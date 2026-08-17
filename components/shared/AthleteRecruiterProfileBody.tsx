@@ -35,6 +35,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
+import { useAthleteContactable, BLACKOUT_MESSAGE } from "@/lib/queries/recruiter/useAthleteContactable";
 
 /* ═══════════════════════════════════════════════════════════════
    AthleteRecruiterProfileBody — shared across recruiter, athlete-
@@ -991,6 +992,12 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     }
     setShowContactMenu(true);
   };
+
+  /* Période de restriction RSEQ — UI dormante, la RPC rend `true` aujourd'hui.
+     Ce test passe AVANT le verrou de palier : une restriction de ligue n'est
+     pas une fonctionnalité à vendre, et proposer « Passe à Pro » sur un
+     athlète que personne ne peut contacter serait mensonger. */
+  const { contactable } = useAthleteContactable(id);
   const [statusToast, setStatusToast] = useState<SuccessToastData | null>(null);
 
   /* Le stage est désormais PERSISTÉ (avant : setState local uniquement → tout
@@ -1744,11 +1751,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       {/* ══════════ STICKY CTA BAR (hidden in preview) ══════════ */}
       {!isPreview && (
       <div className="fixed bottom-0 left-0 right-0 z-40 md:bottom-6 md:left-auto md:right-6 md:w-auto">
+        {/* Période de restriction — même patron que « athlète sans coach » :
+            l'action reste VISIBLE mais désactivée, et une phrase dit pourquoi.
+            La cacher laisserait croire que la fonctionnalité n'existe pas. */}
+        {!contactable && (
+          <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24]/95 backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
+            {BLACKOUT_MESSAGE}
+          </p>
+        )}
         {/* Mobile — full-width bar */}
         <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
           <button type="button" onClick={handleContactClick}
-            title={contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
-            className="flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
+            disabled={!contactable}
+            title={!contactable ? BLACKOUT_MESSAGE : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+            className="disabled:opacity-40 disabled:cursor-not-allowed flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
             {contactLocked ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
@@ -1779,8 +1795,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* Desktop — floating pill */}
         <div className="hidden md:flex items-center gap-2">
           <button type="button" onClick={handleContactClick}
-            title={contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
-            className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
+            disabled={!contactable}
+            title={!contactable ? BLACKOUT_MESSAGE : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+            className="disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
             {contactLocked ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />

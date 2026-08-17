@@ -39,6 +39,7 @@ import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
+import { useAthleteContactable, BLACKOUT_MESSAGE } from "@/lib/queries/recruiter/useAthleteContactable";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
@@ -1770,6 +1771,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     }
     setShowContactMenu(true);
   };
+
+  /* Période de restriction RSEQ — UI dormante, jumelle du desktop. Testée
+     AVANT le verrou de palier : une restriction de ligue n'est pas une
+     fonctionnalité à vendre. */
+  const { contactable } = useAthleteContactable(id);
   // Bottom sheet « Changer le statut » (remplace StatusChangeDropdown).
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [savingVisit, setSavingVisit] = useState(false);
@@ -2933,6 +2939,35 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           Portal échappe au containing block de l'ancêtre transform.
           RECRUITER-ONLY (Step 6 gate) — coach a sa propre barre "Modifier le profil"
           rendue plus bas. */}
+      {/* Période de restriction RSEQ — bandeau posé AU-DESSUS de la barre
+          d'action, en bloc distinct : la barre est une rangée flex, y glisser
+          un paragraphe l'aurait déformée. Même message que le desktop, même
+          patron que « athlète sans coach » (action visible mais désactivée,
+          et une phrase qui dit pourquoi). */}
+      {isRecruiter && mounted && !contactable && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed left-0 right-0 z-30 px-3"
+          style={{
+            bottom: "calc(env(safe-area-inset-bottom) + 142px)",
+            transform: `translateY(${actionBarVisible && !showFlagModal && !showActionSheet ? 0 : 160}px)`,
+            transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        >
+          <p
+            className="rounded-xl px-3.5 py-2.5 text-[12px] leading-snug text-[#F59E0B]"
+            style={{
+              backgroundColor: "rgba(26,29,36,0.92)",
+              backdropFilter: "blur(20px) saturate(180%)",
+              WebkitBackdropFilter: "blur(20px) saturate(180%)",
+              border: "0.5px solid rgba(245,158,11,0.32)",
+            }}
+          >
+            {BLACKOUT_MESSAGE}
+          </p>
+        </div>,
+        document.body,
+      )}
+
       {isRecruiter && mounted && typeof document !== "undefined" && createPortal(
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5 flex items-center gap-2"
@@ -2949,7 +2984,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           <button
             type="button"
             onClick={handleContactClick}
-            className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+            disabled={!contactable}
+            className="disabled:opacity-40 flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
           >
             {contactLocked ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

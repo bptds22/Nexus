@@ -574,7 +574,23 @@ function CiblesBtn({ cible, onToggle, small }: { cible: boolean; onToggle: () =>
 /* ── Calendrier ──────────────────────────────────────────────────────────── */
 
 function CalendrierMobile({ team }: { team: TeamData }) {
-  const events = team.events ?? [];
+  /* Même source et même logique que le web (CalendarSection) : `seasons` vient
+     du chargeur serveur, clé school_id + sport_id + gender, division exclue.
+     Repli sur `events` quand `seasons` est absent — mocks et fixtures ne
+     bougent pas. */
+  const saisons = React.useMemo(() => {
+    if (team.seasons?.length) return team.seasons;
+    const courante = `${team.season}-${team.season + 1}`;
+    return [{ saison: courante, teamId: team.id, division: null, events: team.events ?? [] }];
+  }, [team.seasons, team.events, team.season, team.id]);
+
+  const [choisie, setChoisie] = React.useState(saisons[0]?.saison ?? "");
+  React.useEffect(() => { setChoisie(saisons[0]?.saison ?? ""); }, [team.id, saisons]);
+
+  const active = saisons.find((s) => s.saison === choisie) ?? saisons[0];
+  const events = active?.events ?? [];
+  const divisionsDifferent = new Set(saisons.map((s) => s.division ?? "")).size > 1;
+  const avecSelecteur = saisons.length > 1;
   const caraRef = React.useRef<HTMLDivElement>(null);
   // `bout` = on a atteint la fin du défilement. Il pilote le retrait du masque
   // de bord : estomper la dernière tuile alors que rien ne suit dirait le
@@ -601,27 +617,56 @@ function CalendrierMobile({ team }: { team: TeamData }) {
   // tuile d'un calendrier pourtant entièrement visible.
   React.useEffect(() => { onScroll(); }, [onScroll, team.id]);
 
-  if (events.length === 0) return null; // pas d'événement → pas de section
+  /* La section ne disparaît que si AUCUNE saison n'a d'événement — sinon une
+     équipe dont la saison courante n'est pas publiée perdait aussi son
+     historique, et la page ne disait rien. Même règle que le web. */
+  if (saisons.every((s) => s.events.length === 0)) return null;
 
-  const season = `${team.season}-${String((team.season + 1) % 100).padStart(2, "0")}`;
   const scroll = (dir: number) => caraRef.current?.scrollBy({ left: dir * 181, behavior: "smooth" });
 
   return (
     <section className="cal">
       <div className="cal-head">
         <div>
-          <div className="kick">SAISON {season}</div>
+          <div className="kick">SAISON {active?.saison}</div>
           <h2>Le calendrier</h2>
           <div className="pbar" />
         </div>
-        <div className="cara-nav">
-          <button type="button" onClick={() => { void triggerHaptic("Light"); scroll(-1); }} aria-label="Précédent"><ChevronLeft size={16} aria-hidden /></button>
-          <button type="button" onClick={() => { void triggerHaptic("Light"); scroll(1); }} aria-label="Suivant"><ChevronRight size={16} aria-hidden /></button>
+        {events.length > 0 && (
+          <div className="cara-nav">
+            <button type="button" onClick={() => { void triggerHaptic("Light"); scroll(-1); }} aria-label="Précédent"><ChevronLeft size={16} aria-hidden /></button>
+            <button type="button" onClick={() => { void triggerHaptic("Light"); scroll(1); }} aria-label="Suivant"><ChevronRight size={16} aria-hidden /></button>
+          </div>
+        )}
+      </div>
+
+      {avecSelecteur && (
+        <div className="cal-seasons" role="tablist" aria-label="Saison">
+          {saisons.map((s) => (
+            <button
+              key={s.saison}
+              type="button"
+              role="tab"
+              aria-selected={s.saison === choisie}
+              className={"cal-pill" + (s.saison === choisie ? " on" : "")}
+              onClick={() => { void triggerHaptic("Light"); setChoisie(s.saison); }}
+            >
+              {s.saison}
+              {divisionsDifferent && s.division ? <span className="div">{s.division}</span> : null}
+            </button>
+          ))}
         </div>
-      </div>
-      <div className={"cal-row" + (bout ? " bout" : "")} ref={caraRef} onScroll={onScroll}>
-        {events.map((e, i) => <EventCard key={i} e={e} today={today} />)}
-      </div>
+      )}
+
+      {events.length === 0 ? (
+        <p className="cal-vide">
+          Calendrier à venir — les matchs {active?.saison} ne sont pas encore publiés.
+        </p>
+      ) : (
+        <div className={"cal-row" + (bout ? " bout" : "")} ref={caraRef} onScroll={onScroll}>
+          {events.map((e, i) => <EventCard key={`${choisie}-${i}`} e={e} today={today} />)}
+        </div>
+      )}
     </section>
   );
 }
@@ -1175,6 +1220,16 @@ const TPM_CSS = `
 
 /* ── Calendrier ── */
 .tpm .cal-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+/* Sélecteur de saison — rangée défilable : sur un écran étroit, deux ou trois
+   pills tiennent, mais on ne parie pas dessus. Apparaît à partir de DEUX
+   saisons seulement. */
+.tpm .cal-seasons{display:flex;gap:8px;overflow-x:auto;margin:12px 0 4px;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tpm .cal-seasons::-webkit-scrollbar{display:none}
+.tpm .cal-pill{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;border:1.5px solid var(--line-card);background:var(--card);color:var(--p-ink);font-size:14px;font-weight:700;-webkit-tap-highlight-color:transparent}
+.tpm .cal-pill.on{background:var(--p);border-color:var(--p);color:var(--p-on)}
+.tpm .cal-pill .div{font-size:11px;font-weight:800;opacity:.72;padding:1px 6px;border-radius:999px;background:rgba(0,0,0,.14)}
+.tpm .cal-pill.on .div{background:rgba(255,255,255,.18)}
+.tpm .cal-vide{margin:14px 0 4px;padding:16px 16px;border:1.5px dashed var(--line-card);border-radius:14px;color:var(--muted);font-size:14px;line-height:1.5}
 .tpm .cara-nav{display:flex;gap:6px;padding-bottom:18px}
 .tpm .cara-nav button{width:32px;height:32px;border-radius:16px;border:1px solid var(--line-card);
   background:var(--card);color:var(--p-soft);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}

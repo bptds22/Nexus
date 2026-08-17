@@ -57,5 +57,10 @@
 			</array>
 		</dict>
 	</array>
+	<!-- L'app n'utilise que le HTTPS du système : chiffrement exempté au sens
+	     de l'ITAR/EAR. Déclaré ici pour qu'App Store Connect cesse de poser la
+	     question du chiffrement à chaque soumission. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

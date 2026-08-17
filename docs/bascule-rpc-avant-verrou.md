@@ -228,6 +228,43 @@ dernières 24 h — il peut appartenir à une édition en cours).
 
 ---
 
+## 7. Périodes de restriction RSEQ — l'admin, et la table
+
+Ajouté le 2026-08-16. L'**UI dormante** est livrée dans le build mobile 1.2.1 :
+le bouton « Contacter » du profil athlète recruteur (web ET mobile) interroge
+`public.is_athlete_contactable(p_athlete uuid)` et se désactive sur `false`.
+
+Aujourd'hui la RPC est un **stub qui rend `true`** — rien ne se bloque. Le jour
+où la règle entre en vigueur, le serveur change la fonction et l'interface suit
+**sans redéploiement d'app**. C'est toute la raison de l'avoir câblée pendant
+qu'un binaire était en préparation : un client mobile figé ne peut pas porter
+une règle de ligue versionnée.
+
+**Reste à faire — côté web, hors soirée de build :**
+
+- La **table** des périodes. Schéma acté par BP : `sport_id` **nullable**,
+  `date_debut` / `date_fin`, `promo_min` / `promo_max` **nullables**, `actif`,
+  `libelle`.
+- L'**écran admin** de gestion de ces périodes.
+- Remplacer le stub de `is_athlete_contactable` par la vraie lecture.
+- Afficher `libelle` à la place du message générique du client. Le message
+  actuel (`BLACKOUT_MESSAGE`, dans `lib/queries/recruiter/useAthleteContactable.ts`)
+  ne nomme NI sport NI dates, précisément parce que la RPC ne rend qu'un
+  booléen : le client ne sait pas pourquoi il est bloqué et n'a donc pas à
+  l'affirmer. Les nullables du schéma le confirment — une restriction peut
+  porter sur une promotion sans sport, ou l'inverse.
+
+**Deux invariants à ne pas casser en implémentant la table :**
+
+1. **Le repli client est `true` en cas d'échec**, délibérément. La règle est
+   RÉGLEMENTAIRE, pas sécuritaire : rien de confidentiel ne fuit si un bouton
+   reste actif à tort, et le serveur re-vérifiera au `send`. Un verrou de
+   sécurité se fermerait dans l'autre sens ; celui-ci non.
+2. **La vérification au `send` est la vraie barrière.** L'UI n'est qu'un
+   confort — ne jamais la traiter comme l'application de la règle.
+
+---
+
 ## Doctrine — ce que le repli `logo_url` sert, et ce qu'il ne sert pas
 
 Tranché par BP le 2026-08-16, à la suite de la bascule `logo_path` canonique
