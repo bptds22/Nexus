@@ -142,6 +142,69 @@ async function loadTeamDataClient(supabase: SupabaseClient, teamId: string): Pro
     wallWords: Array.isArray(sp?.wall_words) ? (sp!.wall_words as string[]).filter(Boolean) : [],
   };
 
+  /* SAISONS DISPONIBLES — transposition du bloc service-role de
+     lib/queries/teamPage/loadForRender.ts. Sans lui, `seasons` n'était jamais
+     passé à buildTeamData : le sélecteur de saison existait dans le balisage
+     (CalendrierMobile) mais restait mort, pour TOUS les rôles, faute de donnée.
+
+     Clé volontairement SANS division, comme le web : les identités cégep
+     présentes dans deux saisons changent toutes de division, l'inclure
+     couperait l'équipe en deux exactement quand son historique commence.
+
+     RLS (client anon, pas le service-role) : sous `authenticated`, la policy
+     « Cegep teams readable for search » rend ces lignes sœurs lisibles —
+     vérifié en prod, mêmes comptes qu'en service-role. Sous `anon`, toute
+     lecture de `teams` échoue déjà en 42501 bien avant ce bloc (la page entière
+     est inaccessible), donc rien ici ne dégrade ce cas. */
+  const { data: soeurs } = await supabase
+    .from("teams")
+    .select("id, season, division")
+    .eq("school_id", team.school_id)
+    .eq("sport_id", team.sport_id)
+    .eq("gender", team.gender ?? "")
+    .not("season", "is", null);
+
+  const lignesSoeurs = ((soeurs ?? []) as { id: string; season: string; division: string | null }[])
+    .filter((t) => t.season);
+
+  /* Les matchs de TOUTES les saisons en une requête. Un match appartient à la
+     saison de la ligne d'équipe qui le porte — on n'interroge donc pas
+     `games.season`, qui pourrait diverger de `teams.season` sur une ligne dont
+     la saison a été avancée à la main. */
+  const idsSoeurs = lignesSoeurs.map((t) => t.id);
+  const { data: matchsToutesSaisons } = idsSoeurs.length
+    ? await supabase.from("games")
+        .select("game_date, game_time, venue, home_team_id, visitor_team_id, home_name_raw, visitor_name_raw, home_score, visitor_score, is_played")
+        .or(idsSoeurs.map((id) => `home_team_id.eq.${id},visitor_team_id.eq.${id}`).join(","))
+        .order("game_date")
+    : { data: [] };
+
+  /* UNE SEULE LIGNE PAR SAISON — cas réel : Ahuntsic aligne en 2025-2026 une
+     équipe de flag D2 ET une D3. Sans arbitrage, le sélecteur afficherait deux
+     pills « 2025-2026 » indiscernables. On garde, par saison, celle qui
+     prolonge le mieux la page courante : même division d'abord, sinon la
+     première venue. L'autre reste accessible par sa propre page. */
+  const parSaison = new Map<string, { id: string; season: string; division: string | null }>();
+  for (const t of lignesSoeurs) {
+    const dejaLa = parSaison.get(t.season);
+    if (!dejaLa) { parSaison.set(t.season, t); continue; }
+    const memeDivision = (x: { division: string | null }) => x.division === team.division;
+    if (!memeDivision(dejaLa) && memeDivision(t)) parSaison.set(t.season, t);
+  }
+  // La saison courante pointe toujours sur LA ligne demandée, jamais sa jumelle.
+  if (team.season) parSaison.set(team.season, { id: team.id, season: team.season, division: team.division });
+
+  const seasons = [...parSaison.values()]
+    .map((t) => ({
+      saison: t.season,
+      teamId: t.id,
+      division: t.division,
+      games: ((matchsToutesSaisons ?? []) as GameRow[])
+        .filter((g) => g.home_team_id === t.id || g.visitor_team_id === t.id),
+    }))
+    // Plus récente en tête — tri lexical, correct sur « 2026-2027 » vs « 2025-2026 ».
+    .sort((a, b) => b.saison.localeCompare(a.saison));
+
   const posRows = (positions.data ?? []) as PositionRow[];
   const needs = page.needs.length && sportKey
     ? toTeamNeeds(mergeNeeds(defaultNeeds(sportKey, posRows), page.needs), posRows)
@@ -183,6 +246,7 @@ async function loadTeamDataClient(supabase: SupabaseClient, teamId: string): Pro
     team, sportNom, sportKey, school: identity,
     content: page.content, pennants, camps: page.camps, needs,
     games: (games.data ?? []) as GameRow[],
+    seasons,
     roster: rosterRows,
     commitRows: (commits.data ?? []) as CommitRow[],
     headCoachName, staff,
@@ -574,10 +638,11 @@ function CiblesBtn({ cible, onToggle, small }: { cible: boolean; onToggle: () =>
 /* ── Calendrier ──────────────────────────────────────────────────────────── */
 
 function CalendrierMobile({ team }: { team: TeamData }) {
-  /* Même source et même logique que le web (CalendarSection) : `seasons` vient
-     du chargeur serveur, clé school_id + sport_id + gender, division exclue.
-     Repli sur `events` quand `seasons` est absent — mocks et fixtures ne
-     bougent pas. */
+  /* Même logique que le web (CalendarSection), clé school_id + sport_id +
+     gender, division exclue. Sur mobile `seasons` vient de loadTeamDataClient
+     (plus haut dans ce fichier), PAS du chargeur serveur : la page est rendue
+     en output:export et n'a pas de SSR. Repli sur `events` quand `seasons` est
+     absent — mocks et fixtures ne bougent pas. */
   const saisons = React.useMemo(() => {
     if (team.seasons?.length) return team.seasons;
     const courante = `${team.season}-${team.season + 1}`;

@@ -1,9 +1,29 @@
 // app/college/[schoolId]/[teamId]/page.tsx
 //
-// Page équipe PUBLIQUE, enfant de la page école. Destination des rangées et des
-// chips de « L'affiche » (SportsGrid).
+// Page équipe, enfant de la page école. Destination des rangées et des chips de
+// « L'affiche » (SportsGrid).
 //
-// PUBLIQUE au sens strict : aucune garde de rôle, aucune redirection de login.
+// ACCÈS ANONYME (MOBILE) — FERMÉ VOLONTAIREMENT. NE PAS « RÉPARER ».
+//
+// Le rendu mobile lit Supabase avec la clé anon sous RLS. Sans compte, toute
+// lecture de `teams` échoue en 42501 dès la première requête du chargeur, et la
+// page ne s'affiche pas. C'est le comportement VOULU : une page d'équipe n'est
+// pas censée être atteignable sans compte.
+//
+// ⚠ Cette fermeture ne repose sur AUCUNE garde de rôle dans ce fichier. Elle est
+// l'effet de bord d'une chaîne de policies :
+//     teams  → policy « Recruiters see teams » → EXISTS sur `users`
+//       users → policy « Users read conversation participants » → sous-requête
+//         sur `conversations` → policy group_conversations_select
+//           → is_group_participant(), dont l'ACL n'accorde PAS `anon`.
+// Assouplir n'importe quel maillon (GRANT EXECUTE à anon, refonte des policies
+// de messagerie, resserrement de « Recruiters see teams » pour qu'elle cesse
+// d'aller lire `users`) ROUVRE l'accès anonyme, en silence et sans que rien ici
+// ne le signale. Si la fermeture doit devenir robuste, c'est une garde
+// explicite à écrire — pas une policy à relâcher.
+//
+// Le rendu WEB, lui, passe par le service-role, qui CONTOURNE la RLS : il reste
+// lisible sans compte (SEO public). Écart assumé entre les deux plateformes.
 //
 // DEUX rendus, un seul composant <TeamPage> :
 //   • WEB  → SSR service-role (SEO public). Corps inchangé ci-dessous.
