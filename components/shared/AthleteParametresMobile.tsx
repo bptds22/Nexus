@@ -26,7 +26,8 @@
        desktop deactivateAccount() uses — supabase.rpc(
        "deactivate_my_account", { p_revoke_consent: false }).
 
-   No FeatureGate ; athlete baseline is free with Pro upgrade CTA.
+   No FeatureGate ; l'athlète est entièrement gratuit — aucune
+   section Abonnement, aucun CTA de mise à niveau.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -38,11 +39,10 @@ import { isMinor } from "@/lib/utils/age";
 import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
-  triggerHaptic, tierStatus,
+  triggerHaptic,
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
-  TierCard, PasswordChangeSheet, ConfirmSheet,
+  PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
-import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -70,11 +70,10 @@ interface AthleteProfile {
 export function AthleteParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier, isStripeManaged, refresh, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
-
-  // Athlete only has Free / Pro per business rules ; any legacy
-  // "all_star" DB value collapses to Pro for display.
-  const displayTier: "free" | "pro" = tier === "free" ? "free" : "pro";
+  // L'athlète n'a plus de palier payant : aucune lecture de tier ici.
+  // `refresh` reste appelé au montage/reprise — l'abonnement gouverne
+  // encore d'autres surfaces (recruteur), et le contexte est partagé.
+  const { refresh } = useSubscription();
 
   /* ── State (hooks BEFORE any early return — Rules of Hooks 7.8d) */
   const [profile, setProfile] = useState<AthleteProfile | null>(null);
@@ -106,24 +105,6 @@ export function AthleteParametresMobile() {
     })();
     return () => { annule = true; };
   }, []);
-
-  const [portalBusy, setPortalBusy] = useState(false);
-
-  /* ── Portail Stripe mobile (Lot 2 — handler partagé startMobilePortal :
-        Bearer + Browser.open). Erreur visible, jamais avalée. ── */
-  async function handlePortal() {
-    if (portalBusy) return;
-    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
-    triggerHaptic("Light");
-    setPortalBusy(true);
-    try {
-      await startMobilePortal();
-    } catch (e) {
-      toast.error({ message: "Portail indisponible", detail: e instanceof Error ? e.message : "Erreur inconnue" });
-    } finally {
-      setPortalBusy(false);
-    }
-  }
 
   /* Refresh le tier au montage + au retour de l'in-app browser (parité
      coach/recruteur). Plugins absents sur web → no-op. */
@@ -372,7 +353,6 @@ export function AthleteParametresMobile() {
     router.push("/athlete/dashboard");
   }
 
-  const tierLabel = displayTier === "pro" ? "Pro" : "Gratuit";
   const isCivil = profile?.context === "ligue_civile";
 
   /* ── Loading early return (AFTER all hooks) ──────────────────── */
@@ -633,101 +613,6 @@ export function AthleteParametresMobile() {
           </>
         );
       })()}
-
-      {/* ABONNEMENT — Plan actuel + portail/notice + TierCards */}
-      <SectionLabel>Abonnement</SectionLabel>
-      {/* Plan actuel (déplacé ici, sous le label Abonnement) */}
-      <div className="px-4 pt-1 pb-2">
-        <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-              <span className="text-[13px] text-[#9CA3AF]">Plan actuel</span>
-            </div>
-            <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
-          </div>
-          {displayTier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Voir qui consulte ton profil — réservé aux membres Pro.</p>
-          )}
-          {/* Payant + vrai abo Stripe → résumé + portail (in-app browser). */}
-          {tier !== "free" && isStripeManaged && (
-            <div className="mt-3 space-y-2">
-              <div className="space-y-1">
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[#9CA3AF]">Statut</span>
-                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
-                </div>
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[#9CA3AF]">Cycle</span>
-                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
-                </div>
-                {cancelAtPeriodEnd ? (
-                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
-                ) : (
-                  <div className="flex justify-between text-[12px]">
-                    <span className="text-[#9CA3AF]">Renouvellement</span>
-                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
-                  </div>
-                )}
-              </div>
-              {IS_CAPACITOR ? (
-                // iOS (3.1.1) : pas de gestion de paiement in-app.
-                // Texte descriptif PUR — aucun lien ni bouton cliquable.
-                <p className="text-[12px] text-[#9CA3AF] leading-snug">
-                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handlePortal}
-                  disabled={portalBusy}
-                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
-                >
-                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
-                </button>
-              )}
-            </div>
-          )}
-          {tier !== "free" && !isStripeManaged && (
-            <div className="mt-3">
-              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
-              <p className="text-[12px] text-[#6b7280] mt-1">
-                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="px-4 space-y-2">
-        <TierCard
-          name="Gratuit"
-          price="0 $"
-          period=""
-          features={[
-            "Profil athlète + carte de joueur",
-            "Évaluations + cote globale",
-            "Vérification par ton coach",
-          ]}
-          status={tierStatus(displayTier, "free")}
-        />
-        <TierCard
-          name="Pro"
-          price="9,99 $"
-          period="/mois"
-          features={[
-            "Voir quels CÉGEPs consultent ton profil",
-            "Intérêt mutuel des CÉGEPs",
-            "Alertes recruteurs en temps réel",
-            "Graphique de vues hebdomadaire",
-            "Badge Pro affiché aux recruteurs",
-            "Vidéo de commitment personnalisée",
-          ]}
-          status={tierStatus(displayTier, "pro")}
-          accentDot="#F59E0B"
-          onUpgrade={() => router.push("/tarifs")}
-          upgradeLabel="Passer à Pro"
-        />
-      </div>
 
       {/* COMPTE */}
       <SectionLabel>Compte</SectionLabel>

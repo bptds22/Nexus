@@ -7,31 +7,24 @@
    Mobile rendering of /coach/ecole. Today the desktop has 6 school
    management routes (Mon école, Mes coachs, Stats école, Analytique,
    Placements, Administration) ; on mobile they were entirely hidden.
-   This screen surfaces all 6 as a visible MENU :
-     - Discovery for non-admin Free coaches (so they can see what
-       Pro unlocks).
-     - Direct openExternal to the real web feature for Pro coaches
-       and school admins (who have access).
+   This screen surfaces all 6 as a visible MENU.
 
    Per the brief : école labels for ALL coaches (no civil variant
    this build — accepted for beta).
 
-   Access rule (matches components/subscription/SchoolGate.tsx) :
-     hasAccess(1-5) = tier !== "free" OR is_school_admin
-     hasAccess(6)   = is_school_admin (Pro doesn't unlock admin)
+   Access rule — l'entraîneur n'a plus de palier payant :
+     sections 1-5 : ouvertes à tous
+     section 6    : is_school_admin (ce n'est PAS un verrou de
+                    palier — c'est un rôle, il reste en place)
 
    Smart tap behavior :
-     - Has access → openExternal to the web URL
-     - Section 1-5 + no access → router.push("/coach/settings") to
-       the parametres Abonnement section (upsell, not the gated
-       web page that would refuse them).
+     - Sections 1-5 → openExternal vers l'URL web
      - Section 6 + not admin → MobileToast info (Réservé aux
-       administrateurs — Pro doesn't unlock this).
+       administrateurs)
 
    Pills :
-     - "PRO" gold pill on 1-5 when the coach lacks access.
      - "ADMIN" blue pill on 6 when the coach is not a school admin.
-     - No pill when access is granted (clean row).
+     - Plus de pastille "PRO" : il n'y a plus de palier à marquer.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useRouter } from "next/navigation";
@@ -68,21 +61,6 @@ const ENTRIES: EntryDef[] = [
 
 /* ── Pills ──────────────────────────────────────────────────── */
 
-function ProPill() {
-  return (
-    <span
-      className="inline-flex items-center h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.12em]"
-      style={{
-        color: "#F59E0B",
-        backgroundColor: "rgba(245,158,11,0.12)",
-        border: "1px solid rgba(245,158,11,0.35)",
-      }}
-    >
-      Pro
-    </span>
-  );
-}
-
 function AdminPill() {
   return (
     <span
@@ -105,11 +83,9 @@ function AdminPill() {
 export function GestionEcoleMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier, isSchoolAdmin, loading } = useSubscription();
-
-  /* SchoolGate access check (mirror of components/subscription/
-     SchoolGate.tsx) : tier !== "free" OR is_school_admin. */
-  const hasProOrAdmin = tier !== "free" || isSchoolAdmin;
+  // `isSchoolAdmin` gouverne encore la section 6 — c'est un rôle,
+  // pas un palier d'abonnement. Plus aucune lecture de `tier` ici.
+  const { isSchoolAdmin, loading } = useSubscription();
 
   function handleBack() {
     triggerHaptic("Light");
@@ -136,14 +112,7 @@ export function GestionEcoleMobile() {
       return;
     }
 
-    // Sections 1-5 — Pro OR admin to access.
-    if (!hasProOrAdmin) {
-      // Free non-admin → route to coach parametres Abonnement section
-      // for the upsell. Sending them to the web URL would just give
-      // them the SchoolGate UpgradePlaceholder again.
-      router.push("/coach/settings");
-      return;
-    }
+    // Sections 1-5 — ouvertes à tous les entraîneurs.
     if (IS_CAPACITOR) {
       toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
       return;
@@ -199,34 +168,28 @@ export function GestionEcoleMobile() {
         </div>
       </div>
 
-      {/* Intro bandeau — sets the expectation for non-Pro coaches. */}
+      {/* Intro bandeau */}
       <div className="px-4 pt-6 pb-2">
         <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
           <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
-            {hasProOrAdmin
-              ? "Tes fonctionnalités de gestion d'école se gèrent sur la version web de Nexus."
-              : "Découvre la gestion d'école. Les sections marquées Pro débloquent l'analyse, les stats et le placement."}
+            Tes fonctionnalités de gestion d&apos;école se gèrent sur la version web de Nexus.
           </p>
         </div>
       </div>
 
-      {/* Five Pro-gated entries */}
-      <SectionLabel>Vue d'ensemble</SectionLabel>
+      {/* Cinq entrées, ouvertes à tous */}
+      <SectionLabel>Vue d&apos;ensemble</SectionLabel>
       <Group>
-        {ENTRIES.filter((e) => e.gate === "pro").map((e, idx) => {
-          const showPill = !hasProOrAdmin;
-          return (
-            <NavRow
-              key={e.key}
-              isFirst={idx === 0}
-              label={e.label}
-              sublabel={e.sublabel}
-              rightChevron={hasProOrAdmin ? "none" : "chevron"}
-              rightAccessory={showPill ? <ProPill /> : undefined}
-              onTap={() => handleTap(e)}
-            />
-          );
-        })}
+        {ENTRIES.filter((e) => e.gate === "pro").map((e, idx) => (
+          <NavRow
+            key={e.key}
+            isFirst={idx === 0}
+            label={e.label}
+            sublabel={e.sublabel}
+            rightChevron="none"
+            onTap={() => handleTap(e)}
+          />
+        ))}
       </Group>
 
       {/* Admin entry (separate group — distinct gate) */}
@@ -248,11 +211,11 @@ export function GestionEcoleMobile() {
         })}
       </Group>
 
-      {/* Upsell helper text — only for non-Pro, non-admin coaches. */}
-      {!hasProOrAdmin && (
+      {/* Note d'accès — l'administration reste liée au rôle. */}
+      {!isSchoolAdmin && (
         <div className="px-6 pt-3 pb-6 text-[11px] text-[#6b7280] leading-5">
           <p>
-            Pro débloque les 5 premières sections. L'administration de l'école est réservée aux directeurs.
+            L&apos;administration de l&apos;école est réservée aux directeurs.
           </p>
         </div>
       )}

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import SchoolGate from "@/components/subscription/SchoolGate";
 import StarRating from "@/components/ui/StarRating";
 import type { CoachOverview } from "@/lib/types/models";
 
@@ -145,7 +144,7 @@ function CircularProgress({ value }: { value: number }) {
 /* ── Component ───────────────────────────────────────────── */
 
 export default function CoachDetailPageWrapper() {
-  return <SchoolGate><CoachDetailPage /></SchoolGate>;
+  return <CoachDetailPage />;
 }
 
 function CoachDetailPage() {

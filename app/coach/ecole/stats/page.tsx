@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import SchoolGate from "@/components/subscription/SchoolGate";
 import { createClient } from "@/lib/supabase/client";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
@@ -37,7 +36,7 @@ function getBestStatus(statuses: string[]): string {
 /* ── page ────────────────────────────────────────────────── */
 
 export default function StatsPageWrapper() {
-  return <SchoolGate><StatsPage /></SchoolGate>;
+  return <StatsPage />;
 }
 
 function StatsPage() {

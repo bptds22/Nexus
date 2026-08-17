@@ -26,22 +26,45 @@ export function getYouTubeId(url: string): string | null {
   return null;
 }
 
+/** URL d'intégration Hudl, dérivée d'un lien de partage (null si impossible).
+ *
+ *  Hudl sert TROIS formes, et une seule est intégrable :
+ *
+ *    /v/2U3ZFM                        lien court de partage  → non dérivable
+ *    /video/3/26518191/6a64ce78…      page vidéo             → X-Frame-Options: Deny
+ *    /embed/video/3/26518191/6a64…    intégration officielle → aucun XFO, frame-ancestors *
+ *
+ *  Hudl déclare lui-même la troisième dans ses balises `twitter:player` et
+ *  `embedUrl` : c'est un point d'entrée assumé, pas un contournement.
+ *
+ *  ⚠ L'ancienne version rendait l'URL de la PAGE VIDÉO telle quelle comme
+ *  source d'iframe. Cette page porte `X-Frame-Options: Deny` — le cadre
+ *  restait donc vide, en silence. Il manquait `/embed` dans le chemin.
+ *
+ *  Le lien COURT n'est pas dérivable ici : `2U3ZFM` ne contient ni
+ *  l'identifiant utilisateur ni celui de la vidéo, seul Hudl connaît la
+ *  correspondance. Il faut suivre la redirection, ce que le navigateur ne
+ *  peut pas faire (CORS). C'est le rôle de /api/video/resolve, appelé À LA
+ *  SAISIE pour stocker directement la forme longue. */
+export function getHudlEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "hudl.com" && !u.hostname.endsWith(".hudl.com")) return null;
+    if (u.pathname.startsWith("/embed/video/")) return `https://www.hudl.com${u.pathname}`;
+    if (u.pathname.startsWith("/video/")) return `https://www.hudl.com/embed${u.pathname}`;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** EXPORTÉ — voir getYouTubeId. Porte l'atténuation nocookie + origin. */
 export function getEmbedUrl(url: string): string | null {
   const ytId = getYouTubeId(url);
   // Dégradé (option a) : ?origin déclaré pour le player web (inoffensif, aide
   // la validation d'origin côté YouTube). La garantie device reste l'option (c).
   if (ytId) return `https://www.youtube-nocookie.com/embed/${ytId}?origin=https://nexussports.ca`;
-  try {
-    const u = new URL(url);
-    // Hudl
-    if (u.hostname.includes("hudl.com") && u.pathname.includes("/video/")) {
-      return url;
-    }
-  } catch {
-    return null;
-  }
-  return null;
+  return getHudlEmbedUrl(url);
 }
 
 /** Ouvre l'URL dans le navigateur in-app (SFSafariViewController sur iOS) —
@@ -107,8 +130,16 @@ export default function VideoEmbed({ url, title }: VideoEmbedProps) {
     );
   }
 
-  // ── WEB : iframe inline (comportement d'origine) ─────────────────────────
-  if (embedUrl && (embedUrl.includes("youtube") || embedUrl.includes("youtu.be"))) {
+  // ── IFRAME EN LIGNE ──────────────────────────────────────────────────────
+  // Toute URL d'intégration résolue passe ici, plus seulement YouTube.
+  //
+  // Le cas YouTube + natif a déjà rendu la vignette plus haut (son iframe est
+  // refusée sous une origine non-http). Hudl, lui, annonce `frame-ancestors: *`
+  // et se moque de l'origine : il s'affiche donc en ligne SUR TOUTES LES
+  // PLATEFORMES, y compris dans l'application. À confirmer sur un vrai
+  // appareil — l'en-tête est permissif, mais je ne l'ai pas vu tourner en
+  // WKWebView.
+  if (embedUrl) {
     return (
       <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
         <iframe

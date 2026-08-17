@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import FeatureGate from "@/components/subscription/FeatureGate";
 import useAthleteVisibility, { useAthleteVisibilityPro } from "@/hooks/useAthleteVisibility";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
@@ -12,7 +11,6 @@ import { relativeTimeFr } from "@/lib/utils/relativeTime";
 ═══════════════════════════════════════════════════════════════ */
 
 const sectionTitle = "text-[11px] font-semibold tracking-[2px] uppercase text-[#555]";
-const proTag = "text-[9px] font-bold tracking-[1.5px] uppercase bg-[#E63946]/15 text-[#E63946] px-2 py-0.5 rounded ml-2";
 
 function Initials({ name, size = 36 }: { name: string; size?: number }) {
   const parts = name.trim().split(/\s+/);
@@ -172,15 +170,11 @@ export default function VisibilitePage() {
         </div>
       )}
 
-      {/* ── Section 5: Quels CÉGEPs consultent ton profil (Pro) ── */}
-      <FeatureGate feature="who_viewed" requiredTier="pro">
-        <CegepDetailsSection />
-      </FeatureGate>
+      {/* ── Section 5: Quels CÉGEPs consultent ton profil ── */}
+      <CegepDetailsSection />
 
-      {/* ── Section 6: Qui consulte ton profil (Pro) ────────── */}
-      <FeatureGate feature="who_viewed" requiredTier="pro">
-        <RecruiterDetailsSection />
-      </FeatureGate>
+      {/* ── Section 6: Qui consulte ton profil ────────────── */}
+      <RecruiterDetailsSection />
 
       {/* ── Section 7: Verified + video impact ────────────────── */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#E63946]/10 p-5">
@@ -214,9 +208,17 @@ export default function VisibilitePage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Pro-only sub-components.
-   Their hooks fire ONLY when rendered inside a passing FeatureGate,
-   so recruiter / CÉGEP names never reach a free account's browser.
+   Sous-composants « qui a consulté mon profil ».
+
+   Anciennement réservés au palier Pro de l'athlète, aujourd'hui
+   ouverts à tous : l'athlète n'a plus de palier payant. Leurs
+   hooks se déclenchent donc au montage, sans condition.
+
+   ⚠ LE VERROU DE BASE N'EST PAS LEVÉ. Le RPC
+   get_my_athlete_view_details() porte encore `user_has_pro()` et
+   rend ZÉRO ligne à un athlète gratuit — c'est-à-dire à tous
+   aujourd'hui. Ces deux sections s'affichent donc, mais avec leur
+   état vide, tant que ce verrou n'est pas retiré côté base.
 ═══════════════════════════════════════════════════════════════ */
 
 function CegepDetailsSection() {
@@ -230,7 +232,6 @@ function CegepDetailsSection() {
     <div>
       <div className="flex items-center mb-4">
         <h2 className={sectionTitle}>Quels CÉGEPs consultent ton profil</h2>
-        <span className={proTag}>PRO</span>
       </div>
       {cegepDetails.length > 0 ? (
         <div className="space-y-3">
@@ -283,7 +284,6 @@ function RecruiterDetailsSection() {
     <div>
       <div className="flex items-center mb-4">
         <h2 className={sectionTitle}>Qui consulte ton profil</h2>
-        <span className={proTag}>PRO</span>
       </div>
       {recruiterDetails.length > 0 ? (
         <div className="space-y-2">

@@ -7,7 +7,6 @@ import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
-import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useAthleteVisibilityPro, type CegepDetail } from "@/hooks/useAthleteVisibility";
 import { MON_PARCOURS_COTE_COPY } from "@/lib/config/parcoursCoteCopy";
 import { parseDistinctions, BADGE_ORDER, type DistinctionEntry } from "@/lib/config/badges";
@@ -402,22 +401,10 @@ export default function MonParcoursMobile() {
     .filter((c) => !targetedIds.has(c.id))
     .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
 
-  /* ── Pro tier check (single read, drives the recruiter badges).
-        canSee("who_viewed") is the canon flag for "athlete sees
-        recruiter-view data per CÉGEP" — mirrors the gate used at
-        app/athlete/visibilite/page.tsx :174 + :179. The tier is
-        read ONCE here ; the actual recruiter fetch is gated below
-        by mounting <ProRecruiterBadgesLoader> only when this flag
-        is true. Free athletes never trigger the
-        useAthleteVisibilityPro hook → no athlete_view_details
-        query, no recruiter names in the network tab. */
-  const { canSee, loading: subscriptionLoading } = useSubscription();
-  const showProBadges = !subscriptionLoading && canSee("who_viewed");
-
-  /* recruiterBadgeMap is null while loading OR when free ;
-     TargetCard renders nothing in the badge slot in that case.
-     Pro path: <ProRecruiterBadgesLoader> fetches once + setter
-     populates the Map<cegepName, CegepDetail>. */
+  /* recruiterBadgeMap est null tant que le chargement n'a rien
+     rendu ; TargetCard n'affiche alors rien dans l'emplacement de
+     badge. Le chargeur est monté sans condition depuis que
+     l'athlète n'a plus de palier payant. */
   const [recruiterBadgeMap, setRecruiterBadgeMap] = useState<Map<string, CegepDetail> | null>(null);
 
   /* ── Unified Télécharger handler ─────────────────────────
@@ -1245,32 +1232,15 @@ export default function MonParcoursMobile() {
           </>
         )}
 
-        {/* Pro recruiter-view data loader OR free-tier nudge.
-            Tier is checked ONCE via useSubscription's canSee
-            ("who_viewed") below ; the actual recruiter fetch
-            happens inside a Pro-only sub-component so the hook
-            never fires for free users (no wasted Supabase query,
-            no recruiter PII reaches a free browser). Free users
-            see ONE subtle row below the carousel — not a per-card
-            FeatureGate (which would render N UpgradePlaceholders
-            and clutter the row). */}
-        {showProBadges ? (
-          <ProRecruiterBadgesLoader onLoad={setRecruiterBadgeMap} />
-        ) : targets.length > 0 ? (
-          <div className="px-5 pt-4">
-            <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-              <span className="w-7 h-7 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center shrink-0">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0110 0v4" />
-                </svg>
-              </span>
-              <p className="text-[12px] text-white/65 leading-snug">
-                Passe Pro pour voir quels CÉGEPs ont consulté ton profil.
-              </p>
-            </div>
-          </div>
-        ) : null}
+        {/* Chargeur des données « qui a consulté » — monté sans
+            condition de palier. L'encart « Passe Pro » qui occupait
+            la branche alternative a été retiré : l'athlète n'a plus
+            de palier payant.
+
+            ⚠ Le RPC sous-jacent porte encore user_has_pro() en base
+            (hors périmètre du lot 2), donc la carte reste vide tant
+            que ce verrou n'est pas levé. */}
+        <ProRecruiterBadgesLoader onLoad={setRecruiterBadgeMap} />
       </div>
 
       {/* ── CÉGEP picker — SearchSheet (canon mobile pattern from
@@ -1604,12 +1574,10 @@ function TargetCard({
   );
 }
 
-/* ── ProRecruiterBadgesLoader — Pro-only sub-component.
-   Calls useAthleteVisibilityPro() inside its own scope so the
-   React hook never runs for free users (the parent only mounts
-   this when canSee("who_viewed") is true ; mounting a component
-   conditionally is the canonical way to conditionally fire a
-   hook without violating the rules-of-hooks).
+/* ── ProRecruiterBadgesLoader — chargeur des données « qui a
+   consulté ». Le nom garde le préfixe « Pro » pour ne pas rompre
+   les références ; il n'y a plus de condition de palier, le
+   parent le monte systématiquement.
 
    Reduces the cegepDetails array to a Map<cegepName, CegepDetail>
    for O(1) lookup by TargetCard. Pushes the map up via onLoad,

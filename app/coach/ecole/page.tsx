@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
-import SchoolGate from "@/components/subscription/SchoolGate";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
@@ -64,7 +63,7 @@ export default function SchoolDashboardPage() {
   // openExternal (when the coach has access) or upsell route to
   // /coach/settings (when they don't). Desktop body untouched.
   if (IS_CAPACITOR) return <GestionEcoleMobile />;
-  return <SchoolGate><SchoolDashboardContent /></SchoolGate>;
+  return <SchoolDashboardContent />;
 }
 
 function SchoolDashboardContent() {
