@@ -7,8 +7,8 @@ import "server-only";
 // pour que l'appelant applique le fixture Grasset. LA PAGE NE CASSE JAMAIS.
 
 import { createServiceClient } from "@/lib/supabase/service";
-import { loadSchoolPage } from "./schoolPageData";
-import { dbToProgramPage, degradedProgramPage, type SchoolRow, type TeamRowForGrid } from "./dbToProgramPage";
+import { loadSchoolPage, loadTeamsForGrid } from "./schoolPageData";
+import { dbToProgramPage, degradedProgramPage, type SchoolRow } from "./dbToProgramPage";
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import type { ProgramPageContent } from "@/components/program-page/content";
 
@@ -41,16 +41,14 @@ export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderR
   // la section #sports disparaissait de toute école chargée depuis la base.
   // Lu AVANT le branchement : une école non configurée a quand même ses
   // équipes, et c'est tout l'intérêt de sa page dégradée.
-  const [{ data: rc }, { data: fc }, { data: teamRows }] = await Promise.all([
+  // `teams` passe par loadTeamsForGrid — SOURCE UNIQUE partagée avec la page
+  // école mobile et l'aperçu de l'éditeur, pour que les trois montrent la même
+  // affiche (la requête y était recopiée à l'identique, sans `season`).
+  const [{ data: rc }, { data: fc }, teams] = await Promise.all([
     svc.rpc("count_recruited_by_school", { p_school_id: school.id } as unknown as undefined),
     svc.rpc("count_followers_by_school", { p_school_id: school.id } as unknown as undefined),
-    svc.from("teams").select("id, division, gender, sports:sport_id(nom)").eq("school_id", school.id),
+    loadTeamsForGrid(svc, school.id),
   ]);
-  const teams: TeamRowForGrid[] = ((teamRows ?? []) as unknown as {
-    id: string; division: string | null; gender: string | null; sports: { nom: string } | null;
-  }[]).map((t) => ({
-    id: t.id, sport: t.sports?.nom ?? "", division: t.division, gender: t.gender,
-  }));
 
   if (!content) {
     return {

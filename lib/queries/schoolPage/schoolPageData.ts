@@ -7,6 +7,7 @@
 // AUCUN service role ici (c'est l'éditeur réel de l'utilisateur).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { TeamRowForGrid } from "./dbToProgramPage";
 
 /* ── forme éditeur (miroir des champs de l'éditeur v3) ─────────────────── */
 export interface EditorProgram { id?: string; name: string; code: string | null; type: "preuniversitaire" | "technique"; is_displayed: boolean; source: "seed" | "manuel" }
@@ -42,6 +43,59 @@ const CONTENT_COLS =
 /** null-safe : chaîne DB → chaîne éditeur ('' si null). */
 const s = (v: unknown): string => (v == null ? "" : String(v));
 const arr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : []);
+
+/** Charge les équipes d'une école dans la forme attendue par « L'affiche ».
+ *
+ *  SOURCE UNIQUE des trois surfaces qui dessinent la grille — page école web
+ *  (SSR service-role), page école mobile (client anon) et aperçu de l'éditeur.
+ *  Elles portaient jusqu'ici la MÊME requête recopiée trois fois ; la fusion
+ *  multi-saison de `sportsFromTeams` a besoin de `season`, `name` et
+ *  `age_group`, qu'aucune des trois ne sélectionnait. Les recopier une
+ *  quatrième fois garantissait qu'un jour l'éditeur montrerait au directeur
+ *  autre chose que sa page publique.
+ *
+ *  La seconde requête ne sert qu'à savoir QUELLES équipes ont au moins un
+ *  match — c'est ce qui décide vers quelle ligne pointe un chip fusionné. Deux
+ *  colonnes d'UUID, ~117 lignes par école en moyenne (479 au maximum mesuré).
+ *  Aucune donnée de match n'est lue au-delà de l'identifiant d'équipe. */
+export async function loadTeamsForGrid(
+  supabase: SupabaseClient, schoolId: string,
+): Promise<TeamRowForGrid[]> {
+  const { data } = await supabase
+    .from("teams")
+    .select("id, division, gender, name, age_group, season, sports:sport_id(nom)")
+    .eq("school_id", schoolId);
+
+  const rows = (data ?? []) as unknown as {
+    id: string; division: string | null; gender: string | null;
+    name: string | null; age_group: string | null; season: string | null;
+    sports: { nom: string } | null;
+  }[];
+  if (!rows.length) return [];
+
+  const ids = rows.map((t) => t.id);
+  const { data: parties } = await supabase
+    .from("games")
+    .select("home_team_id, visitor_team_id")
+    .or(`home_team_id.in.(${ids.join(",")}),visitor_team_id.in.(${ids.join(",")})`);
+
+  const avecMatchs = new Set<string>();
+  for (const g of (parties ?? []) as { home_team_id: string | null; visitor_team_id: string | null }[]) {
+    if (g.home_team_id) avecMatchs.add(g.home_team_id);
+    if (g.visitor_team_id) avecMatchs.add(g.visitor_team_id);
+  }
+
+  return rows.map((t) => ({
+    id: t.id,
+    sport: t.sports?.nom ?? "",
+    division: t.division,
+    gender: t.gender,
+    name: t.name,
+    ageGroup: t.age_group,
+    season: t.season,
+    hasGames: avecMatchs.has(t.id),
+  }));
+}
 
 /** Charge le contenu complet d'une école. content NULL (page jamais configurée)
  *  → renvoie null pour content ; l'appelant applique ses valeurs par défaut. */

@@ -39,6 +39,15 @@ export interface TeamRowForGrid {
   sport: string;
   division: string | null;
   gender: string | null;
+  /** Les trois champs ci-dessous servent UNIQUEMENT à la fusion multi-saison
+   *  de `sportsFromTeams`. Ils ne sont jamais affichés. */
+  name: string | null;
+  ageGroup: string | null;
+  season: string | null;
+  /** L'équipe a-t-elle au moins un match ? Décide de la ligne vers laquelle
+   *  pointe un chip fusionné. Absent → traité comme `false`, la fusion retombe
+   *  alors sur « la saison la plus récente ». */
+  hasGames?: boolean;
 }
 
 /** `teams.gender` est en toutes lettres ; « L'affiche » attend le code court
@@ -129,24 +138,67 @@ export function libelleSportGenre(
  *  nom de l'établissement, il ne distingue pas les équipes entre elles.
  *  Chaque équipe pointe vers sa route publique `/college/<école>/<équipe>`. */
 export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[]): Sport[] {
-  const parSport = new Map<string, Sport>();
+  /* FUSION MULTI-SAISON — une équipe qui existe sur deux saisons est UNE
+     équipe, donc UN chip ; le sélecteur de saison de la page d'équipe fait
+     naviguer entre elles. Sans cette fusion, « L'affiche » montrait deux
+     entrées rigoureusement identiques (même sport, même genre, même division)
+     menant à deux pages dont l'une paraissait vide.
+
+     ⚠ `ageGroup` EST dans la clé, et ce n'est pas négociable : Atome,
+     Benjamin, Cadet et Juvénile sont des équipes RÉELLEMENT distinctes, avec
+     chacune son calendrier. Les fusionner effacerait ~3 000 équipes de la vue.
+     Mesuré en base : sans ce champ, la clé fusionnerait 2 339 groupes au lieu
+     de 175 — l'essentiel étant des échelons d'âge du secondaire.
+
+     `age_group` nul → « Collégial ». Ce n'est pas une supposition : les 234
+     lignes à `age_group` nul sont CÉGEP à 100 %, et le CÉGEP ne connaît que
+     « Collégial » ou nul — aucun échelon d'âge. Le nul est la signature de
+     l'import du 2026-08-16, qui a cessé d'écrire la valeur. Sans cette
+     normalisation la clé ne fusionnerait RIEN (0 groupe, vérifié). */
+  /* JSON.stringify, et non un `join` sur un séparateur : les quatre champs
+     sont du texte libre, et tout séparateur imprimable peut apparaître dans un
+     nom d’équipe — « D2 » + « A » et « D2 A » + « » donneraient la même clé. */
+  const cle = (t: TeamRowForGrid) =>
+    JSON.stringify([t.division ?? "", t.gender ?? "", t.name ?? "", t.ageGroup ?? "Collégial"]);
+
+  /* Destination d'un chip fusionné : la ligne la plus récente AYANT des matchs.
+     Aujourd'hui cette règle et « la plus récente » désignent la même ligne dans
+     les 175 groupes (0 divergence mesurée) ; elle protège du jour où un import
+     créera la saison N+1 avant que son calendrier soit publié — « la plus
+     récente » mènerait alors à un calendrier vide. */
+  const meilleure = (a: TeamRowForGrid, b: TeamRowForGrid) => {
+    if (!!a.hasGames !== !!b.hasGames) return a.hasGames ? a : b;
+    return (b.season ?? "").localeCompare(a.season ?? "") > 0 ? b : a;
+  };
+
+  const parSport = new Map<string, Map<string, TeamRowForGrid>>();
   for (const t of teams) {
     const sport = (t.sport ?? "").trim();
     if (!sport) continue; // sport_id orphelin → l'équipe n'est pas affichable
-    const entry = parSport.get(sport) ?? { nom: sport, equipes: [] };
-    entry.equipes.push({
-      nom: libelleSportGenre(sport, t.gender),
-      division: t.division && t.division.trim() ? t.division : null,
-      genre: genreCourt(t.gender),
-      url: `/college/${schoolId}/${t.id}`,
-    });
+    const entry = parSport.get(sport) ?? new Map<string, TeamRowForGrid>();
+    const k = cle(t);
+    const dejaLa = entry.get(k);
+    entry.set(k, dejaLa ? meilleure(dejaLa, t) : t);
     parSport.set(sport, entry);
   }
-  for (const s of parSport.values()) {
+
+  const sports = new Map<string, Sport>();
+  for (const [sport, retenues] of parSport) {
+    sports.set(sport, {
+      nom: sport,
+      equipes: [...retenues.values()].map((t) => ({
+        nom: libelleSportGenre(sport, t.gender),
+        division: t.division && t.division.trim() ? t.division : null,
+        genre: genreCourt(t.gender),
+        url: `/college/${schoolId}/${t.id}`,
+      })),
+    });
+  }
+  for (const s of sports.values()) {
     s.equipes.sort((a, b) =>
       (a.division ?? "").localeCompare(b.division ?? "", "fr") || a.nom.localeCompare(b.nom, "fr"));
   }
-  return [...parSport.values()].sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  return [...sports.values()].sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
 }
 
 /** Construit {school, content} pour <ProgramPage>. `assetUrl` transforme un
