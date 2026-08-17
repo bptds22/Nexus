@@ -33,7 +33,7 @@ import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import { openExternal } from "@/components/shared/settings";
 import { createClient } from "@/lib/supabase/client";
-import { loadSchoolPage } from "@/lib/queries/schoolPage/schoolPageData";
+import { loadSchoolPage, loadTeamsForGrid } from "@/lib/queries/schoolPage/schoolPageData";
 import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
 import { deriveWallTheme } from "@/components/program-wall/theme";
 import ProgramWallMobile, { WALL_CSS } from "./ProgramWallMobile";
@@ -48,7 +48,7 @@ import dynamic from "next/dynamic";
 const MapPane = dynamic(() => import("@/components/cegep-search/MapPane"), { ssr: false });
 import {
   dbToProgramPage, degradedProgramPage,
-  type SchoolRow, type TeamRowForGrid,
+  type SchoolRow,
 } from "@/lib/queries/schoolPage/dbToProgramPage";
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import { languageLabel, type ProgramPageContent, type Sport, type SportTeam } from "./content";
@@ -113,14 +113,13 @@ export default function ProgramPageMobile() {
         if (!school) { if (!cancelled) setSt({ state: "notfound" }); return; }
 
         const { content, cards, programs, news } = await loadSchoolPage(supabase, school.id);
-        const [{ data: rc }, { data: fc }, { data: teamRows }] = await Promise.all([
+        // loadTeamsForGrid — MÊME source que la page école web et l'aperçu de
+        // l'éditeur, pour que les trois surfaces montrent la même affiche.
+        const [{ data: rc }, { data: fc }, teams] = await Promise.all([
           supabase.rpc("count_recruited_by_school", { p_school_id: school.id } as unknown as undefined),
           supabase.rpc("count_followers_by_school", { p_school_id: school.id } as unknown as undefined),
-          supabase.from("teams").select("id, division, gender, sports:sport_id(nom)").eq("school_id", school.id),
+          loadTeamsForGrid(supabase, school.id),
         ]);
-        const teams: TeamRowForGrid[] = ((teamRows ?? []) as unknown as {
-          id: string; division: string | null; gender: string | null; sports: { nom: string } | null;
-        }[]).map((t) => ({ id: t.id, sport: t.sports?.nom ?? "", division: t.division, gender: t.gender }));
 
         const assetUrl = (path: string | null | undefined, bucket: "school-logos" | "campus-photos") =>
           path ? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl : null;

@@ -12,7 +12,8 @@
 
 import * as React from "react";
 import { useEditor } from "./editorContext";
-import { sportsFromTeams, type TeamRowForGrid } from "@/lib/queries/schoolPage/dbToProgramPage";
+import { sportsFromTeams } from "@/lib/queries/schoolPage/dbToProgramPage";
+import { loadTeamsForGrid } from "@/lib/queries/schoolPage/schoolPageData";
 import type { Sport } from "@/components/program-page/content";
 
 type Etat =
@@ -27,18 +28,14 @@ export default function SportsAffiche() {
   React.useEffect(() => {
     let annule = false;
     (async () => {
-      const { data, error } = await client
-        .from("teams")
-        .select("id, division, gender, sports:sport_id(nom)")
-        .eq("school_id", schoolId);
-      if (annule) return;
-      if (error) { setEtat({ s: "err", msg: error.message }); return; }
-      const teams: TeamRowForGrid[] = ((data ?? []) as unknown as {
-        id: string; division: string | null; gender: string | null; sports: { nom: string } | null;
-      }[]).map((t) => ({
-        id: t.id, sport: t.sports?.nom ?? "", division: t.division, gender: t.gender,
-      }));
-      setEtat({ s: "ok", sports: sportsFromTeams(schoolId, teams) });
+      try {
+        const teams = await loadTeamsForGrid(client, schoolId);
+        if (annule) return;
+        setEtat({ s: "ok", sports: sportsFromTeams(schoolId, teams) });
+      } catch (e) {
+        if (annule) return;
+        setEtat({ s: "err", msg: e instanceof Error ? e.message : String(e) });
+      }
     })();
     return () => { annule = true; };
   }, [client, schoolId]);

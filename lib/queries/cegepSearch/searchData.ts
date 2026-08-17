@@ -109,8 +109,12 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     // cégep tombait dans la fenêtre, les 64 autres perdaient leurs badges
     // de sport sans la moindre erreur. Borné au type, on lit 398 lignes en
     // une requête — plus juste ET plus rapide qu'avant.
+    // `name` et `age_group` ne sont JAMAIS affichés : ils n'entrent que dans la
+    // clé de déduplication multi-saison, plus bas. `season` n'est pas lu — un
+    // badge n'est pas cliquable, il n'y a donc aucune ligne à désigner : la
+    // seule chose qui compte est que les deux saisons tombent sur la même clé.
     supabase.from("teams")
-      .select("school_id, division, gender, sports:sport_id(nom), schools!school_id!inner(type)")
+      .select("school_id, division, gender, name, age_group, sports:sport_id(nom), schools!school_id!inner(type)")
       .eq("schools.type", "CEGEP"),
     // Les 1263 programmes sont TOUS is_displayed=true et TOUS rattachés à un
     // cégep : le filtre ne borne rien et on dépasse les 1000. Pagination.
@@ -124,11 +128,44 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
   // `programs` vient de fetchAllRows : c'est un tableau, sans .error.
   for (const r of [schools, teams, pageContent, cards]) if (r.error) throw r.error;
 
+  /* DÉDUPLICATION MULTI-SAISON — une équipe présente sur deux saisons est UNE
+     équipe, donc UN badge. Sans elle, le tiroir « ÉQUIPES (n) » d'André-Grasset
+     affichait « Flag football · D2 · Féminin » deux fois (et trois autres
+     paires), et comptait 12 là où il y a 8 équipes.
+
+     La clé porte `name` et `age_group` alors que ni l'un ni l'autre n'est
+     affiché : ce sont eux qui distinguent deux équipes réellement différentes
+     d'une même équipe vue sur deux saisons.
+
+     `age_group` nul → « Collégial ». Ce panneau est borné au type CÉGEP, et le
+     CÉGEP ne connaît que « Collégial » ou nul — aucun échelon d'âge (Atome,
+     Benjamin, Cadet, Juvénile sont exclusivement secondaires). Le nul est la
+     signature de l'import du 2026-08-16, qui a cessé d'écrire la valeur.
+
+     JSON.stringify, jamais un `join` sur un séparateur : `name` est du texte
+     libre venu du RSEQ, et tout séparateur imprimable peut y apparaître —
+     mesuré, un séparateur « | » produit 20 collisions sur cette table.
+
+     Même règle et même clé que `sportsFromTeams` (page école), à la ligne de
+     destination près : un badge n'étant pas cliquable, il n'y a rien à choisir
+     entre les lignes fusionnées — la première rencontrée fait le badge. */
+  const cleBadge = (t: { division: string | null; gender: string | null; name: string | null; age_group: string | null }, sport: string) =>
+    JSON.stringify([sport, t.division ?? "", t.gender ?? "", t.name ?? "", t.age_group ?? "Collégial"]);
+
   const teamsBy = new Map<string, TeamBadge[]>();
-  for (const t of (teams.data ?? []) as unknown as { school_id: string; division: string | null; gender: string | null; sports: { nom: string } | null }[]) {
-    const arr = teamsBy.get(t.school_id) ?? [];
-    if (t.sports?.nom) arr.push({ sport: t.sports.nom, division: t.division, gender: t.gender });
-    teamsBy.set(t.school_id, arr);
+  const vuesParEcole = new Map<string, Set<string>>();
+  for (const t of (teams.data ?? []) as unknown as { school_id: string; division: string | null; gender: string | null; name: string | null; age_group: string | null; sports: { nom: string } | null }[]) {
+    const sport = t.sports?.nom;
+    if (!sport) continue;
+    const vues = vuesParEcole.get(t.school_id) ?? new Set<string>();
+    const k = cleBadge(t, sport);
+    if (!vues.has(k)) {
+      vues.add(k);
+      const arr = teamsBy.get(t.school_id) ?? [];
+      arr.push({ sport, division: t.division, gender: t.gender });
+      teamsBy.set(t.school_id, arr);
+    }
+    vuesParEcole.set(t.school_id, vues);
   }
 
   const progsBy = new Map<string, string[]>();
