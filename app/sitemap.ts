@@ -32,7 +32,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "comment-ca-marche",
     "guide-recrutement",
     "tarifs",
-    "roadmap",
     "contact",
   ].map((slug) => ({
     url: `${BASE_URL}/${slug}`,

@@ -27,7 +27,7 @@ export default function MarketingNav() {
   const NAV_LINKS = [
     { label: t.nav.howItWorks, href: "/comment-ca-marche", accent: false },
     { label: t.nav.pricing, href: "/tarifs", accent: true },
-    { label: t.nav.roadmap, href: "/roadmap", accent: false },
+    { label: t.nav.help, href: "/aide", accent: false },
     { label: t.nav.about, href: "/a-propos", accent: false },
   ];
 
@@ -83,8 +83,8 @@ export default function MarketingNav() {
           </li>
 
           <li>
-            <Link href="/roadmap" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-              {t.nav.roadmap}
+            <Link href="/aide" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
+              {t.nav.help}
             </Link>
           </li>
 

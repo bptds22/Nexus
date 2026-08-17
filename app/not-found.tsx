@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: "Comment ça marche", href: "/comment-ca-marche" },
   { label: "Coaches & Recruteurs", href: "/#roles" },
   { label: "Athlètes", href: "/#athletes" },
-  { label: "Roadmap", href: "/roadmap" },
+  { label: "Aide", href: "/aide" },
 ];
 
 export default function NotFound() {

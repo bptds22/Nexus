@@ -53,7 +53,7 @@ export interface Dictionary {
     forAthletes: string;
     howItWorks: string;
     pricing: string;
-    roadmap: string;
+    help: string;
     about: string;
     login: string;
     signup: string;
@@ -592,7 +592,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       forAthletes: "Pour les étudiants-athlètes",
       howItWorks: "Comment ça marche",
       pricing: "Tarifs",
-      roadmap: "Roadmap",
+      help: "Aide",
       about: "À propos",
       login: "Connexion",
       signup: "S'inscrire",
@@ -1367,7 +1367,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       forAthletes: "For student-athletes",
       howItWorks: "How it works",
       pricing: "Pricing",
-      roadmap: "Roadmap",
+      help: "Help",
       about: "About",
       login: "Log in",
       signup: "Sign up",
