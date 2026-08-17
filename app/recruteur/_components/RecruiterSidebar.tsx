@@ -127,16 +127,18 @@ const BOTTOM_ITEMS: NavItem[] = [
        recrues). Le nom vient de l'editeur lui-meme, dont la topbar affiche
        deja « MA PAGE ».
 
-       requiredTier "pro" = le palier a 19,99 $. Verrouillee, l'entree reste
-       VISIBLE et grisee avec un cadenas, et le clic ouvre la modale — c'est le
-       comportement des cinq entrees « Mon CEGEP », et il vend le palier.
+       PAS DE requiredTier : publier sa vitrine releve de l'ACQUISITION, pas
+       de la valeur payante. Un recruteur gratuit doit pouvoir presenter son
+       CEGEP — c'est ce qui l'amene sur la plateforme. Les entrees voisines
+       qui portent encore requiredTier (« Listes », « Activites », les cinq
+       « Mon CEGEP ») sont d'une autre nature : elles donnent acces aux
+       ATHLETES, et restent verrouillees.
 
-       Ce verrou est de l'AFFICHAGE, mais il ne tient plus seul : depuis la
-       migration 20260807224410, can_edit_school_page exige un abonnement
-       pro/all_star actif. Les deux doivent rester d'accord — un palier releve
-       ici sans l'etre en SQL ouvrirait un ecran qui refuse d'enregistrer. */
+       ⚠ DEPENDANCE DB NON LEVEE. can_edit_school_page exige encore un
+       abonnement pro/all_star (migration 20260807224410). Tant que le volet
+       DB n'est pas fait, l'ecran s'ouvre mais l'enregistrement echoue en
+       RLS. Les deux doivent redevenir d'accord. */
     label: "Ma page", href: "/recruteur/ma-page",
-    requiredTier: "pro",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 9h16" /><path d="M9 9v11" /></svg>,
   },
   {

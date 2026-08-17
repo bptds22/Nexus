@@ -15,22 +15,22 @@
 // exige `u.school_id = p_school_id`. Vérifié en transaction annulée — écriture
 // sur une école tierce : 0 ligne.
 //
-// ── LE FORFAIT EST GARDÉ PAR LA BASE ────────────────────────────────────────
-// `FeatureGate` ci-dessous n'est PAS la protection : c'est de l'affichage. La
-// vraie porte est can_edit_school_page, qui exige depuis la migration
-// 20260807224410 un abonnement `pro`/`all_star` au statut `active`/`trialing`.
-// Avant elle, un recruteur Free pouvait écrire sa page par appel direct
-// (démontré : UPDATE 1 ligne, INSERT 1 ligne) — ce n'est plus le cas
-// (re-démontré après application : porte false, UPDATE 0 ligne).
+// ── PLUS DE FORFAIT SUR CETTE SURFACE ───────────────────────────────────────
+// Le `FeatureGate` qui enveloppait la page a été retiré : publier sa vitrine
+// relève de l'ACQUISITION, pas de la valeur payante. Un recruteur gratuit doit
+// pouvoir présenter son CÉGEP.
 //
-// ⚠ LES DEUX DOIVENT RESTER D'ACCORD. Si le palier requis change ici, il doit
-// changer dans la fonction SQL, et inversement : sinon l'écran s'ouvre et
-// l'enregistrement échoue en silence côté RLS. Un directeur (is_school_admin)
-// passe la porte SQL quel que soit son forfait — voir la clause 2a.
+// ⚠ DÉSACCORD EN COURS, ASSUMÉ. can_edit_school_page exige TOUJOURS un
+// abonnement `pro`/`all_star` actif (migration 20260807224410). Tant que le
+// volet DB n'est pas livré, l'écran s'ouvre et l'enregistrement échoue côté
+// RLS. Les deux doivent redevenir d'accord — c'est le prochain lot.
+//
+// Un directeur (is_school_admin) ne passe PAS par la branche recruteur de
+// can_edit_school_page : cette fonction n'a que deux branches, admin
+// plateforme et recruteur. Voir le diagnostic du 17 août.
 
 import * as React from "react";
 import PagesTab, { type PagesTabTeam } from "@/components/shared/pages/PagesTab";
-import FeatureGate from "@/components/subscription/FeatureGate";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
@@ -95,23 +95,23 @@ export default function MaPageClient() {
         </p>
       </header>
 
-      {/* Pro = le palier à 19,99 $. Le contenu gaté n'est PAS monté sous le
-          palier requis : aucune requête ne part, rien ne fuit par le réseau. */}
-      <FeatureGate feature="public_page" requiredTier="pro">
-        {userLoading || loading ? (
-          <div className={`${card} px-4 py-6 text-[13px] text-[#9CA3AF]`}>Chargement…</div>
-        ) : err ? (
-          <div className={`${card} px-4 py-6 text-[13px] text-[#9CA3AF]`}>{err}</div>
-        ) : !schoolId ? (
-          // Un recruteur sans établissement n'a pas de page à éditer. Message
-          // net plutôt qu'un écran vide : ce n'est pas une panne.
-          <div className={`${card} px-4 py-6 text-[13px] text-[#9CA3AF]`}>
-            Ton compte n&apos;est rattaché à aucun établissement — il n&apos;y a pas de page à modifier.
-          </div>
-        ) : (
-          <PagesTab schoolId={schoolId} schoolName={schoolName} teams={teams} />
-        )}
-      </FeatureGate>
+      {/* Plus de FeatureGate : publier sa vitrine relève de l'acquisition,
+          pas de la valeur payante. Le périmètre reste tenu par la base —
+          can_edit_school_page exige u.school_id = p_school_id, donc un
+          recruteur ne peut éditer que SON établissement. */}
+      {userLoading || loading ? (
+        <div className={`${card} px-4 py-6 text-[13px] text-[#9CA3AF]`}>Chargement…</div>
+      ) : err ? (
+        <div className={`${card} px-4 py-6 text-[13px] text-[#9CA3AF]`}>{err}</div>
+      ) : !schoolId ? (
+        // Un recruteur sans établissement n'a pas de page à éditer. Message
+        // net plutôt qu'un écran vide : ce n'est pas une panne.
+        <div className={`${card} px-4 py-6 text-[13px] text-[#9CA3AF]`}>
+          Ton compte n&apos;est rattaché à aucun établissement — il n&apos;y a pas de page à modifier.
+        </div>
+      ) : (
+        <PagesTab schoolId={schoolId} schoolName={schoolName} teams={teams} />
+      )}
     </div>
   );
 }
