@@ -56,8 +56,13 @@ interface PartnerAthletesSearchProps {
   promotions: number[];
 }
 
+/* Une cote ABSENTE n'est pas une cote de zéro. Ici les cinq étoiles grises
+   sont déjà le bon rendu — mais elles l'étaient par accident arithmétique
+   (`?? 0` → r = 0 → aucune étoile allumée). On l'écrit, pour que le jour où
+   quelqu'un touche au calcul l'intention reste lisible. Le libellé chiffré
+   qui accompagne ces étoiles est traité à son point d'usage. */
 function StarRow({ rating }: { rating: number | null }) {
-  const r = Math.round(rating ?? 0);
+  const r = rating == null ? 0 : Math.round(rating);
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
@@ -467,9 +472,21 @@ export default function PartnerAthletesSearch({
                   />
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5">
                     <StarRow rating={a.cote_globale_entraineur} />
-                    <span className="text-[11px] font-bold text-[#F59E0B] ml-1.5">
-                      {(a.cote_globale_entraineur ?? 0).toFixed(1)}
-                    </span>
+                    {a.cote_globale_entraineur == null ? (
+                      /* Absence ≠ zéro : « 0.0 » en doré se lit comme une
+                         évaluation faible sur un athlète nommé, alors qu'aucun
+                         entraîneur ne s'est prononcé. Gris neutre, et on le dit. */
+                      <span
+                        className="text-[10px] font-semibold text-[#9CA3AF] ml-1.5 whitespace-nowrap"
+                        title="Aucune évaluation d'entraîneur"
+                      >
+                        Non évalué
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold text-[#F59E0B] ml-1.5">
+                        {a.cote_globale_entraineur.toFixed(1)}
+                      </span>
+                    )}
                   </div>
                 </div>
 

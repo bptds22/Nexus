@@ -47,8 +47,26 @@ type FilterParams = {
   year?: string;
 };
 
+/* ABSENCE ≠ ZÉRO.
+   `(rating ?? 0).toFixed(1)` rendait un athlète JAMAIS ÉVALUÉ comme « 0.0 »,
+   à côté de son nom. Un partenaire média y lit une évaluation faible, alors
+   qu'aucun entraîneur ne s'est prononcé — huit des neuf athlètes actuellement
+   classés sont dans ce cas, sans une seule ligne dans `evaluations`.
+   Le null se dit maintenant, il ne se convertit plus. */
 function StarRow({ rating }: { rating: number | null }) {
-  const r = Math.round(rating ?? 0);
+  if (rating == null) {
+    return (
+      <div className="flex items-center gap-0.5" title="Aucune évaluation d'entraîneur">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill="#374151" stroke="none">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+        ))}
+        <span className="text-[11px] font-semibold text-[#6b7280] ml-1 whitespace-nowrap">Non évalué</span>
+      </div>
+    );
+  }
+  const r = Math.round(rating);
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
@@ -56,7 +74,7 @@ function StarRow({ rating }: { rating: number | null }) {
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
         </svg>
       ))}
-      <span className="text-[11px] font-bold text-[#F59E0B] ml-1">{(rating ?? 0).toFixed(1)}</span>
+      <span className="text-[11px] font-bold text-[#F59E0B] ml-1">{rating.toFixed(1)}</span>
     </div>
   );
 }
@@ -92,13 +110,20 @@ export default async function PartnerClassementsPage({
   const { data, error } = await query;
   const athletes: AthleteRow[] = error ? [] : ((data ?? []) as unknown as AthleteRow[]);
 
-  const heading = athletes.length === 25 ? "Top 25" : `${athletes.length} athlète${athletes.length === 1 ? "" : "s"}`;
+  /* Le titre de section s'adaptait déjà au nombre réel ; le sous-titre de
+     page, lui, annonçait « Top 25 » même avec neuf lignes. Les deux se
+     dérivent maintenant du MÊME test, pour qu'ils ne puissent plus diverger. */
+  const auPlafond = athletes.length === 25;
+  const heading = auPlafond ? "Top 25" : `${athletes.length} athlète${athletes.length === 1 ? "" : "s"}`;
+  const sousTitre = auPlafond
+    ? "Top 25 par sport, position, région et promotion"
+    : "Classement par sport, position, région et promotion";
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-6">
       <div>
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Classements</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">Top 25 par sport, position, région et promotion</p>
+        <p className="text-[14px] text-[#9CA3AF] mt-1">{sousTitre}</p>
       </div>
 
       <ClassementsFilterBar
