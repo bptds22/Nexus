@@ -1,0 +1,27 @@
+-- ═══════════════════════════════════════════════════════════════
+-- blackout_periods — retrait du seul privilège que la RLS ne couvre pas.
+--
+-- CONTEXTE. `pg_default_acl` accorde automatiquement TOUS les privilèges à
+-- anon, authenticated et service_role sur chaque table créée dans `public`.
+-- La refonte (20260818200000) a donc recréé la table avec un ALL implicite ;
+-- son `grant select to authenticated` était un no-op posé par-dessus, et
+-- seul `revoke all from anon` a réellement mordu.
+--
+-- POURQUOI SEULEMENT TRUNCATE.
+-- INSERT / UPDATE / DELETE doivent RESTER accordés à `authenticated` : la
+-- policy « blackout admin write » est `for all to authenticated`, et une
+-- policy RLS s'applique PAR-DESSUS les privilèges, jamais à leur place.
+-- Les révoquer empêcherait l'administrateur plateforme d'écrire et casserait
+-- la future page d'admin. La RLS fait déjà le tri : seul is_platform_admin()
+-- passe.
+--
+-- TRUNCATE est le cas à part : il N'EST PAS soumis à la RLS. Un rôle qui le
+-- détient peut vider la table entière, policies ou non. Rien ne truncate
+-- légitimement un calendrier réglementaire — on le retire.
+--
+-- PORTÉE. Cette table uniquement. Le même défaut existe sur d'autres tables
+-- du schéma (c'est le défaut Supabase) ; le traiter globalement est un autre
+-- chantier, à mener table par table avec la même prudence que ci-dessus.
+-- ═══════════════════════════════════════════════════════════════
+
+revoke truncate on public.blackout_periods from authenticated;
