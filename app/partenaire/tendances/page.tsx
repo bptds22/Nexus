@@ -37,6 +37,8 @@ type TrendingRow = {
 };
 
 type FilterParams = {
+  /** 'M' | 'F' | 'X' — valeur BRUTE de athletes.genre, non normalisée. */
+  genre?: string;
   sport?: string;
   position?: string;
 };
@@ -129,6 +131,7 @@ export default async function PartnerTendancesPage({
   const params = await searchParams;
   const sportFilter = params.sport || null;
   const positionFilter = params.position || null;
+  const genreFilter = params.genre || null;
 
   const supabase = await createClient();
 
@@ -152,6 +155,8 @@ export default async function PartnerTendancesPage({
     .limit(10);
   if (sportFilter) viewsQuery = viewsQuery.eq("sport_id", sportFilter);
   if (positionFilter) viewsQuery = viewsQuery.eq("position_id", positionFilter);
+  // Genre — projeté par trending_athletes_view depuis 20260817190100.
+  if (genreFilter) viewsQuery = viewsQuery.eq("genre", genreFilter);
 
   let favsQuery = supabase
     .from("trending_athletes_view")
@@ -161,13 +166,17 @@ export default async function PartnerTendancesPage({
     .limit(10);
   if (sportFilter) favsQuery = favsQuery.eq("sport_id", sportFilter);
   if (positionFilter) favsQuery = favsQuery.eq("position_id", positionFilter);
+  if (genreFilter) favsQuery = favsQuery.eq("genre", genreFilter);
 
   const [viewsRes, favsRes] = await Promise.all([viewsQuery, favsQuery]);
 
   const viewsTop: TrendingRow[] = (viewsRes.data ?? []) as unknown as TrendingRow[];
   const favsTop: TrendingRow[] = (favsRes.data ?? []) as unknown as TrendingRow[];
 
-  const hasActiveFilters = !!(sportFilter || positionFilter);
+  // genreFilter EN FAIT PARTIE : sans lui, filtrer un genre sans résultat
+  // affichait « Aucune tendance détectée cette semaine » — un constat sur la
+  // semaine, alors que la cause est le filtre. Le message mentait.
+  const hasActiveFilters = !!(sportFilter || positionFilter || genreFilter);
   const emptyMessage = hasActiveFilters
     ? "Aucune tendance ne correspond à ces filtres."
     : "Aucune tendance détectée cette semaine.";

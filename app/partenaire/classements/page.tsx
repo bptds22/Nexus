@@ -41,6 +41,8 @@ type AthleteRow = {
 };
 
 type FilterParams = {
+  /** 'M' | 'F' | 'X' — valeur BRUTE de athletes.genre, non normalisée. */
+  genre?: string;
   sport?: string;
   position?: string;
   region?: string;
@@ -106,6 +108,8 @@ export default async function PartnerClassementsPage({
   if (params.position) query = query.eq("position_id", params.position);
   if (params.region) query = query.eq("region", params.region);
   if (params.year) query = query.eq("annee_diplomation", parseInt(params.year, 10));
+  // Genre — colonne projetée par top_athletes_view depuis 20260817190000.
+  if (params.genre) query = query.eq("genre", params.genre);
 
   const { data, error } = await query;
   const athletes: AthleteRow[] = error ? [] : ((data ?? []) as unknown as AthleteRow[]);

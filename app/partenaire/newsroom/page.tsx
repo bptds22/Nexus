@@ -38,6 +38,8 @@ type EventRow = {
 };
 
 type FilterParams = {
+  /** 'M' | 'F' | 'X' — valeur BRUTE de athletes.genre, non normalisée. */
+  genre?: string;
   type?: string;
   range?: string;
   sport?: string;
@@ -69,6 +71,7 @@ export default async function PartnerNewsroomPage({
   const rangeFilter = params.range === "7d" ? "7d" : params.range === "all" ? "all" : "30d";
   const sportFilter = params.sport || null;
   const positionFilter = params.position || null;
+  const genreFilter = params.genre || null;
 
   const supabase = await createClient();
 
@@ -88,8 +91,12 @@ export default async function PartnerNewsroomPage({
   // directly (set by the trigger), no inner join needed for that.
   // Embed pulls schools/sports/positions for the editorial card
   // metadata row ("FOOTBALL · QB · COLLÈGE ...").
-  const athletesProjection = "id, photo_url, first_name, last_name, schools!school_id(name), sports!sport_id(nom), positions!position_id(abreviation)";
-  const athletesEmbed = positionFilter
+  const athletesProjection = "id, photo_url, first_name, last_name, genre, schools!school_id(name), sports!sport_id(nom), positions!position_id(abreviation)";
+  /* !inner dès qu'on filtre sur une colonne JOINTE — le genre vit sur
+     `athletes`, pas sur `newsroom_events` (contrairement à sport_id, que le
+     trigger recopie). Sans inner, PostgREST rendrait l'événement avec un
+     embed vide au lieu de l'exclure. */
+  const athletesEmbed = positionFilter || genreFilter
     ? `athletes!inner(${athletesProjection})`
     : `athletes(${athletesProjection})`;
 
@@ -115,6 +122,9 @@ export default async function PartnerNewsroomPage({
   if (positionFilter) {
     query = query.eq("athletes.position_id", positionFilter);
   }
+  if (genreFilter) {
+    query = query.eq("athletes.genre", genreFilter);
+  }
 
   const { data, error } = await query;
   const events: EventRow[] = error ? [] : ((data ?? []) as unknown as EventRow[]);
@@ -134,7 +144,9 @@ export default async function PartnerNewsroomPage({
     return qs ? `/partenaire/newsroom?${qs}` : "/partenaire/newsroom";
   }
 
-  const hasActiveFilters = !!(typeFilter || rangeFilter !== "30d" || sportFilter || positionFilter);
+  // genreFilter inclus — voir tendances : omis, il faisait dire « Aucun
+  // événement récent » là où le filtre était seul en cause.
+  const hasActiveFilters = !!(typeFilter || rangeFilter !== "30d" || sportFilter || positionFilter || genreFilter);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
