@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRecruiterAthleteCards, displayFullName, LOCKED_NAME_LABEL, type RecruiterAthleteCard } from "@/lib/queries/shared/recruiterAthleteCards";
-import { findOrCreateRecruiterAthleteConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
+import { findOrCreateRecruiterAthleteConversation, findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import {
   mockAthleteProfileFull,
 } from "@/lib/mock/athleteProfileRecruiter";
@@ -1042,6 +1042,23 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     setShowContactMenu(true);
   };
 
+  /* PORTE DE SORTIE. Pendant un silence RSEQ, le contact direct est ferme
+     mais RECRUTEUR_COACH ne l'est pas : parler a l'entraineur reste la voie
+     legitime. Un bouton desactive n'apporte rien — on offre l'action qui
+     reste possible, exactement comme le fil de messagerie. */
+  const [contactingCoach, setContactingCoach] = useState(false);
+  const handleContactCoach = async () => {
+    if (!coachId || contactingCoach) return;
+    setContactingCoach(true);
+    const res = await findOrCreateRecruiterConversation({ coachId, athleteId: id });
+    /* Union discriminee : on teste `ok` seul, sinon TypeScript ne retrecit
+       pas la branche d'echec. */
+    if (res.ok) { router.push(`/recruteur/messages/${res.conversationId}`); return; }
+    setContactingCoach(false);
+    console.warn("[contact coach] echec", res.error);
+  };
+
+
   /* Période de restriction RSEQ — UI dormante, la RPC rend `true` aujourd'hui.
      Ce test passe AVANT le verrou de palier : une restriction de ligue n'est
      pas une fonctionnalité à vendre, et proposer « Passe à Pro » sur un
@@ -1049,6 +1066,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   /* `message` porte desormais le libelle de la periode et la date de
      reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
   const { contactable, message: blackoutMsg } = useAthleteContactable(id);
+  /* Le blackout est actif ET l'athlete a un entraineur : on bascule le
+     bouton. Sans entraineur, on garde le bouton desactive et le message
+     l'explique — pas de bouton mort. */
+  const coachExit = !contactable && !!coachId;
   const [statusToast, setStatusToast] = useState<SuccessToastData | null>(null);
 
   /* Le stage est désormais PERSISTÉ (avant : setState local uniquement → tout
@@ -1808,13 +1829,14 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {!contactable && (
           <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24]/95 backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
             {blackoutMsg}
+            {!coachId && " Cet athlète n'a pas d'entraîneur rattaché sur Nexus."}
           </p>
         )}
         {/* Mobile — full-width bar */}
         <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
-          <button type="button" onClick={handleContactClick}
-            disabled={!contactable}
-            title={!contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+          <button type="button" onClick={coachExit ? handleContactCoach : handleContactClick}
+            disabled={coachExit ? contactingCoach : !contactable}
+            title={coachExit ? "Écrire à l'entraîneur de cet athlète" : !contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
             className="disabled:opacity-40 disabled:cursor-not-allowed flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
             {contactLocked ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1825,7 +1847,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
               </svg>
             )}
-            Contacter
+            {coachExit ? (contactingCoach ? "Ouverture…" : "Écrire à son entraîneur") : "Contacter"}
           </button>
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
@@ -1845,9 +1867,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         </div>
         {/* Desktop — floating pill */}
         <div className="hidden md:flex items-center gap-2">
-          <button type="button" onClick={handleContactClick}
-            disabled={!contactable}
-            title={!contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+          <button type="button" onClick={coachExit ? handleContactCoach : handleContactClick}
+            disabled={coachExit ? contactingCoach : !contactable}
+            title={coachExit ? "Écrire à l'entraîneur de cet athlète" : !contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
             className="disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
             {contactLocked ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1858,7 +1880,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
               </svg>
             )}
-            Contacter
+            {coachExit ? (contactingCoach ? "Ouverture…" : "Écrire à son entraîneur") : "Contacter"}
           </button>
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}

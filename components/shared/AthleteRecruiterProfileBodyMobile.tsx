@@ -1778,6 +1778,13 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   /* `message` porte desormais le libelle de la periode et la date de
      reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
   const { contactable, message: blackoutMsg } = useAthleteContactable(id);
+  /* PORTE DE SORTIE pendant un silence RSEQ. Le contact direct est ferme,
+     mais RECRUTEUR_COACH ne l'est pas : on bascule le bouton principal vers
+     l'entraineur plutot que de laisser une action desactivee qui n'apporte
+     rien. handleContactCoach existait deja (menu de contact) — on le
+     reutilise tel quel. Sans entraineur rattache : bouton desactive, et le
+     message ambre l'explique. */
+  const coachExit = !contactable && !!coachId;
   // Bottom sheet « Changer le statut » (remplace StatusChangeDropdown).
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [savingVisit, setSavingVisit] = useState(false);
@@ -2965,6 +2972,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             }}
           >
             {blackoutMsg}
+            {!coachId && " Cet athlète n'a pas d'entraîneur rattaché sur Nexus."}
           </p>
         </div>,
         document.body,
@@ -2985,8 +2993,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         >
           <button
             type="button"
-            onClick={handleContactClick}
-            disabled={!contactable}
+            onClick={coachExit ? () => { void handleContactCoach(); } : handleContactClick}
+            disabled={coachExit ? contactingCoach : !contactable}
             className="disabled:opacity-40 flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
           >
             {contactLocked ? (
@@ -2998,7 +3006,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
               </svg>
             )}
-            Contacter
+            {coachExit ? (contactingCoach ? "Ouverture…" : "Écrire à son entraîneur") : "Contacter"}
           </button>
           {/* Iter 7.23 Sprint 4 — bouton "Ajouter à une liste" (PRO-only).
               Icône liste-avec-+ pour signaler l'action d'ajout. Tap → ouvre
