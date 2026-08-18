@@ -5,7 +5,7 @@ import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion, getIncompleteFields } from "@/lib/utils/calculateProfileCompletion";
 import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileCompletion";
-import { isValidationDue, isValidationExpired, formatDeadlineFr, currentMonthKey } from "@/lib/utils/profileValidation";
+import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/utils/profileValidation";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import DatePicker from "@/app/coach/components/DatePicker";
 import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
@@ -1433,29 +1433,15 @@ function AthleteProfilPageDesktop() {
   const needsValidation = isValidationDue(validationPair);
   const validationExpired = isValidationExpired(validationPair);
 
-  // One-shot: log a notification the first time we detect expired state this month.
-  useEffect(() => {
-    if (!athleteId || !validationExpired) return;
-    const month = currentMonthKey();
-    (async () => {
-      const supabase = createClient();
-      const { data: existing } = await supabase
-        .from("athlete_notifications")
-        .select("id")
-        .eq("athlete_id", athleteId)
-        .eq("type", "PROFILE_TIP")
-        .contains("metadata", { kind: "monthly_validation_expired", month })
-        .maybeSingle();
-      if (existing) return;
-      await supabase.from("athlete_notifications").insert({
-        athlete_id: athleteId,
-        type: "PROFILE_TIP",
-        title: "⚠️ Ton badge vérifié a été désactivé",
-        message: "Confirme tes informations pour le réactiver.",
-        metadata: { kind: "monthly_validation_expired", month },
-      });
-    })();
-  }, [athleteId, validationExpired]);
+  /* L'effet qui insérait ici la notification de re-validation a été retiré.
+     Il ne pouvait pas fonctionner : `athlete_notifications` n'a qu'une seule
+     policy INSERT (« admins insert notifications », is_admin()), donc l'appel
+     repartait en 42501 — sans bruit, l'erreur n'étant pas testée. Et même
+     réparé, il n'aurait relancé que les athlètes déjà présents sur la page
+     qui porte le bouton de confirmation.
+     La création vit désormais dans la RPC SECURITY DEFINER
+     `ensure_validation_notice()`, appelée à l'ouverture des deux tableaux
+     de bord (web + mobile), idempotente par athlète et par mois. */
 
   async function confirmValidation() {
     if (!athleteId) return;
@@ -1466,12 +1452,13 @@ function AthleteProfilPageDesktop() {
       .update({ last_profile_validation: new Date().toISOString() })
       .eq("id", athleteId);
     if (error) { console.error("[Validation confirm]", error); setConfirming(false); return; }
-    await supabase.from("athlete_notifications").insert({
-      athlete_id: athleteId,
-      type: "PROFILE_TIP",
-      title: "Tes informations ont été confirmées pour ce mois.",
-      metadata: { kind: "monthly_validation_confirmed", month: currentMonthKey() },
-    });
+    /* L'accusé de réception qui était inséré ici a été retiré. Il se heurtait
+       au même mur que la notification de relance : `athlete_notifications`
+       n'a qu'une policy INSERT (« admins insert notifications », is_admin()),
+       donc l'appel repartait en 42501 à chaque confirmation, en silence.
+       Il n'est pas remplacé et la RPC n'est pas étendue : l'athlète vient de
+       cliquer, le toast le lui confirme — lui écrire une notification pour
+       l'informer de son propre geste n'apporte rien. */
     await reloadProfile();
     setConfirming(false);
     showToast("Informations confirmées!");

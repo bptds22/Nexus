@@ -26,7 +26,7 @@
    - "11× profils vérifiés" banner
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -39,6 +39,12 @@ import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
 import { frenchDateUppercase } from "@/components/shared/dashboard/utils";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
 import { triggerHaptic } from "@/lib/haptics";
+/* 4b — on appelle le MEME helper que VerifiedBadge encapsule, plutot que
+   de faire rendre VerifiedBadge par DashboardGreeting : ce dernier sert
+   aussi les tableaux de bord coach et recruteur, qui ne passent aucune
+   date de validation. isValidationDue rend true quand la date est nulle,
+   leurs badges vireraient donc au gris tous les 16 du mois. */
+import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ── Checklist item shape — mirrors desktop's local ChecklistItem
       type (page.tsx). The `section` tag is display-only ; "coach"
@@ -54,20 +60,30 @@ type ChecklistItem = {
 /* ── Inline banner — reused for pending invitations + unread notif.
       Canon surface (#1A1D24), red accent, tap → href. */
 function InlineBanner({
-  href, accent, icon, title, subtitle,
+  href, accent, icon, title, subtitle, onClick, disabled,
 }: {
-  href: string;
+  /* `href` navigue, `onClick` agit sur place. L'un OU l'autre : la
+     re-validation est une action d'une seule écriture, lui dédier un écran
+     serait disproportionné. `onClick` gagne quand les deux sont fournis. */
+  href?: string;
   accent: string;
   icon: React.ReactNode;
   title: string;
   subtitle?: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
   const router = useRouter();
   return (
     <div className="px-4">
       <button
         type="button"
-        onClick={() => { void triggerHaptic("Light"); router.push(href); }}
+        disabled={disabled}
+        onClick={() => {
+          void triggerHaptic("Light");
+          if (onClick) { onClick(); return; }
+          if (href) router.push(href);
+        }}
         className="w-full text-left bg-[#1A1D24] rounded-2xl border border-white/[0.05] active:bg-white/[0.02] transition-colors flex items-center gap-3 px-4 py-3"
       >
         <div
@@ -264,6 +280,9 @@ export default function AthleteDashboardMobile() {
   // State mirrors the desktop page.tsx exactly.
   const [firstName, setFirstName] = useState<string>("");
   const [verified, setVerified] = useState<boolean>(false);
+  const [lastValidation, setLastValidation] = useState<string | null>(null);
+  const [athleteId, setAthleteId] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [profileCompletion, setProfileCompletion] = useState<number>(0);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [unreadNotifs, setUnreadNotifs] = useState<{ count: number; latestTitle: string | null }>({ count: 0, latestTitle: null });
@@ -273,6 +292,34 @@ export default function AthleteDashboardMobile() {
   const [favoritesCount, setFavoritesCount] = useState<number>(0);
   const [regionsCount, setRegionsCount] = useState<number>(0);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+
+  /* Etat derive : le badge est actif seulement si la validation est fraiche.
+     C'est ce booleen que DashboardGreeting doit recevoir — il rendait
+     jusqu'ici `verified` brut, d'ou un badge bleu au tableau de bord pendant
+     que la carte de profil affichait le crochet gris. */
+  const badgeActive = verified && !isValidationExpired({ verified, last_profile_validation: lastValidation });
+
+  /* Reconfirmation sur place. Meme ecriture que confirmValidation()
+     (app/athlete/profil/page.tsx) : un UPDATE de last_profile_validation.
+     L'athlete en a le droit — policy « athletes can update own profile ». */
+  const confirmValidation = useCallback(async () => {
+    if (!athleteId || confirming) return;
+    setConfirming(true);
+    const supabase = createClient();
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase
+      .from("athletes")
+      .update({ last_profile_validation: nowIso })
+      .eq("id", athleteId);
+    if (error) {
+      console.error("[revalidation] confirmation echouee", error);
+      setConfirming(false);
+      return;
+    }
+    void triggerHaptic("Light");
+    setLastValidation(nowIso);   // la banniere disparait immediatement
+    setConfirming(false);
+  }, [athleteId, confirming]);
 
   useEffect(() => {
     const load = async () => {
@@ -292,8 +339,15 @@ export default function AthleteDashboardMobile() {
       if (fn) setFirstName(fn);
       if (data) {
         setVerified(!!data.verified);
+        setLastValidation((data.last_profile_validation as string) || null);
         setProfileCompletion((data.profile_completion as number) || 0);
       }
+
+      /* Relance de re-validation — meme appel que le tableau de bord web.
+         La RPC est idempotente cote serveur (index unique partiel par
+         athlete et par mois) : les deux surfaces peuvent l'appeler sans
+         produire de doublon. Echec silencieux assume. */
+      await supabase.rpc("ensure_validation_notice");
 
       const { data: athleteRow } = await supabase
         .from("athletes")
@@ -301,6 +355,7 @@ export default function AthleteDashboardMobile() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (!athleteRow?.id) return;
+      setAthleteId(athleteRow.id as string);
 
       // ── Unread athlete_notifications + latest title ──
       const { data: notifs, count } = await supabase
@@ -463,12 +518,34 @@ export default function AthleteDashboardMobile() {
       <DashboardGreeting
         greeting={firstName}
         dateLabel={dateLabel}
-        verifiedBadge={verified}
+        verifiedBadge={badgeActive}
       />
 
       {/* Phase 1 banners — kept inline above the hero (D3 locked).
           Conditional on real counts ; same routing targets as desktop
           (/athlete/notifications for both). */}
+      {/* Badge desactive — relance la plus prioritaire : elle passe avant les
+          deux autres bannieres parce qu'elle demande une action de l'athlete
+          sur son propre profil, pas une consultation. */}
+      {verified && !badgeActive && (
+        <div className="mb-3">
+          <InlineBanner
+            accent="#F59E0B"
+            disabled={confirming}
+            onClick={() => { void confirmValidation(); }}
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            }
+            title="Ton badge vérifié a été désactivé"
+            subtitle={confirming ? "Confirmation en cours…" : "Touche ici pour confirmer tes informations"}
+          />
+        </div>
+      )}
+
       {pendingInvitations > 0 && (
         <div className="mb-3">
           <InlineBanner

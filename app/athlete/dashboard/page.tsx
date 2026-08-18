@@ -102,6 +102,14 @@ function AthleteDashboardPageDesktop() {
         setProfileCompletion((data.profile_completion as number) || 0);
       }
 
+      /* Relance de re-validation. La règle est réévaluée SERVEUR à chaque
+         ouverture : le client ne décide rien, il déclenche. La RPC est
+         idempotente (une notification par athlète et par mois, garantie par
+         un index unique partiel), donc l'appeler ici ET depuis le tableau de
+         bord mobile ne peut pas produire de doublon. Échec silencieux
+         assumé : rater une relance ne doit pas casser le tableau de bord. */
+      await supabase.rpc("ensure_validation_notice");
+
       const { data: athleteRow } = await supabase
         .from("athletes")
         .select("id")

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import PendingInvitations from "./_components/PendingInvitations";
@@ -62,6 +63,7 @@ const TYPE_ICON: Record<NotifType, React.ReactNode> = {
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [notifs, setNotifs] = useState<AthleteNotif[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -213,8 +215,15 @@ export default function NotificationsPage() {
         <div className="space-y-2">
           {filtered.map((n) => {
             const color = DOT_COLOR[n.type] || "#9CA3AF";
-            return (
-              <button key={n.id} type="button" onClick={() => markRead(n.id)}
+              /* Une notification de re-validation MENE quelque part : c'est la
+                 seule dont l'utilite depend d'une action. Les autres restent
+                 informatives — le clic les marque lues, sans navigation. */
+              const target = n.metadata?.kind === "monthly_validation_expired"
+                ? "/athlete/profil"
+                : null;
+              return (
+              <button key={n.id} type="button"
+                onClick={() => { markRead(n.id); if (target) router.push(target); }}
                 className={`w-full text-left rounded-lg border p-4 transition-all hover:border-[#2D3748] ${
                   n.read ? "bg-[#1A1D24] border-white/5" : "bg-[#1A1D24] border-[#2D3748]"
                 }`}>
