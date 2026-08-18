@@ -428,6 +428,21 @@ export interface Dictionary {
       title: string;
       lede: string;
     };
+    /* Personas sans aucun tier payant (athlète, coach). Remplace les
+       cartes par un encadré mission + la liste de ce qui est inclus.
+       Le jour où une adhésion revient, il suffit de repeupler le tableau
+       de tiers dans lib/config/pricing.ts : le rendu rebascule seul. */
+    freePersona: {
+      missionEyebrow: string;
+      missionTitle: string;
+      missionBody: string;
+      /** Phrase de contexte affichée SOUS la mission, onglet COACH seulement.
+          L'onglet athlète garde la mission seule. */
+      coachNote: string;
+      checklistTitle: string;
+      athleteItems: string[];
+      coachItems: string[];
+    };
     trust: {
       quebecHost: string;
       loi25: string;
@@ -1134,6 +1149,35 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "Pourquoi Pro?",
         title: "Tu sais que tu es regardé. Maintenant, sache par qui.",
         lede: "Chaque mois, ton profil est consulté par des recruteurs de partout au Québec. Avec Pro, tu vois leurs noms, leurs CÉGEPs, et combien de fois ils reviennent.",
+      },
+      freePersona: {
+        missionEyebrow: "Gratuit",
+        missionTitle: "Notre mission",
+        missionBody: "Chaque athlète mérite de poursuivre son parcours au prochain niveau. Nexus n'est pas une simple banque de joueurs : nous offrons aux recruteurs et aux étudiants-athlètes des outils concrets qui simplifient chaque étape du recrutement. Et tout cela, gratuitement pour les athlètes.",
+        coachNote: "Les entraîneurs aussi. Votre compte et tous vos outils de gestion d'équipe sont gratuits — ce sont les programmes collégiaux qui financent la plateforme.",
+        checklistTitle: "Ce qui est inclus",
+        athleteItems: [
+          "Profil complet : photo, bio, parcours, vidéos, stats et mesures",
+          "Badge vérifié et cote globale de l'entraîneur",
+          "Ma visibilité : vues, favoris, graphique hebdomadaire, régions",
+          "Quels CÉGEPs consultent ton profil",
+          "Messagerie avec les recruteurs, ton entraîneur et la direction de ton école, dans le respect des périodes de silence RSEQ",
+          "Recherche complète des CÉGEPs : programmes, équipes et informations de chaque établissement",
+          "Transfer portal",
+          "Consentement parental documenté",
+          "Statut de recrutement et confirmation d'engagement",
+        ],
+        coachItems: [
+          "Créer et gérer les profils de tes athlètes",
+          "Évaluations simplifiées et détaillées",
+          "Vérifier tes athlètes",
+          "Messagerie avec les recruteurs",
+          "Messagerie interne avec ton équipe, tes entraîneurs et ta direction",
+          "Gérer les demandes de tes athlètes",
+          "Mon école : tableau de bord, stats, placements, analytique",
+          "Gestion des entraîneurs de ton école",
+          "Ma réputation",
+        ],
       },
       trust: {
         quebecHost: "Hébergé au Québec",
@@ -1915,6 +1959,35 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "Why Pro?",
         title: "You know you're being watched. Now know by whom.", // TODO-EN
         lede: "Every month, your profile is viewed by recruiters from across Québec. With Pro, you see their names, their CÉGEPs, and how often they come back.",
+      },
+      freePersona: {
+        missionEyebrow: "Free",
+        missionTitle: "Our mission",
+        missionBody: "Every athlete deserves to take their journey to the next level. Nexus isn't just a player database: we give recruiters and student-athletes concrete tools that simplify every step of recruitment. And all of it, free for athletes.",
+        coachNote: "Coaches too. Your account and all your team management tools are free — collegiate programs fund the platform.",
+        checklistTitle: "What's included",
+        athleteItems: [
+          "Complete profile: photo, bio, background, videos, stats and measurements",
+          "Verified badge and overall coach rating",
+          "My visibility: views, favorites, weekly chart, regions",
+          "Which CÉGEPs are viewing your profile",
+          "Messaging with recruiters, your coach and your school's administration, within RSEQ quiet periods",
+          "Full CÉGEP search: programs, teams and details for every institution",
+          "Transfer portal",
+          "Documented parental consent",
+          "Recruitment status and commitment confirmation",
+        ],
+        coachItems: [
+          "Create and manage your athletes' profiles",
+          "Simplified and detailed evaluations",
+          "Verify your athletes",
+          "Messaging with recruiters",
+          "Internal messaging with your team, your coaches and your administration",
+          "Handle your athletes' requests",
+          "My school: dashboard, stats, placements, analytics",
+          "Manage your school's coaches",
+          "My reputation",
+        ],
       },
       trust: {
         quebecHost: "Hosted in Québec",

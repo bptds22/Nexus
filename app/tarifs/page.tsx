@@ -76,6 +76,10 @@ export default function TarifsPage() {
 
   const tiers = getTiersForPersona(persona);
   const savingsPct = PERSONA_SAVINGS[persona];
+  /* Source unique de la bascule « offre payante » vs « tout gratuit ».
+     On teste le tableau de tiers, jamais la persona en dur : le jour où une
+     adhésion coach revient, repeupler COACH_TIERS rebascule toute la page. */
+  const hasPaidTiers = tiers.length > 0;
 
   const handleCheckout = async (tierId: string, cycle: Billing) => {
     // Map tier ID → checkout tier value
@@ -157,7 +161,10 @@ export default function TarifsPage() {
         </div>
       </section>
 
-      {/* ─── SECTION 3 — BILLING TOGGLE ───────────────────── */}
+      {/* ─── SECTION 3 — BILLING TOGGLE ─────────────────────
+          Masqué quand la persona n'a aucun tier payant : un bascule
+          mensuel/annuel devant une offre gratuite ne commande rien. */}
+      {hasPaidTiers && (
       <section>
         <div className="max-w-[1200px] mx-auto px-6 flex justify-center mt-5">
           <div className="inline-flex items-center gap-1 bg-[#1A1D24] rounded-full p-1 border border-white/[0.06]">
@@ -185,11 +192,22 @@ export default function TarifsPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ─── SECTION 4 — PRICING CARDS ────────────────────── */}
       <section>
         <div className="max-w-[1200px] mx-auto px-6 pt-10 pb-12">
-          {tiers.length === 2 ? (
+          {!hasPaidTiers ? (
+            /* Aucun tier payant (athlète, coach) — encadré mission puis
+               liste de ce qui est inclus. Piloté par la LONGUEUR du tableau
+               de tiers, pas par la persona : repeupler COACH_TIERS suffit
+               à faire réapparaître les cartes, sans toucher à ce fichier. */
+            <FreePersonaPanel
+              items={persona === "coach" ? T.freePersona.coachItems : T.freePersona.athleteItems}
+              labels={T.freePersona}
+              note={persona === "coach" ? T.freePersona.coachNote : undefined}
+            />
+          ) : tiers.length === 2 ? (
             /* 2 tiers (Athlète — Pro + Free; All Star hidden for MVP) */
             <div className="max-w-[820px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
               <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} />
@@ -231,8 +249,11 @@ export default function TarifsPage() {
         </section>
       )}
 
-      {/* ─── SECTION 6 — POURQUOI PRO (athlete only) ──────── */}
-      {persona === "athlete" && (
+      {/* ─── SECTION 6 — POURQUOI PRO (athlete only) ────────
+          Ne s'affiche que s'il existe un tier payant à justifier. L'athlète
+          étant entièrement gratuit, cette section reste montée mais inerte —
+          elle revient telle quelle si une offre athlète est réintroduite. */}
+      {persona === "athlete" && hasPaidTiers && (
         <section>
           <div className="max-w-[820px] mx-auto px-6 pb-14 text-center">
             <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#F59E0B]">
@@ -269,6 +290,66 @@ export default function TarifsPage() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+/* ── FreePersonaPanel ───────────────────────────────────────────
+   Affiché à la place des cartes pour une persona sans tier payant.
+   Encadré mission calqué sur la bannière CÉGEP (même surface, même
+   pastille d'icône), puis la liste de ce qui est inclus dans le même
+   vocabulaire visuel que les FeatureRow des cartes — pastille verte +
+   Check, texte 13px. Aucune notion de prix : il n'y en a pas. */
+function FreePersonaPanel({
+  items,
+  labels,
+  note,
+}: {
+  items: string[];
+  labels: Dictionary["pricing"]["freePersona"];
+  /** Contexte propre à une persona, sous la mission. Fourni pour le coach,
+      absent pour l'athlète — d'où l'optionnalité plutôt qu'un drapeau. */
+  note?: string;
+}) {
+  return (
+    <div className="max-w-[820px] mx-auto">
+      <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 sm:p-7 flex flex-col sm:flex-row items-start gap-5">
+        <div className="shrink-0 w-12 h-12 rounded-full bg-[#E63946]/10 flex items-center justify-center">
+          <GraduationCap size={22} className="text-[#E63946]" strokeWidth={2} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
+            {labels.missionEyebrow}
+          </p>
+          <h3 className="text-[18px] sm:text-[20px] font-semibold text-white mt-1.5">
+            {labels.missionTitle}
+          </h3>
+          <p className="text-[14px] sm:text-[15px] text-[#9CA3AF] mt-2.5 leading-relaxed">
+            {labels.missionBody}
+          </p>
+          {note && (
+            <p className="text-[14px] sm:text-[15px] text-white/85 mt-3 leading-relaxed">
+              {note}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+          {labels.checklistTitle}
+        </h4>
+        <ul className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+          {items.map((label, idx) => (
+            <li key={`free-${idx}-${label}`} className="flex items-start gap-2.5">
+              <span className="shrink-0 mt-0.5 w-[16px] h-[16px] rounded-full bg-[#10B981]/15 text-[#10B981] flex items-center justify-center">
+                <Check size={11} strokeWidth={3} />
+              </span>
+              <span className="text-[13px] leading-relaxed text-white/85">{label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

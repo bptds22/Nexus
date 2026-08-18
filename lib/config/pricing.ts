@@ -128,144 +128,23 @@ export const RECRUITER_TIERS: Tier[] = [
 /* ── COACH ──────────────────────────────────────────────────── */
 
 export const COACH_TIERS: Tier[] = [
-  {
-    id: "coach_free",
-    name: "Gratuit",
-    nameColor: "text-[#9CA3AF]",
-    monthly: 0,
-    annual: 0,
-    annualMonthlyEq: null,
-    border: "border border-white/10",
-    glow: "",
-    badge: null,
-    features: [
-      { kind: "item", label: "Créer profils athlètes", included: true },
-      { kind: "item", label: "Évaluations simplifiées et détaillées", included: true },
-      { kind: "item", label: "Vérifier les athlètes", included: true },
-      { kind: "item", label: "Recevoir messages des recruteurs", included: true },
-      { kind: "item", label: "Rejoindre une école", included: true },
-      { kind: "item", label: "Mon école (dashboard)", included: false },
-      { kind: "item", label: "Stats école", included: false },
-      { kind: "item", label: "Placement", included: false },
-      { kind: "item", label: "Ma réputation", included: false },
-      { kind: "item", label: "Analytics", included: false },
-    ],
-    ctaLabel: "Commencer gratuitement →",
-    ctaClass: "border border-white/30 text-white hover:bg-white/5",
-    ctaHref: "/inscription?role=COACH",
-  },
-  {
-    id: "coach-pro",
-    name: "Pro",
-    nameColor: "text-[#F59E0B]",
-    monthly: 9.99,
-    annual: 79,
-    annualMonthlyEq: 6.58,
-    border: "border-2 border-[#F59E0B]",
-    glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
-    badge: { label: "Populaire", bg: "bg-[#F59E0B]", fg: "text-black" },
-    featuresHeader: "Tout du plan Gratuit, plus :",
-    features: [
-      { kind: "item", label: "Mon école — dashboard de l'école", included: true },
-      { kind: "item", label: "Stats école — vues, placements, activité", included: true },
-      { kind: "item", label: "Placement — suivi des placements en CÉGEP", included: true },
-      { kind: "item", label: "Ma réputation — score, avis recruteurs, badges", included: true },
-      { kind: "item", label: "Analytics — tendances, recruteurs actifs", included: true },
-      { kind: "item", label: "Voir quels recruteurs regardent tes athlètes", included: true },
-      { kind: "item", label: "Notifications d'intérêt recruteur", included: true },
-      { kind: "item", label: "Multi-équipe (gérer plusieurs sports)", included: true },
-    ],
-    ctaLabel: "Passer à Pro →",
-    ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
-    ctaHref: "/inscription?role=COACH",
-  },
-  {
-    id: "coach_allstar",
-    name: "All Star",
-    nameColor: "text-[#E63946]",
-    monthly: 19.99,
-    annual: 159,
-    annualMonthlyEq: 13.25,
-    border: "border-2 border-[#E63946]",
-    glow: "shadow-[0_0_24px_rgba(230,57,70,0.1)]",
-    badge: null,
-    featuresHeader: "Tout du plan Pro, plus :",
-    features: [
-      { kind: "item", label: "Gestion complète de l'école (ajout et gestion des coachs)", included: true },
-      { kind: "item", label: "Analytique avancée par athlète et par équipe", included: true },
-      { kind: "item", label: "Suivi détaillé des placements en CÉGEP", included: true },
-      { kind: "item", label: "Statistiques d'école complètes", included: true },
-      { kind: "item", label: "Outils d'invitation pour les entraîneurs", included: true },
-    ],
-    ctaLabel: "Bientôt disponible",
-    ctaClass: "bg-[#E63946] text-white hover:bg-[#D42B22]",
-    ctaHref: "/inscription?role=COACH",
-    comingSoon: true,
-  },
+  /* VIDE — le compte coach est entièrement gratuit (lots 1 et 2, 3c84f44).
+     Le sélecteur de personas garde son onglet Coach : /tarifs y affiche
+     l'encadré mission + la liste `freePersona.coachItems` du dictionnaire.
+
+     POUR RÉINTRODUIRE UNE ADHÉSION : repeupler ce tableau et remettre
+     PERSONA_SAVINGS.coach à la bonne valeur. Le rendu rebascule seul sur
+     les cartes — aucune modification de app/tarifs/page.tsx n'est requise.
+     Les définitions précédentes (Gratuit / Pro 9,99 / All Star 19,99) sont
+     récupérables dans l'historique git de ce fichier. */
 ];
 
 /* ── ATHLETE ────────────────────────────────────────────────── */
 
 export const ATHLETE_TIERS: Tier[] = [
-  {
-    id: "ath_free",
-    name: "Gratuit",
-    nameColor: "text-[#9CA3AF]",
-    monthly: 0,
-    annual: 0,
-    annualMonthlyEq: null,
-    border: "border border-white/10",
-    glow: "",
-    badge: null,
-    features: [
-      { kind: "section", label: "Mon profil" },
-      { kind: "item", label: "Créer et gérer mon profil complet", included: true },
-      { kind: "item", label: "Photo, bio, parcours académique", included: true },
-      { kind: "item", label: "Vidéos faits saillants + match complet", included: true },
-      { kind: "item", label: "Stats et mesures physiques", included: true },
-      { kind: "item", label: "Badge vérifié par le coach", included: true },
-      { kind: "item", label: "Cote globale visible aux recruteurs", included: true },
-      { kind: "section", label: "Ma visibilité" },
-      { kind: "item", label: "Nombre de vues ce mois / total", included: true },
-      { kind: "item", label: "Nombre de recruteurs en favori", included: true },
-      { kind: "item", label: "Graphique de vues par semaine", included: true },
-      { kind: "item", label: "D'où viennent les recruteurs (régions)", included: true },
-      { kind: "item", label: "Nom des recruteurs qui consultent", included: false },
-      { kind: "item", label: "Nom des CÉGEPs qui regardent", included: false },
-      { kind: "item", label: "Quels recruteurs t'ont mis en favori", included: false },
-      { kind: "section", label: "Outils" },
-      { kind: "item", label: "Consentement parental numérique", included: true },
-      { kind: "item", label: "Statut de recrutement", included: true },
-      { kind: "item", label: "Confirmation d'engagement", included: true },
-    ],
-    ctaLabel: "Créer mon profil gratuitement →",
-    ctaClass: "border border-white/30 text-white hover:bg-white/5",
-    ctaHref: "/inscription?role=ATHLETE",
-  },
-  {
-    id: "ath_pro",
-    name: "Pro",
-    nameColor: "text-[#F59E0B]",
-    monthly: 6.99,
-    annual: 55,
-    annualMonthlyEq: 4.58,
-    border: "border-2 border-[#F59E0B]",
-    glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
-    badge: { label: "Recommandé", bg: "bg-[#F59E0B]", fg: "text-black" },
-    featuresHeader: "Tout du plan Gratuit, plus :",
-    features: [
-      { kind: "item", label: "Vidéo d'engagement personnalisée à l'inscription", included: true },
-      { kind: "item", label: "Voir le nom des recruteurs qui consultent ton profil", included: true },
-      { kind: "item", label: "Voir quels CÉGEPs s'intéressent à toi", included: true },
-      { kind: "item", label: "Savoir quels recruteurs t'ont ajouté en favori (nom + CÉGEP)", included: true },
-      { kind: "item", label: "Classement détaillé des vues par CÉGEP", included: true },
-      { kind: "item", label: "Notifications d'intérêt avec noms", included: true },
-    ],
-    ctaLabel: "Passer à Pro →",
-    ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
-    ctaHref: "/inscription?role=ATHLETE",
-  },
-  // Athlete All Star — coming soon, hidden for MVP.
+  /* VIDE — le compte athlète est entièrement gratuit. Même mécanique que
+     COACH_TIERS ci-dessus : /tarifs affiche `freePersona.athleteItems`.
+     Les définitions précédentes (Gratuit / Pro 6,99) sont dans git. */
 ];
 
 /* ── Savings shown in toggle label per persona.
@@ -274,8 +153,8 @@ export const ATHLETE_TIERS: Tier[] = [
    average. 0 hides the caption (no paid tiers exist). ── */
 export const PERSONA_SAVINGS: Record<Persona, number> = {
   recruteur: 34, // Pro 19.99/159 → 33.7%, All Star 29.99/239 → 33.6%
-  coach: 34,     // Pro 9.99/79 → 34.1% (All Star "Bientôt disponible", not counted)
-  athlete: 34,   // Pro 6.99/55 → 34.4%
+  coach: 0,      // aucun tier payant → masque la mention d'économie ET le bascule
+  athlete: 0,    // idem
 };
 
 export function getTiersForPersona(persona: Persona): Tier[] {
