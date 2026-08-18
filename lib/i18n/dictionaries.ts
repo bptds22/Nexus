@@ -1034,7 +1034,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "Questions fréquentes",
         title: "Les réponses aux questions que vous vous posez.",
         items: [
-          { q: "Comment Nexus respecte-t-elle la Loi 25?", a: "Toutes les données sont hébergées au Québec (OVHcloud Beauharnois). Le consentement parental est documenté pour chaque athlète mineur avant la mise en ligne du profil. Les recruteurs signent une entente de confidentialité à l'inscription. Le droit à l'effacement et à la portabilité est respecté selon les délais légaux." },
+          { q: "Comment Nexus respecte-t-elle la Loi 25?", a: "Toutes les données sont hébergées au Québec. Le consentement parental est documenté pour chaque athlète mineur avant la mise en ligne du profil. Les recruteurs signent une entente de confidentialité à l'inscription. Le droit à l'effacement et à la portabilité est respecté selon les délais légaux." },
           { q: "Comment Nexus respecte-t-elle le calendrier RSEQ?", a: "Nexus ne s'insère pas dans le processus de recrutement officiel du RSEQ — c'est votre responsabilité de connaître et respecter les périodes de recrutement de votre sport. Ce que Nexus fait : la communication avec un athlète mineur passe obligatoirement par son entraîneur du secondaire, conforme à l'esprit des règles RSEQ. L'entraîneur décide quand et comment impliquer l'athlète. Vous restez maître de votre démarche; Nexus ne vous bloque ni ne vous dicte quoi que ce soit côté calendrier." },
           { q: "Est-ce que je peux contacter directement un athlète?", a: "Non. Pour les athlètes mineurs, toutes les communications passent par leur entraîneur du secondaire. C'est la règle RSEQ et c'est aussi une protection pour vous — l'entraîneur sert de filtre et de contexte. Vous évitez les malentendus et les situations inconfortables." },
           { q: "Mes concurrents CÉGEP peuvent-ils voir qui je scoute?", a: "Par défaut, les coachs voient quels CÉGEPs ont consulté leurs athlètes (pour créer un signal d'intérêt utile). Vos concurrents directs ne voient PAS vos listes de favoris — seulement les coachs des athlètes concernés. Vous pouvez ajuster votre visibilité dans les paramètres." },
@@ -1224,7 +1224,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       security: {
         eyebrow: "Sécurité",
         title: "Bâti par des professionnels en cybersécurité.",
-        body: "Nexus est hébergé au Québec (OVHcloud Beauharnois). Conforme à la Loi 25 sur la protection des renseignements personnels. Consentement parental documenté pour chaque athlète mineur. Vos données ne quittent jamais la province.",
+        body: "Nexus est hébergé au Québec. Conforme à la Loi 25 sur la protection des renseignements personnels. Consentement parental documenté pour chaque athlète mineur. Vos données ne quittent jamais la province.",
       },
       contact: {
         eyebrow: "Nous écrire",
@@ -1813,7 +1813,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "Frequently asked questions",
         title: "Answers to the questions you're asking.", // TODO-EN
         items: [
-          { q: "How does Nexus comply with Loi 25?", a: "All data is hosted in Québec (OVHcloud Beauharnois). Parental consent is documented for every minor athlete before the profile goes live. Recruiters sign a confidentiality agreement at signup. Right to deletion and portability are respected within the legal deadlines." },
+          { q: "How does Nexus comply with Loi 25?", a: "All data is hosted in Québec. Parental consent is documented for every minor athlete before the profile goes live. Recruiters sign a confidentiality agreement at signup. Right to deletion and portability are respected within the legal deadlines." },
           { q: "How does Nexus respect the RSEQ calendar?", a: "Nexus doesn't insert itself into the RSEQ's official recruitment process — it's your responsibility to know and respect the recruitment periods for your sport. What Nexus does: communication with a minor athlete must go through their high school coach, consistent with the spirit of RSEQ rules. The coach decides when and how to involve the athlete. You remain in charge of your process; Nexus doesn't block you or dictate anything on the calendar side." },
           { q: "Can I contact an athlete directly?", a: "No. For minor athletes, all communication goes through their high school coach. It's the RSEQ rule and it's also a protection for you — the coach acts as a filter and context. You avoid misunderstandings and uncomfortable situations." },
           { q: "Can my CÉGEP competitors see who I'm scouting?", a: "By default, coaches see which CÉGEPs have viewed their athletes (to create a useful interest signal). Your direct competitors do NOT see your favorites lists — only the coaches of the athletes involved. You can adjust your visibility in settings." },
@@ -2005,7 +2005,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       security: {
         eyebrow: "Security",
         title: "Built by cybersecurity professionals.",
-        body: "Nexus is hosted in Québec (OVHcloud Beauharnois). Compliant with Loi 25 on the protection of personal information. Parental consent documented for every minor athlete. Your data never leaves the province.",
+        body: "Nexus is hosted in Québec. Compliant with Loi 25 on the protection of personal information. Parental consent documented for every minor athlete. Your data never leaves the province.",
       },
       contact: {
         eyebrow: "Write to us",

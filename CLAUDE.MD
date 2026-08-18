@@ -22,7 +22,7 @@ Follow these instructions exactly. Updated April 2026.
 - **Font:** Outfit (Google Fonts) — weights: 700 headings, 600 buttons, 500 sidebar, 400 body
 - **Dev server:** `npx next dev --port 3002`
 - **Local project:** `C:\Users\bptds\OneDrive\Documents\Nexus`
-- **Hosting:** OVHcloud Beauharnois (production, Loi 25), Coolify (replaces Vercel), Vercel (demo only)
+- **Hosting:** AWS Canada Central — Montréal (`ca-central-1`), via Supabase (production, Loi 25), Vercel (demo only)
 - **Demo:** `nexus-brown-zeta.vercel.app` (mock data, stable)
 
 ---
@@ -540,7 +540,7 @@ If a field is empty (coach used simplified), show nothing — no placeholder, ju
 - Address: 856 Basile-Routhier, Repentigny, Quebec
 
 ### Key Decisions
-- OVHcloud Beauharnois for 100% Quebec data residency (Coolify replaces Vercel)
+- AWS Canada Central (Montréal, `ca-central-1`) via Supabase for 100% Quebec data residency
 - Coach attestation (checkbox + PDF template) as MVP consent mechanism for minors
 - Parent notification model for 14-17 year old self-registering athletes (7-14 day response window)
 - ÉFVP is a one-time Nexus-level document, not per-athlete or per-CÉGEP
@@ -594,7 +594,7 @@ If a field is empty (coach used simplified), show nothing — no placeholder, ju
 
 - Wire recruiter pipeline page to recruiter_pipeline table
 - Wire recruiter favorites page (Mes Favoris)
-- Google OAuth (deferred until OVHcloud VPS — needs public redirect URL)
+- Google OAuth (deferred until public deployment — needs public redirect URL)
 - Stripe integration: Billing, Customer Portal, Tax (TPS/TVQ)
 - Supabase feature-flag system: subscriptions table + useSubscription hook
 - Ambassador program launch
