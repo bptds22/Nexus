@@ -35,7 +35,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
-import { useAthleteContactable, BLACKOUT_MESSAGE } from "@/lib/queries/recruiter/useAthleteContactable";
+import { useAthleteContactable } from "@/lib/queries/recruiter/useAthleteContactable";
 
 /* ═══════════════════════════════════════════════════════════════
    AthleteRecruiterProfileBody — shared across recruiter, athlete-
@@ -1046,7 +1046,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
      Ce test passe AVANT le verrou de palier : une restriction de ligue n'est
      pas une fonctionnalité à vendre, et proposer « Passe à Pro » sur un
      athlète que personne ne peut contacter serait mensonger. */
-  const { contactable } = useAthleteContactable(id);
+  /* `message` porte desormais le libelle de la periode et la date de
+     reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
+  const { contactable, message: blackoutMsg } = useAthleteContactable(id);
   const [statusToast, setStatusToast] = useState<SuccessToastData | null>(null);
 
   /* Le stage est désormais PERSISTÉ (avant : setState local uniquement → tout
@@ -1805,14 +1807,14 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             La cacher laisserait croire que la fonctionnalité n'existe pas. */}
         {!contactable && (
           <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24]/95 backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
-            {BLACKOUT_MESSAGE}
+            {blackoutMsg}
           </p>
         )}
         {/* Mobile — full-width bar */}
         <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
           <button type="button" onClick={handleContactClick}
             disabled={!contactable}
-            title={!contactable ? BLACKOUT_MESSAGE : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+            title={!contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
             className="disabled:opacity-40 disabled:cursor-not-allowed flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
             {contactLocked ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1845,7 +1847,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         <div className="hidden md:flex items-center gap-2">
           <button type="button" onClick={handleContactClick}
             disabled={!contactable}
-            title={!contactable ? BLACKOUT_MESSAGE : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+            title={!contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
             className="disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
             {contactLocked ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -39,7 +39,7 @@ import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
-import { useAthleteContactable, BLACKOUT_MESSAGE } from "@/lib/queries/recruiter/useAthleteContactable";
+import { useAthleteContactable } from "@/lib/queries/recruiter/useAthleteContactable";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
@@ -1775,7 +1775,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   /* Période de restriction RSEQ — UI dormante, jumelle du desktop. Testée
      AVANT le verrou de palier : une restriction de ligue n'est pas une
      fonctionnalité à vendre. */
-  const { contactable } = useAthleteContactable(id);
+  /* `message` porte desormais le libelle de la periode et la date de
+     reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
+  const { contactable, message: blackoutMsg } = useAthleteContactable(id);
   // Bottom sheet « Changer le statut » (remplace StatusChangeDropdown).
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [savingVisit, setSavingVisit] = useState(false);
@@ -2962,7 +2964,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               border: "0.5px solid rgba(245,158,11,0.32)",
             }}
           >
-            {BLACKOUT_MESSAGE}
+            {blackoutMsg}
           </p>
         </div>,
         document.body,
