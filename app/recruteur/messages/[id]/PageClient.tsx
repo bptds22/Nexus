@@ -13,7 +13,8 @@ import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { RecruteurMessagesThreadMobile } from "@/components/shared/RecruteurMessagesThreadMobile";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
-import { useAthleteContactable, blackoutMessageCourt } from "@/lib/queries/recruiter/useAthleteContactable";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAthleteContactable, blackoutMessageFil } from "@/lib/queries/recruiter/useAthleteContactable";
 import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -157,6 +158,7 @@ function RecruiterThreadPage() {
   const locked = Boolean(ctx?.isDirect && blackout);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [reply, setReply] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [openingCoach, setOpeningCoach] = useState(false);
@@ -340,6 +342,13 @@ function RecruiterThreadPage() {
       /* 23514 = check_violation, le code que leve enforce_messaging_blackout.
          On teste aussi le libelle : un futur garde pourrait lever autrement. */
       const isBlackout = error?.code === "23514" || /black-?out/i.test(error?.message ?? "");
+      /* Le refus du serveur est le signal le PLUS FRAIS qui existe : il vient
+         de trancher a l'instant. On invalide donc la requete plutot que
+         d'attendre l'expiration du staleTime — l'ecran ne peut plus rester
+         faux APRES un envoi rate, il se corrige de lui-meme. */
+      if (isBlackout && ctx?.athleteId) {
+        void queryClient.invalidateQueries({ queryKey: ["athlete-blackout", ctx.athleteId] });
+      }
       setSendError(
         isBlackout
           ? "Ce message n'a pas pu etre envoye : la periode de silence est en cours."
@@ -482,7 +491,7 @@ function RecruiterThreadPage() {
                 Aucun message ne peut etre envoye pendant cette periode
               </p>
               <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-1.5">
-                {blackoutMessageCourt(blackout)} Nexus suit les regles de recrutement du RSEQ.
+                {blackoutMessageFil(blackout)} Nexus suit les regles de recrutement du RSEQ.
               </p>
               {ctx.athleteCoachId ? (
                 <button type="button" onClick={() => { void openCoachThread(); }} disabled={openingCoach}

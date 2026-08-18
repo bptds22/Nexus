@@ -53,34 +53,50 @@ function lendemain(iso: string): string {
 }
 
 /**
- * Le message affiché, construit à partir de la période réelle.
+ * Message de la FICHE athlète — encart compact sous le bouton Contacter.
  *
- * « Silence RSEQ — basketball. Tu pourras écrire à cet athlète à partir du
- *   21 août. »
+ * « Test — contact suspendu jusqu'au 20 août inclus. »
  *
- * Sans période (cas défensif) : le message générique d'avant.
+ * Une seule date, celle qui BORNE la période. La formulation précédente
+ * (« suspendu à partir du 21 août ») annonçait la reprise avec le verbe de
+ * la suspension : elle se lisait comme un début de blocage, soit l'inverse
+ * exact du sens. On ne mentionne donc plus la date de reprise ici — « inclus »
+ * lève l'ambiguïté de borne sans avoir à parler du lendemain.
  */
-export function blackoutMessage(b: ActiveBlackout | null): string {
+export function blackoutMessageFiche(b: ActiveBlackout | null): string {
   if (!b) return BLACKOUT_MESSAGE;
-  const quand = `à partir du ${jourMois(lendemain(b.date_fin))}`;
-  return `${b.libelle} — contact suspendu ${quand}.`;
+  return `${b.libelle} — contact suspendu jusqu'au ${jourMois(b.date_fin)} inclus.`;
 }
 
 /**
- * Message court pour un espace contraint (infobulle, sous-titre).
+ * Message du FIL de messagerie — encart large, à la place du composeur.
+ *
+ * « Test — tu pourras écrire à cet athlète à partir du 21 août. »
+ *
+ * Ici on annonce la REPRISE, et le verbe à la deuxième personne interdit la
+ * lecture inverse : « tu pourras écrire à partir du 21 » ne peut pas se
+ * comprendre comme un début de blocage. La date est le LENDEMAIN de
+ * `date_fin`, les bornes étant incluses côté serveur (`between`) — annoncer
+ * `date_fin` ferait espérer un jour trop tôt.
  */
-export function blackoutMessageCourt(b: ActiveBlackout | null): string {
+export function blackoutMessageFil(b: ActiveBlackout | null): string {
   if (!b) return BLACKOUT_MESSAGE;
-  return `Contact suspendu jusqu'au ${jourMois(b.date_fin)} inclus.`;
+  return `${b.libelle} — tu pourras écrire à cet athlète à partir du ${jourMois(lendemain(b.date_fin))}.`;
 }
 
 export function useAthleteContactable(athleteId: string | null | undefined) {
   const q = useQuery<ActiveBlackout | null>({
     queryKey: ["athlete-blackout", athleteId],
     enabled: !!athleteId,
-    // La réponse ne bouge qu'au rythme d'une décision de ligue : inutile de
-    // la redemander à chaque montage.
-    staleTime: 5 * 60 * 1000,
+    /* 60 s, plus court que le défaut global de 5 min (QueryProvider).
+       Une règle de silence change rarement — mais quand elle change, l'écart
+       entre l'écran et le serveur se voit : l'encart disparaît alors que
+       l'envoi échoue encore, ou l'inverse. Le coût d'une revalidation est une
+       RPC minuscule ; celui d'une divergence de cinq minutes est un recruteur
+       qui ne comprend pas pourquoi son message part en erreur.
+       Pas 0 pour autant : refetchOnMount rejouerait la requête à chaque
+       montage de fiche, pour une donnée qui bouge quelques fois par saison. */
+    staleTime: 60 * 1000,
     retry: 1,
     queryFn: async () => {
       const supabase = createClient();
@@ -107,8 +123,9 @@ export function useAthleteContactable(athleteId: string | null | undefined) {
     contactable: blackout === null,
     /** La période, pour composer un message précis. Null si contactable. */
     blackout,
-    /** Message prêt à afficher — précis si la période est connue. */
-    message: blackoutMessage(blackout),
+    /** Message prêt à afficher sur la FICHE. Le fil compose le sien
+     *  avec blackoutMessageFil(blackout). */
+    message: blackoutMessageFiche(blackout),
     loading: q.isLoading,
   };
 }

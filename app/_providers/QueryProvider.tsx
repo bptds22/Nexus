@@ -67,9 +67,17 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         // persistance → toujours re-fetch frais au boot. Les autres queries
         // gardent la persistance (cache instantané en nav MPA). Le reste du
         // filtre reproduit le défaut (persister uniquement les succès).
+        // `athlete-blackout` est exclu pour la MÊME raison que `currentUser` :
+        // c'est une décision réglementaire, pas un contenu. Réhydratée depuis
+        // sessionStorage, une période périmée survivrait jusqu'à 30 min à un
+        // reload — l'encart « contact suspendu » disparaîtrait alors que le
+        // trigger refuse encore, ou l'inverse. Une règle de ligue se redemande
+        // toujours au serveur.
         dehydrateOptions: {
           shouldDehydrateQuery: (q) =>
-            q.state.status === "success" && q.queryKey?.[0] !== "currentUser",
+            q.state.status === "success"
+            && q.queryKey?.[0] !== "currentUser"
+            && q.queryKey?.[0] !== "athlete-blackout",
         },
       }}
     >
