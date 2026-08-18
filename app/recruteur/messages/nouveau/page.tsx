@@ -522,9 +522,21 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
       const isTierDenial =
         sendErr?.code === "42501" ||
         /permission denied|row-level security|policy/i.test(sendErr?.message ?? "");
+      /* 23514 = check_violation, le code que lève enforce_messaging_blackout.
+         DÉFENSIF ICI : cette page crée des fils RECRUTEUR_COACH (défaut de
+         la colonne conversation_type), et le silence RSEQ ne couvre que
+         RECRUTEUR_ATHLETE — la branche ne peut donc pas se déclencher
+         aujourd'hui. Elle est posée pour le jour où le périmètre du trigger
+         s'élargirait : sans elle, le refus retomberait sur « réessaie dans
+         un instant », qui invite à réessayer une règle qui tiendra des
+         semaines. */
+      const isBlackout =
+        sendErr?.code === "23514" || /black-?out/i.test(sendErr?.message ?? "");
 
       setErrorToast({
-        message: isTierDenial
+        message: isBlackout
+          ? "Ce message n'a pas pu être envoyé : une période de silence RSEQ est en cours."
+          : isTierDenial
           ? "L'envoi de messages nécessite un abonnement Pro."
           : "Impossible d'envoyer le message. Réessaie dans un instant.",
         showUpgrade: isTierDenial,
