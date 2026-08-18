@@ -20,7 +20,8 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useMessages, type MessageRow } from "@/lib/queries/recruiter/useMessages";
-import { useSendMessage } from "@/lib/queries/recruiter/useSendMessage";
+import { useSendMessage, isBlackoutError } from "@/lib/queries/recruiter/useSendMessage";
+import { blackoutMessageFiche } from "@/lib/queries/recruiter/useAthleteContactable";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
@@ -179,7 +180,14 @@ function AthleteCoachThreadMobile() {
   const handleSend = (content: string) => {
     if (!conversationId) return;
     sendMut.mutate({ conversationId, content }, {
-      onError: () => toast.error({ message: "Erreur d'envoi", detail: "Vérifie ta connexion" }),
+      /* Cote ATHLETE du meme fil RECRUTEUR_ATHLETE : le trigger bloque
+         l'insertion quel que soit l'expediteur, l'athlete se prenait donc
+         « Verifie ta connexion » lui aussi. */
+      onError: (error: unknown) => toast.error(
+        isBlackoutError(error)
+          ? { message: "Envoi impossible", detail: blackoutMessageFiche(null) }
+          : { message: "Erreur d'envoi", detail: "Vérifie ta connexion" },
+      ),
     });
   };
 

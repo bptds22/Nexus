@@ -10,6 +10,18 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import type { MessageRow } from "@/lib/queries/recruiter/useMessages";
 
+/* Un refus de silence RSEQ n'est PAS une panne reseau. Le trigger
+   enforce_messaging_blackout leve un check_violation (23514) sur les fils
+   RECRUTEUR_ATHLETE ; sans ce tri, chaque surface l'annoncait « Verifie ta
+   connexion » — un diagnostic faux, qui envoie chercher le probleme du
+   mauvais cote et invite a reessayer une regle qui tiendra des semaines.
+   Le libelle regarde aussi le message : un futur garde pourrait lever
+   autrement. */
+export function isBlackoutError(err: unknown): boolean {
+  const e = err as { code?: string; message?: string } | null;
+  return e?.code === "23514" || /black-?out/i.test(e?.message ?? "");
+}
+
 export function useSendMessage() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();

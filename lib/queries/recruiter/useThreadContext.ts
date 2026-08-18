@@ -30,6 +30,10 @@ export interface ThreadContextMobile {
   athletePosition: string;
   /** false = identité masquée par le serveur (Loi 25 ou tier FREE). */
   athleteIdentityVisible: boolean;
+  /** Entraineur rattache a l'athlete — porte de sortie quand le fil direct
+   *  est verrouille par une periode de silence RSEQ (RECRUTEUR_COACH n'est
+   *  pas bloque). null = aucun entraineur, on ne propose alors rien. */
+  athleteCoachId: string | null;
 }
 
 export function useThreadContext(conversationId: string | null) {
@@ -60,6 +64,17 @@ export function useThreadContext(conversationId: string | null) {
       const cardMap = await fetchRecruiterAthleteCards(supabase, athleteId ? [athleteId] : []);
       const card = (athleteId ? cardMap.get(athleteId) : null) ?? null;
 
+      /* Le coach de l'ATHLETE, distinct de `coach` (l'interlocuteur du fil,
+         absent d'un fil direct). Lu a part : la carte projetee ne le porte
+         pas. Echec silencieux — sans lui on n'affiche simplement pas la
+         porte de sortie. */
+      let coachAthlete: string | null = null;
+      if (athleteId) {
+        const { data: aRow } = await supabase
+          .from("athletes").select("coach_id").eq("id", athleteId).maybeSingle();
+        coachAthlete = ((aRow as { coach_id: string | null } | null)?.coach_id) ?? null;
+      }
+
       const cf = (coach?.first_name as string) || "";
       const cl = (coach?.last_name as string) || "";
       const coachPhoto = (coach?.photo_url as string) || (coach?.avatar_url as string) || null;
@@ -79,6 +94,7 @@ export function useThreadContext(conversationId: string | null) {
         athletePhotoUrl: card?.photo_url ?? null,
         athletePosition: card?.position_abbr ?? "",
         athleteIdentityVisible: card?.identity_visible ?? false,
+        athleteCoachId: coachAthlete,
       };
     },
     enabled: !!conversationId,

@@ -86,6 +86,11 @@ export interface MessageThreadShellProps<M> {
   /** Optionnel : petite mention affichée sous le champ de saisie (ex. athlète
    *  en groupe : « Ta réponse ne sera visible que par les entraîneurs »). */
   composerNote?: ReactNode;
+  /** Quand fourni, REMPLACE le composeur (zone de saisie + bouton d'envoi).
+   *  Sert au verrou de blackout : laisser la zone de saisie visible mais
+   *  inerte invite a taper puis perd le texte — meme raisonnement que le
+   *  fil web (app/recruteur/messages/[id]/PageClient.tsx). */
+  composerLocked?: ReactNode;
 
   /** Empty-state copy (when there are no messages yet). */
   emptyTitle?: string;
@@ -104,7 +109,7 @@ export function MessageThreadShell<M>({
   otherColor = "#262628",
   headerCenter, onBack,
   onSend, composerPlaceholder = "Message…",
-  renderMessage, composerNote,
+  renderMessage, composerNote, composerLocked,
   emptyTitle = "Démarre la conversation",
   emptyDescription = "Pose une question pour commencer.",
   children,
@@ -271,6 +276,10 @@ export function MessageThreadShell<M>({
              — même principe que SearchSheet, qui ne casse jamais pour ça. */
           style={{ bottom: 0 }}
       >
+        {composerLocked ? (
+          <div className="px-4 py-3">{composerLocked}</div>
+        ) : (
+        <>
         <div className="px-4 py-2 flex items-end gap-2">
           <div className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2 min-h-[40px] flex items-center">
             <textarea
@@ -311,6 +320,8 @@ export function MessageThreadShell<M>({
           <div className="px-4 pb-2 -mt-1">
             {composerNote}
           </div>
+        )}
+        </>
         )}
       </div>
 

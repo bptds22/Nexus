@@ -28,6 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { blackoutMessageFiche } from "@/lib/queries/recruiter/useAthleteContactable";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import {
   fetchRecruiterAthleteCards,
@@ -278,9 +279,23 @@ J'ai consulté le profil de ${a.fullName}${a.position ? ` (${a.position})` : ""}
       const tierDenial =
         msgErr.code === "42501" ||
         /permission denied|row-level security|policy/i.test(msgErr.message ?? "");
+      /* 23514 = check_violation, le code que leve enforce_messaging_blackout.
+         DEFENSIF ICI, comme sur la page web jumelle : cet ecran cree un fil
+         sans conversation_type explicite (defaut RECRUTEUR_COACH) et le
+         silence RSEQ ne couvre que RECRUTEUR_ATHLETE — la branche ne peut
+         donc pas se declencher aujourd'hui. Elle est posee pour le jour ou
+         le perimetre du trigger s'elargirait : sans elle, le refus retombe
+         sur « Reessaie dans un instant », qui invite a reessayer une regle
+         qui tiendra des semaines.
+         Formulation prise dans le hook (blackoutMessageFiche), pas reecrite —
+         sans periode chargee ici, elle rend son libelle generique. */
+      const isBlackout =
+        msgErr.code === "23514" || /black-?out/i.test(msgErr.message ?? "");
       toast.error({
-        message: tierDenial ? "Abonnement Pro requis" : "Envoi impossible",
-        detail: tierDenial ? "Réservé Pro." : "Réessaie dans un instant.",
+        message: isBlackout ? "Envoi impossible" : tierDenial ? "Abonnement Pro requis" : "Envoi impossible",
+        detail: isBlackout
+          ? blackoutMessageFiche(null)
+          : tierDenial ? "Réservé Pro." : "Réessaie dans un instant.",
       });
       setSending(false);
       return;

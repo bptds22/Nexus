@@ -11,6 +11,8 @@ import PendingInvitations from "./_components/PendingInvitations";
    Notifications — Athlete activity alerts (wired to Supabase)
 ═══════════════════════════════════════════════════════════════ */
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED" | "SUGGESTION_REJECTED" | "COACH_REPORT_UPDATED" | "COACH_VERIFIED" | "COACH_MODIFIED_PROFILE" | "COACH_DISTINCTION_ADDED" | "COACH_EVALUATION_UPDATED" | "PROFILE_MILESTONE" | "PROFILE_TIP"
   // TEAM_INVITATION existe en base depuis Flow A mais manquait ici : la requête
   // étant un select("*") sans filtre de type, ces lignes s'affichaient SANS
@@ -218,8 +220,13 @@ export default function NotificationsPage() {
               /* Une notification de re-validation MENE quelque part : c'est la
                  seule dont l'utilite depend d'une action. Les autres restent
                  informatives — le clic les marque lues, sans navigation. */
+              /* MOBILE : /athlete/profil sort tot sur <AthleteEditWizardMobile>
+                 (app/athlete/profil/page.tsx) — le bloc de reconfirmation n'y
+                 est jamais rendu, la notification menait donc a un cul-de-sac.
+                 Le tableau de bord mobile porte la banniere qui, elle, appelle
+                 confirmValidation(). */
               const target = n.metadata?.kind === "monthly_validation_expired"
-                ? "/athlete/profil"
+                ? (IS_CAPACITOR ? "/athlete/dashboard" : "/athlete/profil")
                 : null;
               return (
               <button key={n.id} type="button"

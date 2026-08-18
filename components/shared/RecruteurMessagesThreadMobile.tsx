@@ -26,7 +26,9 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useThreadContext } from "@/lib/queries/recruiter/useThreadContext";
 import { useMessages, type MessageRow } from "@/lib/queries/recruiter/useMessages";
-import { useSendMessage } from "@/lib/queries/recruiter/useSendMessage";
+import { useSendMessage, isBlackoutError } from "@/lib/queries/recruiter/useSendMessage";
+import { useAthleteContactable, blackoutMessageFil } from "@/lib/queries/recruiter/useAthleteContactable";
+import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import { useMarkConversationRead } from "@/lib/queries/recruiter/useMarkConversationRead";
 import { useCoachReputation } from "@/lib/hooks/useCoachReputation";
 import { useMyCoachReview, type MyCoachReview } from "@/lib/queries/recruiter/useMyCoachReview";
@@ -691,6 +693,14 @@ export function RecruteurMessagesThreadMobile() {
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [athleteSheetOpen, setAthleteSheetOpen] = useState(false);
+  const [openingCoach, setOpeningCoach] = useState(false);
+
+  /* VERROU DE SILENCE — meme regle que le fil web
+     (app/recruteur/messages/[id]/PageClient.tsx) : seul un fil DIRECT
+     (RECRUTEUR_ATHLETE) est concerne, un fil RECRUTEUR_COACH ne l'est
+     jamais — c'est justement la porte de sortie. */
+  const { blackout } = useAthleteContactable(ctx?.isDirect ? ctx.athleteId : null);
+  const locked = Boolean(ctx?.isDirect && blackout);
 
   // Mark as read au mount (1 fois)
   const markedRef = useRef(false);
@@ -732,14 +742,59 @@ export function RecruteurMessagesThreadMobile() {
 
   const handleSendContent = (content: string) => {
     if (!conversationId) return;
+    /* GARDE D'ENVOI, pas seulement de bouton : le composeur est remplace
+       quand `locked`, mais l'envoi peut encore partir par une autre voie
+       (touche Entree d'un clavier materiel, etat rafraichi entre-temps).
+       Le serveur refuserait de toute facon — autant le dire ici, sans
+       aller chercher un echec reseau. */
+    if (locked) {
+      toast.error({
+        message: "Envoi impossible",
+        detail: blackoutMessageFil(blackout),
+      });
+      return;
+    }
     sendMut.mutate(
       { conversationId, content },
       {
-        onError: () => {
+        onError: (error: unknown) => {
+          /* 23514 = check_violation, le code que leve enforce_messaging_blackout.
+             On teste aussi le libelle : un futur garde pourrait lever autrement.
+             Sans ce tri, un refus de silence s'annoncait « Verifie ta
+             connexion » — un diagnostic faux qui envoie chercher le probleme
+             du mauvais cote. */
+          if (isBlackoutError(error)) {
+            if (ctx?.athleteId) {
+              void queryClient.invalidateQueries({ queryKey: ["athlete-blackout", ctx.athleteId] });
+            }
+            toast.error({
+              message: "Envoi impossible",
+              detail: blackoutMessageFil(blackout),
+            });
+            return;
+          }
           toast.error({ message: "Erreur d'envoi", detail: "Vérifie ta connexion" });
         },
       }
     );
+  };
+
+  /* Ouvre (ou retrouve) le fil avec l'entraineur de l'athlete. RECRUTEUR_COACH
+     n'est PAS bloque par le silence RSEQ : c'est la porte de sortie legitime.
+     Transposition de openCoachThread() du fil web. */
+  const handleContactCoach = async () => {
+    if (!ctx?.athleteCoachId || openingCoach) return;
+    setOpeningCoach(true);
+    const res = await findOrCreateRecruiterConversation({
+      coachId: ctx.athleteCoachId,
+      athleteId: ctx.athleteId,
+    });
+    setOpeningCoach(false);
+    if (res.ok) { router.push(`/recruteur/messages/${res.conversationId}`); return; }
+    toast.error({
+      message: "Ouverture impossible",
+      detail: res.error || "Impossible d'ouvrir la conversation avec l'entraineur.",
+    });
   };
 
   const handleBack = () => router.push("/recruteur/messages");
@@ -832,6 +887,36 @@ export function RecruteurMessagesThreadMobile() {
       onBack={handleBack}
       onSend={handleSendContent}
       composerPlaceholder="Message…"
+      /* Le composeur est REMPLACE, pas grise : une zone de saisie inerte
+         invite quand meme a taper, puis perd le texte. Meme choix que le
+         fil web. Formulation reprise de blackoutMessageFil() — aucune
+         nouvelle tournure. */
+      composerLocked={locked ? (
+        <div className="rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 px-4 py-3">
+          <p className="text-[13px] font-semibold text-[#F59E0B]">
+            Aucun message ne peut être envoyé pendant cette période
+          </p>
+          <p className="text-[13px] text-white/60 leading-relaxed mt-1.5">
+            {blackoutMessageFil(blackout)} Nexus suit les règles de recrutement du RSEQ.
+          </p>
+          {ctx?.athleteCoachId ? (
+            <button
+              type="button"
+              disabled={openingCoach}
+              onClick={() => { void triggerHaptic("Light"); void handleContactCoach(); }}
+              className="mt-3 inline-flex items-center h-9 px-4 rounded-lg border border-[#F59E0B] text-[#F59E0B] text-[12px] font-bold uppercase tracking-wider active:bg-[#F59E0B]/10 disabled:opacity-50 transition-colors"
+            >
+              {openingCoach ? "Ouverture…" : "Écrire à son entraîneur"}
+            </button>
+          ) : (
+            /* Pas d'entraineur rattache : on ne propose rien plutot qu'un
+               lien mort. Le silence est preferable a une fausse piste. */
+            <p className="text-[12px] text-white/40 mt-2">
+              Cet athlète n&apos;a pas d&apos;entraîneur rattaché sur Nexus.
+            </p>
+          )}
+        </div>
+      ) : undefined}
       emptyTitle="Démarre la conversation"
       emptyDescription={`Tu n'as pas encore échangé avec ${ctx?.coachName ?? "le coach"}. Pose une question pour commencer.`}
     >
