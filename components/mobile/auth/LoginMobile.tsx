@@ -130,181 +130,188 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
         }}
       />
 
-      {/* HEADER — logo centré + headline + subtitle */}
-      <div className="relative z-10 px-6 shrink-0" style={{ paddingTop: 24 }}>
-        <div className="flex justify-center">
-          {/* Iter 7.47g : logo STATIQUE, plus de motion.div layoutId
-              (le splash sort par fade simple, rien ne "voyage"). */}
-          <NexusLogoSvg width={91} />
-        </div>
-        <div className="mt-8">
-          <h1
-            className="font-head font-black text-white uppercase tracking-tight"
-            style={{ fontSize: 28, lineHeight: 0.95 }}
-          >
-            Bon retour.
-          </h1>
-          <p className="text-[14px] text-[#9CA3AF] mt-2">
-            Connecte-toi à ton compte Nexus.
-          </p>
-        </div>
-      </div>
-
-      {/* FORM — 32px sous le subtitle */}
-      <div className="relative z-10 px-6 shrink-0" style={{ marginTop: 32 }}>
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          {/* Email row */}
-          <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-3">
-            <label
-              htmlFor="email-mobile"
-              className="block uppercase mb-1"
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                color: "#B6BCC7",
-              }}
-            >
-              Courriel
-            </label>
-            <input
-              id="email-mobile"
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              placeholder="nom@exemple.ca"
-              disabled={loading}
-              className="w-full bg-transparent text-white placeholder:text-[#4a4d56] focus:outline-none disabled:opacity-60"
-              style={{ fontSize: 17 }}
-            />
+      {/* Zone défilante — patron canon du dépôt (RolePickerMobile:105,
+          SignupMobile Step1Account:746) : flex-1 + overflow-y-auto. Le spacer
+          garde l'ancrage bas tant qu'il reste de la place ; dès que le contenu
+          dépasse — police système agrandie — il s'écrase à 0 et la zone DÉFILE,
+          au lieu que le conteneur borné en overflow-hidden rogne le bas. */}
+      <div className="relative z-10 flex-1 flex flex-col overflow-y-auto">
+        {/* HEADER — logo centré + headline + subtitle */}
+        <div className="relative z-10 px-6 shrink-0" style={{ paddingTop: 24 }}>
+          <div className="flex justify-center">
+            {/* Iter 7.47g : logo STATIQUE, plus de motion.div layoutId
+                (le splash sort par fade simple, rien ne "voyage"). */}
+            <NexusLogoSvg width={91} />
           </div>
-
-          {/* Password row + eye toggle */}
-          <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-3 mt-3">
-            <label
-              htmlFor="password-mobile"
-              className="block uppercase mb-1"
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                color: "#B6BCC7",
-              }}
+          <div className="mt-8">
+            <h1
+              className="font-head font-black text-white uppercase tracking-tight"
+              style={{ fontSize: 28, lineHeight: 0.95 }}
             >
-              Mot de passe
-            </label>
-            <div className="relative">
+              Bon retour.
+            </h1>
+            <p className="text-[14px] text-[#9CA3AF] mt-2">
+              Connecte-toi à ton compte Nexus.
+            </p>
+          </div>
+        </div>
+
+        {/* FORM — 32px sous le subtitle */}
+        <div className="relative z-10 px-6 shrink-0" style={{ marginTop: 32 }}>
+          <form onSubmit={handleSubmit} className="flex flex-col">
+            {/* Email row */}
+            <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-3">
+              <label
+                htmlFor="email-mobile"
+                className="block uppercase mb-1"
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: "0.18em",
+                  color: "#B6BCC7",
+                }}
+              >
+                Courriel
+              </label>
               <input
-                id="password-mobile"
-                type={showPwd ? "text" : "password"}
-                autoComplete="current-password"
+                id="email-mobile"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                placeholder="••••••••"
+                placeholder="nom@exemple.ca"
                 disabled={loading}
-                className="w-full bg-transparent text-white placeholder:text-[#4a4d56] focus:outline-none pr-9 disabled:opacity-60"
+                className="w-full bg-transparent text-white placeholder:text-[#4a4d56] focus:outline-none disabled:opacity-60"
                 style={{ fontSize: 17 }}
               />
+            </div>
+
+            {/* Password row + eye toggle */}
+            <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-3 mt-3">
+              <label
+                htmlFor="password-mobile"
+                className="block uppercase mb-1"
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: "0.18em",
+                  color: "#B6BCC7",
+                }}
+              >
+                Mot de passe
+              </label>
+              <div className="relative">
+                <input
+                  id="password-mobile"
+                  type={showPwd ? "text" : "password"}
+                  autoComplete="current-password"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  placeholder="••••••••"
+                  disabled={loading}
+                  className="w-full bg-transparent text-white placeholder:text-[#4a4d56] focus:outline-none pr-9 disabled:opacity-60"
+                  style={{ fontSize: 17 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => { void triggerHaptic("Light"); setShowPwd((v) => !v); }}
+                  aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9CA3AF] active:text-white p-1"
+                  tabIndex={-1}
+                >
+                  {showPwd ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Mot de passe oublié — 12px sous, droite, font bumpée 14px */}
+            <div className="flex justify-end" style={{ marginTop: 12 }}>
               <button
                 type="button"
-                onClick={() => { void triggerHaptic("Light"); setShowPwd((v) => !v); }}
-                aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9CA3AF] active:text-white p-1"
-                tabIndex={-1}
+                onClick={handleForgotPassword}
+                className="text-[#9CA3AF] active:text-white py-1"
+                style={{ fontSize: 14 }}
               >
-                {showPwd ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
+                Mot de passe oublié ?
               </button>
             </div>
-          </div>
 
-          {/* Mot de passe oublié — 12px sous, droite, font bumpée 14px */}
-          <div className="flex justify-end" style={{ marginTop: 12 }}>
+            {/* CTA Se connecter — 28px sous */}
             <button
-              type="button"
-              onClick={handleForgotPassword}
-              className="text-[#9CA3AF] active:text-white py-1"
-              style={{ fontSize: 14 }}
+              type="submit"
+              disabled={!canSubmit}
+              style={{ marginTop: 28 }}
+              className={`w-full h-14 rounded-2xl font-head font-black text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                canSubmit
+                  ? "bg-[#E63946] text-white active:scale-[0.97] active:bg-[#D42B22] shadow-[0_8px_24px_rgba(230,57,70,0.35)]"
+                  : "bg-white/[0.06] text-[#6B7280] cursor-not-allowed"
+              }`}
             >
-              Mot de passe oublié ?
+              {loading ? (
+                <>
+                  <span
+                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                    aria-hidden
+                  />
+                  Connexion…
+                </>
+              ) : (
+                "Se connecter"
+              )}
             </button>
-          </div>
 
-          {/* CTA Se connecter — 28px sous */}
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            style={{ marginTop: 28 }}
-            className={`w-full h-14 rounded-2xl font-head font-black text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-              canSubmit
-                ? "bg-[#E63946] text-white active:scale-[0.97] active:bg-[#D42B22] shadow-[0_8px_24px_rgba(230,57,70,0.35)]"
-                : "bg-white/[0.06] text-[#6B7280] cursor-not-allowed"
-            }`}
-          >
-            {loading ? (
-              <>
-                <span
-                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
-                  aria-hidden
-                />
-                Connexion…
-              </>
-            ) : (
-              "Se connecter"
-            )}
-          </button>
+            {/* Boutons social (iter 7.60) — UI seulement, toast "Bientôt" au tap.
+                Câblage OAuth réel = session infra dédiée. */}
+            <SocialButtonsMobile topMargin={20} />
+          </form>
+        </div>
 
-          {/* Boutons social (iter 7.60) — UI seulement, toast "Bientôt" au tap.
-              Câblage OAuth réel = session infra dédiée. */}
-          <SocialButtonsMobile topMargin={20} />
-        </form>
-      </div>
+        {/* Spacer — le vide vit ICI */}
+        <div className="relative flex-1" />
 
-      {/* Spacer — le vide vit ICI */}
-      <div className="relative flex-1" />
-
-      {/* FOOTER — masqué au focus input ou clavier ouvert */}
-      <div
-        className="relative z-10 px-6 shrink-0"
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)",
-          opacity: footerHidden ? 0 : 1,
-          visibility: footerHidden ? "hidden" : "visible",
-          transition: "opacity 180ms ease, visibility 180ms ease",
-        }}
-        aria-hidden={footerHidden ? "true" : "false"}
-      >
-        <button
-          type="button"
-          onClick={handleBackToWelcome}
-          className="w-full text-center text-[14px] text-[#9CA3AF] active:text-white py-2"
+        {/* FOOTER — masqué au focus input ou clavier ouvert */}
+        <div
+          className="relative z-10 px-6 shrink-0"
+          style={{
+            paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)",
+            opacity: footerHidden ? 0 : 1,
+            visibility: footerHidden ? "hidden" : "visible",
+            transition: "opacity 180ms ease, visibility 180ms ease",
+          }}
+          aria-hidden={footerHidden ? "true" : "false"}
         >
-          Pas de compte ?{" "}
-          <span className="text-white font-bold underline underline-offset-4 decoration-1">
-            Commencer
-          </span>
-        </button>
+          <button
+            type="button"
+            onClick={handleBackToWelcome}
+            className="w-full text-center text-[14px] text-[#9CA3AF] active:text-white py-2"
+          >
+            Pas de compte ?{" "}
+            <span className="text-white font-bold underline underline-offset-4 decoration-1">
+              Commencer
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

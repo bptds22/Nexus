@@ -72,73 +72,96 @@ export function WelcomeMobile({ onShowLogin, onShowSignup }: WelcomeMobileProps)
         }}
       />
 
-      {/* Spacer pour pousser le contenu en bas. */}
-      <div className="relative flex-1" />
+      {/* Zone défilante — patron canon du dépôt (RolePickerMobile:105,
+          SignupMobile Step1Account:746) : flex-1 + overflow-y-auto. Le spacer
+          garde l'ancrage bas tant qu'il reste de la place ; dès que le contenu
+          dépasse — police système agrandie — il s'écrase à 0 et la zone DÉFILE,
+          au lieu que le conteneur borné en overflow-hidden rogne le bas. */}
+      <div className="relative z-10 flex-1 flex flex-col overflow-y-auto">
+        {/* Spacer pour pousser le contenu en bas. */}
+        <div className="relative flex-1" />
 
-      {/* Bloc contenu — aligné gauche, padding bottom safe-area + 40px */}
-      <div
-        className="relative z-10 px-6 flex flex-col"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 40px)" }}
-      >
-        {/* Logo 32px de hauteur (width = 32 * 2.86 ≈ 91).
-            Iter 7.47g : logo STATIQUE, plus de motion.div layoutId
-            (le splash sort par fade simple, rien ne "voyage"). */}
-        <NexusLogoSvg width={91} />
-
-        {/* Headline — Anton ALL-CAPS, points finaux blancs (canon 7.46d).
-            mt 28px = mt-7. */}
-        <h1
-          className="font-head font-black text-white uppercase tracking-tight mt-7"
-          style={{
-            fontSize: "clamp(2.5rem, 9vw, 3.5rem)",
-            lineHeight: 0.95,
-          }}
+        {/* Bloc contenu — aligné gauche, padding bottom safe-area + 40px */}
+        <div
+          className="px-6 flex flex-col shrink-0"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 40px)" }}
         >
-          Le recrutement.
-          <br />
-          Réinventé.
-        </h1>
+          {/* Logo 32px de hauteur (width = 32 * 2.86 ≈ 91).
+              Iter 7.47g : logo STATIQUE, plus de motion.div layoutId
+              (le splash sort par fade simple, rien ne "voyage"). */}
+          <NexusLogoSvg width={91} />
 
-        {/* Body — gris secondaire. mt 16px = mt-4 */}
-        <p
-          className="text-[#9CA3AF] mt-4 max-w-[440px]"
-          style={{ fontSize: 15, lineHeight: 1.55, fontWeight: 400 }}
-        >
-          Connecte-toi à la plateforme qui réunit les athlètes du secondaire,
-          leurs entraîneurs et les recruteurs CÉGEP du Québec.
-        </p>
+          {/* Headline — Anton ALL-CAPS, points finaux blancs (canon 7.46d).
+              mt 28px = mt-7. */}
+          <h1
+            className="font-head font-black text-white uppercase tracking-tight mt-7"
+            style={{
+              // Le plancher fixe est retiré. `clamp(2.5rem, 9vw, 3.5rem)`
+              // imposait 40px quelle que soit la largeur : le terme 9vw n'atteint
+              // 2.5rem qu'à 444dp, donc il ne servait JAMAIS sur téléphone et la
+              // taille était indépendante de l'écran. Elle suit désormais la
+              // largeur — mesuré ~39px à 411dp (≈ les 40px d'avant), ~34px à 360dp.
+              //
+              // ⚠ Ceci ne soustrait PAS au facteur de police système : mesuré sur
+              // appareil, AUCUNE unité n'y échappe (40px, 2.5rem et 10vw sont tous
+              // multipliés) et `text-size-adjust` est ignoré par Chrome Android.
+              // Seul un setTextZoom natif le ferait. Ici on réduit l'emballement ;
+              // ce qui GARANTIT qu'aucun contenu ne devient inatteignable, c'est
+              // overflowWrap ci-dessous + la zone défilante parente.
+              fontSize: "min(9.5vw, 3.5rem)",
+              lineHeight: 0.95,
+              // « RECRUTEMENT. » est un jeton insécable : sans point de coupure,
+              // un dépassement de largeur se transforme en ROGNAGE sous le
+              // overflow-hidden de la racine, au lieu de passer à la ligne.
+              overflowWrap: "anywhere",
+            }}
+          >
+            Le recrutement.
+            <br />
+            Réinventé.
+          </h1>
 
-        {/* CTA primaire plein rouge. mt 36px = mt-9 */}
-        <button
-          type="button"
-          onClick={() => { void triggerHaptic("Light"); handleCreateAccount(); }}
-          className="w-full h-14 mt-9 rounded-2xl bg-[#E63946] text-white font-head font-black uppercase tracking-widest active:scale-[0.97] active:bg-[#D42B22] transition-all"
-          style={{
-            fontSize: 14,
-            letterSpacing: "0.16em",
-            boxShadow: "0 8px 24px rgba(230,57,70,0.35)",
-          }}
-        >
-          Créer un compte
-        </button>
+          {/* Body — gris secondaire. mt 16px = mt-4 */}
+          <p
+            className="text-[#9CA3AF] mt-4 max-w-[440px]"
+            style={{ fontSize: 15, lineHeight: 1.55, fontWeight: 400 }}
+          >
+            Connecte-toi à la plateforme qui réunit les athlètes du secondaire,
+            leurs entraîneurs et les recruteurs CÉGEP du Québec.
+          </p>
 
-        {/* Boutons social (iter 7.60) — UI seulement, toast "Bientôt" au tap.
-            Câblage OAuth réel = session infra dédiée (Google Cloud + Apple
-            Developer + Supabase providers + flow Capacitor). */}
-        <SocialButtonsMobile topMargin={20} />
+          {/* CTA primaire plein rouge. mt 36px = mt-9 */}
+          <button
+            type="button"
+            onClick={() => { void triggerHaptic("Light"); handleCreateAccount(); }}
+            className="w-full h-14 mt-9 rounded-2xl bg-[#E63946] text-white font-head font-black uppercase tracking-widest active:scale-[0.97] active:bg-[#D42B22] transition-all"
+            style={{
+              fontSize: 14,
+              letterSpacing: "0.16em",
+              boxShadow: "0 8px 24px rgba(230,57,70,0.35)",
+            }}
+          >
+            Créer un compte
+          </button>
 
-        {/* Lien Login — centré. mt 20px = mt-5 */}
-        <button
-          type="button"
-          onClick={handleLogin}
-          className="w-full text-center text-[#9CA3AF] active:text-white transition-colors mt-5"
-          style={{ fontSize: 14 }}
-        >
-          Déjà un compte ?{" "}
-          <span className="text-white font-bold underline underline-offset-4 decoration-1">
-            Se connecter
-          </span>
-        </button>
+          {/* Boutons social (iter 7.60) — UI seulement, toast "Bientôt" au tap.
+              Câblage OAuth réel = session infra dédiée (Google Cloud + Apple
+              Developer + Supabase providers + flow Capacitor). */}
+          <SocialButtonsMobile topMargin={20} />
+
+          {/* Lien Login — centré. mt 20px = mt-5 */}
+          <button
+            type="button"
+            onClick={handleLogin}
+            className="w-full text-center text-[#9CA3AF] active:text-white transition-colors mt-5"
+            style={{ fontSize: 14 }}
+          >
+            Déjà un compte ?{" "}
+            <span className="text-white font-bold underline underline-offset-4 decoration-1">
+              Se connecter
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
