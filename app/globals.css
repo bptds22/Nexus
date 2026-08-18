@@ -1047,6 +1047,13 @@ body.light-mode .nx-social-auth-btn:hover {
 
 /* ── Filter bar (recruiter search) ───────────────────────── */
 .nx-filter-select {
+  /* La LISTE d'options d'un <select> est dessinée par l'OS, pas par la page :
+     aucune règle CSS de ce fichier ne l'atteint. Sans cette déclaration, elle
+     sort en clair sur fond blanc au milieu d'un thème sombre.
+     `.nx-filter-select option` (plus bas) ne suffit pas : styler `option`
+     fonctionne sur Windows et Linux, et est IGNORÉ sur macOS et iOS, où la
+     liste est native. Les deux sont complémentaires, pas redondantes. */
+  color-scheme: dark;
   background-color: #1A1D24;
   border: 1px solid #3a3f4b;
   border-radius: 9999px;

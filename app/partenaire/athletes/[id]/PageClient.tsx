@@ -200,7 +200,7 @@ export default function PartnerAthleteProfilePage() {
           value={activeFormat}
           onChange={(e) => setActiveFormat(e.target.value as CardFormat)}
           aria-label="Format de la carte"
-          className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-3 py-2 text-[13px] text-white focus:border-[#E63946] outline-none transition-colors"
+          className="nx-filter-select bg-[#1A1D24] border border-[#2D3748] rounded-lg px-3 py-2 text-[13px] text-white focus:border-[#E63946] outline-none transition-colors"
         >
           <option value="publication">Format publication (1080×1350)</option>
           <option value="story">Format story (1080×1920)</option>
