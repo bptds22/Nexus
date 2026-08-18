@@ -2,6 +2,7 @@
 
 import {  useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
@@ -12,6 +13,8 @@ import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { RecruteurMessagesThreadMobile } from "@/components/shared/RecruteurMessagesThreadMobile";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
+import { useAthleteContactable, blackoutMessageCourt } from "@/lib/queries/recruiter/useAthleteContactable";
+import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -41,6 +44,10 @@ interface ThreadContext {
   coachEmail: string;
   coachPhone: string;
   athleteId: string;
+  /** Entraineur de l'ATHLETE — distinct de coachId, qui est le coach de la
+   *  CONVERSATION et vaut "" dans un fil direct (la policy impose
+   *  coach_id IS NULL sur RECRUTEUR_ATHLETE). Sert la porte de sortie. */
+  athleteCoachId: string;
   athleteName: string;
   /** VIDE sous identité réservée — voir le contrat de ThreadData. Ne pas
    *  redériver depuis athleteName, qui vaut « Identité réservée ». */
@@ -142,8 +149,17 @@ export default function Page() {
 function RecruiterThreadPage() {
   const id = useDynamicParam("id");
   const [ctx, setCtx] = useState<ThreadContext | null>(null);
+  /* Le verrou est PAR ATHLETE : la RPC applique sport et bornes de promotion
+     cote serveur. Une periode visant le basketball ne ferme rien pour un
+     joueur de football. Et il ne concerne QUE les fils directs — parler a
+     l'entraineur reste permis pendant le silence. */
+  const { blackout } = useAthleteContactable(ctx?.isDirect ? ctx.athleteId : null);
+  const locked = Boolean(ctx?.isDirect && blackout);
   const [messages, setMessages] = useState<MessageData[]>([]);
+  const router = useRouter();
   const [reply, setReply] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [openingCoach, setOpeningCoach] = useState(false);
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
   /* Échec de chargement — distinct de « rien à afficher ».
@@ -169,7 +185,7 @@ function RecruiterThreadPage() {
           id, conversation_type, status, recruiter_id, coach_id, athlete_id, created_at,
           coach:users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(name, region)),
           athlete:athletes!athlete_id(
-            id, verified, cote_globale_entraineur,
+            id, verified, cote_globale_entraineur, coach_id,
             annee_diplomation, recruitment_status, committed_school_id, open_to_offers,
             moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
             sports!sport_id(nom),
@@ -241,6 +257,7 @@ function RecruiterThreadPage() {
           coachEmail: (coach?.email as string) || "",
           coachPhone: (coach?.phone as string) || "",
           athleteId,
+          athleteCoachId: (athlete?.coach_id as string) || "",
           // displayFullName porte les trois cas (carte absente, masquée, nom
           // partiel) — jamais d'interpolation qui donnerait "null null".
           athleteName: displayFullName(card),
@@ -303,18 +320,55 @@ function RecruiterThreadPage() {
 
   async function handleSend() {
     if (!reply.trim() || !ctx) return;
+    /* Garde cote code, pas seulement `disabled` sur le bouton : le composeur
+       envoie aussi sur Ctrl+Entree, et un attribut disabled ne protege pas
+       d'un raccourci clavier. */
+    if (locked) return;
+    setSendError(null);
+
     const supabase = createClient();
-    const { data: newMsg } = await supabase
+    /* `error` est enfin recupere. Sans lui, un refus laissait `newMsg` a null,
+       le bloc suivant etait saute — mais `setReply("")` s'executait quand
+       meme, hors du bloc : le message tape disparaissait sans un mot. */
+    const { data: newMsg, error } = await supabase
       .from("messages")
       .insert({ conversation_id: ctx.conversationId, sender_id: userId, content: reply.trim() })
       .select("id, sender_id, content, created_at")
       .single();
 
-    if (newMsg) {
-      setMessages(prev => [...prev, { id: newMsg.id, senderId: newMsg.sender_id, content: newMsg.content, createdAt: newMsg.created_at }]);
-      await supabase.from("conversations").update({ last_message_at: newMsg.created_at, updated_at: new Date().toISOString() }).eq("id", ctx.conversationId);
+    if (error || !newMsg) {
+      /* 23514 = check_violation, le code que leve enforce_messaging_blackout.
+         On teste aussi le libelle : un futur garde pourrait lever autrement. */
+      const isBlackout = error?.code === "23514" || /black-?out/i.test(error?.message ?? "");
+      setSendError(
+        isBlackout
+          ? "Ce message n'a pas pu etre envoye : la periode de silence est en cours."
+          : "Envoi impossible. Ton message est conserve — reessaie dans un instant.",
+      );
+      // On NE VIDE PAS le champ : le texte reste, l'utilisateur peut renvoyer.
+      return;
     }
+
+    setMessages(prev => [...prev, { id: newMsg.id, senderId: newMsg.sender_id, content: newMsg.content, createdAt: newMsg.created_at }]);
+    await supabase.from("conversations").update({ last_message_at: newMsg.created_at, updated_at: new Date().toISOString() }).eq("id", ctx.conversationId);
     setReply("");
+  }
+
+  /* Ouvre (ou retrouve) le fil avec l'entraineur de l'athlete. RECRUTEUR_COACH
+     n'est PAS bloque par le silence RSEQ : c'est la porte de sortie legitime.
+     La fonction existait deja et n'etait cablee que sur mobile. */
+  async function openCoachThread() {
+    if (!ctx?.athleteCoachId || openingCoach) return;
+    setOpeningCoach(true);
+    const res = await findOrCreateRecruiterConversation({
+      coachId: ctx.athleteCoachId,
+      athleteId: ctx.athleteId,
+    });
+    setOpeningCoach(false);
+    /* Union discriminée : on teste `ok` seul. `res.conversationId` dans la
+       même condition empêcherait TypeScript de rétrécir la branche d'échec. */
+    if (res.ok) { router.push(`/recruteur/messages/${res.conversationId}`); return; }
+    setSendError(res.error || "Impossible d'ouvrir la conversation avec l'entraineur.");
   }
 
   if (loading) return <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>;
@@ -418,8 +472,40 @@ function RecruiterThreadPage() {
             <div ref={endRef} />
           </div>
 
-          {/* Reply composer */}
+          {/* Reply composer — remplace par l'explication quand le silence est
+              en cours. On retire le champ plutot que de le griser : un champ
+              grise invite quand meme a taper, puis perd le texte. */}
+          {locked ? (
           <div className="bg-[#1A1D24] border-t border-[#2D3748] p-4 rounded-b-xl">
+            <div className="rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 px-4 py-3">
+              <p className="text-[13px] font-semibold text-[#F59E0B]">
+                Aucun message ne peut etre envoye pendant cette periode
+              </p>
+              <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-1.5">
+                {blackoutMessageCourt(blackout)} Nexus suit les regles de recrutement du RSEQ.
+              </p>
+              {ctx.athleteCoachId ? (
+                <button type="button" onClick={() => { void openCoachThread(); }} disabled={openingCoach}
+                  className="mt-3 inline-flex items-center h-9 px-4 rounded-lg border border-[#F59E0B] text-[#F59E0B] text-[12px] font-bold uppercase tracking-wider hover:bg-[#F59E0B]/10 disabled:opacity-50 transition-colors">
+                  {openingCoach ? "Ouverture…" : "Ecrire a son entraineur"}
+                </button>
+              ) : (
+                /* Pas d'entraineur rattache : on ne propose rien plutot qu'un
+                   lien mort. Le silence est preferable a une fausse piste. */
+                <p className="text-[12px] text-[#6b7280] mt-2">
+                  Cet athlete n&apos;a pas d&apos;entraineur rattache sur Nexus.
+                </p>
+              )}
+              {sendError && (
+                <p className="text-[12px] text-[#EF4444] mt-3">{sendError}</p>
+              )}
+            </div>
+          </div>
+          ) : (
+          <div className="bg-[#1A1D24] border-t border-[#2D3748] p-4 rounded-b-xl">
+            {sendError && (
+              <p className="text-[12px] text-[#EF4444] mb-2">{sendError}</p>
+            )}
             <div className="flex items-end gap-3">
               <textarea
                 value={reply}
@@ -435,6 +521,7 @@ function RecruiterThreadPage() {
             </div>
             <p className="text-[10px] text-[#4a4d56] mt-2">Ctrl + Entrée pour envoyer</p>
           </div>
+          )}
         </div>
 
         {/* Barre latérale — TOUJOURS rendue, quel que soit le type de fil.
