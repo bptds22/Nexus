@@ -146,14 +146,14 @@ export const SECTIONS_COLLECTE_DONNEES: Section[] = [
       {
         type: "bullets",
         items: [
-          "Serveur principal : OVHcloud, centre de données de Beauharnois, Québec, Canada",
-          "Base de données : Supabase (PostgreSQL) hébergé sur infrastructure OVHcloud Québec",
+          "Serveur principal : Amazon Web Services, région Canada Central (ca-central-1), Montréal, Québec, Canada",
+          "Base de données : Supabase (PostgreSQL) hébergé sur infrastructure Amazon Web Services au Québec",
           "Fichiers et médias : stockage Supabase Storage sur la même infrastructure",
           "Aucun transfert transfrontalier : vos données ne quittent pas le territoire canadien",
-          "Sauvegardes : chiffrées et stockées dans le même centre de données québécois",
+          "Sauvegardes : chiffrées et stockées dans la même région québécoise",
         ],
       },
-      { type: "p", trailing: true, text: "L'infrastructure est gérée via Coolify (auto-hébergé) pour un contrôle complet sur l'environnement de déploiement." },
+      { type: "p", trailing: true, text: "Le déploiement de l'application web est assuré par Vercel, configuré sur la région de Montréal." },
     ],
   },
   {

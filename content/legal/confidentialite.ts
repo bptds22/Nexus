@@ -309,7 +309,7 @@ export const SECTIONS_CONFIDENTIALITE: Section[] = [
           {
             type: "bullets",
             items: [
-              "OVHcloud (Beauharnois, Québec) : Hébergement de l'infrastructure (serveurs, base de données, stockage de fichiers).",
+              "Supabase, sur infrastructure Amazon Web Services, région Canada Central (Montréal, Québec) : hébergement de l'infrastructure (serveurs, base de données, stockage de fichiers).",
             ],
           },
           { type: "p", text: "Ce fournisseur est lié à Nexus par une entente écrite l'obligeant à respecter des standards de sécurité équivalents à ceux de Nexus et à n'utiliser les données qu'aux seules fins de la prestation de services." },
@@ -348,7 +348,7 @@ export const SECTIONS_CONFIDENTIALITE: Section[] = [
             type: "callout",
             tone: "blue",
             title: "Hébergement 100 % Québec",
-            text: "Tous les renseignements personnels traités par Nexus sont hébergés exclusivement au Québec, dans le centre de données d'OVHcloud situé à Beauharnois. Aucune donnée personnelle n'est transférée à l'extérieur du Québec ou du Canada.",
+            text: "Tous les renseignements personnels traités par Nexus sont hébergés exclusivement au Québec, dans la région Canada Central d'Amazon Web Services située à Montréal. Aucune donnée personnelle n'est transférée à l'extérieur du Québec ou du Canada.",
           },
         ],
       },
