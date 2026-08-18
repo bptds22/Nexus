@@ -435,10 +435,11 @@ export interface Dictionary {
     freePersona: {
       missionEyebrow: string;
       missionTitle: string;
-      missionBody: string;
-      /** Phrase de contexte affichée SOUS la mission, onglet COACH seulement.
-          L'onglet athlète garde la mission seule. */
-      coachNote: string;
+      /* Une mission par persona : le coach lit un texte écrit de SON point de
+         vue (vouvoiement), l'athlète le sien (tutoiement). Un texte unique
+         forçait l'entraîneur à lire un propos qui ne s'adressait pas à lui. */
+      athleteMissionBody: string;
+      coachMissionBody: string;
       checklistTitle: string;
       athleteItems: string[];
       coachItems: string[];
@@ -1153,8 +1154,8 @@ export const dictionaries: Record<Lang, Dictionary> = {
       freePersona: {
         missionEyebrow: "Gratuit",
         missionTitle: "Notre mission",
-        missionBody: "Chaque athlète mérite de poursuivre son parcours au prochain niveau. Nexus n'est pas une simple banque de joueurs : nous offrons aux recruteurs et aux étudiants-athlètes des outils concrets qui simplifient chaque étape du recrutement. Et tout cela, gratuitement pour les athlètes.",
-        coachNote: "Les entraîneurs aussi. Votre compte et tous vos outils de gestion d'équipe sont gratuits — ce sont les programmes collégiaux qui financent la plateforme.",
+        athleteMissionBody: "Chaque athlète mérite de poursuivre son parcours au prochain niveau. Nexus n'est pas une simple banque de joueurs : nous offrons aux recruteurs et aux étudiants-athlètes des outils concrets qui simplifient chaque étape du recrutement. Et tout cela, gratuitement pour les athlètes.",
+        coachMissionBody: "Chaque athlète mérite de poursuivre son parcours au prochain niveau — et personne n'est mieux placé que son entraîneur pour l'y aider. Nexus n'est pas une simple banque de joueurs : nous vous donnons des outils concrets pour faire voir vos joueurs, gérer votre équipe et suivre chaque étape du recrutement. Gratuitement, pour vous comme pour eux.",
         checklistTitle: "Ce qui est inclus",
         athleteItems: [
           "Profil complet : photo, bio, parcours, vidéos, stats et mesures",
@@ -1168,14 +1169,14 @@ export const dictionaries: Record<Lang, Dictionary> = {
           "Statut de recrutement et confirmation d'engagement",
         ],
         coachItems: [
-          "Créer et gérer les profils de tes athlètes",
+          "Créer et gérer les profils de vos athlètes",
           "Évaluations simplifiées et détaillées",
-          "Vérifier tes athlètes",
+          "Vérifier vos athlètes",
           "Messagerie avec les recruteurs",
-          "Messagerie interne avec ton équipe, tes entraîneurs et ta direction",
-          "Gérer les demandes de tes athlètes",
+          "Messagerie interne avec votre équipe, vos entraîneurs et votre direction",
+          "Gérer les demandes de vos athlètes",
           "Mon école : tableau de bord, stats, placements, analytique",
-          "Gestion des entraîneurs de ton école",
+          "Gestion des entraîneurs de votre école",
           "Ma réputation",
         ],
       },
@@ -1963,8 +1964,8 @@ export const dictionaries: Record<Lang, Dictionary> = {
       freePersona: {
         missionEyebrow: "Free",
         missionTitle: "Our mission",
-        missionBody: "Every athlete deserves to take their journey to the next level. Nexus isn't just a player database: we give recruiters and student-athletes concrete tools that simplify every step of recruitment. And all of it, free for athletes.",
-        coachNote: "Coaches too. Your account and all your team management tools are free — collegiate programs fund the platform.",
+        athleteMissionBody: "Every athlete deserves to take their journey to the next level. Nexus isn't just a player database: we give recruiters and student-athletes concrete tools that simplify every step of recruitment. And all of it, free for athletes.",
+        coachMissionBody: "Every athlete deserves a shot at the next level — and no one is better placed than their coach to help them get there. Nexus isn't just a player database: we give you concrete tools to showcase your players, manage your team, and follow every step of the recruiting process. Free, for you and for them.",
         checklistTitle: "What's included",
         athleteItems: [
           "Complete profile: photo, bio, background, videos, stats and measurements",

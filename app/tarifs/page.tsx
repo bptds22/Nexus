@@ -204,8 +204,8 @@ export default function TarifsPage() {
                à faire réapparaître les cartes, sans toucher à ce fichier. */
             <FreePersonaPanel
               items={persona === "coach" ? T.freePersona.coachItems : T.freePersona.athleteItems}
+              missionBody={persona === "coach" ? T.freePersona.coachMissionBody : T.freePersona.athleteMissionBody}
               labels={T.freePersona}
-              note={persona === "coach" ? T.freePersona.coachNote : undefined}
             />
           ) : tiers.length === 2 ? (
             /* 2 tiers (Athlète — Pro + Free; All Star hidden for MVP) */
@@ -302,14 +302,15 @@ export default function TarifsPage() {
    Check, texte 13px. Aucune notion de prix : il n'y en a pas. */
 function FreePersonaPanel({
   items,
+  missionBody,
   labels,
-  note,
 }: {
   items: string[];
+  /** Corps de mission propre à la persona — choisi au site d'appel, comme
+      `items`. Le coach et l'athlète n'ont ni le même propos ni le même
+      registre (vouvoiement / tutoiement). */
+  missionBody: string;
   labels: Dictionary["pricing"]["freePersona"];
-  /** Contexte propre à une persona, sous la mission. Fourni pour le coach,
-      absent pour l'athlète — d'où l'optionnalité plutôt qu'un drapeau. */
-  note?: string;
 }) {
   return (
     <div className="max-w-[820px] mx-auto">
@@ -325,17 +326,15 @@ function FreePersonaPanel({
             {labels.missionTitle}
           </h3>
           <p className="text-[14px] sm:text-[15px] text-[#9CA3AF] mt-2.5 leading-relaxed">
-            {labels.missionBody}
+            {missionBody}
           </p>
-          {note && (
-            <p className="text-[14px] sm:text-[15px] text-white/85 mt-3 leading-relaxed">
-              {note}
-            </p>
-          )}
         </div>
       </div>
 
-      <div className="mt-8">
+      {/* Même surface que l'encadré mission : sur le fond sombre de la page,
+          une liste posée à nu manquait de contraste et ne se lisait pas comme
+          un bloc. Deux cartes empilées — mission, puis inclus. */}
+      <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 sm:p-7 mt-5">
         <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
           {labels.checklistTitle}
         </h4>
