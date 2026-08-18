@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { fetchRecruiterAthleteCards, displayFullName, LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
+import { fetchRecruiterAthleteCards, displayFullName, LOCKED_NAME_LABEL, type RecruiterAthleteCard } from "@/lib/queries/shared/recruiterAthleteCards";
 import { findOrCreateRecruiterAthleteConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import {
   mockAthleteProfileFull,
@@ -439,11 +439,27 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
        règle Loi 25 (mineur sans consentement parental) n'était appliquée
        nulle part : elle dépend de date_naissance et consentement_parental,
        que le client n'a aucun droit de lire pour en tirer une décision. */
-    supabase
+    /* Colonnes d'identite ajoutees au TEMPS 1 quand l'appelant n'est pas
+       recruteur : la RPC recruiter_athlete_cards lui est fermee (42501), et
+       il n'en a pas besoin — l'athlete lit sa propre ligne, le partenaire lit
+       une ligne deja filtree par is_partner_eligible_athlete.
+
+       date_naissance UNIQUEMENT pour l'athlete lui-meme. Un partenaire n'a
+       pas a recevoir la date de naissance d'un mineur : la RPC ne la projette
+       jamais non plus, elle en derive l'age cote serveur. */
+    const identityCols =
+      viewerMode === "preview"
+        ? "first_name, last_name, photo_url, numero_jersey, date_naissance,"
+        : viewerMode === "partner"
+        ? "first_name, last_name, photo_url, numero_jersey,"
+        : "";
+
+    const load = supabase
       .from("athletes")
       .select(`
         id,
         user_id,
+        ${identityCols}
         verified,
         profile_completion,
         last_profile_validation,
@@ -519,9 +535,28 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
            `?? null` explicite : la RPC ne rend AUCUNE ligne pour un athlète
            inactif ou supprimé, et un `undefined` interpolé écrirait
            "undefined" à l'écran. Même piège que usePipelineCards:72. */
-        const cardMap = await fetchRecruiterAthleteCards(supabase, [id]);
-        const card = cardMap.get(id) ?? null;
-        const identityVisible = card?.identity_visible ?? false;
+        /* La RPC est RECRUTEUR-ONLY. L'appeler en preview (athlete) ou en
+           partner rendait 42501 ; le helper leve, la chaine n'avait pas de
+           catch, et setLoadingAthlete(false) n'etait jamais atteint — page
+           bloquee en chargement. Meme garde que le corps mobile (l.950).
+
+           Le try/catch protege AUSSI la fiche recruteur : avant, n'importe
+           quel echec de cette RPC gelait la page. Desormais on degrade vers
+           l'identite masquee, ce qui est le repli sur : on n'affiche jamais
+           une identite qu'on n'a pas pu autoriser. */
+        let card: RecruiterAthleteCard | null = null;
+        if (viewerMode === "recruiter") {
+          try {
+            card = (await fetchRecruiterAthleteCards(supabase, [id])).get(id) ?? null;
+          } catch (e) {
+            console.warn("[recruiter_athlete_cards] echec — identite masquee", e);
+            card = null;
+          }
+        }
+        /* Hors recruteur, il n'y a pas de palier a appliquer : l'athlete voit
+           son profil tel qu'un abonne le verrait (c'est l'objet de l'apercu),
+           et le partenaire retrouve le comportement d'avant 794c6fd. */
+        const identityVisible = viewerMode === "recruiter" ? (card?.identity_visible ?? false) : true;
 
         setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
@@ -552,7 +587,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
            jamais projetée à un recruteur — c'est elle qui décide du masquage
            Loi 25, la livrer permettrait de recalculer ce que le masquage
            protège. */
-        const age = card?.age ?? null;
+        const age = card?.age
+          ?? (d.date_naissance
+              ? Math.floor((Date.now() - new Date(d.date_naissance as string).getTime()) / 31_557_600_000)
+              : null);
 
         // Programme CÉGEP
         const progArr = (d.programme_cegep_vise as string[]) || [];
@@ -586,9 +624,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           // rend ces quatre champs à NULL, et `?? ""` garde le contrat
           // `string` du type sans jamais produire "null".
           identityVisible,
-          firstName: card?.first_name ?? "",
-          lastName: card?.last_name ?? "",
-          photoUrl: card?.photo_url ?? "",
+          firstName: card?.first_name ?? (d.first_name as string) ?? "",
+          lastName: card?.last_name ?? (d.last_name as string) ?? "",
+          photoUrl: card?.photo_url ?? (d.photo_url as string) ?? "",
           isVerified: d.verified as boolean,
           lastValidation: (d.last_profile_validation as string) || null,
           /* Complétion : valeur SERVEUR, plus de recalcul client.
@@ -598,7 +636,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
              recruteur, d'un score d'autant plus faux que le profil est
              complet. La RPC porte la valeur calculée sur la ligne entière. */
           profileCompleteness: card?.profile_completion ?? (d.profile_completion as number) ?? 0,
-          jerseyNumber: card?.numero_jersey ?? "",
+          jerseyNumber: card?.numero_jersey ?? (d.numero_jersey as string) ?? "",
           graduationYear: (d.annee_diplomation as number) || 0,
           highlightVideoUrl: (d.video_faits_saillants_url as string) || "",
           hudlUrl: (d.hudl_url as string) || "",
@@ -775,7 +813,18 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
         setLoadingAthlete(false);
       });
-  }, [id, isFreeRecruiter, tierLoading]);
+
+    /* Filet de securite : toute exception levee DANS le .then (mapping,
+       jointure inattendue, RPC) laisserait sinon loadingAthlete a true et la
+       page en chargement perpetuel. Le builder Supabase rend un
+       PromiseLike<void>, qui n'a pas de .catch — d'ou Promise.resolve().
+       On sort du chargement quoi qu'il arrive : une fiche incomplete vaut
+       mieux qu'un ecran fige. */
+    void Promise.resolve(load).catch((e: unknown) => {
+      console.error("[AthleteRecruiterProfileBody] chargement echoue", e);
+      setLoadingAthlete(false);
+    });
+  }, [id, isFreeRecruiter, tierLoading, viewerMode]);
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   // Partners only see the simplified canonical view; the detailed
