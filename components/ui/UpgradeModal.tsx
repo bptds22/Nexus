@@ -5,6 +5,7 @@ import { Check, X as XIcon } from "lucide-react";
 import {
   type Persona,
   getTiersForPersona,
+  TIER_COPY_FR,
 } from "@/lib/config/pricing";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -65,8 +66,16 @@ export default function UpgradeModal({
     return null;
   }
 
+  /* Libelles cote i18n depuis la refonte recruteur ; cette modale est
+     applicative et francophone, elle lit la source francaise. */
+  const copy = TIER_COPY_FR[tier.id];
+  if (!copy) {
+    console.error(`[UpgradeModal] No FR copy for tierId "${tierId}"`);
+    return null;
+  }
+
   // Top 4 feature items from the tier (skip section headers if any)
-  const topFeatures = tier.features
+  const topFeatures = copy.features
     .filter((f) => f.kind === "item" && f.included)
     .slice(0, 4);
 
@@ -113,7 +122,7 @@ export default function UpgradeModal({
                 : "bg-[#F59E0B] text-black"
             }`}
           >
-            {tier.name}
+            {copy.name}
           </span>
 
           {/* Headline — locked feature */}
@@ -124,7 +133,7 @@ export default function UpgradeModal({
             {lockedFeatureTitle}
           </h2>
           <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">
-            Cette fonctionnalité est réservée aux membres {tier.name}. Découvre tout ce que tu obtiens.
+            Cette fonctionnalité est réservée aux membres {copy.name}. Découvre tout ce que tu obtiens.
           </p>
 
           {/* Pricing block — masqué sur iOS (3.1.1 : aucun prix ni achat) */}
@@ -169,7 +178,7 @@ export default function UpgradeModal({
                 href={tarifsUrl}
                 className="mt-6 inline-flex items-center justify-center w-full h-12 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-[13px] uppercase tracking-widest transition-colors"
               >
-                Passer à {tier.name} →
+                Passer à {copy.name} →
               </Link>
 
               <Link

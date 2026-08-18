@@ -25,6 +25,11 @@
  */
 
 import type { Lang } from "./LanguageContext";
+/* Les textes des tiers vivent ici et non dans pricing.ts : ils doivent
+   exister en FR et en EN. pricing.ts n'y garde que le non-traduisible
+   (montants, couleurs, identifiants). Import de TYPE uniquement — aucun
+   coût à l'exécution, et pricing.ts n'importe rien d'ici : pas de cycle. */
+import { TIER_COPY_FR, type TierCopy } from "@/lib/config/pricing";
 
 export interface Dictionary {
   home: {
@@ -449,6 +454,9 @@ export interface Dictionary {
       loi25: string;
       verifiedProfiles: string;
     };
+    /* Textes des cartes de tiers, indexés par `Tier.id`. Un tier dont
+       l'identifiant est absent d'ici n'est simplement pas rendu. */
+    tiers: Record<string, TierCopy>;
   };
   roadmap: {
     hero: {
@@ -1185,6 +1193,11 @@ export const dictionaries: Record<Lang, Dictionary> = {
         loi25: "Conforme Loi 25",
         verifiedProfiles: "Profils vérifiés",
       },
+      /* Le francais est defini UNE fois dans pricing.ts (TIER_COPY_FR) :
+         les surfaces applicatives (SubscriptionManager, UpgradeModal) le
+         lisent aussi, sans embarquer tout ce dictionnaire marketing. */
+      tiers: TIER_COPY_FR,
+
     },
     roadmap: {
       hero: {
@@ -1994,6 +2007,68 @@ export const dictionaries: Record<Lang, Dictionary> = {
         quebecHost: "Hosted in Québec",
         loi25: "Loi 25 compliant",
         verifiedProfiles: "Verified profiles",
+      },
+      tiers: {
+        rec_free: {
+          name: "Free",
+          ctaLabel: "Start for free →",
+          features: [
+            { kind: "item", label: "Search by sport, region, graduation year, school, position", included: true },
+            { kind: "item", label: "Stars, overall rating, verified badge", included: true },
+            { kind: "item", label: "School, sport, graduation year, GPA", included: true },
+            { kind: "item", label: "Height / weight", included: true },
+            { kind: "item", label: "Simplified evaluations (3 groups)", included: true },
+            { kind: "item", label: "Your CÉGEP page: a customizable page to showcase your program to athletes", included: true },
+            { kind: "item", label: "Your team page: one page per team, visible to every athlete", included: true },
+            { kind: "item", label: "Advanced filters", included: false },
+            { kind: "item", label: "Athlete identity (name, photo, number)", included: false },
+            { kind: "item", label: "Videos and academic background", included: false },
+            { kind: "item", label: "Messaging", included: false },
+            { kind: "item", label: "Recruiting pipeline", included: false },
+          ],
+        },
+        rec_pro: {
+          name: "Pro",
+          badgeLabel: "Popular",
+          featuresHeader: "Everything in Free, plus:",
+          ctaLabel: "Upgrade to Pro →",
+          features: [
+            { kind: "section", label: "Search and profiles" },
+            { kind: "item", label: "Advanced filters (height, weight, overall rating)", included: true },
+            { kind: "item", label: "Unlimited search results", included: true },
+            { kind: "item", label: "Name, photo and jersey number revealed", included: true },
+            { kind: "item", label: "Highlight videos", included: true },
+            { kind: "item", label: "Full academic background", included: true },
+            { kind: "item", label: "Coach's comments", included: true },
+            { kind: "item", label: "Detailed evaluations — 11 criteria", included: true },
+            { kind: "section", label: "Communication" },
+            { kind: "item", label: "Coach's contact information", included: true },
+            { kind: "item", label: "Messaging with the coach and the athlete, without limits, automatically respecting RSEQ quiet periods", included: true },
+            { kind: "item", label: "Coach replies", included: true },
+            { kind: "item", label: "Auto-intro and message templates", included: true },
+            { kind: "section", label: "Tracking and pipeline" },
+            { kind: "item", label: "Unlimited favorites", included: true },
+            { kind: "item", label: "Recruiting pipeline", included: true },
+            { kind: "item", label: "Global recruitment status", included: true },
+            { kind: "item", label: "Pipeline analytics", included: true },
+            { kind: "item", label: "Custom prospect lists", included: true },
+            { kind: "item", label: "Activity feed", included: true },
+            { kind: "section", label: "Planning" },
+            { kind: "item", label: "Optimized calendar: RSEQ and civil league schedules combined, cross-referenced with your recruiting targets — see at a glance the games where several of the athletes you follow play at the same time", included: true },
+          ],
+        },
+        rec_allstar: {
+          name: "All Star",
+          featuresHeader: "Everything in Pro — for institutions managing a recruiting team:",
+          ctaLabel: "Go All Star →",
+          features: [
+            { kind: "item", label: "Institution dashboard: pipeline by sport, where recruits come from, your recruiting team's activity", included: true },
+            { kind: "item", label: "Recruiting statistics: funnel by stage, results by sport, performance by recruiter, most-targeted athletes", included: true },
+            { kind: "item", label: "Confirmed recruits: commitments and signed letters, with the source school and assigned recruiter", included: true },
+            { kind: "item", label: "Manage your recruiters: activity, favorites, messages sent, confirmed recruits per person", included: true },
+            { kind: "item", label: "Reassign athletes between recruiters without losing pipeline statuses", included: true },
+          ],
+        },
       },
     },
     roadmap: {

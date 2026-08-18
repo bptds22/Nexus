@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   getTiersForPersona,
+  TIER_COPY_FR,
   PERSONA_SAVINGS,
   type Persona,
   type Tier,
@@ -389,6 +390,11 @@ function TierCard({
   const comingSoon = Boolean(tier.comingSoon);
   const amount = cycle === "annual" ? tier.annual : tier.monthly;
   const busy = checkoutBusyTier === tier.id;
+  /* Les libelles ont quitte `Tier` pour l'i18n (FR + EN sur /tarifs). Cette
+     surface est applicative et francophone : elle lit la source francaise
+     directement, sans embarquer le dictionnaire marketing. */
+  const copy = TIER_COPY_FR[tier.id];
+  if (!copy) return null;
 
   return (
     <div className={`relative bg-[#1A1D24] rounded-xl border ${tier.border} ${tier.glow} p-6 flex flex-col`}>
@@ -397,16 +403,16 @@ function TierCard({
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#6B7280] text-white">
           Bientôt disponible
         </span>
-      ) : tier.badge ? (
-        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badge.bg} ${tier.badge.fg}`}>
-          {tier.badge.label}
+      ) : copy.badgeLabel && tier.badgeStyle ? (
+        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badgeStyle.bg} ${tier.badgeStyle.fg}`}>
+          {copy.badgeLabel}
         </span>
       ) : null}
 
       {/* Name */}
       <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mt-1">
         {key !== "free" && <span className="text-[#F59E0B] mr-1">{key === "pro" ? "★" : "★★"}</span>}
-        {tier.name}
+        {copy.name}
       </h3>
 
       {/* Price — hidden for comingSoon */}
@@ -435,10 +441,10 @@ function TierCard({
 
       {/* Features */}
       <div className="space-y-2.5 flex-1">
-        {tier.featuresHeader && (
-          <p className="text-[12px] font-bold text-[#F59E0B] uppercase tracking-wider">{tier.featuresHeader}</p>
+        {copy.featuresHeader && (
+          <p className="text-[12px] font-bold text-[#F59E0B] uppercase tracking-wider">{copy.featuresHeader}</p>
         )}
-        {tier.features.map((f, i) => (
+        {copy.features.map((f, i) => (
           <FeatureLine key={i} row={f} isCivilCoach={isCivilCoach} />
         ))}
       </div>
@@ -475,7 +481,7 @@ function TierCard({
             disabled={busy}
             className={`w-full py-2.5 rounded-lg text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${tier.ctaClass} ${busy ? "opacity-60 cursor-wait" : ""}`}
           >
-            {busy ? "Redirection..." : tier.ctaLabel}
+            {busy ? "Redirection..." : copy.ctaLabel}
           </button>
         )}
       </div>

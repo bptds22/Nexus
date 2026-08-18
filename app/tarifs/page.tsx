@@ -17,6 +17,7 @@ import {
   type Persona,
   type Billing,
   type Tier,
+  type TierCopy,
   PERSONA_SAVINGS,
   getTiersForPersona,
 } from "@/lib/config/pricing";
@@ -210,15 +211,15 @@ export default function TarifsPage() {
           ) : tiers.length === 2 ? (
             /* 2 tiers (Athlète — Pro + Free; All Star hidden for MVP) */
             <div className="max-w-[820px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} />
-              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
+              <PricingCard tier={tiers[1]} copy={T.tiers[tiers[1].id]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} />
+              <PricingCard tier={tiers[0]} copy={T.tiers[tiers[0].id]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
             </div>
           ) : (
             /* 3 tiers (Recruteur, Coach) — Pro centered, Free left, All Star right */
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} onCheckout={tiers[1].monthly > 0 ? handleCheckout : undefined} />
-              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
-              <PricingCard tier={tiers[2]} billing={billing} orderCls="order-3 md:order-3" cardLabels={T.card} />
+              <PricingCard tier={tiers[1]} copy={T.tiers[tiers[1].id]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} onCheckout={tiers[1].monthly > 0 ? handleCheckout : undefined} />
+              <PricingCard tier={tiers[0]} copy={T.tiers[tiers[0].id]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
+              <PricingCard tier={tiers[2]} copy={T.tiers[tiers[2].id]} billing={billing} orderCls="order-3 md:order-3" cardLabels={T.card} />
             </div>
           )}
         </div>
@@ -357,18 +358,27 @@ function FreePersonaPanel({
 
 function PricingCard({
   tier,
+  copy,
   billing,
   orderCls,
   cardLabels,
   onCheckout,
 }: {
   tier: Tier;
+  /* Textes du tier, résolus par `tier.id` dans le dictionnaire actif.
+     Absent = tier non traduit : on ne rend rien plutôt que des trous. */
+  copy: TierCopy | undefined;
   billing: Billing;
   orderCls: string;
   cardLabels: Dictionary["pricing"]["card"];
   onCheckout?: (tier: string, cycle: Billing) => Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
+  /* Un tier sans traduction ne rend rien plutôt qu'une carte trouée. Le cas
+     ne devrait pas survenir — l'interface Dictionary impose les trois clés
+     recruteur dans les deux langues — mais `Record<string, TierCopy>` ne le
+     garantit pas au type, et une carte à moitié vide serait pire qu'absente. */
+  if (!copy) return null;
   const isFree = tier.monthly === 0;
   const showAnnual = billing === "annual" && tier.annual > 0;
   // Big price always follows the billing toggle so the user sees the actual
@@ -383,16 +393,16 @@ function PricingCard({
 
   return (
     <div className={`relative bg-[#1A1D24] rounded-xl ${tier.border} ${tier.glow} ${orderCls} p-6 sm:p-7 flex flex-col`}>
-      {tier.badge && (
+      {copy.badgeLabel && tier.badgeStyle && (
         <span
-          className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badge.bg} ${tier.badge.fg}`}
+          className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badgeStyle.bg} ${tier.badgeStyle.fg}`}
         >
-          {tier.badge.label}
+          {copy.badgeLabel}
         </span>
       )}
 
       <p className={`text-[11px] font-bold uppercase tracking-[0.2em] ${tier.nameColor}`}>
-        {tier.name}
+        {copy.name}
       </p>
 
       <div className="mt-3 flex items-baseline gap-1.5">
@@ -418,14 +428,14 @@ function PricingCard({
 
       <div className="h-px bg-white/[0.06] my-5" />
 
-      {tier.featuresHeader && (
+      {copy.featuresHeader && (
         <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-3">
-          {tier.featuresHeader}
+          {copy.featuresHeader}
         </p>
       )}
 
       <ul className="space-y-2.5 flex-1">
-        {tier.features.map((f, idx) => {
+        {copy.features.map((f, idx) => {
           if (f.kind === "section") {
             return (
               <li
@@ -469,14 +479,14 @@ function PricingCard({
           }}
           className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 ${tier.ctaClass}`}
         >
-          {loading ? "Redirection..." : tier.ctaLabel}
+          {loading ? "Redirection..." : copy.ctaLabel}
         </button>
       ) : (
         <Link
           href={tier.ctaHref}
           className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors ${tier.ctaClass}`}
         >
-          {tier.ctaLabel}
+          {copy.ctaLabel}
         </Link>
       )}
     </div>
