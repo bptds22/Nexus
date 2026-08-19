@@ -4,15 +4,24 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 /* ═══════════════════════════════════════════════════════════════
-   TendancesDropdownFilters — sport + position dropdowns that
-   write to URL params on /partenaire/tendances. Mirrors
-   NewsroomDropdownFilters (same cascading sport→position UX,
-   same disabled-with-placeholder treatment, same Tailwind
+   TendancesDropdownFilters — sport, position, région, promotion
+   et genre, écrits dans les params d'URL de /partenaire/tendances.
+   Mirrors NewsroomDropdownFilters (same cascading sport→position
+   UX, same disabled-with-placeholder treatment, same Tailwind
    classes) — just routes back to /partenaire/tendances on
    change.
 
    Position dropdown filters its own options by selected sport
    (positions are pre-fetched server-side and passed in).
+
+   RÉGION ET PROMOTION (19 août 2026) — `trending_athletes_view`
+   projetait DÉJÀ `region` et `annee_diplomation` ; il ne manquait
+   que l'UI. Aucun DDL, donc aucune collision avec le chantier RLS
+   partenaire qui va redéfinir cette vue.
+   L'ordre des selects et le vocabulaire des params (`region`,
+   `year`) reproduisent ClassementsFilterBar : les deux écrans
+   pilotés par l'URL partagent la même grammaire, une URL se relit
+   d'un écran à l'autre.
 ═══════════════════════════════════════════════════════════════ */
 
 interface SportOption { id: string; nom: string }
@@ -21,14 +30,23 @@ interface PositionOption { id: string; nom: string; abreviation: string | null; 
 interface TendancesDropdownFiltersProps {
   sports: SportOption[];
   positions: PositionOption[];
+  regions: string[];
+  graduationYears: number[];
 }
 
-export default function TendancesDropdownFilters({ sports, positions }: TendancesDropdownFiltersProps) {
+export default function TendancesDropdownFilters({
+  sports,
+  positions,
+  regions,
+  graduationYears,
+}: TendancesDropdownFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const currentSport = searchParams.get("sport") || "";
   const currentPosition = searchParams.get("position") || "";
+  const currentRegion = searchParams.get("region") || "";
+  const currentYear = searchParams.get("year") || "";
   const currentGenre = searchParams.get("genre") || "";
 
   const positionsForSport = useMemo(
@@ -55,7 +73,13 @@ export default function TendancesDropdownFilters({ sports, positions }: Tendance
      chevron rouge, que la version Tailwind n'avait pas). */
   const activeCls = "nx-filter-active";
 
-  const hasFilters = currentSport || currentPosition || currentGenre;
+  /* Région et promotion DOIVENT figurer ici — c'est ce test qui pilote
+     l'affichage du bouton « Réinitialiser ». Son pendant serveur,
+     `hasActiveFilters` dans page.tsx, choisit lequel des deux états vides
+     s'affiche : sans ces deux clés, filtrer une région sans tendance
+     annoncerait « Aucune tendance détectée cette semaine » — un constat sur
+     la semaine, alors que la cause est le filtre. */
+  const hasFilters = currentSport || currentPosition || currentRegion || currentYear || currentGenre;
 
   return (
     <>
@@ -82,6 +106,34 @@ export default function TendancesDropdownFilters({ sports, positions }: Tendance
             {p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom}
           </option>
         ))}
+      </select>
+
+      {/* RÉGION — `trending_athletes_view` projette `region` depuis l'origine
+          (elle vient de `schools.region` via la LEFT JOIN de la vue). La liste
+          d'options est dérivée de `schools`, PAS des athlètes affichés : une
+          liste qui rétrécit avec le jeu de données rend le portail
+          imprévisible, même raisonnement que pour le genre. */}
+      <select
+        value={currentRegion}
+        onChange={(e) => pushFilter({ region: e.target.value || null })}
+        className={`${selectCls} ${currentRegion ? activeCls : ""}`}
+        aria-label="Région"
+      >
+        <option value="">Toutes les régions</option>
+        {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+      </select>
+
+      {/* PROMOTION — `annee_diplomation`, projetée par la vue. Les années sont
+          une constante partagée avec /classements et /athletes, pas une
+          requête : elles ne dépendent pas des données présentes. */}
+      <select
+        value={currentYear}
+        onChange={(e) => pushFilter({ year: e.target.value || null })}
+        className={`${selectCls} ${currentYear ? activeCls : ""}`}
+        aria-label="Promotion"
+      >
+        <option value="">Toutes les promotions</option>
+        {graduationYears.map((y) => <option key={y} value={String(y)}>{y}</option>)}
       </select>
 
       {/* GENRE — `athletes.genre` est brut en base ('M' | 'F' | 'X' | NULL).

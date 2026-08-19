@@ -102,12 +102,20 @@ export default async function PartnerClassementsPage({
     new Set((regionsRes.data ?? []).map((r) => r.region).filter(Boolean)),
   ).sort() as string[];
 
+  /* Un `year` malformé dans l'URL donnerait NaN, et `.eq("annee_diplomation",
+     NaN)` fait échouer la requête PostgREST — l'écran tomberait à vide sans
+     explication, sur une URL trafiquée ou un lien partagé tronqué. On ne
+     retient l'année que si elle est un entier. Même garde que sur
+     /partenaire/tendances. */
+  const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
+  const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
+
   // Apply filters to top_athletes_view query
   let query = supabase.from("top_athletes_view").select("*").limit(25);
   if (params.sport) query = query.eq("sport_id", params.sport);
   if (params.position) query = query.eq("position_id", params.position);
   if (params.region) query = query.eq("region", params.region);
-  if (params.year) query = query.eq("annee_diplomation", parseInt(params.year, 10));
+  if (yearFilter !== null) query = query.eq("annee_diplomation", yearFilter);
   // Genre — colonne projetée par top_athletes_view depuis 20260817190000.
   if (params.genre) query = query.eq("genre", params.genre);
 

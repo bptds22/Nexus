@@ -36,11 +36,19 @@ type TrendingRow = {
   position_id: string | null;
 };
 
+/** Années de promotion — constante, alignée sur /classements et /athletes.
+    Volontairement pas dérivée des données : une liste d'options qui rétrécit
+    avec le jeu de données rend le portail imprévisible. */
+const GRADUATION_YEARS = [2025, 2026, 2027, 2028, 2029];
+
 type FilterParams = {
   /** 'M' | 'F' | 'X' — valeur BRUTE de athletes.genre, non normalisée. */
   genre?: string;
   sport?: string;
   position?: string;
+  region?: string;
+  /** `annee_diplomation` — même nom de param que sur /classements. */
+  year?: string;
 };
 
 function formatDelta(d: number): string {
@@ -131,19 +139,31 @@ export default async function PartnerTendancesPage({
   const params = await searchParams;
   const sportFilter = params.sport || null;
   const positionFilter = params.position || null;
+  const regionFilter = params.region || null;
   const genreFilter = params.genre || null;
+  /* Un `year` malformé dans l'URL donnerait NaN, et `.eq("annee_diplomation",
+     NaN)` fait échouer la requête PostgREST — les DEUX palmarès tomberaient à
+     vide sans explication. On ne retient l'année que si elle est un entier. */
+  const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
+  const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
 
   const supabase = await createClient();
 
   // Pre-fetch dropdown options. Sports list is small (16);
   // positions cap at ~50 across all sports — single query each,
   // passed into the client filter component as props.
-  const [sportsRes, positionsRes] = await Promise.all([
+  const [sportsRes, positionsRes, regionsRes] = await Promise.all([
     supabase.from("sports").select("id, nom").order("nom"),
     supabase.from("positions").select("id, nom, abreviation, sport_id").order("nom"),
+    supabase.from("schools").select("region").not("region", "is", null).order("region"),
   ]);
   const sports = (sportsRes.data ?? []) as { id: string; nom: string }[];
   const positions = (positionsRes.data ?? []) as { id: string; nom: string; abreviation: string | null; sport_id: string }[];
+  // Mêmes dérivation et tri que sur /classements — `schools.region` n'est pas
+  // dédupliquée en base, le Set s'en charge.
+  const distinctRegions = Array.from(
+    new Set((regionsRes.data ?? []).map((r) => r.region).filter(Boolean)),
+  ).sort() as string[];
 
   // Build the views/favs queries with optional sport + position
   // filters layered on top of the positive-mover gate.
@@ -153,8 +173,15 @@ export default async function PartnerTendancesPage({
     .gt("views_delta", 0)
     .order("views_delta", { ascending: false })
     .limit(10);
+  /* TOUT filtre posé ici DOIT l'être à l'identique sur favsQuery plus bas.
+     La page rend deux palmarès côte à côte alimentés par la même vue ; en
+     filtrer un seul afficherait « Vues » restreint aux Laurentides et
+     « Favoris » sur tout le Québec, sous une seule et même barre de filtres.
+     Les deux blocs se lisent en parallèle, ligne pour ligne. */
   if (sportFilter) viewsQuery = viewsQuery.eq("sport_id", sportFilter);
   if (positionFilter) viewsQuery = viewsQuery.eq("position_id", positionFilter);
+  if (regionFilter) viewsQuery = viewsQuery.eq("region", regionFilter);
+  if (yearFilter !== null) viewsQuery = viewsQuery.eq("annee_diplomation", yearFilter);
   // Genre — projeté par trending_athletes_view depuis 20260817190100.
   if (genreFilter) viewsQuery = viewsQuery.eq("genre", genreFilter);
 
@@ -164,8 +191,11 @@ export default async function PartnerTendancesPage({
     .gt("favs_delta", 0)
     .order("favs_delta", { ascending: false })
     .limit(10);
+  // Miroir EXACT du bloc viewsQuery ci-dessus — cinq filtres, même ordre.
   if (sportFilter) favsQuery = favsQuery.eq("sport_id", sportFilter);
   if (positionFilter) favsQuery = favsQuery.eq("position_id", positionFilter);
+  if (regionFilter) favsQuery = favsQuery.eq("region", regionFilter);
+  if (yearFilter !== null) favsQuery = favsQuery.eq("annee_diplomation", yearFilter);
   if (genreFilter) favsQuery = favsQuery.eq("genre", genreFilter);
 
   const [viewsRes, favsRes] = await Promise.all([viewsQuery, favsQuery]);
@@ -176,7 +206,12 @@ export default async function PartnerTendancesPage({
   // genreFilter EN FAIT PARTIE : sans lui, filtrer un genre sans résultat
   // affichait « Aucune tendance détectée cette semaine » — un constat sur la
   // semaine, alors que la cause est le filtre. Le message mentait.
-  const hasActiveFilters = !!(sportFilter || positionFilter || genreFilter);
+  // regionFilter et yearFilter y entrent pour la MÊME raison : avec 13 régions
+  // pour 25 athlètes éligibles, la plupart des régions ne rendront aucune
+  // tendance — c'est le cas le plus fréquent, pas le cas limite.
+  const hasActiveFilters = !!(
+    sportFilter || positionFilter || regionFilter || yearFilter !== null || genreFilter
+  );
   const emptyMessage = hasActiveFilters
     ? "Aucune tendance ne correspond à ces filtres."
     : "Aucune tendance détectée cette semaine.";
@@ -190,7 +225,12 @@ export default async function PartnerTendancesPage({
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <TendancesDropdownFilters sports={sports} positions={positions} />
+        <TendancesDropdownFilters
+          sports={sports}
+          positions={positions}
+          regions={distinctRegions}
+          graduationYears={GRADUATION_YEARS}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
