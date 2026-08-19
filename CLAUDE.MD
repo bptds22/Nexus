@@ -388,6 +388,28 @@ Follow this for EVERY schema change. (Authored 2026-07 from the working discipli
 7. **Local-first, per-role proof.** Apply locally, then prove behavior under each real role via `SET ROLE authenticated` + `request.jwt.claims` (or real JWTs/REST): allow-paths, deny-paths, cross-tenant denial, and **trigger non-firing** for the paths that must not fire. Runtime proof over logic claims.
 8. **Both builds pass** (`npm run build` + `npm run build:mobile`) before committing app code.
 9. **Prod only on BP's explicit per-migration GO.** CC commits on the branch; BP pushes/merges and applies to prod.
+10. **Redefining a view carries its `WITH` clause forward — always.** `CREATE OR REPLACE VIEW` **erases** any `reloptions` the new definition doesn't restate. A `security_invoker` set by an earlier `ALTER VIEW` is silently dropped by the next redefinition that omits it — no error, no warning, no log. Restate `WITH (security_invoker = true)` in the `CREATE OR REPLACE` itself, then run the conformance check below.
+
+### View hardening — the `CREATE OR REPLACE` trap
+
+Proven 2026-08-19 on a throwaway local view:
+
+```
+alter view _probe set (security_invoker = true);   -- {security_invoker=true}
+create or replace view _probe as select 1 as x;    -- NULL   ← reset
+```
+
+Real case: `top_athletes_view` was hardened 2026-07-07 (`harden_top_athletes_view`, `WITH (security_invoker = true)`), then reset 2026-08-18 by `top_athletes_view_genre` — a migration that only added a column. Six weeks unnoticed.
+
+**Control:** `scripts/check-view-hardening.sql` — encodes the intent for every view in `public`, returns **only deviations**. **Zero rows = conforming.** Run it after **every** migration touching a view, prod and local. Any new view must be added to its `attendu` list, or it goes unchecked.
+
+Supabase's own `security_definer_view` linter does fire, but it can't tell a *deliberate* DEFINER from an *accidental* one — it flags `trending_athletes_view`, which is correct by design. An alert that cries over conforming objects gets ignored, which is why this regression sat unread. The script encodes intent instead.
+
+**Restoring a lost `security_invoker` is not a one-liner.** Before reposing the clause, verify the reading role has a policy on **every** base table the view touches — under INVOKER the view stops bypassing RLS, and a missing policy empties data with no error:
+- `trending_athletes_view` → `recruiter_athlete_views` / `recruiter_favorites` have **no partner policy**; INVOKER would zero every delta and `/partenaire/tendances` would render permanently empty.
+- `top_athletes_view` → `evaluations` has **no partner branch** (the policy named `authenticated read evaluations` is a disjunction of named roles, and partner isn't one). INVOKER would leave athletes visible but `distinctions` NULL — badges gone, "Avec distinction" filter always empty. Proven by runtime probe, not by reading the policy.
+
+The active guard (`assert_view_hardening()` raising at migration end) is deferred to the partner RLS chantier, where the expectations get declared anyway.
 
 ### Deferred contractions (post-build-3 — pending a no-shipped-caller check)
 
