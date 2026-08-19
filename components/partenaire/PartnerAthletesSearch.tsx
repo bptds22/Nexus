@@ -44,6 +44,8 @@ type AthleteRow = {
   video_faits_saillants_url: string | null;
   video_match_complet_url: string | null;
   video_entrainement_url: string | null;
+  /** 'M' | 'F' | 'X' — valeur BRUTE de athletes.genre, non normalisée. */
+  genre: string | null;
 };
 
 type SportOption = { id: string; nom: string };
@@ -102,6 +104,7 @@ export default function PartnerAthletesSearch({
   const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
   const [orgType, setOrgType] = useState(""); // "" | "scolaire" | "ligue_civile"
+  const [genre, setGenre] = useState(""); // "" | "M" | "F" | "X"
   const [minRating, setMinRating] = useState("");
   const [withSportBadge, setWithSportBadge] = useState(false);
   const [withVideoOnly, setWithVideoOnly] = useState(false);
@@ -144,6 +147,7 @@ export default function PartnerAthletesSearch({
       if (promotion) query = query.eq("annee_diplomation", parseInt(promotion, 10));
       if (orgType === "scolaire") query = query.not("school_id", "is", null);
       if (orgType === "ligue_civile") query = query.is("school_id", null);
+      if (genre) query = query.eq("genre", genre);
       if (minRating) query = query.gte("cote_globale_entraineur", parseFloat(minRating));
       if (withVideoOnly) query = query.not("video_faits_saillants_url", "is", null);
 
@@ -179,7 +183,7 @@ export default function PartnerAthletesSearch({
     loadData();
   }, [
     search, sport, position, region, promotion, orgType,
-    minRating, withVideoOnly, sortBy,
+    genre, minRating, withVideoOnly, sortBy,
   ]);
 
   // Client-side filter for distinctions (jsonb shape — server-side
@@ -190,9 +194,15 @@ export default function PartnerAthletesSearch({
     return athletes.filter((a) => hasDistinctions(a.distinctions));
   }, [athletes, withSportBadge]);
 
+  /* `genre` DOIT figurer ici : c'est ce test qui choisit lequel des deux états
+     vides s'affiche. Sans lui, filtrer sur Féminin — qui ne rend rien en base
+     aujourd'hui — tomberait dans la branche « Aucun athlète disponible pour le
+     moment », un message FAUX (24 athlètes sont disponibles) et sans bouton de
+     réinitialisation, laissant le partenaire coincé sur un écran vide sans
+     comprendre que c'est son propre filtre qui l'a vidé. */
   const hasFilters =
     !!search || !!sport || !!position || !!region || !!promotion ||
-    !!orgType || !!minRating || withSportBadge || withVideoOnly ||
+    !!orgType || !!genre || !!minRating || withSportBadge || withVideoOnly ||
     sortBy !== "cote_desc";
 
   const resetFilters = () => {
@@ -202,6 +212,7 @@ export default function PartnerAthletesSearch({
     setRegion("");
     setPromotion("");
     setOrgType("");
+    setGenre("");
     setMinRating("");
     setWithSportBadge(false);
     setWithVideoOnly(false);
@@ -398,6 +409,42 @@ export default function PartnerAthletesSearch({
                 <option value="ligue_civile">Ligue civile</option>
               </select>
 
+              {/* GENRE — `athletes.genre` est brut en base ('M' | 'F' | 'X' | NULL).
+                  On normalise ICI, à l'affichage, jamais en base : la colonne est
+                  écrite par quatre formulaires, et traduire côté vue créerait un
+                  second vocabulaire à maintenir.
+                  Un athlète sans genre SORT des résultats dès qu'un genre est choisi —
+                  le champ n'est obligatoire qu'en mode « détaillé » à la création,
+                  donc 12 profils sur 26 sont à NULL. Choix assumé : un partenaire qui
+                  filtre fait une sélection éditoriale ; y verser des profils dont le
+                  critère n'est pas établi serait pire qu'une omission. Sans filtre,
+                  ils restent tous visibles.
+
+                  ÉTAT DES DONNÉES AU 19 AOÛT 2026 : aucune ligne 'F' ni 'X' n'existe
+                  en base. 26 athlètes — 14 en 'M', 12 à NULL. Les options Féminin et
+                  Non genré sont câblées et fonctionnelles, mais rendront un état vide
+                  tant qu'aucune athlète féminine n'est saisie. CE N'EST PAS UN BUG DU
+                  FILTRE, et il ne faut pas « corriger » en dérivant la liste d'options
+                  des valeurs présentes : le filtre doit rester complet pour être prêt
+                  le jour où la donnée arrive, et une liste qui rétrécit avec le jeu de
+                  données rend le portail imprévisible.
+
+                  Placé dans le tiroir avancé, contrairement aux trois autres écrans
+                  partenaire où il est toujours visible : ceux-là n'ont pas de découpe
+                  primaire/avancé. Ici la règle de l'écran prime — région y est déjà,
+                  alors qu'elle est inline sur /classements. */}
+              <select
+                value={genre}
+                onChange={(e) => setGenre(e.target.value)}
+                className={`nx-filter-select${genre ? " nx-filter-active" : ""}`}
+                aria-label="Genre"
+              >
+                <option value="">Tous les genres</option>
+                <option value="M">Masculin</option>
+                <option value="F">Féminin</option>
+                <option value="X">Non genré</option>
+              </select>
+
               <select
                 value={minRating}
                 onChange={(e) => setMinRating(e.target.value)}
@@ -442,8 +489,15 @@ export default function PartnerAthletesSearch({
           ) : (
             <>
               <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucun athlète disponible pour le moment.</p>
+              {/* Copie alignée sur is_partner_eligible_athlete() :
+                  partner_visibility_opt_in ET (18 ans OU consentement
+                  parental). La cote N'EST PAS une condition — l'ancienne
+                  formulation l'annonçait, et envoyait le partenaire réclamer
+                  des évaluations qui ne débloquent rien. Au 19 août 2026,
+                  22 des 24 athlètes éligibles n'ont aucune cote et s'affichent
+                  malgré tout. */}
               <p className="text-[12px] text-[#6b7280] mt-1.5">
-                Les athlètes apparaissent ici une fois qu&apos;ils ont activé leur visibilité publique et obtenu une cote-coach.
+                Les athlètes apparaissent ici une fois qu&apos;ils ont activé leur visibilité publique — et, s&apos;ils sont mineurs, obtenu le consentement d&apos;un parent.
               </p>
             </>
           )}

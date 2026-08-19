@@ -111,6 +111,22 @@ export default async function PartnerClassementsPage({
   // Genre — colonne projetée par top_athletes_view depuis 20260817190000.
   if (params.genre) query = query.eq("genre", params.genre);
 
+  /* TRI EXPLICITE — ne PAS s'en remettre au `ORDER BY` interne de la vue.
+     `top_athletes_view` se termine par `ORDER BY cote_globale_entraineur DESC`,
+     et en PostgreSQL `DESC` implique `NULLS FIRST` : les athlètes SANS cote
+     remontaient donc en tête du classement. Au 19 août 2026, 22 des 24
+     athlètes éligibles au portail partenaire n'ont pas de cote — le « Top 25 »
+     s'ouvrait sur 22 profils non évalués avant d'atteindre les 2 classés.
+
+     On corrige ICI plutôt que dans la vue, à dessein : le chantier RLS
+     partenaire (projection RPC) va redéfinir `top_athletes_view`, et un
+     `NULLS LAST` posé en DDL serait perdu à la première redéfinition partie
+     d'une version antérieure. Un `.order()` côté page produit le même
+     résultat, ne coûte aucun DDL, et survit à la refonte des vues.
+     Même réglage que components/partenaire/PartnerAthletesSearch.tsx, qui
+     triait déjà correctement — c'est cet écran-ci qui était l'exception. */
+  query = query.order("cote_globale_entraineur", { ascending: false, nullsFirst: false });
+
   const { data, error } = await query;
   const athletes: AthleteRow[] = error ? [] : ((data ?? []) as unknown as AthleteRow[]);
 
