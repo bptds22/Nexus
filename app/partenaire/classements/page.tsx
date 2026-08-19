@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import ClassementsFilterBar from "../_components/ClassementsFilterBar";
+import {
+  isOrgType,
+  parseCoteMin,
+  isPartnerSortKey,
+  DEFAULT_PARTNER_SORT,
+  sortPartnerRows,
+} from "../_components/partnerFilters";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -47,6 +54,12 @@ type FilterParams = {
   position?: string;
   region?: string;
   year?: string;
+  /** 'scolaire' | 'ligue_civile' */
+  org?: string;
+  /** Cote minimale, en texte ('3' | '3.5' | '4' | '4.5'). */
+  cote?: string;
+  /** Clé de tri — ordre d'AFFICHAGE, pas de composition. Cf. sortPartnerRows. */
+  sort?: string;
 };
 
 /* ABSENCE ≠ ZÉRO.
@@ -109,6 +122,9 @@ export default async function PartnerClassementsPage({
      /partenaire/tendances. */
   const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
   const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
+  const orgFilter = isOrgType(params.org) ? params.org : null;
+  const coteFilter = parseCoteMin(params.cote);
+  const sortKey = isPartnerSortKey(params.sort) ? params.sort : DEFAULT_PARTNER_SORT;
 
   // Apply filters to top_athletes_view query
   let query = supabase.from("top_athletes_view").select("*").limit(25);
@@ -118,6 +134,11 @@ export default async function PartnerClassementsPage({
   if (yearFilter !== null) query = query.eq("annee_diplomation", yearFilter);
   // Genre — colonne projetée par top_athletes_view depuis 20260817190000.
   if (params.genre) query = query.eq("genre", params.genre);
+  /* ORGANISME — `school_id` est projeté par la vue : « scolaire » = rattaché à
+     une école, « ligue_civile » = sans école. Aucun DDL. */
+  if (orgFilter === "scolaire") query = query.not("school_id", "is", null);
+  if (orgFilter === "ligue_civile") query = query.is("school_id", null);
+  if (coteFilter !== null) query = query.gte("cote_globale_entraineur", coteFilter);
 
   /* TRI EXPLICITE — ne PAS s'en remettre au `ORDER BY` interne de la vue.
      `top_athletes_view` se termine par `ORDER BY cote_globale_entraineur DESC`,
@@ -136,7 +157,26 @@ export default async function PartnerClassementsPage({
   query = query.order("cote_globale_entraineur", { ascending: false, nullsFirst: false });
 
   const { data, error } = await query;
-  const athletes: AthleteRow[] = error ? [] : ((data ?? []) as unknown as AthleteRow[]);
+  const classes: AthleteRow[] = error ? [] : ((data ?? []) as unknown as AthleteRow[]);
+
+  /* ── LE TRI NE CHANGE PAS LA COMPOSITION DE LA LISTE ──────────────────
+     `.order(cote) + .limit(25)` ci-dessus DÉFINIT le Top 25 : c'est
+     l'appartenance au classement, et elle ne dépend que de la cote.
+
+     Trier côté serveur selon le choix de l'utilisateur AVANT la coupe serait
+     un bug : « Nom A-Z » + `.limit(25)` rendrait les 25 premiers
+     ALPHABÉTIQUEMENT, un sous-ensemble différent — un « Top 25 » qui n'aurait
+     plus rien d'un top. Le piège est masqué tant que la population tient sous
+     la limite (27 éligibles au 19 août 2026, donc il est DÉJÀ franchi).
+
+     On trie donc APRÈS la coupe, sur les 25 lignes déjà sélectionnées : la
+     composition reste la même quel que soit le tri, seul l'ordre d'affichage
+     suit le choix. Le tri est stable, donc les ex æquo gardent leur rang de
+     cote — l'ordre du classement reste lisible sous le tri choisi.
+
+     Coût : nul. Trier 25 objets en mémoire dans un composant serveur ne
+     déclenche aucune requête et n'ajoute aucun JavaScript client. */
+  const athletes = sortPartnerRows(classes, sortKey, (a) => a);
 
   /* Le titre de section s'adaptait déjà au nombre réel ; le sous-titre de
      page, lui, annonçait « Top 25 » même avec neuf lignes. Les deux se

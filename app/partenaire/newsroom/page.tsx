@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import NewsroomDropdownFilters from "../_components/NewsroomDropdownFilters";
+import {
+  isOrgType,
+  parseCoteMin,
+  isPartnerSortKey,
+  NEWSROOM_RECENT_SORT,
+  sortPartnerRows,
+} from "../_components/partnerFilters";
 import NewsroomEventCard, { type NewsroomEventType } from "@/components/partner/NewsroomEventCard";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -20,6 +27,10 @@ import NewsroomEventCard, { type NewsroomEventType } from "@/components/partner/
    useRouter — same pattern as ClassementsFilterBar.
 ═══════════════════════════════════════════════════════════════ */
 
+/** Constante partagée avec /classements, /tendances et /athletes —
+    volontairement pas dérivée des données. */
+const GRADUATION_YEARS = [2025, 2026, 2027, 2028, 2029];
+
 type EventRow = {
   id: string;
   event_type: NewsroomEventType;
@@ -31,6 +42,10 @@ type EventRow = {
     photo_url: string | null;
     first_name: string | null;
     last_name: string | null;
+    /* Ajoutés le 2026-08-19 pour le filtre « cote min » et le tri. Ils ne sont
+       pas affichés sur la carte éditoriale — seulement filtrés et triés. */
+    cote_globale_entraineur: number | string | null;
+    annee_diplomation: number | null;
     schools: { name: string | null } | null;
     sports: { nom: string | null } | null;
     positions: { abreviation: string | null } | null;
@@ -44,6 +59,16 @@ type FilterParams = {
   range?: string;
   sport?: string;
   position?: string;
+  /** 'scolaire' | 'ligue_civile' */
+  org?: string;
+  /** Cote minimale, en texte ('3' | '3.5' | '4' | '4.5'). */
+  cote?: string;
+  /** 'recent' (défaut) + les 5 clés partagées. Cf. NEWSROOM_SORT_OPTIONS. */
+  sort?: string;
+  /** `schools.region` accrochée à l'ÉVÉNEMENT, pas à l'athlète. */
+  region?: string;
+  /** `athletes.annee_diplomation` — même nom de param que les autres écrans. */
+  year?: string;
 };
 
 function FilterChip({ label, href, active }: { label: string; href: string; active: boolean }) {
@@ -69,9 +94,20 @@ export default async function PartnerNewsroomPage({
   const params = await searchParams;
   const typeFilter = params.type === "COMMITMENT" || params.type === "FIVE_STAR_SIGNUP" ? params.type : null;
   const rangeFilter = params.range === "7d" ? "7d" : params.range === "all" ? "all" : "30d";
+  const orgFilter = isOrgType(params.org) ? params.org : null;
+  const coteFilter = parseCoteMin(params.cote);
+  /* `recent` par défaut, et tout param inconnu y retombe — un tri fantôme
+     issu d'une URL trafiquée ne doit pas réordonner le fil en silence. */
+  const sortKey = isPartnerSortKey(params.sort) ? params.sort : NEWSROOM_RECENT_SORT;
   const sportFilter = params.sport || null;
   const positionFilter = params.position || null;
   const genreFilter = params.genre || null;
+  const regionFilter = params.region || null;
+  /* Même garde que sur /classements et /tendances : un `year` malformé donne
+     NaN, et `.eq(col, NaN)` fait échouer la requête PostgREST — le fil
+     tomberait à vide sans message. */
+  const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
+  const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
 
   const supabase = await createClient();
 
@@ -79,30 +115,49 @@ export default async function PartnerNewsroomPage({
   // Sports list is small (16) and positions cap at ~50 across all
   // sports — single query each, passed into the client filter
   // component as props.
-  const [sportsRes, positionsRes] = await Promise.all([
+  const [sportsRes, positionsRes, regionsRes] = await Promise.all([
     supabase.from("sports").select("id, nom").order("nom"),
     supabase.from("positions").select("id, nom, abreviation, sport_id").order("nom"),
+    supabase.from("schools").select("region").not("region", "is", null).order("region"),
   ]);
   const sports = (sportsRes.data ?? []) as { id: string; nom: string }[];
   const positions = (positionsRes.data ?? []) as { id: string; nom: string; abreviation: string | null; sport_id: string }[];
+  // Mêmes dérivation et tri que sur /classements et /tendances.
+  const distinctRegions = Array.from(
+    new Set((regionsRes.data ?? []).map((r) => r.region).filter(Boolean)),
+  ).sort() as string[];
 
   // Position filter requires inner join to athletes (filter on
   // joined column). Sport filter goes on newsroom_events.sport_id
   // directly (set by the trigger), no inner join needed for that.
   // Embed pulls schools/sports/positions for the editorial card
   // metadata row ("FOOTBALL · QB · COLLÈGE ...").
-  const athletesProjection = "id, photo_url, first_name, last_name, genre, schools!school_id(name), sports!sport_id(nom), positions!position_id(abreviation)";
+  const athletesProjection = "id, photo_url, first_name, last_name, genre, cote_globale_entraineur, annee_diplomation, schools!school_id(name), sports!sport_id(nom), positions!position_id(abreviation)";
   /* !inner dès qu'on filtre sur une colonne JOINTE — le genre vit sur
      `athletes`, pas sur `newsroom_events` (contrairement à sport_id, que le
      trigger recopie). Sans inner, PostgREST rendrait l'événement avec un
-     embed vide au lieu de l'exclure. */
-  const athletesEmbed = positionFilter || genreFilter
-    ? `athletes!inner(${athletesProjection})`
-    : `athletes(${athletesProjection})`;
+     embed vide au lieu de l'exclure.
+     `coteFilter` et `yearFilter` REJOIGNENT cette condition le 2026-08-19 :
+     ils portent eux aussi sur des colonnes de `athletes`. Les oublier ici
+     aurait rendu les filtres inopérants — les événements seraient tous
+     restés, avec un embed vide. */
+  const athletesEmbed =
+    positionFilter || genreFilter || coteFilter !== null || yearFilter !== null
+      ? `athletes!inner(${athletesProjection})`
+      : `athletes(${athletesProjection})`;
+
+  /* RÉGION — embed SÉPARÉ, au premier niveau : `newsroom_events.school_id`
+     porte sa propre FK vers `schools`, donc un seul niveau de jointure suffit
+     et on évite `athletes!inner(schools!inner(…))`, le patron le plus fragile
+     de PostgREST. `!inner` seulement quand on filtre, sinon un événement sans
+     école serait exclu du fil alors qu'il a sa place.
+     La clé JSON `schools` au premier niveau ne se confond pas avec le
+     `athletes.schools` imbriqué : niveaux différents. */
+  const schoolsEmbed = regionFilter ? "schools!inner(region)" : "schools(region)";
 
   let query = supabase
     .from("newsroom_events")
-    .select(`id, event_type, athlete_id, metadata, occurred_at, ${athletesEmbed}`)
+    .select(`id, event_type, athlete_id, metadata, occurred_at, ${athletesEmbed}, ${schoolsEmbed}`)
     .order("occurred_at", { ascending: false })
     .limit(100);
 
@@ -125,9 +180,47 @@ export default async function PartnerNewsroomPage({
   if (genreFilter) {
     query = query.eq("athletes.genre", genreFilter);
   }
+  /* ORGANISME — sur `newsroom_events.school_id`, la colonne dénormalisée de
+     l'événement (FK vers `schools`), et NON sur l'embed athlète : un niveau
+     de jointure en moins, et pas besoin de forcer l'inner. */
+  if (orgFilter === "scolaire") {
+    query = query.not("school_id", "is", null);
+  } else if (orgFilter === "ligue_civile") {
+    query = query.is("school_id", null);
+  }
+  if (coteFilter !== null) {
+    query = query.gte("athletes.cote_globale_entraineur", coteFilter);
+  }
+  if (yearFilter !== null) {
+    query = query.eq("athletes.annee_diplomation", yearFilter);
+  }
+  if (regionFilter) {
+    query = query.eq("schools.region", regionFilter);
+  }
 
   const { data, error } = await query;
-  const events: EventRow[] = error ? [] : ((data ?? []) as unknown as EventRow[]);
+  const fetched: EventRow[] = error ? [] : ((data ?? []) as unknown as EventRow[]);
+
+  /* ── TRI ──────────────────────────────────────────────────────────────
+     PostgREST n'ordonne PAS la table parente par une colonne d'embed : un
+     `.order("athletes.cote_globale_entraineur")` trierait les lignes
+     EMBARQUÉES, pas les événements. La limite est réelle — mais elle ne
+     s'applique qu'au tri CÔTÉ SERVEUR.
+
+     On trie donc après la requête, exactement comme sur /classements et
+     /tendances : `.order(occurred_at desc).limit(100)` définit QUELS
+     événements composent le fil, le tri choisi ne change que leur ordre
+     d'affichage. La contrainte PostgREST devient sans objet.
+
+     `recent` (le défaut) ne fait rien : l'ordre serveur est déjà le bon. */
+  const events: EventRow[] =
+    sortKey === NEWSROOM_RECENT_SORT
+      ? fetched
+      : sortPartnerRows(fetched, sortKey, (e) => ({
+          cote_globale_entraineur: e.athletes?.cote_globale_entraineur ?? null,
+          annee_diplomation: e.athletes?.annee_diplomation ?? null,
+          last_name: e.athletes?.last_name ?? null,
+        }));
 
   function buildHref(overrides: { type?: string | null; range?: string }): string {
     const next = new URLSearchParams();
@@ -135,18 +228,33 @@ export default async function PartnerNewsroomPage({
     const r = overrides.range !== undefined ? overrides.range : rangeFilter;
     if (t) next.set("type", t);
     if (r && r !== "30d") next.set("range", r);
-    // Preserve sport + position across chip-driven nav so a partner
-    // changing the type chip doesn't lose their sport/position
-    // selection.
+    /* Les chips de type et de période reconstruisent l'URL DE ZÉRO, donc tout
+       param non recopié ici est PERDU au clic. `sport` et `position` étaient
+       préservés ; `genre` ne l'était pas — un partenaire qui filtrait sur un
+       genre puis changeait de période perdait son filtre sans le voir. Le
+       correctif accompagne l'ajout de `org`, `cote` et `sort`, qui auraient
+       hérité du même défaut.
+       RÈGLE : tout nouveau param d'URL de cet écran doit être recopié ici. */
     if (sportFilter) next.set("sport", sportFilter);
     if (positionFilter) next.set("position", positionFilter);
+    if (genreFilter) next.set("genre", genreFilter);
+    if (orgFilter) next.set("org", orgFilter);
+    if (params.cote && coteFilter !== null) next.set("cote", params.cote);
+    if (sortKey !== NEWSROOM_RECENT_SORT) next.set("sort", sortKey);
+    if (regionFilter) next.set("region", regionFilter);
+    if (yearFilter !== null) next.set("year", String(yearFilter));
     const qs = next.toString();
     return qs ? `/partenaire/newsroom?${qs}` : "/partenaire/newsroom";
   }
 
   // genreFilter inclus — voir tendances : omis, il faisait dire « Aucun
-  // événement récent » là où le filtre était seul en cause.
-  const hasActiveFilters = !!(typeFilter || rangeFilter !== "30d" || sportFilter || positionFilter || genreFilter);
+  // événement récent » là où le filtre était seul en cause. org/cote/sort
+  // rejoignent le test pour la même raison.
+  const hasActiveFilters = !!(
+    typeFilter || rangeFilter !== "30d" || sportFilter || positionFilter || genreFilter
+    || orgFilter || coteFilter !== null || sortKey !== NEWSROOM_RECENT_SORT
+    || regionFilter || yearFilter !== null
+  );
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
@@ -155,20 +263,36 @@ export default async function PartnerNewsroomPage({
         <p className="text-[14px] text-[#9CA3AF] mt-1">Engagements et nouvelles 5 étoiles</p>
       </div>
 
-      {/* Filters — type → sport → position → date range, single
-          row with horizontal scroll on narrow viewports. */}
-      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Type</span>
-        <FilterChip label="Tout" href={buildHref({ type: null })} active={typeFilter === null} />
-        <FilterChip label="Engagements" href={buildHref({ type: "COMMITMENT" })} active={typeFilter === "COMMITMENT"} />
-        <FilterChip label="5 étoiles" href={buildHref({ type: "FIVE_STAR_SIGNUP" })} active={typeFilter === "FIVE_STAR_SIGNUP"} />
-        <span className="w-px h-5 bg-[#2D3748] mx-2 shrink-0" />
-        <NewsroomDropdownFilters sports={sports} positions={positions} />
-        <span className="w-px h-5 bg-[#2D3748] mx-2 shrink-0" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Période</span>
-        <FilterChip label="7 jours" href={buildHref({ range: "7d" })} active={rangeFilter === "7d"} />
-        <FilterChip label="30 jours" href={buildHref({ range: "30d" })} active={rangeFilter === "30d"} />
-        <FilterChip label="Tout" href={buildHref({ range: "all" })} active={rangeFilter === "all"} />
+      {/* Filtres en DEUX rangées depuis le 2026-08-19.
+          Les chips (type, période) restent sur leur rangée à défilement
+          horizontal : elles sont des liens, leur comportement ne change pas.
+          Les dropdowns descendent sur une rangée `flex-wrap` — condition
+          NÉCESSAIRE au tiroir « Filtres avancés », dont le panneau prend
+          toute la largeur et doit provoquer un retour à la ligne. Il ne
+          pouvait pas se déplier dans un conteneur `flex-nowrap` à défilement.
+          Ce n'est PAS la refonte complète de la barre newsroom (chips ⇄
+          selects, hiérarchie des chips), qui reste un chantier distinct. */}
+      <div className="space-y-2">
+        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Type</span>
+          <FilterChip label="Tout" href={buildHref({ type: null })} active={typeFilter === null} />
+          <FilterChip label="Engagements" href={buildHref({ type: "COMMITMENT" })} active={typeFilter === "COMMITMENT"} />
+          <FilterChip label="5 étoiles" href={buildHref({ type: "FIVE_STAR_SIGNUP" })} active={typeFilter === "FIVE_STAR_SIGNUP"} />
+          <span className="w-px h-5 bg-[#2D3748] mx-2 shrink-0" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Période</span>
+          <FilterChip label="7 jours" href={buildHref({ range: "7d" })} active={rangeFilter === "7d"} />
+          <FilterChip label="30 jours" href={buildHref({ range: "30d" })} active={rangeFilter === "30d"} />
+          <FilterChip label="Tout" href={buildHref({ range: "all" })} active={rangeFilter === "all"} />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <NewsroomDropdownFilters
+            sports={sports}
+            positions={positions}
+            regions={distinctRegions}
+            graduationYears={GRADUATION_YEARS}
+          />
+        </div>
       </div>
 
       {/* Feed */}

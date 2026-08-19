@@ -2,6 +2,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import TendancesDropdownFilters from "../_components/TendancesDropdownFilters";
+import {
+  isOrgType,
+  parseCoteMin,
+  isPartnerSortKey,
+  DEFAULT_PARTNER_SORT,
+  sortPartnerRows,
+} from "../_components/partnerFilters";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/tendances — async server component
@@ -49,6 +56,12 @@ type FilterParams = {
   region?: string;
   /** `annee_diplomation` — même nom de param que sur /classements. */
   year?: string;
+  /** 'scolaire' | 'ligue_civile' */
+  org?: string;
+  /** Cote minimale, en texte ('3' | '3.5' | '4' | '4.5'). */
+  cote?: string;
+  /** Clé de tri — ordre d'AFFICHAGE, pas de composition. Cf. sortPartnerRows. */
+  sort?: string;
 };
 
 function formatDelta(d: number): string {
@@ -146,6 +159,9 @@ export default async function PartnerTendancesPage({
      vide sans explication. On ne retient l'année que si elle est un entier. */
   const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
   const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
+  const orgFilter = isOrgType(params.org) ? params.org : null;
+  const coteFilter = parseCoteMin(params.cote);
+  const sortKey = isPartnerSortKey(params.sort) ? params.sort : DEFAULT_PARTNER_SORT;
 
   const supabase = await createClient();
 
@@ -184,6 +200,11 @@ export default async function PartnerTendancesPage({
   if (yearFilter !== null) viewsQuery = viewsQuery.eq("annee_diplomation", yearFilter);
   // Genre — projeté par trending_athletes_view depuis 20260817190100.
   if (genreFilter) viewsQuery = viewsQuery.eq("genre", genreFilter);
+  /* ORGANISME — la vue ne projette pas `school_id` : on teste `school_name`,
+     substitut exact vérifié (0 désaccord). Détaillé dans la barre de filtres. */
+  if (orgFilter === "scolaire") viewsQuery = viewsQuery.not("school_name", "is", null);
+  if (orgFilter === "ligue_civile") viewsQuery = viewsQuery.is("school_name", null);
+  if (coteFilter !== null) viewsQuery = viewsQuery.gte("cote_globale_entraineur", coteFilter);
 
   let favsQuery = supabase
     .from("trending_athletes_view")
@@ -191,17 +212,32 @@ export default async function PartnerTendancesPage({
     .gt("favs_delta", 0)
     .order("favs_delta", { ascending: false })
     .limit(10);
-  // Miroir EXACT du bloc viewsQuery ci-dessus — cinq filtres, même ordre.
+  // Miroir EXACT du bloc viewsQuery ci-dessus — sept filtres, même ordre.
   if (sportFilter) favsQuery = favsQuery.eq("sport_id", sportFilter);
   if (positionFilter) favsQuery = favsQuery.eq("position_id", positionFilter);
   if (regionFilter) favsQuery = favsQuery.eq("region", regionFilter);
   if (yearFilter !== null) favsQuery = favsQuery.eq("annee_diplomation", yearFilter);
   if (genreFilter) favsQuery = favsQuery.eq("genre", genreFilter);
+  if (orgFilter === "scolaire") favsQuery = favsQuery.not("school_name", "is", null);
+  if (orgFilter === "ligue_civile") favsQuery = favsQuery.is("school_name", null);
+  if (coteFilter !== null) favsQuery = favsQuery.gte("cote_globale_entraineur", coteFilter);
 
   const [viewsRes, favsRes] = await Promise.all([viewsQuery, favsQuery]);
 
-  const viewsTop: TrendingRow[] = (viewsRes.data ?? []) as unknown as TrendingRow[];
-  const favsTop: TrendingRow[] = (favsRes.data ?? []) as unknown as TrendingRow[];
+  /* Comme sur /classements, le tri s'applique APRÈS la coupe. Le `.limit(10)`
+     ci-dessus, ordonné par delta, DÉFINIT qui sont les dix athlètes en
+     ascension — c'est la raison d'être de l'écran. Trier par nom avant la
+     coupe rendrait « les dix premiers alphabétiquement parmi ceux qui
+     progressent », ce qui n'est plus un palmarès.
+     Chaque liste est triée séparément mais avec la MÊME clé : les deux
+     panneaux se lisent côte à côte, un ordre différent de part et d'autre
+     serait illisible. */
+  const viewsTop = sortPartnerRows(
+    (viewsRes.data ?? []) as unknown as TrendingRow[], sortKey, (r) => r,
+  );
+  const favsTop = sortPartnerRows(
+    (favsRes.data ?? []) as unknown as TrendingRow[], sortKey, (r) => r,
+  );
 
   // genreFilter EN FAIT PARTIE : sans lui, filtrer un genre sans résultat
   // affichait « Aucune tendance détectée cette semaine » — un constat sur la
@@ -211,6 +247,7 @@ export default async function PartnerTendancesPage({
   // tendance — c'est le cas le plus fréquent, pas le cas limite.
   const hasActiveFilters = !!(
     sportFilter || positionFilter || regionFilter || yearFilter !== null || genreFilter
+    || orgFilter || coteFilter !== null || sortKey !== DEFAULT_PARTNER_SORT
   );
   const emptyMessage = hasActiveFilters
     ? "Aucune tendance ne correspond à ces filtres."

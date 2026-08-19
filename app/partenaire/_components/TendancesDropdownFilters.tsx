@@ -2,6 +2,15 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import AdvancedFilterDrawer from "./AdvancedFilterDrawer";
+import {
+  PARTNER_SORT_OPTIONS,
+  DEFAULT_PARTNER_SORT,
+  ORG_TYPE_OPTIONS,
+  ORG_TYPE_PLACEHOLDER,
+  COTE_MIN_OPTIONS,
+  COTE_MIN_PLACEHOLDER,
+} from "./partnerFilters";
 
 /* ═══════════════════════════════════════════════════════════════
    TendancesDropdownFilters — sport, position, région, promotion
@@ -48,6 +57,9 @@ export default function TendancesDropdownFilters({
   const currentRegion = searchParams.get("region") || "";
   const currentYear = searchParams.get("year") || "";
   const currentGenre = searchParams.get("genre") || "";
+  const currentOrg = searchParams.get("org") || "";
+  const currentCote = searchParams.get("cote") || "";
+  const currentSort = searchParams.get("sort") || DEFAULT_PARTNER_SORT;
 
   const positionsForSport = useMemo(
     () => (currentSport ? positions.filter((p) => p.sport_id === currentSport) : []),
@@ -79,7 +91,9 @@ export default function TendancesDropdownFilters({
      s'affiche : sans ces deux clés, filtrer une région sans tendance
      annoncerait « Aucune tendance détectée cette semaine » — un constat sur
      la semaine, alors que la cause est le filtre. */
-  const hasFilters = currentSport || currentPosition || currentRegion || currentYear || currentGenre;
+  const hasFilters =
+    currentSport || currentPosition || currentRegion || currentYear || currentGenre
+    || currentOrg || currentCote || currentSort !== DEFAULT_PARTNER_SORT;
 
   return (
     <>
@@ -108,21 +122,6 @@ export default function TendancesDropdownFilters({
         ))}
       </select>
 
-      {/* RÉGION — `trending_athletes_view` projette `region` depuis l'origine
-          (elle vient de `schools.region` via la LEFT JOIN de la vue). La liste
-          d'options est dérivée de `schools`, PAS des athlètes affichés : une
-          liste qui rétrécit avec le jeu de données rend le portail
-          imprévisible, même raisonnement que pour le genre. */}
-      <select
-        value={currentRegion}
-        onChange={(e) => pushFilter({ region: e.target.value || null })}
-        className={`${selectCls} ${currentRegion ? activeCls : ""}`}
-        aria-label="Région"
-      >
-        <option value="">Toutes les régions</option>
-        {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-      </select>
-
       {/* PROMOTION — `annee_diplomation`, projetée par la vue. Les années sont
           une constante partagée avec /classements et /athletes, pas une
           requête : elles ne dépendent pas des données présentes. */}
@@ -136,36 +135,109 @@ export default function TendancesDropdownFilters({
         {graduationYears.map((y) => <option key={y} value={String(y)}>{y}</option>)}
       </select>
 
-      {/* GENRE — `athletes.genre` est brut en base ('M' | 'F' | 'X' | NULL).
-          On normalise ICI, à l'affichage, jamais en base : la colonne est
-          écrite par quatre formulaires, et traduire côté vue créerait un
-          second vocabulaire à maintenir.
-          Un athlète sans genre SORT des résultats dès qu'un genre est choisi —
-          le champ n'est obligatoire qu'en mode « détaillé » à la création,
-          donc 12 profils sur 26 sont à NULL. Choix assumé : un partenaire qui
-          filtre fait une sélection éditoriale ; y verser des profils dont le
-          critère n'est pas établi serait pire qu'une omission. Sans filtre,
-          ils restent tous visibles.
+      <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
 
-          ÉTAT DES DONNÉES AU 17 AOÛT 2026 : aucune ligne 'F' ni 'X' n'existe
-          en base. 26 athlètes — 14 en 'M', 12 à NULL. Les options Féminin et
-          Non genré sont câblées et fonctionnelles, mais rendront un état vide
-          tant qu'aucune athlète féminine n'est saisie. CE N'EST PAS UN BUG DU
-          FILTRE, et il ne faut pas « corriger » en dérivant la liste d'options
-          des valeurs présentes : le filtre doit rester complet pour être prêt
-          le jour où la donnée arrive, et une liste qui rétrécit avec le jeu de
-          données rend le portail imprévisible. */}
+      {/* TRI — ordre d'AFFICHAGE des deux palmarès. Leur composition reste
+          définie par les deltas, côté serveur. Cf. le commentaire de la page. */}
       <select
-        value={currentGenre}
-        onChange={(e) => pushFilter({ genre: e.target.value || null })}
-        className={`${selectCls} ${currentGenre ? activeCls : ""}`}
-        aria-label="Genre"
+        value={currentSort}
+        onChange={(e) => pushFilter({ sort: e.target.value })}
+        className={selectCls}
+        aria-label="Trier"
       >
-        <option value="">Tous les genres</option>
-        <option value="M">Masculin</option>
-        <option value="F">Féminin</option>
-        <option value="X">Non genré</option>
+        {PARTNER_SORT_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
       </select>
+
+      <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
+
+      {/* Même répartition primaires / avancés que /partenaire/athletes et
+          /partenaire/classements. Région et genre étaient inline ici — ils
+          descendent dans le tiroir pour aligner les quatre écrans. */}
+      <AdvancedFilterDrawer>
+        {/* RÉGION — `trending_athletes_view` projette `region` depuis l'origine
+            (elle vient de `schools.region` via la LEFT JOIN de la vue). La liste
+            d'options est dérivée de `schools`, PAS des athlètes affichés : une
+            liste qui rétrécit avec le jeu de données rend le portail
+            imprévisible, même raisonnement que pour le genre. */}
+        <select
+          value={currentRegion}
+          onChange={(e) => pushFilter({ region: e.target.value || null })}
+          className={`${selectCls} ${currentRegion ? activeCls : ""}`}
+          aria-label="Région"
+        >
+          <option value="">Toutes les régions</option>
+          {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+
+        {/* ORGANISME — `trending_athletes_view` ne projette PAS `school_id`,
+            contrairement à `top_athletes_view`. On teste donc `school_name`,
+            qui vient de la même LEFT JOIN : `school_name IS NULL` ⟺
+            `school_id IS NULL` (vérifié le 19 août 2026 : 0 désaccord sur les
+            27 éligibles, la FK garantit qu'une école référencée existe).
+            Substitut exact, et surtout AUCUN DDL — ajouter `school_id` à la
+            vue entrerait en collision avec le chantier RLS partenaire.
+            Même réserve de données que sur /classements : 0 athlète éligible
+            en ligue civile aujourd'hui. */}
+        <select
+          value={currentOrg}
+          onChange={(e) => pushFilter({ org: e.target.value || null })}
+          className={`${selectCls} ${currentOrg ? activeCls : ""}`}
+          aria-label="Organisme"
+        >
+          <option value="">{ORG_TYPE_PLACEHOLDER}</option>
+          {ORG_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        {/* GENRE — `athletes.genre` est brut en base ('M' | 'F' | 'X' | NULL).
+            On normalise ICI, à l'affichage, jamais en base : la colonne est
+            écrite par quatre formulaires, et traduire côté vue créerait un
+            second vocabulaire à maintenir.
+            Un athlète sans genre SORT des résultats dès qu'un genre est choisi —
+            le champ n'est obligatoire qu'en mode « détaillé » à la création,
+            donc 12 profils sur 26 sont à NULL. Choix assumé : un partenaire qui
+            filtre fait une sélection éditoriale ; y verser des profils dont le
+            critère n'est pas établi serait pire qu'une omission. Sans filtre,
+            ils restent tous visibles.
+
+            ÉTAT DES DONNÉES AU 17 AOÛT 2026 : aucune ligne 'F' ni 'X' n'existe
+            en base. 26 athlètes — 14 en 'M', 12 à NULL. Les options Féminin et
+            Non genré sont câblées et fonctionnelles, mais rendront un état vide
+            tant qu'aucune athlète féminine n'est saisie. CE N'EST PAS UN BUG DU
+            FILTRE, et il ne faut pas « corriger » en dérivant la liste d'options
+            des valeurs présentes : le filtre doit rester complet pour être prêt
+            le jour où la donnée arrive, et une liste qui rétrécit avec le jeu de
+            données rend le portail imprévisible. */}
+        <select
+          value={currentGenre}
+          onChange={(e) => pushFilter({ genre: e.target.value || null })}
+          className={`${selectCls} ${currentGenre ? activeCls : ""}`}
+          aria-label="Genre"
+        >
+          <option value="">Tous les genres</option>
+          <option value="M">Masculin</option>
+          <option value="F">Féminin</option>
+          <option value="X">Non genré</option>
+        </select>
+
+        {/* COTE MIN — croisée avec la fenêtre d'activité de 7 jours, elle est
+            le filtre le plus restrictif du portail : il faut être coté ET
+            avoir bougé cette semaine. 2 cotés sur 27 au 19 août 2026. */}
+        <select
+          value={currentCote}
+          onChange={(e) => pushFilter({ cote: e.target.value || null })}
+          className={`${selectCls} ${currentCote ? activeCls : ""}`}
+          aria-label="Cote minimale"
+        >
+          <option value="">{COTE_MIN_PLACEHOLDER}</option>
+          {COTE_MIN_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </AdvancedFilterDrawer>
 
       {hasFilters && (
         <button
