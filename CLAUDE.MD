@@ -108,9 +108,15 @@ green for the wrong reason.
   + `is_platform_admin`. **The only account `is_admin()` lets through.** Every
   RPC gated on it (e.g. `create_team_join_token`, `revoke_team_join_token`)
   works with this account and no other.
-- `bpdesfosses@gmail.com` / `51ec6dbe-…` is a COACH account, never an admin —
-  and it does not exist on the cloud DB at all (local-only leftover). Do not
-  use it as a fixture.
+- `bpdesfosses@gmail.com` — **never an admin**, and the "does not exist on the
+  cloud DB" note that stood here until 2026-08-19 was **wrong**. It exists in
+  prod as user `011ef8c9-c97a-429f-b630-29b493895fcf`, role **PARTNER**, with an
+  `APPROVED` `media_partners` row (`Nexus`, created 2026-08-07, password reset +
+  terms v1 accepted, signed in 2026-08-19). It is BP's own account, used to walk
+  the partner activation flow by hand. The `51ec6dbe-…` COACH id previously
+  listed here is a **local-only** leftover and does not match the prod user.
+  Resolve by email at runtime, per the rule above — and do not assume the two
+  environments hold the same account under the same address.
 
 **Athlete fixtures** (all four have a real auth user → usable with a genuine JWT)
 
