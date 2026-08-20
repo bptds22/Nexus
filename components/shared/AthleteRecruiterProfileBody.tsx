@@ -367,6 +367,57 @@ function FreeLock() {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 
+/**
+ * Redonne a une ligne de public.partner_athlete_profile la FORME que produisait
+ * la requete directe sur `athletes`, pour que le mapping en aval soit inchange.
+ *
+ * Ce qui est ABSENT l'est par construction, pas par oubli — la RPC ne le
+ * projette pas :
+ *   email, telephone, date_naissance, nom_parent, telephone_parent,
+ *   moyenne_generale, mentions_academiques, matieres_fortes,
+ *   programme_cegep_vise, regions_cegep_preferees, ouvert_cegep_*,
+ *   notes_coach, rapport_entraineur, les 14 notes de traits.
+ *
+ * L'ecran partenaire est force en mode « simple » et masque deja le bloc
+ * academique (l. ~1669) et le nom de l'entraineur (l. ~1751) : rien de visible
+ * ne disparait. `age` est fourni DERIVE — date_naissance ne franchit jamais la
+ * frontiere, c'est elle qui decide du masquage Loi 25.
+ */
+function adaptPartnerRow(r: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: r.id,
+    user_id: null,
+    first_name: r.first_name,
+    last_name: r.last_name,
+    photo_url: r.photo_url,
+    numero_jersey: r.numero_jersey,
+    // Age DERIVE cote serveur — pas de date_naissance a reconstituer.
+    age: r.age,
+    genre: r.genre,
+    annee_diplomation: r.annee_diplomation,
+    verified: r.verified,
+    last_profile_validation: r.last_profile_validation,
+    cote_globale_entraineur: r.cote_globale,
+    taille_pieds: r.taille_pieds,
+    taille_pouces: r.taille_pouces,
+    poids_lbs: r.poids_lbs,
+    bio: r.bio,
+    video_faits_saillants_url: r.video_faits_saillants_url,
+    hudl_url: r.hudl_url,
+    youtube_url: r.youtube_url,
+    sports: r.sport_nom ? { nom: r.sport_nom } : null,
+    positions: r.position_nom ? { nom: r.position_nom, abreviation: r.position_abbr } : null,
+    schools: r.school_name
+      ? { name: r.school_name, region: r.school_region, city: r.school_city, type: r.school_type }
+      : null,
+    /* Seule `distinctions` remonte. selectBestEvaluation recoit donc un tableau
+       d'un element sans notes de traits ni rapport — ce qui est exactement
+       l'intention. */
+    evaluations: r.distinctions ? [{ distinctions: r.distinctions }] : null,
+    users: null,
+  };
+}
+
 export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: AthleteRecruiterProfileBodyProps) {
   const id = athleteId;
   // Both "preview" and "partner" are non-recruiter viewers; the
@@ -454,7 +505,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         ? "first_name, last_name, photo_url, numero_jersey,"
         : "";
 
-    const load = supabase
+    /* REQUETE DIRECTE — chemin RECRUTEUR et APERCU ATHLETE uniquement.
+       Le partenaire ne passe plus par ici depuis le 2026-08-19 (point 5a du
+       chantier RLS partenaire) : voir `source` juste apres. */
+    const directQuery = supabase
       .from("athletes")
       .select(`
         id,
@@ -525,8 +579,34 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         users!athletes_coach_id_fkey(first_name, last_name)
       ` as unknown as "*")
       .eq("id", id)
-      .single()
-      .then(async ({ data, error }) => {
+      .single();
+
+    /* AIGUILLAGE DE SOURCE.
+
+       Pour un PARTENAIRE, la lecture passe par public.partner_athlete_profile :
+       28 colonnes, gate interne (is_approved_partner ET
+       is_partner_eligible_athlete), et AUCUNE des 11 colonnes interdites. La
+       requete directe ci-dessus laissait encore passer moyenne_generale,
+       programme_cegep_vise, regions_cegep_preferees, notes_coach et l'embed
+       evaluations a 18 colonnes — dont rapport_entraineur, du texte libre ecrit
+       par un adulte sur un mineur.
+
+       L'adaptateur redonne a la ligne la FORME que le mapping ci-dessous
+       attend. Les champs absents le sont PAR CONSTRUCTION : l'ecran partenaire
+       est force en mode « simple » (effectiveMode) et masque deja le bloc
+       academique et le nom de l'entraineur. Ce qui n'arrive plus n'etait de
+       toute facon pas affiche — mais il arrivait quand meme jusqu'ici. */
+    const source: PromiseLike<{ data: unknown; error: unknown }> = isPartner
+      ? supabase
+          .rpc("partner_athlete_profile", { p_athlete_id: id })
+          .maybeSingle()
+          .then((r) => ({
+            data: r.data ? adaptPartnerRow(r.data as Record<string, unknown>) : null,
+            error: r.error,
+          }))
+      : (directQuery as unknown as PromiseLike<{ data: unknown; error: unknown }>);
+
+    const load = Promise.resolve(source).then(async ({ data, error }) => {
         if (error || !data) { setLoadingAthlete(false); return; }
 
         const d = data as Record<string, unknown>;
@@ -587,7 +667,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
            jamais projetée à un recruteur — c'est elle qui décide du masquage
            Loi 25, la livrer permettrait de recalculer ce que le masquage
            protège. */
+        /* `d.age` : chemin PARTENAIRE, ou l'age arrive deja derive de la RPC.
+           Sans cette branche il serait null — `card` n'est peuple que pour un
+           recruteur, et date_naissance n'est jamais projetee a un partenaire. */
         const age = card?.age
+          ?? (d.age as number | null)
           ?? (d.date_naissance
               ? Math.floor((Date.now() - new Date(d.date_naissance as string).getTime()) / 31_557_600_000)
               : null);

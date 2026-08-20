@@ -1,0 +1,70 @@
+-- 20260820023055_drop_partner_direct_table_policies
+--
+-- Appliquee en PROD le 2026-08-19 via MCP apply_migration. Nom de fichier
+-- aligne sur la version REELLE. Chercher par `name`, jamais par `version`.
+--
+-- Point 5b(d) du chantier RLS partenaire — LA FERMETURE.
+--
+-- Apres ces deux DROP, un partenaire approuve n'a PLUS AUCUN acces direct aux
+-- tables. Tout passe par des objets SECURITY DEFINER dont on maitrise la
+-- projection :
+--   /partenaire/athletes, /classements -> top_athletes_view       (DEFINER)
+--   /partenaire/tendances              -> trending_athletes_view  (DEFINER)
+--   /partenaire/newsroom               -> partner_newsroom_events (DEFINER)
+--   /partenaire/athletes/[id]          -> partner_athlete_profile (DEFINER)
+--
+-- CE QUE CHAQUE DROP FERME
+--
+-- 1. « Approved partners read opted-in athletes » sur public.athletes
+--    LA FUITE PRINCIPALE. La RLS est par LIGNE, l'exposition est COLONNAIRE :
+--    tant que cette policy existait, les 87 colonnes des lignes visibles
+--    etaient lisibles en PostgREST direct, quoi que l'application demande.
+--    Mesure runtime, JWT partenaire reel, 2026-08-19 :
+--      email 29/29 · date_naissance 29/29 (MINEURS COMPRIS) · nom_parent 29/29
+--      telephone 23 · telephone_parent 4 · moyenne_generale 17
+--
+--    Elle portait aussi un DECALAGE : elle n'exigeait que
+--    partner_visibility_opt_in, la ou les vues et les RPC exigent EN PLUS
+--    18 ans OU consentement parental. Ecart nul le 2026-08-19 (29 = 29) mais
+--    par COINCIDENCE DE DONNEES : un mineur sans consentement qui activait son
+--    opt-in devenait lisible en direct tout en restant absent des vues. Le drop
+--    supprime le decalage en supprimant le chemin.
+--
+-- 2. « approved partners read evaluations of eligible athletes » sur
+--    public.evaluations — posee le matin meme (20260820015945) comme prerequis
+--    du passage de top_athletes_view en INVOKER. Cette vue est revenue en
+--    DEFINER (20260820022949), donc la policy n'a plus d'objet. Elle exposait
+--    18 colonnes, dont rapport_entraineur — texte libre ecrit par un adulte sur
+--    un mineur — a /partenaire/athletes/[id]. C'etait l'elargissement
+--    TEMPORAIRE assume par BP sous condition que le point 5 suive sans delai.
+--    Il a suivi le jour meme : la fenetre aura ete ouverte quelques heures.
+--
+-- CE QUI NE CASSE PAS : les quatre ecrans passent par des objets DEFINER, qui
+-- contournent la RLS. La policy de newsroom_events (« Approved partners read
+-- eligible newsroom events ») RESTE en place — elle gate la table que la
+-- fonction lit, et la fonction porte le meme predicat.
+--
+-- PREUVE FINALE (JWT partenaire reel, prod, apres ce drop) :
+--   athletes en direct .............. 0   (etait 29)
+--   evaluations en direct ........... 0   (etait 3)
+--   top_athletes_view ............... 29 lignes, 2 distinctions
+--   trending_athletes_view .......... 29 lignes
+--   partner_newsroom_events() ....... 1 evenement
+--   partner_athlete_profile(...) .... 1 ligne
+--   les 8 filtres testes sur chacun des ecrans : tous discriminent
+--   scripts/check-view-hardening.sql : 0 ligne
+--
+-- RETOUR ARRIERE — definitions exactes pour recreation :
+--   create policy "Approved partners read opted-in athletes" on public.athletes
+--     for select using (partner_visibility_opt_in = true
+--                       and is_approved_partner((select auth.uid())));
+--   create policy "approved partners read evaluations of eligible athletes"
+--     on public.evaluations for select to authenticated
+--     using (is_approved_partner((select auth.uid()))
+--            and is_partner_eligible_athlete(athlete_id));
+
+drop policy if exists "approved partners read evaluations of eligible athletes"
+  on public.evaluations;
+
+drop policy if exists "Approved partners read opted-in athletes"
+  on public.athletes;

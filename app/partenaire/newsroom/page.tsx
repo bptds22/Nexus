@@ -52,6 +52,25 @@ type EventRow = {
   } | null;
 };
 
+/** Ligne PLATE rendue par public.partner_newsroom_events. Les colonnes
+    d'athlète servant aux filtres (position_id, genre) ne sont pas projetées :
+    un filtre n'a pas besoin d'être rendu. */
+type PartnerNewsroomRow = {
+  id: string;
+  event_type: string;
+  athlete_id: string | null;
+  metadata: Record<string, unknown> | null;
+  occurred_at: string;
+  athlete_first_name: string | null;
+  athlete_last_name: string | null;
+  athlete_photo_url: string | null;
+  athlete_school_name: string | null;
+  athlete_sport_nom: string | null;
+  athlete_position_abbr: string | null;
+  athlete_cote_globale: number | string | null;
+  athlete_annee_diplomation: number | null;
+};
+
 type FilterParams = {
   /** 'M' | 'F' | 'X' — valeur BRUTE de athletes.genre, non normalisée. */
   genre?: string;
@@ -132,74 +151,60 @@ export default async function PartnerNewsroomPage({
   // directly (set by the trigger), no inner join needed for that.
   // Embed pulls schools/sports/positions for the editorial card
   // metadata row ("FOOTBALL · QB · COLLÈGE ...").
-  const athletesProjection = "id, photo_url, first_name, last_name, genre, cote_globale_entraineur, annee_diplomation, schools!school_id(name), sports!sport_id(nom), positions!position_id(abreviation)";
-  /* !inner dès qu'on filtre sur une colonne JOINTE — le genre vit sur
-     `athletes`, pas sur `newsroom_events` (contrairement à sport_id, que le
-     trigger recopie). Sans inner, PostgREST rendrait l'événement avec un
-     embed vide au lieu de l'exclure.
-     `coteFilter` et `yearFilter` REJOIGNENT cette condition le 2026-08-19 :
-     ils portent eux aussi sur des colonnes de `athletes`. Les oublier ici
-     aurait rendu les filtres inopérants — les événements seraient tous
-     restés, avec un embed vide. */
-  const athletesEmbed =
-    positionFilter || genreFilter || coteFilter !== null || yearFilter !== null
-      ? `athletes!inner(${athletesProjection})`
-      : `athletes(${athletesProjection})`;
+  /* LECTURE PAR RPC — depuis le 2026-08-19 (point 5b du chantier RLS
+     partenaire). Le fil lisait `newsroom_events` avec un embed
+     `athletes!inner(...)` qui s'appuyait sur la policy « Approved partners read
+     opted-in athletes ». Cette policy est supprimee : l'embed rendrait
+     desormais du vide, et les QUATRE filtres qui en dependaient — position,
+     genre, cote min, promotion — casseraient en silence.
 
-  /* RÉGION — embed SÉPARÉ, au premier niveau : `newsroom_events.school_id`
-     porte sa propre FK vers `schools`, donc un seul niveau de jointure suffit
-     et on évite `athletes!inner(schools!inner(…))`, le patron le plus fragile
-     de PostgREST. `!inner` seulement quand on filtre, sinon un événement sans
-     école serait exclu du fil alors qu'il a sa place.
-     La clé JSON `schools` au premier niveau ne se confond pas avec le
-     `athletes.schools` imbriqué : niveaux différents. */
-  const schoolsEmbed = regionFilter ? "schools!inner(region)" : "schools(region)";
+     public.partner_newsroom_events porte les HUIT filtres et son propre gate
+     (is_approved_partner + is_partner_eligible_athlete, ce dernier tolerant un
+     evenement sans athlete). Les colonnes d'athletes servant aux filtres sont
+     utilisees dans son WHERE sans etre projetees. */
+  const since =
+    rangeFilter === "7d"  ? new Date(Date.now() -  7 * 86400000).toISOString() :
+    rangeFilter === "30d" ? new Date(Date.now() - 30 * 86400000).toISOString() :
+    null;
 
-  let query = supabase
-    .from("newsroom_events")
-    .select(`id, event_type, athlete_id, metadata, occurred_at, ${athletesEmbed}, ${schoolsEmbed}`)
-    .order("occurred_at", { ascending: false })
-    .limit(100);
+  const { data, error } = await supabase.rpc("partner_newsroom_events", {
+    p_event_type:  typeFilter,
+    p_since:       since,
+    p_sport_id:    sportFilter,
+    p_position_id: positionFilter,
+    p_genre:       genreFilter,
+    p_org:         orgFilter,
+    p_cote_min:    coteFilter,
+    p_year:        yearFilter,
+    p_region:      regionFilter,
+    p_limit:       100,
+  });
 
-  if (typeFilter) {
-    query = query.eq("event_type", typeFilter);
-  }
-  if (rangeFilter === "7d") {
-    const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
-    query = query.gte("occurred_at", cutoff);
-  } else if (rangeFilter === "30d") {
-    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
-    query = query.gte("occurred_at", cutoff);
-  }
-  if (sportFilter) {
-    query = query.eq("sport_id", sportFilter);
-  }
-  if (positionFilter) {
-    query = query.eq("athletes.position_id", positionFilter);
-  }
-  if (genreFilter) {
-    query = query.eq("athletes.genre", genreFilter);
-  }
-  /* ORGANISME — sur `newsroom_events.school_id`, la colonne dénormalisée de
-     l'événement (FK vers `schools`), et NON sur l'embed athlète : un niveau
-     de jointure en moins, et pas besoin de forcer l'inner. */
-  if (orgFilter === "scolaire") {
-    query = query.not("school_id", "is", null);
-  } else if (orgFilter === "ligue_civile") {
-    query = query.is("school_id", null);
-  }
-  if (coteFilter !== null) {
-    query = query.gte("athletes.cote_globale_entraineur", coteFilter);
-  }
-  if (yearFilter !== null) {
-    query = query.eq("athletes.annee_diplomation", yearFilter);
-  }
-  if (regionFilter) {
-    query = query.eq("schools.region", regionFilter);
-  }
-
-  const { data, error } = await query;
-  const fetched: EventRow[] = error ? [] : ((data ?? []) as unknown as EventRow[]);
+  /* La RPC rend des colonnes PLATES ; le rendu (NewsroomEventCard) attend la
+     forme imbriquee de l'ancien embed. On la reconstitue ici, sans rien
+     ajouter : ce qui manque manque parce que la RPC ne le projette pas. */
+  const fetched: EventRow[] = error
+    ? []
+    : ((data ?? []) as PartnerNewsroomRow[]).map((r) => ({
+        id: r.id,
+        event_type: r.event_type as NewsroomEventType,
+        athlete_id: r.athlete_id,
+        metadata: r.metadata,
+        occurred_at: r.occurred_at,
+        athletes: r.athlete_id
+          ? {
+              id: r.athlete_id,
+              photo_url: r.athlete_photo_url,
+              first_name: r.athlete_first_name,
+              last_name: r.athlete_last_name,
+              cote_globale_entraineur: r.athlete_cote_globale,
+              annee_diplomation: r.athlete_annee_diplomation,
+              schools: r.athlete_school_name ? { name: r.athlete_school_name } : null,
+              sports: r.athlete_sport_nom ? { nom: r.athlete_sport_nom } : null,
+              positions: r.athlete_position_abbr ? { abreviation: r.athlete_position_abbr } : null,
+            }
+          : null,
+      }));
 
   /* ── TRI ──────────────────────────────────────────────────────────────
      PostgREST n'ordonne PAS la table parente par une colonne d'embed : un

@@ -14,6 +14,20 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
    athlete profile.
 ═══════════════════════════════════════════════════════════════ */
 
+/** Ligne PLATE rendue par public.partner_card_downloads_list. Les champs
+    d'identité sont NULL quand l'athlète n'est plus partenaire-éligible : la
+    trace du téléchargement survit, le profil ne se redivulgue pas. */
+type PartnerDownloadRow = {
+  id: string;
+  format: string;
+  downloaded_at: string;
+  athlete_id: string | null;
+  athlete_first_name: string | null;
+  athlete_last_name: string | null;
+  athlete_photo_url: string | null;
+  athlete_sport_nom: string | null;
+};
+
 type DownloadRow = {
   id: string;
   format: "publication" | "story";
@@ -56,21 +70,43 @@ function formatRelativeFrench(iso: string): string {
 
 export default async function PartnerTelechargementsPage() {
   const supabase = await createClient();
-  // FK hint `sports!sport_id` disambiguates the embed: athletes
-  // has two FKs to sports (sport_id + sport_secondaire_id), and
-  // PostgREST returns an error rather than picking one. Same FK-
-  // hint convention is used everywhere else in the codebase
-  // (loadAthleteFromSupabase, recruteur/recherche, etc.).
-  const { data, error } = await supabase
-    .from("partner_card_downloads")
-    .select("id, format, downloaded_at, athletes(id, first_name, last_name, photo_url, sport_id, sports!sport_id(nom))")
-    .order("downloaded_at", { ascending: false })
-    .limit(50);
+  /* LECTURE PAR RPC — depuis le 2026-08-19 (point 5b du chantier RLS
+     partenaire). Cette page embarquait `athletes(...)` dans sa requête sur
+     partner_card_downloads. Cet embed dépendait de la policy « Approved
+     partners read opted-in athletes », supprimée : il rendrait désormais NULL.
+     La liste aurait continué de s'afficher, mais SANS nom, SANS photo, SANS
+     sport — une panne muette, l'historique réduit à des cartes vides. Ce
+     n'était pas un `!inner` : les lignes restaient, seul l'embed se vidait.
+
+     public.partner_card_downloads_list porte son propre gate et filtre sur
+     partner_id = auth.uid(). L'identité de l'athlète n'y est projetée que
+     s'il est TOUJOURS éligible ; sinon la ligne subsiste avec des champs à
+     NULL — la trace du téléchargement est préservée sans divulguer un profil
+     redevenu invisible. */
+  const { data, error } = await supabase.rpc("partner_card_downloads_list", {
+    p_limit: 50,
+  });
 
   if (error) {
     console.error("[partenaire/telechargements] load:", error);
   }
-  const downloads: DownloadRow[] = (data ?? []) as unknown as DownloadRow[];
+  /* La RPC rend des colonnes plates ; le rendu attend la forme imbriquée de
+     l'ancien embed. On la reconstitue sans rien ajouter. */
+  const downloads: DownloadRow[] = ((data ?? []) as PartnerDownloadRow[]).map((r) => ({
+    id: r.id,
+    format: r.format as DownloadRow["format"],
+    downloaded_at: r.downloaded_at,
+    athletes: r.athlete_id
+      ? {
+          id: r.athlete_id,
+          first_name: r.athlete_first_name,
+          last_name: r.athlete_last_name,
+          photo_url: r.athlete_photo_url,
+          sport_id: null,
+          sports: r.athlete_sport_nom ? { nom: r.athlete_sport_nom } : null,
+        }
+      : null,
+  }));
   const loadFailed = !!error;
 
   return (

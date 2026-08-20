@@ -57,7 +57,30 @@ with attendu(vue, invoker_attendu, motif) as (values
   ('athlete_coaches',          true,  'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
   ('athlete_views_weekly',     true,  'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
   ('athlete_visibility_stats', true,  'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
-  ('top_athletes_view',        true,  'durcie 2026-07-07 (harden_top_athletes_view)'),
+
+  /* ── top_athletes_view : ATTENDU CHANGÉ LE 2026-08-19, INVOKER → DEFINER ──
+     Elle a été INVOKER de juillet au 18 août (régression), restaurée en INVOKER
+     le matin du 19, puis REMISE en DEFINER le soir — délibérément.
+
+     LA RAISON, à ne pas re-litiger : INVOKER est la bonne posture quand la RLS
+     de la table de base a la BONNE GRANULARITÉ. Pour `athletes`, elle ne l'a
+     pas — la RLS est par LIGNE, l'exposition est COLONNAIRE. Tant qu'une
+     politique partenaire existait sur `athletes`, les 87 colonnes des lignes
+     visibles étaient lisibles en PostgREST direct : email 29/29,
+     date_naissance 29/29 (mineurs compris), nom_parent 29/29 — mesuré en
+     runtime sous JWT partenaire. Aucun GRANT colonne ne pouvait corriger ça :
+     les partenaires partagent le rôle `authenticated` avec les entraîneurs et
+     les recruteurs.
+
+     Refermer a donc exigé de SUPPRIMER cette politique (point 5b du chantier
+     RLS partenaire). Une vue INVOKER en dépendait : elle ne verrait plus
+     aucune ligne. Pour le chemin partenaire, DEFINER avec gate interne est la
+     posture FORTE — c'est elle qui permet de maîtriser la PROJECTION, ce que
+     la RLS ne sait pas faire.
+
+     Accès restreint par REVOKE anon + gate is_approved_partner(auth.uid())
+     dans le WHERE : un non-partenaire authentifié lit 0 ligne. */
+  ('top_athletes_view',        false, 'DEFINER assume 2026-08-19 (top_athletes_view_back_to_definer)'),
 
   -- DEFINER ASSUMÉ : ses CTE agrègent recruiter_athlete_views et
   -- recruiter_favorites, et AUCUNE de ces deux tables n'a de politique
