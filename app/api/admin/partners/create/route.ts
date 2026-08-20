@@ -2,6 +2,7 @@ import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { sendWelcomeEmail } from "@/lib/partners/sendWelcomeEmail";
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/admin/partners/create
@@ -158,9 +159,42 @@ export async function POST(req: Request) {
     );
   }
 
+  /* 9. ENVOI DES ACCÈS — ajouté le 2026-08-20.
+        C'est l'absence de cet appel qui a produit le cas Jules Regimbald :
+        send-partner-welcome était déployée depuis le 2026-08-13, son en-tête
+        affirmait être appelée d'ici, et elle ne l'a JAMAIS été. Le mot de
+        passe s'affichait à l'écran et la transmission reposait entièrement
+        sur un copier-coller manuel de l'admin.
+
+        NON BLOQUANT : un partenaire créé mais non prévenu reste récupérable
+        (la route /resend existe désormais pour ça). Un partenaire non créé,
+        non. Le mot de passe repart donc dans la réponse quoi qu'il arrive,
+        et l'écran admin l'affiche — c'est le repli qui a fonctionné, mal,
+        jusqu'ici. */
+  const envoi = await sendWelcomeEmail({
+    email,
+    organizationName,
+    contactName,
+    tempPassword,
+  });
+
+  /* Marqueur posé UNIQUEMENT sur succès : il signifie « la passerelle a
+     accepté », jamais « le partenaire a reçu ». En cas d'échec la colonne
+     reste NULL — c'est précisément ce qui permettra de retrouver un
+     partenaire resté dans le silence. */
+  if (envoi.ok) {
+    const { error: traceErr } = await sbAdmin
+      .from("media_partners")
+      .update({ welcome_email_sent_at: new Date().toISOString() })
+      .eq("id", partner.id);
+    if (traceErr) console.error("[admin/partners/create] trace envoi:", traceErr);
+  }
+
   return NextResponse.json({
     partner,
     email,
     temp_password: tempPassword,
+    email_envoye: envoi.ok,
+    email_erreur: envoi.error,
   });
 }

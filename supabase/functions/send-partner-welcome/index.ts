@@ -6,34 +6,41 @@
 // (secret DÉDIÉ, distinct de PARENT_NOTICE_SECRET / INVITE_NOTICE_SECRET /
 // TEAM_INVITE_NOTICE_SECRET / MARKETING_NOTICE_SECRET / PUSH_DISPATCH_SECRET).
 //
-// ⚠️ ÉTAT RÉEL AU 2026-08-19 — CETTE FONCTION N'A AUCUN APPELANT.
+// APPELANTS (câblés le 2026-08-20 — voir l'historique plus bas) :
+//   app/api/admin/partners/create/route.ts        -> à la création
+//   app/api/admin/partners/[id]/resend/route.ts   -> à la régénération
+// Les deux passent par le helper partagé lib/partners/sendWelcomeEmail.ts.
 //
-// L'en-tête d'origine affirmait être « appelée côté serveur par
-// app/api/admin/partners/create/route.ts ». C'est FAUX, et ça l'a toujours été.
-// Cette route existe bel et bien, mais elle ne contient aucun appel : ni
-// `invoke`, ni `fetch` vers cette fonction, ni Resend. Elle crée l'utilisateur,
-// insère la ligne media_partners en APPROVED, puis RENVOIE le mot de passe
-// temporaire dans sa réponse JSON — que app/admin/partenaires/page.tsx affiche
-// une fois à l'écran, dans un encart `select-all`.
+// PARTICULARITÉ — contrairement aux autres fonctions courriel, celle-ci n'est
+// PAS déclenchée par un trigger Postgres. Le mot de passe temporaire est
+// généré dans la route et n'est JAMAIS écrit en base : un trigger sur
+// media_partners ne pourrait pas le connaître.
 //
-// Autrement dit : la transmission des accès est aujourd'hui MANUELLE. L'admin
-// copie le mot de passe et l'envoie lui-même. Aucun courriel n'est parti de
-// cette fonction depuis son déploiement (version 2, 2026-08-13) — les deux
-// partenaires APPROVED en prod n'ont jamais reçu d'accueil automatisé.
+// ⚠️ ELLE NE SAIT PAS RELANCER UN PARTENAIRE EXISTANT. `temp_password` est
+// requis (400 sans lui) et n'est stocké nulle part. Un « renvoyer les accès »
+// doit donc RÉGÉNÉRER le mot de passe avant d'appeler ici — c'est ce que fait
+// la route /resend, via auth.admin.updateUserById.
 //
-// La raison invoquée pour ne PAS passer par un trigger Postgres reste valide :
-// le mot de passe temporaire est généré dans la route et n'est JAMAIS écrit en
-// base, donc un trigger sur media_partners ne pourrait pas le connaître.
+// ⚠️ L'ÉCHEC D'ENVOI NE DOIT JAMAIS FAIRE ÉCHOUER L'APPELANT. Après une
+// régénération, le mot de passe est déjà posé et l'ancien invalidé : faire
+// échouer la route effacerait le seul exemplaire du nouveau. Les deux routes
+// rendent `temp_password` quoi qu'il arrive, et l'écran admin l'affiche avec
+// un bandeau rouge en cas d'échec.
 //
-// ⚠️ CONSÉQUENCE POUR TOUT CÂBLAGE FUTUR — `temp_password` est requis (400
-// sans lui) et n'est stocké nulle part. Cette fonction ne peut donc PAS servir
-// à relancer un partenaire déjà créé : son mot de passe d'origine est perdu.
-// Un « renvoyer l'accès » suppose d'abord un chemin de régénération.
+// ── HISTORIQUE, À NE PAS PERDRE ──────────────────────────────────────────────
+// Déployée le 2026-08-13 (version 2) SANS AUCUNE SOURCE VERSIONNÉE et SANS
+// AUCUN APPELANT. Son en-tête d'origine affirmait déjà être appelée par
+// app/api/admin/partners/create/route.ts — c'était faux : cette route existait
+// mais ne contenait ni `invoke`, ni `fetch`, ni Resend. Elle affichait le mot
+// de passe à l'écran admin et la transmission reposait sur un copier-coller.
 //
-// Ce fichier a été RAPATRIÉ depuis Supabase le 2026-08-19
-// (`supabase functions download`) : il était déployé en prod sans aucune
-// source versionnée. Le code est celui qui tourne, à l'octet près — seul ce
-// bloc de commentaire a été corrigé.
+// Conséquence concrète : Jules Regimbald (lespritsportifmedia@gmail.com), créé
+// le 2026-08-13 et APPROVED, n'a jamais reçu ses accès, ne s'est jamais
+// connecté, et RIEN en base ne permettait de le savoir. Six jours de silence.
+// D'où la colonne media_partners.welcome_email_sent_at, ajoutée le 2026-08-20.
+//
+// Source rapatriée le 2026-08-19 (`supabase functions download`). Le code est
+// celui qui tourne, à l'octet près — seul ce bloc de commentaire a changé.
 //
 // Corps attendu :
 //   { email, organization_name, contact_name, temp_password }

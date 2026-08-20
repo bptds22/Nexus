@@ -63,7 +63,15 @@ export default function AdminPartenairesPage() {
     description: "",
   });
   const [submitting, setSubmitting] = useState(false);
-  const [tempPassword, setTempPassword] = useState<{ email: string; password: string } | null>(null);
+  /* `sent` / `sendError` : l'ENVOI est désormais automatique, mais il peut
+     échouer. Dans ce cas le mot de passe est déjà posé — l'ancien est donc
+     déjà invalidé — et cet encart devient le SEUL exemplaire du nouveau.
+     L'échec doit donc être visible, jamais silencieux. */
+  const [tempPassword, setTempPassword] = useState<
+    { email: string; password: string; sent: boolean; sendError?: string; resend?: boolean } | null
+  >(null);
+  /** id du partenaire dont le renvoi est en cours — désactive son bouton. */
+  const [resending, setResending] = useState<string | null>(null);
 
   const loadPartners = useCallback(async () => {
     setLoading(true);
@@ -103,7 +111,12 @@ export default function AdminPartenairesPage() {
         setSubmitting(false);
         return;
       }
-      setTempPassword({ email: json.email, password: json.temp_password });
+      setTempPassword({
+        email: json.email,
+        password: json.temp_password,
+        sent: !!json.email_envoye,
+        sendError: json.email_erreur,
+      });
       setForm({ email: "", organization_name: "", contact_name: "", logo_url: "", instagram_handle: "", description: "" });
       setShowCreate(false);
       await loadPartners();
@@ -112,6 +125,41 @@ export default function AdminPartenairesPage() {
       showToast("error", "Erreur réseau");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  /* Régénère un mot de passe temporaire et renvoie les accès.
+     Le mot de passe temporaire n'est JAMAIS stocké : s'il n'a pas été
+     transmis, il est perdu et le partenaire ne peut plus entrer. C'est
+     arrivé — Jules Regimbald, créé le 2026-08-13, jamais connecté.
+     La route ré-arme aussi l'onboarding (password_reset_completed_at → NULL)
+     pour que le nouveau mot de passe temporaire soit bien remplacé à la
+     première connexion. */
+  async function resendAccess(partnerId: string, orgName: string) {
+    setResending(partnerId);
+    try {
+      const res = await fetch(`/api/admin/partners/${partnerId}/resend`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        showToast("error", json.error || `Erreur ${res.status}`);
+        return;
+      }
+      /* On affiche TOUJOURS le mot de passe, envoi réussi ou non : c'est le
+         repli manuel, et après régénération c'est son seul exemplaire. */
+      setTempPassword({
+        email: json.email,
+        password: json.temp_password,
+        sent: !!json.email_envoye,
+        sendError: json.email_erreur,
+        resend: true,
+      });
+      if (json.email_envoye) showToast("success", `Accès renvoyés à ${orgName}`);
+      await loadPartners();
+    } catch (e) {
+      console.error("[admin/partenaires] resend:", e);
+      showToast("error", "Erreur réseau");
+    } finally {
+      setResending(null);
     }
   }
 
@@ -181,13 +229,38 @@ export default function AdminPartenairesPage() {
         </button>
       </div>
 
-      {/* Temp password reveal banner — one-time */}
+      {/* Encart mot de passe temporaire — affiché une seule fois.
+          Le cadre passe au ROUGE quand l'envoi a échoué : dans ce cas le mot
+          de passe est déjà posé côté auth (donc l'ancien est invalidé) et cet
+          encart est le SEUL exemplaire du nouveau. Le fermer sans copier
+          reproduirait exactement le cas Jules. */}
       {tempPassword && (
-        <div className="bg-[#22C55E]/10 border-2 border-[#22C55E]/40 rounded-xl p-5 space-y-3">
+        <div
+          className={`rounded-xl p-5 space-y-3 border-2 ${
+            tempPassword.sent
+              ? "bg-[#22C55E]/10 border-[#22C55E]/40"
+              : "bg-[#EF4444]/10 border-[#EF4444]/50"
+          }`}
+        >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[14px] font-bold text-[#22C55E]">Compte créé — mot de passe temporaire</p>
-              <p className="text-[12px] text-[#9CA3AF] mt-1">Copie ces informations maintenant — elles ne seront pas affichées à nouveau. Envoie-les manuellement par courriel.</p>
+              <p className={`text-[14px] font-bold ${tempPassword.sent ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                {tempPassword.sent
+                  ? tempPassword.resend
+                    ? "Accès renvoyés par courriel"
+                    : "Compte créé — accès envoyés par courriel"
+                  : "ENVOI ÉCHOUÉ — transmets ce mot de passe manuellement"}
+              </p>
+              <p className="text-[12px] text-[#9CA3AF] mt-1">
+                {tempPassword.sent
+                  ? "Le partenaire a reçu ses accès. Ce mot de passe ne sera plus affiché — inutile de le copier, sauf si le courriel n'arrive pas."
+                  : "Le mot de passe est DÉJÀ actif et l'ancien ne fonctionne plus. Copie-le maintenant : il n'est stocké nulle part et ne sera plus affiché."}
+              </p>
+              {!tempPassword.sent && tempPassword.sendError && (
+                <p className="text-[11px] text-[#EF4444]/90 mt-2 font-mono break-all">
+                  {tempPassword.sendError}
+                </p>
+              )}
             </div>
             <button type="button" onClick={() => setTempPassword(null)} className="text-[#9CA3AF] hover:text-white text-[18px] leading-none">×</button>
           </div>
@@ -266,6 +339,32 @@ export default function AdminPartenairesPage() {
                         className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider bg-[#22C55E] hover:bg-[#16A34A] text-white rounded-lg transition-colors"
                       >
                         Approuver
+                      </button>
+                    )}
+                    {/* RENVOYER LES ACCÈS — régénère un mot de passe temporaire
+                        et le renvoie par courriel. Réservé aux APPROVED : le
+                        renvoyer à un compte suspendu ou révoqué rouvrirait la
+                        porte que la bascule de statut a fermée (la route le
+                        refuse aussi, en 409 — double garde).
+                        Confirmation demandée parce que l'action INVALIDE le mot
+                        de passe actuel : un partenaire déjà activé serait
+                        déconnecté de fait. */}
+                    {p.status === "APPROVED" && (
+                      <button
+                        type="button"
+                        disabled={resending === p.id}
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `Renvoyer les accès à ${p.organization_name} ?\n\nUn NOUVEAU mot de passe temporaire sera généré : l'actuel cessera de fonctionner immédiatement.`,
+                            )
+                          ) {
+                            resendAccess(p.id, p.organization_name);
+                          }
+                        }}
+                        className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#E63946]/40 text-[#E63946] hover:bg-[#E63946]/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {resending === p.id ? "Envoi…" : "Renvoyer les accès"}
                       </button>
                     )}
                     {p.status === "APPROVED" && (
