@@ -11,6 +11,7 @@ import UpgradeModal from "@/components/ui/UpgradeModal";
 import MorePanel from "./MorePanel";
 import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 import { triggerHaptic } from "@/lib/haptics";
+import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -354,19 +355,12 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
           setMoreDotActive(false);
           return;
         }
-        // Messages non lus (ATHLETE_COACH) → badge VERT du tab Messages.
-        const { data: aConvs } = await supabase.from("conversations").select("id").eq("conversation_type", "ATHLETE_COACH");
-        const aConvIds = (aConvs ?? []).map((c) => c.id as string);
-        let aMsgCount = 0;
-        if (aConvIds.length > 0) {
-          const { count } = await supabase
-            .from("messages")
-            .select("*", { count: "exact", head: true })
-            .in("conversation_id", aConvIds)
-            .neq("sender_id", user.id)
-            .is("read_at", null);
-          aMsgCount = count ?? 0;
-        }
+        // Messages non lus → badge VERT du tab Messages. Même fonction que
+        // la barre latérale web (app/athlete/layout.tsx) : un badge juste sur
+        // une seule des deux surfaces apprend à l'utilisateur que le compteur
+        // ment. Voir lib/messaging/athleteUnread.ts pour l'allowlist de types
+        // et le traitement séparé des fils de groupe.
+        const aMsgCount = await countAthleteUnread(supabase, user.id, athleteId);
         const [{ count: notifs }, { count: invs }, { count: suggs }] = await Promise.all([
           supabase.from("athlete_notifications").select("id", { count: "exact", head: true }).eq("athlete_id", athleteId).eq("read", false),
           supabase.from("team_invitations").select("id", { count: "exact", head: true }).eq("athlete_id", athleteId).eq("status", "PENDING"),

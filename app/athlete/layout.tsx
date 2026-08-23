@@ -12,6 +12,7 @@ import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 import WrongRoutePage from "./_components/WrongRoutePage";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
 import { AnimatedRoute } from "../recruteur/_components/AnimatedRoute";
+import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ─────────────────────────────────────────────────────────────────
@@ -209,24 +210,11 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       .eq("athlete_id", athlete.id)
       .eq("status", "EN_ATTENTE");
 
-    // Unread athlete↔coach messages (inbound, read_at IS NULL). The
-    // mark_conversation_read RPC keeps read_at current for this surface.
-    let msgUnread = 0;
-    const { data: myConvs } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("conversation_type", "ATHLETE_COACH")
-      .eq("athlete_id", athlete.id);
-    const convIds = (myConvs || []).map((c: { id: string }) => c.id);
-    if (convIds.length > 0) {
-      const { count } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .in("conversation_id", convIds)
-        .is("read_at", null)
-        .neq("sender_id", user.id);
-      msgUnread = count || 0;
-    }
+    // Messages entrants non lus. Le calcul vit dans countAthleteUnread,
+    // partagé avec la barre d'onglets mobile : les deux surfaces portaient
+    // la même requête recopiée avec le même type en dur, donc le même angle
+    // mort. Une seule implémentation = elles ne peuvent plus diverger.
+    const msgUnread = await countAthleteUnread(supabase, user.id, athlete.id);
 
     setBadges({
       notifications: (unreadNotifs || 0) + (pendingInvitations || 0),
