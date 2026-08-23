@@ -60,6 +60,26 @@ interface SentBroadcast {
   created_at: string;
 }
 
+/* Une page de destinataires. 50 : une diffusion « tout le monde » se compte
+   en centaines de lignes, on ne les charge pas d'un bloc. */
+const RECIPIENTS_PAGE = 50;
+
+interface Recipient {
+  name: string;
+  role: string;
+  read: boolean;
+}
+
+interface BroadcastDetail {
+  content: string;
+  recipients: Recipient[];
+  /* Décompte par rôle sur la PAGE chargée — pas sur l'envoi entier. Le total
+     de l'envoi reste broadcasts.recipient_count, écrit par la RPC. */
+  byRole: Record<string, number>;
+  loadedAll: boolean;
+  loading: boolean;
+}
+
 function optionLabel(u: UserOption): string {
   const name = `${u.first_name || ""} ${u.last_name || ""}`.trim();
   return name || u.email;
@@ -140,6 +160,111 @@ export default function AdminMessagesPage() {
     })();
     return () => { cancelled = true; };
   }, [supabase, debouncedSearch, kind]);
+
+  /* ── Détail d'un envoi (accordéon) ───────────────────────────────
+     DEUX requêtes, au dépliage SEULEMENT — jamais au chargement de la
+     liste. Aucune migration n'a été nécessaire : les trois policies de
+     lecture admin existent déjà (`admins read messages`,
+     `admins read conversations`, `admins read all` sur athletes et users),
+     et le contenu n'a pas besoin d'être dupliqué dans `broadcasts` — la RPC
+     insère le MÊME p_content pour chaque destinataire, donc n'importe quel
+     message du lot le porte.
+
+     Le chemin destinataires est messages.broadcast_id -> conversations ->
+     athlete_id / coach_id / recruiter_id. Il n'y a pas d'index sur
+     messages.broadcast_id : assumé tant qu'il n'y a pas de volume. */
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, BroadcastDetail>>({});
+
+  async function loadDetail(id: string, offset: number) {
+    setDetails((d) => ({
+      ...d,
+      [id]: d[id]
+        ? { ...d[id], loading: true }
+        : { content: "", recipients: [], byRole: {}, loadedAll: false, loading: true },
+    }));
+
+    const contentPromise = offset === 0
+      ? supabase.from("messages").select("content").eq("broadcast_id", id).limit(1).maybeSingle()
+      : Promise.resolve({ data: null });
+
+    const rowsPromise = supabase
+      .from("messages")
+      .select(`
+        read_at,
+        conversations!conversation_id(
+          conversation_type, coach_id, recruiter_id,
+          athletes!athlete_id(first_name, last_name)
+        )
+      `)
+      .eq("broadcast_id", id)
+      .range(offset, offset + RECIPIENTS_PAGE - 1);
+
+    const [contentRes, rowsRes] = await Promise.all([contentPromise, rowsPromise]);
+
+    /* Les noms coach/recruteur demanderaient une seconde requête sur `users`
+       (les FK de `conversations` vers users sont multiples — pas d'embed sans
+       ambiguïté PostgREST, cf. lib/messaging/serviceIdentity.ts). Résolus en
+       un aller-retour groupé plutôt qu'un par ligne. */
+    const raw = (rowsRes.data ?? []) as Record<string, unknown>[];
+    const userIds = new Set<string>();
+    for (const r of raw) {
+      const c = r.conversations as Record<string, unknown> | null;
+      if (c?.coach_id) userIds.add(c.coach_id as string);
+      if (c?.recruiter_id) userIds.add(c.recruiter_id as string);
+    }
+    const nameById = new Map<string, string>();
+    if (userIds.size > 0) {
+      const { data: us } = await supabase
+        .from("users").select("id, first_name, last_name").in("id", [...userIds]);
+      for (const u of (us ?? []) as Record<string, unknown>[]) {
+        nameById.set(
+          u.id as string,
+          `${(u.first_name as string) || ""} ${(u.last_name as string) || ""}`.trim() || "—",
+        );
+      }
+    }
+
+    const page: Recipient[] = raw.map((r) => {
+      const c = (r.conversations ?? {}) as Record<string, unknown>;
+      const ath = c.athletes as Record<string, unknown> | null;
+      if (ath) {
+        return {
+          name: `${(ath.first_name as string) || ""} ${(ath.last_name as string) || ""}`.trim() || "—",
+          role: "ATHLETE",
+          read: !!r.read_at,
+        };
+      }
+      if (c.coach_id) return { name: nameById.get(c.coach_id as string) || "—", role: "COACH", read: !!r.read_at };
+      if (c.recruiter_id) return { name: nameById.get(c.recruiter_id as string) || "—", role: "RECRUTEUR", read: !!r.read_at };
+      return { name: "—", role: "—", read: !!r.read_at };
+    });
+
+    setDetails((d) => {
+      const prev = d[id];
+      const recipients = offset === 0 ? page : [...(prev?.recipients ?? []), ...page];
+      const byRole: Record<string, number> = {};
+      for (const r of recipients) byRole[r.role] = (byRole[r.role] ?? 0) + 1;
+      return {
+        ...d,
+        [id]: {
+          content: offset === 0
+            ? ((contentRes.data as { content?: string } | null)?.content ?? "")
+            : (prev?.content ?? ""),
+          recipients,
+          byRole,
+          loadedAll: page.length < RECIPIENTS_PAGE,
+          loading: false,
+        },
+      };
+    });
+  }
+
+  function toggleDetail(id: string) {
+    if (openId === id) { setOpenId(null); return; }
+    setOpenId(id);
+    if (!details[id]) loadDetail(id, 0);
+  }
 
   /* Une recherche trop courte n'affiche rien, quel que soit le contenu de
      `results` (voir l'effet ci-dessus). */
@@ -362,17 +487,103 @@ export default function AdminMessagesPage() {
             Seuls tes propres envois sont visibles ici.
           </p>
           <ul className="space-y-2">
-            {history.map((h) => (
-              <li key={h.id} className="px-3 py-2.5 rounded-lg bg-[#111317] border border-white/5 flex items-center justify-between gap-3">
-                <span className="text-[12px] text-[#e0e0e0]">
-                  {audienceSummary(h.audience)}
-                  <span className="text-[#6b7280]"> · {h.recipient_count} destinataire{h.recipient_count > 1 ? "s" : ""}</span>
-                </span>
-                <span className="text-[11px] text-[#6b7280] shrink-0">
-                  {new Date(h.created_at).toLocaleString("fr-CA", { dateStyle: "short", timeStyle: "short" })}
-                </span>
-              </li>
-            ))}
+            {history.map((h) => {
+              const open = openId === h.id;
+              const d = details[h.id];
+              const lus = d ? d.recipients.filter((r) => r.read).length : 0;
+              return (
+                <li key={h.id} className="rounded-lg bg-[#111317] border border-white/5 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => toggleDetail(h.id)}
+                    aria-expanded={open}
+                    className="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-white/[0.03] transition-colors"
+                  >
+                    <span className="text-[12px] text-[#e0e0e0] min-w-0">
+                      {audienceSummary(h.audience)}
+                      <span className="text-[#6b7280]"> · {h.recipient_count} destinataire{h.recipient_count > 1 ? "s" : ""}</span>
+                      <span className="text-[#6b7280]"> · {(h.audience?.category as string) || "service"}</span>
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] text-[#6b7280]">
+                        {new Date(h.created_at).toLocaleString("fr-CA", { dateStyle: "short", timeStyle: "short" })}
+                      </span>
+                      <svg
+                        width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280"
+                        strokeWidth="2.5" strokeLinecap="round"
+                        className={`transition-transform ${open ? "rotate-180" : ""}`}
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </span>
+                  </button>
+
+                  {open && (
+                    <div className="px-3 pb-3 space-y-3 border-t border-white/5 pt-3">
+                      {d?.loading && !d?.recipients.length ? (
+                        <p className="text-[12px] text-[#6b7280]">Chargement…</p>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280] mb-1.5">Message</p>
+                            <div className="rounded-lg bg-[#1A1D24] border border-white/5 px-3 py-2.5">
+                              <p className="text-[13px] text-[#E0E0E0] leading-snug whitespace-pre-wrap">
+                                {d?.content || <span className="text-[#6b7280] italic">(contenu introuvable)</span>}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280]">
+                                Destinataires
+                                {d && Object.keys(d.byRole).length > 0 && (
+                                  <span className="ml-2 font-medium normal-case tracking-normal text-[11px]">
+                                    {Object.entries(d.byRole)
+                                      .map(([r, n]) => `${n} ${(ROLE_LABEL[r] ?? r).toLowerCase()}${n > 1 ? "s" : ""}`)
+                                      .join(" · ")}
+                                  </span>
+                                )}
+                              </p>
+                              {d && d.recipients.length > 0 && (
+                                <p className="text-[11px] text-[#6b7280] shrink-0">
+                                  {lus}/{d.recipients.length} lu{lus > 1 ? "s" : ""}
+                                </p>
+                              )}
+                            </div>
+                            <ul className="rounded-lg border border-white/5 divide-y divide-white/5 overflow-hidden">
+                              {(d?.recipients ?? []).map((r, i) => (
+                                <li key={i} className="px-3 py-2 flex items-center justify-between gap-3 bg-[#1A1D24]">
+                                  <span className="text-[12px] text-[#e0e0e0] truncate">{r.name}</span>
+                                  <span className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280]">
+                                      {ROLE_LABEL[r.role] ?? r.role}
+                                    </span>
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${r.read ? "text-[#22C55E]" : "text-[#6b7280]"}`}>
+                                      {r.read ? "Lu" : "Non lu"}
+                                    </span>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                            {d && !d.loadedAll && (
+                              <button
+                                type="button"
+                                onClick={() => loadDetail(h.id, d.recipients.length)}
+                                disabled={d.loading}
+                                className="mt-2 text-[12px] font-bold text-[#E63946] hover:text-[#ff4d5a] disabled:opacity-40 transition-colors"
+                              >
+                                {d.loading ? "Chargement…" : `Voir les suivants (${RECIPIENTS_PAGE})`}
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
