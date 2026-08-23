@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import { fetchServiceIdentity, SERVICE_IDENTITY_FALLBACK, SERVICE_IDENTITY_ROLE_LABEL } from "@/lib/messaging/serviceIdentity";
 
 export interface ThreadData {
   id: string;
@@ -77,13 +78,21 @@ export function useConversations() {
         .select(`
           id, conversation_type, status, last_message_at, unread_count, created_at,
           coach:users!coach_id(id, first_name, last_name, photo_url, avatar_url, school_id, schools!school_id(name)),
-          athlete_id
+          athlete_id, admin_id
         `)
         .eq("recruiter_id", userId)
         .order("last_message_at", { ascending: false });
 
       if (error) throw error;
       if (!data) return [];
+
+      // ADMIN_USER — l'identité de service. Fetch séparé : `conversations`
+      // porte déjà un embed users!coach_id, un second embed users!admin_id
+      // déclencherait l'ambiguïté de FK PostgREST.
+      const hasAdminThread = data.some((c: Record<string, unknown>) => c.conversation_type === "ADMIN_USER");
+      const serviceIdentity = hasAdminThread
+        ? (await fetchServiceIdentity(supabase)) ?? SERVICE_IDENTITY_FALLBACK
+        : SERVICE_IDENTITY_FALLBACK;
 
       // Récupérer le dernier message par conversation
       const convIds = data.map((c: Record<string, unknown>) => c.id as string);
@@ -131,6 +140,7 @@ export function useConversations() {
         const cardMissing = card === null;
         const identityVisible = card?.identity_visible ?? false;
 
+        const isNexus = (c.conversation_type as string) === "ADMIN_USER";
         const coachFirst = (coach?.first_name as string) || "";
         const coachLast = (coach?.last_name as string) || "";
         const athFirst = card?.first_name ?? "";
@@ -139,11 +149,15 @@ export function useConversations() {
         return {
           id: c.id as string,
           conversationType: (c.conversation_type as string) || "RECRUTEUR_COACH",
-          coachName: `${coachFirst} ${coachLast}`.trim() || "Coach",
-          coachInitials: `${coachFirst[0] || ""}${coachLast[0] || ""}`.toUpperCase(),
-          coachSchool: coachSchool?.name || "",
-          coachId: (coach?.id as string) || "",
-          coachPhotoUrl: (coach?.photo_url as string) || (coach?.avatar_url as string) || null,
+          /* ADMIN_USER : la contrepartie est l'identité de service. Sans
+             cette branche le repli « Coach » s'afficherait — une fausse
+             identité, exactement ce que la policy « service identity
+             readable » existe pour éviter. */
+          coachName: isNexus ? serviceIdentity.name : `${coachFirst} ${coachLast}`.trim() || "Coach",
+          coachInitials: isNexus ? serviceIdentity.initials : `${coachFirst[0] || ""}${coachLast[0] || ""}`.toUpperCase(),
+          coachSchool: isNexus ? SERVICE_IDENTITY_ROLE_LABEL : coachSchool?.name || "",
+          coachId: isNexus ? ((c.admin_id as string) || "") : (coach?.id as string) || "",
+          coachPhotoUrl: isNexus ? serviceIdentity.photoUrl : (coach?.photo_url as string) || (coach?.avatar_url as string) || null,
           // displayFullName porte les trois cas (carte absente, masquée, nom
           // partiel). Le repli « Athlète » a disparu : il inventait un nom
           // pour cacher un nom absent.

@@ -60,55 +60,19 @@ export default function AdminSettingsPage() {
   const [maintModal, setMaintModal] = useState<{ turningOn: boolean; message: string; eta: string } | null>(null);
   const [version, setVersion] = useState(0);
 
-  // ── Broadcast state ──
-  type Audience = "ALL" | "COACH" | "RECRUTEUR" | "ATHLETE";
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [broadcastMsg, setBroadcastMsg] = useState("");
-  const [audience, setAudience] = useState<Audience>("ALL");
-  const [confirmBroadcast, setConfirmBroadcast] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [history, setHistory] = useState<{ message: string; audience: string; created_at: string; count: number }[]>([]);
-  const [historyVersion, setHistoryVersion] = useState(0);
-
+  /* La diffusion vivait ici. Elle est partie vers /admin/messages, qui envoie
+     de VRAIS messages via la RPC send_admin_message, au lieu d'écrire des
+     lignes de notification dans trois tables sans fil ni historique. */
   const isSuperAdmin = role === "SUPER_ADMIN";
-  const canBroadcast = role === "ADMIN" || role === "SUPER_ADMIN";
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      setCurrentUserId(user.id);
       const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
       setRole((data?.role as string) ?? null);
     })();
   }, [supabase]);
-
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from("activities")
-        .select("created_at, metadata, actor_id")
-        .eq("type", "ADMIN_BROADCAST")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) {
-        console.error("[AdminSettings] broadcast history error:", error.message);
-        return;
-      }
-      // Group by created_at (second resolution) to collapse fanned-out inserts into single broadcasts
-      const groups = new Map<string, { message: string; audience: string; created_at: string; count: number }>();
-      for (const row of (data || []) as { created_at: string; metadata: Record<string, unknown> | null }[]) {
-        const bucket = row.created_at.slice(0, 19);
-        const msg = (row.metadata?.message as string) ?? "";
-        const aud = (row.metadata?.audience as string) ?? "ALL";
-        const existing = groups.get(bucket);
-        if (existing) existing.count += 1;
-        else groups.set(bucket, { message: msg, audience: aud, created_at: row.created_at, count: 1 });
-      }
-      const list = [...groups.values()].slice(0, 5);
-      setHistory(list);
-    })();
-  }, [supabase, historyVersion]);
 
   useEffect(() => {
     (async () => {
@@ -194,102 +158,6 @@ export default function AdminSettingsPage() {
     showToast(maintModal.turningOn ? "Mode maintenance activé" : "Mode maintenance désactivé", true);
     setMaintModal(null);
     setVersion((v) => v + 1);
-  }
-
-  async function broadcast() {
-    if (!broadcastMsg.trim() || !currentUserId) return;
-    setSending(true);
-    const message = broadcastMsg.trim();
-
-    let query = supabase.from("users").select("id, role");
-    if (audience === "COACH") query = query.eq("role", "COACH");
-    else if (audience === "RECRUTEUR") query = query.eq("role", "RECRUTEUR");
-    else if (audience === "ATHLETE") query = query.eq("role", "ATHLETE");
-
-    const { data: targetUsers, error: targetErr } = await query;
-    if (targetErr) {
-      console.error("[AdminSettings] target users error:", targetErr.message);
-      showToast(`Erreur: ${targetErr.message}`, false);
-      setSending(false);
-      return;
-    }
-    const users = (targetUsers || []) as { id: string; role: string }[];
-
-    let delivered = 0;
-
-    // ── Athletes → athlete_notifications ──
-    const athleteUsers = users.filter((u) => u.role === "ATHLETE");
-    if (athleteUsers.length > 0) {
-      const { data: athleteRows, error: athErr } = await supabase
-        .from("athletes")
-        .select("id, user_id")
-        .in("user_id", athleteUsers.map((u) => u.id));
-      if (athErr) {
-        console.error("[AdminSettings] athletes lookup error:", athErr.message);
-      }
-      const rows = (athleteRows || []) as { id: string; user_id: string }[];
-      if (rows.length > 0) {
-        const payload = rows.map((a) => ({
-          athlete_id: a.id,
-          type: "ADMIN_BROADCAST",
-          title: message,
-          read: false,
-        }));
-        const { error: insErr } = await supabase.from("athlete_notifications").insert(payload);
-        if (insErr) {
-          console.error("[AdminSettings] athlete_notifications insert error:", insErr.message);
-          showToast(`Erreur athlètes: ${insErr.message}`, false);
-          setSending(false);
-          return;
-        }
-        delivered += rows.length;
-      }
-    }
-
-    // ── Coaches → activities ──
-    const coachUsers = users.filter((u) => u.role === "COACH");
-    if (coachUsers.length > 0) {
-      const payload = coachUsers.map((u) => ({
-        type: "ADMIN_BROADCAST",
-        actor_id: currentUserId,
-        actor_role: "admin",
-        coach_id: u.id,
-        metadata: { message, audience },
-        read: false,
-      }));
-      const { error: insErr } = await supabase.from("activities").insert(payload);
-      if (insErr) {
-        console.error("[AdminSettings] activities insert error:", insErr.message);
-        showToast(`Erreur entraîneurs: ${insErr.message}`, false);
-        setSending(false);
-        return;
-      }
-      delivered += coachUsers.length;
-    }
-
-    // ── Recruiters → recruiter_activity_log ──
-    const recruiterUsers = users.filter((u) => u.role === "RECRUTEUR");
-    if (recruiterUsers.length > 0) {
-      const payload = recruiterUsers.map((u) => ({
-        recruiter_id: u.id,
-        action_type: "ADMIN_BROADCAST",
-        details: { message, audience },
-      }));
-      const { error: insErr } = await supabase.from("recruiter_activity_log").insert(payload);
-      if (insErr) {
-        console.error("[AdminSettings] recruiter_activity_log insert error:", insErr.message);
-        showToast(`Erreur recruteurs: ${insErr.message}`, false);
-        setSending(false);
-        return;
-      }
-      delivered += recruiterUsers.length;
-    }
-
-    showToast(`Message diffusé à ${delivered} utilisateur${delivered > 1 ? "s" : ""}`, true);
-    setBroadcastMsg("");
-    setConfirmBroadcast(false);
-    setSending(false);
-    setHistoryVersion((v) => v + 1);
   }
 
   async function addSetting() {
@@ -418,114 +286,6 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      {canBroadcast && (
-        <section className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 space-y-5">
-          <div>
-            <h2 className="font-head text-[13px] font-black text-white uppercase tracking-[0.15em]">
-              Message à tous les utilisateurs
-            </h2>
-            <p className="text-[12px] text-[#6b7280] mt-1">
-              Diffuse une notification à tous les utilisateurs ciblés.
-            </p>
-          </div>
-
-          <textarea
-            title="Message à diffuser"
-            placeholder="Écrire un message..."
-            rows={3}
-            value={broadcastMsg}
-            onChange={(e) => setBroadcastMsg(e.target.value)}
-            className={INPUT_CLS + " w-full"}
-          />
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-            <div className="w-full sm:w-[260px]">
-              <label className="block text-[11px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5">
-                Audience
-              </label>
-              <select
-                title="Audience"
-                value={audience}
-                onChange={(e) => setAudience(e.target.value as Audience)}
-                className={INPUT_CLS + " w-full"}
-              >
-                <option value="ALL">Tous</option>
-                <option value="COACH">Entraîneurs</option>
-                <option value="RECRUTEUR">Recruteurs</option>
-                <option value="ATHLETE">Athlètes</option>
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={() => setConfirmBroadcast(true)}
-              disabled={!broadcastMsg.trim() || sending}
-              className="shrink-0 self-end px-5 py-2.5 rounded-lg bg-[#E63946] text-white font-bold text-[13px] uppercase tracking-wider hover:bg-[#D42B22] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {sending ? "Envoi..." : "Diffuser"}
-            </button>
-          </div>
-
-          {history.length > 0 && (
-            <div className="pt-4 border-t border-[#2D3748]/60">
-              <h3 className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider mb-3">
-                Derniers messages diffusés
-              </h3>
-              <ul className="space-y-2">
-                {history.map((h, i) => (
-                  <li key={h.created_at + i} className="px-3 py-2.5 rounded-lg bg-[#111317] border border-white/5">
-                    <div className="flex items-center justify-between gap-3 mb-1">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">
-                        {audienceLabel(h.audience)} — {h.count} envoi{h.count > 1 ? "s" : ""}
-                      </span>
-                      <span className="text-[11px] text-[#6b7280]">
-                        {new Date(h.created_at).toLocaleString("fr-CA", { dateStyle: "short", timeStyle: "short" })}
-                      </span>
-                    </div>
-                    <p className="text-[13px] text-[#E0E0E0] leading-snug line-clamp-2">
-                      {h.message || <span className="text-[#6b7280] italic">(aucun contenu)</span>}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-      )}
-
-      {confirmBroadcast && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !sending && setConfirmBroadcast(false)} />
-          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 w-full max-w-[460px] shadow-2xl mx-4">
-            <h2 className="font-head text-[16px] font-black text-white uppercase mb-3">
-              Diffuser le message
-            </h2>
-            <p className="text-[13px] text-[#9CA3AF] mb-5">
-              Envoyer ce message à <span className="font-bold text-white">{audienceLabel(audience)}</span>?
-            </p>
-            <div className="bg-[#111317] border border-white/5 rounded-lg px-3 py-2.5 mb-6">
-              <p className="text-[13px] text-[#E0E0E0] leading-snug whitespace-pre-wrap">{broadcastMsg}</p>
-            </div>
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmBroadcast(false)}
-                disabled={sending}
-                className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors disabled:opacity-40"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={broadcast}
-                disabled={sending}
-                className="px-5 py-2.5 rounded-lg bg-[#E63946] text-white font-bold text-[13px] uppercase tracking-wider hover:bg-[#D42B22] disabled:opacity-40 transition-colors"
-              >
-                {sending ? "Envoi..." : "Confirmer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -727,14 +487,6 @@ export default function AdminSettingsPage() {
 const INPUT_CLS =
   "bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2 text-[13px] text-white transition-colors focus:outline-none focus:border-[#E63946]/60 hover:border-[#3a4250]";
 
-function audienceLabel(aud: string): string {
-  switch (aud) {
-    case "COACH": return "Entraîneurs";
-    case "RECRUTEUR": return "Recruteurs";
-    case "ATHLETE": return "Athlètes";
-    default: return "Tous";
-  }
-}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

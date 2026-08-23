@@ -1,6 +1,5 @@
 "use client";
 
-import FeatureGate from "@/components/subscription/FeatureGate";
 import { Suspense, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +11,9 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { useConversations, type ThreadData } from "@/lib/queries/recruiter/useConversations";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { RecruteurMessagesMobile } from "@/components/shared/RecruteurMessagesMobile";
+import UpgradePlaceholder from "@/components/subscription/UpgradePlaceholder";
+import { useSubscription } from "@/lib/hooks/useSubscription";
+import { useServiceThreads, type ServiceThread } from "@/lib/queries/recruiter/useServiceThreads";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -69,6 +71,9 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
   // RECRUTEUR_ATHLETE is a DIRECT thread — the athlete IS the counterparty.
   // No coach, no "about-athlete" context panel.
   const isDirect = t.conversationType === "RECRUTEUR_ATHLETE";
+  // Fil de service : ni athlète en face, ni coach — et surtout pas de
+  // panneau « athlète concerné » : athlete_id est NULL sur un ADMIN_USER.
+  const isNexus = t.conversationType === "ADMIN_USER";
   const primaryName = isDirect ? t.athleteName : t.coachName;
   const primaryInitials = isDirect ? t.athleteInitials : t.coachInitials;
   const primarySub = isDirect ? t.athletePosition : t.coachSchool;
@@ -88,8 +93,8 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={primaryPhotoUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
         ) : (
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30" : "bg-[#2D3748]"}`}>
-            <span className={`text-[13px] font-bold ${isDirect ? "text-[#22C55E]" : "text-[#9CA3AF]"}`}>{primaryInitials}</span>
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${isNexus ? "bg-[#E63946]/15 border border-[#E63946]/30" : isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30" : "bg-[#2D3748]"}`}>
+            <span className={`text-[13px] font-bold ${isNexus ? "text-[#E63946]" : isDirect ? "text-[#22C55E]" : "text-[#9CA3AF]"}`}>{primaryInitials}</span>
           </div>
         )}
         <div className="min-w-0 flex-1">
@@ -97,8 +102,8 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
             <span className={`text-[15px] font-bold truncate ${t.unreadCount > 0 ? "text-white" : "text-[#e0e0e0]"}`}>
               {primaryName}
             </span>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E]" : "bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6]"}`}>
-              {isDirect ? "Athlète" : "Coach"}
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${isNexus ? "bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946]" : isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E]" : "bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6]"}`}>
+              {isNexus ? "Nexus" : isDirect ? "Athlète" : "Coach"}
             </span>
             {primarySub && <span className="text-[12px] text-[#6b7280] shrink-0 hidden sm:inline">{primarySub}</span>}
           </div>
@@ -107,7 +112,7 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
       </div>
 
       {/* Athlete context — ONLY for about-athlete (RECRUTEUR_COACH) threads. */}
-      {!isDirect && (
+      {!isDirect && !isNexus && (
         <div className="hidden md:flex items-center gap-2 shrink-0 w-[260px]">
           {/* TROIS états, pas deux — c'est le bug de la preview :
               · identité visible      -> initiales ;
@@ -170,13 +175,94 @@ function RecruteurMessagesRouter() {
 }
 
 function RecruteurMessagesDispatch() {
-  // Iter 7.8a — mobile early return AVANT le FeatureGate desktop : la mobile
+  // Iter 7.8a — mobile early return AVANT le gating desktop : la mobile
   // gère son propre gating Free (blur + tease) en interne.
   if (IS_CAPACITOR) return <RecruteurMessagesMobile />;
+  return <RecruteurMessagesDesktop />;
+}
+
+/* Le gate Pro, ouvert à la main — et c'est le seul moyen d'y arriver.
+   `<FeatureGate>` REMPLACE ses enfants quand il bloque, et c'est sa raison
+   d'être : les enfants ne sont pas montés, donc leurs requêtes Supabase ne
+   partent jamais. Un `<FeatureGate>` posé en frère d'un bandeau de service
+   ne saurait pas s'il bloque ; et monter MessagesPageContent pour n'en
+   afficher que les fils ADMIN_USER ferait partir TOUS les fils du recruteur
+   dans le client — le filtre côté client cache la donnée, il ne l'empêche
+   pas de voyager. D'où : on relit le palier, et on monte soit la messagerie
+   complète, soit le bandeau étroit + le placeholder.
+
+   La règle d'accès est recopiée de FeatureGate (adminBypass=false ici, donc
+   pas de branche isSchoolAdmin). Si elle change là-bas, elle doit changer
+   ici — c'est le prix de ne pas monter de données verrouillées. */
+function RecruteurMessagesDesktop() {
+  const { tier, loading } = useSubscription();
+  if (loading) return null;
+
+  const hasAccess = tier === "all_star" || tier === "pro";
+  if (hasAccess) return <MessagesPageContent />;
+
   return (
-    <FeatureGate feature="messaging" requiredTier="pro">
-      <MessagesPageContent />
-    </FeatureGate>
+    <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
+      <ServiceThreadsNotice />
+      <UpgradePlaceholder tier="pro" featureName="messaging" />
+    </div>
+  );
+}
+
+/* Bandeau de service — PAS un aperçu gratuit de la messagerie.
+   Un message de maintenance, d'information ou de support doit atteindre un
+   compte gratuit ; le verrou Pro protège la messagerie de RECRUTEMENT, pas
+   la communication de la plateforme. Même frontière que le fil sorti devant
+   le FeatureGate dans [id]/PageClient.tsx et que l'exemption de black-out en
+   base — cf. CLAUDE.md, MIGRATION SAFETY CHECKLIST règle 11.
+
+   Le rendu est délibérément étranger à une inbox : encadré, en-tête « Nexus »,
+   une ligne (au plus une, par l'index unique conversations_admin_recruiter_uniq).
+   Pas de recherche, pas de filtres, pas de statut, pas d'archivage. Rien ici ne
+   doit se lire comme « voilà à quoi ressemblerait ta messagerie ».
+   Aucun fil de service -> aucun bandeau : pas de cadre vide au-dessus du
+   placeholder. */
+function ServiceThreadsNotice() {
+  const { data: threads = [] } = useServiceThreads();
+  if (threads.length === 0) return null;
+
+  return (
+    <section className="rounded-xl border border-[#E63946]/30 bg-[#E63946]/[0.06] overflow-hidden">
+      <div className="flex items-center gap-2 px-5 pt-4 pb-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+        <p className="text-[11px] font-black uppercase tracking-[0.15em] text-[#E63946]">
+          Message de Nexus
+        </p>
+      </div>
+      <div className="px-5 pb-4 space-y-2">
+        {threads.map((t: ServiceThread) => (
+          <Link
+            key={t.id}
+            href={`/recruteur/messages?id=${t.id}`}
+            className="flex items-center gap-3 rounded-lg bg-[#111317] border border-white/5 px-4 py-3 hover:border-[#E63946]/40 transition-colors"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-bold text-white truncate">{t.sender.name}</span>
+                {t.unreadCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#E63946] text-white text-[10px] font-black inline-flex items-center justify-center shrink-0">
+                    {t.unreadCount}
+                  </span>
+                )}
+              </div>
+              <p className="text-[12px] text-[#9CA3AF] truncate mt-0.5">{t.lastMessage}</p>
+            </div>
+            <span className="text-[11px] text-[#6b7280] shrink-0">{relativeTime(t.lastMessageAt)}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" className="shrink-0">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 

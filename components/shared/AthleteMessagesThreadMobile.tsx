@@ -26,6 +26,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
 import { AthleteGroupThreadMobile } from "@/components/shared/AthleteGroupThreadMobile";
+import { NexusThreadMobile } from "@/components/messaging/NexusThreadView";
 
 interface CoachHeader { name: string; initials: string; photoUrl: string | null; role: string; school: string; }
 
@@ -40,7 +41,7 @@ function roleLabel(scRole: string | undefined): string {
 ═══════════════════════════════════════════════════════════════ */
 export function AthleteMessagesThreadMobile() {
   const conversationId = useDynamicParam("id");
-  const [convType, setConvType] = useState<"loading" | "GROUP" | "OTHER">("loading");
+  const [convType, setConvType] = useState<"loading" | "GROUP" | "ADMIN_USER" | "OTHER">("loading");
   useEffect(() => {
     if (!conversationId) return;
     let cancelled = false;
@@ -48,7 +49,8 @@ export function AthleteMessagesThreadMobile() {
       try {
         const supabase = createClient();
         const { data } = await supabase.from("conversations").select("conversation_type").eq("id", conversationId).maybeSingle();
-        if (!cancelled) setConvType(data?.conversation_type === "GROUP" ? "GROUP" : "OTHER");
+        const t = data?.conversation_type;
+        if (!cancelled) setConvType(t === "GROUP" ? "GROUP" : t === "ADMIN_USER" ? "ADMIN_USER" : "OTHER");
       } catch {
         if (!cancelled) setConvType("OTHER");
       }
@@ -64,6 +66,7 @@ export function AthleteMessagesThreadMobile() {
     );
   }
   if (convType === "GROUP") return <AthleteGroupThreadMobile />;
+  if (convType === "ADMIN_USER") return <NexusThreadMobile id={conversationId} backHref="/athlete/messages" />;
   return <AthleteCoachThreadMobile />;
 }
 

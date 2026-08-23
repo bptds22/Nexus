@@ -274,13 +274,15 @@ export function CoachDemandesMobile() {
     const isAth = t.conversationType === "ATHLETE_COACH";
     const isCC = t.conversationType === "COACH_COACH";
     const isParent = t.conversationType === "PARENT_COACH";
+    const isNexus = t.conversationType === "ADMIN_USER";
     const typeBadge = (
       <span className={`inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 ${
-        isCC ? "bg-[#14B8A6]/15 border-[#14B8A6]/30 text-[#14B8A6]"
+        isNexus ? "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
+          : isCC ? "bg-[#14B8A6]/15 border-[#14B8A6]/30 text-[#14B8A6]"
           : isAth ? "bg-[#22C55E]/15 border-[#22C55E]/30 text-[#22C55E]"
           : "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
       }`}>
-        {isCC ? (t.otherCoachIsDirector ? "Directeur" : "Coach") : isAth ? "Athlète" : isParent ? "Parent" : "Recruteur"}
+        {isNexus ? "Nexus" : isCC ? (t.otherCoachIsDirector ? "Directeur" : "Coach") : isAth ? "Athlète" : isParent ? "Parent" : "Recruteur"}
       </span>
     );
     const name = isCC ? t.otherCoachName : isAth ? t.athleteName : isParent ? t.parentName : t.recruiterName;
@@ -308,7 +310,9 @@ export function CoachDemandesMobile() {
           </div>
           {subtitle && <p className="text-[15px] text-white/55 mt-0.5 truncate">{subtitle}</p>}
           {isParent && <p className="text-[13px] text-white/45 mt-0.5 truncate">Parent de {t.athleteName}</p>}
-          {!isAth && !isCC && !isParent && <p className="text-[13px] text-white/45 mt-0.5 truncate">Au sujet de {t.athleteName}</p>}
+          {/* « Au sujet de … » n'a pas de sens sur un fil de service :
+              athlete_id est NULL sur un ADMIN_USER. */}
+          {!isAth && !isCC && !isParent && !isNexus && <p className="text-[13px] text-white/45 mt-0.5 truncate">Au sujet de {t.athleteName}</p>}
           {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
         </div>
       </div>

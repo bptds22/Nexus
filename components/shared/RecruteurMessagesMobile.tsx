@@ -192,7 +192,9 @@ export function RecruteurMessagesMobile() {
     }).catch(() => toast.error({ message: "Erreur d'archivage" }));
   };
 
-  const totalThreads = threads.length;
+  /* Le tease dit « N coachs t'attendent » : les fils de service n'en sont
+     pas, et ils ne sont pas derriere le verrou de toute facon. */
+  const totalThreads = threads.filter((t) => t.conversationType !== "ADMIN_USER").length;
   const loading = isLoading || tierLoading;
 
   // Empty kind → copy
@@ -218,6 +220,9 @@ export function RecruteurMessagesMobile() {
     // athlète) → le COACH. Ça distingue un fil AVEC l'athlète d'un fil À PROPOS
     // de lui — jamais l'athlète-du-contexte quand la contrepartie est le coach.
     const isDirect = t.conversationType === "RECRUTEUR_ATHLETE";
+    // Fil de service : la contrepartie est l'identité de service, portée par
+    // les champs coach* (cf. useConversations). Ni athlète, ni « à propos de ».
+    const isNexus = t.conversationType === "ADMIN_USER";
     const cpPhoto = isDirect ? t.athletePhotoUrl : t.coachPhotoUrl;
     const cpInitials = isDirect ? t.athleteInitials : t.coachInitials;
     // Le masquage ne concerne QUE l'athlète : un fil « à propos de » a le
@@ -237,14 +242,16 @@ export function RecruteurMessagesMobile() {
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
             <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>
-              {t.athleteName}
+              {isNexus ? t.coachName : t.athleteName}
             </p>
             <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#3B82F6] font-semibold" : "text-white/40"}`}>
               {relativeTime(t.lastMessageAt)}
             </span>
           </div>
           <p className="text-[15px] text-white/55 mt-0.5 truncate">
-            {t.conversationType === "RECRUTEUR_ATHLETE"
+            {isNexus
+              ? t.coachSchool
+              : t.conversationType === "RECRUTEUR_ATHLETE"
               ? (t.athletePosition ? `Athlète · ${t.athletePosition}` : "Athlète · message direct")
               : `Coach ${t.coachName}`}
           </p>
@@ -312,6 +319,18 @@ export function RecruteurMessagesMobile() {
       })}
       isLocked={showFreeLock}
       lockOverlay={lockTease}
+      /* Le fil de service passe DEVANT le verrou Pro. Un message de
+         maintenance, d'information ou de support doit atteindre un compte
+         gratuit : le verrou protege la messagerie de recrutement, pas la
+         communication de la plateforme. Meme frontiere que cote web
+         (app/recruteur/messages/[id]/PageClient.tsx), qui sort le fil
+         ADMIN_USER devant le FeatureGate — cf. CLAUDE.md, MIGRATION SAFETY
+         CHECKLIST regle 11. Un canal de service qui marche sur une surface
+         et pas l'autre est pire qu'absent.
+         Rien n'est ouvert au passage : la RLS `recruiter_conversations_select`
+         est `recruiter_id = auth.uid()`, sans palier — le verrou n'a jamais
+         ete le controle d'acces, seulement une couche d'UI. */
+      isThreadUnlocked={(t) => t.conversationType === "ADMIN_USER"}
       emptyTitle={emptyCopy.title}
       emptyDescription={emptyCopy.sub}
     />

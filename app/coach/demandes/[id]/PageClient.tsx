@@ -14,6 +14,7 @@ import CoachAthleteThreadView from "./CoachAthleteThreadView";
 import CoachCoachThreadView from "./CoachCoachThreadView";
 import CoachParentThreadView from "./CoachParentThreadView";
 import CoachGroupThreadView from "./CoachGroupThreadView";
+import NexusThreadView from "@/components/messaging/NexusThreadView";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -112,10 +113,11 @@ export default function Page() {
 }
 
 /* Route by conversation_type : ATHLETE_COACH → 2-party athlete view ;
-   anything else → the existing recruiter↔coach thread (byte-identical). */
+   ADMIN_USER → fil de service en lecture seule ; anything else → the
+   existing recruiter↔coach thread (byte-identical). */
 function CoachThreadRouter() {
   const id = useDynamicParam("id");
-  const [convType, setConvType] = useState<"loading" | "ATHLETE_COACH" | "COACH_COACH" | "PARENT_COACH" | "GROUP" | "OTHER">("loading");
+  const [convType, setConvType] = useState<"loading" | "ATHLETE_COACH" | "COACH_COACH" | "PARENT_COACH" | "GROUP" | "ADMIN_USER" | "OTHER">("loading");
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -123,7 +125,7 @@ function CoachThreadRouter() {
         const supabase = createClient();
         const { data } = await supabase.from("conversations").select("conversation_type").eq("id", id).maybeSingle();
         const t = data?.conversation_type;
-        if (!cancelled) setConvType(t === "ATHLETE_COACH" ? "ATHLETE_COACH" : t === "COACH_COACH" ? "COACH_COACH" : t === "PARENT_COACH" ? "PARENT_COACH" : t === "GROUP" ? "GROUP" : "OTHER");
+        if (!cancelled) setConvType(t === "ATHLETE_COACH" ? "ATHLETE_COACH" : t === "COACH_COACH" ? "COACH_COACH" : t === "PARENT_COACH" ? "PARENT_COACH" : t === "GROUP" ? "GROUP" : t === "ADMIN_USER" ? "ADMIN_USER" : "OTHER");
       } catch {
         if (!cancelled) setConvType("OTHER");
       }
@@ -142,6 +144,7 @@ function CoachThreadRouter() {
   if (convType === "COACH_COACH") return <CoachCoachThreadView id={id} />;
   if (convType === "PARENT_COACH") return <CoachParentThreadView id={id} />;
   if (convType === "GROUP") return <CoachGroupThreadView id={id} />;
+  if (convType === "ADMIN_USER") return <NexusThreadView id={id} backHref="/coach/demandes" />;
   return <ThreadDetailPage />;
 }
 

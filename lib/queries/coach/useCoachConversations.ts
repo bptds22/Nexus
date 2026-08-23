@@ -15,6 +15,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { fetchServiceIdentity, SERVICE_IDENTITY_FALLBACK, SERVICE_IDENTITY_ROLE_LABEL } from "@/lib/messaging/serviceIdentity";
 
 export interface CoachThreadData {
   id: string;
@@ -77,7 +78,7 @@ export function useCoachConversations() {
         .from("conversations")
         .select(`
           id, conversation_type, status, last_message_at, unread_count, created_at,
-          coach_id, coach_b_id, parent_id,
+          coach_id, coach_b_id, parent_id, admin_id,
           recruiter:users!recruiter_id(
             id, first_name, last_name, avatar_url, photo_url, school_id,
             schools!school_id(name)
@@ -150,6 +151,13 @@ export function useCoachConversations() {
         }
       }
 
+      // ADMIN_USER — l'identité de service. Fetch séparé (ambiguïté de FK
+      // PostgREST : `conversations` embarque déjà users!recruiter_id).
+      const hasAdminThread = data.some((c: Record<string, unknown>) => c.conversation_type === "ADMIN_USER");
+      const serviceIdentity = hasAdminThread
+        ? (await fetchServiceIdentity(supabase)) ?? SERVICE_IDENTITY_FALLBACK
+        : SERVICE_IDENTITY_FALLBACK;
+
       const threads = data.map((c: Record<string, unknown>): CoachThreadData => {
         const recRaw = c.recruiter;
         const rec = (Array.isArray(recRaw) ? recRaw[0] : recRaw) as Record<string, unknown> | null;
@@ -160,6 +168,7 @@ export function useCoachConversations() {
         const posRaw = ath?.positions;
         const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string } | null;
 
+        const isNexus = (c.conversation_type as string) === "ADMIN_USER";
         const rf = (rec?.first_name as string) || "";
         const rl = (rec?.last_name as string) || "";
         const af = (ath?.first_name as string) || "";
@@ -179,11 +188,15 @@ export function useCoachConversations() {
           parentName: pm?.name || "Parent",
           parentInitials: pm?.initials || "P",
           parentPhotoUrl: pm?.photoUrl ?? null,
-          recruiterId: (rec?.id as string) || "",
-          recruiterName: `${rf} ${rl}`.trim() || "Recruteur",
-          recruiterInitials: `${rf[0] || ""}${rl[0] || ""}`.toUpperCase(),
-          recruiterPhotoUrl: (rec?.photo_url as string) || (rec?.avatar_url as string) || null,
-          recruiterCegep: recSchool?.name || "",
+          recruiterId: isNexus ? ((c.admin_id as string) || "") : (rec?.id as string) || "",
+          /* La contrepartie d'un fil de service voyage dans les champs
+             `recruiter*`, comme celle d'un COACH_COACH ou d'un PARENT_COACH :
+             le pipeline recherche/tri/statut reste inchangé. Sans ça, le repli
+             « Recruteur » s'afficherait — une fausse identité. */
+          recruiterName: isNexus ? serviceIdentity.name : `${rf} ${rl}`.trim() || "Recruteur",
+          recruiterInitials: isNexus ? serviceIdentity.initials : `${rf[0] || ""}${rl[0] || ""}`.toUpperCase(),
+          recruiterPhotoUrl: isNexus ? serviceIdentity.photoUrl : (rec?.photo_url as string) || (rec?.avatar_url as string) || null,
+          recruiterCegep: isNexus ? SERVICE_IDENTITY_ROLE_LABEL : recSchool?.name || "",
           athleteId: (ath?.id as string) || "",
           athleteName: `${af} ${al}`.trim() || "Athlète",
           athleteInitials: `${af[0] || ""}${al[0] || ""}`.toUpperCase(),

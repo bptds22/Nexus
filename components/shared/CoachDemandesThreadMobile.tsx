@@ -34,6 +34,7 @@ import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadS
 import { triggerHaptic } from "@/components/shared/messaging/utils";
 import { CoachAthleteThreadMobile } from "@/components/shared/CoachAthleteThreadMobile";
 import { CoachGroupThreadMobile } from "@/components/shared/CoachGroupThreadMobile";
+import { NexusThreadMobile } from "@/components/messaging/NexusThreadView";
 
 /* ═══════════════════════════════════════════════════════════════
    ROUTER — route par conversation_type. ATHLETE_COACH → vue athlète
@@ -51,6 +52,7 @@ export function CoachDemandesThreadMobile() {
       </div>
     );
   }
+  if (ctx?.conversationType === "ADMIN_USER") return <NexusThreadMobile id={conversationId} backHref="/coach/demandes" />;
   if (ctx?.conversationType === "GROUP") return <CoachGroupThreadMobile />;
   if (ctx?.conversationType === "ATHLETE_COACH") return <CoachAthleteThreadMobile />;
   if (ctx?.conversationType === "PARENT_COACH") return <CoachParentThreadMobile />;

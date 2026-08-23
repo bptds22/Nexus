@@ -212,7 +212,14 @@ export function AthleteMessagesMobile() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
-            <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>{t.coachName}</p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>{t.coachName}</p>
+              {/* Fil de service : le badge évite de lire « Équipe Nexus »
+                  comme un entraîneur de plus dans la liste. */}
+              {t.conversationType === "ADMIN_USER" && (
+                <span className="inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]">Nexus</span>
+              )}
+            </div>
             <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#22C55E] font-semibold" : "text-white/40"}`}>{relativeTime(t.lastMessageAt)}</span>
           </div>
           {/* Coach sans nom résolu → coachName porte déjà "{rôle} — {école}". */}

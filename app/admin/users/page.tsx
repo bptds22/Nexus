@@ -119,6 +119,10 @@ export default function AdminUsersPage() {
         supabase
           .from("users")
           .select(USERS_SELECT)
+          // L'identité de service « Équipe Nexus » n'est pas un utilisateur :
+          // aucune action de cette page (statut, rôle, suppression) n'a de sens
+          // sur elle, et la voir listée invite à y toucher.
+          .eq("is_service_identity", false)
           .order("created_at", { ascending: false }),
         supabase.from("subscriptions").select("user_id,tier"),
         supabase.from("athletes").select("id,user_id,school_id,schools!school_id(name,type)"),
@@ -348,6 +352,7 @@ export default function AdminUsersPage() {
     const { data } = await supa
       .from("users")
       .select(USERS_SELECT)
+      .eq("is_service_identity", false)
       .order("created_at", { ascending: false });
     if (data) {
       setRows((prev) => {

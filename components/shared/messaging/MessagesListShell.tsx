@@ -188,6 +188,16 @@ export interface MessagesListShellProps<T> {
   isLocked?: boolean;
   /** Overlay card content shown over the blurred list. Role-specific. */
   lockOverlay?: ReactNode;
+  /** Fils EXEMPTES du verrou. Quand `isLocked`, ceux pour lesquels ce
+   *  predicat rend true sont rendus en clair AVANT le bloc floute, et non
+   *  simplement laisses non-floutes a leur place : la carte de tease est
+   *  centree en absolu et recouvrirait une ligne restee dans le flux.
+   *  Sert au canal de service (ADMIN_USER), qui doit atteindre un compte
+   *  gratuit — le verrou protege la messagerie de recrutement, pas la
+   *  communication de la plateforme. Meme frontiere que cote web
+   *  (app/recruteur/messages/[id]/PageClient.tsx) : cf. CLAUDE.md,
+   *  MIGRATION SAFETY CHECKLIST regle 11. Non fourni -> rendu inchange. */
+  isThreadUnlocked?: (t: T) => boolean;
 
   /** Empty-state copy. Image defaults to the messaging asset. */
   emptyImage?: string;
@@ -205,7 +215,7 @@ export function MessagesListShell<T>({
   onTapThread, onSwipeArchive,
   title = "Messages",
   onCreate, createDisabled, onCreateBlocked,
-  isLocked, lockOverlay,
+  isLocked, lockOverlay, isThreadUnlocked,
   emptyImage = "/empty/nexus-empty-messagerie.png",
   emptyTitle, emptyDescription,
 }: MessagesListShellProps<T>) {
@@ -242,6 +252,11 @@ export function MessagesListShell<T>({
     : `${searchPlaceholder} dans ${activeFilterLabel.toLowerCase()}`;
 
   const totalThreads = threads.length;
+
+  /* Partition sous verrou. Sans verrou ou sans predicat, `lockedThreads`
+     vaut `threads` et le rendu est celui d'avant, a l'identique. */
+  const unlockedThreads = isLocked && isThreadUnlocked ? threads.filter(isThreadUnlocked) : [];
+  const lockedThreads = isLocked && isThreadUnlocked ? threads.filter((t) => !isThreadUnlocked(t)) : threads;
 
   return (
     <div
@@ -362,45 +377,88 @@ export function MessagesListShell<T>({
         ) : threads.length === 0 ? (
           <SharedEmptyState image={emptyImage} title={emptyTitle} description={emptyDescription} />
         ) : (
-          <div className={`relative ${isLocked ? "blur-[6px] select-none pointer-events-none" : ""}`}>
-            <AnimatePresence initial={true}>
-              {threads.map((t, idx) => (
-                <motion.div
-                  key={getId(t)}
-                  layout
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.22, delay: Math.min(idx * 0.03, 0.3), ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <ThreadRowSwipe<T>
-                    thread={t}
-                    isLast={idx === threads.length - 1}
-                    isEdit={editMode}
-                    selected={selectedIds.has(getId(t))}
-                    unread={getUnread(t)}
-                    isArchived={getStatus(t) === "ARCHIVE"}
-                    onTap={() => onTapThread(t)}
-                    onToggleSelect={() => {
-                      triggerHaptic("Light");
-                      onToggleSelect(getId(t));
-                    }}
-                    onCommitArchive={() => onSwipeArchive(t)}
-                    renderContent={renderRowContent}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
+          <>
+            {/* Fils exemptes du verrou — en clair, et places avant le bloc
+                floute pour passer au-dessus de la carte de tease. */}
+            {unlockedThreads.length > 0 && (
+              <div className="relative z-30">
+                <AnimatePresence initial={true}>
+                  {unlockedThreads.map((t, idx) => (
+                    <motion.div
+                      key={getId(t)}
+                      layout
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.22, delay: Math.min(idx * 0.03, 0.3), ease: [0.16, 1, 0.3, 1] }}
+                    >
+                      <ThreadRowSwipe<T>
+                        thread={t}
+                        isLast={idx === unlockedThreads.length - 1}
+                        isEdit={editMode}
+                        selected={selectedIds.has(getId(t))}
+                        unread={getUnread(t)}
+                        isArchived={getStatus(t) === "ARCHIVE"}
+                        onTap={() => onTapThread(t)}
+                        onToggleSelect={() => {
+                          triggerHaptic("Light");
+                          onToggleSelect(getId(t));
+                        }}
+                        onCommitArchive={() => onSwipeArchive(t)}
+                        renderContent={renderRowContent}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
 
-        {/* Lock overlay tease (free-tier) */}
-        {isLocked && totalThreads > 0 && lockOverlay && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center px-6 pointer-events-none">
-            <div className="pointer-events-auto">
-              {lockOverlay}
-            </div>
-          </div>
+            {lockedThreads.length > 0 && (
+              <div className="relative">
+                <div className={`relative ${isLocked ? "blur-[6px] select-none pointer-events-none" : ""}`}>
+                  <AnimatePresence initial={true}>
+                    {lockedThreads.map((t, idx) => (
+                      <motion.div
+                        key={getId(t)}
+                        layout
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.22, delay: Math.min(idx * 0.03, 0.3), ease: [0.16, 1, 0.3, 1] }}
+                      >
+                        <ThreadRowSwipe<T>
+                          thread={t}
+                          isLast={idx === lockedThreads.length - 1}
+                          isEdit={editMode}
+                          selected={selectedIds.has(getId(t))}
+                          unread={getUnread(t)}
+                          isArchived={getStatus(t) === "ARCHIVE"}
+                          onTap={() => onTapThread(t)}
+                          onToggleSelect={() => {
+                            triggerHaptic("Light");
+                            onToggleSelect(getId(t));
+                          }}
+                          onCommitArchive={() => onSwipeArchive(t)}
+                          renderContent={renderRowContent}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                {/* Tease du verrou — cadre sur le bloc verrouille, donc jamais
+                    par-dessus un fil exempte. Et s'il ne reste que des fils
+                    exemptes, il n'y a rien a teaser : pas de carte. */}
+                {isLocked && lockOverlay && (
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center px-6 pointer-events-none">
+                    <div className="pointer-events-auto">
+                      {lockOverlay}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -16,6 +16,7 @@ import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAthleteContactable, blackoutMessageFil } from "@/lib/queries/recruiter/useAthleteContactable";
 import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
+import NexusThreadView, { NexusThreadMobile } from "@/components/messaging/NexusThreadView";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -132,6 +133,49 @@ function DaySeparator({ date }: { date: string }) {
 }
 
 export default function Page() {
+  return <RecruiterThreadRouter />;
+}
+
+/* Route par conversation_type. ADMIN_USER → fil de service en lecture seule,
+   et il passe DEVANT le FeatureGate, délibérément : un message de service
+   (maintenance, information, support) doit atteindre un recruteur Free. Le
+   verrou Pro protège la messagerie de recrutement, pas la communication de la
+   plateforme — c'est la même frontière que l'exemption de black-out écrite
+   dans enforce_messaging_blackout (CLAUDE.md, checklist migrations règle 11).
+   Rien n'est ouvert au passage : la RLS `recruiter_conversations_select` est
+   `recruiter_id = auth.uid()`, sans palier — le gate n'était qu'une couche
+   d'UI, jamais le contrôle d'accès. */
+function RecruiterThreadRouter() {
+  const id = useDynamicParam("id");
+  const [convType, setConvType] = useState<"loading" | "ADMIN_USER" | "OTHER">("loading");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.from("conversations").select("conversation_type").eq("id", id).maybeSingle();
+        if (!cancelled) setConvType(data?.conversation_type === "ADMIN_USER" ? "ADMIN_USER" : "OTHER");
+      } catch {
+        if (!cancelled) setConvType("OTHER");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (convType === "loading") {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (convType === "ADMIN_USER") {
+    return IS_CAPACITOR
+      ? <NexusThreadMobile id={id} backHref="/recruteur/messages" />
+      : <NexusThreadView id={id} backHref="/recruteur/messages" />;
+  }
+
   // Iter 7.8b — mobile early return wrappé dans FeatureGate (ceinture+bretelles).
   if (IS_CAPACITOR) {
     return (

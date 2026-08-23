@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 import { AthleteMessagesThreadMobile } from "@/components/shared/AthleteMessagesThreadMobile";
 import AthleteGroupThreadView from "./AthleteGroupThreadView";
+import NexusThreadView from "@/components/messaging/NexusThreadView";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -88,17 +89,19 @@ export default function Page() {
 }
 
 /* Route par conversation_type : GROUP → fil de groupe (multi-parties) ;
-   sinon → le fil 2-party existant (ATHLETE_COACH / RECRUTEUR_ATHLETE). */
+   ADMIN_USER → fil de service en lecture seule ; sinon → le fil 2-party
+   existant (ATHLETE_COACH / RECRUTEUR_ATHLETE). */
 function AthleteThreadRouter() {
   const id = useDynamicParam("id");
-  const [convType, setConvType] = useState<"loading" | "GROUP" | "OTHER">("loading");
+  const [convType, setConvType] = useState<"loading" | "GROUP" | "ADMIN_USER" | "OTHER">("loading");
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const supabase = createClient();
         const { data } = await supabase.from("conversations").select("conversation_type").eq("id", id).maybeSingle();
-        if (!cancelled) setConvType(data?.conversation_type === "GROUP" ? "GROUP" : "OTHER");
+        const t = data?.conversation_type;
+        if (!cancelled) setConvType(t === "GROUP" ? "GROUP" : t === "ADMIN_USER" ? "ADMIN_USER" : "OTHER");
       } catch {
         if (!cancelled) setConvType("OTHER");
       }
@@ -114,6 +117,7 @@ function AthleteThreadRouter() {
     );
   }
   if (convType === "GROUP") return <AthleteGroupThreadView id={id} />;
+  if (convType === "ADMIN_USER") return <NexusThreadView id={id} backHref="/athlete/messages" />;
   return <AthleteThreadPage />;
 }
 

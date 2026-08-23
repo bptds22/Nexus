@@ -12,10 +12,15 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { mapDbStatus, type ThreadStatus } from "@/lib/messaging/threadStatus";
+import {
+  fetchServiceIdentity,
+  SERVICE_IDENTITY_FALLBACK,
+  SERVICE_IDENTITY_ROLE_LABEL,
+} from "@/lib/messaging/serviceIdentity";
 
 export interface AthleteThreadData {
   id: string;
-  /** 'ATHLETE_COACH' | 'RECRUTEUR_ATHLETE' | 'GROUP'. */
+  /** 'ATHLETE_COACH' | 'RECRUTEUR_ATHLETE' | 'ADMIN_USER' | 'GROUP'. */
   conversationType: string;
   /** Vrai groupe chat (conversation_type='GROUP'). Une conversation = UNE row
       (avatar de groupe générique + groupName + dernier message visible). */
@@ -81,18 +86,24 @@ export function useAthleteConversations() {
       if (!athleteId) return [];
 
       // My ATHLETE_COACH threads (counterparty = coach) + my RECRUTEUR_ATHLETE
-      // threads (counterparty = recruiter — P3, coach_id NULL). RLS scopes to
-      // mine anyway. The athlete only ever RECEIVES/REPLIES to RA threads.
+      // threads (counterparty = recruiter — P3, coach_id NULL) + my ADMIN_USER
+      // threads (counterparty = l'identité de service). RLS scopes to mine
+      // anyway. The athlete only ever RECEIVES/REPLIES to RA threads, and only
+      // ever RECEIVES on ADMIN_USER (lecture seule, cf. trg_admin_thread_readonly).
+      //
+      // Ce filtre est une ALLOWLIST : un type absent d'ici est INVISIBLE, sans
+      // erreur ni trace. ADMIN_USER y a donc été ajouté explicitement — c'est
+      // la ligne qui décide si un message de service arrive à l'athlète.
       const { data, error } = await supabase
         .from("conversations")
         .select(`
-          id, conversation_type, status, last_message_at, unread_count, created_at, recruiter_id,
+          id, conversation_type, status, last_message_at, unread_count, created_at, recruiter_id, admin_id,
           coach:users!coach_id(
             id, first_name, last_name, photo_url, avatar_url, school_id,
             schools!school_id(name)
           )
         `)
-        .in("conversation_type", ["ATHLETE_COACH", "RECRUTEUR_ATHLETE"])
+        .in("conversation_type", ["ATHLETE_COACH", "RECRUTEUR_ATHLETE", "ADMIN_USER"])
         .eq("athlete_id", athleteId)
         .order("last_message_at", { ascending: false });
 
@@ -130,6 +141,18 @@ export function useAthleteConversations() {
           });
         }
       }
+
+      // ADMIN_USER : la contrepartie est l'identité de service. Fetch séparé
+      // pour la MÊME raison que le recruteur ci-dessus — un second embed
+      // `users!admin_id(...)` à côté de `users!coach_id(...)` déclenche
+      // l'ambiguïté de FK PostgREST et fait échouer la requête entière.
+      // Une seule requête pour tous les fils : il n'y a qu'une identité.
+      const hasAdminThread = data.some(
+        (c: Record<string, unknown>) => c.conversation_type === "ADMIN_USER",
+      );
+      const serviceIdentity = hasAdminThread
+        ? (await fetchServiceIdentity(supabase)) ?? SERVICE_IDENTITY_FALLBACK
+        : SERVICE_IDENTITY_FALLBACK;
 
       const convIds = data.map((c: Record<string, unknown>) => c.id as string);
       const coachIds = [
@@ -186,6 +209,30 @@ export function useAthleteConversations() {
       const bipartite = data.map((c: Record<string, unknown>): AthleteThreadData => {
         const isRA = (c.conversation_type as string) === "RECRUTEUR_ATHLETE";
         const cid_status = (c.id as string);
+
+        // ADMIN_USER : counterparty = l'identité de service. Lecture seule,
+        // donc pas de notion de « sans réponse » côté athlète : threadStatus
+        // est calculé avec otherReplied=true et meReplied=false — le fil est
+        // « reçu », jamais « en attente de ma réponse ».
+        if ((c.conversation_type as string) === "ADMIN_USER") {
+          return {
+            id: cid_status,
+            conversationType: "ADMIN_USER",
+            coachId: (c.admin_id as string) || serviceIdentity.id,
+            coachName: serviceIdentity.name,
+            coachInitials: serviceIdentity.initials,
+            coachPhotoUrl: serviceIdentity.photoUrl,
+            coachRole: SERVICE_IDENTITY_ROLE_LABEL,
+            coachSchool: "",
+            hasCoachName: true,
+            lastMessage: lastMsgMap.get(cid_status) || "",
+            lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
+            lastSenderId: lastSenderMap.get(cid_status) ?? null,
+            unreadCount: unreadMap.get(cid_status) ?? 0,
+            status: (c.status as string) || "ACTIVE",
+            threadStatus: mapDbStatus(c.status as string, false, true),
+          };
+        }
 
         // RECRUTEUR_ATHLETE : counterparty = recruiter (from recruiterMap).
         if (isRA) {

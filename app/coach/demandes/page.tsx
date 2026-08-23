@@ -20,6 +20,7 @@ import {
   type StatusPreset,
 } from "@/lib/messaging/threadStatus";
 import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
+import { fetchServiceIdentity, SERVICE_IDENTITY_FALLBACK, SERVICE_IDENTITY_ROLE_LABEL } from "@/lib/messaging/serviceIdentity";
 import { type AnnonceSummary } from "@/lib/queries/coach/loadSenderBroadcasts";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -254,6 +255,49 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
   );
 }
 
+/* ── Nexus Card (fil de service ADMIN_USER) ──────────────────────
+   Carte dédiée plutôt que ThreadCard : celle-ci pointe un EntityLink
+   vers une fiche recruteur et déroule un panneau athlète — deux choses
+   qui n'existent pas sur un fil de service (athlete_id est NULL). Une
+   carte propre vaut mieux qu'un gabarit recruteur à moitié vide. */
+
+function NexusThreadCard({ thread: t }: { thread: ConversationThread }) {
+  return (
+    <Link
+      href={`/coach/demandes?id=${t.id}`}
+      className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
+        t.unread
+          ? "bg-[#1E2430] border-l-[3px] border-l-[#E63946]"
+          : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
+      }`}
+    >
+      <div className="w-11 h-11 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className={`text-[15px] truncate ${t.unread ? "font-bold text-white" : "font-semibold text-[#e0e0e0]"}`}>
+            {t.recruiter.firstName}
+          </p>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946] shrink-0">
+            Nexus
+          </span>
+          <span className="text-[12px] text-[#6b7280] shrink-0 hidden sm:inline">{t.recruiter.cegep}</span>
+        </div>
+        <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{t.lastMessagePreview}</p>
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 w-[130px]">
+        <span className={`text-[12px] ${t.unread ? "text-white font-semibold" : "text-[#6b7280]"}`}>
+          {relativeTime(t.lastMessageTime)}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 /* ── Annonce Card (broadcast — REPLACES the N member rows) ────── */
 
 function AnnonceCard({ a }: { a: AnnonceSummary }) {
@@ -456,7 +500,7 @@ function DemandesContent() {
         // Fetch conversations for this coach
         const { data: conversations, error: convError } = await supabase
           .from("conversations")
-          .select("id, conversation_type, recruiter_id, coach_id, coach_b_id, parent_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
+          .select("id, conversation_type, recruiter_id, coach_id, coach_b_id, parent_id, admin_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
           .or(`coach_id.eq.${user.id},coach_b_id.eq.${user.id}`)
           .order("last_message_at", { ascending: false });
 
@@ -524,6 +568,14 @@ function DemandesContent() {
           }
         }
 
+        // ADMIN_USER — l'identite de service. Meme raison de fetch separe que
+        // le recruteur juste en dessous : plusieurs FK de `conversations` vers
+        // `users`, donc pas d'embed possible sans ambiguite PostgREST.
+        const hasAdminThread = conversations.some((c: { conversation_type?: string }) => c.conversation_type === "ADMIN_USER");
+        const serviceIdentity = hasAdminThread
+          ? (await fetchServiceIdentity(supabase)) ?? SERVICE_IDENTITY_FALLBACK
+          : SERVICE_IDENTITY_FALLBACK;
+
         // Load recruiter info separately (avoids ambiguous FK on users)
         const recruiterIds = [...new Set(conversations.map((c: any) => c.recruiter_id).filter(Boolean))];
         const recruiterMap = new Map<string, { first_name: string; last_name: string; email: string; school_name: string }>();
@@ -555,6 +607,7 @@ function DemandesContent() {
         const mapped: ConversationThread[] = conversations.map((c: any) => {
           const isCoachCoach = c.conversation_type === "COACH_COACH";
           const isParent = c.conversation_type === "PARENT_COACH";
+          const isNexus = c.conversation_type === "ADMIN_USER";
           const otherCoachId = c.coach_id === user.id ? c.coach_b_id : c.coach_id;
           const otherCoach = isCoachCoach ? coachInfoMap.get(otherCoachId) : undefined;
           const parentName = isParent ? (parentInfoMap.get(c.parent_id) || "Parent") : "";
@@ -577,11 +630,11 @@ function DemandesContent() {
               // COACH_COACH / PARENT_COACH : the counterparty (coach or parent)
               // lives in `recruiter` so the shared search/sort/status pipeline
               // works unchanged. Full name in firstName ; cegep = role label.
-              id: isCoachCoach ? (otherCoachId || "") : isParent ? (c.parent_id || "") : c.recruiter_id,
-              firstName: isCoachCoach ? (otherCoach?.name || "Coach") : isParent ? parentName : (recruiterUser?.first_name || ""),
+              id: isNexus ? (c.admin_id || "") : isCoachCoach ? (otherCoachId || "") : isParent ? (c.parent_id || "") : c.recruiter_id,
+              firstName: isNexus ? serviceIdentity.name : isCoachCoach ? (otherCoach?.name || "Coach") : isParent ? parentName : (recruiterUser?.first_name || ""),
               lastName: "",
               title: "",
-              cegep: isCoachCoach ? (otherCoach?.isDirector ? "Directeur" : "Entraîneur") : isParent ? "Parent" : (recruiterUser?.school_name || ""),
+              cegep: isNexus ? SERVICE_IDENTITY_ROLE_LABEL : isCoachCoach ? (otherCoach?.isDirector ? "Directeur" : "Entraîneur") : isParent ? "Parent" : (recruiterUser?.school_name || ""),
               cegepTeamName: "",
               division: "Div. 1" as const,
               sport: "",
@@ -782,6 +835,7 @@ function DemandesContent() {
             if (ct === "ATHLETE_COACH") return <AthleteThreadCard key={t.id} thread={t} />;
             if (ct === "COACH_COACH") return <CoachCoachThreadCard key={t.id} thread={t} meta={coachMeta[t.id]} />;
             if (ct === "PARENT_COACH") return <ParentThreadCard key={t.id} thread={t} meta={parentMeta[t.id]} />;
+            if (ct === "ADMIN_USER") return <NexusThreadCard key={t.id} thread={t} />;
             return <ThreadCard key={t.id} thread={t} />;
           })}
         </div>

@@ -33,11 +33,16 @@ const COACH_ORDER: { value: string; label: string; type: string }[] = [
   // COACH_COACH thread exists (directors included — no separate type).
   { value: "coach", label: "Coachs", type: "COACH_COACH" },
   { value: "parent", label: "Parents", type: "PARENT_COACH" },
+  // Messagerie de service (ADMIN_USER). En DERNIER délibérément : c'est un
+  // fil qu'on consulte, pas un fil qu'on travaille — il ne doit pas pousser
+  // « Athlètes » ou « Recruteurs » d'un cran vers la droite.
+  { value: "nexus", label: "Nexus", type: "ADMIN_USER" },
 ];
 
 const ATHLETE_ORDER: { value: string; label: string; type: string }[] = [
   { value: "coach", label: "Mes coachs", type: "ATHLETE_COACH" },
   { value: "recruteur", label: "Recruteurs", type: "RECRUTEUR_ATHLETE" },
+  { value: "nexus", label: "Nexus", type: "ADMIN_USER" },
 ];
 
 export function deriveTypeSegments(

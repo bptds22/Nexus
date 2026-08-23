@@ -91,6 +91,11 @@ function ThreadRow({ t }: { t: AthleteThreadData }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className={`text-[15px] truncate ${unread ? "font-bold text-white" : "font-semibold text-[#e0e0e0]"}`}>{t.coachName}</p>
+          {/* Fil de service : un badge, parce que « Équipe Nexus » au milieu
+              d'une liste d'entraîneurs doit se lire comme autre chose. */}
+          {t.conversationType === "ADMIN_USER" && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946] shrink-0">Nexus</span>
+          )}
           {/* When the coach has no resolved name, coachName already carries
               "{role} — {école}" — skip the redundant role·école subtitle. */}
           {t.hasCoachName && (

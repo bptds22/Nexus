@@ -608,6 +608,9 @@ function AuditTab() {
       const { data } = await supabase
         .from("users")
         .select("id, email, first_name, last_name, role")
+        // Le compte de service n'est la personne concernée de rien : ni
+        // demande de portabilité, ni incident. Hors de la liste.
+        .eq("is_service_identity", false)
         .or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
         .limit(10);
       setUserResults((data || []) as UserOption[]);
