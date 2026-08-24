@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthleteDashboardMobile from "@/components/shared/AthleteDashboardMobile";
+import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -76,6 +77,7 @@ function AthleteDashboardPageDesktop() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [unreadNotifs, setUnreadNotifs] = useState<{ count: number; latestTitle: string | null }>({ count: 0, latestTitle: null });
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [pendingInvitations, setPendingInvitations] = useState(0);
   const [viewsThisMonth, setViewsThisMonth] = useState(0);
   const [viewsLastMonth, setViewsLastMonth] = useState(0);
@@ -127,6 +129,13 @@ function AthleteDashboardPageDesktop() {
           count: count ?? 0,
           latestTitle: (notifs?.[0]?.title as string) || null,
         });
+
+        /* Messages non lus. MÊME fonction que le badge de la barre latérale
+           et de la barre d'onglets mobile — un troisième compte recopié ici
+           aurait le même angle mort que les deux premiers. Couvre les fils
+           coach, recruteur, de service et de groupe, avec leurs deux
+           mécaniques de lecture. Voir lib/messaging/athleteUnread.ts. */
+        setUnreadMsgs(await countAthleteUnread(supabase, user.id, athleteRow.id as string));
 
         // 5.5e-iv-c: pending Flow A invitations count for the dashboard
         // banner. Refresh hook is the same 'notifications-updated' event
@@ -335,6 +344,61 @@ function AthleteDashboardPageDesktop() {
           </span>
         </Link>
       )}
+
+      {/* ── Messagerie ────────────────────────────────────────────
+           Jumeau du bandeau de notifications, en vert : c'est l'accent de
+           la messagerie athlète (badge de la barre latérale, pastille de
+           non-lus de l'inbox), et le rouge est déjà pris par les
+           notifications juste en dessous.
+
+           AFFICHÉ MÊME À ZÉRO, délibérément. Le dashboard ne portait AUCUN
+           lien vers /athlete/messages — ni carte, ni bandeau, ni entrée.
+           Un bandeau conditionné à `> 0` laisserait la messagerie invisible
+           dans le cas courant, c'est-à-dire exactement le défaut qu'on
+           corrige. L'état vide est donc discret plutôt qu'absent.
+           Pour revenir au comportement conditionnel : envelopper dans
+           {unreadMsgs > 0 && (…)}. */}
+      <Link
+        href="/athlete/messages"
+        className={`flex items-center gap-4 bg-[#1A1D24] border rounded-xl px-5 py-4 transition-colors group ${
+          unreadMsgs > 0
+            ? "border-[#22C55E]/30 hover:border-[#22C55E]/60"
+            : "border-white/5 hover:border-white/15"
+        }`}
+      >
+        <span
+          className={`w-11 h-11 shrink-0 rounded-full flex items-center justify-center border ${
+            unreadMsgs > 0
+              ? "bg-[#22C55E]/10 border-[#22C55E]/30"
+              : "bg-white/[0.03] border-white/10"
+          }`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={unreadMsgs > 0 ? "#22C55E" : "#6b7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className={`text-[13px] font-bold leading-tight ${unreadMsgs > 0 ? "text-white" : "text-[#9CA3AF]"}`}>
+              {unreadMsgs > 0 ? "Nouveaux messages" : "Messagerie"}
+            </p>
+            {unreadMsgs > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-[#22C55E] rounded-full text-[11px] font-bold text-[#0b0d10] leading-none">
+                {unreadMsgs}
+              </span>
+            )}
+          </div>
+          <p className="text-[12px] text-[#6b7280] truncate mt-1">
+            {unreadMsgs > 0
+              ? `${unreadMsgs} message${unreadMsgs > 1 ? "s" : ""} non lu${unreadMsgs > 1 ? "s" : ""}`
+              : "Aucun nouveau message"}
+          </p>
+        </div>
+        <span className={`text-[12px] font-bold shrink-0 ${unreadMsgs > 0 ? "text-[#22C55E]" : "text-[#6b7280] group-hover:text-[#9CA3AF]"}`}>
+          Ouvrir →
+        </span>
+      </Link>
 
       {/* ── Unread notifications banner ───────────────────────── */}
       {unreadNotifs.count > 0 && (

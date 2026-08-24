@@ -45,6 +45,7 @@ import { triggerHaptic } from "@/lib/haptics";
    date de validation. isValidationDue rend true quand la date est nulle,
    leurs badges vireraient donc au gris tous les 16 du mois. */
 import { isValidationExpired } from "@/lib/utils/profileValidation";
+import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 
 /* ── Checklist item shape — mirrors desktop's local ChecklistItem
       type (page.tsx). The `section` tag is display-only ; "coach"
@@ -286,6 +287,7 @@ export default function AthleteDashboardMobile() {
   const [profileCompletion, setProfileCompletion] = useState<number>(0);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [unreadNotifs, setUnreadNotifs] = useState<{ count: number; latestTitle: string | null }>({ count: 0, latestTitle: null });
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [pendingInvitations, setPendingInvitations] = useState<number>(0);
   const [viewsThisMonth, setViewsThisMonth] = useState<number>(0);
   const [viewsLastMonth, setViewsLastMonth] = useState<number>(0);
@@ -369,6 +371,11 @@ export default function AthleteDashboardMobile() {
         count: count ?? 0,
         latestTitle: (notifs?.[0]?.title as string) || null,
       });
+
+      /* Messages non lus — MÊME fonction que le web et que les deux badges.
+         Les deux tableaux de bord se posent la question ensemble, jamais
+         l'un sans l'autre. Voir lib/messaging/athleteUnread.ts. */
+      setUnreadMsgs(await countAthleteUnread(supabase, user.id, athleteRow.id as string));
 
       // ── PENDING team_invitations count ──
       const { count: pendingCount } = await supabase
@@ -563,6 +570,29 @@ export default function AthleteDashboardMobile() {
           />
         </div>
       )}
+
+      {/* Messagerie — affichée MÊME à zéro : le tableau de bord ne portait
+          aucun accès à /athlete/messages, et un bandeau conditionné à `> 0`
+          laisserait la messagerie invisible dans le cas courant. Vert =
+          accent de la messagerie athlète. Miroir exact du web. */}
+      <div className="mb-3">
+        <InlineBanner
+          href="/athlete/messages"
+          accent={unreadMsgs > 0 ? "#22C55E" : "#6b7280"}
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          }
+          title={
+            unreadMsgs > 0
+              ? `${unreadMsgs} ${unreadMsgs > 1 ? "messages non lus" : "message non lu"}`
+              : "Messagerie"
+          }
+          subtitle={unreadMsgs > 0 ? undefined : "Aucun nouveau message"}
+        />
+      </div>
 
       {unreadNotifs.count > 0 && (
         <div className="mb-3">
