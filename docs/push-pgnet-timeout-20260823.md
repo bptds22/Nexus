@@ -129,13 +129,34 @@ Un message de service n'écrit dans aucune de ces tables. Le dashboard est donc 
 **par construction**, et il l'est autant pour un message de coach. Ce n'est pas un
 filtre à corriger, c'est une surface qui n'existe pas.
 
-Deux options, de coûts très différents, **aucune tranchée** :
+**TRANCHÉ le 2026-08-24 : option 2 — un bandeau « Messagerie » sur le tableau de
+bord, alimenté par `lib/messaging/athleteUnread.ts`. Aucune migration.**
 
-- faire écrire `send_admin_message` dans `athlete_notifications` (migration, et une
-  question de périmètre : tous les messages, ou seulement la catégorie `service` ?) ;
-- donner au dashboard un compteur de messages non lus (code seul — le calcul existe
-  déjà dans `lib/messaging/athleteUnread.ts`).
+**Option 1 — faire écrire `send_admin_message` dans `athlete_notifications` —
+est écartée définitivement.** Deux raisons, la première étant décisive :
+
+1. **Elle créerait une seconde copie du message hors de la messagerie, donc deux
+   compteurs pour un seul événement — et rien ne les synchronise.** Marquer le fil
+   lu (`mark_conversation_read` -> `messages.read_at`) ne touche pas
+   `athlete_notifications.read`, et marquer la notification lue ne touche pas le
+   fil. L'athlète verrait un compteur retomber et l'autre rester, sans moyen de
+   comprendre lequel ment. Le défaut ne se répare pas côté UI : il vient d'avoir
+   dupliqué l'état de lecture dans deux tables.
+2. Elle ne couvre que le canal admin. Le tableau de bord est tout aussi muet pour
+   un message de coach ou de recruteur — l'étendre imposerait un trigger sur
+   `messages`, un neuvième sur cette table, dupliquant chaque message en
+   notification. L'option 2 les couvre gratuitement, `countAthleteUnread`
+   comptant déjà les fils coach, recruteur, de service et de groupe.
+
+Formulé autrement : l'option 1 répondait à « le message admin est invisible »,
+l'option 2 à « la messagerie est invisible ». Le second problème contient le
+premier.
+
+Note pour qui rouvrirait le sujet : la contrainte `athlete_notifications_type_check`
+autorise **déjà** `ADMIN_BROADCAST`, donc l'option 1 n'aurait demandé aucune DDL.
+Ce n'est pas son coût qui l'a écartée, c'est sa sémantique.
 
 Le badge de la messagerie, lui, **a été corrigé** le 2026-08-23 sur les deux surfaces
 (barre latérale web + barre d'onglets mobile) : il ignorait tous les types sauf
-`ATHLETE_COACH`.
+`ATHLETE_COACH`. Le bandeau du tableau de bord, posé le 2026-08-24, réutilise le
+même `countAthleteUnread` — trois surfaces, un seul calcul.

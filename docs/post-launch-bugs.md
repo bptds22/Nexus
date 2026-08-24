@@ -708,6 +708,108 @@ file.
 
 ## P3 — Latent / future work
 
+> **2026-08-23 — Push : trois points laissés ouverts.** Relevés en instruisant
+> le timeout pg_net de `notify_on_message`. La latence a été corrigée
+> (parallélisation de `send-push`, 8,9 s -> 2,3 s sur 42 jetons) ; ces
+> trois-là ne l'ont PAS été, délibérément. Contexte complet et chiffres :
+> [`docs/push-pgnet-timeout-20260823.md`](push-pgnet-timeout-20260823.md).
+
+- [ ] **`send-parent-marketing` est au dépôt et n'a jamais été déployée.**
+      Relevé le 2026-08-24 par un balayage de parité déployé ↔ dépôt sur les
+      six edge functions. `supabase/functions/send-parent-marketing/`
+      (`index.ts` + `email.ts`) n'a **aucune contrepartie en production** —
+      elle n'apparaît pas dans `list_edge_functions`.
+
+      Les cinq autres fonctions du dépôt sont déployées et à jour : six
+      divergences d'octets relevées, dont **cinq ne sont que des fins de
+      ligne** (dépôt en CRLF, déployé en LF, contenu identique après
+      normalisation) et une — `send-partner-welcome/index.ts` — porte 30
+      lignes de **commentaires seulement** (code hors commentaires : 45
+      lignes des deux côtés, empreinte identique).
+
+      **Décision à prendre : abandon ou reprise.** Ne pas la déployer sur la
+      seule foi de sa présence au dépôt — un secret dédié
+      (`MARKETING_NOTICE_SECRET`) est référencé, et personne n'a vérifié
+      qu'il existe ni qu'un appelant l'invoque.
+
+- [ ] **`ADMIN_BROADCAST` manque à `NotifType` / `DOT_COLOR` / `TYPE_ICON`.**
+      [`app/athlete/notifications/page.tsx`](../app/athlete/notifications/page.tsx)
+      déclare douze types ; la contrainte
+      `athlete_notifications_type_check` en autorise **treize**.
+      `ADMIN_BROADCAST` est le manquant.
+
+      **Inerte aujourd'hui : zéro ligne de ce type en base** (vérifié le
+      2026-08-24 — les cinq types présents sont tous couverts). L'ancien bloc
+      « Diffusion » de `/admin/settings`, qui en écrivait, a été retiré le
+      2026-08-23.
+
+      Le trou reste ouvert : la requête de la page est un `select("*")` sans
+      filtre de type, donc une ligne `ADMIN_BROADCAST` s'afficherait **sans
+      pastille ni icône** et dans aucun onglet thématique. C'est exactement
+      le piège déjà rencontré avec `TEAM_INVITATION`, documenté en commentaire
+      au-dessus du type — deuxième occurrence du même défaut, ce qui suggère
+      que la vraie correction est un repli par défaut dans les deux maps
+      plutôt qu'une énumération à tenir à jour.
+
+- [ ] **`clearPushToken()` est écrite mais n'est jamais appelée.**
+      [`lib/push/registerPush.ts`](../lib/push/registerPush.ts) exporte
+      `clearPushToken()`, qui supprime la ligne `device_tokens` du jeton
+      courant. Son propre commentaire le dit — « nettoyage au logout (à
+      brancher plus tard) » — et aucun appelant n'existe dans le dépôt.
+
+      Conséquence : un appareil qui change de compte **garde le jeton
+      rattaché à l'ancien utilisateur**. Une notification destinée à
+      l'ancien titulaire atterrit chez le nouveau. Le corps est générique
+      (« Nexus / Tu as un nouveau message »), donc aucun contenu ne fuit —
+      mais le signal part à la mauvaise personne, et le compteur de jetons
+      de l'ancien utilisateur ne redescend jamais.
+
+      Le brancher est une ligne dans le chemin de déconnexion. Ce qui
+      demande une décision, c'est le cas du logout hors ligne : la
+      suppression n'a pas lieu, et le jeton survit quand même.
+
+- [ ] **Aucune purge de `device_tokens`, et aucune purge planifiée
+      possible en l'état.**
+      Vérifié au catalogue prod : zéro trigger sur la table, une seule
+      fonction la mentionne (`register_device_token`, qui n'écrit jamais de
+      suppression), et **`pg_cron` n'est pas installé** — un nettoyage
+      périodique n'est pas seulement absent, il n'est pas réalisable sans
+      d'abord activer l'extension.
+
+      Le seul purgeur existant vit dans
+      [`supabase/functions/send-push/index.ts`](../supabase/functions/send-push/index.ts)
+      et ne supprime que sur `404` / `UNREGISTERED`. **Mesuré le 2026-08-23 :
+      il ne supprime rien.** Un envoi vers le compte à 42 jetons a rendu
+      `{"sent":42,"failed":0,"removed":0}` — FCM accepte les 42, y compris
+      les 41 dont l'instance d'application n'existe plus (APNs les jette
+      ensuite en silence). Il n'y a donc **aucun code d'erreur FCM sur
+      lequel purger** : élargir le critère ne supprimerait rien.
+
+      Le seul signal disponible est `last_seen_at` (37 des 42 jetons pas
+      revus depuis plus de 7 jours, 1 seul vu dans les 24 h). C'est un
+      critère de base de données, pas un critère FCM — donc une décision
+      produit sur la fenêtre de rétention, pas un correctif mécanique.
+
+      Non urgent : médiane 1 jeton par utilisateur, p90 à 2. Les trois
+      comptes de test Nexus détiennent 51 % des jetons de la base.
+
+- [ ] **`notify_on_message` appelle `net.http_post` sans
+      `timeout_milliseconds`, donc à 5 s.**
+      La parallélisation de `send-push` ramène la latence à ~2,3 s pour 42
+      jetons, ce qui passe confortablement. Mais **la marge dépend de la
+      latence de la fonction, pas d'un paramètre** : elle se referme toute
+      seule si FCM ralentit, si un démarrage à froid s'allonge, ou si un
+      utilisateur accumule assez de jetons pour dépasser cinq paquets.
+
+      Poser un timeout explicite est une ligne dans la fonction SQL. Le
+      faire seul ne suffit pas : un appel qui expire reste invisible tant
+      que le `request_id` rendu par `net.http_post` est jeté (`perform`).
+      Le conserver dans une table minuscule — `push_attempts(message_id,
+      user_id, request_id, created_at)` — rendrait chaque tentative
+      lisible par jointure sur `net._http_response`, dans sa fenêtre de
+      rétention de 6 h (`pg_net.ttl`), corps `{sent, failed, removed}`
+      compris. Les deux gestes vont ensemble.
+
 - [x] **KILLED — Recruiter Interest Trigger.** Decision 2026-05-04.
       Spec preserved at
       [`docs/feature-specs/recruiter-interest-trigger.md`](feature-specs/recruiter-interest-trigger.md)
