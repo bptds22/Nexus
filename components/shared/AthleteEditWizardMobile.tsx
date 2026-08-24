@@ -66,6 +66,8 @@ import {
   BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
   parseDistinctions, type DistinctionEntry,
 } from "@/lib/config/badges";
+import { traitGroups, champToColumn, type GrilleRef, type TraitEntry } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 
 /* ═══════════════════════════════════════════════════════════════
    Loaded athlete shape — narrowed to the fields B-1 actually reads.
@@ -147,6 +149,9 @@ interface LoadedAthlete {
    *  string-array rows + the canonical {badge, detail?} shape both
    *  rehydrate to the same DistinctionEntry[] view. */
   coachDistinctions: DistinctionEntry[];
+  /** Grille figée sur l'éval affichée ; NULL = repli par position. */
+  grilleId: string | null;
+  positionId: string | null;
   /* ── Civil/école derivation (Identité affiliation row) ── */
   isCivil: boolean;
   schoolName: string;
@@ -205,39 +210,10 @@ const GENDER_OPTIONS: PickerOption[] = [
   { value: "X", label: "Autre" },
 ];
 
-/* ── TRAIT_CHAMPS — verbatim mirror of page.tsx :521-540.
-      Each entry's `label` is the EXACT champ string the trigger's
-      apply_approved_suggestion CASE matches against (migration
-      20260616000000_apply_suggestion_new_traits.sql). A single
-      character drift here (e.g. a half-space, missing accent) falls
-      through to ELSE → RAISE EXCEPTION → suggestion stuck in
-      EN_ATTENTE. The 14 keys mirror AthleteTraitRatings so trait
-      values read from the loaded `traitRatings` map.
-
-      Order : 8 character traits then 6 tactical traits, mirroring
-      web. The two groups also drive the EvaluationStep's two-Card
-      grouping (Caractère / Tactique). */
-const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
-  // Character (8 original)
-  { key: "leadership",      label: "Leadership" },
-  { key: "discipline",      label: "Discipline" },
-  { key: "coachability",    label: "Coachabilité" },
-  { key: "gameIQ",          label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork",        label: "Esprit d'équipe" },
-  { key: "resilience",      label: "Résilience" },
-  { key: "attitude",        label: "Attitude / Mentalité" },
-  // Tactical / athletic (6 newer trait columns, added 20260616).
-  { key: "speed",           label: "Vitesse / Explosivité" },
-  { key: "power",           label: "Force / Puissance" },
-  { key: "endurance",       label: "Endurance cardio" },
-  { key: "agility",         label: "Agilité / Coordination" },
-  { key: "gameVision",      label: "Vision du jeu" },
-  { key: "tactics",         label: "Sens tactique" },
-];
-
-const CHARACTER_TRAITS = TRAIT_CHAMPS.slice(0, 8);
-const TACTICAL_TRAITS  = TRAIT_CHAMPS.slice(8);
+/* TRAIT_CHAMPS / CHARACTER_TRAITS / TACTICAL_TRAITS retirés. Le libellé et la
+   clé écrite dans athlete_suggestions.champ ne sont plus le même objet :
+   `champ` porte le NOM DE COLONNE, le libellé vient de la grille de l'athlète.
+   Les deux groupes sont désormais ceux du module (9 / 5). */
 
 /* ═══════════════════════════════════════════════════════════════
    SuggestExpand — inline-expanding suggest form (NO overlay).
@@ -618,10 +594,11 @@ export default function AthleteEditWizardMobile() {
       .select(`
         *,
         sports!sport_id(nom),
+        position_id,
         positions!position_id(nom, abreviation),
         schools!school_id(name, region, city, type),
         team_athletes(team_id, teams!team_id(name)),
-        evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at),
+        evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id),
         users!athletes_coach_id_fkey(first_name, last_name)
       `)
       .eq("user_id", user.id)
@@ -699,6 +676,10 @@ export default function AthleteEditWizardMobile() {
        share one parser (legacy string-array vs canonical {badge,detail?}
        are normalized identically). Sprint B-3b. */
     const coachDistinctions = parseDistinctions(evalRel?.distinctions);
+    /* Règle de lecture des grilles : grille_id de l'éval affichée d'abord,
+       la position de l'athlète ensuite. */
+    const grilleId   = ((evalRel as Record<string, unknown> | null)?.grille_id as string | null) ?? null;
+    const positionId = (raw.position_id as string | null) ?? null;
 
     setA({
       id: raw.id as string,
@@ -753,6 +734,8 @@ export default function AthleteEditWizardMobile() {
       coachReport,
       coachName,
       coachDistinctions,
+      grilleId,
+      positionId,
       // Civil/école
       isCivil,
       schoolName,
@@ -797,7 +780,22 @@ export default function AthleteEditWizardMobile() {
 
   /* ── getPending — verbatim mirror of page.tsx :1290 helper. */
   const pendingSugs = useMemo(() => suggestions.filter((s) => s.status === "pending"), [suggestions]);
-  const getPending = useCallback((champ: string) => pendingSugs.find((s) => s.field === champ), [pendingSugs]);
+  /* Compare sur la COLONNE : l'app 1.2 en magasin a pu créer la suggestion avec
+     un libellé FR, celle-ci l'écrit en nom de colonne. Les deux doivent
+     retrouver le même critère. */
+  /* Grille de l'athlète : grille_id de l'éval affichée, sinon sa position.
+     Une seule résolution, partagée par l'affichage et par la suggestion. */
+  const grilleSet = useGrilles();
+  const traitGroupsResolved = traitGroups(grilleSet, {
+    grilleId:   ((a as { grilleId?: string | null } | null)?.grilleId) ?? null,
+    positionId: ((a as { positionId?: string | null } | null)?.positionId) ?? null,
+  } as GrilleRef);
+
+  const getPending = useCallback((champ: string) => {
+    const col = champToColumn(champ);
+    return pendingSugs.find((s) =>
+      s.field === champ || (col !== null && champToColumn(s.field) === col));
+  }, [pendingSugs]);
 
   /* ── DIRECT save — mirrors page.tsx :1224-1236 (Médias saveField)
         widened to cover the Académique JSONB + bool columns introduced
@@ -991,6 +989,7 @@ export default function AthleteEditWizardMobile() {
         {/* ── Step 5 : Évaluation (SUGGEST cote + traits + LOCKED rapport) ── */}
         {step === 5 && (
           <EvaluationStep
+            groups={traitGroupsResolved}
             a={a}
             getPending={getPending}
             submitting={submitting}
@@ -1842,25 +1841,31 @@ function MediasStep({
        row with champ = the trait's exact French label.
 
    isDetailedMode mirrors page.tsx :550 verbatim :
-     !!traitRatings && TRAIT_CHAMPS.some((t) => (traitRatings[t.key] || 0) > 0)
+     !!traitRatings && groups.flatMap((g) => g.traits).some((t) => (traitRatings[t.camel] || 0) > 0)
 ═══════════════════════════════════════════════════════════════ */
 function EvaluationStep({
-  a, getPending, submitting, onSubmit,
+  a, getPending, submitting, onSubmit, groups,
 }: {
   a: LoadedAthlete;
   getPending: (champ: string) => AthleteSuggestion | undefined;
   submitting: boolean;
   onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+  /** Les 2 groupes (9 / 5), libellés résolus par la grille de l'athlète. */
+  groups: { title: string; traits: TraitEntry[] }[];
 }) {
   const tr = a.traitRatings;
-  const isDetailedMode = !!tr && TRAIT_CHAMPS.some((t) => (tr[t.key] || 0) > 0);
+  const TRAIT_CHAMPS: TraitEntry[] = groups.flatMap((g) => g.traits);
+  const CHARACTER_TRAITS = groups[0]?.traits ?? [];
+  const TACTICAL_TRAITS  = groups[1]?.traits ?? [];
+  const camel = (t: TraitEntry) => t.camel as keyof AthleteTraitRatings;
+  const isDetailedMode = !!tr && TRAIT_CHAMPS.some((t) => (tr[camel(t)] || 0) > 0);
 
   /* traitAvg — auto-average of non-zero traits (verbatim from
      page.tsx :562-567). When isDetailedMode is false, falls back
      to the flat overallRating from the loaded cote_globale. */
   const traitAvg = isDetailedMode && tr
     ? (() => {
-        const vals = TRAIT_CHAMPS.map((t) => (tr[t.key] || 0)).filter((v) => v > 0);
+        const vals = TRAIT_CHAMPS.map((t) => (tr[camel(t)] || 0)).filter((v) => v > 0);
         return vals.length ? vals.reduce((acc, v) => acc + v, 0) / vals.length : 0;
       })()
     : a.overallRating;
@@ -1973,16 +1978,16 @@ function EvaluationStep({
             </p>
             <Card>
               {CHARACTER_TRAITS.map((t, i) => {
-                const current = getCurrent(t.key);
+                const current = getCurrent(camel(t));
                 return (
                   <StarSuggestRow
-                    key={t.key}
+                    key={t.column}
                     label={t.label}
                     currentValue={current}
-                    champ={t.label}
+                    champ={t.column}
                     allowHalf={false}
                     starSize={20}
-                    pending={getPending(t.label)}
+                    pending={getPending(t.column)}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
                       /* Submit guard mirrors page.tsx :587 :
@@ -1990,7 +1995,8 @@ function EvaluationStep({
                          StarSuggestRow's submit path enforces > 0 ;
                          the equality check happens here. */
                       if (proposed === current) return;
-                      await onSubmit(t.label, String(proposed), "", String(current || ""));
+                      // `champ` = NOM DE COLONNE (clé stable).
+                      await onSubmit(t.column, String(proposed), "", String(current || ""));
                     }}
                     isLast={i === CHARACTER_TRAITS.length - 1}
                   />
@@ -2004,20 +2010,21 @@ function EvaluationStep({
             </p>
             <Card>
               {TACTICAL_TRAITS.map((t, i) => {
-                const current = getCurrent(t.key);
+                const current = getCurrent(camel(t));
                 return (
                   <StarSuggestRow
-                    key={t.key}
+                    key={t.column}
                     label={t.label}
                     currentValue={current}
-                    champ={t.label}
+                    champ={t.column}
                     allowHalf={false}
                     starSize={20}
-                    pending={getPending(t.label)}
+                    pending={getPending(t.column)}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
                       if (proposed === current) return;
-                      await onSubmit(t.label, String(proposed), "", String(current || ""));
+                      // `champ` = NOM DE COLONNE (clé stable).
+                      await onSubmit(t.column, String(proposed), "", String(current || ""));
                     }}
                     isLast={i === TACTICAL_TRAITS.length - 1}
                   />

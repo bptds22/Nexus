@@ -18,6 +18,8 @@ import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import { traitGroups, type GrilleRef } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
@@ -36,16 +38,7 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
-  { key: "leadership", label: "Leadership" },
-  { key: "discipline", label: "Discipline" },
-  { key: "coachability", label: "Coachabilité" },
-  { key: "gameIQ", label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork", label: "Esprit d'équipe" },
-  { key: "resilience", label: "Résilience" },
-  { key: "attitude", label: "Attitude / Mentalité" },
-];
+/* TRAIT_LIST retiré — voir lib/evaluations/grilles.ts (traitGroups). */
 
 /* ── inline helpers ────────────────────────────────────────────── */
 
@@ -127,6 +120,10 @@ export default function AthleteProfileView({
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
+  const grilleSet = useGrilles();
+  /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE. Les deux
+     champs voyagent depuis mapToRecruiterView. */
+  const grilleRef: GrilleRef = { grilleId: a?.grilleId ?? null, positionId: a?.positionId ?? null };
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [globalRecruit, setGlobalRecruit] = useState<string>("OUVERT");
@@ -304,15 +301,18 @@ export default function AthleteProfileView({
                     <div className="border-t border-[#2D3748]/50 pt-4">
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                        {TRAIT_LIST.map((trait) => {
-                          const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                          return (
-                            <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                              <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
-                              {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
-                            </div>
-                          );
-                        })}
+                        {traitGroups(grilleSet, grilleRef).flatMap((group) => [
+                          <p key={`t-${group.title}`} className="sm:col-span-2 text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-3 first:mt-0">{group.title}</p>,
+                          ...group.traits.map((trait) => {
+                            const val = a.traitRatings ? (a.traitRatings[trait.camel as keyof typeof a.traitRatings] as number) : 0;
+                            return (
+                              <div key={trait.column} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
+                                <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                                {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
+                              </div>
+                            );
+                          }),
+                        ])}
                       </div>
                     </div>
                   )}

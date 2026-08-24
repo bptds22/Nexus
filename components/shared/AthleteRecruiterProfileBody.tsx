@@ -24,6 +24,8 @@ import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import { traitGroups, resolvePositionId, type GrilleRef } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import SuccessToast, { type SuccessToastData } from "@/components/ui/SuccessToast";
@@ -73,26 +75,8 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
-  // Character (8 original)
-  { key: "leadership", label: "Leadership" },
-  { key: "discipline", label: "Discipline" },
-  { key: "coachability", label: "Coachabilité" },
-  { key: "gameIQ", label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork", label: "Esprit d'équipe" },
-  { key: "resilience", label: "Résilience" },
-  { key: "attitude", label: "Attitude / Mentalité" },
-  // Athletic / tactical (6 newer DB columns: vitesse_explosivite,
-  // force_puissance, endurance_cardio, agilite_coordination,
-  // vision_du_jeu, sens_tactique — mapped via AthleteTraitRatings).
-  { key: "speed", label: "Vitesse / Explosivité" },
-  { key: "power", label: "Force / Puissance" },
-  { key: "endurance", label: "Endurance cardio" },
-  { key: "agility", label: "Agilité / Coordination" },
-  { key: "gameVision", label: "Vision du jeu" },
-  { key: "tactics", label: "Sens tactique" },
-];
+/* TRAIT_LIST retiré : les 14 libellés et leur groupement viennent de
+   lib/evaluations/grilles.ts (traitGroups). */
 
 const FLAG_REASONS = [
   "Informations incorrectes",
@@ -439,6 +423,24 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // loadingAthlete plus bas court-circuite le rendu tant que a est null.
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
+  /* Règle de lecture des grilles : grille_id de l'éval affichée d'abord, sinon
+     la position. Le partenaire n'a NI l'un NI l'autre — partner_athlete_profile
+     ne projette ni grille_id ni position_id — d'où sportNom/positionNom, résolus
+     par nom AVEC filtre sport (18 abréviations sont partagées entre sports). */
+  const grilleSet = useGrilles();
+  const [grilleSrc, setGrilleSrc] = useState<{
+    grilleId: string | null; positionId: string | null;
+    sportNom: string | null; positionNom: string | null;
+  }>({ grilleId: null, positionId: null, sportNom: null, positionNom: null });
+  /* grille_id > position_id > (sport, position) par nom > GENERIQUE.
+     21 des 23 évaluations locales ont grille_id NULL : le repli est le chemin
+     NORMAL, pas l'exception. */
+  const grilleRef: GrilleRef = {
+    grilleId: grilleSrc.grilleId,
+    positionId: grilleSrc.positionId
+      ?? resolvePositionId(grilleSet, grilleSrc.sportNom, grilleSrc.positionNom),
+  };
+
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
@@ -558,6 +560,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         open_to_offers,
         parcours_equipes,
         school_id,
+        position_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
         schools!school_id(name, region, city, type),
@@ -574,7 +577,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           vision_du_jeu, sens_tactique,
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
-          cote_globale, rapport_entraineur, distinctions, updated_at
+          cote_globale, rapport_entraineur, distinctions, updated_at, grille_id
         ),
         users!athletes_coach_id_fkey(first_name, last_name)
       ` as unknown as "*")
@@ -657,6 +660,13 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
         const sport = sportRel as { nom: string } | null;
         const pos = posRel as { nom: string; abreviation: string } | null;
+
+        setGrilleSrc({
+          grilleId:    (eval0?.grille_id as string | null) ?? null,
+          positionId:  (d.position_id as string | null) ?? null,
+          sportNom:    sport?.nom ?? null,
+          positionNom: pos?.nom ?? null,
+        });
 
         // School info
         const schoolRel = Array.isArray(d.schools) ? d.schools[0] : d.schools;
@@ -1487,23 +1497,34 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
                     {a.traitRatings && (
                       <div className="border-t border-[#2D3748]/50 pt-4">
-                        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                          {TRAIT_LIST.map((trait) => {
-                            const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                            // Skip unrated traits entirely — NULL in the DB
-                            // shows up here as 0 via the `|| 0` fallback in
-                            // the mapping. Showing a "—" placeholder would
-                            // imply the coach has rated every trait.
-                            if (!val || val <= 0) return null;
-                            return (
-                              <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                                <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
-                                <StarRating rating={val} size="sm" />
+                        {/* Deux blocs 9/5 au lieu d'une liste de 14. Les libellés
+                            des 5 fentes variables viennent de la grille de
+                            l'athlète ; rien ne les distingue des fixes. */}
+                        {traitGroups(grilleSet, grilleRef).map((group) => {
+                          const rated = group.traits.filter((t) => {
+                            const v = a.traitRatings ? a.traitRatings[t.camel as keyof typeof a.traitRatings] : 0;
+                            return typeof v === "number" && v > 0;
+                          });
+                          // Un groupe dont aucun critère n'est noté ne s'affiche
+                          // pas — son titre seul laisserait croire à un oubli.
+                          if (rated.length === 0) return null;
+                          return (
+                            <div key={group.title} className="mb-5 last:mb-0">
+                              <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">{group.title}</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                                {rated.map((trait) => {
+                                  const val = a.traitRatings![trait.camel as keyof typeof a.traitRatings] as number;
+                                  return (
+                                    <div key={trait.column} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
+                                      <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                                      <StarRating rating={val} size="sm" />
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
-                        </div>
+                            </div>
+                          );
+                        })}
                         {traitAvg !== null && (
                           <div className="mt-4 pt-4 border-t border-[#2D3748]/50 flex items-center justify-between">
                             <span className="text-[13px] font-bold text-[#9CA3AF] uppercase tracking-wider">Moyenne des traits</span>

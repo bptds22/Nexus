@@ -60,6 +60,8 @@ import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/ut
 import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import { Card, ChipsBlock, DateRow, DetailedTag, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { diffTeamHistory, isTeamHistoryDiffEmpty, summarizeTeamHistoryDiff } from "@/components/shared/athlete/teamHistory";
@@ -118,28 +120,9 @@ const CEGEP_REGIONS = [
   "Montérégie", "Outaouais", "Estrie", "Sherbrooke",
 ];
 
-const TRAIT_GROUPS: { title: string; traits: { key: string; label: string }[] }[] = [
-  { title: "Capacités athlétiques", traits: [
-    { key: "vitesse_explosivite", label: "Vitesse / Explosivité" },
-    { key: "force_puissance", label: "Force / Puissance" },
-    { key: "endurance_cardio", label: "Endurance / Cardio" },
-    { key: "agilite_coordination", label: "Agilité / Coordination" },
-  ]},
-  { title: "Intelligence sportive", traits: [
-    { key: "vision_du_jeu", label: "Vision du jeu" },
-    { key: "sens_tactique", label: "Sens tactique" },
-  ]},
-  { title: "Caractère", traits: [
-    { key: "leadership", label: "Leadership" },
-    { key: "discipline", label: "Discipline / Éthique de travail" },
-    { key: "coachabilite", label: "Coachabilité" },
-    { key: "intelligence_jeu", label: "Intelligence de jeu" },
-    { key: "competitivite", label: "Compétitivité" },
-    { key: "esprit_equipe", label: "Esprit d'équipe" },
-    { key: "resilience", label: "Résilience" },
-    { key: "attitude_mentalite", label: "Attitude / Mentalité" },
-  ]},
-];
+/* TRAIT_GROUPS a migré vers lib/evaluations/grilles.ts : les 14 libellés
+   (9 fixes + 5 fournis par la grille de la position) y sont la seule
+   source de vérité. Résolu par écran via traitGroups(), plus bas. */
 
 const RECRUITMENT_STATUS_OPTIONS: PickerOption[] = [
   { value: "OUVERT", label: "Ouvert" },
@@ -191,6 +174,10 @@ const SLIDE_LABELS = ["Identité", "Académique", "Physique", "Sport", "Évaluat
 ═══════════════════════════════════════════════════════════════ */
 
 export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMobileProps) {
+  /* Référentiel de grilles — libellés des 5 critères variables résolus depuis
+     la position ACTUELLEMENT SÉLECTIONNÉE, pas celle en base : c'est cette
+     position-là qui sera figée dans grille_id à la sauvegarde. */
+  const grilleSet = useGrilles();
   const router = useRouter();
   const toast = useMobileToast();
   const isCreate = mode === "create";
@@ -1964,6 +1951,12 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     const sportStats = getSportStats(form.sports.primarySport);
     const selectedMap = new Map(sc.badges.map((b) => [b.badge, b]));
     const atMax = sc.badges.length >= MAX_BADGES;
+    const TRAIT_GROUPS = traitGroups(grilleSet, {
+      positionId: resolvePositionId(grilleSet, form.sports.primarySport, form.sports.primaryPosition),
+    }).map((g) => ({
+      title: g.title,
+      traits: g.traits.map((t) => ({ key: t.column, label: t.label })),
+    }));
     const ratedTraits = Object.values(sc.traitRatings).filter((v) => v > 0);
     const autoAvg = ratedTraits.length > 0 ? ratedTraits.reduce((a, b) => a + b, 0) / ratedTraits.length : 0;
     /* Mirrors apply_approved_suggestion's "Impossible d'appliquer une

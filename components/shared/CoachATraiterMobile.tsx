@@ -42,6 +42,7 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
+import { champToColumn } from "@/lib/evaluations/grilles";
 import { hapticSuccess, triggerHaptic } from "@/lib/haptics";
 
 /* ── Types ────────────────────────────────────────────────────── */
@@ -96,6 +97,28 @@ function slimAthleteFromName(athleteId: string, athleteName: string): CoachTaskA
 /* Mapping champ (label FR du trigger apply_approved_suggestion) → label
    compact pour la summary line. Fallback "Changement : {champ}" pour tout
    champ non mappé (assure-zéro silent drop si un nouveau champ apparait). */
+/* Phrase d'annonce par critère, indexée par NOM DE COLONNE.
+   Les 14 y sont — les 6 ajoutés en juin 2026 (vitesse, puissance, endurance,
+   agilité, vision, sens tactique) manquaient, et retombaient sur le générique
+   « Changement : … ». champLabel accepte AUSSI les libellés FR : une
+   suggestion créée par l'app 1.2 en magasin doit rester lisible chez le coach. */
+const CHAMP_PHRASE_BY_COLUMN: Record<string, string> = {
+  leadership:           "Nouveau score de leadership",
+  discipline:           "Nouveau score de discipline",
+  coachabilite:         "Nouveau score de coachabilité",
+  intelligence_jeu:     "Nouveau score d'intelligence de jeu",
+  competitivite:        "Nouveau score de compétitivité",
+  esprit_equipe:        "Nouveau score d'esprit d'équipe",
+  resilience:           "Nouveau score de résilience",
+  attitude_mentalite:   "Nouveau score de disponibilité",
+  vitesse_explosivite:  "Nouveau score de vitesse",
+  force_puissance:      "Nouveau score de puissance",
+  endurance_cardio:     "Nouveau score d'endurance",
+  agilite_coordination: "Nouveau score d'agilité / coordination",
+  vision_du_jeu:        "Nouveau score de vision du jeu",
+  sens_tactique:        "Nouveau score de sens tactique",
+};
+
 const CHAMP_LABEL_MAP: Record<string, string> = {
   "Numéro": "Changement de numéro",
   "Position": "Changement de position",
@@ -113,20 +136,16 @@ const CHAMP_LABEL_MAP: Record<string, string> = {
   "Navette": "Nouveau temps de navette",
   "Sprint 100m": "Nouveau sprint 100m",
   "Cote globale": "Nouvelle cote globale",
-  "Leadership": "Nouveau score de leadership",
-  "Discipline": "Nouveau score de discipline",
-  "Coachabilité": "Nouveau score de coachabilité",
-  "Intelligence de jeu": "Nouveau score d'intelligence de jeu",
-  "Compétitivité": "Nouveau score de compétitivité",
-  "Esprit d'équipe": "Nouveau score d'esprit d'équipe",
-  "Résilience": "Nouveau score de résilience",
-  "Attitude / Mentalité": "Nouveau score d'attitude",
   "Distinctions": "Nouvelles distinctions",
   "Distinction personnalisée": "Nouvelle distinction",
 };
 
 function champLabel(champ: string): string {
   if (!champ) return "Suggestion";
+  // 1) trait : on passe par la colonne, ce qui couvre les deux espaces de clés
+  const col = champToColumn(champ);
+  if (col && CHAMP_PHRASE_BY_COLUMN[col]) return CHAMP_PHRASE_BY_COLUMN[col];
+  // 2) champs non-traits (Taille, Poids, Distinctions…), inchangés
   return CHAMP_LABEL_MAP[champ] ?? `Changement : ${champ}`;
 }
 

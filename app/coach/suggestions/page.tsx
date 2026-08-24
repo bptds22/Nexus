@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { mapDbStatus } from "./_data/mockSuggestions";
 import type { CoachSuggestion } from "./_data/mockSuggestions";
 import { BADGE_CONFIG, parseDistinctions } from "@/lib/config/badges";
+import { isRatingChamp, CHAMP_COTE_GLOBALE } from "@/lib/evaluations/grilles";
 
 /* ═══════════════════════════════════════════════════════════════
    Suggestions des Athlètes — Coach approval queue
@@ -52,12 +53,15 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
 function SuggestionValueDisplay({ field, value, muted }: { field: string; value: string | null | undefined; muted?: boolean }) {
   if (!value) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
 
-  // Star rating display for Cote globale + all 8 individual traits
-  const STAR_FIELDS = ["Cote globale", "Leadership", "Discipline", "Coachabilité", "Intelligence de jeu", "Compétitivité", "Esprit d'équipe", "Résilience", "Attitude / Mentalité"];
-  if (STAR_FIELDS.includes(field)) {
+  /* Étoiles pour la cote globale ET les 14 traits. L'ancienne liste s'arrêtait
+     aux 8 d'origine : les 6 ajoutés en juin 2026 (vitesse, puissance, endurance,
+     agilité, vision, sens tactique) s'affichaient en texte brut. isRatingChamp
+     accepte les deux espaces de clés — nom de colonne comme libellé FR de
+     l'app 1.2 en magasin. */
+  if (isRatingChamp(field)) {
     const rating = parseFloat(value);
     if (!isNaN(rating)) {
-      const isGlobal = field === "Cote globale";
+      const isGlobal = field === CHAMP_COTE_GLOBALE;
       return (
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-0.5">

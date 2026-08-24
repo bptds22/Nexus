@@ -35,8 +35,23 @@
 BEGIN;
 
 -- ---------------------------------------------------------------------
--- 1. GARDE-FOUS (avortent la transaction si la cible n'est pas la bonne)
+-- 1. GARDE-FOUS
+--
+--     REJOUABILITE (ajout 2026-08-25) -- le contenu enregistre dans
+--     supabase_migrations.schema_migrations n'est PAS modifie par cette
+--     edition : seul le depot bouge. La prod a execute la version d'origine
+--     le 2026-07-13 et n'y repassera jamais.
+--
+--     Cette migration cible UNE fiche relevee par un audit de PRODUCTION.
+--     Sur une base recreee (supabase db reset) elle n'existe pas, et la
+--     version d'origine levait -- rendant tout rejeu impossible. Desormais :
+--     fiche absente -> NO-OP annonce par RAISE NOTICE ; fiche presente ->
+--     comportement d'origine, garde-fous inchanges (user_id, email et status
+--     toujours verifies) ; etat inattendu -> EXCEPTION.
+--     UUID et trace d'audit intacts.
 -- ---------------------------------------------------------------------
+CREATE TEMP TABLE _masque_mode (actif boolean NOT NULL) ON COMMIT DROP;
+
 DO $$
 DECLARE
   v_athlete_id  CONSTANT uuid := '0684b5ff-c5f8-4c77-b442-b26cfe41d7fa';
@@ -47,8 +62,12 @@ BEGIN
   SELECT * INTO v_row FROM public.athletes WHERE id = v_athlete_id;
 
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'GARDE-FOU: athlete % introuvable -- ARRET', v_athlete_id;
+    INSERT INTO _masque_mode (actif) VALUES (false);
+    RAISE NOTICE 'MASQUAGE IGNORE : athlete % absent (base recreee) -- no-op.', v_athlete_id;
+    RETURN;
   END IF;
+
+  INSERT INTO _masque_mode (actif) VALUES (true);
 
   -- La fiche doit bien etre celle du compte auth annonce.
   IF v_row.user_id IS DISTINCT FROM v_user_id THEN
@@ -70,7 +89,8 @@ END $$;
 -- ---------------------------------------------------------------------
 UPDATE public.athletes
 SET    status = 'EN_ATTENTE'
-WHERE  id = '0684b5ff-c5f8-4c77-b442-b26cfe41d7fa';
+WHERE  id = '0684b5ff-c5f8-4c77-b442-b26cfe41d7fa'
+  AND  (SELECT actif FROM _masque_mode);
 
 -- ---------------------------------------------------------------------
 -- 3. VERIFICATION FINALE. Sinon, rollback.
@@ -81,6 +101,11 @@ DECLARE
   v_user_id    uuid;
   v_collateral int;
 BEGIN
+  IF NOT (SELECT actif FROM _masque_mode) THEN
+    RAISE NOTICE 'VERIFICATION IGNOREE : masquage en mode no-op.';
+    RETURN;
+  END IF;
+
   SELECT status, user_id INTO v_status, v_user_id
   FROM public.athletes WHERE id = '0684b5ff-c5f8-4c77-b442-b26cfe41d7fa';
 

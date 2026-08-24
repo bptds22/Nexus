@@ -39,8 +39,23 @@ INSERT INTO _purge_cibles (athlete_id) VALUES
   ('95ff43de-0506-41c3-83c4-fbacfefed213'); -- "Mathieu royal" / mathieuroyal196@gmail.com
 
 -- ---------------------------------------------------------------------
--- 1. GARDE-FOUS (avortent la transaction si la realite ne correspond pas)
+-- 1. GARDE-FOUS
+--
+--     REJOUABILITE (ajout 2026-08-25) -- le contenu enregistre dans
+--     supabase_migrations.schema_migrations n'est PAS modifie par cette
+--     edition : seul le depot bouge. La prod a execute la version d'origine
+--     le 2026-07-13 et n'y repassera jamais.
+--
+--     Cette migration cible des lignes relevees par un audit de PRODUCTION.
+--     Sur une base recreee (supabase db reset) elles n'existent pas, et la
+--     version d'origine levait -- rendant tout rejeu impossible. Desormais :
+--     cible absente -> NO-OP annonce par RAISE NOTICE ; cible presente ->
+--     comportement d'origine, garde-fous inchanges ; etat inattendu ->
+--     EXCEPTION, car c'est la le vrai signal d'anomalie.
+--     UUID et trace d'audit intacts.
 -- ---------------------------------------------------------------------
+CREATE TEMP TABLE _purge_mode (actif boolean NOT NULL) ON COMMIT DROP;
+
 DO $$
 DECLARE
   v_cibles      int;
@@ -56,9 +71,18 @@ BEGIN
   -- Les 2 doivent tous exister (sinon la base a change depuis l'audit).
   SELECT count(*) INTO v_existants
   FROM public.athletes a JOIN _purge_cibles c ON c.athlete_id = a.id;
-  IF v_existants <> 2 THEN
-    RAISE EXCEPTION 'GARDE-FOU: % athletes cibles trouves au lieu de 2 (base modifiee depuis l''audit du 2026-07-13)', v_existants;
+
+  IF v_existants = 0 THEN
+    INSERT INTO _purge_mode (actif) VALUES (false);
+    RAISE NOTICE 'PURGE IGNOREE : aucune des 2 cibles de l''audit 2026-07-13 n''est presente. Base recreee ou purge deja effectuee -- no-op.';
+    RETURN;
   END IF;
+
+  IF v_existants <> 2 THEN
+    RAISE EXCEPTION 'GARDE-FOU: % athletes cibles trouves au lieu de 2 ou 0 -- purge PARTIELLE, anomalie reelle, ARRET', v_existants;
+  END IF;
+
+  INSERT INTO _purge_mode (actif) VALUES (true);
 
   -- Aucune cible ne doit avoir de compte auth : ce sont des orphelins.
   SELECT count(*) INTO v_avec_compte
@@ -113,6 +137,11 @@ DECLARE
   v_restants int;
   v_zombies  int;
 BEGIN
+  IF NOT (SELECT actif FROM _purge_mode) THEN
+    RAISE NOTICE 'VERIFICATION IGNOREE : purge en mode no-op.';
+    RETURN;
+  END IF;
+
   SELECT count(*) INTO v_restants FROM public.athletes;
   IF v_restants <> 5 THEN
     RAISE EXCEPTION 'VERIF: % athletes restants au lieu de 5 -- ROLLBACK', v_restants;

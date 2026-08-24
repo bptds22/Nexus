@@ -19,6 +19,8 @@ import AthleteProfileView from "@/components/shared/AthleteProfileView";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import { traitGroups, type GrilleRef } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import {
   BADGE_CONFIG,
@@ -166,16 +168,9 @@ const sectionLabel = "font-head text-[12px] font-bold tracking-[0.15em] uppercas
 const pillBase = "inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full border";
 const cardBase = "bg-[#1A1D24] rounded-xl border border-[#2D3748]";
 
-const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
-  { key: "leadership", label: "Leadership" },
-  { key: "discipline", label: "Discipline" },
-  { key: "coachability", label: "Coachabilité" },
-  { key: "gameIQ", label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork", label: "Esprit d'équipe" },
-  { key: "resilience", label: "Résilience" },
-  { key: "attitude", label: "Attitude / Mentalité" },
-];
+/* TRAIT_LIST (aperçu) retiré — voir lib/evaluations/grilles.ts (traitGroups).
+   TRAIT_GROUPS l.799, qui pilote le FORMULAIRE d'édition admin, reste en place :
+   hors périmètre du lot 2. */
 
 /* ── Inline helpers cloned from coach profile ──────────────────── */
 
@@ -259,6 +254,9 @@ export default function AdminAthleteDetailPage() {
   const [togglingVerified, setTogglingVerified] = useState(false);
   const [coachInfo, setCoachInfo] = useState<{ name: string; school: string } | null>(null);
   const [previewView, setPreviewView] = useState<AthleteProfileRecruiterView | null>(null);
+  const grilleSet = useGrilles();
+  /* Aperçu admin : même règle de lecture que les fiches — grille_id de l'éval
+     affichée, sinon la position. previewView vient de mapToRecruiterView. */
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
@@ -796,37 +794,12 @@ export default function AdminAthleteDetailPage() {
   );
 
   /* ── Évaluation helpers (mirror coach modifier) ───────────────── */
-  const TRAIT_GROUPS: { title: string; traits: { key: string; label: string }[] }[] = [
-    {
-      title: "Capacités athlétiques",
-      traits: [
-        { key: "vitesse_explosivite", label: "Vitesse / Explosivité" },
-        { key: "force_puissance", label: "Force / Puissance" },
-        { key: "endurance_cardio", label: "Endurance / Cardio" },
-        { key: "agilite_coordination", label: "Agilité / Coordination" },
-      ],
-    },
-    {
-      title: "Intelligence sportive",
-      traits: [
-        { key: "vision_du_jeu", label: "Vision du jeu" },
-        { key: "sens_tactique", label: "Sens tactique" },
-      ],
-    },
-    {
-      title: "Caractère",
-      traits: [
-        { key: "leadership", label: "Leadership" },
-        { key: "discipline", label: "Discipline / Éthique de travail" },
-        { key: "coachabilite", label: "Coachabilité" },
-        { key: "intelligence_jeu", label: "Intelligence de jeu" },
-        { key: "competitivite", label: "Compétitivité" },
-        { key: "esprit_equipe", label: "Esprit d'équipe" },
-        { key: "resilience", label: "Résilience" },
-        { key: "attitude_mentalite", label: "Attitude / Mentalité" },
-      ],
-    },
-  ];
+  /* Formulaire d'édition admin : mêmes 14 critères, mêmes groupes 9/5 et mêmes
+     libellés que la saisie coach. La grille vient de la position de l'athlète
+     en cours d'édition (A("position_id")), pas de l'éval — c'est ce qui sera
+     saisi, pas ce qui a été saisi. */
+  const TRAIT_GROUPS = traitGroups(grilleSet, { positionId: (A("position_id") as string | null) ?? null })
+    .map((g) => ({ title: g.title, traits: g.traits.map((t) => ({ key: t.column, label: t.label })) }));
 
   const ALL_TRAIT_KEYS = TRAIT_GROUPS.flatMap((g) => g.traits.map((t) => t.key));
 
@@ -1592,15 +1565,18 @@ export default function AdminAthleteDetailPage() {
                       <div className="border-t border-[#2D3748]/50 pt-4">
                         <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                          {TRAIT_LIST.map((trait) => {
-                            const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                            return (
-                              <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                                <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
-                                {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">&mdash;</span>}
-                              </div>
-                            );
-                          })}
+                          {traitGroups(grilleSet, { grilleId: a.grilleId ?? null, positionId: a.positionId ?? null } as GrilleRef).flatMap((group) => [
+                            <p key={`t-${group.title}`} className="sm:col-span-2 text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-3 first:mt-0">{group.title}</p>,
+                            ...group.traits.map((trait) => {
+                              const val = a.traitRatings ? (a.traitRatings[trait.camel as keyof typeof a.traitRatings] as number) : 0;
+                              return (
+                                <div key={trait.column} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
+                                  <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                                  {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">&mdash;</span>}
+                                </div>
+                              );
+                            }),
+                          ])}
                         </div>
                       </div>
                     )}

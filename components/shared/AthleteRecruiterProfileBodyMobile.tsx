@@ -36,6 +36,8 @@ import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import { needsAutoMessage } from "@/lib/config/recruitmentStatuses";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import { traitGroups, resolvePositionId, type GrilleRef } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -126,22 +128,7 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display]),
 );
 
-const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
-  { key: "leadership", label: "Leadership" },
-  { key: "discipline", label: "Discipline" },
-  { key: "coachability", label: "Coachabilité" },
-  { key: "gameIQ", label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork", label: "Esprit d'équipe" },
-  { key: "resilience", label: "Résilience" },
-  { key: "attitude", label: "Attitude / Mentalité" },
-  { key: "speed", label: "Vitesse / Explosivité" },
-  { key: "power", label: "Force / Puissance" },
-  { key: "endurance", label: "Endurance cardio" },
-  { key: "agility", label: "Agilité / Coordination" },
-  { key: "gameVision", label: "Vision du jeu" },
-  { key: "tactics", label: "Sens tactique" },
-];
+/* TRAIT_LIST retiré — voir lib/evaluations/grilles.ts (traitGroups). */
 
 const FLAG_REASONS = [
   "Informations incorrectes",
@@ -783,6 +770,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const currentUserId = currentUser?.authUser.id;
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
+  const grilleSet = useGrilles();
+  const [grilleSrc, setGrilleSrc] = useState<{
+    grilleId: string | null; positionId: string | null;
+    sportNom: string | null; positionNom: string | null;
+  }>({ grilleId: null, positionId: null, sportNom: null, positionNom: null });
+  /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE.
+     21 des 23 évaluations locales ont grille_id NULL : le repli est le chemin
+     NORMAL. */
+  const grilleRef: GrilleRef = {
+    grilleId: grilleSrc.grilleId,
+    positionId: grilleSrc.positionId
+      ?? resolvePositionId(grilleSet, grilleSrc.sportNom, grilleSrc.positionNom),
+  };
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
@@ -918,7 +918,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         bio, cote_globale_entraineur, consentement_parental,
         statut_recrutement_override, notes_coach, ouvert_entraineur_cegep,
         coach_id, recruitment_status, committed_school_id, open_to_offers,
-        parcours_equipes, school_id,
+        parcours_equipes, school_id, position_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
         schools!school_id(name, region, city, type),
@@ -929,7 +929,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           vision_du_jeu, sens_tactique,
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
-          cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
+          cote_globale, rapport_entraineur, distinctions, updated_at, coach_id, grille_id,
           evaluator:users!evaluations_coach_id_fkey(first_name, last_name)
         ),
         users!athletes_coach_id_fkey(first_name, last_name)
@@ -957,6 +957,16 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         // Pick by rule (détaillée > simple, then most recent updated_at) —
         // NOT evaluations[0] (unordered, often a non-owning coach's row).
         const eval0 = selectBestEvaluation(evals);
+        {
+          const sr = Array.isArray(d.sports) ? d.sports[0] : d.sports;
+          const pr = Array.isArray(d.positions) ? d.positions[0] : d.positions;
+          setGrilleSrc({
+            grilleId:    ((eval0 as Record<string, unknown> | null)?.grille_id as string | null) ?? null,
+            positionId:  (d.position_id as string | null) ?? null,
+            sportNom:    (sr as { nom?: string } | null)?.nom ?? null,
+            positionNom: (pr as { nom?: string } | null)?.nom ?? null,
+          });
+        }
 
         const recruitmentStatusRaw = (d.recruitment_status as string) || "OUVERT";
         const committedSchoolRel = d.committed_school as { name: string } | null;
@@ -2501,13 +2511,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Détail par trait</h2>
                     <div>
-                      {TRAIT_LIST.map((trait) => {
-                        const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                        if (!val || val <= 0) return null;
+                      {traitGroups(grilleSet, grilleRef).map((group) => {
+                        const rated = group.traits.filter((t) => {
+                          const v = a.traitRatings ? a.traitRatings[t.camel as keyof typeof a.traitRatings] : 0;
+                          return typeof v === "number" && v > 0;
+                        });
+                        if (rated.length === 0) return null;
                         return (
-                          <div key={trait.key} className={mobileRow}>
-                            <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
-                            <StarRating rating={val} size="sm" />
+                          <div key={group.title} className="mb-4 last:mb-0">
+                            <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">{group.title}</p>
+                            {rated.map((trait) => (
+                              <div key={trait.column} className={mobileRow}>
+                                <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                                <StarRating rating={a.traitRatings![trait.camel as keyof typeof a.traitRatings] as number} size="sm" />
+                              </div>
+                            ))}
                           </div>
                         );
                       })}

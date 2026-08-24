@@ -803,6 +803,13 @@ export interface AthleteProfileRecruiterView {
    *  users. Sert à l'attribution « Évalué par … » quand la note affichée n'est
    *  PAS l'éval du coach courant (evaluatorCoachId !== coach connecté). */
   evaluatorCoachId?: string | null;
+  /** Grille FIGÉE sur l'évaluation affichée (evaluations.grille_id). NULL =
+   *  évaluation antérieure aux grilles : le rendu retombe alors sur la
+   *  position, puis sur GENERIQUE. C'est le chemin NORMAL aujourd'hui —
+   *  21 des 23 évaluations locales sont à NULL. */
+  grilleId?: string | null;
+  /** athletes.position_id — le repli quand grilleId est NULL. */
+  positionId?: string | null;
   /** `string | null` comme son frere evaluatorCoachId : les deux constructeurs
    *  divergeaient (loadAthleteFromSupabase rend "", le profil mobile rend null)
    *  et le type n'admettait que `undefined`. On elargit plutot que de caster —

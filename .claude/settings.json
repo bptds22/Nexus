@@ -1,5 +1,15 @@
 {
   "permissions": {
+    "deny": [
+      "Bash(supabase db push:*)",
+      "Bash(npx supabase db push:*)",
+      "PowerShell(supabase db push:*)",
+      "PowerShell(npx supabase db push:*)",
+      "Bash(supabase db reset --linked:*)",
+      "Bash(npx supabase db reset --linked:*)",
+      "PowerShell(supabase db reset --linked:*)",
+      "PowerShell(npx supabase db reset --linked:*)"
+    ],
     "allow": [
       "Bash(find /c/Users/bptds/OneDrive/Documents/Nexus/app/coach/components -type f -name *.tsx)",
       "Bash(find c:UsersbptdsOneDriveDocumentsNexusnexus-app -type f -name *.tsx -o -name *.ts)",

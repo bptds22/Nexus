@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import { traitList, champToColumn, type GrilleRef, type TraitEntry } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion, getIncompleteFields } from "@/lib/utils/calculateProfileCompletion";
 import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileCompletion";
@@ -29,6 +31,8 @@ type ProfilEval = {
   leadership?: number; discipline?: number; coachabilite?: number; intelligence_jeu?: number;
   competitivite?: number; esprit_equipe?: number; resilience?: number; attitude_mentalite?: number;
   cote_globale?: number; rapport_entraineur?: string; distinctions?: unknown;
+  /** Grille figée à la saisie ; NULL = éval antérieure aux grilles. */
+  grille_id?: string | null;
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -529,50 +533,43 @@ function ClickableStars({ value, onChange, size = 28, allowHalf = false }: { val
 
 /* ── Trait definitions (detailed evaluation) ──────────────── */
 
-const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
-  // Character (8 original)
-  { key: "leadership", label: "Leadership" },
-  { key: "discipline", label: "Discipline" },
-  { key: "coachability", label: "Coachabilité" },
-  { key: "gameIQ", label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork", label: "Esprit d'équipe" },
-  { key: "resilience", label: "Résilience" },
-  { key: "attitude", label: "Attitude / Mentalité" },
-  // Athletic / tactical (6 newer DB columns: vitesse_explosivite,
-  // force_puissance, endurance_cardio, agilite_coordination,
-  // vision_du_jeu, sens_tactique — mapped via AthleteTraitRatings).
-  { key: "speed", label: "Vitesse / Explosivité" },
-  { key: "power", label: "Force / Puissance" },
-  { key: "endurance", label: "Endurance cardio" },
-  { key: "agility", label: "Agilité / Coordination" },
-  { key: "gameVision", label: "Vision du jeu" },
-  { key: "tactics", label: "Sens tactique" },
-];
+/* TRAIT_CHAMPS retiré. Il portait DEUX rôles à la fois : le libellé affiché
+   ET la clé écrite dans athlete_suggestions.champ. C'est précisément ce
+   couplage que le lot 3 défait — `champ` porte désormais le NOM DE COLONNE,
+   le libellé vient de la grille. Voir lib/evaluations/grilles.ts. */
 
 /* ── Unified Evaluation section (simplified + detailed) ───── */
 
-function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit }: {
+function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit, traits }: {
   currentOverall: number;
   traitRatings: AthleteTraitRatings | undefined;
   pendingSugs: AthleteSuggestion[];
   onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
+  /** Les 14 critères, libellés résolus par la grille de l'athlète. */
+  traits: TraitEntry[];
 }) {
-  const isDetailedMode = !!traitRatings && TRAIT_CHAMPS.some((t) => (traitRatings[t.key] || 0) > 0);
+  const TRAIT_CHAMPS = traits;
+  const isDetailedMode = !!traitRatings && TRAIT_CHAMPS.some((t) => (traitRatings[t.camel as keyof AthleteTraitRatings] || 0) > 0);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [overallDraft, setOverallDraft] = useState(currentOverall);
   const [traitDraft, setTraitDraft] = useState<Record<string, number>>({});
 
-  function pendingFor(label: string): AthleteSuggestion | undefined {
-    return pendingSugs.find((s) => s.field === label);
+  /* Compare sur la COLONNE : une suggestion créée par l'app 1.2 porte un
+     libellé FR, une suggestion créée ici porte un nom de colonne. Les deux
+     doivent retrouver le même critère, sinon le « ⏳ En attente » disparaît
+     pour les utilisateurs de la version en magasin. */
+  function pendingFor(champ: string): AthleteSuggestion | undefined {
+    const col = champToColumn(champ);
+    return pendingSugs.find((s) =>
+      s.field === champ || (col !== null && champToColumn(s.field) === col));
   }
 
   const getCurrent = (key: keyof AthleteTraitRatings) => (traitRatings ? traitRatings[key] || 0 : 0);
 
   const traitAvg = isDetailedMode
     ? (() => {
-        const vals = TRAIT_CHAMPS.map((t) => getCurrent(t.key)).filter((v) => v > 0);
+        const vals = TRAIT_CHAMPS.map((t) => getCurrent(t.camel as keyof AthleteTraitRatings)).filter((v) => v > 0);
         return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
       })()
     : currentOverall;
@@ -580,7 +577,7 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
   function startEditing() {
     setOverallDraft(currentOverall);
     const initial: Record<string, number> = {};
-    for (const t of TRAIT_CHAMPS) initial[t.label] = getCurrent(t.key);
+    for (const t of TRAIT_CHAMPS) initial[t.column] = getCurrent(t.camel as keyof AthleteTraitRatings);
     setTraitDraft(initial);
     setEditing(true);
   }
@@ -593,10 +590,12 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
     setSaving(true);
     if (isDetailedMode) {
       for (const t of TRAIT_CHAMPS) {
-        const current = getCurrent(t.key);
-        const proposed = traitDraft[t.label] ?? 0;
+        const current = getCurrent(t.camel as keyof AthleteTraitRatings);
+        const proposed = traitDraft[t.column] ?? 0;
         if (proposed > 0 && proposed !== current) {
-          await onSubmit(t.label, String(proposed), "");
+          // `champ` = NOM DE COLONNE. Le trigger accepte les deux depuis
+          // 20260824134148 ; on n'écrit plus que la clé stable.
+          await onSubmit(t.column, String(proposed), "");
         }
       }
     } else if (overallDraft > 0 && overallDraft !== currentOverall) {
@@ -640,14 +639,14 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
             {TRAIT_CHAMPS.map((trait) => {
-              const current = getCurrent(trait.key);
-              const pend = pendingFor(trait.label);
+              const current = getCurrent(trait.camel as keyof AthleteTraitRatings);
+              const pend = pendingFor(trait.column);
               // Hide unrated traits in the read-only view. In edit mode
               // (handled by a separate block below) we still show every
               // trait so the athlete can propose a first rating.
               if (current <= 0 && !pend) return null;
               return (
-                <div key={trait.key} className="py-2 border-b border-[#2D3748]/30">
+                <div key={trait.column} className="py-2 border-b border-[#2D3748]/30">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] text-[#9CA3AF]">{trait.label}</span>
                     {current > 0 ? <ReadOnlyStars rating={current} size={14} /> : <span className="text-[12px] text-[#4a4d56]">—</span>}
@@ -675,12 +674,12 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
       {editing && isDetailedMode && (
         <div className="mt-3 space-y-1">
           {TRAIT_CHAMPS.map((trait) => {
-            const value = traitDraft[trait.label] ?? 0;
+            const value = traitDraft[trait.column] ?? 0;
             return (
-              <div key={trait.key} className="flex items-center justify-between py-2 border-b border-[#2D3748]/30">
+              <div key={trait.column} className="flex items-center justify-between py-2 border-b border-[#2D3748]/30">
                 <span className="text-[12px] text-[#c8c8cc]">{trait.label}</span>
                 <div className="flex items-center gap-2">
-                  <ClickableStars value={value} onChange={(v) => setTraitDraft((d) => ({ ...d, [trait.label]: v }))} size={20} />
+                  <ClickableStars value={value} onChange={(v) => setTraitDraft((d) => ({ ...d, [trait.column]: v }))} size={20} />
                   <span className="text-[11px] font-bold text-[#9CA3AF] w-10 text-right">{value > 0 ? `${value}/5` : "—"}</span>
                 </div>
               </div>
@@ -873,13 +872,7 @@ function TeamHistoryDirectEdit({ athleteId, current, anchor, recruiterView, onSa
 
 /* ── Trait labels ──────────────────────────────────────────────── */
 
-const TRAIT_LABELS: Record<keyof AthleteTraitRatings, string> = {
-  speed: "Vitesse / Explosivité", power: "Force / Puissance", endurance: "Endurance cardio", agility: "Agilité / Coordination",
-  gameVision: "Vision du jeu", tactics: "Sens tactique",
-  leadership: "Leadership", discipline: "Discipline", coachability: "Coachabilité",
-  gameIQ: "Intelligence de jeu", competitiveness: "Compétitivité", teamwork: "Esprit d'équipe",
-  resilience: "Résilience", attitude: "Attitude / Mentalité",
-};
+/* TRAIT_LABELS retiré — libellés résolus par la grille (traitLabelByCamel). */
 
 /* ── Completeness color ───────────────────────────────────────── */
 
@@ -1043,8 +1036,21 @@ export default function AthleteProfilPage() {
 }
 
 function AthleteProfilPageDesktop() {
+  /* Les 14 critères de l'athlète, libellés résolus par SA grille : grille_id de
+     l'éval affichée d'abord, sa position ensuite, GENERIQUE sinon. La même
+     liste sert à l'affichage ET à la suggestion — le libellé ne peut donc pas
+     diverger de ce qui est proposé. */
+  const grilleSet = useGrilles();
   const [loading, setLoading] = useState(true);
   const [a, setA] = useState<AnyProfile>({});
+  /* Résolus une fois, consommés par l'affichage ET par la suggestion. */
+  const athleteGrilleRef: GrilleRef = {
+    grilleId:   ((a as { grilleId?: string | null }).grilleId) ?? null,
+    positionId: ((a as { positionId?: string | null }).positionId) ?? null,
+  };
+  const athleteTraits = traitList(grilleSet, athleteGrilleRef);
+  const traitLabelByCamel: Record<string, string> =
+    Object.fromEntries(athleteTraits.map((t) => [t.camel, t.label]));
   const [athleteId, setAthleteId] = useState<string | null>(null);
   const recruiterView = false;
   const [showPreview, setShowPreview] = useState(false);
@@ -1068,10 +1074,11 @@ function AthleteProfilPageDesktop() {
         .select(`
           *,
           sports!sport_id(nom),
+          position_id,
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, city, type),
           team_athletes(team_id, teams!team_id(name)),
-          evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at),
+          evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id),
           users!athletes_coach_id_fkey(first_name, last_name)
         `)
         .eq("user_id", user.id)
@@ -1175,6 +1182,10 @@ function AthleteProfilPageDesktop() {
         coachName: coachRel ? `${coachRel.first_name || ""} ${coachRel.last_name || ""}`.trim() : "",
         overallRating: evalRel?.cote_globale || 0,
         coachDistinctions: parseDistinctions(evalRel?.distinctions),
+        /* Règle de lecture des grilles, côté athlète : grille_id de l'éval
+           affichée d'abord, sa position ensuite. */
+        grilleId: (evalRel?.grille_id as string | null) ?? null,
+        positionId: (raw.position_id as string | null) ?? null,
         traitRatings,
         highlightVideoUrl: raw.video_faits_saillants_url || "",
         hudlUrl: raw.hudl_url || "",
@@ -1225,7 +1236,7 @@ function AthleteProfilPageDesktop() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), team_athletes(team_id, teams!team_id(name)), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
+    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), position_id, positions!position_id(nom, abreviation), schools!school_id(name, region, city), team_athletes(team_id, teams!team_id(name)), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
     if (!raw) return;
     // Re-run the same mapping (simplified — just update key display fields)
     const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
@@ -1817,7 +1828,7 @@ function AthleteProfilPageDesktop() {
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     {traitEntries.map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-[#111317] border border-white/5">
-                        <span className="text-[12px] text-[#9CA3AF]">{TRAIT_LABELS[key]}</span>
+                        <span className="text-[12px] text-[#9CA3AF]">{traitLabelByCamel[key] ?? key}</span>
                         <StarRating rating={val} size="sm" />
                       </div>
                     ))}
@@ -1830,6 +1841,7 @@ function AthleteProfilPageDesktop() {
                 traitRatings={a.traitRatings}
                 pendingSugs={pendingSugs}
                 onSubmit={submitSuggestion}
+                traits={athleteTraits}
               />
             )}
 

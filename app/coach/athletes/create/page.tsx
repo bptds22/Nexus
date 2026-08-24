@@ -10,6 +10,8 @@ import NxSelect from "../../components/NxSelect";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
 import { createClient } from "@/lib/supabase/client";
@@ -176,16 +178,14 @@ interface CoachTeamData {
   teams: { id: string; name: string; level: string; division: string; sport: string; league: string; gender: "M" | "F" }[];
 }
 
-const CHARACTER_TRAITS: { key: string; label: string; iconName: string }[] = [
-  { key: "leadership", label: "Leadership", iconName: "leadership" },
-  { key: "discipline", label: "Discipline / Éthique de travail", iconName: "discipline" },
-  { key: "coachability", label: "Coachabilité", iconName: "coachability" },
-  { key: "game_iq", label: "Intelligence de jeu", iconName: "gameIQ" },
-  { key: "competitiveness", label: "Compétitivité", iconName: "competitiveness" },
-  { key: "teamwork", label: "Esprit d'équipe", iconName: "teamwork" },
-  { key: "resilience", label: "Résilience / Gestion de la pression", iconName: "resilience" },
-  { key: "attitude", label: "Attitude / Mentalité", iconName: "attitude" },
-];
+/* CHARACTER_TRAITS retiré. Ses 8 entrées écrivaient dans
+   form.scouting.traitRatings sous des clés camelCase (coachability,
+   game_iq, competitiveness, teamwork, attitude) que buildEvalRecord ne
+   relit JAMAIS — il lit les noms de colonne DB. Cinq des huit notes
+   saisies partaient donc en base à NULL, et le trigger calc_cote_globale
+   recalculait la cote sur les trois survivantes. Les 14 critères viennent
+   maintenant du référentiel, indexés par nom de colonne : les clés
+   écrites et les clés relues sont les mêmes par construction. */
 
 /* ══════════════════════════════════════════════════════════════
    INITIAL STATE
@@ -251,6 +251,9 @@ const req = <span className="text-[#E63946]"> *</span>;
 ══════════════════════════════════════════════════════════════ */
 
 export default function CreateAthletePage() {
+  /* Référentiel de grilles. À la création, la position vient du formulaire —
+     c'est elle qui sera figée dans grille_id par saveAthleteCreate. */
+  const grilleSet = useGrilles();
   // Mobile-native dispatch (Capacitor) — shared mode-gated wizard.
   // Web wizard below untouched. IS_CAPACITOR is a build-time constant
   // so the conditional return is stable per build (no rules-of-hooks issue).
@@ -1382,42 +1385,45 @@ export default function CreateAthletePage() {
           <p className="text-[12px] text-[#6b7280] mb-5 -mt-3">
             Évalue chaque caractéristique de l&apos;athlète individuellement. Clique sur les étoiles pour noter de 1 à 5.
           </p>
-          <div className="space-y-1">
-            {CHARACTER_TRAITS.map((trait) => {
-              const rating = sc.traitRatings[trait.key] || 0;
-              return (
-                <div key={trait.key}
-                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-[#13151a]/60 border border-[#2a2d36]/50 hover:border-[#3a3d46]/60 transition-colors">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <NxIcon name={trait.iconName} size={15} className="shrink-0 text-[#8a8d96]" />
-                    <span className="text-[14px] font-bold text-[#c8c8cc] truncate">{trait.label}</span>
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {Array.from({ length: 5 }, (_, i) => {
-                      const starVal = i + 1;
-                      const isFilled = rating >= starVal;
-                      return (
-                        <button key={i} type="button"
-                          title={`${starVal} étoile${starVal > 1 ? "s" : ""}`}
-                          className="w-6 h-6 cursor-pointer transition-transform hover:scale-110"
-                          onClick={() => {
-                            const newVal = rating === starVal ? 0 : starVal;
-                            updateScouting("traitRatings", { ...sc.traitRatings, [trait.key]: newVal });
-                          }}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill={isFilled ? "#F59E0B" : "#2D3748"} stroke="none">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                        </button>
-                      );
-                    })}
-                    <span className="ml-2 text-[13px] font-bold text-[#6b7280] w-8 text-right tabular-nums">
-                      {rating > 0 ? `${rating}/5` : "—"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {traitGroups(grilleSet, {
+            positionId: resolvePositionId(grilleSet, form.sports.primarySport, form.sports.primaryPosition),
+          }).map((group) => (
+            <div key={group.title} className="mb-4">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-2">{group.title}</p>
+              <div className="space-y-1">
+                {group.traits.map((trait) => {
+                  const rating = sc.traitRatings[trait.column] || 0;
+                  return (
+                    <div key={trait.column}
+                      className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-[#13151a]/60 border border-[#2a2d36]/50 hover:border-[#3a3d46]/60 transition-colors">
+                      <span className="text-[14px] font-bold text-[#c8c8cc] truncate">{trait.label}</span>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {Array.from({ length: 5 }, (_, i) => {
+                          const starVal = i + 1;
+                          return (
+                            <button key={i} type="button"
+                              title={`${starVal} étoile${starVal > 1 ? "s" : ""}`}
+                              className="w-6 h-6 cursor-pointer transition-transform hover:scale-110"
+                              onClick={() => {
+                                const newVal = rating === starVal ? 0 : starVal;
+                                updateScouting("traitRatings", { ...sc.traitRatings, [trait.column]: newVal });
+                              }}>
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill={rating >= starVal ? "#F59E0B" : "#2D3748"} stroke="none">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                            </button>
+                          );
+                        })}
+                        <span className="ml-2 text-[13px] font-bold text-[#6b7280] w-8 text-right tabular-nums">
+                          {rating > 0 ? `${rating}/5` : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           {(() => {
             const rated = Object.values(sc.traitRatings).filter((v) => v > 0);
             if (rated.length === 0) return null;

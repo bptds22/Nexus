@@ -73,6 +73,7 @@ const ATHLETE_SELECT = `
   parcours_equipes,
   school_id,
   coach_id,
+  position_id,
   sports!sport_id(nom),
   positions!position_id(nom, abreviation),
   schools!school_id(name, city, region, type),
@@ -84,7 +85,7 @@ const ATHLETE_SELECT = `
     vision_du_jeu, sens_tactique,
     leadership, discipline, coachabilite, intelligence_jeu,
     competitivite, esprit_equipe, resilience, attitude_mentalite,
-    rapport_entraineur, distinctions, updated_at, coach_id,
+    rapport_entraineur, distinctions, updated_at, coach_id, grille_id,
     evaluator:users!evaluations_coach_id_fkey(first_name, last_name)
   ),
   users!coach_id(first_name, last_name)
@@ -454,6 +455,11 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     // ne sert que de repli si la colonne est nulle (données legacy sans cascade).
     overallRating: (raw.cote_globale_entraineur as number) || (eval0?.cote_globale as number) || 0,
     distinctions: parseDistinctions(eval0?.distinctions),
+    /* Règle de lecture des grilles : grille_id de l'éval choisie d'abord,
+       position de l'athlète ensuite. Les deux voyagent ensemble jusqu'au
+       rendu, qui applique resolveGrille. */
+    grilleId: (eval0?.grille_id as string | null) ?? null,
+    positionId: (raw.position_id as string | null) ?? null,
     // Attribution : auteur de l'éval choisie (selectBestEvaluation → coach_id +
     // users embed). Le composant compare evaluatorCoachId au coach connecté pour
     // décider d'afficher « Évalué par … ». Visible quand la requête renvoie la

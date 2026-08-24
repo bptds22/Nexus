@@ -16,6 +16,8 @@ import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmConte
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import StepIndicator from "../../../components/StepIndicator";
 import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import TagInput from "../../../components/TagInput";
@@ -336,6 +338,12 @@ function ModifierContent({ id }: { id: string }) {
   const updateSubmission = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, submission: { ...prev.submission, [field]: value } }));
   }, []);
+
+  /* Référentiel de grilles. Les libellés des 5 critères variables suivent la
+     position ACTUELLEMENT SÉLECTIONNÉE dans le formulaire, pas celle en base :
+     si le coach change la position, il doit évaluer sur la grille qui sera
+     effectivement figée dans grille_id à la sauvegarde. */
+  const grilleSet = useGrilles();
 
   const updateScouting = useCallback((field: string, value: string | number | DistinctionEntry[] | Record<string, number>) => {
     setForm((prev) => ({ ...prev, scouting: { ...prev.scouting, [field]: value } }));
@@ -800,28 +808,16 @@ function ModifierContent({ id }: { id: string }) {
 
         {/* ── Detailed: 11 trait ratings ──────────── */}
         {isDetailed && (() => {
-          const TRAIT_GROUPS = [
-            { title: "Capacités athlétiques", traits: [
-              { key: "vitesse_explosivite", label: "Vitesse / Explosivité" },
-              { key: "force_puissance", label: "Force / Puissance" },
-              { key: "endurance_cardio", label: "Endurance / Cardio" },
-              { key: "agilite_coordination", label: "Agilité / Coordination" },
-            ]},
-            { title: "Intelligence sportive", traits: [
-              { key: "vision_du_jeu", label: "Vision du jeu" },
-              { key: "sens_tactique", label: "Sens tactique" },
-            ]},
-            { title: "Caractère", traits: [
-              { key: "leadership", label: "Leadership" },
-              { key: "discipline", label: "Discipline / Éthique de travail" },
-              { key: "coachabilite", label: "Coachabilité" },
-              { key: "intelligence_jeu", label: "Intelligence de jeu" },
-              { key: "competitivite", label: "Compétitivité" },
-              { key: "esprit_equipe", label: "Esprit d'équipe" },
-              { key: "resilience", label: "Résilience" },
-              { key: "attitude_mentalite", label: "Attitude / Mentalité" },
-            ]},
-          ];
+          /* Les 14 critères viennent du référentiel : 9 libellés fixes +
+             5 fournis par la grille de la position. Aucun libellé n'est
+             câblé ici, et rien à l'écran ne distingue les deux familles —
+             les groupes ci-dessous sont ceux d'avant, à l'identique. */
+          const TRAIT_GROUPS = traitGroups(grilleSet, {
+            positionId: resolvePositionId(grilleSet, form.sports.primarySport, form.sports.primaryPosition),
+          }).map((g) => ({
+            title: g.title,
+            traits: g.traits.map((t) => ({ key: t.column, label: t.label })),
+          }));
           const allRated = Object.values(sc.traitRatings).filter((v) => v > 0);
           const autoAvg = allRated.length > 0 ? allRated.reduce((a, b) => a + b, 0) / allRated.length : 0;
           return (

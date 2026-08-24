@@ -36,6 +36,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AthleteFormData } from "./wizardFormShape";
+import { loadGrilles, grilleIdForSave } from "@/lib/evaluations/grilles";
 
 /* ── Result + options ───────────────────────────────────────── */
 
@@ -209,12 +210,19 @@ function buildEvalRecord(
   athleteId: string,
   coachUserId: string,
   coteGlobale: number | null,
+  grilleId: string | null,
 ): Record<string, unknown> {
   const tr = form.scouting.traitRatings;
   const distinctions = form.scouting.badges.filter((b) => b && b.badge);
   return {
     coach_id: coachUserId,
     athlete_id: athleteId,
+    /* Grille FIGÉE au moment de la saisie. GENERIQUE est écrite
+       EXPLICITEMENT, jamais laissée à NULL : c'est ce qui garantit qu'une
+       éval garde ses libellés si la position de l'athlète reçoit une grille
+       dédiée plus tard. NULL veut dire « éval antérieure aux grilles »
+       (les 5 lignes historiques, non backfillées), pas « GENERIQUE ». */
+    grille_id: grilleId,
     cote_globale: coteGlobale,
     vitesse_explosivite: tr.vitesse_explosivite || null,
     force_puissance: tr.force_puissance || null,
@@ -246,6 +254,10 @@ export async function saveAthleteCreate(
 ): Promise<SaveResult> {
   const coteGlobale = computeCoteGlobale(form);
   const ids = await resolveSportIds(supabase, form);
+  /* Résolu depuis la position QUI VA ÊTRE ÉCRITE (ids.positionId), pas
+     depuis celle en base : si le coach change la position dans le
+     formulaire, la grille figée doit suivre ce qu'il vient de saisir. */
+  const grilleId = grilleIdForSave(await loadGrilles(supabase), ids.positionId);
 
   const shared = buildSharedAthletesPayload(form, ids, coteGlobale);
   const createOnly: Record<string, unknown> = {
@@ -278,7 +290,7 @@ export async function saveAthleteCreate(
   const athleteId = (data as { id: string }).id;
 
   // evaluations INSERT
-  const evalRecord = buildEvalRecord(form, athleteId, coachUserId, coteGlobale);
+  const evalRecord = buildEvalRecord(form, athleteId, coachUserId, coteGlobale, grilleId);
   const evalRes = await supabase.from("evaluations").insert(evalRecord);
   if (evalRes.error) return { error: evalRes.error };
 
@@ -312,6 +324,10 @@ export async function saveAthleteEdit(
 ): Promise<SaveResult> {
   const coteGlobale = computeCoteGlobale(form);
   const ids = await resolveSportIds(supabase, form);
+  /* Résolu depuis la position QUI VA ÊTRE ÉCRITE (ids.positionId), pas
+     depuis celle en base : si le coach change la position dans le
+     formulaire, la grille figée doit suivre ce qu'il vient de saisir. */
+  const grilleId = grilleIdForSave(await loadGrilles(supabase), ids.positionId);
 
   const shared = buildSharedAthletesPayload(form, ids, coteGlobale);
   const editOnly: Record<string, unknown> = {
@@ -348,7 +364,7 @@ export async function saveAthleteEdit(
      remonte l'erreur athletes qu'APRÈS, une fois l'éval en sécurité. */
 
   // evaluations UPSERT (indépendant du résultat de l'UPDATE athletes)
-  const evalRecord = buildEvalRecord(form, athleteId, coachUserId, coteGlobale);
+  const evalRecord = buildEvalRecord(form, athleteId, coachUserId, coteGlobale, grilleId);
   const evalRes = await supabase
     .from("evaluations")
     .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });

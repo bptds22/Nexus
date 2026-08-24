@@ -15,6 +15,8 @@ import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { traitGroups, type GrilleRef } from "@/lib/evaluations/grilles";
+import { useGrilles } from "@/lib/evaluations/useGrilles";
 import { type DistinctionEntry } from "@/lib/config/badges";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -43,28 +45,7 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const TRAIT_GROUPS: { title: string; traits: { key: keyof AthleteTraitRatings; label: string }[] }[] = [
-  { title: "Capacités athlétiques", traits: [
-    { key: "speed",     label: "Vitesse / Explosivité" },
-    { key: "power",     label: "Force / Puissance" },
-    { key: "endurance", label: "Endurance / Cardio" },
-    { key: "agility",   label: "Agilité / Coordination" },
-  ]},
-  { title: "Intelligence sportive", traits: [
-    { key: "gameVision", label: "Vision du jeu" },
-    { key: "tactics",    label: "Sens tactique" },
-  ]},
-  { title: "Caractère", traits: [
-    { key: "leadership",      label: "Leadership" },
-    { key: "discipline",      label: "Discipline / Éthique de travail" },
-    { key: "coachability",    label: "Coachabilité" },
-    { key: "gameIQ",          label: "Intelligence de jeu" },
-    { key: "competitiveness", label: "Compétitivité" },
-    { key: "teamwork",        label: "Esprit d'équipe" },
-    { key: "resilience",      label: "Résilience" },
-    { key: "attitude",        label: "Attitude / Mentalité" },
-  ]},
-];
+/* TRAIT_GROUPS retiré — voir lib/evaluations/grilles.ts (traitGroups). */
 
 /* ── Shared components (same as recruiter view) ───────────────── */
 
@@ -262,6 +243,11 @@ export default function CoachAthleteProfilePage() {
 
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loading, setLoading] = useState(true);
+  const grilleSet = useGrilles();
+  /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE. Les deux
+     champs voyagent depuis mapToRecruiterView. */
+  const grilleRef: GrilleRef = { grilleId: a?.grilleId ?? null, positionId: a?.positionId ?? null };
+
 
   useEffect(() => {
     const load = async () => {
@@ -781,14 +767,14 @@ export default function CoachAthleteProfilePage() {
 
                   {/* (2-4) Capacités athlétiques / Intelligence sportive / Caractère */}
                   <div className="space-y-4">
-                    {TRAIT_GROUPS.map((group) => (
+                    {traitGroups(grilleSet, grilleRef).map((group) => (
                       <div key={group.title} className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-5">
                         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">{group.title}</p>
                         <div className="space-y-1">
                           {group.traits.map((trait) => {
-                            const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
+                            const val = a.traitRatings ? (a.traitRatings[trait.camel as keyof typeof a.traitRatings] as number) : 0;
                             return (
-                              <div key={trait.key} className="flex items-center justify-between py-2 px-2 rounded-lg">
+                              <div key={trait.column} className="flex items-center justify-between py-2 px-2 rounded-lg">
                                 <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
                                 <div className="flex items-center gap-2">
                                   <StarRating rating={val} size="sm" />

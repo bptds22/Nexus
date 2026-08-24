@@ -45,8 +45,32 @@ INSERT INTO _purge_cibles (athlete_id) VALUES
   ('8a90951c-8592-4c53-962a-815ea064dc33'); -- "Bruno-Philippe Simard"  / bpdesfosses@gmail.com
 
 -- ---------------------------------------------------------------------
--- 1. GARDE-FOUS (avortent la transaction si la realite ne correspond pas)
+-- 1. GARDE-FOUS
+--
+--     REJOUABILITE (ajout 2026-08-25) -- le contenu enregistre dans
+--     supabase_migrations.schema_migrations n'est PAS modifie par cette
+--     edition : seul le depot bouge. La prod a deja execute la version
+--     d'origine le 2026-07-12 et n'y repassera jamais.
+--
+--     Cette migration ciblait 12 UUID releves par un audit de PRODUCTION.
+--     Sur une base recreee de zero (supabase db reset), ces 12 lignes
+--     n'existent pas : la version d'origine levait, ce qui rendait TOUT
+--     rejeu impossible -- le depot ne pouvait plus reconstruire une base
+--     locale, et les 142 migrations suivantes restaient inatteignables.
+--
+--     Trois cas, desormais :
+--       12 trouves -> purge normale, garde-fous d'origine inchanges
+--        0 trouve   -> NO-OP annonce par RAISE NOTICE (base neuve : la
+--                      purge n'a rien a faire, son role historique est
+--                      rempli en prod)
+--       autre       -> EXCEPTION. C'est le cas qui doit alerter : une
+--                      purge partielle signale une vraie anomalie.
+--
+--     Les 12 UUID et les 7 lignes protegees restent en dur, intacts,
+--     pour la trace d'audit.
 -- ---------------------------------------------------------------------
+CREATE TEMP TABLE _purge_mode (actif boolean NOT NULL) ON COMMIT DROP;
+
 DO $$
 DECLARE
   v_cibles     int;
@@ -59,12 +83,22 @@ BEGIN
     RAISE EXCEPTION 'GARDE-FOU: % UUID cibles au lieu de 12', v_cibles;
   END IF;
 
-  -- Les 12 doivent tous exister (sinon la base a change depuis l'audit).
+  -- Combien des 12 cibles sont reellement presentes ?
   SELECT count(*) INTO v_existants
   FROM public.athletes a JOIN _purge_cibles c ON c.athlete_id = a.id;
-  IF v_existants <> 12 THEN
-    RAISE EXCEPTION 'GARDE-FOU: % athletes cibles trouves au lieu de 12 (base modifiee depuis l''audit du 2026-07-12)', v_existants;
+
+  IF v_existants = 0 THEN
+    -- Base recreee : rien a purger. On l'annonce et on sort.
+    INSERT INTO _purge_mode (actif) VALUES (false);
+    RAISE NOTICE 'PURGE IGNOREE : aucune des 12 cibles de l''audit 2026-07-12 n''est presente. Base recreee ou purge deja effectuee -- no-op.';
+    RETURN;
   END IF;
+
+  IF v_existants <> 12 THEN
+    RAISE EXCEPTION 'GARDE-FOU: % athletes cibles trouves au lieu de 12 ou 0 -- purge PARTIELLE, anomalie reelle, ARRET', v_existants;
+  END IF;
+
+  INSERT INTO _purge_mode (actif) VALUES (true);
 
   -- Aucune cible ne doit avoir de compte auth : ce sont des orphelins coach.
   SELECT count(*) INTO v_avec_compte
@@ -121,6 +155,12 @@ DECLARE
   v_restants int;
   v_zombies  int;
 BEGIN
+  -- En mode no-op, les comptes d'origine (19 -> 7) n'ont aucun sens.
+  IF NOT (SELECT actif FROM _purge_mode) THEN
+    RAISE NOTICE 'VERIFICATION IGNOREE : purge en mode no-op.';
+    RETURN;
+  END IF;
+
   SELECT count(*) INTO v_restants FROM public.athletes;
   IF v_restants <> 7 THEN
     RAISE EXCEPTION 'VERIF: % athletes restants au lieu de 7 -- ROLLBACK', v_restants;
