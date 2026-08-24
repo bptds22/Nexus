@@ -1,13 +1,5 @@
--- 20260825000000_grille_id_semantique_du_null
+-- Rectification du COMMENT ON COLUMN evaluations.grille_id.
 --
--- NON APPLIQUÉE PAR L'AGENT. Fichier préparé sur demande, à appliquer par BP.
--- ATTENTION : le nom de fichier porte un horodatage CHOISI. Si l'application
--- se fait via MCP apply_migration, celui-ci posera sa PROPRE version — il
--- faudra alors renommer le fichier pour qu'il corresponde à ce qui est
--- réellement enregistré dans supabase_migrations.schema_migrations, et
--- chercher par `name`, jamais par `version`.
---
--- ── OBJET : un commentaire, rien d'autre ────────────────────────────────────
 -- Aucune donnée touchée, aucune colonne modifiée, aucune fonction redéfinie.
 -- COMMENT ON COLUMN uniquement.
 --
