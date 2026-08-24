@@ -1,7 +1,15 @@
 // send-push : envoi de notifications via FCM HTTP v1.
 // Auth appelant : header x-push-secret == PUSH_DISPATCH_SECRET.
 // Lit les tokens de l'utilisateur (service role, bypass RLS), envoie à chaque
-// appareil, supprime les tokens morts (UNREGISTERED).
+// appareil EN CONCURRENCE (paquets de BATCH_SIZE), supprime les tokens morts
+// (UNREGISTERED).
+//
+// Pourquoi la concurrence : la boucle était séquentielle, donc la latence de
+// la fonction était PROPORTIONNELLE au nombre de jetons du destinataire —
+// mesuré le 2026-08-23 : 42 jetons, ~200 ms l'aller-retour FCM, 8,9 s au
+// total, alors que pg_net abandonne à 5 s (son défaut, notify_on_message ne
+// passe pas timeout_milliseconds). Le push aboutissait mais était enregistré
+// comme expiré. Voir docs/push-pgnet-timeout-20260823.md.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { importPKCS8, SignJWT } from "https://esm.sh/jose@5";
@@ -74,7 +82,28 @@ Deno.serve(async (req) => {
   let sent = 0, failed = 0;
   const dead: string[] = [];
 
-  for (const { token } of tokens) {
+  // Paquets de 10 : assez pour que la latence cesse de suivre le nombre de
+  // jetons, assez petit pour ne pas ouvrir 40+ connexions FCM d'un coup.
+  const BATCH_SIZE = 10;
+
+  /* Journal par jeton EN ÉCHEC. Aujourd'hui on ne sait pas POURQUOI 41 jetons
+     morts ne sont pas purgés : le critère ne retient que 404/UNREGISTERED, et
+     la fonction ne trace rien. Cette ligne existe pour décider du critère sur
+     des chiffres, pas sur une intuition — elle ne change aucun comportement.
+     Ne journalise que la QUEUE du jeton (12 derniers caractères) : de quoi
+     distinguer deux appareils, jamais de quoi en réutiliser un. Aucun contenu
+     de message, aucun nom, aucun courriel. */
+  const logFailure = (token: string, httpStatus: number | null, fcmCode: string | null) => {
+    console.log(JSON.stringify({
+      evt: "push_token_failed",
+      user_id,
+      token_tail: token.slice(-12),
+      http_status: httpStatus,
+      fcm_code: fcmCode,
+    }));
+  };
+
+  const sendOne = async (token: string): Promise<{ ok: boolean; dead: boolean }> => {
     const r = await fetch(
       `https://fcm.googleapis.com/v1/projects/${FCM_SA.project_id}/messages:send`,
       {
@@ -83,13 +112,30 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ message: { token, notification: { title, body }, data: stringData } }),
       },
     );
-    if (r.ok) { sent++; continue; }
-    failed++;
+    if (r.ok) return { ok: true, dead: false };
     const errBody = await r.json().catch(() => ({}));
     const code = errBody?.error?.details?.[0]?.errorCode ?? errBody?.error?.status;
+    logFailure(token, r.status, code ?? null);
     // Conservateur : on ne supprime QUE sur token périmé, pas sur INVALID_ARGUMENT
     // (qui peut juste signaler un payload mal formé pendant le debug).
-    if (r.status === 404 || code === "UNREGISTERED") dead.push(token);
+    return { ok: false, dead: r.status === 404 || code === "UNREGISTERED" };
+  };
+
+  for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+    const slice = tokens.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(slice.map(({ token }) => sendOne(token)));
+    results.forEach((res, j) => {
+      if (res.status === "fulfilled") {
+        if (res.value.ok) { sent++; return; }
+        failed++;
+        if (res.value.dead) dead.push(slice[j].token);
+        return;
+      }
+      // Rejet réseau (fetch qui lève). Compté en échec, JAMAIS purgé : on ne
+      // sait pas si le jeton est mort ou si c'est le réseau qui a lâché.
+      failed++;
+      logFailure(slice[j].token, null, "FETCH_REJECTED");
+    });
   }
 
   let removed = 0;
