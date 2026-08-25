@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import { selectBestEvaluation, isDetailed } from "@/lib/evaluations/selectEvaluation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
@@ -253,7 +253,7 @@ function AthleteDashboardPageDesktop() {
         // ── Profile checklist (derived from real fields) ───────
         const { data: athleteFullRow } = await supabase
           .from("athletes")
-          .select("photo_url, first_name, last_name, date_naissance, telephone, taille_pieds, poids_lbs, sport_id, position_id, video_match_complet_url, video_faits_saillants_url, hudl_url, youtube_url, instagram_url, moyenne_generale, test_40_verges, saut_vertical, evaluations(vitesse_explosivite, force_puissance, leadership, rapport_entraineur, updated_at)")
+          .select("photo_url, first_name, last_name, date_naissance, telephone, taille_pieds, poids_lbs, sport_id, position_id, video_match_complet_url, video_faits_saillants_url, hudl_url, youtube_url, instagram_url, moyenne_generale, test_40_verges, saut_vertical, evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, rapport_entraineur, updated_at)")
           .eq("id", athleteRow.id)
           .maybeSingle();
 
@@ -263,11 +263,11 @@ function AthleteDashboardPageDesktop() {
               ? athleteFullRow.evaluations
               : athleteFullRow.evaluations ? [athleteFullRow.evaluations] : []
           );
-          const hasAnyTrait = evalRow && (
-            (evalRow.vitesse_explosivite || 0) > 0 ||
-            (evalRow.force_puissance || 0) > 0 ||
-            (evalRow.leadership || 0) > 0
-          );
+          /* isDetailed teste les 14 colonnes, pas 3. L'ancienne heuristique produisait
+             un FAUX NÉGATIF : un coach qui ne notait que les 5 fentes de grille laissait
+             la case « Évaluation coach » vide alors que l'évaluation existait. La
+             fonction vivait déjà dans selectEvaluation.ts sans être appelée ici. */
+          const hasAnyTrait = isDetailed(evalRow);
           const newChecklist: ChecklistItem[] = [
             { label: "Photo de profil", boost: 8, done: !!athleteFullRow.photo_url },
             { label: "Identité complète", boost: 10, done: !!(athleteFullRow.first_name && athleteFullRow.last_name && athleteFullRow.date_naissance && athleteFullRow.telephone) },

@@ -42,7 +42,7 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
-import { champToColumn } from "@/lib/evaluations/grilles";
+import { champToColumn, loadGrilles, grilleIdForSave } from "@/lib/evaluations/grilles";
 import { hapticSuccess, triggerHaptic } from "@/lib/haptics";
 
 /* ── Types ────────────────────────────────────────────────────── */
@@ -997,6 +997,59 @@ export function CoachATraiterMobile() {
     if (!coachUserId) return;
     const supabase = createClient();
     const trimmedReport = report.trim();
+
+    /* ── DEUX DÉFAUTS FERMÉS ICI ─────────────────────────────────────────
+       Ce chemin est le SEUL qui écrit dans evaluations sans passer par
+       saveAthlete ni par le trigger. Il ne listait que cote_globale et
+       rapport_entraineur.
+
+       1. PERTE DE BADGES (antérieure au chantier des grilles) — sur une
+          ligne INEXISTANTE, l'INSERT prenait le DEFAULT '[]' de
+          distinctions. Une éval rapide effaçait donc les badges affichés :
+          la ligne devenait la plus récente, et selectBestEvaluation la
+          retenait, vide.
+
+       2. BASCULE DE LIBELLÉS (introduite par le câblage de grille_id) — sur
+          une ligne EXISTANTE, l'upsert ne touche pas grille_id mais bumpe
+          updated_at. Une éval à grille_id NULL redevenait la gagnante, et la
+          fiche repassait de la grille figée au repli par position : les
+          libellés changeaient sans que personne n'ait touché à la position.
+
+       Le correctif est le même pour les deux : on RELIT la ligne du coach
+       et on recopie les deux colonnes dans le payload, au lieu de les
+       laisser absentes. Absente ≠ inchangée quand la ligne n'existe pas.
+
+       Et la relecture doit RÉUSSIR pour qu'on écrive : voir le test sur
+       lectureErr juste après. */
+    const { data: existante, error: lectureErr } = await supabase
+      .from("evaluations")
+      .select("distinctions, grille_id")
+      .eq("coach_id", coachUserId)
+      .eq("athlete_id", athleteId)
+      .maybeSingle();
+
+    /* ÉCHEC DE LECTURE ≠ ABSENCE DE LIGNE. maybeSingle() rend data:null dans
+       les DEUX cas ; sans ce test, une coupure réseau ferait écrire
+       distinctions: [] et effacerait les badges. Écrire une éval amputée est
+       PIRE que ne rien écrire : on abandonne et on le dit. */
+    if (lectureErr) {
+      console.error("[CoachATraiter] lecture eval existante:", lectureErr.message);
+      toast.error({ message: "Lecture impossible — rien n'a été enregistré" });
+      return;
+    }
+
+    let grilleId = (existante?.grille_id as string | null) ?? null;
+    if (!grilleId) {
+      /* Aucune ligne, ou ligne antérieure aux grilles : on fige la grille
+         depuis la position de l'athlète, exactement comme buildEvalRecord.
+         grilleIdForSave rend null si le référentiel est injoignable — on ne
+         devine pas. */
+      const { data: ath } = await supabase
+        .from("athletes").select("position_id").eq("id", athleteId).maybeSingle();
+      grilleId = grilleIdForSave(await loadGrilles(supabase),
+                                 (ath?.position_id as string | null) ?? null);
+    }
+
     const { error } = await supabase
       .from("evaluations")
       .upsert(
@@ -1005,6 +1058,8 @@ export function CoachATraiterMobile() {
           athlete_id: athleteId,
           cote_globale: star > 0 ? star : null,
           rapport_entraineur: trimmedReport || null,
+          distinctions: existante?.distinctions ?? [],
+          grille_id: grilleId,
         },
         { onConflict: "coach_id,athlete_id" },
       );

@@ -17,13 +17,15 @@ Follow these instructions exactly. Updated April 2026.
 
 ## TECH STACK
 
-- **Framework:** Next.js 14, TypeScript, Tailwind CSS
+- **Framework:** Next.js 16.1.6 (Turbopack), TypeScript, Tailwind CSS
 - **Database:** Supabase (self-hosted via Docker/CLI locally)
 - **Font:** Outfit (Google Fonts) — weights: 700 headings, 600 buttons, 500 sidebar, 400 body
-- **Dev server:** `npx next dev --port 3002`
-- **Local project:** `C:\Users\bptds\OneDrive\Documents\Nexus`
-- **Hosting:** AWS Canada Central — Montréal (`ca-central-1`), via Supabase (production, Loi 25), Vercel (demo only)
-- **Demo:** `nexus-brown-zeta.vercel.app` (mock data, stable)
+- **Dev server:** `npm run dev` (web, port 3000) - `npm run dev:mobile` (Capacitor, port 3001, `-H 0.0.0.0`)
+- **Local project:** `C:\Users\bptds\Documents\Nexus` (PAS sous OneDrive)
+- **Hosting:** Supabase sur AWS Canada Central — Montréal (`ca-central-1`) pour la base (production, Loi 25) ; Vercel pour le web
+- **Vercel:** projet `nexus`, branche `main` → environnement **Production**, région `yul1` (Montréal). Vercel sert la PRODUCTION, pas une démo. Tout push sur `main` déploie.
+- **Domaines:** `nexussports.ca` (production) et `nexus-brown-zeta.vercel.app` — le second est le domaine Vercel par défaut du MÊME déploiement, pas une démo à données factices. Vérifié 2026-08-24 : les deux servent la même application.
+- **Non versionné:** aucune règle de branche dans `vercel.json` (il ne porte que `regions`). Le mapping branche → environnement vit UNIQUEMENT dans le dashboard Vercel.
 
 ---
 

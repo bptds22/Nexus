@@ -77,6 +77,12 @@ export const MOBILE_EXCLUDED_PAGES = [
   '/wall-test',
   '/recherche-test',
   '/recherche-mobile-test',
+  // Ajoutees 2026-08-24 : elles etaient masquees au BUILD par
+  // HIDE_PATTERNS ('app/(dev)/**/page.tsx') mais absentes d'ici. Le groupe
+  // de route (dev) n'apparait pas dans l'URL, donc chaque feuille doit etre
+  // listee nommement. Les deux listes avaient deja diverge une fois (/join).
+  '/editeur-test',
+  '/equipe-editeur-test',
 ] as const;
 
 /**

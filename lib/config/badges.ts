@@ -69,6 +69,55 @@ export function getSportStats(sportName: string | null | undefined): string[] {
   return SPORT_STATS[key] || [];
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   Pont vers le catalogue de 22 badges (table `badges`).
+
+   VOIE 1 — transitoire. Les surfaces lisent encore
+   evaluations.distinctions, que le miroir en base entretient avec les
+   ANCIENS codes. Les 22 fichiers de public/badges/ portent les NOUVEAUX.
+   Cette table fait la jonction le temps que les appelants basculent sur
+   athlete_badges (voie 2 : 15 fichiers, autre lot).
+
+   `progression` n'a AUCUN équivalent au nouveau catalogue. Il n'est
+   rapproché d'aucun code : afficher un badge que le coach n'a pas donné
+   serait une erreur d'information sur un mineur montré à des recruteurs.
+   Un badge absent est une lacune ; un badge faux est une faute.
+   DistinctionBadge ne rend alors rien et journalise avec le marqueur
+   NEXUS:.
+───────────────────────────────────────────────────────────────── */
+export const LEGACY_BADGE_TO_CATALOGUE: Record<string, string> = {
+  captain:       "capitaine",
+  allstar:       "equipe-etoiles",
+  mvp:           "mvp",
+  team_leader:   "leader-equipe",
+  league_leader: "leader-ligue",
+  custom:        "nexus-x",
+  // progression : volontairement absent — voir ci-dessus.
+};
+
+/** Les 22 codes du catalogue.
+ *  Source de vérité : badges-catalogue-final.json, reflété par la table
+ *  public.badges. Si cette liste diverge du fichier, c'est elle qui a tort.
+ *  Vérifié contre le JSON et contre la base le 2026-08-25. */
+export const CATALOGUE_BADGE_CODES = [
+  "capitaine", "qi", "clutch", "costaud", "disponibilite",
+  "mvp", "leader-equipe", "leader-ligue", "equipe-etoiles", "nexus-x",
+  "finisseur", "3-points", "insaisissable", "verrou", "fusee",
+  "dans-la-mire", "vitesse", "mains-sures", "inarretable",
+  "force-de-frappe", "rempart", "radar",
+] as const;
+
+const CATALOGUE_SET = new Set<string>(CATALOGUE_BADGE_CODES);
+
+/** Chemin du SVG d'un badge, ou null si le code n'a pas d'équivalent.
+ *  Accepte indifféremment un ancien code (captain) ou un code de
+ *  catalogue (capitaine), ce qui évitera un second passage le jour de la
+ *  voie 2. */
+export function badgeSvgPath(code: string): string | null {
+  const cat = LEGACY_BADGE_TO_CATALOGUE[code] ?? (CATALOGUE_SET.has(code) ? code : null);
+  return cat ? `/badges/badge-${cat}.svg` : null;
+}
+
 /** A badge entry stored in evaluations.distinctions (new format) */
 export interface DistinctionEntry {
   badge: string;
