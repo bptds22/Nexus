@@ -1,5 +1,49 @@
 # Dérive de migrations — chantier badges, 25 août 2026
 
+> ## ⚠️ MISE À JOUR DU 25 AOÛT, APRÈS VÉRIFICATION — LIRE AVANT LE RESTE
+>
+> **1. Les treize migrations ont été rapatriées.** Commit `4b0159a`, par la session
+> qui a produit le chantier badges, plus une quatorzième de son cru
+> (`badges_avertissement_prefixe_zz_sur_les_triggers`, appliquée *et* versionnée).
+> Ce volet est réglé. La suite du document décrit l'état d'avant, et reste le
+> compte rendu de ce qui a été trouvé.
+>
+> **2. LA « 14ᵉ MODIFICATION SANS MIGRATION » N'EXISTE PAS. Je me suis trompé.**
+>
+> Ce document affirmait que `apply_approved_suggestion()` avait été modifiée en
+> direct sur la production, hors de tout mécanisme de migration. **C'est faux, et
+> l'erreur était la mienne.** Vérification faite :
+>
+> La migration `20260825144302_badges_contexte_forme_et_suggestions_vers_athlete_badges.sql`
+> **ne fait pas de `CREATE OR REPLACE`**. Elle lit le corps déployé avec
+> `pg_get_functiondef('public.apply_approved_suggestion')`, y applique **deux
+> substitutions textuelles ciblées**, et exécute le résultat. Le corps final est
+> donc *calculé au moment du rejeu* — d'où son absence littérale des fichiers.
+> C'est ce qui a déclenché ma fausse alerte : j'ai cherché le texte, je ne l'ai
+> pas trouvé, et j'en ai conclu à une écriture à la main.
+>
+> Cette forme n'est pas une faiblesse, elle est **plus sûre** que ce que je lui
+> reprochais : si le corps de départ n'est pas celui attendu, la migration
+> **lève** (`NEXUS: branche 'Distinctions' introuvable — le corps déployé a
+> changé, aucune substitution faite`), puis revérifie après coup qu'aucune
+> écriture de `evaluations.distinctions` ne subsiste et que les 47 branches `WHEN`
+> sont intactes. Un `db reset` reproduit donc le corps à l'identique, **ou échoue
+> bruyamment**. Aucune dégradation silencieuse n'est possible.
+>
+> Ce qui reste vrai, et qui est une gêne réelle mais mineure : **le texte
+> réellement exécuté n'est lisible dans aucun fichier du dépôt**. C'est la seule
+> raison pour laquelle une archive a été conservée :
+> `docs/recuperation/apply_approved_suggestion-20260825.sql` — pièce de
+> **lecture**, pas de rejeu, et son en-tête le dit.
+>
+> **3. Un audit complet a suivi.** 710 objets de `public` testés (206 fonctions,
+> 95 tables, 6 vues, 308 policies, 95 triggers), extensions exclues.
+> **Zéro objet de production n'existe nulle part ailleurs qu'en production.**
+> Les quinze divergences de définition relevées s'expliquent toutes par la forme
+> des migrations (corps calculé, reformatage, un enregistrement en stub), aucune
+> par une écriture à la main. Limites de la méthode en fin de document.
+
+
 **Statut : constat, pas correctif.** Ce document ne rapatrie rien. Il existe pour
 que le lot soit portable à la session qui a produit ces migrations. Deux sessions
 qui écriraient les mêmes fichiers miroirs se marcheraient dessus.
@@ -22,8 +66,8 @@ les quatorze fonctions, sans les six triggers, et avec `top_athletes_view` et
 `partner_athlete_profile` dans leur version d'avant. Le dev qui teste en local ne
 teste pas ce qui tourne en prod.
 
-**Une quatorzième modification est pire encore** : elle n'a même pas de migration.
-Voir la section « Le trou le plus sérieux ».
+*(Une quatorzième modification était initialement signalée ici comme pire encore.
+Cette alerte était fausse — voir la mise à jour en tête de document.)*
 
 ### L'entrelacement avec le chantier CÉGEP
 
@@ -126,28 +170,22 @@ heure plus tôt par le chantier lui-même.
 
 ---
 
-## Le trou le plus sérieux : une 14ᵉ modification sans aucune migration
+## L'alerte retirée : `apply_approved_suggestion()`
 
-**`apply_approved_suggestion()`** — fonction de la baseline, câblée par
-`trg_apply_suggestion` sur `athlete_suggestions`, 19 642 caractères — référence
-aujourd'hui `athlete_badges` et **appelle `appliquer_distinctions_suggerees`**.
+**Cette section affirmait une modification hors migration. Elle était fausse.**
+Le détail de la réfutation est en tête de document ; le résumé :
 
-**Aucune migration de `schema_migrations` ne contient cette version.** La dernière
-qui la redéfinit est `20260824134148`, antérieure au chantier badges et sans
-aucune mention de badges. Les migrations 12 et 13 en parlent en commentaire
-(« POURQUOI TOUCHER apply_approved_suggestion ») mais **ne la recréent pas**.
+| affirmé | établi |
+|---|---|
+| modifiée en direct sur la prod | **non** — modifiée par la migration `20260825144302` |
+| n'existe nulle part ailleurs qu'en production | **non** — reproductible depuis `20260824134148` + deux substitutions |
+| un `db reset` la remplacerait silencieusement | **non** — la migration lève si le corps de départ diffère |
+| son texte est illisible depuis le dépôt | **oui** — seul point qui tenait, d'où l'archive de lecture |
 
-Elle a donc été modifiée **en direct sur la base**, hors de tout mécanisme de
-migration. Ce n'est pas une migration sans miroir : c'est un changement de schéma
-sans migration du tout. Ni le dépôt ni `schema_migrations` n'en portent trace.
-
-Conséquence : un `db reset` restaure la version du `20260824134148`, qui ne
-connaît pas les badges — et le flux suggestions se comporte alors différemment en
-local et en prod, **sans erreur**.
-
-C'est le point à porter en premier à l'autre session.
-
----
+Ce que j'aurais dû faire avant d'écrire l'alerte : ouvrir la migration `144302`
+plutôt que de conclure de l'absence du texte à l'absence de migration. Une
+recherche textuelle ne peut rien conclure face à une migration qui construit son
+SQL à l'exécution — c'est une limite de la méthode, pas une preuve de dérive.
 
 ## Anomalies secondaires relevées au passage
 
@@ -185,15 +223,20 @@ Toutes sont dans le périmètre de l'autre session. Aucune n'a été corrigée i
 
 **Pour la session badges — dans cet ordre :**
 
-1. Récupérer `apply_approved_suggestion()` (`pg_get_functiondef`) et lui écrire
-   une migration. C'est le seul point où l'information n'existe qu'en base, sans
-   même une ligne dans `schema_migrations`.
-2. Rapatrier les treize depuis `statements`, un fichier `<version>_<name>.sql`.
+1. ~~Récupérer `apply_approved_suggestion()`~~ — **sans objet**, l'alerte était
+   fausse (voir en tête). Une archive de lecture existe néanmoins :
+   `docs/recuperation/apply_approved_suggestion-20260825.sql`.
+2. ~~Rapatrier les treize~~ — **fait**, commit `4b0159a`.
 3. Vérifier le rejeu à blanc : `supabase db reset` sur une base locale neuve doit
    produire les trois tables, les quatorze fonctions, les six triggers, et
    `top_athletes_view` / `partner_athlete_profile` dans leur version `131151`.
 4. Traiter les anomalies 1 et 2 (`search_path`, `GRANT anon`).
 
-**Pour tout le monde, d'ici là :** ne pas lancer `supabase db reset` en local.
-Il reconstruirait une base sans badges — et sans la 14ᵉ modification, qui
-n'existe qu'en production.
+**Pour tout le monde :** l'avertissement `db reset` du 25 août au matin est levé
+pour ce qui concerne les badges — les treize sont rapatriées. Il reste valable
+pour une autre raison, indépendante de ce chantier : **335 migrations appliquées
+contre 339 fichiers locaux**, dont 67 paires même-nom-version-différente et au
+moins deux numéros de version portant un contenu différent de chaque côté
+(`20260723130000` est `coach_school_onboarding_adopt_guard` en local et
+`coach_initiate_recruteur_coach` sur le cloud). Ni `schema_migrations` ni le
+dépôt ne font autorité seuls. Cet écart mérite son propre audit.
