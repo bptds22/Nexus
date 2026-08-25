@@ -41,6 +41,11 @@ type AthleteRow = {
   position_name: string | null;
   school_name: string | null;
   distinctions: unknown;
+  /** VOIE 2 — construite depuis athlete_badges par top_athletes_view.
+   *  distinctions ne porte que les 7 codes hérités : un athlète dont tous les
+   *  badges sont spécifiques au sport y apparaît VIDE, et le filtre
+   *  « avec badge » l'écartait donc à tort. */
+  badges: unknown;
   video_faits_saillants_url: string | null;
   video_match_complet_url: string | null;
   video_entrainement_url: string | null;
@@ -186,12 +191,17 @@ export default function PartnerAthletesSearch({
     genre, minRating, withVideoOnly, sortBy,
   ]);
 
-  // Client-side filter for distinctions (jsonb shape — server-side
+  // Client-side filter sur les badges (jsonb — filtre serveur
   // jsonb_array_length isn't directly exposable through PostgREST
   // without a function wrapper, so apply after fetch).
   const filtered = useMemo(() => {
     if (!withSportBadge) return athletes;
-    return athletes.filter((a) => hasDistinctions(a.distinctions));
+    /* VOIE 2 — on teste `badges` (issue de athlete_badges) et non plus
+       `distinctions`, la colonne dérivée qui ne connaît que 7 codes. Repli sur
+       distinctions pour ne pas dépendre d'un déploiement de la vue : si la
+       colonne n'est pas encore servie, le filtre garde son ancien
+       comportement au lieu de tout écarter. */
+    return athletes.filter((a) => hasDistinctions(a.badges) || hasDistinctions(a.distinctions));
   }, [athletes, withSportBadge]);
 
   /* `genre` DOIT figurer ici : c'est ce test qui choisit lequel des deux états

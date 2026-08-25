@@ -256,7 +256,7 @@ export default function AthleteProfileView({
             {dbDistinctions.length > 0 && (
               <div className="flex items-start gap-6 flex-wrap">
                 {dbDistinctions.map((d, i) => (
-                  <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} count={dbDistinctions.length} index={i} />
+                  <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} count={dbDistinctions.length} index={i} />
                 ))}
               </div>
             )}
@@ -321,7 +321,7 @@ export default function AthleteProfileView({
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                       <div className="flex flex-wrap gap-3">
                         {dbDistinctions.map((d, i) => (
-                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="sm" />
+                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="sm" />
                         ))}
                       </div>
                     </div>

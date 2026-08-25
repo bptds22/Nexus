@@ -118,10 +118,19 @@ export function badgeSvgPath(code: string): string | null {
   return cat ? `/badges/badge-${cat}.svg` : null;
 }
 
-/** A badge entry stored in evaluations.distinctions (new format) */
+/** Une entrée de badge telle que les surfaces d'AFFICHAGE la manipulent.
+ *
+ *  VOIE 2 — `libelle` est optionnel le temps de la bascule : les surfaces
+ *  déjà passées à athlete_badges le portent (c'est le libellé du catalogue,
+ *  qui part dans la prop du même nom de DistinctionBadge) ; celles encore sur
+ *  evaluations.distinctions ne l'ont pas, et DistinctionBadge retombe alors
+ *  sur BADGE_CONFIG. Il deviendra requis quand plus personne ne lira la
+ *  colonne dérivée. */
 export interface DistinctionEntry {
   badge: string;
   detail?: string;
+  libelle?: string;
+  attribueLe?: string | null;
 }
 
 /** Parse distinctions JSONB into the object format, handling legacy string arrays */

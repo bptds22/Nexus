@@ -711,7 +711,7 @@ export default function CoachAthleteProfilePage() {
             {dbDistinctions.length > 0 && (
               <div className="flex items-start gap-9 flex-wrap">
                 {dbDistinctions.map((d, i) => (
-                  <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="lg" />
+                  <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                 ))}
               </div>
             )}
@@ -793,7 +793,7 @@ export default function CoachAthleteProfilePage() {
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                       <div className="flex flex-wrap gap-3">
                         {dbDistinctions.map((d, i) => (
-                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="sm" />
+                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="sm" />
                         ))}
                       </div>
                     </div>

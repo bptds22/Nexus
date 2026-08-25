@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchProgrammeLabels } from "@/lib/queries/shared/useCegepPrograms";
 import type { AthleteProfile } from "./mockAthleteProfiles";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
-import { parseDistinctions } from "@/lib/config/badges";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { selectBestEvaluation, isDetailed } from "@/lib/evaluations/selectEvaluation";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
@@ -90,7 +89,8 @@ const ATHLETE_SELECT = `
     rapport_entraineur, distinctions, updated_at, coach_id, grille_id,
     evaluator:users!evaluations_coach_id_fkey(first_name, last_name)
   ),
-  users!coach_id(first_name, last_name)
+  users!coach_id(first_name, last_name),
+  athlete_badges(contexte, created_at, retire_le, badges(code, libelle))
 `;
 
 export async function loadAthleteRaw(athleteId: string) {
@@ -121,6 +121,61 @@ export async function loadAthleteRaw(athleteId: string) {
   }
 
   return { data, error };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VOIE 2 — les badges viennent de athlete_badges, pas de la colonne
+   dérivée evaluations.distinctions.
+
+   POURQUOI PAR L'EMBED ET PAS PAR UNE REQUÊTE
+   mapToAthleteProfile et mapToRecruiterView sont SYNCHRONES et appelées
+   depuis neuf endroits. Les rendre asynchrones, ou leur ajouter un
+   paramètre, aurait imposé neuf modifications d'appelants pour une donnée
+   d'affichage. L'embed la fait arriver par `raw`, et les deux mappeurs se
+   servent — sans changer de signature.
+
+   CE QUE ÇA CHANGE POUR L'ÉCRAN
+   distinctions ne portait que les codes ayant un équivalent hérité : Caron
+   y avait 3 badges sur 7, et un athlète dont tous les badges sont
+   spécifiques au sport n'en avait AUCUN. L'embed les rend tous, avec le
+   libellé du catalogue — c'est lui qui part dans la prop `libelle` de
+   DistinctionBadge.
+
+   Les badges RETIRÉS sont exclus ICI, pas en base : retire_le documente un
+   retrait, il ne supprime pas la ligne.
+═══════════════════════════════════════════════════════════════ */
+interface LigneBadgeAffichee {
+  contexte: string | null;
+  /* La date d'attribution est created_at. Il n'existe PAS de attribue_le :
+     attribue_par est l'AUTEUR, retire_le la date de RETRAIT. */
+  created_at?: string | null;
+  retire_le: string | null;
+  badges: { code: string; libelle: string } | { code: string; libelle: string }[] | null;
+}
+
+export interface BadgeAffiche {
+  badge: string;
+  detail?: string;
+  libelle: string;
+  attribueLe?: string | null;
+}
+
+export function badgesDepuisRaw(raw: Record<string, unknown>): BadgeAffiche[] {
+  const brut = raw.athlete_badges;
+  if (!Array.isArray(brut)) return [];
+  return (brut as LigneBadgeAffichee[])
+    .filter((l) => !l.retire_le)
+    .map((l): BadgeAffiche | null => {
+      const b = Array.isArray(l.badges) ? l.badges[0] : l.badges;
+      if (!b?.code) return null;
+      return {
+        badge: b.code,
+        detail: l.contexte ?? undefined,
+        libelle: b.libelle,
+        attribueLe: l.created_at ?? null,
+      };
+    })
+    .filter((e): e is BadgeAffiche => e !== null);
 }
 
 export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfile {
@@ -165,7 +220,7 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
     school: schoolObj?.name || "",
     region: "",
     sport: (sportObj?.nom?.toLowerCase().replace(/ /g, "_") || "football") as AthleteProfile["sport"],
-    badges: parseDistinctions(eval0?.distinctions) as unknown as AthleteProfile["badges"],
+    badges: badgesDepuisRaw(raw) as unknown as AthleteProfile["badges"],
     coachEndorsement: (raw.notes_coach as string) || (eval0?.rapport_entraineur as string) || undefined,
     openToRelocate: !!(raw.pret_changer_region),
     openToPrivate: !!(raw.ouvert_cegep_prive),
@@ -475,7 +530,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     // renvoie au coach courant que SA propre ligne). eval0 (selectBestEvaluation)
     // ne sert que de repli si la colonne est nulle (données legacy sans cascade).
     overallRating: (raw.cote_globale_entraineur as number) || (eval0?.cote_globale as number) || 0,
-    distinctions: parseDistinctions(eval0?.distinctions),
+    distinctions: badgesDepuisRaw(raw),
     /* Règle de lecture des grilles : grille_id de l'éval choisie d'abord,
        position de l'athlète ensuite. Les deux voyagent ensemble jusqu'au
        rendu, qui applique resolveGrille. */

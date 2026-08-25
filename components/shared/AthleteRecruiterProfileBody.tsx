@@ -1449,7 +1449,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               {a.distinctions.length > 0 && (
                 <div className="flex items-start gap-9 flex-wrap">
                   {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
-                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="lg" />
+                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                   ))}
                 </div>
               )}
@@ -1546,7 +1546,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                         <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                         <div className="flex flex-wrap gap-3">
                           {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
-                            <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="sm" />
+                            <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="sm" />
                           ))}
                         </div>
                       </div>

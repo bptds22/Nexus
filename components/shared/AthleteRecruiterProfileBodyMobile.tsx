@@ -423,7 +423,7 @@ function BadgesRow({
   mounted,
   badgesRevealed,
 }: {
-  distinctions: { badge: string; detail?: string }[];
+  distinctions: { badge: string; detail?: string; libelle?: string }[];
   mounted: boolean;
   badgesRevealed: number;
 }) {
@@ -439,7 +439,7 @@ function BadgesRow({
       badgesRevealed={badgesRevealed}
       maxBadges={MAX_BADGES_AFFICHES}
       renderItem={(d, _i, sizeHint) => (
-        <DistinctionBadge badge={d.badge} detail={d.detail} size={sizeHint} />
+        <DistinctionBadge badge={d.badge} detail={d.detail} libelle={d.libelle} size={sizeHint} />
       )}
     />
   );

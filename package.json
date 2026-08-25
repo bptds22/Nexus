@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --import ./lib/evaluations/__tests__/register-alias.mjs --test \"lib/evaluations/__tests__/**/*.test.ts\"",
+    "test": "node --experimental-strip-types --import ./lib/evaluations/__tests__/register-alias.mjs --test \"lib/**/__tests__/*.test.ts\"",
     "check:css": "node scripts/check-css-literals.mjs",
     "build:mobile": "node scripts/build-mobile.mjs",
     "mobile:sync": "npm run build:mobile && npx cap sync",

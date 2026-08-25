@@ -35,6 +35,21 @@ interface Props {
   attribueLe?: string | null;
   /** Joue la frappe de déblocage. Le décalage entre badges suit `index`. */
   unlock?: boolean;
+  /**
+   * VOIE 2 — le libellé, fourni par l'appelant.
+   *
+   * Passé, il fait autorité. Absent, on retombe sur BADGE_CONFIG, qui ne
+   * connaît que les 7 codes hérités : c'est ce qui laisse les surfaces
+   * basculer une par une sans rien casser au passage.
+   *
+   * POURQUOI EN PROP ET PAS UN HOOK
+   * Un hook sur le catalogue rendrait ce composant dépendant du réseau. Il
+   * est rendu dans des LISTES : le temps que le catalogue arrive, chaque
+   * badge rendrait null, et une fiche se peuplerait par à-coups. Il reste
+   * donc pur et synchrone, et la charge va aux appelants — qui, pour la
+   * plupart, ont déjà le catalogue en main.
+   */
+  libelle?: string;
 }
 
 const FENETRE_FRAICHEUR_MS = 48 * 60 * 60 * 1000;
@@ -47,7 +62,12 @@ function signalerUneFois(cle: string, message: string) {
   console.warn(message);
 }
 
-function getBadgeLabel(badge: string, detail: string | undefined, config: { label: string; hasDetail: boolean }) {
+function getBadgeLabel(
+  badge: string,
+  detail: string | undefined,
+  config: { label: string; hasDetail: boolean } | undefined,
+  libelle: string | undefined,
+) {
   // `custom` (aujourd'hui) = `nexus-x` (catalogue) : le CONTEXTE saisi par le
   // coach tient lieu de libellé et s'affiche SEUL — « Joueur défensif de la
   // ligue », sans préfixe. Le libellé du catalogue (« Custom ») ne sert qu'au
@@ -60,12 +80,20 @@ function getBadgeLabel(badge: string, detail: string | undefined, config: { labe
   // ne se souviendra pourquoi. La condition ci-dessous accepte déjà les deux
   // pour que la bascule ne dépende pas d'un oubli.
   if (badge === "custom" || badge === "nexus-x") return detail || "Distinction";
+
+  /* Le libellé de l'appelant l'emporte. Le contexte s'y accole s'il existe :
+     au catalogue, « a un contexte » n'est plus une propriété du LIBELLÉ
+     (config.hasDetail) mais du badge (requiertContexte), et un contexte
+     présent mérite d'être montré quel que soit le drapeau. */
+  if (libelle) return detail ? `${libelle} — ${detail}` : libelle;
+
+  if (!config) return detail || "Distinction";
   if (config.hasDetail && detail) return `${config.label} — ${detail}`;
   return config.label;
 }
 
 export default function DistinctionBadge({
-  badge, detail, size, count, index, attribueLe, unlock,
+  badge, detail, size, count, index, attribueLe, unlock, libelle,
 }: Props) {
   // La fraîcheur est calculée APRÈS montage, jamais au rendu serveur : le
   // build mobile est un export statique, un `Date.now()` évalué à la
@@ -91,14 +119,18 @@ export default function DistinctionBadge({
       `Voir LEGACY_BADGE_TO_CATALOGUE dans lib/config/badges.ts.`);
     return null;
   }
-  if (!config) {
+  /* Le refus ne porte plus que sur le cas VRAIMENT insoluble : ni libellé
+     fourni, ni entrée héritée. Un code de catalogue accompagné de son
+     libellé passe désormais — c'est toute la bascule voie 2. */
+  if (!config && !libelle) {
     signalerUneFois(`config:${badge}`,
-      `NEXUS: badge « ${badge} » absent de BADGE_CONFIG — non affiché. ` +
-      `Un code de catalogue est probablement arrivé avant la bascule voie 2.`);
+      `NEXUS: badge « ${badge} » sans libellé et absent de BADGE_CONFIG — non affiché. ` +
+      `Un code de catalogue est arrivé sans sa prop \`libelle\` : l'appelant a ` +
+      `basculé voie 2 à moitié.`);
     return null;
   }
 
-  const label = getBadgeLabel(badge, detail, config);
+  const label = getBadgeLabel(badge, detail, config, libelle);
 
   // Auto-derive size from count when no explicit size is passed.
   // Explicit size always wins (back-compat).
