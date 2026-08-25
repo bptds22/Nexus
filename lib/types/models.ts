@@ -214,7 +214,9 @@ export interface AthleteFormAcademic {
   strongSubjects: string[];
   academicHonors: string[];
   cegepPrograms: string[];
-  cegepProgramDetail: string;
+  /* T2 — cegep_program_labels.id[], 3 max. Remplace cegepProgramDetail,
+     le texte libre concatene derriere « Technique — ». */
+  programmesVises: string[];
   openToPrivate: boolean;
   openToAnglophone: boolean;
   cegepRegions: string[];

@@ -34,6 +34,8 @@ type ExtendedAthlete = SearchAthlete & { identityVisible: boolean; academicBadge
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, useMonCegepOffreDesProgrammes } from "@/lib/queries/shared/useCegepPrograms";
 /* ═══════════════════════════════════════════════════════════════
    Recherche d'athlètes — Filterable card grid
    Core value page for recruiters.
@@ -372,6 +374,15 @@ function RechercheContent() {
   const [hideFavorites, setHideFavorites] = useState(false);
   const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
   const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
+  /* T2 — filtre par programme CÉGEP. Le picker rend des LIBELLÉS ; la RPC
+     filtre par PROGRAMME. La conversion se fait ici, via le catalogue. */
+  const [progFilterIds, setProgFilterIds] = useState<string[]>([]);
+  const [progFilterOpen, setProgFilterOpen] = useState(false);
+  const [offertParMonCegep, setOffertParMonCegep] = useState(false);
+  const { data: catalogueProg } = useCegepPrograms();
+  const { data: monCegepAUnCatalogue = false } = useMonCegepOffreDesProgrammes();
+  const progFilterProgramIds = [...new Set(
+    (catalogueProg ?? []).filter((l) => progFilterIds.includes(l.id)).map((l) => l.programId))];
   const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
   const [filterNewOnly, setFilterNewOnly] = useState(searchParams.get("nouveau") === "true");
   const [minGpa, setMinGpa] = useState("");
@@ -416,6 +427,9 @@ function RechercheContent() {
     minGpa,
     sortBy,
     sportId,
+    programmeIds: progFilterProgramIds,
+    // Jamais true quand le bouton est masqué : la RPC lèverait.
+    offertParMonCegep: offertParMonCegep && monCegepAUnCatalogue,
     tier,
   });
   const loading = tierLoading || athletesLoading;
@@ -492,7 +506,7 @@ function RechercheContent() {
     queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
 
   const resetFilters = () => {
     setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType(""); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setHideFavorites(false); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
@@ -700,6 +714,33 @@ function RechercheContent() {
               </div>
               <span className={`text-[13px] font-semibold transition-colors ${filterOuvertDemenager ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert à déménager</span>
             </label>
+
+            {/* T2 — le filtre par programme : le gain reel du chantier.
+                Avant, le programme vise n'apparaissait qu'une fois la fiche
+                ouverte, donc trop tard pour trier une liste. */}
+            <button type="button" onClick={() => setProgFilterOpen(true)}
+              className={`flex items-center gap-2 text-[13px] font-semibold transition-colors ${progFilterIds.length ? "text-white" : "text-[#9CA3AF] hover:text-[#c0c0c0]"}`}>
+              <div className={`nx-filter-checkbox${progFilterIds.length ? " checked" : ""}`}>
+                {progFilterIds.length > 0 && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+              </div>
+              {progFilterIds.length > 0 ? `Programme (${progFilterIds.length})` : "Programme visé"}
+            </button>
+            <ProgrammeCegepPicker open={progFilterOpen} onClose={() => setProgFilterOpen(false)}
+              value={progFilterIds} onChange={setProgFilterIds} />
+
+            {/* GARDE-FOU : masqué, jamais coché-mais-inerte. Sans school_id,
+                ou sans catalogue au cégep, ce filtre ne peut rien rendre —
+                et une liste à zéro doit pouvoir dire pourquoi elle est à zéro.
+                La RPC lève aussi, avec le marqueur NEXUS. */}
+            {monCegepAUnCatalogue && (
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input type="checkbox" checked={offertParMonCegep} onChange={(e) => setOffertParMonCegep(e.target.checked)} className="sr-only" />
+                <div className={`nx-filter-checkbox${offertParMonCegep ? " checked" : ""}`}>
+                  {offertParMonCegep && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                </div>
+                <span className={`text-[13px] font-semibold transition-colors ${offertParMonCegep ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Programme offert chez nous</span>
+              </label>
+            )}
 
             <label className="flex items-center gap-2 cursor-pointer group">
               <input type="checkbox" checked={filterOuvertPrive} onChange={(e) => setFilterOuvertPrive(e.target.checked)} className="sr-only" />

@@ -45,6 +45,8 @@ export interface AthleteLike {
   instagram_url?: string | null;
   moyenne_generale?: number | string | null;
   programme_cegep_vise?: unknown;
+  /** T1 — uuid[] vers cegep_program_labels. Remplace programme_cegep_vise. */
+  programmes_vises?: unknown;
   matieres_fortes?: unknown;
   regions_cegep_preferees?: unknown;
   cote_globale_entraineur?: number | string | null;
@@ -126,7 +128,14 @@ export const COMPLETION_CHECKS: CompletionCheck[] = [
   { key: "moyenne", label: "Moyenne générale", weight: 5, section: "academic", role: "athlete",
     check: (a) => numPos(a.moyenne_generale) },
   { key: "programme_cegep", label: "Programme CÉGEP visé", weight: 3, section: "academic", role: "athlete",
-    check: (a) => nonEmptyArr(a.programme_cegep_vise) },
+    /* REPLI T1 — jumeau exact de la branche du trigger SQL
+       calculate_profile_completion(). La nouvelle colonne compte, et
+       l'ancienne continue de compter tant qu'elle n'est pas vidée (T3).
+       Les deux implémentations doivent perdre leur seconde branche
+       DANS LA MÊME MIGRATION que le vidage : séparées, elles amputent
+       40 profils de façon permanente et silencieuse, y compris après
+       que l'athlète ait refait son choix. */
+    check: (a) => nonEmptyArr(a.programmes_vises) || nonEmptyArr(a.programme_cegep_vise) },
   { key: "matieres_fortes", label: "Matières fortes", weight: 2, section: "academic", role: "athlete",
     check: (a) => nonEmptyArr(a.matieres_fortes) },
   { key: "regions_cegep", label: "Régions CÉGEP préférées", weight: 3, section: "academic", role: "athlete",

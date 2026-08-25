@@ -29,6 +29,7 @@ import { parseDistinctions } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
 import { triggerHaptic } from "@/components/shared/messaging/utils";
+import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 interface AthleteCard {
   id: string; name: string; initials: string; photoUrl: string | null;
@@ -67,7 +68,7 @@ export function CoachAthleteThreadMobile() {
             athletes!athlete_id(
               id, first_name, last_name, photo_url, verified, cote_globale_entraineur,
               annee_diplomation, numero_jersey, recruitment_status, committed_school_id, open_to_offers,
-              moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
+              moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
               sports!sport_id(nom),
               positions!position_id(nom, abreviation),
               schools!school_id(name, region),
@@ -91,10 +92,9 @@ export function CoachAthleteThreadMobile() {
         const evalRaw = a?.evaluations;
         const eval0 = selectBestEvaluation(Array.isArray(evalRaw) ? evalRaw : evalRaw ? [evalRaw] : []) as { distinctions?: unknown } | null;
         const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
-        const rawProg: unknown = a?.programme_cegep_vise;
-        const programmes: string[] = Array.isArray(rawProg)
-          ? (rawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
-          : (typeof rawProg === "string" && rawProg !== "" ? [rawProg] : []);
+        // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
+        const programmes: string[] = await resolveProgrammesVisesAsync(
+          supabase, (a as Record<string, unknown> | null)?.programmes_vises, a?.programme_cegep_vise);
         const af = (a?.first_name as string) || "";
         const al = (a?.last_name as string) || "";
         if (!cancelled) {

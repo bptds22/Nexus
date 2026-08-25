@@ -38,6 +38,7 @@ import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/T
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 import { useAthleteContactable } from "@/lib/queries/recruiter/useAthleteContactable";
+import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 /* ═══════════════════════════════════════════════════════════════
    AthleteRecruiterProfileBody — shared across recruiter, athlete-
@@ -359,7 +360,7 @@ function FreeLock() {
  * projette pas :
  *   email, telephone, date_naissance, nom_parent, telephone_parent,
  *   moyenne_generale, mentions_academiques, matieres_fortes,
- *   programme_cegep_vise, regions_cegep_preferees, ouvert_cegep_*,
+ *   programme_cegep_vise, programmes_vises, regions_cegep_preferees, ouvert_cegep_*,
  *   notes_coach, rapport_entraineur, les 14 notes de traits.
  *
  * L'ecran partenaire est force en mode « simple » et masque deja le bloc
@@ -687,7 +688,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               : null);
 
         // Programme CÉGEP
-        const progArr = (d.programme_cegep_vise as string[]) || [];
+        // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
+        const progArr = await resolveProgrammesVisesAsync(
+          supabase, (d as Record<string, unknown>).programmes_vises, d.programme_cegep_vise);
 
         const heightFt = d.taille_pieds as number | null;
         const heightIn = d.taille_pouces as number | null;

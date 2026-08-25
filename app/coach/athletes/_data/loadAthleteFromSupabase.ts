@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchProgrammeLabels } from "@/lib/queries/shared/useCegepPrograms";
 import type { AthleteProfile } from "./mockAthleteProfiles";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { parseDistinctions } from "@/lib/config/badges";
@@ -63,6 +64,7 @@ const ATHLETE_SELECT = `
   telephone_parent,
   notes_coach,
   programme_cegep_vise,
+  programmes_vises,
   consentement_parental,
   status,
   statut_recrutement_override,
@@ -103,7 +105,20 @@ export async function loadAthleteRaw(athleteId: string) {
     .eq("id", athleteId)
     .single();
 
-
+  /* T2 — les libellés de programme résolus UNE fois ici, déposés sur `raw`
+     sous une clé qui n'est pas une colonne. Les trois mappeurs synchrones
+     plus bas (mapToAthleteProfile / buildFormFromRaw / mapToRecruiterView)
+     sont appelés depuis neuf endroits : leur passer un paramètre aurait
+     imposé neuf modifications d'appelants pour une donnée d'affichage.
+     Chacun retombe sur programme_cegep_vise quand la clé est absente —
+     donc les appelants qui ne passent PAS par loadAthleteRaw continuent
+     d'afficher le legacy, ce qui reste correct jusqu'à T3. */
+  if (data) {
+    (data as Record<string, unknown>)._programmes_labels =
+      await fetchProgrammeLabels(supabase, Array.isArray((data as Record<string, unknown>).programmes_vises)
+        ? ((data as Record<string, unknown>).programmes_vises as unknown[]).map(String)
+        : []);
+  }
 
   return { data, error };
 }
@@ -193,9 +208,9 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
   const heightIn = raw.taille_pouces != null ? String(raw.taille_pouces) : "";
   const weightLbs = raw.poids_lbs != null ? String(raw.poids_lbs) : "";
 
-  // Parse programme_cegep_vise
-  let progArr: string[] = [];
-  const progRaw = raw.programme_cegep_vise;
+  // Parse programme_cegep_vise — nouvelle colonne d'abord (voir loadAthleteRaw).
+  let progArr: string[] = Array.isArray(raw._programmes_labels) ? raw._programmes_labels as string[] : [];
+  const progRaw = progArr.length > 0 ? null : raw.programme_cegep_vise;
   if (Array.isArray(progRaw)) progArr = progRaw.filter((v) => v != null);
   else if (typeof progRaw === "string" && progRaw.startsWith("[")) try { progArr = JSON.parse(progRaw).filter((v: unknown) => v != null); } catch { /* */ }
 
@@ -226,8 +241,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
       gpa: raw.moyenne_generale != null ? String(raw.moyenne_generale) : "",
       strongSubjects: (raw.matieres_fortes as string[]) || [],
       academicHonors: (raw.mentions_academiques as string[]) || [],
-      cegepType: progArr.some((p) => p.toLowerCase().includes("technique")) ? "technique" : progArr.length > 0 ? "dec_general" : "",
-      cegepProgramDetail: progArr.find((p) => p.toLowerCase().includes("technique")) || "",
+      programmesVises: Array.isArray(raw.programmes_vises) ? (raw.programmes_vises as unknown[]).map(String) : [],
       openToPrivate: !!(raw.ouvert_cegep_prive),
       openToAnglophone: !!(raw.ouvert_cegep_anglophone),
       openToRelocate: !!(raw.pret_changer_region),
@@ -424,6 +438,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     strongSubjects: (raw.matieres_fortes as string[]) || [],
     academicHonors: (raw.mentions_academiques as string[]) || [],
     targetCegepProgram: (() => {
+      if (Array.isArray(raw._programmes_labels) && raw._programmes_labels.length > 0) return raw._programmes_labels as string[];
       const p = raw.programme_cegep_vise;
       if (Array.isArray(p)) return p as string[];
       if (typeof p === "string" && p.startsWith("[")) try { return JSON.parse(p) as string[]; } catch { return []; }
@@ -431,6 +446,8 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
       return [];
     })(),
     program: (() => {
+      const pl = raw._programmes_labels;
+      if (Array.isArray(pl) && pl.length > 0) return (pl as string[]).join(", ");
       const p = raw.programme_cegep_vise;
       let arr: string[] = [];
       if (Array.isArray(p)) arr = p;

@@ -36,6 +36,10 @@ export interface CegepRow {
   teams: TeamBadge[];
   sports: string[];           // noms de sports distincts (filtre)
   programmes: string[];        // noms de programmes affichés
+  /** T2 — cegep_programs.id offerts. C'est LA clé de matching : le score
+   *  « programme visé offert » est devenu une intersection d'ensembles,
+   *  plus une comparaison de sous-chaînes. */
+  programmeIds: string[];
 }
 
 export interface ViewerProfile {
@@ -46,7 +50,11 @@ export interface ViewerProfile {
   /** Abréviation du poste — le badge « 🔥 QB » du panneau aperçu. */
   positionAbrev: string | null;
   /** Programme(s) visé(s) déclaré(s) au profil athlète. */
+  /** Libellés choisis — pour l'AFFICHAGE (« Sciences humaines — Psychologie
+   *  offert »), jamais pour le matching. */
   programmesVises: string[];
+  /** cegep_programs.id — LA clé de matching. */
+  programmeIdsVises: string[];
   /** Région de son école actuelle — origine par défaut du calcul de distance. */
   regionOrigine: string | null;
 }
@@ -118,8 +126,8 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
       .eq("schools.type", "CEGEP"),
     // Les 1263 programmes sont TOUS is_displayed=true et TOUS rattachés à un
     // cégep : le filtre ne borne rien et on dépasse les 1000. Pagination.
-    fetchAllRows<{ school_id: string; name: string }>(
-      (f, t) => supabase.from("school_programs").select("school_id, name").eq("is_displayed", true).range(f, t),
+    fetchAllRows<{ school_id: string; name: string; program_id: string | null }>(
+      (f, t) => supabase.from("school_programs").select("school_id, name, program_id").eq("is_displayed", true).range(f, t),
       "cegepSearch/programs",
     ),
     supabase.from("school_page_content").select("school_id, nickname, logo_path, sell_text, color_primary"),
@@ -213,6 +221,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
         teams: teamList,
         sports: [...new Set(teamList.map((t) => t.sport))].sort(),
         programmes: progsBy.get(id) ?? [],
+        programmeIds: [...new Set(programs.filter((p) => p.school_id === id && p.program_id).map((p) => p.program_id as string))],
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
@@ -236,17 +245,38 @@ async function loadViewer(supabase: SupabaseClient): Promise<ViewerProfile | nul
   const { data: auth } = await supabase.auth.getUser();
   if (!auth?.user) return null;
   const { data } = await supabase.from("athletes")
-    .select("id, position_id, programme_cegep_vise, school_id, sports:sport_id(nom), positions:position_id(nom, abreviation), schools:school_id(region)")
+    .select("id, position_id, programme_cegep_vise, programmes_vises, school_id, sports:sport_id(nom), positions:position_id(nom, abreviation), schools:school_id(region)")
     .eq("user_id", auth.user.id).maybeSingle();
   if (!data) return null;
   const row = data as unknown as {
-    id: string; position_id: string | null; programme_cegep_vise: unknown; school_id: string | null;
+    id: string; position_id: string | null; programme_cegep_vise: unknown; programmes_vises: unknown; school_id: string | null;
     sports: { nom: string } | null; positions: { nom: string; abreviation: string | null } | null;
     schools: { region: string | null } | null;
   };
-  const vises = Array.isArray(row.programme_cegep_vise)
-    ? (row.programme_cegep_vise as unknown[]).map((x) => String(x)).filter(Boolean)
+  /* T2 — les libellés choisis, résolus en une requête ; et surtout leurs
+     program_id, sur lesquels le score se calcule désormais.
+     AVANT : le score comparait le TEXTE de l'athlète aux noms de programmes
+     par sous-chaîne bidirectionnelle. Mesuré sur les données réelles,
+     2 athlètes sur 40 déclenchaient le point — « Technique — Physiothérapie »
+     échouait alors que « DEC Techniques de physiothérapie » existe chez
+     12 cégeps. Une jointure ne rate pas ça. */
+  const labelIds = Array.isArray(row.programmes_vises)
+    ? (row.programmes_vises as unknown[]).map(String).filter(Boolean)
     : [];
+  let vises: string[] = [];
+  let programmeIdsVises: string[] = [];
+  if (labelIds.length > 0) {
+    const { data: labs } = await supabase
+      .from("cegep_program_labels").select("id, label, program_id").in("id", labelIds);
+    const byId = new Map(((labs ?? []) as { id: string; label: string; program_id: string }[]).map((l) => [l.id, l]));
+    vises = labelIds.map((id) => byId.get(id)?.label).filter((x): x is string => !!x);
+    programmeIdsVises = [...new Set(labelIds.map((id) => byId.get(id)?.program_id).filter((x): x is string => !!x))];
+  } else if (Array.isArray(row.programme_cegep_vise)) {
+    // Repli T3 : le texte legacy reste AFFICHABLE, mais il ne porte aucune
+    // clé — il ne peut donc plus marquer de point. C'est volontaire : ces
+    // valeurs sont abandonnées, pas converties.
+    vises = (row.programme_cegep_vise as unknown[]).map(String).filter(Boolean);
+  }
   return {
     athleteId: row.id,
     sportNom: row.sports?.nom ?? null,
@@ -254,6 +284,7 @@ async function loadViewer(supabase: SupabaseClient): Promise<ViewerProfile | nul
     positionNom: row.positions?.nom ?? null,
     positionAbrev: row.positions?.abreviation ?? null,
     programmesVises: vises,
+    programmeIdsVises,
     regionOrigine: row.schools?.region ?? null,
   };
 }

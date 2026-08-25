@@ -7,7 +7,6 @@
 export { MOCK_ATHLETES } from "./athletes-mock-data";
 export {
   mockRecruiterSettings,
-  CEGEP_PROGRAMS,
 } from "./recruiterSettings";
 // CEGEP_LIST / CegepEntry removed (dead). RSEQ_SPORTS / QC_REGIONS
 // moved to @/lib/config/recruiterReferenceData (static config, not mock).

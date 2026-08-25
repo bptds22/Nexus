@@ -71,6 +71,7 @@ import SuggestionsAlert, { type PendingSuggestion } from "@/components/coach/pro
 import SuggestionSheet from "@/components/coach/SuggestionSheet";
 import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
 import { triggerHaptic } from "@/lib/haptics";
+import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
 /** Surface viewer — drives recruteur-only gates + coach-only additions.
@@ -910,7 +911,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         video_faits_saillants_url, hudl_url, youtube_url, instagram_url,
         video_match_complet_url, video_entrainement_url,
         moyenne_generale, matieres_fortes, mentions_academiques,
-        programme_cegep_vise, ouvert_cegep_prive, ouvert_cegep_anglophone,
+        programme_cegep_vise, programmes_vises, ouvert_cegep_prive, ouvert_cegep_anglophone,
         pret_changer_region, regions_cegep_preferees,
         taille_pieds, taille_pouces, poids_lbs, envergure, taille_mains,
         main_dominante, pied_dominant,
@@ -992,7 +993,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           ? (birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null)
           : (card?.age ?? null);
 
-        const progArr = (d.programme_cegep_vise as string[]) || [];
+        // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
+        const progArr = await resolveProgrammesVisesAsync(
+          supabase, (d as Record<string, unknown>).programmes_vises, d.programme_cegep_vise);
 
         const heightFt = d.taille_pieds as number | null;
         const heightIn = d.taille_pouces as number | null;

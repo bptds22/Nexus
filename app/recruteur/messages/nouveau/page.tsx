@@ -15,6 +15,7 @@ import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { MessageNouveauMobile } from "@/components/shared/MessageNouveauMobile";
+import { resolveProgrammesVisesAsync, fetchProgrammeLabelMap, resolveProgrammesVisesMap } from "@/lib/queries/shared/useCegepPrograms";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -246,7 +247,7 @@ function NouveauMessageContent() {
             id, verified, coach_id,
             recruitment_status, cote_globale_entraineur,
             annee_diplomation, committed_school_id, open_to_offers,
-            moyenne_generale, programme_cegep_vise,
+            moyenne_generale, programme_cegep_vise, programmes_vises,
             pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
             sports!sport_id(nom),
             positions!position_id(abreviation),
@@ -269,6 +270,15 @@ function NouveauMessageContent() {
           (pipeData as Record<string, unknown>[])
             .map((f) => f.athlete_id as string)
             .filter(Boolean),
+        );
+
+        // T2 — une seule requete de resolution pour toute la liste (pas un N+1).
+        const progLabelMap = await fetchProgrammeLabelMap(
+          supabase,
+          pipeData.map((f: Record<string, unknown>) => {
+            const r = f.athletes;
+            return (Array.isArray(r) ? r[0] : r) as { programmes_vises?: unknown } ?? {};
+          }),
         );
 
         const mapped: SelectableAthlete[] = pipeData.map((f: Record<string, unknown>) => {
@@ -294,10 +304,9 @@ function NouveauMessageContent() {
           const eval0 = selectBestEvaluation(Array.isArray(evalRel) ? evalRel : evalRel ? [evalRel] : []) as { distinctions?: unknown } | null;
           // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
           const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
-          const rawProg: unknown = a.programme_cegep_vise;
-          const programmes: string[] = Array.isArray(rawProg)
-            ? (rawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
-            : (typeof rawProg === "string" && rawProg !== "" ? [rawProg] : []);
+          // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
+          const programmes: string[] = resolveProgrammesVisesMap(
+            a.programmes_vises, a.programme_cegep_vise, progLabelMap);
           return {
             id: a.id as string,
             identityVisible: card?.identity_visible ?? false,
@@ -347,7 +356,7 @@ function NouveauMessageContent() {
                 id, verified, coach_id,
                 recruitment_status, cote_globale_entraineur,
                 annee_diplomation, committed_school_id, open_to_offers,
-                moyenne_generale, programme_cegep_vise,
+                moyenne_generale, programme_cegep_vise, programmes_vises,
                 pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
                 sports!sport_id(nom),
                 positions!position_id(abreviation),
@@ -381,10 +390,11 @@ function NouveauMessageContent() {
               const directEval0 = selectBestEvaluation(Array.isArray(directEvalRel) ? directEvalRel : directEvalRel ? [directEvalRel] : []) as { distinctions?: unknown } | null;
               // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
               const directDistinctions: string[] = parseDistinctions(directEval0?.distinctions).map((d) => d.badge);
-              const directRawProg: unknown = (directAthlete as Record<string, unknown>)?.programme_cegep_vise;
-              const directProgrammes: string[] = Array.isArray(directRawProg)
-                ? (directRawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
-                : (typeof directRawProg === "string" && directRawProg !== "" ? [directRawProg] : []);
+              // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
+              const directProgrammes: string[] = await resolveProgrammesVisesAsync(
+                supabase,
+                (directAthlete as Record<string, unknown>)?.programmes_vises,
+                (directAthlete as Record<string, unknown>)?.programme_cegep_vise);
               found = {
                 id: directAthlete.id as string,
                 identityVisible: directCard?.identity_visible ?? false,

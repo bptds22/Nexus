@@ -19,6 +19,9 @@ import NxIcon from "@/components/ui/NxIcon";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
+import { CEGEP_REGIONS } from "@/lib/config/academicOptions";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -980,13 +983,33 @@ function PhysicalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
 
 function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
   const [gpa, setGpa] = useState(String(raw?.moyenne_generale || ""));
-  const [prog, setProg] = useState((raw?.programme_cegep_vise as string[])?.join(", ") || "");
+  /* T2 — le sélecteur partagé remplace le <input type="text"> brut qui
+     était la source unique des valeurs polluées de cette colonne
+     (« sciences humaines » en minuscules, « Montréal Québec » dans les
+     régions juste en dessous — un split(",") sur une saisie sans
+     virgule). On écrit désormais des uuid, jamais du texte. */
+  const { data: catalogueProg } = useCegepPrograms();
+  const [progIds, setProgIds] = useState<string[]>(
+    Array.isArray(raw?.programmes_vises)
+      ? (raw!.programmes_vises as unknown[]).map(String).filter(Boolean)
+      : [],
+  );
+  const [progPickerOpen, setProgPickerOpen] = useState(false);
+  const progLabels = resolveProgrammesVises(progIds, raw?.programme_cegep_vise, catalogueProg);
   const [subjects, setSubjects] = useState((raw?.matieres_fortes as string[])?.join(", ") || "");
   const [honors, setHonors] = useState((raw?.mentions_academiques as string[])?.join(", ") || "");
   const [prive, setPrive] = useState(raw?.ouvert_cegep_prive === true);
   const [anglo, setAnglo] = useState(raw?.ouvert_cegep_anglophone === true);
   const [relocate, setRelocate] = useState(raw?.pret_changer_region === true);
-  const [regions, setRegions] = useState((raw?.regions_cegep_preferees as string[])?.join(", ") || "");
+  /* Régions : chips sur CEGEP_REGIONS, plus de saisie libre. Même
+     défaut, même formulaire — « Montréal Québec » est né ici. */
+  const [regions, setRegions] = useState<string[]>(
+    Array.isArray(raw?.regions_cegep_preferees)
+      ? (raw!.regions_cegep_preferees as unknown[]).map(String).filter(Boolean)
+      : [],
+  );
+  const toggleRegion = (r: string) =>
+    setRegions((cur) => (cur.includes(r) ? cur.filter((x) => x !== r) : [...cur, r]));
   const [bio, setBio] = useState(raw?.bio || "");
 
   const toggleCls = (on: boolean) => `px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${on ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748]"}`;
@@ -995,7 +1018,22 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div><label className={lblCls}>Moyenne (%)</label><input type="number" value={gpa} onChange={(e) => setGpa(e.target.value)} placeholder="82" min="0" max="100" className={inputCls} /></div>
-        <div><label className={lblCls}>Programme CÉGEP visé</label><input type="text" value={prog} onChange={(e) => setProg(e.target.value)} placeholder="Sciences humaines" className={inputCls} /></div>
+        <div>
+          <label className={lblCls}>Programme CÉGEP visé</label>
+          <button
+            type="button"
+            onClick={() => setProgPickerOpen(true)}
+            className={`${inputCls} flex items-center text-left ${progLabels.length ? "text-white" : "text-[#4a4d56]"}`}
+          >
+            {progLabels.length > 0 ? progLabels.join(", ") : "Choisir…"}
+          </button>
+          <ProgrammeCegepPicker
+            open={progPickerOpen}
+            onClose={() => setProgPickerOpen(false)}
+            value={progIds}
+            onChange={setProgIds}
+          />
+        </div>
       </div>
       <div><label className={lblCls}>Matières fortes (séparées par virgule)</label><input type="text" value={subjects} onChange={(e) => setSubjects(e.target.value)} placeholder="Mathématiques, Éducation physique" className={inputCls} /></div>
       <div><label className={lblCls}>Mentions académiques</label><input type="text" value={honors} onChange={(e) => setHonors(e.target.value)} placeholder="Tableau d'honneur" className={inputCls} /></div>
@@ -1004,7 +1042,16 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
         <button type="button" onClick={() => setAnglo(!anglo)} className={toggleCls(anglo)}>Ouvert anglophone</button>
         <button type="button" onClick={() => setRelocate(!relocate)} className={toggleCls(relocate)}>Ouvert à déménager</button>
       </div>
-      {relocate && <div><label className={lblCls}>Régions préférées (séparées par virgule)</label><input type="text" value={regions} onChange={(e) => setRegions(e.target.value)} placeholder="Montréal, Québec" className={inputCls} /></div>}
+      {relocate && (
+        <div>
+          <label className={lblCls}>Régions préférées</label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {CEGEP_REGIONS.map((r) => (
+              <button key={r} type="button" onClick={() => toggleRegion(r)} className={toggleCls(regions.includes(r))}>{r}</button>
+            ))}
+          </div>
+        </div>
+      )}
       <div>
         <label className={lblCls}>Bio <span className="text-[#4a4d56] normal-case tracking-normal">({bio.length}/500)</span></label>
         <textarea value={bio} onChange={(e) => { if (e.target.value.length <= 500) setBio(e.target.value); }} rows={3} placeholder="Parle de toi, tes objectifs..." className={`${inputCls} h-auto py-2 resize-none`} />
@@ -1012,11 +1059,14 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
       <div className="flex items-center gap-3 mt-3">
         <button type="button" onClick={() => onSave({
           moyenne_generale: gpa ? parseFloat(gpa) : null,
-          programme_cegep_vise: prog ? prog.split(",").map(s => s.trim()).filter(Boolean) : [],
+          // programme_cegep_vise reste ABSENT du payload : cette colonne
+          // n'est plus jamais écrite depuis T2. Elle est lue en repli
+          // jusqu'au vidage T3, puis supprimée.
+          programmes_vises: progIds,
           matieres_fortes: subjects ? subjects.split(",").map(s => s.trim()).filter(Boolean) : [],
           mentions_academiques: honors ? honors.split(",").map(s => s.trim()).filter(Boolean) : [],
           ouvert_cegep_prive: prive, ouvert_cegep_anglophone: anglo, pret_changer_region: relocate,
-          regions_cegep_preferees: regions ? regions.split(",").map(s => s.trim()).filter(Boolean) : [],
+          regions_cegep_preferees: regions,
           bio: bio || null,
         })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
         <button type="button" onClick={onCancel} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
@@ -1036,6 +1086,8 @@ export default function AthleteProfilPage() {
 }
 
 function AthleteProfilPageDesktop() {
+  // T2 — catalogue des programmes, pour rejouer le libellé choisi.
+  const { data: catalogueProfil } = useCegepPrograms();
   /* Les 14 critères de l'athlète, libellés résolus par SA grille : grille_id de
      l'éval affichée d'abord, sa position ensuite, GENERIQUE sinon. La même
      liste sert à l'affichage ET à la suggestion — le libellé ne peut donc pas
@@ -1170,7 +1222,7 @@ function AthleteProfilPageDesktop() {
         shuttleAgility: raw.navette_agilite || "",
         sprint100m: raw.sprint_100m || "",
         gpa: raw.moyenne_generale,
-        targetCegepProgram: raw.programme_cegep_vise || [],
+        targetCegepProgram: resolveProgrammesVises(raw.programmes_vises, raw.programme_cegep_vise, catalogueProfil),
         strongSubjects: raw.matieres_fortes || [],
         academicHonors: raw.mentions_academiques || [],
         openToRelocate: raw.pret_changer_region,
@@ -1283,7 +1335,7 @@ function AthleteProfilPageDesktop() {
       dominantHand: raw.main_dominante||"", dominantFoot: raw.pied_dominant||"",
       fortyYard: raw.test_40_verges||"", verticalJump: raw.saut_vertical||"", broadJump: raw.saut_longueur||"",
       benchPress: raw.developpe_couche||"", shuttleAgility: raw.navette_agilite||"", sprint100m: raw.sprint_100m||"",
-      gpa: raw.moyenne_generale, targetCegepProgram: raw.programme_cegep_vise||[],
+      gpa: raw.moyenne_generale, targetCegepProgram: resolveProgrammesVises(raw.programmes_vises, raw.programme_cegep_vise, catalogueProfil),
       strongSubjects: raw.matieres_fortes||[], academicHonors: raw.mentions_academiques||[],
       openToRelocate: raw.pret_changer_region, openToPrivate: raw.ouvert_cegep_prive, openToAnglophone: raw.ouvert_cegep_anglophone,
       preferredRegions: raw.regions_cegep_preferees||[], bio: raw.bio||"",

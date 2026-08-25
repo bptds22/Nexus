@@ -22,6 +22,8 @@ import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { traitGroups, type GrilleRef } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import {
   BADGE_CONFIG,
   BADGE_ORDER,
@@ -107,16 +109,6 @@ const SUBJECTS = [
   "Arts",
 ];
 
-const CEGEP_PROGRAMS = [
-  "DEC général",
-  "Sciences de la nature",
-  "Sciences humaines",
-  "Arts",
-  "Techniques policières",
-  "Techniques informatiques",
-  "Administration",
-  "Autre",
-];
 
 const QC_REGIONS = [
   "Bas-Saint-Laurent",
@@ -532,6 +524,7 @@ export default function AdminAthleteDetailPage() {
       matieres_fortes: A("matieres_fortes") ?? [],
       mentions_academiques: A("mentions_academiques") ?? [],
       programme_cegep_vise: A("programme_cegep_vise") ?? [],
+      programmes_vises: A("programmes_vises") ?? [],
       ouvert_cegep_prive: !!A("ouvert_cegep_prive"),
       ouvert_cegep_anglophone: !!A("ouvert_cegep_anglophone"),
       pret_changer_region: !!A("pret_changer_region"),
@@ -721,23 +714,10 @@ export default function AdminAthleteDetailPage() {
     );
   };
   /** Single-select dropdown for a JSONB array stored as `[value]`. */
-  const selectSingleArray = (key: string, options: string[]) => {
-    const arr = Array.isArray(A(key)) ? (A(key) as string[]) : [];
-    const current = arr[0] ?? "";
-    return (
-      <select
-        title={key}
-        value={current}
-        onChange={(e) => setA(key, e.target.value ? [e.target.value] : [])}
-        className={inputCls}
-      >
-        <option value="">—</option>
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
-      </select>
-    );
-  };
+  // T2 — selectSingleArray + le CEGEP_PROGRAMS local a 8 valeurs sont
+  // supprimes : l'admin utilise desormais le meme selecteur que l'athlete.
+  const [progPickerOpen, setProgPickerOpen] = useState(false);
+  const { data: catalogueProg } = useCegepPrograms();
   const date = (key: string) => (
     <DatePicker
       value={(A(key) as string)?.slice(0, 10) ?? ""}
@@ -1268,7 +1248,16 @@ export default function AdminAthleteDetailPage() {
           {row("Moyenne générale", numRange("moyenne_generale", 0, 100, "0.01"))}
           {row("Matières fortes", chips("matieres_fortes", SUBJECTS))}
           {row("Mentions académiques", arrayText("mentions_academiques"))}
-          {row("Programme CÉGEP visé", selectSingleArray("programme_cegep_vise", CEGEP_PROGRAMS))}
+          {row("Programme CÉGEP visé", (
+            <>
+              <button type="button" onClick={() => setProgPickerOpen(true)} className={`${inputCls} flex items-center text-left`}>
+                {resolveProgrammesVises(A("programmes_vises"), A("programme_cegep_vise"), catalogueProg).join(", ") || "Choisir…"}
+              </button>
+              <ProgrammeCegepPicker open={progPickerOpen} onClose={() => setProgPickerOpen(false)}
+                value={Array.isArray(A("programmes_vises")) ? (A("programmes_vises") as unknown[]).map(String) : []}
+                onChange={(ids) => setA("programmes_vises", ids)} />
+            </>
+          ))}
           {row("Régions CÉGEP préférées", chips("regions_cegep_preferees", QC_REGIONS))}
           {boolRow("Ouvert CÉGEP privé", "ouvert_cegep_prive")}
           {boolRow("Ouvert CÉGEP anglophone", "ouvert_cegep_anglophone")}

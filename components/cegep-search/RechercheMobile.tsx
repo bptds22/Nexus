@@ -288,9 +288,13 @@ export default function RechercheMobile() {
           // scoreCegep → il fait remonter, il n'ouvre pas la porte à lui seul) :
           // PAS dans ce filtre. Langue/réseau : cases « ouvert à », jamais un
           // refus → pas de filtre. Distance exclue (barycentre régional).
-          if (v.programmesVises.length > 0) {
-            const offerts = c.programmes.map(norm);
-            if (!v.programmesVises.some((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)))) return false;
+          if (v.programmeIdsVises.length > 0) {
+            // T2 — même bascule que scoring.ts : intersection d'ensembles.
+            // Ce filtre est DUR (il exclut des cégeps) : le laisser sur le
+            // matching par sous-chaîne revenait à écarter des établissements
+            // sur la base d'un test qui réussissait 2 fois sur 40.
+            const offerts = new Set(c.programmeIds);
+            if (!v.programmeIdsVises.some((pid) => offerts.has(pid))) return false;
           }
         }
         return true;
@@ -484,10 +488,15 @@ export default function RechercheMobile() {
     const v = data.viewer;
     const out: { t: string; ok: boolean }[] = raisons.map((t) => ({ t, ok: true }));
     if (!data.postesEnDemande.has(c.id)) out.push({ t: "Poste non listé", ok: false });
-    if (v.programmesVises.length) {
-      const offerts = c.programmes.map(norm);
-      const trouve = v.programmesVises.some((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)));
-      if (!trouve) out.push({ t: "Programme visé absent", ok: false });
+    if (v.programmeIdsVises.length) {
+      // T2 — 4e et dernier site du matching par sous-chaîne. Les quatre
+      // basculent ensemble : en corriger trois aurait laissé le badge
+      // « Programme visé absent » mentir sur des cégeps que le score, lui,
+      // considérait compatibles.
+      const offerts = new Set(c.programmeIds);
+      if (!v.programmeIdsVises.some((pid) => offerts.has(pid))) {
+        out.push({ t: "Programme visé absent", ok: false });
+      }
     }
     return out;
   }, [data]);

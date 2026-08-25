@@ -125,14 +125,6 @@ async function resolveSportIds(supabase: SupabaseClient, form: AthleteFormData):
   return { sportId, positionId };
 }
 
-function programmeCegepVise(form: AthleteFormData): string[] {
-  const t = form.academic.cegepType;
-  if (t === "dec_general") return ["DEC général"];
-  if (t === "technique" && form.academic.cegepProgramDetail) return [`Technique — ${form.academic.cegepProgramDetail}`];
-  if (t === "technique") return ["Programme technique"];
-  return [];
-}
-
 function safeGpa(form: AthleteFormData): number | null {
   const v = form.academic.gpa ? parseFloat(form.academic.gpa) : null;
   return v !== null && (v < 0 || v > 100) ? null : v;
@@ -158,7 +150,10 @@ function buildSharedAthletesPayload(
     moyenne_generale: safeGpa(form),
     matieres_fortes: form.academic.strongSubjects || [],
     mentions_academiques: form.academic.academicHonors || [],
-    programme_cegep_vise: programmeCegepVise(form),
+    // T2 — on n'ecrit plus programme_cegep_vise. Ce fichier portait une
+    // COPIE locale de programmeCegepArray() au lieu de l'importer, et
+    // avait deja derive : elle est supprimee ici, pas reparee.
+    programmes_vises: form.academic.programmesVises,
     ouvert_cegep_prive: form.academic.openToPrivate,
     ouvert_cegep_anglophone: form.academic.openToAnglophone,
     pret_changer_region: form.academic.openToRelocate,

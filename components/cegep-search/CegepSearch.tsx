@@ -260,9 +260,13 @@ export default function CegepSearch() {
           // étudier). Poste = BONUS de TRI seulement (pèse déjà 3 dans
           // scoreCegep) : il fait remonter, il n'ouvre pas la porte → PAS dans
           // le filtre. Langue/réseau : cases « ouvert à », jamais un refus.
-          if (v.programmesVises.length > 0) {
-            const offerts = c.programmes.map(norm);
-            if (!v.programmesVises.some((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)))) return false;
+          if (v.programmeIdsVises.length > 0) {
+            // T2 — même bascule que scoring.ts : intersection d'ensembles.
+            // Ce filtre est DUR (il exclut des cégeps) : le laisser sur le
+            // matching par sous-chaîne revenait à écarter des établissements
+            // sur la base d'un test qui réussissait 2 fois sur 40.
+            const offerts = new Set(c.programmeIds);
+            if (!v.programmeIdsVises.some((pid) => offerts.has(pid))) return false;
           }
         }
         return true;

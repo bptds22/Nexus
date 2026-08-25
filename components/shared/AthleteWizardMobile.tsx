@@ -53,6 +53,8 @@ import { uploadAvatar } from "@/lib/storage/uploadAvatar";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import { HeightWheel, WeightWheel, formatHeightDisplay, formatWeightDisplay } from "@/components/shared/wizard/HeightWeightWheel";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -178,6 +180,8 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
      la position ACTUELLEMENT SÉLECTIONNÉE, pas celle en base : c'est cette
      position-là qui sera figée dans grille_id à la sauvegarde. */
   const grilleSet = useGrilles();
+  // T2 — catalogue des programmes (cache infini, 228 libellés).
+  const { data: catalogueProg } = useCegepPrograms();
   const router = useRouter();
   const toast = useMobileToast();
   const isCreate = mode === "create";
@@ -776,8 +780,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     push("Photo", f.identity.photo, b.identity.photo);
 
     push("Moyenne", f.academic.gpa, b.academic.gpa);
-    push("Programme CÉGEP", f.academic.cegepType, b.academic.cegepType);
-    push("Programme — détail", f.academic.cegepProgramDetail, b.academic.cegepProgramDetail);
+    push("Programme CÉGEP", (f.academic.programmesVises || []).join(", "), (b.academic.programmesVises || []).join(", "));
     push("CÉGEP privé", f.academic.openToPrivate, b.academic.openToPrivate);
     push("CÉGEP anglophone", f.academic.openToAnglophone, b.academic.openToAnglophone);
     push("Prêt à changer de région", f.academic.openToRelocate, b.academic.openToRelocate);
@@ -1237,15 +1240,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         title="Statut (override)" options={RECRUITING_OVERRIDE_OPTIONS}
         value={form.submission.recruitingStatus || ""}
         onChange={(v) => updateSubmission("recruitingStatus", v ? String(v) : "")} />
-      <MobilePicker open={openCegepTypePicker} onClose={() => setOpenCegepTypePicker(false)}
-        title="Programme CÉGEP visé"
-        options={[
-          { value: "", label: "Non précisé" },
-          { value: "dec_general", label: "DEC général" },
-          { value: "technique", label: "Programme technique" },
-        ]}
-        value={form.academic.cegepType || ""}
-        onChange={(v) => updateAcademic("cegepType", v ? String(v) : "")} />
+      <ProgrammeCegepPicker open={openCegepTypePicker} onClose={() => setOpenCegepTypePicker(false)}
+        value={form.academic.programmesVises || []}
+        onChange={(ids) => updateAcademic("programmesVises", ids)} />
 
       <SearchSheet<SchoolRow> open={openCegepPicker} onClose={() => setOpenCegepPicker(false)}
         title="CÉGEP d'engagement" searchPlaceholder="Rechercher un CÉGEP…"
@@ -1746,14 +1743,8 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             placeholder="85"
             type="number" numericMode="decimal" />
           <PickerRow label="Programme CÉGEP visé"
-            value={d.cegepType === "dec_general" ? "DEC général" : d.cegepType === "technique" ? "Programme technique" : ""}
+            value={resolveProgrammesVises(d.programmesVises, null, catalogueProg).join(", ")}
             onTap={() => setOpenCegepTypePicker(true)} />
-          {d.cegepType === "technique" && (
-            <InlineEditRow label="Détail du programme"
-              value={d.cegepProgramDetail}
-              onSave={(v) => updateAcademic("cegepProgramDetail", v)}
-              placeholder="Ex: Techniques policières" />
-          )}
         </Card>
 
         <Card>
@@ -2612,6 +2603,7 @@ function CreateSummary({
   onToggleConsent: () => void;
   onTogglePartner: (next: boolean) => void;
 }) {
+  const { data: catalogueProg } = useCegepPrograms();
   const sections: { title: string; rows: { label: string; value: string }[] }[] = [
     {
       title: "Identité",
@@ -2631,10 +2623,7 @@ function CreateSummary({
       title: "Académique",
       rows: [
         { label: "Moyenne", value: form.academic.gpa ? `${form.academic.gpa}%` : "" },
-        { label: "Programme", value:
-          form.academic.cegepType === "dec_general" ? "DEC général"
-          : form.academic.cegepType === "technique" ? `Technique${form.academic.cegepProgramDetail ? ` — ${form.academic.cegepProgramDetail}` : ""}`
-          : "" },
+        { label: "Programme", value: resolveProgrammesVises(form.academic.programmesVises, null, catalogueProg).join(", ") },
         { label: "Matières fortes", value: (form.academic.strongSubjects || []).join(", ") },
         { label: "Régions préférées", value: (form.academic.cegepRegions || []).join(", ") },
       ],

@@ -44,6 +44,8 @@ import { createClient } from "@/lib/supabase/client";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
 import { triggerHaptic } from "@/lib/haptics";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, useMonCegepOffreDesProgrammes } from "@/lib/queries/shared/useCegepPrograms";
 /* ── Constants ────────────────────────────────────────────── */
 
 const SPORTS: PickerOption[] = [
@@ -858,6 +860,9 @@ interface FiltersBottomSheetProps {
   hideFavorites: boolean; setHideFavorites: (v: boolean) => void;
   filterOuvertDemenager: boolean; setFilterOuvertDemenager: (v: boolean) => void;
   filterOuvertPrive: boolean; setFilterOuvertPrive: (v: boolean) => void;
+  progFilterIds: string[]; setProgFilterOpen: (v: boolean) => void;
+  monCegepAUnCatalogue: boolean;
+  offertParMonCegep: boolean; setOffertParMonCegep: (v: boolean) => void;
   filterOuvertAnglophone: boolean; setFilterOuvertAnglophone: (v: boolean) => void;
   minRating: string; setMinRating: (v: string) => void;
   positionOptions: PickerOption[];
@@ -979,6 +984,15 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
             <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mb-3">Ouvertures</h3>
             <div className="flex flex-wrap gap-2">
               <TogglePill active={props.filterOuvertDemenager} label="Déménager" onTap={() => props.setFilterOuvertDemenager(!props.filterOuvertDemenager)} />
+              <TogglePill active={props.progFilterIds.length > 0}
+                label={props.progFilterIds.length > 0 ? `Programme (${props.progFilterIds.length})` : "Programme"}
+                onTap={() => props.setProgFilterOpen(true)} />
+              {/* GARDE-FOU : masqué, jamais coché-mais-inerte — sans cégep
+                  rattaché ou sans catalogue, ce filtre ne peut rien rendre. */}
+              {props.monCegepAUnCatalogue && (
+                <TogglePill active={props.offertParMonCegep} label="Offert chez nous"
+                  onTap={() => props.setOffertParMonCegep(!props.offertParMonCegep)} />
+              )}
               <TogglePill active={props.filterOuvertPrive} label="Privé" onTap={() => props.setFilterOuvertPrive(!props.filterOuvertPrive)} />
               <TogglePill active={props.filterOuvertAnglophone} label="Anglophone" onTap={() => props.setFilterOuvertAnglophone(!props.filterOuvertAnglophone)} />
             </div>
@@ -1088,6 +1102,15 @@ export function RecruteurRechercheMobile() {
   const [hideFavorites, setHideFavorites] = useState(false);
   const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
   const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
+  /* T2 — filtre par programme CÉGEP. Le picker rend des LIBELLÉS, la RPC
+     filtre par PROGRAMME : la conversion passe par le catalogue. */
+  const [progFilterIds, setProgFilterIds] = useState<string[]>([]);
+  const [progFilterOpen, setProgFilterOpen] = useState(false);
+  const [offertParMonCegep, setOffertParMonCegep] = useState(false);
+  const { data: catalogueProg } = useCegepPrograms();
+  const { data: monCegepAUnCatalogue = false } = useMonCegepOffreDesProgrammes();
+  const progFilterProgramIds = [...new Set(
+    (catalogueProg ?? []).filter((l) => progFilterIds.includes(l.id)).map((l) => l.programId))];
   const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
   const [filterNewOnly, setFilterNewOnly] = useState(searchParams?.get("nouveau") === "true");
 
@@ -1189,6 +1212,9 @@ export function RecruteurRechercheMobile() {
     minGpa,
     sortBy,
     sportId,
+    programmeIds: progFilterProgramIds,
+    // Jamais true quand le bouton est masqué : la RPC lèverait.
+    offertParMonCegep: offertParMonCegep && monCegepAUnCatalogue,
     tier,
   });
   const loading = tierLoading || athletesLoading;
@@ -1412,11 +1438,16 @@ export function RecruteurRechercheMobile() {
         hideFavorites={hideFavorites} setHideFavorites={setHideFavorites}
         filterOuvertDemenager={filterOuvertDemenager} setFilterOuvertDemenager={setFilterOuvertDemenager}
         filterOuvertPrive={filterOuvertPrive} setFilterOuvertPrive={setFilterOuvertPrive}
+        progFilterIds={progFilterIds} setProgFilterOpen={setProgFilterOpen}
+        monCegepAUnCatalogue={monCegepAUnCatalogue}
+        offertParMonCegep={offertParMonCegep} setOffertParMonCegep={setOffertParMonCegep}
         filterOuvertAnglophone={filterOuvertAnglophone} setFilterOuvertAnglophone={setFilterOuvertAnglophone}
         minRating={minRating} setMinRating={setMinRating}
         positionOptions={positionOptions}
         regionOptions={regionOptions}
       />
+      <ProgrammeCegepPicker open={progFilterOpen} onClose={() => setProgFilterOpen(false)}
+        value={progFilterIds} onChange={setProgFilterIds} />
 
       {/* Expanded search overlay */}
       <AnimatePresence>

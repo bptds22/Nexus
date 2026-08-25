@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAthleteContactable, blackoutMessageFil } from "@/lib/queries/recruiter/useAthleteContactable";
 import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import NexusThreadView, { NexusThreadMobile } from "@/components/messaging/NexusThreadView";
+import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -233,7 +234,7 @@ function RecruiterThreadPage() {
           athlete:athletes!athlete_id(
             id, verified, cote_globale_entraineur, coach_id,
             annee_diplomation, recruitment_status, committed_school_id, open_to_offers,
-            moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
+            moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
             schools!school_id(name, region),
@@ -286,10 +287,9 @@ function RecruiterThreadPage() {
         const al = card?.last_name ?? "";
 
         // Normalize programme_cegep_vise JSONB: accept array of strings or legacy scalar
-        const rawProg: unknown = athlete?.programme_cegep_vise;
-        const programmes: string[] = Array.isArray(rawProg)
-          ? (rawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
-          : (typeof rawProg === "string" && rawProg !== "" ? [rawProg] : []);
+        // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
+        const programmes: string[] = await resolveProgrammesVisesAsync(
+          supabase, (athlete as Record<string, unknown> | null)?.programmes_vises, athlete?.programme_cegep_vise);
 
         const athleteData = {
           conversationId: conv.id,

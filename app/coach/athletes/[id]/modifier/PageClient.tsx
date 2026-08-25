@@ -16,6 +16,8 @@ import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmConte
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 import StepIndicator from "../../../components/StepIndicator";
@@ -93,7 +95,7 @@ interface CoachTeamData {
 function emptyForm(): AthleteFormData {
   return {
     identity: { identityMode: "simple", photo: "", firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "", school: "", city: "", region: "", phone: "", email: "", parentName: "", parentPhone: "" },
-    academic: { academicMode: "simple", gpa: "", strongSubjects: [], academicHonors: [], cegepType: "", cegepProgramDetail: "", openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [] },
+    academic: { academicMode: "simple", gpa: "", strongSubjects: [], academicHonors: [], programmesVises: [], openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [] },
     physical: { physicalMode: "simple", heightFeet: "", heightInches: "", weightLbs: "", wingspan: "", handSize: "", dominantHand: "", dominantFoot: "", fortyYard: "", verticalJump: "", broadJump: "", benchPress: "", shuttleAgility: "", sprint100m: "" },
     sports: { sportsMode: "simple", primarySport: "", primarySportDetail: "", primaryPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false, parcoursEquipes: [] },
     scouting: { evalMode: "simple", starRating: 0, traitRatings: {}, badges: [], coachEndorsement: "" },
@@ -319,6 +321,10 @@ function ModifierContent({ id }: { id: string }) {
     setForm((prev) => ({ ...prev, identity: { ...prev.identity, [field]: value } }));
   }, []);
 
+  // T2 — sélecteur de programme partagé (183 vedettes au repos,
+  // 228 libellés à la recherche). Le catalogue est en cache infini.
+  const [progPickerOpen, setProgPickerOpen] = useState(false);
+  const { data: catalogueProg } = useCegepPrograms();
   const updateAcademic = useCallback((field: string, value: string | string[] | boolean) => {
     setForm((prev) => ({ ...prev, academic: { ...prev.academic, [field]: value } }));
   }, []);
@@ -670,13 +676,17 @@ function ModifierContent({ id }: { id: string }) {
             <p className={labelCls}>Programme CÉGEP visé</p>
             <div className="flex items-center gap-3 mt-1">
               {([{ value: "dec_general" as const, label: "DEC général (préuniversitaire)" }, { value: "technique" as const, label: "Programme technique" }]).map((opt) => (
-                <label key={opt.value} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${d.cegepType === opt.value ? "border-[#3b82f6] bg-[#3b82f6]/10 text-white" : "border-[#2a2d36] text-[#8a8d96] hover:border-[#6b7280]"}`}>
-                  <input type="radio" name="cegepType" value={opt.value} checked={d.cegepType === opt.value} onChange={() => updateAcademic("cegepType", opt.value)} className="sr-only" />
+                <label key={opt.value} className="hidden">
+                  <input type="radio" name="cegepType" value={opt.value} className="sr-only" />
                   <span className="text-[14px] font-bold">{opt.label}</span>
                 </label>
               ))}
             </div>
-            {d.cegepType === "technique" && <input type="text" value={d.cegepProgramDetail} onChange={(e) => updateAcademic("cegepProgramDetail", e.target.value)} placeholder="Précisez le programme technique (ex: Techniques policières, Soins infirmiers…)" className={`${inputCls} mt-3`} />}
+            <button type="button" onClick={() => setProgPickerOpen(true)} className={`${inputCls} mt-1 flex items-center text-left ${d.programmesVises.length ? "text-white" : "text-[#8a8d96]"}`}>
+              {resolveProgrammesVises(d.programmesVises, null, catalogueProg).join(", ") || "Choisir…"}
+            </button>
+            <ProgrammeCegepPicker open={progPickerOpen} onClose={() => setProgPickerOpen(false)}
+              value={d.programmesVises} onChange={(ids) => updateAcademic("programmesVises", ids)} />
           </div>
 
           <div className="space-y-3">
@@ -1074,7 +1084,7 @@ function ModifierContent({ id }: { id: string }) {
 
         {summaryCard("Étudiant-athlète", 1, (<div>{infoRow("Nom", `${identity.firstName} ${identity.lastName}`)}{infoRow("Genre", identity.gender === "M" ? "Masculin" : identity.gender === "F" ? "Féminin" : "")}{infoRow("Date de naissance", identity.dateOfBirth)}{infoRow("Promotion", identity.gradYear)}{infoRow("École", identity.school)}</div>))}
 
-        {summaryCard("Académique", 2, (<div>{infoRow("Moyenne", academic.gpa ? `${academic.gpa}%` : "")}{infoRow("Programme visé", academic.cegepType === "dec_general" ? "DEC général" : academic.cegepType === "technique" ? `Technique${academic.cegepProgramDetail ? ` — ${academic.cegepProgramDetail}` : ""}` : "")}{academic.openToPrivate && infoRow("CÉGEP privé", "Oui")}{academic.openToRelocate && infoRow("Prêt à changer de région", "Oui")}</div>))}
+        {summaryCard("Académique", 2, (<div>{infoRow("Moyenne", academic.gpa ? `${academic.gpa}%` : "")}{infoRow("Programme visé", resolveProgrammesVises(academic.programmesVises, null, catalogueProg).join(", "))}{academic.openToPrivate && infoRow("CÉGEP privé", "Oui")}{academic.openToRelocate && infoRow("Prêt à changer de région", "Oui")}</div>))}
 
         {summaryCard("Physique", 3, (<div>{infoRow("Taille", heightStr)}{infoRow("Poids", physical.weightLbs ? `${physical.weightLbs} lbs` : "")}{infoRow("Main dominante", physical.dominantHand)}{infoRow("40 verges", physical.fortyYard)}</div>))}
 

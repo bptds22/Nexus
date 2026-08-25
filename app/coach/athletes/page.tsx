@@ -272,7 +272,7 @@ function MesAthletesContent() {
           position_id,
           mentions_academiques,
           matieres_fortes,
-          programme_cegep_vise,
+          programme_cegep_vise, programmes_vises,
           moyenne_generale,
           pret_changer_region,
           ouvert_cegep_prive,

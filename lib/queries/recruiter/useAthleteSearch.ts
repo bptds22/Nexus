@@ -77,6 +77,18 @@ export interface AthleteSearchFilters {
   minGpa: string;           // string parce qu'on parse en float
   sortBy: string;
   sportId: string | null;
+  /** T2 — cegep_programs.id[] : « visant l'un de ces programmes ».
+   *  Le filtre opère au niveau du PROGRAMME, pas du libellé : deux
+   *  athlètes ayant choisi « Sciences humaines — Psychologie » et
+   *  « — Criminologie » remontent tous deux sur 300.M1. */
+  programmeIds: string[];
+  /** T2 — « visant un programme que MON cégep offre ». La RPC LÈVE
+   *  (marqueur NEXUS) si le compte n'a pas de cégep, ou si ce cégep n'a
+   *  aucun catalogue : une liste à zéro doit pouvoir dire pourquoi.
+   *  Le bouton doit être MASQUÉ dans ces deux cas, pas coché-mais-inerte
+   *  — 8 recruteurs sur 24 n'ont pas de school_id, et 9 cégeps n'ont
+   *  aucun programme. Voir useMonCegepOffreDesProgrammes(). */
+  offertParMonCegep: boolean;
   /**
    * Tier courant — N'EST PAS ENVOYÉ AU SERVEUR et ne décide de rien.
    *
@@ -265,6 +277,8 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
         // le dire ici documente l'intention (« aucun plafond, aucun tier »)
         // là où on la lit.
         p_limit: null,
+        p_programme_ids: filters.programmeIds.length > 0 ? filters.programmeIds : null,
+        p_offert_par_mon_cegep: filters.offertParMonCegep,
       });
 
       if (error) throw error;

@@ -10,9 +10,8 @@
      - String literals are stored in the JSONB columns verbatim
        (matieres_fortes / mentions_academiques / regions_cegep_preferees).
        Changing one of these strings is a DATA migration, not a UI tweak.
-     - PROGRAMME_TYPE_OPTIONS drives the Programme visé picker ;
-       the stored shape in programme_cegep_vise mirrors onboarding's
-       assembly logic (see usage in AthleteEditWizardMobile.tsx).
+     - Le programme CÉGEP visé N'EST PLUS ici : il vit dans les tables
+       cegep_programs / cegep_program_labels depuis T2.
 ═══════════════════════════════════════════════════════════════ */
 
 export const SUBJECTS: readonly string[] = [
@@ -32,35 +31,12 @@ export const CEGEP_REGIONS: readonly string[] = [
   "Montérégie", "Outaouais", "Estrie", "Sherbrooke",
 ] as const;
 
-/** Programme CÉGEP visé — picker option values.
- *  Stored in programme_cegep_vise as a 1-element array containing
- *  either "DEC général" or "Technique — <detail>" / "Programme technique".
- *  See AthleteEditWizardMobile.tsx (mobile assembly) and
- *  app/athlete/onboarding/page.tsx (onboarding assembly) for the
- *  shared serialization helper. */
-export const PROGRAMME_TYPE_OPTIONS: readonly { value: string; label: string }[] = [
-  { value: "dec_general", label: "DEC général" },
-  { value: "technique",   label: "Programme technique" },
-] as const;
-
-/** Encode a (type, optional technique-detail) pair into the array
- *  shape stored in athletes.programme_cegep_vise. Mirrors the inline
- *  IIFE in onboarding/page.tsx around line 825 — extracted so the
- *  mobile editor + onboarding cannot drift. */
-export function programmeCegepArray(type: string, detail: string): string[] {
-  if (type === "dec_general") return ["DEC général"];
-  if (type === "technique" && detail.trim()) return [`Technique — ${detail.trim()}`];
-  if (type === "technique") return ["Programme technique"];
-  return [];
-}
-
-/** Decode a stored programme_cegep_vise array back into (type, detail)
- *  for seeding the mobile editor's picker + input. */
-export function programmeCegepDecode(arr: string[] | null | undefined): { type: string; detail: string } {
-  if (!arr || arr.length === 0) return { type: "", detail: "" };
-  const v = arr[0];
-  if (v === "DEC général") return { type: "dec_general", detail: "" };
-  if (v === "Programme technique") return { type: "technique", detail: "" };
-  if (v.startsWith("Technique — ")) return { type: "technique", detail: v.slice("Technique — ".length) };
-  return { type: "", detail: "" };
-}
+/* PROGRAMME_TYPE_OPTIONS / programmeCegepArray / programmeCegepDecode
+   SUPPRIMÉS EN T2. C'était le vocabulaire à DEUX valeurs — « DEC général »
+   et « Programme technique » — plus un champ libre concaténé derrière
+   « Technique — ». Il a produit « Technique — Technique — Génie robotique »
+   et « Technique — Sciences », et 28 athlètes sur 40 avaient répondu
+   « DEC général », qui n'est pas un programme.
+   Le remplaçant est cegep_programs / cegep_program_labels, lu par
+   lib/queries/shared/useCegepPrograms.ts et rendu par
+   components/shared/ProgrammeCegepPicker.tsx. */

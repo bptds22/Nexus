@@ -58,10 +58,9 @@ import { WizardPills } from "@/components/shared/wizard/WizardPills";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
 import { triggerHaptic } from "@/lib/haptics";
-import {
-  SUBJECTS, HONORS, CEGEP_REGIONS, PROGRAMME_TYPE_OPTIONS,
-  programmeCegepArray, programmeCegepDecode,
-} from "@/lib/config/academicOptions";
+import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import {
   BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
   parseDistinctions, type DistinctionEntry,
@@ -94,7 +93,8 @@ interface LoadedAthlete {
   telephone: string;                    // athletes.telephone — DIRECT
   /* ── Académique (LOCKED) — display values mirrored from page.tsx :1595-1657 ── */
   gpa: string;                          // athletes.moyenne_generale
-  programmeCegepVise: string[];         // athletes.programme_cegep_vise JSONB
+  programmeCegepVise: string[];         // athletes.programme_cegep_vise JSONB (legacy, repli lecture)
+  programmesVises: string[];            // athletes.programmes_vises uuid[] -> cegep_program_labels
   strongSubjects: string[];             // athletes.matieres_fortes JSONB
   academicHonors: string[];             // athletes.mentions_academiques JSONB
   openToPrivate: boolean;               // athletes.ouvert_cegep_prive
@@ -698,6 +698,7 @@ export default function AthleteEditWizardMobile() {
       // Académique (LOCKED)
       gpa: raw.moyenne_generale != null ? String(raw.moyenne_generale) : "",
       programmeCegepVise: Array.isArray(raw.programme_cegep_vise) ? raw.programme_cegep_vise as string[] : [],
+      programmesVises: Array.isArray(raw.programmes_vises) ? (raw.programmes_vises as unknown[]).map(String) : [],
       strongSubjects: Array.isArray(raw.matieres_fortes) ? raw.matieres_fortes as string[] : [],
       academicHonors: Array.isArray(raw.mentions_academiques) ? raw.mentions_academiques as string[] : [],
       openToPrivate: !!raw.ouvert_cegep_prive,
@@ -1238,12 +1239,15 @@ function AcademiqueStep({
   a: LoadedAthlete;
   onDirect: (column: string, value: string | string[] | boolean) => Promise<void>;
 }) {
-  /* Decode the stored programme_cegep_vise array (e.g. ["DEC général"]
-     or ["Technique — Soins infirmiers"]) back into the (type, detail)
-     pair the picker + input need for seeding. */
-  const { type: progType, detail: progDetail } = programmeCegepDecode(a.programmeCegepVise);
+  /* T2 — sélecteur partagé. Remplace le couple (type, détail libre)
+     dont programmeCegepDecode/Array assurait l'aller-retour : c'est ce
+     couple qui a produit « Technique — Technique — Génie robotique ».
+     La valeur affichée retombe sur l'ancienne colonne tant qu'elle n'est
+     pas vidée (T3), via resolveProgrammesVises. */
   const [progPickerOpen, setProgPickerOpen] = useState(false);
-  const progTypeLabel = PROGRAMME_TYPE_OPTIONS.find((o) => o.value === progType)?.label || "";
+  const { data: catalogueProg } = useCegepPrograms();
+  const progLabels = resolveProgrammesVises(a.programmesVises, a.programmeCegepVise, catalogueProg);
+  const progTypeLabel = progLabels.join(", ");
 
   /* Pill toggle helper : add value when absent, remove when present.
      The JSONB array column is updated atomically via saveDirect — no
@@ -1290,31 +1294,12 @@ function AcademiqueStep({
           value={progTypeLabel}
           onTap={() => setProgPickerOpen(true)}
         />
-        <MobilePicker
+        <ProgrammeCegepPicker
           open={progPickerOpen}
           onClose={() => setProgPickerOpen(false)}
-          title="Programme visé"
-          options={PROGRAMME_TYPE_OPTIONS as unknown as PickerOption[]}
-          value={progType || null}
-          onChange={(v) => {
-            if (typeof v !== "string") return;
-            /* Picking DEC général collapses any technique detail ;
-               picking Programme technique keeps an existing detail
-               so the user can type-then-pick in either order. */
-            void onDirect("programme_cegep_vise", programmeCegepArray(v, progDetail));
-          }}
+          value={a.programmesVises}
+          onChange={(ids) => { void onDirect("programmes_vises", ids); }}
         />
-        {progType === "technique" && (
-          <InlineEditRow
-            label="Précise le programme"
-            value={progDetail}
-            type="text"
-            placeholder="Ex: Soins infirmiers"
-            onSave={(v) => {
-              void onDirect("programme_cegep_vise", programmeCegepArray("technique", v));
-            }}
-          />
-        )}
       </Card>
 
       {/* Matières fortes + Mentions académiques — fixed-list pills

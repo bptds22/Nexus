@@ -16,6 +16,7 @@ import CoachParentThreadView from "./CoachParentThreadView";
 import CoachGroupThreadView from "./CoachGroupThreadView";
 import NexusThreadView from "@/components/messaging/NexusThreadView";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
+import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -170,7 +171,7 @@ function ThreadDetailPage() {
         // Fetch conversation
         const { data: conv, error: convError } = await supabase
           .from("conversations")
-          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale, updated_at))")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale, updated_at))")
           .eq("id", id)
           .single();
 
@@ -198,6 +199,9 @@ function ThreadDetailPage() {
         // Map conversation to thread
         const athleteData = (conv as any).athletes;
         const position = athleteData?.positions;
+        // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
+        const _athleteProgrammes = await resolveProgrammesVisesAsync(
+          supabase, athleteData?.programmes_vises, athleteData?.programme_cegep_vise);
 
         const mappedThread: ConversationThread = {
           id: conv.id,
@@ -233,7 +237,8 @@ function ThreadDetailPage() {
           _athleteSchool: (() => { const s = athleteData?.schools; const r = Array.isArray(s) ? s[0] : s; return r?.name || ""; })(),
           _athleteRegion: (() => { const s = athleteData?.schools; const r = Array.isArray(s) ? s[0] : s; return r?.region || ""; })(),
           _athleteGpa: athleteData?.moyenne_generale || 0,
-          _athleteProgramme: (() => { const p = athleteData?.programme_cegep_vise; if (Array.isArray(p) && p.length > 0) return p[0]; if (typeof p === "string") return p; return ""; })(),
+          // T2 — resolu en amont (voir _athleteProgrammes), repli T3 inclus.
+          _athleteProgramme: _athleteProgrammes[0] ?? "",
           _athleteRelocate: athleteData?.pret_changer_region || false,
           _athletePrivate: athleteData?.ouvert_cegep_prive || false,
           _athleteAnglophone: athleteData?.ouvert_cegep_anglophone || false,

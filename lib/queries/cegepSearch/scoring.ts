@@ -75,13 +75,25 @@ export function scoreCegep(c: CegepRow, i: FitInput): FitResult {
     raisons.push(i.viewer.positionNom ? `${i.viewer.positionNom} en demande` : "ton poste en demande");
   }
 
-  // 2. Programme visé offert.
-  if (i.viewer.programmesVises.length && c.programmes.length) {
-    const offerts = c.programmes.map(norm);
-    const match = i.viewer.programmesVises.find((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)));
-    if (match) {
+  // 2. Programme visé offert — JOINTURE, plus sous-chaîne.
+  //
+  // AVANT T2 : `o.includes(norm(p)) || norm(p).includes(o)` sur le texte
+  // libre de l'athlète contre les noms locaux des cégeps. Rejoué sur les
+  // données réelles, ce test marquait le point pour 2 athlètes sur 40 :
+  // « DEC général » (28 athlètes) ne correspond à aucun nom de programme,
+  // et « Technique — Physiothérapie » échouait alors que
+  // « DEC Techniques de physiothérapie » existe chez 12 cégeps.
+  // P_PROGRAMME était décoratif.
+  //
+  // DEPUIS : intersection d'ensembles sur cegep_programs.id. La raison
+  // affichée reste le LIBELLÉ choisi par l'athlète — c'est son mot, pas
+  // la formule ministérielle.
+  if (i.viewer.programmeIdsVises.length && c.programmeIds.length) {
+    const offerts = new Set(c.programmeIds);
+    const idx = i.viewer.programmeIdsVises.findIndex((pid) => offerts.has(pid));
+    if (idx >= 0) {
       score += P_PROGRAMME;
-      raisons.push(`${match} offert`);
+      raisons.push(`${i.viewer.programmesVises[idx] ?? i.viewer.programmesVises[0] ?? "programme visé"} offert`);
     }
   }
 

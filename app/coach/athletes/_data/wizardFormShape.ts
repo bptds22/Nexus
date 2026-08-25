@@ -41,8 +41,10 @@ export interface AthleteFormData {
     gpa: string;
     strongSubjects: string[];
     academicHonors: string[];
-    cegepType: "dec_general" | "technique" | "";
-    cegepProgramDetail: string;
+    /* T2 — cegep_program_labels.id[], 3 max. Remplace le couple
+       (cegepType, cegepProgramDetail) dont la concatenation produisait
+       « Technique — <texte libre> » : jamais un programme reel. */
+    programmesVises: string[];
     openToPrivate: boolean;
     openToAnglophone: boolean;
     openToRelocate: boolean;
@@ -124,7 +126,7 @@ export function emptyAthleteForm(): AthleteFormData {
     academic: {
       academicMode: "simple",
       gpa: "", strongSubjects: [], academicHonors: [],
-      cegepType: "", cegepProgramDetail: "",
+      programmesVises: [],
       openToPrivate: false, openToAnglophone: false, openToRelocate: false,
       cegepRegions: [],
     },

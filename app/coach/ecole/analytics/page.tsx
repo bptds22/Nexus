@@ -135,7 +135,7 @@ function CoachAnalyticsPage() {
           numero_jersey, taille_pieds, taille_pouces, poids_lbs, main_dominante, pied_dominant,
           video_faits_saillants_url, video_match_complet_url, video_entrainement_url,
           hudl_url, youtube_url, instagram_url,
-          moyenne_generale, programme_cegep_vise, matieres_fortes, regions_cegep_preferees,
+          moyenne_generale, programme_cegep_vise, programmes_vises, matieres_fortes, regions_cegep_preferees,
           cote_globale_entraineur,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),

@@ -17,7 +17,9 @@ import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import { AthleteOnboardingMobile } from "@/components/shared/AthleteOnboardingMobile";
-import { SUBJECTS, HONORS, CEGEP_REGIONS, programmeCegepArray } from "@/lib/config/academicOptions";
+import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
+import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY } from "@/lib/queries/athlete/teamAttachment";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
@@ -832,8 +834,15 @@ function AthleteOnboardingDesktop() {
   const [gpa, setGpa] = useState("");
   const [strongSubjects, setStrongSubjects] = useState<string[]>([]);
   const [academicHonors, setAcademicHonors] = useState<string[]>([]);
-  const [cegepType, setCegepType] = useState("");
-  const [cegepProgramDetail, setCegepProgramDetail] = useState("");
+  /* T2 — sélecteur partagé. Remplace le couple (type, détail libre)
+     dont la sérialisation produisait « Technique — Technique — Génie
+     robotique » et « Technique — Sciences » : un préfixe collé devant
+     une saisie libre, jamais un programme réel. */
+  const [progIds, setProgIds] = useState<string[]>([]);
+  const [progPickerOpen, setProgPickerOpen] = useState(false);
+  const { data: catalogueProg } = useCegepPrograms();
+  // Onboarding : pas de legacy à replier, l'athlète n'a encore rien.
+  const progLabels = resolveProgrammesVises(progIds, null, catalogueProg);
   const [openToPrivate, setOpenToPrivate] = useState(false);
   const [openToAnglophone, setOpenToAnglophone] = useState(false);
   const [openToRelocate, setOpenToRelocate] = useState(false);
@@ -1317,7 +1326,7 @@ function AthleteOnboardingDesktop() {
         ...payload,
         moyenne_generale: gpa ? parseFloat(gpa) : null,
         matieres_fortes: strongSubjects, mentions_academiques: academicHonors,
-        programme_cegep_vise: programmeCegepArray(cegepType, cegepProgramDetail),
+        programmes_vises: progIds,
         ouvert_cegep_prive: openToPrivate, ouvert_cegep_anglophone: openToAnglophone,
         pret_changer_region: openToRelocate, regions_cegep_preferees: cegepRegions,
       };
@@ -1429,7 +1438,7 @@ function AthleteOnboardingDesktop() {
       moyenne_generale: gpa ? parseFloat(gpa) : null,
       matieres_fortes: strongSubjects,
       mentions_academiques: academicHonors,
-      programme_cegep_vise: programmeCegepArray(cegepType, cegepProgramDetail),
+      programmes_vises: progIds,
       ouvert_cegep_prive: openToPrivate,
       ouvert_cegep_anglophone: openToAnglophone,
       pret_changer_region: openToRelocate,
@@ -2008,12 +2017,12 @@ function AthleteOnboardingDesktop() {
             <div className="grid grid-cols-2 gap-4 mb-5">
               <div><label className={labelCls}>Moyenne générale (%)</label><input type="number" value={gpa} onChange={(e) => setGpa(e.target.value)} placeholder="78" min="0" max="100" className={inputCls} /></div>
               <div><label className={labelCls}>Programme CÉGEP visé</label>
-                <select title="Programme" value={cegepType} onChange={(e) => setCegepType(e.target.value)} className={inputCls}><option value="">—</option><option value="dec_general">DEC général</option><option value="technique">Programme technique</option></select>
+                <button type="button" onClick={() => setProgPickerOpen(true)} className={`${inputCls} flex items-center text-left ${progLabels.length ? "text-white" : "text-[#4a4d56]"}`}>
+                  {progLabels.length > 0 ? progLabels.join(", ") : "Choisir…"}
+                </button>
               </div>
             </div>
-            {cegepType === "technique" && (
-              <div className="mb-5"><label className={labelCls}>Précise le programme</label><input type="text" value={cegepProgramDetail} onChange={(e) => setCegepProgramDetail(e.target.value)} placeholder="Ex: Soins infirmiers" className={inputCls} /></div>
-            )}
+            <ProgrammeCegepPicker open={progPickerOpen} onClose={() => setProgPickerOpen(false)} value={progIds} onChange={setProgIds} />
 
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Matières fortes</div>
             <div className="flex flex-wrap gap-2 mb-5">
