@@ -9,8 +9,10 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { useAthleteVisibilityPro, type CegepDetail } from "@/hooks/useAthleteVisibility";
 import { MON_PARCOURS_COTE_COPY } from "@/lib/config/parcoursCoteCopy";
-import { parseDistinctions, BADGE_ORDER, type DistinctionEntry } from "@/lib/config/badges";
-import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { parseDistinctions, LEGACY_BADGE_TO_CATALOGUE, type DistinctionEntry } from "@/lib/config/badges";
+import { badgesPourSport } from "@/lib/config/badgeCatalogue";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { triggerHaptic } from "@/lib/haptics";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -173,6 +175,7 @@ export default function MonParcoursMobile() {
      objects both normalize to DistinctionEntry[]. Drives the Badges
      screen's obtenu/à-viser grid. Empty array when not yet evaluated. */
   const [distinctions, setDistinctions] = useState<DistinctionEntry[]>([]);
+  const badgeCat = useBadgeCatalogue();
 
   /* ── Mes Cibles state (B-3, verbatim mirror of desktop
         page.tsx :104-110). targets feeds the carousel + the
@@ -1005,19 +1008,39 @@ export default function MonParcoursMobile() {
                       Décernés par ton coach — voici ce qui t&apos;attend.
                     </p>
                     {(() => {
-                      /* Obtenu vs à-viser derivation per the brief : 6 named
-                         badges (BADGE_ORDER minus "custom"). The OBTENU/À VISER
-                         pill labels were dropped in favor of pure visual signal
-                         (full-color + drop-shadow vs grayscale + opacity 0.35)
-                         so all 6 badges fit the 560px box without scroll. */
-                      const obtainedKeys = new Set(distinctions.map((d) => d.badge));
-                      const aimableBadges = BADGE_ORDER
-                        .filter((k) => k !== "custom")
-                        .map((badgeKey) => ({
-                          badge: badgeKey,
-                          detail: distinctions.find((o) => o.badge === badgeKey)?.detail,
-                          obtained: obtainedKeys.has(badgeKey),
-                        }));
+                      /* Obtenu vs à-viser. Le signal est purement visuel
+                         (couleur pleine vs grisé + opacité 0.35) : les pilules
+                         OBTENU/À VISER avaient été retirées pour tenir dans la
+                         boîte de 560 px sans défilement.
+
+                         2026-08-25 — la liste venait de BADGE_ORDER, six codes
+                         figés dont `progression`, qui n'existe plus au
+                         catalogue. Elle vient désormais du CATALOGUE.
+
+                         sportId = null VOLONTAIREMENT : cette surface ne charge
+                         pas le sport de l'athlète, et la dégradation documentée
+                         donne universels + honneurs — le bon ensemble ici, les
+                         badges de sport dépendant du poste. Neuf cellules au
+                         lieu de six : la grille à 2 colonnes passe de 3 à 5
+                         rangées dans la boîte de 560 px. */
+                      const obtainedKeys = new Set(
+                        distinctions.map((d) => LEGACY_BADGE_TO_CATALOGUE[d.badge] ?? d.badge),
+                      );
+                      const detailParCode = new Map(
+                        distinctions.map((d) => [LEGACY_BADGE_TO_CATALOGUE[d.badge] ?? d.badge, d.detail]),
+                      );
+                      const aimableBadges = badgesPourSport(badgeCat, null)
+                        /* `libre` = nexus-x, l'héritier de « custom » : un
+                           titre libre ne se vise pas, il se reçoit. */
+                        .filter((b) => b.contexteForme !== "libre")
+                        .map((b) => ({
+                          badge: b.code,
+                          libelle: b.libelle,
+                          ordre: b.ordre,
+                          detail: detailParCode.get(b.code),
+                          obtained: obtainedKeys.has(b.code),
+                        }))
+                        .sort((x, y) => Number(y.obtained) - Number(x.obtained) || x.ordre - y.ordre);
                       return (
                         <div className="grid grid-cols-2 gap-2 flex-1">
                           {aimableBadges.map((b) => (
@@ -1038,7 +1061,7 @@ export default function MonParcoursMobile() {
                                   transition: "opacity 200ms ease, filter 200ms ease",
                                 }}
                               >
-                                <DistinctionBadge badge={b.badge} detail={b.detail} size="sm" />
+                                <BadgeVignette code={b.badge} taille="sm" />
                               </div>
                             </div>
                           ))}

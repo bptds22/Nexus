@@ -64,6 +64,12 @@ import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityC
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
+import BadgePicker, { ContexteEditeur } from "@/components/shared/BadgePicker";
+import BadgeVignette from "@/components/shared/badges/BadgeVignette";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import {
+  type BadgeEntry, type BadgeCatalogueEntry,
+} from "@/lib/config/badgeCatalogue";
 import { Card, ChipsBlock, DateRow, DetailedTag, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { diffTeamHistory, isTeamHistoryDiffEmpty, summarizeTeamHistoryDiff } from "@/components/shared/athlete/teamHistory";
@@ -73,7 +79,6 @@ import { StarRow } from "@/components/shared/wizard/stars";
 import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
 import {
   BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
-  getSportStats,
   type DistinctionEntry,
 } from "@/lib/config/badges";
 import { POSITIONS } from "@/lib/sports-data";
@@ -84,6 +89,7 @@ import {
 } from "@/lib/coach/athleteEmailAutocomplete";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadAthleteRaw, buildFormFromRaw } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
+import { chargerBadgesAthlete } from "@/lib/queries/shared/athleteBadges";
 import {
   emptyAthleteForm,
   type AthleteFormData,
@@ -180,6 +186,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
      la position ACTUELLEMENT SÉLECTIONNÉE, pas celle en base : c'est cette
      position-là qui sera figée dans grille_id à la sauvegarde. */
   const grilleSet = useGrilles();
+  const badgeCat = useBadgeCatalogue();
+  /* Année lue APRÈS montage : en export statique, un new Date() au rendu
+     serveur figerait le millésime au jour du build. */
   // T2 — catalogue des programmes (cache infini, 228 libellés).
   const { data: catalogueProg } = useCegepPrograms();
   const router = useRouter();
@@ -191,6 +200,12 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   const [slide, setSlide] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [form, setForm] = useState<AthleteFormData>(emptyAthleteForm);
+  /* Badges d'un AUTRE auteur : montrés en lecture seule par le picker, jamais
+     édités ici — la RPC borne sa portée de la même façon. */
+  const [autresBadges, setAutresBadges] = useState<BadgeEntry[]>([]);
+  /* Lecture des badges en échec : on refuse d'enregistrer plutôt que
+     d'envoyer une liste vide à appliquer_badges_saisie. */
+  const [badgesIllisibles, setBadgesIllisibles] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -400,9 +415,36 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         }
         const raw = data as Record<string, unknown>;
         const formFromDB = buildFormFromRaw(raw, user?.id) as unknown as AthleteFormData;
-        const finalForm: AthleteFormData = { ...formFromDB, partnerVisibilityConsent: false };
+
+        /* Les badges NE venaient pas du tout : buildFormFromRaw rend
+           scouting.badges = [] (ils ne sortent pas de evaluations.distinctions),
+           et cet écran n'appelait jamais chargerBadgesAthlete. Le picker
+           s'ouvrait donc toujours vide, et l'enregistrement envoyait cette
+           liste vide à appliquer_badges_saisie — qui la prend pour
+           « retire-les tous ». Sur cette surface la perte n'était pas une
+           course : elle était systématique.
+           Chargés ICI, dans la même séquence, avant le setForm. */
+        let badgesMiens: BadgeEntry[] = [];
+        let badgesLus = true;
+        try {
+          const b = await chargerBadgesAthlete(createClient(), athleteId, user?.id ?? null);
+          badgesMiens = b.miens;
+          if (!cancelled) setAutresBadges(b.autres);
+        } catch (e) {
+          console.error("NEXUS: badges illisibles —", e instanceof Error ? e.message : e);
+          badgesLus = false;
+        }
+        if (!cancelled) setBadgesIllisibles(!badgesLus);
+
+        const finalForm: AthleteFormData = {
+          ...formFromDB,
+          partnerVisibilityConsent: false,
+          scouting: { ...formFromDB.scouting, badges: badgesMiens },
+        };
         if (cancelled) return;
         setForm(finalForm);
+        /* La baseline inclut les badges lus : sans ça, le diff les verrait
+           comme un ajout à chaque montage. */
         baselineFormRef.current = finalForm;
 
         if (raw.recruitment_status) setRecruitmentStatus(raw.recruitment_status as string);
@@ -685,7 +727,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     setForm((prev) => ({ ...prev, media: { ...prev.media, [field]: value } }));
   }, []);
   const updateScouting = useCallback(
-    (field: string, value: string | number | DistinctionEntry[] | Record<string, number>) => {
+    (field: string, value: string | number | BadgeEntry[] | Record<string, number>) => {
       setForm((prev) => ({ ...prev, scouting: { ...prev.scouting, [field]: value } }));
     },
     [],
@@ -695,20 +737,14 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   }, []);
 
   /* ── Badges ─────────────────────────────────────────────── */
-  function toggleBadge(badgeKey: string) {
-    const cur = form.scouting.badges;
-    const idx = cur.findIndex((b) => b.badge === badgeKey);
-    if (idx >= 0) {
-      updateScouting("badges", cur.filter((_, i) => i !== idx));
-    } else if (cur.length < MAX_BADGES) {
-      updateScouting("badges", [...cur, { badge: badgeKey }]);
-    }
+  /* Bascules et plafond : portés par BadgePicker. Le CONTEXTE est délégué à
+     la feuille du bas (onEditerContexte) — canon de ce wizard. */
+  function majContexteBadge(code: string, contexte: string) {
+    updateScouting("badges", form.scouting.badges.map((b) =>
+      b.code === code ? { ...b, contexte: contexte || null } : b));
   }
-  function updateBadgeDetail(badgeKey: string, detail: string) {
-    const next: DistinctionEntry[] = form.scouting.badges.map((b) =>
-      b.badge === badgeKey ? { ...b, detail: detail || undefined } : b
-    );
-    updateScouting("badges", next);
+  function retirerBadge(code: string) {
+    updateScouting("badges", form.scouting.badges.filter((b) => b.code !== code));
   }
   function toggleArrayItem(arr: string[], item: string): string[] {
     return arr.includes(item) ? arr.filter((v) => v !== item) : [...arr, item];
@@ -816,7 +852,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
 
     push("Cote étoile", f.scouting.starRating, b.scouting.starRating);
     push("Rapport coach", f.scouting.coachEndorsement, b.scouting.coachEndorsement);
-    push("Distinctions", f.scouting.badges.map((x) => x.badge).join(","), b.scouting.badges.map((x) => x.badge).join(","));
+    push("Distinctions", f.scouting.badges.map((x) => x.code).join(","), b.scouting.badges.map((x) => x.code).join(","));
     // Trait deltas — collapse into a single "Traits modifiés"
     const traitChanges = Object.keys({ ...f.scouting.traitRatings, ...b.scouting.traitRatings })
       .filter((k) => (f.scouting.traitRatings[k] || 0) !== (b.scouting.traitRatings[k] || 0));
@@ -946,6 +982,17 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         email: linkedToExisting.email,
         prenom: linkedToExisting.firstName || "",
       });
+      return;
+    }
+
+    /* Badges illisibles : saveAthleteEdit enverrait form.scouting.badges — vide —
+       à appliquer_badges_saisie, qui le prendrait pour « retire-les tous ». On
+       refuse l'enregistrement ENTIER plutôt que de perdre en silence des badges
+       qu'on n'a pas su lire. N'existe qu'en édition : en création il n'y a rien
+       à écraser. */
+    if (isEdit && badgesIllisibles) {
+      toast.error({ message: "Badges illisibles — recharge la fiche avant d'enregistrer, sinon ils seraient retirés." });
+      setSaving(false);
       return;
     }
 
@@ -1339,19 +1386,14 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
 
       {/* ═══ Distinction detail popup (replaces under-grid blocks) ═══ */}
       <DistinctionDetailSheet
-        badgeKey={openDistinctionSheet}
-        entry={openDistinctionSheet
-          ? form.scouting.badges.find((b) => b.badge === openDistinctionSheet) ?? null
+        badge={openDistinctionSheet ? badgeCat.byCode.get(openDistinctionSheet) ?? null : null}
+        contexte={openDistinctionSheet
+          ? form.scouting.badges.find((b) => b.code === openDistinctionSheet)?.contexte ?? null
           : null}
-        sportStats={openDistinctionSheet
-          ? ((openDistinctionSheet === "team_leader" || openDistinctionSheet === "league_leader")
-              ? getSportStats(form.sports.primarySport)
-              : [])
-          : []}
-        onChange={(detail) => openDistinctionSheet && updateBadgeDetail(openDistinctionSheet, detail)}
+        onChange={(c) => openDistinctionSheet && majContexteBadge(openDistinctionSheet, c)}
         onRemove={() => {
           if (!openDistinctionSheet) return;
-          toggleBadge(openDistinctionSheet);
+          retirerBadge(openDistinctionSheet);
           setOpenDistinctionSheet(null);
         }}
         onClose={() => setOpenDistinctionSheet(null)}
@@ -1939,9 +1981,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   function renderStep5() {
     const sc = form.scouting;
     const isDet = sc.evalMode === "detailed";
-    const sportStats = getSportStats(form.sports.primarySport);
-    const selectedMap = new Map(sc.badges.map((b) => [b.badge, b]));
-    const atMax = sc.badges.length >= MAX_BADGES;
     const TRAIT_GROUPS = traitGroups(grilleSet, {
       positionId: resolvePositionId(grilleSet, form.sports.primarySport, form.sports.primaryPosition),
     }).map((g) => ({
@@ -2101,49 +2140,15 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45 mb-2">
             Distinctions ({sc.badges.length}/{MAX_BADGES})
           </p>
-          <div className="grid grid-cols-3 gap-2">
-            {BADGE_ORDER.map((key) => {
-              const cfg = BADGE_CONFIG[key];
-              const entry = selectedMap.get(key);
-              const isSelected = !!entry;
-              const isDisabled = !isSelected && atMax;
-              const detailBearing = cfg.hasDetail || key === "custom";
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => { void triggerHaptic("Light"); if (isDisabled) return;
-                    if (isSelected) {
-                      // Selected + detail-bearing → open popup to edit.
-                      // Selected + non-detail → toggle off.
-                      if (detailBearing) setOpenDistinctionSheet(key);
-                      else toggleBadge(key);
-                    } else {
-                      // Newly selected. Add the entry first, then for
-                      // detail-bearing badges open the popup immediately
-                      // so the coach fills in the title/stat right away.
-                      toggleBadge(key);
-                      if (detailBearing) setOpenDistinctionSheet(key);
-                    }
-                  }}
-                  disabled={isDisabled}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border ${
-                    isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-white/[0.08] bg-[#1A1D24]"
-                  } ${isDisabled ? "opacity-40" : ""}`}
-                >
-                  <DistinctionBadge badge={key} detail={entry?.detail} size="sm" />
-                  <span className={`text-[11px] font-bold text-center ${isSelected ? "text-white" : "text-white/65"}`}>
-                    {key === "custom" ? (entry?.detail || "Personnalisée") : cfg.label}
-                  </span>
-                  {isSelected && detailBearing && entry?.detail && key !== "custom" && (
-                    <span className="text-[10px] text-white/55 text-center leading-tight">
-                      {entry.detail}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <BadgePicker
+            value={sc.badges}
+            onChange={(v: BadgeEntry[]) => updateScouting("badges", v)}
+            sportId={grilleSet.sportIdByNom.get(form.sports.primarySport) ?? null}
+            sportNom={form.sports.primarySport}
+            autresBadges={autresBadges}
+            layout="tuiles"
+            onEditerContexte={(b) => { void triggerHaptic("Light"); setOpenDistinctionSheet(b.code); }}
+          />
 
           {/* Old under-grid "Détail — X" dropdown/input blocks removed
               — replaced by the DistinctionDetailSheet popup that opens
@@ -2315,12 +2320,11 @@ function getLiveBadgeLabel(badgeKey: string, detail: string | undefined): string
 }
 
 function DistinctionDetailSheet({
-  badgeKey, entry, sportStats, onChange, onRemove, onClose,
+  badge, contexte, onChange, onRemove, onClose,
 }: {
-  badgeKey: string | null;
-  entry: DistinctionEntry | null;
-  sportStats: string[];
-  onChange: (detail: string) => void;
+  badge: BadgeCatalogueEntry | null;
+  contexte: string | null;
+  onChange: (contexte: string) => void;
   onRemove: () => void;
   onClose: () => void;
 }) {
@@ -2331,12 +2335,15 @@ function DistinctionDetailSheet({
   // avant tout return conditionnel (règle des hooks).
   const kbdH = useKeyboardHeight();
 
-  if (!mounted || !badgeKey || !entry) return null;
+  if (!mounted || !badge) return null;
   if (typeof document === "undefined") return null;
 
-  const cfg = BADGE_CONFIG[badgeKey];
-  const draft = entry.detail || "";
-  const livePreview = getLiveBadgeLabel(badgeKey, draft);
+  const draft = contexte || "";
+  /* `nexus-x` (ex-`custom`) s'affiche par son contexte SEUL : c'est le titre
+     saisi par le coach, pas un préfixe de libellé. */
+  const livePreview = badge.code === "nexus-x"
+    ? (draft || "Distinction")
+    : (draft ? `${badge.libelle} — ${draft}` : badge.libelle);
 
   return createPortal(
     <>
@@ -2370,66 +2377,25 @@ function DistinctionDetailSheet({
 
         {/* Live badge preview */}
         <div className="flex flex-col items-center gap-3 px-5 pt-3 pb-4 shrink-0">
-          <DistinctionBadge badge={badgeKey} detail={draft || undefined} size="lg" />
+          <BadgeVignette code={badge.code} taille="lg" />
           <p className="text-[14px] font-bold text-white text-center leading-tight">
             {livePreview}
           </p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-3">
-          {/* Tappable stat chips for team_leader / league_leader */}
-          {sportStats.length > 0 && (
-            <div className="mb-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/55 mb-2">
-                Statistique
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {sportStats.map((s) => {
-                  const sel = draft === s;
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => { void triggerHaptic("Light"); onChange(s); }}
-                      className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors ${
-                        sel
-                          ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
-                          : "bg-transparent border border-white/[0.10] text-white/65 active:bg-white/[0.04]"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-white/45 mt-1.5">
-                Ou tape ton propre titre ci-dessous.
-              </p>
-            </div>
-          )}
-
-          {/* Title / detail input */}
+          {/* Une SEULE implémentation des trois formes de contexte, partagée
+              avec le picker : la forme vient de badges.contexte_forme, jamais
+              d'un `if` sur le code. */}
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/55 mb-2">
-            {badgeKey === "custom" ? "Titre de la distinction" : "Précise"}
+            {badge.contexteForme === "libre" ? "Titre de la distinction" : "Précise"}
           </p>
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => onChange(e.target.value.slice(0, MAX_DETAIL_LENGTH))}
-            maxLength={MAX_DETAIL_LENGTH}
-            aria-label={badgeKey === "custom" ? "Titre" : "Détail"}
-            placeholder={badgeKey === "custom" ? "Ex: Meilleur passeur RSEQ" : "Ex: Points"}
-            className="w-full bg-[#13151a] border border-white/[0.06] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/30 focus:border-[#E63946]/40 outline-none"
+          <ContexteEditeur
+            forme={badge.contexteForme}
+            contexte={draft}
+            accent="#E63946"
+            onChange={(texte) => onChange(texte.trim())}
           />
-          <p className="text-right text-[11px] text-white/45 mt-1 tabular-nums">
-            {draft.length} / {MAX_DETAIL_LENGTH}
-          </p>
-
-          {!cfg && (
-            <p className="text-[12px] text-white/45 mt-2">
-              Badge inconnu — la valeur sera quand même sauvegardée.
-            </p>
-          )}
         </div>
 
         {/* Footer actions */}
@@ -2603,6 +2569,7 @@ function CreateSummary({
   onToggleConsent: () => void;
   onTogglePartner: (next: boolean) => void;
 }) {
+  const badgeCat = useBadgeCatalogue();
   const { data: catalogueProg } = useCegepPrograms();
   const sections: { title: string; rows: { label: string; value: string }[] }[] = [
     {
@@ -2650,7 +2617,7 @@ function CreateSummary({
       rows: [
         { label: "Mode", value: form.scouting.evalMode === "detailed" ? "Détaillé" : "Simplifié" },
         { label: "Cote étoile", value: form.scouting.starRating ? String(form.scouting.starRating) : "" },
-        { label: "Distinctions", value: form.scouting.badges.map((b) => BADGE_CONFIG[b.badge]?.label || b.badge).join(", ") },
+        { label: "Distinctions", value: form.scouting.badges.map((b) => badgeCat.byCode.get(b.code)?.libelle || b.code).join(", ") },
       ],
     },
     {

@@ -12,6 +12,9 @@ import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
+import BadgePicker from "@/components/shared/BadgePicker";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
 import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
 import { createClient } from "@/lib/supabase/client";
@@ -115,7 +118,7 @@ interface AthleteFormData {
     evalMode: "simple" | "detailed";
     starRating: number;
     traitRatings: Record<string, number>;
-    badges: DistinctionEntry[];
+    badges: BadgeEntry[];
     coachEndorsement: string;
   };
   media: {
@@ -255,6 +258,7 @@ export default function CreateAthletePage() {
   /* Référentiel de grilles. À la création, la position vient du formulaire —
      c'est elle qui sera figée dans grille_id par saveAthleteCreate. */
   const grilleSet = useGrilles();
+  const badgeCat = useBadgeCatalogue();
   // Mobile-native dispatch (Capacitor) — shared mode-gated wizard.
   // Web wizard below untouched. IS_CAPACITOR is a build-time constant
   // so the conditional return is stable per build (no rules-of-hooks issue).
@@ -603,28 +607,13 @@ export default function CreateAthletePage() {
     setForm((prev) => ({ ...prev, submission: { ...prev.submission, [field]: value } }));
   }, []);
 
-  const updateScouting = useCallback((field: string, value: string | number | DistinctionEntry[] | Record<string, number>) => {
+  const updateScouting = useCallback((field: string, value: string | number | BadgeEntry[] | Record<string, number>) => {
     setForm((prev) => ({ ...prev, scouting: { ...prev.scouting, [field]: value } }));
   }, []);
 
   /* ── Badge helpers ─────────────────────────────────────────── */
 
-  function toggleBadge(badgeKey: string) {
-    const badges = form.scouting.badges;
-    const idx = badges.findIndex((b) => b.badge === badgeKey);
-    if (idx >= 0) {
-      updateScouting("badges", badges.filter((_, i) => i !== idx));
-    } else if (badges.length < MAX_BADGES) {
-      updateScouting("badges", [...badges, { badge: badgeKey }]);
-    }
-  }
-
-  function updateBadgeDetail(badgeKey: string, detail: string) {
-    const next: DistinctionEntry[] = form.scouting.badges.map((b) =>
-      b.badge === badgeKey ? { ...b, detail: detail || undefined } : b
-    );
-    updateScouting("badges", next);
-  }
+  /* Bascules et contexte : portés par BadgePicker. */
 
   /* ── Toggle helpers ─────────────────────────────────────────── */
 
@@ -1311,9 +1300,6 @@ export default function CreateAthletePage() {
     const sc = form.scouting;
     const isDetailed = sc.evalMode === "detailed";
     const sportName = form.sports.primarySport;
-    const sportStats = getSportStats(sportName);
-    const selectedMap = new Map(sc.badges.map((b) => [b.badge, b]));
-    const atMax = sc.badges.length >= MAX_BADGES;
 
     return (
       <div className={cardCls}>
@@ -1441,55 +1427,13 @@ export default function CreateAthletePage() {
             Sélectionne les reconnaissances qui s&apos;appliquent à cet athlète cette saison.
           </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {BADGE_ORDER.map((key) => {
-              const cfg = BADGE_CONFIG[key];
-              const entry = selectedMap.get(key);
-              const isSelected = !!entry;
-              const isDisabled = !isSelected && atMax;
-              return (
-                <div key={key}
-                  className={`border rounded-lg transition-all ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
-                  <button type="button"
-                    onClick={() => !isDisabled && toggleBadge(key)}
-                    disabled={isDisabled}
-                    className="w-full flex flex-col items-center gap-2 px-3 py-4 text-center">
-                    <DistinctionBadge badge={key} detail={entry?.detail} size="sm" />
-                    <span className={`text-[12px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>
-                      {key === "custom" ? "Personnalisée" : cfg.label}
-                    </span>
-                  </button>
-
-                  {isSelected && cfg.hasDetail && (
-                    <div className="px-3 pb-3 space-y-2">
-                      {(key === "team_leader" || key === "league_leader") && sportStats.length > 0 && (
-                        <select
-                          aria-label="Statistique"
-                          value={sportStats.includes(entry?.detail || "") ? entry?.detail || "" : ""}
-                          onChange={(e) => updateBadgeDetail(key, e.target.value)}
-                          className={`${inputCls} text-[13px]`}
-                        >
-                          <option value="">— Choisir une stat —</option>
-                          {sportStats.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      )}
-                      <input type="text"
-                        value={entry?.detail || ""}
-                        onChange={(e) => updateBadgeDetail(key, e.target.value.slice(0, MAX_DETAIL_LENGTH))}
-                        maxLength={MAX_DETAIL_LENGTH}
-                        placeholder={key === "custom" ? "Titre de la distinction" : "Précise (ex: Points)"}
-                        className={`${inputCls} text-[13px]`}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <p className="text-[12px] text-[#4a4d56] mt-3">
-            {sc.badges.length} / {MAX_BADGES} sélectionnée{sc.badges.length !== 1 ? "s" : ""}
-          </p>
+          <BadgePicker
+            value={sc.badges}
+            onChange={(v: BadgeEntry[]) => updateScouting("badges", v)}
+            sportId={grilleSet.sportIdByNom.get(sportName) ?? null}
+            sportNom={sportName}
+            layout="tuiles"
+          />
         </div>
 
         {/* ── Rapport de l'entraîneur ──────────────── */}
@@ -1663,9 +1607,11 @@ export default function CreateAthletePage() {
         {summaryCard("Évaluation", 5, (
           <div>
             {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => {
-              const cfg = BADGE_CONFIG[b.badge];
-              const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
-              return b.badge !== "custom" && b.detail ? `${label} — ${b.detail}` : label;
+              /* Libellé du CATALOGUE. `nexus-x` (ex-`custom`) s'affiche par
+                 son contexte seul : c'est le titre saisi par le coach. */
+              const cb = badgeCat.byCode.get(b.code);
+              const label = b.code === "nexus-x" ? (b.contexte || "Distinction") : (cb?.libelle || b.code);
+              return b.code !== "nexus-x" && b.contexte ? `${label} — ${b.contexte}` : label;
             }).join(", ") : "")}
             {scouting.coachEndorsement && (
               <div className="mt-2 p-3 bg-[#1A1D24] rounded-lg">

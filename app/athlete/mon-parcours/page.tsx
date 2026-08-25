@@ -6,8 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
-import { BADGE_ORDER, parseDistinctions } from "@/lib/config/badges";
-import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { parseDistinctions, LEGACY_BADGE_TO_CATALOGUE } from "@/lib/config/badges";
+import { badgesPourSport } from "@/lib/config/badgeCatalogue";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { toPng } from "html-to-image";
 import MonParcoursMobile from "@/components/shared/MonParcoursMobile";
 
@@ -49,8 +51,29 @@ const STEPS = [
 const SEASON_YEAR = new Date().getFullYear();
 const SEASON_LABEL = `${SEASON_YEAR}–${SEASON_YEAR + 1}`;
 
-// The 6 named badges — "custom" is excluded (empty label, free-text).
-const NAMED_BADGES = BADGE_ORDER.filter((k) => k !== "custom");
+/* Les badges « à viser » viennent du CATALOGUE, plus d'une liste de 6 codes
+   figés. Proposer de viser « progression », qui n'existe plus, serait absurde.
+
+   sportId = null VOLONTAIREMENT : cette page ne charge pas le sport de
+   l'athlète, et la dégradation documentée donne alors universels + honneurs.
+   C'est le bon ensemble ici — les badges de sport dépendent du poste, ce ne
+   sont pas des cibles universelles. Charger le sport les ajouterait (jusqu'à
+   19 pour un footballeur) et obligerait à revoir cette grille. */
+function useBadgesAViser(obtenus: Map<string, string | undefined>) {
+  const cat = useBadgeCatalogue();
+  /* earnedBadges vient de evaluations.distinctions, donc en ANCIENS codes
+     (captain, allstar…). Le catalogue parle les nouveaux. Sans cette
+     traduction, aucun badge ne serait jamais marqué « Obtenu ». */
+  const obtenusCat = new Map(
+    [...obtenus].map(([ancien, detail]) => [LEGACY_BADGE_TO_CATALOGUE[ancien] ?? ancien, detail]),
+  );
+  return badgesPourSport(cat, null)
+    /* `libre` = nexus-x, l'héritier de « custom » : un titre libre ne se vise
+       pas, il se reçoit. Même exclusion qu'avant, exprimée par la DONNÉE. */
+    .filter((b) => b.contexteForme !== "libre")
+    .map((b) => ({ ...b, obtenu: obtenusCat.has(b.code), detail: obtenusCat.get(b.code) }))
+    .sort((x, y) => Number(y.obtenu) - Number(x.obtenu) || x.ordre - y.ordre);
+}
 
 type Cegep = { id: string; name: string; city: string | null; region: string | null };
 type TargetRow = { id: string; schoolId: string; name: string; city: string | null; region: string | null };
@@ -97,6 +120,7 @@ function MonParcoursPageDesktop() {
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
   const [earnedBadges, setEarnedBadges] = useState<Map<string, string | undefined>>(new Map());
+  const badgesAViser = useBadgesAViser(earnedBadges);
   const [downloading, setDownloading] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
@@ -637,9 +661,9 @@ function MonParcoursPageDesktop() {
                 Décernés par ton entraîneur — continue de performer pour les mériter.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {NAMED_BADGES.map((key) => {
-                  const earned = earnedBadges.has(key);
-                  const detail = earnedBadges.get(key);
+                {badgesAViser.map((b) => {
+                  const key = b.code;
+                  const earned = b.obtenu;
                   return (
                     <div
                       key={key}
@@ -650,7 +674,7 @@ function MonParcoursPageDesktop() {
                       }`}
                     >
                       <div className={earned ? "" : "grayscale opacity-40"}>
-                        <DistinctionBadge badge={key} detail={detail} size="lg" />
+                        <BadgeVignette code={key} libelle={b.libelle} taille="lg" />
                       </div>
                       {earned ? (
                         <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#E63946]">

@@ -102,13 +102,17 @@ export default function DistinctionBadge({
 
   // Auto-derive size from count when no explicit size is passed.
   // Explicit size always wins (back-compat).
-  const effectiveSize: "xs" | "sm" | "lg" = size ?? (count !== undefined && count >= 4 ? "sm" : "lg");
+  /* Seuil de bascule remonté de 4 à 6. À 4, presque tous les athlètes
+     tombaient en `sm` : un porteur typique en a 4 à 7, donc la « grande »
+     taille ne servait quasiment jamais. 6 laisse respirer le cas courant et
+     ne compacte que les fiches réellement chargées. */
+  const effectiveSize: "xs" | "sm" | "lg" = size ?? (count !== undefined && count >= 6 ? "sm" : "lg");
 
   // Uniform outer tile + icon box so every badge occupies the same footprint
   // regardless of the SVG's natural aspect ratio.
-  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "sm" ? "w-[88px]" : "w-[110px]";
-  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "sm" ? "w-14 h-14" : "w-[72px] h-[72px]";
-  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[88px]" : "text-[11px] max-w-[110px]";
+  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "sm" ? "w-[96px]" : "w-[128px]";
+  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "sm" ? "w-16 h-16" : "w-[88px] h-[88px]";
+  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]" : "text-[11px] max-w-[128px]";
 
   const decalage = `${(index ?? 0) * 90}ms`;
   // Le survol N'EST PAS posé sur .nx-badge : `is-fresh` y anime déjà

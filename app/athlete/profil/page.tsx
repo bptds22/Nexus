@@ -16,7 +16,11 @@ import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
-import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import BadgePicker from "@/components/shared/BadgePicker";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import { entreesIncompletes, type BadgeEntry } from "@/lib/config/badgeCatalogue";
+import { chargerBadgesAthlete, versSuggestion } from "@/lib/queries/shared/athleteBadges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
 import { CEGEP_REGIONS } from "@/lib/config/academicOptions";
@@ -705,41 +709,55 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
 
 /* ── Distinctions suggestion (unified pattern) ────────────── */
 
-function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
+function DistinctionsSuggest({ athleteId, sportId, sportNom, currentDistinctions, pending, onSubmit }: {
+  /* string | null : la page ne connaît l'athlète qu'après chargement. Sans
+     identifiant on n'ouvre pas la sélection — plutôt que d'ouvrir sur une
+     liste vide qui proposerait de tout retirer. */
+  athleteId: string | null;
+  sportId: string | null;
+  sportNom: string | null;
   currentDistinctions: DistinctionEntry[];
   pending?: { proposed_value: string };
   onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
-  const [entries, setEntries] = useState<DistinctionEntry[]>(currentDistinctions);
+  const [entries, setEntries] = useState<BadgeEntry[]>([]);
+  const [autres, setAutres] = useState<BadgeEntry[]>([]);
+  const [erreur, setErreur] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const totalCount = entries.length;
-  const atMax = totalCount >= MAX_BADGES;
-
-  function toggle(key: string) {
-    setEntries((prev) => {
-      const idx = prev.findIndex((e) => e.badge === key);
-      if (idx >= 0) return prev.filter((_, i) => i !== idx);
-      if (prev.length >= MAX_BADGES) return prev;
-      return [...prev, { badge: key }];
-    });
-  }
-
-  function updateDetail(key: string, detail: string) {
-    setEntries((prev) => prev.map((e) => e.badge === key ? { ...e, detail: detail || undefined } : e));
-  }
+  const cat = useBadgeCatalogue();
+  const incomplets = entreesIncompletes(entries, cat);
 
   async function handleSubmit() {
+    if (incomplets.length > 0) return;
     setSaving(true);
-    await onSubmit("Distinctions", JSON.stringify(entries), "");
-    setSaving(false);
-    setEditing(false);
+    try {
+      await onSubmit("Distinctions", versSuggestion(entries), "");
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function startEditing() {
-    setEntries(currentDistinctions);
-    setEditing(true);
+  /* Le picker part des badges issus de SUGGESTIONS, pas de
+     evaluations.distinctions. Ceux posés par un coach s'affichent en lecture
+     seule : une suggestion ne peut pas les retirer, et l'écran ne doit pas
+     laisser croire l'inverse. */
+  async function startEditing() {
+    setErreur(null);
+    if (!athleteId) { setErreur("profil non chargé"); return; }
+    try {
+      const { data: { user } } = await createClient().auth.getUser();
+      const b = await chargerBadgesAthlete(createClient(), athleteId, user?.id ?? null, false, "suggestion");
+      setEntries(b.miens);
+      setAutres(b.autres);
+      setEditing(true);
+    } catch (e) {
+      /* Ouvrir sur une liste vide ferait proposer le retrait de tout ce que
+         la lecture n'a pas vu. On refuse d'ouvrir. */
+      setErreur(e instanceof Error ? e.message : String(e));
+    }
   }
 
   const hasPending = !!pending;
@@ -767,42 +785,30 @@ function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
       {!editing && hasPending && (
         <p className={PENDING_LINE_CLS}>⏳ En attente</p>
       )}
+      {!editing && erreur && (
+        <p className="text-[12px] text-[#E63946] mt-2">Impossible d&apos;ouvrir la sélection — {erreur}</p>
+      )}
 
       {editing && (
-        <div className="mt-3 space-y-2">
-          {BADGE_ORDER.map((key) => {
-            const cfg = BADGE_CONFIG[key];
-            const entry = entries.find((e) => e.badge === key);
-            const isSelected = !!entry;
-            const isDisabled = !isSelected && atMax;
-            return (
-              <div key={key} className={`border rounded transition-colors ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40" : ""}`}>
-                <button type="button" onClick={() => !isDisabled && toggle(key)} disabled={isDisabled}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-left">
-                  <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56]"}`}>
-                    {isSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
-                  </span>
-                  <span className={`text-[13px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{key === "custom" ? "Personnalisée" : cfg.label}</span>
-                </button>
-                {isSelected && cfg.hasDetail && (
-                  <div className="px-3 pb-3 pl-10">
-                    <input type="text"
-                      value={entry?.detail || ""}
-                      onChange={(e) => updateDetail(key, e.target.value.slice(0, MAX_DETAIL_LENGTH))}
-                      maxLength={MAX_DETAIL_LENGTH}
-                      placeholder={key === "custom" ? "Titre" : "Ex: Points, Buts, Passes..."}
-                      className="w-full bg-[#13151a] border border-[#2a2d36] rounded px-2 py-1.5 text-[12px] text-white focus:border-[#E63946] outline-none"
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          <p className="text-[11px] text-[#6b7280]">{totalCount} / {MAX_BADGES}</p>
+        <div className="mt-3">
+          <BadgePicker
+            value={entries}
+            onChange={setEntries}
+            sportId={sportId}
+            sportNom={sportNom}
+            autresBadges={autres}
+            layout="rangees"
+          />
 
           <div className="flex items-center gap-3 justify-end mt-4 pt-3 border-t border-[#2D3748]/40">
             <button type="button" onClick={() => setEditing(false)} className={CANCEL_BTN_CLS}>Annuler</button>
-            <button type="button" onClick={handleSubmit} disabled={saving} className={SUBMIT_BTN_CLS}>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving || incomplets.length > 0}
+              title={incomplets.length > 0 ? "Complète le contexte des honneurs sélectionnés" : undefined}
+              className={SUBMIT_BTN_CLS}
+            >
               {saving ? "..." : "Envoyer"}
             </button>
           </div>
@@ -1900,6 +1906,9 @@ function AthleteProfilPageDesktop() {
             {/* Distinctions — suggestible */}
             {!recruiterView && (
               <DistinctionsSuggest
+                athleteId={athleteId}
+                sportId={grilleSet.sportIdByNom.get(a.primarySport || "") ?? null}
+                sportNom={a.primarySport || null}
                 currentDistinctions={((a as unknown) as { coachDistinctions?: DistinctionEntry[] }).coachDistinctions || []}
                 pending={getPending("Distinctions")}
                 onSubmit={submitSuggestion}

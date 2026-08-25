@@ -22,7 +22,8 @@ import type {
 } from "@/lib/types/models";
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import { parseDistinctions, MAX_BADGES } from "@/lib/config/badges";
+import { parseDistinctions } from "@/lib/config/badges";
+import { MAX_BADGES_AFFICHES } from "@/lib/config/badgeCatalogue";
 import { AdaptiveBadgesRow } from "@/components/shared/badges/AdaptiveBadgesRow";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type {
@@ -436,7 +437,7 @@ function BadgesRow({
       items={distinctions}
       mounted={mounted}
       badgesRevealed={badgesRevealed}
-      maxBadges={MAX_BADGES}
+      maxBadges={MAX_BADGES_AFFICHES}
       renderItem={(d, _i, sizeHint) => (
         <DistinctionBadge badge={d.badge} detail={d.detail} size={sizeHint} />
       )}
@@ -1491,7 +1492,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     if (loadingAthlete) return;
     if (!photoReady) return;
     setMounted(true);
-    const distinctionsCount = Math.min(a?.distinctions?.length ?? 0, MAX_BADGES);
+    const distinctionsCount = Math.min(a?.distinctions?.length ?? 0, MAX_BADGES_AFFICHES);
     const timers: number[] = [];
     // T+16 ms — card reveal (laisse le rendu initial se faire)
     timers.push(window.setTimeout(() => setCardRevealed(true), 16));

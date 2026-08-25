@@ -125,6 +125,33 @@ export function AdaptiveBadgesRow<T>({
     );
   }
 
+  // N >= 6 — depuis que les HONNEURS échappent au plafond (5 badges de
+  // sport/universels + un nombre libre d'honneurs), un athlète peut
+  // légitimement en porter 6 à 10. Les dispositions ci-dessus, taillées à la
+  // main, s'arrêtaient à 5 : au-delà, la rangée débordait.
+  //
+  // Règle : JAMAIS PLUS DE 3 PAR RANGÉE. Le commentaire de n=4 le mesure
+  // déjà — 4 badges de 88 px + 3 gouttières de 20 px font 412 px, au-delà
+  // des 343-379 px d'une largeur mobile courante, et la 4e étiquette se
+  // faisait rogner. Trois tiennent (3×88 + 2×24 = 312 px).
+  if (n >= 6) {
+    const rangees = repartirEnRangees(n);
+    let curseur = 0;
+    return (
+      <div className="flex flex-col items-center gap-y-3">
+        {rangees.map((taille, r) => {
+          const debut = curseur;
+          curseur += taille;
+          return (
+            <div key={r} className="flex items-center justify-center gap-x-6">
+              {list.slice(debut, debut + taille).map((d, i) => renderWrapped(d, debut + i))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   // N = 1..3 — une seule rangée centrée, gap ajusté par count.
   const gapCls =
     n === 1 ? "" :
@@ -135,4 +162,21 @@ export function AdaptiveBadgesRow<T>({
       {list.map((d, i) => renderWrapped(d, i))}
     </div>
   );
+}
+
+/**
+ * Découpe n badges en rangées de 3 au plus, sans jamais laisser une rangée
+ * ORPHELINE d'un seul badge : 7 donne 3+2+2 et non 3+3+1, qui pendrait au
+ * milieu du vide.
+ *
+ *   6 → 3+3     7 → 3+2+2     8 → 3+3+2     9 → 3+3+3     10 → 3+3+2+2
+ */
+export function repartirEnRangees(n: number): number[] {
+  const rangees: number[] = [];
+  for (let reste = n; reste > 0; reste -= 3) rangees.push(Math.min(3, reste));
+  if (rangees.length > 1 && rangees[rangees.length - 1] === 1) {
+    rangees[rangees.length - 2] -= 1;
+    rangees[rangees.length - 1] = 2;
+  }
+  return rangees;
 }

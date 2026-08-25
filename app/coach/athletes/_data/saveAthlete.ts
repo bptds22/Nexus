@@ -37,6 +37,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AthleteFormData } from "./wizardFormShape";
 import { loadGrilles, grilleIdForSave } from "@/lib/evaluations/grilles";
+import { enregistrerBadgesSaisie } from "@/lib/queries/shared/athleteBadges";
 
 /* ── Result + options ───────────────────────────────────────── */
 
@@ -208,7 +209,14 @@ function buildEvalRecord(
   grilleId: string | null,
 ): Record<string, unknown> {
   const tr = form.scouting.traitRatings;
-  const distinctions = form.scouting.badges.filter((b) => b && b.badge);
+  /* 2026-08-25 — `distinctions` NE FIGURE PLUS ICI.
+     C'est devenu une colonne DÉRIVÉE : un miroir la reconstruit depuis
+     athlete_badges à chaque changement de badge. Toute écriture directe y
+     survivait jusqu'au badge suivant, puis disparaissait sans erreur — et
+     les badges posés par ce formulaire n'existaient nulle part pour le
+     système de badges.
+     Les badges partent désormais par enregistrerBadgesSaisie (RPC
+     transactionnelle), appelée après l'écriture de l'évaluation. */
   return {
     coach_id: coachUserId,
     athlete_id: athleteId,
@@ -233,7 +241,6 @@ function buildEvalRecord(
     esprit_equipe: tr.esprit_equipe || null,
     resilience: tr.resilience || null,
     attitude_mentalite: tr.attitude_mentalite || null,
-    distinctions,
     rapport_entraineur: form.scouting.coachEndorsement.trim() || null,
   };
 }
@@ -287,6 +294,20 @@ export async function saveAthleteCreate(
   // evaluations INSERT
   const evalRecord = buildEvalRecord(form, athleteId, coachUserId, coteGlobale, grilleId);
   const evalRes = await supabase.from("evaluations").insert(evalRecord);
+
+  /* Badges : chemin SÉPARÉ de l'évaluation, et transactionnel.
+     Remplacer un jeu impose de retirer avant d'insérer (badge_plafond
+     rejetterait un 6e plafonné transitoire) ; sans transaction, un échec
+     entre les deux ferait perdre un badge sans en poser un.
+     `form.scouting.badges` ne contient QUE les badges que ce chemin gère —
+     ceux d'un autre coach sont montrés par le picker, jamais édités, et la
+     RPC borne sa portée de la même façon. */
+  const badgesRes = await enregistrerBadgesSaisie(
+    supabase, athleteId, form.scouting.badges,
+  ).then(() => null).catch((e: unknown) => ({
+    message: e instanceof Error ? e.message : String(e),
+  }));
+  if (badgesRes) return { error: badgesRes };
   if (evalRes.error) return { error: evalRes.error };
 
   // team_athletes INSERT (with joined_at — consistency fix)
@@ -364,6 +385,20 @@ export async function saveAthleteEdit(
     .from("evaluations")
     .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });
   if (evalRes.error) return { error: evalRes.error };
+
+  /* Badges : chemin SÉPARÉ de l'évaluation, et transactionnel.
+     Remplacer un jeu impose de retirer avant d'insérer (badge_plafond
+     rejetterait un 6e plafonné transitoire) ; sans transaction, un échec
+     entre les deux ferait perdre un badge sans en poser un.
+     `form.scouting.badges` ne contient QUE les badges que ce chemin gère —
+     ceux d'un autre coach sont montrés par le picker, jamais édités, et la
+     RPC borne sa portée de la même façon. */
+  const badgesRes = await enregistrerBadgesSaisie(
+    supabase, athleteId, form.scouting.badges,
+  ).then(() => null).catch((e: unknown) => ({
+    message: e instanceof Error ? e.message : String(e),
+  }));
+  if (badgesRes) return { error: badgesRes };
 
   // L'éval est persistée : on peut maintenant remonter une éventuelle
   // erreur d'écriture athletes sans risquer de perdre l'évaluation.

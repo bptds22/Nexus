@@ -20,6 +20,10 @@ import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
+import BadgePicker from "@/components/shared/BadgePicker";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
+import { chargerBadgesAthlete } from "@/lib/queries/shared/athleteBadges";
 import StepIndicator from "../../../components/StepIndicator";
 import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import TagInput from "../../../components/TagInput";
@@ -287,7 +291,42 @@ function ModifierContent({ id }: { id: string }) {
       // scope — getUser() sert la session en cache, pas un aller-retour reseau.
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const formFromDB = buildFormFromRaw(raw, currentUser?.id) as unknown as AthleteFormData;
-      setForm(formFromDB);
+
+      /* Les badges se chargent ICI, APRÈS que le formulaire soit construit,
+         et sont posés dans le MÊME setForm.
+
+         POURQUOI PAS DEUX EFFETS SÉPARÉS — c'est le bug qu'on corrige.
+         buildFormFromRaw rend scouting.badges = [] (les badges ne viennent
+         pas de evaluations.distinctions, cf. son commentaire), et le
+         setForm(formFromDB) qui suivait ÉCRASAIT ce qu'un second effet avait
+         déjà posé. Mesuré contre le Docker local : chargerBadgesAthlete
+         répond en 13-22 ms, loadAthleteRaw en 28-36 ms — le formulaire
+         arrivait donc TOUJOURS second, et les badges disparaissaient à
+         chaque montage, pour tous les athlètes.
+
+         La conséquence n'était pas cosmétique : saveAthleteEdit envoie
+         form.scouting.badges à appliquer_badges_saisie, qui REMPLACE le jeu
+         de badges de saisie de l'appelant. Enregistrer la fiche après avoir
+         changé un téléphone retirait donc tous les badges posés par ce coach.
+
+         Fusionner au lieu de remplacer aurait suffi à faire disparaître le
+         symptôme, mais aurait laissé la course ouverte : le jour où un champ
+         s'ajoute à buildFormFromRaw sans penser à se préserver, le bug
+         revient. Une seule séquence, un seul setForm. */
+      let badgesMiens: BadgeEntry[] = [];
+      try {
+        const b = await chargerBadgesAthlete(supabase, id, currentUser?.id ?? null);
+        badgesMiens = b.miens;
+        setAutresBadges(b.autres);
+      } catch (e) {
+        /* Ne PAS retomber sur une liste vide EN SILENCE : le prochain
+           enregistrement retirerait tout ce que la lecture n'a pas vu.
+           On journalise et on bloque la sauvegarde des badges. */
+        console.error("NEXUS: badges illisibles —", e instanceof Error ? e.message : e);
+        setBadgesIllisibles(true);
+      }
+
+      setForm({ ...formFromDB, scouting: { ...formFromDB.scouting, badges: badgesMiens } });
 
       // Load recruitment status fields from athlete record
       if (raw.recruitment_status) setRecruitmentStatus(raw.recruitment_status as string);
@@ -350,29 +389,23 @@ function ModifierContent({ id }: { id: string }) {
      si le coach change la position, il doit évaluer sur la grille qui sera
      effectivement figée dans grille_id à la sauvegarde. */
   const grilleSet = useGrilles();
+  const badgeCat = useBadgeCatalogue();
+  /* Badges présents mais non éditables ici : ceux d'un autre coach, d'une
+     suggestion, ou repris de l'ancien format. Montrés, jamais retirés par
+     cet écran — la RPC borne sa portée de la même façon. */
+  const [autresBadges, setAutresBadges] = useState<BadgeEntry[]>([]);
+  /* Lecture des badges en échec : on refuse d'enregistrer plutôt que
+     d'envoyer une liste vide à appliquer_badges_saisie, qui la prendrait
+     pour « retire-les tous ». */
+  const [badgesIllisibles, setBadgesIllisibles] = useState(false);
 
-  const updateScouting = useCallback((field: string, value: string | number | DistinctionEntry[] | Record<string, number>) => {
+
+  const updateScouting = useCallback((field: string, value: string | number | BadgeEntry[] | Record<string, number>) => {
     setForm((prev) => ({ ...prev, scouting: { ...prev.scouting, [field]: value } }));
   }, []);
 
-  /* ── Badge helpers ─────────────────────────────────────────── */
-
-  function toggleBadge(badgeKey: string) {
-    const badges = form.scouting.badges;
-    const idx = badges.findIndex((b) => b.badge === badgeKey);
-    if (idx >= 0) {
-      updateScouting("badges", badges.filter((_, i) => i !== idx));
-    } else if (badges.length < MAX_BADGES) {
-      updateScouting("badges", [...badges, { badge: badgeKey }]);
-    }
-  }
-
-  function updateBadgeDetail(badgeKey: string, detail: string) {
-    const next: DistinctionEntry[] = form.scouting.badges.map((b) =>
-      b.badge === badgeKey ? { ...b, detail: detail || undefined } : b
-    );
-    updateScouting("badges", next);
-  }
+  /* Les bascules et la saisie de contexte sont portées par BadgePicker,
+     qui lit familles, plafonds et formes de contexte dans le catalogue. */
 
   /* ── Toggle helpers ─────────────────────────────────────────── */
 
@@ -435,6 +468,14 @@ function ModifierContent({ id }: { id: string }) {
   }
 
   async function handleSave() {
+    /* Badges illisibles : saveAthleteEdit enverrait form.scouting.badges — vide —
+       à appliquer_badges_saisie, qui le prendrait pour « retire-les tous ». On
+       refuse l'enregistrement ENTIER plutôt que de perdre en silence des badges
+       qu'on n'a pas su lire. */
+    if (badgesIllisibles) {
+      alert("Les badges de cet athlète n'ont pas pu être lus. Recharge la page avant d'enregistrer — sans cette lecture, l'enregistrement les retirerait.");
+      return;
+    }
     if (!validateStep(7)) { setShowErrors(true); return; }
     const ok = await saveToSupabase();
     if (ok) {
@@ -804,10 +845,7 @@ function ModifierContent({ id }: { id: string }) {
     const sc = form.scouting;
     const isDetailed = sc.evalMode === "detailed";
     const sportName = form.sports.primarySport;
-    const sportStats = getSportStats(sportName);
-    const selectedMap = new Map(sc.badges.map((b) => [b.badge, b]));
-    const totalDistinctions = sc.badges.length;
-    const atMax = totalDistinctions >= MAX_BADGES;
+
 
     return (
       <div className={cardCls}>
@@ -933,55 +971,14 @@ function ModifierContent({ id }: { id: string }) {
             Maximum de 5 distinctions affichées sur le profil
           </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {BADGE_ORDER.map((key) => {
-              const cfg = BADGE_CONFIG[key];
-              const entry = selectedMap.get(key);
-              const isSelected = !!entry;
-              const isDisabled = !isSelected && atMax;
-              return (
-                <div key={key}
-                  className={`border rounded-lg transition-all ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
-                  <button type="button"
-                    onClick={() => !isDisabled && toggleBadge(key)}
-                    disabled={isDisabled}
-                    className="w-full flex flex-col items-center gap-2 px-3 py-4 text-center">
-                    <DistinctionBadge badge={key} detail={entry?.detail} size="sm" />
-                    <span className={`text-[12px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>
-                      {key === "custom" ? "Personnalisée" : cfg.label}
-                    </span>
-                  </button>
-
-                  {isSelected && cfg.hasDetail && (
-                    <div className="px-3 pb-3 space-y-2">
-                      {(key === "team_leader" || key === "league_leader") && sportStats.length > 0 && (
-                        <select
-                          aria-label="Statistique"
-                          value={sportStats.includes(entry?.detail || "") ? entry?.detail || "" : ""}
-                          onChange={(e) => updateBadgeDetail(key, e.target.value)}
-                          className={`${inputCls} text-[13px]`}
-                        >
-                          <option value="">— Choisir une stat —</option>
-                          {sportStats.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      )}
-                      <input type="text"
-                        value={entry?.detail || ""}
-                        onChange={(e) => updateBadgeDetail(key, e.target.value.slice(0, MAX_DETAIL_LENGTH))}
-                        maxLength={MAX_DETAIL_LENGTH}
-                        placeholder={key === "custom" ? "Titre de la distinction" : "Précise (ex: Points)"}
-                        className={`${inputCls} text-[13px]`}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <p className="text-[12px] text-[#4a4d56] mt-3">
-            {totalDistinctions} / {MAX_BADGES} sélectionnée{totalDistinctions !== 1 ? "s" : ""}
-          </p>
+          <BadgePicker
+            value={sc.badges}
+            onChange={(v: BadgeEntry[]) => updateScouting("badges", v)}
+            sportId={grilleSet.sportIdByNom.get(sportName) ?? null}
+            sportNom={sportName}
+            autresBadges={autresBadges}
+            layout="tuiles"
+          />
         </div>
 
         {/* ── Rapport de l'entraîneur ──────────────── */}
@@ -1092,9 +1089,11 @@ function ModifierContent({ id }: { id: string }) {
 
         {summaryCard("Évaluation", 5, (<div>
           {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => {
-            const cfg = BADGE_CONFIG[b.badge];
-            const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
-            return b.badge !== "custom" && b.detail ? `${label} — ${b.detail}` : label;
+            /* Libellé du CATALOGUE. `nexus-x` (ex-`custom`) s'affiche par son
+               contexte seul : c'est le titre saisi par le coach. */
+            const cb = badgeCat.byCode.get(b.code);
+            const label = b.code === "nexus-x" ? (b.contexte || "Distinction") : (cb?.libelle || b.code);
+            return b.code !== "nexus-x" && b.contexte ? `${label} — ${b.contexte}` : label;
           }).join(", ") : "")}
           {scouting.coachEndorsement && (<div className="mt-2 p-3 bg-[#1A1D24] rounded-lg"><p className="text-[12px] text-[#6b7280] mb-1 font-bold uppercase tracking-wider">Rapport</p><p className="text-[12px] text-[#e0e0e0] italic leading-relaxed">&ldquo;{scouting.coachEndorsement.slice(0, 150)}{scouting.coachEndorsement.length > 150 ? "…" : ""}&rdquo;</p></div>)}
         </div>))}

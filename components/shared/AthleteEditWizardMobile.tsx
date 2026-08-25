@@ -62,9 +62,13 @@ import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import {
-  BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
+  BADGE_CONFIG, MAX_DETAIL_LENGTH,
   parseDistinctions, type DistinctionEntry,
 } from "@/lib/config/badges";
+import BadgePicker from "@/components/shared/BadgePicker";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import { entreesIncompletes, type BadgeEntry } from "@/lib/config/badgeCatalogue";
+import { chargerBadgesAthlete } from "@/lib/queries/shared/athleteBadges";
 import { traitGroups, champToColumn, type GrilleRef, type TraitEntry } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 
@@ -2033,6 +2037,9 @@ function EvaluationStep({
         </p>
         <Card>
           <DistinctionsSuggestRow
+            athleteId={a.id ?? null}
+            sportId={a.sportId}
+            sportNom={a.primarySport || null}
             currentDistinctions={a.coachDistinctions}
             pending={getPending("Distinctions")}
             submitting={submitting}
@@ -2220,44 +2227,44 @@ function StarSuggestRow({
    parseDistinctions read are both symmetric round-trips.
 ═══════════════════════════════════════════════════════════════ */
 function DistinctionsSuggestRow({
-  currentDistinctions, pending, submitting, onSubmit,
+  athleteId, sportId, sportNom, currentDistinctions, pending, submitting, onSubmit,
 }: {
+  athleteId: string | null;
+  sportId: string | null;
+  sportNom: string | null;
   currentDistinctions: DistinctionEntry[];
   pending: AthleteSuggestion | undefined;
   submitting: boolean;
   onSubmit: (entries: DistinctionEntry[]) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [autres, setAutres] = useState<BadgeEntry[]>([]);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const cat = useBadgeCatalogue();
   /* Draft is seeded from currentDistinctions on expand (mirrors web
      `startEditing` at page.tsx :727-730) so the athlete edits the
      existing set rather than starting blank. */
-  const [draft, setDraft] = useState<DistinctionEntry[]>(currentDistinctions);
+  const [draft, setDraft] = useState<BadgeEntry[]>([]);
   const hasPending = !!pending;
+  const incomplets = entreesIncompletes(draft, cat);
 
-  const atMax = draft.length >= MAX_BADGES;
-
-  /* Toggle a badge into/out of draft. Respects MAX_BADGES — once at
-     cap, adding is a no-op (mirrors web :707-714). Toggling OFF a
-     selected badge drops it AND any detail. */
-  const toggle = (badgeKey: string) => {
-    setDraft((prev) => {
-      const idx = prev.findIndex((e) => e.badge === badgeKey);
-      if (idx >= 0) return prev.filter((_, i) => i !== idx);
-      if (prev.length >= MAX_BADGES) return prev;
-      return [...prev, { badge: badgeKey }];
-    });
-  };
-
-  /* Update a hasDetail badge's detail text. Empty / whitespace-only
-     detail is preserved as "" in local state ; the submit handler
-     strips empties to `undefined` (key absent in payload) — matches
-     web `detail: detail || undefined` at page.tsx :717. */
-  const updateDetail = (badgeKey: string, detail: string) => {
-    setDraft((prev) => prev.map((e) =>
-      e.badge === badgeKey
-        ? { ...e, detail: detail.slice(0, MAX_DETAIL_LENGTH) }
-        : e,
-    ));
+  /* Le picker part des badges issus de SUGGESTIONS, pas de
+     evaluations.distinctions. Ceux posés par un coach s'affichent en lecture
+     seule : une suggestion ne peut pas les retirer. Si la lecture échoue on
+     N'OUVRE PAS — ouvrir sur une liste vide proposerait de tout retirer. */
+  const ouvrir = async () => {
+    setErreur(null);
+    if (!athleteId) { setErreur("profil non chargé"); return; }
+    try {
+      const sb = createClient();
+      const { data: { user } } = await sb.auth.getUser();
+      const b = await chargerBadgesAthlete(sb, athleteId, user?.id ?? null, false, "suggestion");
+      setDraft(b.miens);
+      setAutres(b.autres);
+      setExpanded(true);
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : String(e));
+    }
   };
 
   const submit = async () => {
@@ -2265,9 +2272,12 @@ function DistinctionsSuggestRow({
        so JSON.stringify omits them (matches web exactly — empty detail
        must NOT serialize as `"detail":""`). Preserve insertion order
        (athlete's tap order = badge ordering in the recruiter view). */
+    /* Ancienne forme {badge, detail} avec les NOUVEAUX codes :
+       code_badge_catalogue accepte les deux vocabulaires, donc aucun SQL à
+       toucher et le contrat de onSubmit reste inchangé. */
     const wire: DistinctionEntry[] = draft.map((e) => {
-      const d = (e.detail || "").trim();
-      return d ? { badge: e.badge, detail: d } : { badge: e.badge };
+      const d = (e.contexte || "").trim();
+      return d ? { badge: e.code, detail: d } : { badge: e.code };
     });
     await onSubmit(wire);
     setExpanded(false);
@@ -2282,7 +2292,7 @@ function DistinctionsSuggestRow({
       <div className="w-full">
         <button
           type="button"
-          onClick={() => { void triggerHaptic("Light"); setDraft(currentDistinctions); setExpanded(true); }}
+          onClick={() => { void triggerHaptic("Light"); void ouvrir(); }}
           className="w-full flex items-start justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
         >
           <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
@@ -2347,60 +2357,17 @@ function DistinctionsSuggestRow({
         </button>
       </div>
 
-      <div className="space-y-1.5">
-        {BADGE_ORDER.map((key) => {
-          const cfg = BADGE_CONFIG[key];
-          const entry = draft.find((e) => e.badge === key);
-          const isSelected = !!entry;
-          const isDisabled = !isSelected && atMax;
-          const displayLabel = key === "custom" ? "Personnalisée" : cfg.label;
-          return (
-            <div
-              key={key}
-              className={`border rounded-lg transition-colors ${
-                isSelected ? "border-[#EAB308]/40 bg-[#EAB308]/[0.06]" : "border-white/[0.08]"
-              } ${isDisabled ? "opacity-40" : ""}`}
-            >
-              <button
-                type="button"
-                onClick={() => { void triggerHaptic("Light"); if (!isDisabled) toggle(key); }}
-                disabled={isDisabled}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
-              >
-                <span
-                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                    isSelected ? "bg-[#EAB308] border-[#EAB308]" : "border-white/[0.20]"
-                  }`}
-                >
-                  {isSelected && (
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#111317" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  )}
-                </span>
-                <span className={`text-[13px] font-bold ${isSelected ? "text-white" : "text-white/55"}`}>
-                  {displayLabel}
-                </span>
-              </button>
-              {isSelected && cfg.hasDetail && (
-                <div className="px-3 pb-3 pl-10">
-                  <input
-                    type="text"
-                    value={entry?.detail || ""}
-                    onChange={(e) => updateDetail(key, e.target.value)}
-                    maxLength={MAX_DETAIL_LENGTH}
-                    placeholder={key === "custom" ? "Titre" : "Ex: Points, Buts, Passes..."}
-                    aria-label={`Détail — ${displayLabel}`}
-                    className="w-full bg-[#111317] border border-white/[0.10] rounded-lg px-2.5 py-1.5 text-[13px] text-white placeholder:text-white/35 outline-none focus:border-[#EAB308]/40"
-                  />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <p className="text-[11px] text-white/45 mt-3">{draft.length} / {MAX_BADGES}</p>
+      {/* Ambre : l'accent des surfaces athlète mobile. Les compteurs (dont
+          le plafond par famille) sont portés par le picker. */}
+      <BadgePicker
+        value={draft}
+        onChange={setDraft}
+        sportId={sportId}
+        sportNom={sportNom}
+        autresBadges={autres}
+        layout="rangees"
+        accent="#EAB308"
+      />
 
       <div className="mt-3 flex items-center justify-end gap-3 pb-2">
         <button

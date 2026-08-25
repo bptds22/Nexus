@@ -314,7 +314,11 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
         resilience: (eval0.resilience as number) || 0,
         attitude_mentalite: (eval0.attitude_mentalite as number) || 0,
       } : {},
-      badges: parseDistinctions(eval0?.distinctions),
+      /* Les badges NE viennent PLUS de evaluations.distinctions : c'est une
+         colonne dérivée, et elle ne dit pas QUI a attribué quoi — donc pas
+         ce que l'écran a le droit d'éditer. Chaque surface les charge par
+         chargerBadgesAthlete, qui rend le découpage éditable / lecture seule. */
+      badges: [],
       coachEndorsement: (eval0?.rapport_entraineur as string) || (raw.notes_coach as string) || "",
     },
     media: {

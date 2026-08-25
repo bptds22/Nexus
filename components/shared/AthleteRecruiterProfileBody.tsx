@@ -13,7 +13,8 @@ import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmen
 import { BADGE_COLORS } from "@/lib/types/models";
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import { parseDistinctions, MAX_BADGES } from "@/lib/config/badges";
+import { parseDistinctions } from "@/lib/config/badges";
+import { MAX_BADGES_AFFICHES } from "@/lib/config/badgeCatalogue";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
@@ -1447,7 +1448,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
               {a.distinctions.length > 0 && (
                 <div className="flex items-start gap-9 flex-wrap">
-                  {a.distinctions.slice(0, MAX_BADGES).map((d, i) => (
+                  {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
                     <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="lg" />
                   ))}
                 </div>
@@ -1544,7 +1545,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                       <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
                         <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                         <div className="flex flex-wrap gap-3">
-                          {a.distinctions.slice(0, MAX_BADGES).map((d, i) => (
+                          {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
                             <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="sm" />
                           ))}
                         </div>

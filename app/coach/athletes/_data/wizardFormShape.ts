@@ -17,7 +17,7 @@
 
 import type { TeamHistoryEntry } from "@/lib/types/models";
 
-import type { DistinctionEntry } from "@/lib/config/badges";
+import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
 
 export interface AthleteFormData {
   identity: {
@@ -94,7 +94,12 @@ export interface AthleteFormData {
     evalMode: "simple" | "detailed";
     starRating: number;
     traitRatings: Record<string, number>;
-    badges: DistinctionEntry[];
+    /* Codes du CATALOGUE ({code, contexte}), plus les anciens
+       {badge, detail} de evaluations.distinctions. Ce champ alimente
+       directement appliquer_badges_saisie et ne contient QUE les badges que
+       ce chemin gère — ceux d'un autre coach sont montrés par le picker
+       sans être éditables. */
+    badges: BadgeEntry[];
     coachEndorsement: string;
   };
   media: {

@@ -21,6 +21,9 @@ import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/l
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { traitGroups, type GrilleRef } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
+import BadgePicker from "@/components/shared/BadgePicker";
+import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
+import { chargerBadgesAthlete, enregistrerBadgesSaisie } from "@/lib/queries/shared/athleteBadges";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
@@ -247,6 +250,27 @@ export default function AdminAthleteDetailPage() {
   const [coachInfo, setCoachInfo] = useState<{ name: string; school: string } | null>(null);
   const [previewView, setPreviewView] = useState<AthleteProfileRecruiterView | null>(null);
   const grilleSet = useGrilles();
+  /* Un admin édite TOUS les badges de saisie de l'athlète, pas seulement les
+     siens — même portée que la RPC et que la policy UPDATE. */
+  const [badgesEdit, setBadgesEdit] = useState<BadgeEntry[]>([]);
+  const [badgesAutres, setBadgesAutres] = useState<BadgeEntry[]>([]);
+  useEffect(() => {
+    if (!id) return;
+    let vivant = true;
+    (async () => {
+      try {
+        const sb = createClient();
+        const { data: { user } } = await sb.auth.getUser();
+        const b = await chargerBadgesAthlete(sb, id, user?.id ?? null, true);
+        if (!vivant) return;
+        setBadgesEdit(b.miens);
+        setBadgesAutres(b.autres);
+      } catch (e) {
+        console.error("NEXUS: badges illisibles —", e instanceof Error ? e.message : e);
+      }
+    })();
+    return () => { vivant = false; };
+  }, [id]);
   /* Aperçu admin : même règle de lecture que les fiches — grille_id de l'éval
      affichée, sinon la position. previewView vient de mapToRecruiterView. */
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
@@ -571,8 +595,19 @@ export default function AdminAthleteDetailPage() {
         sens_tactique: evaluation.sens_tactique ?? null,
         cote_globale: evaluation.cote_globale ?? null,
         rapport_entraineur: evaluation.rapport_entraineur ?? null,
-        distinctions: evaluation.distinctions ?? [],
+        /* `distinctions` retirée : colonne DÉRIVÉE, reconstruite par le
+           miroir depuis athlete_badges. Les badges partent par la RPC
+           transactionnelle ci-dessous. */
       };
+      const badgesErr = await enregistrerBadgesSaisie(supa, id, badgesEdit)
+        .then(() => null)
+        .catch((e: unknown) => (e instanceof Error ? e.message : String(e)));
+      if (badgesErr) {
+        setToast(`Erreur badges: ${badgesErr}`);
+        setTimeout(() => setToast(null), 4000);
+        setSaving(false);
+        return;
+      }
       const { error: eErr } = await supa
         .from("evaluations")
         .upsert(evalPatch, { onConflict: "coach_id,athlete_id" });
@@ -994,69 +1029,14 @@ export default function AdminAthleteDetailPage() {
                 Maximum de 5 distinctions affichées sur le profil
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {BADGE_ORDER.map((key) => {
-                  const cfg = BADGE_CONFIG[key];
-                  const entry = selectedBadgeMap.get(key);
-                  const isSelected = !!entry;
-                  const isDisabled = !isSelected && atMax;
-                  return (
-                    <div
-                      key={key}
-                      className={`border rounded-lg transition-all ${
-                        isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"
-                      } ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => !isDisabled && toggleBadge(key)}
-                        disabled={isDisabled}
-                        className="w-full flex flex-col items-center gap-2 px-3 py-4 text-center"
-                      >
-                        <DistinctionBadge badge={key} detail={entry?.detail} size="sm" />
-                        <span
-                          className={`text-[12px] font-bold ${
-                            isSelected ? "text-white" : "text-[#8a8d96]"
-                          }`}
-                        >
-                          {key === "custom" ? "Personnalisée" : cfg.label}
-                        </span>
-                      </button>
-
-                      {isSelected && cfg.hasDetail && (
-                        <div className="px-3 pb-3 space-y-2">
-                          {(key === "team_leader" || key === "league_leader") &&
-                            sportStatsOpts.length > 0 && (
-                              <select
-                                aria-label="Statistique"
-                                value={sportStatsOpts.includes(entry?.detail || "") ? entry?.detail || "" : ""}
-                                onChange={(ev) => updateBadgeDetail(key, ev.target.value)}
-                                className={`${inputCls} text-[13px]`}
-                              >
-                                <option value="">— Choisir une stat —</option>
-                                {sportStatsOpts.map((s) => (
-                                  <option key={s} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          <input
-                            type="text"
-                            value={entry?.detail || ""}
-                            onChange={(ev) => updateBadgeDetail(key, ev.target.value.slice(0, MAX_DETAIL_LENGTH))}
-                            maxLength={MAX_DETAIL_LENGTH}
-                            placeholder={
-                              key === "custom" ? "Titre de la distinction" : "Précise (ex: Points)"
-                            }
-                            className={`${inputCls} text-[13px]`}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <BadgePicker
+                value={badgesEdit}
+                onChange={setBadgesEdit}
+                sportId={primarySportId}
+                sportNom={A("sport_nom") as string | null}
+                autresBadges={badgesAutres}
+                layout="tuiles"
+              />
             </div>
 
             {/* ── Rapport de l'entraîneur ────────────── */}
