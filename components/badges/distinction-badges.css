@@ -18,6 +18,10 @@
 /* ── Le conteneur ────────────────────────────────────────────── */
 .nx-badge {
   position: relative;
+  /* Au-dessus de .nx-badge__glow, qui est désormais son FRÈRE et non plus son
+     enfant. Sans ce z-index, la lueur — positionnée, donc peinte après un
+     frère non positionné — passerait PAR-DESSUS le badge. */
+  z-index: 1;
   display: grid;
   place-items: center;
   /* Confine le reflet. Sans masque il balaierait ce carré en entier, coins
@@ -36,26 +40,41 @@
      est décalé par rapport au dessin. */
 }
 
-/* ── Lueur fixe, par défaut, sans filtre ─────────────────────── */
+/* ── Lueur : elle porte MAINTENANT tout l'effet ──────────────── */
+/*
+   Les 22 SVG portaient chacun deux feGaussianBlur (un halo utilisé, un mort).
+   Ils n'en ont plus AUCUN : la lueur venait du fichier, elle vient désormais
+   d'ici. Sans cette règle, les badges sont plats — c'est le seul point qui ne
+   pardonne pas.
+
+   POURQUOI LA LUEUR EST SORTIE DE .nx-badge
+   Elle en était l'enfant. Or .nx-badge porte overflow:hidden — nécessaire au
+   reflet, qui se translate et se ferait voir hors silhouette sans lui. À
+   inset:-14% la lueur était déjà rognée ; à -30% elle l'aurait été bien plus,
+   et le halo se serait arrêté NET au carré du conteneur — un bord droit
+   visible autour d'un losange à coins transparents.
+   Elle est donc remontée d'un cran, dans l'enveloppe position:relative qui
+   existait déjà, où rien ne la rogne. Le reflet n'est pas touché.
+*/
 .nx-badge__glow {
   position: absolute;
-  inset: -14%;
+  inset: -30%;
   z-index: 0;
   pointer-events: none;
   border-radius: 50%;
   background: radial-gradient(
-    circle at 50% 50%,
-    rgba(230, 57, 70, 0.42) 0%,
-    rgba(230, 57, 70, 0.18) 45%,
-    rgba(230, 57, 70, 0) 72%
+    circle,
+    rgba(230, 57, 70, 0.78) 0%,
+    rgba(230, 57, 70, 0.3) 42%,
+    rgba(230, 57, 70, 0) 70%
   );
-  opacity: 0.8;
+  opacity: 0.42;
   /* Seule l'opacité bouge au survol — pas de filtre, pas de repeinture. */
   transition: opacity 300ms ease-out;
 }
 
 .group:hover .nx-badge__glow {
-  opacity: 1;
+  opacity: 0.72;
 }
 
 /* ── Le reflet, masqué à la silhouette du badge ──────────────── */

@@ -161,6 +161,10 @@ export default function DistinctionBadge({
   return (
     <div className={`flex flex-col items-center ${effectiveSize === "xs" ? "" : "gap-[10px]"} cursor-pointer group shrink-0 ${outerW}`}>
       <div className="relative transition-transform duration-300 group-hover:scale-[1.18] group-hover:-translate-y-[3px]">
+        {/* La lueur est SŒUR du badge, pas son enfant : .nx-badge porte
+            overflow:hidden pour le reflet, ce qui rognerait le halo au carré
+            du conteneur. Ici rien ne la rogne. */}
+        <span className="nx-badge__glow" aria-hidden="true" />
         <div
           className={classes}
           // --nx-mask confine le reflet à la SILHOUETTE du badge : sans lui,
@@ -168,7 +172,6 @@ export default function DistinctionBadge({
           // Même URL que le <img>, donc aucun aller-retour réseau en plus.
           style={{ "--nx-mask": `url("${svg}")`, "--nx-delay": decalage } as React.CSSProperties}
         >
-          <span className="nx-badge__glow" aria-hidden="true" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={svg} alt="" className="nx-badge__img" draggable={false} />
         </div>

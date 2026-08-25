@@ -44,12 +44,16 @@ export default function BadgeVignette({
 
   return (
     <div className={`flex flex-col items-center gap-1.5 ${className}`}>
-      <span
-        className={`nx-badge ${BOITE[taille]}`}
-        style={attenue ? { opacity: 0.35 } : undefined}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={svg} alt="" className="nx-badge__img" draggable={false} />
+      {/* Enveloppe position:relative — elle n'existait pas. Le picker n'avait
+          AUCUNE lueur : les SVG portaient la leur, et elle suffisait. Depuis
+          qu'ils sont plats, sans cette enveloppe les tuiles du sélecteur
+          seraient les seules à le rester. */}
+      <span className="relative inline-grid place-items-center" style={attenue ? { opacity: 0.35 } : undefined}>
+        <span className="nx-badge__glow" aria-hidden="true" />
+        <span className={`nx-badge ${BOITE[taille]}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={svg} alt="" className="nx-badge__img" draggable={false} />
+        </span>
       </span>
       {libelle && (
         <span
