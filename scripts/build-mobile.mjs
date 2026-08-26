@@ -83,10 +83,20 @@ const HIDE_PATTERNS = [
   'app/collecte-donnees/page.tsx',
   // Route handler GET dynamique (OAuth web callback) : incompatible avec
   // output:export (cookies + searchParams → "force-static non configuré").
-  // Inutile sur device (login social NATIF, pas de callback web). Les autres
-  // route.ts sous app/api/* sont des POST → ignorés par l'export, pas besoin
-  // de les masquer.
+  // Inutile sur device (login social NATIF, pas de callback web).
   'app/auth/callback/route.ts',
+  // ⚠ CORRIGÉ le 2026-08-26. Cette liste portait : « les autres route.ts sous
+  // app/api/* sont des POST → ignorés par l'export, pas besoin de les masquer ».
+  // C'est vrai d'une route STATIQUE, faux dès qu'un segment est DYNAMIQUE :
+  // output:'export' exige generateStaticParams() pour tout [param], y compris
+  // sur une route API. app/api/admin/partners/[id]/resend a été ajoutée le
+  // 20 août (36ecd55) et a cassé le build mobile pendant six jours, sans que
+  // personne le voie — aucun build n'avait été lancé depuis le 18.
+  // Le motif est volontairement GÉNÉRIQUE : il couvre toute future route API
+  // dynamique, pour que le trou ne se rouvre pas au prochain [id].
+  // ⚠ CROCHETS EN CLASSE DE CARACTÈRES ([[] et []]), pas en backslash —
+  // vérifié à 1 fichier avant d'être écrit ici.
+  'app/api/**/[[]*[]]/**/route.ts',
 ];
 
 function findAllToHide() {

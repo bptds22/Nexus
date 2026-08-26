@@ -11,6 +11,14 @@
  *     mobile n'aurait pas de point d'entrée valide)
  *   - `generateStaticParams() => []` sur les routes [id] (segments dynamiques
  *     non-exportés au build mobile)
+ *   - HIDE_PATTERNS dans scripts/build-mobile.mjs, qui DÉPLACE physiquement les
+ *     fichiers avant `next build`. C'est le seul mécanisme qui vaille pour les
+ *     ROUTES API dynamiques (app/api/**\/[param]/**\/route.ts) : elles n'ont ni
+ *     layout où poser un notFound(), ni page où poser generateStaticParams,
+ *     et output:'export' les refuse telles quelles. Ajouté le 2026-08-26 après
+ *     que app/api/admin/partners/[id]/resend ait cassé le build six jours durant.
+ *     Aucune garde runtime n'est nécessaire pour elles : un export statique
+ *     n'embarque aucune route API — il n'y a rien à atteindre sur l'appareil.
  *
  * Les guards utilisent `process.env.CAPACITOR_BUILD === 'true'` (server) ou
  * `process.env.NEXT_PUBLIC_CAPACITOR_BUILD === 'true'` (client). En web,
