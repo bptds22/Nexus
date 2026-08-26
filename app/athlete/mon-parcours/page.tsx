@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
-import { parseDistinctions, LEGACY_BADGE_TO_CATALOGUE } from "@/lib/config/badges";
+import { LEGACY_BADGE_TO_CATALOGUE } from "@/lib/config/badges";
+import { pastillesBadges } from "@/lib/queries/shared/athleteBadges";
 import { badgesPourSport } from "@/lib/config/badgeCatalogue";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
@@ -207,25 +208,29 @@ function MonParcoursPageDesktop() {
         console.error("[mon-parcours] card load failed:", e);
       }
 
-      // Module 1 — earned badges. Distinctions are coach-awarded and
-      // live in evaluations.distinctions; union across all evaluations.
-      const { data: evals } = await supabase
-        .from("evaluations")
-        .select("distinctions")
-        .eq("athlete_id", id);
-      if (evals) {
-        // Keep the full entry (badge + detail); on a repeat badge, prefer
-        // the occurrence that carries a stat detail.
-        const earned = new Map<string, string | undefined>();
-        for (const row of evals) {
-          for (const entry of parseDistinctions((row as { distinctions: unknown }).distinctions)) {
-            if (!earned.has(entry.badge) || (earned.get(entry.badge) == null && entry.detail != null)) {
-              earned.set(entry.badge, entry.detail);
-            }
-          }
-        }
-        setEarnedBadges(earned);
+      /* Module 1 — les badges mérités.
+         VOIE 2 — UNE table par athlète, donc plus d'union à faire.
+         Avant : les badges vivaient dans evaluations.distinctions, une ligne
+         PAR COACH. Cet écran en faisait l'UNION, le mobile prenait la plus
+         récente — deux réponses différentes à la même question, et aucune
+         n'était fausse puisque la question elle-même était mal posée.
+         athlete_badges est par athlète : il n'y a plus de choix à faire. */
+      const { data: abRows } = await supabase
+        .from("athlete_badges")
+        .select("contexte, retire_le, badges(code, libelle)")
+        .eq("athlete_id", id)
+        .is("retire_le", null);
+      const earned = new Map<string, string | undefined>();
+      for (const p of pastillesBadges(
+        (abRows ?? []).map((r) => {
+          const b = (r as { badges: unknown }).badges;
+          const bb = (Array.isArray(b) ? b[0] : b) as { code: string; libelle: string } | null;
+          return { code: bb?.code, libelle: bb?.libelle, contexte: (r as { contexte: string | null }).contexte };
+        }),
+      )) {
+        earned.set(p.code, p.contexte ?? undefined);
       }
+      setEarnedBadges(earned);
 
       // Module 2 — saved targets + the CÉGEP list for the picker.
       await loadTargets(id);

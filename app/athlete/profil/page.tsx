@@ -16,11 +16,11 @@ import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
-import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { type DistinctionEntry } from "@/lib/config/badges";
 import BadgePicker from "@/components/shared/BadgePicker";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import { entreesIncompletes, type BadgeEntry } from "@/lib/config/badgeCatalogue";
-import { chargerBadgesAthlete, versSuggestion } from "@/lib/queries/shared/athleteBadges";
+import { chargerBadgesAthlete, versSuggestion, badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
 import { CEGEP_REGIONS } from "@/lib/config/academicOptions";
@@ -775,7 +775,7 @@ function DistinctionsSuggest({ athleteId, sportId, sportNom, currentDistinctions
       {!editing && currentDistinctions.length > 0 && (
         <div className="flex flex-wrap gap-4 mt-3">
           {currentDistinctions.map((e, i) => (
-            <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} count={currentDistinctions.length} index={i} />
+            <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} libelle={e.libelle} count={currentDistinctions.length} index={i} />
           ))}
         </div>
       )}
@@ -1136,7 +1136,7 @@ function AthleteProfilPageDesktop() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, city, type),
           team_athletes(team_id, teams!team_id(name)),
-          evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id),
+          evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id), athlete_badges(contexte, created_at, retire_le, badges(code, libelle)),
           users!athletes_coach_id_fkey(first_name, last_name)
         `)
         .eq("user_id", user.id)
@@ -1239,7 +1239,10 @@ function AthleteProfilPageDesktop() {
         coachReport: evalRel?.rapport_entraineur || "",
         coachName: coachRel ? `${coachRel.first_name || ""} ${coachRel.last_name || ""}`.trim() : "",
         overallRating: evalRel?.cote_globale || 0,
-        coachDistinctions: parseDistinctions(evalRel?.distinctions),
+        /* VOIE 2 — l'affichage sort de athlete_badges, embarqué dans la
+           requête ci-dessus : aucune requête de plus. Le libellé du catalogue
+           voyage avec, et part en prop à DistinctionBadge. */
+        coachDistinctions: badgesDepuisRaw(raw as Record<string, unknown>),
         /* Règle de lecture des grilles, côté athlète : grille_id de l'éval
            affichée d'abord, sa position ensuite. */
         grilleId: (evalRel?.grille_id as string | null) ?? null,
@@ -1294,7 +1297,7 @@ function AthleteProfilPageDesktop() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), position_id, positions!position_id(nom, abreviation), schools!school_id(name, region, city), team_athletes(team_id, teams!team_id(name)), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
+    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), position_id, positions!position_id(nom, abreviation), schools!school_id(name, region, city), team_athletes(team_id, teams!team_id(name)), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id), athlete_badges(contexte, created_at, retire_le, badges(code, libelle)), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
     if (!raw) return;
     // Re-run the same mapping (simplified — just update key display fields)
     const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;

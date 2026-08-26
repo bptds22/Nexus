@@ -8,7 +8,8 @@ import { STATUS_CONFIG, mapDbStatus, type Message, type ThreadStatus, type Conve
 import EntityLink from "@/components/shared/EntityLink";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
-import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { type DistinctionEntry } from "@/lib/config/badges";
+import { pastillesBadges, badgesDepuisRaw, textePastille, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 import { CoachDemandesThreadMobile } from "@/components/shared/CoachDemandesThreadMobile";
 import CoachAthleteThreadView from "./CoachAthleteThreadView";
 import CoachCoachThreadView from "./CoachCoachThreadView";
@@ -171,7 +172,7 @@ function ThreadDetailPage() {
         // Fetch conversation
         const { data: conv, error: convError } = await supabase
           .from("conversations")
-          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale, updated_at))")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle)))")
           .eq("id", id)
           .single();
 
@@ -242,7 +243,7 @@ function ThreadDetailPage() {
           _athleteRelocate: athleteData?.pret_changer_region || false,
           _athletePrivate: athleteData?.ouvert_cegep_prive || false,
           _athleteAnglophone: athleteData?.ouvert_cegep_anglophone || false,
-          _athleteDistinctions: (() => { const e = athleteData?.evaluations; const ev = selectBestEvaluation(Array.isArray(e) ? e : e ? [e] : []); return parseDistinctions((ev as { distinctions?: unknown } | null)?.distinctions); })(),
+          _athleteDistinctions: pastillesBadges(badgesDepuisRaw(athleteData as Record<string, unknown>)),
           messages: [],
           status: mapDbStatus(conv.status, (msgs || []).some((m: any) => m.sender_id === conv.coach_id), (msgs || []).some((m: any) => m.sender_id === conv.recruiter_id)),
           lastMessagePreview: "",
@@ -561,17 +562,19 @@ function ThreadDetailPage() {
             )}
 
             {/* Distinctions */}
-            {((thread as any)._athleteDistinctions as DistinctionEntry[])?.length > 0 && (
+            {((thread as any)._athleteDistinctions as PastilleBadge[])?.length > 0 && (
               <div className="pt-3 border-t border-[#2D3748] mb-3">
                 <div className="flex flex-wrap gap-1.5">
-                  {((thread as any)._athleteDistinctions as DistinctionEntry[]).map((e) => {
-                    const labels: Record<string, string> = { captain: "Capitaine", allstar: "Étoile", team_leader: "Leader", points_leader: "Pointeur", mvp: "MVP", progression: "Progression" };
-                    return (
-                      <span key={e.badge} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
-                        {labels[e.badge] || e.badge}
-                      </span>
-                    );
-                  })}
+                  {/* Seconde table de libellés en dur, supprimée elle aussi.
+                      Elle disait « Étoile » là où l'autre disait « Équipe
+                      d'étoiles » et le catalogue « Équipe d'étoiles » : trois
+                      mots pour un même badge, sur des écrans que le même
+                      recruteur enchaîne. */}
+                  {((thread as any)._athleteDistinctions as PastilleBadge[]).map((e) => (
+                    <span key={e.code} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
+                      {textePastille(e)}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}

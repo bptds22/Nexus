@@ -9,7 +9,7 @@ import ReclamerSection from "./_components/ReclamerSection";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
-import { parseDistinctions } from "@/lib/config/badges";
+import { pastillesBadges, badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
@@ -283,7 +283,8 @@ function MesAthletesContent() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
-          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at),
+          athlete_badges(contexte, retire_le, badges(code, libelle))
         `)
         // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
         // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
@@ -363,7 +364,7 @@ function MesAthletesContent() {
         const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
         const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown } | undefined;
         const stars = eval0?.cote_globale || (a.cote_globale_entraineur as number) || 0;
-        const distinctions = parseDistinctions(eval0?.distinctions);
+        const distinctions = pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>));
 
         const position = posObj?.abreviation || posObj?.nom || "";
         const gradYear = (a.annee_diplomation as number) || 0;
@@ -417,6 +418,7 @@ function MesAthletesContent() {
           region: schoolObj?.region || "",
           sport: sportName,
           hasVideo: !!a.video_faits_saillants_url,
+          /* VOIE 2 — pastilles porteuses de leur libellé de catalogue. */
           badges: distinctions,
           academicBadges: (a.mentions_academiques as string[]) || [],
           recruitmentStatus: (a.recruitment_status as string) || "OUVERT",
@@ -1103,7 +1105,7 @@ function MesAthletesContent() {
                   live here was removed to match the recruiter card visual
                   (recruiter side filters distinctions through BADGE_MAP
                   which drops custom free-text, so its cards render lean ;
-                  coach's parseDistinctions kept everything → wall of pills
+                  coach's badge list kept everything → wall of pills
                   → inconsistent height + diverging look from recruiter). */}
               <div className="flex-1 min-w-0" />
               <div className="flex items-center gap-3 shrink-0">

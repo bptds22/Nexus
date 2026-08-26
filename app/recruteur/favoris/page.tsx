@@ -137,7 +137,7 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {a.badges.slice(0, 2).map((b) => (
               <span key={b.badgeId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[12px] font-bold text-[#E63946]">
-                <NxIcon name={b.icon} size={12} className="text-[#E63946]" /> {b.label}
+                {b.icon && <NxIcon name={b.icon} size={12} className="text-[#E63946]" />} {b.label}
               </span>
             ))}
           </div>

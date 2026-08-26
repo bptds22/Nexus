@@ -32,7 +32,6 @@ import {
   BADGE_ORDER,
   MAX_BADGES,
   MAX_DETAIL_LENGTH,
-  parseDistinctions,
   getSportStats,
   type DistinctionEntry,
 } from "@/lib/config/badges";
@@ -265,6 +264,13 @@ export default function AdminAthleteDetailPage() {
         if (!vivant) return;
         setBadgesEdit(b.miens);
         setBadgesAutres(b.autres);
+        /* VOIE 2 — l'affichage sort des MÊMES données que le picker. miens +
+           autres = tous les badges vivants, et chargerBadgesAthlete remonte
+           désormais le libellé du catalogue : aucune requête de plus, et plus
+           de divergence de vocabulaire entre les deux moitiés de cet écran. */
+        setDbDistinctions([...b.miens, ...b.autres].map((e) => ({
+          badge: e.code, detail: e.contexte ?? undefined, libelle: e.libelle,
+        })));
       } catch (e) {
         console.error("NEXUS: badges illisibles —", e instanceof Error ? e.message : e);
       }
@@ -391,11 +397,6 @@ export default function AdminAthleteDetailPage() {
           const evals = (rawA as Record<string, unknown>).evaluations;
           const evalArr = Array.isArray(evals) ? evals : [];
           const e0 = selectBestEvaluation(evalArr) as Record<string, unknown> | undefined;
-          if (e0?.distinctions) {
-            let d: unknown = e0.distinctions;
-            if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }
-            setDbDistinctions(parseDistinctions(d));
-          }
         }
       } catch (err) {
         console.error("[admin/athletes] loadAthleteRaw failed:", err);
@@ -818,8 +819,11 @@ export default function AdminAthleteDetailPage() {
 
   const ALL_TRAIT_KEYS = TRAIT_GROUPS.flatMap((g) => g.traits.map((t) => t.key));
 
-  const distinctionsEntries: DistinctionEntry[] = parseDistinctions(evaluation.distinctions);
-  const selectedBadgeMap = new Map(distinctionsEntries.map((e) => [e.badge, e]));
+  /* L'éditeur de badges de cet écran (toggleBadge / updateBadgeDetail, avec
+     distinctionsEntries et selectedBadgeMap) a été RETIRÉ : il n'était plus
+     appelé nulle part — BadgePicker l'a remplacé — et il écrivait dans
+     evaluations.distinctions, une colonne DÉRIVÉE que le miroir réécrit. Le
+     garder revenait à laisser une porte ouverte sur une perte silencieuse. */
   const primarySportId = (A("sport_id") as string | null) ?? null;
   const primarySportName = sports.find((s) => s.id === primarySportId)?.nom ?? null;
   const sportStatsOpts = getSportStats(primarySportName);
@@ -829,22 +833,6 @@ export default function AdminAthleteDetailPage() {
     setE(key, current === value ? null : value);
   }
 
-  function toggleBadge(key: string) {
-    const existing = selectedBadgeMap.get(key);
-    let next: DistinctionEntry[];
-    if (existing) {
-      next = distinctionsEntries.filter((e) => e.badge !== key);
-    } else {
-      if (distinctionsEntries.length >= MAX_BADGES) return;
-      next = [...distinctionsEntries, { badge: key }];
-    }
-    setE("distinctions", next);
-  }
-
-  function updateBadgeDetail(key: string, detail: string) {
-    const next = distinctionsEntries.map((e) => (e.badge === key ? { ...e, detail } : e));
-    setE("distinctions", next);
-  }
 
   function renderEvaluationSection() {
     const hasCoach = !!A("coach_id");
@@ -854,8 +842,6 @@ export default function AdminAthleteDetailPage() {
       .filter((v) => v > 0);
     const autoAvg = traitValues.length > 0 ? traitValues.reduce((a, b) => a + b, 0) / traitValues.length : 0;
     const starRating = (evaluation.cote_globale as number | null) ?? 0;
-    const totalDistinctions = distinctionsEntries.length;
-    const atMax = totalDistinctions >= MAX_BADGES;
     const rapport = (evaluation.rapport_entraineur as string) ?? "";
     const sectionTitle = "text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-4";
 
@@ -1014,14 +1000,13 @@ export default function AdminAthleteDetailPage() {
 
             {/* ── Distinctions (7-badge grid) ────────────── */}
             <div className="mb-8 bg-[#13151a] border border-[#2a2d36] rounded-xl p-5">
-              <div className="flex items-baseline justify-between mb-2">
-                <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">
-                  Distinctions
-                </p>
-                <span className="text-[11px] font-bold tabular-nums text-[#6b7280]">
-                  {totalDistinctions} / {MAX_BADGES}
-                </span>
-              </div>
+              {/* Le compteur « n / 5 » est retiré : BadgePicker porte les siens,
+                  et distingue le plafond des familles plafonnées des HONNEURS
+                  qui en sont exemptés. Un « n / 5 » global mentirait dès qu'un
+                  athlète porte 5 plafonnés plus un honneur. */}
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-2">
+                Distinctions
+              </p>
               <p className="text-[12px] text-[#6b7280] mb-1">
                 Sélectionne les reconnaissances qui s&apos;appliquent à cet athlète cette saison.
               </p>
@@ -1489,7 +1474,7 @@ export default function AdminAthleteDetailPage() {
               {dbDistinctions.length > 0 && (
                 <div className="flex items-start gap-9 flex-wrap">
                   {dbDistinctions.map((d, i) => (
-                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="lg" />
+                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                   ))}
                 </div>
               )}
@@ -1554,7 +1539,7 @@ export default function AdminAthleteDetailPage() {
                         <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                         <div className="flex flex-wrap gap-3">
                           {dbDistinctions.map((d, i) => (
-                            <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="sm" />
+                            <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="sm" />
                           ))}
                         </div>
                       </div>

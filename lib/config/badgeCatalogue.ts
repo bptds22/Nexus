@@ -23,6 +23,14 @@ export type ContexteForme = "stat_annee" | "annee" | "libre";
 export interface BadgeEntry {
   code: string;
   contexte?: string | null;
+  /** VOIE 2 — le libellé du catalogue, rempli par chargerBadgesAthlete.
+   *
+   *  Il voyage AVEC l'entrée pour que les écrans qui chargent déjà les badges
+   *  du picker puissent aussi les AFFICHER, sans seconde requête ni dépendance
+   *  au catalogue en mémoire. Absent sur une entrée fabriquée à la main (le
+   *  picker en crée à la volée) — DistinctionBadge retombe alors sur
+   *  BADGE_CONFIG, et le picker, lui, lit le catalogue de toute façon. */
+  libelle?: string;
 }
 
 export interface BadgeCatalogueEntry {
@@ -47,14 +55,25 @@ export const EMPTY_BADGE_CATALOGUE: BadgeCatalogue = Object.freeze({
   ok: false, all: [], byCode: new Map<string, BadgeCatalogueEntry>(),
 });
 
-/** Plafond des familles plafonnées (universel + sport). Les HONNEURS en sont
- *  exempts — même règle que le trigger badge_plafond en base. Les deux
- *  doivent rester d'accord : ici c'est du confort d'interface, la base est
- *  ce qui fait autorité. */
-export const PLAFOND_PLAFONNES = 5;
+/**
+ * Plafond de badges par athlète — TOUTES FAMILLES CONFONDUES.
+ *
+ * Le nombre ne vient pas d'une règle métier abstraite : 5 badges tiennent sur
+ * UNE ligne au web et se posent en 3+2 sur mobile. C'est la mise en page qui
+ * fixe le plafond, et AdaptiveBadgesRow est bâti dessus.
+ *
+ * Les honneurs NE SONT PAS exemptés. Ils l'ont été un temps pendant le
+ * chantier badges ; l'exemption est retirée (migration
+ * 20260826010127_badge_plafond_5_toutes_familles). Ce qui reste propre aux
+ * honneurs, c'est le CONTEXTE obligatoire — pas une place gratuite.
+ *
+ * Doit rester d'accord avec le trigger badge_plafond en base ; la base fait
+ * autorité, ceci n'est que du confort d'interface.
+ */
+export const PLAFOND_BADGES = 5;
 
 /**
- * Plafond d'AFFICHAGE. À ne pas confondre avec PLAFOND_PLAFONNES.
+ * Plafond d'AFFICHAGE. À ne pas confondre avec PLAFOND_BADGES.
  *
  * MAX_BADGES = 5 servait aux deux : limiter la saisie ET tronquer les
  * surfaces de lecture. Depuis que les honneurs échappent au plafond, un
@@ -82,10 +101,6 @@ export const TITRE_SECTION: Readonly<Record<BadgeFamille, string>> = Object.free
 export const ORDRE_SECTIONS: readonly BadgeFamille[] = Object.freeze([
   "universel", "sport", "honneur",
 ]);
-
-export function estPlafonnee(famille: BadgeFamille): boolean {
-  return famille !== "honneur";
-}
 
 /* ── Chargement ─────────────────────────────────────────────── */
 
@@ -212,27 +227,22 @@ export function sectionsPourSport(
 /* ── Plafond ────────────────────────────────────────────────── */
 
 export interface ComptesBadges {
-  /** Universels + sport. Soumis à PLAFOND_PLAFONNES. */
-  plafonnes: number;
-  /** Honneurs. Non plafonnés. */
-  honneurs: number;
+  /** Badges vivants, toutes familles. Soumis à PLAFOND_BADGES. */
+  total: number;
 }
 
 export function compter(value: readonly BadgeEntry[], cat: BadgeCatalogue): ComptesBadges {
-  let plafonnes = 0, honneurs = 0;
+  let total = 0;
   for (const e of value) {
-    const b = cat.byCode.get(e.code);
-    if (!b) continue; // code hors catalogue : ne compte pour rien
-    if (estPlafonnee(b.famille)) plafonnes++; else honneurs++;
+    if (cat.byCode.has(e.code)) total++; // code hors catalogue : ne compte pour rien
   }
-  return { plafonnes, honneurs };
+  return { total };
 }
 
-/** Un badge NON sélectionné peut-il encore être ajouté ? */
-export function peutAjouter(
-  famille: BadgeFamille, comptes: ComptesBadges,
-): boolean {
-  return !estPlafonnee(famille) || comptes.plafonnes < PLAFOND_PLAFONNES;
+/** Un badge NON sélectionné peut-il encore être ajouté ?
+ *  La famille n'entre plus en ligne de compte : le plafond est global. */
+export function peutAjouter(comptes: ComptesBadges): boolean {
+  return comptes.total < PLAFOND_BADGES;
 }
 
 /* ── Contexte : UNE chaîne libre ─────────────────────────────── */

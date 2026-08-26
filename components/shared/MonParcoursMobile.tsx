@@ -9,7 +9,8 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { useAthleteVisibilityPro, type CegepDetail } from "@/hooks/useAthleteVisibility";
 import { MON_PARCOURS_COTE_COPY } from "@/lib/config/parcoursCoteCopy";
-import { parseDistinctions, LEGACY_BADGE_TO_CATALOGUE, type DistinctionEntry } from "@/lib/config/badges";
+import { LEGACY_BADGE_TO_CATALOGUE, type DistinctionEntry } from "@/lib/config/badges";
+import { pastillesBadges, badgesDepuisRaw, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 import { badgesPourSport } from "@/lib/config/badgeCatalogue";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
@@ -171,10 +172,10 @@ export default function MonParcoursMobile() {
 
   /* B-3b-2b — distinctions loaded from evaluations.distinctions JSONB via
      the embedded join in the athletes-row SELECT below. Parsed once via
-     parseDistinctions() so legacy string arrays + new {badge, detail}
+     pastillesBadges() so legacy string arrays + new {badge, detail}
      objects both normalize to DistinctionEntry[]. Drives the Badges
      screen's obtenu/à-viser grid. Empty array when not yet evaluated. */
-  const [distinctions, setDistinctions] = useState<DistinctionEntry[]>([]);
+  const [distinctions, setDistinctions] = useState<PastilleBadge[]>([]);
   const badgeCat = useBadgeCatalogue();
 
   /* ── Mes Cibles state (B-3, verbatim mirror of desktop
@@ -278,7 +279,7 @@ export default function MonParcoursMobile() {
       const { data: a } = await supabase
         .from("athletes")
         .select(
-          "id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, evaluations(distinctions, updated_at)",
+          "id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -295,12 +296,14 @@ export default function MonParcoursMobile() {
       /* B-3b-2b — PostgREST embedded join surfaces evaluations as either an
          array (the canonical 1-to-many embed) or a single object (when the
          driver collapses 1-row joins). pickOne-style normalization handles
-         both ; parseDistinctions() further accepts legacy string-array
+         both ; pastillesBadges() further accepts legacy string-array
          and new {badge, detail} object shapes. Empty array for not-yet-
          evaluated athletes → Badges screen renders all 6 as "à viser". */
-      const evalsRaw = (a as { evaluations?: unknown }).evaluations;
-      const evalRow = selectBestEvaluation(Array.isArray(evalsRaw) ? evalsRaw : evalsRaw ? [evalsRaw] : []) as { distinctions?: unknown } | null;
-      setDistinctions(parseDistinctions(evalRow?.distinctions));
+      /* VOIE 2 — plus de selectBestEvaluation pour les badges : ils ne
+         dépendent plus d'une évaluation. Le web en faisait l'UNION, ce
+         mobile prenait la PLUS RÉCENTE ; la divergence s'évapore avec une
+         table par athlète. */
+      setDistinctions(pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>)));
 
       /* Module 2 — saved targets + the CÉGEP list for the picker.
          Verbatim from desktop page.tsx :206-213. loadTargets
@@ -1023,11 +1026,15 @@ export default function MonParcoursMobile() {
                          badges de sport dépendant du poste. Neuf cellules au
                          lieu de six : la grille à 2 colonnes passe de 3 à 5
                          rangées dans la boîte de 560 px. */
+                      /* VOIE 2 — les codes sont DÉJÀ ceux du catalogue :
+                         LEGACY_BADGE_TO_CATALOGUE n'a plus rien à traduire
+                         ici. Il reste appliqué par sécurité, au cas où une
+                         entrée héritée transiterait encore. */
                       const obtainedKeys = new Set(
-                        distinctions.map((d) => LEGACY_BADGE_TO_CATALOGUE[d.badge] ?? d.badge),
+                        distinctions.map((d) => LEGACY_BADGE_TO_CATALOGUE[d.code] ?? d.code),
                       );
                       const detailParCode = new Map(
-                        distinctions.map((d) => [LEGACY_BADGE_TO_CATALOGUE[d.badge] ?? d.badge, d.detail]),
+                        distinctions.map((d) => [LEGACY_BADGE_TO_CATALOGUE[d.code] ?? d.code, d.contexte ?? undefined]),
                       );
                       const aimableBadges = badgesPourSport(badgeCat, null)
                         /* `libre` = nexus-x, l'héritier de « custom » : un

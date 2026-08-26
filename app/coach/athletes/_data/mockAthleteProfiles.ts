@@ -5,6 +5,7 @@
 
 import type { NexusSport } from "@/lib/config/sportBadges";
 import type { DistinctionEntry } from "@/lib/config/badges";
+import type { PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 
 export type Position = "QB" | "RB" | "WR" | "TE" | "OL" | "DL" | "LB" | "CB" | "S" | "K/P"
   | "Passeuse" | "Attaquante" | "Libéro" | "Centrale" | "Arrière";
@@ -51,7 +52,11 @@ export interface AthleteProfile {
 
   // Sport-specific badge model
   sport: NexusSport;
-  badges: DistinctionEntry[];
+  /** VOIE 2 — soit des entrées héritées {badge, detail}, soit des pastilles
+   *  {code, libelle, contexte} venues d'athlete_badges. Les deux formes
+   *  coexistent le temps que les dernières surfaces basculent ; pastillesBadges()
+   *  et DistinctionBadge acceptent l'une comme l'autre. */
+  badges: (DistinctionEntry | PastilleBadge)[];
   coachEndorsement?: string;
 }
 

@@ -63,12 +63,12 @@ import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import {
   BADGE_CONFIG, MAX_DETAIL_LENGTH,
-  parseDistinctions, type DistinctionEntry,
+  type DistinctionEntry,
 } from "@/lib/config/badges";
 import BadgePicker from "@/components/shared/BadgePicker";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import { entreesIncompletes, type BadgeEntry } from "@/lib/config/badgeCatalogue";
-import { chargerBadgesAthlete } from "@/lib/queries/shared/athleteBadges";
+import { chargerBadgesAthlete, badgesDepuisRaw, type BadgeAffiche } from "@/lib/queries/shared/athleteBadges";
 import { traitGroups, champToColumn, type GrilleRef, type TraitEntry } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 
@@ -149,10 +149,10 @@ interface LoadedAthlete {
   coachName: string;                // "first_name last_name" via users!athletes_coach_id_fkey
   /** Current coach-set distinctions (SUGGEST champ "Distinctions" —
    *  athlete proposes a new array, coach approves, trigger writes
-   *  it back as JSONB). Parsed via parseDistinctions so legacy
+   *  it back as JSONB). Lu via badgesDepuisRaw depuis athlete_badges ; legacy
    *  string-array rows + the canonical {badge, detail?} shape both
    *  rehydrate to the same DistinctionEntry[] view. */
-  coachDistinctions: DistinctionEntry[];
+  coachDistinctions: BadgeAffiche[];
   /** Grille figée sur l'éval affichée ; NULL = repli par position. */
   grilleId: string | null;
   positionId: string | null;
@@ -603,6 +603,7 @@ export default function AthleteEditWizardMobile() {
         schools!school_id(name, region, city, type),
         team_athletes(team_id, teams!team_id(name)),
         evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at, grille_id),
+        athlete_badges(contexte, created_at, retire_le, badges(code, libelle)),
         users!athletes_coach_id_fkey(first_name, last_name)
       `)
       .eq("user_id", user.id)
@@ -675,11 +676,10 @@ export default function AthleteEditWizardMobile() {
     const coachName = coachRel
       ? `${coachRel.first_name || ""} ${coachRel.last_name || ""}`.trim()
       : "";
-    /* coachDistinctions — parsed via the canonical badges.ts helper so
-       this mobile editor, the web profile, and the recruiter view all
-       share one parser (legacy string-array vs canonical {badge,detail?}
-       are normalized identically). Sprint B-3b. */
-    const coachDistinctions = parseDistinctions(evalRel?.distinctions);
+    /* VOIE 2 — depuis athlete_badges, embarqué dans la requête ci-dessus :
+       aucune requête de plus. Le libellé du catalogue voyage avec, et part
+       en prop à DistinctionBadge. */
+    const coachDistinctions = badgesDepuisRaw(raw as Record<string, unknown>);
     /* Règle de lecture des grilles : grille_id de l'éval affichée d'abord,
        la position de l'athlète ensuite. */
     const grilleId   = ((evalRel as Record<string, unknown> | null)?.grille_id as string | null) ?? null;
@@ -2029,7 +2029,7 @@ function EvaluationStep({
             JSON-stringified into one athlete_suggestions row with champ
             "Distinctions" + valeur_proposee = JSON.stringify(entries).
             Trigger casts ::jsonb on apply (migration L190-193) and the
-            recruiter/coach read goes through parseDistinctions, so the
+            recruiter/coach read goes through pastillesBadges, so the
             stringify→jsonb→parse round-trip is symmetric. */}
       <div>
         <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
@@ -2195,7 +2195,7 @@ function StarSuggestRow({
    array of {badge, detail?} entries that ships as ONE suggestion row
    (champ="Distinctions", valeur_proposee=JSON.stringify(entries)) ;
    the trigger casts ::jsonb and the recruiter/coach read goes through
-   parseDistinctions. Symmetric round-trip.
+   pastillesBadges. Symmetric round-trip.
 
    Mirrors web DistinctionsSuggest (app/athlete/profil/page.tsx :695-
    800) :
@@ -2224,7 +2224,7 @@ function StarSuggestRow({
 
    Submission shape is byte-identical to the web payload so the
    apply_approved_suggestion trigger's `::jsonb` cast and the canonical
-   parseDistinctions read are both symmetric round-trips.
+   pastillesBadges read are both symmetric round-trips.
 ═══════════════════════════════════════════════════════════════ */
 function DistinctionsSuggestRow({
   athleteId, sportId, sportNom, currentDistinctions, pending, submitting, onSubmit,

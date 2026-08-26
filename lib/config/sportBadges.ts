@@ -11,7 +11,11 @@ export type NexusSport = string;
 export interface LeadershipBadge {
   badgeId: string;
   label: string;
-  icon: string;
+  /** VOIE 2 — OPTIONNELLE. Le catalogue des 22 badges n'a pas
+   *  d'iconographie, et en inventer une serait pire qu'aucune. Les pastilles
+   *  rendent l'icône seulement quand elle existe ; le libellé, lui, est
+   *  toujours là et porte le sens. */
+  icon?: string;
   detail?: string;
 }
 

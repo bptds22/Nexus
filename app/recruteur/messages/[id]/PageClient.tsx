@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
-import { parseDistinctions } from "@/lib/config/badges";
+import { pastillesBadges, badgesDepuisRaw, textePastille, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
@@ -74,7 +74,7 @@ interface ThreadContext {
   athleteOpenRelocate: boolean;
   athleteOpenPrivate: boolean;
   athleteOpenAnglophone: boolean;
-  athleteDistinctions: string[];
+  athleteDistinctions: PastilleBadge[];
   status: string;
 }
 
@@ -239,7 +239,8 @@ function RecruiterThreadPage() {
             positions!position_id(nom, abreviation),
             schools!school_id(name, region),
             committed_school:schools!committed_school_id(name),
-            evaluations(distinctions, updated_at)
+            evaluations(distinctions, updated_at),
+              athlete_badges(contexte, retire_le, badges(code, libelle))
           )
         `)
         .eq("id", id)
@@ -262,11 +263,14 @@ function RecruiterThreadPage() {
         const committedSchool = (Array.isArray(committedSchoolRaw) ? committedSchoolRaw[0] : committedSchoolRaw) as { name?: string } | null;
         const evalRaw = athlete?.evaluations;
         const eval0 = selectBestEvaluation(Array.isArray(evalRaw) ? evalRaw : evalRaw ? [evalRaw] : []) as { distinctions?: unknown } | null;
-        // #56 — parseDistinctions gère string[] + {badge,detail} (objet) et
+        // VOIE 2 — pastillesBadges écarte toute entrée sans libellé, et
         // filtre les badges inconnus ; on garde le contrat string[] (clés badge)
         // attendu en aval (athleteDistinctions). L'ancienne extraction d.code||d.id
         // droppait silencieusement le format objet.
-        const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
+        /* VOIE 2 — on garde l'ENTRÉE (code + libellé + contexte), plus
+           seulement le code : la pastille a besoin du libellé du catalogue,
+           et un code brut ne doit jamais atteindre l'écran. */
+        const distinctions = pastillesBadges(badgesDepuisRaw((athlete ?? {}) as Record<string, unknown>));
 
         /* Temps 2 — l'identité, projetée par le serveur.
            Le reste de l'athlète (GPA, programmes, ouvert_*) RESTE dans

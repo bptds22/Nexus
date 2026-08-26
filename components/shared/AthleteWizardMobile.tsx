@@ -61,7 +61,6 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/utils/profileValidation";
 import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
-import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 import BadgePicker, { ContexteEditeur } from "@/components/shared/BadgePicker";

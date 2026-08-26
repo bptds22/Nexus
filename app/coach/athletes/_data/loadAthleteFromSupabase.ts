@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchProgrammeLabels } from "@/lib/queries/shared/useCegepPrograms";
+import { badgesDepuisRaw, type BadgeAffiche } from "@/lib/queries/shared/athleteBadges";
 import type { AthleteProfile } from "./mockAthleteProfiles";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
@@ -93,6 +94,11 @@ const ATHLETE_SELECT = `
   athlete_badges(contexte, created_at, retire_le, badges(code, libelle))
 `;
 
+/* Réexporté : plusieurs surfaces l'importent depuis ici. La définition
+   vit dans lib/queries/shared/athleteBadges.ts, avec le reste des badges. */
+export { badgesDepuisRaw };
+export type { BadgeAffiche };
+
 export async function loadAthleteRaw(athleteId: string) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -121,61 +127,6 @@ export async function loadAthleteRaw(athleteId: string) {
   }
 
   return { data, error };
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   VOIE 2 — les badges viennent de athlete_badges, pas de la colonne
-   dérivée evaluations.distinctions.
-
-   POURQUOI PAR L'EMBED ET PAS PAR UNE REQUÊTE
-   mapToAthleteProfile et mapToRecruiterView sont SYNCHRONES et appelées
-   depuis neuf endroits. Les rendre asynchrones, ou leur ajouter un
-   paramètre, aurait imposé neuf modifications d'appelants pour une donnée
-   d'affichage. L'embed la fait arriver par `raw`, et les deux mappeurs se
-   servent — sans changer de signature.
-
-   CE QUE ÇA CHANGE POUR L'ÉCRAN
-   distinctions ne portait que les codes ayant un équivalent hérité : Caron
-   y avait 3 badges sur 7, et un athlète dont tous les badges sont
-   spécifiques au sport n'en avait AUCUN. L'embed les rend tous, avec le
-   libellé du catalogue — c'est lui qui part dans la prop `libelle` de
-   DistinctionBadge.
-
-   Les badges RETIRÉS sont exclus ICI, pas en base : retire_le documente un
-   retrait, il ne supprime pas la ligne.
-═══════════════════════════════════════════════════════════════ */
-interface LigneBadgeAffichee {
-  contexte: string | null;
-  /* La date d'attribution est created_at. Il n'existe PAS de attribue_le :
-     attribue_par est l'AUTEUR, retire_le la date de RETRAIT. */
-  created_at?: string | null;
-  retire_le: string | null;
-  badges: { code: string; libelle: string } | { code: string; libelle: string }[] | null;
-}
-
-export interface BadgeAffiche {
-  badge: string;
-  detail?: string;
-  libelle: string;
-  attribueLe?: string | null;
-}
-
-export function badgesDepuisRaw(raw: Record<string, unknown>): BadgeAffiche[] {
-  const brut = raw.athlete_badges;
-  if (!Array.isArray(brut)) return [];
-  return (brut as LigneBadgeAffichee[])
-    .filter((l) => !l.retire_le)
-    .map((l): BadgeAffiche | null => {
-      const b = Array.isArray(l.badges) ? l.badges[0] : l.badges;
-      if (!b?.code) return null;
-      return {
-        badge: b.code,
-        detail: l.contexte ?? undefined,
-        libelle: b.libelle,
-        attribueLe: l.created_at ?? null,
-      };
-    })
-    .filter((e): e is BadgeAffiche => e !== null);
 }
 
 export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfile {

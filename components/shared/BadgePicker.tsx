@@ -18,9 +18,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  sectionsPourSport, compter, peutAjouter, estPlafonnee,
+  sectionsPourSport, compter, peutAjouter,
   contexteComplet, placeholderContexte,
-  PLAFOND_PLAFONNES,
+  PLAFOND_BADGES,
   type BadgeCatalogueEntry, type BadgeEntry,
 } from "@/lib/config/badgeCatalogue";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
@@ -100,7 +100,7 @@ export default function BadgePicker({
       onChange(value.filter((e) => e.code !== b.code));
       return;
     }
-    if (!peutAjouter(b.famille, comptes)) return;
+    if (!peutAjouter(comptes)) return;
     onChange([...value, { code: b.code, contexte: null }]);
   }, [disabled, parCode, value, comptes, onChange]);
 
@@ -111,7 +111,7 @@ export default function BadgePicker({
     if (disabled) return;
     if (!onEditerContexte || !b.requiertContexte) { basculer(b); return; }
     if (!parCode.has(b.code)) {
-      if (!peutAjouter(b.famille, comptes)) return;
+      if (!peutAjouter(comptes)) return;
       onChange([...value, { code: b.code, contexte: null }]);
     }
     onEditerContexte(b);
@@ -138,19 +138,18 @@ export default function BadgePicker({
   return (
     <div style={styleAccent} className="space-y-5">
       {sections.map((section) => {
-        const plafondAtteint =
-          estPlafonnee(section.famille) && comptes.plafonnes >= PLAFOND_PLAFONNES;
+        /* Le plafond est GLOBAL : la mention ne dépend plus de la famille.
+           Les honneurs n'en sont plus exemptés — cf. PLAFOND_BADGES. */
+        const plafondAtteint = comptes.total >= PLAFOND_BADGES;
         return (
           <section key={section.famille}>
             <div className="flex items-baseline justify-between mb-2">
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8a8d96]">
                 {section.titre}
               </p>
-              {section.famille === "honneur" ? (
-                <span className="text-[10px] text-[#6b7280] italic">hors plafond</span>
-              ) : plafondAtteint ? (
+              {plafondAtteint && (
                 <span className="text-[10px]" style={{ color: accent }}>plafond atteint</span>
-              ) : null}
+              )}
             </div>
 
             <div className={layout === "tuiles"
@@ -163,7 +162,7 @@ export default function BadgePicker({
                   entree={parCode.get(b.code)}
                   layout={layout}
                   accent={accent}
-                  desactive={disabled || (!parCode.has(b.code) && !peutAjouter(b.famille, comptes))}
+                  desactive={disabled || (!parCode.has(b.code) && !peutAjouter(comptes))}
                   onBasculer={() => toucher(b)}
                   onContexte={(t) => majContexte(b, t)}
                   contexteEnLigne={!onEditerContexte}
@@ -189,22 +188,15 @@ export default function BadgePicker({
         layout={layout}
       />
 
-      {/* Deux compteurs DISTINCTS : un plafond commun aux deux familles
-          plafonnées, et les honneurs comptés à part parce qu'ils n'y
-          entrent pas. Un compteur unique « n/5 » mentirait dès le premier
-          honneur. */}
-      <div className="flex items-center gap-4 text-[12px] text-[#6b7280] pt-1">
-        <span>
-          Universels + sport :{" "}
-          <span className="font-bold" style={{
-            color: comptes.plafonnes >= PLAFOND_PLAFONNES ? accent : undefined,
-          }}>
-            {comptes.plafonnes} / {PLAFOND_PLAFONNES}
-          </span>
-        </span>
-        <span>
-          Honneurs : <span className="font-bold">{comptes.honneurs}</span>
-          <span className="text-[#4a4d56]"> (non plafonnés)</span>
+      {/* UN seul compteur : le plafond vaut pour toutes les familles. Il
+          borne la LIGNE d'affichage — 5 tiennent au web, 3+2 sur mobile —
+          pas une catégorie. */}
+      <div className="text-[12px] text-[#6b7280] pt-1">
+        Badges :{" "}
+        <span className="font-bold" style={{
+          color: comptes.total >= PLAFOND_BADGES ? accent : undefined,
+        }}>
+          {comptes.total} / {PLAFOND_BADGES}
         </span>
       </div>
     </div>

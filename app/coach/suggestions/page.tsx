@@ -5,7 +5,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { mapDbStatus } from "./_data/mockSuggestions";
 import type { CoachSuggestion } from "./_data/mockSuggestions";
-import { BADGE_CONFIG, parseDistinctions } from "@/lib/config/badges";
+import { depuisSuggestion, pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import { isRatingChamp, CHAMP_COTE_GLOBALE } from "@/lib/evaluations/grilles";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -51,6 +52,11 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
 /* ── Typed display for suggestion values ──────────────────── */
 
 function SuggestionValueDisplay({ field, value, muted }: { field: string; value: string | null | undefined; muted?: boolean }) {
+  /* VOIE 2 — la charge utile d'une suggestion ne porte QUE des codes : le
+     libellé se résout au catalogue. Ce composant a donc besoin du hook.
+     Avant, parseDistinctions filtrait sur BADGE_CONFIG (7 codes) : un athlète
+     qui suggérait « verrou » ou « qi » voyait son coach lire « Aucune ». */
+  const badgeCat = useBadgeCatalogue();
   if (!value) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
 
   /* Étoiles pour la cote globale ET les 14 traits. L'ancienne liste s'arrêtait
@@ -79,17 +85,24 @@ function SuggestionValueDisplay({ field, value, muted }: { field: string; value:
 
   // Badges display for Distinctions
   if (field === "Distinctions") {
-    let parsed: { badge: string; detail?: string }[] = [];
-    try { parsed = parseDistinctions(JSON.parse(value)); } catch { parsed = []; }
+    /* depuisSuggestion tolère les deux vocabulaires de clés ({badge,detail}
+       comme {code,contexte}) ; le libellé vient du catalogue, et un code
+       inconnu n'est PAS rendu — pastillesBadges l'écarte et le journalise. */
+    const entrees = depuisSuggestion(value).map((e) => ({
+      code: e.code,
+      contexte: e.contexte,
+      libelle: badgeCat.byCode.get(e.code)?.libelle,
+    }));
+    const parsed = pastillesBadges(entrees);
     if (parsed.length === 0) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
     return (
       <div className="flex flex-wrap gap-1.5">
         {parsed.map((e, i) => {
-          const cfg = BADGE_CONFIG[e.badge];
-          const label = e.badge === "custom" ? (e.detail || "Distinction") : cfg?.label || e.badge;
-          const text = e.badge !== "custom" && e.detail ? `${label} — ${e.detail}` : label;
+          /* nexus-x (ex-« custom ») : le contexte saisi TIENT LIEU de libellé
+             et s'affiche seul — « Joueur défensif de la ligue », sans préfixe. */
+          const text = e.code === "nexus-x" ? (e.contexte || "Distinction") : textePastille(e);
           return (
-            <span key={`${e.badge}-${i}`} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${muted ? "bg-[#6b7280]/15 text-[#9CA3AF] border border-[#6b7280]/30" : "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30"}`}>
+            <span key={`${e.code}-${i}`} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${muted ? "bg-[#6b7280]/15 text-[#9CA3AF] border border-[#6b7280]/30" : "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30"}`}>
               {text}
             </span>
           );

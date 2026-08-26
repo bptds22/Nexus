@@ -13,7 +13,7 @@ import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmen
 import { BADGE_COLORS } from "@/lib/types/models";
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import { parseDistinctions } from "@/lib/config/badges";
+import { badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { MAX_BADGES_AFFICHES } from "@/lib/config/badgeCatalogue";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
@@ -532,7 +532,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         moyenne_generale,
         matieres_fortes,
         mentions_academiques,
-        programme_cegep_vise,
+        programme_cegep_vise, programmes_vises,
+        athlete_badges(contexte, created_at, retire_le, badges(code, libelle)),
         ouvert_cegep_prive,
         ouvert_cegep_anglophone,
         pret_changer_region,
@@ -806,7 +807,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           coachReputation: undefined,
           overallRating: (eval0?.cote_globale as number) ?? (d.cote_globale_entraineur as number) ?? 0,
           traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
-          distinctions: parseDistinctions(eval0?.distinctions),
+          /* VOIE 2 — ce chargeur alimente LES MÊMES points de rendu que
+             mapToRecruiterView. Le laisser sur la colonne dérivée faisait
+             afficher 3 badges sur 7 selon le chemin emprunté. */
+          distinctions: badgesDepuisRaw(d as Record<string, unknown>),
           favoriteCount: 0,
           viewsThisMonth: 0,
         };

@@ -16,7 +16,8 @@ import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/l
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
-import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { type DistinctionEntry } from "@/lib/config/badges";
+import { badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { traitGroups, type GrilleRef } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
@@ -143,11 +144,8 @@ export default function AthleteProfileView({
         const evals = rawRec.evaluations;
         const evalArr = Array.isArray(evals) ? evals : [];
         const e0 = selectBestEvaluation(evalArr) as Record<string, unknown> | undefined;
-        if (e0?.distinctions) {
-          let d: unknown = e0.distinctions;
-          if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }
-          setDbDistinctions(parseDistinctions(d));
-        }
+        /* VOIE 2 — depuis athlete_badges, embarqué par loadAthleteRaw. */
+        setDbDistinctions(badgesDepuisRaw(rawRec as Record<string, unknown>));
 
         const overrideVal = rawRec.statut_recrutement_override as string | null;
         setGlobalRecruit(overrideVal || "OUVERT");

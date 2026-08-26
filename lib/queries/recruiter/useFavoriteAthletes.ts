@@ -13,7 +13,7 @@ import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useAthletesByIds } from "@/lib/queries/shared/useAthletesByIds";
 import { displayFullName, type RecruiterAthleteCard } from "@/lib/queries/shared/recruiterAthleteCards";
-import { parseDistinctions } from "@/lib/config/badges";
+import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 
 export interface FavoriAthlete {
@@ -47,15 +47,19 @@ export interface FavoriAthlete {
   recruitmentStatus: string;
   committedSchoolName: string;
   openToOffers: boolean | null;
-  badges: { badgeId: string; label: string; icon: string }[];
+  badges: { badgeId: string; label: string; icon?: string }[];
   noTeam: boolean;
 }
 
-const BADGE_MAP: Record<string, { label: string; icon: string }> = {
-  captain: { label: "Capitaine", icon: "shield" },
-  allstar: { label: "Équipe d'étoiles", icon: "star" },
-  team_leader: { label: "Leader", icon: "award" },
-};
+/* VOIE 2 — BADGE_MAP est SUPPRIMÉE. Elle ne connaissait que 3 des 22 codes
+   (captain, allstar, team_leader) et FILTRAIT le reste : un athlète portant
+   qi, clutch ou verrou n'affichait aucune pastille, sans que rien ne le
+   signale. Avec les codes du catalogue elle n'aurait plus rien matché du
+   tout — zéro badge sur toutes les cartes.
+   Le libellé vient désormais de la RPC, qui le projette depuis le catalogue.
+   `icon` devient OPTIONNELLE : le catalogue n'a pas d'iconographie, et en
+   inventer une pour 22 badges serait pire qu'aucune. Le libellé porte le
+   sens ; l'icône n'était qu'un ornement sur 3 codes. */
 
 function transformAthlete(a: RecruiterAthleteCard, favCount: number): FavoriAthlete {
   // La RPC projette à plat — plus d'embeds à déballer, donc plus de
@@ -63,8 +67,8 @@ function transformAthlete(a: RecruiterAthleteCard, favCount: number): FavoriAthl
   // tantôt objet, tantôt tableau à un élément selon la forme du select.
   const evalRel = a.evaluations;
   const eval0 = selectBestEvaluation(Array.isArray(evalRel) ? evalRel : evalRel ? [evalRel] : []) as { cote_globale?: number | null; distinctions?: unknown } | null;
-  // #56 — parseDistinctions gère string[] (legacy) ET {badge,detail} (objet).
-  const distinctions = parseDistinctions(eval0?.distinctions);
+  // VOIE 2 — pastillesBadges lit la projection de la RPC (code + libellé).
+  const distinctions = pastillesBadges(eval0?.distinctions);
 
   const ft = a.taille_pieds;
   const inches = a.taille_pouces;
@@ -108,8 +112,7 @@ function transformAthlete(a: RecruiterAthleteCard, favCount: number): FavoriAthl
     committedSchoolName: a.committed_school_name ?? "",
     openToOffers: a.open_to_offers ?? null,
     badges: distinctions
-      .filter((d) => !!BADGE_MAP[d.badge])
-      .map((d) => ({ badgeId: d.badge, label: BADGE_MAP[d.badge].label, icon: BADGE_MAP[d.badge].icon })),
+      .map((d) => ({ badgeId: d.code, label: textePastille(d) })),
     noTeam: !a.school_id,
   };
 }

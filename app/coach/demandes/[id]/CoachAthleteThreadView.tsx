@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
-import { parseDistinctions } from "@/lib/config/badges";
+import { pastillesBadges, badgesDepuisRaw, textePastille, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
@@ -26,7 +26,7 @@ interface AthleteInfo {
   verified: boolean; stars: number; school: string; region: string;
   recruitmentStatus: string; committedSchool: string; openToOffers: boolean | null;
   gpa: number; programmes: string[]; openRelocate: boolean; openPrivate: boolean;
-  openAnglophone: boolean; distinctions: string[];
+  openAnglophone: boolean; distinctions: PastilleBadge[];
 }
 
 function relativeTime(isoStr: string): string {
@@ -98,7 +98,8 @@ export default function CoachAthleteThreadView({ id }: { id: string }) {
               positions!position_id(nom, abreviation),
               schools!school_id(name, region),
               committed_school:schools!committed_school_id(name),
-              evaluations(distinctions, updated_at)
+              evaluations(distinctions, updated_at),
+              athlete_badges(contexte, retire_le, badges(code, libelle))
             )
           `)
           .eq("id", id)
@@ -117,7 +118,10 @@ export default function CoachAthleteThreadView({ id }: { id: string }) {
         const committed = (Array.isArray(committedRaw) ? committedRaw[0] : committedRaw) as { name?: string } | null;
         const evalRaw = a?.evaluations;
         const eval0 = selectBestEvaluation(Array.isArray(evalRaw) ? evalRaw : evalRaw ? [evalRaw] : []) as { distinctions?: unknown } | null;
-        const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
+        /* VOIE 2 — on garde l'ENTRÉE (code + libellé + contexte), plus
+           seulement le code : la pastille a besoin du libellé du catalogue,
+           et un code brut ne doit jamais atteindre l'écran. */
+        const distinctions = pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>));
         // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
         const programmes: string[] = await resolveProgrammesVisesAsync(
           supabase, (a as Record<string, unknown> | null)?.programmes_vises, a?.programme_cegep_vise);

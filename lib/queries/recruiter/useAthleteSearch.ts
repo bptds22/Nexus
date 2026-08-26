@@ -61,7 +61,7 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createClient } from "@/lib/supabase/client";
-import { parseDistinctions } from "@/lib/config/badges";
+import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 
 export interface AthleteSearchFilters {
   search: string;           // déjà débouncé en amont
@@ -186,7 +186,7 @@ export interface SearchAthleteRow {
   lastValidation: string | null;
   isFavorited: boolean;     // placeholder, overridé en page
   hasVideo: boolean;
-  badges: { badgeId: string; label: string; icon: string }[];
+  badges: { badgeId: string; label: string; icon?: string }[];
   favorites: number;        // placeholder, overridé en page
   views: number;
   stars: number;
@@ -226,11 +226,15 @@ export interface SearchAthleteRow {
 }
 
 
-const BADGE_MAP: Record<string, { label: string; icon: string }> = {
-  captain: { label: "Capitaine", icon: "shield" },
-  allstar: { label: "Équipe d'étoiles", icon: "star" },
-  team_leader: { label: "Leader", icon: "award" },
-};
+/* VOIE 2 — BADGE_MAP est SUPPRIMÉE. Elle ne connaissait que 3 des 22 codes
+   (captain, allstar, team_leader) et FILTRAIT le reste : un athlète portant
+   qi, clutch ou verrou n'affichait aucune pastille, sans que rien ne le
+   signale. Avec les codes du catalogue elle n'aurait plus rien matché du
+   tout — zéro badge sur toutes les cartes.
+   Le libellé vient désormais de la RPC, qui le projette depuis le catalogue.
+   `icon` devient OPTIONNELLE : le catalogue n'a pas d'iconographie, et en
+   inventer une pour 22 badges serait pire qu'aucune. Le libellé porte le
+   sens ; l'icône n'était qu'un ornement sur 3 codes. */
 
 /** Les 5 valeurs que la RPC sait trier. Tout le reste part en rating_desc.
  *
@@ -286,9 +290,9 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
 
       return (data as RpcSearchRow[]).map((a): SearchAthleteRow => {
         const evalRel = selectBestEvaluation(a.evaluations ?? []);
-        // #56 — parseDistinctions gère string[] (legacy) ET {badge,detail} (objet,
+        // VOIE 2 — pastillesBadges lit la projection de la RPC (code+libellé),
         // 10 rows en prod), filtre les badges inconnus.
-        const distinctions = parseDistinctions((evalRel as Record<string, unknown> | null)?.distinctions);
+        const distinctions = pastillesBadges((evalRel as Record<string, unknown> | null)?.distinctions);
         return {
           id: a.id,
           identityVisible: a.identity_visible,
@@ -312,8 +316,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           isFavorited: false, // composé en page
           hasVideo: !!a.a_une_video,
           badges: distinctions
-            .filter((d) => !!BADGE_MAP[d.badge])
-            .map((d) => ({ badgeId: d.badge, label: BADGE_MAP[d.badge].label, icon: BADGE_MAP[d.badge].icon })),
+            .map((d) => ({ badgeId: d.code, label: textePastille(d) })),
           favorites: 0, // composé en page
           views: 0,
           stars: a.cote_globale ?? 0,

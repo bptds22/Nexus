@@ -15,7 +15,6 @@ import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
-import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";

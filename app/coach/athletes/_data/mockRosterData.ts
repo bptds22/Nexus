@@ -5,6 +5,7 @@
 
 import type { AthleteVerification } from "../../../../lib/types/models";
 import type { DistinctionEntry } from "@/lib/config/badges";
+import type { PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 
 export type CommitmentStatus = "aucun" | "en_discussion" | "visite_planifiee" | "lettre_signee" | "place";
 
@@ -56,7 +57,10 @@ export interface RosterAthlete {
   region?: string;
   sport?: string;
   hasVideo?: boolean;
-  badges?: DistinctionEntry[];
+  /** VOIE 2 — soit des entrées héritées {badge, detail}, soit des pastilles
+   *  {code, libelle, contexte} venues d'athlete_badges. Les deux formes
+   *  coexistent le temps que les dernières surfaces basculent. */
+  badges?: (DistinctionEntry | PastilleBadge)[];
   academicBadges?: string[];
   heightWeight?: string;
   gpa?: number;

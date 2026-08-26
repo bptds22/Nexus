@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
-import { parseDistinctions } from "@/lib/config/badges";
+import { pastillesBadges, badgesDepuisRaw, textePastille, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import ErrorToast from "@/components/ui/ErrorToast";
@@ -65,7 +65,7 @@ interface SelectableAthlete {
   openRelocate: boolean;
   openPrivate: boolean;
   openAnglophone: boolean;
-  distinctions: string[];
+  distinctions: PastilleBadge[];
 }
 
 /* ── Success Toast ─────────────────────────────────────────── */
@@ -254,6 +254,7 @@ function NouveauMessageContent() {
             schools!school_id(name, region),
             committed_school:schools!committed_school_id(name),
             evaluations(distinctions, updated_at),
+              athlete_badges(contexte, retire_le, badges(code, libelle)),
             users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(region))
           )
         `)
@@ -302,8 +303,11 @@ function NouveauMessageContent() {
           const committedSchoolObj = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
           const evalRel = a.evaluations;
           const eval0 = selectBestEvaluation(Array.isArray(evalRel) ? evalRel : evalRel ? [evalRel] : []) as { distinctions?: unknown } | null;
-          // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
-          const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
+          // VOIE 2 — via pastillesBadges : libellé du catalogue, code brut jamais rendu.
+          /* VOIE 2 — on garde l'ENTRÉE (code + libellé + contexte), plus
+           seulement le code : la pastille a besoin du libellé du catalogue,
+           et un code brut ne doit jamais atteindre l'écran. */
+        const distinctions = pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>));
           // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
           const programmes: string[] = resolveProgrammesVisesMap(
             a.programmes_vises, a.programme_cegep_vise, progLabelMap);
@@ -363,6 +367,7 @@ function NouveauMessageContent() {
                 schools!school_id(name, region),
                 committed_school:schools!committed_school_id(name),
                 evaluations(distinctions, updated_at),
+              athlete_badges(contexte, retire_le, badges(code, libelle)),
                 users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(region))
               `)
               .eq("id", athleteId)
@@ -388,8 +393,8 @@ function NouveauMessageContent() {
               const directCommittedSchoolObj = (Array.isArray(directCommittedSchoolRel) ? directCommittedSchoolRel[0] : directCommittedSchoolRel) as { name?: string } | null;
               const directEvalRel = (directAthlete as Record<string, unknown>)?.evaluations;
               const directEval0 = selectBestEvaluation(Array.isArray(directEvalRel) ? directEvalRel : directEvalRel ? [directEvalRel] : []) as { distinctions?: unknown } | null;
-              // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
-              const directDistinctions: string[] = parseDistinctions(directEval0?.distinctions).map((d) => d.badge);
+              // VOIE 2 — via pastillesBadges : libellé du catalogue, code brut jamais rendu.
+              const directDistinctions = pastillesBadges(badgesDepuisRaw(directAthlete as Record<string, unknown>));
               // T2 — la nouvelle colonne d'abord, l'ancienne en repli jusqu'a T3.
               const directProgrammes: string[] = await resolveProgrammesVisesAsync(
                 supabase,

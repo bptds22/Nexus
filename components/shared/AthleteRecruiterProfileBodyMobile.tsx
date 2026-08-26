@@ -22,7 +22,7 @@ import type {
 } from "@/lib/types/models";
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import { parseDistinctions } from "@/lib/config/badges";
+import { badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { MAX_BADGES_AFFICHES } from "@/lib/config/badgeCatalogue";
 import { AdaptiveBadgesRow } from "@/components/shared/badges/AdaptiveBadgesRow";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
@@ -913,6 +913,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         video_match_complet_url, video_entrainement_url,
         moyenne_generale, matieres_fortes, mentions_academiques,
         programme_cegep_vise, programmes_vises, ouvert_cegep_prive, ouvert_cegep_anglophone,
+        athlete_badges(contexte, created_at, retire_le, badges(code, libelle)),
         pret_changer_region, regions_cegep_preferees,
         taille_pieds, taille_pouces, poids_lbs, envergure, taille_mains,
         main_dominante, pied_dominant,
@@ -1121,7 +1122,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             return ev ? (`${ev.first_name || ""} ${ev.last_name || ""}`.trim() || null) : null;
           })(),
           traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
-          distinctions: parseDistinctions(eval0?.distinctions),
+          /* VOIE 2 — voir AthleteRecruiterProfileBody : même double chargeur,
+             mêmes points de rendu. */
+          distinctions: badgesDepuisRaw(d as Record<string, unknown>),
           favoriteCount: 0,
           viewsThisMonth: 0,
         };

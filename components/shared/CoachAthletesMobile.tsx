@@ -31,7 +31,7 @@ import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicke
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
-import { parseDistinctions } from "@/lib/config/badges";
+import { pastillesBadges, badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 import { taRows } from "@/lib/queries/shared/embeds";
@@ -159,7 +159,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
   // affichait sa vieille note au lieu de la dernière (ex. celle du directeur).
   const starsRaw = ((a.cote_globale_entraineur as number) ?? eval0?.cote_globale ?? 0) as number;
   const stars = Math.round(starsRaw * 10) / 10;
-  const distinctions = parseDistinctions(eval0?.distinctions);
+  const distinctions = pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>));
   // Attribution : auteur de l'éval choisie (join users), seulement s'il diffère
   // du coach connecté (ex. le directeur).
   const evalCoachId = (eval0?.coach_id as string | null) ?? null;
@@ -1075,6 +1075,7 @@ export function CoachAthletesMobile() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
+          athlete_badges(contexte, retire_le, badges(code, libelle)),
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
             evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)

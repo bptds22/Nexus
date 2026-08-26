@@ -16,9 +16,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  sectionsPourSport, badgesPourSport, compter, peutAjouter, estPlafonnee,
+  sectionsPourSport, badgesPourSport, compter, peutAjouter,
   contexteComplet, entreesIncompletes, placeholderContexte,
-  PLAFOND_PLAFONNES,
+  PLAFOND_BADGES,
   type BadgeCatalogue, type BadgeCatalogueEntry,
 } from "@/lib/config/badgeCatalogue";
 
@@ -89,32 +89,42 @@ test("un badge inactif n'est jamais proposé", () => {
 
 /* ── Plafond ─────────────────────────────────────────────────── */
 
-test("plafond — les honneurs en sont exempts", () => {
-  assert.equal(estPlafonnee("universel"), true);
-  assert.equal(estPlafonnee("sport"), true);
-  assert.equal(estPlafonnee("honneur"), false);
-});
-
-test("compteurs — plafonnés et honneurs sont comptés SÉPARÉMENT", () => {
+test("compteurs — toutes les familles comptent dans le même total", () => {
   const v = [
     { code: "capitaine" }, { code: "qi" }, { code: "clutch" },
     { code: "costaud" }, { code: "disponibilite" },           // 5 plafonnés
     { code: "mvp" }, { code: "nexus-x" },                      // 2 honneurs
   ];
-  assert.deepEqual(compter(v, CAT), { plafonnes: 5, honneurs: 2 });
+  // Le plafond est GLOBAL : les honneurs comptent comme les autres.
+  assert.deepEqual(compter(v, CAT), { total: 7 });
 });
 
-test("plafond — au 6e plafonné on bloque, au 6e honneur jamais", () => {
+/* Le plafond vaut TOUTES FAMILLES CONFONDUES : 5 badges tiennent sur une
+   ligne au web et en 3+2 sur mobile, et c'est la mise en page qui commande.
+   Les assertions qui exemptaient les honneurs ont été retirées — cette
+   exemption, introduite pendant le chantier, est défaite (migration
+   20260826010127). */
+test("plafond — au 6e badge on bloque, quelle que soit la famille", () => {
   const cinq = ["capitaine", "qi", "clutch", "costaud", "disponibilite"].map((code) => ({ code }));
   const c = compter(cinq, CAT);
-  assert.equal(c.plafonnes, PLAFOND_PLAFONNES);
-  assert.equal(peutAjouter("sport", c), false, "un 6e badge de sport doit être refusé");
-  assert.equal(peutAjouter("universel", c), false);
-  assert.equal(peutAjouter("honneur", c), true, "un honneur ne doit JAMAIS être bloqué par le plafond");
+  assert.equal(c.total, PLAFOND_BADGES);
+  assert.equal(peutAjouter(c), false, "un 6e badge doit être refusé");
+});
+
+test("plafond — un honneur n'échappe PAS au plafond", () => {
+  const cinq = ["capitaine", "qi", "clutch", "costaud", "mvp"].map((code) => ({ code }));
+  const c = compter(cinq, CAT);
+  assert.equal(c.total, 5, "mvp (honneur) occupe une place comme les autres");
+  assert.equal(peutAjouter(c), false, "un 6e badge, même honneur, est refusé");
+});
+
+test("plafond — sous le plafond, on peut toujours ajouter", () => {
+  assert.equal(peutAjouter(compter([{ code: "capitaine" }], CAT)), true);
+  assert.equal(peutAjouter(compter([], CAT)), true);
 });
 
 test("compteurs — un code hors catalogue ne compte pour rien", () => {
-  assert.deepEqual(compter([{ code: "progression" }], CAT), { plafonnes: 0, honneurs: 0 });
+  assert.deepEqual(compter([{ code: "progression" }], CAT), { total: 0 });
 });
 
 /* ── Contexte : trois formes ─────────────────────────────────── */

@@ -5,6 +5,7 @@ import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { textePastille, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 
 interface AthleteInfoCardProps {
   athleteId: string;
@@ -27,7 +28,8 @@ interface AthleteInfoCardProps {
   athleteOpenRelocate?: boolean;
   athleteOpenPrivate?: boolean;
   athleteOpenAnglophone?: boolean;
-  athleteDistinctions?: string[];
+  /** VOIE 2 — pastilles porteuses de leur libellé de catalogue. */
+  athleteDistinctions?: PastilleBadge[];
   /** Route for the "Voir le profil complet" CTA. Defaults to the recruiter
       athlete route so existing recruiter callers render unchanged; the coach
       thread passes /coach/athletes/[id]. */
@@ -172,14 +174,18 @@ export default function AthleteInfoCard({
       {/* Distinctions */}
       {athleteDistinctions.length > 0 && (
         <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-wrap gap-1.5">
-          {athleteDistinctions.map((d, idx) => {
-            const labels: Record<string, string> = { captain: "Capitaine", allstar: "Équipe d'étoiles", team_leader: "Leader", mvp: "MVP" };
-            return (
-              <span key={`${d}-${idx}`} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
-                {labels[d] || d}
-              </span>
-            );
-          })}
+          {/* La table de libellés en dur qui vivait ici est SUPPRIMÉE : c'était
+              un vocabulaire de plus, en désaccord avec le catalogue ET avec
+              celui de coach/demandes. Son repli `labels[d] || d` affichait le
+              CODE BRUT pour tout badge non répertorié — invisible tant que
+              cette surface ne voyait que les 7 anciens codes, mais la voie 2
+              y fait arriver les 22. Le libellé vient désormais du catalogue,
+              et un badge sans libellé n'est pas rendu du tout. */}
+          {athleteDistinctions.map((d, idx) => (
+            <span key={`${d.code}-${idx}`} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
+              {textePastille(d)}
+            </span>
+          ))}
         </div>
       )}
 
