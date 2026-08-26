@@ -142,11 +142,29 @@ export default function DistinctionBadge({
 
   // Uniform outer tile + icon box so every badge occupies the same footprint
   // regardless of the SVG's natural aspect ratio.
-  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "sm" ? "w-[96px]" : "w-[128px]";
-  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "sm" ? "w-16 h-16" : "w-[88px] h-[88px]";
-  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]" : "text-[11px] max-w-[128px]";
+  /* La CELLULE reste etroite meme si la boite grandit. Elle ne sert qu'a
+     borner le retour a la ligne du libelle ; c'est elle, pas le picto, qui
+     decide si les 5 badges tiennent sur UNE ligne. La rangee de la fiche fait
+     852 px avec gap-9 : 5 x 152 + 4 x 36 = 904 px et le cinquieme tombait a la
+     ligne. A 136 : 5 x 136 + 4 x 36 = 824 px. La regle des 5 sur une ligne est
+     la raison d'etre du plafond (voir badge_plafond) — elle prime sur le
+     confort du libelle. */
+  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "sm" ? "w-[96px]" : "w-[136px]";
+  /* `lg` passe de 88 à 104 px. Le PICTO n'en occupe que 57,7 % : les SVG
+     « biseau » dessinent le glyphe sur ~150 unités d'un viewBox de 260, le
+     reste étant la marge où le halo déborde. À 104 px le picto visible fait
+     donc ~60 px — l'agrandissement du conteneur ne rend qu'une partie du
+     gain, et le vrai levier est la proportion dans le fichier. */
+  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "sm" ? "w-16 h-16" : "w-[104px] h-[104px]";
+  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]" : "text-[11px] max-w-[136px]";
 
-  const decalage = `${(index ?? 0) * 90}ms`;
+  /* 80 ms. Les etoiles de la carte sont CONTIGUES : un seul reflet les
+     traverse toutes, la vague est dans le mouvement. Les badges sont separes
+     par 32 px de vide — sans decalage, cinq bandes apparaissent et
+     disparaissent ensemble, ce qui se lit comme un clignotement et non comme
+     un balayage. UNE SEULE valeur pour les trois animations (reflet, frappe,
+     onde) : deux cadences differentes sur la meme rangee se verraient. */
+  const decalage = `${(index ?? 0) * 80}ms`;
   // Le survol N'EST PAS posé sur .nx-badge : `is-fresh` y anime déjà
   // `transform`, et une animation CSS l'emporte sur une transition portant la
   // même propriété — le badge frais aurait cessé de réagir au survol. Le
@@ -161,10 +179,11 @@ export default function DistinctionBadge({
   return (
     <div className={`flex flex-col items-center ${effectiveSize === "xs" ? "" : "gap-[10px]"} cursor-pointer group shrink-0 ${outerW}`}>
       <div className="relative transition-transform duration-300 group-hover:scale-[1.18] group-hover:-translate-y-[3px]">
-        {/* La lueur est SŒUR du badge, pas son enfant : .nx-badge porte
-            overflow:hidden pour le reflet, ce qui rognerait le halo au carré
-            du conteneur. Ici rien ne la rogne. */}
-        <span className="nx-badge__glow" aria-hidden="true" />
+        {/* La lueur CSS est RETIRÉE : les SVG portent de nouveau leur halo,
+            mais À L'INTÉRIEUR — il suit la forme du picto au lieu d'être un
+            cercle derrière, ce qu'un radial-gradient ne sait pas faire. Le
+            viewBox passe de 200 à 260 pour lui laisser la marge de débord.
+            Garder .nx-badge__glow en superposerait deux. */}
         <div
           className={classes}
           // --nx-mask confine le reflet à la SILHOUETTE du badge : sans lui,

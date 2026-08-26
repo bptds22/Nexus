@@ -18,9 +18,8 @@
 /* ── Le conteneur ────────────────────────────────────────────── */
 .nx-badge {
   position: relative;
-  /* Au-dessus de .nx-badge__glow, qui est désormais son FRÈRE et non plus son
-     enfant. Sans ce z-index, la lueur — positionnée, donc peinte après un
-     frère non positionné — passerait PAR-DESSUS le badge. */
+  /* Conservé du lot précédent, et toujours utile : il maintient le badge
+     au-dessus de tout frère positionné, et sert de repère au reflet. */
   z-index: 1;
   display: grid;
   place-items: center;
@@ -40,66 +39,70 @@
      est décalé par rapport au dessin. */
 }
 
-/* ── Lueur : elle porte MAINTENANT tout l'effet ──────────────── */
+/* ── La lueur est repartie DANS les fichiers ─────────────────── */
 /*
-   Les 22 SVG portaient chacun deux feGaussianBlur (un halo utilisé, un mort).
-   Ils n'en ont plus AUCUN : la lueur venait du fichier, elle vient désormais
-   d'ici. Sans cette règle, les badges sont plats — c'est le seul point qui ne
-   pardonne pas.
+   .nx-badge__glow a existé ici le temps d'un lot : les SVG de « b2 » étaient
+   plats, la lueur venait donc du CSS — un radial-gradient derrière l'image.
+   Les fichiers « biseau » portent de nouveau leur halo, mais À L'INTÉRIEUR,
+   et c'est le seul moyen qu'il suive la FORME du picto : un dégradé radial
+   ne sait dessiner qu'un cercle, quel que soit le dessin qu'il éclaire.
+   Leur viewBox passe de 200 à 260 pour loger ce débord — la marge que le CSS
+   simulait avec inset:-30%.
 
-   POURQUOI LA LUEUR EST SORTIE DE .nx-badge
-   Elle en était l'enfant. Or .nx-badge porte overflow:hidden — nécessaire au
-   reflet, qui se translate et se ferait voir hors silhouette sans lui. À
-   inset:-14% la lueur était déjà rognée ; à -30% elle l'aurait été bien plus,
-   et le halo se serait arrêté NET au carré du conteneur — un bord droit
-   visible autour d'un losange à coins transparents.
-   Elle est donc remontée d'un cran, dans l'enveloppe position:relative qui
-   existait déjà, où rien ne la rogne. Le reflet n'est pas touché.
+   La règle est retirée plutôt que laissée sans porteur : une lueur CSS encore
+   définie et un halo dans le fichier se superposeraient au premier qui la
+   remettrait dans le JSX « puisqu'elle existe ».
+
+   .nx-badge garde en revanche z-index:1 — il sert aussi au reflet.
 */
-.nx-badge__glow {
-  position: absolute;
-  inset: -30%;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(230, 57, 70, 0.78) 0%,
-    rgba(230, 57, 70, 0.3) 42%,
-    rgba(230, 57, 70, 0) 70%
-  );
-  opacity: 0.42;
-  /* Seule l'opacité bouge au survol — pas de filtre, pas de repeinture. */
-  transition: opacity 300ms ease-out;
-}
-
-.group:hover .nx-badge__glow {
-  opacity: 0.72;
-}
 
 /* ── Le reflet, masqué à la silhouette du badge ──────────────── */
 /* --nx-mask est posée en ligne par le composant :
    style={{ "--nx-mask": `url("/badges/badge-${code}.svg")` }}
    Aucun identifiant, aucune collision — et le fichier est déjà en cache,
    c'est la même URL que le <img>. */
+/* REPRIS DE .card-star-shimmer, LA MECANIQUE COMPRISE — pas seulement
+   l'apparence. La carte ne deplace pas un ruban : elle fait glisser un
+   `background-position` sur un degrade deux fois plus large que la boite.
+   C'est ce qui donne l'entree et la sortie douces, sans rampe d'opacite.
+
+   Aux deux extremites la bande est hors de la boite, donc invisible :
+   a 200% le degrade occupe [-2W, 0] et sa partie claire [-1,3W, -0,7W] ;
+   a -100% il occupe [W, 3W] et sa partie claire [1,7W, 2,3W]. Aucun
+   `opacity` a piloter — exactement comme sur la carte.
+
+   PLUS DE ROTATION. Le badge avait un `skewX(-18deg)` et les SVG un
+   `rotate(18 130 130)` : c'est ce qui le faisait lire comme une autre
+   animation. La carte est droite ; l'inclinaison vit dans les 105deg du
+   degrade, pas dans une transformation de l'element.
+
+   `inset: 0` et non plus un ruban de 46% deborde en haut et en bas : la
+   boite du pseudo-element doit couvrir EXACTEMENT celle de l'image, sinon
+   le `mask-size: contain` cadre le masque autrement que le dessin.
+
+   RESERVE ASSUMEE : `background-position` n'est pas compositee, contrairement
+   au `transform` qu'imposait la regle de performance en tete de fichier.
+   C'est le prix de l'identite avec la carte, demandee explicitement. La
+   surface reste petite (104 px) et l'animation joue 1,2 s puis s'arrete. */
 .nx-badge::after {
   content: "";
   position: absolute;
-  top: -10%;
-  bottom: -10%;
-  left: 0;
-  width: 46%;
+  inset: 0;
   z-index: 2;
   pointer-events: none;
-  opacity: 0;
+  /* Les arrets et les opacites de .card-star-shimmer, verbatim. */
   background: linear-gradient(
-    100deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.16) 42%,
-    rgba(255, 255, 255, 0.34) 50%,
-    rgba(255, 255, 255, 0.16) 58%,
-    rgba(255, 255, 255, 0) 100%
+    105deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(255, 255, 255, 0.35) 45%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.35) 55%,
+    transparent 65%,
+    transparent 100%
   );
+  background-size: 200% 100%;
+  background-position: 200% 0;
   -webkit-mask-image: var(--nx-mask);
           mask-image: var(--nx-mask);
   -webkit-mask-size: contain;
@@ -108,7 +111,17 @@
           mask-repeat: no-repeat;
   -webkit-mask-position: center;
           mask-position: center;
-  transform: translateX(-180%) skewX(-18deg);
+  /* AU MONTAGE, une seule fois. Le decalage par badge est le meme
+     `--nx-delay` que la frappe et l'onde : cinq reflets simultanes se
+     liraient comme un clignotement, echelonnes ils se lisent comme un
+     balayage qui parcourt la rangee. */
+  animation: nxRefletCarte 1200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: var(--nx-delay, 0ms);
+}
+
+@keyframes nxRefletCarte {
+  from { background-position: 200% 0; }
+  to   { background-position: -100% 0; }
 }
 
 /* ── Fraîcheur : respiration + reflet, 48 h après l'attribution ─ */
@@ -118,7 +131,9 @@
 }
 
 .nx-badge.is-fresh::after {
-  animation: nxSweep 6s ease-in-out infinite;
+  /* La courbe s'applique a CHAQUE segment : le 0%->20% recoit donc la
+     meme cubic-bezier que le balayage unique. */
+  animation: nxSweep 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes nxBreathe {
@@ -126,12 +141,47 @@
   50%      { transform: scale(1.035); }
 }
 
+/* Converti a la meme mecanique, obligatoirement : l'ancienne version
+   translatait l'ELEMENT, or le masque est porte par l'element — le deplacer
+   emportait le masque hors de la silhouette. Avec la bande dans le fond,
+   l'element ne bouge plus et le masque reste cale sur le dessin.
+   20% de 6 s = 1200 ms : le balayage de `.is-fresh` dure exactement celui
+   du montage, puis la boucle attend 4,8 s avant de recommencer. */
 @keyframes nxSweep {
-  0%   { transform: translateX(-180%) skewX(-18deg); opacity: 0; }
-  4%   { opacity: 1; }
-  20%  { transform: translateX(180%)  skewX(-18deg); opacity: 1; }
-  24%  { transform: translateX(180%)  skewX(-18deg); opacity: 0; }
-  100% { transform: translateX(180%)  skewX(-18deg); opacity: 0; }
+  0%   { background-position: 200% 0; }
+  20%  { background-position: -100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ── Le reflet au SURVOL ─────────────────────────────────────── */
+/*
+   Un seul balayage, 0,9 s, sans boucle. Il réutilise le ::after et la
+   trajectoire de nxSweep — c'est le même reflet, joué une fois.
+
+   POURQUOI PAS UN REFLET PERMANENT
+   Il ne jouait jusqu'ici que sur .is-fresh (48 h après l'attribution) et
+   .is-unlocking (au déblocage). Six badges qui brillent en continu font
+   sapin de Noël, et la fiche perd la hiérarchie qu'on vient de lui donner.
+   Au survol, l'attention est déjà portée sur UN badge : le reflet la
+   confirme au lieu de la disputer.
+
+   `.is-fresh` garde la main : sa boucle de 6 s continue, on ne la remplace
+   pas par un balayage unique le temps du survol.
+*/
+.group:hover .nx-badge:not(.is-fresh)::after {
+  animation: nxRefletCarteSurvol 1200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  /* Le decalage du montage ne doit PAS se rejouer ici : au survol le badge
+     repond tout de suite, il n'attend pas son rang dans la rangee. */
+  animation-delay: 0ms;
+}
+
+/* Corps identique a nxRefletCarte, sous un AUTRE NOM, et ce n'est pas un
+   doublon par negligence : reappliquer une animation qui porte deja le meme
+   nom ne la redemarre pas. Changer de nom au survol est ce qui force le
+   navigateur a rejouer le balayage. */
+@keyframes nxRefletCarteSurvol {
+  from { background-position: 200% 0; }
+  to   { background-position: -100% 0; }
 }
 
 /* ── La frappe, au déblocage ─────────────────────────────────── */
@@ -192,6 +242,10 @@
   .nx-badge,
   .nx-badge.is-fresh,
   .nx-badge.is-unlocking,
+  /* `.nx-badge::after` couvre desormais les TROIS etats du reflet : le
+     montage, la fraicheur et le survol. `!important` l'emporte sur la
+     specificite superieure de la regle de survol. */
+  .nx-badge::after,
   .nx-badge.is-fresh::after,
   .nx-badge-wave::before {
     animation: none !important;

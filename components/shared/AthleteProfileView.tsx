@@ -317,9 +317,13 @@ export default function AthleteProfileView({
                   {dbDistinctions.length > 0 && (
                     <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
+                      {/* `lg`, comme le bloc Profil athlete : c'est le MEME badge dans le
+                          MEME sous-bloc Distinctions. Le `sm` venait d'un heritage, pas
+                          d'une contrainte de place — conteneur en flex-wrap gap-3, donc
+                          5 x 136 + 4 x 12 = 728 px tiennent. */}
                       <div className="flex flex-wrap gap-3">
                         {dbDistinctions.map((d, i) => (
-                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="sm" />
+                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                         ))}
                       </div>
                     </div>

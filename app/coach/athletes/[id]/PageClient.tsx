@@ -657,16 +657,16 @@ export default function CoachAthleteProfilePage() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="bg-[#111317] rounded-lg px-4 py-2 flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-              <span className="text-[16px] font-bold text-white">{viewCount}</span>
-              <span className="text-[11px] text-[#6b7280]">{viewCount === 1 ? "vue totale" : "vues totales"}</span>
+              <span className="text-[20px] font-bold text-white">{viewCount}</span>
+              <span className="text-[12px] text-[#6b7280]">{viewCount === 1 ? "vue totale" : "vues totales"}</span>
             </div>
             <div className="bg-[#111317] rounded-lg px-4 py-2 flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
-              <span className="text-[16px] font-bold text-white">{favoriteCount}</span>
-              <span className="text-[11px] text-[#6b7280]">favoris</span>
+              <span className="text-[20px] font-bold text-white">{favoriteCount}</span>
+              <span className="text-[12px] text-[#6b7280]">favoris</span>
             </div>
             <div className="bg-[#111317] rounded-lg px-4 py-2">
-              <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
               <RecruitmentStatusBadge
                 status={globalRecruitmentStatus as GlobalRecruitmentStatus}
                 committedSchoolName={committedSchoolName || undefined}
@@ -691,17 +691,17 @@ export default function CoachAthleteProfilePage() {
             <div className="flex items-center gap-12 mb-8">
               {a.heightDisplay && (
                 <div className="text-center">
-                  <p className="text-[40px] font-head font-[800] text-white leading-none">{a.heightDisplay}</p>
+                  <p className="text-[28px] font-head font-[800] text-white leading-none">{a.heightDisplay}</p>
                   <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mt-1.5">Taille</p>
                 </div>
               )}
               {a.heightDisplay && a.weightDisplay && (
-                <div className="w-px h-12 bg-[#555]" />
+                <div className="w-px h-8 bg-[#555]" />
               )}
               {a.weightDisplay && (
                 <div className="text-center">
-                  <p className="text-[40px] font-head font-[800] text-white leading-none">
-                    {a.weightDisplay.replace(" lbs", "")}<span className="text-[20px] font-semibold text-[#555]"> lbs</span>
+                  <p className="text-[28px] font-head font-[800] text-white leading-none">
+                    {a.weightDisplay.replace(" lbs", "")}<span className="text-[14px] font-semibold text-[#555]"> lbs</span>
                   </p>
                   <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mt-1.5">Poids</p>
                 </div>
@@ -711,7 +711,7 @@ export default function CoachAthleteProfilePage() {
             {dbDistinctions.length > 0 && (
               <div className="flex items-start gap-9 flex-wrap">
                 {dbDistinctions.map((d, i) => (
-                  <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                  <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                 ))}
               </div>
             )}
@@ -791,9 +791,12 @@ export default function CoachAthleteProfilePage() {
                   {dbDistinctions.length > 0 && (
                     <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
+                      {/* `lg` comme le bloc Profil athlete : c'est le MEME badge,
+                          rien ne justifie qu'il retrecisse d'un onglet a l'autre.
+                          Il etait en `sm` (64 px) par heritage, pas par decision. */}
                       <div className="flex flex-wrap gap-3">
                         {dbDistinctions.map((d, i) => (
-                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="sm" />
+                          <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                         ))}
                       </div>
                     </div>
