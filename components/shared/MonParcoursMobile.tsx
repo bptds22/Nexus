@@ -11,7 +11,9 @@ import { useAthleteVisibilityPro, type CegepDetail } from "@/hooks/useAthleteVis
 import { MON_PARCOURS_COTE_COPY } from "@/lib/config/parcoursCoteCopy";
 import { LEGACY_BADGE_TO_CATALOGUE, type DistinctionEntry } from "@/lib/config/badges";
 import { pastillesBadges, badgesDepuisRaw, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
-import { badgesPourSport } from "@/lib/config/badgeCatalogue";
+import {
+  badgesPourSport, ORDRE_SECTIONS, TITRE_SECTION,
+} from "@/lib/config/badgeCatalogue";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { triggerHaptic } from "@/lib/haptics";
@@ -176,7 +178,19 @@ export default function MonParcoursMobile() {
      objects both normalize to DistinctionEntry[]. Drives the Badges
      screen's obtenu/à-viser grid. Empty array when not yet evaluated. */
   const [distinctions, setDistinctions] = useState<PastilleBadge[]>([]);
+  /* Le sport pilote la section « Spécifiques au sport ». null = athlète sans
+     équipe : la section reste, avec son explication. */
+  const [sportId, setSportId] = useState<string | null>(null);
   const badgeCat = useBadgeCatalogue();
+  /* Le compteur vit au niveau du composant : l'en-tête de l'écran est HORS de
+     l'IIFE qui construit la grille, et dupliquer le calcul serait la meilleure
+     façon d'afficher deux totaux différents sur le même écran. */
+  const badgesDispo = badgesPourSport(badgeCat, sportId)
+    .filter((b) => b.contexteForme !== "libre");
+  const totalBadges = badgesDispo.length;
+  const nbBadgesObtenus = badgesDispo.filter(
+    (b) => distinctions.some((d) => (LEGACY_BADGE_TO_CATALOGUE[d.code] ?? d.code) === b.code),
+  ).length;
 
   /* ── Mes Cibles state (B-3, verbatim mirror of desktop
         page.tsx :104-110). targets feeds the carousel + the
@@ -279,7 +293,7 @@ export default function MonParcoursMobile() {
       const { data: a } = await supabase
         .from("athletes")
         .select(
-          "id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -304,6 +318,7 @@ export default function MonParcoursMobile() {
          mobile prenait la PLUS RÉCENTE ; la divergence s'évapore avec une
          table par athlète. */
       setDistinctions(pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>)));
+      setSportId((a as { sport_id?: string | null }).sport_id ?? null);
 
       /* Module 2 — saved targets + the CÉGEP list for the picker.
          Verbatim from desktop page.tsx :206-213. loadTargets
@@ -1004,9 +1019,16 @@ export default function MonParcoursMobile() {
               >
                 <div className="w-full rounded-2xl bg-[#1A1D24] border border-[#2D3748] overflow-hidden flex flex-col" style={{ borderLeft: "3px solid #E63946" }}>
                   <div className="px-5 pt-4 pb-3 border-b border-white/[0.06]">
-                    <p className="text-[10px] font-black tracking-[0.25em] uppercase text-[#E63946]">Badges à viser</p>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-[10px] font-black tracking-[0.25em] uppercase text-[#E63946]">Mes badges</p>
+                      <p className="font-head font-[700] text-[11px] text-[#6b7280] shrink-0">
+                        <span className="text-[#E63946]">{nbBadgesObtenus}</span> / {totalBadges} obtenus
+                      </p>
+                    </div>
                   </div>
-                  <div className="px-5 py-3 flex-1 flex flex-col gap-2 overflow-hidden">
+                  {/* overflow-y-auto : le catalogue complet d'un footballeur fait
+                      20 vignettes, la boîte de 560 px n'en tient plus la moitié. */}
+                  <div className="px-5 py-3 flex-1 flex flex-col gap-2 overflow-y-auto nx-no-scrollbar">
                     <p className="text-[12px] text-[#9CA3AF] leading-snug">
                       Décernés par ton coach — voici ce qui t&apos;attend.
                     </p>
@@ -1036,21 +1058,44 @@ export default function MonParcoursMobile() {
                       const detailParCode = new Map(
                         distinctions.map((d) => [LEGACY_BADGE_TO_CATALOGUE[d.code] ?? d.code, d.contexte ?? undefined]),
                       );
-                      const aimableBadges = badgesPourSport(badgeCat, null)
-                        /* `libre` = nexus-x, l'héritier de « custom » : un
-                           titre libre ne se vise pas, il se reçoit. */
+                      /* Le catalogue COMPLET de son sport, groupé comme le
+                         BadgePicker. `libre` (nexus-x) reste hors grille et hors
+                         compteur : un titre libre ne se vise pas. */
+                      const dispo = badgesPourSport(badgeCat, sportId)
                         .filter((b) => b.contexteForme !== "libre")
                         .map((b) => ({
                           badge: b.code,
                           libelle: b.libelle,
+                          famille: b.famille,
                           ordre: b.ordre,
                           detail: detailParCode.get(b.code),
                           obtained: obtainedKeys.has(b.code),
+                        }));
+                      const groupes = ORDRE_SECTIONS
+                        .map((famille) => ({
+                          famille,
+                          titre: TITRE_SECTION[famille],
+                          badges: dispo.filter((b) => b.famille === famille)
+                            .sort((x, y) => x.ordre - y.ordre),
+                          message: famille === "sport" && !sportId
+                            ? "Rejoins une équipe pour débloquer les badges de ton sport"
+                            : undefined,
                         }))
-                        .sort((x, y) => Number(y.obtained) - Number(x.obtained) || x.ordre - y.ordre);
+                        .filter((g) => g.badges.length > 0 || !!g.message);
                       return (
-                        <div className="grid grid-cols-2 gap-2 flex-1">
-                          {aimableBadges.map((b) => (
+                        <div className="flex flex-col gap-3">
+                          {groupes.map((g) => (
+                            <div key={g.famille}>
+                              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#4a4d56] mb-1.5">
+                                {g.titre}
+                              </p>
+                              {g.badges.length === 0 ? (
+                                <p className="text-[11px] text-[#6b7280] rounded-lg border border-dashed border-[#2D3748] px-3 py-4">
+                                  {g.message}
+                                </p>
+                              ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {g.badges.map((b, i) => (
                             <div
                               key={b.badge}
                               className="flex flex-col items-center justify-center py-1.5 px-2 rounded-lg bg-[#13151a]/40 border border-transparent"
@@ -1068,8 +1113,12 @@ export default function MonParcoursMobile() {
                                   transition: "opacity 200ms ease, filter 200ms ease",
                                 }}
                               >
-                                <BadgeVignette code={b.badge} taille="sm" />
+                                <BadgeVignette code={b.badge} taille="sm" index={i} obtenu={b.obtained} />
                               </div>
+                            </div>
+                          ))}
+                        </div>
+                              )}
                             </div>
                           ))}
                         </div>

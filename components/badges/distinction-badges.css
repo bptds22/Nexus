@@ -133,7 +133,7 @@
 .nx-badge.is-fresh::after {
   /* La courbe s'applique a CHAQUE segment : le 0%->20% recoit donc la
      meme cubic-bezier que le balayage unique. */
-  animation: nxSweep 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: nxRefletCycle 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes nxBreathe {
@@ -145,28 +145,57 @@
    translatait l'ELEMENT, or le masque est porte par l'element — le deplacer
    emportait le masque hors de la silhouette. Avec la bande dans le fond,
    l'element ne bouge plus et le masque reste cale sur le dessin.
-   20% de 6 s = 1200 ms : le balayage de `.is-fresh` dure exactement celui
-   du montage, puis la boucle attend 4,8 s avant de recommencer. */
-@keyframes nxSweep {
+   20% de 6 s = 1200 ms : le balayage dure exactement celui du montage, puis
+   la boucle attend 4,8 s avant de recommencer.
+
+   RENOMMÉ de `nxSweep` : il ne sert plus seulement à `.is-fresh` — c'est
+   DÉSORMAIS le cycle du régime permanent des badges obtenus. Le renommer
+   plutôt qu'en empiler un cinquième : le corps est déjà exactement celui
+   qu'il faut, et une animation de plus aurait été une copie. */
+@keyframes nxRefletCycle {
   0%   { background-position: 200% 0; }
   20%  { background-position: -100% 0; }
   100% { background-position: -100% 0; }
 }
 
+/* ── Le régime permanent : les badges OBTENUS ────────────────── */
+/*
+   `is-metal` = ce badge est acquis. Posé par la DONNÉE, pas par une prop
+   qu'aucun appelant ne renseigne : c'est ce qui distingue cet état de
+   `is-fresh` et `is-unlocking`, dont les props `attribueLe` et `unlock`
+   n'ont zéro appelant dans le dépôt et qui ne jouent donc jamais. Ils sont
+   laissés en place, morts, à trancher séparément.
+
+   LA RÈGLE PRODUIT, une seule et partout : obtenu = vivant, à viser = mat.
+   Une vignette « à viser » ne porte pas la classe et ne cycle pas.
+
+   POURQUOI UNE SECONDE VARIABLE. `--nx-delay` échelonne le MONTAGE de 80 ms
+   par badge : sur un cycle de 6 s, cinq badges décalés de 80 ms balaieraient
+   quasi ensemble. `--nx-cycle-delay` répartit sur le cycle (1100 ms par rang)
+   pour qu'il y ait toujours un balayage quelque part dans la rangée. Deux
+   rythmes, deux variables — les confondre obligerait à choisir entre une
+   vague au montage et une vague en régime.
+
+   Placée APRÈS `.is-fresh::after`, à spécificité égale : si les deux classes
+   coexistaient un jour, c'est le cycle du badge acquis qui l'emporterait.
+   Le survol, lui, reste au-dessus des deux — il a une spécificité de plus. */
+.nx-badge.is-metal::after {
+  animation: nxRefletCycle 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: var(--nx-cycle-delay, 0ms);
+}
+
 /* ── Le reflet au SURVOL ─────────────────────────────────────── */
 /*
-   Un seul balayage, 0,9 s, sans boucle. Il réutilise le ::after et la
-   trajectoire de nxSweep — c'est le même reflet, joué une fois.
+   Un seul balayage, 1,2 s, sans boucle — mêmes valeurs que le montage et que
+   le cycle, c'est le même reflet joué une fois.
 
-   POURQUOI PAS UN REFLET PERMANENT
-   Il ne jouait jusqu'ici que sur .is-fresh (48 h après l'attribution) et
-   .is-unlocking (au déblocage). Six badges qui brillent en continu font
-   sapin de Noël, et la fiche perd la hiérarchie qu'on vient de lui donner.
-   Au survol, l'attention est déjà portée sur UN badge : le reflet la
-   confirme au lieu de la disputer.
+   IL PASSE DEVANT LE CYCLE, par la spécificité : trois classes contre deux.
+   Un badge obtenu survolé interrompt donc son cycle pour un balayage franc,
+   puis le reprend. C'est voulu : au survol l'attention porte sur UN badge,
+   le reflet la confirme au lieu de la disputer.
 
-   `.is-fresh` garde la main : sa boucle de 6 s continue, on ne la remplace
-   pas par un balayage unique le temps du survol.
+   `.is-fresh` reste exclu — mais c'est aujourd'hui sans effet, la classe
+   n'étant jamais posée (prop `attribueLe`, zéro appelant).
 */
 .group:hover .nx-badge:not(.is-fresh)::after {
   animation: nxRefletCarteSurvol 1200ms cubic-bezier(0.4, 0, 0.2, 1) both;

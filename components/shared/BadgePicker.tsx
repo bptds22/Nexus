@@ -155,9 +155,10 @@ export default function BadgePicker({
             <div className={layout === "tuiles"
               ? "grid grid-cols-2 sm:grid-cols-3 gap-3"
               : "space-y-1.5"}>
-              {section.badges.map((b) => (
+              {section.badges.map((b, i) => (
                 <Tuile
                   key={b.code}
+                  index={i}
                   badge={b}
                   entree={parCode.get(b.code)}
                   layout={layout}
@@ -230,7 +231,7 @@ function SectionLectureSeule({
       <div className={layout === "tuiles"
         ? "grid grid-cols-2 sm:grid-cols-3 gap-3"
         : "space-y-1.5"}>
-        {badges.map((b) => {
+        {badges.map((b, i) => {
           const contexte = parCode.get(b.code)?.contexte;
           return (
             <div
@@ -241,7 +242,7 @@ function SectionLectureSeule({
               <div className={layout === "tuiles"
                 ? "flex flex-col items-center gap-2 px-3 py-4 text-center"
                 : "flex items-center gap-3 px-3 py-2.5"}>
-                {layout === "tuiles" && <BadgeVignette code={b.code} taille="lg" />}
+                {layout === "tuiles" && <BadgeVignette code={b.code} taille="lg" index={i} />}
                 <span className="text-[12px] font-bold text-[#8a8d96]">{b.libelle}</span>
               </div>
               {contexte && (
@@ -261,9 +262,11 @@ function SectionLectureSeule({
 
 function Tuile({
   badge, entree, layout, accent, desactive, onBasculer, onContexte,
-  contexteEnLigne,
+  contexteEnLigne, index,
 }: {
   badge: BadgeCatalogueEntry;
+  /** Rang dans la grille — echelonne le reflet, rien d'autre. */
+  index?: number;
   entree: BadgeEntry | undefined;
   layout: "tuiles" | "rangees";
   accent: string;
@@ -294,7 +297,7 @@ function Tuile({
           : "w-full flex items-center gap-3 px-3 py-2.5 text-left"}
       >
         {layout === "tuiles" ? (
-          <BadgeVignette code={badge.code} taille="lg" />
+          <BadgeVignette code={badge.code} taille="lg" index={index} />
         ) : (
           <span
             className="w-4 h-4 rounded border flex items-center justify-center shrink-0"

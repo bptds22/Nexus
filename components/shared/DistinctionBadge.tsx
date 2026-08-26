@@ -165,6 +165,11 @@ export default function DistinctionBadge({
      un balayage. UNE SEULE valeur pour les trois animations (reflet, frappe,
      onde) : deux cadences differentes sur la meme rangee se verraient. */
   const decalage = `${(index ?? 0) * 80}ms`;
+  /* Le cycle du régime permanent se répartit sur ses 6 s, pas sur les 80 ms du
+     montage : décalés de 80 ms, cinq badges balaieraient quasi ensemble une
+     fois par cycle. 1100 ms par rang -> il y a toujours un balayage quelque
+     part dans la rangée. */
+  const decalageCycle = `${(index ?? 0) * 1100}ms`;
   // Le survol N'EST PAS posé sur .nx-badge : `is-fresh` y anime déjà
   // `transform`, et une animation CSS l'emporte sur une transition portant la
   // même propriété — le badge frais aurait cessé de réagir au survol. Le
@@ -172,6 +177,9 @@ export default function DistinctionBadge({
   const classes = [
     "nx-badge", iconBox,
     effectiveSize === "xs" ? "nx-badge--xs" : "",
+    /* `is-metal` sans condition : ce composant ne rend QUE des badges
+       attribués. Un badge affiché ici est, par construction, obtenu. */
+    effectiveSize !== "xs" ? "is-metal" : "",
     estFrais && effectiveSize !== "xs" ? "is-fresh" : "",
     unlock ? "is-unlocking" : "",
   ].filter(Boolean).join(" ");
@@ -189,7 +197,11 @@ export default function DistinctionBadge({
           // --nx-mask confine le reflet à la SILHOUETTE du badge : sans lui,
           // la bande balaierait le carré entier, coins transparents compris.
           // Même URL que le <img>, donc aucun aller-retour réseau en plus.
-          style={{ "--nx-mask": `url("${svg}")`, "--nx-delay": decalage } as React.CSSProperties}
+          style={{
+            "--nx-mask": `url("${svg}")`,
+            "--nx-delay": decalage,
+            "--nx-cycle-delay": decalageCycle,
+          } as React.CSSProperties}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={svg} alt="" className="nx-badge__img" draggable={false} />

@@ -8,7 +8,10 @@ import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/l
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { LEGACY_BADGE_TO_CATALOGUE } from "@/lib/config/badges";
 import { pastillesBadges } from "@/lib/queries/shared/athleteBadges";
-import { badgesPourSport } from "@/lib/config/badgeCatalogue";
+import {
+  badgesPourSport, ORDRE_SECTIONS, TITRE_SECTION,
+  type BadgeCatalogueEntry, type BadgeFamille,
+} from "@/lib/config/badgeCatalogue";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { toPng } from "html-to-image";
@@ -52,28 +55,58 @@ const STEPS = [
 const SEASON_YEAR = new Date().getFullYear();
 const SEASON_LABEL = `${SEASON_YEAR}–${SEASON_YEAR + 1}`;
 
-/* Les badges « à viser » viennent du CATALOGUE, plus d'une liste de 6 codes
-   figés. Proposer de viser « progression », qui n'existe plus, serait absurde.
+/* Les badges viennent du CATALOGUE, plus d'une liste de 6 codes figés.
 
-   sportId = null VOLONTAIREMENT : cette page ne charge pas le sport de
-   l'athlète, et la dégradation documentée donne alors universels + honneurs.
-   C'est le bon ensemble ici — les badges de sport dépendent du poste, ce ne
-   sont pas des cibles universelles. Charger le sport les ajouterait (jusqu'à
-   19 pour un footballeur) et obligerait à revoir cette grille. */
-function useBadgesAViser(obtenus: Map<string, string | undefined>) {
+   LE SPORT EST DÉSORMAIS CHARGÉ, et c'est un renversement assumé. La version
+   précédente passait sportId = null exprès, au motif que les badges de sport
+   dépendent du poste et que la grille passerait de 9 à 20 cellules. Les deux
+   constats étaient justes ; la décision produit du 2026-08-26 tranche dans
+   l'autre sens : l'athlète doit voir TOUT ce qu'il peut réellement gagner,
+   pas un extrait. La grille à 20 cellules est acceptée telle quelle.
+
+   `libre` = nexus-x, l'héritier de « custom ». Il reste hors grille ET hors
+   compteur : un titre libre ne se vise pas, il se reçoit. L'inclure gonflerait
+   le N d'une cible qu'on ne peut pas atteindre. */
+export interface BadgeAViser extends BadgeCatalogueEntry {
+  obtenu: boolean;
+  detail?: string;
+}
+export interface SectionAViser {
+  famille: BadgeFamille;
+  titre: string;
+  badges: BadgeAViser[];
+  /** Rempli UNIQUEMENT quand la section est vide FAUTE DE SPORT connu. Une
+   *  section vide parce que le sport n'a aucun badge lié disparaît, elle ;
+   *  seule l'absence de sport mérite d'être expliquée à l'athlète. */
+  message?: string;
+}
+
+const SANS_SPORT = "Rejoins une équipe pour débloquer les badges de ton sport";
+
+function useSectionsBadges(
+  obtenus: Map<string, string | undefined>, sportId: string | null,
+) {
   const cat = useBadgeCatalogue();
-  /* earnedBadges vient de evaluations.distinctions, donc en ANCIENS codes
-     (captain, allstar…). Le catalogue parle les nouveaux. Sans cette
-     traduction, aucun badge ne serait jamais marqué « Obtenu ». */
+  /* VOIE 2 — les codes viennent d'athlete_badges, donc DÉJÀ ceux du catalogue.
+     La traduction reste appliquée par sécurité, au cas où une entrée héritée
+     transiterait encore. */
   const obtenusCat = new Map(
     [...obtenus].map(([ancien, detail]) => [LEGACY_BADGE_TO_CATALOGUE[ancien] ?? ancien, detail]),
   );
-  return badgesPourSport(cat, null)
-    /* `libre` = nexus-x, l'héritier de « custom » : un titre libre ne se vise
-       pas, il se reçoit. Même exclusion qu'avant, exprimée par la DONNÉE. */
+  const dispo: BadgeAViser[] = badgesPourSport(cat, sportId)
     .filter((b) => b.contexteForme !== "libre")
-    .map((b) => ({ ...b, obtenu: obtenusCat.has(b.code), detail: obtenusCat.get(b.code) }))
-    .sort((x, y) => Number(y.obtenu) - Number(x.obtenu) || x.ordre - y.ordre);
+    .map((b) => ({ ...b, obtenu: obtenusCat.has(b.code), detail: obtenusCat.get(b.code) }));
+
+  const sections: SectionAViser[] = ORDRE_SECTIONS
+    .map((famille) => ({
+      famille,
+      titre: TITRE_SECTION[famille],
+      badges: dispo.filter((b) => b.famille === famille).sort((x, y) => x.ordre - y.ordre),
+      message: famille === "sport" && !sportId ? SANS_SPORT : undefined,
+    }))
+    .filter((s) => s.badges.length > 0 || !!s.message);
+
+  return { sections, total: dispo.length, nbObtenus: dispo.filter((b) => b.obtenu).length };
 }
 
 type Cegep = { id: string; name: string; city: string | null; region: string | null };
@@ -121,7 +154,20 @@ function MonParcoursPageDesktop() {
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
   const [earnedBadges, setEarnedBadges] = useState<Map<string, string | undefined>>(new Map());
-  const badgesAViser = useBadgesAViser(earnedBadges);
+  const [sportId, setSportId] = useState<string | null>(null);
+  /* Le fondu bas ne s'affiche QUE s'il reste des badges sous le pli. Aucun
+     moyen CSS de détecter un débordement — d'où ces quelques lignes plutôt
+     qu'un dégradé permanent qui mentirait sur une liste courte (9 badges
+     pour un athlète sans sport tiennent sans défiler). */
+  const listeBadgesRef = useRef<HTMLDivElement>(null);
+  const [resteEnBas, setResteEnBas] = useState(false);
+  const majFondu = useCallback(() => {
+    const el = listeBadgesRef.current;
+    if (!el) return;
+    setResteEnBas(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  }, []);
+  const { sections: sectionsBadges, total: totalBadges, nbObtenus } =
+    useSectionsBadges(earnedBadges, sportId);
   const [downloading, setDownloading] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
@@ -144,6 +190,15 @@ function MonParcoursPageDesktop() {
   const [togglingKey, setTogglingKey] = useState<ManualKey | null>(null);
   const [phaseSaving, setPhaseSaving] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    majFondu();
+    const el = listeBadgesRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(majFondu);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [majFondu, sectionsBadges.length, totalBadges]);
 
   const showToast = useCallback((kind: "success" | "error", message: string) => {
     setToast({ kind, message });
@@ -180,11 +235,15 @@ function MonParcoursPageDesktop() {
       const { data } = await supabase
         .from("athletes")
         .select(
-          "id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness",
         )
         .eq("user_id", user.id)
         .maybeSingle();
       if (!data) return;
+      /* Le sport pilote la section « Spécifiques au sport ». null n'est pas une
+         erreur : c'est un athlète sans équipe, et la section le lui dit au lieu
+         de disparaître sans explication. */
+      setSportId((data as { sport_id: string | null }).sport_id ?? null);
       setFirstName((data.first_name as string) || "");
       setProfileCompletion((data.profile_completion as number) || 0);
       setHighlightUrl((data.video_faits_saillants_url as string | null) ?? null);
@@ -657,46 +716,104 @@ function MonParcoursPageDesktop() {
               </button>
             </div>
 
-            {/* Badges to chase — real DistinctionBadge emblems */}
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">
-                Badges à viser
-              </h3>
+            {/* MES BADGES — le catalogue ENTIER de son sport, pas un extrait.
+
+                LA HAUTEUR VIENT DE LA CARTE, PAS DE LA LISTE. Le contenu passe
+                en `lg:absolute inset-0` : il sort du flux, donc cette colonne ne
+                pèse plus rien dans le calcul de hauteur de la rangée, qui est
+                alors dictée par la seule colonne de gauche (carte 300x460 +
+                bouton). `align-items: stretch` la rend ensuite à la hauteur de
+                la ligne, et `inset-0` la remplit exactement.
+
+                Aucune hauteur en dur : si la carte change de format, les deux
+                blocs restent alignés d'eux-mêmes.
+
+                Sous `lg`, la carte passe AU-DESSUS des badges — la contrainte
+                n'a plus d'objet et la liste reprend sa hauteur naturelle. */}
+            <div className="flex-1 min-w-0 lg:relative">
+              <div className="lg:absolute lg:inset-0 flex flex-col min-h-0">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">
+                  Mes badges
+                </h3>
+                <p className="font-head font-[700] text-[13px] text-[#6b7280] shrink-0">
+                  <span className="text-[#E63946]">{nbObtenus}</span> / {totalBadges} obtenus
+                </p>
+              </div>
               <p className="text-[12px] text-[#6b7280] mt-1 mb-4">
                 Décernés par ton entraîneur — continue de performer pour les mériter.
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {badgesAViser.map((b) => {
-                  const key = b.code;
-                  const earned = b.obtenu;
-                  return (
-                    <div
-                      key={key}
-                      className={`flex flex-col items-center gap-2 rounded-xl border p-4 ${
-                        earned
-                          ? "bg-[#E63946]/[0.06] border-[#E63946]/25"
-                          : "bg-[#13151a] border-[#2D3748]"
-                      }`}
-                    >
-                      <div className={earned ? "" : "grayscale opacity-40"}>
-                        <BadgeVignette code={key} libelle={b.libelle} taille="lg" />
-                      </div>
-                      {earned ? (
-                        <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#E63946]">
-                          Obtenu
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" />
-                            <path d="M7 11V7a5 5 0 0110 0v4" />
-                          </svg>
-                          À viser
-                        </span>
-                      )}
+
+              {/* La zone qui défile. `flex-1 min-h-0` : sans min-h-0 un enfant
+                  flex refuse de rétrécir sous sa taille de contenu et le
+                  débordement repart dans la page. */}
+              <div className="relative flex-1 min-h-0">
+                <div
+                  ref={listeBadgesRef}
+                  onScroll={majFondu}
+                  className="h-full overflow-y-auto nx-no-scrollbar pr-1"
+                >
+              {sectionsBadges.map((section, si) => (
+                <div key={section.famille} className={si === 0 ? "" : "mt-5"}>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#4a4d56] mb-2">
+                    {section.titre}
+                  </p>
+
+                  {section.badges.length === 0 ? (
+                    /* Sans sport, la section ne DISPARAÎT pas : un athlète qui ne
+                       voit rien ne sait pas qu'il manque quelque chose. */
+                    <p className="text-[12px] text-[#6b7280] rounded-xl border border-dashed border-[#2D3748] px-4 py-5">
+                      {section.message}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {section.badges.map((b, i) => {
+                        const earned = b.obtenu;
+                        return (
+                          <div
+                            key={b.code}
+                            className={`flex flex-col items-center gap-2 rounded-xl border p-4 ${
+                              earned
+                                ? "bg-[#E63946]/[0.06] border-[#E63946]/25"
+                                : "bg-[#13151a] border-[#2D3748]"
+                            }`}
+                          >
+                            <div className={earned ? "" : "grayscale opacity-40"}>
+                              <BadgeVignette code={b.code} libelle={b.libelle} taille="lg" index={i} obtenu={earned} />
+                            </div>
+                            {earned ? (
+                              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#E63946]">
+                                Obtenu
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                                </svg>
+                                À viser
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+              ))}
+                </div>
+                {/* Le fondu : il dit qu'il reste des badges, sans bouton et sans
+                    voler de place. `pointer-events-none` pour ne pas bloquer le
+                    défilement au doigt. La couleur est celle du panneau, sinon
+                    le dégradé se verrait comme une bande grise. */}
+                {resteEnBas && (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-12"
+                    style={{ background: "linear-gradient(to bottom, rgba(26,29,36,0) 0%, rgba(26,29,36,0.92) 78%, #1A1D24 100%)" }}
+                  />
+                )}
+              </div>
               </div>
             </div>
           </div>

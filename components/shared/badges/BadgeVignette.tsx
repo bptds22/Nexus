@@ -14,6 +14,7 @@
    instances, fût-ce le même badge répété.
 ═══════════════════════════════════════════════════════════════ */
 
+import type React from "react";
 import { badgeSvgPath } from "@/lib/config/badges";
 import "@/components/badges/distinction-badges.css";
 
@@ -28,6 +29,14 @@ export interface BadgeVignetteProps {
    *  ne déclenche pas de repeinture, contrairement à grayscale(). */
   attenue?: boolean;
   className?: string;
+  /** Rang dans la rangée. Sert UNIQUEMENT au décalage du reflet : sans lui
+   *  les vignettes d'une même grille s'allument toutes ensemble, ce qui se
+   *  lit comme un clignotement. Même pas de 80 ms que DistinctionBadge. */
+  index?: number;
+  /** Badge ACQUIS. Contrairement à DistinctionBadge, cette vignette sert aussi
+   *  à montrer ce qu'on n'a PAS : elle doit donc qu'on le lui dise.
+   *  Règle produit : obtenu = vivant (cycle de reflet), à viser = mat. */
+  obtenu?: boolean;
 }
 
 const BOITE: Record<NonNullable<BadgeVignetteProps["taille"]>, string> = {
@@ -37,7 +46,7 @@ const BOITE: Record<NonNullable<BadgeVignetteProps["taille"]>, string> = {
 };
 
 export default function BadgeVignette({
-  code, libelle, taille = "sm", attenue = false, className = "",
+  code, libelle, taille = "sm", attenue = false, className = "", index, obtenu = false,
 }: BadgeVignetteProps) {
   const svg = badgeSvgPath(code);
   if (!svg) return null;
@@ -48,8 +57,22 @@ export default function BadgeVignette({
           nouveau leur halo à l'intérieur. On revient donc à la forme simple
           d'avant, sans niveau intermédiaire. */}
       <span
-        className={`nx-badge ${BOITE[taille]}`}
-        style={attenue ? { opacity: 0.35 } : undefined}
+        className={`nx-badge ${BOITE[taille]}${obtenu ? " is-metal" : ""}`}
+        /* --nx-mask CONFINE le reflet à la silhouette. Sans elle,
+           `.nx-badge::after` n'a pas de masque et son dégradé balaie le CARRÉ
+           entier : c'est la bande diagonale vue sur mon-parcours et sur le
+           picker en tuiles. Le défaut existait déjà, mais restait invisible
+           tant que le reflet ne jouait que sur `.is-fresh` et `.group:hover`
+           — deux états qu'une vignette n'atteint jamais. Il est devenu
+           visible quand le reflet est passé en animation DE MONTAGE, portée
+           par la règle de base.
+           Même URL que le <img> juste en dessous : aucune requête de plus. */
+        style={{
+          "--nx-mask": `url("${svg}")`,
+          "--nx-delay": `${(index ?? 0) * 80}ms`,
+          "--nx-cycle-delay": `${(index ?? 0) * 1100}ms`,
+          ...(attenue ? { opacity: 0.35 } : null),
+        } as React.CSSProperties}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={svg} alt="" className="nx-badge__img" draggable={false} />
