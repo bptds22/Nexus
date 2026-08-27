@@ -2012,6 +2012,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             let dest = "/recruteur/recherche";
             try {
               const last = sessionStorage.getItem("lastRecruiterTab");
+              /* La query de l'écran d'origine, posée en même temps que
+                 `last`. Ce `push` n'est PAS un `history.back()` : il
+                 reconstruit la destination, et la reconstruisait nue — d'où
+                 des filtres de recherche réinitialisés à chaque aller-retour
+                 sur mobile, là où la flèche du navigateur les rendait au web.
+                 Lue seulement si `last` existe : les deux clés sont écrites
+                 et effacées ensemble, donc une query sans onglet serait un
+                 résidu, jamais une intention. */
+              const qs = last ? sessionStorage.getItem("lastRecruiterQuery") ?? "" : "";
               if (last === "pipeline") dest = "/recruteur/pipeline";
               else if (last === "favoris") dest = "/recruteur/favoris";
               else if (last === "listes") dest = "/recruteur/listes";
@@ -2022,7 +2031,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 const id = last.slice("list-detail:".length);
                 if (id) dest = `/recruteur/listes/${id}`;
               }
+              if (qs) dest += qs;
               sessionStorage.removeItem("lastRecruiterTab");
+              sessionStorage.removeItem("lastRecruiterQuery");
             } catch { /* no-op */ }
             router.push(dest);
           }}

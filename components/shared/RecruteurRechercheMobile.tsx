@@ -579,7 +579,25 @@ export function AthleteCardMobile({
     }
     lastTapRef.current = now;
     navTimerRef.current = setTimeout(() => {
-      try { sessionStorage.setItem("lastRecruiterTab", lastTabKey); } catch { /* no-op */ }
+      /* La QUERY part avec l'onglet, et pour la même raison que lui.
+         Le bouton Retour du profil ne fait pas `history.back()` : il
+         `router.push` vers un chemin RECONSTRUIT. Il reconstituait déjà la
+         bonne destination grâce à `lastRecruiterTab` — mais nue, sans
+         paramètres, donc les 21 filtres de la recherche mouraient là. Un
+         navigateur web ne le montrait pas : sa flèche Retour, elle, est un
+         vrai retour d'historique et restaure l'URL entière.
+
+         L'URL RESTE LA SOURCE DE VÉRITÉ. sessionStorage ne mémorise rien —
+         il TRANSPORTE la query à travers un bouton qui la perdait. Liens
+         collés, partage et web ne changent pas d'un octet.
+
+         Écrite et effacée dans le même souffle que `lastRecruiterTab` (le
+         profil fait les deux `removeItem` ensemble) : une query orpheline ne
+         peut donc pas ressurgir sur un onglet auquel elle n'appartient pas. */
+      try {
+        sessionStorage.setItem("lastRecruiterTab", lastTabKey);
+        sessionStorage.setItem("lastRecruiterQuery", window.location.search);
+      } catch { /* no-op */ }
       router.push(profileHref ?? `/recruteur/athletes/${a.id}`);
       navTimerRef.current = null;
     }, 300);
