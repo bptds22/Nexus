@@ -42,7 +42,7 @@ import { useGrilles } from "@/lib/evaluations/useGrilles";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
-import { useAthleteContactable } from "@/lib/queries/recruiter/useAthleteContactable";
+import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
@@ -1583,6 +1583,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [showFavContactPrompt, setShowFavContactPrompt] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
 
+  /* Période de restriction RSEQ — UI dormante, jumelle du desktop. Testée
+     AVANT le verrou de palier : une restriction de ligue n'est pas une
+     fonctionnalité à vendre. */
+  /* `message` porte desormais le libelle de la periode et la date de
+     reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
+  /* ⚠ DÉCLARÉ ICI, PAS PLUS BAS — et ce n'est pas cosmétique. handleContactAthlete
+     (juste dessous) porte `contactable` dans son tableau de dépendances, or ce
+     tableau est évalué PENDANT le rendu. Laisser le hook sous le useCallback
+     levait un ReferenceError de zone morte temporelle (`Cannot access
+     'contactable' before initialization`) au premier rendu de chaque fiche.
+     Toute réorganisation de ce fichier doit garder cet appel au-dessus. */
+  const { contactable, message: blackoutMsg } = useAthleteContactable(id);
+
   const openAthleteThread = useCallback(async () => {
     if (!a) return;
     setContactingAthlete(true);
@@ -1595,10 +1608,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   const handleContactAthlete = useCallback(() => {
     if (favButtonDisabled || contactingAthlete) return;
+    /* Silence RSEQ — defense en profondeur, jumelle du desktop. Le bouton qui
+       mene ici est deja desactive ; ce test couvre le jour ou une AUTRE entree
+       ouvrira la feuille de contact. Sans lui, le clic se fait refuser par le
+       trigger (23514) au lieu d'etre explique. */
+    if (!contactable) return;
     triggerHaptic("Medium");
     if (isFavorited) { void openAthleteThread(); return; }
     setShowFavContactPrompt(true);
-  }, [favButtonDisabled, contactingAthlete, isFavorited, openAthleteThread]);
+  }, [favButtonDisabled, contactingAthlete, contactable, isFavorited, openAthleteThread]);
 
   const favoriteAndContact = useCallback(async () => {
     await toggleFav();
@@ -1789,12 +1807,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     setShowContactMenu(true);
   };
 
-  /* Période de restriction RSEQ — UI dormante, jumelle du desktop. Testée
-     AVANT le verrou de palier : une restriction de ligue n'est pas une
-     fonctionnalité à vendre. */
-  /* `message` porte desormais le libelle de la periode et la date de
-     reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
-  const { contactable, message: blackoutMsg } = useAthleteContactable(id);
   /* PORTE DE SORTIE pendant un silence RSEQ. Le contact direct est ferme,
      mais RECRUTEUR_COACH ne l'est pas : on bascule le bouton principal vers
      l'entraineur plutot que de laisser une action desactivee qui n'apporte
@@ -2996,8 +3008,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               border: "0.5px solid rgba(245,158,11,0.32)",
             }}
           >
-            {blackoutMsg}
-            {!coachId && " Cet athlète n'a pas d'entraîneur rattaché sur Nexus."}
+            {blackoutMsg}{" "}
+            {blackoutSortieCourt(!!coachId)}
           </p>
         </div>,
         document.body,
@@ -3085,15 +3097,20 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   <span className="block text-[12px] text-[#6b7280]">{coachId ? "Écris à l’entraîneur de l’athlète" : "Aucun coach connecté pour cet athlète"}</span>
                 </span>
               </button>
-              <button type="button" disabled={contactingAthlete || favButtonDisabled}
+              {/* Silence RSEQ — `contactable` DOIT figurer ici. Le bouton
+                  principal bascule vers l'entraineur pendant une periode, mais
+                  cette feuille porte sa PROPRE entree vers l'athlete : sans ce
+                  test, elle reste cliquable et part droit sur le refus 23514
+                  du trigger. Jumelle exacte du desktop. */}
+              <button type="button" disabled={contactingAthlete || favButtonDisabled || !contactable}
                 onClick={() => { setShowContactMenu(false); handleContactAthlete(); }}
-                className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled ? "opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] active:bg-[#E63946]/[0.06]"}`}>
+                className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled || !contactable ? "opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] active:bg-[#E63946]/[0.06]"}`}>
                 <span className="w-10 h-10 rounded-lg bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[15px] font-bold text-white">Contacter l&apos;athlète</span>
-                  <span className="block text-[12px] text-[#6b7280]">{isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
+                  <span className="block text-[12px] text-[#6b7280]">{!contactable ? blackoutSortie(!!coachId) : isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
                 </span>
               </button>
             </div>

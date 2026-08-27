@@ -38,7 +38,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
-import { useAthleteContactable } from "@/lib/queries/recruiter/useAthleteContactable";
+import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1000,6 +1000,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
   const handleContactAthlete = () => {
     if (favButtonDisabled) return; // fav cap → can't favorite → can't contact
+    /* Silence RSEQ — defense en profondeur. Le bouton qui mene ici est deja
+       desactive ; ce test couvre le jour ou une AUTRE entree ouvrira la
+       feuille de contact. Sans lui, le clic part sur openAthleteThread() et
+       se fait refuser par le trigger (23514) au lieu d'etre explique. */
+    if (!contactable) return;
     setContactError(null);
     if (isFavorited) { void openAthleteThread(); return; }
     setShowFavContactPrompt(true);
@@ -1945,8 +1950,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             La cacher laisserait croire que la fonctionnalité n'existe pas. */}
         {!contactable && (
           <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24]/95 backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
-            {blackoutMsg}
-            {!coachId && " Cet athlète n'a pas d'entraîneur rattaché sur Nexus."}
+            {blackoutMsg}{" "}
+            {blackoutSortieCourt(!!coachId)}
           </p>
         )}
         {/* Mobile — full-width bar */}
@@ -2038,15 +2043,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   <span className="block text-[12px] text-[#6b7280]">{coachId ? "Écris à l’entraîneur de l’athlète" : "Aucun coach connecté pour cet athlète"}</span>
                 </span>
               </button>
-              <button type="button" disabled={contacting || favButtonDisabled}
+              {/* Silence RSEQ — `contactable` DOIT figurer ici. Le bouton
+                  principal bascule vers l'entraineur pendant une periode, mais
+                  cette feuille porte sa PROPRE entree vers l'athlete : sans ce
+                  test, elle reste cliquable et part droit sur le refus 23514
+                  du trigger. Le serveur bloquerait de toute facon — l'ecran ne
+                  doit pas laisser croire le contraire. */}
+              <button type="button" disabled={contacting || favButtonDisabled || !contactable}
                 onClick={() => { setShowContactMenu(false); handleContactAthlete(); }}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled ? "cursor-not-allowed opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] hover:border-[#E63946]/50 hover:bg-[#E63946]/[0.06]"}`}>
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled || !contactable ? "cursor-not-allowed opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] hover:border-[#E63946]/50 hover:bg-[#E63946]/[0.06]"}`}>
                 <span className="w-10 h-10 rounded-lg bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[14px] font-bold text-white">Contacter l&apos;athlète</span>
-                  <span className="block text-[12px] text-[#6b7280]">{isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
+                  <span className="block text-[12px] text-[#6b7280]">{!contactable ? blackoutSortie(!!coachId) : isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
                 </span>
               </button>
             </div>
