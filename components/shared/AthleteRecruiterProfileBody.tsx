@@ -1326,7 +1326,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6 pb-28 relative z-1">
+      {/* pb : le bandeau de restriction ajoute une rangée au bloc bas fixe.
+          Sans la réserver, les dernières sections finissent derrière lui. */}
+      <div className={`max-w-7xl mx-auto px-6 py-8 space-y-6 relative z-1 ${contactable ? "pb-28" : "pb-40"}`}>
 
         {/* ── Toggle (hidden for partner) + Completeness ────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1948,14 +1950,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* Période de restriction — même patron que « athlète sans coach » :
             l'action reste VISIBLE mais désactivée, et une phrase dit pourquoi.
             La cacher laisserait croire que la fonctionnalité n'existe pas. */}
+        {/* FONDS OPAQUES en viewport mobile — `/95 + backdrop-blur` laissait le
+            contenu transparaître à travers le bandeau et la barre, qui se
+            lisaient alors comme un calque flottant posé sur les sections du
+            bas plutôt que comme le socle de l'écran. Le contenu doit passer
+            DERRIÈRE, invisible. En `md:` la barre est une pilule flottante
+            détachée du bas de l'écran : là, le retrait translucide est voulu
+            et reste en place. */}
         {!contactable && (
-          <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24]/95 backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
+          <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24] md:bg-[#1A1D24]/95 md:backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
             {blackoutMsg}{" "}
             {blackoutSortieCourt(!!coachId)}
           </p>
         )}
         {/* Mobile — full-width bar */}
-        <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
+        <div className="md:hidden bg-[#111317] border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
           <button type="button" onClick={coachExit ? handleContactCoach : handleContactClick}
             disabled={coachExit ? contactingCoach : !contactable}
             title={coachExit ? "Écrire à l'entraîneur de cet athlète" : !contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
