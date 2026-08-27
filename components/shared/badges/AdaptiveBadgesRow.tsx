@@ -1,55 +1,62 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   AdaptiveBadgesRow — the 1/2/3/4/5 (2+2 on n=4, 3+2 on n=5) badges
-   layout extracted from AthleteRecruiterProfileBodyMobile.tsx:367-431.
+   AdaptiveBadgesRow — disposition des badges d'un athlète en rangées.
 
-   Layout :
-   - n = 1       → single centered badge
-   - n = 2/3     → single centered row, gap adapts (10/6)
-   - n = 4       → 2 on top + 2 on bottom, both rows centered
-                   (Sprint C fix : a 4-in-a-row layout at 88px badges
-                    + 20px gaps totals 412px, which overflows typical
-                    mobile content widths of 343-379px and visibly
-                    clipped the 4th label. Mirroring the n=5 two-row
-                    pattern keeps badge size + labels intact and
-                    matches the existing aesthetic for any badge count
-                    that needs more than 3 across.)
-   - n = 5       → 3 on top + 2 on bottom, both rows centered
+   ── UNE SEULE TAILLE, QUEL QUE SOIT LE NOMBRE ───────────────────
+   Avant : `sizeHint = n === 1 ? "lg" : "sm"`. Un badge seul s'affichait en
+   136 px, deux badges tombaient à 96 px. Le même badge changeait donc de
+   taille selon ses voisins — un athlète qui en gagnait un second voyait le
+   premier rapetisser. Décision : la taille du badge SEUL devient LA taille.
+   `sizeHint` vaut désormais toujours "lg", et il ne reste dans la signature
+   de `renderItem` que pour ne pas casser les appelants.
 
-   Optional staggered reveal :
-   - mounted=false OR i >= badgesRevealed  → opacity 0, scale 0.4
-   - revealed                              → opacity 1, scale 1
-   - transition : opacity 200ms ease-out,
-                  transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)
+   ── CONSÉQUENCE : DEUX PAR RANGÉE, PAS TROIS ────────────────────
+   La règle « jamais plus de 3 par rangée » était calibrée sur `sm`. Elle ne
+   survit pas au passage à `lg` :
 
-   Generic over the item type T. Caller supplies `renderItem`
-   to draw the visible content (a DistinctionBadge for athlete
-   profile, a ReputationBadgeCell for Ma Réputation, etc.). The
-   shared component owns the reveal wrapper, so the renderItem
-   returns only the inner content.
+       3 × 136 px + 2 × 24 px de gouttière = 456 px
+       largeur de contenu mobile courante   = 343-379 px   → débordement
 
-   The component is PURE — no fetching, no state.
+       2 × 136 px + 1 × 24 px               = 296 px       → tient
 
-   Byte-identical to the previous private BadgesRow inside
-   AthleteRecruiterProfileBodyMobile when invoked with the same
-   props : the wrapper div className, key, style, and gap classes
-   are preserved verbatim.
+   C'est le même calcul que celui qui avait fait passer n=4 de 4-en-ligne à
+   2+2 (4 × 88 + 3 × 20 = 412 px, la 4e étiquette se faisait rogner) ; seule
+   la largeur du badge a changé. Le coût est vertical : cinq badges occupent
+   trois rangées au lieu de deux. C'est le prix d'une taille constante.
+
+   ── UNE SEULE BRANCHE ───────────────────────────────────────────
+   Les cas n=1, 2/3, 4, 5 et ≥6 étaient taillés à la main, chacun avec ses
+   gouttières. Avec un maximum uniforme de 2, `repartirEnRangees` couvre tout :
+   plus de branches, plus de dispositions qui divergent en silence.
+
+   Révélation échelonnée optionnelle :
+   - mounted=false OU i >= badgesRevealed  → opacity 0, scale 0.4
+   - révélé                                → opacity 1, scale 1
+
+   Générique sur T : l'appelant fournit `renderItem` (un DistinctionBadge pour
+   la fiche athlète, un ReputationBadgeCell pour Ma Réputation). Le composant
+   ne possède que l'enveloppe de révélation.
+
+   PUR — aucun fetch, aucun état.
 ═══════════════════════════════════════════════════════════════ */
 
 import type { ReactNode } from "react";
 
+/** Maximum de badges par rangée. Fixé par la largeur de `lg` (136 px) face à
+ *  une largeur de contenu mobile de 343-379 px — voir le calcul en tête. */
+export const MAX_PAR_RANGEE = 2;
+
 export interface AdaptiveBadgesRowProps<T> {
   items: T[];
+  /** `sizeHint` vaut TOUJOURS "lg" depuis le passage à la taille unique.
+   *  Conservé dans la signature pour ne pas casser les appelants. */
   renderItem: (item: T, index: number, sizeHint: "lg" | "sm") => ReactNode;
-  /** Maximum items rendered (truncates beyond). Athlete profile
-   *  passes MAX_BADGES (5) ; coach reputation uses default 5. */
+  /** Maximum d'éléments rendus (tronque au-delà). */
   maxBadges?: number;
-  /** Stagger gate. When false, all items are hidden (opacity 0).
-   *  Defaults to true (skip staggered reveal, show immediately). */
+  /** Grille de révélation. À false, tout est masqué (opacity 0). */
   mounted?: boolean;
-  /** Reveal up to N items (i < badgesRevealed). Defaults to
-   *  items.length (all revealed at once). */
+  /** Révèle jusqu'à N éléments (i < badgesRevealed). Défaut : tous. */
   badgesRevealed?: number;
 }
 
@@ -65,7 +72,8 @@ export function AdaptiveBadgesRow<T>({
   const n = list.length;
   const revealedCount = badgesRevealed ?? n;
 
-  const sizeHint: "lg" | "sm" = n === 1 ? "lg" : "sm";
+  /* Taille CONSTANTE — ne plus la faire dépendre de `n`. C'était tout le bug. */
+  const sizeHint = "lg" as const;
 
   const renderWrapped = (item: T, i: number) => {
     const revealed = mounted && i < revealedCount;
@@ -85,98 +93,58 @@ export function AdaptiveBadgesRow<T>({
     );
   };
 
-  // N = 5 : 3 en haut, 2 en bas — les deux rangées centrées
-  // horizontalement, rangée du bas alignée sous le centre des
-  // 3 du haut pour un équilibre 3+2 visuellement propre.
-  if (n === 5) {
-    const top = list.slice(0, 3);
-    const bottom = list.slice(3, 5);
-    return (
-      <div className="flex flex-col items-center gap-y-3">
-        <div className="flex items-center justify-center gap-x-5">
-          {top.map((d, i) => renderWrapped(d, i))}
-        </div>
-        <div className="flex items-center justify-center gap-x-8">
-          {bottom.map((d, i) => renderWrapped(d, i + 3))}
-        </div>
-      </div>
-    );
-  }
+  /* Tranches PRÉCALCULÉES (début + taille) plutôt qu'un curseur muté dans le
+     `map`. L'ancienne version portait un `let curseur` réassigné pendant le
+     rendu — que `react-hooks` refuse, à raison : sous rendu concurrent, un
+     rendu interrompu puis repris laisserait le curseur à mi-chemin et les
+     rangées se découperaient de travers. */
+  const tranches = repartirEnRangees(n).reduce<{ debut: number; taille: number }[]>(
+    (acc, taille) => {
+      const precedente = acc[acc.length - 1];
+      acc.push({ debut: precedente ? precedente.debut + precedente.taille : 0, taille });
+      return acc;
+    },
+    [],
+  );
 
-  // N = 4 : 2 en haut, 2 en bas — same two-row pattern as n=5. A
-  // single 4-badge row at 88px badges + gap-x-5 (20px) totals 412px,
-  // which overflowed typical mobile content widths (343-379px) and
-  // visibly clipped the 4th label ("PROGRESSION MARQUÉE"). The 2+2
-  // layout fits any mobile width (2×88 + 1×32 = 208px), preserves
-  // badge size + labels, and aesthetically mirrors n=5's two-row
-  // shape.
-  if (n === 4) {
-    const top = list.slice(0, 2);
-    const bottom = list.slice(2, 4);
-    return (
-      <div className="flex flex-col items-center gap-y-3">
-        <div className="flex items-center justify-center gap-x-8">
-          {top.map((d, i) => renderWrapped(d, i))}
-        </div>
-        <div className="flex items-center justify-center gap-x-8">
-          {bottom.map((d, i) => renderWrapped(d, i + 2))}
-        </div>
-      </div>
-    );
-  }
-
-  // N >= 6 — depuis que les HONNEURS échappent au plafond (5 badges de
-  // sport/universels + un nombre libre d'honneurs), un athlète peut
-  // légitimement en porter 6 à 10. Les dispositions ci-dessus, taillées à la
-  // main, s'arrêtaient à 5 : au-delà, la rangée débordait.
-  //
-  // Règle : JAMAIS PLUS DE 3 PAR RANGÉE. Le commentaire de n=4 le mesure
-  // déjà — 4 badges de 88 px + 3 gouttières de 20 px font 412 px, au-delà
-  // des 343-379 px d'une largeur mobile courante, et la 4e étiquette se
-  // faisait rogner. Trois tiennent (3×88 + 2×24 = 312 px).
-  if (n >= 6) {
-    const rangees = repartirEnRangees(n);
-    let curseur = 0;
-    return (
-      <div className="flex flex-col items-center gap-y-3">
-        {rangees.map((taille, r) => {
-          const debut = curseur;
-          curseur += taille;
-          return (
-            <div key={r} className="flex items-center justify-center gap-x-6">
-              {list.slice(debut, debut + taille).map((d, i) => renderWrapped(d, debut + i))}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  // N = 1..3 — une seule rangée centrée, gap ajusté par count.
-  const gapCls =
-    n === 1 ? "" :
-    n === 2 ? "gap-x-10" :
-    "gap-x-6"; // n === 3
   return (
-    <div className={`flex items-center justify-center ${gapCls}`}>
-      {list.map((d, i) => renderWrapped(d, i))}
+    <div className="flex flex-col items-center gap-y-3">
+      {tranches.map(({ debut, taille }, r) => (
+        <div key={r} className="flex items-center justify-center gap-x-6">
+          {list.slice(debut, debut + taille).map((d, i) => renderWrapped(d, debut + i))}
+        </div>
+      ))}
     </div>
   );
 }
 
 /**
- * Découpe n badges en rangées de 3 au plus, sans jamais laisser une rangée
- * ORPHELINE d'un seul badge : 7 donne 3+2+2 et non 3+3+1, qui pendrait au
- * milieu du vide.
+ * Découpe n badges en rangées de `parRangee` au plus, SANS rangée orpheline
+ * en bas.
  *
- *   6 → 3+3     7 → 3+2+2     8 → 3+3+2     9 → 3+3+3     10 → 3+3+2+2
+ * Avec un maximum de 2, un nombre impair produit forcément une rangée de 1
+ * quelque part. On la met EN TÊTE, jamais en queue : un badge seul suspendu
+ * sous deux rangées pleines pend dans le vide (c'est ce que l'ancienne règle
+ * des rangées de 3 évitait déjà), alors qu'en tête il se lit comme une
+ * pyramide. L'ordre de lecture est préservé — badge 1 en haut, puis 2-3,
+ * puis 4-5 — ce qui compte, les badges étant ordonnés.
+ *
+ *   1 → 1        2 → 2        3 → 1+2
+ *   4 → 2+2      5 → 1+2+2    7 → 1+2+2+2
  */
-export function repartirEnRangees(n: number): number[] {
+export function repartirEnRangees(n: number, parRangee: number = MAX_PAR_RANGEE): number[] {
+  if (n <= 0) return [];
   const rangees: number[] = [];
-  for (let reste = n; reste > 0; reste -= 3) rangees.push(Math.min(3, reste));
-  if (rangees.length > 1 && rangees[rangees.length - 1] === 1) {
-    rangees[rangees.length - 2] -= 1;
-    rangees[rangees.length - 1] = 2;
+  let reste = n;
+
+  /* Le reliquat part en PREMIER. Sans ça il finirait en dernière rangée —
+     l'orpheline qu'on refuse. */
+  const reliquat = n % parRangee;
+  if (parRangee > 1 && n > parRangee && reliquat !== 0) {
+    rangees.push(reliquat);
+    reste -= reliquat;
   }
+
+  for (; reste > 0; reste -= parRangee) rangees.push(Math.min(parRangee, reste));
   return rangees;
 }

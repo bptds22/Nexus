@@ -20,14 +20,21 @@ import "@/components/badges/distinction-badges.css";
 interface Props {
   badge: string;
   detail?: string;
-  /** Explicit size — if omitted, auto-derives from `count` (sm when count >= 4, else lg).
+  /** Taille EXPLICITE. Omise, le badge est toujours `lg` — la taille ne
+   *  dépend plus du nombre de badges (voir effectiveSize plus bas).
    *  `xs` = rangée compacte 28 px : ni reflet ni onde (illisibles à cette taille). */
   size?: "xs" | "sm" | "lg";
   /**
-   * Total distinctions in the same row. When provided and `size`
-   * is not explicit, badges auto-shrink to "sm" at 4+ distinctions
-   * so they stay on a single row at typical container widths.
-   * Both /athlete/profil and the partner profile pass count.
+   * @deprecated N'A PLUS AUCUN EFFET.
+   *
+   * Il pilotait la taille (`count >= 6 → sm`) ; la taille est désormais
+   * constante. Le décalage de la frappe de déblocage suit `index` seul, pas
+   * `count` — vérifié : `(index ?? 0) * 80ms`.
+   *
+   * La prop est CONSERVÉE, et acceptée sans rien faire, pour ne pas casser
+   * les deux appelants qui la passent encore (/athlete/profil et la fiche
+   * partenaire). À retirer quand ils auront été nettoyés — pas avant, un
+   * changement de signature pour une prop inerte ne vaut pas un build cassé.
    */
   count?: number;
   index?: number;
@@ -93,7 +100,7 @@ function getBadgeLabel(
 }
 
 export default function DistinctionBadge({
-  badge, detail, size, count, index, attribueLe, unlock, libelle,
+  badge, detail, size, index, attribueLe, unlock, libelle,
 }: Props) {
   // La fraîcheur est calculée APRÈS montage, jamais au rendu serveur : le
   // build mobile est un export statique, un `Date.now()` évalué à la
@@ -132,13 +139,22 @@ export default function DistinctionBadge({
 
   const label = getBadgeLabel(badge, detail, config, libelle);
 
-  // Auto-derive size from count when no explicit size is passed.
-  // Explicit size always wins (back-compat).
-  /* Seuil de bascule remonté de 4 à 6. À 4, presque tous les athlètes
-     tombaient en `sm` : un porteur typique en a 4 à 7, donc la « grande »
-     taille ne servait quasiment jamais. 6 laisse respirer le cas courant et
-     ne compacte que les fiches réellement chargées. */
-  const effectiveSize: "xs" | "sm" | "lg" = size ?? (count !== undefined && count >= 6 ? "sm" : "lg");
+  /* ── LA TAILLE NE DÉPEND PLUS DU NOMBRE ───────────────────────
+     Il y avait ici un seuil : `count >= 6 → sm`, sinon `lg`. Combiné au
+     `n === 1 ? "lg" : "sm"` d'AdaptiveBadgesRow, un même badge changeait de
+     taille selon le nombre de ses voisins — un athlète qui en gagnait un
+     second voyait le premier rapetisser.
+
+     Décision : la taille du badge SEUL devient LA taille. `lg` par défaut,
+     toujours. Les deux surfaces qui passaient `count` (/athlete/profil et la
+     fiche partenaire) sont en conteneur `flex-wrap` : elles enroulent
+     naturellement au lieu de déborder, il n'y a donc rien à compenser.
+
+     `count` reste ACCEPTÉ en prop mais n a plus aucun effet (voir sa doc) :
+     le décalage de la frappe de déblocage suit `index` seul.
+     Une taille EXPLICITE gagne toujours : `xs` (rangée compacte 28 px) et
+     `sm` restent disponibles pour les appelants qui les demandent. */
+  const effectiveSize: "xs" | "sm" | "lg" = size ?? "lg";
 
   // Uniform outer tile + icon box so every badge occupies the same footprint
   // regardless of the SVG's natural aspect ratio.
