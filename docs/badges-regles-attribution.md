@@ -1,8 +1,14 @@
 # Badges — règles d'attribution et de retrait
 
-**Décidé le 2026-08-26 par BP.** Ce document est la trace qui manquait : jusqu'ici la
-règle n'existait que dans le corps d'une migration, appliquée en prod via MCP puis
-rapatriée au dépôt par `4b0159a`. Aucun commit de décision, aucune note produit.
+**Décidé le 2026-08-26 par BP, étendu le 2026-08-27.** Ce document est la trace qui
+manquait : jusqu'ici la règle n'existait que dans le corps d'une migration, appliquée
+en prod via MCP puis rapatriée au dépôt par `4b0159a`. Aucun commit de décision, aucune
+note produit.
+
+| Date | Décision | Migration |
+|---|---|---|
+| 2026-08-26 | l'administrateur retire **toute origine, tout auteur** | `20260826180000_badges_admin_retire_toute_origine` |
+| 2026-08-27 | `transposition` devient gérable par **tout coach du périmètre** | `20260827120000_badges_transposition_gerable_par_coach_perimetre` |
 
 ---
 
@@ -78,13 +84,59 @@ quelle ligne. Seule la clause de la RPC changeait quelque chose.
 
 ---
 
+## 2 bis. `transposition` sous la main du coach — **nouveau, 2026-08-27**
+
+Un badge d'origine `transposition` est désormais **gérable par tout coach du périmètre
+de l'athlète**, en plus de l'administrateur. Il peut le **retirer** comme le
+**reprendre**.
+
+**Pourquoi ce n'est pas un assouplissement de la partition.** La règle 1 protège un
+*jugement signé*. Or un `transposition` n'a pas d'auteur en ce sens : c'est une ligne
+reprise de l'ancien format lors de la bascule voie 2, et son `attribue_par` désigne le
+compte qui a **porté la migration**, pas un coach qui aurait décidé quoi que ce soit.
+Le traiter comme « le badge d'un collègue » revenait à faire respecter un choix que
+personne n'avait fait — et laissait le coach rattaché devant une ligne qu'il voyait,
+savait fausse, et ne pouvait pas corriger.
+
+**Ce qui ne bouge pas.** La partition par auteur reste **entière** pour `saisie` : le
+badge qu'un autre coach a posé délibérément reste verrouillé, pour exactement la raison
+d'avant. `suggestion` ne bouge pas non plus.
+
+**Le périmètre n'est pas retesté**, et c'est voulu : `appliquer_badges_saisie` s'ouvre
+déjà sur `if not (v_admin or coach_can_award_badge(p_athlete_id))`. Passé ce point, un
+appelant non-admin *est* un coach du périmètre (coach direct, `coach_can_manage_athlete`,
+ou même école). Réécrire ce test dans la clause du `UPDATE` en ferait une seconde
+implémentation, libre de diverger. Le `or ab.origine = 'transposition'` du retrait est
+juste **parce que** la porte d'entrée est gardée — toucher à cette porte, c'est toucher
+à ceci.
+
+> ⚠️ **Même piège que pour l'admin, un cran plus bas.** La portée du remplacement
+> s'élargit pour le coach, donc `p_entrees` doit désormais contenir les `transposition`
+> qu'il veut **conserver**. `chargerBadgesAthlete` les verse dans `miens` en mode
+> `saisie` pour cette raison précise. **Les deux changements ne se séparent pas** —
+> appliquer la migration sans le client, c'est effacer les `transposition` au premier
+> enregistrement d'un coach.
+
+**Prouvé en prod le 2026-08-27**, blocs avortés (`BEGIN … ROLLBACK`, 0 ligne touchée),
+sur Gabriel Mandziuk avec un coach de son école qui n'est l'auteur d'aucun de ses
+badges :
+
+| Sonde | Résultat |
+|---|---|
+| coach du périmètre, `p_entrees = []` | `transposition` retirée ✅ ; les 3 `saisie` du coach A **intactes** ✅ |
+| coach du périmètre, `p_entrees = [capitaine]` | conservée, **non requalifiée** en `saisie`, auteur d'origine gardé ✅ |
+| retirer puis recocher | ligne neuve en `saisie`, le coach devient le **véritable** auteur ✅ |
+| coach **hors** périmètre | refusé — `NEXUS: vous n'avez pas le droit d'attribuer des badges à cet athlète.` ✅ |
+
+---
+
 ## 3. Origines
 
 | `origine` | D'où ça vient | Qui peut retirer |
 |---|---|---|
 | `saisie` | picker coach / admin | son auteur, ou un admin |
 | `suggestion` | proposée par l'athlète, approuvée | chemin `appliquer_distinctions_suggerees`, ou un admin |
-| `transposition` | reprise de l'ancien `evaluations.distinctions` (migration du 25 août) | **un admin seulement** |
+| `transposition` | reprise de l'ancien `evaluations.distinctions` (migration du 25 août) | **tout coach du périmètre**, ou un admin — depuis le 2026-08-27 |
 
 Un badge conservé **garde son origine** : présent dans `p_entrees`, le `not exists` du
 retrait l'épargne et l'`INSERT` retombe sur `on conflict … do nothing`. Il n'est jamais
@@ -105,8 +157,13 @@ personne qui n'avait aucun pouvoir.
 - `Attribué par <prénom>` — partition par auteur (repli : « Attribué par quelqu'un
   d'autre » quand la RLS de `users` ne laisse pas lire le prénom, cas d'un auteur ADMIN
   vu par un coach) ;
-- `Historique (transposition)` ;
 - `Issu d'une suggestion de l'athlète`.
+
+**Depuis le 2026-08-27, `Historique (transposition)` a disparu du picker coach** : ces
+badges sont devenus éditables, ils quittent « Verrouillés » et redeviennent cochables et
+décochables. La raison reste écrite dans le code — elle sert encore au chemin
+**suggestion** (surfaces athlète), où `transposition` demeure hors de portée : élargir
+le droit du coach n'élargit pas celui de l'athlète.
 
 ---
 
@@ -132,6 +189,9 @@ en base, `badge_plafond` ne regarde pas qui a attribué. Afficher « 3/5 » quan
 en voit 5 ferait échouer l'enregistrement sans explication.
 
 Le nombre ne vient pas d'une règle métier : **5 badges tiennent sur une ligne au web**,
-et `AdaptiveBadgesRow` est bâti dessus. Depuis le 2026-08-26, la taille des badges est
-constante (`lg`, 136 px) et la disposition mobile passe à **2 par rangée** — le plafond,
-lui, ne change pas.
+et `AdaptiveBadgesRow` est bâti dessus. Depuis le 2026-08-26 la taille des badges est
+**constante** — un badge ne rétrécit plus quand un second arrive. Le 2026-08-27 cette
+taille unique passe de 136 à **110 px** et la gouttière de 24 à 6 px, ce qui rétablit
+**3 badges par rangée** sur mobile (`3 × 110 + 2 × 6 = 342 px ≤ 343 px`, la largeur utile
+d'un iPhone SE). Cinq badges se lisent donc **3 en haut, 2 dessous**. Le plafond, lui, ne
+change pas.

@@ -15,12 +15,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
 
 export interface BadgesAthlete {
-  /** Éditables par l'appelant : origine 'saisie' et attribués par lui
-   *  (ou tous ceux de saisie s'il est admin). C'est ce qui part dans
-   *  `value` du picker, et EXACTEMENT ce qui part dans la RPC. */
+  /** Éditables par l'appelant : ses propres badges de 'saisie', PLUS les
+   *  'transposition' de l'athlète (2026-08-27) — et tout, sans exception,
+   *  s'il est admin. C'est ce qui part dans `value` du picker, et
+   *  EXACTEMENT ce qui part dans la RPC. */
   miens: BadgeEntry[];
-  /** Montrés, pas édités : ceux d'un autre coach, ceux issus d'une
-   *  suggestion, ceux repris de l'ancien format. Ils comptent au plafond. */
+  /** Montrés, pas édités : le badge de 'saisie' d'un AUTRE coach, et ceux
+   *  issus d'une suggestion. Ils comptent au plafond. */
   autres: BadgeEntry[];
 }
 
@@ -183,26 +184,36 @@ export async function chargerBadgesAthlete(
     const e: BadgeEntry = { code: b.code, contexte: l.contexte, libelle: b.libelle };
     /* Le périmètre éditable dépend du CHEMIN, parce que chaque RPC borne le
        sien de la même façon :
-         · 'saisie'     → appliquer_badges_saisie. Pour un COACH : ses propres
-                          badges de saisie. Pour un ADMINISTRATEUR : TOUS les
-                          badges, toute origine — 'transposition' comprise
+         · 'saisie'     → appliquer_badges_saisie.
+                          COACH : ses propres badges de saisie, PLUS les
+                          'transposition' de l'athlète (décision BP du
+                          2026-08-27, migration 20260827120000). Un badge
+                          repris de l'ancien format n'a pas d'auteur à
+                          respecter — son `attribue_par` désigne le porteur
+                          de la migration, pas quelqu'un qui a décidé — donc
+                          le coach rattaché peut le reprendre ou le retirer.
+                          ADMINISTRATEUR : TOUS les badges, toute origine
                           (décision BP du 2026-08-26, migration
                           20260826180000_badges_admin_retire_toute_origine).
          · 'suggestion' → appliquer_distinctions_suggerees ne remplace que
                           les badges issus de suggestions. L'athlète n'en est
                           pas l'auteur — c'est l'approbateur — donc aucun
-                          test sur attribue_par ici.
+                          test sur attribue_par ici. 'transposition' y reste
+                          verrouillé : élargir le chemin coach n'élargit pas
+                          celui de l'athlète.
        Un badge posé par un coach n'est donc jamais retirable par une
        suggestion, et l'écran ne le laisse pas croire.
 
-       ⚠ LA BRANCHE ADMIN EST SOLIDAIRE DE LA MIGRATION. La RPC retire tout ce
-       que l'administrateur n'a PAS renvoyé dans `p_entrees` ; si cet écran
-       continuait de ne lui donner que les badges de saisie, le premier
-       enregistrement retirerait les 'transposition' et 'suggestion' sans
-       qu'il les ait jamais vus. Les deux changements ne se séparent pas. */
+       ⚠ CETTE LIGNE EST SOLIDAIRE DES DEUX MIGRATIONS. La RPC retire tout ce
+       que l'appelant n'a PAS renvoyé dans `p_entrees` ; si cet écran ne lui
+       donnait pas ce qu'il a désormais le droit de retirer, le premier
+       enregistrement l'effacerait sans qu'il l'ait jamais vu. Vrai pour
+       l'administrateur depuis le 26, vrai pour le COACH et les
+       'transposition' depuis le 27. Ces changements ne se séparent pas. */
     const editable = mode === "suggestion"
       ? l.origine === "suggestion"
-      : estAdmin || (l.origine === "saisie" && l.attribue_par === moi);
+      : estAdmin || l.origine === "transposition"
+        || (l.origine === "saisie" && l.attribue_par === moi);
 
     if (editable) {
       miens.push(e);
@@ -211,12 +222,17 @@ export async function chargerBadgesAthlete(
 
     /* NOMMER LE VERROU. Deux causes distinctes, longtemps confondues sous un
        unique « seul leur auteur peut les retirer » :
-         · l'ORIGINE — 'transposition' (repris de l'ancien format) ou
-           'suggestion' : aucun coach ne peut y toucher, pas même l'auteur de
-           la ligne. Seul un administrateur le peut.
+         · l'ORIGINE — 'suggestion' : le chemin de retrait est celui de la
+           suggestion, pas le picker.
          · l'AUTEUR — un badge de saisie posé par quelqu'un d'autre.
        Dire « son auteur » dans le premier cas envoyait chercher une personne
-       qui, elle non plus, ne pouvait rien faire. */
+       qui, elle non plus, ne pouvait rien faire.
+
+       La branche 'transposition' ci-dessous n'est plus atteinte en mode
+       'saisie' — ces badges sont passés dans `miens` le 2026-08-27. Elle
+       reste VIVANTE en mode 'suggestion', où ils demeurent verrouillés :
+       la supprimer y ferait afficher « Attribué par quelqu'un d'autre »,
+       qui renverrait l'athlète vers le porteur de la migration. */
     if (l.origine === "transposition") {
       e.raison = "Historique (transposition)";
     } else if (l.origine === "suggestion") {
@@ -256,9 +272,10 @@ export async function chargerBadgesAthlete(
  *   · EN OMETTRE les RETIRE. Vrai pour tout le monde, et redoutable pour un
  *     ADMINISTRATEUR depuis le 2026-08-26 : sa portée couvre désormais TOUTES
  *     les origines, donc un `miens` amputé des 'transposition' / 'suggestion'
- *     les effacerait. `chargerBadgesAthlete` les lui verse pour cette raison
- *     précise — les deux fonctions forment un contrat, ne pas en changer une
- *     seule.
+ *     les effacerait. Même piège pour un COACH depuis le 2026-08-27, sur les
+ *     'transposition' seuls. `chargerBadgesAthlete` verse à chacun ce qu'il
+ *     peut retirer pour cette raison précise — les deux fonctions forment un
+ *     contrat, ne pas en changer une seule.
  */
 export async function enregistrerBadgesSaisie(
   supabase: SupabaseClient,

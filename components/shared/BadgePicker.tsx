@@ -204,9 +204,11 @@ export default function BadgePicker({
         layout={layout}
       />
       {/* Plus de note collective ici : chaque tuile porte SA raison. L'ancienne
-          — « seul leur auteur peut les retirer » — était fausse une fois sur
-          deux : un badge d'origine 'transposition' n'est retirable par
-          personne d'autre qu'un administrateur, pas même par son auteur. */}
+          — « seul leur auteur peut les retirer » — n'a jamais couvert les deux
+          causes de verrou, et elle en couvre encore moins depuis que
+          'transposition' est sorti de cette section (2026-08-27) : ce qui y
+          reste est soit le badge de saisie d'un AUTRE coach, soit une
+          suggestion. Deux phrases différentes, portées par les tuiles. */}
       <SectionLectureSeule
         titre="Verrouillés"
         note=""
