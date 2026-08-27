@@ -16,7 +16,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useFiltresRecherche, usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
@@ -578,7 +579,25 @@ export function AthleteCardMobile({
     }
     lastTapRef.current = now;
     navTimerRef.current = setTimeout(() => {
-      try { sessionStorage.setItem("lastRecruiterTab", lastTabKey); } catch { /* no-op */ }
+      /* La QUERY part avec l'onglet, et pour la même raison que lui.
+         Le bouton Retour du profil ne fait pas `history.back()` : il
+         `router.push` vers un chemin RECONSTRUIT. Il reconstituait déjà la
+         bonne destination grâce à `lastRecruiterTab` — mais nue, sans
+         paramètres, donc les 21 filtres de la recherche mouraient là. Un
+         navigateur web ne le montrait pas : sa flèche Retour, elle, est un
+         vrai retour d'historique et restaure l'URL entière.
+
+         L'URL RESTE LA SOURCE DE VÉRITÉ. sessionStorage ne mémorise rien —
+         il TRANSPORTE la query à travers un bouton qui la perdait. Liens
+         collés, partage et web ne changent pas d'un octet.
+
+         Écrite et effacée dans le même souffle que `lastRecruiterTab` (le
+         profil fait les deux `removeItem` ensemble) : une query orpheline ne
+         peut donc pas ressurgir sur un onglet auquel elle n'appartient pas. */
+      try {
+        sessionStorage.setItem("lastRecruiterTab", lastTabKey);
+        sessionStorage.setItem("lastRecruiterQuery", window.location.search);
+      } catch { /* no-op */ }
       router.push(profileHref ?? `/recruteur/athletes/${a.id}`);
       navTimerRef.current = null;
     }, 300);
@@ -1068,7 +1087,6 @@ function EmptyState({ hasFilters, onReset }: { hasFilters: boolean; onReset: () 
 ═══════════════════════════════════════════════════════════════ */
 
 export function RecruteurRechercheMobile() {
-  const searchParams = useSearchParams();
   /* maxSearchResults n'est plus lu : la RPC ne plafonne plus (p_limit NULL).
      `tier` ne sert qu'à la portée du cache et au gel du champ de recherche
      par nom — jamais au masquage, tranché serveur par ligne. */
@@ -1082,42 +1100,60 @@ export function RecruteurRechercheMobile() {
   const { data: regionsArr = [] } = useRegions();
   const favorites = useMemo(() => new Set(favoritesArr), [favoritesArr]);
 
-  // Filter states
-  const [search, setSearch] = useState("");
-  const [sport, setSport] = useState("");
-  // Genre d'ÉQUIPE (teams.gender), PAS athletes.genre. teamGender arrive déjà
-  // mappé par useAthleteSearch (partagé avec le web) — ici il n'y a que l'UI.
-  const [genderFilter, setGenderFilter] = useState<string>("");
-  const [position, setPosition] = useState("");
-  const [promotion, setPromotion] = useState("");
-  const [region, setRegion] = useState("");
-  const [orgType, setOrgType] = useState("");
-  const [minGpa, setMinGpa] = useState("");
-  const [sortBy, setSortBy] = useState("rating_desc");
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [withVideoOnly, setWithVideoOnly] = useState(false);
-  const [minRating, setMinRating] = useState("");
-  const [withSportBadge, setWithSportBadge] = useState(false);
-  const [withAcademicBadge, setWithAcademicBadge] = useState(false);
-  const [hideFavorites, setHideFavorites] = useState(false);
-  const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
-  const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
+  /* ── LES 21 FILTRES VIVENT DANS L'URL ─────────────────────────
+     Même hook que l'écran web (`app/recruteur/recherche/page.tsx`) : un seul
+     schéma, un seul encodage, plus deux jeux d'états jumeaux voués à diverger.
+     Ils étaient en `useState` à défauts codés en dur ; `router.push` vers une
+     fiche démontait l'écran et les effaçait. Le hook les relit dans l'URL au
+     remontage — c'est ce qui fait survivre les filtres au retour natif de la
+     WebView, que Capacitor traite comme une vraie navigation arrière.
+     Les noms locaux sont préservés : ils partent en props vers les
+     sous-composants de filtre, qui n'ont pas à savoir d'où ils viennent. */
+  const { filtres, setFiltre, poserPlusieurs } = useFiltresRecherche();
+  const {
+    search, sport, genderFilter, position, region, promotion, orgType,
+    minGpa, minRating, sortBy, verifiedOnly, withVideoOnly, withSportBadge,
+    withAcademicBadge, hideFavorites, filterOuvertDemenager, filterOuvertPrive,
+    filterOuvertAnglophone, offertParMonCegep, filterNewOnly, progFilterIds,
+  } = filtres;
+
+  /* Adaptateurs de nom — aucun appel en forme fonctionnelle sur cet écran
+     (vérifié avant la bascule), `setFiltre` n'en accepte donc pas. */
+  const setSearch = useCallback((v: string) => setFiltre("search", v), [setFiltre]);
+  const setSport = useCallback((v: string) => setFiltre("sport", v), [setFiltre]);
+  const setGenderFilter = useCallback((v: string) => setFiltre("genderFilter", v), [setFiltre]);
+  const setPosition = useCallback((v: string) => setFiltre("position", v), [setFiltre]);
+  const setRegion = useCallback((v: string) => setFiltre("region", v), [setFiltre]);
+  const setPromotion = useCallback((v: string) => setFiltre("promotion", v), [setFiltre]);
+  const setOrgType = useCallback((v: string) => setFiltre("orgType", v), [setFiltre]);
+  const setMinGpa = useCallback((v: string) => setFiltre("minGpa", v), [setFiltre]);
+  const setMinRating = useCallback((v: string) => setFiltre("minRating", v), [setFiltre]);
+  const setSortBy = useCallback((v: string) => setFiltre("sortBy", v), [setFiltre]);
+  const setVerifiedOnly = useCallback((v: boolean) => setFiltre("verifiedOnly", v), [setFiltre]);
+  const setWithVideoOnly = useCallback((v: boolean) => setFiltre("withVideoOnly", v), [setFiltre]);
+  const setWithSportBadge = useCallback((v: boolean) => setFiltre("withSportBadge", v), [setFiltre]);
+  const setWithAcademicBadge = useCallback((v: boolean) => setFiltre("withAcademicBadge", v), [setFiltre]);
+  const setHideFavorites = useCallback((v: boolean) => setFiltre("hideFavorites", v), [setFiltre]);
+  const setFilterOuvertDemenager = useCallback((v: boolean) => setFiltre("filterOuvertDemenager", v), [setFiltre]);
+  const setFilterOuvertPrive = useCallback((v: boolean) => setFiltre("filterOuvertPrive", v), [setFiltre]);
+  const setFilterOuvertAnglophone = useCallback((v: boolean) => setFiltre("filterOuvertAnglophone", v), [setFiltre]);
+  const setOffertParMonCegep = useCallback((v: boolean) => setFiltre("offertParMonCegep", v), [setFiltre]);
+  const setProgFilterIds = useCallback((v: string[]) => setFiltre("progFilterIds", v), [setFiltre]);
+
   /* T2 — filtre par programme CÉGEP. Le picker rend des LIBELLÉS, la RPC
      filtre par PROGRAMME : la conversion passe par le catalogue. */
-  const [progFilterIds, setProgFilterIds] = useState<string[]>([]);
   const [progFilterOpen, setProgFilterOpen] = useState(false);
-  const [offertParMonCegep, setOffertParMonCegep] = useState(false);
   const { data: catalogueProg } = useCegepPrograms();
   const { data: monCegepAUnCatalogue = false } = useMonCegepOffreDesProgrammes();
   const progFilterProgramIds = [...new Set(
     (catalogueProg ?? []).filter((l) => progFilterIds.includes(l.id)).map((l) => l.programId))];
-  const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
-  const [filterNewOnly, setFilterNewOnly] = useState(searchParams?.get("nouveau") === "true");
 
   // UI states
   const [showFilters, setShowFilters] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  /* Préférence d'AFFICHAGE — localStorage, pas l'URL. Voir le jumeau web. */
+  const [viewMode, setViewMode] = usePreferenceLocale<"grid" | "list">(
+    "nexus:recherche:vue", "grid", ["grid", "list"] as const);
 
   const debouncedSearch = useDebouncedValue(search, 250);
   const { data: posData } = usePositionsBySport(sport || null);
@@ -1246,17 +1282,23 @@ export function RecruteurRechercheMobile() {
   ].filter(Boolean).length;
   const hasFilters = activeFiltersCount > 0 || search.length > 0;
 
+  /* PÉRIMÈTRE INCHANGÉ. Ce bouton ne vide NI `search` (l'écran le remet à zéro
+     séparément, voir EmptyState), NI `progFilterIds`, NI `offertParMonCegep` —
+     c'était déjà le cas avant la bascule vers l'URL, et ce n'est pas le
+     chantier des filtres persistants qui doit changer ça en douce. */
   const resetFilters = useCallback(() => {
-    setSport(""); setGenderFilter(""); setPosition(""); setPromotion(""); setRegion(""); setOrgType(""); setMinGpa("");
-    setSortBy("rating_desc");
-    setVerifiedOnly(false); setWithVideoOnly(false); setMinRating("");
-    setWithSportBadge(false); setWithAcademicBadge(false); setHideFavorites(false);
-    setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false);
-    setFilterNewOnly(false);
-  }, []);
+    poserPlusieurs({
+      sport: "", genderFilter: "", position: "", promotion: "", region: "", orgType: "", minGpa: "",
+      sortBy: "rating_desc",
+      verifiedOnly: false, withVideoOnly: false, minRating: "",
+      withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
+      filterOuvertDemenager: false, filterOuvertPrive: false, filterOuvertAnglophone: false,
+      filterNewOnly: false,
+    });
+  }, [poserPlusieurs]);
 
   // Reset position si sport change
-  useEffect(() => { setPosition(""); }, [sport]);
+  useEffect(() => { setPosition(""); }, [sport, setPosition]);
 
   // toggleFav avec invalidations TanStack + toast
   const toggleFav = async (id: string) => {

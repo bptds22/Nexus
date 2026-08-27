@@ -135,3 +135,43 @@ export function useAthleteContactable(athleteId: string | null | undefined) {
  *  sans la donnée serait une déduction du client, donc un risque de mentir. */
 export const BLACKOUT_MESSAGE =
   "Contact indisponible — période de restriction RSEQ en vigueur.";
+
+/**
+ * La phrase qui explique la PORTE DE SORTIE, pas la restriction.
+ *
+ * POURQUOI ELLE EXISTE. Pendant une période, le bouton principal bascule de
+ * « Contacter » vers « Écrire à son entraîneur » et RESTE actif — c'est la
+ * décision produit (le fil RECRUTEUR_COACH n'est pas suspendu, seul
+ * RECRUTEUR_ATHLETE l'est). Vu de l'écran, une bannière « contact suspendu »
+ * au-dessus d'un bouton actif se lit comme un blocage décoratif : le test
+ * device du 26 août a conclu exactement ça, à tort. La phrase dit donc ce qui
+ * est FERMÉ *et* ce qui reste OUVERT, dans le même souffle.
+ *
+ * DEUX FORMES, PAS UNE. Sans entraîneur rattaché, la première mentirait —
+ * elle enverrait vers une porte qui n'existe pas. `blackoutSortie()` choisit.
+ */
+export const BLACKOUT_SORTIE_COACH =
+  "Le contact direct est suspendu — tu peux écrire à son entraîneur.";
+
+export const BLACKOUT_SORTIE_SANS_COACH =
+  "Le contact direct est suspendu — cet athlète n'a pas d'entraîneur rattaché sur Nexus.";
+
+/** @param aUnCoach `!!coachId` — la porte de sortie n'existe que s'il y a un coach. */
+export function blackoutSortie(aUnCoach: boolean): string {
+  return aUnCoach ? BLACKOUT_SORTIE_COACH : BLACKOUT_SORTIE_SANS_COACH;
+}
+
+/**
+ * Forme COURTE, à n'utiliser QUE derrière un texte qui a déjà annoncé la
+ * suspension (l'encart de fiche, qui porte `blackoutMessageFiche` avec le
+ * libellé et la date). Y coller la phrase complète répéterait « contact
+ * suspendu » deux fois dans le même paragraphe.
+ *
+ * Ailleurs — feuille de contact, composeur de nouveau message — la phrase
+ * arrive SEULE : c'est `blackoutSortie()` qu'il faut, pas celle-ci.
+ */
+export function blackoutSortieCourt(aUnCoach: boolean): string {
+  return aUnCoach
+    ? "Tu peux écrire à son entraîneur."
+    : "Cet athlète n'a pas d'entraîneur rattaché sur Nexus.";
+}

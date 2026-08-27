@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useFiltresRecherche, usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
@@ -344,13 +344,24 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
 ═══════════════════════════════════════════════════════════════ */
 
 export default function RecherchePage() {
-  return <Suspense><RechercheContent /></Suspense>;
+  /* LA BASCULE CAPACITOR SE FAIT ICI, PAS DANS RechercheContent.
+     Elle y était placée AVANT le premier `useSearchParams()`, donc avant tous
+     les hooks du composant : un retour anticipé conditionnel devant des
+     hooks. Inoffensif en pratique — `IS_CAPACITOR` est une constante de
+     MODULE, l'ordre des hooks ne varie donc jamais d'un rendu à l'autre —
+     mais c'est une violation des règles des hooks que le prochain lecteur
+     prendra pour un motif autorisé, et qui casserait pour de bon le jour où
+     la condition deviendrait dynamique.
+     Le ternaire reste DANS le Suspense : les deux branches appellent
+     `useSearchParams()`, qui l'exige. */
+  return (
+    <Suspense>
+      {IS_CAPACITOR ? <RecruteurRechercheMobile /> : <RechercheContent />}
+    </Suspense>
+  );
 }
 
 function RechercheContent() {
-  if (IS_CAPACITOR) return <RecruteurRechercheMobile />;
-
-  const searchParams = useSearchParams();
   /* maxSearchResults n'est plus lu ici : le plafond de résultats est mort
      avec la bascule RPC (p_limit NULL = illimité, tous tiers confondus).
      `tier` sert encore à deux choses, aucune n'étant un test d'identité :
@@ -359,36 +370,66 @@ function RechercheContent() {
      neutralise p_search de son côté quoi qu'il arrive). */
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const isFreeRecruiter = tier === "free";
-  const [search, setSearch] = useState("");
-  const [sport, setSport] = useState("");
-  const [genderFilter, setGenderFilter] = useState<string>("");
-  const [position, setPosition] = useState("");
-  const [region, setRegion] = useState("");
-  const [promotion, setPromotion] = useState("");
-  const [orgType, setOrgType] = useState("");
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [withVideoOnly, setWithVideoOnly] = useState(false);
-  const [minRating, setMinRating] = useState("");
-  const [withSportBadge, setWithSportBadge] = useState(false);
-  const [withAcademicBadge, setWithAcademicBadge] = useState(false);
-  const [hideFavorites, setHideFavorites] = useState(false);
-  const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
-  const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
+  /* ── LES 21 FILTRES VIVENT DANS L'URL ─────────────────────────
+     Ils étaient 21 `useState` à défauts codés en dur : ouvrir une fiche
+     démontait l'écran et les effaçait tous. Le hook les lit dans l'URL au
+     montage et les y réécrit en différé (`router.replace`, 300 ms) — le
+     retour depuis une fiche les retrouve donc intacts, et un lien collé les
+     porte. Un seul lisait déjà l'URL (`?nouveau=true`) ; sa clé est
+     conservée telle quelle, des liens existants s'en servent.
+     Les noms locaux sont préservés pour ne pas toucher les ~200 usages en
+     aval — seule leur PROVENANCE change. */
+  const { filtres, setFiltre, poserPlusieurs } = useFiltresRecherche();
+  const {
+    search, sport, genderFilter, position, region, promotion, orgType,
+    minGpa, minRating, sortBy, verifiedOnly, withVideoOnly, withSportBadge,
+    withAcademicBadge, hideFavorites, filterOuvertDemenager, filterOuvertPrive,
+    filterOuvertAnglophone, offertParMonCegep, filterNewOnly, progFilterIds,
+  } = filtres;
+
+  /* Adaptateurs de nom. Aucun n'est appelé avec une forme fonctionnelle
+     (`setX(prev => …)`) — vérifié sur les deux écrans avant la bascule ;
+     `setFiltre` n'en accepte donc pas, volontairement. */
+  const setSearch = useCallback((v: string) => setFiltre("search", v), [setFiltre]);
+  const setSport = useCallback((v: string) => setFiltre("sport", v), [setFiltre]);
+  const setGenderFilter = useCallback((v: string) => setFiltre("genderFilter", v), [setFiltre]);
+  const setPosition = useCallback((v: string) => setFiltre("position", v), [setFiltre]);
+  const setRegion = useCallback((v: string) => setFiltre("region", v), [setFiltre]);
+  const setPromotion = useCallback((v: string) => setFiltre("promotion", v), [setFiltre]);
+  const setOrgType = useCallback((v: string) => setFiltre("orgType", v), [setFiltre]);
+  const setMinGpa = useCallback((v: string) => setFiltre("minGpa", v), [setFiltre]);
+  const setMinRating = useCallback((v: string) => setFiltre("minRating", v), [setFiltre]);
+  const setSortBy = useCallback((v: string) => setFiltre("sortBy", v), [setFiltre]);
+  const setVerifiedOnly = useCallback((v: boolean) => setFiltre("verifiedOnly", v), [setFiltre]);
+  const setWithVideoOnly = useCallback((v: boolean) => setFiltre("withVideoOnly", v), [setFiltre]);
+  const setWithSportBadge = useCallback((v: boolean) => setFiltre("withSportBadge", v), [setFiltre]);
+  const setWithAcademicBadge = useCallback((v: boolean) => setFiltre("withAcademicBadge", v), [setFiltre]);
+  const setHideFavorites = useCallback((v: boolean) => setFiltre("hideFavorites", v), [setFiltre]);
+  const setFilterOuvertDemenager = useCallback((v: boolean) => setFiltre("filterOuvertDemenager", v), [setFiltre]);
+  const setFilterOuvertPrive = useCallback((v: boolean) => setFiltre("filterOuvertPrive", v), [setFiltre]);
+  const setFilterOuvertAnglophone = useCallback((v: boolean) => setFiltre("filterOuvertAnglophone", v), [setFiltre]);
+  const setOffertParMonCegep = useCallback((v: boolean) => setFiltre("offertParMonCegep", v), [setFiltre]);
+  const setFilterNewOnly = useCallback((v: boolean) => setFiltre("filterNewOnly", v), [setFiltre]);
+  const setProgFilterIds = useCallback((v: string[]) => setFiltre("progFilterIds", v), [setFiltre]);
+
   /* T2 — filtre par programme CÉGEP. Le picker rend des LIBELLÉS ; la RPC
      filtre par PROGRAMME. La conversion se fait ici, via le catalogue. */
-  const [progFilterIds, setProgFilterIds] = useState<string[]>([]);
   const [progFilterOpen, setProgFilterOpen] = useState(false);
-  const [offertParMonCegep, setOffertParMonCegep] = useState(false);
   const { data: catalogueProg } = useCegepPrograms();
   const { data: monCegepAUnCatalogue = false } = useMonCegepOffreDesProgrammes();
   const progFilterProgramIds = [...new Set(
     (catalogueProg ?? []).filter((l) => progFilterIds.includes(l.id)).map((l) => l.programId))];
-  const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
-  const [filterNewOnly, setFilterNewOnly] = useState(searchParams.get("nouveau") === "true");
-  const [minGpa, setMinGpa] = useState("");
-  const [sortBy, setSortBy] = useState("rating_desc");
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  /* Préférences d'AFFICHAGE — localStorage, pas l'URL : elles ne changent pas
+     le jeu de résultats, et un lien partagé ne doit pas imposer la grille ou
+     la liste à celui qui le reçoit. */
+  const [viewMode, setViewMode] = usePreferenceLocale<"grid" | "list">(
+    "nexus:recherche:vue", "grid", ["grid", "list"] as const);
+  const [showAdvancedPref, setShowAdvancedPref] = usePreferenceLocale<"0" | "1">(
+    "nexus:recherche:avance", "0", ["0", "1"] as const);
+  const showAdvanced = showAdvancedPref === "1";
+  const setShowAdvanced = useCallback(
+    (v: boolean) => setShowAdvancedPref(v ? "1" : "0"), [setShowAdvancedPref]);
   // Migration TanStack (iter 5.3b) — états fetch-related délégués aux hooks.
   // Cache TanStack → navigation tab→Recherche instantanée avec mêmes filtres.
   const queryClient = useQueryClient();
@@ -435,7 +476,7 @@ function RechercheContent() {
   const loading = tierLoading || athletesLoading;
 
   // Reset position quand le sport change (legacy behavior)
-  useEffect(() => { if (!sport) setPosition(""); }, [sport]);
+  useEffect(() => { if (!sport) setPosition(""); }, [sport, setPosition]);
 
   // Ex mega-useEffect (main athlete query, 200+ lignes) retiré en iter 5.3b.
   // Ex useEffect load positions (lignes 586-613) retiré, remplacé par usePositionsBySport.
@@ -508,8 +549,19 @@ function RechercheContent() {
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
 
+  /* PÉRIMÈTRE INCHANGÉ. Ce bouton ne vide NI `search`, NI `progFilterIds`, NI
+     `offertParMonCegep` — c'était déjà le cas avant la bascule vers l'URL, et
+     ce n'est pas le chantier des filtres persistants qui doit changer ça en
+     douce. Jumeau exact du mobile. */
   const resetFilters = () => {
-    setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType(""); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setHideFavorites(false); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
+    poserPlusieurs({
+      sport: "", genderFilter: "", position: "", region: "", promotion: "", orgType: "",
+      minRating: "", minGpa: "", sortBy: "rating_desc",
+      verifiedOnly: false, withVideoOnly: false,
+      withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
+      filterOuvertDemenager: false, filterOuvertPrive: false, filterOuvertAnglophone: false,
+      filterNewOnly: false,
+    });
   };
 
   return (

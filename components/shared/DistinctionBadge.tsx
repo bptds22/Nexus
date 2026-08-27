@@ -20,14 +20,21 @@ import "@/components/badges/distinction-badges.css";
 interface Props {
   badge: string;
   detail?: string;
-  /** Explicit size — if omitted, auto-derives from `count` (sm when count >= 4, else lg).
+  /** Taille EXPLICITE. Omise, le badge est toujours `lg` — la taille ne
+   *  dépend plus du nombre de badges (voir effectiveSize plus bas).
    *  `xs` = rangée compacte 28 px : ni reflet ni onde (illisibles à cette taille). */
   size?: "xs" | "sm" | "lg";
   /**
-   * Total distinctions in the same row. When provided and `size`
-   * is not explicit, badges auto-shrink to "sm" at 4+ distinctions
-   * so they stay on a single row at typical container widths.
-   * Both /athlete/profil and the partner profile pass count.
+   * @deprecated N'A PLUS AUCUN EFFET.
+   *
+   * Il pilotait la taille (`count >= 6 → sm`) ; la taille est désormais
+   * constante. Le décalage de la frappe de déblocage suit `index` seul, pas
+   * `count` — vérifié : `(index ?? 0) * 80ms`.
+   *
+   * La prop est CONSERVÉE, et acceptée sans rien faire, pour ne pas casser
+   * les deux appelants qui la passent encore (/athlete/profil et la fiche
+   * partenaire). À retirer quand ils auront été nettoyés — pas avant, un
+   * changement de signature pour une prop inerte ne vaut pas un build cassé.
    */
   count?: number;
   index?: number;
@@ -93,7 +100,7 @@ function getBadgeLabel(
 }
 
 export default function DistinctionBadge({
-  badge, detail, size, count, index, attribueLe, unlock, libelle,
+  badge, detail, size, index, attribueLe, unlock, libelle,
 }: Props) {
   // La fraîcheur est calculée APRÈS montage, jamais au rendu serveur : le
   // build mobile est un export statique, un `Date.now()` évalué à la
@@ -132,31 +139,56 @@ export default function DistinctionBadge({
 
   const label = getBadgeLabel(badge, detail, config, libelle);
 
-  // Auto-derive size from count when no explicit size is passed.
-  // Explicit size always wins (back-compat).
-  /* Seuil de bascule remonté de 4 à 6. À 4, presque tous les athlètes
-     tombaient en `sm` : un porteur typique en a 4 à 7, donc la « grande »
-     taille ne servait quasiment jamais. 6 laisse respirer le cas courant et
-     ne compacte que les fiches réellement chargées. */
-  const effectiveSize: "xs" | "sm" | "lg" = size ?? (count !== undefined && count >= 6 ? "sm" : "lg");
+  /* ── LA TAILLE NE DÉPEND PLUS DU NOMBRE ───────────────────────
+     Il y avait ici un seuil : `count >= 6 → sm`, sinon `lg`. Combiné au
+     `n === 1 ? "lg" : "sm"` d'AdaptiveBadgesRow, un même badge changeait de
+     taille selon le nombre de ses voisins — un athlète qui en gagnait un
+     second voyait le premier rapetisser.
+
+     Décision : la taille du badge SEUL devient LA taille. `lg` par défaut,
+     toujours. Les deux surfaces qui passaient `count` (/athlete/profil et la
+     fiche partenaire) sont en conteneur `flex-wrap` : elles enroulent
+     naturellement au lieu de déborder, il n'y a donc rien à compenser.
+
+     `count` reste ACCEPTÉ en prop mais n a plus aucun effet (voir sa doc) :
+     le décalage de la frappe de déblocage suit `index` seul.
+     Une taille EXPLICITE gagne toujours : `xs` (rangée compacte 28 px) et
+     `sm` restent disponibles pour les appelants qui les demandent. */
+  const effectiveSize: "xs" | "sm" | "lg" = size ?? "lg";
 
   // Uniform outer tile + icon box so every badge occupies the same footprint
   // regardless of the SVG's natural aspect ratio.
-  /* La CELLULE reste etroite meme si la boite grandit. Elle ne sert qu'a
-     borner le retour a la ligne du libelle ; c'est elle, pas le picto, qui
-     decide si les 5 badges tiennent sur UNE ligne. La rangee de la fiche fait
-     852 px avec gap-9 : 5 x 152 + 4 x 36 = 904 px et le cinquieme tombait a la
-     ligne. A 136 : 5 x 136 + 4 x 36 = 824 px. La regle des 5 sur une ligne est
-     la raison d'etre du plafond (voir badge_plafond) — elle prime sur le
-     confort du libelle. */
-  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "sm" ? "w-[96px]" : "w-[136px]";
-  /* `lg` passe de 88 à 104 px. Le PICTO n'en occupe que 57,7 % : les SVG
-     « biseau » dessinent le glyphe sur ~150 unités d'un viewBox de 260, le
-     reste étant la marge où le halo déborde. À 104 px le picto visible fait
-     donc ~60 px — l'agrandissement du conteneur ne rend qu'une partie du
-     gain, et le vrai levier est la proportion dans le fichier. */
-  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "sm" ? "w-16 h-16" : "w-[104px] h-[104px]";
-  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]" : "text-[11px] max-w-[136px]";
+  /* ── 110 px, ET C'EST LA LARGEUR QUI DÉCIDE DE TOUT ──────────────
+     La cellule ne dessine rien : elle borne le retour à la ligne du libellé
+     et, surtout, elle fixe combien de badges tiennent par rangée.
+
+     136 px interdisaient TROIS par rangée sur mobile :
+         3 × 136 + 2 × 24 de gouttière = 456 px
+         largeur utile la plus étroite  = 375 − 32 (px-4) = 343 px
+
+     La disposition voulue est 3 en haut puis le reste (5 → 3+2). On a donc
+     resserré la gouttière D'ABORD — 24 → 6 px — puis rétréci la cellule
+     juste assez :
+         3 × 110 + 2 × 6 = 342 px ≤ 343 px      ← tient sur un iPhone SE/13 mini
+     116 px était hors d'atteinte quoi qu'il arrive : 3 × 116 = 348 px
+     déborde déjà avec une gouttière NULLE. 110 est le maximum réel.
+
+     UNE SEULE TAILLE PARTOUT — la règle tient : `lg` est la taille par
+     défaut, donc le badge SEUL rétrécit avec les autres. Un badge ne change
+     jamais de taille selon ses voisins.
+
+     La fiche web n'en souffre pas : sa rangée est `flex-wrap` en gap-9, et
+     5 × 110 + 4 × 36 = 694 px là où elle en avait 852. */
+  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "sm" ? "w-[96px]" : "w-[110px]";
+  /* 104 → 96. Le PICTO n'occupe que 57,7 % de la boîte : les SVG « biseau »
+     dessinent le glyphe sur ~150 unités d'un viewBox de 260, le reste étant
+     la marge où le halo déborde. Le glyphe visible passe donc de ~60 à
+     ~55 px — 8 % de moins, quasi imperceptible, là où la cellule en perd 19.
+     C'est l'écart cellule/picto qu'on a dépensé, pas le badge lui-même.
+     96 dans 110 laisse 7 px de part et d'autre : avec la gouttière de 6, les
+     pictos restent à 20 px les uns des autres et ne se touchent pas. */
+  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "sm" ? "w-16 h-16" : "w-[96px] h-[96px]";
+  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]" : "text-[11px] max-w-[110px]";
 
   /* 80 ms. Les etoiles de la carte sont CONTIGUES : un seul reflet les
      traverse toutes, la vague est dans le mouvement. Les badges sont separes

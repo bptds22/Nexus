@@ -38,7 +38,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
-import { useAthleteContactable } from "@/lib/queries/recruiter/useAthleteContactable";
+import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1000,6 +1000,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
   const handleContactAthlete = () => {
     if (favButtonDisabled) return; // fav cap → can't favorite → can't contact
+    /* Silence RSEQ — defense en profondeur. Le bouton qui mene ici est deja
+       desactive ; ce test couvre le jour ou une AUTRE entree ouvrira la
+       feuille de contact. Sans lui, le clic part sur openAthleteThread() et
+       se fait refuser par le trigger (23514) au lieu d'etre explique. */
+    if (!contactable) return;
     setContactError(null);
     if (isFavorited) { void openAthleteThread(); return; }
     setShowFavContactPrompt(true);
@@ -1321,7 +1326,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6 pb-28 relative z-1">
+      {/* pb : le bandeau de restriction ajoute une rangée au bloc bas fixe.
+          Sans la réserver, les dernières sections finissent derrière lui. */}
+      <div className={`max-w-7xl mx-auto px-6 py-8 space-y-6 relative z-1 ${contactable ? "pb-28" : "pb-40"}`}>
 
         {/* ── Toggle (hidden for partner) + Completeness ────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1943,14 +1950,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* Période de restriction — même patron que « athlète sans coach » :
             l'action reste VISIBLE mais désactivée, et une phrase dit pourquoi.
             La cacher laisserait croire que la fonctionnalité n'existe pas. */}
+        {/* FONDS OPAQUES en viewport mobile — `/95 + backdrop-blur` laissait le
+            contenu transparaître à travers le bandeau et la barre, qui se
+            lisaient alors comme un calque flottant posé sur les sections du
+            bas plutôt que comme le socle de l'écran. Le contenu doit passer
+            DERRIÈRE, invisible. En `md:` la barre est une pilule flottante
+            détachée du bas de l'écran : là, le retrait translucide est voulu
+            et reste en place. */}
         {!contactable && (
-          <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24]/95 backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
-            {blackoutMsg}
-            {!coachId && " Cet athlète n'a pas d'entraîneur rattaché sur Nexus."}
+          <p className="md:max-w-[320px] md:ml-auto md:mb-2 bg-[#1A1D24] md:bg-[#1A1D24]/95 md:backdrop-blur-sm border-t md:border border-[#2D3748] md:rounded-xl px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]">
+            {blackoutMsg}{" "}
+            {blackoutSortieCourt(!!coachId)}
           </p>
         )}
         {/* Mobile — full-width bar */}
-        <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
+        <div className="md:hidden bg-[#111317] border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
           <button type="button" onClick={coachExit ? handleContactCoach : handleContactClick}
             disabled={coachExit ? contactingCoach : !contactable}
             title={coachExit ? "Écrire à l'entraîneur de cet athlète" : !contactable ? blackoutMsg : contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
@@ -2038,15 +2052,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   <span className="block text-[12px] text-[#6b7280]">{coachId ? "Écris à l’entraîneur de l’athlète" : "Aucun coach connecté pour cet athlète"}</span>
                 </span>
               </button>
-              <button type="button" disabled={contacting || favButtonDisabled}
+              {/* Silence RSEQ — `contactable` DOIT figurer ici. Le bouton
+                  principal bascule vers l'entraineur pendant une periode, mais
+                  cette feuille porte sa PROPRE entree vers l'athlete : sans ce
+                  test, elle reste cliquable et part droit sur le refus 23514
+                  du trigger. Le serveur bloquerait de toute facon — l'ecran ne
+                  doit pas laisser croire le contraire. */}
+              <button type="button" disabled={contacting || favButtonDisabled || !contactable}
                 onClick={() => { setShowContactMenu(false); handleContactAthlete(); }}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled ? "cursor-not-allowed opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] hover:border-[#E63946]/50 hover:bg-[#E63946]/[0.06]"}`}>
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled || !contactable ? "cursor-not-allowed opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] hover:border-[#E63946]/50 hover:bg-[#E63946]/[0.06]"}`}>
                 <span className="w-10 h-10 rounded-lg bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[14px] font-bold text-white">Contacter l&apos;athlète</span>
-                  <span className="block text-[12px] text-[#6b7280]">{isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
+                  <span className="block text-[12px] text-[#6b7280]">{!contactable ? blackoutSortie(!!coachId) : isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
                 </span>
               </button>
             </div>

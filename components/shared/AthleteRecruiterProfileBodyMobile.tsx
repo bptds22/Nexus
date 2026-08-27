@@ -42,7 +42,7 @@ import { useGrilles } from "@/lib/evaluations/useGrilles";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
-import { useAthleteContactable } from "@/lib/queries/recruiter/useAthleteContactable";
+import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
@@ -1583,6 +1583,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [showFavContactPrompt, setShowFavContactPrompt] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
 
+  /* Période de restriction RSEQ — UI dormante, jumelle du desktop. Testée
+     AVANT le verrou de palier : une restriction de ligue n'est pas une
+     fonctionnalité à vendre. */
+  /* `message` porte desormais le libelle de la periode et la date de
+     reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
+  /* ⚠ DÉCLARÉ ICI, PAS PLUS BAS — et ce n'est pas cosmétique. handleContactAthlete
+     (juste dessous) porte `contactable` dans son tableau de dépendances, or ce
+     tableau est évalué PENDANT le rendu. Laisser le hook sous le useCallback
+     levait un ReferenceError de zone morte temporelle (`Cannot access
+     'contactable' before initialization`) au premier rendu de chaque fiche.
+     Toute réorganisation de ce fichier doit garder cet appel au-dessus. */
+  const { contactable, message: blackoutMsg } = useAthleteContactable(id);
+
   const openAthleteThread = useCallback(async () => {
     if (!a) return;
     setContactingAthlete(true);
@@ -1595,10 +1608,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   const handleContactAthlete = useCallback(() => {
     if (favButtonDisabled || contactingAthlete) return;
+    /* Silence RSEQ — defense en profondeur, jumelle du desktop. Le bouton qui
+       mene ici est deja desactive ; ce test couvre le jour ou une AUTRE entree
+       ouvrira la feuille de contact. Sans lui, le clic se fait refuser par le
+       trigger (23514) au lieu d'etre explique. */
+    if (!contactable) return;
     triggerHaptic("Medium");
     if (isFavorited) { void openAthleteThread(); return; }
     setShowFavContactPrompt(true);
-  }, [favButtonDisabled, contactingAthlete, isFavorited, openAthleteThread]);
+  }, [favButtonDisabled, contactingAthlete, contactable, isFavorited, openAthleteThread]);
 
   const favoriteAndContact = useCallback(async () => {
     await toggleFav();
@@ -1789,12 +1807,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     setShowContactMenu(true);
   };
 
-  /* Période de restriction RSEQ — UI dormante, jumelle du desktop. Testée
-     AVANT le verrou de palier : une restriction de ligue n'est pas une
-     fonctionnalité à vendre. */
-  /* `message` porte desormais le libelle de la periode et la date de
-     reprise ; il retombe sur BLACKOUT_MESSAGE si la periode est inconnue. */
-  const { contactable, message: blackoutMsg } = useAthleteContactable(id);
   /* PORTE DE SORTIE pendant un silence RSEQ. Le contact direct est ferme,
      mais RECRUTEUR_COACH ne l'est pas : on bascule le bouton principal vers
      l'entraineur plutot que de laisser une action desactivee qui n'apporte
@@ -2000,6 +2012,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             let dest = "/recruteur/recherche";
             try {
               const last = sessionStorage.getItem("lastRecruiterTab");
+              /* La query de l'écran d'origine, posée en même temps que
+                 `last`. Ce `push` n'est PAS un `history.back()` : il
+                 reconstruit la destination, et la reconstruisait nue — d'où
+                 des filtres de recherche réinitialisés à chaque aller-retour
+                 sur mobile, là où la flèche du navigateur les rendait au web.
+                 Lue seulement si `last` existe : les deux clés sont écrites
+                 et effacées ensemble, donc une query sans onglet serait un
+                 résidu, jamais une intention. */
+              const qs = last ? sessionStorage.getItem("lastRecruiterQuery") ?? "" : "";
               if (last === "pipeline") dest = "/recruteur/pipeline";
               else if (last === "favoris") dest = "/recruteur/favoris";
               else if (last === "listes") dest = "/recruteur/listes";
@@ -2010,7 +2031,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 const id = last.slice("list-detail:".length);
                 if (id) dest = `/recruteur/listes/${id}`;
               }
+              if (qs) dest += qs;
               sessionStorage.removeItem("lastRecruiterTab");
+              sessionStorage.removeItem("lastRecruiterQuery");
             } catch { /* no-op */ }
             router.push(dest);
           }}
@@ -2423,12 +2446,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           Iter 7.8b Section B BUG FIX : padding-bottom élargi pour dégager la
           sticky action bar "Contacter le coach" (hauteur réelle ~72px) + tab
           bar (64px) + safe-area + buffer 16px. Avant : 56+64+safe = trop court,
-          le bas du contenu Détaillé passait SOUS la barre fixe. */}
+          le bas du contenu Détaillé passait SOUS la barre fixe.
+
+          Le terme `bandeau` : pendant une période de silence, le bloc bas
+          gagne une rangée (~40px). Sans elle dans le calcul, les dernières
+          sections — faits saillants, régions CÉGEP — restaient coincées
+          DERRIÈRE le bandeau, inatteignables au scroll. Vaut pour les deux
+          modes, Simplifié comme Détaillé : ils partagent ce conteneur. */}
       <div
         key={tabFadeKey}
         className="px-4 pt-5 space-y-6"
         style={{
-          paddingBottom: "calc(80px + 72px + 24px + env(safe-area-inset-bottom))",
+          paddingBottom: `calc(80px + 72px + 24px + ${contactable ? "0px" : "40px"} + env(safe-area-inset-bottom))`,
           animation: "nx-tab-fade 200ms ease-out",
         }}
       >
@@ -2973,93 +3002,98 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           Portal échappe au containing block de l'ancêtre transform.
           RECRUITER-ONLY (Step 6 gate) — coach a sa propre barre "Modifier le profil"
           rendue plus bas. */}
-      {/* Période de restriction RSEQ — bandeau posé AU-DESSUS de la barre
-          d'action, en bloc distinct : la barre est une rangée flex, y glisser
-          un paragraphe l'aurait déformée. Même message que le desktop, même
-          patron que « athlète sans coach » (action visible mais désactivée,
-          et une phrase qui dit pourquoi). */}
-      {isRecruiter && mounted && !contactable && typeof document !== "undefined" && createPortal(
+      {/* Période de restriction RSEQ — le bandeau est DANS le bloc bas, pas
+          au-dessus de lui.
+
+          AVANT : deux portails distincts, le bandeau en `fixed` à
+          `bottom: safe + 142px`, pilule arrondie à fond translucide
+          (rgba .92 + backdrop-blur) séparée de la barre par une bande
+          transparente. Résultat sur device : le bandeau FLOTTAIT au milieu
+          de l'écran, le contenu défilait à travers lui et de chaque côté
+          (px-3), et il recouvrait les dernières sections (faits saillants,
+          régions CÉGEP) que le padding-bas du scroll n'avait pas dégagées.
+
+          MAINTENANT : un seul portail, une seule colonne, un seul fond
+          OPAQUE (#111317 — plus de rgba ni de blur : le contenu doit
+          disparaître derrière, pas transparaître). Le bandeau est une
+          rangée pleine largeur collée au-dessus de la rangée de boutons ;
+          les deux glissent ensemble (un seul transform, plus de risque de
+          désynchronisation entre les deux animations).
+
+          Le conteneur est une COLONNE : la rangée de boutons garde son
+          propre `flex` interne, donc y ajouter un paragraphe ne la déforme
+          plus — c'était la raison d'être du bloc distinct. */}
+      {isRecruiter && mounted && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed left-0 right-0 z-30 px-3"
+          className="fixed left-0 right-0 z-30"
           style={{
-            bottom: "calc(env(safe-area-inset-bottom) + 142px)",
+            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
+            backgroundColor: "#111317",
+            borderTop: "0.5px solid rgba(255,255,255,0.08)",
+            /* 160 et non 120 : le bloc est plus haut quand le bandeau est
+               là. La barre d'onglets (z-40) le recouvre en fin de course. */
             transform: `translateY(${actionBarVisible && !showFlagModal && !showActionSheet ? 0 : 160}px)`,
             transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          <p
-            className="rounded-xl px-3.5 py-2.5 text-[12px] leading-snug text-[#F59E0B]"
-            style={{
-              backgroundColor: "rgba(26,29,36,0.92)",
-              backdropFilter: "blur(20px) saturate(180%)",
-              WebkitBackdropFilter: "blur(20px) saturate(180%)",
-              border: "0.5px solid rgba(245,158,11,0.32)",
-            }}
-          >
-            {blackoutMsg}
-            {!coachId && " Cet athlète n'a pas d'entraîneur rattaché sur Nexus."}
-          </p>
-        </div>,
-        document.body,
-      )}
-
-      {isRecruiter && mounted && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed left-0 right-0 z-30 px-3 py-2.5 flex items-center gap-2"
-          style={{
-            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
-            backgroundColor: "rgba(17,19,23,0.85)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            borderTop: "0.5px solid rgba(255,255,255,0.08)",
-            transform: `translateY(${actionBarVisible && !showFlagModal && !showActionSheet ? 0 : 120}px)`,
-            transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={coachExit ? () => { void handleContactCoach(); } : handleContactClick}
-            disabled={coachExit ? contactingCoach : !contactable}
-            className="disabled:opacity-40 flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
-          >
-            {contactLocked ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-              </svg>
-            )}
-            {coachExit ? (contactingCoach ? "Ouverture…" : "Écrire à son entraîneur") : "Contacter"}
-          </button>
-          {/* Iter 7.23 Sprint 4 — bouton "Ajouter à une liste" (PRO-only).
-              Icône liste-avec-+ pour signaler l'action d'ajout. Tap → ouvre
-              AddToListSheet (réutilise useRecruiterLists + checkboxes
-              pré-cochées via useAthleteListMembership). */}
-          {canCustomLists && (
+          {!contactable && (
+            <p
+              className="px-4 py-2.5 text-[12px] leading-snug text-[#F59E0B]"
+              style={{
+                backgroundColor: "#1A1D24",
+                borderBottom: "0.5px solid rgba(245,158,11,0.32)",
+              }}
+            >
+              {blackoutMsg}{" "}
+              {blackoutSortieCourt(!!coachId)}
+            </p>
+          )}
+          <div className="px-3 py-2.5 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => { triggerHaptic("Light"); setAddToListOpen(true); }}
-              aria-label="Ajouter à une liste"
-              className="w-12 h-12 rounded-2xl flex items-center justify-center border bg-[#1A1D24] border-[#2D3748] text-white active:bg-white/[0.06] transition-colors flex-shrink-0"
+              onClick={coachExit ? () => { void handleContactCoach(); } : handleContactClick}
+              disabled={coachExit ? contactingCoach : !contactable}
+              className="disabled:opacity-40 flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h13" /><path d="M3 12h13" /><path d="M3 18h9" />
-                <line x1="18" y1="15" x2="18" y2="21" /><line x1="15" y1="18" x2="21" y2="18" />
-              </svg>
+              {contactLocked ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                </svg>
+              )}
+              {coachExit ? (contactingCoach ? "Ouverture…" : "Écrire à son entraîneur") : "Contacter"}
             </button>
-          )}
-          <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${favButtonDisabled ? "opacity-40" : ""} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}
-            title={favButtonDisabled ? favDisabledTitle : undefined}
-          >
-            <HeartButton
-              isFavorited={isFavorited}
-              onToggle={toggleFav}
-              size="md"
-              disabled={favButtonDisabled}
-            />
+            {/* Iter 7.23 Sprint 4 — bouton "Ajouter à une liste" (PRO-only).
+                Icône liste-avec-+ pour signaler l'action d'ajout. Tap → ouvre
+                AddToListSheet (réutilise useRecruiterLists + checkboxes
+                pré-cochées via useAthleteListMembership). */}
+            {canCustomLists && (
+              <button
+                type="button"
+                onClick={() => { triggerHaptic("Light"); setAddToListOpen(true); }}
+                aria-label="Ajouter à une liste"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center border bg-[#1A1D24] border-[#2D3748] text-white active:bg-white/[0.06] transition-colors flex-shrink-0"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h13" /><path d="M3 12h13" /><path d="M3 18h9" />
+                  <line x1="18" y1="15" x2="18" y2="21" /><line x1="15" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+            )}
+            <div
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${favButtonDisabled ? "opacity-40" : ""} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}
+              title={favButtonDisabled ? favDisabledTitle : undefined}
+            >
+              <HeartButton
+                isFavorited={isFavorited}
+                onToggle={toggleFav}
+                size="md"
+                disabled={favButtonDisabled}
+              />
+            </div>
           </div>
         </div>,
         document.body,
@@ -3085,15 +3119,20 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   <span className="block text-[12px] text-[#6b7280]">{coachId ? "Écris à l’entraîneur de l’athlète" : "Aucun coach connecté pour cet athlète"}</span>
                 </span>
               </button>
-              <button type="button" disabled={contactingAthlete || favButtonDisabled}
+              {/* Silence RSEQ — `contactable` DOIT figurer ici. Le bouton
+                  principal bascule vers l'entraineur pendant une periode, mais
+                  cette feuille porte sa PROPRE entree vers l'athlete : sans ce
+                  test, elle reste cliquable et part droit sur le refus 23514
+                  du trigger. Jumelle exacte du desktop. */}
+              <button type="button" disabled={contactingAthlete || favButtonDisabled || !contactable}
                 onClick={() => { setShowContactMenu(false); handleContactAthlete(); }}
-                className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled ? "opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] active:bg-[#E63946]/[0.06]"}`}>
+                className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled || !contactable ? "opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] active:bg-[#E63946]/[0.06]"}`}>
                 <span className="w-10 h-10 rounded-lg bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[15px] font-bold text-white">Contacter l&apos;athlète</span>
-                  <span className="block text-[12px] text-[#6b7280]">{isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
+                  <span className="block text-[12px] text-[#6b7280]">{!contactable ? blackoutSortie(!!coachId) : isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
                 </span>
               </button>
             </div>

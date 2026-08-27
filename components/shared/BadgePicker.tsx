@@ -94,6 +94,27 @@ export default function BadgePicker({
     [autresBadges, cat],
   );
 
+  const autresParCode = useMemo(
+    () => new Map(autresBadges.map((e) => [e.code, e])), [autresBadges],
+  );
+
+  /* ── LE CONFLIT SILENCIEUX ────────────────────────────────────
+     Un badge déjà attribué par quelqu'un d'autre restait COCHABLE dans la
+     grille. Le coach le cochait, enregistrait, et… rien : la RPC finit sur
+     `on conflict (athlete_id, badge_id, contexte) … do nothing`, l'index
+     unique partiel refusant un doublon vivant. Aucune erreur, aucun message,
+     et le badge continuait de s'afficher au nom de l'autre. Le coach croyait
+     l'avoir attribué.
+     On verrouille donc la tuile EN AMONT, avec la raison — « Déjà attribué
+     par Marc » — plutôt que de laisser un enregistrement sans effet. */
+  const verrouParCode = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const e of autresBadges) {
+      m.set(e.code, e.raison ? `Déjà — ${e.raison.toLowerCase()}` : "Déjà attribué par quelqu'un d'autre");
+    }
+    return m;
+  }, [autresBadges]);
+
   const basculer = useCallback((b: BadgeCatalogueEntry) => {
     if (disabled) return;
     if (parCode.has(b.code)) {
@@ -163,7 +184,8 @@ export default function BadgePicker({
                   entree={parCode.get(b.code)}
                   layout={layout}
                   accent={accent}
-                  desactive={disabled || (!parCode.has(b.code) && !peutAjouter(comptes))}
+                  desactive={disabled || verrouParCode.has(b.code) || (!parCode.has(b.code) && !peutAjouter(comptes))}
+                  raisonVerrou={verrouParCode.get(b.code)}
                   onBasculer={() => toucher(b)}
                   onContexte={(t) => majContexte(b, t)}
                   contexteEnLigne={!onEditerContexte}
@@ -181,11 +203,17 @@ export default function BadgePicker({
         parCode={parCode}
         layout={layout}
       />
+      {/* Plus de note collective ici : chaque tuile porte SA raison. L'ancienne
+          — « seul leur auteur peut les retirer » — n'a jamais couvert les deux
+          causes de verrou, et elle en couvre encore moins depuis que
+          'transposition' est sorti de cette section (2026-08-27) : ce qui y
+          reste est soit le badge de saisie d'un AUTRE coach, soit une
+          suggestion. Deux phrases différentes, portées par les tuiles. */}
       <SectionLectureSeule
-        titre="Attribués par quelqu'un d'autre"
-        note="seul leur auteur peut les retirer"
+        titre="Verrouillés"
+        note=""
         badges={autresResolus}
-        parCode={new Map(autresBadges.map((e) => [e.code, e]))}
+        parCode={autresParCode}
         layout={layout}
       />
 
@@ -214,8 +242,14 @@ function SectionLectureSeule({
   titre, note, badges, parCode, layout,
 }: {
   titre: string;
+  /** Sous-titre de SECTION. Laisser vide quand chaque tuile porte sa propre
+   *  raison — une note générale au-dessus de raisons individuelles qui la
+   *  contredisent est pire que pas de note du tout. */
   note: string;
   badges: BadgeCatalogueEntry[];
+  /** `raison` de chaque entrée, quand elle existe, est affichée SOUS le
+   *  libellé de sa tuile. C'est ce qui remplace le « seul leur auteur peut les
+   *  retirer » collectif, faux pour les origines 'transposition'. */
   parCode: Map<string, BadgeEntry>;
   layout: "tuiles" | "rangees";
 }) {
@@ -226,18 +260,20 @@ function SectionLectureSeule({
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6b7280]">
           {titre}
         </p>
-        <span className="text-[10px] text-[#4a4d56] italic">{note}</span>
+        {note && <span className="text-[10px] text-[#4a4d56] italic">{note}</span>}
       </div>
       <div className={layout === "tuiles"
         ? "grid grid-cols-2 sm:grid-cols-3 gap-3"
         : "space-y-1.5"}>
         {badges.map((b, i) => {
-          const contexte = parCode.get(b.code)?.contexte;
+          const entree = parCode.get(b.code);
+          const contexte = entree?.contexte;
+          const raison = entree?.raison;
           return (
             <div
               key={b.code}
               className="border border-[#2a2d36] rounded-lg bg-white/[0.02] opacity-60"
-              title="Lecture seule"
+              title={raison ?? "Lecture seule"}
             >
               <div className={layout === "tuiles"
                 ? "flex flex-col items-center gap-2 px-3 py-4 text-center"
@@ -248,6 +284,15 @@ function SectionLectureSeule({
               {contexte && (
                 <p className={`text-[11px] text-[#6b7280] pb-3 ${layout === "tuiles" ? "px-3 text-center" : "px-3 pl-10"}`}>
                   {contexte}
+                </p>
+              )}
+              {/* LA RAISON, PAR TUILE. Chaque badge verrouillé dit POURQUOI il
+                  l'est — « Attribué par Marc » n'est pas « Historique
+                  (transposition) », et l'ancienne note collective donnait la
+                  première réponse aux deux cas. */}
+              {raison && (
+                <p className={`text-[10px] italic text-[#6b7280] pb-3 ${layout === "tuiles" ? "px-3 text-center" : "px-3 pl-10"}`}>
+                  {raison}
                 </p>
               )}
             </div>
@@ -261,7 +306,7 @@ function SectionLectureSeule({
 /* ── Une tuile, ou une rangée ───────────────────────────────── */
 
 function Tuile({
-  badge, entree, layout, accent, desactive, onBasculer, onContexte,
+  badge, entree, layout, accent, desactive, raisonVerrou, onBasculer, onContexte,
   contexteEnLigne, index,
 }: {
   badge: BadgeCatalogueEntry;
@@ -271,6 +316,10 @@ function Tuile({
   layout: "tuiles" | "rangees";
   accent: string;
   desactive: boolean;
+  /** Pourquoi la tuile est verrouillée — affiché SOUS le libellé, pas
+   *  seulement en `title` : sur mobile il n'y a pas de survol, et un badge
+   *  grisé sans explication se lit comme un bug. */
+  raisonVerrou?: string;
   onBasculer: () => void;
   onContexte: (contexte: string) => void;
   contexteEnLigne: boolean;
@@ -286,12 +335,14 @@ function Tuile({
     <div
       className={`border rounded-lg transition-colors ${choisi ? "" : "border-[#2a2d36]"} ${desactive ? "opacity-40" : ""}`}
       style={bordure}
+      title={raisonVerrou}
     >
       <button
         type="button"
         onClick={onBasculer}
         disabled={desactive}
         aria-pressed={choisi}
+        aria-describedby={raisonVerrou ? `verrou-${badge.code}` : undefined}
         className={layout === "tuiles"
           ? "w-full flex flex-col items-center gap-2 px-3 py-4 text-center"
           : "w-full flex items-center gap-3 px-3 py-2.5 text-left"}
@@ -317,6 +368,17 @@ function Tuile({
           {badge.libelle}
         </span>
       </button>
+
+      {/* Le verrou se LIT. En `title` seul, il serait invisible sur mobile —
+          et c'est précisément là que le coach a coché dans le vide. */}
+      {raisonVerrou && (
+        <p
+          id={`verrou-${badge.code}`}
+          className={`text-[10px] italic text-[#6b7280] pb-3 ${layout === "tuiles" ? "px-3 text-center" : "px-3 pl-10"}`}
+        >
+          {raisonVerrou}
+        </p>
+      )}
 
       {choisi && badge.requiertContexte && contexteEnLigne && (
         <div className={layout === "tuiles" ? "px-3 pb-3 space-y-2" : "px-3 pb-3 pl-10 space-y-2"}>
