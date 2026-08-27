@@ -11,24 +11,21 @@
    `sizeHint` vaut désormais toujours "lg", et il ne reste dans la signature
    de `renderItem` que pour ne pas casser les appelants.
 
-   ── CONSÉQUENCE : DEUX PAR RANGÉE, PAS TROIS ────────────────────
-   La règle « jamais plus de 3 par rangée » était calibrée sur `sm`. Elle ne
-   survit pas au passage à `lg` :
+   ── TROIS PAR RANGÉE, RETROUVÉS PAR LA GOUTTIÈRE ────────────────
+   La version précédente était tombée à 2 par rangée, et le raisonnement
+   tenait — mais il n'avait fait varier qu'UNE des trois grandeurs :
 
-       3 × 136 px + 2 × 24 px de gouttière = 456 px
-       largeur de contenu mobile courante   = 343-379 px   → débordement
+       3 × 136 px + 2 × 24 px de gouttière = 456 px  > 343 px   → débordait
+       3 × 110 px + 2 ×  6 px              = 342 px ≤ 343 px    → tient
 
-       2 × 136 px + 1 × 24 px               = 296 px       → tient
-
-   C'est le même calcul que celui qui avait fait passer n=4 de 4-en-ligne à
-   2+2 (4 × 88 + 3 × 20 = 412 px, la 4e étiquette se faisait rogner) ; seule
-   la largeur du badge a changé. Le coût est vertical : cinq badges occupent
-   trois rangées au lieu de deux. C'est le prix d'une taille constante.
+   La largeur utile la plus étroite est 343 px (375 px d'écran − 32 px de
+   `px-4`). On a resserré la gouttière d'abord, la cellule ensuite : 5 badges
+   se lisent en 3+2 sur deux rangées, au lieu de 1+2+2 sur trois.
 
    ── UNE SEULE BRANCHE ───────────────────────────────────────────
    Les cas n=1, 2/3, 4, 5 et ≥6 étaient taillés à la main, chacun avec ses
-   gouttières. Avec un maximum uniforme de 2, `repartirEnRangees` couvre tout :
-   plus de branches, plus de dispositions qui divergent en silence.
+   gouttières. `repartirEnRangees` couvre tout : plus de branches, plus de
+   dispositions qui divergent en silence.
 
    Révélation échelonnée optionnelle :
    - mounted=false OU i >= badgesRevealed  → opacity 0, scale 0.4
@@ -43,9 +40,9 @@
 
 import type { ReactNode } from "react";
 
-/** Maximum de badges par rangée. Fixé par la largeur de `lg` (136 px) face à
- *  une largeur de contenu mobile de 343-379 px — voir le calcul en tête. */
-export const MAX_PAR_RANGEE = 2;
+/** Maximum de badges par rangée. Fixé par la largeur de `lg` (110 px) et la
+ *  gouttière (6 px) face à 343 px de contenu mobile — voir le calcul en tête. */
+export const MAX_PAR_RANGEE = 3;
 
 export interface AdaptiveBadgesRowProps<T> {
   items: T[];
@@ -110,7 +107,11 @@ export function AdaptiveBadgesRow<T>({
   return (
     <div className="flex flex-col items-center gap-y-3">
       {tranches.map(({ debut, taille }, r) => (
-        <div key={r} className="flex items-center justify-center gap-x-6">
+        /* items-START, pas center : à 110 px les libellés longs passent sur
+           deux lignes. Centrés, deux badges de hauteurs différentes auraient
+           décalé leurs pictos verticalement ; alignés en haut, la rangée de
+           pictos reste droite et seul le texte descend. */
+        <div key={r} className="flex items-start justify-center gap-x-1.5">
           {list.slice(debut, debut + taille).map((d, i) => renderWrapped(d, debut + i))}
         </div>
       ))}
@@ -119,32 +120,44 @@ export function AdaptiveBadgesRow<T>({
 }
 
 /**
- * Découpe n badges en rangées de `parRangee` au plus, SANS rangée orpheline
- * en bas.
+ * Découpe n badges en rangées de `parRangee` au plus, RELIQUAT EN QUEUE.
  *
- * Avec un maximum de 2, un nombre impair produit forcément une rangée de 1
- * quelque part. On la met EN TÊTE, jamais en queue : un badge seul suspendu
- * sous deux rangées pleines pend dans le vide (c'est ce que l'ancienne règle
- * des rangées de 3 évitait déjà), alors qu'en tête il se lit comme une
- * pyramide. L'ordre de lecture est préservé — badge 1 en haut, puis 2-3,
- * puis 4-5 — ce qui compte, les badges étant ordonnés.
+ * ── LE RELIQUAT REDESCEND EN BAS ────────────────────────────────
+ * La version précédente le remontait EN TÊTE (5 → 1+2+2). C'était la parade
+ * juste au mauvais problème : avec un maximum de 2, un nombre impair laissait
+ * forcément une rangée de 1, et un badge seul pendu sous deux rangées pleines
+ * se lit mal. À 3 par rangée le cas ne se pose presque plus, et la lecture
+ * naturelle — les rangées pleines d'abord, le reste dessous — reprend ses
+ * droits. 5 badges se lisent 3 en haut, 2 dessous.
  *
- *   1 → 1        2 → 2        3 → 1+2
- *   4 → 2+2      5 → 1+2+2    7 → 1+2+2+2
+ * ── L'ORPHELINE DE 1 EST RÉÉQUILIBRÉE, PAS DÉPLACÉE ─────────────
+ * Reste le cas `n % parRangee === 1` : la dernière rangée n'aurait qu'un
+ * badge, isolé sous des rangées pleines. Plutôt que de le remonter — ce qui
+ * ferait réapparaître la pyramide qu'on vient d'abandonner — on emprunte un
+ * badge à la rangée précédente : deux rangées de 2 valent mieux qu'une de 3
+ * et une de 1. C'est la même intention qu'avant (jamais de badge seul en
+ * bas), obtenue sans casser l'ordre de lecture.
+ *
+ *   1 → 1        2 → 2        3 → 3
+ *   4 → 2+2      5 → 3+2      6 → 3+3
+ *   7 → 3+2+2    8 → 3+3+2    10 → 3+3+2+2
+ *
+ * `n = 1` reste une rangée de 1 : il n'y a rien au-dessus, donc rien dont il
+ * puisse être orphelin.
  */
 export function repartirEnRangees(n: number, parRangee: number = MAX_PAR_RANGEE): number[] {
   if (n <= 0) return [];
   const rangees: number[] = [];
-  let reste = n;
+  for (let reste = n; reste > 0; reste -= parRangee) rangees.push(Math.min(parRangee, reste));
 
-  /* Le reliquat part en PREMIER. Sans ça il finirait en dernière rangée —
-     l'orpheline qu'on refuse. */
-  const reliquat = n % parRangee;
-  if (parRangee > 1 && n > parRangee && reliquat !== 0) {
-    rangees.push(reliquat);
-    reste -= reliquat;
+  /* Dernière rangée à 1 badge : on lui en cède un de la précédente.
+     Garde `parRangee > 2` — à 2 par rangée l'échange donnerait 1+1, pire que
+     2+1. Garde `rangees.length > 1` — un unique badge n'est orphelin de
+     rien. */
+  const derniere = rangees.length - 1;
+  if (parRangee > 2 && rangees.length > 1 && rangees[derniere] === 1) {
+    rangees[derniere - 1] -= 1;
+    rangees[derniere] += 1;
   }
-
-  for (; reste > 0; reste -= parRangee) rangees.push(Math.min(parRangee, reste));
   return rangees;
 }
