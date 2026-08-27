@@ -11,6 +11,7 @@ import { PushRegistrar } from "@/components/push/PushRegistrar";
 import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { KeyboardInset } from "@/components/mobile/KeyboardInset";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
+import { ForceUpdateGate } from "@/components/mobile/ForceUpdateGate";
 import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
 import { OAuthDeepLinkHandler } from "@/components/mobile/auth/OAuthDeepLinkHandler";
 import { AuthSync } from "@/components/auth/AuthSync";
@@ -241,6 +242,11 @@ export default function RootLayout({
                 {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
                     cold start Capacitor. Desktop : passthrough immédiat
                     (IS_CAPACITOR=false → children direct, jamais d'anim). */}
+                {/* AU-DESSUS du SplashGate : la lecture des réglages part
+                    pendant l'animation, qui attend déjà 2 s au démarrage à
+                    froid — donc coût perçu nul. Le mur, lui, est un overlay
+                    z-[100] : il couvre le splash comme le reste. */}
+                <ForceUpdateGate />
                 <SplashGate>{children}</SplashGate>
               </MobileToastProvider>
             </SubscriptionProvider>
