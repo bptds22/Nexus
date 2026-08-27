@@ -10,6 +10,11 @@
 // total, alors que pg_net abandonne à 5 s (son défaut, notify_on_message ne
 // passe pas timeout_milliseconds). Le push aboutissait mais était enregistré
 // comme expiré. Voir docs/push-pgnet-timeout-20260823.md.
+//
+// Deux champs de payload OPTIONNELS (`collapse_id`, `purge_invalid`) servent
+// le canal ANNONCES (send-announcement). Absents, la fonction se comporte
+// exactement comme avant — le chemin messagerie ne les passe pas.
+// Voir docs/push-annonces-admin.md.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { importPKCS8, SignJWT } from "https://esm.sh/jose@5";
@@ -61,10 +66,26 @@ Deno.serve(async (req) => {
 
   let payload: any;
   try { payload = await req.json(); } catch { return new Response("Bad JSON", { status: 400 }); }
-  const { user_id, title, body, data } = payload ?? {};
+  const { user_id, title, body, data, collapse_id, purge_invalid } = payload ?? {};
   if (!user_id || !title || !body) {
     return new Response("user_id, title, body requis", { status: 400 });
   }
+
+  /* Deux champs OPTIONNELS, ajoutés pour les annonces (send-announcement).
+     Absents → comportement strictement identique à avant : le chemin
+     messagerie (notify_on_message) ne passe ni l'un ni l'autre.
+
+     · collapse_id : deux jetons vivants pointant le MÊME appareil se
+       remplacent au lieu de s'empiler. `apns-collapse-id` est limité à
+       64 octets — un uuid en fait 36.
+     · purge_invalid : autorise la purge des INVALID_ARGUMENT. FCM renvoie
+       ce code aussi bien pour un jeton invalide que pour un PAYLOAD
+       malformé — purger dessus à l'aveugle viderait device_tokens du parc
+       entier sur un envoi cassé. L'appelant ne le met à true qu'APRÈS
+       avoir prouvé le payload sur un premier destinataire (la sonde). */
+  const collapseId = typeof collapse_id === "string" && collapse_id.length > 0
+    && collapse_id.length <= 64 ? collapse_id : null;
+  const purgeInvalid = purge_invalid === true;
 
   // FCM v1 : les valeurs de data DOIVENT être des strings
   const stringData: Record<string, string> = {};
@@ -81,15 +102,18 @@ Deno.serve(async (req) => {
   const accessToken = await getAccessToken();
   let sent = 0, failed = 0;
   const dead: string[] = [];
+  // Histogramme des codes d'échec FCM, renvoyé à l'appelant. C'est la
+  // mesure qui manquait pour décider de la purge sur des chiffres.
+  const codes: Record<string, number> = {};
 
   // Paquets de 10 : assez pour que la latence cesse de suivre le nombre de
   // jetons, assez petit pour ne pas ouvrir 40+ connexions FCM d'un coup.
   const BATCH_SIZE = 10;
 
-  /* Journal par jeton EN ÉCHEC. Aujourd'hui on ne sait pas POURQUOI 41 jetons
-     morts ne sont pas purgés : le critère ne retient que 404/UNREGISTERED, et
-     la fonction ne trace rien. Cette ligne existe pour décider du critère sur
-     des chiffres, pas sur une intuition — elle ne change aucun comportement.
+  /* Journal par jeton EN ÉCHEC, posé le 2026-08-23 pour décider du critère de
+     purge sur des chiffres plutôt que sur une intuition. Depuis le 2026-08-27
+     il est doublé par l'histogramme `codes` renvoyé à l'appelant — le journal
+     reste, lui seul identifie QUEL jeton a échoué.
      Ne journalise que la QUEUE du jeton (12 derniers caractères) : de quoi
      distinguer deux appareils, jamais de quoi en réutiliser un. Aucun contenu
      de message, aucun nom, aucun courriel. */
@@ -103,22 +127,35 @@ Deno.serve(async (req) => {
     }));
   };
 
-  const sendOne = async (token: string): Promise<{ ok: boolean; dead: boolean }> => {
+  const sendOne = async (token: string): Promise<{ ok: boolean; dead: boolean; code?: string }> => {
+    const message: Record<string, unknown> = {
+      token,
+      notification: { title, body },
+      data: stringData,
+    };
+    if (collapseId) {
+      message.android = { collapse_key: collapseId };
+      message.apns = { headers: { "apns-collapse-id": collapseId } };
+    }
     const r = await fetch(
       `https://fcm.googleapis.com/v1/projects/${FCM_SA.project_id}/messages:send`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ message: { token, notification: { title, body }, data: stringData } }),
+        body: JSON.stringify({ message }),
       },
     );
     if (r.ok) return { ok: true, dead: false };
     const errBody = await r.json().catch(() => ({}));
     const code = errBody?.error?.details?.[0]?.errorCode ?? errBody?.error?.status;
     logFailure(token, r.status, code ?? null);
-    // Conservateur : on ne supprime QUE sur token périmé, pas sur INVALID_ARGUMENT
-    // (qui peut juste signaler un payload mal formé pendant le debug).
-    return { ok: false, dead: r.status === 404 || code === "UNREGISTERED" };
+    // Conservateur par défaut : on ne supprime QUE sur token périmé. Les
+    // INVALID_ARGUMENT ne sont purgés que si l'appelant a explicitement
+    // prouvé son payload (purge_invalid) — voir le commentaire plus haut.
+    const isDead = r.status === 404
+      || code === "UNREGISTERED"
+      || (purgeInvalid && code === "INVALID_ARGUMENT");
+    return { ok: false, dead: isDead, code: code ?? "UNKNOWN" };
   };
 
   for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
@@ -128,12 +165,14 @@ Deno.serve(async (req) => {
       if (res.status === "fulfilled") {
         if (res.value.ok) { sent++; return; }
         failed++;
+        codes[res.value.code ?? "UNKNOWN"] = (codes[res.value.code ?? "UNKNOWN"] ?? 0) + 1;
         if (res.value.dead) dead.push(slice[j].token);
         return;
       }
       // Rejet réseau (fetch qui lève). Compté en échec, JAMAIS purgé : on ne
       // sait pas si le jeton est mort ou si c'est le réseau qui a lâché.
       failed++;
+      codes.FETCH_REJECTED = (codes.FETCH_REJECTED ?? 0) + 1;
       logFailure(slice[j].token, null, "FETCH_REJECTED");
     });
   }
@@ -144,6 +183,6 @@ Deno.serve(async (req) => {
     removed = dead.length;
   }
 
-  return new Response(JSON.stringify({ sent, failed, removed }),
+  return new Response(JSON.stringify({ sent, failed, removed, codes }),
     { headers: { "Content-Type": "application/json" } });
 });
