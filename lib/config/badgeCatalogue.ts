@@ -31,6 +31,16 @@ export interface BadgeEntry {
    *  picker en crée à la volée) — DistinctionBadge retombe alors sur
    *  BADGE_CONFIG, et le picker, lui, lit le catalogue de toute façon. */
   libelle?: string;
+  /** POURQUOI cette entrée n'est pas éditable ici — rempli par
+   *  `chargerBadgesAthlete` sur les seules entrées `autres`.
+   *
+   *  L'écran affichait « seul leur auteur peut les retirer » pour TOUS les
+   *  badges verrouillés. C'était faux dans un cas sur deux : un badge
+   *  d'origine 'transposition' n'est retirable ni par son auteur ni par
+   *  personne d'autre qu'un administrateur — le verrou n'est pas l'auteur,
+   *  c'est l'origine. La tuile porte donc désormais SA raison, pas une
+   *  formule générique. */
+  raison?: string;
 }
 
 export interface BadgeCatalogueEntry {

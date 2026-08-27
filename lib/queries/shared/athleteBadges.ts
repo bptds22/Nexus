@@ -33,6 +33,52 @@ interface LigneBadge {
   badges: { code: string; libelle: string } | { code: string; libelle: string }[] | null;
 }
 
+/**
+ * Prénoms des auteurs, en BEST-EFFORT et en SECONDE requête.
+ *
+ * POURQUOI PAS UN EMBED. Le réflexe était d'ajouter
+ * `users!athlete_badges_attribue_par_fkey(first_name)` au `select` des badges
+ * — athlete_badges porte deux clés étrangères vers users (`attribue_par` et
+ * `retire_par`), donc il faut nommer la contrainte. Mais la lecture des
+ * badges est un chemin CRITIQUE : `chargerBadgesAthlete` propage ses erreurs
+ * exprès, parce qu'un jeu de badges lu à moitié fait retirer par le premier
+ * enregistrement tout ce que la lecture n'a pas vu. Un embed mal nommé, ou
+ * refusé, casserait donc le picker sur les cinq surfaces qui l'utilisent —
+ * et je n'ai pas pu valider la syntaxe contre l'API (anon n'a aucun droit sur
+ * athlete_badges, la permission tombe avant la résolution de l'embed).
+ *
+ * Un prénom est du CONFORT D'AFFICHAGE. Il n'a pas le droit de mettre en jeu
+ * la lecture des badges. Il part donc en requête séparée, dans un try/catch,
+ * et son échec se résout en libellé générique.
+ *
+ * La RLS de `users` laisse tout compte authentifié lire les lignes de rôle
+ * COACH (`authenticated read coaches`) — ce qui couvre les auteurs de badges.
+ * Un auteur ADMIN n'est lisible que par un autre admin : d'où le repli.
+ */
+async function prenomsDesAuteurs(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<Map<string, string>> {
+  const m = new Map<string, string>();
+  if (ids.length === 0) return m;
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, first_name")
+      .in("id", ids);
+    if (error) return m;
+    for (const u of (data ?? []) as { id: string; first_name: string | null }[]) {
+      const p = u.first_name?.trim();
+      if (p) m.set(u.id, p);
+    }
+  } catch {
+    /* Silencieux VOLONTAIREMENT : l'appelant a déjà ses badges, et un verrou
+       nommé « quelqu'un d'autre » reste juste. Journaliser ici bruiterait une
+       console à chaque montage de picker pour une dégradation invisible. */
+  }
+  return m;
+}
+
 /** PostgREST rend l'embed tantôt objet, tantôt tableau selon la version. */
 function badgeDe(l: LigneBadge): { code: string; libelle: string } | null {
   const b = Array.isArray(l.badges) ? l.badges[0] : l.badges;
@@ -124,6 +170,10 @@ export async function chargerBadgesAthlete(
 
   const miens: BadgeEntry[] = [];
   const autres: BadgeEntry[] = [];
+  /* Entrées dont le verrou est « un autre auteur », en attente de son prénom.
+     On garde la RÉFÉRENCE à l'entrée pour la compléter après la requête —
+     les objets sont déjà dans `autres`, donc les muter suffit. */
+  const aNommer: [BadgeEntry, string][] = [];
   for (const l of (data ?? []) as unknown as LigneBadge[]) {
     const b = badgeDe(l);
     if (!b) continue;
@@ -133,28 +183,82 @@ export async function chargerBadgesAthlete(
     const e: BadgeEntry = { code: b.code, contexte: l.contexte, libelle: b.libelle };
     /* Le périmètre éditable dépend du CHEMIN, parce que chaque RPC borne le
        sien de la même façon :
-         · 'saisie'     → appliquer_badges_saisie ne remplace que les badges
-                          de saisie de l'appelant (tous si admin) ;
+         · 'saisie'     → appliquer_badges_saisie. Pour un COACH : ses propres
+                          badges de saisie. Pour un ADMINISTRATEUR : TOUS les
+                          badges, toute origine — 'transposition' comprise
+                          (décision BP du 2026-08-26, migration
+                          20260826180000_badges_admin_retire_toute_origine).
          · 'suggestion' → appliquer_distinctions_suggerees ne remplace que
                           les badges issus de suggestions. L'athlète n'en est
                           pas l'auteur — c'est l'approbateur — donc aucun
                           test sur attribue_par ici.
        Un badge posé par un coach n'est donc jamais retirable par une
-       suggestion, et l'écran ne le laisse pas croire. */
+       suggestion, et l'écran ne le laisse pas croire.
+
+       ⚠ LA BRANCHE ADMIN EST SOLIDAIRE DE LA MIGRATION. La RPC retire tout ce
+       que l'administrateur n'a PAS renvoyé dans `p_entrees` ; si cet écran
+       continuait de ne lui donner que les badges de saisie, le premier
+       enregistrement retirerait les 'transposition' et 'suggestion' sans
+       qu'il les ait jamais vus. Les deux changements ne se séparent pas. */
     const editable = mode === "suggestion"
       ? l.origine === "suggestion"
-      : l.origine === "saisie" && (estAdmin || l.attribue_par === moi);
-    (editable ? miens : autres).push(e);
+      : estAdmin || (l.origine === "saisie" && l.attribue_par === moi);
+
+    if (editable) {
+      miens.push(e);
+      continue;
+    }
+
+    /* NOMMER LE VERROU. Deux causes distinctes, longtemps confondues sous un
+       unique « seul leur auteur peut les retirer » :
+         · l'ORIGINE — 'transposition' (repris de l'ancien format) ou
+           'suggestion' : aucun coach ne peut y toucher, pas même l'auteur de
+           la ligne. Seul un administrateur le peut.
+         · l'AUTEUR — un badge de saisie posé par quelqu'un d'autre.
+       Dire « son auteur » dans le premier cas envoyait chercher une personne
+       qui, elle non plus, ne pouvait rien faire. */
+    if (l.origine === "transposition") {
+      e.raison = "Historique (transposition)";
+    } else if (l.origine === "suggestion") {
+      e.raison = "Issu d'une suggestion de l'athlète";
+    } else {
+      /* Raison PROVISOIRE : elle reste telle quelle si le prénom n'arrive
+         pas. On note l'auteur à nommer et on repasse après la requête. */
+      e.raison = "Attribué par quelqu'un d'autre";
+      if (l.attribue_par) aNommer.push([e, l.attribue_par]);
+    }
+    autres.push(e);
   }
+
+  /* Second temps, hors du chemin critique : on nomme les auteurs si on peut.
+     Une seule requête pour tous, et seulement s'il y a quelqu'un à nommer. */
+  if (aNommer.length > 0) {
+    const prenoms = await prenomsDesAuteurs(
+      supabase, [...new Set(aNommer.map(([, id]) => id))],
+    );
+    for (const [entree, id] of aNommer) {
+      const prenom = prenoms.get(id);
+      if (prenom) entree.raison = `Attribué par ${prenom}`;
+    }
+  }
+
   return { miens, autres };
 }
 
 /**
  * Enregistre le jeu de badges de saisie, EN UNE TRANSACTION.
  *
- * `entrees` ne doit contenir que les badges éditables (le `miens` ci-dessus,
- * tel que le picker l'a modifié). Y ajouter ceux des autres ne les
- * retirerait pas — la RPC borne sa portée — et l'écran mentirait.
+ * `entrees` doit être le `miens` ci-dessus, tel que le picker l'a modifié —
+ * ni plus, ni moins. C'est ce qui garde l'écran honnête dans les deux sens :
+ *
+ *   · EN AJOUTER (les badges d'un autre coach) ne les retirerait pas, la RPC
+ *     bornant sa portée à l'auteur : la case décochée n'aurait aucun effet.
+ *   · EN OMETTRE les RETIRE. Vrai pour tout le monde, et redoutable pour un
+ *     ADMINISTRATEUR depuis le 2026-08-26 : sa portée couvre désormais TOUTES
+ *     les origines, donc un `miens` amputé des 'transposition' / 'suggestion'
+ *     les effacerait. `chargerBadgesAthlete` les lui verse pour cette raison
+ *     précise — les deux fonctions forment un contrat, ne pas en changer une
+ *     seule.
  */
 export async function enregistrerBadgesSaisie(
   supabase: SupabaseClient,
