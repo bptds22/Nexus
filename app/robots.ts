@@ -21,6 +21,7 @@ export default function robots(): MetadataRoute.Robots {
           "/onboarding",
           "/coach/",
           "/athlete/",
+          "/parent/",
           "/recruteur/",
           "/partenaire/",
           "/partenaires/",

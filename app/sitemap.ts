@@ -33,6 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "guide-recrutement",
     "tarifs",
     "contact",
+    "roadmap",
   ].map((slug) => ({
     url: `${BASE_URL}/${slug}`,
     lastModified: lastMod,
