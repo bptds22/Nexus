@@ -1310,6 +1310,51 @@ file.
       auditing — for MVP the UI handler is the only entry point
       and the surface is tiny.
 
+- [ ] **1.5 — Flash de `/auth` ~1 s au démarrage à froid (cosmétique).**
+      Relevé le 2026-08-28 en validant le build Android 10 sur `Pixel_6_Play`
+      (émulateur, `ro.serialno` EMULATOR36X5X11X0, session RECRUTEUR). Au
+      démarrage à froid **avec session valide**, la WebView traverse
+      `/` → `/auth/` → portail :
+
+          t+2s  https://localhost/
+          t+3s  https://localhost/auth/
+          t+4s  https://localhost/recruteur/tableau-de-bord/
+
+      Reproductible sur deux cycles `HOME → am kill → relance launcher`.
+
+      **Le verdict fonctionnel est vert** : l'URL finale est bien le portail,
+      la session persiste (clé `sb-nrloizyemulbhujrqhgx-auth-token` en
+      localStorage, survit à la mort du process). Seul l'affichage transitoire
+      est en cause — l'usager voit passer l'écran de connexion ~1 s alors
+      qu'il est déjà connecté.
+
+      N'apparaît **pas** sur le chemin deep-link : le cas 3 (app morte + tap
+      notif) et le repli non-participant vont directement à destination sans
+      traverser `/auth/`.
+
+      Cosmétique, aucun impact fonctionnel. À traiter après le lancement.
+
+- [ ] **Titre en double sur les pages équipe publiques — « … | Nexus | Nexus ».**
+      Relevé le 2026-08-28 en instruisant l'indexation (4 pages seulement dans
+      Search Console). Mesuré sur la prod, sans authentification :
+
+          GET /college/d4b92629-…/786a82d7-…
+          <title>Wildcats Midget D1 | Nexus | Nexus</title>
+
+      Cause : [`app/college/[schoolId]/[teamId]/page.tsx`](../app/college/%5BschoolId%5D/%5BteamId%5D/page.tsx)
+      ligne 76 renvoie `` `${res.teamName} | Nexus` ``, alors que le template
+      du layout racine (`title.template = "%s | Nexus"`) ajoute déjà le
+      suffixe. Même chose ligne 73 pour le repli Capacitor et pour
+      `"Équipe | Nexus"`.
+
+      **Micro-fix cosmétique, volontairement différé** (décision du
+      2026-08-28) : ces routes ne figurent ni au sitemap ni dans le périmètre
+      du lot SEO `c77c70a`. Retirer ` | Nexus` des trois littéraux suffit —
+      le template le remet.
+
+      À noter au passage, hors du fix : ces pages n'ont **aucune
+      `description`**. Si on y revient, la poser en même temps.
+
 ---
 
 ## Closeout rule
