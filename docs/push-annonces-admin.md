@@ -83,6 +83,56 @@ passe sous le seuil et **part sans rien demander**. Un coach de plus avec un
 appareil enregistré, et il basculera de l'autre côté. Baisser `c_seuil` à 1 si
 ce silence gêne.
 
+
+### Reprise d'un envoi — audience `retry` (2026-08-28)
+
+Rejoue une annonce vers **ses seuls destinataires en échec**, avec le **même
+titre et le même texte**, repris de la source : une reprise ne peut pas dériver
+du message qu'elle complète.
+
+```sql
+begin;
+  select set_config('role', 'authenticated', true);
+  select set_config('request.jwt.claims',
+                    json_build_object('sub', id, 'role', 'authenticated')::text, true)
+    from public.users where email = 'bptds22@gmail.com';
+
+  select public.send_push_announcement(
+    null, null,          -- titre et texte ignorés : repris de la source
+    'retry',
+    null,                -- p_user_ids : sans objet ici
+    true,                -- p_confirme_envoi_large, si > 5 manqués
+    '<uuid-de-l-annonce-source>'
+  );
+commit;
+```
+
+La reprise repasse par `device_tokens` comme n'importe quelle audience : un
+usager désactivé depuis, ou dont les jetons ont disparu, ne rentre pas par la
+porte de derrière. Le nouvel enregistrement porte `retry_of` = l'annonce source.
+
+### Le bilan dit désormais la vérité
+
+Trois colonnes ajoutées à `push_announcements` :
+
+| Colonne | Contenu |
+|---|---|
+| `failures` | `[{user_id, kind, status, note}]` — le détail par usager en échec |
+| `failed_user_ids` | les mêmes usagers, typés : la poignée de `retry` |
+| `retry_of` | l'annonce dont celle-ci est la reprise |
+
+`kind` vaut `http` (send-push a répondu 4xx/5xx, `status` porte le code),
+`throw` (transport en échec après 2 tentatives), `badjson` (2xx illisible) ou
+`aucun_jeton_accepte` (200, mais FCM a tout refusé).
+
+**Au-delà de 20 % de l'audience en échec, l'annonce se clôt en `ERROR`**, pas en
+`DONE`, et `error` dit le compte et le pourcentage.
+
+> **Limite.** Les annonces **antérieures au 2026-08-28** ne consignaient que des
+> compteurs : elles n'ont aucun `failed_user_ids`, et `retry` sur l'une d'elles
+> lève en le disant. Leurs usagers manqués sont irrécupérables — il faut un
+> envoi `user` ciblé, ou refaire l'envoi complet en acceptant les doublons.
+
 ---
 
 ## 2. Lire le bilan
@@ -161,7 +211,8 @@ suivant règlera le cas.
 
 ## 6. Retour arrière
 
-- La RPC : `DROP FUNCTION public.send_push_announcement(text,text,text,uuid[],boolean);`
+- La RPC : `DROP FUNCTION public.send_push_announcement(text,text,text,uuid[],boolean,uuid);`
+  (la signature porte un 6e argument depuis le 2026-08-28 : `p_source_announcement_id`)
   La table `push_announcements` est un journal — la garder.
 - `send-push` : les deux champs ajoutés (`collapse_id`, `purge_invalid`) sont
   optionnels et inertes quand ils sont absents. Pour revenir à la version
