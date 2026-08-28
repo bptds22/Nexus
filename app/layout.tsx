@@ -8,6 +8,7 @@ import { MobileToastProvider } from "@/components/mobile/MobileToast";
 import { QueryProvider } from "./_providers/QueryProvider";
 import { SubscriptionProvider } from "@/lib/context/SubscriptionProvider";
 import { PushRegistrar } from "@/components/push/PushRegistrar";
+import { PushDeepLinkConsumer } from "@/components/push/PushDeepLinkConsumer";
 import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { KeyboardInset } from "@/components/mobile/KeyboardInset";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
@@ -233,6 +234,10 @@ export default function RootLayout({
                   sans cold restart. Single-instance, dans QueryProvider. */}
               <AuthSync />
               <PushRegistrar />
+              {/* Phase 6 push — le tap ouvre le bon écran quand l'app est
+                  vivante (cas 1 et 2). Cold start et login sont consommés
+                  par postLoginDispatch, pas ici. No-op web. */}
+              <PushDeepLinkConsumer />
               <MobileToastProvider>
                 {/* Init unique du plugin social login (idempotent, native-only). */}
                 <SocialLoginInit />
