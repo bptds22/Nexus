@@ -39,6 +39,7 @@ import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/T
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
+import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1329,6 +1330,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       {/* pb : le bandeau de restriction ajoute une rangée au bloc bas fixe.
           Sans la réserver, les dernières sections finissent derrière lui. */}
       <div className={`max-w-7xl mx-auto px-6 py-8 space-y-6 relative z-1 ${contactable ? "pb-28" : "pb-40"}`}>
+
+        {/* Vitrine — bandeau en tete de fiche : personne ne doit croire
+            contacter un vrai athlete. */}
+        <DemoRibbonIf athleteId={id} variant="profile" />
 
         {/* ── Toggle (hidden for partner) + Completeness ────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

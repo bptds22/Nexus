@@ -21,6 +21,7 @@ import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
+import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { RecruteurRechercheMobile } from "@/components/shared/RecruteurRechercheMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -152,6 +153,8 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
               {a.firstName} {a.lastName}
             </Link>
           )}
+          {/* Vitrine — la seule carte identifiee au milieu des anonymes. */}
+          <DemoRibbonIf athleteId={a.id} />
           {a.position && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[12px] font-bold uppercase tracking-wider">
               {a.position}
@@ -263,6 +266,8 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
             {a.firstName} {a.lastName}
           </Link>
         )}
+        {/* Vitrine — meme signalement que la carte grille. */}
+        <DemoRibbonIf athleteId={a.id} className="mt-0.5" />
         {a.noTeam ? (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">
             Ligue Civile

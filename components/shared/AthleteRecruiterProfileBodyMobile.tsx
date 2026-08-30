@@ -43,6 +43,7 @@ import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
+import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
@@ -2182,6 +2183,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             />
           </div>
         )}
+
+        {/* Vitrine — bandeau en tete de fiche, avant la player card. */}
+        <DemoRibbonIf athleteId={id} variant="profile" className="mb-4" />
 
         {/* Player Card */}
         <div className="py-1">
