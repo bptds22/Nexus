@@ -1371,7 +1371,12 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
           <div className="flex-1 min-w-0 lg:pt-2 space-y-5">
             <h1 className="font-head text-[36px] sm:text-[46px] font-black text-white uppercase tracking-tight leading-[0.92]">
-              {lockContent ? (
+              {/* IDENTITE = decision SERVEUR, jamais le palier ni la vitrine.
+                  Tester `lockContent` ici rendait un en-tete VIDE sur le profil
+                  demo : le verrou cedait, mais la RPC renvoie first_name a NULL
+                  tant que identity_visible est faux. `identityVisible` est le
+                  seul predicat qui sait s'il y a quelque chose a afficher. */}
+              {a.identityVisible === false ? (
                 <span className="inline-flex items-start gap-3" title="Nom réservé aux recruteurs Pro">
                   <span aria-hidden="true" className="select-none pointer-events-none blur-[6px]">Prénom<br />Nom</span>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">

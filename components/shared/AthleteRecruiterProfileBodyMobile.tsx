@@ -2222,7 +2222,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         >
           <h1 className="font-head text-[34px] font-black uppercase tracking-tight leading-[0.95]">
             {/* Step 6 — name blur gate is recruteur-only ; coach voit toujours le nom. */}
-            {isRecruiter && lockContent ? (
+            {isRecruiter && a.identityVisible === false ? (
               <span className="inline-flex items-start gap-2" title="Nom réservé aux recruteurs Pro">
                 <span aria-hidden className="select-none pointer-events-none blur-[6px]">Prénom Nom</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
@@ -2428,7 +2428,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <div className="flex items-center gap-3 px-4 py-3 h-full">
           <HeroMiniAvatar a={a} isFree={lockContent} />
           <h2 className="flex-1 font-head text-[16px] font-black uppercase tracking-tight leading-tight truncate min-w-0">
-            {lockContent ? (
+            {isRecruiter && a.identityVisible === false ? (
               <span className="blur-[5px] select-none">Prénom Nom</span>
             ) : (
               <>
