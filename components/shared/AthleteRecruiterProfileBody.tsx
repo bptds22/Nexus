@@ -40,6 +40,7 @@ import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
+import { isShowcaseAthlete } from "@/lib/showcase";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -420,6 +421,24 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // Free recruiters only — excludes preview (athlete self-view) and
   // partner (own gating). Drives the name strip + content locks.
   const isFreeRecruiter = viewerMode === "recruiter" && tier === "free";
+  /* VITRINE — aucun verrou d'AFFICHAGE sur le profil demo.
+
+     `lockContent` remplace `isFreeRecruiter` sur tout ce qui masque une
+     DONNEE DE L'ATHLETE : identite, rapport d'entraineur, faits saillants,
+     profil academique.
+
+     Ce qui NE cede PAS, et volontairement : le contact (contactLocked /
+     canMessageCoach) et le pipeline (canUsePipeline). Ces deux-la ne
+     masquent aucune donnee de l'athlete — ce sont des FONCTIONS payantes
+     du recruteur. Les ouvrir sur la vitrine donnerait un pipeline et une
+     messagerie gratuits, pas une demonstration.
+
+     Sur l'identite (nom, photo, dossard), ce changement est NECESSAIRE mais
+     INERTE tant que la migration is_showcase n'est pas appliquee : le
+     serveur renvoie first_name/photo_url a NULL, il n'y a rien a afficher.
+     Il devient actif des que la RPC projette l'identite. */
+  const isShowcase = isShowcaseAthlete(id);
+  const lockContent = isFreeRecruiter && !isShowcase;
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   // #52 — init à null (plus de mock comme valeur initiale) : aucun faux
   // athlète n'est rendu avant l'arrivée des vraies données. Le gate
@@ -1347,12 +1366,12 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* ══════════ HERO — 2 Columns ══════════ */}
         <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch">
           <div className="shrink-0 flex justify-center lg:justify-start">
-            <PlayerCard a={a} isFree={isFreeRecruiter} />
+            <PlayerCard a={a} isFree={lockContent} />
           </div>
 
           <div className="flex-1 min-w-0 lg:pt-2 space-y-5">
             <h1 className="font-head text-[36px] sm:text-[46px] font-black text-white uppercase tracking-tight leading-[0.92]">
-              {isFreeRecruiter ? (
+              {lockContent ? (
                 <span className="inline-flex items-start gap-3" title="Nom réservé aux recruteurs Pro">
                   <span aria-hidden="true" className="select-none pointer-events-none blur-[6px]">Prénom<br />Nom</span>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
@@ -1475,7 +1494,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         </section>
 
         {/* ══════════ COACH REPORT (both modes — content varies) ══════════ */}
-        {isFreeRecruiter ? (
+        {lockContent ? (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <FreeLock />
@@ -1582,7 +1601,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
         <section>
           <h2 className={sectionLabel}>Faits saillants</h2>
-          {isFreeRecruiter ? (
+          {lockContent ? (
             <FreeLock />
           ) : a.highlightVideoUrl || a.fullGameUrl ? (
             <div className="flex flex-col gap-4">
@@ -1639,7 +1658,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </p>
             </div>
           </section>
-        ) : isFreeRecruiter ? (
+        ) : lockContent ? (
           <section>
             <h2 className={sectionLabel}>Profil académique</h2>
             <FreeLock />

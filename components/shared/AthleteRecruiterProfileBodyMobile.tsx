@@ -44,6 +44,7 @@ import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
+import { isShowcaseAthlete } from "@/lib/showcase";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
@@ -766,6 +767,24 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   // for athletes) would otherwise trigger free-tier blurs that lie about how
   // a recruiter sees them.
   const isFreeRecruiter = tier === "free" && !isSelfPreview;
+  /* VITRINE — aucun verrou d'AFFICHAGE sur le profil demo.
+
+     `lockContent` remplace `isFreeRecruiter` sur tout ce qui masque une
+     DONNEE DE L'ATHLETE : identite, rapport d'entraineur, faits saillants,
+     profil academique.
+
+     Ce qui NE cede PAS, et volontairement : le contact (contactLocked /
+     canMessageCoach) et le pipeline (canUsePipeline). Ces deux-la ne
+     masquent aucune donnee de l'athlete — ce sont des FONCTIONS payantes
+     du recruteur. Les ouvrir sur la vitrine donnerait un pipeline et une
+     messagerie gratuits, pas une demonstration.
+
+     Sur l'identite (nom, photo, dossard), ce changement est NECESSAIRE mais
+     INERTE tant que la migration is_showcase n'est pas appliquee : le
+     serveur renvoie first_name/photo_url a NULL, il n'y a rien a afficher.
+     Il devient actif des que la RPC projette l'identite. */
+  const isShowcase = isShowcaseAthlete(id);
+  const lockContent = isFreeRecruiter && !isShowcase;
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   // #52 — init à null (plus de mock initial) : aucun faux athlète rendu avant
   // les vraies données. Le gate loadingAthlete plus bas court-circuite le rendu.
@@ -2189,7 +2208,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
         {/* Player Card */}
         <div className="py-1">
-          <PlayerCardMobile a={a} isFree={isRecruiter && isFreeRecruiter} starsRevealed={starsRevealed} cardRevealed={cardRevealed} photoParallaxY={expandedSlideProgress === 0 ? scrollY * 0.15 : 0} layoutIdPrefix={isCoach ? "coach-athlete-photo" : "athlete-photo"} />
+          <PlayerCardMobile a={a} isFree={isRecruiter && lockContent} starsRevealed={starsRevealed} cardRevealed={cardRevealed} photoParallaxY={expandedSlideProgress === 0 ? scrollY * 0.15 : 0} layoutIdPrefix={isCoach ? "coach-athlete-photo" : "athlete-photo"} />
         </div>
 
         {/* Nom + jersey (fade-up depuis 8px) */}
@@ -2203,7 +2222,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         >
           <h1 className="font-head text-[34px] font-black uppercase tracking-tight leading-[0.95]">
             {/* Step 6 — name blur gate is recruteur-only ; coach voit toujours le nom. */}
-            {isRecruiter && isFreeRecruiter ? (
+            {isRecruiter && lockContent ? (
               <span className="inline-flex items-start gap-2" title="Nom réservé aux recruteurs Pro">
                 <span aria-hidden className="select-none pointer-events-none blur-[6px]">Prénom Nom</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
@@ -2407,9 +2426,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         }}
       >
         <div className="flex items-center gap-3 px-4 py-3 h-full">
-          <HeroMiniAvatar a={a} isFree={isFreeRecruiter} />
+          <HeroMiniAvatar a={a} isFree={lockContent} />
           <h2 className="flex-1 font-head text-[16px] font-black uppercase tracking-tight leading-tight truncate min-w-0">
-            {isFreeRecruiter ? (
+            {lockContent ? (
               <span className="blur-[5px] select-none">Prénom Nom</span>
             ) : (
               <>
@@ -2476,7 +2495,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {activeTab === "rapport" && (
           <>
             {/* FreeLock gate : Step 6 — recruteur-only. Coach voit toujours. */}
-            {isRecruiter && isFreeRecruiter ? (
+            {isRecruiter && lockContent ? (
               <FreeLock />
             ) : (
               <>
@@ -2630,7 +2649,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {activeTab === "academique" && (
           <>
             {/* FreeLock gate : Step 6 — recruteur-only. Coach voit toujours. */}
-            {isRecruiter && isFreeRecruiter ? (
+            {isRecruiter && lockContent ? (
               <FreeLock />
             ) : (
               <>
