@@ -65,30 +65,60 @@ const RANG: Record<PartnerTier, number> = { OFFICIEL: 0, MAJEUR: 1, PARTENAIRE: 
    1:1 sans déformer — un canevas 3:1 fourni par le partenaire supprime le
    problème à la source (consigne posée dans l'admin). */
 const GEO = {
-  officiel:   { w: 340, h: 150, logoH: 96, logoW: 264 },
-  secondaire: { w: 200, h: 96,  logoH: 62, logoW: 156 },
+  officiel:   { w: 340, h: 150, logoH: 96,  logoW: 264 },
+  majeur:     { w: 240, h: 112, logoH: 72,  logoW: 187 },
+  partenaire: { w: 200, h: 96,  logoH: 62,  logoW: 156 },
 } as const;
+
+/* La taille est le premier porteur du rang — avant toute couleur. Trois
+   rangs, trois formats : sans ça, deux MAJEUR et trois PARTENAIRE se
+   ressemblaient trait pour trait et seule l'étiquette les séparait. */
+const GEO_PAR_RANG: Record<PartnerTier, typeof GEO[keyof typeof GEO]> = {
+  OFFICIEL: GEO.officiel,
+  MAJEUR: GEO.majeur,
+  PARTENAIRE: GEO.partenaire,
+};
+
+/* Habillage. Le rouge STRUCTURE, il ne colore pas : bordure et lueur,
+   jamais de fond teinté. Un fond rosé se comporte mal d'un écran à
+   l'autre en mode clair, et un contour sur fond neutre dit « distinguée »
+   plutôt que « spéciale » — le bon registre pour un bandeau de confiance.
+   La lueur est retirée en mode clair (voir globals.css) : une lueur rouge
+   sur blanc se lit comme une erreur. */
+const CLASSE_PAR_RANG: Record<PartnerTier, string> = {
+  OFFICIEL: "nx-partner-slot--officiel",
+  MAJEUR: "nx-partner-slot--majeur",
+  PARTENAIRE: "",
+};
 
 const GOUTTIERE = 24; // px, rangée secondaire — doit refléter le `gap` du rendu
 
-/* Taille de police du repli, choisie sur la longueur du nom. Le but n'est
-   pas d'être joli à 12 caractères mais de ne JAMAIS déborder à 40. */
-function taillePolice(nom: string, grand: boolean): number {
+/* Taille de police du repli, choisie sur la longueur du nom ET le rang.
+   Le but n'est pas d'être joli à 12 caractères mais de ne JAMAIS déborder
+   à 40 — le créneau est en overflow-hidden, un débordement serait coupé
+   sans bruit. */
+const ECHELLE: Record<PartnerTier, [number, number, number, number]> = {
+  OFFICIEL:   [26, 21, 17, 14],
+  MAJEUR:     [20, 16, 13, 11],
+  PARTENAIRE: [16, 13, 11, 10],
+};
+function taillePolice(nom: string, tier: PartnerTier): number {
+  const [a, b, c, d] = ECHELLE[tier] ?? ECHELLE.PARTENAIRE;
   const n = nom.length;
-  if (grand) return n <= 14 ? 26 : n <= 24 ? 21 : n <= 36 ? 17 : 14;
-  return n <= 14 ? 16 : n <= 24 ? 13 : n <= 36 ? 11 : 10;
+  return n <= 14 ? a : n <= 24 ? b : n <= 36 ? c : d;
 }
 
-function Logo({ p, grand }: { p: FeaturedPartner; grand: boolean }) {
+function Logo({ p }: { p: FeaturedPartner }) {
   const [errored, setErrored] = useState(false);
-  const g = grand ? GEO.officiel : GEO.secondaire;
+  const rang = p.tier ?? "PARTENAIRE";
+  const g = GEO_PAR_RANG[rang] ?? GEO.partenaire;
 
   if (!p.logo_url || errored) {
     return (
       <span
         className="nx-partner-name block text-center px-3 font-head font-black uppercase leading-tight"
         style={{
-          fontSize: taillePolice(p.organization_name, grand),
+          fontSize: taillePolice(p.organization_name, rang),
           letterSpacing: "0.02em",
           overflowWrap: "anywhere",
         }}
@@ -117,7 +147,7 @@ function Logo({ p, grand }: { p: FeaturedPartner; grand: boolean }) {
 function Libelle({ p }: { p: FeaturedPartner }) {
   if (p.tier === "OFFICIEL") {
     return (
-      <p className={`${label} nx-partner-label-fort mt-3 text-center`}>
+      <p className={`${label} nx-partner-label-officiel mt-3 text-center`}>
         Partenaire officiel
         {p.category && <span className="nx-partner-label"> · {p.category}</span>}
       </p>
@@ -127,17 +157,19 @@ function Libelle({ p }: { p: FeaturedPartner }) {
   return <p className="nx-partner-label mt-2 text-center text-[10px] tracking-[0.18em] uppercase font-bold">{p.category}</p>;
 }
 
-function Creneau({ p, grand }: { p: FeaturedPartner; grand: boolean }) {
-  const g = grand ? GEO.officiel : GEO.secondaire;
+function Creneau({ p }: { p: FeaturedPartner }) {
+  const rang = p.tier ?? "PARTENAIRE";
+  const g = GEO_PAR_RANG[rang] ?? GEO.partenaire;
+  const habillage = CLASSE_PAR_RANG[rang] ?? "";
   return (
     <div className="flex flex-col items-center">
       <Link
         href={`/partenaires/${p.id}`}
         aria-label={p.organization_name}
-        className="nx-partner-slot flex items-center justify-center overflow-hidden"
+        className={`nx-partner-slot ${habillage} flex items-center justify-center overflow-hidden`}
         style={{ width: g.w, height: g.h }}
       >
-        <Logo p={p} grand={grand} />
+        <Logo p={p} />
       </Link>
       <Libelle p={p} />
     </div>
@@ -179,10 +211,14 @@ export default function PartnerCarousel() {
   const mesurer = useCallback(() => {
     const zone = zoneRef.current;
     if (!zone) return;
+    /* La rangée secondaire mélange deux formats (MAJEUR 240, PARTENAIRE
+       200) : on somme les largeurs réelles, on ne multiplie pas. */
     const n = secondaires.length;
-    const naturelle = n * GEO.secondaire.w + Math.max(0, n - 1) * GOUTTIERE;
+    const naturelle =
+      secondaires.reduce((s, p) => s + (GEO_PAR_RANG[p.tier ?? "PARTENAIRE"] ?? GEO.partenaire).w, 0) +
+      Math.max(0, n - 1) * GOUTTIERE;
     setDefile(n > 1 && naturelle > zone.clientWidth);
-  }, [secondaires.length]);
+  }, [secondaires]);
 
   useEffect(() => {
     const zone = zoneRef.current;
@@ -217,7 +253,7 @@ export default function PartnerCarousel() {
       {officiels.length > 0 && (
         <div className="flex flex-wrap items-start justify-center gap-10 mb-12">
           {officiels.map((p) => (
-            <Creneau key={p.id} p={p} grand />
+            <Creneau key={p.id} p={p} />
           ))}
         </div>
       )}
@@ -237,7 +273,7 @@ export default function PartnerCarousel() {
               return (
                 <div key={`${p.id}-${i}`} aria-hidden={doublon ? "true" : undefined}>
                   <div className={doublon ? "pointer-events-none" : undefined} tabIndex={doublon ? -1 : undefined}>
-                    <Creneau p={p} grand={false} />
+                    <Creneau p={p} />
                   </div>
                 </div>
               );

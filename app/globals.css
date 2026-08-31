@@ -1315,8 +1315,34 @@ body.light-mode .nx-particle.blue { color: rgba(37, 99, 235, 0.4); }
 .nx-partner-name { color: rgba(255, 255, 255, 0.58); }
 .nx-partner-slot:hover .nx-partner-name { color: rgba(255, 255, 255, 0.82); }
 
-.nx-partner-label      { color: #6b7280; }
-.nx-partner-label-fort { color: rgba(255, 255, 255, 0.72); }
+.nx-partner-label { color: #6b7280; }
+
+/* Le rang OFFICIEL parle en rouge Nexus ; la category reste grise, pour
+   que l'accent porte le STATUT et non l'étiquette. */
+.nx-partner-label-officiel { color: #E63946; }
+
+/* ── Habillage par rang ────────────────────────────────────────────
+   Le rouge structure, il ne colore pas : bordure et lueur, jamais de
+   fond teinté. Les variantes :hover sont indispensables — la règle
+   `.nx-partner-slot:hover` a une spécificité supérieure aux classes
+   de rang et écraserait leur fond au survol. */
+.nx-partner-slot--officiel {
+  border-color: rgba(230, 57, 70, 0.42);
+  box-shadow: 0 0 34px rgba(230, 57, 70, 0.10);
+}
+.nx-partner-slot--officiel:hover {
+  border-color: rgba(230, 57, 70, 0.65);
+  box-shadow: 0 0 44px rgba(230, 57, 70, 0.16);
+}
+
+.nx-partner-slot--majeur {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.nx-partner-slot--majeur:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(230, 57, 70, 0.25);
+}
 
 @keyframes nxMarquee {
   from { transform: translateX(0); }
@@ -1340,8 +1366,27 @@ body.light-mode .nx-partner-slot:hover {
    créneau, et un !important sur `span` teintait tout ce qui passait. */
 body.light-mode .nx-partner-name { color: rgba(13, 17, 23, 0.60); }
 body.light-mode .nx-partner-slot:hover .nx-partner-name { color: rgba(13, 17, 23, 0.85); }
-body.light-mode .nx-partner-label      { color: rgba(13, 17, 23, 0.45); }
-body.light-mode .nx-partner-label-fort { color: rgba(13, 17, 23, 0.75); }
+body.light-mode .nx-partner-label { color: rgba(13, 17, 23, 0.45); }
+/* Le rouge de marque tient sur les deux fonds — pas de variante. */
+
+/* PAS DE LUEUR EN MODE CLAIR : une lueur rouge sur blanc se lit comme un
+   état d'erreur. Seule la bordure porte le rang. */
+body.light-mode .nx-partner-slot--officiel {
+  border-color: rgba(230, 57, 70, 0.45);
+  box-shadow: none;
+}
+body.light-mode .nx-partner-slot--officiel:hover {
+  border-color: rgba(230, 57, 70, 0.7);
+  box-shadow: none;
+}
+body.light-mode .nx-partner-slot--majeur {
+  background: rgba(13, 17, 23, 0.065);
+  border-color: rgba(13, 17, 23, 0.16);
+}
+body.light-mode .nx-partner-slot--majeur:hover {
+  background: rgba(13, 17, 23, 0.09);
+  border-color: rgba(230, 57, 70, 0.3);
+}
 
 /* ── Mobile design tokens (iter 7.60) ────────────────────────────
    Source CSS pour les valeurs partagées coach/recruteur/athlete en
