@@ -14,11 +14,14 @@ import { uploadImage } from "@/lib/upload/uploadImage";
    — they are pinned by the "Partners update own profile" RLS policy
    (admin-controlled). status is shown read-only for context.
 
-   Logo uploads to the avatars bucket under {auth.uid()}/… — the
-   owner-folder storage policy already permits this (same pattern
-   as the athlete photo upload). All writes use .select() so an
-   RLS-filtered 0-row update surfaces as a real error, not a false
-   success toast.
+   Le logo va dans le bucket partner-logos, sous {media_partners.id}/ —
+   PAS sous {auth.uid()}, et PAS dans avatars. Deux raisons, toutes
+   deux bloquantes : la policy « partner logos insert » attend l'id de
+   la LIGNE en premier segment de chemin, et la contrainte
+   media_partners_logo_url_interne rejette toute URL qui ne contient
+   pas /partner-logos/. L'ancien chemin avatars/{auth.uid()} echouait
+   donc deux fois. All writes use .select() so an RLS-filtered 0-row
+   update surfaces as a real error, not a false success toast.
 ═══════════════════════════════════════════════════════════════ */
 
 type PartnerStatus = "PENDING" | "APPROVED" | "SUSPENDED" | "REVOKED";
@@ -159,7 +162,21 @@ export default function PartnerProfilePage() {
         showToast("error", "Session expirée. Reconnecte-toi.");
         return;
       }
-      const res = await uploadImage(file, { pathBase: `${user.id}/partner-logo-${Date.now()}`, preserveTransparency: true });
+      if (!partner) {
+        showToast("error", "Profil introuvable — recharge la page.");
+        return;
+      }
+      /* pathBase SANS extension : uploadImage pose .png lui-meme.
+         Chemin stable (pas d'horodatage) + upsert : un nouveau logo
+         remplace l'ancien au lieu d'empiler des orphelins dans le
+         bucket. */
+      const res = await uploadImage(file, {
+        bucket: "partner-logos",
+        pathBase: `${partner.id}/logo`,
+        preserveTransparency: true,
+        maxDimension: 512,
+        maxBytes: 500_000,
+      });
       if (!res.ok) {
         showToast("error", `Erreur logo : ${res.message}`);
         return;
