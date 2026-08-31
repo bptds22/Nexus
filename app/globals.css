@@ -1264,6 +1264,17 @@ body.light-mode .nx-particle.blue { color: rgba(37, 99, 235, 0.4); }
    Partner carousel — Section 2 of marketing homepage
 ══════════════════════════════════════════════════════════════ */
 
+/* ── Bandeau partenaires ─────────────────────────────────────────
+   Le marquee n'est plus inconditionnel : PartnerCarousel ne pose
+   .nx-marquee / .nx-marquee-track QUE lorsque la rangée secondaire
+   déborde réellement (mesure ResizeObserver). En dessous, la rangée
+   est une grille flex-wrap statique. L'animation suppose une piste
+   plus large que son conteneur — l'appliquer sans cette garantie
+   faisait dériver les créneaux sous le masque de gauche.
+
+   `gap` DOIT rester synchronisé avec GOUTTIERE dans
+   PartnerCarousel.tsx (24px) et avec le décalage des keyframes
+   ci-dessous (-50% moins la moitié de la gouttière). */
 .nx-marquee {
   width: 100%;
   overflow: hidden;
@@ -1273,16 +1284,18 @@ body.light-mode .nx-particle.blue { color: rgba(37, 99, 235, 0.4); }
 
 .nx-marquee-track {
   display: flex;
-  align-items: center;
-  gap: 64px;
+  align-items: flex-start;
+  gap: 24px;
   width: max-content;
   animation: nxMarquee 45s linear infinite;
 }
 
+/* Les dimensions du créneau viennent du composant (340x150 pour un
+   OFFICIEL, 200x96 pour un secondaire) : cette classe ne porte plus
+   que l'habillage commun. Les figer ici rendait les deux formats
+   impossibles. */
 .nx-partner-slot {
   flex-shrink: 0;
-  width: 220px;
-  height: 88px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
@@ -1296,9 +1309,18 @@ body.light-mode .nx-particle.blue { color: rgba(37, 99, 235, 0.4); }
   border-color: rgba(230, 57, 70, 0.25);
 }
 
+/* Repli sans logo : c'est un état NORMAL (partenaire dont le fichier
+   n'est pas encore arrivé), pas une erreur. Il se lit comme un
+   élément de marque, pas comme un trou. */
+.nx-partner-name { color: rgba(255, 255, 255, 0.58); }
+.nx-partner-slot:hover .nx-partner-name { color: rgba(255, 255, 255, 0.82); }
+
+.nx-partner-label      { color: #6b7280; }
+.nx-partner-label-fort { color: rgba(255, 255, 255, 0.72); }
+
 @keyframes nxMarquee {
   from { transform: translateX(0); }
-  to   { transform: translateX(calc(-50% - 32px)); }
+  to   { transform: translateX(calc(-50% - 12px)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1314,9 +1336,12 @@ body.light-mode .nx-partner-slot:hover {
   background: rgba(13, 17, 23, 0.06);
   border-color: rgba(230, 57, 70, 0.3);
 }
-body.light-mode .nx-partner-slot span {
-  color: rgba(13, 17, 23, 0.4) !important;
-}
+/* Cible la CLASSE, plus `span` : le repli n'est plus le seul span du
+   créneau, et un !important sur `span` teintait tout ce qui passait. */
+body.light-mode .nx-partner-name { color: rgba(13, 17, 23, 0.60); }
+body.light-mode .nx-partner-slot:hover .nx-partner-name { color: rgba(13, 17, 23, 0.85); }
+body.light-mode .nx-partner-label      { color: rgba(13, 17, 23, 0.45); }
+body.light-mode .nx-partner-label-fort { color: rgba(13, 17, 23, 0.75); }
 
 /* ── Mobile design tokens (iter 7.60) ────────────────────────────
    Source CSS pour les valeurs partagées coach/recruteur/athlete en
