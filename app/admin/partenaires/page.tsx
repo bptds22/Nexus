@@ -54,12 +54,12 @@ const TIERS: { value: PartnerTier; label: string; aide: string }[] = [
    carre et un logo horizontal ne peuvent pas occuper la meme surface a
    hauteur egale — un canevas 3:1 commun supprime le probleme a la
    source, au lieu de le rattraper en CSS. */
-const CONSIGNE_LOGO = "PNG a fond transparent, canevas 3:1 (ex. 900 x 300 px), 512 Ko max.";
+const CONSIGNE_LOGO = "PNG a fond transparent, canevas carre ou 3:1. Sert aux surfaces CARREES : page publique du partenaire, barre laterale.";
 
 /* L'image de carte n'est PAS un logo : c'est la composition finie qui
    remplit le creneau OFFICIEL bord a bord, logo deja integre. Le ratio
    2,27:1 est celui du creneau (340x150) — s'en ecarter fait rogner. */
-const CONSIGNE_CARTE = "Composition complete, logo integre. Ratio 2,27:1 — ex. 1360 x 600 px. Remplit la carte bord a bord.";
+const CONSIGNE_CARTE = "Composition complete, logo deja integre. Ratio 2,27:1 — ex. 1360 x 600 px. Remplit la carte du bandeau, bord a bord.";
 
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
@@ -303,11 +303,21 @@ export default function AdminPartenairesPage() {
     }
   }
 
-  /* Deux plafonds differents, et c'est deliberé : un logo est une marque
-     qu'on affiche a 264 px de large au plus, 512 px de cote suffisent. Une
-     image de carte est rendue a 340x150 CSS, soit 680x300 sur un ecran 2x
-     et 1020x450 en 3x — la plafonner a 512 la rendrait visiblement floue.
-     Mesure sur le fichier reel (1360x600) : ~372 Ko une fois re-encode. */
+  /* Plafonds CORRIGES par la mesure du 2026-08-31, apres un echec reel.
+     Mon estimation initiale (PIL, ~372 Ko a 1360) etait fausse : le canvas
+     du navigateur produit 864 Ko sur le meme fichier — 2,3x plus. Et il
+     VARIE d'un navigateur a l'autre : au plafond 512, celui-ci rend 97 Ko
+     la ou celui de BP en a stocke 121 Ko, soit +24 %.
+
+     Consequence : relever maxBytes ne pouvait pas suffire, il aurait fallu
+     depasser le 1 Mo du bucket. Le levier est le PLAFOND DE DIMENSION.
+
+       cap 1360 -> 864 Ko     cap 1024 -> 465 Ko     cap 680 -> 166 Ko
+
+     1024 laisse ~2x de marge contre la variation d'encodeur, et reste 3x
+     la taille de rendu (la carte fait 340 px CSS). PNG n'a PAS de boucle
+     de qualite dans le helper : au-dessus du plafond, c'est un echec sec,
+     pas une degradation. La marge doit donc etre reelle. */
   async function televerserCarte(partnerId: string, file: File) {
     setPanelBusy(true);
     try {
@@ -315,8 +325,8 @@ export default function AdminPartenairesPage() {
         bucket: "partner-logos",
         pathBase: `${partnerId}/carte`,
         preserveTransparency: true,
-        maxDimension: 1360,
-        maxBytes: 900_000,
+        maxDimension: 1024,
+        maxBytes: 950_000,
       });
       if (!res.ok) {
         showToast("error", `Erreur image : ${res.message}`);
@@ -340,13 +350,25 @@ export default function AdminPartenairesPage() {
     }
   }
 
-  async function retirerCarte(partnerId: string) {
+  /* Retrait generique. Vide la colonne ET purge le fichier : sans ca, une
+     image deposee par erreur reste servable a son URL publique meme apres
+     avoir disparu de l'interface. La suppression Storage est « best
+     effort » — si elle echoue, on vide quand meme la colonne, parce que
+     l'affichage est ce que l'admin cherchait a corriger. */
+  async function retirerImage(partnerId: string, champ: "logo_url" | "card_image_url") {
     setPanelBusy(true);
     try {
       const supabase = createClient();
+      const fichier = champ === "logo_url" ? "logo.png" : "carte.png";
+      const { error: errStorage } = await supabase.storage
+        .from("partner-logos")
+        .remove([`${partnerId}/${fichier}`]);
+      if (errStorage) {
+        console.warn("[partner] purge storage echouee — la colonne est quand meme videe", errStorage);
+      }
       const { data, error } = await supabase
         .from("media_partners")
-        .update({ card_image_url: null })
+        .update({ [champ]: null })
         .eq("id", partnerId)
         .select();
       if (error) { showToast("error", error.message); return; }
@@ -355,7 +377,9 @@ export default function AdminPartenairesPage() {
         return;
       }
       setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
-      showToast("success", "Image de carte retiree — le logo reprend la main.");
+      showToast("success", champ === "logo_url"
+        ? "Logo retire."
+        : "Image de carte retiree — le logo reprend la main dans le bandeau.");
     } finally {
       setPanelBusy(false);
     }
@@ -617,31 +641,48 @@ export default function AdminPartenairesPage() {
                         </p>
                       </div>
 
-                      <div className="sm:col-span-3">
-                        <label className={labelCls}>Logo</label>
+                      {/* ZONE 1 — LOGO. Volontairement dissemblable de la zone
+                          « image de carte » : apercu CARRE, liseré bleu, accent
+                          bleu sur le bouton. Les deux zones se ressemblaient
+                          trop et une image de carte a fini dans ce champ, ce
+                          qui casse la page publique et la barre laterale. */}
+                      <div className="sm:col-span-3 rounded-lg border-l-2 border-[#3B82F6]/40 bg-[#3B82F6]/[0.03] pl-4 py-3">
+                        <label className={labelCls}>Logo — surfaces carrées</label>
                         <div className="flex items-center gap-4 flex-wrap">
-                          <div className="w-[150px] h-[56px] rounded-lg border border-[#2a2d36] bg-[#13151a] flex items-center justify-center overflow-hidden shrink-0">
+                          <div className="w-[96px] h-[96px] rounded-lg border border-[#2a2d36] bg-[#13151a] flex items-center justify-center overflow-hidden shrink-0">
                             {p.logo_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={p.logo_url} alt="" className="max-h-[40px] max-w-[130px] object-contain" />
+                              <img src={p.logo_url} alt="" className="max-h-[76px] max-w-[76px] object-contain" />
                             ) : (
-                              <span className="text-[11px] text-[#4a4d56]">Aucun logo</span>
+                              <span className="text-[11px] text-[#4a4d56] text-center px-2">Aucun logo</span>
                             )}
                           </div>
-                          <label className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#3B82F6]/30 text-[#3B82F6] hover:bg-[#3B82F6]/10 rounded-lg transition-colors cursor-pointer">
-                            {panelBusy ? "Envoi…" : p.logo_url ? "Remplacer" : "Téléverser"}
-                            <input
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp"
-                              className="hidden"
-                              disabled={panelBusy}
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                e.target.value = "";
-                                if (f) void televerserLogo(p.id, f);
-                              }}
-                            />
-                          </label>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <label className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#3B82F6]/40 text-[#3B82F6] hover:bg-[#3B82F6]/10 rounded-lg transition-colors cursor-pointer">
+                              {panelBusy ? "Envoi…" : p.logo_url ? "Remplacer" : "Téléverser"}
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                className="hidden"
+                                disabled={panelBusy}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  e.target.value = "";
+                                  if (f) void televerserLogo(p.id, f);
+                                }}
+                              />
+                            </label>
+                            {p.logo_url && (
+                              <button
+                                type="button"
+                                disabled={panelBusy}
+                                onClick={() => void retirerImage(p.id, "logo_url")}
+                                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#EF4444]/40 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                Retirer
+                              </button>
+                            )}
+                          </div>
                         </div>
                         {/* La consigne vit ICI, a cote du bouton — c'est le
                             seul endroit ou elle est lue au bon moment. */}
@@ -653,8 +694,8 @@ export default function AdminPartenairesPage() {
                           partenaire doit pouvoir televerser dans la foulee, sans
                           enregistrer d'abord. */}
                       {draft.tier === "OFFICIEL" && (
-                        <div className="sm:col-span-3">
-                          <label className={labelCls}>Image de carte</label>
+                        <div className="sm:col-span-3 rounded-lg border-l-2 border-[#E63946]/50 bg-[#E63946]/[0.03] pl-4 py-3">
+                          <label className={labelCls}>Image de carte — bandeau d&apos;accueil</label>
                           <div className="flex items-center gap-4 flex-wrap">
                             <div className="w-[204px] h-[90px] rounded-lg border border-[#2a2d36] bg-[#13151a] flex items-center justify-center overflow-hidden shrink-0">
                               {p.card_image_url ? (
@@ -683,7 +724,7 @@ export default function AdminPartenairesPage() {
                                 <button
                                   type="button"
                                   disabled={panelBusy}
-                                  onClick={() => void retirerCarte(p.id)}
+                                  onClick={() => void retirerImage(p.id, "card_image_url")}
                                   className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#EF4444]/40 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                   Retirer
@@ -693,8 +734,9 @@ export default function AdminPartenairesPage() {
                           </div>
                           <p className="text-[11px] text-[#6B7280] mt-2">{CONSIGNE_CARTE}</p>
                           <p className="text-[11px] text-[#6B7280] mt-1">
-                            Remplace le logo dans le bandeau. Le logo reste utilisé sur la page
-                            publique du partenaire et dans son portail.
+                            Remplace le logo <strong className="text-[#9CA3AF]">dans le bandeau uniquement</strong>.
+                            Le logo carré ci-dessus reste utilisé sur la page publique du
+                            partenaire et dans son portail — les deux sont nécessaires.
                           </p>
                         </div>
                       )}
