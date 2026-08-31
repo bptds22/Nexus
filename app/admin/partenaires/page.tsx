@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { MediaPartner, PartnerStatus } from "@/lib/types/models";
+import type { MediaPartner, PartnerStatus, PartnerTier } from "@/lib/types/models";
+import { uploadImage } from "@/lib/upload/uploadImage";
 
 /* ═══════════════════════════════════════════════════════════════
    /admin/partenaires — Phase 1 closed-beta admin panel
@@ -39,6 +40,27 @@ const ACTIVATION_META: Record<ActivationState, { bg: string; text: string; label
   active:  { bg: "bg-[#22C55E]/15", text: "text-[#22C55E]", label: "Actif" },
 };
 
+/* Rangs d'affichage. Miroir de media_partners_tier_check — toute valeur
+   ajoutee ici doit l'etre AUSSI dans la contrainte, sinon l'update est
+   rejete a l'ecriture. */
+const TIERS: { value: PartnerTier; label: string; aide: string }[] = [
+  { value: "OFFICIEL",   label: "Officiel",   aide: "Grand format, seul en haut du bandeau" },
+  { value: "MAJEUR",     label: "Majeur",     aide: "Rangee secondaire, en premier" },
+  { value: "PARTENAIRE", label: "Partenaire", aide: "Rangee secondaire" },
+];
+
+/* Ecrite ICI, sous le bouton, et pas dans un document que personne ne
+   rouvre : c'est au moment de choisir le fichier qu'elle sert. Un logo
+   carre et un logo horizontal ne peuvent pas occuper la meme surface a
+   hauteur egale — un canevas 3:1 commun supprime le probleme a la
+   source, au lieu de le rattraper en CSS. */
+const CONSIGNE_LOGO = "PNG a fond transparent, canevas 3:1 (ex. 900 x 300 px), 512 Ko max.";
+
+/* L'image de carte n'est PAS un logo : c'est la composition finie qui
+   remplit le creneau OFFICIEL bord a bord, logo deja integre. Le ratio
+   2,27:1 est celui du creneau (340x150) — s'en ecarter fait rogner. */
+const CONSIGNE_CARTE = "Composition complete, logo integre. Ratio 2,27:1 — ex. 1360 x 600 px. Remplit la carte bord a bord.";
+
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
 
@@ -53,12 +75,20 @@ export default function AdminPartenairesPage() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Panneau « Presentation » (rang, etiquette, ordre, logo) — un seul ouvert.
+  const [openPanel, setOpenPanel] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ tier: PartnerTier; category: string; order: string }>(
+    { tier: "PARTENAIRE", category: "", order: "" },
+  );
+  const [panelBusy, setPanelBusy] = useState(false);
+
   // Create form state
   const [form, setForm] = useState({
     email: "",
     organization_name: "",
     contact_name: "",
-    logo_url: "",
+    tier: "PARTENAIRE" as PartnerTier,
+    category: "",
     instagram_handle: "",
     description: "",
   });
@@ -117,7 +147,7 @@ export default function AdminPartenairesPage() {
         sent: !!json.email_envoye,
         sendError: json.email_erreur,
       });
-      setForm({ email: "", organization_name: "", contact_name: "", logo_url: "", instagram_handle: "", description: "" });
+      setForm({ email: "", organization_name: "", contact_name: "", tier: "PARTENAIRE", category: "", instagram_handle: "", description: "" });
       setShowCreate(false);
       await loadPartners();
     } catch (e) {
@@ -185,6 +215,150 @@ export default function AdminPartenairesPage() {
     }
     showToast("success", `Statut mis à jour : ${STATUS_COLORS[status].label}`);
     await loadPartners();
+  }
+
+  function ouvrirPanneau(p: MediaPartner) {
+    if (openPanel === p.id) { setOpenPanel(null); return; }
+    setOpenPanel(p.id);
+    setDraft({
+      tier: p.tier ?? "PARTENAIRE",
+      category: p.category ?? "",
+      order: p.homepage_order?.toString() ?? "",
+    });
+  }
+
+  async function enregistrerPresentation(partnerId: string) {
+    setPanelBusy(true);
+    try {
+      const supabase = createClient();
+      /* homepage_order : chaine vide -> null, pas 0. Un 0 se placerait EN
+         TETE du tri au lieu de laisser la ligne se ranger par nom. */
+      const ordre = draft.order.trim() === "" ? null : Number(draft.order);
+      if (ordre !== null && !Number.isFinite(ordre)) {
+        showToast("error", "L'ordre doit etre un nombre.");
+        return;
+      }
+      const { data, error } = await supabase
+        .from("media_partners")
+        .update({
+          tier: draft.tier,
+          category: draft.category.trim() || null,
+          homepage_order: ordre,
+        })
+        .eq("id", partnerId)
+        .select();
+      if (error) {
+        /* 23514 = check_violation : category > 24 caracteres, ou un rang
+           hors media_partners_tier_check. Le dire au lieu de rendre le
+           message brut de Postgres. */
+        showToast("error", error.code === "23514"
+          ? "Refuse : etiquette de plus de 24 caracteres, ou rang invalide."
+          : error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusee — verifie tes permissions.");
+        return;
+      }
+      setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
+      showToast("success", "Presentation mise a jour.");
+      setOpenPanel(null);
+    } finally {
+      setPanelBusy(false);
+    }
+  }
+
+  async function televerserLogo(partnerId: string, file: File) {
+    setPanelBusy(true);
+    try {
+      /* Chemin {media_partners.id}/logo : c'est ce que la policy
+         « partner logos insert » attend, et ce que la contrainte
+         media_partners_logo_url_interne exige dans l'URL. */
+      const res = await uploadImage(file, {
+        bucket: "partner-logos",
+        pathBase: `${partnerId}/logo`,
+        preserveTransparency: true,
+        maxDimension: 512,
+        maxBytes: 500_000,
+      });
+      if (!res.ok) {
+        showToast("error", `Erreur logo : ${res.message}`);
+        return;
+      }
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("media_partners")
+        .update({ logo_url: res.publicUrl })
+        .eq("id", partnerId)
+        .select();
+      if (error) { showToast("error", error.message); return; }
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusee — verifie tes permissions.");
+        return;
+      }
+      setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
+      showToast("success", "Logo mis a jour.");
+    } finally {
+      setPanelBusy(false);
+    }
+  }
+
+  /* Deux plafonds differents, et c'est deliberé : un logo est une marque
+     qu'on affiche a 264 px de large au plus, 512 px de cote suffisent. Une
+     image de carte est rendue a 340x150 CSS, soit 680x300 sur un ecran 2x
+     et 1020x450 en 3x — la plafonner a 512 la rendrait visiblement floue.
+     Mesure sur le fichier reel (1360x600) : ~372 Ko une fois re-encode. */
+  async function televerserCarte(partnerId: string, file: File) {
+    setPanelBusy(true);
+    try {
+      const res = await uploadImage(file, {
+        bucket: "partner-logos",
+        pathBase: `${partnerId}/carte`,
+        preserveTransparency: true,
+        maxDimension: 1360,
+        maxBytes: 900_000,
+      });
+      if (!res.ok) {
+        showToast("error", `Erreur image : ${res.message}`);
+        return;
+      }
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("media_partners")
+        .update({ card_image_url: res.publicUrl })
+        .eq("id", partnerId)
+        .select();
+      if (error) { showToast("error", error.message); return; }
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusee — verifie tes permissions.");
+        return;
+      }
+      setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
+      showToast("success", "Image de carte mise a jour.");
+    } finally {
+      setPanelBusy(false);
+    }
+  }
+
+  async function retirerCarte(partnerId: string) {
+    setPanelBusy(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("media_partners")
+        .update({ card_image_url: null })
+        .eq("id", partnerId)
+        .select();
+      if (error) { showToast("error", error.message); return; }
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusee — verifie tes permissions.");
+        return;
+      }
+      setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
+      showToast("success", "Image de carte retiree — le logo reprend la main.");
+    } finally {
+      setPanelBusy(false);
+    }
   }
 
   async function toggleHomepage(partnerId: string, current: boolean) {
@@ -332,6 +506,13 @@ export default function AdminPartenairesPage() {
                     >
                       {p.show_on_homepage ? "Retirer du site" : "Afficher au site"}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => ouvrirPanneau(p)}
+                      className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:border-[#E63946]/40 hover:text-white rounded-lg transition-colors"
+                    >
+                      {openPanel === p.id ? "Fermer" : "Présentation"}
+                    </button>
                     {p.status !== "APPROVED" && (
                       <button
                         type="button"
@@ -390,6 +571,146 @@ export default function AdminPartenairesPage() {
                       </button>
                     )}
                   </div>
+
+                  {openPanel === p.id && (
+                    <div className="w-full mt-4 pt-4 border-t border-[#2D3748]/60 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className={labelCls}>Rang</label>
+                        <select
+                          value={draft.tier}
+                          onChange={(e) => setDraft({ ...draft, tier: e.target.value as PartnerTier })}
+                          className={inputCls}
+                        >
+                          {TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                        <p className="text-[11px] text-[#6B7280] mt-1">
+                          {TIERS.find((t) => t.value === draft.tier)?.aide}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className={labelCls}>Étiquette</label>
+                        <input
+                          type="text"
+                          maxLength={24}
+                          value={draft.category}
+                          onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+                          placeholder="Média, Ligue, Équipementier…"
+                          className={inputCls}
+                        />
+                        <p className="text-[11px] text-[#6B7280] mt-1">
+                          {draft.category.length}/24 — affichée sous le logo.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className={labelCls}>Ordre</label>
+                        <input
+                          type="number"
+                          value={draft.order}
+                          onChange={(e) => setDraft({ ...draft, order: e.target.value })}
+                          placeholder="—"
+                          className={inputCls}
+                        />
+                        <p className="text-[11px] text-[#6B7280] mt-1">
+                          Départage à rang égal. Vide = classé par nom.
+                        </p>
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label className={labelCls}>Logo</label>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="w-[150px] h-[56px] rounded-lg border border-[#2a2d36] bg-[#13151a] flex items-center justify-center overflow-hidden shrink-0">
+                            {p.logo_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={p.logo_url} alt="" className="max-h-[40px] max-w-[130px] object-contain" />
+                            ) : (
+                              <span className="text-[11px] text-[#4a4d56]">Aucun logo</span>
+                            )}
+                          </div>
+                          <label className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#3B82F6]/30 text-[#3B82F6] hover:bg-[#3B82F6]/10 rounded-lg transition-colors cursor-pointer">
+                            {panelBusy ? "Envoi…" : p.logo_url ? "Remplacer" : "Téléverser"}
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="hidden"
+                              disabled={panelBusy}
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                e.target.value = "";
+                                if (f) void televerserLogo(p.id, f);
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {/* La consigne vit ICI, a cote du bouton — c'est le
+                            seul endroit ou elle est lue au bon moment. */}
+                        <p className="text-[11px] text-[#6B7280] mt-2">{CONSIGNE_LOGO}</p>
+                      </div>
+
+                      {/* Image de carte — OFFICIEL uniquement. On lit `draft.tier`
+                          et non `p.tier` : l'admin qui vient de promouvoir un
+                          partenaire doit pouvoir televerser dans la foulee, sans
+                          enregistrer d'abord. */}
+                      {draft.tier === "OFFICIEL" && (
+                        <div className="sm:col-span-3">
+                          <label className={labelCls}>Image de carte</label>
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <div className="w-[204px] h-[90px] rounded-lg border border-[#2a2d36] bg-[#13151a] flex items-center justify-center overflow-hidden shrink-0">
+                              {p.card_image_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={p.card_image_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[11px] text-[#4a4d56]">Aucune image</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <label className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#E63946]/40 text-[#E63946] hover:bg-[#E63946]/10 rounded-lg transition-colors cursor-pointer">
+                                {panelBusy ? "Envoi…" : p.card_image_url ? "Remplacer" : "Téléverser"}
+                                <input
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/webp"
+                                  className="hidden"
+                                  disabled={panelBusy}
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    e.target.value = "";
+                                    if (f) void televerserCarte(p.id, f);
+                                  }}
+                                />
+                              </label>
+                              {p.card_image_url && (
+                                <button
+                                  type="button"
+                                  disabled={panelBusy}
+                                  onClick={() => void retirerCarte(p.id)}
+                                  className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#EF4444]/40 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  Retirer
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-[#6B7280] mt-2">{CONSIGNE_CARTE}</p>
+                          <p className="text-[11px] text-[#6B7280] mt-1">
+                            Remplace le logo dans le bandeau. Le logo reste utilisé sur la page
+                            publique du partenaire et dans son portail.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="sm:col-span-3 flex justify-end">
+                        <button
+                          type="button"
+                          disabled={panelBusy}
+                          onClick={() => void enregistrerPresentation(p.id)}
+                          className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider bg-[#E63946] hover:bg-[#c62d3a] text-white rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {panelBusy ? "Enregistrement…" : "Enregistrer"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -438,15 +759,32 @@ export default function AdminPartenairesPage() {
                 />
               </div>
               <div>
-                <label className={labelCls}>Logo URL</label>
+                <label className={labelCls}>Rang</label>
+                <select
+                  value={form.tier}
+                  onChange={(e) => setForm({ ...form, tier: e.target.value as PartnerTier })}
+                  className={inputCls}
+                >
+                  {TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Étiquette</label>
                 <input
-                  type="url"
-                  value={form.logo_url}
-                  onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                  placeholder="https://…"
+                  type="text"
+                  maxLength={24}
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  placeholder="Média, Ligue, Équipementier…"
                   className={inputCls}
                 />
+                <p className="text-[11px] text-[#6B7280] mt-1">
+                  Affichée sous le logo. 24 caractères max.
+                </p>
               </div>
+              {/* Le logo ne se televerse pas ici : il lui faut l'id de la
+                  ligne, qui n'existe qu'apres creation. Bouton
+                  « Presentation » sur la ligne du partenaire. */}
               <div>
                 <label className={labelCls}>Instagram</label>
                 <input

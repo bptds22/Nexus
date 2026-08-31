@@ -14,10 +14,18 @@ import { sendWelcomeEmail } from "@/lib/partners/sendWelcomeEmail";
        email: string,
        organization_name: string,
        contact_name: string,
-       logo_url?: string,
+       tier?: "OFFICIEL" | "MAJEUR" | "PARTENAIRE",
+       category?: string,
        instagram_handle?: string,
        description?: string
      }
+
+   logo_url n'est VOLONTAIREMENT pas accepte ici. Le logo se televerse
+   apres creation, dans le bucket partner-logos, sous {partner.id}/ —
+   ce qui exige l'id, donc la ligne. Une URL externe collee dans ce
+   champ est ce qui a produit le logo Facebook expire (HTTP 403) qui
+   a laisse la page d'accueil sans logo pendant deux semaines ; la
+   contrainte media_partners_logo_url_interne la rejette desormais.
 
    Response (success):
      {
@@ -34,7 +42,8 @@ interface CreatePartnerBody {
   email?: string;
   organization_name?: string;
   contact_name?: string;
-  logo_url?: string;
+  tier?: string;
+  category?: string;
   instagram_handle?: string;
   description?: string;
 }
@@ -142,7 +151,8 @@ export async function POST(req: Request) {
       organization_name: organizationName,
       contact_name: contactName,
       contact_email: email,
-      logo_url: body.logo_url?.trim() || null,
+      tier: body.tier === "OFFICIEL" || body.tier === "MAJEUR" ? body.tier : "PARTENAIRE",
+      category: body.category?.trim().slice(0, 24) || null,
       instagram_handle: body.instagram_handle?.trim() || null,
       description: body.description?.trim() || null,
       status: "APPROVED",

@@ -965,6 +965,11 @@ export interface AthleteSuggestion {
 /* ── Media partners (Phase 1) ─────────────────────────────── */
 
 export type PartnerStatus = "PENDING" | "APPROVED" | "SUSPENDED" | "REVOKED";
+
+/* Rang d'affichage sur la page d'accueil. OFFICIEL est mis en avant en
+   grand format ; MAJEUR et PARTENAIRE partagent la rangee secondaire,
+   MAJEUR d'abord. Miroir de media_partners_tier_check. */
+export type PartnerTier = "OFFICIEL" | "MAJEUR" | "PARTENAIRE";
 export type CardDownloadFormat = "publication" | "story";
 
 export interface MediaPartner {
@@ -974,6 +979,11 @@ export interface MediaPartner {
   contact_name: string;
   contact_email: string;
   logo_url: string | null;
+  /** Composition finie qui REMPLIT la carte du bandeau, bord a bord
+   *  (logo integre). Distincte de logo_url, qui est une marque centree.
+   *  Prioritaire sur logo_url dans le bandeau ; les surfaces carrees
+   *  (/partenaires/[id], PartnerSidebar) lisent toujours logo_url. */
+  card_image_url: string | null;
   website_url: string | null;
   instagram_handle: string | null;
   facebook_url: string | null;
@@ -981,6 +991,11 @@ export interface MediaPartner {
   description: string | null;
   audience_size: number | null;
   status: PartnerStatus;
+  tier: PartnerTier;
+  /** Etiquette libre affichee sous le logo (« Media », « Ligue »…).
+   *  Bornee a 24 caracteres en base. JAMAIS de la logique : rien ne
+   *  doit brancher sur sa valeur. */
+  category: string | null;
   approved_at: string | null;
   approved_by: string | null;
   show_on_homepage: boolean;
