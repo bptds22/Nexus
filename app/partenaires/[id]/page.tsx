@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import PlaybookBackground from "../../components/PlaybookBackground";
+import { initialesOrganisation } from "@/lib/partners/initiales";
 
 // Anon-role client (no cookies — public RLS handles row scoping). Required
 // because importing the cookies-based server client would prevent static
@@ -35,6 +36,7 @@ type PartnerPublic = {
   id: string;
   organization_name: string;
   logo_url: string | null;
+  card_image_url: string | null;
   description: string | null;
   about_text: string | null;
   website_url: string | null;
@@ -53,7 +55,7 @@ async function getPartner(id: string): Promise<PartnerPublic | null> {
   const { data } = await supabase
     .from("media_partners")
     .select(
-      "id, organization_name, logo_url, description, about_text, website_url, instagram_handle, tiktok_handle, facebook_url, x_url, youtube_url, linkedin_url",
+      "id, organization_name, logo_url, card_image_url, description, about_text, website_url, instagram_handle, tiktok_handle, facebook_url, x_url, youtube_url, linkedin_url",
     )
     .eq("id", id)
     .maybeSingle();
@@ -209,12 +211,7 @@ export default async function PartnerPublicPage(
     },
   ];
 
-  const initials = partner.organization_name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w.charAt(0).toUpperCase())
-    .join("");
+  const initials = initialesOrganisation(partner.organization_name);
 
   return (
     <main className="hero-playbook bg-[#111317] min-h-screen relative overflow-hidden">
@@ -233,16 +230,33 @@ export default async function PartnerPublicPage(
             <span className="w-10 h-px bg-[#E63946]" />
           </div>
 
-          {/* Logo — layered tile over a red halo */}
+          {/* Créneau au format CARTE (2,27:1), identique au bandeau de
+              l'accueil — 380x167 et 300x132 partagent ce ratio. C'est la
+              continuité qui compte : le recruteur retrouve ici l'image qu'il
+              vient de voir sur la page d'accueil.
+
+              Cascade à trois étages, la même que le bandeau :
+                1. card_image_url — composition finie, bord à bord
+                2. logo_url       — marque centrée, avec respiration
+                3. les initiales  — repli assumé
+              Un partenaire sans image de carte garde donc exactement le
+              rendu d'avant, à la forme du cadre près. */}
           <div className="relative mb-7">
             <div className="absolute -inset-5 bg-[#E63946]/20 blur-3xl rounded-full" aria-hidden />
-            <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl bg-gradient-to-b from-[#1E222B] to-[#13151a] border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.55)] flex items-center justify-center overflow-hidden">
-              {partner.logo_url ? (
+            <div className="relative w-[300px] h-[132px] sm:w-[380px] sm:h-[167px] rounded-2xl bg-gradient-to-b from-[#1E222B] to-[#13151a] border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.55)] flex items-center justify-center overflow-hidden">
+              {partner.card_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={partner.card_image_url}
+                  alt={partner.organization_name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : partner.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={partner.logo_url}
                   alt={`Logo ${partner.organization_name}`}
-                  className="w-full h-full object-contain p-3"
+                  className="max-h-[108px] max-w-[296px] object-contain"
                 />
               ) : (
                 <span className="font-head text-4xl font-black text-[#6B7280]">{initials}</span>
