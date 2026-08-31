@@ -1366,17 +1366,29 @@ body.light-mode .nx-partner-slot:hover {
    créneau, et un !important sur `span` teintait tout ce qui passait. */
 body.light-mode .nx-partner-name { color: rgba(13, 17, 23, 0.60); }
 body.light-mode .nx-partner-slot:hover .nx-partner-name { color: rgba(13, 17, 23, 0.85); }
-body.light-mode .nx-partner-label { color: rgba(13, 17, 23, 0.45); }
-/* Le rouge de marque tient sur les deux fonds — pas de variante. */
+/* `!important` OBLIGATOIRE ici, et ce n'est pas de la surenchère : la
+   feuille porte un `body.light-mode p { color: … !important }` global qui
+   écrase toute couleur de paragraphe en mode clair. Les libellés du
+   bandeau SONT des <p> — sans cette contre-mesure, le rouge de marque de
+   « PARTENAIRE OFFICIEL » devenait gris ardoise et le signal disparaissait.
+   Toute nouvelle couleur de libellé ici devra faire de même. */
+body.light-mode .nx-partner-label          { color: rgba(13, 17, 23, 0.45) !important; }
+body.light-mode .nx-partner-label-officiel { color: #E63946 !important; }
 
 /* PAS DE LUEUR EN MODE CLAIR : une lueur rouge sur blanc se lit comme un
-   état d'erreur. Seule la bordure porte le rang. */
+   état d'erreur. Seule la bordure porte le rang.
+
+   Bordure OPAQUE en mode clair, et non 45 % comme sur fond sombre : quand
+   le créneau porte une image de carte, le filet rouge est pris entre une
+   page pâle et une composition sombre. À 45 % il se dissout dans l'image
+   et le signal Nexus disparaît — mesuré sur la carte de L'Esprit Sportif.
+   Opaque, il tient contre les deux. */
 body.light-mode .nx-partner-slot--officiel {
-  border-color: rgba(230, 57, 70, 0.45);
+  border-color: #E63946;
   box-shadow: none;
 }
 body.light-mode .nx-partner-slot--officiel:hover {
-  border-color: rgba(230, 57, 70, 0.7);
+  border-color: #c62d3a;
   box-shadow: none;
 }
 body.light-mode .nx-partner-slot--majeur {

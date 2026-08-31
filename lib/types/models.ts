@@ -979,6 +979,11 @@ export interface MediaPartner {
   contact_name: string;
   contact_email: string;
   logo_url: string | null;
+  /** Composition finie qui REMPLIT la carte du bandeau, bord a bord
+   *  (logo integre). Distincte de logo_url, qui est une marque centree.
+   *  Prioritaire sur logo_url dans le bandeau ; les surfaces carrees
+   *  (/partenaires/[id], PartnerSidebar) lisent toujours logo_url. */
+  card_image_url: string | null;
   website_url: string | null;
   instagram_handle: string | null;
   facebook_url: string | null;

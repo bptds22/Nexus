@@ -43,6 +43,7 @@ type FeaturedPartner = {
   id: string;
   organization_name: string;
   logo_url: string | null;
+  card_image_url: string | null;
   tier: PartnerTier;
   category: string | null;
   homepage_order: number | null;
@@ -108,12 +109,36 @@ function taillePolice(nom: string, tier: PartnerTier): number {
   return n <= 14 ? a : n <= 24 ? b : n <= 36 ? c : d;
 }
 
+/* Cascade a trois etages, du plus specifique au plus universel :
+     1. card_image_url — composition finie, REMPLIT le creneau bord a bord
+     2. logo_url       — marque centree, plafonnee a 65 % / 78 %
+     3. le nom         — repli assume, jamais une erreur
+   Chaque etage retombe sur le suivant en cas d'URL morte (onError), pour
+   qu'un lien casse ne laisse jamais un cadre vide — le cas Facebook 403. */
 function Logo({ p }: { p: FeaturedPartner }) {
-  const [errored, setErrored] = useState(false);
+  const [logoErrone, setLogoErrone] = useState(false);
+  const [carteErronee, setCarteErronee] = useState(false);
   const rang = p.tier ?? "PARTENAIRE";
   const g = GEO_PAR_RANG[rang] ?? GEO.partenaire;
 
-  if (!p.logo_url || errored) {
+  /* Bord a bord : ni marge interieure, ni plafond de taille. Les coins
+     arrondis viennent de l'overflow-hidden du creneau, et le contour
+     rouge reste AU-DESSUS puisqu'il est porte par le conteneur.
+     Pas d'opacite reduite non plus : une composition finie voilee a 80 %
+     paraitrait delavee, alors qu'un logo y gagne en discretion. */
+  if (p.card_image_url && !carteErronee) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={p.card_image_url}
+        alt={p.organization_name}
+        onError={() => setCarteErronee(true)}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    );
+  }
+
+  if (!p.logo_url || logoErrone) {
     return (
       <span
         className="nx-partner-name block text-center px-3 font-head font-black uppercase leading-tight"
@@ -132,7 +157,7 @@ function Logo({ p }: { p: FeaturedPartner }) {
     <img
       src={p.logo_url}
       alt={p.organization_name}
-      onError={() => setErrored(true)}
+      onError={() => setLogoErrone(true)}
       className="object-contain opacity-80 hover:opacity-100 transition-opacity"
       style={{ maxHeight: g.logoH, maxWidth: g.logoW }}
     />
@@ -166,7 +191,8 @@ function Creneau({ p }: { p: FeaturedPartner }) {
       <Link
         href={`/partenaires/${p.id}`}
         aria-label={p.organization_name}
-        className={`nx-partner-slot ${habillage} flex items-center justify-center overflow-hidden`}
+        /* `relative` : ancre l'image de carte en absolute inset-0. */
+        className={`nx-partner-slot ${habillage} relative flex items-center justify-center overflow-hidden`}
         style={{ width: g.w, height: g.h }}
       >
         <Logo p={p} />
@@ -186,7 +212,7 @@ export default function PartnerCarousel() {
       const supabase = createClient();
       const { data } = await supabase
         .from("media_partners")
-        .select("id, organization_name, logo_url, tier, category, homepage_order")
+        .select("id, organization_name, logo_url, card_image_url, tier, category, homepage_order")
         .eq("status", "APPROVED")
         .eq("show_on_homepage", true);
       const rows = (data as FeaturedPartner[] | null) ?? [];
