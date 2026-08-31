@@ -35,6 +35,45 @@ export interface UploadImageOptions {
   preserveTransparency?: boolean;
   /** upsert Storage. Défaut true. */
   upsert?: boolean;
+  /**
+   * `Cache-Control: max-age` en secondes, en CHAÎNE. Défaut "3600".
+   *
+   * Ne relever cette valeur QUE si le chemin est unique par téléversement
+   * (nom horodaté). Sur un chemin FIXE écrasé par `upsert`, l'URL ne
+   * change pas : un long max-age fige l'ancienne image dans le navigateur
+   * ET dans le CDN. C'est exactement le défaut constaté le 2026-08-31 sur
+   * les logos partenaires, où 3600 suffisait déjà à servir une heure
+   * d'image périmée après un remplacement.
+   */
+  cacheControl?: string;
+}
+
+/**
+ * Chemin Storage d'une URL publique, ou null si l'URL n'appartient pas au
+ * bucket. À utiliser pour PURGER un objet : on DÉRIVE le nom de ce qui est
+ * stocké, on ne le devine jamais.
+ *
+ * C'est indispensable dès que les chemins sont horodatés : supprimer un
+ * `logo.png` codé en dur ne toucherait pas `logo-1756...png`, et laisserait
+ * le vrai fichier servable à son URL publique.
+ *
+ * Tolère un suffixe de requête et les caractères encodés.
+ */
+export function cheminStorageDepuisUrl(
+  url: string | null | undefined,
+  bucket: string,
+): string | null {
+  if (!url) return null;
+  const marqueur = `/storage/v1/object/public/${bucket}/`;
+  const i = url.indexOf(marqueur);
+  if (i === -1) return null;
+  const brut = url.slice(i + marqueur.length).split("?")[0];
+  if (!brut) return null;
+  try {
+    return decodeURIComponent(brut);
+  } catch {
+    return brut;
+  }
 }
 
 export type UploadImageResult =
@@ -66,6 +105,7 @@ export async function uploadImage(
   const maxBytes = opts.maxBytes ?? DEFAULTS.maxBytes;
   const preserveTransparency = opts.preserveTransparency ?? false;
   const upsert = opts.upsert ?? true;
+  const cacheControl = opts.cacheControl ?? "3600";
 
   // 1. Validation type — on accepte toute image (png inclus).
   if (!file.type.startsWith("image/")) {
@@ -135,7 +175,7 @@ export async function uploadImage(
   const supabase = createClient();
   const { error } = await supabase.storage
     .from(bucket)
-    .upload(path, blob, { upsert, contentType, cacheControl: "3600" });
+    .upload(path, blob, { upsert, contentType, cacheControl });
   if (error) {
     return { ok: false, code: "UPLOAD_FAILED", message: error.message };
   }

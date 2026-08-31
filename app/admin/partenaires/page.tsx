@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { MediaPartner, PartnerStatus, PartnerTier } from "@/lib/types/models";
-import { uploadImage } from "@/lib/upload/uploadImage";
+import { uploadImage, cheminStorageDepuisUrl } from "@/lib/upload/uploadImage";
 
 /* ═══════════════════════════════════════════════════════════════
    /admin/partenaires — Phase 1 closed-beta admin panel
@@ -59,6 +59,14 @@ const CONSIGNE_LOGO = "PNG a fond transparent, canevas carre ou 3:1. Sert aux su
 /* L'image de carte n'est PAS un logo : c'est la composition finie qui
    remplit le creneau OFFICIEL bord a bord, logo deja integre. Le ratio
    2,27:1 est celui du creneau (340x150) — s'en ecarter fait rogner. */
+const BUCKET_PARTENAIRES = "partner-logos";
+
+/* Un an. Legitime UNIQUEMENT parce que le chemin est horodate a chaque
+   televersement : l'URL est unique, donc son contenu est immuable. Sur
+   l'ancien chemin fixe, meme 3600 servait une heure d'image perimee apres
+   un remplacement — le defaut que BP a rencontre. */
+const CACHE_IMMUABLE = "31536000";
+
 const CONSIGNE_CARTE = "Composition complete, logo deja integre. Ratio 2,27:1 — ex. 1360 x 600 px. Remplit la carte du bandeau, bord a bord.";
 
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
@@ -268,18 +276,26 @@ export default function AdminPartenairesPage() {
     }
   }
 
-  async function televerserLogo(partnerId: string, file: File) {
+  /* Chemin HORODATE, et non plus fixe. Le dossier reste {id}/ — c'est ce
+     que la policy « partner logos insert » scope, et ce que la contrainte
+     media_partners_logo_url_interne exige dans l'URL. Seul le nom du
+     fichier porte l'horodatage, ce qui rend chaque URL unique et tue le
+     cache perime a toutes les couches (navigateur, CDN, proxy).
+
+     Ordre volontaire : upload -> ecriture de la colonne -> purge de
+     l'ancien. Purger d'abord laisserait une image cassee si l'ecriture
+     echouait ; dans cet ordre, le pire cas est un orphelin, pas un trou. */
+  async function televerserLogo(p: MediaPartner, file: File) {
     setPanelBusy(true);
     try {
-      /* Chemin {media_partners.id}/logo : c'est ce que la policy
-         « partner logos insert » attend, et ce que la contrainte
-         media_partners_logo_url_interne exige dans l'URL. */
+      const ancien = cheminStorageDepuisUrl(p.logo_url, BUCKET_PARTENAIRES);
       const res = await uploadImage(file, {
-        bucket: "partner-logos",
-        pathBase: `${partnerId}/logo`,
+        bucket: BUCKET_PARTENAIRES,
+        pathBase: `${p.id}/logo-${Date.now()}`,
         preserveTransparency: true,
         maxDimension: 512,
         maxBytes: 500_000,
+        cacheControl: CACHE_IMMUABLE,
       });
       if (!res.ok) {
         showToast("error", `Erreur logo : ${res.message}`);
@@ -289,14 +305,15 @@ export default function AdminPartenairesPage() {
       const { data, error } = await supabase
         .from("media_partners")
         .update({ logo_url: res.publicUrl })
-        .eq("id", partnerId)
+        .eq("id", p.id)
         .select();
       if (error) { showToast("error", error.message); return; }
       if (!data || data.length === 0) {
         showToast("error", "Action refusee — verifie tes permissions.");
         return;
       }
-      setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
+      setPartners((prev) => prev.map((x) => (x.id === p.id ? (data[0] as MediaPartner) : x)));
+      await purgerAncien(ancien, res.path);
       showToast("success", "Logo mis a jour.");
     } finally {
       setPanelBusy(false);
@@ -318,15 +335,17 @@ export default function AdminPartenairesPage() {
      la taille de rendu (la carte fait 340 px CSS). PNG n'a PAS de boucle
      de qualite dans le helper : au-dessus du plafond, c'est un echec sec,
      pas une degradation. La marge doit donc etre reelle. */
-  async function televerserCarte(partnerId: string, file: File) {
+  async function televerserCarte(p: MediaPartner, file: File) {
     setPanelBusy(true);
     try {
+      const ancien = cheminStorageDepuisUrl(p.card_image_url, BUCKET_PARTENAIRES);
       const res = await uploadImage(file, {
-        bucket: "partner-logos",
-        pathBase: `${partnerId}/carte`,
+        bucket: BUCKET_PARTENAIRES,
+        pathBase: `${p.id}/carte-${Date.now()}`,
         preserveTransparency: true,
         maxDimension: 1024,
         maxBytes: 950_000,
+        cacheControl: CACHE_IMMUABLE,
       });
       if (!res.ok) {
         showToast("error", `Erreur image : ${res.message}`);
@@ -336,18 +355,30 @@ export default function AdminPartenairesPage() {
       const { data, error } = await supabase
         .from("media_partners")
         .update({ card_image_url: res.publicUrl })
-        .eq("id", partnerId)
+        .eq("id", p.id)
         .select();
       if (error) { showToast("error", error.message); return; }
       if (!data || data.length === 0) {
         showToast("error", "Action refusee — verifie tes permissions.");
         return;
       }
-      setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
+      setPartners((prev) => prev.map((x) => (x.id === p.id ? (data[0] as MediaPartner) : x)));
+      await purgerAncien(ancien, res.path);
       showToast("success", "Image de carte mise a jour.");
     } finally {
       setPanelBusy(false);
     }
+  }
+
+  /* Purge « best effort » de l'objet remplace. Un echec ici laisse un
+     orphelin dans le bucket — genant, jamais visible. On journalise au
+     lieu d'alerter : l'admin vient de reussir son televersement, lui
+     annoncer une erreur serait faux. */
+  async function purgerAncien(ancien: string | null, nouveau: string) {
+    if (!ancien || ancien === nouveau) return;
+    const supabase = createClient();
+    const { error } = await supabase.storage.from(BUCKET_PARTENAIRES).remove([ancien]);
+    if (error) console.warn("[partner] orphelin non purge :", ancien, error);
   }
 
   /* Retrait generique. Vide la colonne ET purge le fichier : sans ca, une
@@ -355,28 +386,37 @@ export default function AdminPartenairesPage() {
      avoir disparu de l'interface. La suppression Storage est « best
      effort » — si elle echoue, on vide quand meme la colonne, parce que
      l'affichage est ce que l'admin cherchait a corriger. */
-  async function retirerImage(partnerId: string, champ: "logo_url" | "card_image_url") {
+  async function retirerImage(p: MediaPartner, champ: "logo_url" | "card_image_url") {
     setPanelBusy(true);
     try {
       const supabase = createClient();
-      const fichier = champ === "logo_url" ? "logo.png" : "carte.png";
-      const { error: errStorage } = await supabase.storage
-        .from("partner-logos")
-        .remove([`${partnerId}/${fichier}`]);
-      if (errStorage) {
-        console.warn("[partner] purge storage echouee — la colonne est quand meme videe", errStorage);
+      /* Le chemin est DERIVE de l'URL stockee, jamais reconstruit. Depuis
+         que les noms sont horodates, supprimer un « logo.png » en dur ne
+         toucherait plus rien et laisserait le vrai fichier servable a son
+         URL publique. Fonctionne aussi sur les anciennes URL a nom fixe. */
+      const cible = cheminStorageDepuisUrl(
+        champ === "logo_url" ? p.logo_url : p.card_image_url,
+        BUCKET_PARTENAIRES,
+      );
+      if (cible) {
+        const { error: errStorage } = await supabase.storage
+          .from(BUCKET_PARTENAIRES)
+          .remove([cible]);
+        if (errStorage) {
+          console.warn("[partner] purge storage echouee — la colonne est quand meme videe", errStorage);
+        }
       }
       const { data, error } = await supabase
         .from("media_partners")
         .update({ [champ]: null })
-        .eq("id", partnerId)
+        .eq("id", p.id)
         .select();
       if (error) { showToast("error", error.message); return; }
       if (!data || data.length === 0) {
         showToast("error", "Action refusee — verifie tes permissions.");
         return;
       }
-      setPartners((prev) => prev.map((p) => (p.id === partnerId ? (data[0] as MediaPartner) : p)));
+      setPartners((prev) => prev.map((x) => (x.id === p.id ? (data[0] as MediaPartner) : x)));
       showToast("success", champ === "logo_url"
         ? "Logo retire."
         : "Image de carte retiree — le logo reprend la main dans le bandeau.");
@@ -668,7 +708,7 @@ export default function AdminPartenairesPage() {
                                 onChange={(e) => {
                                   const f = e.target.files?.[0];
                                   e.target.value = "";
-                                  if (f) void televerserLogo(p.id, f);
+                                  if (f) void televerserLogo(p, f);
                                 }}
                               />
                             </label>
@@ -676,7 +716,7 @@ export default function AdminPartenairesPage() {
                               <button
                                 type="button"
                                 disabled={panelBusy}
-                                onClick={() => void retirerImage(p.id, "logo_url")}
+                                onClick={() => void retirerImage(p, "logo_url")}
                                 className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#EF4444]/40 rounded-lg transition-colors disabled:opacity-50"
                               >
                                 Retirer
@@ -716,7 +756,7 @@ export default function AdminPartenairesPage() {
                                   onChange={(e) => {
                                     const f = e.target.files?.[0];
                                     e.target.value = "";
-                                    if (f) void televerserCarte(p.id, f);
+                                    if (f) void televerserCarte(p, f);
                                   }}
                                 />
                               </label>
@@ -724,7 +764,7 @@ export default function AdminPartenairesPage() {
                                 <button
                                   type="button"
                                   disabled={panelBusy}
-                                  onClick={() => void retirerImage(p.id, "card_image_url")}
+                                  onClick={() => void retirerImage(p, "card_image_url")}
                                   className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#EF4444]/40 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                   Retirer

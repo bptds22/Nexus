@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { uploadImage } from "@/lib/upload/uploadImage";
+import { uploadImage, cheminStorageDepuisUrl } from "@/lib/upload/uploadImage";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/profil — partner self-edit form.
@@ -167,15 +167,18 @@ export default function PartnerProfilePage() {
         return;
       }
       /* pathBase SANS extension : uploadImage pose .png lui-meme.
-         Chemin stable (pas d'horodatage) + upsert : un nouveau logo
-         remplace l'ancien au lieu d'empiler des orphelins dans le
-         bucket. */
+         Chemin HORODATE : un chemin stable garde la meme URL apres un
+         remplacement, et le navigateur comme le CDN continuent de servir
+         l'ancienne image. On purge l'ancien objet plus bas plutot que de
+         compter sur upsert. */
+      const ancien = cheminStorageDepuisUrl(partner.logo_url, "partner-logos");
       const res = await uploadImage(file, {
         bucket: "partner-logos",
-        pathBase: `${partner.id}/logo`,
+        pathBase: `${partner.id}/logo-${Date.now()}`,
         preserveTransparency: true,
         maxDimension: 512,
         maxBytes: 500_000,
+        cacheControl: "31536000",
       });
       if (!res.ok) {
         showToast("error", `Erreur logo : ${res.message}`);
@@ -198,6 +201,11 @@ export default function PartnerProfilePage() {
         return;
       }
       setLogoUrl(publicUrl);
+      setPartner((prev) => (prev ? { ...prev, logo_url: publicUrl } : prev));
+      if (ancien && ancien !== res.path) {
+        const { error: errPurge } = await supabase.storage.from("partner-logos").remove([ancien]);
+        if (errPurge) console.warn("[partner logo] orphelin non purge :", ancien, errPurge);
+      }
       showToast("success", "Logo mis à jour !");
     } finally {
       setUploadingLogo(false);
