@@ -355,26 +355,168 @@ function FreeLock() {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 
+/** Les 30 colonnes de public.partner_athlete_profile, telles que la RPC les
+ *  RETOURNE (verifie contre son RETURNS TABLE). Toute colonne absente d'ici
+ *  n'existe pas cote partenaire — et c'est le seul endroit ou le verifier. */
+type PartnerRpcRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  photo_url: string | null;
+  numero_jersey: string | null;
+  age: number | null;
+  genre: string | null;
+  annee_diplomation: number | null;
+  verified: boolean | null;
+  last_profile_validation: string | null;
+  cote_globale: number | null;
+  taille_pieds: number | null;
+  taille_pouces: number | null;
+  poids_lbs: number | null;
+  bio: string | null;
+  sport_nom: string | null;
+  position_nom: string | null;
+  position_abbr: string | null;
+  school_name: string | null;
+  school_region: string | null;
+  school_city: string | null;
+  school_type: string | null;
+  is_civil: boolean | null;
+  team_name: string | null;
+  league_name: string | null;
+  distinctions: unknown;
+  video_faits_saillants_url: string | null;
+  hudl_url: string | null;
+  youtube_url: string | null;
+  /** Projete par la RPC mais non consomme par ce corps de fiche : le mapping
+   *  ne lit jamais `d.badges`. Declare quand meme pour que le type reste le
+   *  reflet FIDELE du RETURNS TABLE. */
+  badges: unknown;
+};
+
+/**
+ * FORME EXIGEE PAR LE MAPPING EN AVAL — tous les champs que `load()` lit sur
+ * `d`, sans exception. Le type existe pour UNE raison : rendre impossible la
+ * panne du 19 aout 2026.
+ *
+ * Ce jour-la, adaptPartnerRow a remplace la requete directe sans reporter
+ * `school_id`. Le mapping teste `!d.school_id` pour decider « civil » ; sur
+ * `undefined` le test est VRAI, et les 47 fiches du portail partenaire ont
+ * bascule en « Ligue civile » — dont 34 athletes scolaires, nom d'ecole vide.
+ * Douze jours sans que rien ne le signale : sur un `Record<string, unknown>`,
+ * un champ MANQUANT est indiscernable d'un champ NULL.
+ *
+ * Chaque champ est donc REQUIS. Une omission ne compile plus. Les absences
+ * VOULUES sont ecrites `null` explicitement — une decision qu'on lit, plus un
+ * oubli qu'on devine. Si le mapping se met a lire un champ de plus, l'ajouter
+ * ici est le premier geste, et le compilateur le rappelle.
+ */
+type PartnerAdaptedRow = {
+  /* ── Identite et gabarit — projetes par la RPC ─────────────────────── */
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  photo_url: string | null;
+  numero_jersey: string | null;
+  age: number | null;
+  genre: string | null;
+  annee_diplomation: number | null;
+  verified: boolean | null;
+  last_profile_validation: string | null;
+  cote_globale_entraineur: number | null;
+  taille_pieds: number | null;
+  taille_pouces: number | null;
+  poids_lbs: number | null;
+  sports: { nom: string | null } | null;
+  positions: { nom: string | null; abreviation: string | null } | null;
+  schools: { name: string | null; region: string | null; city: string | null; type: string | null } | null;
+  evaluations: { distinctions: unknown }[] | null;
+
+  /* ── Le contexte, DECIDE PAR LE SERVEUR ────────────────────────────────
+     `is_civil` est la reponse de la RPC — (school_id IS NULL OR type =
+     'LIGUE_CIVILE') — calculee la ou `school_id` existe vraiment. Le front la
+     PREFERE a sa propre regle plutot que de la recalculer sur des champs qu'il
+     n'a pas. `school_id` reste `null` : le partenaire n'a aucun besoin de
+     l'identifiant, seulement du verdict. */
+  is_civil: boolean | null;
+  school_id: null;
+  team_name: string | null;
+  league_name: string | null;
+
+  /* ── Medias projetes ───────────────────────────────────────────────── */
+  video_faits_saillants_url: string | null;
+  hudl_url: string | null;
+  youtube_url: string | null;
+
+  /* ── ABSENCES VOULUES ──────────────────────────────────────────────────
+     Loi 25 et perimetre partenaire. `date_naissance` en particulier ne
+     franchit JAMAIS la frontiere : c'est elle qui decide du masquage, et l'age
+     arrive deja derive du serveur. */
+  date_naissance: null;
+  user_id: null;
+  coach_id: null;
+  users: null;
+
+  /* Bloc academique — remplace a l'ecran par un substitut assume
+     (« Reserve aux recruteurs et coaches »), pas par du vide. */
+  moyenne_generale: null;
+  mentions_academiques: null;
+  matieres_fortes: null;
+  programme_cegep_vise: null;
+  regions_cegep_preferees: null;
+  ouvert_cegep_prive: null;
+  ouvert_cegep_anglophone: null;
+  pret_changer_region: null;
+
+  /* Parcours d'equipes, engagement, grille — gardes par `!isPartner`, ou
+     resolus autrement (position_id : lib/evaluations/grilles.ts resout la
+     grille client-side, sans cette colonne — c'est documente la-bas). */
+  parcours_equipes: null;
+  team_athletes: null;
+  committed_school: null;
+  position_id: null;
+
+  /* ── ABSENCES SUBIES — non projetees par la RPC ────────────────────────
+     Elles ne mentent plus a l'ecran : les deux surfaces qui les affichaient
+     avec un defaut FAUX (statut de recrutement fige a « OUVERT », completude
+     figee a 0 %) sont desormais masquees pour le partenaire. Les mesures,
+     tests et medias secondaires se masquaient deja seuls quand ils sont vides
+     — une absence, jamais une affirmation fausse. Les rouvrir suppose de les
+     AJOUTER a la RPC, pas de les deviner ici. */
+  profile_completion: null;
+  recruitment_status: null;
+  statut_recrutement_override: null;
+  open_to_offers: null;
+  envergure: null;
+  taille_mains: null;
+  main_dominante: null;
+  pied_dominant: null;
+  test_40_verges: null;
+  saut_vertical: null;
+  saut_longueur: null;
+  navette_agilite: null;
+  sprint_100m: null;
+  developpe_couche: null;
+  video_match_complet_url: null;
+  video_entrainement_url: null;
+  instagram_url: null;
+};
+
 /**
  * Redonne a une ligne de public.partner_athlete_profile la FORME que produisait
  * la requete directe sur `athletes`, pour que le mapping en aval soit inchange.
  *
- * Ce qui est ABSENT l'est par construction, pas par oubli — la RPC ne le
- * projette pas :
- *   email, telephone, date_naissance, nom_parent, telephone_parent,
- *   moyenne_generale, mentions_academiques, matieres_fortes,
- *   programme_cegep_vise, programmes_vises, regions_cegep_preferees, ouvert_cegep_*,
- *   notes_coach, rapport_entraineur, les 14 notes de traits.
+ * Le type de retour EST le contrat : voir PartnerAdaptedRow ci-dessus. Ce qui
+ * vaut `null` l'est par decision, et le compilateur refuse desormais qu'un
+ * champ disparaisse en silence.
  *
  * L'ecran partenaire est force en mode « simple » et masque deja le bloc
- * academique (l. ~1669) et le nom de l'entraineur (l. ~1751) : rien de visible
- * ne disparait. `age` est fourni DERIVE — date_naissance ne franchit jamais la
- * frontiere, c'est elle qui decide du masquage Loi 25.
+ * academique et le nom de l'entraineur. `age` est fourni DERIVE —
+ * date_naissance ne franchit jamais la frontiere.
  */
-function adaptPartnerRow(r: Record<string, unknown>): Record<string, unknown> {
+function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
   return {
     id: r.id,
-    user_id: null,
     first_name: r.first_name,
     last_name: r.last_name,
     photo_url: r.photo_url,
@@ -389,10 +531,6 @@ function adaptPartnerRow(r: Record<string, unknown>): Record<string, unknown> {
     taille_pieds: r.taille_pieds,
     taille_pouces: r.taille_pouces,
     poids_lbs: r.poids_lbs,
-    bio: r.bio,
-    video_faits_saillants_url: r.video_faits_saillants_url,
-    hudl_url: r.hudl_url,
-    youtube_url: r.youtube_url,
     sports: r.sport_nom ? { nom: r.sport_nom } : null,
     positions: r.position_nom ? { nom: r.position_nom, abreviation: r.position_abbr } : null,
     schools: r.school_name
@@ -402,7 +540,53 @@ function adaptPartnerRow(r: Record<string, unknown>): Record<string, unknown> {
        d'un element sans notes de traits ni rapport — ce qui est exactement
        l'intention. */
     evaluations: r.distinctions ? [{ distinctions: r.distinctions }] : null,
+
+    /* Le verdict du serveur, transmis tel quel — plus aucun recalcul. */
+    is_civil: r.is_civil,
+    school_id: null,
+    team_name: r.team_name,
+    league_name: r.league_name,
+
+    video_faits_saillants_url: r.video_faits_saillants_url,
+    hudl_url: r.hudl_url,
+    youtube_url: r.youtube_url,
+
+    /* Absences voulues — Loi 25 et perimetre partenaire. */
+    date_naissance: null,
+    user_id: null,
+    coach_id: null,
     users: null,
+    moyenne_generale: null,
+    mentions_academiques: null,
+    matieres_fortes: null,
+    programme_cegep_vise: null,
+    regions_cegep_preferees: null,
+    ouvert_cegep_prive: null,
+    ouvert_cegep_anglophone: null,
+    pret_changer_region: null,
+    parcours_equipes: null,
+    team_athletes: null,
+    committed_school: null,
+    position_id: null,
+
+    /* Absences subies — non projetees par la RPC. */
+    profile_completion: null,
+    recruitment_status: null,
+    statut_recrutement_override: null,
+    open_to_offers: null,
+    envergure: null,
+    taille_mains: null,
+    main_dominante: null,
+    pied_dominant: null,
+    test_40_verges: null,
+    saut_vertical: null,
+    saut_longueur: null,
+    navette_agilite: null,
+    sprint_100m: null,
+    developpe_couche: null,
+    video_match_complet_url: null,
+    video_entrainement_url: null,
+    instagram_url: null,
   };
 }
 
@@ -627,7 +811,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           .rpc("partner_athlete_profile", { p_athlete_id: id })
           .maybeSingle()
           .then((r) => ({
-            data: r.data ? adaptPartnerRow(r.data as Record<string, unknown>) : null,
+            data: r.data ? adaptPartnerRow(r.data as PartnerRpcRow) : null,
             error: r.error,
           }))
       : (directQuery as unknown as PromiseLike<{ data: unknown; error: unknown }>);
@@ -694,6 +878,23 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         // School info
         const schoolRel = Array.isArray(d.schools) ? d.schools[0] : d.schools;
         const school = schoolRel as { name: string; region: string; city: string; type: string } | null;
+
+        /* LE CONTEXTE, DERIVE UNE SEULE FOIS.
+
+           `d.is_civil` est le verdict du SERVEUR (partner_athlete_profile le
+           calcule sur le vrai `school_id`). Quand il est la, il gagne.
+
+           Le `??` n'est pas une coquetterie : sur le chemin RECRUTEUR la RPC
+           n'existe pas, `d.is_civil` vaut `undefined`, et la regle locale
+           s'applique inchangee — elle est alimentee par un `school_id`
+           reellement selectionne. Sur le chemin PARTENAIRE, cette meme regle
+           lisait `undefined` et rendait TOUT LE MONDE civil (le bug du
+           19 aout). On cesse de recalculer ce que le serveur a deja tranche.
+
+           Un `||` serait faux ici : `is_civil = false` est une reponse, pas
+           une absence de reponse. */
+        const serverCivil = d.is_civil as boolean | null | undefined;
+        const civil = serverCivil ?? (!d.school_id || school?.type === "LIGUE_CIVILE");
 
         // Age from birth date
         /* L'âge vient de la RPC, DÉRIVÉ côté serveur. date_naissance n'est
@@ -791,15 +992,15 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           // Phase 1 audit (post-Phase 6.1): schoolName overload split
           // into isCivil / schoolName / teamName / leagueName. Canonical
           // civil rule = no school_id OR school.type === 'LIGUE_CIVILE'.
-          isCivil: !d.school_id || school?.type === "LIGUE_CIVILE",
-          schoolName: (() => {
-            if (!d.school_id) return "";
-            if (school?.type === "LIGUE_CIVILE") return "";
-            return school?.name || "";
-          })(),
+          isCivil: civil,
+          schoolName: civil ? "" : (school?.name || ""),
           teamName: (() => {
-            const civil = !d.school_id || school?.type === "LIGUE_CIVILE";
             if (!civil) return undefined;
+            /* Chemin partenaire : la RPC projette `team_name`. L'adaptateur ne
+               fournit pas `team_athletes` — sans cette branche, un athlete
+               civil affichait « Equipe civile : — ». */
+            const fromRpc = d.team_name as string | null | undefined;
+            if (fromRpc) return fromRpc;
             const taRel = d.team_athletes as unknown;
             const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
             const firstTa = taArr[0] as Record<string, unknown> | null;
@@ -807,8 +1008,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             return (teamRel as { name?: string } | null)?.name;
           })(),
           leagueName: (() => {
-            const civil = !d.school_id || school?.type === "LIGUE_CIVILE";
             if (!civil) return undefined;
+            const fromRpcTeam = d.team_name as string | null | undefined;
+            if (fromRpcTeam) return undefined;
+            const fromRpcLeague = d.league_name as string | null | undefined;
+            if (fromRpcLeague) return fromRpcLeague;
             const taRel = d.team_athletes as unknown;
             const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
             const firstTa = taArr[0] as Record<string, unknown> | null;
@@ -1357,10 +1561,17 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* ── Toggle (hidden for partner) + Completeness ────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {isPartner ? <div /> : <ProfileToggle mode={mode} onChange={setMode} />}
-          <div className="w-full sm:w-56">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
-            <CompletenessBar percent={a.profileCompleteness} />
-          </div>
+          {/* La RPC partenaire ne projette PAS profile_completion : la barre
+              affichait « 0 % » pour les 47 fiches, alors que le reel va de 33 a
+              95. Une barre absente ne dit rien ; une barre a zero affirme une
+              chose fausse sur un athlete. Masquee tant que la colonne n'est pas
+              projetee — a rouvrir en l'AJOUTANT a la RPC. */}
+          {!isPartner && (
+            <div className="w-full sm:w-56">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
+              <CompletenessBar percent={a.profileCompleteness} />
+            </div>
+          )}
         </div>
 
         {/* ══════════ HERO — 2 Columns ══════════ */}
@@ -1429,10 +1640,17 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   )}
                 </div>
               )}
-              <div className="bg-[#111317] rounded-lg px-4 py-2">
-                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
-                <RecruitmentStatusBadgeGlobal status={recruitmentStatus as GlobalRecruitmentStatus} committedSchoolName={committedSchoolName} openToOffers={openToOffers} size="sm" />
-              </div>
+              {/* Meme raison que la barre de completude : recruitment_status,
+                  statut_recrutement_override, committed_school et open_to_offers
+                  ne sont PAS projetes par la RPC partenaire. Le badge retombait
+                  sur son defaut « OUVERT » pour les 47 fiches — faux pour 13
+                  d'entre elles. Masque plutot que menteur. */}
+              {!isPartner && (
+                <div className="bg-[#111317] rounded-lg px-4 py-2">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
+                  <RecruitmentStatusBadgeGlobal status={recruitmentStatus as GlobalRecruitmentStatus} committedSchoolName={committedSchoolName} openToOffers={openToOffers} size="sm" />
+                </div>
+              )}
 
             </div>
 
