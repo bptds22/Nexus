@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import type { MediaPartner, PartnerStatus } from "@/lib/types/models";
+import { initialesOrganisation } from "@/lib/partners/initiales";
 
 const NAV_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [
   {
@@ -111,7 +112,7 @@ export default function PartnerSidebar({ mobileOpen, onClose }: { mobileOpen: bo
               <img src={partner.logo_url} alt="" className="w-full h-full object-cover" />
             ) : (
               <span className="text-[12px] font-bold text-white/30">
-                {(partner?.organization_name || "?").slice(0, 2).toUpperCase()}
+                {initialesOrganisation(partner?.organization_name)}
               </span>
             )}
           </div>
