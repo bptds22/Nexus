@@ -13,6 +13,15 @@ import { isShowcaseAthlete } from "@/lib/showcase";
  *   - `card`    : pastille compacte, posée près du nom sur une carte de liste
  *   - `profile` : bandeau explicite, en haut de la fiche complète
  *
+ * Le texte de `profile` EXPLIQUE, il n'ouvre rien : aucun lien, aucun bouton,
+ * aucune branche selon le palier ou l'état du recruteur. Le recruteur qui lit
+ * ce bandeau vient de voir une identité en clair au milieu de cartes
+ * anonymes ; il lui faut la raison du contraste, pas un appel à l'achat. La
+ * raison est double et se dit dans cet ordre : l'athlète est fictif (donc
+ * personne à contacter), et les vrais sont protégés parce qu'ils sont
+ * MINEURS — la Loi 25 avant le prix. Y ajouter un bouton retournerait
+ * l'argument : la protection deviendrait un péage.
+ *
  * Palette : ambre RETENU (#F59E0B), déjà présent dans le design via les
  * étoiles de cote. Fonds et bordures à faible opacité — le ruban se lit
  * comme une NOTE, pas comme une alerte. Typo Outfit (`font-head`) comme
@@ -46,8 +55,11 @@ export function DemoRibbon({ variant = "card", className = "" }: {
             Profil démo
           </p>
           <p className="text-[13px] text-[#9CA3AF] leading-snug mt-0.5">
-            Exemple fictif créé par Nexus pour montrer une fiche complète.
-            Cet athlète n&apos;existe pas — il n&apos;y a personne à contacter.
+            Cet athlète est fictif : il montre à quoi ressemble une fiche
+            complète sur Nexus. Les vrais profils sont protégés — nos athlètes
+            sont mineurs, et la Loi 25 nous oblige à ne révéler leur identité
+            qu&apos;aux recruteurs vérifiés par notre équipe et abonnés Pro ou
+            All&nbsp;Star.
           </p>
         </div>
       </div>
