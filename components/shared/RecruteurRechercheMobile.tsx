@@ -32,6 +32,7 @@ import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
 import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
+import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useRecentViewedAthletes } from "@/lib/queries/recruiter/useRecentViewedAthletes";
 import { useAthleteAutocomplete } from "@/lib/queries/recruiter/useAthleteAutocomplete";
@@ -713,6 +714,8 @@ export function AthleteCardMobile({
               <>{a.firstName} {a.lastName}</>
             )}
           </p>
+          {/* Vitrine — ruban sous le nom (carte grille ET carte ligne). */}
+          <DemoRibbonIf athleteId={a.id} className="mt-1" />
           {/* Iter 7.5 Section E — position + verified check inline (déplacé
               depuis le top-left). Pattern Twitter : badge collé à l'identité. */}
           <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
@@ -776,6 +779,8 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
               <>{a.firstName} {a.lastName}</>
             )}
           </p>
+          {/* Vitrine — ruban sous le nom (carte grille ET carte ligne). */}
+          <DemoRibbonIf athleteId={a.id} className="mt-1" />
           <p className="text-[11px] text-[#9CA3AF] truncate mt-0.5">
             {a.position || a.sportName || "—"} · {a.noTeam ? "Ligue civile" : a.school || "—"}
           </p>
