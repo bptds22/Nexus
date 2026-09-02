@@ -88,12 +88,11 @@ export const teamPages: TeamData[] = [
   {
     id: "grasset-flag-f", sportNom: "Flag football", division: "D2", genre: "Féminin",
     sportKey: "flag", nom: "Flag football\nféminin", ...GR,
-    heroImage: "/heroes/hero-flag-grasset.jpg", // PHOTO RÉELLE flag féminin (petite réso, HD à venir)
-    // Point focal du crop (format object-position). Source carrée 447×447 dans un
-    // cadre ≈2.6:1 → le débord est vertical : seul Y compte ici. 22% = les visages.
-    // Bloc 2 : viendra de hero_image.focal_x / hero_image.focal_y (saisie coach),
-    // composé en `${focal_x}% ${focal_y}%`. Absent → défaut "50% 25%".
-    heroFocal: "50% 22%",
+    heroImage: "/team-hero-football.webp", // NEW hero football (remplace la photo flag féminin)
+    // Point focal du crop (object-position). Valeur neutre pour la nouvelle photo
+    // paysage (1024×683) — à ré-ajuster après visionnage si le cadrage doit bouger.
+    // Bloc 2 : viendra de hero_image.focal_x / hero_image.focal_y (saisie coach).
+    heroFocal: "50% 40%",
     recordSaison: "7–2", recordLabel: "Saison 24-25", playoffResult: "Finale", playoffLabel: "Séries RSEQ",
     socials: SOC, engagesCount: 4, season: SEASON,
     roster: [

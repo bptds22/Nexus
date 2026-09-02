@@ -8,6 +8,7 @@
 // Cœur cibles = state partagé avec la box besoins (R3). Icônes = SocialIcons.
 
 import * as React from "react";
+import Image from "next/image";
 import { Heart } from "lucide-react";
 import SocialIcons from "@/components/marketing/SocialIcons";
 import type { TeamData } from "./content";
@@ -29,8 +30,16 @@ export default function TeamHero({
       {/* fond : fallback thémé (toujours présent) + photo par-dessus si dispo */}
       <div className="hero-fallback" />
       {team.heroImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="hero-bg" src={team.heroImage} alt="" onError={() => setImgOk(false)} />
+        <Image
+          className="hero-bg"
+          src={team.heroImage}
+          alt=""
+          width={1024}
+          height={683}
+          sizes="(max-width: 720px) 100vw, 66vw"
+          priority
+          onError={() => setImgOk(false)}
+        />
       )}
       {/* fade Texas : left→right vers le sombre + léger fade bas (enchaînement) */}
       <div className="hero-fade" />
