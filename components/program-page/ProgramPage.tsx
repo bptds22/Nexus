@@ -361,39 +361,82 @@ export const PP_CSS = `
 .pp .n-link:hover{border-color:var(--red);transform:translateY(-2px)}
 .pp .n-link .ar{color:var(--red);filter:brightness(1.5)}
 /* S2bis — SAISON EN COURS (veille RSEQ, donnee vivante) */
-.pp .sn-list{display:flex;flex-direction:column;gap:10px;margin-top:28px}
-.pp .sn-row{background:#1A1D24;border:1.5px solid #262A33;border-radius:14px;overflow:hidden}
-.pp .sn-row[open]{border-color:#2F3542}
-.pp .sn-head{display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;list-style:none}
+.pp .sn-list{display:flex;flex-direction:column;gap:8px;margin-top:28px}
+.pp .sn-row{background:#1A1D24;border:1.5px solid #262A33;border-radius:14px;overflow:hidden;
+  transition:border-color .2s,transform .2s var(--pop)}
+.pp .sn-row:hover{border-color:var(--red);transform:translateY(-2px)}
+.pp .sn-row[open]{border-color:#2F3542;transform:none}
+.pp .sn-row[open]:hover{border-color:var(--red)}
+.pp .sn-head{display:flex;align-items:center;gap:18px;padding:17px 22px;cursor:pointer;list-style:none}
 .pp .sn-head::-webkit-details-marker{display:none}
-.pp .sn-nom{font-family:'Anton';font-size:19px;line-height:1.1;color:var(--p-ink);text-transform:uppercase;flex:1 1 auto;min-width:0}
-.pp .sn-chiffres{display:flex;align-items:baseline;gap:14px;flex:0 0 auto}
-.pp .sn-fiche{font-family:'Anton';font-size:22px;color:var(--p-ink);line-height:1}
-.pp .sn-rang{font-family:'Bebas Neue';letter-spacing:.10em;font-size:15px;color:var(--p-mut)}
-.pp .sn-rang sup{font-size:.62em;vertical-align:super}
-/* Zero match joue : ni fiche ni rang. Le libelle reste discret — il informe,
-   il ne remplit pas un trou avec un faux classement. */
-.pp .sn-attente{font-family:'Bebas Neue';letter-spacing:.14em;font-size:14px;color:var(--p-mut)}
-.pp .sn-chev{font-family:'Outfit';font-size:20px;color:var(--p-mut);transition:transform .2s var(--pop);flex:0 0 auto}
+.pp .sn-head:active{transform:scale(.995)}
+
+/* Identite : le sport porte, le genre/division suit en dessous. Deux niveaux
+   la ou il n'y en avait qu'un — c'est ce qui donne l'air a la rangee. */
+.pp .sn-ident{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px}
+.pp .sn-sport{font-family:'Anton';font-size:19px;line-height:1.05;color:var(--p-ink);
+  text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pp .sn-meta{font-family:'Bebas Neue';letter-spacing:.14em;font-size:13px;color:var(--p-mut)}
+
+.pp .sn-chiffres{display:flex;align-items:center;gap:14px;flex:0 0 auto}
+
+/* LA FICHE. Chiffres en Anton (le poids), lettres en Bebas (le sens). Sans les
+   lettres, « 3 · 1 » se relit comme un score — c'est le defaut qu'on corrige. */
+.pp .sn-fiche{display:inline-flex;align-items:baseline;gap:3px;white-space:nowrap}
+.pp .sn-fiche b{font-family:'Anton';font-weight:400;font-size:22px;line-height:1;color:var(--p-ink)}
+.pp .sn-fiche i{font-family:'Bebas Neue';font-style:normal;letter-spacing:.10em;font-size:13px;
+  color:var(--p-mut);margin-left:1px}
+.pp .sn-fiche .sn-sep{color:var(--p-mut);opacity:.5;margin:0 4px;font-size:13px}
+
+/* Le rang en pastille : il se lit comme un statut, pas comme une donnee de
+   plus alignee sur la fiche. */
+.pp .sn-rang{font-family:'Bebas Neue';letter-spacing:.10em;font-size:14px;color:var(--p-soft);
+  border:1.5px solid #2A2F3A;border-radius:999px;padding:4px 11px;white-space:nowrap;line-height:1.1}
+.pp .sn-rang sup{font-size:.60em;vertical-align:super;letter-spacing:0}
+
+/* Zero match joue : registre visuel distinct — attenue, sans chiffre, il ne
+   pretend pas etre une fiche. */
+.pp .sn-attente{font-family:'Bebas Neue';letter-spacing:.14em;font-size:13px;color:var(--p-mut);
+  border:1.5px dashed #262A33;border-radius:999px;padding:4px 12px;white-space:nowrap}
+
+.pp .sn-chev{font-family:'Outfit';font-size:20px;color:var(--p-mut);flex:0 0 auto;
+  transition:transform .2s var(--pop),color .2s}
+.pp .sn-row:hover .sn-chev{color:var(--p-soft)}
 .pp .sn-row[open] .sn-chev{transform:rotate(90deg)}
-.pp .sn-detail{padding:0 20px 18px;display:flex;flex-wrap:wrap;gap:26px}
-.pp .sn-bloc{flex:1 1 260px;min-width:0}
-.pp .sn-bloc-t{font-family:'Bebas Neue';letter-spacing:.18em;font-size:13px;color:var(--p-mut);margin-bottom:8px}
-.pp .sn-ms{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.pp .sn-m{display:flex;align-items:baseline;gap:10px;font-family:'Outfit';font-size:14px;color:var(--p-soft)}
-.pp .sn-m-date{flex:0 0 62px;color:var(--p-mut)}
-.pp .sn-m-lieu{flex:0 0 30px;font-size:12px;color:var(--p-mut);text-transform:uppercase;letter-spacing:.06em}
+
+/* Deplie */
+.pp .sn-detail{padding:2px 22px 20px;display:flex;flex-wrap:wrap;gap:30px;
+  border-top:1px solid #21252D;margin-top:2px;padding-top:16px}
+.pp .sn-bloc{flex:1 1 280px;min-width:0}
+.pp .sn-bloc-t{font-family:'Bebas Neue';letter-spacing:.18em;font-size:13px;color:var(--p-mut);margin-bottom:9px}
+.pp .sn-ms{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.pp .sn-m{display:flex;align-items:baseline;gap:12px;font-family:'Outfit';font-size:14px;color:var(--p-soft)}
+.pp .sn-m-date{flex:0 0 88px;color:var(--p-mut);font-variant-numeric:tabular-nums}
+.pp .sn-m-lieu{flex:0 0 32px;font-size:11px;color:var(--p-mut);text-transform:uppercase;letter-spacing:.08em}
 .pp .sn-m-adv{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--p-ink)}
-.pp .sn-m-score{flex:0 0 auto;font-weight:700}
+.pp .sn-m-score{flex:0 0 auto;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pp .sn-m-score i{font-family:'Bebas Neue';font-style:normal;letter-spacing:.08em;margin-right:5px}
+.pp .sn-tiret{opacity:.45;margin:0 1px}
+/* Semantique sobre. #EF4444 est reserve aux alertes critiques (CLAUDE.md) :
+   une defaite sportive n'est pas une alerte, d'ou un rouge desature. */
 .pp .sn-V{color:#22C55E}
-.pp .sn-D{color:var(--p-mut)}
+.pp .sn-D{color:#C2666B}
 .pp .sn-N{color:var(--p-soft)}
 .pp .sn-A{color:var(--p-mut);font-weight:400}
+
 /* Attribution : petite, grise, NON cliquable — demandee telle quelle. */
-.pp .sn-src{margin-top:16px;font-family:'Outfit';font-size:12px;color:var(--p-mut);opacity:.8}
+.pp .sn-src{margin-top:18px;font-family:'Outfit';font-size:12px;color:var(--p-mut);opacity:.8}
+
+/* Compact mobile : les chiffres passent sous l'identite, le chevron reste
+   accroche a droite. La carte ne grandit que d'une ligne. */
 @media (max-width:560px){
-  .pp .sn-head{flex-wrap:wrap;gap:8px}
-  .pp .sn-nom{flex:1 1 100%}
+  .pp .sn-head{flex-wrap:wrap;gap:10px 14px;padding:15px 17px}
+  .pp .sn-ident{flex:1 1 calc(100% - 34px)}
+  .pp .sn-chiffres{flex:1 1 100%;order:3}
+  .pp .sn-chev{order:2}
+  .pp .sn-fiche b{font-size:20px}
+  .pp .sn-detail{padding:14px 17px 18px;gap:20px}
+  .pp .sn-m-date{flex:0 0 78px}
 }
 /* CTA */
 /* Fond CONTINU : pas de background propre. La bande vit DANS .pagewrap
