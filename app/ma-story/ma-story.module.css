@@ -1,0 +1,480 @@
+/* ═══════════════════════════════════════════════════════════════
+   /ma-story — transposition littérale du bloc <style> de la
+   référence validée ma-story.html
+   (sha256 01506397aa66855fd8d2bf823c02f63e41883c7c770ddd2e230e5f85d97062cd).
+
+   Toutes les valeurs sont identiques à la référence. Deux adaptations,
+   et rien d'autre :
+
+   1. Les sélecteurs GLOBAUX de la référence (*, body, a, header, main,
+      label, input, select, canvas) sont scopés sous .page. Un CSS module
+      ne hache que les classes — un `*{margin:0}` ou un `header{...}` non
+      scopé fuirait sur toute l'application.
+
+   2. 'Outfit' → var(--font-story) : la police est servie par next/font
+      (app/ma-story/page.tsx) au lieu du <link> Google Fonts et des TTF
+      locaux de la référence.
+
+   Les sélecteurs d'id de la référence (#thumb, #cv) deviennent des
+   classes — un module CSS ne hache pas les id, et un #cv global entrerait
+   en collision avec n'importe quelle autre page.
+═══════════════════════════════════════════════════════════════ */
+
+.page {
+  background: #111317;
+  color: #fff;
+  font-family: var(--font-story), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* référence : *{box-sizing:border-box;margin:0} */
+.page * {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.page a {
+  color: #9ca3af;
+}
+
+.page a:hover {
+  color: #fff;
+}
+
+/* ── en-tête ──────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 32px;
+  border-bottom: 1px solid #2a2f38;
+}
+
+.header img {
+  height: 22px;
+  display: block;
+}
+
+.headerT {
+  font-weight: 600;
+  font-size: 15px;
+  color: #9ca3af;
+}
+
+.headerT b {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── structure ────────────────────────────────────────────────── */
+
+.main {
+  display: flex;
+  gap: 28px;
+  padding: 28px 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.panel {
+  width: 372px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #1a1d24;
+  border: 1px solid #2a2f38;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* ── onglets de gabarit ───────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tabs button {
+  font: 600 13px var(--font-story), system-ui, sans-serif;
+  color: #9ca3af;
+  background: #111317;
+  border: 1px solid #2a2f38;
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tabs button:hover {
+  color: #fff;
+  border-color: #3a4150;
+}
+
+.tabs button.on {
+  color: #fff;
+  background: #22262f;
+  border-color: #3a4150;
+  box-shadow: inset 0 -2px 0 #e63946;
+}
+
+/* ── champs ───────────────────────────────────────────────────── */
+
+.f {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.f span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.page input[type="text"],
+.page input[type="number"],
+.page select {
+  width: 100%;
+  background: #111317;
+  border: 1px solid #2a2f38;
+  border-radius: 8px;
+  color: #fff;
+  font: 400 14px var(--font-story), system-ui, sans-serif;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.page select:focus,
+.page input:focus {
+  border-color: #e63946;
+  box-shadow: 0 0 0 2px rgba(230, 57, 70, 0.2);
+}
+
+.row2 {
+  display: flex;
+  gap: 10px;
+}
+
+.row2 > * {
+  flex: 1;
+}
+
+.statrow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.statrow input:first-child {
+  flex: 0 0 96px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* ── photo et cadrage ─────────────────────────────────────────── */
+
+.photoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  border: 1px dashed #3a4150;
+  border-radius: 8px;
+  color: #fff;
+  font: 600 13px var(--font-story), system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.photoBtn:hover {
+  background: #22262f;
+}
+
+.page input[type="range"] {
+  width: 100%;
+  accent-color: #e63946;
+  margin-top: 4px;
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #2a2f38;
+  touch-action: none;
+  cursor: crosshair;
+  background: #111317;
+}
+
+/* ── téléchargement ───────────────────────────────────────────── */
+
+.dl {
+  width: 100%;
+  padding: 14px;
+  background: #e63946;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  font: 700 15px var(--font-story), system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dl:hover {
+  background: #c42e3a;
+}
+
+.dl:active {
+  transform: scale(0.995);
+}
+
+/* R4 — sans photo il n'y a rien à exporter : le bouton est éteint,
+   pas caché, pour que l'athlète voie ce qui lui manque. */
+.dl:disabled {
+  background: #2a2f38;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.dl:disabled:hover {
+  background: #2a2f38;
+}
+
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #9ca3af;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.chk input {
+  accent-color: #e63946;
+}
+
+/* ── couleur d'équipe ─────────────────────────────────────────── */
+
+.sw {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sw button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 2px solid #2a2f38;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.12s;
+}
+
+.sw button:hover {
+  border-color: #3a4150;
+}
+
+.sw button.on {
+  border-color: #fff;
+}
+
+.hexrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hexrow input {
+  width: 110px;
+  text-transform: uppercase;
+}
+
+.hexLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.btn2 {
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid #2a2f38;
+  border-radius: 8px;
+  color: #fff;
+  font: 600 13px var(--font-story), system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.btn2:hover {
+  background: #1a1d24;
+  border-color: #3a4150;
+}
+
+.btn2.on {
+  border-color: #e63946;
+  color: #fff;
+  background: #1a1d24;
+}
+
+/* ── scène et aperçu ──────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.stagewrap {
+  position: relative;
+}
+
+.cv {
+  display: block;
+  height: min(84vh, 800px);
+  width: auto;
+  border-radius: 16px;
+  border: 1px solid #2a2f38;
+  touch-action: none;
+}
+
+.cv.pip {
+  cursor: crosshair;
+}
+
+/* ── zones de sécurité story ──────────────────────────────────── */
+
+.safe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  border: 0;
+  display: none;
+}
+
+.safe.show {
+  display: block;
+}
+
+.safeT {
+  top: 0;
+  height: 13.02%;
+  border-bottom: 1px dashed rgba(230, 57, 70, 0.55);
+}
+
+.safeB {
+  bottom: 0;
+  height: 13.02%;
+  border-top: 1px dashed rgba(230, 57, 70, 0.55);
+}
+
+.safe span {
+  position: absolute;
+  right: 10px;
+  font: 600 10px var(--font-story), system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  color: rgba(230, 57, 70, 0.8);
+}
+
+.safeT span {
+  bottom: 6px;
+}
+
+.safeB span {
+  top: 6px;
+}
+
+/* ── mobile ───────────────────────────────────────────────────────
+   L'aperçu passe EN HAUT (order:-1) et le téléchargement devient une
+   barre collante en bas : sur un téléphone, on juge l'image d'abord et
+   on télécharge sans remonter. Le padding-bottom de 120 px réserve la
+   place de cette barre. Valeurs identiques à la référence. */
+
+@media (max-width: 860px) {
+  .header {
+    padding: 12px 20px;
+  }
+
+  .headerT {
+    font-size: 13px;
+  }
+
+  .main {
+    flex-direction: column;
+    padding: 16px 16px 120px;
+    gap: 14px;
+  }
+
+  .stage {
+    order: -1;
+    width: 100%;
+  }
+
+  .stagewrap {
+    width: 100%;
+  }
+
+  .cv {
+    width: 100%;
+    height: auto;
+  }
+
+  .panel {
+    width: 100%;
+  }
+
+  .dlcard {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 60;
+    padding: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .cTabs {
+    order: 1;
+  }
+
+  .cPhoto {
+    order: 2;
+  }
+
+  .cColor {
+    order: 3;
+  }
+
+  .cFields {
+    order: 4;
+  }
+}
