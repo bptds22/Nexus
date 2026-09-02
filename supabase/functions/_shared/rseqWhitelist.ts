@@ -178,7 +178,12 @@ export function normaliserMatchs(p: PayloadRetenu, meta: MetaLigue) {
         season: meta.saison,
         sector: meta.sector,
         phase,
-        game_date: g.GameDateText ?? null,
+        // `|| null` et NON `??` : les cases de tableau eliminatoire portent
+        // GameDateText = "" (chaine vide), pas null. Avec `??` la chaine vide
+        // survit et le cast en `date` explose cote SQL — c'est exactement ce
+        // qu'a montre la passe de preuve locale du 2026-09-02. Le chargement
+        // d'origine faisait `g.date || null` : on reproduit, au caractere pres.
+        game_date: (g.GameDateText as string) || null,
         game_time: formatHeure(g.GameTime),
         home_rseq_team_id: g.HomeTeamId ?? null,
         visitor_rseq_team_id: g.VisitingTeamId ?? null,

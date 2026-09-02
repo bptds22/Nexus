@@ -240,6 +240,28 @@ test("N4 — la meta de ligue vient de la base, pas du payload", () => {
   }
 });
 
+test("N6 — une date vide devient null, jamais la chaine vide", () => {
+  /* Trouve en executant les RPC en local, pas en relisant le code : les cases
+     de tableau eliminatoire portent GameDateText = "" (et un GameDate
+     sentinelle 1900-01-01). Laisser passer la chaine vide fait echouer le cast
+     `date` de jsonb_to_recordset et AVORTE toute la passe de la ligue —
+     scores compris. Le chargement d'origine faisait `g.date || null` ; tout
+     ecart ici casse aussi la fidelite avec les 2 368 lignes deja en base. */
+  const retenu = retenirWhitelist(PAYLOAD);
+  const brackets = retenu.PostSeasonGames.filter((g) => g.GameDateText === "");
+  assert.ok(brackets.length > 0, "la fixture doit contenir des matchs a date vide");
+
+  const m = normaliserMatchs(retenu, META);
+  assert.ok(m.length >= 4);
+  for (const g of m) {
+    assert.notEqual(g.game_date, "", "une chaine vide a survecu jusqu'au cast date");
+    assert.ok(g.game_date === null || /^\d{4}-\d{2}-\d{2}$/.test(g.game_date as string));
+  }
+  // Les vraies dates, elles, passent intactes.
+  assert.ok(m.some((g) => g.game_date === "2026-08-28"));
+  assert.equal(m.filter((g) => g.game_date === null).length, brackets.length);
+});
+
 test("N5 — le classement est copie tel quel, sans tri maison", () => {
   const c = normaliserClassement(retenirWhitelist(PAYLOAD));
   assert.ok(c.length > 0);
