@@ -89,7 +89,7 @@ export default async function CollegePage(
     <>
       {FONTS}
       <main style={{ background: "#111317", minHeight: "100vh" }}>
-        <ProgramPage school={props.school} content={props.content} />
+        <ProgramPage school={props.school} content={props.content} saison={res.saison} />
       </main>
     </>
   );

@@ -16,6 +16,7 @@ import { PREVIEW_CSS } from "./PreviewShell";
 import { SchoolPageEditorProvider, useEditor } from "./editorContext";
 import IdentityWall from "./IdentityWall";
 import SportsAffiche from "./SportsAffiche";
+import SaisonEnCoursSection from "./SaisonEnCoursSection";
 import CampusSection from "./CampusSection";
 import AboutSell from "./AboutSell";
 import ProgramsSection from "./ProgramsSection";
@@ -80,6 +81,7 @@ function EditorBody() {
 
         <IdentityWall nick={nick} setNick={setNick} slog={slog} setSlog={setSlog} init={init} setInit={setInit} nbath={nbath} setNbath={setNbath} />
         <SportsAffiche />
+        <SaisonEnCoursSection />
         <CampusSection />
         <AboutSell />
         <ProgramsSection />
