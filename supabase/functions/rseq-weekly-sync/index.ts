@@ -4,9 +4,19 @@
 // ~35 s avec 800 ms de politesse entre les appels. Pour chaque ligue :
 // whitelist -> normalisation -> 3 RPC (matchs, classement, détection).
 //
-// AUTH — même patron que send-push / send-announcement : en-tête
-// `x-rseq-secret` comparé à RSEQ_SYNC_SECRET. Pas de JWT (verify_jwt = false),
-// puisque l'appelant est pg_cron, pas un usager.
+// AUTH — en-tête `x-rseq-secret`, comme send-push / send-announcement, mais
+// avec une différence de fond : le secret N'EST PAS une variable
+// d'environnement de cette fonction. Il vit dans le Vault de la base, généré
+// par elle (migration 20260902210100), et la comparaison se fait LÀ-BAS :
+// `rseq_verifie_secret(candidat)` rend un booléen, jamais le secret.
+//
+// Une seule source, donc. Le cron lit le Vault pour composer son en-tête, la
+// fonction redemande au Vault si l'en-tête est bon — et personne, humain ou
+// agent, n'a jamais eu la valeur sous les yeux. La variable d'environnement
+// RSEQ_SYNC_SECRET a été retirée : la garder aurait fait deux sources, donc
+// deux occasions de diverger.
+//
+// Pas de JWT (verify_jwt = false) : l'appelant est pg_cron, pas un usager.
 //
 // LE TIMEOUT pg_net — piège déjà payé une fois.
 //   pg_net coupe à 5 s par défaut (docs/push-pgnet-timeout-20260823.md). Une
@@ -34,7 +44,6 @@ import {
   type MetaLigue,
 } from "../_shared/rseqWhitelist.ts";
 
-const SECRET = Deno.env.get("RSEQ_SYNC_SECRET")!;
 const API = "https://diffusion.s1.rseq.ca/api/LeagueApi/GetLeagueDiffusion/?leagueId=";
 
 // Politesse : 800 ms entre deux appels, comme les scripts de chargement.
@@ -268,8 +277,24 @@ async function passe(declencheur: string): Promise<Bilan> {
   return b;
 }
 
+/**
+ * L'en-tête reçu est-il le secret ? La comparaison se fait DANS la base : on
+ * envoie le candidat, on reçoit un booléen. Un en-tête absent est refusé sans
+ * même déranger la base.
+ */
+async function secretValide(req: Request): Promise<boolean> {
+  const recu = req.headers.get("x-rseq-secret");
+  if (!recu) return false;
+  const { data, error } = await supabase.rpc("rseq_verifie_secret", { p_candidat: recu });
+  if (error) {
+    console.error("NEXUS: verification du secret impossible —", error.message);
+    return false;
+  }
+  return data === true;
+}
+
 Deno.serve(async (req) => {
-  if (req.headers.get("x-rseq-secret") !== SECRET) {
+  if (!(await secretValide(req))) {
     return new Response("forbidden", { status: 403 });
   }
 
