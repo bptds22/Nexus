@@ -15,9 +15,11 @@ import ProgramWallMenu from "@/components/program-wall/ProgramWallMenu";
 import { deriveWallTheme } from "@/components/program-wall/theme";
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import type { ProgramPageContent } from "./content";
+import type { EquipeSaison } from "@/lib/queries/schoolPage/saisonEnCours";
 import Ticker from "./Ticker";
 import StatRows from "./StatRows";
 import SportsGrid from "./SportsGrid";
+import SaisonEnCours from "./SaisonEnCours";
 import AboutSell from "./AboutSell";
 import CampusSection from "./CampusSection";
 import AcademicPlanche from "./AcademicPlanche";
@@ -29,9 +31,12 @@ import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
 export interface ProgramPageProps {
   school: SchoolProgramIdentity;
   content: ProgramPageContent;
+  /* Donnee VIVANTE (veille RSEQ), pas editoriale : elle ne transite pas par
+     `content` et l'editeur ne la modifie pas. Absente => section absente. */
+  saison?: EquipeSaison[];
 }
 
-export default function ProgramPage({ school, content }: ProgramPageProps) {
+export default function ProgramPage({ school, content, saison }: ProgramPageProps) {
   const theme = deriveWallTheme(school.colorPrimary, school.colorDarker, school.colorNeutral);
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -155,6 +160,7 @@ export default function ProgramPage({ school, content }: ProgramPageProps) {
 
         <StatRows schoolName={school.schoolName} city={school.city} stats={content.stats} inTargets={inTargets} onToggleTargets={toggleTargets} followers={followers} />
         <SportsGrid sports={content.sports} />
+        <SaisonEnCours equipes={saison} />
         {!hidden.includes("campus") && <CampusSection content={content} />}
         {!hidden.includes("about") && <AboutSell title={content.sellTitle} sellText={content.sellText} />}
         {!hidden.includes("programs") && <AcademicPlanche programs={content.programsList} viewerProgrammeVise={content.viewerProgrammeVise} schoolName={school.schoolName} />}
@@ -354,6 +360,41 @@ export const PP_CSS = `
 .pp .n-link{margin-top:auto;display:inline-flex;align-items:center;gap:7px;font-family:'Outfit';font-weight:700;font-size:14px;color:var(--p-ink);text-decoration:none;border:1.5px solid #2A2F3A;border-radius:10px;padding:10px 16px;align-self:flex-start;transition:border-color .2s,transform .2s var(--pop)}
 .pp .n-link:hover{border-color:var(--red);transform:translateY(-2px)}
 .pp .n-link .ar{color:var(--red);filter:brightness(1.5)}
+/* S2bis — SAISON EN COURS (veille RSEQ, donnee vivante) */
+.pp .sn-list{display:flex;flex-direction:column;gap:10px;margin-top:28px}
+.pp .sn-row{background:#1A1D24;border:1.5px solid #262A33;border-radius:14px;overflow:hidden}
+.pp .sn-row[open]{border-color:#2F3542}
+.pp .sn-head{display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;list-style:none}
+.pp .sn-head::-webkit-details-marker{display:none}
+.pp .sn-nom{font-family:'Anton';font-size:19px;line-height:1.1;color:var(--p-ink);text-transform:uppercase;flex:1 1 auto;min-width:0}
+.pp .sn-chiffres{display:flex;align-items:baseline;gap:14px;flex:0 0 auto}
+.pp .sn-fiche{font-family:'Anton';font-size:22px;color:var(--p-ink);line-height:1}
+.pp .sn-rang{font-family:'Bebas Neue';letter-spacing:.10em;font-size:15px;color:var(--p-mut)}
+.pp .sn-rang sup{font-size:.62em;vertical-align:super}
+/* Zero match joue : ni fiche ni rang. Le libelle reste discret — il informe,
+   il ne remplit pas un trou avec un faux classement. */
+.pp .sn-attente{font-family:'Bebas Neue';letter-spacing:.14em;font-size:14px;color:var(--p-mut)}
+.pp .sn-chev{font-family:'Outfit';font-size:20px;color:var(--p-mut);transition:transform .2s var(--pop);flex:0 0 auto}
+.pp .sn-row[open] .sn-chev{transform:rotate(90deg)}
+.pp .sn-detail{padding:0 20px 18px;display:flex;flex-wrap:wrap;gap:26px}
+.pp .sn-bloc{flex:1 1 260px;min-width:0}
+.pp .sn-bloc-t{font-family:'Bebas Neue';letter-spacing:.18em;font-size:13px;color:var(--p-mut);margin-bottom:8px}
+.pp .sn-ms{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pp .sn-m{display:flex;align-items:baseline;gap:10px;font-family:'Outfit';font-size:14px;color:var(--p-soft)}
+.pp .sn-m-date{flex:0 0 62px;color:var(--p-mut)}
+.pp .sn-m-lieu{flex:0 0 30px;font-size:12px;color:var(--p-mut);text-transform:uppercase;letter-spacing:.06em}
+.pp .sn-m-adv{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--p-ink)}
+.pp .sn-m-score{flex:0 0 auto;font-weight:700}
+.pp .sn-V{color:#22C55E}
+.pp .sn-D{color:var(--p-mut)}
+.pp .sn-N{color:var(--p-soft)}
+.pp .sn-A{color:var(--p-mut);font-weight:400}
+/* Attribution : petite, grise, NON cliquable — demandee telle quelle. */
+.pp .sn-src{margin-top:16px;font-family:'Outfit';font-size:12px;color:var(--p-mut);opacity:.8}
+@media (max-width:560px){
+  .pp .sn-head{flex-wrap:wrap;gap:8px}
+  .pp .sn-nom{flex:1 1 100%}
+}
 /* CTA */
 /* Fond CONTINU : pas de background propre. La bande vit DANS .pagewrap
    (max-width:1500px) — un aplat ici se découpe en panneau visible dès que la

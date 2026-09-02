@@ -8,6 +8,7 @@ import "server-only";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import { loadSchoolPage, loadTeamsForGrid } from "./schoolPageData";
+import { loadSaisonEnCours, type EquipeSaison } from "./saisonEnCours";
 import { dbToProgramPage, degradedProgramPage, type SchoolRow } from "./dbToProgramPage";
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import type { ProgramPageContent } from "@/components/program-page/content";
@@ -15,12 +16,12 @@ import type { ProgramPageContent } from "@/components/program-page/content";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type RenderResult =
-  | { configured: true; school: SchoolProgramIdentity; content: ProgramPageContent; schoolName: string }
+  | { configured: true; school: SchoolProgramIdentity; content: ProgramPageContent; schoolName: string; saison: EquipeSaison[] }
   // École réelle jamais configurée. `configured` reste FAUX — /page-test s'en
   // sert pour retomber sur son fixture, et ce comportement ne bouge pas.
   // `degraded` est additif : la route publique /college s'en sert pour rendre
   // CETTE école (nom, ville, équipes) au lieu d'emprunter une autre identité.
-  | { configured: false; schoolName: string | null; degraded?: { school: SchoolProgramIdentity; content: ProgramPageContent } };
+  | { configured: false; schoolName: string | null; saison?: EquipeSaison[]; degraded?: { school: SchoolProgramIdentity; content: ProgramPageContent } };
 
 export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderResult> {
   const svc = createServiceClient();
@@ -44,16 +45,21 @@ export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderR
   // `teams` passe par loadTeamsForGrid — SOURCE UNIQUE partagée avec la page
   // école mobile et l'aperçu de l'éditeur, pour que les trois montrent la même
   // affiche (la requête y était recopiée à l'identique, sans `season`).
-  const [{ data: rc }, { data: fc }, teams] = await Promise.all([
+  // `saison` est de la donnee VIVANTE (veille RSEQ), lue au meme titre que les
+  // equipes et AVANT le branchement : une ecole jamais configuree a elle aussi
+  // ses resultats, et c'est tout l'interet de sa page degradee.
+  const [{ data: rc }, { data: fc }, teams, saison] = await Promise.all([
     svc.rpc("count_recruited_by_school", { p_school_id: school.id } as unknown as undefined),
     svc.rpc("count_followers_by_school", { p_school_id: school.id } as unknown as undefined),
     loadTeamsForGrid(svc, school.id),
+    loadSaisonEnCours(svc, school.id),
   ]);
 
   if (!content) {
     return {
       configured: false,
       schoolName: school.name,
+      saison,
       degraded: degradedProgramPage(school, teams),
     };
   }
@@ -64,5 +70,5 @@ export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderR
     school, content, cards, programs, news,
     (rc as number | null) ?? 0, (fc as number | null) ?? 0, assetUrl, teams,
   );
-  return { configured: true, school: identity, content: pageContent, schoolName: school.name };
+  return { configured: true, school: identity, content: pageContent, schoolName: school.name, saison };
 }
