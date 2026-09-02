@@ -125,7 +125,7 @@ green for the wrong reason.
 | athlete_id | user_id | who | state, and what it is good for |
 |---|---|---|---|
 | `1d06342e-a138-4a88-97ed-d8a9a102428f` | `2a046349-…` | Gabriel Mandziuk | no team — clean slate for a first attachment |
-| `d4cd6432-1c45-47bc-8498-071075e4ae7c` | `b79de13d-…` | Athlete Nexus | exactly 14 → sits ON the `< 14` Loi 25 boundary and passes it; anchored on Dragons Juvenile (SECONDAIRE) |
+| `d4cd6432-1c45-47bc-8498-071075e4ae7c` | `b79de13d-…` | Alexis Tremblay (listed here as "Athlete Nexus" until 2026-09-01) | exactly 14 → sits ON the `< 14` Loi 25 boundary and passes it; anchored on Dragons Juvenile (SECONDAIRE) |
 | `fbf03493-03e7-4fc6-8f34-12a661440401` | `c6c679b1-…` | Test Android | anchored on a LIGUE_CIVILE team — the only shape where `reset_athlete_anchor_on_team_remove` actually writes |
 | `d1e8b894-5699-4e20-acf1-a89de2966989` | `1b4bdeca-…` | Test Nexus | no team, no dependants — use THIS one for destructive fixture edits (e.g. flipping `date_naissance`), and restore immediately |
 
@@ -133,6 +133,28 @@ green for the wrong reason.
 - Coach accounts: `nexus.coachs@nexussports.ca` (`a0000000-…-0000000000a2`),
   `nexus.coachc@nexussports.ca` (`a0000000-…-0000000000a3`)
 - School: Saint-Jean-Eudes (`4f0e52ad-e9c7-4797-9b7b-92b25ed1307b`)
+
+**Parent** (parent portal fixture, created on cloud 2026-09-01 — permanent)
+- `nexus.parent@nexussports.ca` — user `d41528da-03b4-4df2-9b9d-c390f330223b`,
+  role PARENT, email confirmed, **random password deliberately not recorded**
+  anywhere: reset it from the Supabase Dashboard when you need to sign in.
+- Linked to athlete `d4cd6432-…` (Alexis Tremblay, 14) through the **canonical
+  path**, not a hand-written row: `parent_invitations` (`6d9b3e52-…`, token
+  emitted in the trigger's own 2x-uuid-hex shape) then `claim_parent_invitation()`
+  under the parent JWT, which wrote `parent_athletes` (`0ab28137-…`) and stamped
+  `claimed_at`.
+- Consent trail: 2 `consent_audit_trail` rows, action GRANTED,
+  `metadata.acting_role = 'PARENT'`, keys `marketing` and `image_partenaire`,
+  policy `2026-08-v1` — written by the real `set_child_consent()` RPC. The claim
+  itself writes NO consent row; the journal only ever comes from that RPC.
+- `parent_athletes` is `unique(athlete_id)` — **one parent per athlete**. A second
+  parent fixture must target a different athlete; this one is taken.
+- Side effects on the athlete fixture: `parent_email` moved from `test@parent.com`
+  to this address, and `partner_visibility_opted_in_at` was re-stamped by the
+  consent call. `parent_notified_at` stays at 2026-07-15, so
+  `notify_parent_on_minor` will never re-emit for this athlete (idempotence
+  guard) — that is why the invitation row was written directly instead of
+  re-firing the trigger, which would also have sent a real email.
 
 ### RLS Policies
 - athletes: coaches CRUD own, recruiters SELECT active athletes (status = 'ACTIF')

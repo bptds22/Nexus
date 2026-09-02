@@ -38,7 +38,9 @@
     ".next-web/types/**/*.ts",
     ".next-web/dev/types/**/*.ts",
     ".next-mobile/types/**/*.ts",
-    ".next-mobile/dev/types/**/*.ts"
+    ".next-mobile/dev/types/**/*.ts",
+    ".next-buildcheck/types/**/*.ts",
+    ".next-buildcheck/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

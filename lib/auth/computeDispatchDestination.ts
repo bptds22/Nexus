@@ -14,7 +14,7 @@
      1. DESACTIVE (hors SUPER_ADMIN) → /compte-desactive
      2. consent Loi 25 manquant + onboarding non fini → /consentements
      3. onboarding non fini → /athlete/onboarding (athlète) | /onboarding
-     4. dispatch par rôle → /coach /recruteur /athlete /admin /partenaire
+     4. dispatch par rôle → /coach /recruteur /athlete /admin /partenaire /parent
      5. inconnu / pas de profil → /onboarding (fallback)
 ═══════════════════════════════════════════════════════════════ */
 
@@ -58,12 +58,21 @@ export function computeDispatchDestination(
 
   // 2) Consentements Loi 25 manquants + onboarding non fini → interstitiel.
   //    JAMAIS pour un compte déjà onboardé (protège les comptes legacy).
-  if (profile && !onboardingComplete && needsConsent(profile.privacy_preferences, userMetadata)) {
+  //    PARENT exempté : /consentements est typé ATHLETE|COACH|RECRUTEUR et
+  //    collecte une date de naissance + PII parentale — sans objet pour un
+  //    parent. Son consentement vit sur /parent/claim (acceptation des
+  //    conditions) puis /parent/consentements.
+  if (profile && !onboardingComplete && role !== "PARENT"
+      && needsConsent(profile.privacy_preferences, userMetadata)) {
     return { path: "/consentements", reason: "consent" };
   }
 
   // 3) Onboarding non fini → wizard par rôle.
-  if (profile && !onboardingComplete) {
+  //    PARENT exempté : il n'existe aucun wizard parent. Son « onboarding »
+  //    est le claim d'invitation (/parent/claim), déjà fait quand il se
+  //    connecte. Sans cette exemption il tombait sur /onboarding, dont le
+  //    roleMap ignore PARENT et retombe sur le wizard COACH.
+  if (profile && !onboardingComplete && role !== "PARENT") {
     return {
       path: role === "ATHLETE" ? "/athlete/onboarding" : "/onboarding",
       reason: "onboarding",
@@ -77,6 +86,7 @@ export function computeDispatchDestination(
     case "ATHLETE": return { path: "/athlete", reason: "portal", role };
     case "ADMIN": return { path: "/admin", reason: "portal", role };
     case "PARTNER": return { path: "/partenaire", reason: "portal", role };
+    case "PARENT": return { path: "/parent", reason: "portal", role };
     // 5) Inconnu / pas de profil → /onboarding fallback.
     default: return { path: "/onboarding", reason: profile ? "fallback" : "no-profile" };
   }

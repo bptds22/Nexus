@@ -714,7 +714,7 @@ background:var(--bg);color:var(--txt);font-family:var(--f-body);height:var(--cs-
 /* Tuiles Dark Matter rehaussées (A/B tranché le 28 juillet) : sans ce filtre,
    routes et quartiers sont quasi invisibles ; avec, ils se lisent et le fond
    reste sombre. La classe est posée sur la couche dans MapPane. */
-.cs .cs-tile-dark .leaflet-tile{filter:brightness(1.55) contrast(1.18) saturate(1.05)}
+.cs .cs-tile-dark .leaflet-tile{filter:brightness(.88) contrast(1.18) saturate(1.05)}
 /* marqueur « dans mes cibles » : même cercle, un glyphe blanc dedans */
 /* Le scale de sélection vit sur l'enfant .pd, JAMAIS sur la racine du marqueur
    (Leaflet y met translate3d pour la position — un transform CSS y ferait
