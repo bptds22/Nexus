@@ -34,16 +34,41 @@ export interface MapFocus {
 
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 
-// Fond figé après A/B : Carto Dark Matter rehaussé par filtre CSS
-// (cf. `.cs .cs-tile-dark .leaflet-tile`), pins sobres en gris moyen.
-/* Deux fonds de carte Carto (données OSM, aucune clé). `dark_all` reste le
-   défaut : c'est celui de la recherche, sur coquille sombre. `voyager` est le
-   fond CLAIR, pour une vignette de situation où l'on doit lire les rues et
-   les noms de quartier sans forcer. */
+/* ── FOND DE CARTE — MapTiler ────────────────────────────────────────────
+   Le fond était Carto (Dark Matter / Voyager), servi sans clé. Carto a rendu
+   la clé OBLIGATOIRE : leurs tuiles publiques reviennent désormais avec
+   « API KEY REQUIRED » CUIT DANS LE PIXEL — pas un calque qu'on masque, une
+   image morte. Vérifié à la source le 2026-09-01 :
+     GET a.basemaps.cartocdn.com/dark_all/10/292/357.png → 200, filigrane.
+
+   MapTiler sert du raster équivalent : Leaflet reste, aucune bibliothèque ne
+   change. La paire `dataviz-dark` / `dataviz` est leur équivalent le plus
+   proche de Dark Matter / Voyager.
+
+   `{r}` EST CONSERVÉ plutôt que remplacé par un `@2x` en dur. Leaflet ne le
+   substitue qu'avec `detectRetina`, qui n'est pas activé ici : il vaut donc
+   '' aujourd'hui, exactement comme avant, et l'URL reste valide chez MapTiler
+   dans les deux cas. Un `@2x` en dur doublerait le poids des tuiles pour tout
+   le monde, y compris les téléphones en données mobiles — ce n'est pas un
+   détail sur une carte plein écran.
+
+   LA CLÉ EST PUBLIQUE PAR CONSTRUCTION : `NEXT_PUBLIC_*` est inliné dans le
+   bundle navigateur, et une clé de tuiles doit l'être pour que le navigateur
+   puisse les demander. Ce qui la protège n'est pas le secret mais la
+   RESTRICTION PAR DOMAINE, à poser côté MapTiler. Sans elle, la clé est
+   réutilisable par n'importe qui et le quota est à la merci du premier venu. */
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
+
 const TUILES = {
-  sombre: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  clair: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+  sombre: `https://api.maptiler.com/maps/dataviz-dark/{z}/{x}/{y}{r}.png?key=${MAPTILER_KEY}`,
+  clair: `https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}{r}.png?key=${MAPTILER_KEY}`,
 } as const;
+
+/* Attribution exigée par MapTiler (conditions d'utilisation) ET par l'ODbL
+   d'OpenStreetMap. Les deux crédits sont obligatoires et cliquables. */
+const ATTRIBUTION =
+  '<a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener noreferrer">&copy; MapTiler</a> ' +
+  '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">&copy; OpenStreetMap contributors</a>';
 const COULEUR_SOBRE = "#5A616D";
 
 /** Étoile blanche dessinée DANS le cercle rouge (choix figé après A/B).
@@ -167,16 +192,24 @@ export default function MapPane({
       const L = await import("leaflet");
       if (annule) return;
       tileRef.current?.remove();
+      if (!MAPTILER_KEY) {
+        // Sans clé, MapTiler répond 403 et la carte reste vide — un fond noir
+        // silencieux ressemble à un bug de rendu. On le dit une fois.
+        console.warn(
+          "[MapPane] NEXT_PUBLIC_MAPTILER_KEY absente — le fond de carte ne chargera pas.",
+        );
+      }
       tileRef.current = L.tileLayer(TUILES[optsRef.current.fond] ?? TUILES.sombre, {
         maxZoom: 19,
-        subdomains: "abcd",
+        // `subdomains` retiré : MapTiler sert depuis un hôte unique. Le laisser
+        // produirait des a./b./c. inexistants.
         className: "cs-tile-dark",
         // Anti-flash gris au pan/zoom : garder plus de tuiles hors écran en
         // mémoire (keepBuffer) et rendre pendant le geste (updateWhenIdle:false)
         // plutôt qu'à l'arrêt seulement → moins de fond de conteneur visible.
         keepBuffer: 4,
         updateWhenIdle: false,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: ATTRIBUTION,
       }).addTo(map);
       tileRef.current.bringToBack();
     })();

@@ -657,10 +657,11 @@ export default function RechercheMobile() {
           </div>
 
           {/* ═══ ATTRIBUTION — obligation de licence (ODbL pour OSM, conditions
-                 CARTO). Elle n'est PAS supprimée : le contrôle Leaflet reste
+                 MapTiler). Elle n'est PAS supprimée : le contrôle Leaflet reste
                  dans le DOM (attributionControl:true, cf. MapPane) et n'est que
                  masqué visuellement ; le crédit reste accessible ici, replié
-                 derrière un ⓘ — pattern Google Maps. Liens cliquables. ═══ */}
+                 derrière un ⓘ — pattern Google Maps. Liens cliquables.
+                 Doit rester synchronisé avec ATTRIBUTION dans MapPane.tsx. ═══ */}
           {attrOpen && (
             <div className="attrcatch" onClick={() => { void triggerHaptic("Light"); setAttrOpen(false); }} />
           )}
@@ -668,12 +669,12 @@ export default function RechercheMobile() {
             {attrOpen && (
               <div className="attrpill" role="note">
                 ©{" "}
-                <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-                  OpenStreetMap
+                <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener noreferrer">
+                  MapTiler
                 </a>{" "}
                 ©{" "}
-                <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">
-                  CARTO
+                <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+                  OpenStreetMap contributors
                 </a>
               </div>
             )}
@@ -1064,7 +1065,7 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .rm-map{position:absolute;inset:0;z-index:1;background:#0B0D10}
 .rm .leaflet-pane,.rm .leaflet-tile-pane{background:#0B0D10}
 .rm .leaflet-container{background:#0B0D10;font-family:inherit}
-.rm .cs-tile-dark .leaflet-tile{filter:brightness(1.55) contrast(1.18) saturate(1.05)}
+.rm .cs-tile-dark .leaflet-tile{filter:brightness(.88) contrast(1.18) saturate(1.05)}
 /* Racine du marqueur : AUCUN transform (Leaflet y met translate3d pour la
    position — un transform CSS ici fait dériver le pin au zoom). Mobile = pins
    fixes 20px, pas de scale de sélection : rien à animer. */
