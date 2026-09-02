@@ -88,7 +88,24 @@ with attendu(vue, invoker_attendu, motif) as (values
   -- → le `.gt("views_delta", 0)` de la page filtrerait tout → /partenaire/
   -- tendances vide en permanence, sans erreur. L'accès est restreint par
   -- REVOKE anon + le gate is_approved_partner(auth.uid()) dans le WHERE.
-  ('trending_athletes_view',   false, 'DEFINER assume 2026-07-07 (harden_trending_athletes_view)')
+  ('trending_athletes_view',   false, 'DEFINER assume 2026-07-07 (harden_trending_athletes_view)'),
+
+  /* ── Veille RSEQ (2026-09-02) — INVOKER toutes les deux ──────────────────
+     Ni l'une ni l'autre n'a besoin de contourner quoi que ce soit : leur seul
+     lecteur applicatif est l'edge function `rseq-weekly-sync`, qui passe par
+     le service-role et ignore la RLS de toute façon.
+
+     `rseq_ligues_a_appeler` lit `games`, dont la politique unique ouvre le
+     SELECT a `authenticated` : en INVOKER elle rend la meme chose, sans
+     privilege emprunte.
+
+     `rseq_alertes_ouvertes` lit `rseq_sync_alerts`, qui n'a AUCUNE politique.
+     En INVOKER, un authenticated y lit donc 0 ligne — c'est la posture
+     voulue : la file de revue n'est pas une surface applicative. La passer en
+     DEFINER l'ouvrirait a tout compte connecte sans qu'aucune policy ne le
+     dise. */
+  ('rseq_ligues_a_appeler',    true,  'durcie a la creation 2026-09-02 (rseq_veille_collecte)'),
+  ('rseq_alertes_ouvertes',    true,  'durcie a la creation 2026-09-02 (rseq_veille_alertes)')
 ),
 reel as (
   select a.vue,
