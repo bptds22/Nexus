@@ -34,6 +34,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...sauf le gabarit, qui ne documente rien s'il reste invisible des autres
+# postes. Il ne contient que des noms de variables et des valeurs bidon —
+# jamais un secret. L'exception est NOMMEE : .env.local et ses variantes
+# restent couverts par la ligne au-dessus.
+!.env.example
 
 # vercel
 .vercel
