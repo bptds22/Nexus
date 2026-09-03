@@ -254,6 +254,16 @@ async function passe(declencheur: string): Promise<Bilan> {
   if (ef) b.erreurs.push({ league_id: "-", motif: `familles: ${ef.message}` });
   else b.alertes_levees += Number(rf ?? 0);
 
+  // Dérive de mapping, cas A (équipe pontée absente de toute ligue). Après la
+  // boucle, pour la même raison : le jugement porte sur l'ensemble de la
+  // saison, pas sur une ligue. Les cas B et C, eux, ont besoin de
+  // l'InstitutionId et vivent donc dans detect_teams, par ligue.
+  const { data: rm, error: em } = await supabase.rpc("rseq_sync_detect_mapping", {
+    p_run_id: runId, p_saison: saison,
+  });
+  if (em) b.erreurs.push({ league_id: "-", motif: `mapping: ${em.message}` });
+  else b.alertes_levees += Number(rm ?? 0);
+
   b.duree_s = Math.round((Date.now() - t0) / 100) / 10;
 
   await supabase.from("rseq_sync_runs").update({
