@@ -220,6 +220,17 @@ async function passe(declencheur: string): Promise<Bilan> {
     b.matchs_inseres += Number(g?.inseres ?? 0);
     b.matchs_maj += Number(g?.maj ?? 0);
 
+    // MATCH_RETIRE : ce que la base porte et que cette passe n'a PAS vu. Juste
+    // après l'upsert, avec la liste exacte des identifiants servis — c'est le
+    // seul moment où on la connaît. Détection seule : rien n'est supprimé, un
+    // match retiré de l'API n'est pas un match qui n'a pas eu lieu.
+    const { data: rr, error: er } = await supabase.rpc("rseq_sync_detect_matchs_retires", {
+      p_run_id: runId, p_league_id: leagueId, p_saison: meta.saison,
+      p_vus: matchs.map((m) => m.rseq_game_id as string),
+    });
+    if (er) b.erreurs.push({ league_id: leagueId, motif: `retires: ${er.message}` });
+    else b.alertes_levees += Number(rr ?? 0);
+
     const { data: rs, error: es } = await supabase.rpc("rseq_sync_apply_standings", {
       p_run_id: runId, p_league_id: leagueId, p_saison: meta.saison, p_standings: classement,
     });
