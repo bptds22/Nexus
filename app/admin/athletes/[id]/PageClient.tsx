@@ -282,6 +282,14 @@ export default function AdminAthleteDetailPage() {
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
+  /* Selecteur « Programme CEGEP vise » (T2). Ces deux hooks etaient declares
+     au milieu des helpers de champ, SOUS le `if (loading) return ...` : le
+     premier rendu (loading = true) en comptait deux de moins que le second,
+     et React levait « Rendered more hooks than during the previous render »
+     — page blanche pour TOUS les athletes. Un hook n'a qu'une place valide :
+     avant le premier retour du composant. */
+  const [progPickerOpen, setProgPickerOpen] = useState(false);
+  const { data: catalogueProg } = useCegepPrograms();
 
   useEffect(() => {
     (async () => {
@@ -752,8 +760,8 @@ export default function AdminAthleteDetailPage() {
   /** Single-select dropdown for a JSONB array stored as `[value]`. */
   // T2 — selectSingleArray + le CEGEP_PROGRAMS local a 8 valeurs sont
   // supprimes : l'admin utilise desormais le meme selecteur que l'athlete.
-  const [progPickerOpen, setProgPickerOpen] = useState(false);
-  const { data: catalogueProg } = useCegepPrograms();
+  // Les DEUX hooks de ce selecteur vivent en tete de composant (cf. le bloc
+  // d'etat) : ici, ils seraient SOUS le `if (loading) return`.
   const date = (key: string) => (
     <DatePicker
       value={(A(key) as string)?.slice(0, 10) ?? ""}
