@@ -85,8 +85,10 @@ Follow these instructions exactly. Updated April 2026.
 
 **recruiter_pipeline** — kanban stages per athlete
 - id, recruiter_id, athlete_id, stage (default 'IDENTIFIE'), notes, moved_at, created_at, updated_at
+- flagged (bool), next_action_at (date), next_action_note (text), visit_at (timestamptz)
 - UNIQUE(recruiter_id, athlete_id)
-- RLS: recruiters manage own rows only
+- RLS: recruiter owns his rows — MAIS aussi lue par le coach de l'athlète, le cégep admin et l'admin (SELECT). La RLS est par LIGNE : ces lecteurs voient toutes les colonnes. Ne pas ajouter de colonne privée recruteur ici → `docs/pipeline-recruteur-frontieres.md`
+- `notes` : DEPRECATED, plus écrite, lue seulement dans `lib/queries/recruiter/usePipelineCards.ts`. Surface canonique = `recruiter_notes`
 
 **recruiter_notes** — private notes on athletes
 - id, recruiter_id, athlete_id, content, created_at, updated_at
@@ -158,7 +160,8 @@ green for the wrong reason.
 
 ### RLS Policies
 - athletes: coaches CRUD own, recruiters SELECT active athletes (status = 'ACTIF')
-- recruiter_favorites/pipeline/notes/views: each recruiter sees only their own rows
+- recruiter_favorites/notes/views: each recruiter sees only their own rows
+- recruiter_pipeline: PAS « own rows only » — 4 policies SELECT (recruteur propriétaire, coach de l'athlète, cégep admin du recruteur, admin). Voir `docs/pipeline-recruteur-frontieres.md`
 - leagues: public read, authenticated insert
 - Note: old "recruiters can read verified athletes" policy was replaced with "recruiters can read active athletes" — verified filter is client-side
 
@@ -345,6 +348,8 @@ Un `bottom: 0` **inline** bat cette règle et annule tout : ne jamais poser `bot
 - recruiter_pipeline.stage: IDENTIFIE → CONTACTE → EN_DISCUSSION → VISITE_PLANIFIEE → ENGAGE → LETTRE_SIGNEE
 - Separate from athlete's statut_recrutement_override
 - Both can coexist — athlete override is the "source of truth" shown on profile
+- Journalisation : `trg_log_pipeline_insert` + `trg_log_pipeline_update` (WHEN old.stage IS DISTINCT FROM new.stage). Un vrai changement de stage seulement — écrire `flagged`/`next_action_at`/`visit_at` ne loggue PAS
+- Frontières de données (coach vs recruteur), surface de notes canonique, grade recruteur : `docs/pipeline-recruteur-frontieres.md`
 
 ---
 

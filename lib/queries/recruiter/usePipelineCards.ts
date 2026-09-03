@@ -36,6 +36,16 @@ export function usePipelineCards() {
       if (!userId) return EMPTY;
       const supabase = createClient();
 
+      /* DEPRECATED — le champ `notes` du select ci-dessous est
+         recruiter_pipeline.notes. La surface de notes CANONIQUE est la table
+         recruiter_notes (useAddPipelineNote / usePipelineNotes). Cette colonne
+         n'est plus ÉCRITE nulle part dans l'app : elle n'est plus que LUE ici,
+         puis mappée sur PipelineKanbanCard.notes plus bas. Ne pas la réutiliser
+         pour du neuf. Sa suppression est prévue dans un lot de nettoyage dédié —
+         il faudra retirer le champ du select ET le mapping.
+         Le commentaire vit ICI et pas dans le template literal : ce dernier part
+         tel quel à PostgREST, où `//` n'est pas un commentaire mais du texte qui
+         casse la requête. */
       /* Temps 1 — la relation SEULE (embed athletes retiré). */
       const { data, error } = await supabase
         .from("recruiter_pipeline")
