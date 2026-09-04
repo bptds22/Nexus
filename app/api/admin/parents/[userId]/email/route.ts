@@ -44,6 +44,36 @@ import { NextResponse } from "next/server";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+/** Écrit `PARENT_EMAIL_CHANGE_FAILED` au journal B0, sous la session de
+ *  l'admin (donc `is_admin()` s'applique, et le journal reste alimenté
+ *  uniquement par des RPC definer).
+ *
+ *  NE JETTE JAMAIS. Une trace manquante ne doit pas transformer un échec
+ *  déjà diagnostiqué en une seconde panne, plus obscure que la première —
+ *  l'appelant est en train de rendre son propre message d'erreur, et c'est
+ *  lui qui compte. L'échec de journalisation part en console. */
+async function journaliserEchec(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  parentUserId: string,
+  athleteId: string,
+  emailVise: string,
+  etape: "prevol" | "auth" | "public",
+  erreur: string,
+): Promise<void> {
+  try {
+    const { error } = await supabase.rpc("admin_log_parent_email_failure", {
+      p_parent_user_id: parentUserId,
+      p_athlete_id: athleteId,
+      p_email_vise: emailVise,
+      p_etape: etape,
+      p_erreur: erreur,
+    });
+    if (error) console.error("[admin/parents/email] journal d'échec non écrit :", error.message);
+  } catch (e) {
+    console.error("[admin/parents/email] journal d'échec non écrit :", e);
+  }
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ userId: string }> },
@@ -106,6 +136,38 @@ export async function POST(
     );
   }
 
+  /* 5bis. PRÉ-VOL — l'adresse est-elle déjà prise ?
+     LE CONTRÔLE ÉTAIT AU MAUVAIS ÉTAGE. `admin_set_parent_email` vérifie déjà
+     l'unicité sur les deux tables, mais elle s'exécute APRÈS l'écriture
+     `auth` ci-dessous : un doublon faisait donc échouer GoTrue en premier, et
+     ce contrôle soigné ne tournait jamais. L'admin recevait
+     « Error updating user » — le 500 générique de GoTrue — sans cause ni
+     geste possible. Constaté en prod le 2026-09-04.
+     Le pré-vol regarde public.users (qui porte le rôle), auth.users, puis
+     auth.identities, et rend l'id de l'occupant. */
+  const { data: occData, error: occErr } = await supabase.rpc("admin_email_occupe", {
+    p_email: email,
+    p_exclure_user_id: userId,
+  });
+  if (occErr) {
+    return NextResponse.json(
+      { error: `Pré-vol impossible : ${occErr.message}` },
+      { status: 500 },
+    );
+  }
+  const occ = occData as { occupe?: boolean; libelle?: string; user_id?: string; source?: string } | null;
+  if (occ?.occupe) {
+    await journaliserEchec(supabase, userId, athleteId, email, "prevol",
+      `adresse deja utilisee par ${occ.libelle} (source ${occ.source})`);
+    return NextResponse.json(
+      {
+        error: `L'adresse ${email} appartient déjà à ${occ.libelle}. Choisissez-en une autre, ou libérez d'abord celle-ci.`,
+        conflit: { user_id: occ.user_id, source: occ.source },
+      },
+      { status: 409 },
+    );
+  }
+
   /* 6. ÉTAGE 1 — auth.users. `email_confirm: true` pose l'adresse
         directement : sans lui, Supabase ouvre un cycle de confirmation et
         l'ancienne adresse reste active en attendant un clic que le parent
@@ -117,10 +179,26 @@ export async function POST(
     email_confirm: true,
   });
   if (authErr) {
-    /* Ici, et seulement ici, rien n'a changé : on peut échouer proprement. */
-    console.error("[admin/parents/email] updateUserById:", authErr);
+    /* Ici, et seulement ici, rien n'a changé : on peut échouer proprement.
+       MAIS ON DIT POURQUOI. `authErr.message` seul vaut souvent
+       « Error updating user » — le libellé générique de GoTrue, qui a coûté
+       un diagnostic entier. On remonte donc TOUT ce que le client porte :
+       message, statut HTTP et code d'erreur. Et on le journalise, parce
+       qu'une tentative qui se heurte à un mur doit laisser une trace :
+       sans elle, la prochaine enquête repart de zéro. */
+    const detail = [
+      authErr.message,
+      authErr.status ? `HTTP ${authErr.status}` : null,
+      (authErr as { code?: string }).code ? `code ${(authErr as { code?: string }).code}` : null,
+    ].filter(Boolean).join(" · ");
+    console.error("[admin/parents/email] updateUserById:", detail, authErr);
+    await journaliserEchec(supabase, userId, athleteId, email, "auth", detail);
     return NextResponse.json(
-      { error: `Échec de la mise à jour de l'authentification : ${authErr.message}` },
+      {
+        error: `Échec de la mise à jour de l'authentification : ${detail}`,
+        detail_serveur: authErr.message,
+        statut_serveur: authErr.status ?? null,
+      },
       { status: 500 },
     );
   }
@@ -152,6 +230,10 @@ export async function POST(
         ? `l'adresse ${email} appartient déjà à ${rpc.occupant ?? "un autre compte"}`
         : rpcErr?.message ?? rpc?.reason ?? "raison inconnue";
     console.error("[admin/parents/email] DESYNCHRONISATION — auth changé, public.users NON :", motif);
+    /* `etape: 'public'` est le cas grave du journal : auth EST passé, la ligne
+       publique non. C'est le seul état à moitié écrit que ce lot peut
+       produire, donc celui qu'il faut pouvoir retrouver. */
+    await journaliserEchec(supabase, userId, athleteId, email, "public", motif);
     return NextResponse.json(
       {
         error:

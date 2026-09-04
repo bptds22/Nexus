@@ -597,14 +597,31 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
             {state.journal_admin.length === 0 ? (
               <p className="text-[12px] text-[#6b7280]">Aucun geste administratif sur ce lien.</p>
             ) : (
-              state.journal_admin.map((l, i) => (
-                <div key={i} className="text-[12px] text-[#c8c8cc]">
-                  <span className="font-bold text-white">{l.action}</span>
-                  <span className="text-[#6b7280]"> · {dateHeureFr(l.le)}</span>
-                  {l.par && <span className="text-[#6b7280]"> · par {l.par}</span>}
-                  {l.parent_email && <span className="text-[#9CA3AF]"> · {l.parent_email}</span>}
-                </div>
-              ))
+              state.journal_admin.map((l, i) => {
+                /* Un ÉCHEC ne doit pas se lire comme un succès. Il porte sa
+                   cause dans `details.erreur` — le message brut du serveur,
+                   celui qui manquait quand la modale n'affichait que
+                   « Error updating user ». On le montre ici : le journal est
+                   le seul endroit où l'enquête d'après-coup peut le relire. */
+                const echec = l.action.endsWith("_FAILED");
+                const erreur = typeof l.details?.erreur === "string" ? l.details.erreur : null;
+                const etape = typeof l.details?.etape === "string" ? l.details.etape : null;
+                return (
+                  <div key={i} className="text-[12px] text-[#c8c8cc]">
+                    <span className={`font-bold ${echec ? "text-[#EF4444]" : "text-white"}`}>{l.action}</span>
+                    <span className="text-[#6b7280]"> · {dateHeureFr(l.le)}</span>
+                    {l.par && <span className="text-[#6b7280]"> · par {l.par}</span>}
+                    {l.parent_email && <span className="text-[#9CA3AF]"> · {l.parent_email}</span>}
+                    {echec && (
+                      <div className="text-[11px] text-[#F59E0B] mt-0.5 pl-2 border-l border-[#F59E0B]/30">
+                        {etape && <span className="uppercase tracking-wider">étape {etape}</span>}
+                        {etape && erreur && " — "}
+                        {erreur}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
