@@ -156,9 +156,26 @@ Read them freely; write to them only with an explicit per-change GO.
 - School: Saint-Jean-Eudes (`4f0e52ad-e9c7-4797-9b7b-92b25ed1307b`)
 
 **Parent** (parent portal fixture, created on cloud 2026-09-01 — permanent)
-- `nexus.parent@nexussports.ca` — user `d41528da-03b4-4df2-9b9d-c390f330223b`,
-  role PARENT, email confirmed, **random password deliberately not recorded**
-  anywhere: reset it from the Supabase Dashboard when you need to sign in.
+- **`bptds17@gmail.com`** — user `d41528da-03b4-4df2-9b9d-c390f330223b`,
+  role PARENT, email confirmed. **The address changed on 2026-09-04**: it was
+  `nexus.parent@nexussports.ca` until then, and was moved through the admin
+  fiche's own B3 path (`/api/admin/parents/[userId]/email` → `auth.users` then
+  `public.users`, both stages). The move is in `admin_parent_actions`, action
+  `PARENT_EMAIL_CHANGED`. Two earlier rows on the same day are a there-and-back
+  probe of that path, not real changes.
+- Sign-in: the "random password never recorded" note is **stale**. On
+  2026-09-04 a password was set through the real recovery flow, and a **Google
+  identity was linked** to the same user — `auth.identities` holds
+  `email + google`, `providers: ["email","google"]`, one single user. Signing in
+  with Google on this address therefore works and does **not** fork a second
+  account (see `docs/oauth-flow-current-state-20260707.md` §3 — and the ⛔ note
+  there about why activating #34 would break that).
+- ⚠️ `athletes.parent_email` on the linked athlete still reads
+  `nexus.parent@nexussports.ca`. That is **deliberate, not drift**: B3 changes
+  the parent ACCOUNT, never the athlete's DECLARED field — those are two
+  different facts, and writing the declared one would also fire
+  `trg_notify_parent_on_minor` (a phantom second invitation email). The admin
+  fiche shows both side by side; the gap is the feature.
 - Linked to athlete `d4cd6432-…` (14 — see the fixture table above; its display
   name is not stable) through the **canonical
   path**, not a hand-written row: `parent_invitations` (`6d9b3e52-…`, token
@@ -172,7 +189,8 @@ Read them freely; write to them only with an explicit per-change GO.
 - `parent_athletes` is `unique(athlete_id)` — **one parent per athlete**. A second
   parent fixture must target a different athlete; this one is taken.
 - Side effects on the athlete fixture: `parent_email` moved from `test@parent.com`
-  to this address, and `partner_visibility_opted_in_at` was re-stamped by the
+  to `nexus.parent@nexussports.ca` (where it still is — **not** to the account's
+  current address; see the ⚠️ above), and `partner_visibility_opted_in_at` was re-stamped by the
   consent call. `parent_notified_at` stays at 2026-07-15, so
   `notify_parent_on_minor` will never re-emit for this athlete (idempotence
   guard) — that is why the invitation row was written directly instead of
