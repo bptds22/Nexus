@@ -122,14 +122,33 @@ green for the wrong reason.
   Resolve by email at runtime, per the rule above — and do not assume the two
   environments hold the same account under the same address.
 
-**Athlete fixtures** (all four have a real auth user → usable with a genuine JWT)
+**Athlete fixtures** — verified against prod 2026-09-04. **Two of the four rows
+listed here until today did not exist any more.** They had been documented with
+load-bearing roles for weeks, and nothing failed loudly: a query against a
+deleted athlete returns zero rows, which reads exactly like "no result".
+Re-verify this table before relying on any row (`select id, first_name,
+last_name from public.athletes where id = '…'`), and treat a miss as a stale
+doc, not as a bug in what you are testing.
 
-| athlete_id | user_id | who | state, and what it is good for |
-|---|---|---|---|
-| `1d06342e-a138-4a88-97ed-d8a9a102428f` | `2a046349-…` | Gabriel Mandziuk | no team — clean slate for a first attachment |
-| `d4cd6432-1c45-47bc-8498-071075e4ae7c` | `b79de13d-…` | Alexis Tremblay (listed here as "Athlete Nexus" until 2026-09-01) | exactly 14 → sits ON the `< 14` Loi 25 boundary and passes it; anchored on Dragons Juvenile (SECONDAIRE) |
-| `fbf03493-03e7-4fc6-8f34-12a661440401` | `c6c679b1-…` | Test Android | anchored on a LIGUE_CIVILE team — the only shape where `reset_athlete_anchor_on_team_remove` actually writes |
-| `d1e8b894-5699-4e20-acf1-a89de2966989` | `1b4bdeca-…` | Test Nexus | no team, no dependants — use THIS one for destructive fixture edits (e.g. flipping `date_naissance`), and restore immediately |
+Both survivors carry a real, confirmed ATHLETE auth account (so they work under
+a genuine JWT) — and both belong to **real people**, not to a test harness.
+Read them freely; write to them only with an explicit per-change GO.
+
+| athlete_id | who | state, and what it is good for |
+|---|---|---|
+| `1d06342e-a138-4a88-97ed-d8a9a102428f` | Gabriel Mandziuk | ACTIF, 18. No team — clean slate for a first attachment. Carries 2 evaluations and 1 recruiter dependant, so it is **not** a blank slate for anything else. Also the one athlete whose "latest evaluation" differs by sort key (`created_at` vs `updated_at`) — useful for testing that divergence. |
+| `d4cd6432-1c45-47bc-8498-071075e4ae7c` | display name has flip-flopped between "Athlete Nexus" and "Alexis Tremblay" — **identify it by id, never by name** | Exactly 14 → sits ON the `< 14` Loi 25 boundary and passes it; anchored on Dragons Juvenile (SECONDAIRE); holds the parent fixture below, and carries 2 rows in `consent_audit_trail` written by the real `set_child_consent()` RPC (5 of the 28 parent links carry any trail at all — an empty journal is the norm, not a fault). |
+| ~~`fbf03493-…` "Test Android"~~ | **GONE** (deleted before 2026-09-04) | Was documented as "the only shape where `reset_athlete_anchor_on_team_remove` actually writes". **No replacement exists** — that trigger has no live fixture. Testing it now means creating a LIGUE_CIVILE-anchored athlete first. |
+| ~~`d1e8b894-…` "Test Nexus"~~ | **GONE** (deleted before 2026-09-04) | Was "the" row for destructive fixture edits. See the warning below. |
+
+> **THERE IS NO DISPOSABLE ATHLETE FIXTURE IN PROD ANY MORE.**
+> Every remaining athlete with a real ATHLETE account is a **real person** with a
+> real email address — most of them minors. Do not pick one off a query and flip `date_naissance` on
+> it "just to test" — the old instruction to do that pointed at a throwaway row
+> that no longer exists, and following it today would mutate a child's record.
+> Destructive fixture edits belong on **local Docker**, announced before the
+> gesture (project rule). If a prod fixture is genuinely required, create a
+> fresh throwaway athlete first and delete it after.
 
 **Coach / school**
 - Coach accounts: `nexus.coachs@nexussports.ca` (`a0000000-…-0000000000a2`),
@@ -140,7 +159,8 @@ green for the wrong reason.
 - `nexus.parent@nexussports.ca` — user `d41528da-03b4-4df2-9b9d-c390f330223b`,
   role PARENT, email confirmed, **random password deliberately not recorded**
   anywhere: reset it from the Supabase Dashboard when you need to sign in.
-- Linked to athlete `d4cd6432-…` (Alexis Tremblay, 14) through the **canonical
+- Linked to athlete `d4cd6432-…` (14 — see the fixture table above; its display
+  name is not stable) through the **canonical
   path**, not a hand-written row: `parent_invitations` (`6d9b3e52-…`, token
   emitted in the trigger's own 2x-uuid-hex shape) then `claim_parent_invitation()`
   under the parent JWT, which wrote `parent_athletes` (`0ab28137-…`) and stamped
