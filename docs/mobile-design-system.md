@@ -29,6 +29,46 @@ Dernière mise à jour : 2026-05-31.
 - Orange Material
 - Toute couleur non listée sans validation explicite
 
+### Teintes réservées PAR SURFACE
+Exceptions validées explicitement, hors des 4 primaires. Chacune vaut pour
+la surface nommée, **pas pour toute l'app** — la même teinte peut porter un
+autre sens ailleurs, et c'est assumé.
+
+- **Violet `#8B5CF6` — grade privé recruteur, sur les CARTES PIPELINE**
+  (arbitrage BP, 2026-09-04). **L'intensité du violet EST le grade** : une
+  seule teinte, sept opacités, du plus fort au plus faible.
+
+  | Grade | Fond | Bordure |
+  |---|---|---|
+  | A+ | opaque | opaque *(seul cran sans contour visible — bloc plein)* |
+  | A | `/70` | `/80` |
+  | B+ | `/55` | `/70` |
+  | B | `/45` | `/65` |
+  | C+ | `/35` | `/60` |
+  | C | `/25` | `/55` |
+  | D | `/15` | `/50` |
+
+  Lettre blanche pleine sur les 7 crans. **La bordure monte quand le fond
+  descend** : un fond fort n'a pas besoin d'être cerné, un fond faible si —
+  une puce D ne détache que 1,17:1 du fond de carte `#1A1D24` sans bordure.
+  Jamais de graduation CHROMATIQUE (vert → rouge) : elle emprunterait le
+  vocabulaire des statuts pour dire autre chose.
+  L'échelle vit dans un map unique, `GRADE_STYLES` (`GradeChip.tsx`),
+  consommé par la puce ET par les 7 boutons du picker — qui portent donc leur
+  propre intensité, rendant l'échelle auto-explicative.
+  Retenu parce qu'aucune teinte saturée n'est libre à l'échelle de l'app,
+  alors que violet et indigo sont **totalement absents** de
+  `app/recruteur/pipeline/page.tsx` et de
+  `components/shared/RecruteurPipelineMobile.tsx`.
+  Ailleurs `#8B5CF6` veut dire « groupe / diffusion »
+  (`components/messaging/GroupeCompose.tsx:28`), et sert de couleur de sport
+  (Hockey) et de teinte de graphe — ces écrans ne coexistent jamais avec une
+  carte de pipeline.
+  ⚠ Voisinage à surveiller : la fiche athlète mobile colore ses stages en
+  `#6366F1` et `#A855F7` (`AthleteRecruiterProfileBodyMobile.tsx:559-561`),
+  sur un écran ouvert DEPUIS le pipeline. En cas de confusion visuelle, c'est
+  **la fiche** qu'on ajuste, pas la puce.
+
 ---
 
 ## 2. Typographie

@@ -740,6 +740,81 @@ file.
 
 ## P3 — Latent / future work
 
+- [ ] **Retour anticipé avant les hooks dans `app/recruteur/pipeline/page.tsx`
+      — 31 violations `react-hooks/rules-of-hooks`, refactor dédié requis.**
+      `PipelinePageContent` ouvre sur `if (IS_CAPACITOR) return
+      <RecruteurPipelineMobile />;` (l.979), AVANT le moindre hook. Les 31
+      hooks qui suivent sont donc « appelés conditionnellement » aux yeux
+      d'ESLint, et chacun compte une erreur.
+
+      Inoffensif en pratique : `IS_CAPACITOR` est une constante de build, pas
+      un état — l'ordre des hooks ne varie jamais d'un rendu à l'autre pour un
+      même bundle. Le coût est ailleurs : le fichier rend 31 erreurs de lint
+      permanentes, dans lesquelles une VRAIE violation d'ordre de hooks
+      passerait inaperçue. C'est un détecteur de fumée débranché.
+
+      **Le correctif** est de sortir l'aiguillage web/mobile au-dessus du
+      composant — `Page()` choisit le composant, `PipelinePageContent` ne
+      contient plus que le web et commence par ses hooks. Ça touche au partage
+      web/mobile de la page : à faire seul, pas en marge d'un lot fonctionnel.
+
+      Le Lot 2 y a ajouté 2 instances (le `useState` du mode de tri, le
+      `useMemo` des cartes triées) — 29 avant, 31 après. Consigné plutôt que
+      corrigé, sur arbitrage BP.
+
+      **Relevé** le 2026-09-04 en instruisant le Lot 2 (grade recruteur).
+
+- [ ] **`ouvert_cegep_*` manque au garde-fou de `partner_athlete_profile` —
+      la RPC élargie est APPLIQUÉE en prod.** Le bloc `DO $$` de
+      `20260904130334_partner_athlete_profile_perimetre_elargi.sql` lève une
+      exception `NEXUS:` si la fonction projette une colonne hors cadre. Sa
+      liste reprend le contrat « CE QUI NE SORT JAMAIS » de
+      `20260820021550_partner_athlete_profile_rpc.sql` (arbitrage BP
+      2026-08-19) — sauf `ouvert_cegep_*`, qui n'y figure sous aucune forme.
+
+      **Aucune fuite aujourd'hui** : relevé sur `pg_proc` le 2026-09-04, la
+      fonction vivante projette 61 colonnes et AUCUNE de la liste interdite,
+      `ouvert_cegep_*` comprise. Le trou est dans le filet, pas dans la prise.
+
+      Mais le filet est désormais le seul garde-fou d'une RPC qui projette 31
+      colonnes de plus qu'en août, dont les 14 traits d'évaluation. Le
+      prochain élargissement rouvrira ce `DO` en lui faisant confiance, et
+      `ouvert_cegep_technique` passerait sans que rien ne se lève.
+
+      **À corriger :** ajouter `'ouvert_cegep_technique'` et ses voisines au
+      tableau du garde-fou, dans la prochaine migration qui touche cette
+      fonction. Vérifier au passage que la liste couvre bien tout le contrat
+      d'août, colonne par colonne, plutôt que de la relire en diagonale.
+
+      **Relevé** le 2026-09-04 en instruisant le Lot 2 (grade recruteur).
+      Le mirror a été renommé (`20260903210000` -> `20260904130334`),
+      appliqué et commité (`f570bd6`) par une autre session pendant ce lot.
+
+- [ ] **Les six clés étrangères des trois tables recruteur sont nues — aucun
+      `ON DELETE CASCADE`.** Relevé sur `pg_constraint` en prod le 2026-09-03 :
+
+      ```
+      recruiter_pipeline   athlete_id -> athletes(id)     (nue)
+      recruiter_pipeline   recruiter_id -> auth.users(id) (nue)
+      recruiter_favorites  athlete_id -> athletes(id)     (nue)
+      recruiter_favorites  recruiter_id -> auth.users(id) (nue)
+      recruiter_notes      athlete_id -> athletes(id)     (nue)
+      recruiter_notes      recruiter_id -> auth.users(id) (nue)
+      ```
+
+      Conséquence : supprimer un athlète ou un compte recruteur bute sur une
+      violation de contrainte tant que la moindre ligne subsiste dans l'une
+      des trois. Ça ne s'est pas encore vu parce que rien ne supprime
+      réellement un athlète aujourd'hui — c'est une mine, pas un cratère.
+
+      `recruiter_athlete_grades` (Lot 2) part avec `on delete cascade` sur
+      ses deux FK. Le rattrapage des six autres est un **lot de nettoyage
+      dédié** : `alter table … drop constraint … add constraint … on delete
+      cascade` trois fois deux, sur des tables vivantes — donc à faire seul,
+      pas en marge d'un lot fonctionnel.
+
+      **Relevé** le 2026-09-03 en instruisant le DDL du Lot 2.
+
 > **2026-08-23 — Push : trois points laissés ouverts.** Relevés en instruisant
 > le timeout pg_net de `notify_on_message`. La latence a été corrigée
 > (parallélisation de `send-push`, 8,9 s -> 2,3 s sur 42 jetons) ; ces

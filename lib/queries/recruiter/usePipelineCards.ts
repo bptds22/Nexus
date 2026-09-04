@@ -13,6 +13,7 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
+import { isGrade, type Grade } from "@/lib/config/grades";
 
 const STAGE_ORDER: Record<string, number> = {
   identifie: 1, contacte: 2, en_discussion: 3,
@@ -25,6 +26,37 @@ export interface PipelineData {
 }
 
 const EMPTY: PipelineData = { cards: [], competitorMap: {} };
+
+/* Les grades du recruteur courant sur les athlètes de son pipeline.
+   Même modèle que le competitorMap plus bas : une requête à plat, repliée en
+   Record indexé par athlete_id, plutôt qu'un embed PostgREST.
+   L'embed était impossible ici — recruiter_athlete_grades n'a pas de FK vers
+   recruiter_pipeline (les deux pointent vers athletes séparément), donc aucune
+   relation à traverser. Et la RLS suffit à cadrer la lecture : propriétaire
+   seul. Le .eq("recruiter_id") reste pour que la requête dise ce qu'elle lit.
+   isGrade() garde la frontière : une valeur hors des 7 est ignorée plutôt que
+   propagée jusqu'à la puce. */
+async function fetchGradeMap(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  athleteIds: string[],
+): Promise<Record<string, Grade>> {
+  const map: Record<string, Grade> = {};
+  if (athleteIds.length === 0) return map;
+
+  const { data } = await supabase
+    .from("recruiter_athlete_grades")
+    .select("athlete_id, grade")
+    .eq("recruiter_id", userId)
+    .in("athlete_id", athleteIds);
+
+  if (data) {
+    for (const row of data as { athlete_id: string; grade: unknown }[]) {
+      if (isGrade(row.grade)) map[row.athlete_id] = row.grade;
+    }
+  }
+  return map;
+}
 
 export function usePipelineCards() {
   const { data: currentUser } = useCurrentUser();
@@ -69,11 +101,14 @@ export function usePipelineCards() {
       if (error) throw error;
       if (!data) return EMPTY;
 
-      /* Temps 2 — les cartes projetées, résolues par lot. */
-      const cardMap = await fetchRecruiterAthleteCards(
-        supabase,
-        data.map((p) => p.athlete_id as string),
-      );
+      /* Temps 2 — les cartes projetées et les grades, résolus par lot.
+         En parallèle : les deux ne dépendent que de la liste d'athlètes, les
+         sérialiser ajouterait un aller-retour à l'ouverture du kanban. */
+      const pipelineAthleteIds = data.map((p) => p.athlete_id as string);
+      const [cardMap, gradeMap] = await Promise.all([
+        fetchRecruiterAthleteCards(supabase, pipelineAthleteIds),
+        fetchGradeMap(supabase, userId, pipelineAthleteIds),
+      ]);
 
       const mapped: PipelineKanbanCard[] = data.map((p: Record<string, unknown>) => {
         // `?? null` explicite : la RPC ne rend rien pour un athlète
@@ -119,6 +154,9 @@ export function usePipelineCards() {
           // autres stages la remettent à NULL à l'écriture.
           visit_at: (p.visit_at as string) || null,
           moved_at: movedAt,
+          // Grade privé du recruteur courant. `?? null` : absent du map =
+          // aucune ligne dans recruiter_athlete_grades = pas encore jugé.
+          grade: gradeMap[p.athlete_id as string] ?? null,
           noTeam: !card?.school_id,
         } as PipelineKanbanCard;
       });

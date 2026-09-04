@@ -6,6 +6,12 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
+import {
+  sortPipelineCards,
+  PIPELINE_SORT_OPTIONS,
+  DEFAULT_PIPELINE_SORT,
+  type PipelineSortMode,
+} from "@/lib/pipeline/sortPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import {
@@ -26,6 +32,9 @@ import { getCurrentSeason } from "@/lib/utils/season";
 // Pipeline movement is now unrestricted — no validation imports needed
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
+import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
+import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteGrade";
+import type { Grade } from "@/lib/config/grades";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import { generateCalendarLinks, downloadIcs } from "@/lib/calendar/generateCalendarLinks";
 import {
@@ -488,12 +497,24 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               retard). Purement informative : le clic remonte au bouton parent
               (ouverture du slide-over), l'édition se fait là-bas. */}
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-            <RecruitmentStatusBadge
-              status={(card.recruitment_status || "OUVERT") as GlobalRecruitmentStatus}
-              committedSchoolName={card.committed_school_name || undefined}
-              openToOffers={card.open_to_offers}
-              size="sm"
-            />
+            {/* OUVERT NE S'AFFICHE PAS (arbitrage BP, 2026-09-04). C'est
+                l'état PAR DÉFAUT d'un athlète : une pastille verte sur
+                presque chaque carte n'informe de rien et noie les deux
+                statuts qui, eux, disent quelque chose. L'absence de
+                pastille SIGNIFIE « ouvert ».
+                EN PROCESSUS et RECRUTÉ restent : ils disent qu'un AUTRE
+                recruteur travaille l'athlète — la seule information
+                concurrentielle que porte la carte.
+                Le statut complet reste lisible dans le panneau athlète :
+                on allège la carte, on ne retire pas l'information. */}
+            {card.recruitment_status && card.recruitment_status !== "OUVERT" && (
+              <RecruitmentStatusBadge
+                status={card.recruitment_status as GlobalRecruitmentStatus}
+                committedSchoolName={card.committed_school_name || undefined}
+                openToOffers={card.open_to_offers}
+                size="sm"
+              />
+            )}
             {card.status === "visite_planifiee" && card.visit_at && (() => {
               const v = formatVisitPill(card.visit_at, now);
               if (!v) return null;
@@ -533,9 +554,13 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             <p className="text-[11px] text-[#E63946] mt-1.5">⚠️ Un autre CÉGEP est plus avancé</p>
           )}
 
-          {/* Star rating */}
-          <div className="mt-2">
+          {/* Cote du coach + mon grade, sur la même ligne (retour terrain
+              2026-09-04). Les deux jugements portés sur l'athlète se lisent
+              d'un seul regard : les étoiles à gauche, ma puce poussée à
+              droite par ml-auto. */}
+          <div className="mt-2 flex items-center gap-2">
             <StarRating rating={card.coach_rating} size="md" />
+            <GradeChip grade={card.grade} className="ml-auto" />
           </div>
         </div>
 
@@ -655,12 +680,14 @@ interface NoteEntry {
 }
 
 function SlideOver({
-  card, onClose, onStatusChange, onTogglePriority, onSaveVisit,
+  card, onClose, onStatusChange, onTogglePriority, onSetGrade, onSaveVisit,
   isFreeDemoMode, onTeaseUpgrade,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
   onStatusChange: (cardId: string, newStatus: RecruitmentStatus) => void;
   onTogglePriority: (cardId: string, value: boolean) => void;
+  /** `null` retire le grade (DELETE de la ligne, pas un NULL en base). */
+  onSetGrade: (cardId: string, grade: Grade | null, previousGrade: Grade | null) => void;
   /** Écrit recruiter_pipeline.visit_at. `null` efface la date. */
   onSaveVisit: (pipelineId: string, visitAtIso: string | null) => void;
   isFreeDemoMode: boolean;
@@ -747,6 +774,14 @@ function SlideOver({
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
             <div className="flex items-center gap-2 mt-3"><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></div>
+            {/* Mon grade — sous la cote du coach, et séparé d'elle : les
+                étoiles sont le jugement d'un tiers, le grade est le mien. */}
+            <div className="mt-4">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Mon grade</span>
+              <div className="mt-2">
+                <GradePicker value={card.grade} onSelect={(g) => onSetGrade(card.id, g, card.grade ?? null)} />
+              </div>
+            </div>
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Profil complété</span>
@@ -987,6 +1022,7 @@ function PipelinePageContent() {
   const [retireReason, setRetireReason] = useState("");
   const [actionPopover, setActionPopover] = useState<PipelineKanbanCard | null>(null);
   const [sportFilter, setSportFilter] = useState("");
+  const [sortBy, setSortBy] = useState<PipelineSortMode>(DEFAULT_PIPELINE_SORT);
   const now = useClientNow();
 
   // Free users get a read-only "demo" experience: kanban renders
@@ -1076,6 +1112,37 @@ function PipelinePageContent() {
     showToast(value ? "Marqué prioritaire" : "Priorité retirée");
   }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
 
+  /* ── Grade (slide-over) ─────────────────────────────────────────
+     `selectedCard` est un SNAPSHOT : l'optimistic update du hook patche le
+     cache ["pipeline"], pas ce snapshot. Sans le setSelectedCard ci-dessous,
+     la grille du panneau resterait sur l'ancienne valeur jusqu'à réouverture
+     — le même piège que handleSaveVisit plus bas.
+     Le garde isFreeDemoMode n'est pas décoratif : user_has_pro() est en with
+     check sur INSERT et UPDATE, donc un compte free verrait la sélection se
+     poser puis se défaire au revert. On l'arrête avant l'aller-retour. */
+  const upsertGrade = useUpsertAthleteGrade();
+  const handleSetGrade = useCallback((cardId: string, grade: Grade | null, previousGrade: Grade | null) => {
+    if (isFreeDemoMode) {
+      teaseUpgrade();
+      return;
+    }
+    // `previousGrade` vient du panneau, qui l'a sous les yeux au moment du
+    // clic. Le rechercher dans `cards` ici rendrait ce callback dépendant
+    // d'un tableau recréé à chaque rendu, pour une valeur que l'appelant
+    // connaît déjà.
+    setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, grade } : prev));
+    upsertGrade.mutate(
+      { athleteId: cardId, grade },
+      {
+        onError: () => {
+          setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, grade: previousGrade } : prev));
+          showToast("Grade non enregistré");
+        },
+        onSuccess: () => showToast(grade ? `Grade ${grade} enregistré` : "Grade retiré"),
+      },
+    );
+  }, [isFreeDemoMode, teaseUpgrade, upsertGrade, showToast]);
+
   /* ── Save visit_at (slide-over) ─────────────────────────────────
      Écriture immédiate à chaque changement d'input — pas de bouton
      « Enregistrer ». Le panneau lit `selectedCard`, un snapshot : on le
@@ -1130,6 +1197,17 @@ function PipelinePageContent() {
     if (!sportFilter) return cards;
     return cards.filter(c => c.sport === sportFilter);
   }, [cards, sportFilter]);
+
+  /* LA COUCHE DE TRI, qui n'existait pas côté web (Lot 2). Les colonnes
+     rendaient jusqu'ici l'ordre brut de la requête (`moved_at desc`), et les
+     cartes flaggées ne remontaient pas — alors que le mobile les remontait
+     depuis iter 6.1b. Même fonction des deux côtés désormais.
+     Trié UNE fois ici, pas dans chaque colonne : getCardsByStatus filtre et
+     préserve l'ordre, donc les trois points de rendu héritent du même tri. */
+  const sortedCards = useMemo(
+    () => sortPipelineCards(filteredCards, sortBy),
+    [filteredCards, sortBy],
+  );
 
   /* ── DnD Handlers ──────────────────────────────────────────── */
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -1195,9 +1273,21 @@ function PipelinePageContent() {
 
       <FunnelSummary cards={cards} />
 
-      {/* Sport filter */}
-      {sports.length > 1 && (
-        <div className="flex items-center gap-3">
+      {/* Barre de filtres — le TRI est toujours présent (il s'applique même à
+          une seule colonne d'un seul sport) ; le filtre SPORT n'apparaît que
+          s'il y a réellement un choix à faire. */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as PipelineSortMode)}
+          aria-label="Trier les athlètes"
+          className={`bg-[#13151a] border rounded-lg px-3 py-2 text-[13px] outline-none transition-colors ${sortBy !== DEFAULT_PIPELINE_SORT ? "border-[#E63946] text-[#E63946]" : "border-[#2a2d36] text-[#6b7280]"}`}
+        >
+          {PIPELINE_SORT_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {sports.length > 1 && (
           <select
             value={sportFilter}
             onChange={(e) => setSportFilter(e.target.value)}
@@ -1207,20 +1297,24 @@ function PipelinePageContent() {
             <option value="">Tous les sports</option>
             {sports.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          {sportFilter && (
-            <button type="button" onClick={() => setSportFilter("")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors">
-              Réinitialiser
-            </button>
-          )}
-        </div>
-      )}
+        )}
+        {(sportFilter || sortBy !== DEFAULT_PIPELINE_SORT) && (
+          <button
+            type="button"
+            onClick={() => { setSportFilter(""); setSortBy(DEFAULT_PIPELINE_SORT); }}
+            className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors"
+          >
+            Réinitialiser
+          </button>
+        )}
+      </div>
 
       {/* Mobile tab bar */}
       <p className="lg:hidden text-[12px] text-[#6b7280] text-center">Appuie sur une carte pour changer son statut</p>
       <div className="lg:hidden overflow-x-auto -mx-4 px-4">
         <div className="flex gap-1 min-w-max">
           {KANBAN_COLUMNS.map((col) => {
-            const count = getCardsByStatus(filteredCards, col.id).length;
+            const count = getCardsByStatus(sortedCards, col.id).length;
             const isActive = mobileTab === col.id;
             return (
               <button key={col.id} type="button" onClick={() => setMobileTab(col.id)} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${isActive ? (col.phase === "commitment" ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#6B7280]/10 text-[#9CA3AF] border border-[#6B7280]/20") : "text-[#6b7280] border border-transparent hover:text-[#9CA3AF]"}`}>
@@ -1235,7 +1329,7 @@ function PipelinePageContent() {
       <div className="lg:hidden">
         {(() => {
           const col = KANBAN_COLUMNS.find((c) => c.id === mobileTab)!;
-          const colCards = getCardsByStatus(filteredCards, col.id);
+          const colCards = getCardsByStatus(sortedCards, col.id);
           return (
             <div className="space-y-2">
               {colCards.length === 0 ? (
@@ -1252,7 +1346,7 @@ function PipelinePageContent() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="hidden lg:flex gap-4 overflow-x-auto pb-4">
           {KANBAN_COLUMNS.map((col) => (
-            <KanbanColumn key={col.id} colDef={col} cards={getCardsByStatus(filteredCards, col.id)} activeCardStatus={activeCard?.status || null} onCardClick={openSlideOver} onOpenAction={setActionPopover} now={now} competitorMap={competitorMap} />
+            <KanbanColumn key={col.id} colDef={col} cards={getCardsByStatus(sortedCards, col.id)} activeCardStatus={activeCard?.status || null} onCardClick={openSlideOver} onOpenAction={setActionPopover} now={now} competitorMap={competitorMap} />
           ))}
         </div>
         <DragOverlay dropAnimation={null}>
@@ -1268,6 +1362,7 @@ function PipelinePageContent() {
           onClose={() => setSelectedCard(null)}
           onStatusChange={handleStatusChange}
           onTogglePriority={handleTogglePriority}
+          onSetGrade={handleSetGrade}
           onSaveVisit={handleSaveVisit}
           isFreeDemoMode={isFreeDemoMode}
           onTeaseUpgrade={teaseUpgrade}

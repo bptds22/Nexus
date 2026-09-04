@@ -28,9 +28,18 @@ import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
+import {
+  sortPipelineCards,
+  PIPELINE_SORT_OPTIONS,
+  DEFAULT_PIPELINE_SORT,
+  type PipelineSortMode,
+} from "@/lib/pipeline/sortPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useUpdatePipelineStage } from "@/lib/queries/recruiter/useUpdatePipelineStage";
 import { useTogglePipelinePriority } from "@/lib/queries/recruiter/useTogglePipelinePriority";
+import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteGrade";
+import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
+import type { Grade } from "@/lib/config/grades";
 import { useUpdateNextAction } from "@/lib/queries/recruiter/useUpdateNextAction";
 import { useAddPipelineNote } from "@/lib/queries/recruiter/useAddPipelineNote";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
@@ -309,7 +318,10 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
               </svg>
             </span>
           )}
-          <span className="flex-shrink-0 ml-auto flex items-center gap-1">
+          {/* Cote du coach + mon grade, groupés à droite (retour terrain
+              2026-09-04) — même regroupement qu'au kanban web. */}
+          <span className="flex-shrink-0 ml-auto flex items-center gap-1.5">
+            <GradeChip grade={card.grade} />
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
@@ -323,8 +335,15 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
             .filter(Boolean).join(" · ") || "—"}
         </p>
 
-        {/* Ligne 3 : statut global */}
-        {status && (
+        {/* Ligne 3 : statut global — SAUF « OUVERT » (arbitrage BP,
+            2026-09-04). C'est l'état par défaut : l'absence de pastille
+            signifie « ouvert ». EN PROCESSUS et RECRUTÉ restent, ils disent
+            qu'un autre recruteur travaille l'athlète. Le statut complet reste
+            dans le bottom sheet athlète, inchangé.
+            La bordure gauche de la carte (getBorderLeftStyle) garde bien la
+            teinte verte d'OUVERT : c'est un liseré, pas une pastille — il ne
+            revendique aucune place dans la lecture. */}
+        {status && card.recruitment_status !== "OUVERT" && (
           <div className="flex items-center gap-1.5 mt-2">
             <span
               className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -503,14 +522,9 @@ function SwipeableCard({
 
 /* ── PipelineMenuSheet (Fix 9 — ⋮ Apple Reminders style) ──── */
 
-type SortByKey = "moved_at_desc" | "rating_desc" | "graduation_asc" | "name_asc";
-
-const SORT_OPTIONS: { value: SortByKey; label: string }[] = [
-  { value: "moved_at_desc", label: "Dernière activité" },
-  { value: "rating_desc",   label: "Meilleure cote" },
-  { value: "graduation_asc", label: "Promotion proche" },
-  { value: "name_asc",      label: "Nom A-Z" },
-];
+/* Le type de tri et ses libellés vivent dans lib/pipeline/sortPipelineCards —
+   la barre de filtres web lit exactement la même liste. Un mode ajouté là-bas
+   apparaît ici sans rien toucher. */
 
 // Iter 6.1d Fix 3 — palette bicolore pour le breakdown stats du ⋮ menu
 // (UNIQUEMENT dans le breakdown, pas dans les section headers du main).
@@ -535,8 +549,8 @@ function PipelineMenuSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  sortBy: SortByKey;
-  setSortBy: (v: SortByKey) => void;
+  sortBy: PipelineSortMode;
+  setSortBy: (v: PipelineSortMode) => void;
   filterSport: string | null;
   setFilterSport: (v: string | null) => void;
   focusMode: boolean;
@@ -677,7 +691,7 @@ function PipelineMenuSheet({
               <section>
                 <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Trier les athlètes par</h3>
                 <div className="bg-[#1A1D24] rounded-2xl overflow-hidden">
-                  {SORT_OPTIONS.map((opt) => {
+                  {PIPELINE_SORT_OPTIONS.map((opt) => {
                     const active = sortBy === opt.value;
                     return (
                       <button
@@ -748,7 +762,7 @@ function PipelineMenuSheet({
                 <button
                   type="button"
                   onClick={() => {
-                    setSortBy("moved_at_desc"); setFilterSport(null); setFocusMode(false);
+                    setSortBy(DEFAULT_PIPELINE_SORT); setFilterSport(null); setFocusMode(false);
                     toast.info({ message: "Filtres réinitialisés" });
                   }}
                   className="w-full px-4 py-3.5 rounded-2xl text-[14px] text-[#E63946] font-bold active:bg-[#E63946]/10 transition-colors"
@@ -869,12 +883,16 @@ function PipelineDetailSheet({
   const { data: notes = [], isLoading: notesLoading } = usePipelineNotes(card?.id ?? null);
   const updateStage = useUpdatePipelineStage();
   const togglePriority = useTogglePipelinePriority();
+  const upsertGrade = useUpsertAthleteGrade();
   const updateNextAction = useUpdateNextAction();
   const addNote = useAddPipelineNote();
   const removeFromPipeline = useRemoveFromPipeline();
 
   const [noteText, setNoteText] = useState("");
   const [isPriority, setIsPriority] = useState(card?.flagged ?? false);
+  // Grade local — même raison que visitAtLocal/nextActionAtLocal : `card` est
+  // un snapshot non réactif au cache TanStack.
+  const [gradeLocal, setGradeLocal] = useState<Grade | null>(card?.grade ?? null);
   const [posting, setPosting] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   // Date de visite locale — le `card` prop est un snapshot (non réactif au
@@ -897,6 +915,7 @@ function PipelineDetailSheet({
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { setIsPriority(card?.flagged ?? false); }, [card?.id, card?.flagged]);
+  useEffect(() => { setGradeLocal(card?.grade ?? null); }, [card?.id, card?.grade]);
   useEffect(() => { setVisitAtLocal(card?.visit_at ?? null); }, [card?.id, card?.visit_at]);
   useEffect(() => { setNextActionAtLocal(card?.next_action_at ?? null); }, [card?.id, card?.next_action_at]);
   useEffect(() => {
@@ -1003,6 +1022,25 @@ function PipelineDetailSheet({
     } catch {
       setIsPriority(!newValue);
       toast.error({ message: "Erreur priorité" });
+    }
+  };
+
+  // `null` retire le grade — useUpsertAthleteGrade traduit ça en DELETE.
+  // Optimiste local + rollback, sans spinner : la grille reste tapable.
+  const handleSetGrade = async (grade: Grade | null) => {
+    if (isFreeDemoMode) {
+      toast.warning({ message: "Noter un athlète est réservé aux membres Pro" });
+      return;
+    }
+    if (!card) return;
+    const prev = gradeLocal;
+    setGradeLocal(grade);
+    triggerHaptic("Light");
+    try {
+      await upsertGrade.mutateAsync({ athleteId: card.id, grade });
+    } catch {
+      setGradeLocal(prev);
+      toast.error({ message: "Erreur grade" });
     }
   };
 
@@ -1289,6 +1327,13 @@ function PipelineDetailSheet({
                 </button>
               </div>
 
+              {/* Mon grade — sous la priorité, avant les notes. Cibles 44px
+                  (compact={false}) : c'est du tactile, pas du curseur. */}
+              <div>
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Mon grade</h3>
+                <GradePicker value={gradeLocal} onSelect={handleSetGrade} compact={false} />
+              </div>
+
               {/* Notes inline */}
               <div>
                 <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Notes de suivi</h3>
@@ -1479,7 +1524,7 @@ export function RecruteurPipelineMobile() {
 
   // Iter 6.1b — ⋮ menu state
   const [menuOpen, setMenuOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<SortByKey>("moved_at_desc");
+  const [sortBy, setSortBy] = useState<PipelineSortMode>(DEFAULT_PIPELINE_SORT);
   const [filterSport, setFilterSport] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
 
@@ -1514,25 +1559,9 @@ export function RecruteurPipelineMobile() {
     let list = (cardsByStage[activeStage] ?? []).slice();
     if (filterSport) list = list.filter((c) => c.sport === filterSport);
     if (focusMode) list = list.filter((c) => c.recruitment_status !== "RECRUTE");
-    list.sort((a, b) => {
-      if (a.flagged && !b.flagged) return -1;
-      if (!a.flagged && b.flagged) return 1;
-      switch (sortBy) {
-        case "rating_desc":
-          return (b.coach_rating ?? 0) - (a.coach_rating ?? 0);
-        case "graduation_asc":
-          return (a.graduation_year || 9999) - (b.graduation_year || 9999);
-        case "name_asc":
-          return (a.full_name || "").localeCompare(b.full_name || "");
-        case "moved_at_desc":
-        default: {
-          const at = a.moved_at ? new Date(a.moved_at).getTime() : 0;
-          const bt = b.moved_at ? new Date(b.moved_at).getTime() : 0;
-          return bt - at;
-        }
-      }
-    });
-    return list;
+    // Le tri (flaggués d'abord, puis mode courant) est parti dans
+    // lib/pipeline/sortPipelineCards : le web appelle la même fonction.
+    return sortPipelineCards(list, sortBy);
   }, [cardsByStage, activeStage, filterSport, focusMode, sortBy]);
 
   // Index du stage actif pour les bornes du swipe (canSwipeLeft/Right)
