@@ -5,6 +5,19 @@ Follow these instructions exactly. Updated April 2026.
 
 ---
 
+## RÈGLES TRANSVERSES DE SESSION
+
+### PROTOCOLE WEB-D'ABORD (décision BP, 2026-09-04)
+
+Tout chantier se construit et se valide sur le **WEB uniquement**. **AUCUN
+travail mobile** — ni code dans `RecruteurPipelineMobile` ou équivalents, ni
+`build:mobile`, ni `cap sync`, ni émulateur — tant que BP n'a pas déclaré
+explicitement le chantier web **TERMINÉ**. Le mobile se traite ensuite, en un
+**lot dédié**, sur **GO explicite de BP**. Le tronc partagé (`lib/`) est
+permis ; son branchement mobile attend le lot mobile.
+
+---
+
 ## PROJECT OVERVIEW
 
 **Nexus** connects Quebec secondary school athletes with CÉGEP recruiters through the RSEQ network. Core insight: athletes are the product — more athletes = more recruiter value = more revenue.
@@ -155,21 +168,24 @@ Read them freely; write to them only with an explicit per-change GO.
   `nexus.coachc@nexussports.ca` (`a0000000-…-0000000000a3`)
 - School: Saint-Jean-Eudes (`4f0e52ad-e9c7-4797-9b7b-92b25ed1307b`)
 
-**Parent** (parent portal fixture, created on cloud 2026-09-01 — permanent)
-- **`bptds17@gmail.com`** — user `d41528da-03b4-4df2-9b9d-c390f330223b`,
-  role PARENT, email confirmed. **The address changed on 2026-09-04**: it was
-  `nexus.parent@nexussports.ca` until then, and was moved through the admin
-  fiche's own B3 path (`/api/admin/parents/[userId]/email` → `auth.users` then
-  `public.users`, both stages). The move is in `admin_parent_actions`, action
-  `PARENT_EMAIL_CHANGED`. Two earlier rows on the same day are a there-and-back
-  probe of that path, not real changes.
-- Sign-in: the "random password never recorded" note is **stale**. On
-  2026-09-04 a password was set through the real recovery flow, and a **Google
-  identity was linked** to the same user — `auth.identities` holds
-  `email + google`, `providers: ["email","google"]`, one single user. Signing in
-  with Google on this address therefore works and does **not** fork a second
-  account (see `docs/oauth-flow-current-state-20260707.md` §3 — and the ⛔ note
-  there about why activating #34 would break that).
+**Parent** (parent portal fixture — **re-created 2026-09-04**, see the history below)
+- **`bptds17@gmail.com`** — user **`ce7c8339-b28b-49b5-8ba4-f1621a2a1dde`**,
+  role PARENT, email confirmed, password set, identity `email` only.
+- **The previous parent fixture `d41528da-…` NO LONGER EXISTS.** History, from
+  the GoTrue log, in one line: it was deleted through the admin API at
+  2026-09-04 17:20:16, an admin invitation was re-issued from the athlete
+  fiche at 17:21:23 (`PARENT_INVITED`), and the current account was created
+  at 17:21:39 by the claim page's own `signUp` + `claim_parent_invitation()` —
+  i.e. **the canonical parent flow, end to end**, not a hand-built row.
+  Any older note naming `d41528da` is stale; resolve by email, per the rule at
+  the top of this section.
+- ⚠️ **This account has NO consent of its own.** `privacy_preferences` is `{}`,
+  `onboarding_complete` is false, `first_name`/`last_name` are empty. The two
+  `consent_audit_trail` rows below were granted on 2026-09-01 by the *previous*
+  parent; they survive because consents live on the athlete and its user, not
+  on the parent. So the trail reads "granted by PARENT" for a parent that no
+  longer exists — correct as history, misleading if read as "the current parent
+  consented". Worth knowing before using this fixture to test consent.
 - ⚠️ `athletes.parent_email` on the linked athlete still reads
   `nexus.parent@nexussports.ca`. That is **deliberate, not drift**: B3 changes
   the parent ACCOUNT, never the athlete's DECLARED field — those are two
@@ -177,11 +193,14 @@ Read them freely; write to them only with an explicit per-change GO.
   `trg_notify_parent_on_minor` (a phantom second invitation email). The admin
   fiche shows both side by side; the gap is the feature.
 - Linked to athlete `d4cd6432-…` (14 — see the fixture table above; its display
-  name is not stable) through the **canonical
-  path**, not a hand-written row: `parent_invitations` (`6d9b3e52-…`, token
-  emitted in the trigger's own 2x-uuid-hex shape) then `claim_parent_invitation()`
-  under the parent JWT, which wrote `parent_athletes` (`0ab28137-…`) and stamped
-  `claimed_at`.
+  name is not stable) through the **canonical path**, not a hand-written row:
+  `parent_invitations` (`59a182d7-…`, emitted 17:21:23 by the admin fiche's
+  invite button) then `claim_parent_invitation()` under the parent JWT, which
+  wrote `parent_athletes` (`131cce29-…`) and stamped `claimed_at` — all three
+  within 16 seconds.
+  *(The 2026-09-01 pair `6d9b3e52-…` / `0ab28137-…` belonged to the deleted
+  fixture. The invitation row survives, claimed; the link row went with the
+  account.)*
 - Consent trail: 2 `consent_audit_trail` rows, action GRANTED,
   `metadata.acting_role = 'PARENT'`, keys `marketing` and `image_partenaire`,
   policy `2026-08-v1` — written by the real `set_child_consent()` RPC. The claim
