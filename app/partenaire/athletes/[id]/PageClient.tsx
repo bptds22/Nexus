@@ -47,8 +47,17 @@ function safeFilenamePart(s: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Ligne rendue par public.partner_athlete_profile — 28 colonnes, aucune
-    interdite. Voir le commentaire de la fonction en base. */
+/** Le SOUS-ENSEMBLE de public.partner_athlete_profile que la CARTE consomme.
+
+    Ce n'est PAS le miroir du RETURNS TABLE — la fonction en projette 61
+    depuis le 2026-09-03, et le miroir fidele vit dans `PartnerRpcRow`
+    (components/shared/AthleteRecruiterProfileBody.tsx), le seul endroit ou
+    verifier ce que la RPC rend vraiment. Ici on ne declare que ce que
+    AthletePlayerCard affiche ; le corps de fiche partage lit le reste.
+
+    Le CADRE qui decide du perimetre est dans le commentaire de la fonction
+    en base : chiffres sur grille structuree oui, texte nominatif libre
+    jamais, statut de recrutement masque (motif commercial). */
 type PartnerAthleteRow = {
   id: string;
   first_name: string | null;
@@ -149,6 +158,11 @@ function mapPartnerRpcToRecruiterView(r: PartnerAthleteRow): AthleteProfileRecru
     coachName: "",
     coachSchool: "",
 
+    /* `cote_globale` est deja `coalesce(evaluation retenue,
+       athletes.cote_globale_entraineur)` cote serveur depuis la migration
+       20260903210000 — la meme preseance que la fiche recruteur. La carte
+       partageable et le corps de fiche affichent donc le MEME nombre, sans
+       que ni l'un ni l'autre n'ait a le recalculer. */
     overallRating: num(r.cote_globale),
     /* La carte ne consomme pas les distinctions ; le corps partage les rend
        lui-meme depuis la RPC. On evite de dupliquer ici la conversion

@@ -355,9 +355,15 @@ function FreeLock() {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 
-/** Les 30 colonnes de public.partner_athlete_profile, telles que la RPC les
+/** Les 61 colonnes de public.partner_athlete_profile, telles que la RPC les
  *  RETOURNE (verifie contre son RETURNS TABLE). Toute colonne absente d'ici
- *  n'existe pas cote partenaire — et c'est le seul endroit ou le verifier. */
+ *  n'existe pas cote partenaire — et c'est le seul endroit ou le verifier.
+ *
+ *  Le CADRE qui decide de cette liste est ecrit dans le commentaire de la
+ *  fonction en base (`comment on function partner_athlete_profile`) : chiffres
+ *  sur grille structuree oui, texte nominatif libre jamais, statut de
+ *  recrutement masque parce que commercialement sensible. Ne pas le
+ *  re-deviner ici. */
 type PartnerRpcRow = {
   id: string;
   first_name: string | null;
@@ -369,7 +375,10 @@ type PartnerRpcRow = {
   annee_diplomation: number | null;
   verified: boolean | null;
   last_profile_validation: string | null;
-  cote_globale: number | null;
+  /** `coalesce(evaluation retenue, athletes.cote_globale_entraineur)` depuis
+   *  la migration 20260903210000 — la MEME preseance que la fiche recruteur,
+   *  decidee cote serveur. Ce n'est plus la colonne denormalisee nue. */
+  cote_globale: Numerique;
   taille_pieds: number | null;
   taille_pouces: number | null;
   poids_lbs: number | null;
@@ -392,7 +401,71 @@ type PartnerRpcRow = {
    *  `ordre`) et deja filtres sur `retire_le is null` par la RPC. Forme
    *  projetee : {code, libelle, famille, contexte, attribue_le}. */
   badges: PartnerRpcBadge[] | null;
+
+  /* ── Lot 3 — completion ─────────────────────────────────────────────── */
+  profile_completion: number | null;
+
+  /* ── Lot 4 — mesures ────────────────────────────────────────────────── */
+  envergure: string | null;
+  taille_mains: string | null;
+  main_dominante: string | null;
+  pied_dominant: string | null;
+
+  /* ── Lot 6 — tests athletiques ──────────────────────────────────────── */
+  test_40_verges: string | null;
+  saut_vertical: string | null;
+  saut_longueur: string | null;
+  developpe_couche: string | null;
+  navette_agilite: string | null;
+  sprint_100m: string | null;
+
+  /* ── Lot 5 — videos secondaires ─────────────────────────────────────── */
+  video_match_complet_url: string | null;
+  video_entrainement_url: string | null;
+
+  /* ── Lot 7 — parcours d'equipes (JSONB brut, parseTeamHistory s'en
+     charge : il accepte deja tableau, chaine ou n'importe quoi) ────────── */
+  parcours_equipes: unknown;
+
+  /* ── Lots 2 et 6bis — l'evaluation RETENUE par le serveur ──────────────
+     `eval_id` est le MARQUEUR D'EXISTENCE. `updated_at` est nullable sur
+     evaluations, et chaque trait peut valoir null legitimement : seul l'id
+     distingue « aucune evaluation » de « une evaluation vide ». Sans lui,
+     l'adaptateur fabriquerait 14 zeros et la fiche afficherait une grille
+     complete a 0/5 — une affirmation fausse, pas une absence. */
+  eval_id: string | null;
+  eval_grille_id: string | null;
+  eval_cote_globale: Numerique;
+  vitesse_explosivite: Numerique;
+  force_puissance: Numerique;
+  endurance_cardio: Numerique;
+  agilite_coordination: Numerique;
+  vision_du_jeu: Numerique;
+  sens_tactique: Numerique;
+  leadership: Numerique;
+  discipline: Numerique;
+  coachabilite: Numerique;
+  intelligence_jeu: Numerique;
+  competitivite: Numerique;
+  esprit_equipe: Numerique;
+  resilience: Numerique;
+  attitude_mentalite: Numerique;
 };
+
+/** Un `numeric` PostgreSQL tel qu'il ARRIVE. PostgREST le rend tantot en
+ *  nombre JSON, tantot en chaine ("3.80") — le piege est deja documente
+ *  dans app/partenaire/athletes/[id]/PageClient.tsx et dans
+ *  partnerFilters.sortPartnerRows. On ne parie pas : `nombre()` tranche. */
+type Numerique = number | string | null;
+
+/** Coercion unique pour tout `numeric` venu de la RPC. `null` reste `null` —
+ *  un trait non note ne devient PAS 0 ici (c'est la moyenne des traits qui
+ *  ecarte les non-notes, et un 0 injecte fausserait cette moyenne). */
+function nombre(v: Numerique | undefined): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 /** Un element du jsonb `badges` de partner_athlete_profile. Le RETURNS TABLE
  *  le declare `jsonb` ; cette forme est celle que la fonction CONSTRUIT
@@ -441,7 +514,32 @@ type PartnerAdaptedRow = {
   sports: { nom: string | null } | null;
   positions: { nom: string | null; abreviation: string | null } | null;
   schools: { name: string | null; region: string | null; city: string | null; type: string | null } | null;
-  evaluations: { distinctions: unknown }[] | null;
+  /* L'evaluation retenue, dans la FORME de l'embed direct : un tableau d'une
+     ligne. selectBestEvaluation le traverse sans rien savoir de sa
+     provenance, et `traitRatings` puis `overallRating` se calculent par le
+     MEME code que cote recruteur. `updated_at` est volontairement absent :
+     le serveur a deja tranche quelle ligne gagne (meme clef, `updated_at
+     desc`), et selectBestEvaluation rend le premier element quand il est
+     seul. */
+  evaluations: {
+    distinctions: unknown;
+    cote_globale: number | null;
+    grille_id: string | null;
+    vitesse_explosivite: number | null;
+    force_puissance: number | null;
+    endurance_cardio: number | null;
+    agilite_coordination: number | null;
+    vision_du_jeu: number | null;
+    sens_tactique: number | null;
+    leadership: number | null;
+    discipline: number | null;
+    coachabilite: number | null;
+    intelligence_jeu: number | null;
+    competitivite: number | null;
+    esprit_equipe: number | null;
+    resilience: number | null;
+    attitude_mentalite: number | null;
+  }[] | null;
 
   /* ── Badges — VOIE 2, reconstituee ─────────────────────────────────────
      `badgesDepuisRaw` lit `raw.athlete_badges` dans la forme de l'EMBED
@@ -493,37 +591,57 @@ type PartnerAdaptedRow = {
   ouvert_cegep_anglophone: null;
   pret_changer_region: null;
 
-  /* Parcours d'equipes, engagement, grille — gardes par `!isPartner`, ou
-     resolus autrement (position_id : lib/evaluations/grilles.ts resout la
-     grille client-side, sans cette colonne — c'est documente la-bas). */
-  parcours_equipes: null;
+  /* LOT 7 — le parcours d'equipes ENTRE dans le perimetre (arbitrage BP,
+     2026-09-03) : historique sportif public — quelles equipes, quelles
+     saisons, quelle ligue — sans un seul nom de personne. Meme nature verte
+     que les badges et les mesures. La RPC le projette depuis la migration
+     20260903210000 ; ce n'etait PAS une garde front seule. */
+  parcours_equipes: unknown;
+
+  /* `team_athletes` reste absent : c'est la jointure COMPLETE vers teams
+     (id, division, saison, ecole du club), que la RPC ne projette pas. Elle
+     n'alimente que TeamDetailsBlock, masque pour le partenaire — rouvrir ce
+     bloc suppose de l'AJOUTER a la RPC, pas de le deviner ici.
+     `position_id` : lib/evaluations/grilles.ts resout la grille client-side
+     par (sport, position) nommes — c'est documente la-bas. Le partenaire a
+     desormais `grille_id` sur l'evaluation, qui a la preseance. */
   team_athletes: null;
   committed_school: null;
   position_id: null;
 
-  /* ── ABSENCES SUBIES — non projetees par la RPC ────────────────────────
-     Elles ne mentent plus a l'ecran : les deux surfaces qui les affichaient
-     avec un defaut FAUX (statut de recrutement fige a « OUVERT », completude
-     figee a 0 %) sont desormais masquees pour le partenaire. Les mesures,
-     tests et medias secondaires se masquaient deja seuls quand ils sont vides
-     — une absence, jamais une affirmation fausse. Les rouvrir suppose de les
-     AJOUTER a la RPC, pas de les deviner ici. */
-  profile_completion: null;
+  /* ── LOTS 3 a 6 — ce que la RPC projette DESORMAIS ─────────────────────
+     Ces champs etaient les « absences subies » du 19 aout : la RPC ne les
+     rendait pas, et les deux surfaces qui les affichaient avec un defaut
+     FAUX (completude figee a 0 %) etaient masquees plutot que menteuses. La
+     migration 20260903210000 les AJOUTE — c'etait la seule facon de les
+     rouvrir, et c'est faite. */
+  profile_completion: number | null;
+  envergure: string | null;
+  taille_mains: string | null;
+  main_dominante: string | null;
+  pied_dominant: string | null;
+  test_40_verges: string | null;
+  saut_vertical: string | null;
+  saut_longueur: string | null;
+  navette_agilite: string | null;
+  sprint_100m: string | null;
+  developpe_couche: string | null;
+  video_match_complet_url: string | null;
+  video_entrainement_url: string | null;
+
+  /* ── ABSENCES QUI RESTENT, ET POURQUOI ─────────────────────────────────
+     STATUT DE RECRUTEMENT — masque par DECISION COMMERCIALE (arbitrage BP,
+     2026-09-03), pas par vie privee : savoir qu'un athlete est « engage »
+     ou « en discussion » avant tout le monde a une valeur que le partenaire
+     n'achete pas. Le badge retombait sur son defaut « OUVERT » — faux pour
+     13 fiches sur 48. Il reste masque a l'ecran ET absent de la RPC, ou un
+     garde-fou SQL refuse son retour silencieux.
+
+     INSTAGRAM — hors lot. Ce n'est pas une video de sport, c'est le compte
+     personnel d'un mineur. L'ouvrir se decide, ne se deduit pas. */
   recruitment_status: null;
   statut_recrutement_override: null;
   open_to_offers: null;
-  envergure: null;
-  taille_mains: null;
-  main_dominante: null;
-  pied_dominant: null;
-  test_40_verges: null;
-  saut_vertical: null;
-  saut_longueur: null;
-  navette_agilite: null;
-  sprint_100m: null;
-  developpe_couche: null;
-  video_match_complet_url: null;
-  video_entrainement_url: null;
   instagram_url: null;
 };
 
@@ -535,9 +653,14 @@ type PartnerAdaptedRow = {
  * vaut `null` l'est par decision, et le compilateur refuse desormais qu'un
  * champ disparaisse en silence.
  *
- * L'ecran partenaire est force en mode « simple » et masque deja le bloc
- * academique et le nom de l'entraineur. `age` est fourni DERIVE —
- * date_naissance ne franchit jamais la frontiere.
+ * L'ecran partenaire masque le bloc academique et le nom de l'entraineur. Il
+ * n'est PLUS force en mode « simple » (2026-09-03) : le bascule
+ * Simplifie/Detaille lui est rendu, parce que les sections qu'il ouvre —
+ * mesures, tests, medias, les 14 traits — sont desormais alimentees. Les
+ * forcer vides aurait produit des coquilles ; c'est la RPC qui a bouge, pas
+ * le masquage.
+ *
+ * `age` est fourni DERIVE — date_naissance ne franchit jamais la frontiere.
  */
 function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
   return {
@@ -552,7 +675,10 @@ function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
     annee_diplomation: r.annee_diplomation,
     verified: r.verified,
     last_profile_validation: r.last_profile_validation,
-    cote_globale_entraineur: r.cote_globale,
+    /* Deja `coalesce(evaluation, colonne)` cote serveur (lot 2). Le front
+       n'a plus rien a arbitrer : il lit la meme preseance que le recruteur,
+       et la carte partageable de PageClient lit la meme valeur. */
+    cote_globale_entraineur: nombre(r.cote_globale),
     taille_pieds: r.taille_pieds,
     taille_pouces: r.taille_pouces,
     poids_lbs: r.poids_lbs,
@@ -561,10 +687,40 @@ function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
     schools: r.school_name
       ? { name: r.school_name, region: r.school_region, city: r.school_city, type: r.school_type }
       : null,
-    /* Seule `distinctions` remonte. selectBestEvaluation recoit donc un tableau
-       d'un element sans notes de traits ni rapport — ce qui est exactement
-       l'intention. */
-    evaluations: r.distinctions ? [{ distinctions: r.distinctions }] : null,
+    /* L'EVALUATION RETENUE — un tableau d'un element, la forme que
+       selectBestEvaluation attend.
+
+       Le predicat est `eval_id`, PAS `distinctions` comme avant : une
+       evaluation sans distinction rendait `null`, donc `traitRatings` null,
+       donc aucune note a l'ecran alors que le coach en avait saisi 14. Seul
+       l'id dit « il y a une evaluation ».
+
+       `rapport_entraineur` n'est PAS ici et n'y sera pas : le texte libre
+       d'un adulte sur un mineur ne franchit pas cette frontiere. C'est la
+       seule colonne de l'embed recruteur volontairement absente — d'ou
+       `coachReport` vide, et le bloc « Rapport de l'entraineur » qui se
+       reduit a la cote et aux etoiles. */
+    evaluations: r.eval_id
+      ? [{
+          distinctions: r.distinctions,
+          cote_globale: nombre(r.eval_cote_globale),
+          grille_id: r.eval_grille_id,
+          vitesse_explosivite: nombre(r.vitesse_explosivite),
+          force_puissance: nombre(r.force_puissance),
+          endurance_cardio: nombre(r.endurance_cardio),
+          agilite_coordination: nombre(r.agilite_coordination),
+          vision_du_jeu: nombre(r.vision_du_jeu),
+          sens_tactique: nombre(r.sens_tactique),
+          leadership: nombre(r.leadership),
+          discipline: nombre(r.discipline),
+          coachabilite: nombre(r.coachabilite),
+          intelligence_jeu: nombre(r.intelligence_jeu),
+          competitivite: nombre(r.competitivite),
+          esprit_equipe: nombre(r.esprit_equipe),
+          resilience: nombre(r.resilience),
+          attitude_mentalite: nombre(r.attitude_mentalite),
+        }]
+      : null,
 
     /* VOIE 2 — on redonne aux badges la forme de l'embed `athlete_badges`,
        la seule que `badgesDepuisRaw` sache lire. La correspondance est
@@ -608,28 +764,33 @@ function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
     ouvert_cegep_prive: null,
     ouvert_cegep_anglophone: null,
     pret_changer_region: null,
-    parcours_equipes: null,
     team_athletes: null,
     committed_school: null,
     position_id: null,
 
-    /* Absences subies — non projetees par la RPC. */
-    profile_completion: null,
+    /* Lot 7 — historique sportif, projete par la RPC. */
+    parcours_equipes: r.parcours_equipes,
+
+    /* Lots 3 a 6 — projetes par la RPC depuis le 2026-09-03. */
+    profile_completion: r.profile_completion,
+    envergure: r.envergure,
+    taille_mains: r.taille_mains,
+    main_dominante: r.main_dominante,
+    pied_dominant: r.pied_dominant,
+    test_40_verges: r.test_40_verges,
+    saut_vertical: r.saut_vertical,
+    saut_longueur: r.saut_longueur,
+    navette_agilite: r.navette_agilite,
+    sprint_100m: r.sprint_100m,
+    developpe_couche: r.developpe_couche,
+    video_match_complet_url: r.video_match_complet_url,
+    video_entrainement_url: r.video_entrainement_url,
+
+    /* Absences qui restent : statut de recrutement (commercialement
+       sensible) et Instagram (hors lot). Voir le type ci-dessus. */
     recruitment_status: null,
     statut_recrutement_override: null,
     open_to_offers: null,
-    envergure: null,
-    taille_mains: null,
-    main_dominante: null,
-    pied_dominant: null,
-    test_40_verges: null,
-    saut_vertical: null,
-    saut_longueur: null,
-    navette_agilite: null,
-    sprint_100m: null,
-    developpe_couche: null,
-    video_match_complet_url: null,
-    video_entrainement_url: null,
     instagram_url: null,
   };
 }
@@ -838,18 +999,23 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     /* AIGUILLAGE DE SOURCE.
 
        Pour un PARTENAIRE, la lecture passe par public.partner_athlete_profile :
-       28 colonnes, gate interne (is_approved_partner ET
-       is_partner_eligible_athlete), et AUCUNE des 11 colonnes interdites. La
-       requete directe ci-dessus laissait encore passer moyenne_generale,
-       programme_cegep_vise, regions_cegep_preferees, notes_coach et l'embed
-       evaluations a 18 colonnes — dont rapport_entraineur, du texte libre ecrit
-       par un adulte sur un mineur.
+       61 colonnes depuis le 2026-09-03 (30 auparavant), gate interne
+       (is_approved_partner ET is_partner_eligible_athlete), et AUCUNE des
+       colonnes interdites. La requete directe ci-dessus laissait encore passer
+       moyenne_generale, programme_cegep_vise, regions_cegep_preferees,
+       notes_coach et l'embed evaluations a 18 colonnes — dont
+       rapport_entraineur, du texte libre ecrit par un adulte sur un mineur.
+
+       CE QUE L'ELARGISSEMENT NE TOUCHE PAS. La RPC projette maintenant les
+       chiffres — cote, 14 traits, mesures, tests, completion — et
+       l'historique sportif. Elle ne projette toujours PAS une ligne de prose
+       ecrite sur un mineur, ni le statut de recrutement. Le cadre complet est
+       dans le commentaire de la fonction en base ; un garde-fou SQL refuse a
+       l'application le retour silencieux de l'une de ces colonnes.
 
        L'adaptateur redonne a la ligne la FORME que le mapping ci-dessous
-       attend. Les champs absents le sont PAR CONSTRUCTION : l'ecran partenaire
-       est force en mode « simple » (effectiveMode) et masque deja le bloc
-       academique et le nom de l'entraineur. Ce qui n'arrive plus n'etait de
-       toute facon pas affiche — mais il arrivait quand meme jusqu'ici. */
+       attend. Les champs qui restent absents le sont PAR DECISION, une par
+       une, ecrites sur le type PartnerAdaptedRow. */
     const source: PromiseLike<{ data: unknown; error: unknown }> = isPartner
       ? supabase
           .rpc("partner_athlete_profile", { p_athlete_id: id })
@@ -1094,7 +1260,29 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         //       'civil_with_team' if there's a team_athletes row,
         //       'civil_no_team'   otherwise
         const schoolId = d.school_id as string | null;
-        if (!schoolId) {
+        /* CHEMIN PARTENAIRE — `school_id` vaut null PAR DECISION (l'identifiant
+           n'a rien a faire chez un partenaire, seul le verdict compte). Le
+           discriminant ci-dessous en deduisait donc « civil_no_team » pour
+           TOUT LE MONDE : un athlete scolaire s'affichait sous l'en-tete
+           « Equipe civile » avec la phrase « pas encore rattache a une
+           equipe ». Faux, et invisible tant que le mode detaille etait force
+           a « simple » — ce bloc ne se rendait jamais. Le retrait du forcage
+           l'aurait rendu visible sur les 48 fiches.
+
+           On repart des deux seules informations d'affiliation que la RPC
+           projette : le verdict `is_civil` et `team_name`. L'InfoRow du bloc
+           « school » sait deja se retitrer en « Equipe civile » via
+           `a.isCivil` — un athlete civil rattache y est donc correctement
+           rendu, sans branche supplementaire. */
+        if (serverCivil !== undefined && serverCivil !== null) {
+          const teamRpc = (d.team_name as string | null) ?? null;
+          if (!civil || teamRpc) {
+            setAffiliation("school");
+          } else {
+            setAffiliation("civil_no_team");
+          }
+          setCivilTeamInfo(null);
+        } else if (!schoolId) {
           setAffiliation("civil_no_team");
           setCivilTeamInfo(null);
         } else if (school?.type !== "LIGUE_CIVILE") {
@@ -1197,10 +1385,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   }, [id, isFreeRecruiter, tierLoading, viewerMode]);
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
-  // Partners only see the simplified canonical view; the detailed
-  // toggle and detailed-only sections are hidden in partner mode.
-  const effectiveMode: "simple" | "detailed" = isPartner ? "simple" : mode;
-  const isDetailed = effectiveMode === "detailed";
+  /* LE FORCAGE « SIMPLE » EST RETIRE (2026-09-03).
+
+     Il datait du 19 aout, quand la RPC partenaire ne projetait ni mesures,
+     ni tests, ni traits : ouvrir le mode detaille n'aurait montre que des
+     sections vides. La migration 20260903210000 les alimente toutes, donc
+     le forçage n'a plus d'objet — et le partenaire retrouve le meme
+     bascule que le recruteur, sur les memes sections.
+
+     Ce qui NE cede PAS avec lui : le bloc academique (remplace par un
+     substitut assume), le nom et la reputation de l'entraineur, le statut
+     de recrutement. Ces masquages-la sont des decisions, pas des effets de
+     bord du mode — ils sont gardes un par un, plus bas, par `isPartner`. */
+  const isDetailed = mode === "detailed";
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
@@ -1552,6 +1749,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     { top: a.weightDisplay || "—", mid: "Poids" },
   ];
 
+  // Physical measurements — same shape as `tests` / `mediaLinks` below, so
+  // the section can self-hide on an empty set instead of rendering a title
+  // over an empty grid.
+  const measures: { label: string; value?: string }[] = [
+    { label: "Taille", value: a.heightDisplay },
+    { label: "Poids", value: a.weightDisplay },
+    { label: "Envergure", value: a.wingspan },
+    { label: "Main", value: a.handSize },
+    { label: "Main dom.", value: a.dominantHand },
+    { label: "Pied dom.", value: a.dominantFoot },
+  ];
+  const hasMeasures = measures.some((m) => m.value);
+
   // Athletic tests data
   const tests: { label: string; value?: string }[] = [
     { label: "40 verges", value: a.fortyYard },
@@ -1602,20 +1812,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             contacter un vrai athlete. */}
         <DemoRibbonIf athleteId={id} variant="profile" />
 
-        {/* ── Toggle (hidden for partner) + Completeness ────── */}
+        {/* ── Toggle + Completeness ─────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {isPartner ? <div /> : <ProfileToggle mode={mode} onChange={setMode} />}
-          {/* La RPC partenaire ne projette PAS profile_completion : la barre
-              affichait « 0 % » pour les 47 fiches, alors que le reel va de 33 a
-              95. Une barre absente ne dit rien ; une barre a zero affirme une
-              chose fausse sur un athlete. Masquee tant que la colonne n'est pas
-              projetee — a rouvrir en l'AJOUTANT a la RPC. */}
-          {!isPartner && (
-            <div className="w-full sm:w-56">
-              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
-              <CompletenessBar percent={a.profileCompleteness} />
-            </div>
-          )}
+          {/* Le bascule est rendu au partenaire : les sections detaillees ne
+              sont plus vides (migration 20260903210000). */}
+          <ProfileToggle mode={mode} onChange={setMode} />
+          {/* La barre affichait « 0 % » a tout partenaire, parce que la RPC ne
+              projetait pas profile_completion — une affirmation fausse la ou le
+              reel va de 30 a 95. Elle etait donc masquee. La colonne est
+              projetee depuis le 2026-09-03 : la barre dit vrai, elle revient. */}
+          <div className="w-full sm:w-56">
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
+            <CompletenessBar percent={a.profileCompleteness} />
+          </div>
         </div>
 
         {/* ══════════ HERO — 2 Columns ══════════ */}
@@ -1890,21 +2099,27 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* Parcours d'équipes — remonté AU-DESSUS du profil académique et
             renforcé (en-tête plus grand + accent) : le parcours sportif est
             un signal de premier plan pour le recruteur (#8). Se masque tout
-            seul si aucune entrée. Anchor = vraie affiliation Nexus. */}
-        {!isPartner && (
-          <div className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.04] p-4 sm:p-5">
-            <TeamHistoryBlock
-              entries={a.teamHistory}
-              anchor={{
-                teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
-                sport: a.primarySport,
-                position: a.primaryPosition,
-                region: a.region,
-              }}
-              headingClassName="font-head text-[17px] sm:text-[19px] font-black tracking-tight uppercase text-white mb-4 flex items-center gap-2.5 before:content-[''] before:w-1 before:h-5 before:rounded-full before:bg-[#E63946]"
-            />
-          </div>
-        )}
+            seul si aucune entrée. Anchor = vraie affiliation Nexus.
+
+            LOT 7 — la garde `!isPartner` est retirée (2026-09-03). C'est de
+            l'historique sportif public : quelles équipes, quelles saisons,
+            quelle ligue. Aucun nom de personne, aucune prose — même nature
+            que les badges et les mesures. La donnée n'arrivait PAS déjà
+            (contrairement aux badges) : `parcours_equipes` a dû être ajouté
+            à la RPC dans la même migration. Le bloc se masque de lui-même
+            quand il n'y a ni entrée ni anchor. */}
+        <div className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.04] p-4 sm:p-5">
+          <TeamHistoryBlock
+            entries={a.teamHistory}
+            anchor={{
+              teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+              sport: a.primarySport,
+              position: a.primaryPosition,
+              region: a.region,
+            }}
+            headingClassName="font-head text-[17px] sm:text-[19px] font-black tracking-tight uppercase text-white mb-4 flex items-center gap-2.5 before:content-[''] before:w-1 before:h-5 before:rounded-full before:bg-[#E63946]"
+          />
+        </div>
 
         {/* ══════════ ACADEMIC PROFILE — partner mode swaps for a
             locked placeholder so the redaction reads as
@@ -2008,19 +2223,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </div>
             </section>
 
-            {/* ── Physical Measurements ────────────────────── */}
+            {/* ── Physical Measurements ──────────────────────
+                `hasMeasures` reprend l'idiome deja applique deux sections
+                plus bas a `hasTests` et `hasMedia`. Sans lui, la section
+                rendait un titre au-dessus d'une grille VIDE des que l'athlete
+                n'a aucune mensuration — 24 des 48 fiches eligibles partenaire
+                sont dans ce cas (releve prod 2026-09-03). Le mode detaille
+                etant desormais ouvert au partenaire, la coquille serait
+                devenue visible ; elle disparait pour les deux portails. */}
+            {hasMeasures && (
             <section className="nx-slide-section">
               <h2 className={sectionLabel}>Mesures physiques</h2>
               <div className={`${cardBase} overflow-hidden`}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 divide-x divide-y divide-[#2D3748]/40">
-                  {[
-                    { label: "Taille", value: a.heightDisplay },
-                    { label: "Poids", value: a.weightDisplay },
-                    { label: "Envergure", value: a.wingspan },
-                    { label: "Main", value: a.handSize },
-                    { label: "Main dom.", value: a.dominantHand },
-                    { label: "Pied dom.", value: a.dominantFoot },
-                  ].filter(m => m.value).map((m) => (
+                  {measures.filter(m => m.value).map((m) => (
                     <div key={m.label} className="p-4 text-center">
                       <p className="text-[22px] font-head font-black text-white leading-none">{m.value}</p>
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-2">{m.label}</p>
@@ -2029,6 +2245,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 </div>
               </div>
             </section>
+            )}
 
             {/* ── Athletic Tests ───────────────────────────── */}
             {hasTests && (
@@ -2058,8 +2275,18 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                     civil-only via mapToRecruiterView (empty for école).
                     Replaced by the generalized TeamDetailsBlock below,
                     which surfaces team detail for BOTH école and civil
-                    from the team_athletes → teams join. */}
-                <TeamDetailsBlock teams={teamDetails} />
+                    from the team_athletes → teams join.
+
+                    MASQUÉ POUR LE PARTENAIRE — et c'est un masquage, pas un
+                    oubli. Ce bloc lit `team_athletes → teams` (division,
+                    saison, club), que la RPC ne projette pas ; il aurait donc
+                    reçu un tableau vide et affiché « Aucune équipe rattachée »
+                    à un partenaire regardant un athlète qui EST dans une
+                    équipe. Une phrase fausse est pire qu'une section absente.
+                    Le parcours d'équipes, lui, est ouvert (lot 7) : il porte
+                    l'historique, pas la fiche technique de l'équipe.
+                    ROUVRIR = AJOUTER team_athletes à la RPC. */}
+                {!isPartner && <TeamDetailsBlock teams={teamDetails} />}
               </div>
             </section>
 
