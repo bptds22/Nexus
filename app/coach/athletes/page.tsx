@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +18,10 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
 import InviteByEmailModal from "./_components/InviteByEmailModal";
+import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
 
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -197,6 +201,14 @@ function MesAthletesContent() {
   const [dynamicPositions, setDynamicPositions] = useState<{ abbr: string; label: string }[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [refreshVersion, setRefreshVersion] = useState(0);
+  // Supervision directeur — seconde section « Athlètes de l'école » dans le
+  // Roster. Parité stricte avec CoachAthletesMobile (même helper, même
+  // partition, même en-tête partagé AthleteSectionHeader).
+  const [isDirector, setIsDirector] = useState(false);
+  const [coachOrgType, setCoachOrgType] = useState<SchoolType | null>(null);
+  /** Périmètre canonique get_coach_athletes — chargé UNIQUEMENT pour un
+   *  directeur (le chemin coach ne déclenche aucun appel de plus). */
+  const [directorScopeIds, setDirectorScopeIds] = useState<Set<string>>(() => new Set());
 
   // Apply URL filter presets
   useEffect(() => {
@@ -217,13 +229,20 @@ function MesAthletesContent() {
 
       setCurrentUserId(session.user.id);
 
+      // Supervision directeur (school_coaches.role ∈ DIRECTEUR /
+      // DIRECTEUR_INTERIM) → seconde section « Athlètes de l'école » dans le
+      // Roster. Un coach ordinaire retombe sur isDirector=false et NE CHANGE
+      // PAS de comportement (aucune section de plus, aucun appel de plus).
+      const dir = await loadSchoolDirectorStatus(supabase, session.user.id);
+      setIsDirector(dir.isDirector);
+
       // Look up the coach's school_id — needed for the À réclamer
       // tab which shows unclaimed athletes at the school. The
       // Roster tab and À traiter tab filter down to coach_id =
       // me in memory.
       const { data: coachRow, error: coachError } = await supabase
         .from("users")
-        .select("school_id")
+        .select("school_id, schools!school_id(type)")
         .eq("id", session.user.id)
         .single();
 
@@ -234,6 +253,21 @@ function MesAthletesContent() {
       }
 
       const coachSchoolId = coachRow.school_id;
+      const coachSchoolRel = (coachRow as { schools?: unknown }).schools;
+      setCoachOrgType(((Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { type?: SchoolType } | null)?.type ?? null);
+
+      // Périmètre canonique « mes athlètes » — get_coach_athletes est LA
+      // source (contrat ledger). On ne l'appelle que pour un directeur : c'est
+      // lui seul dont le périmètre déborde de `coach_id = moi`. La requête
+      // école ci-dessous reste la source des LIGNES (elle alimente aussi « À
+      // réclamer ») ; le RPC ne sert qu'à BORNER la section supervision au
+      // périmètre canonique, jamais à l'élargir.
+      // includePending: false — même décision de statut que la requête école
+      // ci-dessous (.eq status ACTIF), cf. le bloc de statuts qui la documente.
+      if (dir.isDirector) {
+        const { ids: scopeIds } = await loadCoachAthleteScope(supabase, { includePending: false });
+        setDirectorScopeIds(new Set(scopeIds));
+      }
 
       const { data, error } = await supabase
         .from("athletes")
@@ -525,8 +559,19 @@ function MesAthletesContent() {
     [realAthletes]
   );
 
-  const filtered = useMemo(() => {
-    let list = [...myRoster];
+  // Supervision directeur : les athlètes de l'école réclamés par un AUTRE
+  // coach. Les non réclamés restent dans « À réclamer » (jamais listés deux
+  // fois). Borné au périmètre canonique get_coach_athletes — vide pour un
+  // non-directeur, donc la section ne peut pas fuir sur le chemin coach.
+  const schoolAthletes = useMemo(
+    () => realAthletes.filter(
+      (a) => a.coach_id != null && a.coach_id !== currentUserId && directorScopeIds.has(a.id)
+    ),
+    [realAthletes, currentUserId, directorScopeIds]
+  );
+
+  const applyFilters = useCallback((source: RosterAthlete[]) => {
+    let list = [...source];
 
     // URL preset filter
     if (urlFilter === "non_verifies" || urlFilter === "incomplets") {
@@ -576,7 +621,10 @@ function MesAthletesContent() {
     }
 
     return list;
-  }, [myRoster, search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
+  }, [search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
+
+  const filtered = useMemo(() => applyFilters(myRoster), [applyFilters, myRoster]);
+  const filteredSchool = useMemo(() => applyFilters(schoolAthletes), [applyFilters, schoolAthletes]);
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
@@ -622,6 +670,65 @@ function MesAthletesContent() {
     setRejectingId(null);
     setRejectReason("");
   }
+
+  /* Rendu d'une liste d'athlètes (grille ou liste selon viewMode). Extrait du
+     bloc Results pour être réutilisé par les DEUX sections du Roster directeur
+     (« Mes athlètes » + « Athlètes de l'école ») — un seul gabarit de carte,
+     donc aucune divergence visuelle entre les sections. */
+  const renderSection = (list: RosterAthlete[]) =>
+    viewMode === "grid" ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        {list.map((a) => (
+          <CoachAthleteCard key={a.id} a={a} />
+        ))}
+      </div>
+    ) : (
+      <div className="flex flex-col gap-2">
+        {list.map((a) => (
+          <CoachAthleteRow
+            key={a.id}
+            athleteId={a.id}
+            firstName={a.firstName}
+            lastName={a.lastName}
+            photoUrl={a.photo}
+            isVerified={a.isVerified}
+            lastValidation={a.lastValidation ?? null}
+            school={a.school}
+            position={a.position}
+            recruitmentStatus={(a.recruitmentStatus || null) as GlobalRecruitmentStatus | null}
+            committedSchoolName={a.committedSchoolName}
+            openToOffers={a.openToOffers}
+            region={a.region}
+            heightWeight={a.heightWeight}
+            gradYear={a.gradYear}
+            stars={a.stars}
+          >
+            {/* Spacer — keeps the trailing actions right-aligned in the
+                CoachAthleteRow row layout. The badges block that used to
+                live here was removed to match the recruiter card visual
+                (recruiter side filters distinctions through BADGE_MAP
+                which drops custom free-text, so its cards render lean ;
+                coach's badge list kept everything → wall of pills
+                → inconsistent height + diverging look from recruiter). */}
+            <div className="flex-1 min-w-0" />
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="w-[30px] shrink-0">
+                {a.favorites > 0 ? (
+                  <div className="flex items-center gap-0.5" title={`${a.favorites} favori${a.favorites > 1 ? "s" : ""}`}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+                    <span className="text-[10px] font-bold text-[#E63946]">{a.favorites}</span>
+                  </div>
+                ) : <span />}
+              </div>
+              <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors shrink-0">Modifier</Link>
+              <Link href={`/coach/athletes/${a.id}`} className="text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1 shrink-0">
+                Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
+              </Link>
+            </div>
+          </CoachAthleteRow>
+        ))}
+      </div>
+    );
 
   // Loading state
   if (loading) return (
@@ -686,7 +793,11 @@ function MesAthletesContent() {
           </p>
         </div>
         <div className="flex items-center gap-3 self-start">
-          <span className="text-[13px] font-bold text-[#6b7280]">{filtered.length} athlète{filtered.length !== 1 ? "s" : ""}</span>
+          {(() => {
+            // Directeur : le compteur couvre les deux sections du Roster.
+            const n = isDirector ? filtered.length + filteredSchool.length : filtered.length;
+            return <span className="text-[13px] font-bold text-[#6b7280]">{n} athlète{n !== 1 ? "s" : ""}</span>;
+          })()}
 
           {/* View toggle */}
           <div className="flex items-center bg-[#13151a] border border-[#2a2d36] rounded-lg overflow-hidden">
@@ -1040,7 +1151,40 @@ function MesAthletesContent() {
       )}
 
       {/* ── Results ─────────────────────────────────────────────── */}
-      {filtered.length === 0 ? (
+      {/* DIRECTEUR — deux sections. Le Roster d'un directeur ne peut PAS se
+          réduire à `coach_id = moi` : un directeur ne réclame aucun athlète,
+          il supervise ceux de son école (règle écrite : broadcast directeur =
+          portée école, cf. flip-day-ledger « Broadcast — ciblage propriétaire »
+          + l'en-tête de get_coach_athletes). C'était LA cause du « 0 athlète ».
+          Le chemin coach ordinaire (isDirector=false) est inchangé. */}
+      {isDirector ? (
+        <div className="space-y-8">
+          {/* Mes athlètes — ceux que le directeur a lui-même réclamés */}
+          <div className="space-y-3">
+            <AthleteSectionHeader title="Mes athlètes" count={filtered.length} />
+            {filtered.length === 0 ? (
+              <p className="text-[13px] text-[#6b7280]">
+                {myRoster.length === 0
+                  ? "Tu n'as pas encore d'athlètes."
+                  : "Aucun de tes athlètes ne correspond aux filtres."}
+              </p>
+            ) : renderSection(filtered)}
+          </div>
+
+          {/* Athlètes de l'école — supervision. Les non réclamés restent dans
+              l'onglet « À réclamer » : jamais listés deux fois. */}
+          {schoolAthletes.length > 0 && (
+            <div className="space-y-3">
+              <AthleteSectionHeader title={`Athlètes ${orgNounDe(coachOrgType)}`} count={filteredSchool.length} director />
+              {filteredSchool.length === 0 ? (
+                <p className="text-[13px] text-[#6b7280]">
+                  Aucun athlète {orgNounDe(coachOrgType)} ne correspond aux filtres.
+                </p>
+              ) : renderSection(filteredSchool)}
+            </div>
+          )}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-6">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round">
@@ -1073,59 +1217,7 @@ function MesAthletesContent() {
             </>
           )}
         </div>
-      ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filtered.map((a) => (
-            <CoachAthleteCard key={a.id} a={a} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {filtered.map((a) => (
-            <CoachAthleteRow
-              key={a.id}
-              athleteId={a.id}
-              firstName={a.firstName}
-              lastName={a.lastName}
-              photoUrl={a.photo}
-              isVerified={a.isVerified}
-              lastValidation={a.lastValidation ?? null}
-              school={a.school}
-              position={a.position}
-              recruitmentStatus={(a.recruitmentStatus || null) as GlobalRecruitmentStatus | null}
-              committedSchoolName={a.committedSchoolName}
-              openToOffers={a.openToOffers}
-              region={a.region}
-              heightWeight={a.heightWeight}
-              gradYear={a.gradYear}
-              stars={a.stars}
-            >
-              {/* Spacer — keeps the trailing actions right-aligned in the
-                  CoachAthleteRow row layout. The badges block that used to
-                  live here was removed to match the recruiter card visual
-                  (recruiter side filters distinctions through BADGE_MAP
-                  which drops custom free-text, so its cards render lean ;
-                  coach's badge list kept everything → wall of pills
-                  → inconsistent height + diverging look from recruiter). */}
-              <div className="flex-1 min-w-0" />
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="w-[30px] shrink-0">
-                  {a.favorites > 0 ? (
-                    <div className="flex items-center gap-0.5" title={`${a.favorites} favori${a.favorites > 1 ? "s" : ""}`}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
-                      <span className="text-[10px] font-bold text-[#E63946]">{a.favorites}</span>
-                    </div>
-                  ) : <span />}
-                </div>
-                <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors shrink-0">Modifier</Link>
-                <Link href={`/coach/athletes/${a.id}`} className="text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1 shrink-0">
-                  Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-                </Link>
-              </div>
-            </CoachAthleteRow>
-          ))}
-        </div>
-      )}
+      ) : renderSection(filtered)}
 
       </>}
       <InviteByEmailModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
