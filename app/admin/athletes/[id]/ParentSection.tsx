@@ -107,6 +107,48 @@ const dateFr = (v: string | null | undefined) =>
 const dateHeureFr = (v: string | null | undefined) =>
   v ? new Date(v).toLocaleString("fr-CA", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
+/* ── LA COQUE REPLIABLE ──────────────────────────────────────────────────
+   Reprend l'idiome deja en place dans app/admin/settings : `overflow-hidden`,
+   un bouton pleine largeur en en-tete, un chevron qui pivote de 180°, et le
+   contenu derriere `{!replie && …}`.
+
+   DEPLIEE PAR DEFAUT. Elle vient d'etre remontee sous les champs parent
+   PARCE QU'ON NE LA TROUVAIT PAS ; la replier d'office rejouerait le meme
+   defaut sous une autre forme. Le repli est pour qui n'en a pas besoin, pas
+   l'etat initial.
+
+   DEFINIE HORS DU COMPOSANT : la declarer a l'interieur en ferait un type
+   neuf a chaque rendu, React demonterait tout l'arbre, et le champ courriel
+   perdrait le focus a chaque frappe. */
+function Coque({
+  replie, onBascule, children,
+}: { replie: boolean; onBascule: () => void; children: React.ReactNode }) {
+  return (
+    <section className="bg-[#1A1D24] border border-[#2D3748] rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={onBascule}
+        aria-expanded={!replie}
+        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <span className="font-head text-[16px] font-black text-white uppercase tracking-tight">
+          Parent
+        </span>
+        <svg
+          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className={`text-[#6b7280] transition-transform ${replie ? "" : "rotate-180"}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {!replie && (
+        <div className="border-t border-[#2D3748]/60 p-6 space-y-4">{children}</div>
+      )}
+    </section>
+  );
+}
+
 /** Une ligne fait / valeur, l'idiome de la fiche. */
 function Fait({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -126,6 +168,17 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
   const [prenom, setPrenom] = useState("");
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [resultat, setResultat] = useState<InviteResult | null>(null);
+
+  /* Repli. DÉPLIÉE par défaut — voir la Coque. */
+  const [replie, setReplie] = useState(false);
+
+  /* Lots B3 / B4. `actionEnCours` porte le nom du geste plutôt qu'un booléen :
+     deux boutons, un seul état, et c'est celui qui tourne qui l'affiche. */
+  const [modaleEmail, setModaleEmail] = useState(false);
+  const [nouvelEmail, setNouvelEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [actionEnCours, setActionEnCours] = useState<"email" | "recovery" | null>(null);
+  const [resultatAction, setResultatAction] = useState<{ ok: boolean; message: string } | null>(null);
 
   /* Compteur de rechargement. Une invitation reussie l'incremente, ce qui
      rejoue l'effet ci-dessous — plutot qu'un `charger()` extrait en
@@ -181,23 +234,87 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
     if (r.ok) setRechargement((n) => n + 1);
   }
 
-  const carte = "bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 space-y-4";
+  /* ── LOT B3 — corriger le courriel ──────────────────────────────────────
+     Passe par la ROUTE, pas par une RPC : `auth.users.email` n'est modifiable
+     que par la service key, et elle ne vit que côté serveur. La route fait les
+     deux étages dans l'ordre (auth puis public) et échoue bruyamment entre
+     les deux — son message est repris tel quel ici, sans reformulation : une
+     désynchronisation doit se lire dans les termes exacts du serveur. */
+  async function changerEmail(parentUserId: string) {
+    setActionEnCours("email");
+    setResultatAction(null);
+    try {
+      const rep = await fetch(`/api/admin/parents/${parentUserId}/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ athlete_id: athleteId, email: nouvelEmail.trim() }),
+      });
+      const j = await rep.json().catch(() => ({}));
+      if (!rep.ok) {
+        setResultatAction({ ok: false, message: j?.error ?? `Échec (HTTP ${rep.status}).` });
+        return;
+      }
+      setResultatAction({
+        ok: true,
+        message: `Courriel corrigé : ${j.ancien_email_auth ?? "—"} → ${j.nouveau_email}. Les deux étages (auth et public.users) sont à jour.`,
+      });
+      setModaleEmail(false);
+      setConfirmEmail("");
+      setRechargement((n) => n + 1);
+    } catch (e) {
+      setResultatAction({ ok: false, message: `Échec réseau : ${e instanceof Error ? e.message : String(e)}` });
+    } finally {
+      setActionEnCours(null);
+    }
+  }
+
+  /* ── LOT B4 — renvoyer un accès ─────────────────────────────────────────
+     La route envoie puis journalise. Elle peut rendre `ok:true` AVEC un
+     avertissement (courriel parti, trace manquante) : on l'affiche, parce
+     qu'un geste sans trace est précisément ce que ce chantier interdit. */
+  async function envoyerRecovery() {
+    if (!state?.parent) return;
+    setActionEnCours("recovery");
+    setResultatAction(null);
+    try {
+      const rep = await fetch(`/api/admin/parents/${state.parent.parent_user_id}/recovery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ athlete_id: athleteId }),
+      });
+      const j = await rep.json().catch(() => ({}));
+      if (!rep.ok) {
+        setResultatAction({ ok: false, message: j?.error ?? `Échec (HTTP ${rep.status}).` });
+        return;
+      }
+      setResultatAction({
+        ok: true,
+        message: j.avertissement
+          ?? `Courriel de réinitialisation remis à la passerelle pour ${j.email}. La livraison ne se constate pas d'ici.`,
+      });
+      setRechargement((n) => n + 1);
+    } catch (e) {
+      setResultatAction({ ok: false, message: `Échec réseau : ${e instanceof Error ? e.message : String(e)}` });
+    } finally {
+      setActionEnCours(null);
+    }
+  }
+
+  const bascule = () => setReplie((v) => !v);
 
   if (chargement) {
     return (
-      <section className={carte}>
-        <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight border-b border-[#2D3748] pb-3">Parent</h2>
+      <Coque replie={replie} onBascule={bascule}>
         <p className="text-[13px] text-[#6b7280]">Chargement…</p>
-      </section>
+      </Coque>
     );
   }
 
   if (erreur || !state || state.error) {
     return (
-      <section className={carte}>
-        <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight border-b border-[#2D3748] pb-3">Parent</h2>
+      <Coque replie={replie} onBascule={bascule}>
         <p className="text-[13px] text-[#EF4444]">{erreur || state?.error || "État parental indisponible."}</p>
-      </section>
+      </Coque>
     );
   }
 
@@ -220,10 +337,7 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
     !!inv && !!emailQuiCompte && inv.parent_email.toLowerCase() !== emailQuiCompte.toLowerCase();
 
   return (
-    <section className={carte}>
-      <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight border-b border-[#2D3748] pb-3">
-        Parent
-      </h2>
+    <Coque replie={replie} onBascule={bascule}>
 
       {/* ── LE COMPTE PARENT LIÉ ─────────────────────────────── */}
       {p ? (
@@ -303,13 +417,51 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
         </div>
       )}
 
-      {/* ── INVITER / RELANCER ───────────────────────────────── */}
+      {/* ── ACTIONS ──────────────────────────────────────────────
+          LE MÊME EMPLACEMENT PORTE DEUX GESTES DIFFÉRENTS, selon qu'un
+          compte est lié ou non — parce que la question que l'admin se pose
+          est la même (« comment je fais entrer ce parent ? ») et que la
+          réponse dépend d'un état qu'il n'a pas à traduire lui-même :
+            · pas de compte  → inviter, ou relancer l'invitation (lot B1)
+            · compte lié     → corriger son adresse, ou lui renvoyer un
+                               accès (lots B3 et B4)
+          Aucun bouton mort, aucun bouton qui échouerait s'il était pressé. */}
       {p ? (
-        <p className="text-[12px] text-[#6b7280] leading-relaxed">
-          Un athlète ne peut avoir qu&apos;un seul parent lié — la contrainte est en base
-          (<code className="text-[#9CA3AF]">UNIQUE (athlete_id)</code>). Pour en rattacher un autre,
-          il faudra d&apos;abord délier (lot B2).
-        </p>
+        <div className="bg-[#111317] border border-[#2D3748] rounded-lg p-4 space-y-3">
+          <p className={labelCls}>Actions sur le compte parent</p>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => { setNouvelEmail(p.email_auth ?? ""); setModaleEmail(true); setResultatAction(null); }}
+              className="px-4 py-2.5 bg-[#1A1D24] border border-[#2D3748] hover:border-[#E63946]/50 text-[#E0E0E0] text-[13px] font-bold rounded-lg transition-colors"
+            >
+              Modifier le courriel
+            </button>
+            <button
+              type="button"
+              onClick={() => void envoyerRecovery()}
+              disabled={actionEnCours !== null}
+              className="px-4 py-2.5 bg-[#1A1D24] border border-[#2D3748] hover:border-[#E63946]/50 text-[#E0E0E0] text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {actionEnCours === "recovery" ? "Envoi…" : "Envoyer un courriel de réinitialisation"}
+            </button>
+          </div>
+
+          <p className="text-[12px] text-[#6b7280] leading-relaxed">
+            Le courriel de réinitialisation part vers l&apos;adresse <strong>auth</strong>
+            {emailQuiCompte ? <> (<span className="text-[#9CA3AF]">{emailQuiCompte}</span>)</> : null} —
+            c&apos;est la seule que Supabase Auth reconnaît. Un athlète ne peut avoir
+            qu&apos;un seul parent lié (<code className="text-[#9CA3AF]">UNIQUE (athlete_id)</code>) :
+            pour en rattacher un autre, il faudra d&apos;abord délier (lot B2).
+          </p>
+
+          {resultatAction && (
+            <p className={`text-[12px] leading-relaxed ${resultatAction.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+              {resultatAction.message}
+            </p>
+          )}
+        </div>
       ) : (
         <div className="bg-[#111317] border border-[#2D3748] rounded-lg p-4 space-y-3">
           <p className={labelCls}>{inv ? "Relancer l'invitation" : "Inviter un parent"}</p>
@@ -472,6 +624,82 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
           </div>
         </div>
       )}
-    </section>
+
+      {/* ── MODALE — CORRIGER LE COURRIEL (lot B3) ───────────────────────
+          LA CONFIRMATION EST UNE RESAISIE, pas une case à cocher. Ce geste
+          change l'adresse avec laquelle un parent SE CONNECTE ; une faute de
+          frappe l'enferme dehors sans que rien ne le signale, et c'est
+          exactement la panne qu'on répare. Retaper l'adresse est le seul
+          controle qui attrape une coquille — un « je confirme » ne relit
+          rien. */}
+      {modaleEmail && p && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-lg bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 space-y-4">
+            <h3 className="font-head text-[15px] font-black text-white uppercase tracking-tight">
+              Modifier le courriel du parent
+            </h3>
+
+            <div className="bg-[#111317] border border-[#2D3748] rounded-lg p-4">
+              <Fait label="Actuel (auth)">{p.email_auth || "—"}</Fait>
+              <Fait label="Actuel (public.users)">{p.email_public || "—"}</Fait>
+            </div>
+
+            <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
+              Les <strong>deux</strong> seront réécrits, dans cet ordre : d&apos;abord
+              l&apos;authentification, ensuite la copie affichée. Le parent devra utiliser
+              la nouvelle adresse pour se connecter. Le geste est journalisé avec
+              l&apos;ancienne et la nouvelle valeur.
+            </p>
+
+            <label className="space-y-1.5 block">
+              <span className={labelCls}>Nouvelle adresse</span>
+              <input
+                type="email" value={nouvelEmail}
+                onChange={(e) => setNouvelEmail(e.target.value)}
+                className={inputCls} placeholder="parent@exemple.com"
+              />
+            </label>
+            <label className="space-y-1.5 block">
+              <span className={labelCls}>Retaper pour confirmer</span>
+              <input
+                type="email" value={confirmEmail}
+                onChange={(e) => setConfirmEmail(e.target.value)}
+                className={inputCls} placeholder="la même adresse"
+              />
+            </label>
+
+            {confirmEmail.length > 0 && confirmEmail.trim().toLowerCase() !== nouvelEmail.trim().toLowerCase() && (
+              <p className="text-[12px] text-[#F59E0B]">Les deux adresses diffèrent.</p>
+            )}
+            {resultatAction && !resultatAction.ok && (
+              <p className="text-[12px] text-[#EF4444] leading-relaxed">{resultatAction.message}</p>
+            )}
+
+            <div className="flex justify-end gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => { setModaleEmail(false); setConfirmEmail(""); setResultatAction(null); }}
+                className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => void changerEmail(p.parent_user_id)}
+                disabled={
+                  actionEnCours !== null ||
+                  nouvelEmail.trim().length === 0 ||
+                  confirmEmail.trim().toLowerCase() !== nouvelEmail.trim().toLowerCase() ||
+                  nouvelEmail.trim().toLowerCase() === (p.email_auth ?? "").toLowerCase()
+                }
+                className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionEnCours === "email" ? "Correction…" : "Corriger les deux adresses"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Coque>
   );
 }
