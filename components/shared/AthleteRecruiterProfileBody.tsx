@@ -388,10 +388,21 @@ type PartnerRpcRow = {
   video_faits_saillants_url: string | null;
   hudl_url: string | null;
   youtube_url: string | null;
-  /** Projete par la RPC mais non consomme par ce corps de fiche : le mapping
-   *  ne lit jamais `d.badges`. Declare quand meme pour que le type reste le
-   *  reflet FIDELE du RETURNS TABLE. */
-  badges: unknown;
+  /** Les badges VIVANTS, deja tries (honneur > universel > sport, puis
+   *  `ordre`) et deja filtres sur `retire_le is null` par la RPC. Forme
+   *  projetee : {code, libelle, famille, contexte, attribue_le}. */
+  badges: PartnerRpcBadge[] | null;
+};
+
+/** Un element du jsonb `badges` de partner_athlete_profile. Le RETURNS TABLE
+ *  le declare `jsonb` ; cette forme est celle que la fonction CONSTRUIT
+ *  (jsonb_build_object, cinq cles nommees). */
+type PartnerRpcBadge = {
+  code: string;
+  libelle: string;
+  famille: string | null;
+  contexte: string | null;
+  attribue_le: string | null;
 };
 
 /**
@@ -431,6 +442,20 @@ type PartnerAdaptedRow = {
   positions: { nom: string | null; abreviation: string | null } | null;
   schools: { name: string | null; region: string | null; city: string | null; type: string | null } | null;
   evaluations: { distinctions: unknown }[] | null;
+
+  /* ── Badges — VOIE 2, reconstituee ─────────────────────────────────────
+     `badgesDepuisRaw` lit `raw.athlete_badges` dans la forme de l'EMBED
+     PostgREST. La RPC projette la meme information sous un autre nom et une
+     autre forme ; l'adaptateur la RENDONNE ici, fidele a sa vocation. Sans
+     ce champ, `d.athlete_badges` etait `undefined` et le partenaire voyait
+     zero badge sur une fiche qui en porte trois — alors que la RPC les
+     livrait deja dans la meme reponse. */
+  athlete_badges: {
+    contexte: string | null;
+    created_at: string | null;
+    retire_le: null;
+    badges: { code: string; libelle: string };
+  }[];
 
   /* ── Le contexte, DECIDE PAR LE SERVEUR ────────────────────────────────
      `is_civil` est la reponse de la RPC — (school_id IS NULL OR type =
@@ -540,6 +565,25 @@ function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
        d'un element sans notes de traits ni rapport — ce qui est exactement
        l'intention. */
     evaluations: r.distinctions ? [{ distinctions: r.distinctions }] : null,
+
+    /* VOIE 2 — on redonne aux badges la forme de l'embed `athlete_badges`,
+       la seule que `badgesDepuisRaw` sache lire. La correspondance est
+       terme a terme et documentee dans athleteBadges.ts :
+         contexte    <- ab.contexte
+         created_at  <- ab.created_at, projete sous le nom `attribue_le`
+         retire_le   <- toujours null : la RPC filtre `retire_le is null`,
+                        elle ne rend QUE des badges vivants. Le `null` n'est
+                        donc pas une supposition, c'est le contrat d'amont.
+       L'ordre du serveur (honneur > universel > sport, puis `ordre`) est
+       conserve : `.map` ne reordonne rien, donc MAX_BADGES_AFFICHES tronque
+       les MOINS importants. L'embed recruteur, lui, n'a PAS de ORDER BY —
+       le partenaire est ici mieux servi, pas moins. */
+    athlete_badges: (Array.isArray(r.badges) ? r.badges : []).map((b) => ({
+      contexte: b.contexte ?? null,
+      created_at: b.attribue_le ?? null,
+      retire_le: null as null,
+      badges: { code: b.code, libelle: b.libelle },
+    })),
 
     /* Le verdict du serveur, transmis tel quel — plus aucun recalcul. */
     is_civil: r.is_civil,
