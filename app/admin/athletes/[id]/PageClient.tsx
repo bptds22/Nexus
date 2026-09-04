@@ -1177,6 +1177,25 @@ export default function AdminAthleteDetailPage() {
         </>,
       )}
 
+      {/* Le lien parental — voir et inviter (lots A + B1). Section autonome :
+          elle charge son propre état via la RPC admin_parent_state, parce que
+          `parent_invitations` a RLS activé sans aucune policy et que
+          `auth.users.email` n'est lisible que depuis une fonction DEFINER.
+          Rien de ce formulaire-ci ne l'alimente, et « Enregistrer » ne la
+          touche pas : ses écritures passent par ses propres RPC, journalisées.
+
+          PLACÉE ICI, ET PAS AILLEURS. Elle a d'abord été posée entre « Statut »
+          et « Évaluation » — cinq sections plus bas. Elle s'affichait
+          correctement (vérifié dans le bundle de prod : le composant ET son
+          site d'appel y sont), mais personne ne la trouvait : on cherche la
+          gestion du parent JUSTE SOUS les champs « Nom du parent » et
+          « Téléphone parent » d'Identité, pas après les médias et le statut du
+          compte. Une section correcte au mauvais endroit est indistinguable
+          d'une section absente. Elle reste donc collée aux deux champs
+          déclaratifs qu'elle complète : eux disent ce que l'athlète a saisi,
+          elle dit ce que le COMPTE parent vaut réellement. */}
+      <ParentSection athleteId={id} />
+
       {section(
         "Sport",
         <>
@@ -1261,14 +1280,6 @@ export default function AdminAthleteDetailPage() {
           {boolRow("Ouvert à entraîneur CÉGEP", "ouvert_entraineur_cegep")}
         </>,
       )}
-
-      {/* Le lien parental — voir et inviter (lots A + B1). Section autonome :
-          elle charge son propre état via la RPC admin_parent_state, parce que
-          `parent_invitations` a RLS activé sans aucune policy et que
-          `auth.users.email` n'est lisible que depuis une fonction DEFINER.
-          Rien de ce formulaire-ci ne l'alimente, et « Enregistrer » ne la
-          touche pas : ses écritures passent par ses propres RPC, journalisées. */}
-      <ParentSection athleteId={id} />
 
       {renderEvaluationSection()}
 
