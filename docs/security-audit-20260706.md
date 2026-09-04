@@ -39,9 +39,21 @@ avant d'ouvrir la beta.
 | **#33** Strict-Transport-Security | Absent (config Next ; proxy Coolify ?) | ❌ / TO CONFIRM | idem | **High** | inclus |
 | **#33** Referrer-Policy | Absent | ❌ MANQUANT | idem | Medium | inclus |
 | **#33** Permissions-Policy | Absent | ❌ MANQUANT | idem | Medium | inclus |
-| **#34** Confirm email | Non interrogeable via MCP | TO CONFIRM | Auth config hors DB | High | 5 min |
+| **#34** Confirm email | Non interrogeable via MCP | ⛔ **BLOQUÉ — dépendance OAuth** | Auth config hors DB | High | ~~5 min~~ voir ci-dessous |
 | **#34** Templates FR custom | Non interrogeable | TO CONFIRM | — | Low | 1-2 h |
 | **#35** JWT expiry / rotation / inactivity | Non exposé via MCP | TO CONFIRM | GoTrue config | Medium | 15 min |
+
+> **#34 « Confirm email » — ne pas l'activer tel quel (constaté 2026-09-04).**
+> La liaison automatique des identités OAuth n'opère que si le courriel du
+> compte existant est **confirmé**. Aujourd'hui `email_confirmed_at` est posé
+> dès l'inscription (0 compte non confirmé sur 217), donc Google se **lie** au
+> compte existant — vérifié en prod, 0 courriel en double, 7 comptes portant
+> déjà 2 identités.
+> Activer la confirmation crée une fenêtre entre l'inscription et le clic où le
+> compte est NON confirmé : un « Se connecter avec Google » y **forkerait** un
+> second utilisateur. Ce n'est donc plus un réglage de 5 minutes.
+> Détail, mesures et ce qu'il faut décider d'abord :
+> `docs/oauth-flow-current-state-20260707.md` §3.
 | **#36** Reset password (enum) | Flow **non implémenté** (stub Phase 2) | N/A | `mot-de-passe-oublie/page.tsx:27` TODO, `auth/page.tsx:582` "forgotPhase2" | Info | — |
 | **#36** Signup enumeration | « Cet email est déjà utilisé » **leak l'existence** | ⚠️ PRÉSENT | `lib/utils/translateAuthError.ts:8-9` | Medium | 1 h |
 | **#36** Password change (loggé) | Câblé, pas d'enum | ✅ OK | `PasswordChangeSheet.tsx:42`, `AccountSection.tsx:75` | — | — |

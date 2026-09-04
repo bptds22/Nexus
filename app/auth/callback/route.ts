@@ -28,6 +28,21 @@ import {
    ⚠️ trailingSlash:true — l'URL de redirect (signInWithOAuth.redirectTo) ET
    l'allowlist "Redirect URLs" du dashboard Supabase doivent matcher
    (https://nexussports.ca/auth/callback + query params autorisés).
+
+   ⛔ DÉPENDANCE — #34 « Confirm email » NE PEUT PAS ÊTRE ACTIVÉ TEL QUEL.
+   C'est ICI que le doublon apparaîtrait. GoTrue ne LIE une identité OAuth à un
+   compte existant de même adresse que si ce compte a un courriel CONFIRMÉ (et
+   que le provider affirme email_verified). Constaté en prod le 2026-09-04 : la
+   liaison fonctionne — 217 comptes, 0 courriel en double, 7 comptes portant
+   déjà 2 identités — précisément parce que `email_confirmed_at` est posé dès
+   l'inscription (0 compte non confirmé), ce qui correspond à la confirmation
+   DÉSACTIVÉE.
+   Activer #34 crée une fenêtre entre l'inscription et le clic de confirmation
+   où le compte est NON confirmé : un « Se connecter avec Google » sur la même
+   adresse ne se liera pas, il créera un SECOND utilisateur. Le garde-fou
+   actuel est ce réglage, pas ce code.
+   Mesures, mécanisme et ce qu'il faut décider d'abord :
+   docs/oauth-flow-current-state-20260707.md §3.
 ═══════════════════════════════════════════════════════════════ */
 
 const VALID_ROLES = ["ATHLETE", "COACH", "RECRUTEUR"] as const;

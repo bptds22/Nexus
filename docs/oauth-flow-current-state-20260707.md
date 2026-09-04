@@ -150,12 +150,47 @@ la création du compte, pas au clic. À valider : `/consentements` couvre bien l
 cas OAuth mineur (14-17) + parental. Le flow email/password, lui, capte les
 consentements **dans** le formulaire (`consentMeta` → metadata).
 
-### 3. `link_identities` (anti-énumération + UX)
+### 3. `link_identities` (anti-énumération + UX) — ✅ RÉPONDU LE 2026-09-04
 Si un utilisateur s'authentifie via Google avec un email **déjà** en
 email/password : avec `link_identities=true` (défaut Supabase récent), Supabase
 **auto-lie** silencieusement les identités → SAFE anti-énumération + pas de
-doublon. **À VÉRIFIER dans le dashboard** (non accessible via MCP). Si OFF :
-risque de compte dupliqué OU d'erreur révélant l'existence de l'email.
+doublon. ~~**À VÉRIFIER dans le dashboard**~~ — **vérifié empiriquement, pas
+dans le dashboard** : la liaison automatique FONCTIONNE en production.
+
+Preuve (compte `d41528da`, parent, 2026-09-04 15:26) : une connexion Google sur
+une adresse déjà portée par une identité `email` a produit
+`providers: ["email","google"]` et **deux lignes `auth.identities` sur le même
+`user_id`** — aucun nouvel utilisateur. Mesures sur toute la base le même jour :
+
+| | |
+|---|---|
+| comptes `auth.users` | 217 |
+| **courriels en double** | **0** |
+| comptes portant ≥ 2 identités | 7 |
+| identités | 114 `email` · 64 `google` · 46 `apple` |
+| comptes sans courriel confirmé | **0** |
+
+> ### ⛔ DÉPENDANCE — NE JAMAIS ACTIVER #34 « Confirm email » SANS TRAITER CECI
+>
+> La liaison automatique n'a lieu **que si le courriel du compte existant est
+> confirmé** et que le provider affirme `email_verified: true`. Les deux
+> conditions sont réunies aujourd'hui *parce que* `email_confirmed_at` est posé
+> à l'inscription — ce qui est cohérent avec la confirmation **désactivée**
+> (auto-confirm), soit précisément l'état que l'item **#34** propose de changer.
+>
+> **Activer « Confirm email » ouvre une fenêtre où le doublon devient réel :**
+> entre l'inscription et le clic de confirmation, le compte est NON confirmé ;
+> un « Se connecter avec Google » sur cette même adresse ne se liera pas — il
+> créera un **second utilisateur**. C'est le mécanisme exact du piège consigné
+> dans CLAUDE.md, et il est aujourd'hui neutralisé par un réglage qu'on
+> s'apprête à retirer.
+>
+> Avant de basculer #34, il faut donc décider ce qui se passe pour un compte
+> non confirmé qui arrive par OAuth — au minimum : le mesurer sur un compte de
+> test, et savoir quoi faire des doublons déjà créés. Le compteur à surveiller
+> est celui du tableau ci-dessus : `courriels en double` doit rester à 0.
+>
+> Voir aussi `docs/security-audit-20260706.md` (ligne #34).
 
 ### 4. Vérifications dashboard Supabase (hors MCP — action BP)
 - Auth → Providers → **Google** activé (+ client secret) ; **Apple** activé

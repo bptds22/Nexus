@@ -221,8 +221,18 @@ function AuthContent() {
     setLoading(true);
     const supabase = createClient();
 
+    /* `.trim().toLowerCase()` — aligné sur /mot-de-passe-oublie, qui trimait
+       déjà. Ce formulaire-ci envoyait la valeur du champ TELLE QUELLE : une
+       adresse auto-remplie ou collée avec une espace finale, ou saisie avec
+       une majuscule, produit un « Invalid login credentials » indiscernable
+       d'un mauvais mot de passe. GoTrue stocke les courriels en minuscules ;
+       il n'y a donc aucun cas où la casse ou l'espace de saisie devrait
+       décider d'une connexion.
+
+       Deux formulaires du même écran ne normalisaient pas pareil — c'est
+       l'écart qui compte, pas la ligne. */
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
+      email: loginEmail.trim().toLowerCase(),
       password: loginPassword,
     });
 

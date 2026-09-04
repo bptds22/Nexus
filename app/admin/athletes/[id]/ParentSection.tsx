@@ -51,6 +51,8 @@ interface ParentState {
     email_public: string | null;
     email_auth: string | null;
     email_confirme_le: string | null;
+    /** `auth.users.last_sign_in_at`. NULL = ne s'est JAMAIS connecté. */
+    derniere_connexion: string | null;
     compte_cree_le: string | null;
   } | null;
   invitation: {
@@ -363,6 +365,16 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
           <Fait label="Courriel confirmé">{dateFr(p.email_confirme_le)}</Fait>
           <Fait label="Rôle">{p.role || "—"}</Fait>
           <Fait label="Compte créé">{dateFr(p.compte_cree_le)}</Fait>
+          {/* JAMAIS CONNECTÉ est un fait à dire, pas un blanc à laisser.
+              Un parent lié qui n'est jamais entré n'a pas besoin d'une
+              réinitialisation — il a besoin qu'on lui renvoie son invitation.
+              Mesuré le 2026-09-04 : 0 parent dans ce cas sur 28 liaisons, d'où
+              une mention plutôt qu'un troisième bouton. */}
+          <Fait label="Dernière connexion">
+            {p.derniere_connexion
+              ? dateHeureFr(p.derniere_connexion)
+              : <span className="text-[#F59E0B] font-semibold">jamais connecté</span>}
+          </Fait>
 
           {desync && (
             <p className="mt-3 text-[12px] text-[#F59E0B] leading-relaxed">
@@ -448,8 +460,30 @@ export default function ParentSection({ athleteId }: { athleteId: string }) {
             </button>
           </div>
 
+          {/* REQUALIFICATION — le chemin normal n'est PAS le reset.
+              Un parent arrive par l'INVITATION : il crée son compte lui-même
+              sur /parent/claim, avec un mot de passe ou avec Google, et
+              l'admin ne touche jamais à un mot de passe. La réinitialisation
+              ne sert qu'au parent qui avait déjà un accès et l'a perdu.
+              Mesuré le 2026-09-04 : 48 invitations en attente contre 28
+              liaisons — l'invitation est le chemin de volume, et l'écran doit
+              le dire pour ne pas transformer un outil de dépannage en geste
+              par défaut. */}
           <p className="text-[12px] text-[#6b7280] leading-relaxed">
-            Le courriel de réinitialisation part vers l&apos;adresse <strong>auth</strong>
+            <strong className="text-[#9CA3AF]">Le chemin normal, c&apos;est l&apos;invitation</strong> —
+            le parent crée son compte lui-même, avec un mot de passe ou avec Google.
+            La réinitialisation ci-dessus ne sert qu&apos;à un parent qui avait déjà
+            un accès et l&apos;a perdu ; elle suppose un compte déjà créé.
+            {p.derniere_connexion === null && (
+              <> {" "}<span className="text-[#F59E0B]">
+                Ce compte ne s&apos;est jamais connecté : il n&apos;a probablement jamais
+                terminé sa création, et un lien d&apos;invitation le servirait mieux
+                qu&apos;une réinitialisation.
+              </span></>
+            )}
+          </p>
+          <p className="text-[12px] text-[#6b7280] leading-relaxed">
+            Le courriel part vers l&apos;adresse <strong>auth</strong>
             {emailQuiCompte ? <> (<span className="text-[#9CA3AF]">{emailQuiCompte}</span>)</> : null} —
             c&apos;est la seule que Supabase Auth reconnaît. Un athlète ne peut avoir
             qu&apos;un seul parent lié (<code className="text-[#9CA3AF]">UNIQUE (athlete_id)</code>) :
