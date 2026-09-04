@@ -74,7 +74,18 @@ export function matchesStatusPreset(
   }
 }
 
-/* Sort weight — nouveau first, then reponse_recue, …, archive last. */
-export const STATUS_SORT_PRIORITY: Record<ThreadStatus, number> = {
-  nouveau: 0, reponse_recue: 1, repondu: 2, envoye: 3, archive: 4,
-};
+/* STATUS_SORT_PRIORITY A ÉTÉ RETIRÉ (2026-09-04).
+   { nouveau: 0, reponse_recue: 1, repondu: 2, envoye: 3, archive: 4 } servait
+   de clé PRIMAIRE au tri des deux boîtes (coach, athlète), la date ne
+   départageant qu'à statut égal. Un fil dont le dernier message datait d'« il
+   y a 0 min » se retrouvait donc sous des fils vieux de cinq semaines, sans
+   que l'écran puisse l'expliquer — l'horodatage affiché contredisait l'ordre.
+
+   Les deux listes trient désormais par date du dernier message, décroissant.
+   Ce que cette table faisait remonter est déjà exprimable par les FILTRES de
+   la même barre (`matchesStatusPreset` ci-dessus : « nouveau », « réponse
+   reçue », « sans réponse »). Si un fil non lu doit ressortir, ce sera un
+   badge ou un filtre — pas un réordonnancement.
+
+   Ne pas la rétablir sans traiter ça : c'est le tri qui a produit le bug, pas
+   son contenu. */

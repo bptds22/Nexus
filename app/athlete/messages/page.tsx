@@ -10,7 +10,6 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { MessagesToolbar } from "@/components/shared/messaging/MessagesToolbar";
 import {
-  STATUS_SORT_PRIORITY,
   matchesStatusPreset,
   type StatusPreset,
 } from "@/lib/messaging/threadStatus";
@@ -164,11 +163,15 @@ function AthleteMessagesContent() {
 
     list = list.filter((t) => matchesStatusPreset(statusFilter, { status: t.threadStatus, lastSenderId: t.lastSenderId }, userId));
 
-    list.sort((a, b) => {
-      const sp = STATUS_SORT_PRIORITY[a.threadStatus] - STATUS_SORT_PRIORITY[b.threadStatus];
-      if (sp !== 0) return sp;
-      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
-    });
+    /* Date du dernier message, décroissant — la convention messagerie, et la
+       même règle que la boîte coach. La priorité de statut qui primait ici
+       faisait couler un fil récent sous des fils plus anciens (voir le
+       commentaire détaillé dans app/coach/demandes/page.tsx). Les statuts
+       restent accessibles comme FILTRES, ce qu'ils sont déjà juste au-dessus
+       (`matchesStatusPreset`). */
+    list.sort(
+      (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime(),
+    );
 
     return list;
   }, [threads, typeSegments, typeFilter, debouncedSearch, statusFilter, userId]);

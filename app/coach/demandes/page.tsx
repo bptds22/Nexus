@@ -14,7 +14,6 @@ import { CoachDemandesMobile } from "@/components/shared/CoachDemandesMobile";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { MessagesToolbar } from "@/components/shared/messaging/MessagesToolbar";
 import {
-  STATUS_SORT_PRIORITY,
   matchesStatusPreset,
   mapUrlStatusPreset,
   type StatusPreset,
@@ -715,12 +714,27 @@ function DemandesContent() {
     // Status preset (shared with the athlete inbox)
     list = list.filter((t) => matchesStatusPreset(activeFilter, t, userId));
 
-    // Sort: nouveau first, then reponse_recue, then by most recent
-    list.sort((a, b) => {
-      const sp = STATUS_SORT_PRIORITY[a.status] - STATUS_SORT_PRIORITY[b.status];
-      if (sp !== 0) return sp;
-      return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
-    });
+    /* TRI PAR DATE DU DERNIER MESSAGE, DÉCROISSANT. Rien d'autre.
+
+       Il y avait avant une priorité de STATUT en clé primaire (nouveau, puis
+       reponse_recue, puis repondu…), la date ne servant que de départage à
+       statut égal. Conséquence observée le 2026-09-04 : un fil dont le
+       dernier message datait d'« il y a 0 min » s'affichait en 4e position,
+       sous des fils du 28 juillet — parce que son statut le classait plus
+       bas. La requête SQL, elle, triait déjà correctement sur
+       `last_message_at` ; ce comparateur défaisait son travail juste après.
+
+       POURQUOI SUPPRIMER LE TRI PAR STATUT PLUTÔT QUE LE RÉTROGRADER : les
+       statuts qu'il faisait remonter sont DÉJÀ des filtres de cette même
+       barre (`matchesStatusPreset` : « nouveau », « réponse reçue »…). Les
+       utiliser aussi comme clé de tri, c'est répondre deux fois à la même
+       question — et la seconde réponse contredit ce que l'horodatage affiché
+       à côté de chaque ligne raconte. Pour faire ressortir un fil non lu, un
+       badge ou un filtre ; pas un réordonnancement qui rend l'ordre
+       inexplicable. */
+    list.sort(
+      (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime(),
+    );
 
     return list;
   }, [debouncedSearch, activeFilter, typeFilter, typeSegments, threads, convTypes, userId]);
