@@ -376,7 +376,7 @@ type PartnerRpcRow = {
   verified: boolean | null;
   last_profile_validation: string | null;
   /** `coalesce(evaluation retenue, athletes.cote_globale_entraineur)` depuis
-   *  la migration 20260903210000 — la MEME preseance que la fiche recruteur,
+   *  la migration 20260904130334 — la MEME preseance que la fiche recruteur,
    *  decidee cote serveur. Ce n'est plus la colonne denormalisee nue. */
   cote_globale: Numerique;
   taille_pieds: number | null;
@@ -595,7 +595,7 @@ type PartnerAdaptedRow = {
      2026-09-03) : historique sportif public — quelles equipes, quelles
      saisons, quelle ligue — sans un seul nom de personne. Meme nature verte
      que les badges et les mesures. La RPC le projette depuis la migration
-     20260903210000 ; ce n'etait PAS une garde front seule. */
+     20260904130334 ; ce n'etait PAS une garde front seule. */
   parcours_equipes: unknown;
 
   /* `team_athletes` reste absent : c'est la jointure COMPLETE vers teams
@@ -613,7 +613,7 @@ type PartnerAdaptedRow = {
      Ces champs etaient les « absences subies » du 19 aout : la RPC ne les
      rendait pas, et les deux surfaces qui les affichaient avec un defaut
      FAUX (completude figee a 0 %) etaient masquees plutot que menteuses. La
-     migration 20260903210000 les AJOUTE — c'etait la seule facon de les
+     migration 20260904130334 les AJOUTE — c'etait la seule facon de les
      rouvrir, et c'est faite. */
   profile_completion: number | null;
   envergure: string | null;
@@ -771,7 +771,7 @@ function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
     /* Lot 7 — historique sportif, projete par la RPC. */
     parcours_equipes: r.parcours_equipes,
 
-    /* Lots 3 a 6 — projetes par la RPC depuis le 2026-09-03. */
+    /* Lots 3 a 6 — projetes par la RPC depuis le 2026-09-04. */
     profile_completion: r.profile_completion,
     envergure: r.envergure,
     taille_mains: r.taille_mains,
@@ -999,7 +999,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     /* AIGUILLAGE DE SOURCE.
 
        Pour un PARTENAIRE, la lecture passe par public.partner_athlete_profile :
-       61 colonnes depuis le 2026-09-03 (30 auparavant), gate interne
+       61 colonnes depuis le 2026-09-04 (30 auparavant), gate interne
        (is_approved_partner ET is_partner_eligible_athlete), et AUCUNE des
        colonnes interdites. La requete directe ci-dessus laissait encore passer
        moyenne_generale, programme_cegep_vise, regions_cegep_preferees,
@@ -1389,7 +1389,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
      Il datait du 19 aout, quand la RPC partenaire ne projetait ni mesures,
      ni tests, ni traits : ouvrir le mode detaille n'aurait montre que des
-     sections vides. La migration 20260903210000 les alimente toutes, donc
+     sections vides. La migration 20260904130334 les alimente toutes, donc
      le forçage n'a plus d'objet — et le partenaire retrouve le meme
      bascule que le recruteur, sur les memes sections.
 
@@ -1815,12 +1815,12 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* ── Toggle + Completeness ─────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Le bascule est rendu au partenaire : les sections detaillees ne
-              sont plus vides (migration 20260903210000). */}
+              sont plus vides (migration 20260904130334). */}
           <ProfileToggle mode={mode} onChange={setMode} />
           {/* La barre affichait « 0 % » a tout partenaire, parce que la RPC ne
               projetait pas profile_completion — une affirmation fausse la ou le
               reel va de 30 a 95. Elle etait donc masquee. La colonne est
-              projetee depuis le 2026-09-03 : la barre dit vrai, elle revient. */}
+              projetee depuis le 2026-09-04 : la barre dit vrai, elle revient. */}
           <div className="w-full sm:w-56">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
             <CompletenessBar percent={a.profileCompleteness} />
@@ -1975,7 +1975,14 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <FreeLock />
           </section>
-        ) : (a.coachReport || coteGlobale >= 0) ? (
+        ) : /* `> 0` et non `>= 0` (2026-09-04). Le predicat etait TOUJOURS
+               vrai — `coteGlobale` est un nombre, jamais negatif — donc la
+               section se rendait meme pour un athlete JAMAIS evalue, et y
+               affichait « 0,0/5 » sous cinq etoiles vides. Ce n'est pas une
+               absence de note : c'est une note de zero, affirmee sur un
+               athlete que personne n'a evalue, et lue par un recruteur comme
+               par un partenaire. Un caractere, les deux portails. */
+           (a.coachReport || coteGlobale > 0) ? (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>

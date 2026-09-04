@@ -50,7 +50,7 @@ function safeFilenamePart(s: string): string {
 /** Le SOUS-ENSEMBLE de public.partner_athlete_profile que la CARTE consomme.
 
     Ce n'est PAS le miroir du RETURNS TABLE — la fonction en projette 61
-    depuis le 2026-09-03, et le miroir fidele vit dans `PartnerRpcRow`
+    depuis le 2026-09-04, et le miroir fidele vit dans `PartnerRpcRow`
     (components/shared/AthleteRecruiterProfileBody.tsx), le seul endroit ou
     verifier ce que la RPC rend vraiment. Ici on ne declare que ce que
     AthletePlayerCard affiche ; le corps de fiche partage lit le reste.
@@ -160,7 +160,7 @@ function mapPartnerRpcToRecruiterView(r: PartnerAthleteRow): AthleteProfileRecru
 
     /* `cote_globale` est deja `coalesce(evaluation retenue,
        athletes.cote_globale_entraineur)` cote serveur depuis la migration
-       20260903210000 — la meme preseance que la fiche recruteur. La carte
+       20260904130334 — la meme preseance que la fiche recruteur. La carte
        partageable et le corps de fiche affichent donc le MEME nombre, sans
        que ni l'un ni l'autre n'ait a le recalculer. */
     overallRating: num(r.cote_globale),

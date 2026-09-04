@@ -234,9 +234,9 @@ cote_globale = coalesce(evaluation retenue, athletes.cote_globale_entraineur)
 — la meme preseance que la fiche recruteur. L'evaluation retenue est celle au
 `updated_at` le plus recent, meme clef que selectBestEvaluation cote front.
 
-Le bloc DO de la migration 20260903210000 refuse a l'application toute
-colonne hors cadre. Elargir le perimetre = modifier cette liste, donc relire
-ce commentaire.$c$;
+Le bloc DO de la migration partner_athlete_profile_perimetre_elargi refuse a
+l'application toute colonne hors cadre. Elargir le perimetre = modifier cette
+liste, donc relire ce commentaire.$c$;
 
 -- ── GARDE-FOU ──────────────────────────────────────────────────────────
 -- Deux vérifications, exécutées à l'application. Le préfixe « NEXUS: » est
