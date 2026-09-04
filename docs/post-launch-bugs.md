@@ -436,6 +436,38 @@ file.
       commit message — what an "institution" means for a
       league-level role is a product question, not a gate bug.
 
+- [ ] **Le web affiche la relance du pipeline avec un jour de retard, et
+      allume la mauvaise carte.** `next_action_at` est une colonne `date` :
+      PostgREST la rend en `"AAAA-MM-JJ"` nu, et
+      [`app/recruteur/pipeline/page.tsx`](../app/recruteur/pipeline/page.tsx)
+      la passe telle quelle à `new Date()` dans `formatDateFr` (l.94-99),
+      `isToday` (l.79-83) et `isTomorrow` (l.89-93). JS parse cette forme en
+      **minuit UTC**, soit la veille 20h à Montréal.
+
+      Mesuré le 2026-09-03 en `TZ=America/Toronto` sur la valeur `2026-09-03` :
+
+      ```
+      web formatDateFr     : Mercredi 2 septembre   <- affiché
+      mobile parseDateOnly : Jeudi 3 septembre      <- correct
+      web isToday          : false                  <- relance due AUJOURD'HUI
+      ```
+
+      Ce n'est donc pas qu'un décalage d'affichage : le liseré « Action prévue
+      prochainement » (l.193) et le texte gold `actionToday` (l.546) se
+      déclenchent **un jour trop tard** — ils allument la relance de demain et
+      ratent celle du jour. Trois fonctions, une seule cause.
+
+      **Fix candidat :** `parseDateOnly()` du mobile
+      ([`components/shared/RecruteurPipelineMobile.tsx`](../components/shared/RecruteurPipelineMobile.tsx),
+      l.107) découpe la chaîne à la main pour obtenir un minuit LOCAL et n'a
+      pas le bug. À remonter en util partagé — `lib/pipeline/` tient déjà
+      `visitInstant.ts` pour le pendant timestamptz — puis à câbler sur les
+      trois fonctions web. Le mobile n'a jamais porté le bug : corriger le web
+      referme l'écart d'affichage entre les deux surfaces.
+
+      **Découvert** le 2026-09-03 pendant le Lot 1 (portage de `next_action_at`
+      au mobile). Aucun changement web dans ce lot.
+
 ## P1 — Data collection
 
 *(all cleared — see **Closed** at the bottom)*

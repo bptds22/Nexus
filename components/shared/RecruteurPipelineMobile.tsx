@@ -31,6 +31,7 @@ import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useUpdatePipelineStage } from "@/lib/queries/recruiter/useUpdatePipelineStage";
 import { useTogglePipelinePriority } from "@/lib/queries/recruiter/useTogglePipelinePriority";
+import { useUpdateNextAction } from "@/lib/queries/recruiter/useUpdateNextAction";
 import { useAddPipelineNote } from "@/lib/queries/recruiter/useAddPipelineNote";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -93,6 +94,51 @@ function formatVisitPill(iso: string | null | undefined): string | null {
   return `Visite · ${d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" })}`;
 }
 
+/* ── Relance (next_action_at) — pilule de date ───────────────────
+   PÉRIMÈTRE : la DATE seulement. `next_action_note` n'est ni lue, ni
+   écrite, ni affichée sur mobile — frontière assumée, cf.
+   docs/pipeline-recruteur-frontieres.md (la RLS de recruiter_pipeline est
+   par LIGNE : le coach reçoit déjà la note, l'UI ne la propage pas).
+
+   `next_action_at` est une colonne `date` : PostgREST la rend en
+   "AAAA-MM-JJ" nu. `new Date("2026-09-03")` parserait MINUIT UTC, soit le
+   2 septembre 20h à Montréal — un jour d'écart à l'affichage ET sur le
+   verdict « en retard ». D'où le découpage manuel en minuit LOCAL. */
+function parseDateOnly(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const [y, m, d] = value.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const parsed = new Date(y, m - 1, d);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** « Relance · 12 sept » + drapeau retard (date strictement avant aujourd'hui).
+ *  `now` vient de useClientNow() : à 0 (premier rendu) on ne déclare AUCUN
+ *  retard, même prudence que la pill visite côté web — sinon la carte vire
+ *  au gold pendant l'hydratation puis se corrige. */
+function formatRelancePill(value: string | null | undefined, now: number): { label: string; isLate: boolean } | null {
+  const d = parseDateOnly(value);
+  if (!d) return null;
+  let isLate = false;
+  if (now) {
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    isLate = d.getTime() < today.getTime();
+  }
+  return {
+    label: `Relance · ${d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" })}`,
+    isLate,
+  };
+}
+
+/** Timestamp client stable — 0 au premier rendu (jamais de Date.now() pendant
+ *  le render : hydratation serveur/client divergente). Réplique de
+ *  useClientNow() dans app/recruteur/pipeline/page.tsx. */
+function useClientNow(): number {
+  const [now, setNow] = useState(0);
+  useEffect(() => { setNow(Date.now()); }, []);
+  return now;
+}
 
 /* ── PipelineHeader ──────────────────────────────────────────── */
 
@@ -198,6 +244,8 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
   const status = statusGlobalColor(card.recruitment_status);
   const [first, ...rest] = (card.full_name || "").split(/\s+/);
   const showStaleness = (card.days_in_status ?? 0) > 5;
+  const now = useClientNow();
+  const relance = formatRelancePill(card.next_action_at, now);
   // Iter 7.1 — Card = UNE SEULE SURFACE. Photo en FOND absolute gauche,
   // gradient horizontal → #1A1D24 OPAQUE à droite (couleur de la carte),
   // texte en absolute overlay sur la zone fondue. Aucune 2-boîtes empilées
@@ -291,19 +339,40 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
           </div>
         )}
 
-        {/* Pilule de date de visite — VISITE_PLANIFIEE avec une date planifiée.
-            Style blanc/neutre (décision BP) sur fond subtil. */}
-        {card.status === "visite_planifiee" && (() => {
-          const label = formatVisitPill(card.visit_at);
-          if (!label) return null;
+        {/* Rangée de pilules — visite (VISITE_PLANIFIEE) et relance. Les deux
+            partagent UNE ligne en flex-wrap : la carte est haute de 120px fixes
+            avec overflow-hidden, deux lignes séparées la feraient déborder dès
+            qu'un athlète porte les deux dates. */}
+        {(() => {
+          const visitLabel = card.status === "visite_planifiee" ? formatVisitPill(card.visit_at) : null;
+          if (!visitLabel && !relance) return null;
           return (
-            <div className="mt-1.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                  <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-                <span className="text-[11px] font-bold text-white">{label}</span>
-              </span>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              {/* Visite — style blanc/neutre (décision BP) sur fond subtil. */}
+              {visitLabel && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                    <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <span className="text-[11px] font-bold text-white">{visitLabel}</span>
+                </span>
+              )}
+              {/* Relance — neutre tant qu'elle est à venir, GOLD #F59E0B une fois
+                  la date passée. Une échéance dépassée n'est PAS une alerte : ni
+                  le rouge plateforme #E63946, ni le rouge critique #EF4444. */}
+              {relance && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: relance.isLate ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.1)" }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={relance.isLate ? "#F59E0B" : "#FFFFFF"} strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                    <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+                  </svg>
+                  <span className="text-[11px] font-bold" style={{ color: relance.isLate ? "#F59E0B" : "#FFFFFF" }}>
+                    {relance.label}
+                  </span>
+                </span>
+              )}
             </div>
           );
         })()}
@@ -733,6 +802,60 @@ function EmptyStageState({ stage }: { stage: StageConfig }) {
 
 /* ── PipelineDetailSheet ─────────────────────────────────────── */
 
+/* ── NextActionDateEditor — date de relance (next_action_at) ─────
+   Présentationnel, calqué sur VisitDateEditor (components/shared/
+   VisitDateEditor.tsx) : même surface #0C0E12, même rounded-2xl, même
+   text-[16px] (sous 16px, iOS zoome à la focalisation) et même bouton qui
+   ne s'active que si la valeur a réellement changé — pas de write inutile.
+
+   Deux différences assumées : aucun champ heure (next_action_at est une
+   colonne `date`, pas un timestamptz) et AUCUN champ note. */
+function NextActionDateEditor({
+  value, onSave, saving = false,
+}: {
+  value: string | null;
+  onSave: (dateStr: string | null) => void | Promise<void>;
+  saving?: boolean;
+}) {
+  // Pas de useEffect de re-sync ici (contrairement à VisitDateEditor, qui en
+  // porte un et se fait taper dessus par react-hooks/set-state-in-effect) :
+  // l'appelant passe une `key` dérivée de l'athlète + de la valeur, donc un
+  // changement amont REMONTE le composant et ce useState se réinitialise seul.
+  const [date, setDate] = useState(value?.slice(0, 10) ?? "");
+
+  const isDirty = (date || null) !== (value?.slice(0, 10) || null);
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#9CA3AF] mb-1.5">
+          Date de relance
+        </p>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          aria-label="Date de relance"
+          className="w-full bg-[#0C0E12] border border-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white outline-none focus:border-[#E63946]/40 transition-colors"
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onSave(date || null)}
+        disabled={!isDirty || saving}
+        className={`w-full py-3 rounded-2xl text-[13px] uppercase tracking-wider font-bold transition-colors ${
+          isDirty && !saving
+            ? "bg-[#E63946] text-white active:bg-[#D42B22]"
+            : "bg-white/[0.06] text-[#4a4d56]"
+        }`}
+      >
+        {saving ? "…" : date ? "Enregistrer la relance" : "Effacer la relance"}
+      </button>
+    </div>
+  );
+}
+
 function PipelineDetailSheet({
   card, open, onClose, isFreeDemoMode,
 }: {
@@ -746,6 +869,7 @@ function PipelineDetailSheet({
   const { data: notes = [], isLoading: notesLoading } = usePipelineNotes(card?.id ?? null);
   const updateStage = useUpdatePipelineStage();
   const togglePriority = useTogglePipelinePriority();
+  const updateNextAction = useUpdateNextAction();
   const addNote = useAddPipelineNote();
   const removeFromPipeline = useRemoveFromPipeline();
 
@@ -758,9 +882,15 @@ function PipelineDetailSheet({
   // enregistrement ; l'invalidate du hook rafraîchit la liste kanban.
   const [visitAtLocal, setVisitAtLocal] = useState<string | null>(card?.visit_at ?? null);
   const [savingVisit, setSavingVisit] = useState(false);
+  // Date de relance locale — même raison que visitAtLocal : `card` est un
+  // snapshot non réactif au cache TanStack. LA DATE SEULEMENT : la note de
+  // suivi (next_action_note) ne descend pas au mobile.
+  const [nextActionAtLocal, setNextActionAtLocal] = useState<string | null>(card?.next_action_at ?? null);
+  const [savingNextAction, setSavingNextAction] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const nowTs = useClientNow();
   // Fix 7 iter 6.1a-fix : useRef car `let` était reset à chaque render →
   // les handlers touch perdaient la position de départ.
   const dragStartYRef = useRef(0);
@@ -768,6 +898,7 @@ function PipelineDetailSheet({
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { setIsPriority(card?.flagged ?? false); }, [card?.id, card?.flagged]);
   useEffect(() => { setVisitAtLocal(card?.visit_at ?? null); }, [card?.id, card?.visit_at]);
+  useEffect(() => { setNextActionAtLocal(card?.next_action_at ?? null); }, [card?.id, card?.next_action_at]);
   useEffect(() => {
     if (!open) { setDragOffset(0); setIsDragging(false); setNoteText(""); setConfirmRemove(false); }
   }, [open]);
@@ -831,6 +962,30 @@ function PipelineDetailSheet({
       toast.error({ message: "Erreur lors de l'enregistrement de la date" });
     } finally {
       setSavingVisit(false);
+    }
+  };
+
+  // Date de relance (recruiter_pipeline.next_action_at). Même parcours que
+  // handleSaveVisitDate : optimiste local, rollback si l'écriture échoue.
+  // L'UPDATE ne porte QUE next_action_at — jamais next_action_note, jamais
+  // flagged, jamais le stage (frontière Lot 1).
+  const handleSaveNextAction = async (dateStr: string | null) => {
+    if (!card) return;
+    if (isFreeDemoMode) {
+      toast.warning({ message: "Planifier une relance est réservé aux membres Pro" });
+      return;
+    }
+    const prev = nextActionAtLocal;
+    setSavingNextAction(true);
+    setNextActionAtLocal(dateStr);
+    try {
+      await updateNextAction.mutateAsync({ cardId: card.id, nextActionAt: dateStr });
+      toast.success({ message: dateStr ? "Date de relance enregistrée" : "Date de relance effacée" });
+    } catch {
+      setNextActionAtLocal(prev);
+      toast.error({ message: "Erreur lors de l'enregistrement de la relance" });
+    } finally {
+      setSavingNextAction(false);
     }
   };
 
@@ -1060,6 +1215,33 @@ function PipelineDetailSheet({
                   )}
                 </div>
               )}
+
+              {/* Section relance — présente à TOUS les stages : une relance
+                  n'est pas conditionnée par une visite. Pilotée par
+                  nextActionAtLocal pour un feedback immédiat, comme la visite.
+                  LA DATE SEULEMENT — aucun champ note (frontière Lot 1). */}
+              <div>
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-3">Prochaine relance</h3>
+                <NextActionDateEditor
+                  key={`${card.id}:${nextActionAtLocal ?? ""}`}
+                  value={nextActionAtLocal}
+                  onSave={handleSaveNextAction}
+                  saving={savingNextAction}
+                />
+                {/* Échéance dépassée → gold #F59E0B. Volontairement PAS un
+                    rouge : une relance en retard est une échéance, pas une
+                    alerte critique. */}
+                {formatRelancePill(nextActionAtLocal, nowTs)?.isLate && (
+                  <div className="flex items-center gap-1.5 mt-2.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+                    </svg>
+                    <span className="text-[11px] uppercase tracking-wider font-bold text-[#F59E0B]">
+                      Relance en retard
+                    </span>
+                  </div>
+                )}
+              </div>
 
               {/* Cote */}
               <div className="flex items-center gap-2">

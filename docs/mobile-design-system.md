@@ -14,7 +14,7 @@ Dernière mise à jour : 2026-05-31.
 
 ### Couleurs primaires (4 max)
 - **Rouge Nexus** `#E63946` — CTA primaire, pill statut recrutement actif, indicateur tab actif, KPI cube favoris, icônes iconiques, actions destructives
-- **Or** `#F59E0B` — RÉSERVÉ STRICTEMENT aux étoiles de cote. Aucun autre usage.
+- **Or** `#F59E0B` — étoiles de cote, et signal d'attention NON critique : statut EN PROCESSUS, badge « Recruté ailleurs », stages ambre du pipeline, échéance dépassée (relance en retard). JAMAIS une alerte critique — c'est le rouge.
 - **Vert** `#22C55E` — checkmarks de validation, statuts finalisés positifs (ENGAGE/LETTRE_SIGNEE), toast Success
 - **Gris neutre** `#6B7280` — statuts passifs (IDENTIFIE, CONTACTE), texte secondaire actif
 
