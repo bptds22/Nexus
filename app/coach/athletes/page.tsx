@@ -479,6 +479,26 @@ function MesAthletesContent() {
       setRegions(uniqueRegions);
 
       // Load "À traiter" data
+      //
+      // DÉCISION BP (2026-09-04) — « À traiter » reste `coach_id = moi`, POUR
+      // TOUT LE MONDE, directeur inclus. Ce n'est PAS un oubli symétrique du
+      // Roster : c'est une file d'ACTION, pas de supervision. La rendre
+      // school-wide mettrait les profils non vérifiés et les suggestions en
+      // attente d'un coach dans la file du directeur → double traitement (deux
+      // personnes approuvent la même suggestion, ou personne ne le fait parce
+      // que chacun croit que l'autre s'en charge).
+      //
+      // Un directeur SUPERVISE — les deux sections du Roster (« Mes athlètes »
+      // + « Athlètes de l'école », cf. le bloc Results) — il ne traite pas à la
+      // place de ses coachs. La file d'un coach reste la sienne.
+      //
+      // Les trois onglets, leur portée et où elle est écrite :
+      //   · Roster      → coach = coach_id=moi ; DIRECTEUR = + école
+      //                   (bloc Results, section supervision)
+      //   · À réclamer  → école entière pour tous (coach_id IS NULL) —
+      //                   déjà school-wide, aucun cas particulier directeur
+      //   · À traiter   → coach_id=moi pour tous — CE BLOC
+      //
       // Unverified athletes — only this coach's claimed athletes
       const unverified = mapped.filter((a) => !a.isVerified && a.coach_id === session.user.id);
       setUnverifiedAthletes(unverified.map((a) => ({
