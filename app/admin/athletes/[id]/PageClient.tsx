@@ -15,6 +15,7 @@ import VideoEmbed from "@/components/ui/VideoEmbed";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import ParentSection from "./ParentSection";
 import AthleteProfileView from "@/components/shared/AthleteProfileView";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -1260,6 +1261,14 @@ export default function AdminAthleteDetailPage() {
           {boolRow("Ouvert à entraîneur CÉGEP", "ouvert_entraineur_cegep")}
         </>,
       )}
+
+      {/* Le lien parental — voir et inviter (lots A + B1). Section autonome :
+          elle charge son propre état via la RPC admin_parent_state, parce que
+          `parent_invitations` a RLS activé sans aucune policy et que
+          `auth.users.email` n'est lisible que depuis une fonction DEFINER.
+          Rien de ce formulaire-ci ne l'alimente, et « Enregistrer » ne la
+          touche pas : ses écritures passent par ses propres RPC, journalisées. */}
+      <ParentSection athleteId={id} />
 
       {renderEvaluationSection()}
 
