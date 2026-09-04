@@ -54,7 +54,11 @@ export interface StatusFilterableThread {
 
 /* Does a thread match a status preset ? "Sans réponse" = the last
    message came from the current viewer (waiting on the counterparty),
-   excluding archived. Mirrors the original coach desktop switch. */
+   excluding archived.
+
+   « Tous » exclut l'archive depuis le 2026-09-04 — voir le commentaire sur
+   le `case` correspondant. Ce point-là ne reproduit plus le switch coach
+   d'origine, et c'est délibéré. */
 export function matchesStatusPreset(
   preset: StatusPreset,
   t: StatusFilterableThread,
@@ -69,8 +73,25 @@ export function matchesStatusPreset(
       return t.lastSenderId != null && t.lastSenderId === userId && t.status !== "archive";
     case "archive":
       return t.status === "archive";
+    /* « Tous » = tous les fils VIVANTS. L'archive est un RANGEMENT, pas un
+       statut parmi d'autres : un fil qu'on a archivé, on a dit qu'on ne
+       voulait plus le voir dans la liste courante. C'est le standard de
+       toutes les messageries, et la pastille « Archivé » existe pour les
+       retrouver — ils ne disparaissent pas, ils sortent de la vue par défaut.
+
+       Avant le 2026-09-04, ils y figuraient mais coulaient au fond grâce à la
+       priorité de statut du tri. Cette priorité a été retirée (le tri se fait
+       désormais par date du dernier message) : sans cette ligne, un fil
+       archivé remonterait s'intercaler entre deux fils actifs. Le tri ne peut
+       plus faire ce travail de rangement — c'est au filtre de le faire, et
+       c'est sa place.
+
+       `sans_reponse` excluait déjà l'archive juste au-dessus : on ne fait
+       qu'appliquer la même règle à la vue par défaut. */
+    case "tous":
+      return t.status !== "archive";
     default:
-      return true;
+      return t.status !== "archive";
   }
 }
 
