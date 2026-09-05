@@ -62,6 +62,10 @@ export interface PipelineKanbanCard {
    * les cartes gradées.
    */
   grade?: Grade | null;
+  /** schools.type de l'école de l'athlète (ex. LIGUE_CIVILE). Sert au
+   *  libellé de la facette « École / ligue » du filtre, pas au filtrage.
+   *  Optionnel : les fixtures mock ne le portent pas. */
+  school_type?: string | null;
 }
 
 export const KANBAN_COLUMNS: {

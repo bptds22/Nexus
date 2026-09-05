@@ -34,6 +34,16 @@ import {
   DEFAULT_PIPELINE_SORT,
   type PipelineSortMode,
 } from "@/lib/pipeline/sortPipelineCards";
+import {
+  filterPipelineCards,
+  facetOptions,
+  isFacetUseful,
+  toggleFacetValue,
+  activeFilterCount,
+  FACETS,
+  EMPTY_FILTERS,
+  type PipelineFilters,
+} from "@/lib/pipeline/filterPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useUpdatePipelineStage } from "@/lib/queries/recruiter/useUpdatePipelineStage";
 import { useTogglePipelinePriority } from "@/lib/queries/recruiter/useTogglePipelinePriority";
@@ -44,7 +54,6 @@ import { useUpdateNextAction } from "@/lib/queries/recruiter/useUpdateNextAction
 import { useAddPipelineNote } from "@/lib/queries/recruiter/useAddPipelineNote";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import { useMobileToast } from "@/components/mobile/MobileToast";
-import { MobilePicker } from "@/components/mobile/MobilePicker";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import VisitDateEditor from "@/components/shared/VisitDateEditor";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
@@ -542,27 +551,27 @@ const STATS_STAGE_COLOR_MAP: Record<string, string> = {
 function PipelineMenuSheet({
   open, onClose,
   sortBy, setSortBy,
-  filterSport, setFilterSport,
+  filters, setFilters,
   focusMode, setFocusMode,
-  availableSports,
   cards,
+  visibleCount,
 }: {
   open: boolean;
   onClose: () => void;
   sortBy: PipelineSortMode;
   setSortBy: (v: PipelineSortMode) => void;
-  filterSport: string | null;
-  setFilterSport: (v: string | null) => void;
+  filters: PipelineFilters;
+  setFilters: (updater: (f: PipelineFilters) => PipelineFilters) => void;
   focusMode: boolean;
   setFocusMode: (v: boolean) => void;
-  availableSports: string[];
   cards: PipelineKanbanCard[];
+  /** Cartes restantes dans le stage courant, après filtres. */
+  visibleCount: number;
 }) {
   const toast = useMobileToast();
   const [mounted, setMounted] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [sportPickerOpen, setSportPickerOpen] = useState(false);
   const dragStartYRef = useRef(0);
 
   useEffect(() => { setMounted(true); }, []);
@@ -572,11 +581,15 @@ function PipelineMenuSheet({
 
   const closeSheet = () => { triggerHaptic("Light"); onClose(); };
 
-  const sportOptions = useMemo(() => {
-    const opts = [{ value: "", label: "Tous les sports" }];
-    for (const s of availableSports) opts.push({ value: s, label: s });
-    return opts;
-  }, [availableSports]);
+  /* Les facettes et leurs compteurs — même module que le web. Comptés sur
+     TOUTES les cartes du pipeline, pas sur le stage affiché : un compteur
+     qui changerait à chaque onglet ne voudrait plus rien dire. */
+  const facetLists = useMemo(
+    () => FACETS.map((f) => ({ def: f, options: facetOptions(cards, f.key, filters) }))
+                .filter((x) => isFacetUseful(x.options)),
+    [cards, filters],
+  );
+  const nActiveFilters = activeFilterCount(filters);
 
   return createPortal(
     <AnimatePresence>
@@ -712,25 +725,50 @@ function PipelineMenuSheet({
                 </div>
               </section>
 
-              {/* Section Filtrer par sport */}
-              <section>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Filtrer par sport</h3>
-                <button
-                  type="button"
-                  onClick={() => { triggerHaptic("Light"); setSportPickerOpen(true); }}
-                  className="flex items-center justify-between w-full px-4 py-3.5 bg-[#1A1D24] rounded-2xl text-left active:bg-white/[0.03] transition-colors"
-                >
-                  <span className="text-[15px] text-white/95 font-medium">Sport</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[14px] text-white/50 truncate max-w-[150px]">
-                      {filterSport || "Tous"}
-                    </span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/30">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
+              {/* Section Filtres (Lot 2b) — CHIPS, PAS MobilePicker.
+                  MobilePicker est un sélecteur à valeur UNIQUE
+                  (`onChange(v: string | null)`), et il est partagé par
+                  d'autres écrans : le rendre multi-sélection aurait été une
+                  chirurgie sur un composant commun pour un besoin local.
+                  Des chips dans la feuille donnent le multi-choix sans
+                  toucher à rien, et alignent le mobile sur le web — même
+                  module, mêmes libellés, mêmes compteurs. */}
+              {facetLists.length > 0 && (
+                <section>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold">Filtres</h3>
+                    {nActiveFilters > 0 && (
+                      <span className="text-[11px] text-[#9CA3AF]">
+                        <span className="font-bold text-white">{visibleCount}</span> visible{visibleCount > 1 ? "s" : ""} ici
+                      </span>
+                    )}
                   </div>
-                </button>
-              </section>
+                  <div className="bg-[#1A1D24] rounded-2xl p-3 space-y-3">
+                    {facetLists.map(({ def, options }) => (
+                      <div key={def.key}>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6B7280] mb-1.5">{def.label}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {options.map((opt) => {
+                            const on = filters[def.key].includes(opt.value);
+                            return (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => { triggerHaptic("Light"); setFilters((f) => toggleFacetValue(f, def.key, opt.value)); }}
+                                aria-pressed={on}
+                                className={`inline-flex items-center gap-1.5 border rounded-full px-3 py-1.5 text-[13px] transition-colors ${on ? "border-white/40 text-white bg-white/[0.06]" : "border-white/10 text-[#9CA3AF] active:bg-white/[0.03]"}`}
+                              >
+                                {opt.label}
+                                <span className={on ? "text-white/60" : "text-[#4a4d56]"}>{opt.count}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Section Mode focus */}
               <section>
@@ -762,7 +800,7 @@ function PipelineMenuSheet({
                 <button
                   type="button"
                   onClick={() => {
-                    setSortBy(DEFAULT_PIPELINE_SORT); setFilterSport(null); setFocusMode(false);
+                    setSortBy(DEFAULT_PIPELINE_SORT); setFilters(() => EMPTY_FILTERS); setFocusMode(false);
                     toast.info({ message: "Filtres réinitialisés" });
                   }}
                   className="w-full px-4 py-3.5 rounded-2xl text-[14px] text-[#E63946] font-bold active:bg-[#E63946]/10 transition-colors"
@@ -784,15 +822,6 @@ function PipelineMenuSheet({
             </div>
           </motion.div>
 
-          {/* Sport picker rendu APRÈS le sheet pour stacking z-index */}
-          <MobilePicker
-            open={sportPickerOpen}
-            onClose={() => setSportPickerOpen(false)}
-            title="Sport"
-            options={sportOptions}
-            value={filterSport ?? ""}
-            onChange={(v) => setFilterSport((v as string) || null)}
-          />
         </>
       )}
     </AnimatePresence>,
@@ -1525,7 +1554,7 @@ export function RecruteurPipelineMobile() {
   // Iter 6.1b — ⋮ menu state
   const [menuOpen, setMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState<PipelineSortMode>(DEFAULT_PIPELINE_SORT);
-  const [filterSport, setFilterSport] = useState<string | null>(null);
+  const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [focusMode, setFocusMode] = useState(false);
 
   // Mutation pour le swipe
@@ -1547,22 +1576,15 @@ export function RecruteurPipelineMobile() {
     return c;
   }, [cardsByStage]);
 
-  // Sports disponibles pour le filtre du ⋮ menu
-  const availableSports = useMemo(() => {
-    const s = new Set<string>();
-    for (const c of cards) if (c.sport) s.add(c.sport);
-    return Array.from(s).sort();
-  }, [cards]);
-
   // Fix 2 (page-par-stage) + iter 6.1b sort/filter/focus + tri prioritaires
   const activeStageCards = useMemo(() => {
-    let list = (cardsByStage[activeStage] ?? []).slice();
-    if (filterSport) list = list.filter((c) => c.sport === filterSport);
+    // FILTRER PUIS TRIER — même ordre qu'au web. Les facettes viennent de
+    // lib/pipeline/filterPipelineCards, le tri de sortPipelineCards : les
+    // deux surfaces appellent exactement les mêmes fonctions.
+    let list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters);
     if (focusMode) list = list.filter((c) => c.recruitment_status !== "RECRUTE");
-    // Le tri (flaggués d'abord, puis mode courant) est parti dans
-    // lib/pipeline/sortPipelineCards : le web appelle la même fonction.
     return sortPipelineCards(list, sortBy);
-  }, [cardsByStage, activeStage, filterSport, focusMode, sortBy]);
+  }, [cardsByStage, activeStage, filters, focusMode, sortBy]);
 
   // Index du stage actif pour les bornes du swipe (canSwipeLeft/Right)
   const activeStageIndex = useMemo(
@@ -1806,10 +1828,10 @@ export function RecruteurPipelineMobile() {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         sortBy={sortBy} setSortBy={setSortBy}
-        filterSport={filterSport} setFilterSport={setFilterSport}
+        filters={filters} setFilters={setFilters}
         focusMode={focusMode} setFocusMode={setFocusMode}
-        availableSports={availableSports}
         cards={cards}
+        visibleCount={activeStageCards.length}
       />
 
       <style jsx>{`

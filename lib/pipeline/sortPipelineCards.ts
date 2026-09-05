@@ -9,19 +9,33 @@
    pour la même donnée.
 
    ── LA RÈGLE, EN UNE PHRASE ────────────────────────────────────────────
-   LES FLAGGÉS D'ABORD, PUIS LE MODE DE TRI COURANT.
+   LE MODE DE TRI COURANT, ET RIEN D'AUTRE.
 
-   Le flag passe AVANT le mode et non dedans : c'est le geste par lequel le
-   recruteur dit « celui-là, ne me le fais pas chercher ». Un tri qui pourrait
-   l'enterrer sous quarante cartes annulerait le seul geste dont l'utilisateur
-   attend un effet visuel garanti.
+   ── LE DRAPEAU NE PRÉEMPTE PLUS (arbitrage BP, 2026-09-04) ─────────────
+   Jusqu'à ce jour, `flagged` passait AVANT le mode : les cartes épinglées
+   remontaient en tête quoi qu'on demande. La règle s'est retournée contre
+   elle-même le jour du test : une carte notée D mais épinglée restait en
+   tête d'une colonne triée par MEILLEUR GRADE, et le tri paraissait cassé
+   alors qu'il obéissait.
+
+   Le fond du problème : choisir « Meilleur grade » est une demande
+   EXPLICITE, et une préemption implicite qui la contredit ne s'explique pas
+   à l'écran. Le grade absorbe désormais la priorisation — l'UI recruteur du
+   drapeau a été retirée le même jour (toggle du panneau, point rouge des
+   cartes). Laisser la préemption sans son interrupteur aurait produit le
+   pire des cas : un ordre imposé par une donnée que plus personne ne voit
+   ni ne contrôle.
+
+   La colonne `flagged` reste en base — le portail admin la lit
+   (app/admin/pipeline/[id]/PageClient.tsx). Son sort final et le nettoyage
+   du mobile se décident au lot mobile. Voir docs/post-launch-bugs.md.
 
    ── POURQUOI UNE INTERFACE STRUCTURELLE ET PAS PipelineKanbanCard ──────
    L'entrée est décrite par ses champs, pas par le type du kanban : le tri ne
    lit que six propriétés et n'a aucune raison de dépendre d'un type qui en
    porte trente. Le Lot 1b pourra l'appeler sur une autre forme de carte sans
    toucher à ce fichier. Tous les champs sont optionnels — une carte sans
-   `flagged` n'est pas flaggée, une carte sans `grade` n'est pas gradée.
+   `grade` n'est pas gradée.
 
    ── LE TRI EST PUR ─────────────────────────────────────────────────────
    La fonction rend un NOUVEAU tableau. `Array.prototype.sort` mute en place,
@@ -53,7 +67,6 @@ export const PIPELINE_SORT_OPTIONS: { value: PipelineSortMode; label: string }[]
 
 /** Les seuls champs que le tri lit. Tout est optionnel — voir l'en-tête. */
 export interface SortablePipelineCard {
-  flagged?: boolean;
   grade?: Grade | null;
   coach_rating?: number;
   graduation_year?: number;
@@ -99,14 +112,10 @@ function compareByMode(
   }
 }
 
-/** Les flaggés d'abord, puis le mode courant. Rend un nouveau tableau. */
+/** Le mode courant, sans préemption. Rend un nouveau tableau. */
 export function sortPipelineCards<T extends SortablePipelineCard>(
   cards: T[],
   mode: PipelineSortMode = DEFAULT_PIPELINE_SORT,
 ): T[] {
-  return cards.slice().sort((a, b) => {
-    if (a.flagged && !b.flagged) return -1;
-    if (!a.flagged && b.flagged) return 1;
-    return compareByMode(a, b, mode);
-  });
+  return cards.slice().sort((a, b) => compareByMode(a, b, mode));
 }

@@ -12,6 +12,20 @@ import {
   DEFAULT_PIPELINE_SORT,
   type PipelineSortMode,
 } from "@/lib/pipeline/sortPipelineCards";
+import {
+  filterPipelineCards,
+  facetOptions,
+  isFacetOffered,
+  toggleFacetValue,
+  activeFilterCount,
+  FACETS,
+  EMPTY_FILTERS,
+  QUICK_FILTERS,
+  type FacetDef,
+  type FacetOption,
+  type PipelineFilters,
+  type QuickKey,
+} from "@/lib/pipeline/filterPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import {
@@ -268,7 +282,14 @@ function completenessColor(pct: number): string {
 
 /* ── Funnel Summary Bar ──────────────────────────────────────── */
 
-function FunnelSummary({ cards }: { cards: PipelineKanbanCard[] }) {
+/* Le bandeau compte les cartes FILTRÉES, pas le pipeline entier (Lot 2b).
+   Un récapitulatif qui annonce « 15 athlètes suivis » au-dessus d'un kanban
+   qui en montre 6 ne récapitule rien : il contredit l'écran.
+
+   Le total absolu reste affiché en référence — « 6 sur 15 » — pour que le
+   filtre se lise comme un cadrage temporaire et non comme une perte de
+   données. Sans filtre actif, l'affichage ne change pas d'un pixel. */
+function FunnelSummary({ cards, totalCards }: { cards: PipelineKanbanCard[]; totalCards: number }) {
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const col of KANBAN_COLUMNS) c[col.id] = 0;
@@ -277,6 +298,7 @@ function FunnelSummary({ cards }: { cards: PipelineKanbanCard[] }) {
   }, [cards]);
 
   const total = cards.length;
+  const isFiltered = total !== totalCards;
   const stages = KANBAN_COLUMNS.filter((c) => c.id !== "retire");
   const conversions: { pct: number }[] = [];
   for (let i = 1; i < stages.length; i++) {
@@ -289,6 +311,9 @@ function FunnelSummary({ cards }: { cards: PipelineKanbanCard[] }) {
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-6 py-5">
       <div className="flex items-baseline gap-2 mb-4">
         <span className="font-head text-[28px] font-black text-white leading-none">{total}</span>
+        {isFiltered && (
+          <span className="text-[15px] font-bold text-[#6b7280] leading-none">sur {totalCards}</span>
+        )}
         <span className="text-[14px] font-bold text-[#9CA3AF] uppercase tracking-wider">athlètes suivis</span>
       </div>
       <div className="flex items-center gap-0 overflow-x-auto">
@@ -474,7 +499,6 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         <div className={`px-3.5 pb-3.5 pt-1.5 ${isDraggable ? "pl-8" : ""}`}>
           {/* Name + Jersey + Priority */}
           <div className="flex items-center gap-1.5">
-            {card.flagged && <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0" title="Prioritaire" />}
             <span className="text-[14px] font-semibold text-white truncate">{card.full_name}</span>
             {card.jersey && <span className="text-[12px] font-black text-[#E63946] shrink-0">#{card.jersey}</span>}
           </div>
@@ -680,12 +704,11 @@ interface NoteEntry {
 }
 
 function SlideOver({
-  card, onClose, onStatusChange, onTogglePriority, onSetGrade, onSaveVisit,
+  card, onClose, onStatusChange, onSetGrade, onSaveVisit,
   isFreeDemoMode, onTeaseUpgrade,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
   onStatusChange: (cardId: string, newStatus: RecruitmentStatus) => void;
-  onTogglePriority: (cardId: string, value: boolean) => void;
   /** `null` retire le grade (DELETE de la ligne, pas un NULL en base). */
   onSetGrade: (cardId: string, grade: Grade | null, previousGrade: Grade | null) => void;
   /** Écrit recruiter_pipeline.visit_at. `null` efface la date. */
@@ -792,19 +815,6 @@ function SlideOver({
               </div>
             </div>
           </div>
-          {/* Priority toggle */}
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Prioritaire</span>
-            <button
-              type="button"
-              onClick={() => onTogglePriority(card.id, !card.flagged)}
-              aria-label={card.flagged ? "Retirer la priorité" : "Marquer comme prioritaire"}
-              className={`w-10 h-5 rounded-full transition-colors relative ${card.flagged ? "bg-[#E63946]" : "bg-[#2D3748]"}`}
-            >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${card.flagged ? "left-[22px]" : "left-0.5"}`} />
-            </button>
-          </div>
-
           {/* Notes — ServiceNow-style work notes + activity feed */}
           <div>
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-2">Notes de suivi</h3>
@@ -996,6 +1006,81 @@ function SlideOver({
   );
 }
 
+/* ── FacetDropdown ──────────────────────────────────────────────────────
+   Une pilule `nx-filter-select` — l'apparence exacte des dropdowns de la
+   page Recherche — qui ouvre un menu à CASES au lieu d'une liste native.
+
+   POURQUOI PAS UN <select> : il est mono-valeur. Adopter le vrai `<select>`
+   de la Recherche aurait coûté le multi-sélection, les compteurs par option
+   et « Non renseigné » — trois choses arbitrées. Le bouton porte les mêmes
+   classes, donc le même rendu, sans ce renoncement.
+
+   Le voile `fixed inset-0` derrière le menu ferme au clic extérieur sans
+   écouteur global : un `mousedown` sur `document` aurait fermé le menu au
+   moment même où l'on coche une case (l'événement remonte avant le clic).
+
+   Composant LOCAL, volontairement. Rien n'est extrait de la page Recherche :
+   elle est dense, gatée Pro et couplée à `useFiltresRecherche` + l'URL.
+   L'extraction se fera au 3e consommateur — consigné en P3. */
+function FacetDropdown({
+  def, options, selected, onToggle,
+}: {
+  def: FacetDef;
+  options: FacetOption[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const n = selected.length;
+  // 0 coché → « Toutes les positions ». 1 → sa valeur. 2+ → « Position (3) ».
+  const label = n === 0
+    ? def.allLabel
+    : n === 1
+      ? (options.find((o) => o.value === selected[0])?.label ?? def.label)
+      : `${def.label} (${n})`;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={`nx-filter-select text-left${n > 0 ? " nx-filter-active" : ""}`}
+      >
+        {label}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
+          <div className="absolute z-[61] mt-1 min-w-[220px] max-h-[320px] overflow-y-auto rounded-xl border border-[#2a2d36] bg-[#1A1D24] p-1.5 shadow-2xl">
+            {options.map((opt) => {
+              const on = selected.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onToggle(opt.value)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors hover:bg-white/[0.04]"
+                >
+                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? "border-white/40 bg-white/[0.14]" : "border-[#3a3f4b]"}`}>
+                    {on && (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className={`flex-1 truncate ${on ? "text-white" : "text-[#9CA3AF]"}`}>{opt.label}</span>
+                  <span className="text-[11px] text-[#4a4d56]">{opt.count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
@@ -1021,7 +1106,9 @@ function PipelinePageContent() {
   const [pendingDrop, setPendingDrop] = useState<{ cardId: string; from: RecruitmentStatus; to: RecruitmentStatus } | null>(null);
   const [retireReason, setRetireReason] = useState("");
   const [actionPopover, setActionPopover] = useState<PipelineKanbanCard | null>(null);
-  const [sportFilter, setSportFilter] = useState("");
+  const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
+  const [search, setSearch] = useState("");
+  const [quick, setQuick] = useState<QuickKey[]>([]);
   const [sortBy, setSortBy] = useState<PipelineSortMode>(DEFAULT_PIPELINE_SORT);
   const now = useClientNow();
 
@@ -1097,20 +1184,6 @@ function PipelinePageContent() {
     setSelectedCard(null);
     showToast(`Statut changé → ${KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus}`);
   }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient, removeFromPipeline]);
-
-  const handleTogglePriority = useCallback(async (cardId: string, value: boolean) => {
-    if (isFreeDemoMode) {
-      teaseUpgrade();
-      return;
-    }
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from("recruiter_pipeline").update({ flagged: value }).eq("athlete_id", cardId).eq("recruiter_id", user.id);
-      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    }
-    showToast(value ? "Marqué prioritaire" : "Priorité retirée");
-  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
 
   /* ── Grade (slide-over) ─────────────────────────────────────────
      `selectedCard` est un SNAPSHOT : l'optimistic update du hook patche le
@@ -1188,15 +1261,29 @@ function PipelinePageContent() {
     setSelectedCard(fresh);
   }, [cards]);
 
-  const sports = useMemo(() => {
-    const s = new Set(cards.map(c => c.sport).filter(Boolean));
-    return Array.from(s).sort();
-  }, [cards]);
+  /* LES FACETTES (Lot 2b) — le sélecteur « sport » a disparu : le sport est
+     devenu une facette parmi cinq, dans le même système. Deux mécaniques de
+     filtrage dans la même barre en faisaient une de trop. */
+  const extra = useMemo(() => ({ search, quick }), [search, quick]);
 
-  const filteredCards = useMemo(() => {
-    if (!sportFilter) return cards;
-    return cards.filter(c => c.sport === sportFilter);
-  }, [cards, sportFilter]);
+  const filteredCards = useMemo(
+    () => filterPipelineCards(cards, filters, extra),
+    [cards, filters, extra],
+  );
+
+  /* Options et compteurs de chaque facette. Comptés sur les cartes filtrées
+     par les AUTRES facettes — voir filterPipelineCards. Les facettes à une
+     seule valeur possible sont écartées : elles ne filtrent rien. */
+  /* La PRÉSENCE d'une pilule se juge sur l'ensemble des cartes
+     (isFacetOffered), son CONTENU sur le contexte courant (facetOptions).
+     Mélanger les deux faisait disparaître des pilules en cours de filtrage. */
+  const facetLists = useMemo(
+    () => FACETS.filter((f) => isFacetOffered(cards, f.key, filters))
+                .map((f) => ({ def: f, options: facetOptions(cards, f.key, filters, extra) })),
+    [cards, filters, extra],
+  );
+
+  const nActiveFilters = activeFilterCount(filters, extra);
 
   /* LA COUCHE DE TRI, qui n'existait pas côté web (Lot 2). Les colonnes
      rendaient jusqu'ici l'ordre brut de la requête (`moved_at desc`), et les
@@ -1271,42 +1358,114 @@ function PipelinePageContent() {
         </div>
       )}
 
-      <FunnelSummary cards={cards} />
+      <FunnelSummary cards={filteredCards} totalCards={cards.length} />
 
-      {/* Barre de filtres — le TRI est toujours présent (il s'applique même à
-          une seule colonne d'un seul sport) ; le filtre SPORT n'apparaît que
-          s'il y a réellement un choix à faire. */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as PipelineSortMode)}
-          aria-label="Trier les athlètes"
-          className={`bg-[#13151a] border rounded-lg px-3 py-2 text-[13px] outline-none transition-colors ${sortBy !== DEFAULT_PIPELINE_SORT ? "border-[#E63946] text-[#E63946]" : "border-[#2a2d36] text-[#6b7280]"}`}
-        >
-          {PIPELINE_SORT_OPTIONS.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+      {/* ── BARRE DE FILTRES ET DE TRI (Lot 2b) ──────────────────────────
+          Alignée sur le langage de la page Recherche : champ de recherche,
+          pilules `nx-filter-select`, chips rapides. Trois différences
+          assumées, chacune parce que le pipeline n'est pas la recherche :
+
+          · Les pilules ouvrent un menu à CASES (FacetDropdown), pas une
+            liste native — le multi-sélection, les compteurs et « Non
+            renseigné » ne tiennent pas dans un <option>.
+          · Pas de « Filtres avancés » : le repli de la Recherche existe
+            parce qu'elle porte 21 filtres. Cinq tiennent sur une ligne.
+          · Pas de cascade sport → position : les positions offertes sont
+            celles des cartes réelles, et le compteur le dit. Le pipeline
+            n'a pas le problème du catalogue vide.
+
+          L'ÉTAT ACTIF EST BLANC FRANC (nx-filter-active), jamais rouge : le
+          rouge #E63946 est la couleur de la plateforme (CTA, priorité,
+          destructif). Il ne reste que sur « Réinitialiser », une action. */}
+      <div className="space-y-3">
+        {/* Recherche par nom — même gate Pro que la page Recherche : en free
+            les noms sont de toute façon verrouillés côté serveur, un champ
+            actif ne chercherait que des « Athlète réservé ». */}
+        <div className="relative">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            placeholder={isFreeDemoMode ? "Recherche par nom (Pro)" : "Rechercher par nom..."}
+            value={isFreeDemoMode ? "" : search}
+            onChange={(e) => setSearch(e.target.value)}
+            disabled={isFreeDemoMode}
+            title={isFreeDemoMode ? "La recherche par nom est réservée aux recruteurs Pro" : undefined}
+            className={`w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors${isFreeDemoMode ? " opacity-60 cursor-not-allowed" : ""}`}
+          />
+        </div>
+
+        {/* Facettes + tri + réinitialisation */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {facetLists.map(({ def, options }) => (
+            <FacetDropdown
+              key={def.key}
+              def={def}
+              options={options}
+              selected={filters[def.key]}
+              onToggle={(v) => setFilters((f) => toggleFacetValue(f, def.key, v))}
+            />
           ))}
-        </select>
-        {sports.length > 1 && (
+
+          {facetLists.length > 0 && <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />}
+
           <select
-            value={sportFilter}
-            onChange={(e) => setSportFilter(e.target.value)}
-            aria-label="Filtrer par sport"
-            className={`bg-[#13151a] border rounded-lg px-3 py-2 text-[13px] outline-none transition-colors ${sportFilter ? "border-[#E63946] text-[#E63946]" : "border-[#2a2d36] text-[#6b7280]"}`}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as PipelineSortMode)}
+            aria-label="Trier les athlètes"
+            className={`nx-filter-select${sortBy !== DEFAULT_PIPELINE_SORT ? " nx-filter-active" : ""}`}
           >
-            <option value="">Tous les sports</option>
-            {sports.map(s => <option key={s} value={s}>{s}</option>)}
+            {PIPELINE_SORT_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>Trier: {opt.label}</option>
+            ))}
           </select>
-        )}
-        {(sportFilter || sortBy !== DEFAULT_PIPELINE_SORT) && (
-          <button
-            type="button"
-            onClick={() => { setSportFilter(""); setSortBy(DEFAULT_PIPELINE_SORT); }}
-            className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors"
-          >
-            Réinitialiser
-          </button>
-        )}
+
+          {(nActiveFilters > 0 || sortBy !== DEFAULT_PIPELINE_SORT) && (
+            <button
+              type="button"
+              onClick={() => { setFilters(EMPTY_FILTERS); setSearch(""); setQuick([]); setSortBy(DEFAULT_PIPELINE_SORT); }}
+              className="nx-filter-reset flex items-center gap-1.5 text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors ml-1"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+              </svg>
+              Réinitialiser
+            </button>
+          )}
+        </div>
+
+        {/* Chips rapides + compteur de résultats */}
+        <div className="flex flex-wrap items-center gap-2">
+          {QUICK_FILTERS.map((q) => {
+            const on = quick.includes(q.key);
+            // « Avec grade » porte le violet du grade : la teinte est réservée
+            // à cette notion sur les cartes pipeline, la chip la reprend.
+            const activeCls = q.key === "graded"
+              ? "bg-[#8B5CF6]/15 text-[#A78BFA] border border-[#8B5CF6]/40"
+              : "bg-white/[0.06] text-white border border-white/40";
+            return (
+              <button
+                key={q.key}
+                type="button"
+                onClick={() => setQuick((cur) => cur.includes(q.key) ? cur.filter((k) => k !== q.key) : [...cur, q.key])}
+                aria-pressed={on}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${on ? activeCls : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}
+              >
+                {q.label}
+              </button>
+            );
+          })}
+
+          {/* Conditionnel : « 15 sur 15 » en permanence serait du bruit. Il
+              n'apparaît que quand un filtre retire réellement des cartes —
+              c'est lui qui explique un kanban à moitié vide. */}
+          {nActiveFilters > 0 && (
+            <span className="ml-auto text-[12px] text-[#9CA3AF]">
+              <span className="font-bold text-white">{filteredCards.length}</span> sur {cards.length}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Mobile tab bar */}
@@ -1361,7 +1520,6 @@ function PipelinePageContent() {
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
           onStatusChange={handleStatusChange}
-          onTogglePriority={handleTogglePriority}
           onSetGrade={handleSetGrade}
           onSaveVisit={handleSaveVisit}
           isFreeDemoMode={isFreeDemoMode}

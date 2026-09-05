@@ -133,6 +133,11 @@ export function usePipelineCards() {
           position: card?.position_abbr ?? "",
           school: card?.school_name ?? "",
           region: card?.school_region ?? "",
+          // schools.type — déjà rendu par la projection, il ne descendait
+          // simplement pas sur la carte. Sert au LIBELLÉ de la facette
+          // « École / ligue » (distinguer une ligue civile d'une école
+          // secondaire), jamais au filtrage lui-même.
+          school_type: card?.school_type ?? null,
           division: "D1" as const,
           graduation_year: card?.annee_diplomation ?? 0,
           coach_rating: card?.cote_globale ?? 0,

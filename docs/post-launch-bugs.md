@@ -740,6 +740,41 @@ file.
 
 ## P3 — Latent / future work
 
+- [ ] **`flagged` : donnée conservée (visibilité admin), UI recruteur retirée
+      au profit du grade (2026-09-04).** Nettoyage mobile + décision sur le
+      sort final de la colonne au **lot mobile**.
+
+      Retiré côté WEB ce jour : le toggle « Prioritaire » du panneau athlète,
+      le point rouge des cartes kanban, le handler `handleTogglePriority`, et
+      la **préemption du tri** — `sortPipelineCards` ne consulte plus `flagged`
+      du tout. Motifs BP : redondance avec le grade (un athlète prioritaire
+      est un athlète bien noté) et toggle perçu comme mort (pas de retour
+      visuel au clic). On ne répare pas un contrôle qu'on supprime.
+
+      **CE QUI RESTE, ET POURQUOI :**
+      · La colonne `recruiter_pipeline.flagged` — **aucune migration**. Le
+        portail admin la lit et l'affiche (`app/admin/pipeline/[id]/PageClient.tsx:501`,
+        « ⚑ Signalé »). La supprimer retirerait une information visible côté
+        admin sans équivalent : le grade est propriétaire seul, aucune surface
+        admin ne peut le lire.
+      · `lib/queries/recruiter/useTogglePipelinePriority.ts` — plus aucun
+        importeur web ; **encore importé par le mobile**
+        (`RecruteurPipelineMobile.tsx:49`). Il vit jusqu'au lot mobile.
+      · Le toggle mobile (`RecruteurPipelineMobile.tsx:1342`) et le liseré
+        gauche coloré des cartes mobiles (`getBorderLeftStyle`) — intacts,
+        protocole web-d'abord.
+
+      **⚠ INCOHÉRENCE CONNUE À TRANCHER AU LOT MOBILE :** la bascule
+      « Marquer urgent » du popover *Prochain suivi*
+      (`app/recruteur/pipeline/page.tsx`, `NextActionPopover`) écrit toujours
+      `flagged` via `handleSaveAction`. Elle n'était pas dans le périmètre du
+      retrait (elle relève de l'axe RELANCE du Lot 1, pas de la priorité), mais
+      elle écrit désormais une valeur que **rien n'affiche côté web**. Trois
+      sorties : la retirer, la découpler de `flagged`, ou assumer qu'elle ne
+      sert plus qu'à l'admin.
+
+      **Relevé** le 2026-09-04 en scellant le Lot 2b.
+
 - [ ] **Retour anticipé avant les hooks dans `app/recruteur/pipeline/page.tsx`
       — 31 violations `react-hooks/rules-of-hooks`, refactor dédié requis.**
       `PipelinePageContent` ouvre sur `if (IS_CAPACITOR) return
