@@ -174,7 +174,10 @@ function ParentThreadCard({ thread: t, meta }: { thread: ConversationThread; met
 function ThreadCard({ thread: t }: { thread: ConversationThread }) {
   const r = t.recruiter;
   const a = t.athlete;
-  const initials = `${r.firstName[0]}${r.lastName[0]}`;
+  // Nom composé : `.trim()` parce que les fils COACH_COACH / PARENT_COACH /
+  // service portent tout le nom dans firstName et laissent lastName vide —
+  // sans ça le libellé traîne une espace finale.
+  const fullName = `${r.firstName} ${r.lastName}`.trim();
 
   return (
     <Link
@@ -187,15 +190,18 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
     >
       {/* Recruiter avatar + identity */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
-          <span className="text-[13px] font-bold text-[#9CA3AF]">{initials}</span>
-        </div>
+        {/* AthletePhoto porte le chemin image ET le repli initiales, y compris
+            la dégradation onError (URL morte / jeton expiré). Son getInitials
+            est gardé (`(x ?? "").trim()[0] ?? ""`), donc un lastName vide rend
+            « N » et plus jamais « Nundefined ». Même composant que les lignes
+            athlète de cette liste (l. 85 / 213). */}
+        <AthletePhoto photoUrl={(r as { photoUrl?: string | null }).photoUrl} firstName={r.firstName} lastName={r.lastName} size={44} className="shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <EntityLink
               type="recruiter"
               id={r.id}
-              name={`${r.firstName} ${r.lastName}`}
+              name={fullName}
               portal="coach"
               nested
               className={`text-[15px] truncate ${t.unread ? "" : "!text-[#e0e0e0]"}`}
@@ -577,11 +583,14 @@ function DemandesContent() {
 
         // Load recruiter info separately (avoids ambiguous FK on users)
         const recruiterIds = [...new Set(conversations.map((c: any) => c.recruiter_id).filter(Boolean))];
-        const recruiterMap = new Map<string, { first_name: string; last_name: string; email: string; school_name: string }>();
+        const recruiterMap = new Map<string, { first_name: string; last_name: string; email: string; school_name: string; photo_url: string | null }>();
         if (recruiterIds.length > 0) {
           const { data: recruiters } = await supabase
             .from("users")
-            .select("id, first_name, last_name, email, school_id")
+            // photo_url / avatar_url : les DEUX, comme useCoachConversations
+            // (mobile). Le compte de service et les comptes migrés n'ont pas
+            // toujours rempli la même colonne.
+            .select("id, first_name, last_name, email, school_id, photo_url, avatar_url")
             .in("id", recruiterIds);
           // Load school names separately
           const schoolIds = [...new Set((recruiters || []).map((r: any) => r.school_id).filter(Boolean))];
@@ -596,6 +605,7 @@ function DemandesContent() {
               last_name: (r.last_name as string) || "",
               email: (r.email as string) || "",
               school_name: schoolNameMap.get(r.school_id) || "",
+              photo_url: (r.photo_url as string) || (r.avatar_url as string) || null,
             });
           }
         }
@@ -631,7 +641,15 @@ function DemandesContent() {
               // works unchanged. Full name in firstName ; cegep = role label.
               id: isNexus ? (c.admin_id || "") : isCoachCoach ? (otherCoachId || "") : isParent ? (c.parent_id || "") : c.recruiter_id,
               firstName: isNexus ? serviceIdentity.name : isCoachCoach ? (otherCoach?.name || "Coach") : isParent ? parentName : (recruiterUser?.first_name || ""),
-              lastName: "",
+              // Les fils COACH_COACH / PARENT_COACH / service portent leur nom
+              // COMPLET dans firstName (convention documentée juste au-dessus)
+              // → lastName vide, VOULU. Le fil recruteur, lui, a bien deux
+              // colonnes en base : les jeter produisait l'avatar « Nundefined »
+              // (`""[0]` → undefined, stringifié par le template literal).
+              lastName: isNexus || isCoachCoach || isParent ? "" : (recruiterUser?.last_name || ""),
+              /** Photo de la contrepartie — `undefined` laisse AthletePhoto
+               *  retomber proprement sur les initiales. */
+              photoUrl: isNexus ? serviceIdentity.photoUrl : isCoachCoach || isParent ? null : (recruiterUser?.photo_url || null),
               title: "",
               cegep: isNexus ? SERVICE_IDENTITY_ROLE_LABEL : isCoachCoach ? (otherCoach?.isDirector ? "Directeur" : "Entraîneur") : isParent ? "Parent" : (recruiterUser?.school_name || ""),
               cegepTeamName: "",
