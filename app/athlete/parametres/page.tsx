@@ -234,10 +234,23 @@ function ParametresPageDesktop() {
                 <div className="space-y-4">
                   <div>
                     <label className={labelCls}>Courriel</label>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[14px] text-[#9CA3AF]">{profile?.email || "..."}</span>
-                      <button type="button" onClick={() => showToast("Modifier le courriel — POC")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors">Modifier</button>
-                    </div>
+                    {/* Le bouton « Modifier » a été RETIRÉ (2026-09-09). Il
+                        affichait « Modifier le courriel — POC » et ne changeait
+                        rien. Le câblage a été tenté puis abandonné : avec
+                        « Confirm email » désactivé sur le projet (221 comptes
+                        confirmés, ZÉRO courriel de confirmation jamais envoyé —
+                        auth.users.confirmation_sent_at = 0),
+                        supabase.auth.updateUser({ email }) ne déclenche pas le
+                        flow de confirmation. Annoncer « un courriel a été
+                        envoyé » aurait remplacé un mensonge par un pire : croire
+                        son adresse protégée pendant qu'elle bascule.
+                        Le champ redevient éditable quand le ticket #34 (activer
+                        Confirm email au dashboard) sera passé — geste BP, à faire
+                        en fenêtre calme : il rend la confirmation obligatoire
+                        pour TOUS les nouveaux comptes.
+                        L'adresse reste AFFICHÉE : savoir avec quel courriel on
+                        est connecté n'a jamais été le problème. */}
+                    <span className="text-[14px] text-[#9CA3AF]">{profile?.email || "..."}</span>
                   </div>
                   <div>
                     <label className={labelCls}>Mot de passe</label>
