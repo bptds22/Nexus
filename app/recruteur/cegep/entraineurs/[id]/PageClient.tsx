@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
-import { useSubscription } from "@/lib/hooks/useSubscription";
 import { getCurrentSeason } from "@/lib/utils/season";
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Detail — Admin CÉGEP coaching tool
@@ -227,17 +225,12 @@ function RecruiterDetailWrapper() {
 function RecruiterDetailPage() {
   const id = useDynamicParam("id");
   const profile = PROFILES[id];
-  const [toast, setToast] = useState<string | null>(null);
   /* Le menu ⋮ portait « Réassigner ses athlètes (Phase 2) », « Désactiver ce
      recruteur (POC) » et « Exporter les stats (Phase 2) » : trois toasts,
      zéro écriture. Le second promettait une action destructive, en rouge.
      Retirés pour 1.4.1 — le menu se vidait, le bouton part avec.
      À rétablir entrée par entrée quand chacune aura un flow ; « Réassigner »
      a d'ailleurs déjà sa page dédiée (/recruteur/cegep/reassignation). */
-  const { tier } = useSubscription();
-  const canMessageCoach = tier === "pro" || tier === "all_star";
-
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   if (!profile) {
     return (
@@ -295,13 +288,25 @@ function RecruiterDetailPage() {
             </div>
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons.
+
+              « Envoyer un message » a été RETIRÉ : c'était un CTA rouge
+              primaire branché sur un toast « Messagerie interne (Phase 2) ».
+              La messagerie ne couvre pas le couple recruteur↔recruteur, et
+              cette Phase 2 n'a pas de date — un bouton principal qui ne fait
+              rien est le pire écran possible pour un admin cégep payant.
+              Pas de « désactivé avec motif » ici : on ne désactive pas ce
+              qu'on ne sait pas dater.
+
+              À la place, un lien vers une fonctionnalité qui EXISTE et que
+              rien n'atteignait depuis cette fiche. */}
           <div className="flex items-center gap-2 shrink-0">
-            {canMessageCoach && (
-              <button type="button" onClick={() => showToast("Messagerie interne (Phase 2)")} className="px-4 h-9 rounded-lg bg-[#E63946] text-white font-head font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#D42B22] transition-colors">
-                Envoyer un message
-              </button>
-            )}
+            <Link
+              href="/recruteur/cegep/reassignation"
+              className="px-4 h-9 inline-flex items-center rounded-lg border border-[#E63946] text-[#E63946] font-head font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#E63946]/10 transition-colors"
+            >
+              Réassigner ses athlètes
+            </Link>
           </div>
         </div>
       </div>
@@ -496,13 +501,6 @@ function RecruiterDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#1A1D24] border border-[#E63946]/30 text-white text-[13px] font-semibold px-5 py-3 rounded-lg shadow-xl z-50 animate-fade-in">
-          {toast}
-        </div>
-      )}
     </div>
   );
 }
