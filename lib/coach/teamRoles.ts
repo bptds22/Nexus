@@ -19,9 +19,14 @@
    premier rôle ajouté (head_coach_interim s'affichait en slug brut).
 
    ⚠️ « AU PLUS UN » vs « EXACTEMENT UN » : le SQL ne garantit que le premier.
-   Une équipe peut légitimement n'avoir aucun responsable (départ du head
-   coach, aucune auto-promotion — décision produit). Les surfaces doivent
-   traiter ce cas, pas le supposer impossible.
+   Une équipe peut légitimement n'avoir aucun responsable (départ de
+   l'entraîneur-chef, aucune auto-promotion — décision produit). Les surfaces
+   doivent traiter ce cas, pas le supposer impossible.
+
+   VOCABULAIRE À L'ÉCRAN : « entraîneur-chef », jamais « head coach ». Le
+   terme technique reste la valeur en base (head_coach / head_coach_interim) ;
+   seul l'affichage est en français. Ce module est le seul endroit où les deux
+   se rencontrent.
    ═══════════════════════════════════════════════════════════════ */
 
 /** Les 4 valeurs acceptées par la contrainte SQL. Rien d'autre n'est valide. */
@@ -44,7 +49,7 @@ export function isReferentRole(role: string | null | undefined): boolean {
 
 export const ROLE_LABELS: Record<string, string> = {
   head_coach: "Entraîneur-chef",
-  head_coach_interim: "Head coach intérimaire",
+  head_coach_interim: "Entraîneur-chef par intérim",
   assistant: "Assistant",
   coordinator: "Coordonnateur",
 };
@@ -121,7 +126,7 @@ export function roleOptionsFor(
         label: ROLE_LABELS[value],
         disabled: true,
         reason:
-          "Il faut au moins un autre coach ou un head coach pour transférer la responsabilité.",
+          "Tu es le seul entraîneur — ajoute un autre entraîneur pour pouvoir céder la responsabilité.",
       };
     }
 
@@ -133,8 +138,7 @@ export function roleOptionsFor(
         value,
         label: ROLE_LABELS[value],
         disabled: true,
-        reason:
-          "Un head coach existe déjà — modifiez d'abord le rôle du head coach.",
+        reason: "Un entraîneur-chef existe déjà. Modifie d'abord son rôle.",
       };
     }
 

@@ -432,7 +432,7 @@ export default function TableauDeBordPage() {
       </div>
 
       {/* Lot C — bandeau persistant « coach intérimaire ». Disparaît seul
-          dès qu'un head coach titulaire est nommé. */}
+          dès qu'un entraîneur-chef titulaire est nommé. */}
       <InterimCoachBanner teams={interimTeams} />
 
       {/* Interim director status (persistent while role is held) */}
