@@ -2208,23 +2208,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             verified, pendingSuggestions.length). */}
         {isCoach && (
           <div className="space-y-3 mb-4">
-            {/* Lot J — Transférer. En pleine largeur plutôt que dans l'en-tête :
-                l'en-tête mobile porte déjà photo, nom, badges et retour. Le
-                bouton n'existe pas sans les droits (dérivés de la RLS). */}
-            {trState && canTransferAthlete(trState) && (
-              <button
-                type="button"
-                onClick={() => { void triggerHaptic("Light"); setTrOpen(true); }}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-[#3B82F6] text-[#3B82F6] text-[12px] font-bold uppercase tracking-wider active:bg-[#3B82F6]/10"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>
-                Transférer
-                <span className="font-normal normal-case tracking-normal text-[#6b7280]">
-                  · {trState.currentTeamName ?? "Sans équipe"}
-                </span>
-              </button>
-            )}
-
             <ConsentAlert consentGiven={a.parentalConsent} onConfirm={coachConfirmConsent} />
             <VerifyAlert
               isVerified={!!a.isVerified}
@@ -3292,6 +3275,24 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               </svg>
               Message
             </button>
+            {/* Lot J — même ordre que le web : MESSAGE · TRANSFÉRER · MODIFIER.
+                Icône seule : la barre porte déjà deux libellés, un troisième
+                la ferait déborder sur les petits écrans. Le libellé vit dans
+                aria-label et dans le titre du panneau. */}
+            {trState && canTransferAthlete(trState) && (
+              <button
+                type="button"
+                onClick={() => { void triggerHaptic("Light"); setTrOpen(true); }}
+                className="flex items-center justify-center shrink-0 px-4 py-4 rounded-2xl border border-[#3B82F6]/40 text-[#3B82F6] active:bg-[#3B82F6]/10"
+                aria-label={`Transférer — équipe actuelle : ${trState.currentTeamName ?? "sans équipe"}`}
+                title="Transférer"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
+                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
+                </svg>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
