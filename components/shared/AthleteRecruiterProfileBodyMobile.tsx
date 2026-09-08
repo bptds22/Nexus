@@ -6,6 +6,7 @@
 // Itération 1 = squelette fonctionnel mobile-first, viewerMode "recruiter"
 // uniquement. Si viewerMode preview/partner → on délègue au desktop body.
 
+import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -999,6 +1000,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         setCommittedSchoolName(committedSchoolNameVal);
         setOpenToOffers(openToOffersVal ?? null);
         const coach = d.users as { first_name: string; last_name: string } | null;
+        /* Lot F3 — résolution du référent (équipe → directeur → propriétaire).
+           Lecture séparée : les RPC recruteur ne projettent pas coach_id, et
+           fn_resolve_team_referent n'existe pas encore en base (vague 2). */
+        const referentName =
+          (await loadAthleteReferent(supabase, d.id as string)).name ?? "";
         const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
         const sport = sportRel as { nom: string } | null;
@@ -1125,7 +1131,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           gender: (d.genre as "M" | "F" | "Autre") || "M",
           commitmentStatus: (d.statut_recrutement_override as string) || "ouvert",
           coachReport: (eval0?.rapport_entraineur as string) || "",
-          coachName: coach ? `${coach.first_name} ${coach.last_name}` : "",
+          /* Lot F3 — le RÉFÉRENT résolu, pas le propriétaire brut. coach_id est
+             NULL pour 43 des 53 athlètes en équipe : lire le champ tel quel
+             affichait une carte de réputation sans nom dans 81 % des cas.
+             Repli sur le propriétaire quand la résolution ne donne rien. */
+          coachName: referentName || (coach ? `${coach.first_name} ${coach.last_name}` : ""),
           coachSchool: school?.name || "",
           coachReputation: undefined,
           // #1 latest-wins : la colonne dénormalisée cote_globale_entraineur est

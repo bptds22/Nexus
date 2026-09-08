@@ -255,6 +255,79 @@ CREATE TRIGGER team_athletes_referent_remove
   FOR EACH ROW EXECUTE FUNCTION public.trg_team_athletes_referent_remove();
 
 
+-- ── LOT F1 — le routage recruteur passe par la résolution ───────────────────
+-- `notify_first_recruiter_contact` lisait `athletes.coach_id` en direct. Ça
+-- reste correct une fois coach_id dérivé, mais ça fige la règle à deux
+-- endroits : la fonction de notification et fn_resolve_team_referent
+-- pourraient diverger au premier changement de cascade.
+--
+-- Elle interroge donc désormais la résolution, avec un repli sur coach_id pour
+-- l'athlète SANS équipe (que la résolution, qui part d'un team_id, ne peut pas
+-- traiter). Le cas NULL restant signifie alors ce qu'il dit : personne du staff
+-- de cette équipe n'est sur Nexus — c'est le message du Lot F2 côté client,
+-- plus le silence d'aujourd'hui.
+--
+-- ⚠ Le reste du corps est repris À L'IDENTIQUE de la version en production
+-- (gardes IS NOT NULL, branche PARENT, envoi push, EXCEPTION WHEN OTHERS).
+-- Seule la résolution de v_coach change.
+CREATE OR REPLACE FUNCTION public.notify_first_recruiter_contact()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+SET row_security TO 'off'
+AS $function$
+DECLARE
+  v_coach        uuid;
+  v_parent_email text;
+  v_secret       text;
+  v_url          text := 'https://nrloizyemulbhujrqhgx.supabase.co/functions/v1/send-push';
+BEGIN
+  IF NEW.conversation_type <> 'RECRUTEUR_ATHLETE' THEN
+    RETURN NEW;
+  END IF;
+
+  -- Référent de l'équipe du jeune ; à défaut d'équipe, son coach_id courant.
+  SELECT COALESCE(
+           (SELECT public.fn_resolve_team_referent(ta.team_id)
+              FROM public.team_athletes ta
+             WHERE ta.athlete_id = NEW.athlete_id
+             LIMIT 1),
+           a.coach_id),
+         nullif(a.parent_email, '')
+    INTO v_coach, v_parent_email
+  FROM public.athletes a WHERE a.id = NEW.athlete_id;
+
+  IF v_coach IS NOT NULL THEN
+    INSERT INTO public.recruiter_contact_notifications (conversation_id, athlete_id, recruiter_id, notified_role, notified_ref)
+    VALUES (NEW.id, NEW.athlete_id, NEW.recruiter_id, 'COACH', v_coach::text);
+  END IF;
+  IF v_parent_email IS NOT NULL THEN
+    INSERT INTO public.recruiter_contact_notifications (conversation_id, athlete_id, recruiter_id, notified_role, notified_ref)
+    VALUES (NEW.id, NEW.athlete_id, NEW.recruiter_id, 'PARENT', v_parent_email);
+  END IF;
+
+  BEGIN
+    SELECT decrypted_secret INTO v_secret FROM vault.decrypted_secrets WHERE name = 'PUSH_DISPATCH_SECRET' LIMIT 1;
+    IF v_secret IS NOT NULL AND v_coach IS NOT NULL THEN
+      PERFORM net.http_post(
+        url := v_url,
+        headers := jsonb_build_object('Content-Type','application/json','x-push-secret',v_secret),
+        body := jsonb_build_object(
+          'user_id', v_coach, 'title', 'Nexus',
+          'body', 'Un recruteur a contacté votre athlète.',
+          'data', jsonb_build_object('type','recruiter_contact','conversation_id', NEW.id))
+      );
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'notify_first_recruiter_contact: livraison échouée conv %: %', NEW.id, SQLERRM;
+  END;
+
+  RETURN NEW;
+END;
+$function$;
+
+
 -- ── LOT B — backfill coach_id (no-op mesuré, cf. en-tête) ───────────────────
 UPDATE public.athletes a
    SET coach_id = public.fn_resolve_team_referent(ta.team_id),

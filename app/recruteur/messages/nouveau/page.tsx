@@ -1,5 +1,6 @@
 "use client";
 
+import { loadAthleteReferent, aucunStaffMessage, AUCUN_STAFF_TITRE, type AthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -214,6 +215,10 @@ function NouveauMessageContent() {
 
   const [athletes, setAthletes] = useState<SelectableAthlete[]>([]);
   const [selectedAthlete, setSelectedAthlete] = useState<SelectableAthlete | null>(null);
+  /* Lot F2 — le référent réel de l'athlète sélectionné. `coachId` brut est
+     NULL pour 43 des 53 athlètes en équipe : envoyer sans rien dire, c'est
+     laisser croire qu'un entraîneur sera prévenu. */
+  const [referent, setReferent] = useState<AthleteReferent | null>(null);
   const [messageBody, setMessageBody] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [errorToast, setErrorToast] = useState<{
@@ -570,6 +575,16 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
     setTimeout(() => router.push("/recruteur/messages"), 1500);
   }, [selectedAthlete, messageBody, sending, router]);
 
+  useEffect(() => {
+    if (!selectedAthlete) { setReferent(null); return; }
+    let annule = false;
+    const supabase = createClient();
+    loadAthleteReferent(supabase, selectedAthlete.id).then((r) => {
+      if (!annule) setReferent(r);
+    });
+    return () => { annule = true; };
+  }, [selectedAthlete]);
+
   const canSend = selectedAthlete && messageBody.trim().length > 10 && !sending;
 
   return (
@@ -619,6 +634,18 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
               <label className="block text-[10px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-2">Message</label>
               <textarea rows={12} value={messageBody} onChange={(e) => setMessageBody(e.target.value)} placeholder={selectedAthlete ? "" : "Sélectionne un athlète pour générer un gabarit de message..."} className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none leading-relaxed" />
             </div>
+
+            {/* Lot F2 — état NOMINAL de pré-saison, pas une erreur : on le dit
+                AVANT l'envoi plutôt que de laisser partir un message que
+                personne ne recevra côté encadrement. */}
+            {selectedAthlete && referent && referent.source === "none" && (
+              <div className="rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/[0.07] px-4 py-3">
+                <p className="text-[13px] font-bold text-[#F59E0B]">{AUCUN_STAFF_TITRE}</p>
+                <p className="text-[12.5px] text-[#D1D5DB] mt-1 leading-relaxed">
+                  {aucunStaffMessage(referent.teamName)}
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center gap-3">
               <button type="button" onClick={handleSend} disabled={!canSend} className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg text-[14px] font-bold transition-all ${canSend ? "bg-[#E63946] hover:bg-[#D42B22] text-white cursor-pointer shadow-lg shadow-[#E63946]/20" : "bg-[#2D3748] text-[#6b7280] cursor-not-allowed"}`}>
