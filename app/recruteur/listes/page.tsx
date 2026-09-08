@@ -869,7 +869,7 @@ function ExpandedListView({
           onClose={() => setShowAddModal(false)}
           onAdd={(athlete, note) => {
             onAddAthlete(list.id, { ...athlete, added_at: new Date().toISOString(), recruiter_note: note });
-            onToast(`${athlete.full_name} ajouté à la liste (POC)`);
+            onToast(`${athlete.full_name} ajouté à la liste`);
           }}
         />
       )}
@@ -881,7 +881,7 @@ function ExpandedListView({
           message={`Retirer cet athlète de « ${list.name} » ? Il restera dans vos favoris.`}
           confirmLabel="Retirer"
           danger
-          onConfirm={() => { onRemoveAthlete(list.id, removeTarget); setRemoveTarget(null); onToast("Athlète retiré de la liste (POC)"); }}
+          onConfirm={() => { onRemoveAthlete(list.id, removeTarget); setRemoveTarget(null); onToast("Athlète retiré de la liste"); }}
           onCancel={() => setRemoveTarget(null)}
         />
       )}
