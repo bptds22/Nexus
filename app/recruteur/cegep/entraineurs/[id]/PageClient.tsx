@@ -228,7 +228,12 @@ function RecruiterDetailPage() {
   const id = useDynamicParam("id");
   const profile = PROFILES[id];
   const [toast, setToast] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  /* Le menu ⋮ portait « Réassigner ses athlètes (Phase 2) », « Désactiver ce
+     recruteur (POC) » et « Exporter les stats (Phase 2) » : trois toasts,
+     zéro écriture. Le second promettait une action destructive, en rouge.
+     Retirés pour 1.4.1 — le menu se vidait, le bouton part avec.
+     À rétablir entrée par entrée quand chacune aura un flow ; « Réassigner »
+     a d'ailleurs déjà sa page dédiée (/recruteur/cegep/reassignation). */
   const { tier } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
 
@@ -297,21 +302,6 @@ function RecruiterDetailPage() {
                 Envoyer un message
               </button>
             )}
-            <div className="relative">
-              <button type="button" onClick={() => setMenuOpen(!menuOpen)} className="w-9 h-9 rounded-lg border border-[#2a2d36] flex items-center justify-center text-[#6B7280] hover:text-white hover:border-white/20 transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
-              </button>
-              {menuOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-[#1A1D24] border border-[#2a2d36] rounded-lg shadow-xl z-40 w-52 py-1">
-                    <button type="button" onClick={() => { setMenuOpen(false); showToast("Réassignation (Phase 2)"); }} className="w-full text-left px-4 py-2.5 text-[13px] text-[#9CA3AF] hover:text-white hover:bg-white/5 transition-colors">Réassigner ses athlètes</button>
-                    <button type="button" onClick={() => { setMenuOpen(false); showToast("Recruteur désactivé (POC)"); }} className="w-full text-left px-4 py-2.5 text-[13px] text-[#E63946] hover:bg-[#E63946]/10 transition-colors">Désactiver ce recruteur</button>
-                    <button type="button" onClick={() => { setMenuOpen(false); showToast("Export PDF (Phase 2)"); }} className="w-full text-left px-4 py-2.5 text-[13px] text-[#9CA3AF] hover:text-white hover:bg-white/5 transition-colors">Exporter les stats</button>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
       </div>
