@@ -16,27 +16,34 @@ import { roleOptionsFor, type TeamRole } from "@/lib/coach/teamRoles";
    une option laisse croire qu'elle n'existe pas ; la désactiver avec sa
    raison apprend le modèle.
 
-   Le motif apparaît à deux endroits, pour deux publics : en `title` sur
-   l'option désactivée (survol, desktop) et en UNE ligne discrète sous le
-   select (toucher, mobile — où aucun tooltip natif n'existe).
+   Le motif vit en `title` sur l'option désactivée (survol). La ligne
+   discrète sous le select est OPTIONNELLE (`showReason`) : utile quand le
+   select est seul dans un formulaire, à couper quand il apparaît dans une
+   liste — sinon le même motif se répète sous chaque coach et pousse la
+   mise en page.
    ═══════════════════════════════════════════════════════════════ */
 
 export default function TeamRoleSelect({
   currentRole,
   teamCoachCount,
-  teamHasHeadCoach,
+  teamHasReferent,
   disabled,
+  showReason = true,
   onChange,
   className,
 }: {
   currentRole: string;
   teamCoachCount: number;
-  teamHasHeadCoach: boolean;
+  teamHasReferent: boolean;
   disabled?: boolean;
+  /** false → le motif ne vit QUE dans le tooltip de l'option. Utilisé par
+   *  CoachRoleLine, où une ligne de texte permanente sous chaque coach
+   *  poussait la mise en page et se répétait. */
+  showReason?: boolean;
   onChange: (next: TeamRole) => void;
   className?: string;
 }) {
-  const options = roleOptionsFor(currentRole, teamCoachCount, teamHasHeadCoach);
+  const options = roleOptionsFor(currentRole, teamCoachCount, teamHasReferent);
   const bloquees = options.filter((o) => o.disabled && o.reason);
   // Un seul motif à l'écran : deux phrases pour deux options bloquées
   // noieraient l'information. Le reste vit dans les tooltips.
@@ -69,7 +76,7 @@ export default function TeamRoleSelect({
         </svg>
       </div>
 
-      {motif && (
+      {showReason && motif && (
         <p className="text-[11.5px] text-[#6B7280] mt-1 truncate" title={motif}>
           {motif}
         </p>

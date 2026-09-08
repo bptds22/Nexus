@@ -12,10 +12,15 @@ import { interimBannerTitle } from "@/lib/queries/coach/interimTeams";
    tableau de bord — l'intérim est un état à résoudre, et le premier
    regard doit produire un « qu'est-ce qui se passe ».
 
-   COMPACT, délibérément : titre + une ligne + un lien. Pas de liste
-   d'équipes, pas de repli « masquer le détail ». Le détail vit dans
-   Mes équipes, où se trouvent aussi les actions ; un bandeau qui
-   explique tout devient un bandeau qu'on ne lit plus.
+   COMPACT MAIS PÉDAGOGIQUE (v2) : titre, une ligne de situation, puis les
+   deux sections qui répondent aux seules questions que se pose un
+   intérimaire — ce qu'il peut faire, et ce qui se passera quand
+   l'entraîneur-chef arrivera. Sans elles, « intérimaire » est une étiquette
+   sans mode d'emploi, et l'alerte inquiète sans informer.
+
+   PAS de liste d'équipes, PAS de repli « masquer le détail » : la liste
+   double Mes équipes, et un contenu qu'on replie est un contenu qu'on ne
+   lit jamais. Les deux liens en bas mènent aux deux endroits où l'on AGIT.
 
    Sans état propre — il disparaît de lui-même dès qu'un entraîneur-chef
    titulaire est nommé, parce que `teams` est le reflet direct de
@@ -48,12 +53,38 @@ export default function InterimCoachBanner({ teams }: { teams: InterimTeam[] }) 
             recruteurs et demandes te reviennent.
           </p>
 
-          <Link
-            href="/coach/equipes"
-            className="inline-block mt-2 text-[12.5px] font-bold text-[#E63946] hover:underline"
-          >
-            Va dans Mes équipes pour voir tes équipes et modifier ton rôle →
-          </Link>
+          <div className="mt-3 space-y-2">
+            <div>
+              <p className="text-[11px] font-bold tracking-wider uppercase text-[#E63946]">
+                Ce que tu peux faire
+              </p>
+              <p className="text-[12.5px] text-[#9CA3AF] mt-0.5">
+                Gérer l&apos;alignement, évaluer, répondre aux recruteurs, inviter d&apos;autres
+                entraîneurs — exactement comme un entraîneur-chef.
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] font-bold tracking-wider uppercase text-[#E63946]">
+                Ce qui change quand l&apos;entraîneur-chef arrive
+              </p>
+              <p className="text-[12.5px] text-[#9CA3AF] mt-0.5">
+                Dès qu&apos;un entraîneur-chef est désigné, il devient le responsable et tu
+                redeviens assistant. Tu gardes ton accès à l&apos;équipe, tes évaluations et
+                tes conversations — rien n&apos;est transféré à ta place.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href="/coach/equipes"
+              className="text-[12.5px] font-bold text-[#E63946] hover:underline">
+              Va dans Mes équipes →
+            </Link>
+            <Link href="/coach/transferts"
+              className="text-[12.5px] font-bold text-[#E63946] hover:underline">
+              Ouvrir le portail de gestion →
+            </Link>
+          </div>
         </div>
       </div>
     </div>

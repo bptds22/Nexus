@@ -42,9 +42,9 @@ import { TeamAddCoachSheet } from "@/components/shared/teams/TeamAddCoachSheet";
 import { TeamAddAthleteSheet } from "@/components/shared/teams/TeamAddAthleteSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
-import TeamRoleSelect from "@/components/shared/coach/TeamRoleSelect";
+import CoachRoleLine from "@/components/shared/coach/CoachRoleLine";
 import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
-import { roleColor, roleLabel, type TeamRole } from "@/lib/coach/teamRoles";
+import { isReferentRole, type TeamRole } from "@/lib/coach/teamRoles";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -360,21 +360,16 @@ export default function CoachEquipeDetailMobile() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] text-white truncate">{c.name}</p>
-                    <span
-                      className={`inline-block mt-1 text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${roleColor(c.role)}`}
-                    >
-                      {roleLabel(c.role)}
-                    </span>
-                    {isAdmin && (
-                      <TeamRoleSelect
-                        className="mt-1.5"
-                        currentRole={c.role}
-                        teamCoachCount={coaches.length}
-                        teamHasHeadCoach={coaches.some((o) => o.id !== c.id && o.role === "head_coach")}
-                        disabled={roleBusy !== null}
-                        onChange={(next) => changeCoachRole(c, next)}
-                      />
-                    )}
+                    {/* Rôle en sous-titre + crayon — même ligne que le web.
+                        Pas de crayon sans les droits (isAdmin). */}
+                    <CoachRoleLine
+                      role={c.role}
+                      canEdit={isAdmin}
+                      teamCoachCount={coaches.length}
+                      teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
+                      busy={roleBusy !== null}
+                      onChange={(next) => changeCoachRole(c, next)}
+                    />
                   </div>
                   {isAdmin && (
                     <button

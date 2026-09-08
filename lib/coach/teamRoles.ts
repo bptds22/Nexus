@@ -100,15 +100,22 @@ export interface RoleOptionState {
 /**
  * État des 4 options pour UN coach donné, dans le contexte de son équipe.
  *
- * @param currentRole      rôle actuel de ce coach
- * @param teamCoachCount   nombre total de coachs sur l'équipe
- * @param teamHasHeadCoach l'équipe a-t-elle un head_coach TITULAIRE
- *                         (head_coach, pas intérim) — sur un AUTRE coach
+ * @param currentRole     rôle actuel de ce coach
+ * @param teamCoachCount  nombre total de coachs sur l'équipe
+ * @param teamHasReferent un AUTRE coach est-il déjà RESPONSABLE — head_coach
+ *                        OU head_coach_interim.
+ *
+ * ⚠️ CORRECTION v2 (2026-09-09) : ce paramètre testait `head_coach` seul.
+ * L'invariant que l'index unique protège porte sur les DEUX rôles
+ * responsables. Avec un intérim en place, l'option intérim restait donc
+ * ouverte : on pouvait prendre sa place EN SILENCE, alors que le même geste
+ * face à un titulaire était bloqué et expliqué. Deux traitements pour un seul
+ * invariant. La règle porte désormais sur isReferentRole.
  */
 export function roleOptionsFor(
   currentRole: string,
   teamCoachCount: number,
-  teamHasHeadCoach: boolean,
+  teamHasReferent: boolean,
 ): RoleOptionState[] {
   const seul = teamCoachCount <= 1;
 
@@ -126,19 +133,24 @@ export function roleOptionsFor(
         label: ROLE_LABELS[value],
         disabled: true,
         reason:
-          "Tu es le seul entraîneur — ajoute un autre entraîneur pour pouvoir céder la responsabilité.",
+          "Tu es le seul entraîneur — ajoute un autre entraîneur d'abord.",
       };
     }
 
-    // RÈGLE 2 — un head coach titulaire existe déjà : on ne nomme pas un
-    // intérimaire à côté de lui (l'index unique le refuserait de toute façon,
+    // RÈGLE 2 — un responsable est déjà en place (titulaire OU intérim) : on
+    // n'en nomme pas un second (l'index unique le refuserait de toute façon,
     // mais l'UI doit l'expliquer AVANT l'échec).
-    if (teamHasHeadCoach && value === "head_coach_interim") {
+    //
+    // La promotion vers `head_coach` reste OUVERTE : c'est la passation
+    // légitime, et setTeamCoachRole rétrograde le sortant dans l'ordre que
+    // l'index impose. Ce qu'on ferme, c'est la nomination d'un SECOND
+    // intérimaire — un intérim est un bouche-trou, pas un rôle qu'on double.
+    if (teamHasReferent && value === "head_coach_interim") {
       return {
         value,
         label: ROLE_LABELS[value],
         disabled: true,
-        reason: "Un entraîneur-chef existe déjà. Modifie d'abord son rôle.",
+        reason: "Un responsable est déjà en place. Modifie d'abord son rôle.",
       };
     }
 

@@ -15,9 +15,9 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { AGE_OPTIONS, DIVISION_OPTIONS, SEASON_OPTIONS } from "@/lib/config/civilVocab";
 import CoachEquipeDetailMobile from "@/components/shared/CoachEquipeDetailMobile";
 import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
-import TeamRoleSelect from "@/components/shared/coach/TeamRoleSelect";
+import CoachRoleLine from "@/components/shared/coach/CoachRoleLine";
 import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
-import { roleColor, roleLabel, type TeamRole } from "@/lib/coach/teamRoles";
+import { isReferentRole, type TeamRole } from "@/lib/coach/teamRoles";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ═══════════════════════════════════════════════════════════════
@@ -732,21 +732,23 @@ function TeamDetailPageDesktop() {
           <div className="space-y-2">
             {coaches.map((c) => (
               <div key={c.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.02]">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#2D3748] flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
                     <span className="text-[11px] font-bold text-[#9CA3AF]">{c.name.split(" ").map((n) => n[0]).join("")}</span>
                   </div>
-                  <span className="text-[14px] font-bold text-white">{c.name}</span>
-                  <span className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${roleColor(c.role)}`}>
-                    {roleLabel(c.role)}
-                  </span>
-                  <TeamRoleSelect
-                    currentRole={c.role}
-                    teamCoachCount={coaches.length}
-                    teamHasHeadCoach={coaches.some((o) => o.id !== c.id && o.role === "head_coach")}
-                    disabled={roleBusy !== null}
-                    onChange={(next) => changeCoachRole(c, next)}
-                  />
+                  {/* Nom en titre, rôle en sous-titre : la pastille et le
+                      dropdown permanent disaient deux fois la même chose. */}
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-bold text-white truncate">{c.name}</p>
+                    <CoachRoleLine
+                      role={c.role}
+                      canEdit
+                      teamCoachCount={coaches.length}
+                      teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
+                      busy={roleBusy !== null}
+                      onChange={(next) => changeCoachRole(c, next)}
+                    />
+                  </div>
                 </div>
                 <button type="button" onClick={() => removeCoach(c.id)} className="text-[#4a4d56] hover:text-[#E63946] transition-colors" title="Retirer">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
