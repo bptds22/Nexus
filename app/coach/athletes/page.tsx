@@ -159,6 +159,60 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 
+/* Colonnes du Roster coach — partagées par les DEUX requêtes (périmètre
+   canonique et périmètre école). Une seule liste : si une colonne manque
+   d'un côté, le mapping casse des deux côtés, jamais d'un seul. */
+const ATHLETE_ROSTER_SELECT = `
+          id,
+          photo_url,
+          first_name,
+          last_name,
+          verified,
+          profile_completion,
+          last_profile_validation,
+          verification_method,
+          verified_at,
+          verified_by,
+          video_faits_saillants_url,
+          hudl_url,
+          youtube_url,
+          instagram_url,
+          annee_diplomation,
+          cote_globale_entraineur,
+          date_naissance,
+          genre,
+          telephone,
+          bio,
+          school_id,
+          coach_id,
+          taille_pieds,
+          taille_pouces,
+          poids_lbs,
+          numero_jersey,
+          status,
+          statut_recrutement_override,
+          recrutement_override_at,
+          recruitment_status, committed_school_id, open_to_offers,
+          sport_id,
+          position_id,
+          mentions_academiques,
+          matieres_fortes,
+          programme_cegep_vise, programmes_vises,
+          moyenne_generale,
+          pret_changer_region,
+          ouvert_cegep_prive,
+          ouvert_cegep_anglophone,
+          created_at,
+          sports!sport_id(nom),
+          positions!position_id(nom, abreviation),
+          context,
+          schools!school_id(name, region, type),
+          committed_school:schools!committed_school_id(name),
+          team_athletes(team_id, teams!team_id(gender, division, league, rseq_team_id, schools!school_id(type))),
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at),
+          athlete_badges(contexte, retire_le, badges(code, libelle))
+        `;
+
 export default function MesAthletesPage() {
   return (
     <Suspense>
@@ -217,6 +271,13 @@ function MesAthletesContent() {
   /** Périmètre canonique get_coach_athletes — chargé UNIQUEMENT pour un
    *  directeur (le chemin coach ne déclenche aucun appel de plus). */
   const [directorScopeIds, setDirectorScopeIds] = useState<Set<string>>(() => new Set());
+  /** Périmètre canonique get_coach_athletes — chargé pour TOUS. C'est LUI qui
+   *  définit le Roster « mes athlètes » (owner ∪ équipe ∪ école si directeur),
+   *  y compris les athlètes de ligue civile à school_id NULL que la requête
+   *  école ne peut pas voir. */
+  const [rosterScopeIds, setRosterScopeIds] = useState<Set<string>>(() => new Set());
+  /** Ids ramenés par la requête ÉCOLE — borne « À réclamer » + supervision. */
+  const [schoolRowIds, setSchoolRowIds] = useState<Set<string>>(() => new Set());
 
   // Apply URL filter presets
   useEffect(() => {
@@ -265,70 +326,34 @@ function MesAthletesContent() {
       setCoachOrgType(((Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { type?: SchoolType } | null)?.type ?? null);
 
       // Périmètre canonique « mes athlètes » — get_coach_athletes est LA
-      // source (contrat ledger). On ne l'appelle que pour un directeur : c'est
-      // lui seul dont le périmètre déborde de `coach_id = moi`. La requête
-      // école ci-dessous reste la source des LIGNES (elle alimente aussi « À
-      // réclamer ») ; le RPC ne sert qu'à BORNER la section supervision au
-      // périmètre canonique, jamais à l'élargir.
+      // source (contrat ledger), appelée pour TOUT LE MONDE, plus seulement
+      // pour un directeur.
+      //
+      // POURQUOI (2026-09-08) : la requête école ci-dessous était l'unique
+      // source des lignes, et son `.eq("school_id", coachSchoolId)` écarte en
+      // silence tout athlète à school_id NULL (`NULL = x` → UNKNOWN). Les
+      // athlètes de ligue civile d'un coach — ancrés par coach_id / équipe,
+      // sans école — disparaissaient donc du Roster alors que la page équipe
+      // les affichait. Le RPC, lui, ne joint jamais schools : il les ramène.
+      //
+      // DEUX PÉRIMÈTRES DISTINCTS, JAMAIS FUSIONNÉS EN UN .or() OPAQUE :
+      //   · scopeIds (RPC)  → LE Roster « mes athlètes ». Seul périmètre qui
+      //                       fait autorité sur « quels athlètes sont à moi ».
+      //   · schoolRowIds    → « À réclamer » + supervision directeur, qui sont
+      //                       des questions d'ÉCOLE et le restent (un athlète
+      //                       civil n'a pas d'école où être réclamé).
+      // Les deux jeux de lignes sont unis pour le mapping (une seule passe de
+      // transformation), puis re-partitionnés explicitement par id plus bas.
+      //
       // includePending: false — même décision de statut que la requête école
       // ci-dessous (.eq status ACTIF), cf. le bloc de statuts qui la documente.
-      if (dir.isDirector) {
-        const { ids: scopeIds } = await loadCoachAthleteScope(supabase, { includePending: false });
-        setDirectorScopeIds(new Set(scopeIds));
-      }
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase, { includePending: false });
+      setRosterScopeIds(new Set(scopeIds));
+      if (dir.isDirector) setDirectorScopeIds(new Set(scopeIds));
 
       const { data, error } = await supabase
         .from("athletes")
-        .select(`
-          id,
-          photo_url,
-          first_name,
-          last_name,
-          verified,
-          profile_completion,
-          last_profile_validation,
-          verification_method,
-          verified_at,
-          verified_by,
-          video_faits_saillants_url,
-          hudl_url,
-          youtube_url,
-          instagram_url,
-          annee_diplomation,
-          cote_globale_entraineur,
-          date_naissance,
-          genre,
-          telephone,
-          bio,
-          school_id,
-          coach_id,
-          taille_pieds,
-          taille_pouces,
-          poids_lbs,
-          numero_jersey,
-          status,
-          statut_recrutement_override,
-          recrutement_override_at,
-          recruitment_status, committed_school_id, open_to_offers,
-          sport_id,
-          position_id,
-          mentions_academiques,
-          matieres_fortes,
-          programme_cegep_vise, programmes_vises,
-          moyenne_generale,
-          pret_changer_region,
-          ouvert_cegep_prive,
-          ouvert_cegep_anglophone,
-          created_at,
-          sports!sport_id(nom),
-          positions!position_id(nom, abreviation),
-          context,
-          schools!school_id(name, region, type),
-          committed_school:schools!committed_school_id(name),
-          team_athletes(team_id, teams!team_id(gender, division, league, rseq_team_id, schools!school_id(type))),
-          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at),
-          athlete_badges(contexte, retire_le, badges(code, libelle))
-        `)
+        .select(ATHLETE_ROSTER_SELECT)
         // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
         // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
         //
@@ -368,11 +393,33 @@ function MesAthletesContent() {
         .eq("school_id", coachSchoolId)
         .eq("status", "ACTIF");
 
+      // ── Périmètre canonique (Roster) ───────────────────────────────────
+      // MÊME SELECT, autre borne : `.in("id", scopeIds)` au lieu du filtre
+      // d'école. Pattern identique à CoachAthletesMobile (validé en prod
+      // mobile). C'est cette requête — et elle seule — qui ramène les
+      // athlètes de ligue civile (school_id NULL) du coach.
+      const { data: scopeData } = scopeIds.length
+        ? await supabase
+            .from("athletes")
+            .select(ATHLETE_ROSTER_SELECT)
+            .in("id", scopeIds)
+            .eq("status", "ACTIF")
+        : { data: [] as Record<string, unknown>[] };
 
-      if (!data) { setLoading(false); return; }
+      if (!data && !scopeData) { setLoading(false); return; }
+
+      // Union des DEUX périmètres, dédupliquée par id : une seule passe de
+      // mapping ci-dessous. La re-partition (Roster vs École) se fait sur les
+      // deux Set d'ids, jamais sur la provenance de la ligne.
+      const schoolRows = (data ?? []) as Record<string, unknown>[];
+      const scopeRows = (scopeData ?? []) as Record<string, unknown>[];
+      setSchoolRowIds(new Set(schoolRows.map((a) => a.id as string)));
+      const rowsById = new Map<string, Record<string, unknown>>();
+      for (const r of [...schoolRows, ...scopeRows]) rowsById.set(r.id as string, r);
+      const allRows = Array.from(rowsById.values());
 
       // Load favorite counts from recruiter_favorites
-      const athleteIds = data.map((a: Record<string, unknown>) => a.id as string);
+      const athleteIds = allRows.map((a: Record<string, unknown>) => a.id as string);
       const { data: favRows } = await supabase
         .from("recruiter_favorites")
         .select("athlete_id")
@@ -386,7 +433,7 @@ function MesAthletesContent() {
         });
       }
 
-      const mapped: RosterAthlete[] = data.map((a: Record<string, unknown>) => {
+      const mapped: RosterAthlete[] = allRows.map((a: Record<string, unknown>) => {
         // Handle FK joins — may be object or array
         const posRaw = a.positions;
         const pos = Array.isArray(posRaw) ? posRaw[0] : posRaw;
@@ -457,7 +504,9 @@ function MesAthletesContent() {
             count: favCounts[a.id as string] || 0,
             isOverride: true,
           } : undefined,
-          school: schoolObj?.name || "",
+          // school_id NULL = athlète de ligue civile : pas d'école à nommer.
+          // Libellé explicite plutôt que chaîne vide, comme la page équipe.
+          school: schoolObj?.name || (a.school_id == null ? "Ligue civile" : ""),
           region: schoolObj?.region || "",
           sport: sportName,
           hasVideo: !!a.video_faits_saillants_url,
@@ -583,25 +632,35 @@ function MesAthletesContent() {
     loadPositions();
   }, [sport]);
 
+  // ROSTER « mes athlètes » — borné au PÉRIMÈTRE CANONIQUE (get_coach_athletes),
+  // jamais à l'école. C'est ce qui rend visibles les athlètes de ligue civile
+  // (school_id NULL) du coach, que la requête école ne peut pas ramener.
   const myRoster = useMemo(
-    () => realAthletes.filter((a) => a.coach_id === currentUserId),
-    [realAthletes, currentUserId]
+    () => realAthletes.filter((a) => a.coach_id === currentUserId && rosterScopeIds.has(a.id)),
+    [realAthletes, currentUserId, rosterScopeIds]
   );
 
+  // « À réclamer » — question d'ÉCOLE, et elle le reste : bornée aux lignes
+  // ramenées par la requête école. Un athlète civil (school_id NULL) n'a pas
+  // d'école où être réclamé ; il n'a rien à faire ici, même s'il est entré
+  // dans le jeu de lignes par le périmètre canonique.
   const unclaimedAthletes = useMemo(
-    () => realAthletes.filter((a) => a.coach_id == null),
-    [realAthletes]
+    () => realAthletes.filter((a) => a.coach_id == null && schoolRowIds.has(a.id)),
+    [realAthletes, schoolRowIds]
   );
 
   // Supervision directeur : les athlètes de l'école réclamés par un AUTRE
   // coach. Les non réclamés restent dans « À réclamer » (jamais listés deux
   // fois). Borné au périmètre canonique get_coach_athletes — vide pour un
-  // non-directeur, donc la section ne peut pas fuir sur le chemin coach.
+  // non-directeur, donc la section ne peut pas fuir sur le chemin coach — ET
+  // aux lignes de l'école, pour que la bascule du Roster ci-dessus n'y fasse
+  // pas entrer un civil par la bande.
   const schoolAthletes = useMemo(
     () => realAthletes.filter(
-      (a) => a.coach_id != null && a.coach_id !== currentUserId && directorScopeIds.has(a.id)
+      (a) => a.coach_id != null && a.coach_id !== currentUserId
+        && directorScopeIds.has(a.id) && schoolRowIds.has(a.id)
     ),
-    [realAthletes, currentUserId, directorScopeIds]
+    [realAthletes, currentUserId, directorScopeIds, schoolRowIds]
   );
 
   const applyFilters = useCallback((source: RosterAthlete[]) => {
@@ -696,9 +755,7 @@ function MesAthletesContent() {
      ci-dessous. */
   const orgAxis = useMemo(() => axisDisplay(orgOptions), [orgOptions]);
   const leagueAxis = useMemo(() => axisDisplay(leagueOptionList), [leagueOptionList]);
-  const divisionAxis = useMemo(
-    () => axisDisplay(divisionOptionList, { unsetCounts: true }), [divisionOptionList],
-  );
+  const divisionAxis = useMemo(() => axisDisplay(divisionOptionList), [divisionOptionList]);
 
   /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
      filtrer derriere un menu grise. Sans ca, une selection posee quand l'axe
