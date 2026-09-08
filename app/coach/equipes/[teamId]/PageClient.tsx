@@ -108,7 +108,7 @@ function formatHeightWeight(pieds: number | null, pouces: number | null, lbs: nu
   return parts.join(" · ");
 }
 
-const ROLE_LABELS: Record<string, string> = { head_coach: "Entraîneur-chef", assistant: "Assistant", coordinator: "Coordonnateur" };
+const ROLE_LABELS: Record<string, string> = { head_coach: "Entraîneur-chef", head_coach_interim: "Head coach intérimaire", assistant: "Assistant", coordinator: "Coordonnateur" };
 const ROLE_COLORS: Record<string, string> = {
   head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
   assistant: "bg-[#2D3748] text-[#9CA3AF] border-[#2D3748]",

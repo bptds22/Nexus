@@ -34,6 +34,7 @@ interface Team {
 
 const ROLE_LABELS: Record<string, string> = {
   head_coach: "Entraîneur-chef",
+  head_coach_interim: "Head coach intérimaire",
   assistant: "Assistant",
   coordinator: "Coordonnateur",
 };
