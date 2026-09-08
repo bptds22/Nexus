@@ -448,7 +448,11 @@ export default function CoachAthleteProfilePage() {
   const isPreview = searchParams.get("preview") === "true";
   const [recruiterView, setRecruiterView] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [openMenu, setOpenMenu] = useState(false);
+  /* Le menu ⋮ portait « Exporter PDF / Archiver / Supprimer » : trois libellés
+     branchés sur UN handler générique qui affichait « … (POC) ». Aucune
+     écriture, aucun DELETE — trois promesses vides. Retirés pour 1.4.1 : un
+     menu qui ne fait rien coûte plus en confiance qu'il ne rapporte en
+     promesse. À rétablir entrée par entrée, quand chacune aura un flow. */
   const [pipelineData, setPipelineData] = useState<{ status: string; count: number }[]>([]);
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
@@ -572,22 +576,6 @@ export default function CoachAthleteProfilePage() {
               Modifier
             </Link>
 
-            {/* 3-dot menu */}
-            <div className="relative">
-              <button type="button" title="Plus d'actions" onClick={() => setOpenMenu(!openMenu)} className="w-9 h-9 rounded-lg border border-[#2D3748] flex items-center justify-center text-[#6b7280] hover:text-white transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
-              </button>
-              {openMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-[#1A1D24] border border-[#2D3748] rounded-lg shadow-xl overflow-hidden">
-                    {["Exporter PDF", "Archiver", "Supprimer"].map((label) => (
-                      <button key={label} type="button" onClick={() => { setOpenMenu(false); showToast(`${label} (POC)`); }} className="w-full text-left px-4 py-2.5 text-[12px] text-[#9CA3AF] hover:text-white hover:bg-white/5 transition-colors">{label}</button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
       )}
