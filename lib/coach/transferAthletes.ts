@@ -1,47 +1,66 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /* ═══════════════════════════════════════════════════════════════
-   transferAthletes — shared logic for GESTION DES ATHLÈTES.
+   transferAthletes — GESTION DES ATHLÈTES, pivotée PAR ÉQUIPE.
 
-   Moves athletes.coach_id ownership between coaches at the SAME
-   school (or to/from the "Non assigné" pool where coach_id IS NULL).
-   Does NOT touch team_athletes — this is ownership only.
+   ── CE QUI A CHANGÉ, ET POURQUOI ──────────────────────────────
+   Le portail déplaçait la PROPRIÉTÉ (`athletes.coach_id`) d'un coach à un
+   autre. Constat chiffré du 2026-09-09 : coach_id ne décrivait que 9 des 53
+   athlètes en équipe, et 39 des 42 équipes concernées n'avaient aucun coach.
+   Déplacer un pointeur que 83 % des lignes ne portent pas n'organise rien.
 
-   Security boundary is RLS. DEUX voies, pas une :
-     · "coaches reassign athletes within school" — école de l'appelant,
-       destination contrainte à un coach de cette école (ou NULL). Son
-       USING porte `school_id IS NOT NULL` : elle ne couvre AUCUN civil.
-     · "Coaches update own team athletes" — `coach_can_manage_athlete()`,
-       purement ÉQUIPE. C'est la seule voie qui couvre un athlète civil
-       (school_id NULL), et le périmètre de lecture ci-dessous s'aligne
-       strictement dessus. ⚠ Son WITH CHECK ne valide PAS le coach de
-       DESTINATION : par cette voie on peut transférer vers un coach hors
-       de l'école. Dette connue, pas introduite ici.
-═══════════════════════════════════════════════════════════════ */
+   Le portail déplace maintenant l'APPARTENANCE D'ÉQUIPE (`team_athletes`),
+   qui est la donnée réellement peuplée et réellement structurante.
 
-/** Sentinel used in the UI dropdowns for the coach_id IS NULL pool. */
-export const UNASSIGNED_COACH_ID = "__UNASSIGNED__";
+   `athletes.coach_id` n'est PLUS ÉCRIT ICI. Il devient un pointeur calculé,
+   maintenu par les triggers de la vague 2 (fn_resolve_team_referent). Tant
+   que la vague 2 n'est pas appliquée, le référent peut être PÉRIMÉ après un
+   déplacement — accepté et documenté, c'est la fenêtre entre les deux vagues.
 
-/**
- * Pick a sensible initial SOURCE so the transfer panel isn't empty on load:
- *   me (if I have athletes) → "Non assigné" pool (if it has any) →
- *   first coach with athletes → "" (nothing to select).
- */
-export function pickInitialSource(coaches: SchoolCoachOption[], selfId: string): string {
-  const me = coaches.find((c) => c.id === selfId);
-  if (me && me.athleteCount > 0) return me.id;
-  const pool = coaches.find((c) => c.id === UNASSIGNED_COACH_ID);
-  if (pool && pool.athleteCount > 0) return UNASSIGNED_COACH_ID;
-  const firstNonEmpty = coaches.find((c) => c.athleteCount > 0);
-  return firstNonEmpty ? firstNonEmpty.id : "";
-}
+   ── LES TROIS ÉCRITURES, ET L'INTERDIT ────────────────────────
+     déplacement   → UPDATE team_athletes SET team_id = <cible>
+     depuis « Sans équipe » → INSERT team_athletes
+     vers « Retirer »       → DELETE team_athletes
 
-export interface SchoolCoachOption {
-  /** Coach user id, or UNASSIGNED_COACH_ID for the unclaimed pool. */
+   ⚠ JAMAIS DELETE + INSERT pour un déplacement. Ça paraît équivalent et ça
+   ne l'est pas : la ligne perdrait son `id` et son `joined_at`, et le couple
+   DELETE→INSERT ferait tirer les triggers de retrait PUIS d'arrivée, avec un
+   état intermédiaire « sans équipe » que rien ne justifie. Un déplacement est
+   UN changement, pas une sortie suivie d'une entrée.
+
+   ── PÉRIMÈTRE ET DROITS ───────────────────────────────────────
+   RLS sur team_athletes (policies FOR ALL, `qual` = `with_check`) :
+     · « Directors manage school team athletes » — le directeur passe partout
+       dans son organisation.
+     · « Coaches manage own team athletes » — un coach est borné à SES équipes,
+       et comme un UPDATE de team_id évalue l'ANCIENNE équipe (qual) ET la
+       NOUVELLE (with_check), il doit être coach des DEUX. L'UI désactive donc
+       les destinations tierces pour un non-directeur, avec le motif.
+
+   ── DETTE CONSERVÉE ───────────────────────────────────────────
+   Le pool de réclamation (school_id NULL + coach_id NULL) reste HORS de ce
+   portail : c'est une salle d'attente de réclamation, pas un marché d'agents
+   libres. La réclamation a son propre flow coach, et le retour au pool a le
+   sien (« Libérer l'athlète »). Ce portail ne gère que l'appartenance
+   d'équipe — il ne réclame ni ne libère personne.
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Source : athlètes du périmètre SANS ligne team_athletes. */
+export const NO_TEAM_ID = "__SANS_EQUIPE__";
+/** Destination : retirer de l'équipe (DELETE), sans en rejoindre une autre. */
+export const REMOVE_FROM_TEAM_ID = "__RETIRER__";
+
+export interface TeamOption {
+  /** team_id réel, ou l'un des deux sentinelles ci-dessus. */
   id: string;
   name: string;
-  sport: string;
+  /** Sous-titre : sport · division, ou le motif pour les sentinelles. */
+  sub: string;
   athleteCount: number;
+  /** false → le coach courant n'est pas coach de cette équipe. L'UI
+   *  désactive la destination (la RLS la refuserait). Toujours true
+   *  pour un directeur. */
+  canManage: boolean;
 }
 
 export interface TransferAthlete {
@@ -53,259 +72,296 @@ export interface TransferAthlete {
   position?: string | null;
   /** #EN_ATTENTE : athlète en attente de consentement → liseré « En attente ». */
   isPending?: boolean;
+  /** id de la ligne team_athletes — la cible de l'UPDATE/DELETE.
+   *  undefined quand l'athlète vient de « Sans équipe » (il faudra un INSERT). */
+  rowId?: string;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PÉRIMÈTRE CIVIL (school_id IS NULL) — pourquoi il existe et où il s'arrête.
+const ATHLETE_COLS =
+  "id, first_name, last_name, photo_url, status, sports!sport_id(nom), positions!position_id(abreviation)";
 
-   Le filtre `.eq("school_id", …)` des deux requêtes ci-dessous écarte en
-   silence tout athlète à school_id NULL (`NULL = x` → UNKNOWN). Les athlètes
-   de ligue civile — ancrés par coach_id / équipe, sans école — étaient donc
-   invisibles ET dans le compte du dropdown ET dans la liste source.
+/* ── Contexte de droits ────────────────────────────────────────── */
 
-   La borne retenue n'est PAS « tous les civils du club » : c'est un
-   ALIGNEMENT STRICT sur le prédicat RLS réel, `coach_can_manage_athlete()` :
+export interface TransferContext {
+  /** Équipes dont le user courant est coach — bornent ses déplacements. */
+  myTeamIds: Set<string>;
+  /** Directeur de l'organisation → passe partout. */
+  isDirector: boolean;
+}
 
-     EXISTS (team_coaches tc JOIN team_athletes ta USING (team_id)
-             WHERE tc.coach_id = auth.uid() AND ta.athlete_id = <id>)
-     OR  <je suis DIRECTEUR de l'école de l'athlète>   ← inatteignable ici :
-         `sc.school_id = NULL` ne matche jamais, un civil n'a pas d'école.
-
-   Reste donc la seule voie ÉQUIPE. Afficher plus large (p. ex. « civil dont
-   le propriétaire est un coach du club ») listerait des athlètes que la RLS
-   refuse de déplacer : la policy nommée `coaches reassign athletes within
-   school` porte `school_id IS NOT NULL` dans son USING, et
-   `coaches can update own athletes` a un WITH CHECK qui exige
-   `coach_id = auth.uid()` — donc il échoue précisément au moment du
-   transfert. Vérifié en cloud le 2026-09-08 : 1 athlète du club tombait dans
-   ce trou. On ne liste pas ce qu'on ne peut pas déplacer.
-
-   EXCLUSION DÉLIBÉRÉE — le pool « Non assigné » CIVIL (school_id NULL ET
-   coach_id NULL, 10 lignes en prod au 2026-09-08) reste EXCLU, et ce n'est
-   plus une question ouverte : décision BP du 2026-09-08, ce pool est la
-   SALLE D'ATTENTE DE RÉCLAMATION, pas un marché d'agents libres. On n'y
-   entre donc pas par le dropdown de transfert. La réclamation a son propre
-   flow coach (« chercher / réclamer mes athlètes »), qui pose coach_id ET
-   l'ancrage club ; le retour au pool a le sien (« Libérer l'athlète », avec
-   confirmation) — celui qui remplace l'ex-trigger supprimé en 20260908151616.
-   ═══════════════════════════════════════════════════════════════ */
-
-/**
- * Ids des athlètes CIVILS (school_id NULL) que le user courant peut gérer,
- * c.-à-d. ceux qui sont sur une équipe dont il est coach. Retombe sur [] à la
- * moindre absence de session ou d'équipe — jamais d'exception.
- */
-async function loadMyCivilAthleteIds(supabase: SupabaseClient): Promise<string[]> {
+export async function loadTransferContext(
+  supabase: SupabaseClient,
+  schoolId: string,
+): Promise<TransferContext> {
   const { data: { session } } = await supabase.auth.getSession();
   const uid = session?.user?.id;
-  if (!uid) return [];
+  if (!uid) return { myTeamIds: new Set(), isDirector: false };
 
-  const { data: tcRows } = await supabase
-    .from("team_coaches").select("team_id").eq("coach_id", uid);
-  const teamIds = [...new Set((tcRows ?? []).map((r) => (r as { team_id: string }).team_id))];
-  if (teamIds.length === 0) return [];
+  const [{ data: tcRows }, { data: scRows }] = await Promise.all([
+    supabase.from("team_coaches").select("team_id").eq("coach_id", uid),
+    supabase.from("school_coaches").select("role").eq("coach_id", uid).eq("school_id", schoolId),
+  ]);
+
+  const isDirector = (scRows ?? []).some((r) =>
+    ["DIRECTEUR", "DIRECTEUR_INTERIM"].includes((r as { role: string }).role),
+  );
+
+  return {
+    myTeamIds: new Set((tcRows ?? []).map((r) => (r as { team_id: string }).team_id)),
+    isDirector,
+  };
+}
+
+/* ── Sources / destinations ────────────────────────────────────── */
+
+/**
+ * Équipes de l'organisation + l'entrée virtuelle « Sans équipe ».
+ * Les effectifs sont comptés en UN aller-retour, pas un `count` par équipe.
+ */
+export async function loadSchoolTeams(
+  supabase: SupabaseClient,
+  schoolId: string,
+  ctx: TransferContext,
+): Promise<TeamOption[]> {
+  const { data: teamRows } = await supabase
+    .from("teams")
+    .select("id, name, division, age_group, sports!sport_id(nom)")
+    .eq("school_id", schoolId)
+    .order("name");
+
+  const rows = (teamRows ?? []) as Record<string, unknown>[];
+  const ids = rows.map((t) => t.id as string);
+
+  const counts = new Map<string, number>();
+  if (ids.length > 0) {
+    const { data: taRows } = await supabase
+      .from("team_athletes")
+      .select("team_id")
+      .in("team_id", ids);
+    for (const r of (taRows ?? []) as { team_id: string }[]) {
+      counts.set(r.team_id, (counts.get(r.team_id) ?? 0) + 1);
+    }
+  }
+
+  const teams: TeamOption[] = rows.map((t) => {
+    const spRel = t.sports as { nom?: string } | { nom?: string }[] | null;
+    const sp = Array.isArray(spRel) ? spRel[0] : spRel;
+    const sub = [sp?.nom, t.division as string, t.age_group as string]
+      .filter(Boolean)
+      .join(" · ");
+    const id = t.id as string;
+    return {
+      id,
+      name: (t.name as string) || "Équipe",
+      sub: sub || "—",
+      athleteCount: counts.get(id) ?? 0,
+      canManage: ctx.isDirector || ctx.myTeamIds.has(id),
+    };
+  });
+
+  teams.unshift({
+    id: NO_TEAM_ID,
+    name: "Sans équipe",
+    sub: "Athlètes de l'organisation qui ne sont sur aucun alignement",
+    athleteCount: await countAthletesWithoutTeam(supabase, schoolId),
+    canManage: true,
+  });
+
+  return teams;
+}
+
+async function countAthletesWithoutTeam(
+  supabase: SupabaseClient,
+  schoolId: string,
+): Promise<number> {
+  const { data } = await supabase
+    .from("athletes")
+    .select("id")
+    .eq("school_id", schoolId)
+    .in("status", ["ACTIF", "EN_ATTENTE"]);
+
+  const ids = ((data ?? []) as { id: string }[]).map((a) => a.id);
+  if (ids.length === 0) return 0;
 
   const { data: taRows } = await supabase
-    .from("team_athletes").select("athlete_id").in("team_id", teamIds);
-  const athleteIds = [...new Set((taRows ?? []).map((r) => (r as { athlete_id: string }).athlete_id))];
-  if (athleteIds.length === 0) return [];
+    .from("team_athletes")
+    .select("athlete_id")
+    .in("athlete_id", ids);
 
-  // `.is("school_id", null)` — le SEUL prédicat qui attrape un NULL en SQL.
-  const { data: civilRows } = await supabase
-    .from("athletes").select("id")
-    .in("id", athleteIds)
-    .is("school_id", null)
-    .in("status", ["ACTIF", "EN_ATTENTE"]);
-  return (civilRows ?? []).map((r) => (r as { id: string }).id);
+  const withTeam = new Set(
+    ((taRows ?? []) as { athlete_id: string }[]).map((r) => r.athlete_id),
+  );
+  return ids.filter((id) => !withTeam.has(id)).length;
+}
+
+/** Athlètes d'une équipe, ou du groupe « Sans équipe ». */
+export async function loadAthletesForTeam(
+  supabase: SupabaseClient,
+  schoolId: string,
+  teamId: string,
+): Promise<TransferAthlete[]> {
+  if (!teamId) return [];
+
+  if (teamId === NO_TEAM_ID) {
+    const { data } = await supabase
+      .from("athletes")
+      .select(ATHLETE_COLS)
+      .eq("school_id", schoolId)
+      // #EN_ATTENTE inclus (badgé) — même règle que les autres pickers.
+      .in("status", ["ACTIF", "EN_ATTENTE"]);
+
+    const rows = (data ?? []) as Record<string, unknown>[];
+    if (rows.length === 0) return [];
+
+    const { data: taRows } = await supabase
+      .from("team_athletes")
+      .select("athlete_id")
+      .in("athlete_id", rows.map((a) => a.id as string));
+    const withTeam = new Set(
+      ((taRows ?? []) as { athlete_id: string }[]).map((r) => r.athlete_id),
+    );
+
+    return rows.filter((a) => !withTeam.has(a.id as string)).map((a) => mapAthlete(a, undefined));
+  }
+
+  const { data } = await supabase
+    .from("team_athletes")
+    .select(`id, athlete_id, athletes!athlete_id(${ATHLETE_COLS})`)
+    .eq("team_id", teamId);
+
+  return ((data ?? []) as Record<string, unknown>[])
+    .map((row) => {
+      const aRel = row.athletes as Record<string, unknown> | Record<string, unknown>[] | null;
+      const a = (Array.isArray(aRel) ? aRel[0] : aRel) as Record<string, unknown> | null;
+      if (!a) return null;
+      const status = a.status as string | null;
+      if (status !== "ACTIF" && status !== "EN_ATTENTE") return null;
+      return mapAthlete(a, row.id as string);
+    })
+    .filter((x): x is TransferAthlete => x !== null);
+}
+
+function mapAthlete(a: Record<string, unknown>, rowId: string | undefined): TransferAthlete {
+  const spRel = a.sports as { nom?: string } | { nom?: string }[] | null;
+  const sp = Array.isArray(spRel) ? spRel[0] : spRel;
+  const poRel = a.positions as { abreviation?: string } | { abreviation?: string }[] | null;
+  const po = Array.isArray(poRel) ? poRel[0] : poRel;
+  return {
+    id: a.id as string,
+    firstName: (a.first_name as string) || "",
+    lastName: (a.last_name as string) || "",
+    photo: (a.photo_url as string | null) ?? null,
+    sport: sp?.nom ?? null,
+    position: po?.abreviation ?? null,
+    isPending: a.status === "EN_ATTENTE",
+    rowId,
+  };
+}
+
+/* ── Écriture ──────────────────────────────────────────────────── */
+
+export interface MoveResult {
+  success: boolean;
+  moved: number;
+  error?: string;
 }
 
 /**
- * Bulk-update coach ownership. `toCoachId` may be a real coach id or
- * UNASSIGNED_COACH_ID (→ coach_id = NULL, i.e. send back to the pool).
+ * Déplace un lot d'athlètes vers `destTeamId`, ou les retire
+ * (`REMOVE_FROM_TEAM_ID`).
+ *
+ * N'ÉCRIT JAMAIS athletes.coach_id — le référent est dérivé (vague 2).
+ *
+ * Chaque écriture porte `.select("id")` : une ligne refusée par la RLS ne
+ * lève PAS d'erreur, elle met simplement à jour zéro ligne. Sans ce compte,
+ * l'appelant annoncerait un succès fantôme.
  */
-export async function transferAthletes(
+export async function moveAthletesToTeam(
   supabase: SupabaseClient,
-  athleteIds: string[],
-  toCoachId: string,
-): Promise<{ success: boolean; error?: string }> {
-  if (athleteIds.length === 0) {
-    return { success: false, error: "Aucun athlète sélectionné." };
+  athletes: TransferAthlete[],
+  destTeamId: string,
+): Promise<MoveResult> {
+  if (athletes.length === 0) {
+    return { success: false, moved: 0, error: "Aucun athlète sélectionné." };
   }
 
-  const coachId = toCoachId === UNASSIGNED_COACH_ID ? null : toCoachId;
+  // ── Retrait : DELETE des lignes existantes.
+  if (destTeamId === REMOVE_FROM_TEAM_ID) {
+    const rowIds = athletes.map((a) => a.rowId).filter((x): x is string => !!x);
+    if (rowIds.length === 0) {
+      return { success: false, moved: 0, error: "Ces athlètes ne sont sur aucune équipe." };
+    }
+    const { data, error } = await supabase
+      .from("team_athletes")
+      .delete()
+      .in("id", rowIds)
+      .select("id");
+    if (error) return { success: false, moved: 0, error: error.message };
+    return finish(data?.length ?? 0, rowIds.length, "retiré");
+  }
 
-  // `.select()` so we can count rows ACTUALLY updated. RLS
-  // ("Coaches update own team athletes" / own-athlete / claim-unclaimed)
-  // limits reassignment to the athlete's owner, its team coach, or a
-  // director — a denied row updates silently (no error, 0 rows). Without
-  // this check the caller reported a phantom success on athletes it
-  // couldn't move.
-  const { data, error } = await supabase
-    .from("athletes")
-    .update({ coach_id: coachId, updated_at: new Date().toISOString() })
-    .in("id", athleteIds)
-    .select("id");
+  // ── Déjà en équipe → UPDATE du team_id. JAMAIS delete+insert.
+  const aDeplacer = athletes.filter((a) => a.rowId);
+  // ── Sans équipe → INSERT. sport_id est posé par le trigger BEFORE INSERT
+  //    `team_athletes_set_sport_id`, on ne le fournit pas.
+  const aInserer = athletes.filter((a) => !a.rowId);
 
-  if (error) return { success: false, error: error.message };
+  let moved = 0;
 
-  const moved = (data ?? []).length;
-  if (moved < athleteIds.length) {
-    const blocked = athleteIds.length - moved;
+  if (aDeplacer.length > 0) {
+    const { data, error } = await supabase
+      .from("team_athletes")
+      .update({ team_id: destTeamId })
+      .in("id", aDeplacer.map((a) => a.rowId as string))
+      .select("id");
+    if (error) return { success: false, moved, error: error.message };
+    moved += data?.length ?? 0;
+  }
+
+  if (aInserer.length > 0) {
+    const { data, error } = await supabase
+      .from("team_athletes")
+      .insert(aInserer.map((a) => ({ team_id: destTeamId, athlete_id: a.id })))
+      .select("id");
+    if (error) return { success: false, moved, error: error.message };
+    moved += data?.length ?? 0;
+  }
+
+  return finish(moved, athletes.length, "déplacé");
+}
+
+function finish(moved: number, attendu: number, verbe: string): MoveResult {
+  if (moved < attendu) {
+    const bloques = attendu - moved;
     return {
       success: false,
+      moved,
       error:
-        `${blocked} athlète${blocked > 1 ? "s" : ""} n'ont pas pu être transféré${blocked > 1 ? "s" : ""}. ` +
-        "Tu peux seulement réassigner tes propres athlètes, ceux de tes équipes, ou (en tant que directeur) tous ceux de l'école.",
+        `${bloques} athlète${bloques > 1 ? "s" : ""} n'${bloques > 1 ? "ont" : "a"} pas pu être ${verbe}${bloques > 1 ? "s" : ""}. ` +
+        "Tu peux seulement gérer les alignements de tes équipes — ou toutes celles de l'organisation si tu en es le directeur.",
     };
   }
-  return { success: true };
+  return { success: true, moved };
 }
 
-/**
- * Coaches at a school + their active-athlete counts, plus a virtual
- * "Non assigné" entry (coach_id IS NULL) at the top.
- */
-export async function loadSchoolCoaches(
-  supabase: SupabaseClient,
-  schoolId: string,
-): Promise<SchoolCoachOption[]> {
-  const [{ data: scRows }, { data: athRows }, civilIds] = await Promise.all([
-    supabase
-      .from("school_coaches")
-      .select("coach_id, sport, users!coach_id(first_name, last_name)")
-      .eq("school_id", schoolId),
-    supabase
-      .from("athletes")
-      .select("coach_id")
-      .eq("school_id", schoolId)
-      // #EN_ATTENTE : un athlète en attente de consentement reste gérable /
-      // transférable (décision BP « EN_ATTENTE dans tous les pickers »). Le
-      // compte par coach doit matcher la liste source, donc même filtre.
-      .in("status", ["ACTIF", "EN_ATTENTE"]),
-    loadMyCivilAthleteIds(supabase),
-  ]);
-
-  // Volet CIVIL du périmètre (cf. le bloc PÉRIMÈTRE CIVIL plus haut). MÊME
-  // spec que loadAthletesForCoach ci-dessous — si les deux divergent, le
-  // compte du dropdown ne correspond plus à la liste affichée.
-  const { data: civilRows } = civilIds.length
-    ? await supabase
-        .from("athletes")
-        .select("coach_id")
-        .in("id", civilIds)
-        .in("status", ["ACTIF", "EN_ATTENTE"])
-    : { data: [] as { coach_id: string | null }[] };
-
-  // coach_id (or null) → athlete count (ACTIF + EN_ATTENTE)
-  const counts = new Map<string | null, number>();
-  (athRows ?? []).forEach((a) => {
-    const cid = (a as { coach_id: string | null }).coach_id;
-    counts.set(cid, (counts.get(cid) ?? 0) + 1);
-  });
-  // Les civils sans propriétaire ne rejoignent PAS le pool « Non assigné » —
-  // dette assumée, cf. le bloc PÉRIMÈTRE CIVIL.
-  (civilRows ?? []).forEach((a) => {
-    const cid = (a as { coach_id: string | null }).coach_id;
-    if (cid == null) return;
-    counts.set(cid, (counts.get(cid) ?? 0) + 1);
-  });
-
-  const coaches: SchoolCoachOption[] = (scRows ?? []).map((row) => {
-    const r = row as {
-      coach_id: string;
-      sport: string | null;
-      users: { first_name?: string; last_name?: string } | { first_name?: string; last_name?: string }[] | null;
-    };
-    const u = Array.isArray(r.users) ? r.users[0] : r.users;
-    const name = `${u?.first_name ?? ""} ${u?.last_name ?? ""}`.trim() || "Coach";
-    return {
-      id: r.coach_id,
-      name,
-      sport: r.sport || "—",
-      athleteCount: counts.get(r.coach_id) ?? 0,
-    };
-  });
-
-  // Sort coaches alphabetically for a stable dropdown.
-  coaches.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-
-  // Virtual "Non assigné" pool always first.
-  coaches.unshift({
-    id: UNASSIGNED_COACH_ID,
-    name: "Non assigné",
-    sport: "—",
-    athleteCount: counts.get(null) ?? 0,
-  });
-
-  return coaches;
+/** Première source non vide : une équipe que je gère, sinon n'importe laquelle. */
+export function pickInitialTeam(teams: TeamOption[]): string {
+  const mienne = teams.find((t) => t.id !== NO_TEAM_ID && t.canManage && t.athleteCount > 0);
+  if (mienne) return mienne.id;
+  const pleine = teams.find((t) => t.id !== NO_TEAM_ID && t.athleteCount > 0);
+  if (pleine) return pleine.id;
+  const sansEquipe = teams.find((t) => t.id === NO_TEAM_ID);
+  return sansEquipe && sansEquipe.athleteCount > 0 ? NO_TEAM_ID : (teams[1]?.id ?? "");
 }
 
-/**
- * Active athletes owned by a given coach at a school. Pass
- * UNASSIGNED_COACH_ID to load the unclaimed (coach_id IS NULL) pool.
- */
-export async function loadAthletesForCoach(
-  supabase: SupabaseClient,
-  schoolId: string,
-  coachId: string,
-): Promise<TransferAthlete[]> {
-  const COLS =
-    "id, first_name, last_name, photo_url, status, sports!sport_id(nom), positions!position_id(abreviation)";
-
-  let query = supabase
-    .from("athletes")
-    .select(COLS)
-    .eq("school_id", schoolId)
-    // #EN_ATTENTE inclus (badgé) — la règle d'action (RLS d'update) reste
-    // owner/team/directeur ; seul le statut s'élargit, comme les autres pickers.
-    .in("status", ["ACTIF", "EN_ATTENTE"]);
-
-  if (coachId === UNASSIGNED_COACH_ID) query = query.is("coach_id", null);
-  else query = query.eq("coach_id", coachId);
-
-  // Volet CIVIL — MÊME spec que le compte de loadSchoolCoaches ci-dessus
-  // (cf. le bloc PÉRIMÈTRE CIVIL). Le pool « Non assigné » n'en reçoit rien :
-  // sur ce sentinel on ne va même pas chercher les civils.
-  const civilIds = coachId === UNASSIGNED_COACH_ID ? [] : await loadMyCivilAthleteIds(supabase);
-  const [{ data }, { data: civilData }] = await Promise.all([
-    query,
-    civilIds.length
-      ? supabase
-          .from("athletes")
-          .select(COLS)
-          .in("id", civilIds)
-          .eq("coach_id", coachId)
-          .in("status", ["ACTIF", "EN_ATTENTE"])
-      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
-  ]);
-
-  // Disjoints par construction (school_id = schoolId vs school_id IS NULL),
-  // mais on déduplique quand même : une liste à doublons est un bug muet.
-  const byId = new Map<string, Record<string, unknown>>();
-  for (const r of [...(data ?? []), ...(civilData ?? [])] as Record<string, unknown>[]) {
-    byId.set(r.id as string, r);
+/** Motif de blocage d'une destination, ou null si elle est ouverte. */
+export function destinationBlockReason(dest: TeamOption, source: TeamOption | null): string | null {
+  if (dest.id === REMOVE_FROM_TEAM_ID) return null;
+  if (!dest.canManage) {
+    return "Réservé au directeur — tu n'es pas entraîneur de cette équipe.";
   }
-
-  return Array.from(byId.values()).map((a) => {
-    const row = a as {
-      id: string;
-      first_name: string;
-      last_name: string;
-      photo_url: string | null;
-      status: string | null;
-      sports: { nom?: string } | { nom?: string }[] | null;
-      positions: { abreviation?: string } | { abreviation?: string }[] | null;
-    };
-    const sport = Array.isArray(row.sports) ? row.sports[0] : row.sports;
-    const pos = Array.isArray(row.positions) ? row.positions[0] : row.positions;
-    return {
-      id: row.id,
-      firstName: row.first_name,
-      lastName: row.last_name,
-      photo: row.photo_url,
-      sport: sport?.nom ?? null,
-      position: pos?.abreviation ?? null,
-      isPending: row.status === "EN_ATTENTE",
-    };
-  });
+  if (source && !source.canManage) {
+    return "Réservé au directeur — tu n'es pas entraîneur de l'équipe de départ.";
+  }
+  return null;
 }
