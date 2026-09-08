@@ -593,14 +593,12 @@ function ExpandedListView({
   onBack,
   onRemoveAthlete,
   onAddAthlete,
-  onEditNote,
   onToast,
 }: {
   list: ProspectList;
   onBack: () => void;
   onRemoveAthlete: (listId: string, athleteId: string) => void;
   onAddAthlete: (listId: string, athlete: ProspectListAthlete) => void;
-  onEditNote: (listId: string, athleteId: string, note: string) => void;
   onToast: (msg: string) => void;
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -659,8 +657,6 @@ function ExpandedListView({
     setListNoteText("");
     setListNotePosting(false);
   };
-  const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [editNoteText, setEditNoteText] = useState("");
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const verifiedCount = list.athletes.filter((a) => a.is_verified).length;
@@ -675,17 +671,6 @@ function ExpandedListView({
   }, [list.athletes]);
 
   const existingIds = useMemo(() => new Set(list.athletes.map((a) => a.id)), [list.athletes]);
-
-  const handleStartEditNote = (athleteId: string, currentNote: string) => {
-    setEditingNote(athleteId);
-    setEditNoteText(currentNote);
-  };
-
-  const handleSaveNote = (athleteId: string) => {
-    onEditNote(list.id, athleteId, editNoteText);
-    setEditingNote(null);
-    onToast("Note sauvegardée (POC)");
-  };
 
   return (
     <div className="space-y-6">
@@ -1086,10 +1071,11 @@ function ListesPageContent() {
     ));
   }, []);
 
-  /* Edit note — uses recruiter_notes table via insert */
-  const handleEditNote = useCallback((_listId: string, _athleteId: string, _note: string) => {
-    // Notes are now handled by the activity feed in ExpandedListView
-  }, []);
+  /* Les notes vivent dans le fil d'activité d'ExpandedListView, qui écrit
+     réellement dans recruiter_notes (insert + delete + relecture). Un second
+     éditeur inline avait survécu à côté : états jamais lus, handlers jamais
+     appelés, et un toast « Note sauvegardée (POC) » qu'aucun clic ne pouvait
+     déclencher. Retiré — deux chemins pour une même donnée, dont un mort. */
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
@@ -1100,7 +1086,6 @@ function ListesPageContent() {
           onBack={() => setSelectedListId(null)}
           onRemoveAthlete={handleRemoveAthlete}
           onAddAthlete={handleAddAthlete}
-          onEditNote={handleEditNote}
           onToast={showToast}
         />
       ) : (
