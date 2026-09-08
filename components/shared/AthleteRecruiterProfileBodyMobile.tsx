@@ -7,6 +7,9 @@
 // uniquement. Si viewerMode preview/partner → on délègue au desktop body.
 
 import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
+import AthleteTransferSheet, {
+  loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
+} from "@/components/shared/coach/AthleteTransferSheet";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -752,6 +755,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const isRecruiter = viewer === "recruiter";
   const isCoach = viewer === "coach";
   const isSelfPreview = viewer === "self-preview";
+
+  /* Lot J — transfert depuis la fiche, variante mobile. Même moteur, mêmes
+     droits que le portail et que le web : tout vient du helper partagé. */
+  const [trState, setTrState] = useState<AthleteTransferState | null>(null);
+  const [trOpen, setTrOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isCoach || !athleteId) return;
+    let annule = false;
+    loadAthleteTransferState(athleteId).then((st) => { if (!annule) setTrState(st); });
+    return () => { annule = true; };
+  }, [isCoach, athleteId]);
 
   const id = athleteId;
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
@@ -2193,6 +2208,23 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             verified, pendingSuggestions.length). */}
         {isCoach && (
           <div className="space-y-3 mb-4">
+            {/* Lot J — Transférer. En pleine largeur plutôt que dans l'en-tête :
+                l'en-tête mobile porte déjà photo, nom, badges et retour. Le
+                bouton n'existe pas sans les droits (dérivés de la RLS). */}
+            {trState && canTransferAthlete(trState) && (
+              <button
+                type="button"
+                onClick={() => { void triggerHaptic("Light"); setTrOpen(true); }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-[#3B82F6] text-[#3B82F6] text-[12px] font-bold uppercase tracking-wider active:bg-[#3B82F6]/10"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>
+                Transférer
+                <span className="font-normal normal-case tracking-normal text-[#6b7280]">
+                  · {trState.currentTeamName ?? "Sans équipe"}
+                </span>
+              </button>
+            )}
+
             <ConsentAlert consentGiven={a.parentalConsent} onConfirm={coachConfirmConsent} />
             <VerifyAlert
               isVerified={!!a.isVerified}
@@ -3210,6 +3242,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       )}
 
       {/* ══ COACH-only — sticky "Modifier le profil" CTA + SuggestionSheet (Step 6) ══ */}
+      {isCoach && trOpen && trState && (
+        <AthleteTransferSheet
+          athleteId={athleteId}
+          athleteName={`${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || "cet athlète"}
+          state={trState}
+          variant="mobile"
+          onClose={() => setTrOpen(false)}
+          onDone={(msg) => {
+            setTrOpen(false);
+            toast.success({ message: msg });
+            loadAthleteTransferState(athleteId).then(setTrState);
+          }}
+        />
+      )}
+
       {isCoach && mounted && typeof document !== "undefined" && createPortal(
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5"

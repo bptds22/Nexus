@@ -29,6 +29,9 @@ import SuggestionsAlert from "@/components/coach/profile/SuggestionsAlert";
 // CoachAthleteProfileBodyMobile (paraphrase copy) supprimé.
 import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecruiterProfileBodyMobile";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import AthleteTransferSheet, {
+  loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
+} from "@/components/shared/coach/AthleteTransferSheet";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -242,8 +245,21 @@ export default function CoachAthleteProfilePage() {
   }
 
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
+  /* Lot J — transfert depuis la fiche. L'état de transfert est chargé une
+     fois ; le bouton n'existe que si les droits (dérivés de la RLS, pas
+     réinventés) le permettent. */
+  const [trState, setTrState] = useState<AthleteTransferState | null>(null);
+  const [trOpen, setTrOpen] = useState(false);
+  const [trToast, setTrToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const grilleSet = useGrilles();
+
+  useEffect(() => {
+    if (!id) return;
+    let annule = false;
+    loadAthleteTransferState(id).then((st) => { if (!annule) setTrState(st); });
+    return () => { annule = true; };
+  }, [id]);
   /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE. Les deux
      champs voyagent depuis mapToRecruiterView. */
   const grilleRef: GrilleRef = { grilleId: a?.grilleId ?? null, positionId: a?.positionId ?? null };
@@ -542,6 +558,19 @@ export default function CoachAthleteProfilePage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               Modifier
             </Link>
+
+            {/* Lot J — Transférer. Même moteur que le portail ; le bouton
+                n'apparaît pas sans les droits. */}
+            {trState && canTransferAthlete(trState) && (
+              <button
+                type="button"
+                onClick={() => setTrOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 border border-[#3B82F6] text-[#3B82F6] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#3B82F6]/10 transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>
+                Transférer
+              </button>
+            )}
 
             {/* 3-dot menu */}
             <div className="relative">
@@ -1102,6 +1131,34 @@ export default function CoachAthleteProfilePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lot J — panneau de transfert + accusé de réception. */}
+      {trOpen && trState && (
+        <AthleteTransferSheet
+          athleteId={id}
+          athleteName={`${a?.firstName ?? ""} ${a?.lastName ?? ""}`.trim() || "cet athlète"}
+          state={trState}
+          variant="web"
+          onClose={() => setTrOpen(false)}
+          onDone={(msg) => {
+            setTrOpen(false);
+            setTrToast(msg);
+            /* Recharge l'état de transfert ET la fiche : le nom d'équipe
+               affiché sur la carte vient du chargement principal. */
+            loadAthleteTransferState(id).then(setTrState);
+            loadAthleteRaw(id).then(({ data: refreshed }) => {
+              if (refreshed) setA(mapToRecruiterView(refreshed as Record<string, unknown>));
+            });
+            setTimeout(() => setTrToast(null), 5000);
+          }}
+        />
+      )}
+
+      {trToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] rounded-lg border border-[#22C55E]/40 bg-[#12281c] px-5 py-3">
+          <p className="text-[13px] font-bold text-white">{trToast}</p>
         </div>
       )}
 
