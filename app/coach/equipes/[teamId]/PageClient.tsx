@@ -15,6 +15,9 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { AGE_OPTIONS, DIVISION_OPTIONS, SEASON_OPTIONS } from "@/lib/config/civilVocab";
 import CoachEquipeDetailMobile from "@/components/shared/CoachEquipeDetailMobile";
 import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
+import TeamRoleSelect from "@/components/shared/coach/TeamRoleSelect";
+import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
+import { roleColor, roleLabel, type TeamRole } from "@/lib/coach/teamRoles";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ═══════════════════════════════════════════════════════════════
@@ -108,12 +111,8 @@ function formatHeightWeight(pieds: number | null, pouces: number | null, lbs: nu
   return parts.join(" · ");
 }
 
-const ROLE_LABELS: Record<string, string> = { head_coach: "Entraîneur-chef", assistant: "Assistant", coordinator: "Coordonnateur" };
-const ROLE_COLORS: Record<string, string> = {
-  head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
-  assistant: "bg-[#2D3748] text-[#9CA3AF] border-[#2D3748]",
-  coordinator: "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
-};
+/* Libellés et couleurs de rôle : lib/coach/teamRoles est LA source.
+   Les copies locales avaient déjà divergé (head_coach_interim rendu en slug). */
 
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-3 text-[14px] text-white placeholder-[#4a4d56] focus:outline-none focus:border-[#E63946]/50 transition-colors";
 const labelCls = "block text-[11px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1.5";
@@ -136,6 +135,7 @@ function TeamDetailPageDesktop() {
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [roleBusy, setRoleBusy] = useState<string | null>(null);
 
   // Add athlete
   const [showAddAthlete, setShowAddAthlete] = useState(false);
@@ -586,6 +586,25 @@ function TeamDetailPageDesktop() {
     load();
   }
 
+  /* Lot D — changement de rôle. La bascule (nommer un chef quand il y en a
+     déjà un) est portée par setTeamCoachRole : l'index unique de la vague 1
+     impose l'ordre rétrograder-puis-promouvoir, et le rollback évite de
+     laisser l'équipe sans responsable si la seconde écriture échoue. */
+  async function changeCoachRole(row: TeamCoach, nextRole: TeamRole) {
+    if (row.role === nextRole || roleBusy) return;
+    setRoleBusy(row.id);
+    const supabase = createClient();
+    const res = await setTeamCoachRole(supabase, {
+      teamId,
+      target: row,
+      nextRole,
+      roster: coaches,
+    });
+    setRoleBusy(null);
+    if (res.message) showToast(res.message);
+    if (res.ok) load();
+  }
+
   async function removeCoach(rowId: string) {
     const supabase = createClient();
     await supabase.from("team_coaches").delete().eq("id", rowId);
@@ -718,9 +737,16 @@ function TeamDetailPageDesktop() {
                     <span className="text-[11px] font-bold text-[#9CA3AF]">{c.name.split(" ").map((n) => n[0]).join("")}</span>
                   </div>
                   <span className="text-[14px] font-bold text-white">{c.name}</span>
-                  <span className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${ROLE_COLORS[c.role] || ROLE_COLORS.assistant}`}>
-                    {ROLE_LABELS[c.role] || c.role}
+                  <span className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${roleColor(c.role)}`}>
+                    {roleLabel(c.role)}
                   </span>
+                  <TeamRoleSelect
+                    currentRole={c.role}
+                    teamCoachCount={coaches.length}
+                    teamHasHeadCoach={coaches.some((o) => o.id !== c.id && o.role === "head_coach")}
+                    disabled={roleBusy !== null}
+                    onChange={(next) => changeCoachRole(c, next)}
+                  />
                 </div>
                 <button type="button" onClick={() => removeCoach(c.id)} className="text-[#4a4d56] hover:text-[#E63946] transition-colors" title="Retirer">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
