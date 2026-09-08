@@ -1,6 +1,6 @@
 "use client";
 
-import { roleOptionsFor, type TeamRole } from "@/lib/coach/teamRoles";
+import { roleOptionsFor, roleColor, type TeamRole } from "@/lib/coach/teamRoles";
 
 /* ═══════════════════════════════════════════════════════════════
    TeamRoleSelect — le dropdown de rôle d'un coach sur une équipe.
@@ -10,6 +10,10 @@ import { roleOptionsFor, type TeamRole } from "@/lib/coach/teamRoles";
    radius généreux, chevron dessiné, Outfit 600. Le `<select>` natif est
    conservé (accessibilité, comportement mobile) mais `appearance-none`
    lui retire le chevron du système, remplacé par le nôtre.
+
+   Le TEXTE du select porte la COULEUR DU RÔLE : le select n'est pas un
+   contrôle à côté d'une pastille, il EST l'affichage du rôle. C'est ce qui
+   permet de supprimer la redondance badge + dropdown de la v1.
 
    COMPORTEMENT INCHANGÉ : les 4 options sont TOUJOURS visibles ; celles
    qui ne s'appliquent pas sont désactivées et portent leur motif. Cacher
@@ -58,7 +62,9 @@ export default function TeamRoleSelect({
           onChange={(e) => onChange(e.target.value as TeamRole)}
           title={motif ?? undefined}
           aria-label="Rôle de cet entraîneur"
-          className="appearance-none bg-[#1A1D24] border border-white/[0.10] rounded-xl pl-3 pr-9 py-2 text-[13px] font-semibold text-white outline-none focus:border-[#E63946]/40 disabled:opacity-50 cursor-pointer"
+          className={`appearance-none bg-[#1A1D24] border border-white/[0.10] rounded-xl pl-3 pr-9 py-2 text-[13px] font-semibold outline-none focus:border-[#E63946]/40 disabled:opacity-50 cursor-pointer ${
+            roleColor(currentRole).split(" ").find((c) => c.startsWith("text-")) ?? "text-white"
+          }`}
         >
           {options.map((o) => (
             <option key={o.value} value={o.value} disabled={o.disabled} title={o.reason ?? undefined}>

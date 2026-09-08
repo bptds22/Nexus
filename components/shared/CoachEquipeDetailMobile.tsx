@@ -360,9 +360,13 @@ export default function CoachEquipeDetailMobile() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] text-white truncate">{c.name}</p>
-                    {/* Rôle en sous-titre + crayon — même ligne que le web.
-                        Pas de crayon sans les droits (isAdmin). */}
+                    {/* v3 — le select passe SOUS le nom : la ligne mobile
+                        (avatar + nom + bouton retirer) n'a pas la largeur du
+                        web pour l'accueillir à droite. Même composant, même
+                        règles ; seul le placement diffère. Sans droits
+                        (isAdmin), c'est du texte simple, pas un select grisé. */}
                     <CoachRoleLine
+                      className="mt-1"
                       role={c.role}
                       canEdit={isAdmin}
                       teamCoachCount={coaches.length}

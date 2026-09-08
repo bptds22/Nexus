@@ -736,23 +736,25 @@ function TeamDetailPageDesktop() {
                   <div className="w-9 h-9 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
                     <span className="text-[11px] font-bold text-[#9CA3AF]">{c.name.split(" ").map((n) => n[0]).join("")}</span>
                   </div>
-                  {/* Nom en titre, rôle en sous-titre : la pastille et le
-                      dropdown permanent disaient deux fois la même chose. */}
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-bold text-white truncate">{c.name}</p>
-                    <CoachRoleLine
-                      role={c.role}
-                      canEdit
-                      teamCoachCount={coaches.length}
-                      teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
-                      busy={roleBusy !== null}
-                      onChange={(next) => changeCoachRole(c, next)}
-                    />
-                  </div>
+                  <p className="text-[14px] font-bold text-white truncate">{c.name}</p>
                 </div>
-                <button type="button" onClick={() => removeCoach(c.id)} className="text-[#4a4d56] hover:text-[#E63946] transition-colors" title="Retirer">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-                </button>
+
+                {/* v3 — le select À DROITE, et il EST l'affichage du rôle :
+                    il en porte la couleur. Pas de pastille en plus, sinon on
+                    retombe sur la redondance de la v1. */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <CoachRoleLine
+                    role={c.role}
+                    canEdit
+                    teamCoachCount={coaches.length}
+                    teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
+                    busy={roleBusy !== null}
+                    onChange={(next) => changeCoachRole(c, next)}
+                  />
+                  <button type="button" onClick={() => removeCoach(c.id)} className="text-[#4a4d56] hover:text-[#E63946] transition-colors" title="Retirer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -1,28 +1,30 @@
 "use client";
 
-import { useState } from "react";
 import TeamRoleSelect from "@/components/shared/coach/TeamRoleSelect";
 import { roleLabel, roleColor, type TeamRole } from "@/lib/coach/teamRoles";
 
 /* ═══════════════════════════════════════════════════════════════
-   CoachRoleLine — le rôle d'un coach, en sous-titre, éditable au crayon.
+   CoachRoleLine — le rôle d'un coach : un select, ou du texte.
 
-   AVANT (v1) : une pastille de rôle ET un dropdown permanent, côte à côte.
-   Les deux disaient la même chose, et le dropdown ouvert en permanence
-   transformait une information en formulaire. La ligne criait.
+   v3. Deux états, jamais les deux à la fois :
 
-   MAINTENANT : le rôle est un SOUS-TITRE, dans la couleur du rôle. Le
-   crayon n'apparaît que pour qui peut modifier ; le sélecteur ne s'ouvre
-   qu'au clic. Consulter est le cas fréquent, modifier l'exception — c'est
-   la consultation qui doit être calme.
+     · droits d'édition  → LE SELECT, seul. Il porte la couleur du rôle,
+       donc il EST l'affichage — pas un contrôle posé à côté d'une
+       pastille. C'est ce qui évite de retomber dans la redondance
+       badge + dropdown de la v1, où deux éléments disaient la même
+       chose côte à côte.
 
-   Le motif d'une option bloquée vit UNIQUEMENT dans le tooltip de
-   l'option (`showReason={false}`) : plus de ligne de texte permanente
-   sous la ligne, qui poussait la mise en page et se répétait à chaque
-   coach.
+     · pas de droits → du TEXTE simple, dans la couleur du rôle. Pas de
+       select grisé : un contrôle désactivé invite à cliquer et déçoit,
+       là où un texte informe sans rien promettre.
 
-   Composant unique web + mobile — les deux surfaces montent la même
-   ligne, donc le layout ne peut pas diverger.
+   Les motifs de blocage vivent dans le `title` des options
+   (`showReason={false}`) : une ligne de texte permanente sous chaque
+   coach se répétait et poussait la mise en page.
+
+   Composant unique web + mobile. Le PLACEMENT diffère — à droite de la
+   ligne sur web, sous le nom sur mobile où la largeur manque — mais le
+   rendu et les règles sont les mêmes.
    ═══════════════════════════════════════════════════════════════ */
 
 export default function CoachRoleLine({
@@ -32,63 +34,38 @@ export default function CoachRoleLine({
   teamHasReferent,
   busy,
   onChange,
+  className,
 }: {
   role: string;
-  /** false → aucun crayon. Le rôle reste lisible, il n'est pas modifiable. */
+  /** false → texte simple, aucun contrôle. */
   canEdit: boolean;
   teamCoachCount: number;
   teamHasReferent: boolean;
   busy?: boolean;
   onChange: (next: TeamRole) => void;
+  className?: string;
 }) {
-  const [ouvert, setOuvert] = useState(false);
-
-  if (ouvert && canEdit) {
+  if (!canEdit) {
     return (
-      <div className="flex items-center gap-2 mt-0.5">
-        <TeamRoleSelect
-          currentRole={role}
-          teamCoachCount={teamCoachCount}
-          teamHasReferent={teamHasReferent}
-          disabled={busy}
-          showReason={false}
-          onChange={(next) => {
-            setOuvert(false);
-            onChange(next);
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => setOuvert(false)}
-          className="text-[11px] font-bold text-[#6B7280] hover:text-white transition-colors"
-        >
-          Annuler
-        </button>
-      </div>
+      <span
+        className={`text-[12px] font-semibold ${
+          roleColor(role).split(" ").find((c) => c.startsWith("text-")) ?? "text-[#9CA3AF]"
+        } ${className ?? ""}`}
+      >
+        {roleLabel(role)}
+      </span>
     );
   }
 
   return (
-    <div className="flex items-center gap-1.5 mt-0.5">
-      <span className={`text-[12px] font-semibold ${roleColor(role).split(" ").find((c) => c.startsWith("text-")) ?? "text-[#9CA3AF]"}`}>
-        {roleLabel(role)}
-      </span>
-
-      {canEdit && (
-        <button
-          type="button"
-          onClick={() => setOuvert(true)}
-          disabled={busy}
-          title="Modifier le rôle"
-          aria-label="Modifier le rôle"
-          className="text-[#4a4d56] hover:text-[#E63946] transition-colors disabled:opacity-40"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-          </svg>
-        </button>
-      )}
-    </div>
+    <TeamRoleSelect
+      className={className}
+      currentRole={role}
+      teamCoachCount={teamCoachCount}
+      teamHasReferent={teamHasReferent}
+      disabled={busy}
+      showReason={false}
+      onChange={onChange}
+    />
   );
 }
