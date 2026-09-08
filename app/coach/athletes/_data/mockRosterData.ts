@@ -6,6 +6,7 @@
 import type { AthleteVerification } from "../../../../lib/types/models";
 import type { DistinctionEntry } from "@/lib/config/badges";
 import type { PastilleBadge } from "@/lib/queries/shared/athleteBadges";
+import type { TaxonomySource } from "@/lib/config/team-taxonomy";
 
 export type CommitmentStatus = "aucun" | "en_discussion" | "visite_planifiee" | "lettre_signee" | "place";
 
@@ -72,6 +73,12 @@ export interface RosterAthlete {
    *  lu via team_athletes. null = aucune équipe rattachée. Optionnel : les
    *  fixtures mock ci-dessous ne le portent pas. PAS athletes.genre. */
   teamGender?: string | null;
+  /** Source brute des axes ORGANISATION / LIGUE / DIVISION — voir
+   *  `lib/config/team-taxonomy.ts`. On porte la SOURCE, pas trois libellés déjà
+   *  calculés : les règles vivent dans le module, pas dans les pages.
+   *  Optionnelle : les fixtures mock ci-dessous ne la portent pas et se rangent
+   *  alors en « Non renseigné », ce qui est la vérité. */
+  taxonomy?: TaxonomySource;
   /** Primary coach owning this athlete (NULL = unclaimed in the school pool). */
   coach_id?: string | null;
   /** Nom de l'évaluateur de la note affichée, SEULEMENT quand ce n'est pas le

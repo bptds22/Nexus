@@ -799,6 +799,22 @@ file.
 
       **Relevé** le 2026-09-04 en instruisant le Lot 2 (grade recruteur).
 
+      **`app/coach/athletes/page.tsx` porte EXACTEMENT le même défaut, en
+      pire — 56 violations.** `if (IS_CAPACITOR) return <CoachAthletesMobile />;`
+      à la **l.173**, avant tous les hooks. Relevé le 2026-09-06 en instruisant
+      les filtres Organisation / Ligue / Division : le fichier en comptait
+      **45** avant ce lot, **56** après (11 ajouts — 2 `useState`, 7 `useMemo`,
+      1 `useCallback`, 1 `useEffect`). Ces hooks-là
+      n'introduisent aucune violation d'une nature nouvelle : ils héritent du
+      retour anticipé du fichier.
+
+      Même correctif, même consigne : sortir l'aiguillage web/mobile au-dessus
+      du composant, dans un lot dédié. Les DEUX fichiers sont à traiter
+      ensemble le jour où on s'y met — c'est le même geste, et le laisser à
+      moitié fait garderait le détecteur débranché sur l'autre moitié.
+
+      Consigné plutôt que corrigé, sur arbitrage BP du 2026-09-06.
+
 - [ ] **`ouvert_cegep_*` manque au garde-fou de `partner_athlete_profile` —
       la RPC élargie est APPLIQUÉE en prod.** Le bloc `DO $$` de
       `20260904130334_partner_athlete_profile_perimetre_elargi.sql` lève une
@@ -1496,6 +1512,36 @@ file.
 
       À noter au passage, hors du fix : ces pages n'ont **aucune
       `description`**. Si on y revient, la poser en même temps.
+
+- [ ] **Nudge de saisie : la ligue des équipes civiles est vide 2 fois sur 3.**
+      Constat du 2026-09-06, relevé en construisant les filtres Ligue/Division
+      des moteurs de recherche (`lib/config/team-taxonomy.ts`). **Rien à coder
+      côté filtre** — c'est un manque de saisie, pas un bug.
+
+      Mesuré en prod sur les 86 athlètes ACTIF, une fois la taxonomie
+      appliquée :
+
+          Organisation = ligue_civile   27 athlètes
+            · ligue nommée (LFMM)        9   (34,6 %)
+            · Non renseigné             17   (65,4 %)
+
+      Côté scolaire le problème ne se pose pas : la règle
+      `rseq_team_id ⇒ RSEQ` récupère les équipes pontées dont `teams.league`
+      est vide (26 athlètes rattrapés), et il ne reste que 29 % de vides. Le
+      pont RSEQ **remplit tout seul** ce que le civil ne remplit jamais : sur
+      8 300 équipes, `teams.league` est vide sur 7 382 (89 %).
+
+      Conséquence produit : la facette **Ligue** est peu discriminante côté
+      civil, et le restera tant que le formulaire de création d'équipe
+      n'incitera pas à renseigner la ligue. Piste (roadmap produit, pas
+      technique) : rendre le champ ligue plus visible — voire requis — à la
+      création d'une équipe rattachée à une école de type `LIGUE_CIVILE`, où
+      il n'existe aucun import pour compenser une omission.
+
+      ⚠ Ne PAS « réparer » ça en écrivant des valeurs par défaut dans
+      `teams.league` : cette colonne fait partie de `teams_identity_unique`
+      (school_id, sport_id, name, age_group, division, gender, season,
+      league). Y écrire change l'identité d'une équipe et peut collisionner.
 
 ---
 

@@ -24,6 +24,12 @@ import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
 
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
+import {
+  taxonomyFromAthleteRow, organisationOptions, leagueOptions, divisionOptions,
+  EMPTY_TAXONOMY, axisDisplay,
+  matchesOrganisation, matchesLeague, matchesDivision,
+  type Organisation,
+} from "@/lib/config/team-taxonomy";
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -174,6 +180,8 @@ function MesAthletesContent() {
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
   const [genderFilter, setGenderFilter] = useState<string>("");
+  const [leagueFilter, setLeagueFilter] = useState<string>("");
+  const [divisionFilter, setDivisionFilter] = useState<string>("");
   const [position, setPosition] = useState("");
   const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
@@ -314,9 +322,10 @@ function MesAthletesContent() {
           created_at,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
-          schools!school_id(name, region),
+          context,
+          schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
-          team_athletes(team_id, teams!team_id(gender)),
+          team_athletes(team_id, teams!team_id(gender, division, league, rseq_team_id, schools!school_id(type))),
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at),
           athlete_badges(contexte, retire_le, badges(code, libelle))
         `)
@@ -466,6 +475,11 @@ function MesAthletesContent() {
           // Genre de l'ÉQUIPE (teams.gender via team_athletes), PAS athletes.genre.
           // null quand l'athlète n'a aucune équipe → exclu si un genre est filtré.
           teamGender: firstTeamGender(a.team_athletes),
+          /* ORGANISATION / LIGUE / DIVISION — source unique lib/config/team-taxonomy.
+             On porte la SOURCE brute, pas trois libellés déjà calculés : les
+             regles (repli d'organisation, `rseq_team_id => RSEQ`) vivent dans le
+             module, et le jour ou elles bougent, cette page ne bouge pas. */
+          taxonomy: taxonomyFromAthleteRow(a),
           coach_id: (a.coach_id as string | null) ?? null,
         };
 
@@ -614,6 +628,12 @@ function MesAthletesContent() {
     if (position) list = list.filter((a) => a.position === position);
     // Genre d'ÉQUIPE (teams.gender), PAS athletes.genre. Sans équipe => exclu.
     if (genderFilter) list = list.filter((a) => a.teamGender === genderFilter);
+    /* ORGANISATION / LIGUE / DIVISION — lib/config/team-taxonomy.
+       Contrairement au genre, « Non renseigné » est ici une VALEUR : un athlète
+       sans équipe reste ATTEIGNABLE au lieu de disparaître en silence. */
+    if (orgType) list = list.filter((a) => matchesOrganisation(a.taxonomy ?? EMPTY_TAXONOMY, orgType));
+    if (leagueFilter) list = list.filter((a) => matchesLeague(a.taxonomy ?? EMPTY_TAXONOMY, leagueFilter));
+    if (divisionFilter) list = list.filter((a) => matchesDivision(a.taxonomy ?? EMPTY_TAXONOMY, divisionFilter));
     if (region) list = list.filter((a) => a.region === region);
     if (promotion) list = list.filter((a) => a.gradYear === parseInt(promotion));
     if (verifiedOnly) list = list.filter((a) => a.isVerified);
@@ -641,15 +661,71 @@ function MesAthletesContent() {
     }
 
     return list;
-  }, [search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
+  }, [search, sport, genderFilter, orgType, leagueFilter, divisionFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
 
   const filtered = useMemo(() => applyFilters(myRoster), [applyFilters, myRoster]);
   const filteredSchool = useMemo(() => applyFilters(schoolAthletes), [applyFilters, schoolAthletes]);
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
+  /* ── OPTIONS DES FILTRES ORGANISATION / LIGUE / DIVISION ──────────────────
+     Construites depuis les athletes REELS des DEUX sections — le roster du
+     coach ET le pool de l'ecole pour un directeur — jamais depuis une liste
+     theorique. Une valeur qui n'existe chez personne ne doit pas etre offerte.
+
+     Calculees AVANT les trois filtres de taxonomie : une option ne doit pas
+     s'evaporer parce qu'on vient de la cocher (lecon du Lot 2b). Seul le
+     NIVEAU 1 cadre les niveaux 2 et 3 — c'est la cascade demandee. */
+  const taxonomyRows = useMemo(
+    () => [...myRoster, ...schoolAthletes].map((a) => a.taxonomy ?? EMPTY_TAXONOMY),
+    [myRoster, schoolAthletes],
+  );
+  const orgOptions = useMemo(() => organisationOptions(taxonomyRows), [taxonomyRows]);
+  const leagueOptionList = useMemo(() => leagueOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
+  const divisionOptionList = useMemo(() => divisionOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
+
+  /* ── DANS QUEL ETAT AFFICHER CHAQUE MENU ? (regle finale BP du 2026-09-06) ──
+     Les trois menus sont TOUJOURS AFFICHES, a position stable. Ce qui varie,
+     c'est ce qu'ils racontent : actif (>= 2 valeurs), pre-rempli (1 seule
+     valeur, menu grise qui AFFICHE cette valeur), ou vide (aucune donnee).
+
+     Un directeur scolaire n'a pas besoin de CHOISIR « RSEQ » : il a besoin de
+     LIRE qu'il y est. Le pre-rempli ne retire que le choix, pas l'information.
+
+     Juge sur les listes CADREES par l'organisation — sans danger ici, puisque
+     le menu ne disparait jamais : cocher « Scolaire » doit faire lire « RSEQ »
+     sur le menu Ligue. Ce qui remplace la garde du Lot 2b, c'est la purge
+     ci-dessous. */
+  const orgAxis = useMemo(() => axisDisplay(orgOptions), [orgOptions]);
+  const leagueAxis = useMemo(() => axisDisplay(leagueOptionList), [leagueOptionList]);
+  const divisionAxis = useMemo(
+    () => axisDisplay(divisionOptionList, { unsetCounts: true }), [divisionOptionList],
+  );
+
+  /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
+     filtrer derriere un menu grise. Sans ca, une selection posee quand l'axe
+     etait actif survivrait, invisible et agissante : le piege du Lot 2b, deplace
+     du "menu disparu" au "menu desactive". */
+  useEffect(() => {
+    if (orgAxis.state !== "active" && orgType) setOrgType("");
+    if (leagueAxis.state !== "active" && leagueFilter) setLeagueFilter("");
+    if (divisionAxis.state !== "active" && divisionFilter) setDivisionFilter("");
+  }, [orgAxis.state, leagueAxis.state, divisionAxis.state, orgType, leagueFilter, divisionFilter]);
+
+  /* Changer d'organisation REMET A ZERO les deux niveaux du dessous.
+     Sans ca : cocher « Ligue civile » + « LFMM », puis basculer sur
+     « Scolaire » laisse `leagueFilter = "lfmm"` actif alors que LFMM a quitte
+     la liste — zero resultat, et le <select> affiche un libelle vide. Le filtre
+     continue de filtrer sans plus rien afficher : exactement le piege corrige
+     au Lot 2b, transpose au <select>. */
+  const handleOrgTypeChange = useCallback((v: string) => {
+    setOrgType(v);
+    setLeagueFilter("");
+    setDivisionFilter("");
+  }, []);
+
+  const hasFilters = sport || orgType || leagueFilter || divisionFilter || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
   const resetFilters = () => {
-    setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
+    setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setLeagueFilter(""); setDivisionFilter(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
   const totalPending = unverifiedAthletes.length + pendingSuggestions.length;
@@ -1016,6 +1092,66 @@ function MesAthletesContent() {
         {/* Genre d'ÉQUIPE (teams.gender) — sport → genre → position. */}
         <select title="Genre d&apos;équipe" value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className={`nx-filter-select${genderFilter ? " nx-filter-active" : ""}`}>
           {TEAM_GENDER_FILTER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+        </select>
+
+        {/* ORGANISATION -> LIGUE -> DIVISION. Le niveau 1 cadre les deux suivants ;
+            « Non renseigne » n'apparait QUE si au moins un athlete affiche est
+            sans valeur, et reste SELECTIONNABLE (contrairement au genre, qui
+            exclut silencieusement les athletes sans equipe). */}
+        {/* ORGANISATION -> LIGUE -> DIVISION. Toujours affiches, position stable.
+            Mono-valeur => menu GRISE qui affiche cette valeur (« RSEQ », « D3 ») :
+            un libelle d'ETAT, pas un filtre — il ne compte pas dans « X sur Y »,
+            ne declenche pas « Reinitialiser », et porte `:disabled` (attenue),
+            jamais `nx-filter-active`. */}
+        <select
+          title="Organisation"
+          value={orgType}
+          onChange={(e) => handleOrgTypeChange(e.target.value)}
+          disabled={orgAxis.state !== "active"}
+          className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
+        >
+          {orgAxis.state === "active" ? (
+            <>
+              <option value="">Toutes les organisations</option>
+              {orgOptions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+            </>
+          ) : (
+            <option value="">{orgAxis.label}</option>
+          )}
+        </select>
+
+        <select
+          title="Ligue"
+          value={leagueFilter}
+          onChange={(e) => setLeagueFilter(e.target.value)}
+          disabled={leagueAxis.state !== "active"}
+          className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
+        >
+          {leagueAxis.state === "active" ? (
+            <>
+              <option value="">Toutes les ligues</option>
+              {leagueOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+            </>
+          ) : (
+            <option value="">{leagueAxis.label}</option>
+          )}
+        </select>
+
+        <select
+          title="Division"
+          value={divisionFilter}
+          onChange={(e) => setDivisionFilter(e.target.value)}
+          disabled={divisionAxis.state !== "active"}
+          className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
+        >
+          {divisionAxis.state === "active" ? (
+            <>
+              <option value="">Toutes les divisions</option>
+              {divisionOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+            </>
+          ) : (
+            <option value="">{divisionAxis.label}</option>
+          )}
         </select>
 
         <select title="Position" value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
