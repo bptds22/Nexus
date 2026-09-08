@@ -360,7 +360,7 @@ function TeamDetailPageDesktop() {
             (ath?.poids_lbs as number | null | undefined) ?? null,
           ),
           gradYear: typeof ath?.annee_diplomation === "number" ? (ath.annee_diplomation as number) : null,
-          stars: cote != null ? Number(cote) / 2 : 0,
+          stars: cote != null ? Number(cote) : 0,
           recruitmentStatus: ((ath?.statut_recrutement_override as string | null) ?? null) as GlobalRecruitmentStatus | null,
           committedSchoolName: committed?.name || null,
           openToOffers: (ath?.open_to_offers as boolean | null) ?? null,
