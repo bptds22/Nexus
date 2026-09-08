@@ -10,6 +10,7 @@ import {
 } from "@/components/shared/teams/TeamCreateFormBlock";
 import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import { createTeam, joinTeam } from "@/lib/queries/coach/createTeam";
+import { loadTeamClaimPreview, claimPreviewMessage, type TeamClaimPreview } from "@/lib/queries/coach/teamClaimPreview";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import CoachEquipesMobile from "@/components/shared/CoachEquipesMobile";
 
@@ -68,6 +69,13 @@ function EquipesPageDesktop() {
   const [showCreate, setShowCreate] = useState(false);
   /** Confirmation après un « rejoindre » — précise le rôle obtenu. */
   const [joinedNotice, setJoinedNotice] = useState<string | null>(null);
+  /* Lot C — prise d'équipe : on ANNONCE avant d'écrire. Rejoindre une équipe
+     orpheline désigne le responsable de tous ses athlètes ; le coach doit voir
+     le nombre avant de cliquer, pas le découvrir après. */
+  const [pendingClaim, setPendingClaim] = useState<
+    { team: TeamPickerItem; preview: TeamClaimPreview } | null
+  >(null);
+  const [claimBusy, setClaimBusy] = useState(false);
   const [formValues, setFormValues] = useState<TeamFormValues | null>(null);
   const [formValid, setFormValid] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -232,22 +240,45 @@ function EquipesPageDesktop() {
   /* Coach picks an EXISTING team from the picker → joinTeam décide du rôle
      (équipe sans coach = revendication → head_coach ; sinon assistant) ;
      refresh list. */
+  /* N'ÉCRIT RIEN — charge l'aperçu et ouvre la confirmation. L'écriture est
+     dans confirmClaim ci-dessous. */
   const handlePickExisting = useCallback(async (team: TeamPickerItem) => {
     if (!currentUserId) return;
     const supabase = createClient();
-    const { error, role } = await joinTeam(supabase, { coachUserId: currentUserId, teamId: team.id });
+    const preview = await loadTeamClaimPreview(supabase, team.id);
+    setShowPicker(false);
+    setPendingClaim({ team, preview });
+  }, [currentUserId]);
+
+  const confirmClaim = useCallback(async () => {
+    if (!pendingClaim || !currentUserId || claimBusy) return;
+    setClaimBusy(true);
+    const supabase = createClient();
+    const { error, role } = await joinTeam(supabase, {
+      coachUserId: currentUserId,
+      teamId: pendingClaim.team.id,
+    });
+    setClaimBusy(false);
     if (error) {
-      setCreateError((error as { message?: string }).message || "Impossible de rejoindre cette équipe.");
+      /* L'index unique partiel de la vague 1 refuse un second responsable :
+         un autre coach a revendiqué l'équipe entre l'aperçu et le clic. */
+      setCreateError(
+        (error as { message?: string }).message?.includes("one_referent_per_team")
+          ? "Un autre entraîneur vient de prendre la responsabilité de cette équipe. Recharge la page pour la rejoindre comme adjoint."
+          : (error as { message?: string }).message || "Impossible de rejoindre cette équipe.",
+      );
+      setPendingClaim(null);
       return;
     }
-    setShowPicker(false);
+    const nom = pendingClaim.team.name;
+    setPendingClaim(null);
     setJoinedNotice(
-      role === "head_coach"
-        ? `${team.name} — tu en es maintenant l'entraîneur responsable.`
-        : `${team.name} — tu as rejoint l'équipe comme entraîneur adjoint.`,
+      role === "head_coach_interim"
+        ? `${nom} — tu en es maintenant le coach intérimaire.`
+        : `${nom} — tu as rejoint l'équipe comme entraîneur adjoint.`,
     );
     loadTeams();
-  }, [currentUserId]);
+  }, [pendingClaim, currentUserId, claimBusy]);
 
   if (loading) {
     return (
@@ -408,6 +439,46 @@ function EquipesPageDesktop() {
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* Lot C — CONFIRMATION AVANT ÉCRITURE. Rien n'est écrit tant que le
+          coach n'a pas vu ce qu'il prend en charge. */}
+      {pendingClaim && (
+        <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4"
+             role="dialog" aria-modal="true" aria-labelledby="claim-title">
+          <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-lg w-full">
+            <h3 id="claim-title" className="font-head text-lg font-black text-white uppercase tracking-tight">
+              {pendingClaim.preview.hasReferent ? "Rejoindre l'équipe" : "Devenir coach intérimaire"}
+            </h3>
+
+            <p className="text-[13.5px] text-[#D1D5DB] mt-3 leading-relaxed">
+              {claimPreviewMessage(pendingClaim.preview, pendingClaim.team.name)}
+            </p>
+
+            {!pendingClaim.preview.hasReferent && (
+              <p className="text-[12.5px] text-[#9CA3AF] mt-3 border-l-2 border-[#F59E0B]/50 pl-3">
+                Tu deviens leur point de contact : les recruteurs s&apos;adressent à toi. Dès
+                qu&apos;un entraîneur-chef sera désigné, il reprendra la responsabilité et tu
+                redeviendras assistant — sans rien perdre de tes accès.
+              </p>
+            )}
+
+            {createError && (
+              <p className="mt-3 text-[13px] text-[#EF4444] font-semibold">{createError}</p>
+            )}
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button type="button" onClick={() => setPendingClaim(null)} disabled={claimBusy}
+                className="px-4 py-2 rounded-lg text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors disabled:opacity-50">
+                Annuler
+              </button>
+              <button type="button" onClick={confirmClaim} disabled={claimBusy}
+                className="bg-[#E63946] hover:bg-[#D42B22] text-white px-5 py-2 rounded-lg font-head font-bold text-[12px] uppercase tracking-wider transition-colors disabled:opacity-50">
+                {claimBusy ? "..." : pendingClaim.preview.hasReferent ? "Rejoindre" : "Confirmer"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

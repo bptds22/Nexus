@@ -1,5 +1,7 @@
 "use client";
 
+import InterimCoachBanner from "@/components/shared/coach/InterimCoachBanner";
+import { loadMyInterimTeams, type InterimTeam } from "@/lib/queries/coach/interimTeams";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ActionBar from "./_components/ActionBar";
@@ -45,6 +47,7 @@ export default function TableauDeBordPage() {
   const [loading, setLoading] = useState(true);
   const [isDirector, setIsDirector] = useState(false);
   const [activeTeams, setActiveTeams] = useState(0);
+  const [interimTeams, setInterimTeams] = useState<InterimTeam[]>([]);
   const [isInterimDirector, setIsInterimDirector] = useState(false);
   const [interimSchoolName, setInterimSchoolName] = useState("");
   const [demotionNotifications, setDemotionNotifications] = useState<{
@@ -102,6 +105,10 @@ export default function TableauDeBordPage() {
       }
 
       // Director → school-wide dashboard scope (BP rule). Non-director unchanged.
+      /* Lot C — bandeau intérim. Lecture indépendante : le bandeau ne doit
+         jamais empêcher le tableau de bord de s'afficher. */
+      loadMyInterimTeams(supabase).then(setInterimTeams);
+
       const dir = await loadSchoolDirectorStatus(supabase, user.id);
       const isDir = dir.isDirector;
       setIsDirector(isDir);
@@ -423,6 +430,10 @@ export default function TableauDeBordPage() {
         </p>
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
       </div>
+
+      {/* Lot C — bandeau persistant « coach intérimaire ». Disparaît seul
+          dès qu'un head coach titulaire est nommé. */}
+      <InterimCoachBanner teams={interimTeams} />
 
       {/* Interim director status (persistent while role is held) */}
       {isInterimDirector && (
