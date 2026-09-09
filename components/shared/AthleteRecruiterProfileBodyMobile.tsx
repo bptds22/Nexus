@@ -148,23 +148,6 @@ const FLAG_REASONS = [
 
 /* ── Helper sub-components (copiés du desktop body) ─────────────── */
 
-function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChange: (m: "simple" | "detailed") => void }) {
-  // Iter 7.8b Section B — pill plus lisible : padding bumpé (px-5 py-2.5),
-  // texte 13px (au lieu de 12), tracking moins serré, container plus aéré.
-  const pill = (active: boolean) =>
-    `px-5 py-2.5 rounded-full text-[13px] font-bold uppercase tracking-[0.08em] transition-all cursor-pointer ${
-      active
-        ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]"
-        : "text-[#9CA3AF] hover:text-white"
-    }`;
-  return (
-    <div className="flex items-center gap-1.5 bg-[#13151a] rounded-full p-1.5 w-fit">
-      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("simple"); }} className={pill(mode === "simple")}>Aperçu</button>
-      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("detailed"); }} className={pill(mode === "detailed")}>Profil complet</button>
-    </div>
-  );
-}
-
 function PreferencePill({ active, label: lbl }: { active?: boolean; label: string }) {
   if (active === undefined) return null;
   return (
@@ -1270,9 +1253,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
      mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
      DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
-  const [mode, setMode] = useState<"simple" | "detailed">("detailed");
-  const effectiveMode: "simple" | "detailed" = mode;
-  const isDetailed = effectiveMode === "detailed";
+  /* LE TOGGLE « Aperçu / Profil complet » EST RETIRÉ (BP, 2026-09-09).
+     Aucun contenu ne lui était propre — cette surface n'avait même pas de
+     branche inverse. Aucune persistance, aucun deep-link, aucun geste : le
+     seul effet de bord était un haptique, parti avec le bouton.
+
+     `effectiveMode` disparaît aussi : c'était un alias mort (`= mode`), reste
+     d'un forçage retiré le 2026-09-03.
+
+     Les blocs conditionnels restent EN PLACE ; l'élagage est séparé.
+
+     ⚠ Aucun verrou ouvert : lockContent / identityVisible ne lisent pas
+     `mode`. Vérifié sur ce fichier aujourd'hui. */
+  const isDetailed = true;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
@@ -1573,12 +1566,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     triggerHaptic("Light");
     setActiveTab(k);
     setTabFadeKey((v) => v + 1);
-  };
-
-  // Mode toggle Simplifié/Détaillé avec haptic (Fix 7 iter 3.1)
-  const handleModeChange = (m: "simple" | "detailed") => {
-    triggerHaptic("Light");
-    setMode(m);
   };
 
   // Reset offset modal à chaque fermeture (Fix 2 iter 3.2)
@@ -2492,11 +2479,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         style={{ top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)" }}
       >
         <TabBar activeTab={activeTab} onChange={handleTabChange} />
-        {/* Toggle Simplifié/Détaillé centré. Iter 7.8c-UI Section B —
-            border-t retiré (séparation par l'espace seul, plus aéré). */}
-        <div className="px-4 py-2 flex justify-center">
-          <ProfileToggle mode={mode} onChange={handleModeChange} />
-        </div>
       </div>
 
       {/* ── Main scroll container (tab content) ──
