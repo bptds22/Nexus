@@ -58,6 +58,16 @@ export default function ParentSummaryCard() {
   const maxCount = Math.max(1, ...weekly.map((w) => w.count));
   const aucuneActivite = weekly.length === 0 || weekly.every((w) => w.count === 0);
 
+  /* Vues de la semaine COURANTE — reprend la donnée que portait la StatCard
+     « Vues du profil ». Sélection par week_start MAXIMAL plutôt que par
+     `weekly.at(-1)` : on ne dépend pas de l'ordre de tri du RPC, qui n'est
+     garanti nulle part côté client. */
+  const semaineCourante = weekly.reduce<{ week_start: string; count: number } | null>(
+    (acc, w) => (acc === null || w.week_start > acc.week_start ? w : acc),
+    null,
+  );
+  const vuesSemaine = semaineCourante?.count ?? 0;
+
   return (
     <section className="bg-[#1A1D24] border border-white/5 rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-white/[0.05]">
@@ -68,8 +78,18 @@ export default function ParentSummaryCard() {
         {/* ── Activité ──────────────────────────────────────── */}
         <Link href="/parent/activite" className={`${ZONE} sm:col-span-2 hover:border-[#E63946]/40`}>
           <div className="flex items-baseline justify-between gap-3">
-            <p className="text-[14px] font-bold text-white">Activité du profil</p>
-            <p className="text-[11px] text-[#6b7280] uppercase tracking-wider">12 dernières semaines</p>
+            <p className="text-[14px] font-bold text-white">
+              Activité du profil
+              <span className="text-[11px] font-normal text-[#6b7280] uppercase tracking-wider"> · 12 dernières semaines</span>
+            </p>
+            {/* Zéro vue → pas de badge. « 0 vues cette semaine » est une
+                mauvaise nouvelle affichée en permanence ; l'absence dit la
+                même chose sans la marteler. */}
+            {vuesSemaine > 0 && (
+              <p className="text-[11px] text-[#6b7280] shrink-0 tabular-nums">
+                {vuesSemaine} vue{vuesSemaine > 1 ? "s" : ""} cette semaine
+              </p>
+            )}
           </div>
 
           {aucuneActivite ? (
