@@ -807,6 +807,37 @@ file.
 
 ## P3 — Latent / future work
 
+- [ ] **Page profil recruteur, vue coach — la destination manque, pas
+      l'intention (2026-09-09).** Le besoin est réel : « qui me contacte ? »
+
+      `EntityLink` pointait `/recruteur/<id>/profil` pour un recruteur vu par un
+      coach. **Cette route n'a jamais existé** — il n'y a pas de segment
+      `app/recruteur/[id]`, seulement `app/recruteur/profil`, qui est
+      « Mon profil » DANS le portail recruteur. Un coach qui cliquait le nom du
+      recruteur venant de le contacter tombait sur un 404. Trois surfaces le
+      rendaient : la liste Messages (`app/coach/demandes/page.tsx`), l'en-tête
+      du fil et le panneau latéral (`app/coach/demandes/[id]/PageClient.tsx`).
+
+      Corrigé en retirant le lien : `getEntityRoute` rend `"#"` pour ce cas, et
+      `EntityLink` dégrade alors en texte simple — pas de href, pas de curseur
+      main, pas de soulignement. La ligne, elle, reste cliquable et ouvre la
+      conversation : un seul comportement, aucune ambiguïté.
+
+      **Quand la page existera**, une seule ligne à rétablir dans
+      `getEntityRoute` rallume les trois surfaces d'un coup. Ce qu'elle devra
+      montrer : le nom, l'établissement, la division, et rien de plus — un coach
+      n'a pas à voir le pipeline ni les notes privées d'un recruteur.
+
+- [ ] **Même défaut, autre sens : `/recruteur/coach/<id>` n'existe pas non
+      plus (2026-09-09).** `EntityLink` le rend pour un COACH vu par un
+      RECRUTEUR — trois surfaces le portent, les widgets d'évaluation
+      (`ReviewWidgetTeaser`, `ReviewWidgetForm`, `ReviewWidgetConfirmation`).
+      Un recruteur qui clique le nom du coach qu'il évalue tombe sur un 404.
+      NON corrigé : hors du périmètre demandé le 2026-09-09, qui portait sur le
+      nom du recruteur côté coach. Le correctif est la même ligne, dans le même
+      `switch`. À trancher avec le sort de la page « Ma réputation », qui est
+      justement la fiche publique d'un coach.
+
 - [ ] **`athletes.equipe_id` : colonne piège, non synchronisée avec le vrai
       roster (2026-09-09).** Décision — supprimer ou synchroniser — renvoyée à
       la **session modèle club**. Pas maintenant.
