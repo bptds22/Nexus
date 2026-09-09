@@ -19,7 +19,14 @@ type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED"
   // pastille ni icône (les deux maps rendaient `undefined`) et dans aucun
   // onglet. Le geste d'acceptation vit dans la carte <PendingInvitations>
   // en haut de cette même page.
-  | "TEAM_INVITATION";
+  | "TEAM_INVITATION"
+  // Rattachement d'établissement (2026-09-09). La leçon TEAM_INVITATION est
+  // appliquée d'AVANCE : les deux types entrent ici, dans les deux Records et
+  // dans un onglet, le même jour que la migration qui les crée en base. Une
+  // valeur qui existe côté serveur et pas ici s'affiche sans pastille, sans
+  // icône et dans aucun filtre — visible seulement dans « Tout ».
+  | "SCHOOL_CLAIM_REJECTED"
+  | "COACH_CLAIMED";
 
 interface AthleteNotif {
   id: string;
@@ -45,6 +52,12 @@ const DOT_COLOR: Record<NotifType, string> = {
   PROFILE_TIP: "#EAB308",
   // Ambre = action attendue de l'athlète, même hue que le badge « En attente ».
   TEAM_INVITATION: "#F59E0B",
+  // Ambre aussi : le rejet appelle une VÉRIFICATION de sa part, il n'annonce
+  // pas une perte. Le rouge d'erreur (#EF4444) dirait « quelque chose est
+  // cassé » à un jeune dont le compte, lui, est intact.
+  SCHOOL_CLAIM_REJECTED: "#F59E0B",
+  // Bleu, comme les autres nouvelles qui viennent du coach.
+  COACH_CLAIMED: "#3B82F6",
 };
 
 const TYPE_ICON: Record<NotifType, React.ReactNode> = {
@@ -60,6 +73,10 @@ const TYPE_ICON: Record<NotifType, React.ReactNode> = {
   PROFILE_MILESTONE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7" /><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" /><path d="M18 2H6v7a6 6 0 0012 0V2Z" /></svg>,
   PROFILE_TIP: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
   TEAM_INVITATION: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
+  // École : c'est le rattachement à l'établissement qui est en cause.
+  SCHOOL_CLAIM_REJECTED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>,
+  // Poignée de main : quelqu'un répond désormais pour lui.
+  COACH_CLAIMED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
 };
 
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
@@ -106,9 +123,12 @@ export default function NotificationsPage() {
   const filtered = useMemo(() => {
     switch (filter) {
       case "unread": return notifs.filter((n) => !n.read);
-      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP"].includes(n.type));
+      // Le rejet de rattachement va dans « Profil » : ce qu'il demande au jeune
+      // est d'aller vérifier SON école, dans son profil. Le classer sous
+      // « Coach » l'enverrait chercher au mauvais endroit.
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED"].includes(n.type));
       case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
-      case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION"].includes(n.type));
+      case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION", "COACH_CLAIMED"].includes(n.type));
       default: return notifs;
     }
   }, [notifs, filter]);

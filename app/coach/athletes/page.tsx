@@ -278,6 +278,13 @@ function MesAthletesContent() {
   const [rosterScopeIds, setRosterScopeIds] = useState<Set<string>>(() => new Set());
   /** Ids ramenés par la requête ÉCOLE — borne « À réclamer » + supervision. */
   const [schoolRowIds, setSchoolRowIds] = useState<Set<string>>(() => new Set());
+  /** Rejets ACTIFS de l'école : athlete_id → date ISO. Un athlète rejeté sort
+   *  de la file ; il n'y revient que si un attachement d'équipe réancre son
+   *  école (`_apply_team_attachment_core`). C'est là que la mention « déjà
+   *  rejeté le X » sert — la trace informe, elle ne bloque pas (décision BP).
+   *  La RLS de school_claim_rejections borne déjà à mon école : pas de filtre
+   *  d'école côté client, qui ne ferait que dupliquer la règle. */
+  const [rejections, setRejections] = useState<Record<string, string>>({});
 
   // Apply URL filter presets
   useEffect(() => {
@@ -595,6 +602,22 @@ function MesAthletesContent() {
             };
           }));
         }
+      }
+
+      /* Rejets ACTIFS — lecture bornée par la RLS de la table à mon école.
+         Non bloquante : si elle échoue, la file s'affiche sans les mentions
+         plutôt que pas du tout. */
+      const { data: rejRows, error: rejError } = await supabase
+        .from("school_claim_rejections")
+        .select("athlete_id, rejected_at")
+        .is("cancelled_at", null);
+
+      if (rejError) {
+        console.error("[Coach roster] lecture des rejets échouée", rejError);
+      } else {
+        setRejections(Object.fromEntries(
+          (rejRows ?? []).map((r) => [r.athlete_id as string, r.rejected_at as string]),
+        ));
       }
 
       setLoading(false);
@@ -1037,8 +1060,11 @@ function MesAthletesContent() {
       {activeTab === "reclamer" && (
         <ReclamerSection
           unclaimedAthletes={unclaimedAthletes}
-          currentUserId={currentUserId}
+          orgType={coachOrgType}
+          isDirector={isDirector}
+          rejections={rejections}
           onClaimSuccess={() => setRefreshVersion((v) => v + 1)}
+          onRejectSuccess={() => setRefreshVersion((v) => v + 1)}
         />
       )}
 
