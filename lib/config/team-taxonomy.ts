@@ -214,7 +214,34 @@ export const ORGANISATION_LABELS: Record<Organisation, string> = {
    foi d'un champ vide ment à l'utilisateur, et le mensonge est invisible.
    ───────────────────────────────────────────────────────────────────────────── */
 
-export function organisationOf(src: TaxonomySource): Organisation | null {
+/* ─────────────────────────────────────────────────────────────────────────────
+   LA GARDE D'ENTRÉE — une source absente n'est pas une erreur
+
+   Les cinq fonctions publiques qui lisent une `TaxonomySource` acceptent
+   `null` / `undefined` et rendent `null` (« Non renseigné »). Elles ne lèvent
+   JAMAIS.
+
+   Pourquoi ce n'est pas de la paranoïa : une donnée incomplète est l'état
+   NORMAL du parc — 43 des 54 athlètes en équipe n'ont aucun ancrage résoluble,
+   et les auto-inscrits partiels arrivent tous les jours. Une taxonomie qui
+   plante sur une source vide fait tomber la page de recherche entière pour
+   une ligne mal remplie ; elle doit dégrader, pas casser.
+
+   La source peut aussi manquer sans que personne n'ait mal rempli quoi que ce
+   soit : le cache TanStack est persisté en sessionStorage (`nx-rq-cache`,
+   30 min), et une charge mise en cache AVANT que `SearchAthleteRow` ne porte
+   `taxonomy` se réhydrate dans du code qui l'attend. Le champ vaut alors
+   `undefined` sur TOUTES les lignes — pas sur un athlète, sur la page.
+   Le type ne protège de rien ici : il décrit ce que le code écrit
+   aujourd'hui, pas ce que le stockage rend.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/** Source utilisable ? Sert de garde d'entrée aux fonctions publiques. */
+type MaybeSource = TaxonomySource | null | undefined;
+
+export function organisationOf(src: MaybeSource): Organisation | null {
+  if (!src) return null;
+
   // 1. La déclaration de l'athlète.
   const ctx = (src.context ?? "").trim().toLowerCase();
   if (ctx === "ligue_civile") return "ligue_civile";
@@ -309,7 +336,8 @@ const SCHOOL_TYPES = new Set(["SECONDAIRE", "CEGEP"]);
  *  « scolaire » dans `organisationOf`. Déduire ici une ligue d'un type d'école
  *  est sûr (0 contre-exemple) ; déduire là-bas une organisation d'une ligue
  *  qu'on vient soi-même de déduire empilerait deux inférences. */
-export function leagueOf(src: TaxonomySource): string | null {
+export function leagueOf(src: MaybeSource): string | null {
+  if (!src) return null;
   if (src.teamIsRseq) return RSEQ;
 
   const name = normalizeLeague(src.teamLeague);
@@ -357,7 +385,8 @@ export function normalizeDivision(raw: string | null | undefined): string | null
 }
 
 /** Division d'un athlète, ou null quand elle est inconnue. */
-export function divisionOf(src: TaxonomySource): string | null {
+export function divisionOf(src: MaybeSource): string | null {
+  if (!src) return null;
   return normalizeDivision(src.teamDivision);
 }
 
@@ -473,7 +502,7 @@ function withUnset(options: TaxonomyOption[], unsetCount: number): TaxonomyOptio
   return sortOptions(all);
 }
 
-export function organisationOptions(rows: readonly TaxonomySource[]): TaxonomyOption[] {
+export function organisationOptions(rows: readonly MaybeSource[]): TaxonomyOption[] {
   const counts = new Map<Organisation, number>();
   let unset = 0;
   for (const r of rows) {
@@ -498,7 +527,7 @@ export function organisationOptions(rows: readonly TaxonomySource[]): TaxonomyOp
  *  diverger — deux implémentations de la même règle finissent toujours par se
  *  contredire. */
 export function leagueOptions(
-  rows: readonly TaxonomySource[],
+  rows: readonly MaybeSource[],
   org?: string | null,
 ): TaxonomyOption[] {
   const named: string[] = [];
@@ -514,7 +543,7 @@ export function leagueOptions(
 
 /** Les divisions offertes, mêmes règles de cadrage que `leagueOptions`. */
 export function divisionOptions(
-  rows: readonly TaxonomySource[],
+  rows: readonly MaybeSource[],
   org?: string | null,
 ): TaxonomyOption[] {
   const named: string[] = [];
@@ -539,21 +568,21 @@ export function divisionOptions(
    sur le libellé : deux orthographes d'une même ligue doivent matcher ensemble.
    ───────────────────────────────────────────────────────────────────────────── */
 
-export function matchesOrganisation(src: TaxonomySource, selected: string): boolean {
+export function matchesOrganisation(src: MaybeSource, selected: string): boolean {
   if (!selected) return true;
   const org = organisationOf(src);
   if (selected === UNSET_VALUE) return org === null;
   return org === selected;
 }
 
-export function matchesLeague(src: TaxonomySource, selected: string): boolean {
+export function matchesLeague(src: MaybeSource, selected: string): boolean {
   if (!selected) return true;
   const league = leagueOf(src);
   if (selected === UNSET_VALUE) return league === null;
   return league !== null && league.toLowerCase() === selected.toLowerCase();
 }
 
-export function matchesDivision(src: TaxonomySource, selected: string): boolean {
+export function matchesDivision(src: MaybeSource, selected: string): boolean {
   if (!selected) return true;
   const division = divisionOf(src);
   if (selected === UNSET_VALUE) return division === null;

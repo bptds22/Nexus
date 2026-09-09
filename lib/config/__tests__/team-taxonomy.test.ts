@@ -509,3 +509,43 @@ test("un athlète RSEQ à `league` vide est bien atteint par le filtre « RSEQ �
   assert.equal(matchesLeague(tape, RSEQ), true);
   assert.equal(matchesLeague(importe, UNSET_VALUE), false);
 });
+
+/* ── LA GARDE D'ENTRÉE ───────────────────────────────────────────────────────
+   Régression du 2026-09-09 : `organisationOf(undefined)` levait un TypeError
+   et faisait tomber toute la recherche recruteur. La source manquait sur
+   TOUTES les lignes, pas sur un athlète — cache TanStack persisté en
+   sessionStorage, mis en boîte avant que la ligne ne porte `taxonomy`.
+   Une source absente doit se ranger en « Non renseigné », pas casser. */
+
+test("une source absente dégrade en « Non renseigné » et ne lève jamais", () => {
+  for (const absente of [undefined, null]) {
+    assert.equal(organisationOf(absente), null);
+    assert.equal(leagueOf(absente), null);
+    assert.equal(divisionOf(absente), null);
+  }
+});
+
+test("sans filtre, un athlète sans taxonomie reste trouvable", () => {
+  // Le silence serait pire que le crash : un jeune qui disparaît des
+  // résultats sans que personne ne le sache.
+  assert.equal(matchesOrganisation(undefined, ""), true);
+  assert.equal(matchesLeague(undefined, ""), true);
+  assert.equal(matchesDivision(undefined, ""), true);
+  // Et il est bien joignable par la sentinelle « Non renseigné ».
+  assert.equal(matchesOrganisation(undefined, UNSET_VALUE), true);
+  assert.equal(matchesLeague(undefined, UNSET_VALUE), true);
+  assert.equal(matchesDivision(undefined, UNSET_VALUE), true);
+});
+
+test("les trois listes d'options comptent les sources absentes en « Non renseigné »", () => {
+  const rows = [undefined, mk({ context: "scolaire", teamLeague: "RSEQ", teamDivision: "D1" }), null];
+
+  const org = organisationOptions(rows);
+  assert.deepEqual(org.at(-1), { value: UNSET_VALUE, label: UNSET_LABEL, count: 2 });
+
+  const ligues = leagueOptions(rows);
+  assert.deepEqual(ligues.at(-1), { value: UNSET_VALUE, label: UNSET_LABEL, count: 2 });
+
+  const divisions = divisionOptions(rows);
+  assert.deepEqual(divisions.at(-1), { value: UNSET_VALUE, label: UNSET_LABEL, count: 2 });
+});
