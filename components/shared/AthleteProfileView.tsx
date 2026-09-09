@@ -43,18 +43,6 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
 
 /* ── inline helpers ────────────────────────────────────────────── */
 
-function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChange: (m: "simple" | "detailed") => void }) {
-  const pill = (active: boolean) =>
-    `px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer ${
-      active ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"
-    }`;
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Aperçu</button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Profil complet</button>
-    </div>
-  );
-}
 
 function CompletenessBar({ percent }: { percent: number }) {
   const color = percent >= 90 ? "#3B82F6" : percent >= 60 ? "#22C55E" : percent >= 40 ? "#EAB308" : "#EF4444";
@@ -128,7 +116,6 @@ export default function AthleteProfileView({
      masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
      mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
      DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
-  const [mode, setMode] = useState<"simple" | "detailed">("detailed");
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
   const grilleSet = useGrilles();
   /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE. Les deux
@@ -185,7 +172,22 @@ export default function AthleteProfileView({
     );
   }
 
-  const isDetailed = mode === "detailed";
+  /* LE TOGGLE « Aperçu / Profil complet » EST RETIRÉ (BP, 2026-09-09).
+     Le profil montre ce que l'athlète a rempli, sans qu'on le demande.
+
+     Diagnostic avant retrait : aucun contenu n'était propre à l'Aperçu — sa
+     seule section, l'étoile + la cote, est re-rendue en tête du bloc détaillé.
+     Aucune persistance, aucun deep-link, aucun effet ni fetch ne dépendait du
+     mode : il ne changeait que du DOM.
+
+     `isDetailed` reste, en constante : les blocs conditionnels sont laissés EN
+     PLACE. L'élagage des conditions devenues mortes est un nettoyage séparé,
+     invisible pour l'utilisateur — le mêler à ce retrait ferait un diff qu'on
+     relit mal.
+
+     ⚠ CE RETRAIT N'OUVRE AUCUN VERROU. `lockContent` et les masquages Loi 25
+     ne lisent pas `mode`, et ne l'ont jamais lu (grep croisé, zéro). */
+  const isDetailed = true;
   const coteGlobale = a.overallRating || 0;
   const age = (() => {
     if (!a.dateOfBirth) return 0;
@@ -202,7 +204,6 @@ export default function AthleteProfileView({
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-8 text-[#E0E0E0]" style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
       {/* Toggle + Completeness */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <ProfileToggle mode={mode} onChange={setMode} />
         <div className="w-full sm:w-56">
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
           <CompletenessBar percent={a.profileCompleteness || 0} />
