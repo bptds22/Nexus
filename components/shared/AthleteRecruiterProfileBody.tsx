@@ -1394,7 +1394,16 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     });
   }, [id, isFreeRecruiter, tierLoading, viewerMode]);
 
-  const [mode, setMode] = useState<"simple" | "detailed">("simple");
+  /* DÉFAUT « DÉTAILLÉ » (BP, 2026-09-09). Le mode simplifié est en voie de
+     retrait : ce qu'un athlète a rempli s'affiche, sans qu'il faille le
+     demander. Le toggle RESTE le temps du 1.4.1 — son retrait complet est un
+     fast-follow post-Promote, parce qu'il déroule des centaines de branches.
+
+     ⚠ CE DÉFAUT N'OUVRE AUCUN VERROU. `lockContent` (tier gratuit) et les
+     masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
+     mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
+     DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
+  const [mode, setMode] = useState<"simple" | "detailed">("detailed");
   /* LE FORCAGE « SIMPLE » EST RETIRE (2026-09-03).
 
      Il datait du 19 aout, quand la RPC partenaire ne projetait ni mesures,
