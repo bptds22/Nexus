@@ -402,7 +402,27 @@ export function divisionOf(src: MaybeSource): string | null {
        « X sur N » se vérifie à l'oeil.
    ───────────────────────────────────────────────────────────────────────────── */
 
-export type TaxonomyOption = { value: string; label: string; count: number };
+export type TaxonomyOption = {
+  value: string;
+  label: string;
+  /** Nombre de lignes qui portent cette valeur DANS la population cadrée par
+   *  les AUTRES axes. Zéro = la combinaison ne rendrait rien. */
+  count: number;
+  /** `count === 0` : l'option reste VISIBLE mais n'est pas choisissable.
+   *  Règle maison (cf. roleOptionsFor) : cacher une option laisse croire
+   *  qu'elle n'existe pas ; la griser apprend le modèle. La valeur ACTUELLEMENT
+   *  choisie n'est jamais désactivée — sinon on ne pourrait plus en sortir. */
+  disabled: boolean;
+};
+
+/** Ce qui est coché sur les DEUX autres axes quand on construit un menu.
+ *  `""` / absent = pas de filtre sur cet axe. La sentinelle UNSET_VALUE est
+ *  une valeur comme une autre ici. */
+export type AxisSelection = {
+  org?: string | null;
+  league?: string | null;
+  division?: string | null;
+};
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DANS QUEL ÉTAT AFFICHER CE MENU ?  (corrigé le 2026-09-08)
@@ -461,29 +481,125 @@ export function axisDisplay(options: readonly TaxonomyOption[]): AxisDisplay {
  *  « LFMM » et « Lfmm » sont la même ligue ; c'est un REGROUPEMENT d'affichage,
  *  aucune donnée n'est réécrite. Égalité de fréquence -> ordre alphabétique,
  *  pour que deux exécutions rendent toujours la même liste. */
-function groupByCasefold(values: string[]): TaxonomyOption[] {
-  const buckets = new Map<string, Map<string, number>>();
-  for (const v of values) {
-    const key = v.toLowerCase();
-    const spellings = buckets.get(key) ?? new Map<string, number>();
-    spellings.set(v, (spellings.get(v) ?? 0) + 1);
-    buckets.set(key, spellings);
-  }
+/* ─────────────────────────────────────────────────────────────────────────────
+   LES OPTIONS SONT DES FACETTES DÉPENDANTES  (corrigé le 2026-09-09)
 
-  const out: TaxonomyOption[] = [];
-  for (const [key, spellings] of buckets) {
-    let label = "";
-    let best = -1;
-    for (const [spelling, n] of [...spellings.entries()].sort((a, b) =>
-      a[0].localeCompare(b[0], "fr"),
-    )) {
-      if (n > best) { best = n; label = spelling; }
-    }
-    let count = 0;
-    for (const n of spellings.values()) count += n;
-    out.push({ value: key, label, count });
+   RÈGLE : chaque menu compte sur la population cadrée par les DEUX AUTRES
+   axes. Cocher « Ligue civile » fait retomber les compteurs Ligue et Division
+   à ce qui existe DANS la ligue civile ; cocher LFMM par-dessus fait retomber
+   Division à ce qui existe dans LFMM.
+
+   LE BUG QUE ÇA REFERME, vu en recette : Organisation « Ligue civile (30) » +
+   Ligue « LFMM (11) » + Division « Non renseigné (19) » -> ZÉRO résultat.
+   Le (19) était vrai — 19 athlètes civils sans division — mais il était calculé
+   en ignorant LFMM, et AUCUN athlète LFMM n'est sans division. Le menu
+   promettait une combinaison que la liste ne pouvait pas livrer. Le prédicat,
+   lui, disait vrai : c'est le compteur qui mentait.
+
+   DEUX PARTIES, DEUX POPULATIONS — c'est tout le fix :
+     · le VOCABULAIRE (quelles options existent) vient de TOUTE la page. Une
+       option ne disparaît jamais parce qu'on vient de cocher ailleurs ; sinon
+       l'utilisateur perd le moyen de revenir en arrière, et un menu qui se vide
+       sous les doigts ne s'explique pas ;
+     · le COMPTE vient de la population cadrée par les autres axes. Zéro ->
+       l'option est GRISÉE : visible, honnête, pas choisissable. Même règle que
+       roleOptionsFor — cacher une option laisse croire qu'elle n'existe pas.
+
+   La valeur ACTUELLEMENT choisie sur l'axe n'est jamais grisée : un rafraîchis-
+   sement de données pourrait la faire tomber à zéro, et on doit toujours
+   pouvoir en sortir.
+
+   UN SEUL NORMALISATEUR. Compteurs et prédicats passent par les mêmes
+   `organisationOf` / `leagueOf` / `divisionOf`, et par la même clé casefoldée.
+   Deux implémentations du « Non renseigné », c'était exactement le bug
+   d'aujourd'hui en réserve.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/** Clé de regroupement d'une ligne sur un axe. `null` = « Non renseigné ». */
+function cleOrganisation(src: MaybeSource): string | null {
+  return organisationOf(src);
+}
+function cleLigue(src: MaybeSource): string | null {
+  const v = leagueOf(src);
+  return v === null ? null : v.toLowerCase();
+}
+function cleDivision(src: MaybeSource): string | null {
+  const v = divisionOf(src);
+  return v === null ? null : v.toLowerCase();
+}
+
+/** Libellé brut d'une ligne sur un axe, avant regroupement d'orthographes. */
+function libelleLigue(src: MaybeSource): string | null { return leagueOf(src); }
+function libelleDivision(src: MaybeSource): string | null { return divisionOf(src); }
+
+/** Population cadrée par les axes AUTRES que celui qu'on construit. */
+function cadrer(rows: readonly MaybeSource[], sel: AxisSelection, sauf: "org" | "league" | "division") {
+  return rows.filter((r) =>
+    (sauf === "org" || matchesOrganisation(r, sel.org ?? ""))
+    && (sauf === "league" || matchesLeague(r, sel.league ?? ""))
+    && (sauf === "division" || matchesDivision(r, sel.division ?? "")),
+  );
+}
+
+/** Orthographe la plus fréquente d'une clé, sur TOUTE la page. Égalité ->
+ *  ordre alphabétique, pour que deux exécutions rendent la même liste. */
+function meilleureOrthographe(libelles: string[]): string {
+  const n = new Map<string, number>();
+  for (const l of libelles) n.set(l, (n.get(l) ?? 0) + 1);
+  let best = -1, out = "";
+  for (const [l, k] of [...n.entries()].sort((a, b) => a[0].localeCompare(b[0], "fr"))) {
+    if (k > best) { best = k; out = l; }
   }
   return out;
+}
+
+/** Le moteur commun aux trois axes. */
+function optionsDAxe(
+  rows: readonly MaybeSource[],
+  cle: (src: MaybeSource) => string | null,
+  libelle: (src: MaybeSource) => string | null,
+  scope: readonly MaybeSource[],
+  choixCourant: string,
+): TaxonomyOption[] {
+  // 1. VOCABULAIRE — toute la page.
+  const orthographes = new Map<string, string[]>();
+  let trouExiste = false;
+  for (const r of rows) {
+    const k = cle(r);
+    if (k === null) { trouExiste = true; continue; }
+    const l = libelle(r) ?? k;
+    orthographes.set(k, [...(orthographes.get(k) ?? []), l]);
+  }
+
+  // 2. COMPTES — population cadrée par les autres axes.
+  const comptes = new Map<string, number>();
+  let trouCompte = 0;
+  for (const r of scope) {
+    const k = cle(r);
+    if (k === null) { trouCompte += 1; continue; }
+    comptes.set(k, (comptes.get(k) ?? 0) + 1);
+  }
+
+  const options: TaxonomyOption[] = [...orthographes.entries()].map(([value, libelles]) => {
+    const count = comptes.get(value) ?? 0;
+    return {
+      value,
+      label: meilleureOrthographe(libelles),
+      count,
+      disabled: count === 0 && value !== choixCourant,
+    };
+  });
+
+  if (trouExiste) {
+    options.push({
+      value: UNSET_VALUE,
+      label: UNSET_LABEL,
+      count: trouCompte,
+      disabled: trouCompte === 0 && choixCourant !== UNSET_VALUE,
+    });
+  }
+
+  return sortOptions(options);
 }
 
 /** Trie les options par libellé (fr), « Non renseigné » toujours en dernier. */
@@ -495,66 +611,31 @@ function sortOptions(options: TaxonomyOption[]): TaxonomyOption[] {
   });
 }
 
-function withUnset(options: TaxonomyOption[], unsetCount: number): TaxonomyOption[] {
-  const all = unsetCount > 0
-    ? [...options, { value: UNSET_VALUE, label: UNSET_LABEL, count: unsetCount }]
-    : options;
-  return sortOptions(all);
+export function organisationOptions(
+  rows: readonly MaybeSource[],
+  sel: AxisSelection = {},
+): TaxonomyOption[] {
+  return optionsDAxe(
+    rows,
+    cleOrganisation,
+    (r) => { const o = organisationOf(r); return o === null ? null : ORGANISATION_LABELS[o]; },
+    cadrer(rows, sel, "org"),
+    sel.org ?? "",
+  );
 }
 
-export function organisationOptions(rows: readonly MaybeSource[]): TaxonomyOption[] {
-  const counts = new Map<Organisation, number>();
-  let unset = 0;
-  for (const r of rows) {
-    const org = organisationOf(r);
-    if (org === null) unset += 1;
-    else counts.set(org, (counts.get(org) ?? 0) + 1);
-  }
-  const named: TaxonomyOption[] = [...counts.entries()].map(([value, count]) => ({
-    value, label: ORGANISATION_LABELS[value], count,
-  }));
-  return withUnset(named, unset);
-}
-
-/** Les ligues offertes. `org` renseigné -> seulement celles des athlètes de
- *  cette organisation : c'est le SECOND NIVEAU demandé (cocher « Scolaire » ne
- *  doit pas laisser LFMM dans la liste). `""` ou `null` -> toutes.
- *
- *  Le paramètre accepte la VALEUR du <select> de niveau 1, sentinelle comprise :
- *  cocher « Non renseigné » en organisation restreint bien aux athlètes sans
- *  organisation, au lieu de vider la liste. On réutilise `matchesOrganisation`
- *  pour que le cadrage des options et le filtrage des lignes ne puissent pas
- *  diverger — deux implémentations de la même règle finissent toujours par se
- *  contredire. */
 export function leagueOptions(
   rows: readonly MaybeSource[],
-  org?: string | null,
+  sel: AxisSelection = {},
 ): TaxonomyOption[] {
-  const named: string[] = [];
-  let unset = 0;
-  for (const r of rows) {
-    if (!matchesOrganisation(r, org ?? "")) continue;
-    const league = leagueOf(r);
-    if (league === null) unset += 1;
-    else named.push(league);
-  }
-  return withUnset(groupByCasefold(named), unset);
+  return optionsDAxe(rows, cleLigue, libelleLigue, cadrer(rows, sel, "league"), sel.league ?? "");
 }
 
-/** Les divisions offertes, mêmes règles de cadrage que `leagueOptions`. */
 export function divisionOptions(
   rows: readonly MaybeSource[],
-  org?: string | null,
+  sel: AxisSelection = {},
 ): TaxonomyOption[] {
-  const named: string[] = [];
-  let unset = 0;
-  for (const r of rows) {
-    if (!matchesOrganisation(r, org ?? "")) continue;
-    const division = divisionOf(r);
-    if (division === null) unset += 1;
-    else named.push(division);
-  }
-  return withUnset(groupByCasefold(named), unset);
+  return optionsDAxe(rows, cleDivision, libelleDivision, cadrer(rows, sel, "division"), sel.division ?? "");
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

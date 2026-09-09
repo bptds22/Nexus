@@ -551,9 +551,23 @@ function RechercheContent() {
      deviendraient « les valeurs de la page courante » — fausses. Il faudra
      alors une RPC d'agregat dediee. Consigne en tete de useAthleteSearch. */
   const taxonomyRows = useMemo(() => athletes.map((a) => a.taxonomy), [athletes]);
-  const orgOptions = useMemo(() => organisationOptions(taxonomyRows), [taxonomyRows]);
-  const leagueOptionList = useMemo(() => leagueOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
-  const divisionOptionList = useMemo(() => divisionOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
+  /* FACETTES DÉPENDANTES (2026-09-09) : chaque menu compte sur la population
+     cadrée par les DEUX AUTRES axes. Avant, Ligue et Division ne voyaient que
+     l'organisation — d'où « Non renseigné (19) » sous civile+LFMM alors que la
+     liste ne rendait rien. Le vocabulaire, lui, reste celui de toute la page :
+     une option à 0 se grise, elle ne disparaît pas. */
+  const orgOptions = useMemo(
+    () => organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter }),
+    [taxonomyRows, leagueFilter, divisionFilter],
+  );
+  const leagueOptionList = useMemo(
+    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter }),
+    [taxonomyRows, orgType, divisionFilter],
+  );
+  const divisionOptionList = useMemo(
+    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter }),
+    [taxonomyRows, orgType, leagueFilter],
+  );
 
   const orgAxis = useMemo(() => axisDisplay(orgOptions), [orgOptions]);
   const leagueAxis = useMemo(() => axisDisplay(leagueOptionList), [leagueOptionList]);
@@ -700,7 +714,7 @@ function RechercheContent() {
             {orgAxis.state === "active" ? (
               <>
                 <option value="">Toutes les organisations</option>
-                {orgOptions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+                {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
               </>
             ) : (
               <option value="">{orgAxis.label}</option>
@@ -717,7 +731,7 @@ function RechercheContent() {
             {leagueAxis.state === "active" ? (
               <>
                 <option value="">Toutes les ligues</option>
-                {leagueOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+                {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
               </>
             ) : (
               <option value="">{leagueAxis.label}</option>
@@ -734,7 +748,7 @@ function RechercheContent() {
             {divisionAxis.state === "active" ? (
               <>
                 <option value="">Toutes les divisions</option>
-                {divisionOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+                {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
               </>
             ) : (
               <option value="">{divisionAxis.label}</option>

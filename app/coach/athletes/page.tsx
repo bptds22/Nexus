@@ -737,9 +737,21 @@ function MesAthletesContent() {
     () => [...myRoster, ...schoolAthletes].map((a) => a.taxonomy ?? EMPTY_TAXONOMY),
     [myRoster, schoolAthletes],
   );
-  const orgOptions = useMemo(() => organisationOptions(taxonomyRows), [taxonomyRows]);
-  const leagueOptionList = useMemo(() => leagueOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
-  const divisionOptionList = useMemo(() => divisionOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
+  /* FACETTES DÉPENDANTES (2026-09-09) — même règle que la recherche recruteur :
+     chaque menu compte sur la population cadrée par les DEUX autres axes, le
+     vocabulaire reste celui de toute la page, une option à 0 se grise. */
+  const orgOptions = useMemo(
+    () => organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter }),
+    [taxonomyRows, leagueFilter, divisionFilter],
+  );
+  const leagueOptionList = useMemo(
+    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter }),
+    [taxonomyRows, orgType, divisionFilter],
+  );
+  const divisionOptionList = useMemo(
+    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter }),
+    [taxonomyRows, orgType, leagueFilter],
+  );
 
   /* ── DANS QUEL ETAT AFFICHER CHAQUE MENU ? (regle finale BP du 2026-09-06) ──
      Les trois menus sont TOUJOURS AFFICHES, a position stable. Ce qui varie,
@@ -1170,7 +1182,7 @@ function MesAthletesContent() {
           {orgAxis.state === "active" ? (
             <>
               <option value="">Toutes les organisations</option>
-              {orgOptions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
             </>
           ) : (
             <option value="">{orgAxis.label}</option>
@@ -1187,7 +1199,7 @@ function MesAthletesContent() {
           {leagueAxis.state === "active" ? (
             <>
               <option value="">Toutes les ligues</option>
-              {leagueOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
             </>
           ) : (
             <option value="">{leagueAxis.label}</option>
@@ -1204,7 +1216,7 @@ function MesAthletesContent() {
           {divisionAxis.state === "active" ? (
             <>
               <option value="">Toutes les divisions</option>
-              {divisionOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
             </>
           ) : (
             <option value="">{divisionAxis.label}</option>

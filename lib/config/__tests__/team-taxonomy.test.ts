@@ -25,6 +25,7 @@ import {
   matchesOrganisation, matchesLeague, matchesDivision,
   axisDisplay,
   type TaxonomySource,
+  type AxisSelection,
 } from "@/lib/config/team-taxonomy";
 
 /** Fabrique une source ; tout est vide par défaut, chaque test ne pose que ce
@@ -323,17 +324,29 @@ test("leagueOptions — deux orthographes d'une ligue sont UNE option", () => {
   assert.equal(opts[0].value, "lfmm"); // la clé est casefoldée
 });
 
-test("leagueOptions — le SECOND NIVEAU : cocher « Scolaire » retire LFMM de la liste", () => {
+test("leagueOptions — cocher « Scolaire » ne RETIRE plus LFMM : elle tombe à 0 et se grise", () => {
+  /* Changement de règle du 2026-09-09. Avant, l'option disparaissait de la
+     liste ; désormais le VOCABULAIRE vient de toute la page et seul le COMPTE
+     est cadré. Une option à 0 reste visible, grisée — cacher une option laisse
+     croire qu'elle n'existe pas, et un menu qui se vide sous les doigts retire
+     à l'utilisateur le moyen de revenir en arrière. */
   const rows = [
     mk({ context: "scolaire", teamIsRseq: true }),
     mk({ context: "scolaire", teamLeague: "RSEQ" }),
     mk({ context: "ligue_civile", teamLeague: "LFMM" }),
     mk({ context: "ligue_civile", teamLeague: "QMFL" }),
   ];
-  assert.deepEqual(leagueOptions(rows, "scolaire").map((o) => o.label), [RSEQ]);
-  assert.deepEqual(leagueOptions(rows, "ligue_civile").map((o) => o.label), ["LFMM", "QMFL"]);
-  // Sans organisation cochée : toutes.
-  assert.deepEqual(leagueOptions(rows).map((o) => o.label), ["LFMM", "QMFL", RSEQ]);
+  assert.deepEqual(
+    leagueOptions(rows, { org: "scolaire" }).map((o) => [o.label, o.count, o.disabled]),
+    [["LFMM", 0, true], ["QMFL", 0, true], [RSEQ, 2, false]],
+  );
+  assert.deepEqual(
+    leagueOptions(rows, { org: "ligue_civile" }).map((o) => [o.label, o.count, o.disabled]),
+    [["LFMM", 1, false], ["QMFL", 1, false], [RSEQ, 0, true]],
+  );
+  // Sans organisation cochée : toutes, toutes actives.
+  assert.deepEqual(leagueOptions(rows).map((o) => [o.label, o.disabled]),
+    [["LFMM", false], ["QMFL", false], [RSEQ, false]]);
 });
 
 test("divisionOptions — le second niveau sépare les deux vocabulaires sans les fusionner", () => {
@@ -342,10 +355,13 @@ test("divisionOptions — le second niveau sépare les deux vocabulaires sans le
     mk({ context: "scolaire", teamDivision: "Division 3" }), // même chose, écrite autrement
     mk({ context: "ligue_civile", teamDivision: "Midget — Division 1" }),
   ];
-  assert.deepEqual(divisionOptions(rows, "scolaire").map((o) => [o.label, o.count]), [["D3", 2]]);
   assert.deepEqual(
-    divisionOptions(rows, "ligue_civile").map((o) => o.label),
-    ["Midget — Division 1"],
+    divisionOptions(rows, { org: "scolaire" }).map((o) => [o.label, o.count, o.disabled]),
+    [["D3", 2, false], ["Midget — Division 1", 0, true]],
+  );
+  assert.deepEqual(
+    divisionOptions(rows, { org: "ligue_civile" }).map((o) => [o.label, o.count, o.disabled]),
+    [["D3", 0, true], ["Midget — Division 1", 1, false]],
   );
 });
 
@@ -457,12 +473,18 @@ test("axisDisplay — cocher une organisation fait LIRE la ligue de ce monde", (
     mk({ context: "scolaire", teamIsRseq: true }),
     mk({ context: "ligue_civile", teamLeague: "LFMM" }),
   ];
-  assert.deepEqual(axisDisplay(leagueOptions(mixte, "scolaire")), {
-    state: "prefilled", label: RSEQ,
+  /* 2026-09-09 : le menu reste ACTIF, parce qu'il porte toujours les deux
+     ligues — l'une à son compte, l'autre à 0 et grisée. Le « pré-rempli » ne
+     survit qu'à une page qui ne connaît QU'UNE valeur (test suivant), pas à un
+     cadrage. C'est ce qui empêche un libellé de présenter une ligue comme le
+     monde entier alors qu'il en reste une autre à côté. */
+  assert.deepEqual(axisDisplay(leagueOptions(mixte, { org: "scolaire" })), {
+    state: "active", label: "",
   });
-  assert.deepEqual(axisDisplay(leagueOptions(mixte, "ligue_civile")), {
-    state: "prefilled", label: "LFMM",
-  });
+  assert.deepEqual(
+    leagueOptions(mixte, { org: "scolaire" }).map((o) => [o.label, o.count, o.disabled]),
+    [["LFMM", 0, true], [RSEQ, 1, false]],
+  );
   assert.deepEqual(axisDisplay(leagueOptions(mixte)), { state: "active", label: "" });
 });
 
@@ -540,12 +562,85 @@ test("sans filtre, un athlète sans taxonomie reste trouvable", () => {
 test("les trois listes d'options comptent les sources absentes en « Non renseigné »", () => {
   const rows = [undefined, mk({ context: "scolaire", teamLeague: "RSEQ", teamDivision: "D1" }), null];
 
-  const org = organisationOptions(rows);
-  assert.deepEqual(org.at(-1), { value: UNSET_VALUE, label: UNSET_LABEL, count: 2 });
+  const attendu = { value: UNSET_VALUE, label: UNSET_LABEL, count: 2, disabled: false };
+  assert.deepEqual(organisationOptions(rows).at(-1), attendu);
+  assert.deepEqual(leagueOptions(rows).at(-1), attendu);
+  assert.deepEqual(divisionOptions(rows).at(-1), attendu);
+});
 
-  const ligues = leagueOptions(rows);
-  assert.deepEqual(ligues.at(-1), { value: UNSET_VALUE, label: UNSET_LABEL, count: 2 });
+/* ── FACETTES DÉPENDANTES ────────────────────────────────────────────────────
+   Régression du 2026-09-09, vue en recette : Organisation « Ligue civile (30) »
+   + Ligue « LFMM (11) » + Division « Non renseigné (19) » -> ZÉRO résultat. Le
+   (19) comptait les civils sans division en IGNORANT LFMM, et aucun athlète
+   LFMM n'est sans division. Le compteur promettait, la liste ne livrait pas. */
 
-  const divisions = divisionOptions(rows);
-  assert.deepEqual(divisions.at(-1), { value: UNSET_VALUE, label: UNSET_LABEL, count: 2 });
+const CAPTURE = [
+  ...Array.from({ length: 3 }, () => mk({ context: "ligue_civile" })),          // civils sans équipe
+  ...Array.from({ length: 2 }, () => mk({ context: "ligue_civile", teamLeague: "LFMM", teamDivision: "Midget — Division 1" })),
+  mk({ context: "scolaire", teamLeague: "RSEQ", teamDivision: "D1" }),
+];
+
+test("la combinaison de la recette ne peut plus se composer : « Non renseigné » est à 0 et grisé", () => {
+  const divisions = divisionOptions(CAPTURE, { org: "ligue_civile", league: "lfmm" });
+  const trou = divisions.find((o) => o.value === UNSET_VALUE);
+  assert.ok(trou, "l'option reste VISIBLE — on ne la cache pas");
+  assert.equal(trou.count, 0);
+  assert.equal(trou.disabled, true);
+
+  // Et ce qui existe vraiment sous civile+LFMM est bien offert.
+  const midget = divisions.find((o) => o.label === "Midget — Division 1");
+  assert.equal(midget?.count, 2);
+  assert.equal(midget?.disabled, false);
+});
+
+test("cocher LFMM fait retomber Division ; la décocher la fait remonter", () => {
+  const sansLigue = divisionOptions(CAPTURE, { org: "ligue_civile" });
+  assert.equal(sansLigue.find((o) => o.value === UNSET_VALUE)?.count, 3);
+  const avecLigue = divisionOptions(CAPTURE, { org: "ligue_civile", league: "lfmm" });
+  assert.equal(avecLigue.find((o) => o.value === UNSET_VALUE)?.count, 0);
+});
+
+test("INVARIANT — sur les trois axes, le compte d'une option est EXACTEMENT ce que la liste rendrait", () => {
+  /* Le garde-fou qui aurait attrapé le bug de recette tout seul : pour chaque
+     axe et chaque option, on coche l'option et on compte les lignes qui
+     passent les TROIS prédicats. Le menu ne peut plus promettre autre chose. */
+  const combinaisons = [
+    {}, { org: "ligue_civile" }, { org: "scolaire" },
+    { org: "ligue_civile", league: "lfmm" },
+    { org: "ligue_civile", division: UNSET_VALUE },
+    { league: "lfmm", division: UNSET_VALUE },
+    { org: "scolaire", league: "rseq" },
+  ];
+
+  const passe = (r: TaxonomySource, sel: AxisSelection) =>
+    matchesOrganisation(r, sel.org ?? "")
+    && matchesLeague(r, sel.league ?? "")
+    && matchesDivision(r, sel.division ?? "");
+
+  for (const base of combinaisons) {
+    for (const axe of ["org", "league", "division"] as const) {
+      const options = axe === "org" ? organisationOptions(CAPTURE, base)
+        : axe === "league" ? leagueOptions(CAPTURE, base)
+        : divisionOptions(CAPTURE, base);
+
+      for (const o of options) {
+        const sel = { ...base, [axe]: o.value };
+        const livre = CAPTURE.filter((r) => passe(r, sel)).length;
+        assert.equal(
+          o.count, livre,
+          `axe ${axe}, option ${o.label}, cadrage ${JSON.stringify(base)} : le menu annonce ${o.count}, la liste livre ${livre}`,
+        );
+        /* Et rien de choisissable ne mène à une liste vide — SAUF la valeur
+           déjà cochée sur cet axe, qu'on ne grise jamais (il faut pouvoir en
+           sortir). Cet état n'est pas atteignable au clic : pour y arriver il
+           aurait fallu cocher, sur un AUTRE axe, une option qui était elle-même
+           grisée. Il n'est ici que parce que la boucle énumère aussi des
+           combinaisons que l'écran ne laisse pas composer. */
+        const dejaCoche = o.value === (base as Record<string, string | undefined>)[axe];
+        if (!o.disabled && !dejaCoche) {
+          assert.ok(livre > 0, `option active mais liste vide : ${axe}/${o.label}`);
+        }
+      }
+    }
+  }
 });
