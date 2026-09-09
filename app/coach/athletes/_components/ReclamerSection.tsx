@@ -62,7 +62,7 @@ export default function ReclamerSection({
 }: ReclamerSectionProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirm, setShowConfirm] = useState(false);
-  const [rejectTarget, setRejectTarget] = useState<RosterAthlete | null>(null);
+  const [showReject, setShowReject] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
@@ -112,28 +112,56 @@ export default function ReclamerSection({
     onClaimSuccess();
   }
 
+  /* REJET MULTI — boucle SÉQUENTIELLE, un appel par athlète.
+     `reject_school_athlete` est unitaire et le reste : un rejet est un acte de
+     gouvernance PAR ATHLÈTE — chacun sa trace, sa notification, sa décision.
+     Un lot atomique ferait annuler trois rejets légitimes parce qu'un
+     quatrième athlète vient d'être réclamé par un collègue entre-temps.
+     Séquentiel et non parallèle : chaque appel écrit et notifie ; on ne
+     déclenche pas N envois simultanés sur des profils de mineurs.
+     Un échec n'arrête pas les suivants — il est compté et rapporté. */
   async function handleReject() {
-    if (!rejectTarget || submitting) return;
+    if (selectedIds.size === 0 || submitting) return;
     setSubmitting(true);
     const supabase = createClient();
-    const { error } = await supabase.rpc("reject_school_athlete", { p_athlete_id: rejectTarget.id });
+    // Recalculé ici, pas emprunté au corps de rendu : le `const` du rendu vit
+    // après un retour anticipé, et s'appuyer dessus depuis un handler est une
+    // zone morte temporelle qui n'attend qu'un refactor pour mordre.
+    const cibles = unclaimedAthletes.filter((a) => selectedIds.has(a.id));
 
-    setSubmitting(false);
-    const nom = `${rejectTarget.firstName} ${rejectTarget.lastName}`.trim();
-    setRejectTarget(null);
+    let faits = 0;
+    let premiereErreur: string | null = null;
+    const restants = new Set(selectedIds);
 
-    if (error) {
-      console.error("[reject_school_athlete]", error);
-      flash("error", error.message?.replace(/^NEXUS:\s*/, "") || "Impossible de rejeter ce rattachement.");
-      return;
+    for (const a of cibles) {
+      const { error } = await supabase.rpc("reject_school_athlete", { p_athlete_id: a.id });
+      if (error) {
+        console.error("[reject_school_athlete]", a.id, error);
+        premiereErreur ??= error.message?.replace(/^NEXUS:\s*/, "") || "Rejet refusé.";
+        continue;
+      }
+      faits += 1;
+      restants.delete(a.id);
     }
 
-    flash("success", `${nom} n'est plus rattaché à ${orgNounPossessif(orgType)}. L'athlète en est informé.`);
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(rejectTarget.id);
-      return next;
-    });
+    setSubmitting(false);
+    setShowReject(false);
+    setSelectedIds(restants); // ce qui a échoué reste sélectionné, et visible
+
+    if (faits === 0) {
+      flash("error", premiereErreur ?? "Aucun rattachement rejeté.");
+    } else {
+      const nom = cibles.length === 1
+        ? `${cibles[0].firstName} ${cibles[0].lastName}`.trim()
+        : `${faits} athlète${faits > 1 ? "s" : ""}`;
+      flash(
+        premiereErreur ? "error" : "success",
+        premiereErreur
+          ? `${nom} rejeté${faits > 1 ? "s" : ""}, mais au moins un refus : ${premiereErreur}`
+          : `${nom} n'${faits > 1 ? "sont" : "est"} plus rattaché${faits > 1 ? "s" : ""} à ${orgNounPossessif(orgType)}. ${faits > 1 ? "Les athlètes en sont informés" : "L'athlète en est informé"}.`,
+      );
+    }
+
     (onRejectSuccess ?? onClaimSuccess)();
   }
 
@@ -156,6 +184,7 @@ export default function ReclamerSection({
   }
 
   const count = selectedIds.size;
+  const selectedAthletes = unclaimedAthletes.filter((a) => selectedIds.has(a.id));
 
   return (
     <>
@@ -247,17 +276,6 @@ export default function ReclamerSection({
                   </div>
                 </button>
 
-                {/* REJETER — directeur seulement. Absent, pas grisé. */}
-                {isDirector && (
-                  <button
-                    type="button"
-                    onClick={() => setRejectTarget(a)}
-                    title="Cet athlète n'est pas de notre établissement"
-                    className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded-md bg-[#111317]/85 border border-[#4a4d56] text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white hover:border-[#EF4444]/60 hover:bg-[#EF4444]/15 transition-colors"
-                  >
-                    Rejeter
-                  </button>
-                )}
               </div>
             );
           })}
@@ -276,6 +294,19 @@ export default function ReclamerSection({
             >
               Annuler
             </button>
+            {/* REJETER — secondaire, à gauche du geste principal, et VISIBLE
+                pour les directeurs seulement. Absent pour les autres, pas
+                grisé : ce droit ne se débloque pas, il n'existe pas pour eux.
+                Un coach ordinaire garde donc la barre à un seul bouton. */}
+            {isDirector && (
+              <button
+                type="button"
+                onClick={() => setShowReject(true)}
+                className="px-4 py-2 border border-[#4a4d56] hover:border-[#EF4444]/60 hover:bg-[#EF4444]/10 text-[#9CA3AF] hover:text-white text-[12px] font-bold uppercase tracking-wider rounded-lg transition-colors"
+              >
+                Rejeter
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowConfirm(true)}
@@ -326,32 +357,51 @@ export default function ReclamerSection({
           Le dialogue nomme la conséquence EXACTE, dans l'ordre où elle
           compte : ce que ça retire, qui le voit, ce que ça ne touche pas.
           Un directeur qui clique doit savoir qu'il écrit à un mineur. */}
-      {rejectTarget && (
+      {showReject && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !submitting && setRejectTarget(null)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !submitting && setShowReject(false)} />
           <div className="relative bg-[#1A1D24] border border-[#EF4444]/30 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
             <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">
-              Rejeter le rattachement de {rejectTarget.firstName} {rejectTarget.lastName}?
+              {count === 1
+                ? `Rejeter le rattachement de ${selectedAthletes[0]?.firstName ?? ""} ${selectedAthletes[0]?.lastName ?? ""}?`
+                : `Rejeter ${count} rattachements?`}
             </h3>
+
+            {/* Les noms, tant qu'on peut les lire d'un coup d'œil. Au-delà,
+                une liste de 20 noms ne se vérifie pas — le compte est plus
+                honnête que l'illusion d'avoir relu. */}
+            {count > 1 && count <= 5 && (
+              <ul className="mt-3 space-y-1">
+                {selectedAthletes.map((a) => (
+                  <li key={a.id} className="text-[13px] text-white font-bold">
+                    · {a.firstName} {a.lastName}
+                  </li>
+                ))}
+              </ul>
+            )}
+
             <div className="text-[13px] text-[#9CA3AF] mt-3 space-y-2 leading-relaxed">
               <p>
-                Tu déclares que cet athlète n&apos;est pas de {orgNounPossessif(orgType)}. Son
-                rattachement est effacé et il disparaît de la file « À réclamer »
-                <span className="text-white font-bold"> pour toute l&apos;école</span>.
+                Tu déclares que {count > 1 ? "ces athlètes ne sont pas" : "cet athlète n'est pas"} de{" "}
+                {orgNounPossessif(orgType)}. {count > 1 ? "Leurs rattachements sont effacés et ils disparaissent" : "Son rattachement est effacé et il disparaît"} de la file
+                « À réclamer »<span className="text-white font-bold"> pour toute l&apos;école</span>.
               </p>
               <p>
-                <span className="text-white font-bold">Il en sera informé</span>, avec l&apos;invitation
-                à vérifier son école.
+                <span className="text-white font-bold">
+                  {count > 1 ? "Ils en seront informés" : "Il en sera informé"}
+                </span>
+                , avec l&apos;invitation à vérifier {count > 1 ? "leur" : "son"} école.
               </p>
               <p>
-                Son compte, son profil et ses données restent intacts, et il reste visible aux
-                recruteurs. Ce rejet peut être annulé.
+                {count > 1 ? "Leurs comptes, leurs profils et leurs données restent intacts, et ils restent visibles" : "Son compte, son profil et ses données restent intacts, et il reste visible"} aux
+                recruteurs. {count > 1 ? "Ces rejets peuvent être annulés" : "Ce rejet peut être annulé"}.
               </p>
             </div>
+
             <div className="flex items-center justify-end gap-3 mt-5">
               <button
                 type="button"
-                onClick={() => setRejectTarget(null)}
+                onClick={() => setShowReject(false)}
                 disabled={submitting}
                 className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors disabled:opacity-40"
               >
@@ -363,7 +413,7 @@ export default function ReclamerSection({
                 disabled={submitting}
                 className="px-5 py-2 bg-[#EF4444] hover:bg-[#DC2626] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-40"
               >
-                {submitting ? "..." : "Rejeter le rattachement"}
+                {submitting ? "..." : count > 1 ? `Rejeter ${count} rattachements` : "Rejeter le rattachement"}
               </button>
             </div>
           </div>
