@@ -51,7 +51,6 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 interface AthleteFormData {
   identity: {
-    identityMode: "simple" | "detailed";
     photo: string;
     firstName: string;
     lastName: string;
@@ -67,7 +66,6 @@ interface AthleteFormData {
     parentPhone: string;
   };
   academic: {
-    academicMode: "simple" | "detailed";
     gpa: string;
     strongSubjects: string[];
     academicHonors: string[];
@@ -78,7 +76,6 @@ interface AthleteFormData {
     cegepRegions: string[];
   };
   physical: {
-    physicalMode: "simple" | "detailed";
     heightFeet: string;
     heightInches: string;
     weightLbs: string;
@@ -94,7 +91,6 @@ interface AthleteFormData {
     sprint100m: string;
   };
   sports: {
-    sportsMode: "simple" | "detailed";
     primarySport: string;
     primarySportDetail: string;
     primaryPosition: string;
@@ -122,7 +118,6 @@ interface AthleteFormData {
     coachEndorsement: string;
   };
   media: {
-    mediaMode: "simple" | "detailed";
     hudlLink: string;
     youtubeLink: string;
     instagramLink: string;
@@ -197,7 +192,6 @@ interface CoachTeamData {
 
 const INITIAL_FORM: AthleteFormData = {
   identity: {
-    identityMode: "simple",
     photo: "",
     firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "",
     school: "", city: "", region: "",
@@ -205,17 +199,16 @@ const INITIAL_FORM: AthleteFormData = {
     parentName: "", parentPhone: "",
   },
   academic: {
-    academicMode: "simple", gpa: "", strongSubjects: [], academicHonors: [],
+    gpa: "", strongSubjects: [], academicHonors: [],
     programmesVises: [], openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [],
   },
   physical: {
-    physicalMode: "simple", heightFeet: "", heightInches: "", weightLbs: "",
+    heightFeet: "", heightInches: "", weightLbs: "",
     wingspan: "", handSize: "", dominantHand: "", dominantFoot: "",
     fortyYard: "", verticalJump: "", broadJump: "",
     benchPress: "", shuttleAgility: "", sprint100m: "",
   },
   sports: {
-    sportsMode: "simple",
     primarySport: "", primarySportDetail: "", primaryPosition: "",
     selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "",
     jerseyNumber: "", league: "",
@@ -230,7 +223,6 @@ const INITIAL_FORM: AthleteFormData = {
     coachEndorsement: "",
   },
   media: {
-    mediaMode: "simple",
     hudlLink: "", youtubeLink: "", instagramLink: "",
     highlightVideo: "", fullGameVideo: "", trainingVideo: "",
   },
@@ -630,8 +622,12 @@ export default function CreateAthletePage() {
         // Simplified: prénom, nom, DOB, promotion. Hard-block <14 (Loi 25),
         // même gate que le self-signup — un coach ne peut pas créer un <14.
         const base = !!(d.firstName && d.lastName && d.dateOfBirth && d.gradYear) && !isUnder14(d.dateOfBirth);
-        if (d.identityMode === "detailed") return base && !!(d.gender && d.school && d.city && d.region);
-        return base;
+        /* Décision BP (c) du 2026-09-09 : genre, école, ville et région sont
+           OBLIGATOIRES pour tout le monde — le mode simplifié qui les rendait
+           facultatifs est retiré. École / ville / région sont pré-remplies
+           depuis l'école du coach (voir le préremplissage au chargement) :
+           la friction réelle ajoutée se réduit au GENRE. */
+        return base && !!(d.gender && d.school && d.city && d.region);
       }
       case 2: return true;
       case 3: return true;
@@ -807,7 +803,9 @@ export default function CreateAthletePage() {
   /* ── Step 1: Identité ─────────────────────────────────────── */
   function renderStep1() {
     const d = form.identity;
-    const isDetailed = d.identityMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">
@@ -815,7 +813,6 @@ export default function CreateAthletePage() {
         </h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Informations personnelles de base</p>
 
-        <FormModeToggle mode={d.identityMode} onChange={(m) => updateIdentity("identityMode", m)} />
 
         <div className="flex items-center gap-6 mb-8">
           <div className="relative group shrink-0">
@@ -1004,13 +1001,13 @@ export default function CreateAthletePage() {
           </div>
         </div>
 
-        {isDetailed && (
+        {(
           <div className="border-t border-[#1e2128] mt-6 pt-5">
             <p className={sectionTitle}>Détails additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className={labelCls}>Genre{req}</label>
-                <NxSelect value={d.gender} onChange={(v) => updateIdentity("gender", v)} hasError={isDetailed && isFieldEmpty(d.gender)}
+                <NxSelect value={d.gender} onChange={(v) => updateIdentity("gender", v)} hasError={isFieldEmpty(d.gender)}
                   options={[{ value: "M", label: "Masculin" }, { value: "F", label: "Féminin" }, { value: "X", label: "Non genré" }]} />
               </div>
               <div>
@@ -1062,7 +1059,9 @@ export default function CreateAthletePage() {
   /* ── Step 2: Académique ───────────────────────────────────── */
   function renderStep2() {
     const d = form.academic;
-    const isDetailedAcad = d.academicMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
 
     const checkbox = (checked: boolean, onChange: () => void, label: string) => (
       <label className="flex items-center gap-3 cursor-pointer group">
@@ -1079,7 +1078,6 @@ export default function CreateAthletePage() {
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Profil académique</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Résultats scolaires et objectifs CÉGEP</p>
 
-        <FormModeToggle mode={d.academicMode} onChange={(m) => updateAcademic("academicMode", m)} />
 
         <div className="space-y-6">
           <div className="max-w-[220px]">
@@ -1090,7 +1088,7 @@ export default function CreateAthletePage() {
             </div>
           </div>
 
-          {isDetailedAcad && (
+          {(
             <div>
               <p className={labelCls}>Matières fortes</p>
               <div className="flex flex-wrap gap-2">
@@ -1105,7 +1103,7 @@ export default function CreateAthletePage() {
             </div>
           )}
 
-          {isDetailedAcad && (
+          {(
             <div>
               <label className={labelCls}>Mentions académiques</label>
               <TagInput tags={d.academicHonors} onChange={(tags) => updateAcademic("academicHonors", tags)} placeholder="Tapez une mention + Entrée" />
@@ -1127,7 +1125,7 @@ export default function CreateAthletePage() {
             {checkbox(d.openToRelocate, () => updateAcademic("openToRelocate", !d.openToRelocate), "Prêt à changer de région")}
           </div>
 
-          {isDetailedAcad && (
+          {(
             <div>
               <p className={labelCls}>Régions CÉGEP préférées</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1154,14 +1152,15 @@ export default function CreateAthletePage() {
   /* ── Step 3: Physique ─────────────────────────────────────── */
   function renderStep3() {
     const d = form.physical;
-    const isDetailedPhys = d.physicalMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
 
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Profil physique</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Mensurations et tests athlétiques</p>
 
-        <FormModeToggle mode={d.physicalMode} onChange={(m) => updatePhysical("physicalMode", m)} />
 
         <p className={sectionTitle}>Mensurations</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8">
@@ -1179,7 +1178,7 @@ export default function CreateAthletePage() {
             <label className={labelCls}>Poids (lbs)</label>
             <input type="number" value={d.weightLbs} onChange={(e) => updatePhysical("weightLbs", e.target.value)} placeholder="185" className={inputCls} />
           </div>
-          {isDetailedPhys && (
+          {(
             <>
               <div><label className={labelCls}>Envergure</label><input type="text" value={d.wingspan} onChange={(e) => updatePhysical("wingspan", e.target.value)} placeholder={'6\'4"'} className={inputCls} /></div>
               <div><label className={labelCls}>Taille des mains</label><input type="text" value={d.handSize} onChange={(e) => updatePhysical("handSize", e.target.value)} placeholder={'9.5"'} className={inputCls} /></div>
@@ -1190,7 +1189,7 @@ export default function CreateAthletePage() {
             <NxSelect value={d.dominantHand} onChange={(v) => updatePhysical("dominantHand", v)} placeholder="—"
               options={[{ value: "Droite", label: "Droite" }, { value: "Gauche", label: "Gauche" }, { value: "Ambidextre", label: "Ambidextre" }]} />
           </div>
-          {isDetailedPhys && (
+          {(
             <div>
               <label className={labelCls}>Pied dominant</label>
               <NxSelect value={d.dominantFoot} onChange={(v) => updatePhysical("dominantFoot", v)} placeholder="—"
@@ -1199,7 +1198,7 @@ export default function CreateAthletePage() {
           )}
         </div>
 
-        {isDetailedPhys && (
+        {(
           <div className="border-t border-[#1e2128] pt-5">
             <p className={sectionTitle}>Tests athlétiques (optionnel)</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
@@ -1226,13 +1225,14 @@ export default function CreateAthletePage() {
   /* ── Step 4: Sport ────────────────────────────────────────── */
   function renderStep4() {
     const d = form.sports;
-    const isDetailed = d.sportsMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Informations sportives</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Sport, position et niveau de compétition</p>
 
-        <FormModeToggle mode={d.sportsMode} onChange={(m) => updateSports("sportsMode", m)} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <div>
@@ -1258,7 +1258,7 @@ export default function CreateAthletePage() {
           </div>
         </div>
 
-        {isDetailed && (
+        {(
           <div className="border-t border-[#1e2128] mt-2 pt-5">
             <p className={sectionTitle}>Détails additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
@@ -1467,7 +1467,9 @@ export default function CreateAthletePage() {
   /* ── Step 6: Médias ───────────────────────────────────────── */
   function renderStep6() {
     const d = form.media;
-    const isDetailed = d.mediaMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
     const detailedFields = [
       { key: "hudlLink", label: "Lien Hudl", placeholder: "https://www.hudl.com/..." },
       { key: "youtubeLink", label: "Lien YouTube", placeholder: "https://youtube.com/..." },
@@ -1493,7 +1495,6 @@ export default function CreateAthletePage() {
           </div>
         </div>
 
-        <FormModeToggle mode={d.mediaMode} onChange={(m) => updateMedia("mediaMode", m)} />
 
         {/* Simplified: highlight video only */}
         <div className="space-y-6">
@@ -1509,7 +1510,7 @@ export default function CreateAthletePage() {
         </div>
 
         {/* Detailed: all other media links */}
-        {isDetailed && (
+        {(
           <div className="border-t border-[#1e2128] mt-6 pt-5">
             <p className={sectionTitle}>Liens additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

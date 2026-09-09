@@ -227,7 +227,6 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
     publicEvaluatorId,
     publicByOther,
     identity: {
-      identityMode: "detailed",
       photo: (raw.photo_url as string) || "",
       firstName: (raw.first_name as string) || "",
       lastName: (raw.last_name as string) || "",
@@ -243,7 +242,6 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
       parentPhone: (raw.telephone_parent as string) || "",
     },
     academic: {
-      academicMode: "simple",
       gpa: raw.moyenne_generale != null ? String(raw.moyenne_generale) : "",
       strongSubjects: (raw.matieres_fortes as string[]) || [],
       academicHonors: (raw.mentions_academiques as string[]) || [],
@@ -254,7 +252,6 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
       cegepRegions: (raw.regions_cegep_preferees as string[]) || [],
     },
     physical: {
-      physicalMode: "simple",
       heightFeet: heightFt,
       heightInches: heightIn,
       weightLbs: weightLbs,
@@ -270,7 +267,6 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
       sprint100m: (raw.sprint_100m as string) || "",
     },
     sports: {
-      sportsMode: "detailed",
       primarySport: sportObj?.nom || "",
       primarySportDetail: "",
       primaryPosition: posObj?.abreviation || posObj?.nom || "",
@@ -328,7 +324,6 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
       coachEndorsement: (eval0?.rapport_entraineur as string) || (raw.notes_coach as string) || "",
     },
     media: {
-      mediaMode: "simple",
       hudlLink: (raw.hudl_url as string) || "",
       youtubeLink: (raw.youtube_url as string) || "",
       instagramLink: (raw.instagram_url as string) || "",

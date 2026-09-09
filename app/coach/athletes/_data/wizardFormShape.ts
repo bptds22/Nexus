@@ -21,7 +21,6 @@ import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
 
 export interface AthleteFormData {
   identity: {
-    identityMode: "simple" | "detailed";
     photo: string;
     firstName: string;
     lastName: string;
@@ -37,7 +36,6 @@ export interface AthleteFormData {
     parentPhone: string;
   };
   academic: {
-    academicMode: "simple" | "detailed";
     gpa: string;
     strongSubjects: string[];
     academicHonors: string[];
@@ -51,7 +49,6 @@ export interface AthleteFormData {
     cegepRegions: string[];
   };
   physical: {
-    physicalMode: "simple" | "detailed";
     heightFeet: string;
     heightInches: string;
     weightLbs: string;
@@ -67,7 +64,6 @@ export interface AthleteFormData {
     sprint100m: string;
   };
   sports: {
-    sportsMode: "simple" | "detailed";
     primarySport: string;
     primarySportDetail: string;
     primaryPosition: string;
@@ -103,7 +99,6 @@ export interface AthleteFormData {
     coachEndorsement: string;
   };
   media: {
-    mediaMode: "simple" | "detailed";
     hudlLink: string;
     youtubeLink: string;
     instagramLink: string;
@@ -122,28 +117,24 @@ export interface AthleteFormData {
 export function emptyAthleteForm(): AthleteFormData {
   return {
     identity: {
-      identityMode: "simple",
       photo: "", firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "",
       school: "", city: "", region: "",
       phone: "", email: "",
       parentName: "", parentPhone: "",
     },
     academic: {
-      academicMode: "simple",
       gpa: "", strongSubjects: [], academicHonors: [],
       programmesVises: [],
       openToPrivate: false, openToAnglophone: false, openToRelocate: false,
       cegepRegions: [],
     },
     physical: {
-      physicalMode: "simple",
       heightFeet: "", heightInches: "", weightLbs: "",
       wingspan: "", handSize: "", dominantHand: "", dominantFoot: "",
       fortyYard: "", verticalJump: "", broadJump: "",
       benchPress: "", shuttleAgility: "", sprint100m: "",
     },
     sports: {
-      sportsMode: "simple",
       primarySport: "", primarySportDetail: "",
       primaryPosition: "",
       selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "",
@@ -160,7 +151,6 @@ export function emptyAthleteForm(): AthleteFormData {
       coachEndorsement: "",
     },
     media: {
-      mediaMode: "simple",
       hudlLink: "", youtubeLink: "", instagramLink: "",
       highlightVideo: "", fullGameVideo: "", trainingVideo: "",
     },
