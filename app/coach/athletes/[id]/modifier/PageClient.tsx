@@ -239,30 +239,73 @@ function ModifierContent({ id }: { id: string }) {
         }),
       });
 
-      // Load athlete's current team assignment
-      const { data: currentTeamAssignment } = await supabase
+      /* Équipe ACTUELLE du jeune — préchargée QUOI QU'IL ARRIVE.
+         Deux trous se refermaient sur un champ vide, et un champ vide au
+         formulaire Modifier n'est pas une intention de retrait :
+           · .maybeSingle() ERREURAIT dès que le jeune avait plusieurs lignes
+             (multi-sport) et rendait NULL — on lit donc les lignes ;
+           · l'équipe n'était préchargée que si elle figurait dans la liste du
+             coach (même école + is_active). Une équipe d'une autre école, ou
+             désactivée, laissait le champ vide alors que l'appartenance
+             existait. On l'ajoute maintenant aux options pour qu'elle soit
+             affichable ET conservable. */
+      const { data: taRows } = await supabase
         .from("team_athletes")
-        .select("team_id")
-        .eq("athlete_id", id)
-        .maybeSingle();
-      if (currentTeamAssignment?.team_id) {
-        const matchedTeam = (teams || []).find((t: any) => t.id === currentTeamAssignment.team_id);
-        if (matchedTeam) {
-          const sportRel = (matchedTeam as any).sports;
-          const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
-          const level = [(matchedTeam as any).age_group, (matchedTeam as any).division].filter(Boolean).join(" ");
-          setForm((prev) => ({
-            ...prev,
-            sports: {
-              ...prev.sports,
-              selectedTeamId: matchedTeam.id,
-              currentTeam: matchedTeam.name || "",
-              teamLevel: level || "",
-              teamDivision: (matchedTeam as any).division || "",
-              league: (matchedTeam as any).league || "RSEQ",
-            },
-          }));
-        }
+        .select("team_id, teams!team_id(id, name, division, age_group, league, sport_id, sports!sport_id(nom))")
+        .eq("athlete_id", id);
+
+      type EquipeJointe = {
+        id: string;
+        name: string | null;
+        division: string | null;
+        age_group: string | null;
+        league: string | null;
+        sports: { nom?: string } | { nom?: string }[] | null;
+      };
+      const rows = (taRows ?? []) as { team_id: string; teams: EquipeJointe | EquipeJointe[] | null }[];
+      const idsListe = new Set((teams ?? []).map((t) => t.id as string));
+      const courante = rows.find((r) => idsListe.has(r.team_id)) ?? rows[0];
+      const tRel = courante?.teams;
+      const equipe = Array.isArray(tRel) ? tRel[0] : tRel;
+
+      if (equipe?.id) {
+        const sportRel = equipe.sports;
+        const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
+        const level = [equipe.age_group, equipe.division].filter(Boolean).join(" ");
+
+        // Absente de la liste (autre école, saison inactive) → on l'y met,
+        // sinon le <select> afficherait un champ vide pour une valeur posée.
+        setCoachTeam((prev) =>
+          prev.teams.some((t) => t.id === equipe.id)
+            ? prev
+            : {
+                ...prev,
+                teams: [
+                  ...prev.teams,
+                  {
+                    id: equipe.id,
+                    name: equipe.name || "",
+                    level: level || "",
+                    division: equipe.division || "",
+                    sport: sport?.nom || "",
+                    league: equipe.league || "RSEQ",
+                    gender: "M" as "M" | "F",
+                  },
+                ],
+              },
+        );
+
+        setForm((prev) => ({
+          ...prev,
+          sports: {
+            ...prev.sports,
+            selectedTeamId: equipe.id,
+            currentTeam: equipe.name || "",
+            teamLevel: level || "",
+            teamDivision: equipe.division || "",
+            league: equipe.league || "RSEQ",
+          },
+        }));
       }
 
     })();

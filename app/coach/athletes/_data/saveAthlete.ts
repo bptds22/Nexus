@@ -439,18 +439,18 @@ export async function saveAthleteEdit(
     // rattachement d'équipe raté laissait l'athlète invisible au calendrier
     // sans que personne ne le sache.
     if (taRes.error) return { error: taRes.error };
-  } else if (ids.sportId) {
-    /* Aucune équipe sélectionnée = RETRAIT, mais borné au sport principal
-       du formulaire. Sans cette borne on retomberait sur la purge globale
-       qu'on vient de supprimer. Le trigger reset_athlete_anchor_on_team_remove
-       s'applique normalement. */
-    const delRes = await supabase
-      .from("team_athletes")
-      .delete()
-      .eq("athlete_id", athleteId)
-      .eq("sport_id", ids.sportId);
-    if (delRes.error) return { error: delRes.error };
   }
+  /* CHAMP VIDE ≠ RETRAIT. Il n'y a délibérément pas de branche `else` ici.
+     L'ancienne version supprimait l'appartenance du sport principal dès que
+     le champ ÉQUIPE arrivait vide à la sauvegarde — or il arrivait vide tout
+     seul : le formulaire Modifier ne préchargeait l'équipe que si elle
+     figurait dans la liste du coach (même école, is_active), et la lecture en
+     .maybeSingle() rendait NULL pour un athlète multi-sport. Un coach qui
+     corrigeait une taille sortait le jeune de son équipe sans jamais l'avoir
+     demandé — et depuis la vague 2, ce retrait recalcule aussi coach_id.
+     Retirer un jeune d'une équipe est un geste explicite ; il a sa propre
+     surface (transferts / retrait). Ce formulaire n'attache et ne déplace, il
+     ne retire pas. */
 
   return { id: athleteId };
 }
