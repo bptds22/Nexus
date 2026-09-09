@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { roleLabel, roleColor } from "@/lib/coach/teamRoles";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { TeamPickerSheet, type TeamPickerItem } from "@/components/shared/teams/TeamPickerSheet";
 import {
@@ -33,17 +34,10 @@ interface Team {
   coaches: { name: string; role: string }[];
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  head_coach: "Entraîneur-chef",
-  head_coach_interim: "Head coach intérimaire",
-  assistant: "Assistant",
-  coordinator: "Coordonnateur",
-};
-const ROLE_COLORS: Record<string, string> = {
-  head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
-  assistant: "bg-[#2D3748] text-[#9CA3AF] border-[#2D3748]",
-  coordinator: "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
-};
+/* Libellés et couleurs de rôle : lib/coach/teamRoles est LA source. La table
+   locale qui vivait ici est partie — c'est la copie qui avait divergé (le
+   détail d'équipe rendait head_coach_interim en slug, celle-ci disait
+   « Head coach », que le vocabulaire produit bannit à l'écran). */
 
 export default function EquipesPage() {
   // Capacitor → composant mobile-native (Run 3 — Mes Équipes mobile).
@@ -374,8 +368,8 @@ function EquipesPageDesktop() {
                   {t.coaches.length > 0 && (
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {t.coaches.map((c, i) => (
-                        <span key={i} className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${ROLE_COLORS[c.role] || ROLE_COLORS.assistant}`}>
-                          {c.name} — {ROLE_LABELS[c.role] || c.role}
+                        <span key={i} className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${roleColor(c.role)}`}>
+                          {c.name} — {roleLabel(c.role)}
                         </span>
                       ))}
                     </div>
