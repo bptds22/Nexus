@@ -159,8 +159,8 @@ function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChan
     }`;
   return (
     <div className="flex items-center gap-1.5 bg-[#13151a] rounded-full p-1.5 w-fit">
-      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("simple"); }} className={pill(mode === "simple")}>Simplifié</button>
-      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("detailed"); }} className={pill(mode === "detailed")}>Détaillé</button>
+      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("simple"); }} className={pill(mode === "simple")}>Aperçu</button>
+      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("detailed"); }} className={pill(mode === "detailed")}>Profil complet</button>
     </div>
   );
 }

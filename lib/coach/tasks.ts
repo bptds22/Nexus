@@ -148,13 +148,19 @@ function toTaskAthlete(
 /**
  * Is this athlete missing a coach evaluation? AND-logic — an eval is
  * present as soon as there is a star OR a report; it is missing only
- * when BOTH are absent. A star-only eval (the quick-eval sheet lets you
- * save one) is complete, and so is a report-only eval.
+ * when BOTH are absent. A star-only eval is complete, and so is a
+ * report-only eval.
+ *
+ * VOCABULAIRE (2026-09-09) : le « mode simplifié » n'existe plus. Ce qui
+ * reste, et qui produit ces lignes, s'appelle la COTE RAPIDE — une étoile
+ * posée sans remplir les 14 critères, depuis la feuille d'évaluation rapide
+ * (CoachATraiterMobile) ou l'étoile des formulaires coach. Ce n'est pas un
+ * mode de saisie dégradé : c'est un geste, et il est complet.
  *
  *   missing star   = evaluation.cote_globale IS NULL
  *                    AND athletes.cote_globale_entraineur IS NULL.
- *                    A simplified-mode athlete with cote_globale_entraineur
- *                    set still HAS a star — they are NOT missing.
+ *                    Un athlète noté à la COTE RAPIDE a bien une étoile —
+ *                    il n'est PAS manquant.
  *
  *   missing report = NO evaluation row for this coach
  *                    OR rapport_entraineur null / empty after trim.

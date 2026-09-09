@@ -619,7 +619,7 @@ export default function CreateAthletePage() {
     switch (step) {
       case 1: {
         const d = form.identity;
-        // Simplified: prénom, nom, DOB, promotion. Hard-block <14 (Loi 25),
+        // Socle commun : prénom, nom, DOB, promotion. Hard-block <14 (Loi 25),
         // même gate que le self-signup — un coach ne peut pas créer un <14.
         const base = !!(d.firstName && d.lastName && d.dateOfBirth && d.gradYear) && !isUnder14(d.dateOfBirth);
         /* Décision BP (c) du 2026-09-09 : genre, école, ville et région sont

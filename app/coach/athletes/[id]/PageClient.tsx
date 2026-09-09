@@ -59,8 +59,8 @@ function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChan
     }`;
   return (
     <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Simplifié</button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Détaillé</button>
+      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Aperçu</button>
+      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Profil complet</button>
     </div>
   );
 }
@@ -493,6 +493,13 @@ export default function CoachAthleteProfilePage() {
   const ratedTraits = traitEntries.filter(([, v]) => v > 0);
   const traitAvg = ratedTraits.length > 0 ? ratedTraits.reduce((s, [, v]) => s + v, 0) / ratedTraits.length : null;
   const coteGlobale = traitAvg ?? a.overallRating;
+  /* LA RÈGLE D'AFFICHAGE (BP, 2026-09-09) : l'écran montre ce que la DONNÉE
+     contient. Une cote rapide (étoile seule, aucun critère) ne doit jamais
+     s'afficher comme une évaluation complète — sinon les 14 critères sortent
+     à « 0/5 », et une note de zéro se trouve affirmée sur un jeune que
+     personne n'a noté. Le toggle décide de l'envie de détail ; `aDesCriteres`
+     décide de ce qu'il y a à détailler. Les deux doivent être vrais. */
+  const aDesCriteres = ratedTraits.length > 0;
 
   // Attribution — la note/éval affichée (la plus récente) n'est PAS celle du
   // coach connecté : afficher « Évalué par {Prénom Nom} » (typiquement le
@@ -764,7 +771,7 @@ export default function CoachAthleteProfilePage() {
             )}
             <div className={a.coachReport ? "mt-3" : ""}>
 
-              {!isDetailed && (
+              {(!isDetailed || !aDesCriteres) && (
                 <div className="mt-3 pl-5">
                   <div className="flex items-center gap-3">
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
@@ -777,7 +784,7 @@ export default function CoachAthleteProfilePage() {
                 </div>
               )}
 
-              {isDetailed && (
+              {isDetailed && aDesCriteres && (
                 <div className="mt-5 pl-5">
                   {/* (1) Cote globale prominent — matches modifier card */}
                   <div className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-4 flex items-center justify-between mb-4">
@@ -793,11 +800,22 @@ export default function CoachAthleteProfilePage() {
 
                   {/* (2-4) Capacités athlétiques / Intelligence sportive / Caractère */}
                   <div className="space-y-4">
-                    {traitGroups(grilleSet, grilleRef).map((group) => (
+                    {traitGroups(grilleSet, grilleRef).map((group) => {
+                      /* Un groupe dont aucun critère n'est noté ne s'affiche
+                         pas : son titre seul laisserait croire à un oubli, et
+                         ses lignes à « 0/5 » à une mauvaise note. Règle déjà
+                         appliquée aux deux surfaces recruteur ; elle manquait
+                         ICI, et c'est la seule des quatre qui divergeait. */
+                      const notes = group.traits.filter((t) => {
+                        const v = a.traitRatings ? (a.traitRatings[t.camel as keyof typeof a.traitRatings] as number) : 0;
+                        return typeof v === "number" && v > 0;
+                      });
+                      if (notes.length === 0) return null;
+                      return (
                       <div key={group.title} className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-5">
                         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">{group.title}</p>
                         <div className="space-y-1">
-                          {group.traits.map((trait) => {
+                          {notes.map((trait) => {
                             const val = a.traitRatings ? (a.traitRatings[trait.camel as keyof typeof a.traitRatings] as number) : 0;
                             return (
                               <div key={trait.column} className="flex items-center justify-between py-2 px-2 rounded-lg">
@@ -811,7 +829,8 @@ export default function CoachAthleteProfilePage() {
                           })}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {dbDistinctions.length > 0 && (
