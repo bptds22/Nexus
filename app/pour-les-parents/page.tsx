@@ -170,7 +170,15 @@ export default function PourLesParentsPage() {
         <MarketingNav />
 
         {/* ─── HERO ─────────────────────────────────────────── */}
-        <section id="hero" className="border-b border-white/[0.06]">
+        {/* `overflow-x: clip` — le halo de GlowFrame déborde volontairement de
+            60px de chaque côté du mock. Sous 768px ce débordement dépassait le
+            viewport et créait une barre de défilement horizontale de 36px sur
+            TOUTE la page. On le rogne ici, au niveau de la section, plutôt que
+            sur GlowFrame : le halo garde sa diffusion dans les marges du
+            conteneur (rendu desktop inchangé) et n'est coupé qu'au bord de
+            l'écran. `clip` et non `hidden` : `hidden` ferait de la section un
+            conteneur de défilement et casserait le `sticky` de la nav. */}
+        <section id="hero" className="border-b border-white/[0.06] [overflow-x:clip]">
           <div className="max-w-[1200px] mx-auto px-6 py-20 lg:py-28 text-center">
             <RedLabel>{T.hero.eyebrow}</RedLabel>
             <h1 className="nx-display text-[36px] sm:text-[48px] font-extrabold leading-[1.05] tracking-tight mt-4">
