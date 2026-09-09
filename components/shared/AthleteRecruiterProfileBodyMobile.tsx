@@ -6,6 +6,10 @@
 // Itération 1 = squelette fonctionnel mobile-first, viewerMode "recruiter"
 // uniquement. Si viewerMode preview/partner → on délègue au desktop body.
 
+import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
+import AthleteTransferSheet, {
+  loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
+} from "@/components/shared/coach/AthleteTransferSheet";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -752,6 +756,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const isCoach = viewer === "coach";
   const isSelfPreview = viewer === "self-preview";
 
+  /* Lot J — transfert depuis la fiche, variante mobile. Même moteur, mêmes
+     droits que le portail et que le web : tout vient du helper partagé. */
+  const [trState, setTrState] = useState<AthleteTransferState | null>(null);
+  const [trOpen, setTrOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isCoach || !athleteId) return;
+    let annule = false;
+    loadAthleteTransferState(athleteId).then((st) => { if (!annule) setTrState(st); });
+    return () => { annule = true; };
+  }, [isCoach, athleteId]);
+
   const id = athleteId;
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
@@ -999,6 +1015,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         setCommittedSchoolName(committedSchoolNameVal);
         setOpenToOffers(openToOffersVal ?? null);
         const coach = d.users as { first_name: string; last_name: string } | null;
+        /* Lot F3 — résolution du référent (équipe → directeur → propriétaire).
+           Lecture séparée : les RPC recruteur ne projettent pas coach_id, et
+           fn_resolve_team_referent n'existe pas encore en base (vague 2). */
+        const referentName =
+          (await loadAthleteReferent(supabase, d.id as string)).name ?? "";
         const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
         const sport = sportRel as { nom: string } | null;
@@ -1125,7 +1146,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           gender: (d.genre as "M" | "F" | "Autre") || "M",
           commitmentStatus: (d.statut_recrutement_override as string) || "ouvert",
           coachReport: (eval0?.rapport_entraineur as string) || "",
-          coachName: coach ? `${coach.first_name} ${coach.last_name}` : "",
+          /* Lot F3 — le RÉFÉRENT résolu, pas le propriétaire brut. coach_id est
+             NULL pour 43 des 53 athlètes en équipe : lire le champ tel quel
+             affichait une carte de réputation sans nom dans 81 % des cas.
+             Repli sur le propriétaire quand la résolution ne donne rien. */
+          coachName: referentName || (coach ? `${coach.first_name} ${coach.last_name}` : ""),
           coachSchool: school?.name || "",
           coachReputation: undefined,
           // #1 latest-wins : la colonne dénormalisée cote_globale_entraineur est
@@ -3200,6 +3225,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       )}
 
       {/* ══ COACH-only — sticky "Modifier le profil" CTA + SuggestionSheet (Step 6) ══ */}
+      {isCoach && trOpen && trState && (
+        <AthleteTransferSheet
+          athleteId={athleteId}
+          athleteName={`${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || "cet athlète"}
+          state={trState}
+          variant="mobile"
+          onClose={() => setTrOpen(false)}
+          onDone={(msg) => {
+            setTrOpen(false);
+            toast.success({ message: msg });
+            loadAthleteTransferState(athleteId).then(setTrState);
+          }}
+        />
+      )}
+
       {isCoach && mounted && typeof document !== "undefined" && createPortal(
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5"
@@ -3235,6 +3275,24 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               </svg>
               Message
             </button>
+            {/* Lot J — même ordre que le web : MESSAGE · TRANSFÉRER · MODIFIER.
+                Icône seule : la barre porte déjà deux libellés, un troisième
+                la ferait déborder sur les petits écrans. Le libellé vit dans
+                aria-label et dans le titre du panneau. */}
+            {trState && canTransferAthlete(trState) && (
+              <button
+                type="button"
+                onClick={() => { void triggerHaptic("Light"); setTrOpen(true); }}
+                className="flex items-center justify-center shrink-0 px-4 py-4 rounded-2xl border border-[#3B82F6]/40 text-[#3B82F6] active:bg-[#3B82F6]/10"
+                aria-label={`Transférer — équipe actuelle : ${trState.currentTeamName ?? "sans équipe"}`}
+                title="Transférer"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
+                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
+                </svg>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

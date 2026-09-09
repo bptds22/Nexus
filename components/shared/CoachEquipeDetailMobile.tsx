@@ -42,20 +42,14 @@ import { TeamAddCoachSheet } from "@/components/shared/teams/TeamAddCoachSheet";
 import { TeamAddAthleteSheet } from "@/components/shared/teams/TeamAddAthleteSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
+import CoachRoleLine from "@/components/shared/coach/CoachRoleLine";
+import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
+import { isReferentRole, type TeamRole } from "@/lib/coach/teamRoles";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-const ROLE_LABEL: Record<string, string> = {
-  head_coach: "Chef",
-  assistant: "Assistant",
-  coordinator: "Coordo",
-};
-const ROLE_PILL: Record<string, string> = {
-  head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
-  assistant: "bg-white/[0.06] text-[#9CA3AF] border-white/10",
-  coordinator: "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
-};
+/* Rôles : lib/coach/teamRoles est LA source (parité stricte avec le web). */
 
 /* Adapter : map the team-detail's CoachTeamDetailAthlete row to the
    CoachAthlete shape consumed by the shared CoachAthleteRowMobile.
@@ -123,6 +117,7 @@ export default function CoachEquipeDetailMobile() {
   const teamId = useDynamicParam("teamId");
 
   const { data, isLoading } = useCoachTeamDetail(teamId);
+  const [roleBusy, setRoleBusy] = useState<string | null>(null);
   const team = data?.team;
   const coaches = data?.coaches ?? [];
   const athletes = data?.athletes ?? [];
@@ -144,6 +139,20 @@ export default function CoachEquipeDetailMobile() {
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["coach-team", teamId] });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
+  }
+
+  /* Lot D — changement de rôle, même mutation partagée que le web. */
+  async function changeCoachRole(row: { id: string; coachId: string; name: string; role: string }, nextRole: TeamRole) {
+    if (row.role === nextRole || roleBusy) return;
+    setRoleBusy(row.id);
+    const supabase = createClient();
+    const res = await setTeamCoachRole(supabase, { teamId, target: row, nextRole, roster: coaches });
+    setRoleBusy(null);
+    if (res.message) {
+      if (res.ok) toast.success({ message: res.message });
+      else toast.error({ message: res.message });
+    }
+    if (res.ok) invalidate();
   }
 
   async function addCoachToTeam(coachId: string, role: "head_coach" | "assistant" | "coordinator") {
@@ -351,11 +360,20 @@ export default function CoachEquipeDetailMobile() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] text-white truncate">{c.name}</p>
-                    <span
-                      className={`inline-block mt-1 text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${ROLE_PILL[c.role] || ROLE_PILL.assistant}`}
-                    >
-                      {ROLE_LABEL[c.role] || c.role}
-                    </span>
+                    {/* v3 — le select passe SOUS le nom : la ligne mobile
+                        (avatar + nom + bouton retirer) n'a pas la largeur du
+                        web pour l'accueillir à droite. Même composant, même
+                        règles ; seul le placement diffère. Sans droits
+                        (isAdmin), c'est du texte simple, pas un select grisé. */}
+                    <CoachRoleLine
+                      className="mt-1"
+                      role={c.role}
+                      canEdit={isAdmin}
+                      teamCoachCount={coaches.length}
+                      teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
+                      busy={roleBusy !== null}
+                      onChange={(next) => changeCoachRole(c, next)}
+                    />
                   </div>
                   {isAdmin && (
                     <button

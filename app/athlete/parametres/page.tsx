@@ -60,6 +60,28 @@ function ParametresPageDesktop() {
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState<string | null>(null);
   const [showPwdForm, setShowPwdForm] = useState(false);
+  /* Changement de mot de passe — CÂBLÉ (ex-stub « (POC) »). Même appel et même
+     validation que le flow réel d'app/auth/reinitialiser : longueur ≥ 8 et
+     confirmation. Le champ « mot de passe actuel » a été RETIRÉ : sur une
+     session active, supabase.auth.updateUser ne le vérifie pas, et l'afficher
+     aurait remplacé un mensonge par un autre. */
+  const [pwd, setPwd] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [pwdError, setPwdError] = useState("");
+  const [pwdSaving, setPwdSaving] = useState(false);
+
+  const submitPassword = async () => {
+    setPwdError("");
+    if (pwd.length < 8) { setPwdError("Le mot de passe doit contenir au moins 8 caractères."); return; }
+    if (pwd !== pwdConfirm) { setPwdError("Les mots de passe ne correspondent pas."); return; }
+    setPwdSaving(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: pwd });
+    setPwdSaving(false);
+    if (error) { setPwdError("Impossible de modifier le mot de passe. Reconnecte-toi puis réessaie."); return; }
+    setPwd(""); setPwdConfirm(""); setShowPwdForm(false);
+    showToast("Mot de passe modifié");
+  };
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [actionPending, setActionPending] = useState(false);
@@ -212,21 +234,42 @@ function ParametresPageDesktop() {
                 <div className="space-y-4">
                   <div>
                     <label className={labelCls}>Courriel</label>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[14px] text-[#9CA3AF]">{profile?.email || "..."}</span>
-                      <button type="button" onClick={() => showToast("Modifier le courriel — POC")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors">Modifier</button>
-                    </div>
+                    {/* Le bouton « Modifier » a été RETIRÉ (2026-09-09). Il
+                        affichait « Modifier le courriel — POC » et ne changeait
+                        rien. Le câblage a été tenté puis abandonné : avec
+                        « Confirm email » désactivé sur le projet (221 comptes
+                        confirmés, ZÉRO courriel de confirmation jamais envoyé —
+                        auth.users.confirmation_sent_at = 0),
+                        supabase.auth.updateUser({ email }) ne déclenche pas le
+                        flow de confirmation. Annoncer « un courriel a été
+                        envoyé » aurait remplacé un mensonge par un pire : croire
+                        son adresse protégée pendant qu'elle bascule.
+                        Le champ redevient éditable quand le ticket #34 (activer
+                        Confirm email au dashboard) sera passé — geste BP, à faire
+                        en fenêtre calme : il rend la confirmation obligatoire
+                        pour TOUS les nouveaux comptes.
+                        L'adresse reste AFFICHÉE : savoir avec quel courriel on
+                        est connecté n'a jamais été le problème. */}
+                    <span className="text-[14px] text-[#9CA3AF]">{profile?.email || "..."}</span>
                   </div>
                   <div>
                     <label className={labelCls}>Mot de passe</label>
                     {showPwdForm ? (
                       <div className="space-y-3 max-w-sm">
-                        <input type="password" placeholder="Mot de passe actuel" className={inputCls} />
-                        <input type="password" placeholder="Nouveau mot de passe" className={inputCls} />
-                        <input type="password" placeholder="Confirmer" className={inputCls} />
+                        <input type="password" placeholder="Nouveau mot de passe" value={pwd}
+                          onChange={(e) => { setPwd(e.target.value); setPwdError(""); }}
+                          autoComplete="new-password" className={inputCls} />
+                        <input type="password" placeholder="Confirmer" value={pwdConfirm}
+                          onChange={(e) => { setPwdConfirm(e.target.value); setPwdError(""); }}
+                          autoComplete="new-password" className={inputCls} />
+                        {pwdError && <p className="text-[12px] text-[#EF4444]">{pwdError}</p>}
                         <div className="flex gap-3">
-                          <button type="button" onClick={() => { setShowPwdForm(false); showToast("Mot de passe modifié (POC)"); }} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg transition-colors">Sauvegarder</button>
-                          <button type="button" onClick={() => setShowPwdForm(false)} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+                          <button type="button" onClick={submitPassword} disabled={pwdSaving}
+                            className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 text-white text-[12px] font-bold rounded-lg transition-colors">
+                            {pwdSaving ? "..." : "Sauvegarder"}
+                          </button>
+                          <button type="button" onClick={() => { setShowPwdForm(false); setPwd(""); setPwdConfirm(""); setPwdError(""); }}
+                            className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
                         </div>
                       </div>
                     ) : (

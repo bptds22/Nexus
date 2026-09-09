@@ -16,6 +16,8 @@
    et était dépréciée au sprint coach-responsable-2c).
 ═══════════════════════════════════════════════════════════════ */
 
+import InterimCoachBanner from "@/components/shared/coach/InterimCoachBanner";
+import { loadMyInterimTeams, type InterimTeam } from "@/lib/queries/coach/interimTeams";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -477,6 +479,7 @@ export function CoachDashboardMobile() {
   });
   const [hotAthletes, setHotAthletes] = useState<HotAthleteRow[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
+  const [interimTeams, setInterimTeams] = useState<InterimTeam[]>([]);
   const [isInterimDirector, setIsInterimDirector] = useState(false);
   const [interimSchoolName, setInterimSchoolName] = useState("");
   const [demotionNotifications, setDemotionNotifications] = useState<DemotionNotif[]>([]);
@@ -564,6 +567,9 @@ export function CoachDashboardMobile() {
       if (!coachSchoolId) return;
 
       // Director → school-wide dashboard scope (BP rule). Non-director unchanged.
+      /* Lot C — bandeau intérim, lecture indépendante du reste. */
+      loadMyInterimTeams(supabase).then(setInterimTeams);
+
       const dir = await loadSchoolDirectorStatus(supabase, user.id);
       const isDir = dir.isDirector;
       let schoolCoachIds: string[] = [];
@@ -975,6 +981,14 @@ export function CoachDashboardMobile() {
           onDismiss={() => dismissDemotion(n.id)}
         />
       ))}
+
+      {/* Lot C — bandeau persistant « coach intérimaire », même composant
+          que le web (parité stricte du train 1.4.1). */}
+      {interimTeams.length > 0 && (
+        <div className="px-4 pt-4">
+          <InterimCoachBanner teams={interimTeams} />
+        </div>
+      )}
 
       <SectionDivider />
 

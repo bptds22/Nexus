@@ -6,13 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import TransfertAthletesMobile from "@/components/shared/TransfertAthletesMobile";
 import {
-  loadSchoolCoaches,
-  loadAthletesForCoach,
-  transferAthletes,
-  pickInitialSource,
-  UNASSIGNED_COACH_ID,
-  type SchoolCoachOption,
+  loadSchoolTeams,
+  loadAthletesForTeam,
+  moveAthletesToTeam,
+  loadTransferContext,
+  pickInitialTeam,
+  destinationBlockReason,
+  NO_TEAM_ID,
+  REMOVE_FROM_TEAM_ID,
+  type TeamOption,
   type TransferAthlete,
+  type TransferContext,
 } from "@/lib/coach/transferAthletes";
 import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
@@ -38,9 +42,10 @@ function ArrowRight() {
   );
 }
 
-function coachSubLabel(c: SchoolCoachOption): string {
-  const n = `${c.athleteCount} athlète${c.athleteCount > 1 ? "s" : ""}`;
-  return c.id === UNASSIGNED_COACH_ID ? n : `${c.sport} · ${n}`;
+/* Sous-titre d'une équipe dans le dropdown : effectif + sport/division. */
+function teamSubLabel(t: TeamOption): string {
+  const n = `${t.athleteCount} athlète${t.athleteCount > 1 ? "s" : ""}`;
+  return t.id === NO_TEAM_ID ? n : `${t.sub} · ${n}`;
 }
 
 function MesTransfertsContent() {
@@ -49,7 +54,8 @@ function MesTransfertsContent() {
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
   const [orgType, setOrgType] = useState<SchoolType | null>(null);
-  const [coaches, setCoaches] = useState<SchoolCoachOption[]>([]);
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [ctx, setCtx] = useState<TransferContext>({ myTeamIds: new Set(), isDirector: false });
 
   const [sourceId, setSourceId] = useState<string>("");
   const [destId, setDestId] = useState<string>("");
@@ -67,9 +73,9 @@ function MesTransfertsContent() {
     setTimeout(() => setToast(null), 4000);
   }
 
-  const refreshCoaches = useCallback(async (sid: string) => {
+  const refreshTeams = useCallback(async (sid: string, c: TransferContext) => {
     const supabase = createClient();
-    setCoaches(await loadSchoolCoaches(supabase, sid));
+    setTeams(await loadSchoolTeams(supabase, sid, c));
   }, []);
 
   // Initial load: resolve the coach's school + coach list.
@@ -91,14 +97,16 @@ function MesTransfertsContent() {
       setOrgType(((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null);
       setSchoolId(sid);
       if (sid) {
-        const list = await loadSchoolCoaches(supabase, sid);
-        setCoaches(list);
+        const c = await loadTransferContext(supabase, sid);
+        setCtx(c);
+        const list = await loadSchoolTeams(supabase, sid, c);
+        setTeams(list);
         // Auto-select a non-empty source so the panel isn't empty on load.
-        const auto = pickInitialSource(list, uid);
+        const auto = pickInitialTeam(list);
         if (auto) {
           setSourceId(auto);
           setLoadingAthletes(true);
-          setSourceAthletes(await loadAthletesForCoach(supabase, sid, auto));
+          setSourceAthletes(await loadAthletesForTeam(supabase, sid, auto));
           setLoadingAthletes(false);
         }
       }
@@ -112,7 +120,7 @@ function MesTransfertsContent() {
     if (!coachId) { setSourceAthletes([]); return; }
     setLoadingAthletes(true);
     const supabase = createClient();
-    const list = await loadAthletesForCoach(supabase, sid, coachId);
+    const list = await loadAthletesForTeam(supabase, sid, coachId);
     setSourceAthletes(list);
     setLoadingAthletes(false);
   }, []);
@@ -141,13 +149,30 @@ function MesTransfertsContent() {
     );
   }
 
-  const sourceCoach = useMemo(() => coaches.find((c) => c.id === sourceId) ?? null, [coaches, sourceId]);
-  const destCoach = useMemo(() => coaches.find((c) => c.id === destId) ?? null, [coaches, destId]);
-  const destOptions = useMemo(() => coaches.filter((c) => c.id !== sourceId), [coaches, sourceId]);
+  const sourceCoach = useMemo(() => teams.find((c) => c.id === sourceId) ?? null, [teams, sourceId]);
+  /* « Retirer de l'équipe » n'existe comme destination que si la source EST
+     une équipe : on ne retire pas un athlète de « Sans équipe ». */
+  const destOptions = useMemo<TeamOption[]>(() => {
+    const base = teams.filter((c) => c.id !== sourceId && c.id !== NO_TEAM_ID);
+    if (sourceId && sourceId !== NO_TEAM_ID) {
+      base.push({
+        id: REMOVE_FROM_TEAM_ID,
+        name: "Retirer de l'équipe",
+        sub: "L'athlète ne sera plus sur aucun alignement",
+        athleteCount: 0,
+        canManage: true,
+      });
+    }
+    return base;
+  }, [teams, sourceId]);
+  const destCoach = useMemo(() => destOptions.find((c) => c.id === destId) ?? null, [destOptions, destId]);
 
   const count = selectedIds.size;
-  const isAssign = sourceId === UNASSIGNED_COACH_ID; // source is the pool → "Assigner"
-  const actionVerb = isAssign ? "Assigner" : "Transférer";
+  const isAssign = sourceId === NO_TEAM_ID;            // source « Sans équipe » → "Assigner"
+  const isRemoval = destId === REMOVE_FROM_TEAM_ID;   // destination « Retirer »
+  const actionVerb = isRemoval ? "Retirer" : isAssign ? "Assigner" : "Déplacer";
+  /* Motif de blocage de la destination choisie — la RLS la refuserait. */
+  const destBlocked = destCoach ? destinationBlockReason(destCoach, sourceCoach) : null;
   const canSubmit = count > 0 && !!destId && destId !== sourceId;
 
   async function handleTransfer() {
@@ -155,7 +180,11 @@ function MesTransfertsContent() {
     setSubmitting(true);
     const ids = Array.from(selectedIds);
     const supabase = createClient();
-    const res = await transferAthletes(supabase, ids, destId);
+    const res = await moveAthletesToTeam(
+      supabase,
+      sourceAthletes.filter((a) => selectedIds.has(a.id)),
+      destId,
+    );
 
     if (!res.success) {
       console.error("[Transfert] failed", res.error);
@@ -165,10 +194,10 @@ function MesTransfertsContent() {
       return;
     }
 
-    const verbPast = isAssign ? "assigné" : "transféré";
+    const verbPast = isRemoval ? "retiré" : isAssign ? "assigné" : "déplacé";
     flashToast(
       "success",
-      `${ids.length} athlète${ids.length > 1 ? "s" : ""} ${verbPast}${ids.length > 1 ? "s" : ""} vers ${destCoach?.name ?? ""}.`,
+      `${ids.length} athlète${ids.length > 1 ? "s" : ""} ${verbPast}${ids.length > 1 ? "s" : ""}${isRemoval ? "" : ` vers ${destCoach?.name ?? ""}`}.`,
     );
 
     // Refresh both panels: counts + current source list, reset selection/destination.
@@ -177,7 +206,7 @@ function MesTransfertsContent() {
     setSubmitting(false);
     setDestId("");
     if (schoolId) {
-      await refreshCoaches(schoolId);
+      await refreshTeams(schoolId, ctx);
       await loadSource(schoolId, sourceId);
     }
   }
@@ -213,7 +242,7 @@ function MesTransfertsContent() {
           Gestion des athlètes
         </h1>
         <p className="text-[13px] text-[#9CA3AF] mt-1">
-          Assigne des athlètes à un entraîneur de {orgNounPossessif(orgType)}.
+          Assigne des athlètes à une équipe de {orgNounPossessif(orgType)}.
         </p>
       </div>
 
@@ -229,10 +258,10 @@ function MesTransfertsContent() {
             onChange={(e) => onSourceChange(e.target.value)}
             className="w-full bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-[#E63946]/50"
           >
-            <option value="">Sélectionner un coach</option>
-            {coaches.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.athleteCount})
+            <option value="">Sélectionner une équipe</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} ({t.athleteCount})
               </option>
             ))}
           </select>
@@ -257,7 +286,7 @@ function MesTransfertsContent() {
           <div className="mt-3 space-y-2 max-h-[540px] overflow-y-auto pr-1">
             {!sourceId && (
               <div className="py-14 text-center text-[13px] text-[#6b7280]">
-                Sélectionne un entraîneur
+                Sélectionne une équipe
               </div>
             )}
             {sourceId && loadingAthletes && (
@@ -322,13 +351,24 @@ function MesTransfertsContent() {
             disabled={count === 0}
             className="w-full bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-[#E63946]/50 disabled:opacity-40"
           >
-            <option value="">{isAssign ? "Assigner à…" : "Transférer vers…"}</option>
-            {destOptions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.athleteCount})
-              </option>
-            ))}
+            <option value="">{isAssign ? "Assigner à…" : "Déplacer vers…"}</option>
+            {/* Options TOUJOURS visibles : une destination interdite est
+                désactivée avec son motif, jamais masquée — sinon le coach
+                croit que l'équipe n'existe pas. */}
+            {destOptions.map((c) => {
+              const motif = destinationBlockReason(c, sourceCoach);
+              return (
+                <option key={c.id} value={c.id} disabled={!!motif} title={motif ?? undefined}>
+                  {c.name}{c.id === REMOVE_FROM_TEAM_ID ? "" : ` (${c.athleteCount})`}
+                  {motif ? " — réservé au directeur" : ""}
+                </option>
+              );
+            })}
           </select>
+
+          {destBlocked && (
+            <p className="text-[12px] text-[#F59E0B] mt-2 leading-snug">{destBlocked}</p>
+          )}
 
           {count === 0 && (
             <p className="text-[12px] text-[#6b7280] mt-3">
@@ -337,9 +377,9 @@ function MesTransfertsContent() {
           )}
           {destCoach && (
             <div className="mt-4 rounded-lg bg-[#111317] border border-[#2D3748] p-3">
-              <p className="text-[12px] text-[#6b7280]">{destCoach.id === UNASSIGNED_COACH_ID ? "Retour au pool" : "Nouvel entraîneur"}</p>
+              <p className="text-[12px] text-[#6b7280]">{destCoach.id === REMOVE_FROM_TEAM_ID ? "Sortie d’alignement" : "Nouvelle équipe"}</p>
               <p className="text-[15px] font-bold text-white mt-0.5">{destCoach.name}</p>
-              <p className="text-[12px] text-[#6b7280]">{coachSubLabel(destCoach)}</p>
+              <p className="text-[12px] text-[#6b7280]">{teamSubLabel(destCoach)}</p>
             </div>
           )}
         </section>
