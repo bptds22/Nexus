@@ -1,7 +1,17 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- L'ATHLÈTE MODIFIE SON PROFIL — fin du flow de proposition
 --
--- ⚠ NON APPLIQUÉE à l'écriture. Miroir + gate d'abord, apply sur GO de BP.
+-- APPLIQUÉE sur le cloud le 2026-09-09 (version 20260909191744). Gate en
+--   post-apply, SQL brut : 8/8 verts.
+--
+-- ⚠ MAIS LE GARDE POSÉ ICI NE BLOQUAIT RIEN — voir la migration suivante,
+--   20260909191916_edition_directe_athlete_garde_invoker. En SECURITY DEFINER,
+--   `current_user` vaut le PROPRIÉTAIRE, pas le rôle appelant : le test
+--   `current_user <> 'authenticated'` sortait en early-return à chaque appel.
+--   Les 8 gates de catalogue étaient verts ; c'est la PREUVE PAR EXÉCUTION
+--   demandée par BP qui l'a attrapé, colonne par colonne. Le correctif passe
+--   la fonction en SECURITY INVOKER. Ce fichier garde la version telle
+--   qu'appliquée : l'historique doit montrer la faute, pas la cacher.
 --
 -- DÉCISION BP (2026-09-09) : les sections aujourd'hui gatées « PROPOSER →
 -- approbation coach » deviennent modifiables DIRECTEMENT par l'athlète.
@@ -155,6 +165,18 @@ $function$;
 -- quand un jeune rejoint une équipe, c'est `trg_team_athletes_referent` qui
 -- écrit `athletes.coach_id` AVEC auth.uid() = l'athlète. Un garde basé sur le
 -- seul auth.uid() casserait la vague 2 le jour de sa première prise d'équipe.
+--
+-- ⚠ EXCLUSION VOLONTAIRE — `statut_recrutement_override` N'EST PAS BLOQUÉE.
+-- Le CLAUDE.md en fait une règle produit : « Recruitment Status (on athlete,
+-- last-write-wins) — n'importe lequel de coach / athlète / recruteur peut la
+-- mettre à jour ». L'écriture par l'athlète y est donc LÉGITIME, et la bloquer
+-- ici casserait une règle métier au nom d'une liste de sécurité.
+-- Aucune surface athlète ne l'écrit aujourd'hui : l'exclusion est un droit
+-- gardé ouvert, pas un usage constaté. Son jumeau `recruitment_status`, lui,
+-- EST bloqué — il n'est écrit que par les flows coach/recruteur, et son
+-- `recruitment_status_changed_by` doit rester une signature crédible.
+-- Le jour où l'un des deux disparaît au profit de l'autre, cette exclusion se
+-- relit — elle ne s'hérite pas (règle 11).
 CREATE OR REPLACE FUNCTION public.enforce_athlete_self_edit_perimeter()
 RETURNS trigger
 LANGUAGE plpgsql
