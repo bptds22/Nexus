@@ -28,7 +28,7 @@
    public.current_season() — même source que le DEFAULT de colonne.
 ═══════════════════════════════════════════════════════════════ */
 
-import { REFERENT_ROLES, type TeamRole } from "@/lib/coach/teamRoles";
+import type { TeamRole } from "@/lib/coach/teamRoles";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { normalizeKey, normalizeDivision } from "./detectExistingTeam";
 
@@ -74,9 +74,9 @@ export interface JoinTeamParams {
 
 export interface JoinTeamResult {
   error?: PostgrestError | { message: string; code?: string };
-  /** Rôle réellement attribué : 'head_coach' si l'équipe n'avait aucun
-   *  coach (revendication d'une équipe scrapée), sinon 'assistant'.
-   *  Absent en cas d'erreur. Sert au message de confirmation. */
+  /** Rôle réellement PORTÉ après l'insertion, relu en base : 'head_coach_interim'
+   *  si le trigger de la vague 2 a promu l'arrivant (équipe sans responsable),
+   *  sinon 'assistant'. Absent en cas d'erreur. Sert au message de confirmation. */
   role?: TeamRole;
 }
 
@@ -198,17 +198,16 @@ export async function createTeam(
  *     intérim, sinon une équipe orpheline n'aurait jamais de responsable.
  *   - équipe qui a déjà un responsable → 'assistant'.
  *
- * ⚠️ TEMPORAIRE — CETTE LOGIQUE APPARTIENT AU TRIGGER DE LA VAGUE 2.
- * `trg_team_coaches_referent` (migration vague 2, NON APPLIQUÉE, réservée au
- * release 1.4.1) fait exactement ce calcul côté serveur, avec la double garde
- * `role='assistant'` + auto-jointure. D'ici là le client le pose lui-même,
- * sinon la prise d'équipe ne nomme aucun responsable entre les deux vagues.
- * À L'APPLY DE LA VAGUE 2 : supprimer ce calcul et insérer 'assistant' — le
- * trigger promeut. Laisser les deux en place ferait tourner la règle deux
- * fois (inoffensif, mais deux sources de vérité pour un même invariant).
+ * LOT I — le calcul de rôle est parti côté serveur. `trg_team_coaches_referent`
+ * (vague 2, appliquée le 2026-09-09) promeut l'arrivant en 'head_coach_interim'
+ * quand l'équipe n'a aucun responsable, avec la double garde `role='assistant'`
+ * + auto-jointure (`coach_id = auth.uid()`). Le client insère donc TOUJOURS
+ * 'assistant' : une seule source de vérité pour cet invariant.
  *
- * Le test porte sur le RESPONSABLE, pas sur « aucun coach » : une équipe
- * peuplée d'assistants sans responsable doit en nommer un.
+ * Conséquence sur le retour : le rôle effectif est celui que la base a posé,
+ * pas celui qu'on a demandé. On le relit après l'insertion — sans quoi l'UI
+ * annoncerait « assistant » à un coach que le trigger vient de nommer
+ * responsable par intérim.
  *
  * Idempotent : ON CONFLICT DO NOTHING sur (team_id, coach_id) — taper
  * « Rejoindre » deux fois est sans effet, et ne peut pas promouvoir
@@ -226,18 +225,9 @@ export async function joinTeam(
   if (!coachUserId) return { error: { message: "Coach manquant (non authentifié)." } };
   if (!teamId)      return { error: { message: "Équipe manquante." } };
 
-  /* Équipe sans RESPONSABLE ? → head_coach_interim. La policy "team_coaches
-     scoped select" laisse lire les lignes des équipes de mon école, donc ce
-     compte est fiable pour le cas qui nous intéresse (équipe scrapée de mon
-     école). En cas d'erreur de lecture on retombe sur 'assistant' : jamais de
-     promotion accidentelle sur une équipe déjà encadrée. */
-  const { count, error: countErr } = await supabase
-    .from("team_coaches")
-    .select("coach_id", { count: "exact", head: true })
-    .eq("team_id", teamId)
-    .in("role", REFERENT_ROLES);
-
-  const role = !countErr && (count ?? 0) === 0 ? "head_coach_interim" : "assistant";
+  /* Toujours 'assistant' : c'est le trigger de la vague 2 qui décide s'il faut
+     promouvoir, et sa garde EXIGE ce rôle à l'insertion. */
+  const role = "assistant";
 
   /* Supabase doesn't have a clean .upsert-with-ignore on per-row
      unique violations the way RPC does ; .insert with onConflict
@@ -252,5 +242,16 @@ export async function joinTeam(
     );
 
   if (error) return { error };
-  return { role };
+
+  /* Rôle EFFECTIF, tel que la base l'a laissé : le trigger a pu promouvoir
+     l'arrivant. En cas d'échec de relecture on rend le rôle demandé plutôt que
+     de faire échouer une jointure qui, elle, a réussi. */
+  const { data: apres } = await supabase
+    .from("team_coaches")
+    .select("role")
+    .eq("team_id", teamId)
+    .eq("coach_id", coachUserId)
+    .maybeSingle();
+
+  return { role: (apres?.role as JoinTeamResult["role"]) ?? role };
 }

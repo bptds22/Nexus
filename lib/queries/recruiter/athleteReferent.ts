@@ -1,28 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════
    athleteReferent — qui répond pour cet athlète, côté recruteur.
 
-   MIROIR CLIENT de la fonction SQL `fn_resolve_team_referent` (vague 2) :
+   LOT I (2026-09-09) : le miroir client de `fn_resolve_team_referent` est
+   PARTI. La vague 2 est appliquée ; `athletes.coach_id` est désormais un
+   POINTEUR DÉRIVÉ, maintenu par les triggers dans les deux sens (arrivée et
+   départ). Ce module le LIT, il ne le recalcule pas — une seule cascade
+   vivante, celle de la base.
 
-     responsable de l'équipe (head_coach → head_coach_interim)
-       → directeur de l'organisation
-       → personne
+   Ce qui reste ici n'est pas de la résolution : c'est de l'ÉTIQUETTE. Savoir
+   si le référent tient son rôle de l'équipe ou de la direction ne change pas
+   QUI répond, seulement comment on le présente au recruteur. Cette lecture ne
+   décide de rien et ne peut pas diverger de la base.
 
-   ⚠️ DEUX IMPLÉMENTATIONS, VOLONTAIREMENT, ET TEMPORAIREMENT. La vague 2
-   n'est pas appliquée : `fn_resolve_team_referent` n'existe pas encore en
-   base, et les RPC recruteur ne projettent pas coach_id de toute façon.
-   Ce module comble la fenêtre.
-
-   À L'APPLY DE LA VAGUE 2 : le référent sera maintenu dans
-   `athletes.coach_id` par les triggers, donc ce module se réduira à une
-   simple lecture de coach_id — ou disparaîtra si la projection recruteur
-   l'expose. Ne pas laisser les deux cascades vivre côte à côte : c'est
-   exactement le motif « chaque surface sa propre définition » que la
-   session du 8/09 a passé à démonter.
-
-   Pourquoi ne pas simplement lire coach_id aujourd'hui : parce qu'il est
-   NULL pour 43 des 53 athlètes en équipe (relevé du 2026-09-09). Lire le
-   champ brut, c'est afficher « aucun entraîneur » à 81 % — alors que dans
-   bien des cas un responsable d'équipe existe.
+   Le cas « personne » reste DOMINANT et nominal : au 2026-09-09, 43 des 54
+   athlètes ACTIF en équipe n'ont aucun membre du staff inscrit. C'est ce que
+   coach_id NULL dit maintenant, et c'est vrai — aucune règle de résolution ne
+   crée du staff. D'où le message F2 plus bas.
    ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -46,49 +39,20 @@ export async function loadAthleteReferent(
 ): Promise<AthleteReferent> {
   if (!athleteId) return AUCUN;
 
+  /* L'équipe sert au libellé et au message F2 — jamais à choisir le référent. */
   const { data: taRows } = await supabase
     .from("team_athletes")
-    .select("team_id, teams!team_id(name, school_id)")
+    .select("team_id, teams!team_id(name)")
     .eq("athlete_id", athleteId)
     .limit(1);
 
   const ta = ((taRows ?? []) as Record<string, unknown>[])[0];
+  const tRel = ta?.teams as { name?: string } | { name?: string }[] | null | undefined;
+  const team = Array.isArray(tRel) ? tRel[0] : tRel;
+  const teamId = (ta?.team_id as string | undefined) ?? null;
+  const teamName = team?.name ?? null;
 
-  if (ta) {
-    const tRel = ta.teams as { name?: string; school_id?: string } | { name?: string; school_id?: string }[] | null;
-    const team = Array.isArray(tRel) ? tRel[0] : tRel;
-    const teamId = ta.team_id as string;
-
-    const { data: tcRows } = await supabase
-      .from("team_coaches")
-      .select("coach_id, role, users!coach_id(first_name, last_name)")
-      .eq("team_id", teamId)
-      .in("role", REFERENT_ROLES);
-
-    const rows = (tcRows ?? []) as Record<string, unknown>[];
-    // head_coach l'emporte sur l'intérim — même ordre que la cascade SQL.
-    const chef =
-      rows.find((r) => r.role === "head_coach") ?? rows.find((r) => r.role === "head_coach_interim");
-
-    if (chef) {
-      const uRel = chef.users as { first_name?: string; last_name?: string } | { first_name?: string; last_name?: string }[] | null;
-      const u = Array.isArray(uRel) ? uRel[0] : uRel;
-      return {
-        coachId: chef.coach_id as string,
-        name: coachDisplayName(u?.first_name, u?.last_name),
-        source: "team",
-        teamName: team?.name ?? null,
-      };
-    }
-
-    if (team?.school_id) {
-      const dir = await loadDirector(supabase, team.school_id);
-      if (dir) return { ...dir, source: "director", teamName: team?.name ?? null };
-    }
-  }
-
-  /* Aucune équipe (ou équipe sans staff ni directeur) : on retombe sur le
-     propriétaire déclaré, quand il existe. */
+  /* LA source : le pointeur dérivé, maintenu par les triggers de la vague 2. */
   const { data: aRows } = await supabase
     .from("athletes")
     .select("coach_id, users!athletes_coach_id_fkey(first_name, last_name)")
@@ -96,36 +60,32 @@ export async function loadAthleteReferent(
     .limit(1);
 
   const a = ((aRows ?? []) as Record<string, unknown>[])[0];
-  if (a?.coach_id) {
-    const uRel = a.users as { first_name?: string; last_name?: string } | { first_name?: string; last_name?: string }[] | null;
-    const u = Array.isArray(uRel) ? uRel[0] : uRel;
-    return {
-      coachId: a.coach_id as string,
-      name: coachDisplayName(u?.first_name, u?.last_name),
-      source: "owner",
-      teamName: null,
-    };
-  }
+  const coachId = (a?.coach_id as string | undefined) ?? null;
 
-  return AUCUN;
-}
+  /* Personne ne répond — état nominal, pas une erreur. On garde le nom de
+     l'équipe : le message F2 est bien plus clair avec (« l'encadrement de
+     Wildcats D2 » plutôt que « l'encadrement »). */
+  if (!coachId) return { ...AUCUN, teamName };
 
-async function loadDirector(
-  supabase: SupabaseClient,
-  schoolId: string,
-): Promise<{ coachId: string; name: string } | null> {
-  const { data } = await supabase
-    .from("school_coaches")
-    .select("coach_id, role, users!coach_id(first_name, last_name)")
-    .eq("school_id", schoolId)
-    .in("role", ["DIRECTEUR", "DIRECTEUR_INTERIM"])
+  const uRel = a.users as { first_name?: string; last_name?: string } | { first_name?: string; last_name?: string }[] | null;
+  const u = Array.isArray(uRel) ? uRel[0] : uRel;
+  const name = coachDisplayName(u?.first_name, u?.last_name);
+
+  /* Étiquette seulement : ce référent porte-t-il un rôle SUR cette équipe ?
+     Sinon il vient de la direction de l'organisation. Sans équipe, il ne peut
+     venir que du champ lui-même. */
+  if (!teamId) return { coachId, name, source: "owner", teamName: null };
+
+  const { data: tcRows } = await supabase
+    .from("team_coaches")
+    .select("coach_id")
+    .eq("team_id", teamId)
+    .eq("coach_id", coachId)
+    .in("role", REFERENT_ROLES)
     .limit(1);
 
-  const row = ((data ?? []) as Record<string, unknown>[])[0];
-  if (!row) return null;
-  const uRel = row.users as { first_name?: string; last_name?: string } | { first_name?: string; last_name?: string }[] | null;
-  const u = Array.isArray(uRel) ? uRel[0] : uRel;
-  return { coachId: row.coach_id as string, name: coachDisplayName(u?.first_name, u?.last_name) };
+  const surLEquipe = ((tcRows ?? []) as unknown[]).length > 0;
+  return { coachId, name, source: surLEquipe ? "team" : "director", teamName };
 }
 
 /* ── F2 — ce qu'on dit au recruteur quand personne ne répond ────────
