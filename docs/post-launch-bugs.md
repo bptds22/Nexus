@@ -807,6 +807,30 @@ file.
 
 ## P3 — Latent / future work
 
+- [ ] **`athletes.equipe_id` : colonne piège, non synchronisée avec le vrai
+      roster (2026-09-09).** Décision — supprimer ou synchroniser — renvoyée à
+      la **session modèle club**. Pas maintenant.
+
+      LE ROSTER EST `team_athletes`. `athletes.equipe_id` est un vestige : elle
+      peut être NULL pour un jeune qui EST dans une équipe, et personne ne la
+      maintient. Rien ne signale l'écart — ni contrainte, ni trigger, ni
+      commentaire de colonne.
+
+      **Ce que ça a coûté, et pourquoi c'est noté ici :** le 2026-09-09, un
+      diagnostic « mauvais destinataire du contact coach » a conclu que
+      l'athlète n'était sur AUCUNE équipe, en lisant `equipe_id` (NULL). Il
+      était bien sur Wildcats D2, via `team_athletes`. La conclusion — « le
+      test attend le mauvais coach » — était fausse et inversait le verdict :
+      le référent attendu était le bon, et `athletes.coach_id` était périmé.
+      Une colonne qui répond faux sans jamais se taire est pire qu'une colonne
+      absente.
+
+      **En attendant la décision :** toute résolution d'équipe passe par
+      `team_athletes` (c'est déjà le cas de `fn_resolve_team_referent` et de
+      ses triggers, vague 2). Ne pas lire `equipe_id` pour décider de quoi que
+      ce soit — ni en SQL, ni côté client, ni dans un diagnostic.
+      Voir aussi `athletes.league_team_id`, même famille de vestiges.
+
 - [ ] **`flagged` : donnée conservée (visibilité admin), UI recruteur retirée
       au profit du grade (2026-09-04).** Nettoyage mobile + décision sur le
       sort final de la colonne au **lot mobile**.
