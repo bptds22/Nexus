@@ -56,6 +56,7 @@ export interface Dictionary {
     forCoaches: string;
     forRecruiters: string;
     forAthletes: string;
+    forParents: string;
     howItWorks: string;
     pricing: string;
     help: string;
@@ -369,6 +370,57 @@ export interface Dictionary {
       footer: string;
     };
   };
+  /* Page vitrine « Pour les parents ». Vouvoiement en FR — écart ASSUMÉ
+     avec le tutoiement des pages coach/athlète : c'est le registre juste
+     pour cette audience. En EN, « you » est neutre, rien à trancher. */
+  parentLanding: {
+    hero: {
+      eyebrow: string;
+      titleLine1: string;
+      titleLine2: string;
+      lede: string;
+      ledeSmall: string;
+      cta: string;
+      mockup: {
+        label: string;
+        activityTitle: string;
+        activityCaption: string;
+        consentTitle: string;
+        consentValue: string;
+        notificationTitle: string;
+        notificationBody: string;
+      };
+    };
+    howItWorks: {
+      eyebrow: string;
+      title: string;
+      steps: { num: string; role: string; title: string; body: string }[];
+    };
+    whatYouSee: {
+      eyebrow: string;
+      title: string;
+      tag: string;
+      items: { title: string; body: string }[];
+    };
+    whoDecides: {
+      eyebrow: string;
+      title: string;
+      checks: string[];
+      calloutTitle: string;
+      calloutBody: string;
+    };
+    faq: {
+      eyebrow: string;
+      title: string;
+      items: { q: string; a: string }[];
+    };
+    finalCta: {
+      title: string;
+      line: string;
+      cta: string;
+      bullets: string[];
+    };
+  };
   athleteLanding: {
     hero: {
       eyebrow: string;
@@ -614,6 +666,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       forCoaches: "Pour les coachs",
       forRecruiters: "Pour les recruteurs",
       forAthletes: "Pour les étudiants-athlètes",
+      forParents: "Pour les parents",
       howItWorks: "Comment ça marche",
       pricing: "Tarifs",
       help: "Aide",
@@ -1075,6 +1128,74 @@ export const dictionaries: Record<Lang, Dictionary> = {
         footer: "Aucune carte de crédit requise. Configurez votre profil en 2 minutes.",
       },
     },
+    parentLanding: {
+      hero: {
+        eyebrow: "Pour les parents",
+        titleLine1: "Votre enfant se fait recruter.",
+        titleLine2: "Vous voyez tout.",
+        lede: "Le recrutement, c'est une décision de famille. Le portail parent Nexus vous donne une vue complète — gratuitement.",
+        ledeSmall: "Aucune démarche : votre invitation arrive par courriel dès que votre enfant s'inscrit.",
+        cta: "Inscrire mon enfant",
+        mockup: {
+          label: "Portail parent",
+          activityTitle: "Activité du profil",
+          activityCaption: "12 dernières semaines",
+          consentTitle: "Consentements",
+          consentValue: "2 autorisations actives",
+          notificationTitle: "Nouveau contact",
+          notificationBody: "Un recruteur a contacté votre enfant.",
+        },
+      },
+      howItWorks: {
+        eyebrow: "Comment ça fonctionne",
+        title: "3 étapes. Aucune démarche compliquée.",
+        steps: [
+          { num: "01", role: "Inscription", title: "Votre enfant s'inscrit", body: "Il crée son profil d'athlète et fournit votre adresse courriel." },
+          { num: "02", role: "Invitation", title: "Vous recevez une invitation", body: "Elle arrive automatiquement dans votre boîte courriel. C'est le seul chemin d'entrée : personne ne peut créer un compte parent sans elle." },
+          { num: "03", role: "Accès", title: "Vous accédez à son tableau de bord", body: "Vous créez votre compte gratuit et suivez son parcours." },
+        ],
+      },
+      whatYouSee: {
+        eyebrow: "Ce que vous voyez",
+        title: "L'essentiel, sans jargon.",
+        tag: "Inclus",
+        items: [
+          { title: "Son activité, semaine par semaine", body: "Vues de profil, intérêt des recruteurs, progression — en un coup d'œil." },
+          { title: "L'intérêt des recruteurs pour son profil", body: "Combien de recruteurs ont consulté et suivi son profil. Leur identité reste confidentielle — c'est voulu." },
+          { title: "Une notification quand un recruteur le contacte", body: "Vous êtes informé de chaque premier contact." },
+          { title: "Un canal direct avec son école", body: "Écrivez aux entraîneurs et directeurs de l'école de votre enfant." },
+        ],
+      },
+      whoDecides: {
+        eyebrow: "Vos autorisations",
+        title: "Qui décide ? Vous.",
+        checks: [
+          "Vous autorisez la création de son profil.",
+          "Vous autorisez sa visibilité auprès des recruteurs CÉGEP vérifiés.",
+          "Vous autorisez — ou non — l'utilisation de son image chez nos partenaires.",
+          "Vous pouvez retirer une autorisation à tout moment, depuis votre portail.",
+        ],
+        calloutTitle: "Encadré par la loi québécoise",
+        calloutBody: "Nexus applique la Loi 25 : les données de votre enfant sont hébergées au Québec, et toute autorisation donnée peut être retirée. Chaque changement est journalisé.",
+      },
+      faq: {
+        eyebrow: "Questions fréquentes",
+        title: "Ce que les parents nous demandent.",
+        items: [
+          { q: "Puis-je créer mon compte sans invitation ?", a: "Non — et c'est une protection. L'invitation est envoyée uniquement au courriel fourni par votre enfant à son inscription." },
+          { q: "Le compte parent est-il payant ?", a: "Non. Le portail parent est entièrement gratuit, sans limite de durée." },
+          { q: "Y a-t-il une application à installer ?", a: "Non. Le portail parent s'utilise depuis votre navigateur, sur ordinateur comme sur téléphone." },
+          { q: "Puis-je retirer une autorisation ?", a: "Oui, à tout moment et sans justification, depuis la section Consentements de votre portail. Le retrait prend effet immédiatement." },
+          { q: "Et si mon enfant a moins de 14 ans ?", a: "Nexus n'accepte pas les athlètes de moins de 14 ans. Entre 14 et 17 ans, votre autorisation est requise et vous recevez l'avis parental automatiquement." },
+        ],
+      },
+      finalCta: {
+        title: "Prêt à suivre son parcours ?",
+        line: "Tout commence par l'inscription de votre enfant. Votre invitation suit automatiquement.",
+        cta: "Inscrire mon enfant",
+        bullets: ["100 % gratuit", "Invitation automatique par courriel", "Accessible sur le web"],
+      },
+    },
     athleteLanding: {
       hero: {
         eyebrow: "POUR LES ÉTUDIANTS-ATHLÈTES",
@@ -1423,6 +1544,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       forCoaches: "For coaches",
       forRecruiters: "For recruiters",
       forAthletes: "For student-athletes",
+      forParents: "For parents",
       howItWorks: "How it works",
       pricing: "Pricing",
       help: "Help",
@@ -1886,6 +2008,74 @@ export const dictionaries: Record<Lang, Dictionary> = {
         body: "Create your free account. Explore the platform. Put Pro to the test for 14 days at no cost.",
         button: "Create a free account",
         footer: "No credit card required. Set up your profile in 2 minutes.",
+      },
+    },
+    parentLanding: {
+      hero: {
+        eyebrow: "For parents",
+        titleLine1: "Your child is being recruited.",
+        titleLine2: "You see everything.",
+        lede: "Recruiting is a family decision. The Nexus parent portal gives you the full picture — free of charge.",
+        ledeSmall: "Nothing to do on your end: your invitation arrives by email as soon as your child signs up.",
+        cta: "Sign my child up",
+        mockup: {
+          label: "Parent portal",
+          activityTitle: "Profile activity",
+          activityCaption: "Last 12 weeks",
+          consentTitle: "Permissions",
+          consentValue: "2 active permissions",
+          notificationTitle: "New contact",
+          notificationBody: "A recruiter reached out to your child.",
+        },
+      },
+      howItWorks: {
+        eyebrow: "How it works",
+        title: "3 steps. Nothing complicated.",
+        steps: [
+          { num: "01", role: "Sign-up", title: "Your child signs up", body: "They create their athlete profile and provide your email address." },
+          { num: "02", role: "Invitation", title: "You receive an invitation", body: "It lands in your inbox automatically. It is the only way in: no one can create a parent account without it." },
+          { num: "03", role: "Access", title: "You open their dashboard", body: "You create your free account and follow their journey." },
+        ],
+      },
+      whatYouSee: {
+        eyebrow: "What you see",
+        title: "What matters, without the jargon.",
+        tag: "Included",
+        items: [
+          { title: "Their activity, week by week", body: "Profile views, recruiter interest, progress — at a glance." },
+          { title: "Recruiter interest in their profile", body: "How many recruiters viewed and followed their profile. Their identity stays confidential — by design." },
+          { title: "A notification when a recruiter reaches out", body: "You are told about every first contact." },
+          { title: "A direct channel with their school", body: "Message the coaches and athletic directors at your child's school." },
+        ],
+      },
+      whoDecides: {
+        eyebrow: "Your permissions",
+        title: "Who decides? You do.",
+        checks: [
+          "You authorize the creation of their profile.",
+          "You authorize their visibility to verified CÉGEP recruiters.",
+          "You authorize — or refuse — the use of their image by our partners.",
+          "You can withdraw any permission at any time, from your portal.",
+        ],
+        calloutTitle: "Governed by Quebec law",
+        calloutBody: "Nexus complies with Law 25: your child's data is hosted in Quebec, and any permission you grant can be withdrawn. Every change is logged.",
+      },
+      faq: {
+        eyebrow: "Frequently asked",
+        title: "What parents ask us.",
+        items: [
+          { q: "Can I create my account without an invitation?", a: "No — and that is a safeguard. The invitation is sent only to the email address your child provided at sign-up." },
+          { q: "Is the parent account paid?", a: "No. The parent portal is entirely free, with no time limit." },
+          { q: "Is there an app to install?", a: "No. The parent portal runs in your browser, on computer and phone alike." },
+          { q: "Can I withdraw a permission?", a: "Yes, at any time and without justification, from the Permissions section of your portal. Withdrawal takes effect immediately." },
+          { q: "What if my child is under 14?", a: "Nexus does not accept athletes under 14. Between 14 and 17, your authorization is required and you receive the parental notice automatically." },
+        ],
+      },
+      finalCta: {
+        title: "Ready to follow their journey?",
+        line: "It all starts with your child signing up. Your invitation follows automatically.",
+        cta: "Sign my child up",
+        bullets: ["100% free", "Automatic email invitation", "Available on the web"],
       },
     },
     athleteLanding: {

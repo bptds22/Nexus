@@ -20,6 +20,7 @@ export default function MarketingNav() {
     { label: t.nav.forCoaches, href: "/pour-les-coachs" },
     { label: t.nav.forRecruiters, href: "/pour-les-recruteurs" },
     { label: t.nav.forAthletes, href: "/pour-les-etudiant-athlete" },
+    { label: t.nav.forParents, href: "/pour-les-parents" },
   ];
 
   // Mirrored into the mobile hamburger menu. Desktop <ul> below

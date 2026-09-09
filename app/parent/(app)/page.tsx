@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useParentConversations } from "@/lib/queries/parent/useParentConversations";
+import ParentSummaryCard from "@/components/parent/ParentSummaryCard";
 
 /* Home parent minimale (Lot 1a) — identité de l'enfant lié via le RPC
    colonne-restreint get_my_children() (Option B : PAS tout le profil).
@@ -58,6 +59,12 @@ export default function ParentHome() {
           {meta && <p className="text-[13px] text-[#6B7280] mt-0.5 truncate">{meta}</p>}
         </div>
       </div>
+
+      {/* Carte Résumé — le contenu ; les tuiles ci-dessous restent la
+          navigation. RIEN N'A ÉTÉ SUPPRIMÉ : l'accueil ne portait aucune
+          rangée de StatCards, et la tuile Messages n'est couverte par
+          aucune zone de la carte (voir rapport de session, Q1). */}
+      <ParentSummaryCard />
 
       <nav className="grid gap-3">
         <HomeTile href="/parent/messages" title="Messages" sub="Écrire aux entraîneurs et directeurs de l'école de votre enfant" badge={unreadMessages} />
