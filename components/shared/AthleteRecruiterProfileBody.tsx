@@ -94,7 +94,20 @@ const FLAG_REASONS = [
 /* ── Completeness Indicator ─────────────────────────────────── */
 
 function CompletenessBar({ percent }: { percent: number }) {
-  const color = percent >= 90 ? "#3B82F6" : percent >= 60 ? "#22C55E" : percent >= 40 ? "#EAB308" : "#EF4444";
+  /* BLEU DU SYSTÈME (BP, 2026-09-09) : #3B82F6, la teinte du badge vérifié.
+     Le vert #22C55E disparaît de la jauge de complétion.
+
+     LE PALIER 90 A ÉTÉ FONDU dans le palier 60 : il rendait DÉJÀ #3B82F6.
+     Le garder aurait laissé deux seuils rendre exactement la même couleur —
+     un escalier à marche invisible, que le prochain lecteur prendrait pour un
+     bug. Rouge et ambre restent : en dessous de 60, le profil a encore quelque
+     chose à dire.
+
+     Cette jauge était la DERNIÈRE au vert. Les autres indicateurs de
+     complétion du produit — tableau de bord athlète, anneau du profil
+     athlète, pipeline recruteur, cartes de roster, stats et analytique école —
+     rendent déjà ce bleu. Le changement les aligne, il n'invente rien. */
+  const color = percent >= 60 ? "#3B82F6" : percent >= 40 ? "#EAB308" : "#EF4444";
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 bg-[#2D3748] rounded-full overflow-hidden">
