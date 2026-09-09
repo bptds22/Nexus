@@ -16,6 +16,33 @@ explicitement le chantier web **TERMINÉ**. Le mobile se traite ensuite, en un
 **lot dédié**, sur **GO explicite de BP**. Le tronc partagé (`lib/`) est
 permis ; son branchement mobile attend le lot mobile.
 
+### GATES D'ACL — COMPARAISON COMPLÈTE, JAMAIS PAR INCLUSION (2026-09-07)
+
+**Tout gate d'ACL compare la liste complète triée, jamais par inclusion.**
+
+Leçon payée sur `recruiter_search_athletes` : un `DROP` + `CREATE` emporte
+l'ACL, et l'`ALTER DEFAULT PRIVILEGES` de Supabase sur le schéma `public`
+la repose en accordant `EXECUTE` à **`anon`**, `authenticated` et
+`service_role` sur toute fonction créée. Le gate vérifiait que les deux
+rôles attendus étaient présents et que `PUBLIC` n'était pas revenu — il a
+laissé passer `anon`, qu'il ne nommait pas. **Une liste blanche vérifiée par
+inclusion laisse entrer ce qu'elle n'a pas nommé.**
+
+La forme correcte (`20260908024711`) :
+
+```sql
+select array_agg(t.g order by t.g) into vus
+  from pg_proc pr,
+       lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g
+                  from unnest(pr.proacl::text[]) as x) t
+ where pr.oid = f;
+if vus is distinct from veut then raise exception 'NEXUS: ACL = %, attendu %', vus, veut; end if;
+```
+
+Corollaire : après tout `DROP`/`CREATE` d'une fonction, **relever l'ACL AVANT**
+et la comparer intégralement APRÈS. Reposer les grants ne suffit pas ; il faut
+aussi révoquer ce que les default privileges ont ajouté.
+
 ---
 
 ## PROJECT OVERVIEW
