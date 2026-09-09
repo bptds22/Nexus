@@ -1,7 +1,10 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- REJET ET RÉCLAMATION D'ÉTABLISSEMENT — la file « À réclamer » répond
 --
--- ⚠ NON APPLIQUÉE à l'écriture. Miroir + gate d'abord, apply sur GO de BP.
+-- APPLIQUÉE sur le cloud le 2026-09-09 (version 20260909162002, MCP
+--   apply_migration). Le bloc GATE en fin de fichier a tourné en post-apply,
+--   en SQL brut : 6/6 verts. Les 4 corps appliqués ont été comparés à ce
+--   fichier (md5 identiques une fois les commentaires retirés).
 --
 -- ═══════════════════════════════════════════════════════════════════════════
 -- EXEMPTION À LA DOCTRINE D'ANCRAGE — RÈGLE 11 (CLAUDE.md), écrite, pas héritée
@@ -302,11 +305,14 @@ $function$;
 -- athletes » : athlète sans entraîneur, de MON école, et je deviens
 -- l'entraîneur. La policy reste derrière, en défense en profondeur.
 --
--- ⚠ CE QUE CE PRÉDICAT LAISSE PASSER, ET QUI PRÉEXISTE : il ne teste pas le
--- RÔLE de l'appelant. Un recruteur rattaché au même établissement le satisfait
--- — exactement comme la policy d'aujourd'hui. Reproduit tel quel, sciemment :
--- ajouter `is_coach()` ici resserrerait un droit sans que la décision ait été
--- prise. À trancher séparément.
+-- ⚠ UN CRAN PLUS SERRÉ QUE LA POLICY, ET C'EST VOULU (décision BP, 2026-09-09).
+-- La policy ne teste pas le RÔLE de l'appelant : un recruteur rattaché au même
+-- établissement la satisfait. Ce n'est pas un trou nouveau — il existe depuis
+-- toujours — mais reconduire un trou dans une fonction neuve, c'est le graver.
+-- `is_coach()` est donc exigé ici. Conséquence à connaître : la RPC refusera un
+-- appelant que la policy, elle, laisserait passer. C'est le sens de la marche.
+-- BACKLOG : resserrer la policy « coaches can claim unclaimed school athletes »
+-- de la même façon à la prochaine passe RLS, pour que les deux disent pareil.
 CREATE OR REPLACE FUNCTION public.claim_school_athletes(p_athlete_ids uuid[])
 RETURNS integer
 LANGUAGE plpgsql
@@ -327,6 +333,10 @@ BEGIN
   END IF;
   IF p_athlete_ids IS NULL OR array_length(p_athlete_ids, 1) IS NULL THEN
     RETURN 0;
+  END IF;
+
+  IF NOT public.is_coach() THEN
+    RAISE EXCEPTION 'NEXUS: seul un entraîneur peut réclamer un athlète';
   END IF;
 
   v_school := public.current_user_school_id();
