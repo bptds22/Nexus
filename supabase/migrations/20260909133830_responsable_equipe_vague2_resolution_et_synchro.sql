@@ -1,7 +1,9 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- RESPONSABLE D'ÉQUIPE — VAGUE 2 : résolution + synchronisation de coach_id
 --
--- ⚠ NON APPLIQUÉE — réservée au release 1.4.1. C'est l'INTERRUPTEUR DE
+-- APPLIQUÉE sur le cloud le 2026-09-09 (version 20260909133830, MCP
+--   apply_migration). Le bloc GATE ci-dessous a été exécuté en post-apply,
+--   en SQL brut : 6/6 verts. C'est l'INTERRUPTEUR DE
 --   COMPORTEMENT : elle rend athletes.coach_id dérivé, et elle part avec le
 --   frontend (Lots C/D/E/F), jamais avant.
 --
