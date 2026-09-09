@@ -376,17 +376,46 @@ test("axisDisplay — un monde unique se LIT au lieu de se choisir", () => {
   });
 });
 
-test("axisDisplay — « Non renseigné » seul ne fait pas un second monde", () => {
-  // RSEQ + des trous de saisie = UN monde. Le menu lit « RSEQ », il ne s'active pas.
+test("axisDisplay — RÉGRESSION : une valeur + « Non renseigné » = menu ACTIF", () => {
+  /* LE BUG VU À L'ÉCRAN LE 2026-09-08. Avec « Ligue civile » coché, le menu
+     Ligue affichait « LFMM » grisé alors que la population était LFMM + 17
+     athlètes sans équipe. Le libellé présentait une ligue comme le monde
+     entier, et surtout : les 17 devenaient INFILTRABLES, le menu grisé
+     retirant le seul moyen de les isoler.
+
+     Le pré-rempli n'est légitime que si la valeur unique couvre 100 % des
+     lignes. Dès qu'il y a un trou, « Non renseigné » est une option cliquable
+     et utile — donc il y a bien deux choses à choisir. */
   const avecTrous = [
     mk({ context: "scolaire", teamIsRseq: true }),
     mk({ context: "scolaire" }),
     mk({ context: "scolaire" }),
   ];
-  assert.equal(leagueOptions(avecTrous).length, 2); // RSEQ + Non renseigné
-  assert.deepEqual(axisDisplay(leagueOptions(avecTrous)), {
-    state: "prefilled", label: RSEQ,
-  });
+  const opts = leagueOptions(avecTrous);
+  assert.equal(opts.length, 2); // RSEQ + Non renseigné
+  assert.deepEqual(axisDisplay(opts), { state: "active", label: "" });
+
+  // La forme exacte de la capture : 10 LFMM + 17 sans équipe.
+  const commeALEcran = [
+    ...Array.from({ length: 10 }, () => avecEquipeCivile({ teamLeague: "LFMM" })),
+    ...Array.from({ length: 17 }, () => mk({ context: "ligue_civile" })),
+  ];
+  assert.deepEqual(axisDisplay(leagueOptions(commeALEcran)), { state: "active", label: "" });
+  assert.deepEqual(
+    leagueOptions(commeALEcran).map((o) => [o.label, o.count]),
+    [["LFMM", 10], [UNSET_LABEL, 17]],
+  );
+});
+
+test("axisDisplay — le pré-rempli exige une couverture de 100 %", () => {
+  const total = [
+    avecEquipeScolaire({ teamIsRseq: true }),
+    avecEquipeScolaire({ teamIsRseq: true }),
+  ];
+  assert.deepEqual(axisDisplay(leagueOptions(total)), { state: "prefilled", label: RSEQ });
+
+  const presqueTotal = [...total, mk()];
+  assert.deepEqual(axisDisplay(leagueOptions(presqueTotal)), { state: "active", label: "" });
 });
 
 test("axisDisplay — aucune valeur du tout : menu vide, atténué", () => {
@@ -408,15 +437,17 @@ test("axisDisplay — deux mondes rendent le menu actif", () => {
   assert.deepEqual(axisDisplay(leagueOptions(mixte)), { state: "active", label: "" });
 });
 
-test("axisDisplay — la DIVISION compte « Non renseigné », elle", () => {
-  // Asymetrie voulue : « montre-moi ceux sans equipe » est une vraie question.
-  const uneSeuleDivision = [
+test("axisDisplay — les TROIS axes suivent la même règle, plus d'asymétrie", () => {
+  /* Avant le 2026-09-08, la division comptait « Non renseigné » et les deux
+     autres axes non (paramètre `unsetCounts`). Cette asymétrie n'existait que
+     pour rattraper la règle d'affichage/masquage d'origine ; elle a disparu
+     avec elle. Un seul comportement à retenir, pour les trois menus. */
+  const uneValeurEtUnTrou = [
     mk({ context: "scolaire", teamIsRseq: true, teamDivision: "D3" }),
     mk({ context: "scolaire" }),
   ];
-  const opts = divisionOptions(uneSeuleDivision);
-  assert.deepEqual(axisDisplay(opts), { state: "prefilled", label: "D3" }); // regle des mondes
-  assert.deepEqual(axisDisplay(opts, { unsetCounts: true }), { state: "active", label: "" });
+  assert.deepEqual(axisDisplay(divisionOptions(uneValeurEtUnTrou)), { state: "active", label: "" });
+  assert.deepEqual(axisDisplay(leagueOptions(uneValeurEtUnTrou)), { state: "active", label: "" });
 });
 
 test("axisDisplay — cocher une organisation fait LIRE la ligue de ce monde", () => {

@@ -123,6 +123,47 @@ export function taxonomyFromAthleteRow(row: Record<string, unknown>): TaxonomySo
   };
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   LECTURE D'UNE LIGNE DE `recruiter_search_athletes`
+
+   Le recruteur ne lit pas un embed mais des colonnes PLATES, projetees par la
+   RPC (migration 20260908015840). Meme contrat, autre forme :
+
+     context, school_type,
+     team_division, team_league, team_is_rseq, team_school_type
+
+   `teams.school_id` etant NOT NULL, `team_school_type` non nul vaut « cet
+   athlete a une equipe » — c'est ainsi que `hasTeam` se deduit ici, alors que
+   le coach lit la presence de la ligne d'embed. Les deux surfaces produisent
+   la MEME TaxonomySource, donc les memes reponses.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/** Les seules colonnes de `recruiter_search_athletes` qui nous concernent.
+ *  Structurel et non `Record<string, unknown>` : `RpcSearchRow` est une
+ *  `interface`, et TypeScript n'accorde d'index signature implicite qu'aux
+ *  alias de type — un Record aurait force un cast au point d'appel. */
+export type SearchRowTaxonomy = {
+  context: string | null;
+  school_type: string | null;
+  team_division: string | null;
+  team_league: string | null;
+  team_is_rseq: boolean | null;
+  team_school_type: string | null;
+};
+
+export function taxonomyFromSearchRow(row: SearchRowTaxonomy): TaxonomySource {
+  const teamSchoolType = asText(row.team_school_type);
+  return {
+    context: asText(row.context),
+    schoolType: asText(row.school_type),
+    teamDivision: asText(row.team_division),
+    teamLeague: asText(row.team_league),
+    teamIsRseq: row.team_is_rseq === true,
+    hasTeam: teamSchoolType !== null,
+    teamSchoolType,
+  };
+}
+
 export const ORGANISATION_LABELS: Record<Organisation, string> = {
   scolaire: "Scolaire",
   ligue_civile: "Ligue civile",
@@ -335,43 +376,35 @@ export function divisionOf(src: TaxonomySource): string | null {
 export type TaxonomyOption = { value: string; label: string; count: number };
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   DANS QUEL ÉTAT AFFICHER CE MENU ?  (règle finale, arbitrage BP du 2026-09-06)
+   DANS QUEL ÉTAT AFFICHER CE MENU ?  (corrigé le 2026-09-08)
 
    Le menu est TOUJOURS AFFICHÉ, à une position stable. Ce qui varie, c'est ce
    qu'il raconte — trois états :
 
-     · « active »    ≥ 2 valeurs. Menu normal, « Toutes les X » par défaut.
-     · « prefilled » 1 seule valeur. Menu DÉSACTIVÉ affichant CETTE valeur
-                     (« RSEQ », « D3 ») au lieu de « Toutes les X ».
-     · « empty »     aucune valeur. Menu désactivé, « Non renseigné ».
+     · « active »    ≥ 2 options. Menu normal, « Toutes les X » par défaut.
+     · « prefilled » 1 seule option, NOMMÉE. Menu désactivé affichant cette
+                     valeur (« RSEQ », « D3 ») au lieu de « Toutes les X ».
+     · « empty »     aucune option, ou la seule est « Non renseigné ».
 
-   ── LE PRÉ-REMPLI EST UN LIBELLÉ D'ÉTAT, PAS UN FILTRE ──────────────────────
-   Il informe, il ne sélectionne rien. Il ne compte pas dans « X sur Y », ne
-   déclenche pas « Réinitialiser », n'entre pas dans l'état des filtres, et se
-   distingue visuellement d'une vraie sélection (atténué via
-   `.nx-filter-select:disabled`, JAMAIS `nx-filter-active`).
+   ⚠ LE PRÉ-REMPLI N'EST LÉGITIME QUE SI LA VALEUR UNIQUE COUVRE 100 % DES
+   LIGNES. C'est la correction du 2026-09-08, et elle vient d'un vrai bug vu à
+   l'écran : avec « Ligue civile » coché, le menu Ligue affichait « LFMM »
+   grisé alors que la population était LFMM 10 **+ Non renseigné 17**. Le
+   libellé mentait — il présentait une ligue comme le monde entier — et
+   surtout, 17 athlètes devenaient INFILTRABLES : le menu grisé retirait le
+   seul moyen de les isoler.
 
-   Pourquoi ce choix plutôt que masquer le menu : un directeur scolaire n'a pas
-   besoin de CHOISIR « RSEQ », il a besoin de LIRE qu'il y est. Masquer lui
-   retirait l'information en même temps que le choix inutile ; le pré-rempli ne
-   retire que le choix.
+   La cause : « Non renseigné ne compte pas comme une seconde valeur » était
+   une règle d'AFFICHAGE/MASQUAGE, héritée de la version où un menu non
+   discriminant DISPARAISSAIT. Elle avait du sens là : RSEQ + des trous, ce
+   n'est pas deux mondes, donc pas de menu. Elle n'en a plus aucun ici : dès
+   qu'il y a un trou, « Non renseigné » est une option CLIQUABLE et utile, donc
+   il y a bien deux choses à choisir. On compte donc TOUTES les options.
 
-   ── LE PIÈGE DU LOT 2b, RÉGLÉ AUTREMENT ─────────────────────────────────────
-   En 2b, une pilule qui DISPARAISSAIT en continuant de filtrer était le bug.
-   Ici le menu ne disparaît jamais — la position est stable — donc juger l'état
-   sur la liste CADRÉE est sans danger, et même souhaitable : cocher
-   « Scolaire » doit faire lire « RSEQ » sur le menu Ligue. Ce qui remplace la
-   garde 2b, c'est la PURGE : un axe qui repasse en `prefilled`/`empty` avec une
-   sélection encore posée doit voir cette sélection retirée, sinon elle
-   filtrerait derrière un menu grisé. Voir le `useEffect` côté page.
-
-   `unsetCounts` — « Non renseigné » compte-t-il comme une valeur ?
-     · Organisation, Ligue : NON. RSEQ + des trous de saisie, c'est UN monde
-       avec des trous, pas deux mondes. Le menu lit « RSEQ ».
-     · Division : OUI. « D3 + Non renseigné » mérite un menu actif, parce que
-       « montre-moi ceux qui n'ont pas d'équipe » est une vraie question de
-       coach. Les deux axes ne répondent pas à la même question : la division
-       dit un NIVEAU, l'organisation et la ligue disent un MONDE.
+   Corollaire : le paramètre `unsetCounts` a disparu. Il n'existait que pour
+   rattraper cette asymétrie entre la division (qui comptait le trou) et
+   l'organisation / la ligue (qui ne le comptaient pas). Les trois axes suivent
+   maintenant la même règle, et il n'y a plus d'asymétrie à documenter.
    ───────────────────────────────────────────────────────────────────────────── */
 
 export type AxisState = "active" | "prefilled" | "empty";
@@ -380,16 +413,18 @@ export type AxisState = "active" | "prefilled" | "empty";
  *  le libellé à afficher en « prefilled » / « empty ». */
 export type AxisDisplay = { state: AxisState; label: string };
 
-export function axisDisplay(
-  options: readonly TaxonomyOption[],
-  opts: { unsetCounts?: boolean } = {},
-): AxisDisplay {
-  const counted = opts.unsetCounts
-    ? options
-    : options.filter((o) => o.value !== UNSET_VALUE);
+export function axisDisplay(options: readonly TaxonomyOption[]): AxisDisplay {
+  if (options.length === 0) return { state: "empty", label: UNSET_LABEL };
 
-  if (counted.length === 0) return { state: "empty", label: UNSET_LABEL };
-  if (counted.length === 1) return { state: "prefilled", label: counted[0].label };
+  if (options.length === 1) {
+    const seule = options[0];
+    // « Non renseigné » seul n'est pas une valeur à afficher comme un monde :
+    // c'est l'absence de donnée, et le menu le dit tel quel.
+    return seule.value === UNSET_VALUE
+      ? { state: "empty", label: UNSET_LABEL }
+      : { state: "prefilled", label: seule.label };
+  }
+
   return { state: "active", label: "" };
 }
 
