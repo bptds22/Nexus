@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { type RosterAthlete } from "./_data/mockRosterData";
 import ReclamerSection from "./_components/ReclamerSection";
+import RejetsSection from "./_components/RejetsSection";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -1071,6 +1072,14 @@ function MesAthletesContent() {
       {/* ══════════ À TRAITER TAB ══════════ */}
       {activeTab === "traiter" && (
         <div className="space-y-6">
+          {/* Rattachements rejetés — DIRECTEUR seulement. La fonction ne rend
+              rien aux autres de toute façon ; on ne monte pas le composant pour
+              autant, pour ne pas poser une question sans objet. La section se
+              masque d'elle-même quand il n'y a aucun rejet actif. */}
+          {isDirector && (
+            <RejetsSection onCancelSuccess={() => setRefreshVersion((v) => v + 1)} />
+          )}
+
           {/* Section A: Profils à vérifier */}
           <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
             <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2">
