@@ -474,6 +474,73 @@ file.
 
 ---
 
+## P1 — Sécurité / surface d'exposition
+
+- [ ] **63 fonctions `SECURITY DEFINER` appelables sont exécutables par `anon`,
+      dont 52 aussi par `PUBLIC`.** Relevé le 2026-09-07 en balayant tout le
+      schéma `public`, après avoir corrigé le même défaut sur
+      `recruiter_search_athletes` (migrations `20260908015840` puis
+      `20260908024711`).
+
+      **Cause systémique, pas une négligence ponctuelle.** Supabase pose un
+      `ALTER DEFAULT PRIVILEGES` sur le schéma `public` qui accorde `EXECUTE`
+      à `anon, authenticated, service_role` sur **toute** fonction créée. Toute
+      fonction qui n'a pas été explicitement révoquée l'a donc hérité. Le
+      `=X/postgres` en tête d'ACL (PUBLIC) vient du défaut Postgres lui-même.
+
+      **État exact du parc :**
+
+      | Catégorie | PUBLIC + anon | anon seul | propre |
+      |---|---|---|---|
+      | Appelables (RPC + helpers RLS) | **52** | **11** | 60 |
+      | Fonctions TRIGGER | 66 | 0 | 0 |
+
+      Les 66 fonctions TRIGGER ne sont **pas** invocables par un client via
+      PostgREST (elles retournent `trigger`) — bruit d'ACL, pas surface.
+      **Les 63 appelables sont le vrai sujet.**
+
+      **Ce n'est PAS 63 failles.** La quasi-totalité porte sa propre garde
+      interne (`is_admin()`, `is_recruiter()`, `auth.uid()`…), et un appelant
+      anonyme se fait renvoyer par le corps de la fonction. Le défaut est de
+      **posture** : la garde est à l'intérieur au lieu d'être à la porte, et
+      une garde interne qui se trompe un jour n'a plus de second rempart.
+      Différence mesurée sur `recruiter_search_athletes` : avant le revoke, un
+      appel anon entrait et recevait `42501 acces reserve aux recruteurs` ;
+      après, il est refusé au niveau du privilège — `401`,
+      `permission denied for function`.
+
+      **Certaines DOIVENT rester ouvertes à `anon`** — les flux pré-auth :
+      `resolve_invitation_token`, `resolve_team_join_token`,
+      `resolve_transfer_token`, `resolve_parent_invitation`,
+      `resolve_athlete_invitation`, `claim_parent_invitation`,
+      `consume_invitation_token`. Un lot correctif ne peut donc pas être un
+      `revoke` en masse : il faut **un triage fonction par fonction**.
+
+      **Les plus discutables au premier regard** (aucune raison qu'un
+      anonyme les atteigne) : `send_push_announcement`, `remove_cegep_member`,
+      `set_child_consent`, `get_child_consents`, `get_child_activity`,
+      `get_my_children`, `deactivate_my_account`, `create_athlete_invitation`,
+      `invite_anchored_athlete_to_team`, `lookup_my_orphans_by_email`,
+      `lookup_invitable_athletes_by_email`, `finish_*_onboarding`,
+      `count_coach_athletes` (le point de départ de ce balayage).
+
+      **Lot sécurité dédié à cadrer** — pas en marge d'un lot fonctionnel :
+      1. classer les 63 en « doit rester anon » / « authenticated seulement » ;
+      2. un mirror unique qui révoque `PUBLIC` et `anon` sur la seconde liste ;
+      3. un gate qui compare l'ACL **complète et triée** de chaque fonction
+         touchée (règle inscrite dans `CLAUDE.md`, section RÈGLES TRANSVERSES —
+         une vérification par inclusion laisse entrer ce qu'elle ne nomme pas) ;
+      4. une requête de conformité rejouable, sur le modèle de
+         `scripts/check-view-hardening.sql` : elle encode l'intention par
+         fonction et ne rend que les écarts. Sans ça, la prochaine fonction
+         créée réintroduira le défaut en silence.
+
+      ⚠️ Le `ALTER DEFAULT PRIVILEGES` continuera de rouvrir la porte à chaque
+      nouvelle fonction. Le lot doit décider s'il le **change** (le bon geste de
+      fond) ou s'il se contente de révoquer au cas par cas.
+
+---
+
 ## P2 — Observability
 
 - [x] **Athlete-route guard pushes non-athletes to onboarding.**

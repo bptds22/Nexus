@@ -42,6 +42,10 @@ export interface FiltresRecherche {
   region: string;
   promotion: string;
   orgType: string;
+  /** LOT 3 — axes Ligue et Division (lib/config/team-taxonomy.ts).
+   *  `orgType` leur sert de NIVEAU 1 : le changer remet ces deux-la a zero. */
+  leagueFilter: string;
+  divisionFilter: string;
   minGpa: string;
   minRating: string;
   sortBy: string;
@@ -68,6 +72,8 @@ export const FILTRES_DEFAUT: FiltresRecherche = Object.freeze({
   region: "",
   promotion: "",
   orgType: "",
+  leagueFilter: "",
+  divisionFilter: "",
   minGpa: "",
   minRating: "",
   sortBy: "rating_desc",
@@ -96,6 +102,8 @@ const CLES: Record<keyof FiltresRecherche, string> = {
   region: "region",
   promotion: "promo",
   orgType: "org",
+  leagueFilter: "ligue",
+  divisionFilter: "div",
   minGpa: "gpa",
   minRating: "note",
   sortBy: "tri",
@@ -145,6 +153,8 @@ export function decoderFiltres(params: SourceParams): FiltresRecherche {
     region: texte("region"),
     promotion: texte("promotion"),
     orgType: texte("orgType"),
+    leagueFilter: texte("leagueFilter"),
+    divisionFilter: texte("divisionFilter"),
     minGpa: texte("minGpa"),
     minRating: texte("minRating"),
     sortBy: texte("sortBy"),
@@ -193,6 +203,8 @@ export function encoderFiltres(f: FiltresRecherche): string {
   poserTexte("region");
   poserTexte("promotion");
   poserTexte("orgType");
+  poserTexte("leagueFilter");
+  poserTexte("divisionFilter");
   poserTexte("minGpa");
   poserTexte("minRating");
   poserTexte("sortBy");
