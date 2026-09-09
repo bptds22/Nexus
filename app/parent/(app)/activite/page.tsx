@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { useChildActivity } from "@/lib/queries/parent/useChildActivity";
 
 /* ═══════════════════════════════════════════════════════════════
    Portal parental — Lot 1c. Page Activité (web only).
@@ -14,37 +13,13 @@ import { createClient } from "@/lib/supabase/client";
    Aucune identité de recruteur / collège n'est jamais exposée.
    ═══════════════════════════════════════════════════════════════ */
 
-interface Activity {
-  views_total: number;
-  favorites_total: number;
-  weekly: { week_start: string; count: number }[];
-  error?: string;
-}
-
 const card = "bg-[#1A1D24] border border-white/5 rounded-xl";
 
 export default function ParentActivitePage() {
-  const [data, setData] = useState<Activity | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const supabase = createClient();
-      const { data: kids } = await supabase.rpc("get_my_children");
-      if (cancelled) return;
-      const aid = ((kids as Array<{ athlete_id: string }> | null) ?? [])[0]?.athlete_id ?? null;
-      if (!aid) { setLoadError("Aucun enfant associé à ce compte."); setLoading(false); return; }
-      const { data: res, error } = await supabase.rpc("get_child_activity", { p_athlete_id: aid });
-      if (cancelled) return;
-      const a = res as Activity;
-      if (error || a?.error) { setLoadError("Impossible de charger l'activité."); setLoading(false); return; }
-      setData(a);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  /* Lecture déplacée dans useChildActivity — MÊME RPC, mêmes libellés
+     d'erreur, même « premier enfant ». La carte Résumé de l'accueil lit la
+     même source : deux copies auraient divergé au premier changement. */
+  const { data, loading, loadError } = useChildActivity();
 
   if (loading) return <p className="text-sm text-[#6B7280]">Chargement…</p>;
   if (loadError) {
