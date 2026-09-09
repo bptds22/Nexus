@@ -35,6 +35,10 @@ type ExtendedAthlete = SearchAthlete & { identityVisible: boolean; academicBadge
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
+import {
+  organisationOptions, leagueOptions, divisionOptions, axisDisplay,
+  matchesOrganisation, matchesLeague, matchesDivision,
+} from "@/lib/config/team-taxonomy";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, useMonCegepOffreDesProgrammes } from "@/lib/queries/shared/useCegepPrograms";
 /* ═══════════════════════════════════════════════════════════════
@@ -387,6 +391,7 @@ function RechercheContent() {
   const { filtres, setFiltre, poserPlusieurs } = useFiltresRecherche();
   const {
     search, sport, genderFilter, position, region, promotion, orgType,
+    leagueFilter, divisionFilter,
     minGpa, minRating, sortBy, verifiedOnly, withVideoOnly, withSportBadge,
     withAcademicBadge, hideFavorites, filterOuvertDemenager, filterOuvertPrive,
     filterOuvertAnglophone, offertParMonCegep, filterNewOnly, progFilterIds,
@@ -402,6 +407,14 @@ function RechercheContent() {
   const setRegion = useCallback((v: string) => setFiltre("region", v), [setFiltre]);
   const setPromotion = useCallback((v: string) => setFiltre("promotion", v), [setFiltre]);
   const setOrgType = useCallback((v: string) => setFiltre("orgType", v), [setFiltre]);
+  const setLeagueFilter = useCallback((v: string) => setFiltre("leagueFilter", v), [setFiltre]);
+  const setDivisionFilter = useCallback((v: string) => setFiltre("divisionFilter", v), [setFiltre]);
+  /* Changer le NIVEAU 1 remet les deux niveaux du dessous a zero — meme regle
+     que la page coach. Sans ca, une Ligue cochee puis rendue hors-cadre par un
+     changement d'Organisation continuerait de filtrer derriere un menu grise. */
+  const handleOrgTypeChange = useCallback((v: string) => {
+    poserPlusieurs({ orgType: v, leagueFilter: "", divisionFilter: "" });
+  }, [poserPlusieurs]);
   const setMinGpa = useCallback((v: string) => setFiltre("minGpa", v), [setFiltre]);
   const setMinRating = useCallback((v: string) => setFiltre("minRating", v), [setFiltre]);
   const setSortBy = useCallback((v: string) => setFiltre("sortBy", v), [setFiltre]);
@@ -498,14 +511,18 @@ function RechercheContent() {
   // 10 premiers.
   const filtered = useMemo(() => {
     let list = [...athletes];
-    // orgType client-side (déplacé du legacy useEffect en iter 5.3b pour stabiliser
-    // le cache : un changement d'orgType ne refetch pas, juste filtre)
-    if (orgType) {
-      list = list.filter((a) =>
-        a.orgType === orgType ||
-        (a.noTeam && (a.context === "ligue_civile" ? "ligue_civile" : "scolaire") === orgType)
-      );
-    }
+    /* ORGANISATION / LIGUE / DIVISION — lib/config/team-taxonomy, client-side
+       (un changement ne refetch pas, il filtre le jeu deja rendu).
+
+       L'ANCIEN `orgType` MAISON EST REMPLACE, PAS DOUBLE. Il testait
+       `a.orgType` (calcule dans le hook a partir du seul school_type) avec un
+       repli maison sur `a.context` pour les sans-ecole. Deux definitions du
+       meme axe dans la meme app, dont une qui DIVERGEAIT deja du jumeau mobile
+       (le mobile n'avait pas le repli). Une seule regle desormais, partagee mot
+       pour mot avec la page coach. */
+    if (orgType) list = list.filter((a) => matchesOrganisation(a.taxonomy, orgType));
+    if (leagueFilter) list = list.filter((a) => matchesLeague(a.taxonomy, leagueFilter));
+    if (divisionFilter) list = list.filter((a) => matchesDivision(a.taxonomy, divisionFilter));
     if (position) list = list.filter((a) => a.position === position);
     if (region) list = list.filter((a) => a.region === region);
     // Genre d'ÉQUIPE (teams.gender), pas athletes.genre. Un athlète sans équipe
@@ -522,7 +539,40 @@ function RechercheContent() {
     }
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, orgType, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+
+  /* ── OPTIONS ET ETATS DES TROIS MENUS ─────────────────────────────────────
+     Construites sur `athletes` — LE JEU RENVOYE PAR LA RPC, donc apres les
+     filtres SERVEUR et avant les filtres CLIENT. C'est le pendant exact du
+     coach, qui les batit sur son roster fetche.
+
+     ⚠ CES OPTIONS SONT EXACTES PARCE QUE LA REQUETE NE PAGINE PAS
+     (`p_limit: null` = LIMIT ALL). Si une pagination revient, elles
+     deviendraient « les valeurs de la page courante » — fausses. Il faudra
+     alors une RPC d'agregat dediee. Consigne en tete de useAthleteSearch. */
+  const taxonomyRows = useMemo(() => athletes.map((a) => a.taxonomy), [athletes]);
+  const orgOptions = useMemo(() => organisationOptions(taxonomyRows), [taxonomyRows]);
+  const leagueOptionList = useMemo(() => leagueOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
+  const divisionOptionList = useMemo(() => divisionOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
+
+  const orgAxis = useMemo(() => axisDisplay(orgOptions), [orgOptions]);
+  const leagueAxis = useMemo(() => axisDisplay(leagueOptionList), [leagueOptionList]);
+  const divisionAxis = useMemo(() => axisDisplay(divisionOptionList), [divisionOptionList]);
+
+  /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
+     filtrer derriere un menu grise.
+
+     ⚠ ICI, CE N'EST PAS SEULEMENT LE NIVEAU 1 QUI PEUT LE DECLENCHER. Le coach
+     n'a aucun filtre serveur ; le recruteur en a douze. Cocher « Verifies
+     seulement » ou changer de Sport REFETCHE, retrecit le jeu, et peut faire
+     tomber la Ligue a une seule valeur — la selection posee est alors retiree.
+     C'est la regle du pre-rempli appliquee telle quelle. */
+  useEffect(() => {
+    if (orgAxis.state !== "active" && orgType) setOrgType("");
+    if (leagueAxis.state !== "active" && leagueFilter) setLeagueFilter("");
+    if (divisionAxis.state !== "active" && divisionFilter) setDivisionFilter("");
+  }, [orgAxis.state, leagueAxis.state, divisionAxis.state, orgType, leagueFilter,
+      divisionFilter, setOrgType, setLeagueFilter, setDivisionFilter]);
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -552,7 +602,7 @@ function RechercheContent() {
     queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
 
   /* PÉRIMÈTRE INCHANGÉ. Ce bouton ne vide NI `search`, NI `progFilterIds`, NI
      `offertParMonCegep` — c'était déjà le cas avant la bascule vers l'URL, et
@@ -561,6 +611,7 @@ function RechercheContent() {
   const resetFilters = () => {
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", region: "", promotion: "", orgType: "",
+      leagueFilter: "", divisionFilter: "",
       minRating: "", minGpa: "", sortBy: "rating_desc",
       verifiedOnly: false, withVideoOnly: false,
       withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
@@ -632,6 +683,62 @@ function RechercheContent() {
               Un athlète sans équipe est exclu dès qu'un genre est choisi. */}
           <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className={`nx-filter-select${genderFilter ? " nx-filter-active" : ""}`} aria-label="Genre d&apos;équipe">
             {TEAM_GENDER_FILTER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+          </select>
+
+          {/* ORGANISATION -> LIGUE -> DIVISION (Lot 3). Toujours affiches,
+              position stable. Mono-valeur => menu GRISE qui affiche cette
+              valeur (« RSEQ », « D3 ») : un libelle d'ETAT, pas un filtre — il
+              ne compte pas dans « X athletes trouves », ne declenche pas
+              « Reinitialiser », et porte :disabled, jamais nx-filter-active. */}
+          <select
+            value={orgType}
+            onChange={(e) => handleOrgTypeChange(e.target.value)}
+            disabled={orgAxis.state !== "active"}
+            className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
+            aria-label="Organisation"
+          >
+            {orgAxis.state === "active" ? (
+              <>
+                <option value="">Toutes les organisations</option>
+                {orgOptions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              </>
+            ) : (
+              <option value="">{orgAxis.label}</option>
+            )}
+          </select>
+
+          <select
+            value={leagueFilter}
+            onChange={(e) => setLeagueFilter(e.target.value)}
+            disabled={leagueAxis.state !== "active"}
+            className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
+            aria-label="Ligue"
+          >
+            {leagueAxis.state === "active" ? (
+              <>
+                <option value="">Toutes les ligues</option>
+                {leagueOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              </>
+            ) : (
+              <option value="">{leagueAxis.label}</option>
+            )}
+          </select>
+
+          <select
+            value={divisionFilter}
+            onChange={(e) => setDivisionFilter(e.target.value)}
+            disabled={divisionAxis.state !== "active"}
+            className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
+            aria-label="Division"
+          >
+            {divisionAxis.state === "active" ? (
+              <>
+                <option value="">Toutes les divisions</option>
+                {divisionOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              </>
+            ) : (
+              <option value="">{divisionAxis.label}</option>
+            )}
           </select>
 
           <select value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
@@ -725,11 +832,11 @@ function RechercheContent() {
               {regions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
 
-            <select value={orgType} onChange={(e) => setOrgType(e.target.value)} className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}>
-              <option value="">Toutes les organisations</option>
-              <option value="scolaire">Scolaire</option>
-              <option value="ligue_civile">Ligue civile</option>
-            </select>
+            {/* L'ancien menu « Organisation » vivait ICI, dans les filtres avances,
+                avec deux options codees en dur. Il a FUSIONNE dans le trio
+                Organisation / Ligue / Division de la barre principale (Lot 3) :
+                deux menus du meme axe dans une meme barre en faisaient un de
+                trop, et celui-ci ne connaissait pas « Non renseigne ». */}
 
             <select value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
               <option value="">Toutes les cotes</option>
@@ -780,7 +887,14 @@ function RechercheContent() {
               <div className={`nx-filter-checkbox${progFilterIds.length ? " checked" : ""}`}>
                 {progFilterIds.length > 0 && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
               </div>
-              {progFilterIds.length > 0 ? `Programme (${progFilterIds.length})` : "Programme visé"}
+              {/* « Programmes précis… » plutôt que « Programme visé » : le
+                  voisin « Programme offert chez nous » vise LUI AUSSI les
+                  programmes visés par l'athlète. Ce qui distingue les deux
+                  n'est pas la cible mais la SOURCE de la liste — ici un choix
+                  explicite au picker, là le catalogue de mon cégep. Le libellé
+                  doit porter cette différence, sinon les deux se lisent comme
+                  un doublon (et l'un des deux finit retiré à tort). */}
+              {progFilterIds.length > 0 ? `Programmes (${progFilterIds.length})` : "Programmes précis…"}
             </button>
             <ProgrammeCegepPicker open={progFilterOpen} onClose={() => setProgFilterOpen(false)}
               value={progFilterIds} onChange={setProgFilterIds} />
