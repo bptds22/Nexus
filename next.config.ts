@@ -11,6 +11,23 @@ const isCapacitorBuild = process.env.CAPACITOR_BUILD === "true";
 const isCapacitorRuntime =
   isCapacitorBuild || process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
+/* ── BUILD_ID — le buster du cache persisté ──────────────────────────────────
+   Entre dans la clé du persister TanStack (app/_providers/QueryProvider.tsx).
+   Une clé qui change à chaque déploiement = un sessionStorage qui repart vide,
+   donc jamais une charge d'une version précédente réhydratée dans le code
+   d'après. C'est le mécanisme qui a fait tomber la recherche recruteur le
+   2026-09-09, quand la ligne a gagné `taxonomy`.
+
+   `VERCEL_GIT_COMMIT_SHA` est fourni d'office aux projets Vercel connectés à
+   git, au build comme à l'exécution. Il change à CHAQUE commit déployé : la
+   valeur bouge donc toute seule, sans personne pour la bumper.
+
+   Repli sur la constante en local, en CI hors Vercel et sur le build mobile,
+   où la variable n'existe pas — le comportement d'avant reste le filet, et
+   il faut alors la bumper à la main au release. Cette constante et celle du
+   QueryProvider doivent rester la MÊME valeur. */
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || "1.4.1";
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   // TODO HOTFIX: retirer ces 2 blocs après résolution du bug Next 16 Turbopack
@@ -27,6 +44,7 @@ const nextConfig: NextConfig = {
   // permet aussi le dev:mobile (NEXT_PUBLIC_ direct sans CAPACITOR_BUILD).
   env: {
     NEXT_PUBLIC_CAPACITOR_BUILD: isCapacitorRuntime ? "true" : "false",
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
   },
   // Allow each dev script to use its own build dir so dev:web (port 3000)
   // and dev:mobile (port 3001) can run simultaneously without fighting
