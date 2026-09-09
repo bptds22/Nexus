@@ -91,27 +91,6 @@ const FLAG_REASONS = [
   "Autre",
 ];
 
-/* ── Profile Toggle ─────────────────────────────────────────── */
-
-function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChange: (m: "simple" | "detailed") => void }) {
-  const pill = (active: boolean) =>
-    `px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer ${
-      active
-        ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]"
-        : "text-[#6b7280] hover:text-white"
-    }`;
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>
-        Aperçu
-      </button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>
-        Profil complet
-      </button>
-    </div>
-  );
-}
-
 /* ── Completeness Indicator ─────────────────────────────────── */
 
 function CompletenessBar({ percent }: { percent: number }) {
@@ -1403,7 +1382,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
      masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
      mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
      DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
-  const [mode, setMode] = useState<"simple" | "detailed">("detailed");
   /* LE FORCAGE « SIMPLE » EST RETIRE (2026-09-03).
 
      Il datait du 19 aout, quand la RPC partenaire ne projetait ni mesures,
@@ -1416,7 +1394,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
      substitut assume), le nom et la reputation de l'entraineur, le statut
      de recrutement. Ces masquages-la sont des decisions, pas des effets de
      bord du mode — ils sont gardes un par un, plus bas, par `isPartner`. */
-  const isDetailed = mode === "detailed";
+  /* LE TOGGLE « Aperçu / Profil complet » EST RETIRÉ (BP, 2026-09-09).
+     Rien n'était propre à l'Aperçu : sa seule section — l'étoile + la cote —
+     est re-rendue en tête du bloc détaillé, juste en dessous. Aucune
+     persistance, aucun deep-link, aucun effet ni fetch ne dépendait du mode.
+
+     `isDetailed` reste en constante et les blocs conditionnels restent EN
+     PLACE : l'élagage est un nettoyage séparé.
+
+     ⚠ CE RETRAIT N'OUVRE AUCUN VERROU. `lockContent`, `isPartner` et
+     `identityVisible` (décidé par le SERVEUR) ne lisent pas `mode` et ne l'ont
+     jamais lu — grep croisé refait sur ce fichier le 2026-09-09, zéro
+     occurrence. C'est le fichier où cette confusion coûterait le plus cher :
+     elle ouvrirait l'identité de mineurs à des comptes gratuits. */
+  const isDetailed = true;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
@@ -1835,7 +1826,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Le bascule est rendu au partenaire : les sections detaillees ne
               sont plus vides (migration 20260904130334). */}
-          <ProfileToggle mode={mode} onChange={setMode} />
           {/* La barre affichait « 0 % » a tout partenaire, parce que la RPC ne
               projetait pas profile_completion — une affirmation fausse la ou le
               reel va de 30 a 95. Elle etait donc masquee. La colonne est
@@ -2030,11 +2020,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 {/* Detailed: Cote Globale + full 8-trait grid + distinctions */}
                 {isDetailed && (
                   <div className="mt-5 pl-5">
+                    {/* LA COMPENSATION DU RETRAIT DU TOGGLE (2026-09-09).
+                        La version « Aperçu » portait `coteGlobale > 0`, pas
+                        celle-ci. Sans cette garde, un athlète avec un rapport
+                        écrit mais aucune cote afficherait « 0,0/5 » sous cinq
+                        étoiles vides : une note de ZÉRO affirmée sur un jeune
+                        que personne n'a noté, lue par un recruteur. Le mode
+                        masquait le défaut ; le retirer sans reprendre la garde
+                        l'aurait rendu définitif. */}
+                    {coteGlobale > 0 && (
                     <div className="flex items-center gap-3 mb-4">
                       <StarRating rating={coteGlobale} size="md" showNumber={false} />
                       <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
                       <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
                     </div>
+                    )}
 
                     {a.traitRatings && (
                       <div className="border-t border-[#2D3748]/50 pt-4">
