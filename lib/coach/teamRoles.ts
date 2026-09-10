@@ -39,6 +39,30 @@ export const TEAM_ROLES = [
 
 export type TeamRole = (typeof TEAM_ROLES)[number];
 
+/* ── DÉCISION PRODUIT (BP, 2026-09-10) — écrite, jamais héritée ──────
+   L'ENTRAÎNEUR-CHEF PAR INTÉRIM A LES PLEINS POUVOIRS DU RESPONSABLE.
+
+   Ce n'est pas une conséquence de la condition qu'on teste aujourd'hui,
+   c'est un choix : le modèle a été bâti pour l'école secondaire, où un
+   intérimaire tient l'équipe pour de vrai. L'index unique en base, cette
+   liste, et la copie du bandeau intérim (« inviter d'autres entraîneurs —
+   exactement comme un entraîneur-chef ») disent tous la même chose.
+
+   TOUTE SURFACE QUI DÉCIDE D'UN DROIT DE RESPONSABLE passe par
+   `isReferentRole()`. Jamais `role === "head_coach"` écrit à la main :
+   une liste blanche vérifiée par énumération laisse passer ce qu'elle n'a
+   pas nommé — c'est exactement ainsi qu'un intérimaire s'est retrouvé en
+   lecture seule sur sa propre équipe (2026-09-10, écran équipe mobile).
+
+   ⚠️ LA BASE N'EST PAS ENCORE ALIGNÉE. `is_team_head_coach()` teste
+   `role = 'head_coach'` tout court, et garde les politiques INSERT/DELETE
+   de `team_coaches`. Tant qu'elle n'est pas corrigée, un intérimaire peut
+   CHANGER un rôle (branche école de la politique UPDATE) mais pas AJOUTER
+   ni RETIRER un entraîneur — d'où le drapeau `canManageStaff` côté client,
+   qui masque ces deux gestes plutôt que d'offrir des boutons qui échouent.
+   Correction prévue au lot migration ; voir docs/fast-follow-1.4.2.md.
+   ──────────────────────────────────────────────────────────────────── */
+
 /** Les rôles qui font de leur porteur LE responsable de l'équipe.
  *  Même liste que la clause WHERE de l'index unique partiel. */
 export const REFERENT_ROLES = ["head_coach", "head_coach_interim"] as const;

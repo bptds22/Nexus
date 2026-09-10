@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isCivilType, type SchoolType } from "@/lib/utils/orgLabel";
+import { isReferentRole } from "@/lib/coach/teamRoles";
 
 export interface CoachTeamDetailHeader {
   id: string;
@@ -33,6 +34,24 @@ export interface CoachTeamDetailHeader {
   isCivil: boolean;
   isActive: boolean;
   myRole: "ADMIN" | "COACH";
+  /** L'ajout et le retrait d'entraîneurs passent-ils la RLS pour cet usager ?
+   *
+   *  DISTINCT de `myRole`, et c'est délibéré. Un entraîneur-chef PAR INTÉRIM
+   *  est un responsable à part entière — l'index unique
+   *  `team_coaches_one_referent_per_team` le range avec `head_coach`, et
+   *  REFERENT_ROLES aussi. Mais la RLS, elle, ne le sait pas encore : les
+   *  politiques INSERT/DELETE de `team_coaches` passent par
+   *  `is_team_head_coach()`, qui teste `role = 'head_coach'` tout court.
+   *
+   *  Le changement de rôle, lui, passe : la politique UPDATE a une branche
+   *  école (`users.school_id = team.school_id`) que l'intérimaire satisfait.
+   *
+   *  Donc : le select de rôle s'affiche pour un intérimaire, mais « Ajouter »
+   *  et « Retirer » restent masqués — un contrôle qui échoue est pire qu'un
+   *  contrôle absent. Ce drapeau disparaîtra quand `is_team_head_coach()`
+   *  nommera REFERENT_ROLES (prévu au lot migration, cf.
+   *  docs/fast-follow-1.4.2.md). */
+  canManageStaff: boolean;
 }
 
 export interface CoachTeamDetailCoach {
@@ -121,7 +140,15 @@ export function useCoachTeamDetail(teamId: string | null | undefined) {
       const schoolRow = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
       const schoolType = (schoolRow?.type as SchoolType | undefined) ?? null;
       const rawRole = (roleRow as { role?: string } | null)?.role;
-      const myRole: "ADMIN" | "COACH" = rawRole === "head_coach" || rawRole === "ADMIN" ? "ADMIN" : "COACH";
+      /* `isReferentRole` plutôt qu'une énumération à la main : elle nomme
+         head_coach ET head_coach_interim, comme l'index unique en base. La
+         version précédente listait « head_coach » seul et rangeait donc un
+         intérimaire parmi les simples entraîneurs — écran en lecture seule
+         pour le responsable de l'équipe. Une liste blanche vérifiée par
+         énumération laisse passer ce qu'elle n'a pas nommé. */
+      const myRole: "ADMIN" | "COACH" = isReferentRole(rawRole) || rawRole === "ADMIN" ? "ADMIN" : "COACH";
+      /* Volontairement PLUS ÉTROIT que myRole — voir le commentaire du champ. */
+      const canManageStaff = rawRole === "head_coach" || rawRole === "ADMIN";
 
       const header: CoachTeamDetailHeader = {
         id: teamId,
@@ -139,6 +166,7 @@ export function useCoachTeamDetail(teamId: string | null | undefined) {
         isCivil: isCivilType(schoolType),
         isActive: (tRec.is_active as boolean) ?? true,
         myRole,
+        canManageStaff,
       };
 
       const { data: tc } = await supabase

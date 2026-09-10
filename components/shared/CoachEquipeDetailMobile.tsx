@@ -284,6 +284,12 @@ export default function CoachEquipeDetailMobile() {
 
   const pills = [team.sportName, team.ageGroup, team.division, team.league, team.season].filter(Boolean);
   const isAdmin = team.myRole === "ADMIN";
+  /* Plus étroit qu'isAdmin : l'ajout et le retrait d'entraîneurs sont refusés
+     par la RLS à un entraîneur-chef PAR INTÉRIM, là où le changement de rôle
+     passe (branche école de la politique UPDATE). On masque donc ces deux
+     gestes plutôt que d'offrir des boutons qui échouent. Voir le champ
+     `canManageStaff` dans useCoachTeamDetail pour le détail des politiques. */
+  const canManageStaff = team.canManageStaff;
 
   return (
     <div
@@ -375,7 +381,7 @@ export default function CoachEquipeDetailMobile() {
                       onChange={(next) => changeCoachRole(c, next)}
                     />
                   </div>
-                  {isAdmin && (
+                  {canManageStaff && (
                     <button
                       type="button"
                       onClick={() => { void triggerHaptic("Light"); setConfirmRemoveCoach({ id: c.id, name: c.name }); }}
@@ -390,7 +396,7 @@ export default function CoachEquipeDetailMobile() {
                 </div>
               );
             })}
-            {isAdmin && (
+            {canManageStaff && (
               <NavRow
                 label="Ajouter un entraîneur"
                 isFirst={coaches.length === 0}

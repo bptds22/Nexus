@@ -112,3 +112,84 @@ endroits du même fichier sous `{detailed && <DetailedTag />}`.
 résultat). La pilule « Détaillé » ne s'affiche donc nulle part, mais sa chaîne
 survit dans le bundle. En 1.4.1, seul l'**import orphelin** de
 `AthleteWizardMobile.tsx:72` a été retiré — le reste est hors périmètre.
+
+---
+
+## 7. La branche école de la politique UPDATE est trop large
+
+`team_coaches scoped update` s'ouvre sur :
+
+```sql
+team_id IN (select t.id from teams t
+             where t.school_id IN (select u.school_id from users u
+                                    where u.id = auth.uid()))
+```
+
+**Tout** utilisateur dont `users.school_id` correspond à celui de l'équipe peut
+donc modifier les rôles — y compris un **assistant**, qui peut rétrograder son
+propre entraîneur-chef. Aucun test de rôle, aucun test d'appartenance à
+l'équipe : la seule appartenance à l'école suffit.
+
+À resserrer (responsable de l'équipe + direction d'école + admin), en gardant
+à l'esprit que c'est **cette branche** qui fait aujourd'hui fonctionner le
+select de rôle pour un intérimaire — la resserrer sans corriger
+`is_team_head_coach()` d'abord le casserait.
+
+## 8. La section « Entraîneurs » du web n'est gardée par rien
+
+`app/coach/equipes/[teamId]/PageClient.tsx` — le bloc Section A rend
+`<CoachRoleLine … canEdit />` (littéralement `true`), un bouton « + Ajouter »
+et un « Retirer » par ligne, **sans aucune condition de droits**. `myRole` n'y
+sert qu'à un libellé (`:673`).
+
+Conséquence : un simple assistant voit les mêmes contrôles qu'un responsable.
+Le select fonctionne pour lui (cf. point 7), « Ajouter » et « Retirer »
+échouent en silence sur la RLS.
+
+Non traité en 1.4.1 : garder ces contrôles pour tout le monde est le
+comportement actuel, et les restreindre retirerait des capacités à des usagers
+qui les ont aujourd'hui par d'autres branches (direction d'école). À reprendre
+avec le point 7, d'un seul tenant.
+
+---
+
+## 9. LOT MIGRATION (session D6) — `is_team_head_coach()` doit nommer REFERENT_ROLES
+
+**À ajouter au périmètre de la session D6**, avec le dédoublonnage des
+conversations et l'index unique `RECRUTEUR_COACH`.
+
+Décision produit actée (BP, 2026-09-10) : **l'entraîneur-chef par intérim a
+les pleins pouvoirs du responsable.** Écrite en toutes lettres en tête de
+`lib/coach/teamRoles.ts`, au-dessus de `REFERENT_ROLES`.
+
+État actuel en prod :
+
+```sql
+CREATE OR REPLACE FUNCTION public.is_team_head_coach(p_team uuid, p_uid uuid)
+  RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
+  SET row_security TO 'off' SET search_path TO 'public'
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.team_coaches tc
+                  WHERE tc.team_id = p_team AND tc.coach_id = p_uid
+                    AND tc.role = 'head_coach');     -- ← intérim omis
+$$;
+```
+
+Elle garde `team_coaches scoped insert` (avec `is_director_of_team_school`) —
+donc **« Ajouter un entraîneur » est refusé à un intérimaire**.
+
+**Ce que la correction débloque :** le drapeau `canManageStaff`
+(`lib/queries/coach/useCoachTeamDetail.ts`) pourra disparaître, et « Ajouter »
+redeviendra visible pour un intérimaire sur l'écran équipe mobile.
+
+**⚠️ Le ✕ « Retirer » ne sera PAS débloqué pour autant.** La politique DELETE
+ne mentionne `is_team_head_coach` **nulle part** :
+
+```
+coach_id = auth.uid()  OR  is_director_of_team_school(team_id)  OR  is_admin()
+```
+
+Un entraîneur-chef **titulaire** ne peut donc pas non plus retirer un autre
+entraîneur — il ne peut que se retirer lui-même. C'est peut-être voulu (seule
+la direction d'école défait un staff), peut-être un oubli. **À trancher dans la
+même session**, en écrivant la réponse quelle qu'elle soit.

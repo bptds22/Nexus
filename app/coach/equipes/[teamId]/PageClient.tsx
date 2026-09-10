@@ -256,8 +256,15 @@ function TeamDetailPageDesktop() {
     const schoolRel = tRec.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null;
     const schoolRow = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
     const rawRole = (roleRow as { role?: string } | null)?.role;
+    /* `isReferentRole` plutôt qu'une énumération à la main : elle nomme
+       head_coach ET head_coach_interim, comme l'index unique
+       `team_coaches_one_referent_per_team` en base. La version précédente
+       listait « head_coach » seul, si bien qu'un entraîneur-chef par intérim —
+       responsable de l'équipe à tous les autres égards — était étiqueté simple
+       « Coach ». Une liste blanche vérifiée par énumération laisse passer ce
+       qu'elle n'a pas nommé. */
     const myRole: "ADMIN" | "COACH" =
-      directorView || rawRole === "head_coach" || rawRole === "ADMIN" ? "ADMIN" : "COACH";
+      directorView || isReferentRole(rawRole) || rawRole === "ADMIN" ? "ADMIN" : "COACH";
 
     const teamState: TeamState = {
       name: (tRec.name as string) || "",
