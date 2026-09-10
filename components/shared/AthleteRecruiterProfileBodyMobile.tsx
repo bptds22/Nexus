@@ -11,6 +11,7 @@ import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
 import CoachFicheActionsMobile from "@/components/shared/coach/CoachFicheActionsMobile";
+import SegmentedTabs from "@/components/shared/SegmentedTabs";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -436,44 +437,21 @@ function BadgesRow({
   );
 }
 
-/** Tab bar 3 onglets + indicateur rouge glissant (style MobileTabBar). */
+/** Tab bar 3 onglets — segmented control à pilule glissante (Lot D4b).
+ *
+ *  L'ancienne version posait trois libellés nus, l'actif en rouge, sous un
+ *  trait de 2px : rien ne disait que c'était un contrôle. Le rendu vit
+ *  maintenant dans SegmentedTabs (components/shared), partagé — mais branché
+ *  ici SEULEMENT pour 1.4.1, les six autres surfaces à onglets bricolés
+ *  attendent leur fast-follow.
+ *
+ *  Le fond #111317 reste sur CE wrapper : il appartient à la barre sticky,
+ *  pas au contrôle. (Iter 7.10 Section 2 — fond plein, jamais de
+ *  backdrop-blur sur un sticky : ligne fine perceptible en WebView iOS.) */
 function TabBar({ activeTab, onChange }: { activeTab: TabKey; onChange: (k: TabKey) => void }) {
-  const activeIndex = TABS.findIndex((t) => t.key === activeTab);
-  // Iter 7.10 Section 2 — bg-[#111317]/95 backdrop-blur-md → bg-[#111317]
-  // plein. Le backdrop-blur sur élément sticky bug sur iOS WebView et
-  // crée une ligne fine perceptible + 5% de transparence. Wrapper externe
-  // déjà bg-[#111317] plein, on aligne le TabBar interne pour cohérence.
   return (
-    <div className="relative bg-[#111317]">
-      <div className="flex">
-        {TABS.map((t) => {
-          const isActive = t.key === activeTab;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => { void triggerHaptic("Light"); onChange(t.key); }}
-              className={`flex-1 h-12 flex items-center justify-center text-[12px] font-bold uppercase tracking-[0.12em] transition-colors ${
-                isActive ? "text-[#E63946]" : "text-[#6b7280] active:text-white"
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-      {/* Sliding indicator — Iter 7.8b Section B : underline centré, ~50%
-          de la largeur de chaque tab (au lieu de 80%), centré sous le label
-          via mx-auto. Plus propre visuellement. */}
-      <div
-        className="absolute bottom-0 left-0 h-[2px] w-1/3 flex justify-center"
-        style={{
-          transform: `translateX(${activeIndex * 100}%)`,
-          transition: "transform 280ms cubic-bezier(0.4, 0.0, 0.2, 1)",
-        }}
-      >
-        <div className="w-[50%] h-full bg-[#E63946] rounded-full" />
-      </div>
+    <div className="bg-[#111317] px-4 py-2">
+      <SegmentedTabs tabs={TABS} active={activeTab} onChange={onChange} />
     </div>
   );
 }
