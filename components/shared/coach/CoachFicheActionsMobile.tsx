@@ -1,47 +1,66 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   CoachFicheActionsMobile — le FAB du coach et sa feuille d'actions,
-   sur la fiche athlète mobile (Lot D3).
+   CoachFicheActionsMobile — les boutons flottants du coach sur la
+   fiche athlète mobile.
 
-   ── CE QUI MEURT AVEC CE COMPOSANT ──────────────────────────────
-   Une barre collée en bas portant trois boutons : Message (contour
-   vert), Transférer (contour bleu, ICÔNE SEULE) et Modifier le profil
-   (plein rouge). Trois couleurs pour trois actions dont aucune n'est un
-   statut. Et « Transférer » avait perdu son libellé faute de largeur —
-   il ne vivait plus que dans son aria-label.
+   ── DEUX BOUTONS, EMPILÉS ───────────────────────────────────────
+   MODIFIER (56px, plein rouge, crayon) porte la gestion : au tap, une
+   feuille à deux entrées — Modifier le profil, Transférer.
+   MESSAGE (48px, fond sombre + bordure fine, enveloppe) agit
+   DIRECTEMENT : écrire à l'athlète est un geste fréquent, le faire
+   traverser une feuille lui coûtait deux taps pour rien.
 
-   Le bleu #3B82F6 était en prime un faux signal : c'est la marque du
-   profil vérifié, et on est sur une fiche d'athlète. Un seul accent
-   rouge règle les deux problèmes d'un coup.
+   EMPILÉS, pas côte à côte. La tab bar est une pilule flottante qui
+   court de `left:14` à `right:14` : une paire horizontale posée dessus
+   se lirait comme une seconde barre d'outils en concurrence. Empilés,
+   les deux boutons tiennent une seule colonne alignée sur la gouttière
+   de page (EDGE_X = 16), et la hiérarchie se lit à la TAILLE (56 vs 48)
+   autant qu'à la couleur — le secondaire n'a donc pas besoin de crier.
+   Le principal est en bas, le plus près du pouce.
 
-   ── POURQUOI UN COMPOSANT SÉPARÉ, ET PAS DU JSX DE PLUS ─────────
-   AthleteRecruiterProfileBodyMobile ouvre par
-   `if (viewerMode !== "recruiter") return null;` AVANT ses hooks —
-   l'inverse du canon du dépôt. Ses 97 hooks sont donc tous
-   « conditionnels » aux yeux d'eslint. Y déclarer l'état d'ouverture de
-   la feuille en aurait fait un 98ᵉ : de la dette ajoutée à de la dette.
-   Ici l'état est chez lui, et le parent n'y gagne aucun hook.
+   ── DÉGAGEMENT DE LA TAB BAR ────────────────────────────────────
+   Elle est posée à `bottom: safe + 10` et fait TABBAR_HEIGHT (64) de
+   haut : son bord supérieur est donc à safe + 74. L'ancien FAB était à
+   safe + 80 — SIX pixels de marge, et en z-30 sous une barre en z-40 :
+   les ombres se chevauchaient. Le principal part maintenant de
+   safe + 74 + 16 de respiration.
 
-   (La faute de fond — le retour anticipé devant les hooks — reste
-   entière dans le parent. Elle demande son propre chantier ; ce n'est
-   pas celui-ci.)
+   ── L'ANNEAU ────────────────────────────────────────────────────
+   Un liseré noir à faible opacité, plus une ombre portée sombre. La
+   fiche affiche des cartes et des pastilles rouges : sans lui, un
+   bouton rouge posé sur un fond rouge perd son contour. L'anneau ne se
+   voit pas sur fond sombre et sauve la lisibilité sur fond clair ou
+   coloré.
 
-   Le FAB ne s'escamote PAS au scroll : 56px dans un coin ne masquent
-   rien, contrairement à une barre pleine largeur. La machinerie
-   `actionBarVisible` reste au parent, où la barre RECRUTEUR — 160px
-   avec le bandeau RSEQ — en a toujours besoin.
+   ── LE ⋮ EST MORT ───────────────────────────────────────────────
+   Il ne reste aucun menu « trois points » sur cette fiche : les gestes
+   sont nommés, ou ils n'existent pas.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { triggerHaptic } from "@/lib/haptics";
+import { TABBAR_HEIGHT, EDGE_X } from "@/lib/config/mobileTokens";
+
+/** Bord supérieur de la tab bar (elle est décollée de 10px du bas). */
+const TABBAR_TOP = TABBAR_HEIGHT + 10;
+/** Respiration entre la barre et le premier bouton. */
+const RESPIRATION = 16;
+
+const ANNEAU = "0 0 0 1px rgba(0,0,0,0.55)";
 
 export interface CoachFicheAction {
   /** Libellé écrit, jamais une icône seule. */
   libelle: string;
-  /** La ligne de contexte sous le libellé — ce que la barre ne pouvait pas dire. */
+  /** La ligne de contexte sous le libellé. */
   contexte: string;
+  icone: React.ReactNode;
+  onTap: () => void;
+}
+
+export interface CoachFicheActionDirecte {
+  libelle: string;
   icone: React.ReactNode;
   onTap: () => void;
 }
@@ -49,54 +68,77 @@ export interface CoachFicheAction {
 export default function CoachFicheActionsMobile({
   athleteName,
   actions,
+  actionDirecte,
   masque = false,
 }: {
   athleteName: string;
-  /** Une action absente ne s'affiche pas — plutôt que de s'afficher désactivée. */
+  /** Les gestes de GESTION, derrière le bouton principal. Une action
+   *  absente ne s'affiche pas — plutôt que de s'afficher grisée. */
   actions: CoachFicheAction[];
-  /** Efface le FAB quand une autre surface flottante occupe l'écran. */
+  /** Le geste FRÉQUENT, au tap direct, sans feuille. */
+  actionDirecte?: CoachFicheActionDirecte;
+  /** Efface les boutons quand une autre surface flottante occupe l'écran. */
   masque?: boolean;
 }) {
   const [ouverte, setOuverte] = useState(false);
 
-  if (actions.length === 0) return null;
+  if (actions.length === 0 && !actionDirecte) return null;
 
   return (
     <>
       {typeof document !== "undefined" && createPortal(
-        <button
-          type="button"
-          onClick={() => { void triggerHaptic("Light"); setOuverte(true); }}
-          aria-label="Actions"
-          aria-haspopup="dialog"
-          className="fixed z-30 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+        <div
+          className="fixed z-30 flex flex-col items-end gap-3"
           style={{
-            right: 16,
-            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
-            /* Deux surfaces flottantes en même temps, c'est une de trop. */
+            right: EDGE_X,
+            bottom: `calc(env(safe-area-inset-bottom) + ${TABBAR_TOP + RESPIRATION}px)`,
             opacity: masque ? 0 : 1,
             pointerEvents: masque ? "none" : "auto",
             transition: "opacity 200ms ease",
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none" />
-          </svg>
-        </button>,
+          {/* SECONDAIRE — action directe, 48px, sombre à bordure fine. */}
+          {actionDirecte && (
+            <button
+              type="button"
+              onClick={() => { void triggerHaptic("Light"); actionDirecte.onTap(); }}
+              aria-label={actionDirecte.libelle}
+              className="w-12 h-12 rounded-full bg-[#1A1D24] border border-white/[0.14] text-white flex items-center justify-center active:bg-white/[0.06]"
+              style={{ boxShadow: `${ANNEAU}, 0 6px 18px rgba(0,0,0,0.45)` }}
+            >
+              {actionDirecte.icone}
+            </button>
+          )}
+
+          {/* PRINCIPAL — ouvre la feuille de gestion, 56px, plein rouge. */}
+          {actions.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { void triggerHaptic("Light"); setOuverte(true); }}
+              aria-label="Gérer l'athlète"
+              aria-haspopup="dialog"
+              className="w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center active:bg-[#D42B22]"
+              style={{ boxShadow: `${ANNEAU}, 0 8px 24px rgba(0,0,0,0.5), 0 0 20px rgba(230,57,70,0.3)` }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+          )}
+        </div>,
         document.body,
       )}
 
       {/* Patron repris tel quel de la feuille « Contacter » de la fiche :
           poignée, titre, sous-titre, rangées icône + libellé + ligne de
-          contexte, Annuler. Rien d'inventé. */}
+          contexte, Annuler. */}
       {ouverte && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[60] flex items-end justify-center" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOuverte(false)} />
           <div className="relative w-full max-w-[520px] bg-[#1A1D24] border-t border-white/[0.08] rounded-t-3xl px-5 pt-5 pb-8">
             <div className="w-10 h-1 rounded-full bg-white/15 mx-auto mb-5" />
-            <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-1">Actions</h3>
+            <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-1">Gérer</h3>
             <p className="text-[13px] text-[#9CA3AF] mb-4">{athleteName || "Cet athlète"}</p>
             <div className="space-y-3">
               {actions.map((act) => (

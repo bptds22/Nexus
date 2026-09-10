@@ -3239,39 +3239,28 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <CoachFicheActionsMobile
           athleteName={a ? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() : ""}
           masque={!!sheetSuggestion}
-          actions={[
-            {
-              libelle: "Message",
-              contexte: "Écris à l'athlète",
-              icone: (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-              ),
-              /* Q4 — find-or-create athlète↔coach puis route vers le fil
-                 coach. Le coach est déjà sur la fiche de l'athlète. */
-              onTap: async () => {
-                const supabase = createClient();
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
-                const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
-                if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
-                else toast.error({ message: "Impossible d'ouvrir la conversation" });
-              },
+          /* Écrire à son athlète est le geste fréquent : il agit au tap,
+             sans traverser la feuille. Q4 — find-or-create athlète↔coach
+             puis route vers le fil coach ; le coach est déjà sur la fiche. */
+          actionDirecte={{
+            libelle: "Envoyer un message",
+            icone: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            ),
+            onTap: async () => {
+              const supabase = createClient();
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+              const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
+              if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
+              else toast.error({ message: "Impossible d'ouvrir la conversation" });
             },
-            /* Sans équipe transférable, l'entrée n'existe pas — plutôt
-               qu'exister désactivée. Même condition qu'avant. */
-            ...(trState && canTransferAthlete(trState) ? [{
-              libelle: "Transférer",
-              contexte: `Équipe actuelle : ${trState.currentTeamName ?? "sans équipe"}`,
-              icone: (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
-                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
-                </svg>
-              ),
-              onTap: () => setTrOpen(true),
-            }] : []),
+          }}
+          /* Le bouton principal porte un crayon : « Modifier le profil »
+             ouvre donc la feuille en premier, Transférer ensuite. */
+          actions={[
             {
               libelle: "Modifier le profil",
               contexte: "Ouvre le formulaire complet",
@@ -3296,6 +3285,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 }
               },
             },
+            /* Sans équipe transférable, l'entrée n'existe pas — plutôt
+               qu'exister désactivée. Même condition qu'avant. */
+            ...(trState && canTransferAthlete(trState) ? [{
+              libelle: "Transférer",
+              contexte: `Équipe actuelle : ${trState.currentTeamName ?? "sans équipe"}`,
+              icone: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
+                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
+                </svg>
+              ),
+              onTap: () => setTrOpen(true),
+            }] : []),
           ]}
         />
       )}
