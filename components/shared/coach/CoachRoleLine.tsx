@@ -33,6 +33,7 @@ export default function CoachRoleLine({
   teamCoachCount,
   teamHasReferent,
   busy,
+  variant = "web",
   onChange,
   className,
 }: {
@@ -42,6 +43,9 @@ export default function CoachRoleLine({
   teamCoachCount: number;
   teamHasReferent: boolean;
   busy?: boolean;
+  /** "mobile" → le select prend toute la largeur sous le nom. Le PLACEMENT
+   *  diffère déjà entre les deux surfaces ; la largeur suit le placement. */
+  variant?: "web" | "mobile";
   onChange: (next: TeamRole) => void;
   className?: string;
 }) {
@@ -65,6 +69,7 @@ export default function CoachRoleLine({
       teamHasReferent={teamHasReferent}
       disabled={busy}
       showReason={false}
+      variant={variant}
       onChange={onChange}
     />
   );

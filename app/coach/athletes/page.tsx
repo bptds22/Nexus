@@ -494,7 +494,15 @@ function MesAthletesContent() {
           },
           views: 0,
           favorites: favCounts[a.id as string] || 0,
-          stars: Math.round(stars),
+          /* UNE décimale, pas un entier. L'arrondi à la source ne se voyait
+             pas comme une fausse précision — cette carte ne rend que des
+             étoiles pleines, jamais le nombre — mais il mentait deux fois :
+             un 4,6 allumait CINQ étoiles, et il répondait au filtre
+             « 5 étoiles » (`a.stars >= parseFloat(minRating)`). Le tri en
+             souffrait aussi. Avec la décimale, quatre étoiles s'allument et
+             le filtre dit vrai. Le rendu reste binaire, sans demi-étoile :
+             c'est le parti pris de cette carte, on n'y touche pas. */
+          stars: Math.round(stars * 10) / 10,
           heightWeight: (() => {
             const ft = a.taille_pieds as number | null;
             const inches = a.taille_pouces as number | null;

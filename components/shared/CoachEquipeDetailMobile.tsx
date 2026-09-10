@@ -355,26 +355,36 @@ export default function CoachEquipeDetailMobile() {
           <Group>
             {coaches.map((c, i) => {
               const initials = c.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+              /* Rythme vertical — la ligne porte deux étages (nom, puis
+                 select), donc `items-center` la centrait sur l'ensemble et
+                 désalignait l'avatar du nom. `items-start` + un padding
+                 vertical explicite remplacent le minHeight de 60 : celui-ci
+                 valait pour une ligne à un seul étage, et se faisait de toute
+                 façon dépasser par le select. */
               return (
                 <div
                   key={c.id}
-                  className="w-full flex items-center px-4 gap-3"
-                  style={{ minHeight: 60, borderTop: i === 0 ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
+                  className="w-full flex items-start px-4 py-3 gap-3"
+                  style={{ borderTop: i === 0 ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
                 >
                   <div className="w-10 h-10 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
                     <span className="text-[11px] font-bold text-[#9CA3AF]">{initials}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] text-white truncate">{c.name}</p>
+                    <p className="text-[15px] text-white truncate leading-10">{c.name}</p>
                     {/* v3 — le select passe SOUS le nom : la ligne mobile
                         (avatar + nom + bouton retirer) n'a pas la largeur du
-                        web pour l'accueillir à droite. Même composant, même
-                        règles ; seul le placement diffère. Sans droits
-                        (isAdmin), c'est du texte simple, pas un select grisé. */}
+                        web pour l'accueillir à droite. Même composant, mêmes
+                        règles ; seuls le placement et la largeur diffèrent —
+                        d'où `variant="mobile"`, qui étend le select sur toute
+                        la largeur pour aligner le bord droit d'une ligne à
+                        l'autre. Sans droits (isAdmin), c'est du texte simple,
+                        pas un select grisé. */}
                     <CoachRoleLine
-                      className="mt-1"
+                      className="mt-1.5"
                       role={c.role}
                       canEdit={isAdmin}
+                      variant="mobile"
                       teamCoachCount={coaches.length}
                       teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
                       busy={roleBusy !== null}
@@ -385,7 +395,10 @@ export default function CoachEquipeDetailMobile() {
                     <button
                       type="button"
                       onClick={() => { void triggerHaptic("Light"); setConfirmRemoveCoach({ id: c.id, name: c.name }); }}
-                      className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.04]"
+                      /* h-10 comme l'avatar et comme la ligne du nom : sous
+                         `items-start`, les trois colonnes s'alignent alors sur
+                         le premier étage, et le select occupe le second seul. */
+                      className="w-9 h-10 rounded-full flex items-center justify-center active:bg-white/[0.04] shrink-0"
                       aria-label="Retirer"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
