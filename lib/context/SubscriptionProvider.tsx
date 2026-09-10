@@ -75,6 +75,30 @@ interface Subscription {
 type FeatureValue = boolean | number;
 type FeatureSet = Record<string, FeatureValue>;
 
+/* ⚠️ CETTE TABLE EST DÉCLARÉE, PAS LUE (relevé 2026-09-10).
+
+   `search_results_limit`, `can_use_advanced_filters`, `can_use_pipeline`,
+   `can_see_activity_feed` n'ont AUCUN consommateur hors de ce fichier. Le
+   gating réel se joue ailleurs, dans des `requiredTier` écrits à la main
+   page par page (FeatureGate) et item par item (RecruiterSidebar,
+   MobileTabBar). Deux sources de vérité — et c'est la moins visible qui
+   décide.
+
+   Le désaccord est déjà à l'écran : `free.can_use_pipeline: false` ci-dessous,
+   alors que « Mon processus » s'affiche en mode démo pour un compte gratuit
+   (décision produit assumée, écrite en tête du calcul `isFreeDemoMode` dans
+   les deux pages pipeline).
+
+   DÉCISIONS DE LANCEMENT (BP, 2026-09-10), pour que personne ne « corrige »
+   ces écarts en croyant bien faire :
+     · Mon processus — démo Free ASSUMÉE, aucun changement.
+     · Calendrier — reste OUVERT aux comptes gratuits ; gating à trancher.
+     · `search_results_limit` — NON appliqué au lancement.
+
+   Réunifier les deux sources est un chantier nommé, pas un nettoyage de
+   passage : voir « source de vérité unique du gating » dans
+   docs/fast-follow-1.4.2.md. Il porte aussi le sort du palier Starter,
+   décrit dans CLAUDE.md et absent de la taxonomie (free | pro | all_star). */
 const RECRUITER_FEATURES: Record<SubscriptionTier, FeatureSet> = {
   free: {
     can_search: true,

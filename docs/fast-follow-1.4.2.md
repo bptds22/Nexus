@@ -193,3 +193,45 @@ Un entraîneur-chef **titulaire** ne peut donc pas non plus retirer un autre
 entraîneur — il ne peut que se retirer lui-même. C'est peut-être voulu (seule
 la direction d'école défait un staff), peut-être un oubli. **À trancher dans la
 même session**, en écrivant la réponse quelle qu'elle soit.
+
+---
+
+## 10. Source de vérité unique du gating — chantier nommé
+
+**Relevé 2026-09-10, pendant la recette recruteur mobile.**
+
+Le gating par palier a **deux sources de vérité**, et la moins visible décide.
+
+**Ce qui est déclaré et jamais lu** — `RECRUITER_FEATURES` dans
+`lib/context/SubscriptionProvider.tsx`. Aucun consommateur hors du fichier
+pour `search_results_limit`, `can_use_advanced_filters`, `can_use_pipeline`,
+`can_see_activity_feed`.
+
+**Ce qui décide réellement** — des `requiredTier` écrits à la main :
+`<FeatureGate>` page par page (18 occurrences), plus `RecruiterSidebar` et
+`MobileTabBar` item par item.
+
+**Le désaccord est déjà à l'écran :** `free.can_use_pipeline: false` dans la
+table, alors que « Mon processus » s'affiche en démo pour un compte gratuit —
+et que la navigation, elle, le reverrouille (`requiredTier: "pro"`). Le lien
+est bloqué, la route ne l'est pas.
+
+**Le chantier :** faire lire la table, retirer les `requiredTier` manuels
+divergents, et **statuer sur le palier Starter** — décrit dans CLAUDE.md
+(9,99 $/mois, pipeline à 2 statuts) mais **absent de la taxonomie**, qui ne
+connaît que `free | pro | all_star`.
+
+**Ce qui n'est PAS à corriger**, décisions de lancement prises (BP,
+2026-09-10) et écrites dans le code :
+
+| surface | décision |
+|---|---|
+| Mon processus | démo Free **assumée** — levier de conversion, écritures bloquées par RLS |
+| Calendrier | reste **ouvert** aux gratuits pour le lancement — **gating à trancher ici** |
+| `search_results_limit` | **non appliqué** au lancement — à trancher ici |
+
+**Le filet réel, à ne pas défaire :** `user_has_pro()` garde le `with_check`
+en INSERT **et** en UPDATE sur `recruiter_pipeline`, `recruiter_lists`,
+`recruiter_list_members`, `recruiter_athlete_grades`, `recruiter_favorites`,
+`conversations`, `messages`, `athletes`. C'est lui qui rend la démo
+lecture-seule par construction — pas le client.

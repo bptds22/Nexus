@@ -1593,6 +1593,32 @@ function SkeletonList() {
 
 export function RecruteurPipelineMobile() {
   const { tier, loading: tierLoading } = useSubscription();
+  /* ── DÉCISION PRODUIT (BP, 2026-09-10) — écrite, jamais héritée ──────
+     LE MODE DÉMO GRATUIT DE « MON PROCESSUS » EST ASSUMÉ.
+
+     Un compte Free VOIT le pipeline et ne peut rien y écrire. Ce n'est pas
+     un verrou oublié : c'est un levier de conversion, et il est délibéré
+     depuis 0002c30 (« Pipeline demo mode for Free + sidebar unlock »), qui
+     a retiré le <FeatureGate feature="unlimited_pipeline" requiredTier="pro">
+     posé le matin même par 23c060e.
+
+     ⚠️ DEUX CHOSES CONTREDISENT CE CHOIX AILLEURS, et c'est voulu de les
+     laisser dire le contraire tant que le chantier « source de vérité unique
+     du gating » n'a pas tranché (docs/fast-follow-1.4.2.md) :
+
+       · la NAVIGATION reverrouille — `requiredTier: "pro"` sur l'item de la
+         sidebar (adea65b) et de la MobileTabBar. Le lien est donc bloqué,
+         la route ne l'est pas. C'est ce qui rend la démo atteignable par
+         lien direct et invisible depuis le menu.
+       · la TABLE DE FEATURES du SubscriptionProvider déclare
+         `free.can_use_pipeline: false`. Elle n'est lue par personne.
+
+     CE QUI TIENT VRAIMENT, ce n'est aucun de ces deux-là : c'est la RLS.
+     `user_has_pro()` garde le with_check de recruiter_pipeline en INSERT
+     ET en UPDATE. La démo est donc en lecture seule par construction, pas
+     par politesse du client. Ne retirez pas ces gardes `isFreeDemoMode`
+     en croyant simplifier : elles évitent à l'usager un refus serveur sec.
+     ──────────────────────────────────────────────────────────────────── */
   const isFreeDemoMode = tier === "free";
   const queryClient = useQueryClient();
   const toast = useMobileToast();

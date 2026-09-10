@@ -301,7 +301,12 @@ Read them freely; write to them only with an explicit per-change GO.
 - Cards show: photo, name, position, school, promotion, height/weight, stars, verified badge, favorite heart, distinction badges, recruitment status
 - Grid and list views
 - Favorites read/write from recruiter_favorites table
-- FeatureGate on results beyond first 6
+- ⚠️ **Aucun FeatureGate sur les résultats** (vérifié 2026-09-10). La ligne
+  « FeatureGate on results beyond first 6 » qui figurait ici décrivait un
+  comportement **inexistant**. Un compte gratuit voit TOUS les résultats ;
+  seules les IDENTITÉS sont masquées (`lockContent`). `search_results_limit: 10`
+  existe dans la table de features du SubscriptionProvider mais **n'est lu par
+  personne** — non appliqué au lancement, décision BP 2026-09-10.
 
 ### Recruiter Athlete Profile (/recruteur/athletes/[id]) — MOSTLY WIRED
 - Full Supabase query with all fields
@@ -443,7 +448,16 @@ Un `bottom: 0` **inline** bat cette règle et annule tout : ne jamais poser `bot
 - Coach: Free / Pro / All Star
 - Athlete: Free / Pro
 - "Passe à Pro" sidebar element: small gold card with icon
-- Recherche page: first 6 results free, rest behind FeatureGate
+- Recherche page : **tous** les résultats sont rendus, identités masquées pour
+  le tier gratuit. Il n'y a PAS de coupure à 6 résultats — cette ligne décrivait
+  un comportement jamais implémenté (corrigé 2026-09-10).
+- ⚠️ **Le gating a deux sources de vérité** : la table `RECRUITER_FEATURES`
+  (déclarée, jamais lue) et des `requiredTier` écrits à la main dans chaque page
+  et chaque item de nav. La seconde décide. Chantier de réunification +
+  sort du palier **Starter** (décrit ci-dessous, absent du code, qui ne connaît
+  que `free | pro | all_star`) : voir `docs/fast-follow-1.4.2.md`.
+- « Mon processus » s'affiche en **mode démo** pour un compte gratuit — décision
+  produit assumée, écritures bloquées par `user_has_pro()` en RLS.
 
 ## Feature gating
 
@@ -584,6 +598,10 @@ lib/config/sportBadges.ts              — Badge configuration
 ### Recruiter Tiers
 - **Free:** Anonymized athlete profiles (stats, school, sport, rating visible; name, photo, position, jersey hidden)
 - **Starter:** $9.99/mo or $89/yr — full profile reveal, basic pipeline (2 statuses), auto-messaging, unlimited favorites
+  - ⚠️ **CE PALIER N'EXISTE PAS EN CODE** (vérifié 2026-09-10). `SubscriptionTier`
+    ne connaît que `free | pro | all_star` ; tout le milieu de gamme décrit ici est
+    absent, y compris le « pipeline à 2 statuts ». Statuer dessus fait partie du
+    chantier « source de vérité unique du gating » (`docs/fast-follow-1.4.2.md`).
 - **Pro:** $29.99/mo or $269/yr — full pipeline (8 statuses), full inbox, analytics, trends, custom prospect lists, export
 - Custom prospect lists are EXCLUSIVELY Pro — Free and Starter have no access
 
