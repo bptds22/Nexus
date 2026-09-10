@@ -73,6 +73,10 @@ const HIDE_PATTERNS = [
   'app/pour-les-coachs/page.tsx',
   'app/pour-les-recruteurs/page.tsx',
   'app/pour-les-etudiant-athlete/page.tsx',
+  // Ajoutee le 2026-09-09 avec la vitrine parents du bundle 1.4.1. Ses trois
+  // soeurs etaient deja la ; sans cette ligne, l'export mobile embarquait
+  // MarketingNav + Footer dans l'application.
+  'app/pour-les-parents/page.tsx',
   'app/roadmap/page.tsx',
   'app/guide-recrutement/page.tsx',
   'app/contact/page.tsx',
