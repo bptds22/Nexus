@@ -161,7 +161,17 @@ function useClientNow(): number {
 
 /* ── PipelineHeader ──────────────────────────────────────────── */
 
-function PipelineHeader({ totalCount, onMenuTap }: { totalCount: number; onMenuTap: () => void }) {
+/* Le ⋮ ouvrait la seule porte vers les filtres — et la feuille s'ouvre sur
+   « Trier les athlètes par », si bien qu'on n'y voyait qu'un tri. Les facettes
+   existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
+   NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
+   qu'on ait à ouvrir quoi que ce soit. */
+function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onMenuTap }: {
+  totalCount: number;
+  nActiveFilters: number;
+  onFilterTap: () => void;
+  onMenuTap: () => void;
+}) {
   return (
     <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
       <div className="flex items-start justify-between">
@@ -171,16 +181,37 @@ function PipelineHeader({ totalCount, onMenuTap }: { totalCount: number; onMenuT
             {totalCount} athlète{totalCount !== 1 ? "s" : ""} · Saison 2025-2026
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => { triggerHaptic("Light"); onMenuTap(); }}
-          aria-label="Menu"
-          className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
-            <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => { triggerHaptic("Light"); onFilterTap(); }}
+            aria-label={nActiveFilters > 0 ? `Filtrer — ${nActiveFilters} actif${nActiveFilters > 1 ? "s" : ""}` : "Filtrer"}
+            className="relative h-11 pl-3 pr-3.5 rounded-full flex items-center gap-1.5 active:bg-white/5"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke={nActiveFilters > 0 ? "#E63946" : "#9CA3AF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            <span className={`text-[13px] font-bold ${nActiveFilters > 0 ? "text-[#E63946]" : "text-[#9CA3AF]"}`}>
+              Filtrer
+            </span>
+            {nActiveFilters > 0 && (
+              <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#E63946] text-white text-[10px] font-black leading-none">
+                {nActiveFilters}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => { triggerHaptic("Light"); onMenuTap(); }}
+            aria-label="Menu"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
+              <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -563,6 +594,7 @@ function PipelineMenuSheet({
   filters, setFilters,
   focusMode, setFocusMode,
   cards,
+  cardsFiltrees,
   visibleCount,
 }: {
   open: boolean;
@@ -574,6 +606,10 @@ function PipelineMenuSheet({
   focusMode: boolean;
   setFocusMode: (v: boolean) => void;
   cards: PipelineKanbanCard[];
+  /** Les mêmes, après filtres. La VENTILATION s'y compte ; le TOTAL, lui,
+   *  reste sur `cards` — « combien j'en suis » ne doit pas bouger parce que
+   *  je regarde un sous-ensemble. */
+  cardsFiltrees: PipelineKanbanCard[];
   /** Cartes restantes dans le stage courant, après filtres. */
   visibleCount: number;
 }) {
@@ -652,7 +688,9 @@ function PipelineMenuSheet({
               {(() => {
                 const counts: Record<string, number> = {};
                 for (const s of STAGES) counts[s.key] = 0;
-                for (const c of cards) {
+                /* Ventilation sur les cartes FILTRÉES — le total ci-dessous
+                   reste sur `cards`, brut, à dessein. */
+                for (const c of cardsFiltrees) {
                   const k = (c.status || "").toString().toUpperCase();
                   if (counts[k] !== undefined) counts[k]++;
                 }
@@ -1561,7 +1599,10 @@ export function RecruteurPipelineMobile() {
   useCurrentUser(); // warm cache pour les hooks de mutation
 
   const { data: pipelineData, isLoading: pipelineLoading } = usePipelineCards();
-  const cards = pipelineData?.cards ?? [];
+  /* Mémoïsé : `?? []` fabriquait un tableau NEUF à chaque rendu, si bien que
+     tous les useMemo qui en dépendent se recalculaient sans arrêt — le lint le
+     signalait déjà avant l'ajout des compteurs filtrés. */
+  const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
   const loading = tierLoading || pipelineLoading;
 
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
@@ -1578,6 +1619,18 @@ export function RecruteurPipelineMobile() {
   const updateStage = useUpdatePipelineStage();
 
   // Groupage par stage + counts (counts pour les tabs, tous stages)
+  /* LES COMPTEURS SUIVENT LE FILTRE (patron du web, où FunnelSummary reçoit
+     `filteredCards` et garde `cards.length` à part pour le total).
+
+     Avant, `cardsByStage` était bâti sur `cards` brutes : les pastilles des
+     onglets et la ventilation du menu annonçaient 12 là où la liste filtrée
+     n'en rendait que 3. Un compteur qui ne suit pas le filtre ne décrit plus
+     rien — il dit juste combien il y en aurait sans filtre.
+
+     Le TOTAL, lui, reste brut : c'est « combien d'athlètes je suis », une
+     réponse qui ne doit pas bouger quand je regarde un sous-ensemble. */
+  const cardsFiltrees = useMemo(() => filterPipelineCards(cards, filters), [cards, filters]);
+
   const cardsByStage = useMemo(() => {
     const grouped: Record<string, PipelineKanbanCard[]> = {};
     for (const s of STAGES) grouped[s.lower] = [];
@@ -1587,11 +1640,16 @@ export function RecruteurPipelineMobile() {
     }
     return grouped;
   }, [cards]);
+  /* Les pastilles des onglets comptent sur les cartes FILTRÉES. */
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const s of STAGES) c[s.lower] = cardsByStage[s.lower].length;
+    for (const s of STAGES) c[s.lower] = 0;
+    for (const card of cardsFiltrees) {
+      const k = (card.status || "identifie").toString().toLowerCase();
+      if (c[k] !== undefined) c[k]++;
+    }
     return c;
-  }, [cardsByStage]);
+  }, [cardsFiltrees]);
 
   // Fix 2 (page-par-stage) + iter 6.1b sort/filter/focus + tri prioritaires
   const activeStageCards = useMemo(() => {
@@ -1749,7 +1807,12 @@ export function RecruteurPipelineMobile() {
         </div>
       )}
 
-      <PipelineHeader totalCount={cards.length} onMenuTap={handleMenuTap} />
+      <PipelineHeader
+        totalCount={cards.length}
+        nActiveFilters={activeFilterCount(filters)}
+        onFilterTap={handleMenuTap}
+        onMenuTap={handleMenuTap}
+      />
 
       {/* Free demo banner */}
       {isFreeDemoMode && !loading && cards.length > 0 && (
@@ -1848,6 +1911,7 @@ export function RecruteurPipelineMobile() {
         filters={filters} setFilters={setFilters}
         focusMode={focusMode} setFocusMode={setFocusMode}
         cards={cards}
+        cardsFiltrees={cardsFiltrees}
         visibleCount={activeStageCards.length}
       />
 
