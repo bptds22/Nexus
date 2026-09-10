@@ -19,6 +19,7 @@ import {
   type DispatchProfile,
 } from "@/lib/auth/computeDispatchDestination";
 import { takePendingIntent, resolveDestination } from "@/lib/push/pushIntent";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 type Router = ReturnType<typeof useRouter>;
 
@@ -57,7 +58,7 @@ export async function postLoginDispatch(
 
   // 3) Compte désactivé : signOut AVANT le redirect (canonique). router.replace.
   if (dest.reason === "deactivated") {
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     router.replace(dest.path);
     return { kind: "deactivated" };
   }

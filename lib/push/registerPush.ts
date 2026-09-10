@@ -139,11 +139,32 @@ export async function registerPush(): Promise<void> {
   }
 }
 
-// nettoyage au logout (à brancher plus tard)
+/**
+ * Nettoyage au logout. BRANCHÉ — appelé par `deconnexion()`
+ * (lib/auth/deconnexion.ts), qui est la seule sortie de l'application.
+ *
+ * ORDRE, ET POURQUOI IL COMPTE : à appeler AVANT `auth.signOut()`. La policy
+ * `device_tokens_delete_own` est `USING (auth.uid() = user_id)` ; sans session
+ * le DELETE ne lève rien, il ne touche simplement aucune ligne.
+ */
 export async function clearPushToken(): Promise<void> {
-  if (!Capacitor.isNativePlatform() || !currentToken) return;
+  if (!Capacitor.isNativePlatform()) return;
+
+  // `currentToken` n'est posé que par persistToken, c'est-à-dire seulement si
+  // registerPush a tourné DANS CETTE session JS. Or le jeton peut avoir été
+  // enregistré au lancement précédent : au prochain démarrage la variable est
+  // nulle et la ligne, elle, est toujours en base. S'en tenir à la variable
+  // laissait donc fuir exactement le cas qu'on veut fermer — d'où la relecture.
+  let token = currentToken;
+  if (!token) {
+    try { token = (await FirebaseMessaging.getToken()).token ?? null; }
+    catch { token = null; }   // permission jamais accordée : rien à retirer
+  }
+  if (!token) return;
+
   const supabase = createClient();
-  await supabase.from('device_tokens').delete().eq('token', currentToken);
+  const { error } = await supabase.from('device_tokens').delete().eq('token', token);
+  if (error) console.error('[push] retrait du jeton', error);
   currentToken = null;
   try { await FirebaseMessaging.deleteToken(); } catch { /* no-op */ }
 }

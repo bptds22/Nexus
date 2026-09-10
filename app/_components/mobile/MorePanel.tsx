@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const PUBLIC_BASE = "https://nexussports.ca";
@@ -255,7 +256,7 @@ export default function MorePanel({
             { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
               const supabase = createClient();
               try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-              await supabase.auth.signOut();
+              await deconnexion(supabase);
               router.push("/auth");
             } },
           ],
@@ -380,7 +381,7 @@ export default function MorePanel({
           { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
             const supabase = createClient();
             try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-            await supabase.auth.signOut();
+            await deconnexion(supabase);
             router.push("/auth");
           } },
         ],
@@ -414,7 +415,7 @@ export default function MorePanel({
           { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
             const supabase = createClient();
             try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-            await supabase.auth.signOut();
+            await deconnexion(supabase);
             router.push("/auth");
           } },
         ],

@@ -5,6 +5,7 @@ import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 /* ─────────────────────────────────────────────────────────────────
    CoachSidebar — vertical nav for the coach portal.
@@ -231,7 +232,7 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
 
   const handleLogout = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     router.push("/");
   };
 

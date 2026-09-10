@@ -9,6 +9,7 @@ import { isMinor } from "@/lib/utils/age";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { AthleteParametresMobile } from "@/components/shared/AthleteParametresMobile";
 import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -127,7 +128,7 @@ function ParametresPageDesktop() {
     const supabase = createClient();
     const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: true });
     if (error) { setActionPending(false); showToast("Erreur : " + error.message); return; }
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     router.replace("/compte-desactive");
   }
 

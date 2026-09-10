@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 /* ─────────────────────────────────────────────────────────────────
    RecruiterSidebar — vertical nav for the recruiter portal.
@@ -252,7 +253,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
   const handleLogout = async () => {
     const supabase = createClient();
     try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     router.push("/auth");
   };
 

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 /* ─────────────────────────────────────────────────────────────────
    DeactivationGuard
@@ -37,7 +38,7 @@ export default function DeactivationGuard() {
       if (cancelled) return;
 
       if (profile?.status === "DESACTIVE" && profile?.role !== "SUPER_ADMIN") {
-        await supabase.auth.signOut();
+        await deconnexion(supabase);
         router.replace("/compte-desactive");
         return;
       }

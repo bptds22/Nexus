@@ -18,6 +18,7 @@ import { RolePicker } from "@/components/auth/signup/RolePicker";
 import { ConsentBlock } from "@/components/auth/signup/ConsentBlock";
 import { ParentalBlock } from "@/components/auth/signup/ParentalBlock";
 import { SocialButtonsAuth } from "@/components/auth/SocialButtonsAuth";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -168,7 +169,7 @@ function AuthContent() {
     // navigation post-signup → mauvais rôle → mauvais onboarding / WrongRoutePage.
     // Cas notable : « Confirm email » ON → signUp n'ouvre pas de session, donc
     // sans ce signOut la session précédente reste active.
-    await createClient().auth.signOut();
+    await deconnexion();
 
     const { signUp } = await import("@/lib/supabase/auth.actions");
     const args = sf.buildSignupArgs();
