@@ -12,41 +12,6 @@ import { notFound } from "next/navigation";
    reputation section, no ressources/guide.
 ═══════════════════════════════════════════════════════════════ */
 
-type TierKey = "FREE" | "PRO";
-
-// Tier per feature card — order matches t.coachLanding.features.items
-const FEATURE_TIERS: TierKey[] = [
-  "FREE", "FREE", "FREE", "FREE", "FREE", "FREE",
-  "PRO", "PRO", "PRO", "PRO", "PRO",
-];
-
-// Visual config for the pricing cards (order matches dictionary tiers)
-type PricingVisual = {
-  priceColor: string;
-  checkColor: string;
-  highlighted?: boolean;
-  buttonVariant: "outline-red" | "filled-red" | "outline-amber";
-};
-
-const PRICING_VISUALS: PricingVisual[] = [
-  {
-    priceColor: "text-[#22C55E]",
-    checkColor: "text-[#22C55E] bg-[#22C55E]/15",
-    buttonVariant: "outline-red",
-  },
-  {
-    priceColor: "text-white",
-    checkColor: "text-[#E63946] bg-[#E63946]/15",
-    highlighted: true,
-    buttonVariant: "filled-red",
-  },
-  {
-    priceColor: "text-white",
-    checkColor: "text-[#F59E0B] bg-[#F59E0B]/15",
-    buttonVariant: "outline-amber",
-  },
-];
-
 /* ── Atoms ──────────────────────────────────────────────────── */
 
 function RedLabel({ children }: { children: React.ReactNode }) {
@@ -63,11 +28,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       {children}
     </h2>
   );
-}
-
-function TierPill({ tier, freeLabel, proLabel }: { tier: TierKey; freeLabel: string; proLabel: string }) {
-  if (tier === "FREE") return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[10px] font-bold uppercase tracking-wider">{freeLabel}</span>;
-  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">{proLabel}</span>;
 }
 
 function GlowFrame({ children }: { children: React.ReactNode }) {
@@ -410,95 +370,11 @@ export default function PourLesCoachsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-12">
-              {T.features.items.map((f, i) => {
-                const tier = FEATURE_TIERS[i] ?? "PRO";
+              {T.features.items.map((f) => {
                 return (
                   <div key={f.title} className="bg-[#1A1D24] rounded-2xl border border-white/[0.06] p-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <TierPill tier={tier} freeLabel={T.features.tierFree} proLabel={T.features.tierPro} />
-                    </div>
                     <h3 className="nx-display text-[18px] font-extrabold text-white">{f.title}</h3>
                     <p className="text-[14px] text-white/75 leading-relaxed mt-2">{f.body}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ─── SECTION 9 — PRIX (3-tier comparison) ─────────── */}
-        <section id="prix" className="border-b border-white/[0.06]">
-          <div className="max-w-[1200px] mx-auto px-6 py-20">
-            <div className="text-center">
-              <RedLabel>{T.pricing.eyebrow}</RedLabel>
-              <SectionTitle>{T.pricing.title}</SectionTitle>
-            </div>
-
-            <div className="mt-14 mx-auto max-w-[1000px] flex flex-col md:flex-row items-stretch gap-4">
-              {T.pricing.tiers.map((tier, i) => {
-                const v = PRICING_VISUALS[i];
-                const btnClass =
-                  v.buttonVariant === "filled-red"
-                    ? "bg-[#E63946] text-white hover:bg-[#D42B22] border border-[#E63946]"
-                    : v.buttonVariant === "outline-amber"
-                    ? "border border-[#F59E0B] text-[#F59E0B] hover:bg-[#F59E0B]/10"
-                    : "border border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10";
-                return (
-                  <div
-                    key={tier.name}
-                    className={`relative flex-1 bg-[#1A1D24] rounded-xl flex flex-col min-h-[620px] p-8 ${
-                      v.highlighted ? "border-2 border-[#E63946]" : "border border-white/[0.06]"
-                    }`}
-                  >
-                    {tier.badge && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex px-3 py-1 rounded-full bg-[#E63946] text-white text-[10px] font-bold uppercase tracking-wider">
-                        {tier.badge}
-                      </span>
-                    )}
-
-                    {/* Header */}
-                    <h3 className="text-[20px] font-bold text-white">{tier.name}</h3>
-
-                    {/* Price */}
-                    <div className="mt-4 flex items-baseline gap-1.5">
-                      <span className={`nx-display text-[36px] font-extrabold leading-none ${v.priceColor}`}>
-                        {tier.price}
-                      </span>
-                      {tier.priceSuffix && (
-                        <span className="text-[16px] text-white/55 font-semibold">{tier.priceSuffix}</span>
-                      )}
-                    </div>
-                    <p className="text-[12px] text-white/55 mt-2">{tier.subtitle}</p>
-
-                    {/* Divider */}
-                    <div className="h-px bg-white/[0.06] my-6" />
-
-                    {/* Feature list */}
-                    <div className="flex-1">
-                      {tier.subheader && (
-                        <p className="text-[13px] text-white/55 mb-3">{tier.subheader}</p>
-                      )}
-                      <ul className="space-y-2">
-                        {tier.bullets.map((b) => (
-                          <li key={b} className="flex items-start gap-3 text-[14px] text-white/85 leading-snug">
-                            <span className={`shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center ${v.checkColor}`}>
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </span>
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Button pinned to bottom */}
-                    <Link
-                      href="/inscription"
-                      className={`mt-8 inline-flex items-center justify-center w-full rounded-lg font-bold uppercase tracking-wider text-[13px] py-3 px-5 transition-colors ${btnClass}`}
-                    >
-                      {T.pricing.cta}
-                    </Link>
                   </div>
                 );
               })}
