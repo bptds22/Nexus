@@ -166,11 +166,10 @@ function useClientNow(): number {
    existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
    NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
    qu'on ait à ouvrir quoi que ce soit. */
-function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onMenuTap }: {
+function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
   totalCount: number;
   nActiveFilters: number;
   onFilterTap: () => void;
-  onMenuTap: () => void;
 }) {
   return (
     <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
@@ -181,37 +180,37 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onMenuTap }: 
             {totalCount} athlète{totalCount !== 1 ? "s" : ""} · Saison 2025-2026
           </p>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => { triggerHaptic("Light"); onFilterTap(); }}
-            aria-label={nActiveFilters > 0 ? `Filtrer — ${nActiveFilters} actif${nActiveFilters > 1 ? "s" : ""}` : "Filtrer"}
-            className="relative h-11 pl-3 pr-3.5 rounded-full flex items-center gap-1.5 active:bg-white/5"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke={nActiveFilters > 0 ? "#E63946" : "#9CA3AF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
-            <span className={`text-[13px] font-bold ${nActiveFilters > 0 ? "text-[#E63946]" : "text-[#9CA3AF]"}`}>
-              Filtrer
+        {/* UN SEUL bouton. Le ⋮ ouvrait exactement la même feuille — un second
+            déclencheur pour la même porte, sans rien de plus derrière lui.
+
+            Des CURSEURS plutôt qu'un entonnoir : la feuille ne contient pas que
+            des filtres, elle porte aussi les statistiques, le tri et le mode
+            focus. Un entonnoir aurait promis « filtres » et livré quatre
+            sections ; des curseurs disent « réglages », ce qui est vrai. La
+            pastille, elle, ne compte que les filtres actifs — c'est la seule
+            des quatre sections qui ait un état à annoncer. */}
+        <button
+          type="button"
+          onClick={() => { triggerHaptic("Light"); onFilterTap(); }}
+          aria-label={
+            nActiveFilters > 0
+              ? `Réglages : statistiques, tri, filtres, mode focus — ${nActiveFilters} filtre${nActiveFilters > 1 ? "s" : ""} actif${nActiveFilters > 1 ? "s" : ""}`
+              : "Réglages : statistiques, tri, filtres, mode focus"
+          }
+          aria-haspopup="dialog"
+          className="relative w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke={nActiveFilters > 0 ? "#E63946" : "#9CA3AF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="7" x2="20" y2="7" /><circle cx="10" cy="7" r="2.2" />
+            <line x1="4" y1="14" x2="20" y2="14" /><circle cx="16" cy="14" r="2.2" />
+          </svg>
+          {nActiveFilters > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#E63946] text-white text-[10px] font-black leading-none">
+              {nActiveFilters}
             </span>
-            {nActiveFilters > 0 && (
-              <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#E63946] text-white text-[10px] font-black leading-none">
-                {nActiveFilters}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => { triggerHaptic("Light"); onMenuTap(); }}
-            aria-label="Menu"
-            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
-              <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
-            </svg>
-          </button>
-        </div>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -1837,7 +1836,6 @@ export function RecruteurPipelineMobile() {
         totalCount={cards.length}
         nActiveFilters={activeFilterCount(filters)}
         onFilterTap={handleMenuTap}
-        onMenuTap={handleMenuTap}
       />
 
       {/* Free demo banner */}

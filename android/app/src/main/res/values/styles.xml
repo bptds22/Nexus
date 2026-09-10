@@ -13,14 +13,26 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <!-- Barres système fixes = background app #111317 (PAS d'edge-to-edge :
-             le contenu reste au-dessus). windowLight*Bar=false → glyphes clairs
-             sur fond sombre. navigationBarColor peint la nav bar du bas (aucun
-             plugin requis pour une couleur fixe). -->
-        <item name="android:statusBarColor">#111317</item>
-        <item name="android:navigationBarColor">#111317</item>
+        <!-- windowLight*Bar=false → glyphes CLAIRS (heure, batterie, pilule de
+             geste) sur fond sombre. Ces deux-là comptent encore. -->
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- ⚠️ statusBarColor / navigationBarColor sont DÉPRÉCIÉS ET IGNORÉS
+             depuis targetSdk 35+ : Android impose l'edge-to-edge et rend les
+             deux barres TRANSPARENTES. Ils sont conservés ci-dessous pour les
+             appareils plus anciens, où ils peignent encore.
+
+             Sur Android 15/16, ce qui transparaît sous les barres n'est donc
+             plus leur couleur : c'est le FOND DE FENÊTRE. Or les parents
+             AppCompat *.Light.* et *.DayNight le posent CLAIR — d'où les deux
+             bandes blanches, en haut et en bas, observées sur un écran par
+             ailleurs sombre (recette 2026-09-10). Le déclarer explicitement est
+             le seul réglage qui agisse encore sur les deux plateformes. -->
+        <item name="android:windowBackground">#111317</item>
+        <item name="android:colorBackground">#111317</item>
+        <item name="android:statusBarColor">#111317</item>
+        <item name="android:navigationBarColor">#111317</item>
     </style>
 
 

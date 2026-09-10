@@ -235,3 +235,41 @@ en INSERT **et** en UPDATE sur `recruiter_pipeline`, `recruiter_lists`,
 `recruiter_list_members`, `recruiter_athlete_grades`, `recruiter_favorites`,
 `conversations`, `messages`, `athletes`. C'est lui qui rend la démo
 lecture-seule par construction — pas le client.
+
+---
+
+## 11. Redirection inexpliquée `/recruteur/recherche` → `/recruteur/tableau-de-bord`
+
+**Rencontrée 2026-09-10** en pilotant la WebView par CDP sur le build 1.4.1.
+
+Toute navigation programmatique vers `https://localhost/recruteur/recherche/`
+— `Page.navigate` comme `location.href = …` — **rebondit systématiquement**
+vers `/recruteur/tableau-de-bord/`. Trois tentatives, même résultat, avec une
+session recruteur valide.
+
+L'écran de recherche s'atteint donc normalement **par l'onglet**, mais pas par
+URL. Ça bloque l'inspection outillée de cet écran, et surtout : si un
+**deep-link push** pointe un jour vers la recherche, il atterrira ailleurs sans
+rien dire.
+
+Piste non vérifiée : une garde de route, un `redirect()` de layout, ou le
+routeur client qui réécrit au montage. **Non élucidé — à instruire.**
+
+## 12. Barres système Android — corrigé en 1.4.1, mais la leçon est à garder
+
+Symptôme : deux **bandes blanches**, en haut et en bas, sur une app par
+ailleurs sombre.
+
+Cause : depuis **targetSdk 35+**, `android:statusBarColor` et
+`android:navigationBarColor` sont **dépréciés et ignorés** — l'edge-to-edge est
+imposé et les deux barres deviennent transparentes. Ce qui transparaît alors
+est le **fond de fenêtre**, que les parents AppCompat `*.Light.*` et
+`*.DayNight` posent **clair**.
+
+Correctif appliqué : `android:windowBackground` + `android:colorBackground`
+déclarés à `#111317` dans `AppTheme.NoActionBar`. Les deux anciens attributs
+restent pour les appareils plus anciens, où ils peignent encore.
+
+**À vérifier au premier build iOS** : le même raisonnement ne s'applique pas,
+mais l'équivalent (couleur de fond de fenêtre sous les safe areas) mérite un
+contrôle avant soumission.
