@@ -10,6 +10,7 @@ import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
 import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
+import CoachFicheActionsMobile from "@/components/shared/coach/CoachFicheActionsMobile";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -1291,7 +1292,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [actionSheetDragOffset, setActionSheetDragOffset] = useState(0);
   const [isDraggingSheet, setIsDraggingSheet] = useState(false);
 
-  // Bottom action bar hide-on-scroll-down (Fix 6 iter 3.5)
+  /* Bottom action bar hide-on-scroll-down (Fix 6 iter 3.5).
+
+     RECRUTEUR SEULEMENT depuis le passage du coach au FAB (Lot D3) : sa
+     barre fait 160px avec le bandeau RSEQ et masque vraiment le contenu,
+     donc l'escamotage garde son sens là. Le FAB coach, lui, fait 56px
+     dans un coin — il n'a rien à masquer, il reste posé. */
   const [actionBarVisible, setActionBarVisible] = useState(true);
   const lastScrollYRef = useRef(0);
 
@@ -3221,7 +3227,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         document.body,
       )}
 
-      {/* ══ COACH-only — sticky "Modifier le profil" CTA + SuggestionSheet (Step 6) ══ */}
+      {/* ══ COACH-only — FAB + feuille d'actions + SuggestionSheet (Step 6) ══ */}
       {isCoach && trOpen && trState && (
         <AthleteTransferSheet
           athleteId={athleteId}
@@ -3237,63 +3243,60 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         />
       )}
 
-      {isCoach && mounted && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed left-0 right-0 z-30 px-3 py-2.5"
-          style={{
-            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
-            backgroundColor: "rgba(17,19,23,0.85)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            borderTop: "0.5px solid rgba(255,255,255,0.08)",
-            transform: `translateY(${actionBarVisible && !sheetSuggestion ? 0 : 120}px)`,
-            transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
-        >
-          <div className="flex items-stretch gap-2">
-            {/* Q4 — Envoyer un message (athlète↔coach). Find-or-create + route
-                vers le fil coach. Le coach est déjà sur la fiche de l'athlète. */}
-            <button
-              type="button"
-              onClick={async () => {
-                triggerHaptic("Light");
+      {/* ══ COACH — FAB + feuille d'actions (Lot D3) ══
+          La barre à trois boutons est morte : trois couleurs pour trois
+          actions dont aucune n'est un statut, et un « Transférer » réduit à
+          une icône faute de largeur. L'état d'ouverture vit dans le
+          composant, pas ici — ce corps ouvre par un retour anticipé devant
+          ses hooks, un hook de plus aurait grossi cette dette-là. */}
+      {isCoach && mounted && (
+        <CoachFicheActionsMobile
+          athleteName={a ? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() : ""}
+          masque={!!sheetSuggestion}
+          actions={[
+            {
+              libelle: "Message",
+              contexte: "Écris à l'athlète",
+              icone: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              ),
+              /* Q4 — find-or-create athlète↔coach puis route vers le fil
+                 coach. Le coach est déjà sur la fiche de l'athlète. */
+              onTap: async () => {
                 const supabase = createClient();
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
                 const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
                 if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
                 else toast.error({ message: "Impossible d'ouvrir la conversation" });
-              }}
-              className="flex items-center justify-center gap-1.5 shrink-0 px-4 py-4 rounded-2xl border border-[#22C55E]/40 text-[#22C55E] font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#22C55E]/10"
-              aria-label="Envoyer un message"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              Message
-            </button>
-            {/* Lot J — même ordre que le web : MESSAGE · TRANSFÉRER · MODIFIER.
-                Icône seule : la barre porte déjà deux libellés, un troisième
-                la ferait déborder sur les petits écrans. Le libellé vit dans
-                aria-label et dans le titre du panneau. */}
-            {trState && canTransferAthlete(trState) && (
-              <button
-                type="button"
-                onClick={() => { void triggerHaptic("Light"); setTrOpen(true); }}
-                className="flex items-center justify-center shrink-0 px-4 py-4 rounded-2xl border border-[#3B82F6]/40 text-[#3B82F6] active:bg-[#3B82F6]/10"
-                aria-label={`Transférer — équipe actuelle : ${trState.currentTeamName ?? "sans équipe"}`}
-                title="Transférer"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              },
+            },
+            /* Sans équipe transférable, l'entrée n'existe pas — plutôt
+               qu'exister désactivée. Même condition qu'avant. */
+            ...(trState && canTransferAthlete(trState) ? [{
+              libelle: "Transférer",
+              contexte: `Équipe actuelle : ${trState.currentTeamName ?? "sans équipe"}`,
+              icone: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
                   <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
                 </svg>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic("Medium");
+              ),
+              onTap: () => setTrOpen(true),
+            }] : []),
+            {
+              libelle: "Modifier le profil",
+              contexte: "Ouvre le formulaire complet",
+              icone: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              ),
+              onTap: () => {
+                void triggerHaptic("Medium");
                 // Capacitor static export : matche le pattern stash-puis-push
                 // d'app/page.tsx (errorPath fallback). Sans le stash, le shell
                 // placeholder/modifier reçoit athleteId="placeholder" et la
@@ -3305,18 +3308,10 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 } else {
                   router.push(`/coach/athletes/${id}/modifier`);
                 }
-              }}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Modifier le profil
-            </button>
-          </div>
-        </div>,
-        document.body,
+              },
+            },
+          ]}
+        />
       )}
 
       {/* SuggestionSheet (coach only, portaled inside the sheet component). */}
