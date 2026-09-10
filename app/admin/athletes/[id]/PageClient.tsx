@@ -11,6 +11,7 @@ import { embeddedSchool } from "@/lib/config/schoolTypes";
 import FormModeToggle from "@/app/coach/components/FormModeToggle";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote } from "@/lib/evaluations/presence";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -1524,7 +1525,7 @@ export default function AdminAthleteDetailPage() {
         </section>
 
         {/* COACH REPORT */}
-        {(a.coachReport || coteGlobale > 0) && (
+        {(a.coachReport || aUneCote(coteGlobale)) && (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>
@@ -1540,7 +1541,7 @@ export default function AdminAthleteDetailPage() {
                 </>
               )}
               <div className={a.coachReport ? "mt-3" : ""}>
-                {!isDetailed && coteGlobale > 0 && (
+                {!isDetailed && aUneCote(coteGlobale) && (
                   <div className="mt-3 pl-5 flex items-center gap-3">
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
                     <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
@@ -1549,7 +1550,7 @@ export default function AdminAthleteDetailPage() {
                 )}
                 {isDetailed && (
                   <div className="mt-5 pl-5">
-                    {coteGlobale > 0 && (
+                    {aUneCote(coteGlobale) && (
                       <div className="flex items-center gap-3 mb-4">
                         <StarRating rating={coteGlobale} size="md" showNumber={false} />
                         <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>

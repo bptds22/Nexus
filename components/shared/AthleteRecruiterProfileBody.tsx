@@ -34,6 +34,7 @@ import SuccessToast, { type SuccessToastData } from "@/components/ui/SuccessToas
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import { aUneCote } from "@/lib/evaluations/presence";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
@@ -2004,7 +2005,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                absence de note : c'est une note de zero, affirmee sur un
                athlete que personne n'a evalue, et lue par un recruteur comme
                par un partenaire. Un caractere, les deux portails. */
-           (a.coachReport || coteGlobale > 0) ? (
+           (a.coachReport || aUneCote(coteGlobale)) ? (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>
@@ -2041,7 +2042,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                         que personne n'a noté, lue par un recruteur. Le mode
                         masquait le défaut ; le retirer sans reprendre la garde
                         l'aurait rendu définitif. */}
-                    {coteGlobale > 0 && (
+                    {aUneCote(coteGlobale) && (
                     <div className="flex items-center gap-3 mb-4">
                       <StarRating rating={coteGlobale} size="md" showNumber={false} />
                       <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>

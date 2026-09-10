@@ -9,6 +9,7 @@ import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/typ
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote, aDesCriteres as aDesCriteresPartage } from "@/lib/evaluations/presence";
 import { createClient } from "@/lib/supabase/client";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
@@ -514,7 +515,7 @@ export default function CoachAthleteProfilePage() {
      à « 0/5 », et une note de zéro se trouve affirmée sur un jeune que
      personne n'a noté. Le toggle décide de l'envie de détail ; `aDesCriteres`
      décide de ce qu'il y a à détailler. Les deux doivent être vrais. */
-  const aDesCriteres = ratedTraits.length > 0;
+  const aDesCriteres = aDesCriteresPartage(a.traitRatings);
 
   // Attribution — la note/éval affichée (la plus récente) n'est PAS celle du
   // coach connecté : afficher « Évalué par {Prénom Nom} » (typiquement le

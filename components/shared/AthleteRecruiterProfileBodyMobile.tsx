@@ -54,6 +54,7 @@ import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import { aUneCote, aDesCriteres } from "@/lib/evaluations/presence";
 import {
   calculateCompletion,
   type AthleteLike,
@@ -2462,7 +2463,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#F59E0B" stroke="none" aria-hidden>
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span className="text-[14px] font-bold text-white">{coteGlobale.toFixed(1)}</span>
+            {/* Une note ABSENTE n'est pas une note de ZÉRO (cf.
+                lib/evaluations/presence). Sans cote, la barre ne montre que
+                les étoiles vides — elle n'affirme pas « 0,0 ». */}
+            {aUneCote(coteGlobale) && (
+              <span className="text-[14px] font-bold text-white">{coteGlobale.toFixed(1)}</span>
+            )}
           </div>
         </div>
       </div>
@@ -2556,7 +2562,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   <div className="flex flex-col items-center pt-6 pb-6">
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
                     <p className="text-[32px] font-head font-black text-white mt-3 leading-none">
-                      {coteGlobale.toFixed(1)}<span className="text-[16px] text-[#6B7280] font-normal">/5</span>
+                      {aUneCote(coteGlobale) ? <>{coteGlobale.toFixed(1)}<span className="text-[16px] text-[#6B7280] font-normal">/5</span></> : <span className="text-[16px] text-[#6B7280] font-normal">Pas encore évalué</span>}
                     </p>
                     <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mt-2">Cote Globale</p>
                     {/* #1 attribution : quand la cote publique vient d'un AUTRE
@@ -2564,7 +2570,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                     {a.evaluatorCoachId && a.evaluatorName && a.evaluatorCoachId !== currentUserId && (
                       <p className="text-[11px] text-[#3B82F6] font-semibold mt-1">Évaluée par {a.evaluatorName}</p>
                     )}
-                    {isDetailed && ratedTraits.length > 0 && (
+                    {isDetailed && aDesCriteres(a.traitRatings) && (
                       <p className="text-[11px] text-[#6B7280] mt-1">Moyenne sur {ratedTraits.length} {ratedTraits.length > 1 ? "traits" : "trait"}</p>
                     )}
                   </div>
@@ -2582,7 +2588,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 )}
 
                 {/* DETAILED rapport */}
-                {isDetailed && a.traitRatings && ratedTraits.length > 0 && (
+                {isDetailed && aDesCriteres(a.traitRatings) && (
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Détail par trait</h2>
                     <div>
