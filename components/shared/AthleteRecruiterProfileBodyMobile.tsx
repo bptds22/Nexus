@@ -11,7 +11,10 @@ import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
 import CoachFicheActionsMobile from "@/components/shared/coach/CoachFicheActionsMobile";
-import SegmentedTabs from "@/components/shared/SegmentedTabs";
+import SegmentedTabs from "@/components/shared/SegmentedTabs";
+import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import RelanceFiche from "@/components/shared/RelanceFiche";
+import { plateformeDeUrl, type ClePlateforme } from "@/lib/config/plateformesLien";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -1919,6 +1922,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     toast.success({ message: iso ? "Date de visite enregistrée" : "Date de visite effacée" });
   }
 
+
   async function handleFlagSubmit() {
     if (!flagReason || flagSubmitting) return;
     if (!athleteUserId) {
@@ -1990,11 +1994,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   ];
   const hasTests = tests.some((t) => t.value);
 
-  const mediaLinks: { label: string; url?: string; iconName: string }[] = [
-    { label: "Hudl", url: a.hudlUrl, iconName: "chart" },
-    { label: "YouTube", url: a.youtubeUrl, iconName: "monitor" },
-    { label: "Instagram", url: a.instagramUrl, iconName: "camera" },
+  /* Colonnes NOMMÉES : la plateforme est connue, rien à deviner. Les trois
+     URL LIBRES (faits saillants, match complet, entraînement) passent, elles,
+     par plateformeDeUrl — l'URL dit la marque, et un domaine inconnu garde son
+     nom d'hôte en libellé plutôt qu'un « Lien » qui n'apprend rien. */
+  const mediaLinks: { label: string; url?: string; cle: ClePlateforme }[] = [
+    { label: "Hudl", url: a.hudlUrl, cle: "hudl" },
+    { label: "YouTube", url: a.youtubeUrl, cle: "youtube" },
+    { label: "Instagram", url: a.instagramUrl, cle: "instagram" },
   ];
+  const liensVideo = ([
+    { titre: "Faits saillants", url: a.highlightVideoUrl },
+    { titre: "Match complet", url: a.fullGameUrl },
+  ] as { titre: string; url?: string }[])
+    .map((v) => ({ ...v, p: plateformeDeUrl(v.url) }))
+    .filter((v) => v.url && v.p);
 
   /* ── Statut recrutement label (lisible) ── */
   const recruitmentLabel = (() => {
@@ -2398,6 +2412,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           </div>
         )}
 
+        {/* Relance — la DATE seule ; la note reste au pipeline. Le pourquoi
+            (frontières de données coach/recruteur) est écrit en tête de
+            RelanceFiche, avec la décision produit qui le fixe.
+            Gate : palier Pro ET athlète déjà dans le processus — sans ligne,
+            l'UPDATE n'aurait rien à écrire et la RLS refuserait l'INSERT. */}
+        {isRecruiter && canUsePipeline && myPipelineStage && (
+          <RelanceFiche athleteId={id} />
+        )}
+
         {/* Visite planifiée + export agenda — gate strict : stage ET date. */}
         {isRecruiter && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
           <div className="mt-4">
@@ -2638,13 +2661,25 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 )}
 
                 {/* DETAILED liens média (Hudl/YouTube/IG) */}
-                {isDetailed && (a.hudlUrl || a.youtubeUrl || a.instagramUrl) && (
+                {isDetailed && (a.hudlUrl || a.youtubeUrl || a.instagramUrl || liensVideo.length > 0) && (
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Liens externes</h2>
                     <div className="flex flex-col gap-2">
-                      {mediaLinks.filter((m) => ["Hudl", "YouTube", "Instagram"].includes(m.label) && m.url).map((m) => (
+                      {liensVideo.map((v) => (
+                        <a key={v.titre} href={v.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
+                          <PlateformeIcone cle={v.p!.cle} size={18} />
+                          <span className="flex-1 min-w-0 text-[14px] font-bold text-[#c8c8cc] truncate">
+                            {v.titre}
+                            <span className="ml-1.5 font-normal text-[12px] text-[#6b7280]">{v.p!.libelle}</span>
+                          </span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-[#6b7280] shrink-0">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                        </a>
+                      ))}
+                      {mediaLinks.filter((m) => m.url).map((m) => (
                         <a key={m.label} href={m.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
-                          <NxIcon name={m.iconName} size={18} className="text-[#6B7280]" />
+                          <PlateformeIcone cle={m.cle} size={18} />
                           <span className="flex-1 text-[14px] font-bold text-[#c8c8cc]">{m.label}</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-[#6b7280]">
                             <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
