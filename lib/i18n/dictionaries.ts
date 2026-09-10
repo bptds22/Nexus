@@ -223,23 +223,7 @@ export interface Dictionary {
       eyebrow: string;
       title: string;
       lede: string;
-      tierFree: string;
-      tierPro: string;
       items: { title: string; body: string }[];
-    };
-    pricing: {
-      eyebrow: string;
-      title: string;
-      cta: string;
-      tiers: {
-        name: string;
-        price: string;
-        priceSuffix?: string;
-        subtitle: string;
-        subheader?: string;
-        bullets: string[];
-        badge?: string;
-      }[];
     };
     cta: {
       title1: string;
@@ -865,9 +849,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       features: {
         eyebrow: "Fonctionnalités",
         title: "Tout ce qu'il te faut pour gérer tes athlètes.",
-        lede: "Crée des profils et vérifie tes athlètes gratuitement. Débloque l'intelligence avec Pro.",
-        tierFree: "Gratuit",
-        tierPro: "Pro · 9,99$/mois",
+        lede: "Crée des profils et vérifie tes athlètes gratuitement.",
         items: [
           { title: "Compte entraîneur", body: "Crée ton compte, associe-toi à ton école." },
           { title: "Gestion des athlètes", body: "Crée et gère les profils. Ajout illimité." },
@@ -880,55 +862,6 @@ export const dictionaries: Record<Lang, Dictionary> = {
           { title: "Placement", body: "Suis tes athlètes — qui est recruté, par quel CÉGEP." },
           { title: "Ma réputation", body: "Tes badges, ton historique, ta crédibilité." },
           { title: "Analytics", body: "Tendances, activité recruteurs, performance pipeline." },
-        ],
-      },
-      pricing: {
-        eyebrow: "Prix",
-        title: "Un seul objectif — tes joueurs.",
-        cta: "Sois le Nex",
-        tiers: [
-          {
-            name: "Gratuit",
-            price: "0$",
-            subtitle: "Pour commencer",
-            bullets: [
-              "Créer un compte et rejoindre une école",
-              "Créer et gérer les profils athlètes",
-              "Évaluations simplifiées (5 critères)",
-              "Vérifier les profils (badge bleu)",
-              "Recevoir les messages de recruteurs",
-              "Notifications d'activité",
-            ],
-          },
-          {
-            name: "Pro",
-            price: "9,99$",
-            priceSuffix: "/mois",
-            subtitle: "ou 79$/an — économise 34%",
-            subheader: "Tout ce qui est gratuit, plus :",
-            bullets: [
-              "Accès à Mon école (page complète de ton école)",
-              "Stats école (vues, tendances, activité)",
-              "Placement (suivi de tes athlètes recrutés)",
-              "Ma réputation (badges et historique)",
-              "Analytics avancé (tendances et performance)",
-            ],
-            badge: "Populaire",
-          },
-          {
-            name: "All Star",
-            price: "19,99$",
-            priceSuffix: "/mois",
-            subtitle: "ou 159$/an — économise 34%",
-            subheader: "Tout du plan Pro, plus :",
-            bullets: [
-              "Gestion complète de l'école (ajout et gestion des coachs)",
-              "Analytique avancée par athlète et par équipe",
-              "Suivi détaillé des placements en CÉGEP",
-              "Statistiques d'école complètes",
-              "Outils d'invitation pour les entraîneurs",
-            ],
-          },
         ],
       },
       cta: {
@@ -1745,9 +1678,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       features: {
         eyebrow: "Features",
         title: "Everything you need to manage your athletes.", // TODO-EN
-        lede: "Create profiles and verify your athletes for free. Unlock the intelligence with Pro.",
-        tierFree: "Free",
-        tierPro: "Pro · $9.99/mo",
+        lede: "Create profiles and verify your athletes for free.",
         items: [
           { title: "Coach account", body: "Create your account, link to your school." },
           { title: "Athlete management", body: "Create and manage profiles. Unlimited additions." },
@@ -1760,56 +1691,6 @@ export const dictionaries: Record<Lang, Dictionary> = {
           { title: "Placement", body: "Track your athletes — who's recruited, by which CÉGEP." },
           { title: "My reputation", body: "Your badges, your history, your credibility." },
           { title: "Analytics", body: "Trends, recruiter activity, pipeline performance." },
-        ],
-      },
-      pricing: {
-        eyebrow: "Pricing",
-        title: "One goal — your players.", // TODO-EN
-        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
-        cta: "Be the Nex",
-        tiers: [
-          {
-            name: "Free",
-            price: "$0",
-            subtitle: "To get started",
-            bullets: [
-              "Create an account and join a school",
-              "Create and manage athlete profiles",
-              "Simplified evaluations (5 criteria)",
-              "Verify profiles (blue badge)",
-              "Receive recruiter messages",
-              "Activity notifications",
-            ],
-          },
-          {
-            name: "Pro",
-            price: "$9.99",
-            priceSuffix: "/mo",
-            subtitle: "or $79/yr — save 34%",
-            subheader: "Everything free, plus:",
-            bullets: [
-              "Access to My School (full school page)",
-              "School stats (views, trends, activity)",
-              "Placement (track your recruited athletes)",
-              "My reputation (badges and history)",
-              "Advanced analytics (trends and performance)",
-            ],
-            badge: "Popular",
-          },
-          {
-            name: "All Star",
-            price: "$19.99",
-            priceSuffix: "/mo",
-            subtitle: "or $159/yr — save 34%",
-            subheader: "Everything Pro, plus:",
-            bullets: [
-              "Full school management (add and manage coaches)",
-              "Advanced analytics by athlete and team",
-              "Detailed tracking of CÉGEP placements",
-              "Complete school statistics",
-              "Invitation tools for coaches",
-            ],
-          },
         ],
       },
       cta: {
