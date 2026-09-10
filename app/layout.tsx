@@ -13,6 +13,7 @@ import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { KeyboardInset } from "@/components/mobile/KeyboardInset";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
 import { ForceUpdateGate } from "@/components/mobile/ForceUpdateGate";
+import { InterimCoachModal } from "@/components/mobile/InterimCoachModal";
 import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
 import { OAuthDeepLinkHandler } from "@/components/mobile/auth/OAuthDeepLinkHandler";
 import { AuthSync } from "@/components/auth/AuthSync";
@@ -252,6 +253,12 @@ export default function RootLayout({
                     froid — donc coût perçu nul. Le mur, lui, est un overlay
                     z-[100] : il couvre le splash comme le reste. */}
                 <ForceUpdateGate />
+                {/* L'alerte « entraîneur-chef par intérim », une fois par
+                    démarrage à froid, mobile seulement. z-[90] : elle passe
+                    SOUS le mur de mise à jour, qui reste prioritaire. Le
+                    bandeau du tableau de bord n'est pas retiré pour autant —
+                    web et mobile le gardent. */}
+                <InterimCoachModal />
                 <SplashGate>{children}</SplashGate>
               </MobileToastProvider>
             </SubscriptionProvider>
