@@ -69,7 +69,7 @@ import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import {
   type BadgeEntry, type BadgeCatalogueEntry,
 } from "@/lib/config/badgeCatalogue";
-import { Card, ChipsBlock, DateRow, DetailedTag, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
+import { Card, ChipsBlock, DateRow, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { diffTeamHistory, isTeamHistoryDiffEmpty, summarizeTeamHistoryDiff } from "@/components/shared/athlete/teamHistory";
 import type { TeamHistoryEntry } from "@/lib/types/models";
