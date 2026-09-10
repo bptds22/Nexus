@@ -58,6 +58,7 @@ import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import VisitDateEditor from "@/components/shared/VisitDateEditor";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { triggerHaptic } from "@/lib/haptics";
+import { aUneCote } from "@/lib/evaluations/presence";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
 
@@ -331,10 +332,18 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
               2026-09-04) — même regroupement qu'au kanban web. */}
           <span className="flex-shrink-0 ml-auto flex items-center gap-1.5">
             <GradeChip grade={card.grade} />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            <span className="text-sm font-bold text-white">{(card.coach_rating ?? 0).toFixed(1)}</span>
+            {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence).
+                Sans elle, ni étoile ni chiffre — la carte n'affirme rien. */}
+            {aUneCote(card.coach_rating) ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span className="text-sm font-bold text-white">{card.coach_rating.toFixed(1)}</span>
+              </>
+            ) : (
+              <span className="text-[11px] text-[#6B7280]">Pas encore évalué</span>
+            )}
           </span>
         </div>
 
@@ -1310,16 +1319,24 @@ function PipelineDetailSheet({
                 )}
               </div>
 
-              {/* Cote */}
+              {/* Cote — les étoiles vides restent visibles pour tenir la mise en
+                  page, mais SANS chiffre : « 0,0 » affirmerait une note de zéro
+                  là où il n'y a pas de note (lib/evaluations/presence). */}
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <svg key={i} width="14" height="14" viewBox="0 0 24 24"
-                    fill={i <= Math.round(card.coach_rating ?? 0) ? "#F59E0B" : "#4a4d56"} stroke="none">
+                    fill={aUneCote(card.coach_rating) && i <= Math.round(card.coach_rating) ? "#F59E0B" : "#4a4d56"} stroke="none">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 ))}
-                <span className="text-[13px] font-bold text-[#F59E0B] ml-1">{(card.coach_rating ?? 0).toFixed(1)}</span>
-                <span className="text-[11px] text-[#6B7280] ml-1">Cote du coach</span>
+                {aUneCote(card.coach_rating) ? (
+                  <>
+                    <span className="text-[13px] font-bold text-[#F59E0B] ml-1">{card.coach_rating.toFixed(1)}</span>
+                    <span className="text-[11px] text-[#6B7280] ml-1">Cote du coach</span>
+                  </>
+                ) : (
+                  <span className="text-[11px] text-[#6B7280] ml-1">Pas encore évalué par son entraîneur</span>
+                )}
               </div>
 
               {/* Progress completion */}

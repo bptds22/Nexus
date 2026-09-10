@@ -40,6 +40,7 @@ import {
 } from "@/lib/calendar/recruitingCalendar";
 import { RECRUITER_TIERS } from "@/lib/config/pricing";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote } from "@/lib/evaluations/presence";
 import { RecruteurCalendrierMobile } from "@/components/shared/RecruteurCalendrierMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -244,7 +245,7 @@ function TargetRow({ t }: { t: CalendarTarget }) {
           {/* Cote coach — composant étoiles partagé de la plateforme, même
               rendu que les cartes de la Recherche. Athlète non coté : rien,
               pas de « N/A ». */}
-          {t.stars > 0 && <StarRating rating={t.stars} size="sm" />}
+          {aUneCote(t.stars) && <StarRating rating={t.stars} size="sm" />}
         </b>
         <i className="not-italic text-[12.5px] text-[#8A909C]">
           {[t.position, t.graduationYear ? `Promotion ${t.graduationYear}` : ""]

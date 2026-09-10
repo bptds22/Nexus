@@ -46,6 +46,7 @@ import { getCurrentSeason } from "@/lib/utils/season";
 // Pipeline movement is now unrestricted — no validation imports needed
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote } from "@/lib/evaluations/presence";
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
 import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteGrade";
 import type { Grade } from "@/lib/config/grades";
@@ -583,7 +584,11 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               d'un seul regard : les étoiles à gauche, ma puce poussée à
               droite par ml-auto. */}
           <div className="mt-2 flex items-center gap-2">
-            <StarRating rating={card.coach_rating} size="md" />
+            {/* Une cote ABSENTE n'est pas une cote de ZERO
+                (lib/evaluations/presence) : StarRating rendrait « 0.0 ». */}
+            {aUneCote(card.coach_rating)
+              ? <StarRating rating={card.coach_rating} size="md" />
+              : <span className="text-[12px] text-[#6b7280]">Pas encore évalué</span>}
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
         </div>
@@ -796,7 +801,7 @@ function SlideOver({
               <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
-            <div className="flex items-center gap-2 mt-3"><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></div>
+            <div className="flex items-center gap-2 mt-3">{aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
             {/* Mon grade — sous la cote du coach, et séparé d'elle : les
                 étoiles sont le jugement d'un tiers, le grade est le mien. */}
             <div className="mt-4">

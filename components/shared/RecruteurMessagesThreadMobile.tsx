@@ -39,6 +39,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
 import { triggerHaptic } from "@/components/shared/messaging/utils";
+import { aUneCote } from "@/lib/evaluations/presence";
 
 /* Local helpers retired in favor of the shared messaging package :
    - triggerHaptic      → @/components/shared/messaging/utils
@@ -631,13 +632,20 @@ function AthleteThreadSheet({
                     </div>
                   )}
 
-                  {/* Cote globale entraîneur */}
+                  {/* Cote globale entraîneur — une cote ABSENTE n'est pas une
+                      cote de ZÉRO (lib/evaluations/presence). Sans elle, la
+                      rangée le DIT au lieu d'afficher « 0.0 /5 » : la garder
+                      muette laisserait croire à une note manquante à l'écran. */}
                   <div className="flex items-center justify-between bg-white/[0.04] rounded-2xl px-4 py-3">
                     <span className="text-[13px] uppercase tracking-wider text-white/55 font-semibold">Cote coach</span>
-                    <div className="flex items-center gap-2.5">
-                      <StarBar value={Math.round(cote)} />
-                      <span className="text-[15px] font-bold text-white tabular-nums">{cote.toFixed(1)} <span className="text-[12px] text-white/45">/5</span></span>
-                    </div>
+                    {aUneCote(cote) ? (
+                      <div className="flex items-center gap-2.5">
+                        <StarBar value={Math.round(cote)} />
+                        <span className="text-[15px] font-bold text-white tabular-nums">{cote.toFixed(1)} <span className="text-[12px] text-white/45">/5</span></span>
+                      </div>
+                    ) : (
+                      <span className="text-[13px] text-white/45">Pas encore évalué</span>
+                    )}
                   </div>
 
                   {/* Profil complété */}
