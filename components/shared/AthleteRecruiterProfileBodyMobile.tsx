@@ -2180,7 +2180,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             transformOrigin: "top center",
             marginBottom: expandedLayoutCollapse,
             pointerEvents: expandedSlideProgress >= 1 ? "none" : "auto",
-            willChange: "opacity, transform, margin-bottom",
+            /* Lot D4a — will-change CONDITIONNEL, plus permanent. Ce bloc fait
+               412 × 1015 px (mesuré) : promu en permanence, il force le
+               compositeur à garder une grande couche à pixeliser, et en
+               REMONTANT il doit re-pixeliser des tuiles libérées — d'où le
+               contenu figé quelques frames puis rattrapé d'un coup. Aucune
+               contrepartie : la transformation ne bouge jamais (mesuré :
+               matrix(1,0,0,1,0,0) à tout scroll). Même idiome que le parallaxe
+               photo plus haut, qui ne promeut que pendant le mouvement. */
+            willChange: expandedSlideProgress > 0 || overscrollTranslate !== 0 ? "opacity, transform" : undefined,
           }}
         >
         {/* COACH-only — alert stack en haut du scroll (Step 6 unification).
