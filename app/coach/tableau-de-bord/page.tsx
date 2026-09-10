@@ -310,7 +310,11 @@ export default function TableauDeBordPage() {
               rank: i + 1,
               name: `${(p?.first_name as string) || ""} ${(p?.last_name as string) || ""}`.trim(),
               position: posObj?.abreviation || posObj?.nom || "",
-              stars: Math.round((p?.cote_globale_entraineur as number) || 0),
+              /* UNE décimale conservée : StarRating gère les demi-étoiles et
+                 rend le nombre en `.toFixed(1)`. Arrondir à l'entier ici
+                 affichait « 5.0 » pour un 4,6 — une précision fabriquée, et
+                 cinq étoiles pleines au lieu de quatre et demie. */
+              stars: Math.round(((p?.cote_globale_entraineur as number) || 0) * 10) / 10,
               viewsThisWeek: views,
               uniqueRecruiters: favCounts.get(aid) || 0,
             };

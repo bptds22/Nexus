@@ -742,7 +742,11 @@ export function CoachDashboardMobile() {
               rank: i + 1,
               name: `${(p?.first_name as string) || ""} ${(p?.last_name as string) || ""}`.trim(),
               position: posObj?.abreviation || posObj?.nom || "",
-              stars: Math.round((p?.cote_globale_entraineur as number) || 0),
+              /* UNE décimale conservée, pas un entier. La carte rend ensuite
+                 `.toFixed(1)` : raser la décimale ici puis la réafficher
+                 fabriquait une précision qui n'existait plus — un 4,6 devenait
+                 « 5.0 ». Patron de CoachAthletesMobile, qui l'avait déjà juste. */
+              stars: Math.round(((p?.cote_globale_entraineur as number) || 0) * 10) / 10,
               photoUrl: (p?.photo_url as string) || null,
               viewsThisWeek: views,
               uniqueRecruiters: favCounts.get(aid) || 0,

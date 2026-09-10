@@ -216,7 +216,10 @@ function CoachDetailPage() {
             name: `${(a.first_name as string) || ""} ${(a.last_name as string) || ""}`.trim(),
             position: posObj?.abreviation || posObj?.nom || "",
             completude: (a.profile_completion as number) || 0,
-            stars: Math.round((a.cote_globale_entraineur as number) || 0),
+            /* UNE décimale conservée — même défaut que les deux tableaux de
+               bord : StarRating rend le nombre en `.toFixed(1)`, donc un
+               entier ressortait en « 5.0 » pour un 4,6. */
+            stars: Math.round(((a.cote_globale_entraineur as number) || 0) * 10) / 10,
             views30d: 0,
             lastUpdate: (a.updated_at as string) || new Date().toISOString(),
           };
