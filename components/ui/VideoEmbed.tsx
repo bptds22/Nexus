@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
+import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import { plateformeDeUrl } from "@/lib/config/plateformesLien";
 
 interface VideoEmbedProps {
   url: string;
@@ -87,6 +89,7 @@ export default function VideoEmbed({ url, title }: VideoEmbedProps) {
 
   const ytId = getYouTubeId(url);
   const embedUrl = getEmbedUrl(url);
+  const plateforme = plateformeDeUrl(url);
 
   // ── DEVICE + YouTube : vignette cliquable → Browser.open (option c) ──────
   // L'iframe YouTube échoue sous capacitor://localhost (origin non reconnu).
@@ -112,11 +115,12 @@ export default function VideoEmbed({ url, title }: VideoEmbedProps) {
         )}
 
         {/* Voile + bouton play centré */}
+        {/* La marque de la plateforme plutôt qu'un triangle anonyme : la
+            vignette dit DÉJÀ qu'il y a une vidéo ; ce qu'elle ne disait pas,
+            c'est OÙ elle est hébergée. */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/25">
           <span className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="#E63946" stroke="none">
-              <polygon points="8 5 19 12 8 19 8 5" />
-            </svg>
+            <PlateformeIcone cle="youtube" size={30} />
           </span>
         </div>
 
@@ -161,12 +165,18 @@ export default function VideoEmbed({ url, title }: VideoEmbedProps) {
       rel="noopener noreferrer"
       className="flex items-center gap-3 bg-[#111317] border border-[#2D3748] rounded-lg px-5 py-4 hover:border-[#E63946]/40 transition-colors group"
     >
+      {/* La plateforme, pas un triangle générique. plateformeDeUrl lit le nom
+          d'hôte ; un domaine inconnu retombe sur le maillon de chaîne et garde
+          son hôte en libellé — « vimeo.com » apprend quelque chose, « Voir la
+          vidéo » non. L'URL entière reste en `title` pour qui veut la lire. */}
       <div className="w-10 h-10 rounded-full bg-[#E63946]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#E63946]/20 transition-colors">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="#E63946" stroke="none"><polygon points="8 5 19 12 8 19 8 5" /></svg>
+        <PlateformeIcone cle={plateforme?.cle ?? "autre"} size={18} />
       </div>
-      <div>
-        <p className="text-[13px] font-bold text-white">{title || "Voir la vidéo"}</p>
-        <p className="text-[11px] text-[#6b7280] truncate max-w-[300px]">{url}</p>
+      <div className="min-w-0">
+        <p className="text-[13px] font-bold text-white truncate">{title || "Voir la vidéo"}</p>
+        <p className="text-[11px] text-[#6b7280] truncate max-w-[300px]" title={url}>
+          {plateforme ? plateforme.libelle : url}
+        </p>
       </div>
       <svg className="ml-auto text-[#6b7280]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
     </a>
