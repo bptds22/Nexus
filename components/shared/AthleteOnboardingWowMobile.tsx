@@ -74,8 +74,10 @@ import { triggerHaptic } from "@/lib/haptics";
    badges auraient disparu d'un coup, en silence. Les libellés viennent de
    public.badges, relevés le 2026-09-10.
 
-   Le WOW masque les libellés à l'écran (`[&_span]:hidden`) : ils ne servent
-   qu'à passer ce garde. Raison de plus pour ne pas les inventer. */
+   Depuis le « défilé », le libellé est AFFICHÉ — le badge arrive seul au
+   centre en `lg` et se nomme. Il disparaît au rangement : la vignette `xs`
+   de la rangée ne rend aucun libellé (DistinctionBadge:246). Raison de plus
+   pour ne pas les inventer. */
 const SHOWCASE_BADGES: { badge: string; libelle: string }[] = [
   { badge: "capitaine",      libelle: "Leadership" },        // universel
   { badge: "fusee",          libelle: "Explosif" },          // sport — le physique
@@ -105,8 +107,26 @@ const T_STARS_LEAD       = 320;  // pause après Vérifié avant 1ère étoile
 const T_STAR_GAP         = 420;  // cadence étoile
 const T_BADGES_DELAY     = 300;  // après dernière étoile
 const T_STARS_HOLD       = 900;  // temps de contemplation avant la redescente
-const T_BADGES_STAGGER   = 130;
-const T_PIPELINE_LEAD    = 1500; // respiration avant pipeline
+
+/* ── ACTE 2, « le défilé » ───────────────────────────────────────────────
+   Les cinq badges arrivaient ENSEMBLE, décalés de 130 ms : 940 ms pour les
+   cinq, ce qui se lit comme une volée, pas comme cinq arrivées. Et surtout
+   ils arrivaient en `sm` (96 px de cellule) sur une rangée à gouttière 20 :
+       5 × 96 + 4 × 20 = 560 px
+   pour 411 px d'écran utile sur l'émulateur (1080 / densité 420), 360 px sur
+   le plus étroit visé. La racine est en `overflow-hidden` : les badges 1 et 5
+   n'étaient pas serrés, ils étaient COUPÉS — il en restait 6 px et 5 px.
+   Régression introduite en passant de 3 à 5 badges (à 3 : 328 px, ça tenait).
+
+   Désormais : un badge arrive SEUL au centre, en `lg`, avec son nom, il
+   claque, puis il se range dans une rangée `xs`.
+       5 × 28 + 4 × 12 = 188 px   ≤ 328 px (écran 360)  et  ≤ 379 px (écran 411)
+   Le badge central en `lg` fait 110 px, qui tient aussi sur 360. */
+const T_BADGE_CADENCE    = 340;  // un badge toutes les 340 ms
+const T_BADGE_SETTLE     = 260;  // temps passé au centre avant de descendre
+const T_PIPELINE_LEAD    = 2800; // respiration avant pipeline (était 1500 —
+                                 // le défilé dure 4×340 + 260 = 1620 ms, et
+                                 // laisse 1180 ms de contemplation ensuite)
 const T_PILL_FIRST       = 500;
 const T_PILL_GAP         = 700;  // cadence des titres de pill
 const T_AFTERGLOW_LEAD   = 900;
@@ -194,7 +214,14 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
   /* Vrai une fois les étoiles retombées : la carte cesse de promettre et dit
      qui attribue la cote. */
   const [starsHint, setStarsHint] = useState(false);
-  const [showBadges, setShowBadges] = useState(false);
+  /* Le défilé se décrit avec deux compteurs, pas un drapeau.
+     `badgeAuCentre` = l'index qui occupe le centre (−1 = personne).
+     `badgesRanges`  = combien sont déjà descendus dans la rangée.
+     Le badge central n'est visible que tant qu'il n'est pas rangé, ce qui
+     enchaîne les deux animations sans avoir à mesurer quoi que ce soit. */
+  const [badgeAuCentre, setBadgeAuCentre] = useState(-1);
+  const [badgesRanges, setBadgesRanges] = useState(0);
+  const showBadges = badgesRanges > 0 || badgeAuCentre >= 0;
   const [activeStage, setActiveStage] = useState(0); // 0..6
   const [exiting, setExiting] = useState(false);
   // Portal vers document.body : ce WOW est un overlay `fixed inset-0`. Rendu
@@ -258,9 +285,20 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
       setStarsHint(true);
     });
 
-    // Badges (icônes seules) apparaissent
+    /* Le défilé : chaque badge arrive seul au centre, claque, puis se range.
+       L'haptique est ici et nulle part ailleurs dans l'acte 2 — c'était le
+       seul moment de la chorégraphie sans retour physique, alors que les
+       étoiles et la pipeline en ont un à chaque pas. Le cinquième porte
+       `Success` : c'est le bouquet, il ne se signale pas comme les autres. */
     const badgesStart = starsStart + 5 * T_STAR_GAP + T_BADGES_DELAY;
-    T(badgesStart, () => setShowBadges(true));
+    for (let i = 0; i < SHOWCASE_BADGES.length; i++) {
+      const arriveA = badgesStart + i * T_BADGE_CADENCE;
+      T(arriveA, () => {
+        setBadgeAuCentre(i);
+        triggerHaptic(i === SHOWCASE_BADGES.length - 1 ? "Success" : "Light");
+      });
+      T(arriveA + T_BADGE_SETTLE, () => setBadgesRanges(i + 1));
+    }
 
     // ACT 3 : pipeline pill (6 stages 700ms chacun)
     const pipelineStart = badgesStart + T_PIPELINE_LEAD;
@@ -542,32 +580,64 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
           </div>
         </div>
 
-        {/* Badges icônes seules — visible SCÈNE A uniquement. mt-7 pour
-            la respiration (rien ne colle la carte). */}
+        {/* ─── LE DÉFILÉ — scène du centre ──────────────────────────────
+            Un seul badge à la fois, en `lg` (110 px), AVEC son nom. Il est
+            monté tant qu'il n'est pas rangé ; l'instant où `badgesRanges`
+            le rattrape, il joue sa sortie vers la rangée et la vignette
+            apparaît en bas. Deux animations qui se relaient, aucune mesure
+            de position — donc rien à recalculer si la rangée bouge.
+
+            `h-[152px]` réserve la place une fois pour toutes : sans hauteur
+            fixe, l'apparition du premier badge pousserait la rangée et la
+            ligne « Ton entraîneur t'évaluera » vers le bas. */}
         <div
-          className="mt-7 flex items-end justify-center gap-5"
-          style={{
-            opacity: showBadges && showCardScene ? 1 : 0,
-            transform: showBadges && showCardScene
-              ? "translateY(0)"
-              : "translateY(-6px)",
-            transition: "opacity 480ms ease-out, transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-            pointerEvents: "none",
-          }}
+          className="relative mt-6 h-[152px]"
+          style={{ pointerEvents: "none" }}
         >
-          {SHOWCASE_BADGES.map((d, i) => (
+          {SHOWCASE_BADGES.map((d, i) => {
+            const auCentre = badgeAuCentre === i && badgesRanges <= i;
+            const descend  = badgeAuCentre >= i && badgesRanges === i + 1;
+            if (!showCardScene || (!auCentre && !descend)) return null;
+            return (
+              /* Chaque badge occupe TOUTE la scène, en absolu. Sans ça, le
+                 sortant et l'entrant coexistent ~240 ms dans le même flux :
+                 deux enfants flex, et l'entrant n'est plus au centre — il
+                 sautait de côté à chaque relais. */
+              <div
+                key={d.badge}
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  animation: auCentre
+                    ? "nx-wow-badge-slam 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+                    : "nx-wow-badge-file 240ms cubic-bezier(0.4, 0, 1, 1) forwards",
+                }}
+              >
+                <DistinctionBadge badge={d.badge} libelle={d.libelle} size="lg" />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ─── LE DÉFILÉ — la rangée qui se remplit ─────────────────────
+            `xs` (28 px) + `gap-3` (12 px) : 5 × 28 + 4 × 12 = 188 px. Tient
+            sur 360 px d'écran (328 utiles) comme sur 411 (379 utiles), là où
+            la rangée `sm` d'avant en réclamait 560 et se faisait couper.
+            `xs` ne rend AUCUN libellé (DistinctionBadge:246) — plus besoin
+            du `[&_span]:hidden` qui traînait ici. */}
+        <div
+          className="-mt-4 flex items-end justify-center gap-3"
+          style={{ pointerEvents: "none" }}
+        >
+          {SHOWCASE_BADGES.slice(0, badgesRanges).map((d) => (
             <div
               key={d.badge}
-              className="[&_span]:hidden"
               style={{
-                opacity: showBadges && showCardScene ? 1 : 0,
-                transform: showBadges && showCardScene
-                  ? "translateY(0) scale(1)"
-                  : "translateY(8px) scale(0.85)",
-                transition: `opacity 380ms ease-out ${i * T_BADGES_STAGGER}ms, transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * T_BADGES_STAGGER}ms`,
+                opacity: showCardScene ? 1 : 0,
+                animation: "nx-wow-badge-land 260ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transition: "opacity 300ms ease-out",
               }}
             >
-              <DistinctionBadge badge={d.badge} libelle={d.libelle} size="sm" />
+              <DistinctionBadge badge={d.badge} libelle={d.libelle} size="xs" />
             </div>
           ))}
         </div>

@@ -440,3 +440,99 @@ Même geste que pour `champVersColonne.ts` (§15).
 arguments à `String()`, donc tout objet d'erreur y devient `[object Object]`.
 C'est ce qui a coûté vingt minutes le 2026-09-11 — le message réel était dans le
 client, il a fallu aller le lire dans les logs Supabase.
+
+---
+
+## 19. LOT MIGRATION (session D6, volet 6) — l'auto-évaluation redevient une proposition
+
+**DDL écrit et commenté : `docs/d6-volet6-suggestion-evaluation.sql`.** Non
+appliqué, à reprendre tel quel dans la migration D6.
+
+`trg_suggestion_transition` résout aujourd'hui TOUTE suggestion dans la
+transaction d'insertion : champs de profil → `APPROUVEE`, **tout le reste →
+`REJETEE`**. Relevé prod du 2026-09-11 : **0 ligne `EN_ATTENTE`**, et 50 refus
+automatiques sur les seuls champs d'évaluation (26 « Distinctions », 24 « Cote
+globale »), plus 2 traits en snake_case le 2026-09-09.
+
+Le volet 6 ouvre une **troisième sortie** : une liste blanche explicite
+(`champs_autoevaluation_athlete()`) laisse ces lignes en `EN_ATTENTE`, donc dans
+la boîte du coach. Les champs de profil continuent de s'auto-approuver ; les
+champs inconnus continuent d'être refusés, avec un motif qui ne parle plus
+d'évaluations.
+
+**La liste blanche porte les DEUX écritures des 14 critères** — `'Leadership'`
+et `'leadership'`. Les deux existent en base selon l'âge du client (découplage
+libellé/clé du lot 3). N'en prendre qu'une refuse la moitié des clients en
+silence. Elle ne se dérive **pas** des libellés de grille : depuis `fd31bab`
+ceux-ci dépendent de la position de l'athlète, et une liste blanche dynamique
+n'est pas une liste blanche.
+
+### ⚠️ Le volet est INDISSOCIABLE de son prérequis RLS
+
+Politiques actuelles d'`athlete_suggestions` :
+
+```
+Athletes insert own suggestions   INSERT  WITH CHECK (auth.uid() IS NOT NULL)
+Authenticated users update ...    UPDATE  USING/CHECK (auth.uid() IS NOT NULL)
+```
+
+**N'importe quel compte authentifié peut passer n'importe quelle suggestion à
+`APPROUVEE`.** `apply_approved_suggestion` est `SECURITY DEFINER` +
+`row_security=off` : elle écrit alors `cote_globale_entraineur` et
+`evaluations.cote_globale` en contournant la RLS **et**
+`enforce_athlete_self_edit_perimeter` (sous DEFINER, `current_user` n'est plus
+`authenticated`, donc la garde rend `NEW` sans rien tester).
+
+Le trou est **latent aujourd'hui par accident** : la garde d'application est
+`OLD.status = 'EN_ATTENTE'`, et plus rien n'atteint cet état. **Le volet 6 le
+rend exploitable** — l'athlète propose 5/5, puis approuve sa propre proposition.
+Les deux gestes partent ensemble ou ne partent pas. Le DDL porte les deux, avec
+le pré-vol règle 3 et 9 preuves par exécution, dont la n°3 (« l'athlète ne peut
+pas approuver sa propre ligne ») sans laquelle le volet est une régression.
+
+---
+
+## 20. Le flux de suggestion d'évaluation WEB est encore actif — et menti en prod
+
+**Le retrait du 2026-09-10 était MOBILE seulement.**
+`app/athlete/profil/page.tsx` porte toujours `EvaluationSuggest` — cote globale
++ 14 traits — qui insère dans `athlete_suggestions`. Chaque envoi est
+auto-rejeté par le trigger de transition, en silence, avec un motif que
+l'athlète reçoit en notification. Les lignes `esprit_equipe` /
+`competitivite` du 2026-09-09 et les « Distinctions » du 2026-09-11 viennent
+de là.
+
+C'est exactement le mensonge retiré côté mobile, toujours vivant côté web.
+
+**AUCUN retrait d'UI web à faire.** La surface est correcte ; c'est le trigger
+qui la dément. Le volet 6 (§19) la rend vraie sans toucher une ligne de
+`page.tsx` — coût côté application : **zéro**. C'est la moitié du flux qui
+revit le plus tôt, parce qu'elle ne dépend d'aucun binaire expédié.
+
+**Corollaire de séquencement :** le volet 6 ne doit pas partir en prod pendant
+qu'un binaire mobile expédié (1.2 / 1.4.0 / 1.4.1) est le seul client — leurs
+suggestions resteraient `EN_ATTENTE` sans qu'aucune UI athlète expédiée ne sache
+l'afficher. Web d'abord, mobile en 1.4.2. Cf. la décision consignée dans
+`CLAUDE.md` → « Auto-évaluation athlète → coach ».
+
+---
+
+## 21. Boîte coach — distinguer une auto-évaluation d'une correction de profil
+
+**Question ouverte, à trancher dans le lot 1.4.2**, en même temps que la
+restauration de l'UI mobile (§19-20).
+
+`CoachATraiterMobile` met tout dans la même liste : « Poids : 185 lbs » et
+« Cote globale : 5/5 » arrivent avec la même carte, la même densité, le même
+poids visuel. Le seul signal existant est la carte de filtre « Évaluation » en
+gold, qui n'est qu'un filtre — pas une distinction dans la liste.
+
+Ce ne sont pourtant pas les mêmes gestes : corriger son poids est une
+**donnée déclarative** que le coach valide d'un coup d'œil ; se mettre 5/5 en
+leadership est une **demande de reconnaissance** qui appelle un jugement, et
+potentiellement une conversation. Les traiter à la même vitesse, c'est garantir
+que l'un des deux sera mal traité.
+
+Pistes, non tranchées : section séparée ; accent gold sur la carte elle-même ;
+affichage systématique de l'écart (« tu as 3, tu proposes 5 ») ; ou exiger un
+message de l'athlète pour les seuls champs d'auto-évaluation.

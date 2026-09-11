@@ -472,6 +472,43 @@ Sérialiser à la main — `erreurLisible()` de `lib/athlete/perimetreProtege.ts
 - Coaches evaluate athletes → evaluations table (8 criteria + distinctions)
 - Recruiters evaluate coaches → CoachReview (not yet built) → feeds coach reputation
 
+#### Auto-évaluation athlète → coach — FEATURE CONFIRMÉE (décision BP, 2026-09-11)
+
+**L'athlète PROPOSE sa cote et ses distinctions ; le COACH décide.** Ce n'est ni
+une écriture directe (ce serait de l'auto-notation) ni un refus (ce que la base
+fait aujourd'hui) : c'est une **proposition avec un destinataire réel**.
+
+Le flux a réellement tourné — 41 suggestions traitées à la main par un coach
+entre le 2026-07-14 et le 2026-09-09, dont 5 Distinctions, 3 Cote globale et
+6 traits. Il a été court-circuité, pas supprimé.
+
+**Ce qui existe déjà et n'est PAS à refaire :** la boîte du coach
+(`CoachATraiterMobile` + `/coach/a-traiter` + pastille + `loadCoachTaskCounts`),
+le moteur d'application du verdict (`apply_approved_suggestion`, qui traite
+toujours `Cote globale` et `Distinctions`), et **toute** la chaîne de
+notification (`trg_notify_suggestion_result` → `athlete_notifications` →
+onglet « suggestions » de la page athlète). Le modèle de données
+`athlete_suggestions` est réutilisable **tel quel**.
+
+**Séquence, et elle n'est pas négociable :**
+1. **Volet 6 de la migration D6** — trigger + resserrage RLS, indissociables
+   (`docs/d6-volet6-suggestion-evaluation.sql`, registre §19). Sans le
+   resserrage, l'athlète approuve sa propre proposition.
+2. **Web vivant immédiatement** — `app/athlete/profil/page.tsx` n'a JAMAIS été
+   retiré ; il redevient vrai sans qu'on touche une ligne (registre §20).
+3. **Mobile en 1.4.2** — restauration à la main de `StarSuggestRow` +
+   `DistinctionsSuggestRow` depuis `0b6e05b^` / `eb52329^`, ~320 lignes. Un
+   revert en bloc est FAUX : `261af44` a introduit dans les mêmes commits le
+   chemin d'écriture directe des champs physiques, qu'il ne faut pas défaire.
+
+**L'UI ne revient JAMAIS avant le trigger.** Dans l'autre sens on réexpédie le
+mensonge retiré le 2026-09-10 : « envoyée à ton coach » suivi d'un refus
+automatique.
+
+Question ouverte portée au lot 1.4.2 (registre §21) : la boîte coach doit-elle
+distinguer visuellement une auto-évaluation d'une correction de profil ? Se
+mettre 5/5 en leadership n'appelle pas la même lecture que corriger son poids.
+
 ### Pipeline Status
 - recruiter_pipeline.stage: IDENTIFIE → CONTACTE → EN_DISCUSSION → VISITE_PLANIFIEE → ENGAGE → LETTRE_SIGNEE
 - Separate from athlete's statut_recrutement_override
