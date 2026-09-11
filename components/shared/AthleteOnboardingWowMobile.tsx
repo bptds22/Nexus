@@ -37,10 +37,26 @@ import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constantes showcase ─────────────────────────────────────── */
 
+/* QUATRE badges, et des codes de CATALOGUE — pas des codes hérités.
+
+   Avant : captain / progression / allstar. Trois déclarés, DEUX affichés :
+   « progression » n'a aucun équivalent au catalogue des 22, DistinctionBadge
+   rendait null et le signalait dans la console. Le troisième manquait donc
+   en silence depuis toujours.
+
+   Les codes hérités (captain, allstar) passaient par LEGACY_BADGE_TO_CATALOGUE
+   avant d'être dessinés. On écrit désormais les codes du catalogue directement :
+   un aller-retour de moins, et plus de risque qu'un code sans correspondance
+   s'installe sans qu'on le voie.
+
+   La séquence raconte une progression plutôt qu'un tas : le leadership, puis
+   l'explosivité, puis l'intelligence de jeu — qui dit que Nexus ne mesure pas
+   que le physique — et la consécration en bouquet final. */
 const SHOWCASE_BADGES: { badge: string }[] = [
-  { badge: "captain" },
-  { badge: "progression" },
-  { badge: "allstar" },
+  { badge: "capitaine" },
+  { badge: "fusee" },
+  { badge: "qi" },
+  { badge: "equipe-etoiles" },
 ];
 
 // Pill labels — repris verbatim du brief b3-fix3 (override des shortLabel
@@ -63,6 +79,7 @@ const T_VERIFIED_DELAY   = 250;  // pause après scale-in avant Vérifié
 const T_STARS_LEAD       = 320;  // pause après Vérifié avant 1ère étoile
 const T_STAR_GAP         = 420;  // cadence étoile
 const T_BADGES_DELAY     = 300;  // après dernière étoile
+const T_STARS_HOLD       = 900;  // temps de contemplation avant la redescente
 const T_BADGES_STAGGER   = 130;
 const T_PIPELINE_LEAD    = 1500; // respiration avant pipeline
 const T_PILL_FIRST       = 500;
@@ -149,6 +166,9 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
   const [act, setAct] = useState<Act>("anticipation");
   const [wowVerified, setWowVerified] = useState(false);
   const [wowStars, setWowStars] = useState(0);
+  /* Vrai une fois les étoiles retombées : la carte cesse de promettre et dit
+     qui attribue la cote. */
+  const [starsHint, setStarsHint] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [activeStage, setActiveStage] = useState(0); // 0..6
   const [exiting, setExiting] = useState(false);
@@ -192,7 +212,14 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
       triggerHaptic("Medium");
     });
 
-    // 5 étoiles cascade — Light chacune
+    /* 5 étoiles cascade — Light chacune — PUIS REDESCENTE À VIDE.
+
+       La montée reste : c'est la promesse, et elle est belle. Ce qui change,
+       c'est la fin. Laisser la carte sur 5/5 montrait la note MAXIMALE à un
+       athlète que personne n'a encore évalué — sur une plateforme dont le
+       badge vérifié atteste justement l'évaluation, c'était la pire valeur à
+       simuler. Les étoiles retombent donc à vide, et une ligne dit qui les
+       remplira pour de bon. */
     const starsStart = verifiedAt + T_STARS_LEAD;
     for (let i = 1; i <= 5; i++) {
       T(starsStart + (i - 1) * T_STAR_GAP, () => {
@@ -200,6 +227,11 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
         triggerHaptic("Light");
       });
     }
+    const starsFullAt = starsStart + 5 * T_STAR_GAP;
+    T(starsFullAt + T_STARS_HOLD, () => {
+      setWowStars(0);
+      setStarsHint(true);
+    });
 
     // Badges (icônes seules) apparaissent
     const badgesStart = starsStart + 5 * T_STAR_GAP + T_BADGES_DELAY;
@@ -514,6 +546,20 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
             </div>
           ))}
         </div>
+
+        {/* La carte cesse de promettre. Les étoiles viennent de retomber à
+            vide : cette ligne dit QUI les remplira, plutôt que de laisser un
+            5/5 que personne n'a donné. */}
+        <p
+          className="mt-3 text-center text-[12px] text-white/50"
+          style={{
+            opacity: starsHint && showCardScene ? 1 : 0,
+            transition: "opacity 420ms ease-out",
+            pointerEvents: "none",
+          }}
+        >
+          Ton entraîneur t&apos;évaluera.
+        </p>
       </div>
 
       {/* ─── ACT 3 : pill morphing FIXE au CENTRE ───────────────────

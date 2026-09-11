@@ -1875,14 +1875,24 @@ function Step1Content(p: Step1Props) {
           </div>
         ) : (
           <>
+            {/* OPTIONNEL, ET ÇA SE LIT. Le libellé disait « Ton entraîneur t'a
+                donné un code ? » — une question à laquelle un jeune sans code
+                ne sait pas quoi répondre, dans un encadré rouge qui ressemble à
+                un passage obligé. Le titre annonce maintenant un RACCOURCI, et
+                la ligne du bas donne la sortie explicitement : personne ne doit
+                rester bloqué là faute de code. */}
             <p className="mb-1 text-[13px] font-semibold text-white">
-              Ton entraîneur t&apos;a donné un code ?
+              Un code d&apos;équipe ? <span className="font-normal text-white/50">(facultatif)</span>
             </p>
             <p className="mb-3 text-[12px] leading-relaxed text-white/55">
-              Entre-le : ton équipe, ton école ou ton club et ton sport se
-              remplissent tout seuls.
+              Si ton entraîneur t&apos;en a donné un, entre-le : ton équipe, ton
+              école ou ton club et ton sport se remplissent tout seuls.
             </p>
             <JoinCodeField initialCode={p.joinCodePrefill} onResolved={p.onJoinCodeResolved} />
+            <p className="mt-3 text-[12px] leading-relaxed text-white/45">
+              Pas de code ? Continue sans — tu pourras rejoindre ton équipe plus
+              tard.
+            </p>
           </>
         )}
       </div>
