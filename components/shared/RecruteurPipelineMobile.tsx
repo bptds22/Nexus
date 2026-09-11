@@ -204,11 +204,17 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
           aria-haspopup="dialog"
           className="relative h-11 pl-3 pr-3.5 rounded-full flex items-center gap-1.5 active:bg-white/5 flex-shrink-0"
         >
+          {/* Rouge EN PERMANENCE, pas seulement quand un filtre est actif.
+              Le gris au repos faisait lire le bouton comme désactivé, alors
+              qu'il est la porte unique vers la feuille — c'est une action
+              toujours disponible, elle se présente comme telle. L'état
+              « des filtres tournent » se dit par la pastille, pas par la
+              couleur du bouton. */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke={nActiveFilters > 0 ? "#E63946" : "#9CA3AF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
-          <span className={`text-[13px] font-bold ${nActiveFilters > 0 ? "text-[#E63946]" : "text-[#9CA3AF]"}`}>
+          <span className="text-[13px] font-bold text-[#E63946]">
             Filtrer
           </span>
           {nActiveFilters > 0 && (
