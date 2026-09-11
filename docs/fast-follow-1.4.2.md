@@ -322,3 +322,47 @@ d'image là où le reste du jeu est inline.
 le modèle des autres (`fill={teinte}` ou `stroke={teinte}`), et supprimer
 `public/brand/platforms/hudl.png`. Rien d'autre ne bouge — le contrat du
 composant est inchangé.
+
+---
+
+## 15. Retrait du trigger de transition — PRÉREQUIS à respecter
+
+`trg_suggestion_transition` (migration `20260909191744`) porte écrit :
+
+> `⚠ TEMPORAIRE — À RETIRER AU 1.4.2, quand le parc mobile aura tourné.`
+
+**Son retrait a DEUX prérequis, pas un.** Il intercepte les propositions des
+vieux clients et les applique (ou les rejette) sur-le-champ. Le retirer alors
+qu'un client écrit encore dans `athlete_suggestions` rouvre exactement le trou
+de 237 propositions orphelines que la migration a bouché — en silence, puisque
+rien ne lève.
+
+| client | état |
+|---|---|
+| **Wizard MOBILE** (`AthleteEditWizardMobile`) | ✅ **migré en 1.4.1** — écrit en direct via `lib/athlete/champVersColonne.ts` |
+| **Profil WEB** (`app/athlete/profil/page.tsx:1455`) | 🔴 **écrit encore des propositions** |
+| **Parc installé** (binaires 1.2 / 1.4.0 en magasin) | 🔴 par construction — ils ne changeront pas |
+
+**Donc :** le trigger ne peut pas partir avant que le web soit migré **ET**
+que le parc installé ait tourné. Le second point est une condition de
+CALENDRIER, pas de code — elle ne se coche pas en relisant le dépôt.
+
+### Migrer le web : ce qui existe déjà
+
+`lib/athlete/champVersColonne.ts` est utilisable tel quel — il ne dépend que
+du client Supabase et d'un `athleteId`. La migration web consiste à remplacer
+l'`insert` de `:1455` par `ecrireChampAthlete`, puis à retirer le vocabulaire
+de proposition, comme sur mobile.
+
+### Le mapping est prouvé par exécution (2026-09-10)
+
+Sur le compte démo `b880e4ba-…` (majeur, sans courriel, créé pendant la
+recette) : 14 colonnes écrites avec une valeur distincte chacune, vérifiées
+une par une, **aucune contamination croisée**, puis état restauré à
+l'identique. Les deux recherches de clé étrangère (sport par nom, position
+par nom **dans le sport de l'athlète**) résolvent vers les mêmes ids que le
+moteur SQL.
+
+Les transformations non triviales, reproduites du moteur et vérifiées :
+`Taille` se découpe sur l'apostrophe en `taille_pieds` / `taille_pouces`,
+`Poids` perd son « lbs », `Numéro` perd son « # ».
