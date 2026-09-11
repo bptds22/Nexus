@@ -151,6 +151,10 @@ export function AthleteOnboardingMobile() {
 
   // Step machine 1|2 (consents + parent capturés au signup — iter 2b)
   const [step, setStep] = useState<0 | 1 | 2>(1);
+  /* L'aiguillage « Où joues-tu ? » (Step-0) a-t-il été SAUTÉ cette session ?
+     Vrai quand users.context était déjà posé à l'init — donc une REPRISE
+     d'inscription. Voir la box conditionnelle de l'étape 1. */
+  const [step0Saute, setStep0Saute] = useState(false);
   // Masque le CTA fixed bottom-0 quand un input est focus (clavier monté),
   // pour qu'il ne recouvre pas le champ saisi — même idiome que SignupMobile.
   const [inputFocused, setInputFocused] = useState(false);
@@ -428,6 +432,10 @@ export function AthleteOnboardingMobile() {
       // le Step-0 et la logique resume ci-dessous décide step 1 vs 2.
       let contextChosen = ctxRaw === "scolaire" || ctxRaw === "ligue_civile";
       if (!contextChosen) setStep(0);
+      /* Contexte déjà posé = on saute l'aiguillage. L'athlète n'aura donc
+         PAS vu le champ de code qui y vit — d'où la box de rattrapage à
+         l'étape 1. */
+      else setStep0Saute(true);
 
       // Resume : athletes row + team_athletes junction.
       // Iter team-3 — on tire aussi division/age_group/gender pour
@@ -1371,6 +1379,9 @@ export function AthleteOnboardingMobile() {
             onPick={(c) => {
               triggerHaptic("Light");
               setUserContext(c);
+              /* L'aiguillage a été VU : la box de rattrapage n'a plus lieu
+                 d'être — le champ de code était juste au-dessus. */
+              setStep0Saute(false);
               setStep(1);
             }}
             initialCode={joinCodePrefill}
@@ -1381,7 +1392,7 @@ export function AthleteOnboardingMobile() {
             // l'étape 0).
             onCodeAdopted={(v) => {
               applyCodeLock(v);
-              if (v) { triggerHaptic("Light"); setStep(1); }
+              if (v) { triggerHaptic("Light"); setStep0Saute(false); setStep(1); }
             }}
           />
         )}
@@ -1424,6 +1435,7 @@ export function AthleteOnboardingMobile() {
             // (organisation, contexte, sport) est faite par applyCodeLock, pas
             // ici — c'est le même corps que le web.
             onJoinCodeResolved={applyCodeLock}
+            step0Saute={step0Saute}
             codeLock={codeLock}
             // « Changer » RAMÈNE À L'ÉTAPE 0 (lot 2). Le code ayant décidé du
             // contexte sans que l'athlète ne réponde à « école ou club ? », le
@@ -1823,6 +1835,8 @@ interface Step1Props {
   /** Remonte l'équipe résolue COMPLÈTE — la dérivation est faite par le parent
    *  (applyCodeLock), pas par cet écran. */
   onJoinCodeResolved: (v: { code: string; team: ResolvedJoinTeam } | null) => void;
+  /** Vrai quand l'aiguillage « Où joues-tu ? » n'a pas été montré. */
+  step0Saute: boolean;
   /** Non-null = un code pilote le formulaire : sport verrouillé, équipe
    *  pré-confirmée, picker d'équipe masqué. */
   codeLock: {
@@ -1843,10 +1857,27 @@ function Step1Content(p: Step1Props) {
           ? "Choisis ton sport et ton équipe civile. Ce qui ira sur ta carte joueur."
           : "Choisis ton sport, ton école et — si elle existe — l'équipe à laquelle tu appartiens."}
       />
-      {/* ── VOIE RAPIDE : le code d'équipe, EN TÊTE ──────────────────────────
-          Il vivait plus bas, après le sport et l'école — donc après que
-          l'athlète ait pu se tromper. Ici il pilote : organisation, contexte
-          et sport en sont dérivés et verrouillés. */}
+      {/* ── LE CODE D'ÉQUIPE — CONDITIONNEL ──────────────────────────────────
+          La voie normale passe par l'aiguillage « Où joues-tu ? » (Step-0),
+          qui porte DÉJÀ un champ de code et qui PILOTE le reste : contexte,
+          organisation et sport en sont dérivés et verrouillés. Répéter la box
+          ici ferait deux portes pour une seule serrure, et la seconde arrive
+          après que l'athlète a pu choisir un sport que le code écrasera.
+
+          Elle ne s'affiche donc que dans DEUX cas :
+
+          · `step0Saute` — L'AIGUILLAGE A ÉTÉ SAUTÉ. Ça arrive à la REPRISE
+            d'inscription : `users.context` est déjà posé, l'init envoie droit
+            à l'étape 1. Le scénario concret : l'athlète commence seul un soir,
+            reçoit son code de l'entraîneur le lendemain, puis reprend — sans
+            cette box, il n'aurait aucun endroit où le saisir dans le wizard.
+            Le drapeau retombe dès qu'il revient sur l'aiguillage (bouton
+            Retour) : il y a vu le champ, la répétition redevient inutile.
+
+          · `codeLock` — UN CODE EST ACTIF. Il faut pouvoir lire l'équipe
+            adoptée et la relâcher ; masquer la box enfermerait l'athlète dans
+            un choix qu'il ne verrait plus. */}
+      {(p.codeLock || p.step0Saute) && (
       <div className="mt-2 mb-4 rounded-2xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
         {p.codeLock ? (
           <div className="flex items-start gap-3">
@@ -1896,6 +1927,7 @@ function Step1Content(p: Step1Props) {
           </>
         )}
       </div>
+      )}
 
       <SectionTitle>Sport principal</SectionTitle>
       {/* Sport VERROUILLÉ quand un code est actif : il vient de l'équipe. Le
