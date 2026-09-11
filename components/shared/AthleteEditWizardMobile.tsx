@@ -1013,9 +1013,6 @@ export default function AthleteEditWizardMobile() {
           <EvaluationStep
             groups={traitGroupsResolved}
             a={a}
-            getPending={getPending}
-            submitting={submitting}
-            onSubmit={submitSuggestion}
           />
         )}
       </div>
@@ -1849,13 +1846,15 @@ function MediasStep({
    isDetailedMode mirrors page.tsx :550 verbatim :
      !!traitRatings && groups.flatMap((g) => g.traits).some((t) => (traitRatings[t.camel] || 0) > 0)
 ═══════════════════════════════════════════════════════════════ */
+/* Cette étape est en LECTURE SEULE depuis que la cote, les distinctions et
+   les 14 traits appartiennent à l'entraîneur : elle n'a plus besoin de
+   `getPending`, `submitting` ni `onSubmit`. Les retirer plutôt que les
+   laisser inertes — une prop d'écriture sur un écran qui n'écrit pas
+   invite le prochain à s'en servir. */
 function EvaluationStep({
-  a, getPending, submitting, onSubmit, groups,
+  a, groups,
 }: {
   a: LoadedAthlete;
-  getPending: (champ: string) => AthleteSuggestion | undefined;
-  submitting: boolean;
-  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<string | null>;
   /** Les 2 groupes (9 / 5), libellés résolus par la grille de l'athlète. */
   groups: { title: string; traits: TraitEntry[] }[];
 }) {
@@ -1994,24 +1993,10 @@ function EvaluationStep({
               {CHARACTER_TRAITS.map((t, i) => {
                 const current = getCurrent(camel(t));
                 return (
-                  <StarSuggestRow
+                  <TraitLectureSeule
                     key={t.column}
                     label={t.label}
-                    currentValue={current}
-                    champ={t.column}
-                    allowHalf={false}
-                    starSize={20}
-                    pending={getPending(t.column)}
-                    submitting={submitting}
-                    onSubmit={async (proposed) => {
-                      /* Submit guard mirrors page.tsx :587 :
-                         only emit if proposed > 0 && proposed !== current.
-                         StarSuggestRow's submit path enforces > 0 ;
-                         the equality check happens here. */
-                      if (proposed === current) return;
-                      // `champ` = NOM DE COLONNE (clé stable).
-                      await onSubmit(t.column, String(proposed), "", String(current || ""));
-                    }}
+                    valeur={current}
                     isLast={i === CHARACTER_TRAITS.length - 1}
                   />
                 );
@@ -2026,20 +2011,10 @@ function EvaluationStep({
               {TACTICAL_TRAITS.map((t, i) => {
                 const current = getCurrent(camel(t));
                 return (
-                  <StarSuggestRow
+                  <TraitLectureSeule
                     key={t.column}
                     label={t.label}
-                    currentValue={current}
-                    champ={t.column}
-                    allowHalf={false}
-                    starSize={20}
-                    pending={getPending(t.column)}
-                    submitting={submitting}
-                    onSubmit={async (proposed) => {
-                      if (proposed === current) return;
-                      // `champ` = NOM DE COLONNE (clé stable).
-                      await onSubmit(t.column, String(proposed), "", String(current || ""));
-                    }}
+                    valeur={current}
                     isLast={i === TACTICAL_TRAITS.length - 1}
                   />
                 );
@@ -2089,124 +2064,36 @@ function EvaluationStep({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   StarSuggestRow — parallel to SuggestRow but with a StarRow input
-   body (no text/picker overlap with SuggestExpand). Owns its own
-   expand state + yellow indicator + pending pill + Soumettre /
-   Annuler shell.
+   TraitLectureSeule — un trait d'évaluation, AFFICHÉ et rien d'autre.
 
-   Submit guard : refuses to commit if `proposed <= 0`. Per-row
-   semantic guards (e.g. "trait must differ from current") are
-   delegated to the caller's onSubmit. The trigger doesn't care
-   about identical values — they update the column to the same int —
-   but emitting them clutters the coach's approval inbox, so the
-   trait call sites in EvaluationStep skip when proposed === current.
+   Les 14 traits appartiennent à l'entraîneur, comme la cote et les
+   distinctions. Ils utilisaient StarSuggestRow : des étoiles qu'on
+   pouvait toucher, un bouton « Soumettre » — et le trigger de transition
+   rejetait chaque proposition. Trois surfaces d'une même étape offraient
+   ainsi un geste qui n'aboutissait jamais.
 
-   `allowHalf` is forwarded to StarRow ; the row is half-star for
-   Cote globale and whole-star for individual traits.
+   Un trait non noté affiche « — », jamais zéro étoile pleine : une note
+   ABSENTE n'est pas une note de ZÉRO (lib/evaluations/presence).
 ═══════════════════════════════════════════════════════════════ */
-function StarSuggestRow({
-  label, currentValue, champ, allowHalf, starSize, pending, submitting, onSubmit, isLast,
+
+function TraitLectureSeule({
+  label, valeur, isLast,
 }: {
   label: string;
-  /** Currently-stored value in evaluations (0 = unset). Displayed
-   *  in the collapsed read state + struck-through in the expand
-   *  state for the "Actuel" context. */
-  currentValue: number;
-  /** Exact French champ string ; trigger-critical. Mirrored
-   *  byte-for-byte from TRAIT_CHAMPS labels OR the literal
-   *  "Cote globale" for the flat-cote row. */
-  champ: string;
-  allowHalf: boolean;
-  starSize: number;
-  pending: AthleteSuggestion | undefined;
-  submitting: boolean;
-  /** Called with the validated `proposed` number (always > 0). The
-   *  caller does the stringify (String(int) for traits, toFixed(1)
-   *  for cote) inside its own onSubmit closure. */
-  onSubmit: (proposed: number) => Promise<void>;
-  isLast?: boolean;
+  valeur: number;
+  isLast: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [draft, setDraft] = useState(0);
-
-  const hasPending = !!pending;
-
-  /* Collapsed surface — yellow pencil indicator + current value
-     stars + pending pill (mirrors SuggestRow's read state). The
-     pending pill appears when an EN_ATTENTE suggestion exists for
-     this champ. */
-  if (!expanded) {
-    return (
-      <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"}`}>
-        <button
-          type="button"
-          onClick={() => { void triggerHaptic("Light"); setDraft(currentValue); setExpanded(true); }}
-          className="w-full flex items-center justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
-        >
-          <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
-            <PencilIcon color={YELLOW} size={12} />
-            <span className="text-[14px] text-white/70 truncate">{label}</span>
-          </span>
-          <span className="flex items-center gap-2 shrink-0">
-            <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={starSize > 24 ? 18 : 16} />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </span>
-        </button>
-        {hasPending && (
-          <div className="px-4 pb-3 -mt-1">
-            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
-              ⏳ En attente : {pending?.proposed_value}/5
-            </span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /* Expanded surface — current/proposed stars + Soumettre / Annuler.
-     Submit guard : refuse draft <= 0. */
-  const canSubmit = draft > 0 && !submitting;
   return (
-    <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"} px-4 py-3 bg-[#0E1015]`}>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[14px] text-white font-semibold">{champ}</span>
-        <button
-          type="button"
-          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
-          className="text-[12px] text-white/45 active:text-white/70"
-        >
-          Annuler
-        </button>
-      </div>
-      {currentValue > 0 && (
-        <div className="mb-2 flex items-center gap-2">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-white/40">Actuel</span>
-          <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={16} />
-          <span className="text-[12px] text-white/55">{allowHalf ? currentValue.toFixed(1) : currentValue}/5</span>
-        </div>
+    <div
+      className="px-4 py-3.5 flex items-center justify-between gap-3"
+      style={{ borderBottom: isLast ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
+    >
+      <span className="text-[14px] text-white/70">{label}</span>
+      {valeur > 0 ? (
+        <StarRow value={valeur} onChange={() => { /* lecture seule */ }} size={16} />
+      ) : (
+        <span className="text-[13px] text-white/35">—</span>
       )}
-      <div className="flex items-center gap-3">
-        <StarRow value={draft} onChange={setDraft} size={starSize} allowHalf={allowHalf} />
-        <span className="text-[13px] font-bold text-white w-12 text-right">
-          {draft > 0 ? `${allowHalf ? draft.toFixed(1) : draft}/5` : "—"}
-        </span>
-      </div>
-      <div className="mt-3 flex items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={async () => {
-            if (!canSubmit) return;
-            await onSubmit(draft);
-            setExpanded(false);
-          }}
-          disabled={!canSubmit}
-          className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
-        >
-          {submitting ? "..." : "Soumettre"}
-        </button>
-      </div>
     </div>
   );
 }
