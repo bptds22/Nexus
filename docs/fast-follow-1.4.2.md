@@ -299,3 +299,26 @@ deuxième surface.
 Un sheet sans saisie doit **soit se démonter à la fermeture, soit porter
 `nx-kbd-immobile`**. La translation seule ne suffit pas à le cacher sur une
 plateforme où le clavier déplace tout ce qui est collé en bas.
+
+---
+
+## 14. Icône Hudl — remplacer le PNG par le SVG officiel
+
+**Swap trivial, une seule branche de `switch` à changer.**
+
+`components/shared/PlateformeIcone.tsx` rend toutes les plateformes en SVG
+inline **sauf Hudl**, qui est un `<img>` vers `public/brand/platforms/hudl.png`.
+
+Pourquoi : le fichier officiel fourni était un **PNG** (2814 px, 40 Ko),
+redimensionné à 72 px / 2,6 Ko — quatre fois l'usage 18 px, de quoi tenir les
+écrans haute densité. Redessiner le triskèle de mémoire aurait produit une
+rendition approximative d'une marque tierce ; ça a été écarté.
+
+**Ce que le PNG coûte tant qu'il est là :** il ne se recolore pas (les autres
+icônes héritent d'une teinte par `stroke`/`fill`), et il ajoute une requête
+d'image là où le reste du jeu est inline.
+
+**Le remplacement** : poser le SVG officiel dans la branche `case "hudl"`, sur
+le modèle des autres (`fill={teinte}` ou `stroke={teinte}`), et supprimer
+`public/brand/platforms/hudl.png`. Rien d'autre ne bouge — le contrat du
+composant est inchangé.

@@ -220,7 +220,19 @@ export function CoachAthleteThreadMobile() {
             aria-hidden
           />
           <div
-            className={`fixed bottom-0 inset-x-0 z-[70] bg-[#1A1D24] border-t border-[#2D3748] rounded-t-2xl flex flex-col ${sheetOpen ? "translate-y-0" : "translate-y-full"}`}
+            /* nx-kbd-immobile — CONTRAT : cette feuille ne contient AUCUNE
+               saisie, elle ne doit donc jamais suivre le clavier.
+
+               Sans elle, la règle globale `html.is-capacitor .fixed.bottom-0`
+               (globals.css) lui posait `bottom: var(--kbd-h)` — et comme elle se
+               masque par TRANSLATION en restant montée, un clavier ouvert la
+               repoussait vers le HAUT : la feuille fermée redevenait visible
+               par-dessus la conversation.
+
+               Plus exposé encore que le MorePanel qui a révélé le défaut : on
+               est dans un FIL, le composer ouvre le clavier à chaque message
+               écrit, pas seulement à une recherche. */
+            className={`nx-kbd-immobile fixed bottom-0 inset-x-0 z-[70] bg-[#1A1D24] border-t border-[#2D3748] rounded-t-2xl flex flex-col ${sheetOpen ? "translate-y-0" : "translate-y-full"}`}
             style={{ maxHeight: "min(88vh, calc(100dvh - env(safe-area-inset-top, 0px)))", paddingBottom: "env(safe-area-inset-bottom)", transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" }}
             role="dialog" aria-modal="true" aria-label="Fiche athlète"
           >

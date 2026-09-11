@@ -39,13 +39,26 @@ export default function PlateformeIcone({
         </svg>
       );
     case "hudl":
-      /* Le « h » de Hudl, ramené à deux montants et une traverse. */
+      /* ⚠️ SEULE icône matricielle du jeu, et c'est PROVISOIRE.
+         Le triskèle Hudl n'est pas redessinable de mémoire sans trahir une
+         marque tierce ; le fichier officiel fourni était un PNG. Il a été
+         ramené de 2814px / 40 Ko à 72px / 2,6 Ko — quatre fois l'usage 18px,
+         de quoi tenir les écrans haute densité sans peser.
+         Le SVG officiel, dès qu'il arrive, remplace ce bloc et rien d'autre :
+         le reste du composant ne change pas. Voir docs/fast-follow-1.4.2.md. */
       return (
-        <svg {...commun} fill="none" stroke={teinte} strokeWidth="2.6" strokeLinecap="round">
-          <line x1="6" y1="4" x2="6" y2="20" />
-          <line x1="18" y1="11" x2="18" y2="20" />
-          <path d="M6 12c0-2.2 1.8-4 4-4h4a4 4 0 0 1 4 4" />
-        </svg>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/brand/platforms/hudl.png"
+          alt=""
+          width={size}
+          height={size}
+          className={className}
+          aria-hidden
+          /* Le PNG porte déjà l'orange de marque : rien à teinter. Cohérent
+             avec YouTube et Instagram, qui portent aussi leur couleur. */
+          style={{ display: "block" }}
+        />
       );
     case "instagram":
       return (
