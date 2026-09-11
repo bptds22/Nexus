@@ -34,7 +34,7 @@
    composant est sélectionné via `if (IS_CAPACITOR)` dans page.tsx.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
@@ -55,6 +55,7 @@ import { teamDetails } from "@/lib/config/teamLabel";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
+import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -164,6 +165,12 @@ export function AthleteOnboardingMobile() {
   const [email, setEmail] = useState<string>("");
   const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile">("scolaire");
   const [existingAthleteId, setExistingAthleteId] = useState<string | null>(null);
+  /* Les colonnes protégées TELLES QU'ELLES SONT EN BASE, relevées au
+     chargement de la fiche. Le submit s'en sert pour ne renvoyer que ce qui a
+     réellement changé — cf lib/athlete/perimetreProtege.
+     Un `ref` et pas un `state` : personne ne s'affiche à partir de ça, et un
+     re-render de plus entre le chargement et le submit ne servirait à rien. */
+  const ficheEnBase = useRef<Record<string, unknown> | null>(null);
 
   // Orphan claim
   const [orphanMatch, setOrphanMatch] = useState<OrphanProfile | null>(null);
@@ -450,6 +457,11 @@ export function AthleteOnboardingMobile() {
 
       if (existing) {
         setExistingAthleteId(existing.id as string);
+        /* Relevé AVANT tout pré-remplissage : c'est l'état de la base, pas
+           celui de l'écran. La fiche peut être héritée (orphelin réclamé par
+           `link_athlete_on_signup` à l'inscription) et porter déjà une école,
+           un coach, un statut — que le submit ne doit pas réécrire pour rien. */
+        ficheEnBase.current = instantaneProtege(existing as Record<string, unknown>);
 
         // Bypass dashboard UNIQUEMENT si onboarding_complete === true — même
         // critère que le layout (app/athlete/layout.tsx). Avant : on redirigeait
@@ -472,6 +484,27 @@ export function AthleteOnboardingMobile() {
         if (existing.photo_url) setPhoto(existing.photo_url as string);
         if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
 
+        /* ═══ RÉCLAMATION SILENCIEUSE PAR COURRIEL — ASSUMÉE EN 1.4.1 ═══
+           Décision produit BP, 2026-09-11.
+
+           Le trigger `on_user_created_link_athlete` (→ link_athlete_on_signup)
+           rattache, DANS LA TRANSACTION D'INSCRIPTION, toute fiche orpheline
+           portant le même courriel :
+             UPDATE athletes SET user_id = NEW.id
+              WHERE email = NEW.email AND user_id IS NULL;
+
+           Conséquence directe, et voulue : une inscription qui se croit neuve
+           arrive avec une école, un sport, une position et un numéro déjà
+           posés, et la reprise ci-dessous l'envoie à l'étape 2. C'est le
+           parcours coach → athlète NLS : le coach sème la fiche, l'athlète la
+           récupère sans rien ressaisir. Ce n'est PAS un accident du routage.
+
+           Ce qui manque, et qui est au registre 1.4.2 (§17) : l'app ne DIT pas
+           ce qu'elle a hérité. La modale de réclamation qui servait à ça
+           (`ClaimProfileModal`, branche `else if (user.email)` plus bas) est
+           devenue INATTEIGNABLE pour ce cas — le trigger a déjà posé user_id,
+           donc `existing` n'est jamais null. Elle est à ressusciter, ou à
+           remplacer par une bannière d'héritage. Pas dans 1.4.1. */
         const schoolRel = flatten(existing.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null);
         const schoolType = schoolRel?.type;
         // Fallback contexte (routage) : orphelin coach-créé (users.context null)
@@ -566,7 +599,7 @@ export function AthleteOnboardingMobile() {
         // Échec inattendu (réseau, auth) — état récupérable plutôt que
         // hang. La course 0-ligne du JWT est déjà gérée ci-dessus via
         // .maybeSingle() + retry, donc elle n'atterrit PAS ici.
-        console.error("[OnboardingMobile] init failed:", err);
+        console.error(`[OnboardingMobile] init failed: ${erreurLisible(err)}`);
         if (!cancelled) setInitError(true);
       } finally {
         // TOUJOURS libérer le spinner, quoi qu'il arrive au-dessus.
@@ -612,6 +645,9 @@ export function AthleteOnboardingMobile() {
     if (full.numero_jersey) setJerseyNumber(full.numero_jersey as string);
 
     setExistingAthleteId(orphanMatch.id);
+    /* Même relevé que dans l'effet d'init : dès qu'on passe en mode UPDATE,
+       le submit a besoin de savoir ce que la base porte déjà. */
+    ficheEnBase.current = instantaneProtege(full as Record<string, unknown>);
     setShowClaimModal(false);
   }, [orphanMatch]);
 
@@ -914,10 +950,10 @@ export function AthleteOnboardingMobile() {
     // effet, un resume d'onboarding ou un state périmé repose primarySport dans
     // le dos de l'utilisateur.
     if (codeLock && (primarySport !== codeLock.sportName || selectedTeamId !== codeLock.teamId)) {
-      console.error("[OnboardingMobile] incohérence code/profil", {
+      console.error("[OnboardingMobile] incohérence code/profil " + JSON.stringify({
         codeSport: codeLock.sportName, profilSport: primarySport,
         codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
-      });
+      }));
       toast.error({
         message: "Ton code ne correspond plus",
         detail: `Ton code pointe ${codeLock.teamName} (${codeLock.sportName}). Utilise « Changer » à la première étape pour choisir une autre équipe.`,
@@ -1039,9 +1075,24 @@ export function AthleteOnboardingMobile() {
 
     let athleteIdForTeam: string | null = existingAthleteId;
     if (existingAthleteId) {
-      const { error } = await supabase.from("athletes").update(athleteRecord).eq("id", existingAthleteId);
+      /* On n'envoie les colonnes du périmètre protégé que si elles ont
+         RÉELLEMENT changé. `athleteRecord` repose systématiquement user_id,
+         school_id, coach_id, status et verified ; sur une fiche héritée, les
+         reposer à l'identique suffisait à faire lever
+         `trg_athlete_self_edit_perimeter` (400, « Échec de sauvegarde ») alors
+         que l'athlète n'avait touché à rien d'interdit.
+         Ce n'est PAS un contournement : un vrai changement d'école part encore
+         et se fait encore refuser — tant que la décision produit « pendant
+         l'onboarding, l'école et le coach appartiennent à l'athlète » n'est pas
+         écrite en base (volet 5 de la migration D6). */
+      const patch = elaguerProtegees(athleteRecord, ficheEnBase.current);
+      const { error } = await supabase.from("athletes").update(patch).eq("id", existingAthleteId);
       if (error) {
-        console.error("[OnboardingMobile] update:", error);
+        /* Sérialisé À LA MAIN : le pont console de Capacitor passe ses
+           arguments à String(), donc un objet d'erreur atterrit dans le logcat
+           en « [object Object] » et il faut aller lire les logs Supabase pour
+           savoir ce qui s'est passé. */
+        console.error(`[OnboardingMobile] update: ${erreurLisible(error)}`);
         toast.error({ message: "Échec de sauvegarde", detail: error.message });
         setSaving(false); return;
       }
@@ -1049,7 +1100,7 @@ export function AthleteOnboardingMobile() {
       const { data: inserted, error } = await supabase
         .from("athletes").insert(athleteRecord).select("id").single();
       if (error) {
-        console.error("[OnboardingMobile] insert:", error);
+        console.error(`[OnboardingMobile] insert: ${erreurLisible(error)}`);
         toast.error({ message: "Échec de sauvegarde", detail: error.message });
         setSaving(false); return;
       }
@@ -1126,7 +1177,7 @@ export function AthleteOnboardingMobile() {
       if (ctxErr) {
         const m = ctxErr.message || "";
         if (!m.includes("CONTEXT_ALREADY_SET") && !m.includes("ALREADY_ONBOARDED")) {
-          console.error("[OnboardingMobile] set_initial_role_and_context:", ctxErr);
+          console.error(`[OnboardingMobile] set_initial_role_and_context: ${erreurLisible(ctxErr)}`);
         }
       }
     }
@@ -1160,7 +1211,7 @@ export function AthleteOnboardingMobile() {
           return; // ⚠️ pas de router.replace ici — c'est le CTA du WOW qui le fera
         }
       } catch (err) {
-        console.warn("[OnboardingMobile] WOW re-fetch failed, bypass:", err);
+        console.warn(`[OnboardingMobile] WOW re-fetch failed, bypass: ${erreurLisible(err)}`);
       }
     }
     // Fallback : pas d'athlète à montrer, on redirect directement.

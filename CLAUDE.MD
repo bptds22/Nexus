@@ -401,6 +401,45 @@ Un `bottom: 0` **inline** bat cette règle et annule tout : ne jamais poser `bot
 - Profiles marked "Non vérifié" until coach verifies
 - Parent notification for minors (14-17) with 7-14 day response window
 
+#### Réclamation d'une fiche orpheline — ASSUMÉE (décision BP, 2026-09-11)
+
+Le trigger `on_user_created_link_athlete` (→ `link_athlete_on_signup`, baseline
+2026-04-17) rattache **dans la transaction d'inscription** toute fiche
+`athletes` orpheline portant le même courriel. C'est le parcours **coach →
+athlète NLS** : le coach sème la fiche, l'athlète la récupère sans ressaisir.
+
+Conséquences à connaître avant de diagnostiquer un « bug d'inscription » :
+- une inscription qui se croit neuve arrive **pré-remplie** (école, sport,
+  position, numéro) et démarre à l'**étape 2** — la reprise d'étape écrase le
+  `setStep(0)` parce que `school_id` est présent. **C'est voulu.**
+- la modale `ClaimProfileModal` est de ce fait **inatteignable** pour ce cas :
+  `user_id` est déjà posé quand le client s'exécute. Code mort d'allure vivante.
+- **L'app n'ANNONCE pas l'héritage** — défaut connu, registre `docs/fast-follow-1.4.2.md` §17.
+
+#### Périmètre d'auto-édition de l'athlète — la frontière est l'onboarding
+
+`enforce_athlete_self_edit_perimeter()` (migration `20260909191744`) interdit à
+l'athlète de modifier lui-même `user_id, coach_id, school_id, status, verified*,
+cote_globale_entraineur, profile_completion, is_showcase, consentement*,
+partner_visibility*, recruitment_status*, committed_school_id`.
+
+**Décision produit BP 2026-09-11 :** **pendant** l'onboarding
+(`users.onboarding_complete = false`), `school_id` et `coach_id` appartiennent à
+l'athlète — choisir son école EST le geste d'inscription. La garde s'applique
+pleinement **après**. Rien d'autre ne s'ouvre, à aucun moment.
+- DDL prêt, **non appliqué** : `docs/d6-volet5-perimetre-onboarding.sql`
+  (5ᵉ volet de la migration D6, registre §16).
+- Miroir client, **livré en 1.4.1** : `lib/athlete/perimetreProtege.ts`. Tout
+  écran qui écrit `athletes` sous l'identité de l'athlète doit passer son patch
+  dans `elaguerProtegees()` — sinon reposer une colonne protégée **à l'identique**
+  suffit à lever la garde et à rendre un 400.
+
+#### Journaliser une erreur dans du code qui tourne en WebView
+
+Le pont console de Capacitor passe ses arguments à `String()` : un
+`console.error("x:", error)` atterrit dans le logcat en **`[object Object]`**.
+Sérialiser à la main — `erreurLisible()` de `lib/athlete/perimetreProtege.ts`.
+
 ### School Registry
 - Pre-seeded from MEQ open data (Données Québec)
 - Coaches join existing schools, never create them

@@ -366,3 +366,77 @@ moteur SQL.
 Les transformations non triviales, reproduites du moteur et vérifiées :
 `Taille` se découpe sur l'apostrophe en `taille_pieds` / `taille_pouces`,
 `Poids` perd son « lbs », `Numéro` perd son « # ».
+
+---
+
+## 16. LOT MIGRATION (session D6, volet 5) — l'onboarding rend l'école et le coach à l'athlète
+
+**DDL déjà écrit et commenté : `docs/d6-volet5-perimetre-onboarding.sql`.**
+Non appliqué, à reprendre tel quel dans la migration D6.
+
+Décision produit actée (BP, 2026-09-11) : **pendant l'onboarding — tant que
+`users.onboarding_complete` est faux — l'athlète peut choisir son école et son
+coach. La garde `enforce_athlete_self_edit_perimeter` s'applique pleinement
+après.** Le reste du périmètre n'est jamais ouvert.
+
+**Ce que ça corrige, et pourquoi ça n'a pas été fait en 1.4.1 :** la recette du
+2026-09-11 a buté sur « Échec de sauvegarde » à la finalisation d'une
+inscription. Cause réelle (logs Supabase, `PATCH /rest/v1/athletes` → 400) : le
+trigger posé par `20260909191744_edition_directe_athlete` refusait
+`coach_id, school_id`. Deux règles vraies se contredisaient — le trigger dit
+« l'école appartient à l'entraîneur », l'onboarding dit « l'athlète choisit son
+école ». Il manquait la frontière.
+
+1.4.1 a reçu le **correctif client** (`lib/athlete/perimetreProtege.ts`) : les
+colonnes protégées ne partent plus si elles n'ont pas changé, donc l'athlète qui
+GARDE l'école héritée finalise. Celui qui en CHANGE reste refusé jusqu'à ce
+volet. Le client ne contourne pas la garde, il cesse de la réveiller pour rien.
+
+**Six preuves par exécution sont listées en fin de DDL** — dont la vérification
+que la policy `users read own` existe toujours : le SELECT d'exemption passe par
+la RLS, et sa disparition ouvrirait l'exemption en permanence, en silence.
+
+---
+
+## 17. Annoncer l'héritage à l'inscription — et ressusciter la modale morte
+
+**Assumé tel quel en 1.4.1** (décision BP, 2026-09-11) : la réclamation
+silencieuse d'une fiche orpheline par courriel est le parcours coach → athlète
+NLS, et elle reste. Ce qui est à corriger, c'est le **silence**, pas le
+rattachement.
+
+Le trigger `on_user_created_link_athlete` rattache la fiche dans la transaction
+d'inscription. L'athlète arrive donc sur un wizard pré-rempli — école, sport,
+position, numéro — sans qu'on lui ait dit d'où ça vient, et l'écran s'ouvre
+directement à l'étape 2. Vécu en recette comme un bug ; c'est une
+fonctionnalité qui ne se présente pas.
+
+**Effet de bord à traiter dans le même lot :** `ClaimProfileModal` et la branche
+`else if (user.email)` de `AthleteOnboardingMobile` (et son jumeau
+`app/athlete/onboarding/page.tsx`) sont devenues **inatteignables** pour ce cas —
+le trigger a posé `user_id` avant que la branche ne s'exécute, donc `existing`
+n'est jamais null. Du code mort qui a l'air vivant. Deux sorties possibles :
+la ressusciter (la modale nomme le coach et l'école, ce qui est exactement
+l'annonce manquante), ou la supprimer au profit d'une bannière d'héritage sur
+l'étape 1. À trancher en écrivant la réponse.
+
+---
+
+## 18. Le jumeau web de l'onboarding porte les deux mêmes défauts
+
+`app/athlete/onboarding/page.tsx` envoie le même `athleteRecord` complet et
+tombera sur le même 400 dans les mêmes conditions. Il n'a pas été touché en
+1.4.1 : le protocole web-d'abord n'a pas été suivi ici parce que le chantier est
+né d'une recette mobile sur branche gelée, et élargir au web aurait ouvert un
+périmètre non demandé.
+
+`lib/athlete/perimetreProtege.ts` est utilisable tel quel — il ne dépend que du
+client Supabase. La migration web consiste à relever `instantaneProtege(existing)`
+au chargement, puis à passer le patch dans `elaguerProtegees` avant l'`update`.
+Même geste que pour `champVersColonne.ts` (§15).
+
+`erreurLisible()` du même module est à propager partout où une erreur part vers
+`console.*` dans du code qui tourne en WebView : le pont Capacitor passe ses
+arguments à `String()`, donc tout objet d'erreur y devient `[object Object]`.
+C'est ce qui a coûté vingt minutes le 2026-09-11 — le message réel était dans le
+client, il a fallu aller le lire dans les logs Supabase.

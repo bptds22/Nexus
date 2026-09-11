@@ -24,6 +24,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { clearPushToken } from "@/lib/push/registerPush";
+import { JOIN_CODE_STORAGE_KEY } from "@/lib/queries/athlete/teamAttachment";
+
+/** Les clés de travail du wizard, stashées hors React pour survivre à un
+ *  aller-retour /join → signup → onboarding. Elles ne survivent PAS à un
+ *  changement de compte : fuite inter-comptes sur appareil partagé. */
+const STASH_WIZARD = [JOIN_CODE_STORAGE_KEY];
 
 /**
  * Termine la session sur CET appareil : retrait du jeton push, puis signOut.
@@ -40,6 +46,14 @@ export async function deconnexion(supabase?: SupabaseClient): Promise<void> {
     await clearPushToken();
   } catch (err) {
     console.error("[deconnexion] clearPushToken", err);
+  }
+  /* Fuite inter-comptes sur appareil partagé : le code d'équipe stashé au
+     signup survivait à la déconnexion et était relu au montage de l'onboarding
+     par le compte SUIVANT, qui se retrouvait rattaché à une équipe qu'il n'a
+     jamais demandée. Le stash est un état de parcours, pas un état d'appareil —
+     il sort avec la session. */
+  for (const cle of STASH_WIZARD) {
+    try { sessionStorage.removeItem(cle); } catch { /* privé / quota / SSR */ }
   }
   await (supabase ?? createClient()).auth.signOut();
 }
