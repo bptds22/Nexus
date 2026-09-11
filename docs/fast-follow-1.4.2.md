@@ -490,6 +490,32 @@ Les deux gestes partent ensemble ou ne partent pas. Le DDL porte les deux, avec
 le pré-vol règle 3 et 9 preuves par exécution, dont la n°3 (« l'athlète ne peut
 pas approuver sa propre ligne ») sans laquelle le volet est une régression.
 
+### Question produit à trancher AU MOMENT du volet 6 — l'athlète sans coach
+
+`athlete_suggestions.coach_id` est renseigné depuis `athletes.coach_id` au
+moment du dépôt, et la boîte du coach lit les suggestions des athlètes **qu'il
+possède** (`loadCoachTaskCounts`, jointure sur `athletes.coach_id`). Un athlète
+**sans coach rattaché** dépose donc dans le vide : la ligne reste `EN_ATTENTE`
+pour toujours, personne ne la voit, et il attend un verdict qui ne viendra pas.
+C'est le même mensonge qu'aujourd'hui, déplacé d'un cran — le refus instantané
+deviendrait un silence éternel, ce qui est pire parce qu'il ne se mesure pas.
+
+**Position par défaut, à confirmer :** l'UI de suggestion **ne s'affiche pas**
+sans coach. À la place, un état vide qui dit quoi faire —
+« Rejoins ton équipe pour proposer ton évaluation ». L'athlète comprend le
+prérequis au lieu de découvrir l'absence de réponse.
+
+**Alternative, à peser :** la **file d'attente** — on accepte le dépôt, la ligne
+reste `EN_ATTENTE`, et elle devient visible le jour où un coach le réclame.
+Séduisant (rien n'est perdu, et le rattachement récompense), mais trois choses à
+régler avant de la retenir : (a) l'athlète voit-il « en attente » indéfiniment
+sans explication ? (b) un coach qui réclame une fiche hérite-t-il d'un historique
+de propositions qu'il n'a pas sollicité ? (c) quelle péremption — une cote
+proposée il y a huit mois n'a plus de sens.
+
+**À trancher en écrivant la réponse**, et le cas se teste : parmi les comptes
+athlètes existants, plusieurs n'ont pas de `coach_id`.
+
 ---
 
 ## 20. Le flux de suggestion d'évaluation WEB est encore actif — et menti en prod

@@ -273,6 +273,29 @@ Read them freely; write to them only with an explicit per-change GO.
 - Empty: #4a4d56 (dark gray)
 - Cote globale = average of non-zero trait ratings (skip unrated traits, don't count as 0)
 
+#### L'écran WOW est une PROJECTION ASPIRATIONNELLE assumée (décision BP, 2026-09-11)
+
+**Cette décision REMPLACE celle du 2026-09-10**, qui faisait retomber les
+étoiles à vide en fin d'animation.
+
+`AthleteOnboardingWowMobile` montre **5 étoiles pleines qui le restent** et les
+**cinq distinctions** du défilé. Ce n'est pas la cote de l'athlète : c'est une
+**démo** de ce à quoi sa carte ressemblera quand tout sera là. Le WOW n'écrit
+rien en base — il ne l'a jamais fait.
+
+La version précédente vidait les étoiles pour ne pas « mentir ». Le problème
+n'était pas la valeur affichée, c'était le CADRE : une carte qui monte à 5/5
+puis se vide raconte un échec à un gamin qui vient de s'inscrire.
+
+**Ce qui rend la projection honnête, et qui doit survivre à toute retouche :**
+1. le **défilé des badges NOMMÉS** — un badge nommé se lit « voilà ce que tu
+   peux gagner », pas « voilà ce que tu as » ;
+2. la ligne **« Ton entraîneur t'évaluera. »**, affichée pendant TOUTE la scène
+   (elle ne dépend plus d'une redescente, qui n'existe plus).
+
+Retirer l'un des deux sans retirer les 5 étoiles rouvre le procès en mensonge.
+La projection se NOMME, elle ne se dément pas.
+
 ### Distinctions (from evaluations.distinctions JSONB)
 - captain → "Capitaine" (icon: shield)
 - allstar → "Équipe d'étoiles" (icon: star)

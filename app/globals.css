@@ -1031,7 +1031,10 @@ body.light-mode .nx-social-auth-btn:hover {
    donne la lecture « il est descendu là » sans FLIP ni mesure de position. */
 @keyframes nx-wow-badge-file {
   0%   { transform: scale(1)    translateY(0);    opacity: 1; }
-  100% { transform: scale(0.26) translateY(92px); opacity: 0; }
+  /* 74px = l'écart réel entre le centre de la scène (136 / 2 = 68) et le
+     centre de la vignette de la rangée (136 − 8 de -mt-2, + 14 de demi-
+     vignette = 142). Recalculer si la hauteur de scène ou le -mt bougent. */
+  100% { transform: scale(0.26) translateY(74px); opacity: 0; }
 }
 
 /* La vignette qui apparaît dans la rangée, à 28px. Court et sec : elle ne

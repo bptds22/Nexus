@@ -54,10 +54,12 @@ import { triggerHaptic } from "@/lib/haptics";
    que le physique — et la consécration en bouquet final. */
 /* CINQ badges, en crescendo — et c'est de l'aspirationnel ASSUMÉ.
 
-   Les étoiles, elles, redescendent à vide : une NOTE que personne n'a
-   donnée ne se montre pas. Les badges n'ont pas ce problème. Une note
-   affichée se lit « voilà ce que tu vaux » ; un badge se lit « voilà ce
-   que tu peux gagner ». L'un ment, l'autre donne envie.
+   Les étoiles restent pleines elles aussi — décision BP du 2026-09-11, qui
+   REMPLACE la redescente à vide de la veille. La carte entière est une
+   projection : 5/5 et cinq distinctions, c'est la démo de ce à quoi ça
+   ressemble quand tout est là. Elle ne devient pas honnête en se démentant,
+   elle le devient en se NOMMANT — le défilé des badges nommés, et la ligne
+   « Ton entraîneur t'évaluera » affichée en permanence sous la rangée.
 
    La séquence monte : le brassard, la vitesse, la tête, la sélection —
    puis nexus-x, le badge maison, en bouquet. Chacune dit une facette
@@ -106,7 +108,6 @@ const T_VERIFIED_DELAY   = 250;  // pause après scale-in avant Vérifié
 const T_STARS_LEAD       = 320;  // pause après Vérifié avant 1ère étoile
 const T_STAR_GAP         = 420;  // cadence étoile
 const T_BADGES_DELAY     = 300;  // après dernière étoile
-const T_STARS_HOLD       = 900;  // temps de contemplation avant la redescente
 
 /* ── ACTE 2, « le défilé » ───────────────────────────────────────────────
    Les cinq badges arrivaient ENSEMBLE, décalés de 130 ms : 940 ms pour les
@@ -211,9 +212,6 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
   const [act, setAct] = useState<Act>("anticipation");
   const [wowVerified, setWowVerified] = useState(false);
   const [wowStars, setWowStars] = useState(0);
-  /* Vrai une fois les étoiles retombées : la carte cesse de promettre et dit
-     qui attribue la cote. */
-  const [starsHint, setStarsHint] = useState(false);
   /* Le défilé se décrit avec deux compteurs, pas un drapeau.
      `badgeAuCentre` = l'index qui occupe le centre (−1 = personne).
      `badgesRanges`  = combien sont déjà descendus dans la rangée.
@@ -264,14 +262,20 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
       triggerHaptic("Medium");
     });
 
-    /* 5 étoiles cascade — Light chacune — PUIS REDESCENTE À VIDE.
+    /* 5 étoiles cascade — Light chacune — ET ELLES RESTENT PLEINES.
 
-       La montée reste : c'est la promesse, et elle est belle. Ce qui change,
-       c'est la fin. Laisser la carte sur 5/5 montrait la note MAXIMALE à un
-       athlète que personne n'a encore évalué — sur une plateforme dont le
-       badge vérifié atteste justement l'évaluation, c'était la pire valeur à
-       simuler. Les étoiles retombent donc à vide, et une ligne dit qui les
-       remplira pour de bon. */
+       Décision produit BP du 2026-09-11, qui REMPLACE celle de la veille :
+       la carte du WOW est une PROJECTION ASPIRATIONNELLE assumée. Elle ne
+       montre pas ce que l'athlète EST, elle montre ce à quoi ça ressemble
+       quand tout est là — 5 étoiles, cinq distinctions nommées.
+
+       La version précédente faisait retomber les étoiles à vide pour ne pas
+       « mentir ». Le problème n'était pas la valeur affichée, c'était le
+       cadre : une carte qui monte à 5/5 puis se vide raconte un échec à un
+       gamin qui vient de s'inscrire. Ce qui rend la projection honnête, ce
+       n'est pas de la démentir, c'est de la NOMMER — le défilé des badges
+       et la ligne « Ton entraîneur t'évaluera », affichée en permanence,
+       disent ensemble « voilà la démo, voilà qui la remplira pour de vrai ». */
     const starsStart = verifiedAt + T_STARS_LEAD;
     for (let i = 1; i <= 5; i++) {
       T(starsStart + (i - 1) * T_STAR_GAP, () => {
@@ -279,11 +283,6 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
         triggerHaptic("Light");
       });
     }
-    const starsFullAt = starsStart + 5 * T_STAR_GAP;
-    T(starsFullAt + T_STARS_HOLD, () => {
-      setWowStars(0);
-      setStarsHint(true);
-    });
 
     /* Le défilé : chaque badge arrive seul au centre, claque, puis se range.
        L'haptique est ici et nulle part ailleurs dans l'acte 2 — c'était le
@@ -587,11 +586,16 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
             apparaît en bas. Deux animations qui se relaient, aucune mesure
             de position — donc rien à recalculer si la rangée bouge.
 
-            `h-[152px]` réserve la place une fois pour toutes : sans hauteur
-            fixe, l'apparition du premier badge pousserait la rangée et la
-            ligne « Ton entraîneur t'évaluera » vers le bas. */}
+            HAUTEUR FIXE, ET ELLE EST CALCULÉE : le badge `lg` mesure
+            96 (picto) + 10 (gouttière) + ~28 (libellé sur deux lignes, ex.
+            « ÉQUIPE D'ÉTOILES ») = 134 px. `h-[136px]` le contient au pixel
+            près. Trop généreuse, la boîte jouait le défilé plus bas que
+            nécessaire ; absente, le premier badge pousserait tout le reste.
+
+            `mt-1` + `items-start` collent la scène SOUS LA CARTE. Celle-ci ne
+            bouge pas : elle est au-dessus dans le flux, rien ici ne la pousse. */}
         <div
-          className="relative mt-6 h-[152px]"
+          className="relative mt-1 h-[136px]"
           style={{ pointerEvents: "none" }}
         >
           {SHOWCASE_BADGES.map((d, i) => {
@@ -605,7 +609,7 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
                  sautait de côté à chaque relais. */
               <div
                 key={d.badge}
-                className="absolute inset-0 flex items-center justify-center"
+                className="absolute inset-0 flex items-start justify-center"
                 style={{
                   animation: auCentre
                     ? "nx-wow-badge-slam 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
@@ -625,7 +629,7 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
             `xs` ne rend AUCUN libellé (DistinctionBadge:246) — plus besoin
             du `[&_span]:hidden` qui traînait ici. */}
         <div
-          className="-mt-4 flex items-end justify-center gap-3"
+          className="-mt-2 flex items-end justify-center gap-3"
           style={{ pointerEvents: "none" }}
         >
           {SHOWCASE_BADGES.slice(0, badgesRanges).map((d) => (
@@ -642,13 +646,16 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
           ))}
         </div>
 
-        {/* La carte cesse de promettre. Les étoiles viennent de retomber à
-            vide : cette ligne dit QUI les remplira, plutôt que de laisser un
-            5/5 que personne n'a donné. */}
+        {/* CE QUI REND LA PROJECTION HONNÊTE.
+            Les étoiles restent pleines et les cinq badges sont là : la carte
+            montre une DÉMO, pas un bilan. Cette ligne le dit, et elle est
+            affichée pendant TOUTE la scène — elle ne dépend plus d'une
+            redescente des étoiles, qui n'existe plus. C'est elle, avec le
+            défilé nommé, qui nomme la projection au lieu de la démentir. */}
         <p
-          className="mt-3 text-center text-[12px] text-white/50"
+          className="mt-4 text-center text-[12px] text-white/50"
           style={{
-            opacity: starsHint && showCardScene ? 1 : 0,
+            opacity: showCardScene ? 1 : 0,
             transition: "opacity 420ms ease-out",
             pointerEvents: "none",
           }}
