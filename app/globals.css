@@ -1451,6 +1451,29 @@ html.is-capacitor .sticky.bottom-0 {
   bottom: var(--kbd-h, 0px);
   transition: bottom .22s cubic-bezier(.32,.72,0,1);
 }
+
+/* ── nx-kbd-immobile — l'exclusion NOMMÉE ────────────────────────
+   La règle ci-dessus s'applique à TOUT `.fixed.bottom-0`, y compris à des
+   surfaces qui n'ont aucune saisie et aucune raison de suivre le clavier.
+
+   Le cas qui l'a révélée (recette 2026-09-10) : le MorePanel de la tab bar se
+   masque par TRANSLATION en restant monté. Fermé, il est à `bottom: 0` +
+   `translateY(100%)`, donc sous l'écran. Clavier ouvert, `--kbd-h` le remontait
+   de 300px : le panneau fermé redevenait VISIBLE par-dessus la tab bar, coupé à
+   une hauteur variable selon le clavier.
+
+   Une surface porte cette classe quand elle affirme deux choses : elle ne
+   contient aucun champ, et elle ne doit jamais bouger avec le clavier. C'est
+   une déclaration d'intention, pas un correctif ponctuel — d'où un nom plutôt
+   qu'un `bottom: 0` inline, que le canon du dépôt interdit justement parce
+   qu'il annule la remontée SANS dire pourquoi.
+
+   ⚠️ À ne pas poser sur un sheet AVEC saisie : celui-là doit remonter ET se
+   plafonner (`useSheetKeyboardGeometry`), sinon le champ sort par le haut. */
+html.is-capacitor .nx-kbd-immobile.fixed.bottom-0,
+html.is-capacitor .nx-kbd-immobile.sticky.bottom-0 {
+  bottom: 0;
+}
 @media (prefers-reduced-motion: reduce) {
   html.is-capacitor .fixed.bottom-0,
   html.is-capacitor .sticky.bottom-0 { transition: none; }

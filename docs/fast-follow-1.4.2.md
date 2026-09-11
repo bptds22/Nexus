@@ -45,31 +45,14 @@ animation de repli dormante, donc à recetter entièrement — ou retirer la
 machinerie morte. **Réparer a été explicitement interdit dans 1.4.1** (BP,
 2026-09-10) : on ne réveille pas une animation morte sur un train gelé.
 
-## 2. Le saut des badges en remontant — vérifier si le correctif D4a a suffi
+## 2. ~~Le saut des badges en remontant~~ — **CLOS**
 
-**Symptôme :** en scrollant vers le **haut** (jamais vers le bas), les
-pastilles de distinction restent figées quelques frames puis sautent à leur
-position.
+Corrigé en 1.4.1 par le passage du `will-change` du hero de PERMANENT à
+CONDITIONNEL. **Vérifié par BP à la recette du build `fb63f1b`** : le saut au
+scroll remontant ne se reproduit plus. Rien à reprendre.
 
-**Correctif posé en 1.4.1 (D4a, option 1) :** le `will-change` du hero est
-devenu **conditionnel** au lieu de permanent. Le bloc fait **412 × 1015 px**
-(mesuré) ; promu en permanence sans que sa transformation ne bouge jamais, il
-force le compositeur à garder une grande couche à pixeliser — et en remontant
-à re-pixeliser des tuiles libérées.
-
-**Hypothèse, pas mesure.** Verdict attendu au test de BP après le rebuild de
-fin de session. **Si le saut persiste**, les pistes suivantes sont le
-`will-change` permanent de `HeroCollapsed` (`:2431`, mais 80px seulement) et
-la taille du hero lui-même.
-
-*Deux hypothèses ont déjà été **réfutées par la mesure**, ne pas les reprendre :*
-
-- *Composition/z-index* — expérience contrôlée dans la WebView réelle : trois
-  badges (parent non promu / parent promu / transform animé en boucle) sous la
-  même barre sticky `z-30` opaque, **tous masqués à l'identique**. Ce moteur
-  compose correctement. `willChange: "transform"` sur le sticky ne corrigerait
-  rien.
-- *Re-render par frame* — voir le point 1 : le handler ne s'exécute pas.
+La **chorégraphie morte** du point 1 reste ouverte — c'est un autre défaut,
+qui n'a jamais produit ce symptôme.
 
 ## 3. `return null` devant 97 hooks
 
@@ -273,3 +256,46 @@ restent pour les appareils plus anciens, où ils peignent encore.
 **À vérifier au premier build iOS** : le même raisonnement ne s'applique pas,
 mais l'équivalent (couleur de fond de fenêtre sous les safe areas) mérite un
 contrôle avant soumission.
+
+---
+
+## 13. `.fixed.bottom-0` masqués par TRANSLATION — audit complet
+
+**Relevé 2026-09-10.** La règle globale de `globals.css` remonte **tout**
+`.fixed.bottom-0` / `.sticky.bottom-0` de `var(--kbd-h)` quand le clavier
+s'ouvre. Une surface qui se masque par **translation en restant montée** est
+donc **repoussée dans le champ visible** au lieu de rester cachée.
+
+**34 surfaces** portent `fixed`/`sticky bottom-0`. La forme dangereuse —
+`translate-y-full` **sans** garde de montage — n'en touche que **deux** :
+
+| surface | saisie propre | clavier possible ? | état |
+|---|---|---|---|
+| `app/_components/mobile/MorePanel.tsx` | aucune | oui (champ de recherche) | ✅ **corrigé 1.4.1** (`nx-kbd-immobile`) |
+| `components/shared/CoachAthleteThreadMobile.tsx:222` | aucune | **oui, en permanence** | 🔴 **NON corrigé** — voir ci-dessous |
+
+**Les 32 autres sont saines** : elles se démontent à la fermeture (`open &&`,
+`if (!open) return null`), ou n'ont pas de translation. Une surface démontée ne
+peut pas être repoussée dans le champ.
+
+### Le cas non corrigé, et pourquoi il est plus grave
+
+`CoachAthleteThreadMobile` est un **fil de messagerie**. Il monte
+`MessageThreadShell` avec un composer (`composerPlaceholder="Message…"`), donc
+**le clavier s'ouvre à chaque fois que le coach écrit** — pas seulement quand il
+cherche. Sa feuille d'actions a exactement la même forme que celle du
+MorePanel :
+
+```
+fixed bottom-0 inset-x-0 z-[70] … ${sheetOpen ? "translate-y-0" : "translate-y-full"}
+```
+
+**Le correctif est le même mot** : ajouter `nx-kbd-immobile`. Non appliqué en
+1.4.1 faute de GO — la consigne était de rapporter avant de toucher une
+deuxième surface.
+
+### La leçon, pour les prochaines
+
+Un sheet sans saisie doit **soit se démonter à la fermeture, soit porter
+`nx-kbd-immobile`**. La translation seule ne suffit pas à le cacher sur une
+plateforme où le clavier déplace tout ce qui est collé en bas.
