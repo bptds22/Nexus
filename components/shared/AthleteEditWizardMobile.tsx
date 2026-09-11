@@ -42,6 +42,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ecrireChampAthlete } from "@/lib/athlete/champVersColonne";
+import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { uploadAvatar } from "@/lib/storage/uploadAvatar";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
@@ -57,19 +58,15 @@ import {
 } from "@/components/shared/wizard/HeightWeightWheel";
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
+import { GREEN, YELLOW, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
 import { triggerHaptic } from "@/lib/haptics";
 import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
-import {
-  BADGE_CONFIG, MAX_DETAIL_LENGTH,
-  type DistinctionEntry,
-} from "@/lib/config/badges";
-import BadgePicker from "@/components/shared/BadgePicker";
-import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
-import { entreesIncompletes, type BadgeEntry } from "@/lib/config/badgeCatalogue";
-import { chargerBadgesAthlete, badgesDepuisRaw, type BadgeAffiche } from "@/lib/queries/shared/athleteBadges";
+/* Le sélecteur de badges, son catalogue et ses helpers de saisie sont partis
+   avec DistinctionsSuggestRow : les distinctions ne se proposent plus, elles
+   s'affichent. Seule la lecture reste. */
+import { badgesDepuisRaw, type BadgeAffiche } from "@/lib/queries/shared/athleteBadges";
 import { traitGroups, champToColumn, type GrilleRef, type TraitEntry } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 
@@ -2052,41 +2049,39 @@ function EvaluationStep({
         </>
       )}
 
-      {/* ── Distinctions (SUGGEST) ──────────────────────────────
-            Single-row, single-suggestion : the whole entries array is
-            JSON-stringified into one athlete_suggestions row with champ
-            "Distinctions" + valeur_proposee = JSON.stringify(entries).
-            Trigger casts ::jsonb on apply (migration L190-193) and the
-            recruiter/coach read goes through pastillesBadges, so the
-            stringify→jsonb→parse round-trip is symmetric. */}
+      {/* ── Distinctions — LECTURE SEULE ────────────────────────
+            Elles appartiennent au coach, comme la cote. La rangée offrait
+            encore un crayon et un chevron : l'athlète pouvait l'ouvrir,
+            choisir des badges, appuyer — et le trigger de transition
+            rejetait l'ensemble. Une affordance qui ne mène nulle part est
+            pire qu'une absence : elle fait croire à un droit.
+
+            On montre donc ce que le coach a attribué, et rien de cliquable.
+            Aucune distinction n'est pas une faute — c'est un début. */}
       <div>
         <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
           Distinctions
         </p>
         <Card>
-          <DistinctionsSuggestRow
-            athleteId={a.id ?? null}
-            sportId={a.sportId}
-            sportNom={a.primarySport || null}
-            currentDistinctions={a.coachDistinctions}
-            pending={getPending("Distinctions")}
-            submitting={submitting}
-            onSubmit={async (entries) => {
-              /* champ + payload format are trigger-critical. champ MUST
-                 be exactly "Distinctions" (single trigger CASE branch
-                 at migration L190). NEVER emit "Distinction
-                 personnalisée" — that's a SEPARATE branch (L195-196)
-                 used by a different admin flow ; emitting it from the
-                 athlete profile would INSERT into custom_distinctions
-                 instead of updating evaluations.distinctions, which is
-                 not what we want here. The custom badge's display title
-                 lives inside the entries array as { badge:"custom",
-                 detail:"<title>" } and ships through the regular
-                 Distinctions branch. */
-              const valueActuelle = JSON.stringify(a.coachDistinctions);
-              await onSubmit("Distinctions", JSON.stringify(entries), "", valueActuelle);
-            }}
-          />
+          <div className="px-4 py-4">
+            {a.coachDistinctions.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                {a.coachDistinctions.map((d) => (
+                  <DistinctionBadge
+                    key={d.badge}
+                    badge={d.badge}
+                    detail={d.detail}
+                    libelle={d.libelle}
+                    size="sm"
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-white/45">
+                Attribuées par ton entraîneur.
+              </p>
+            )}
+          </div>
         </Card>
       </div>
     </div>
@@ -2216,197 +2211,3 @@ function StarSuggestRow({
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DistinctionsSuggestRow — Sprint B-3b.
-
-   The ONLY structured-payload suggestion in the system : a JSONB
-   array of {badge, detail?} entries that ships as ONE suggestion row
-   (champ="Distinctions", valeur_proposee=JSON.stringify(entries)) ;
-   the trigger casts ::jsonb and the recruiter/coach read goes through
-   pastillesBadges. Symmetric round-trip.
-
-   Mirrors web DistinctionsSuggest (app/athlete/profil/page.tsx :695-
-   800) :
-     - 7 badges from BADGE_ORDER as a toggle list (custom label is
-       shown as "Personnalisée" — same display substitution as web
-       page.tsx :772).
-     - MAX_BADGES = 5 cap (enforced both on toggle AND visually : once
-       5 are selected, unselected entries dim + disable).
-     - 3 hasDetail badges (team_leader / league_leader / custom)
-       reveal an inline detail input capped at MAX_DETAIL_LENGTH = 30.
-       Placeholders : custom → "Titre", others → "Ex: Points, Buts,
-       Passes..." — verbatim mirror of web :780.
-     - On submit, entries with empty detail strings have their detail
-       key OMITTED (not detail:"") — same as web :716-718's
-       `detail: detail || undefined` idiom which JSON.stringify drops
-       from the serialized object.
-
-   INPUT SURFACE : inline-expand (no bottom sheet). The 7-badge list +
-   per-badge detail inputs fit comfortably inline at ~10 rows worst-
-   case, well below typical step height. Keeping it inline preserves
-   the no-popup canon of the rest of the athlete editor — every
-   suggest row in this wizard is inline-expand (text, picker, stars,
-   now distinctions). A bottom sheet would be the ONLY exception and
-   would have to ship + own its own animation/close semantics. Inline
-   stays simpler and consistent.
-
-   Submission shape is byte-identical to the web payload so the
-   apply_approved_suggestion trigger's `::jsonb` cast and the canonical
-   pastillesBadges read are both symmetric round-trips.
-═══════════════════════════════════════════════════════════════ */
-function DistinctionsSuggestRow({
-  athleteId, sportId, sportNom, currentDistinctions, pending, submitting, onSubmit,
-}: {
-  athleteId: string | null;
-  sportId: string | null;
-  sportNom: string | null;
-  currentDistinctions: DistinctionEntry[];
-  pending: AthleteSuggestion | undefined;
-  submitting: boolean;
-  onSubmit: (entries: DistinctionEntry[]) => Promise<void>;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [autres, setAutres] = useState<BadgeEntry[]>([]);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const cat = useBadgeCatalogue();
-  /* Draft is seeded from currentDistinctions on expand (mirrors web
-     `startEditing` at page.tsx :727-730) so the athlete edits the
-     existing set rather than starting blank. */
-  const [draft, setDraft] = useState<BadgeEntry[]>([]);
-  const hasPending = !!pending;
-  const incomplets = entreesIncompletes(draft, cat);
-
-  /* Le picker part des badges issus de SUGGESTIONS, pas de
-     evaluations.distinctions. Ceux posés par un coach s'affichent en lecture
-     seule : une suggestion ne peut pas les retirer. Si la lecture échoue on
-     N'OUVRE PAS — ouvrir sur une liste vide proposerait de tout retirer. */
-  const ouvrir = async () => {
-    setErreur(null);
-    if (!athleteId) { setErreur("profil non chargé"); return; }
-    try {
-      const sb = createClient();
-      const { data: { user } } = await sb.auth.getUser();
-      const b = await chargerBadgesAthlete(sb, athleteId, user?.id ?? null, false, "suggestion");
-      setDraft(b.miens);
-      setAutres(b.autres);
-      setExpanded(true);
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const submit = async () => {
-    /* Normalize entries for the wire payload : drop empty detail keys
-       so JSON.stringify omits them (matches web exactly — empty detail
-       must NOT serialize as `"detail":""`). Preserve insertion order
-       (athlete's tap order = badge ordering in the recruiter view). */
-    /* Ancienne forme {badge, detail} avec les NOUVEAUX codes :
-       code_badge_catalogue accepte les deux vocabulaires, donc aucun SQL à
-       toucher et le contrat de onSubmit reste inchangé. */
-    const wire: DistinctionEntry[] = draft.map((e) => {
-      const d = (e.contexte || "").trim();
-      return d ? { badge: e.code, detail: d } : { badge: e.code };
-    });
-    await onSubmit(wire);
-    setExpanded(false);
-  };
-
-  /* ─── Collapsed surface ──────────────────────────────────────
-        Yellow pencil indicator + "Distinctions" + small chip summary
-        of currently-coach-set badges + pending pill. Same visual
-        canon as the StarSuggestRow read-state. */
-  if (!expanded) {
-    return (
-      <div className="w-full">
-        <button
-          type="button"
-          onClick={() => { void triggerHaptic("Light"); void ouvrir(); }}
-          className="w-full flex items-start justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
-        >
-          <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
-            <PencilIcon color={YELLOW} size={12} />
-            <span className="text-[14px] text-white/70 truncate">Distinctions</span>
-          </span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-        {/* Current badges as small muted chips. Empty state shows an
-            em-dash via the read-only branch ; in expand mode the user
-            sees the same chip list reflected in the toggle states. */}
-        {currentDistinctions.length > 0 ? (
-          <div className="px-4 pb-3 flex flex-wrap gap-1.5">
-            {currentDistinctions.map((e, i) => {
-              const cfg = BADGE_CONFIG[e.badge];
-              if (!cfg) return null;
-              const label = e.badge === "custom"
-                ? (e.detail || "Personnalisée")
-                : (e.detail ? `${cfg.label} — ${e.detail}` : cfg.label);
-              return (
-                <span
-                  key={`${e.badge}-${i}`}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/[0.06] border border-white/[0.08] text-white/75"
-                >
-                  {label}
-                </span>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="px-4 pb-3">
-            <span className="text-[12px] text-white/35">—</span>
-          </div>
-        )}
-        {hasPending && (
-          <div className="px-4 pb-3 -mt-1">
-            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
-              ⏳ En attente
-            </span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /* ─── Expanded surface ───────────────────────────────────────
-        7-badge toggle list + per-badge detail inputs (hasDetail
-        only) + Annuler/Soumettre. Cap counter (n/MAX_BADGES) sits
-        above the action row. */
-  return (
-    <div className="w-full px-4 py-3 bg-[#0E1015]">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[14px] text-white font-semibold">Distinctions</span>
-        <button
-          type="button"
-          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
-          className="text-[12px] text-white/45 active:text-white/70"
-        >
-          Annuler
-        </button>
-      </div>
-
-      {/* Ambre : l'accent des surfaces athlète mobile. Les compteurs (dont
-          le plafond par famille) sont portés par le picker. */}
-      <BadgePicker
-        value={draft}
-        onChange={setDraft}
-        sportId={sportId}
-        sportNom={sportNom}
-        autresBadges={autres}
-        layout="rangees"
-        accent="#EAB308"
-      />
-
-      <div className="mt-3 flex items-center justify-end gap-3 pb-2">
-        <button
-          type="button"
-          onClick={() => { void triggerHaptic("Light"); submit(); }}
-          disabled={submitting}
-          className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
-        >
-          {submitting ? "..." : "Soumettre"}
-        </button>
-      </div>
-    </div>
-  );
-}

@@ -52,11 +52,36 @@ import { triggerHaptic } from "@/lib/haptics";
    La séquence raconte une progression plutôt qu'un tas : le leadership, puis
    l'explosivité, puis l'intelligence de jeu — qui dit que Nexus ne mesure pas
    que le physique — et la consécration en bouquet final. */
-const SHOWCASE_BADGES: { badge: string }[] = [
-  { badge: "capitaine" },
-  { badge: "fusee" },
-  { badge: "qi" },
-  { badge: "equipe-etoiles" },
+/* CINQ badges, en crescendo — et c'est de l'aspirationnel ASSUMÉ.
+
+   Les étoiles, elles, redescendent à vide : une NOTE que personne n'a
+   donnée ne se montre pas. Les badges n'ont pas ce problème. Une note
+   affichée se lit « voilà ce que tu vaux » ; un badge se lit « voilà ce
+   que tu peux gagner ». L'un ment, l'autre donne envie.
+
+   La séquence monte : le brassard, la vitesse, la tête, la sélection —
+   puis nexus-x, le badge maison, en bouquet. Chacune dit une facette
+   différente, pour qu'un jeune se reconnaisse dans au moins une.
+
+   Codes de CATALOGUE, jamais de codes hérités : un code sans équivalent
+   se rend en `null` sans bruit, et c'est comme ça qu'un des trois badges
+   d'origine manquait depuis toujours.
+
+   ⚠️ LE LIBELLÉ EST OBLIGATOIRE ICI, et c'est le même piège d'un cran plus
+   loin : BADGE_CONFIG ne connaît que les codes HÉRITÉS. Un code de catalogue
+   arrivant sans sa prop `libelle` tombe sur le second garde de
+   DistinctionBadge (`!config && !libelle`) et se rend en `null` — les cinq
+   badges auraient disparu d'un coup, en silence. Les libellés viennent de
+   public.badges, relevés le 2026-09-10.
+
+   Le WOW masque les libellés à l'écran (`[&_span]:hidden`) : ils ne servent
+   qu'à passer ce garde. Raison de plus pour ne pas les inventer. */
+const SHOWCASE_BADGES: { badge: string; libelle: string }[] = [
+  { badge: "capitaine",      libelle: "Leadership" },        // universel
+  { badge: "fusee",          libelle: "Explosif" },          // sport — le physique
+  { badge: "qi",             libelle: "IQ" },                // universel — la tête
+  { badge: "equipe-etoiles", libelle: "Équipe d'étoiles" },  // honneur — la sélection
+  { badge: "mvp",            libelle: "MVP" },               // honneur — le bouquet
 ];
 
 // Pill labels — repris verbatim du brief b3-fix3 (override des shortLabel
@@ -542,7 +567,7 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
                 transition: `opacity 380ms ease-out ${i * T_BADGES_STAGGER}ms, transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * T_BADGES_STAGGER}ms`,
               }}
             >
-              <DistinctionBadge badge={d.badge} size="sm" />
+              <DistinctionBadge badge={d.badge} libelle={d.libelle} size="sm" />
             </div>
           ))}
         </div>
