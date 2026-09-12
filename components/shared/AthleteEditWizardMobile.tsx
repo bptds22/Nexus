@@ -793,8 +793,6 @@ export default function AthleteEditWizardMobile() {
 
   useEffect(() => { load(); }, [load]);
 
-  /* ── getPending — verbatim mirror of page.tsx :1290 helper. */
-  const pendingSugs = useMemo(() => suggestions.filter((s) => s.status === "pending"), [suggestions]);
   /* Compare sur la COLONNE : l'app 1.2 en magasin a pu créer la suggestion avec
      un libellé FR, celle-ci l'écrit en nom de colonne. Les deux doivent
      retrouver le même critère. */
@@ -806,11 +804,38 @@ export default function AthleteEditWizardMobile() {
     positionId: ((a as { positionId?: string | null } | null)?.positionId) ?? null,
   } as GrilleRef);
 
-  const getPending = useCallback((champ: string) => {
+  /* ── L'ÉTAT RÉEL, PAS L'ÉTAT ESPÉRÉ ──────────────────────────────────────
+        Décision BP du 2026-09-12, après une recette perdue à chasser un
+        fantôme. `getPending` ne rendait que les EN_ATTENTE — et il n'existe
+        AUCUNE ligne EN_ATTENTE en base : le trigger de transition résout tout
+        dans la transaction d'insertion (délai mesuré : 0.000000 s). La
+        pastille était donc structurellement invisible, et l'athlète soumettait
+        dans le noir.
+
+        `derniereSuggestion` rend la PLUS RÉCENTE quel que soit son statut. La
+        rangée affiche ce que le serveur dit — en attente, approuvée ou
+        refusée. Le jour où le volet 6 de D6 laisse les évaluations en
+        EN_ATTENTE, le même code se met à afficher « En attente » sans qu'on y
+        retouche : c'est le statut qui change, pas l'écran. */
+  const derniereSuggestion = useCallback((champ: string) => {
     const col = champToColumn(champ);
-    return pendingSugs.find((s) =>
+    /* `suggestions` arrive déjà trié created_at DESC (cf. load()), donc le
+       premier trouvé est le plus récent. */
+    return suggestions.find((s) =>
       s.field === champ || (col !== null && champToColumn(s.field) === col));
-  }, [pendingSugs]);
+  }, [suggestions]);
+
+  /* Le récapitulatif de l'étape Évaluation : uniquement les champs qui
+     APPARTIENNENT à l'entraîneur. Les champs de profil s'écrivent en direct
+     et n'ont produit de ligne que via l'ancien chemin — les mélanger ici
+     ferait croire qu'ils attendent une approbation. */
+  const suggestionsEvaluation = useMemo(
+    () => suggestions.filter((s) => s.field === "Distinctions"
+      || s.field === "Distinction personnalisée"
+      || s.field === "Cote globale"
+      || champToColumn(s.field) !== null).slice(0, 12),
+    [suggestions],
+  );
 
   /* ── DIRECT save — mirrors page.tsx :1224-1236 (Médias saveField)
         widened to cover the Académique JSONB + bool columns introduced
@@ -1074,7 +1099,8 @@ export default function AthleteEditWizardMobile() {
           <EvaluationStep
             groups={traitGroupsResolved}
             a={a}
-            getPending={getPending}
+            derniereSuggestion={derniereSuggestion}
+            suggestionsEvaluation={suggestionsEvaluation}
             submitting={submitting}
             onPropose={proposerEvaluation}
           />
@@ -1916,12 +1942,13 @@ function MediasStep({
    Parité assumée avec les deux autres clients : le web (athlete/profil,
    EvaluationSuggest) et le binaire iOS 1.4 offrent exactement ce geste. */
 function EvaluationStep({
-  a, groups, getPending, submitting, onPropose,
+  a, groups, derniereSuggestion, suggestionsEvaluation, submitting, onPropose,
 }: {
   a: LoadedAthlete;
   /** Les 2 groupes (9 / 5), libellés résolus par la grille de l'athlète. */
   groups: { title: string; traits: TraitEntry[] }[];
-  getPending: (champ: string) => AthleteSuggestion | undefined;
+  derniereSuggestion: (champ: string) => AthleteSuggestion | undefined;
+  suggestionsEvaluation: AthleteSuggestion[];
   submitting: boolean;
   onPropose: (champ: string, valeurProposee: string, valeurActuelle: string) => Promise<string | null>;
 }) {
@@ -2044,7 +2071,7 @@ function EvaluationStep({
               champ="Cote globale"
               allowHalf
               starSize={26}
-              pending={getPending("Cote globale")}
+              suggestion={derniereSuggestion("Cote globale")}
               submitting={submitting}
               onSubmit={async (proposed) => {
                 await onPropose("Cote globale", proposed.toFixed(1), a.overallRating > 0 ? a.overallRating.toFixed(1) : "");
@@ -2077,8 +2104,27 @@ function EvaluationStep({
             Each row is a StarSuggestRow with whole-star input
             (allowHalf=false) and champ = the trait's exact French
             label. valeur_proposee = String(int) "1"-"5", matching
-            the trigger ::int cast for those 14 columns. */}
-      {isDetailedMode && (
+            the trigger ::int cast for those 14 columns.
+
+            ⚠️ PLUS DE GARDE `isDetailedMode` ICI — décision BP, 2026-09-12.
+            La grille ne s'affichait que si au moins un trait était DÉJÀ noté
+            par l'entraîneur. Autrement dit : « tu ne peux proposer une note
+            que si on t'en a déjà mis une ». Pour tout nouvel inscrit — donc
+            pour ceux qui en ont le plus besoin — les 14 traits étaient
+            invisibles et impossibles à proposer.
+
+            La règle devient : PROPOSER NE PRÉSUPPOSE PAS D'AVOIR ÉTÉ NOTÉ.
+
+            Ce qui ne change PAS : la LECTURE. Un trait jamais noté rend « — »
+            dans StarSuggestRow, jamais cinq étoiles vides — une note absente
+            n'est pas une note de zéro. C'est le GESTE qui s'ouvre, pas
+            l'affichage qui invente une valeur.
+
+            `isDetailedMode` sert encore juste au-dessus, pour la cote : elle
+            reste le miroir client de la garde `v_is_detailed` du trigger, qui
+            refuse d'appliquer une cote plate quand l'évaluation détaillée est
+            active. Cette garde-là est critique et ne bouge pas. */}
+      {(
         <>
           <div>
             <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
@@ -2095,7 +2141,7 @@ function EvaluationStep({
                     champ={t.column}
                     allowHalf={false}
                     starSize={24}
-                    pending={getPending(t.column)}
+                    suggestion={derniereSuggestion(t.column)}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
                       /* Même valeur = pas de ligne. Le trigger l'appliquerait
@@ -2125,7 +2171,7 @@ function EvaluationStep({
                     champ={t.column}
                     allowHalf={false}
                     starSize={24}
-                    pending={getPending(t.column)}
+                    suggestion={derniereSuggestion(t.column)}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
                       if (proposed === current) return;
@@ -2157,7 +2203,7 @@ function EvaluationStep({
             sportId={a.sportId}
             sportNom={a.primarySport || null}
             currentDistinctions={a.coachDistinctions}
-            pending={getPending("Distinctions")}
+            suggestion={derniereSuggestion("Distinctions")}
             submitting={submitting}
             onSubmit={async (entries) => {
               /* Une SEULE ligne pour tout le jeu de badges, sérialisée en
@@ -2169,8 +2215,71 @@ function EvaluationStep({
           />
         </Card>
       </div>
+
+      {/* ── MES PROPOSITIONS — le journal, pas la promesse ────────────────
+            Port du panneau « Mes suggestions » du web (athlete/profil
+            :1980-2026), en liste unique plutôt qu'en trois onglets : sur un
+            écran de 411 px, trois onglets pour douze lignes coûtent un geste
+            de plus qu'ils n'en économisent. Le statut est porté par la
+            pastille de chaque ligne, donc l'information est la même.
+
+            Il vit ICI, en bas de l'étape, et pas ailleurs : c'est la seule
+            étape dont les gestes attendent une décision de quelqu'un d'autre.
+            Les champs de profil s'écrivent — ils n'ont rien à journaliser. */}
+      {suggestionsEvaluation.length > 0 && (
+        <div>
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
+            Mes propositions
+          </p>
+          <Card>
+            <div className="divide-y divide-white/[0.06]">
+              {suggestionsEvaluation.map((s) => (
+                <div key={s.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-[13px] font-semibold text-white/85 min-w-0 truncate">
+                      {libelleChampProposition(s.field, groups)}
+                    </span>
+                    <span className="shrink-0"><PastilleStatut s={s} /></span>
+                  </div>
+                  <p className="mt-1 text-[12px] text-white/55 break-words">
+                    {s.field === "Distinctions"
+                      ? (badgesProposes(s.proposed_value).join(" · ") || s.proposed_value)
+                      : <>
+                          {s.current_value ? <span className="line-through text-white/30">{s.current_value}</span> : null}
+                          {s.current_value ? " → " : null}
+                          <span className="font-bold text-white/85">{s.proposed_value}</span>
+                        </>}
+                  </p>
+                  {s.status === "rejected" && s.rejection_reason && (
+                    <p className="mt-1 text-[11px] leading-relaxed text-[#E63946]/85">
+                      {s.rejection_reason}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
+}
+
+/** Le libellé LISIBLE d'un champ proposé. `field` porte un nom de colonne
+ *  depuis le découplage du lot 3 (`esprit_equipe`), ou un libellé français
+ *  pour les lignes déposées par les clients plus anciens. On rend celui de
+ *  la grille de l'athlète quand on le retrouve, sinon la valeur telle quelle
+ *  — jamais une colonne brute présentée comme du français. */
+function libelleChampProposition(
+  field: string,
+  groups: { title: string; traits: TraitEntry[] }[],
+): string {
+  const col = champToColumn(field);
+  if (col) {
+    const t = groups.flatMap((g) => g.traits).find((x) => x.column === col);
+    if (t) return t.label;
+  }
+  return field;
 }
 
 /* ── RESTAURÉ le 2026-09-11 depuis eb52329^ / 0b6e05b^ ────────────────────
@@ -2185,6 +2294,34 @@ function EvaluationStep({
    comportent pareil — ce qui est la condition pour que le correctif serveur
    les répare tous les trois d'un coup.
    ──────────────────────────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════
+   PastilleStatut — ce que le SERVEUR dit de la dernière proposition.
+
+   Une seule pastille pour les trois rangées de l'étape Évaluation, alignée
+   sur le panneau « Mes suggestions » du web (athlete/profil :1987-2020) :
+   jaune en attente, vert approuvé, rouge refusé.
+
+   ⚠️ AUCUN de ces trois états n'est deviné côté client. C'est la leçon de la
+   recette du 2026-09-12 : la version précédente n'affichait que EN_ATTENTE,
+   un état qu'aucune ligne n'atteint aujourd'hui — donc rien ne s'affichait
+   jamais, et l'athlète soumettait dans le noir.
+═══════════════════════════════════════════════════════════════ */
+function PastilleStatut({ s, valeur }: { s: AthleteSuggestion; valeur?: string }) {
+  const skin = s.status === "pending"
+    ? { bord: "#EAB308", fond: "rgba(234,179,8,0.10)", texte: "⏳ En attente" }
+    : s.status === "approved"
+      ? { bord: "#22C55E", fond: "rgba(34,197,94,0.10)", texte: "✓ Approuvée" }
+      : { bord: "#E63946", fond: "rgba(230,57,70,0.10)", texte: "✕ Refusée" };
+  return (
+    <span
+      className="inline-block text-[11px] font-bold rounded-full px-2 py-0.5"
+      style={{ color: skin.bord, background: skin.fond, border: `1px solid ${skin.bord}40` }}
+    >
+      {skin.texte}{valeur ? ` : ${valeur}` : ""}
+    </span>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════════
    StarSuggestRow — parallel to SuggestRow but with a StarRow input
@@ -2203,7 +2340,7 @@ function EvaluationStep({
    Cote globale and whole-star for individual traits.
 ═══════════════════════════════════════════════════════════════ */
 function StarSuggestRow({
-  label, currentValue, champ, allowHalf, starSize, pending, submitting, onSubmit, isLast,
+  label, currentValue, champ, allowHalf, starSize, suggestion, submitting, onSubmit, isLast,
 }: {
   label: string;
   /** Currently-stored value in evaluations (0 = unset). Displayed
@@ -2216,7 +2353,8 @@ function StarSuggestRow({
   champ: string;
   allowHalf: boolean;
   starSize: number;
-  pending: AthleteSuggestion | undefined;
+  /** La DERNIÈRE proposition sur ce champ, quel que soit son statut. */
+  suggestion: AthleteSuggestion | undefined;
   submitting: boolean;
   /** Called with the validated `proposed` number (always > 0). The
    *  caller does the stringify (String(int) for traits, toFixed(1)
@@ -2227,12 +2365,8 @@ function StarSuggestRow({
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState(0);
 
-  const hasPending = !!pending;
-
-  /* Collapsed surface — yellow pencil indicator + current value
-     stars + pending pill (mirrors SuggestRow's read state). The
-     pending pill appears when an EN_ATTENTE suggestion exists for
-     this champ. */
+  /* Surface repliée — crayon jaune, valeur COURANTE, puis l'état réel de la
+     dernière proposition s'il y en a une. */
   if (!expanded) {
     return (
       <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"}`}>
@@ -2246,17 +2380,25 @@ function StarSuggestRow({
             <span className="text-[14px] text-white/70 truncate">{label}</span>
           </span>
           <span className="flex items-center gap-2 shrink-0">
-            <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={starSize > 24 ? 18 : 16} />
+            {/* Un trait JAMAIS noté rend « — », pas cinq étoiles vides : une
+                note absente n'est pas une note de zéro. La LECTURE ne ment
+                pas ; c'est le geste de proposition, lui, qui reste ouvert. */}
+            {currentValue > 0
+              ? <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={starSize > 24 ? 18 : 16} />
+              : <span className="text-[13px] text-white/35">—</span>}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </span>
         </button>
-        {hasPending && (
+        {suggestion && (
           <div className="px-4 pb-3 -mt-1">
-            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
-              ⏳ En attente : {pending?.proposed_value}/5
-            </span>
+            <PastilleStatut s={suggestion} valeur={`${suggestion.proposed_value}/5`} />
+            {suggestion.status === "rejected" && suggestion.rejection_reason && (
+              <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                {suggestion.rejection_reason}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -2371,13 +2513,13 @@ function badgesProposes(valeur: string | null | undefined): string[] {
 }
 
 function DistinctionsSuggestRow({
-  athleteId, sportId, sportNom, currentDistinctions, pending, submitting, onSubmit,
+  athleteId, sportId, sportNom, currentDistinctions, suggestion, submitting, onSubmit,
 }: {
   athleteId: string | null;
   sportId: string | null;
   sportNom: string | null;
   currentDistinctions: DistinctionEntry[];
-  pending: AthleteSuggestion | undefined;
+  suggestion: AthleteSuggestion | undefined;
   submitting: boolean;
   onSubmit: (entries: DistinctionEntry[]) => Promise<void>;
 }) {
@@ -2389,7 +2531,6 @@ function DistinctionsSuggestRow({
      `startEditing` at page.tsx :727-730) so the athlete edits the
      existing set rather than starting blank. */
   const [draft, setDraft] = useState<BadgeEntry[]>([]);
-  const hasPending = !!pending;
   const incomplets = entreesIncompletes(draft, cat);
 
   /* Le picker part des badges issus de SUGGESTIONS, pas de
@@ -2491,19 +2632,22 @@ function DistinctionsSuggestRow({
             `proposed_value` est le JSON envoyé au dépôt. Il est reparsé ici :
             si le format devait changer un jour, la liste disparaît au lieu de
             planter — d'où le try/catch et le repli sur la pastille nue. */}
-        {hasPending && (
+        {suggestion && (
           <div className="px-4 pb-3 -mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
-              ⏳ En attente
-            </span>
-            {badgesProposes(pending?.proposed_value).map((lib, i) => (
+            <PastilleStatut s={suggestion} />
+            {badgesProposes(suggestion.proposed_value).map((lib, i) => (
               <span
                 key={`${lib}-${i}`}
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EAB308]/[0.08] border border-[#EAB308]/20 text-[#EAB308]/85"
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70"
               >
                 {lib}
               </span>
             ))}
+            {suggestion.status === "rejected" && suggestion.rejection_reason && (
+              <p className="w-full mt-0.5 text-[11px] leading-relaxed text-white/45">
+                {suggestion.rejection_reason}
+              </p>
+            )}
           </div>
         )}
       </div>

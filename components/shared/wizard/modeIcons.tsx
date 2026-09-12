@@ -47,6 +47,42 @@
    Application, étape par étape : voir STEP_MODES / STEP_ACCENTS dans
    AthleteEditWizardMobile.tsx. Aujourd'hui UNE seule étape propose
    (Évaluation) ; les cinq autres écrivent.
+
+   ══ JAMAIS D'ACCUSÉ DE RÉCEPTION SANS STATUT SERVEUR ══════════════
+   Décision BP, 2026-09-12 (règle 11). DEUXIÈME recette perdue sur cette
+   même classe de mensonge — d'où l'inscription ici plutôt qu'un commentaire
+   local de plus.
+
+   Un écran de proposition n'affiche JAMAIS d'état qu'il n'a pas lu du
+   serveur. Ni « Envoyé ! » posé côté client, ni pastille câblée sur le seul
+   statut qu'on espère.
+
+   Ce qui s'est passé, deux fois :
+     · 2026-09-10 — « envoyée à ton coach pour approbation » sur un chemin
+       dont un trigger avalait la ligne à l'instant même.
+     · 2026-09-12 — pastille « ⏳ En attente » branchée sur le seul statut
+       EN_ATTENTE, alors qu'AUCUNE ligne n'atteint cet état en base (le
+       trigger de transition résout dans la transaction d'insertion, délai
+       mesuré 0.000000 s). Rien ne s'affichait jamais. La plomberie était
+       juste — la requête partait, le filtre existait — et le résultat était
+       structurellement vide. Vérifier le mécanisme ne vaut pas vérifier le
+       RÉSULTAT.
+
+   La forme correcte : lire la DERNIÈRE ligne du serveur quel que soit son
+   statut, et rendre ce statut tel quel — en attente / approuvée / refusée,
+   motif de refus compris. L'écran devient alors juste par construction :
+   le jour où la base change d'avis, l'affichage suit sans qu'on y touche.
+
+   ══ PROPOSER NE PRÉSUPPOSE PAS D'AVOIR ÉTÉ NOTÉ ═══════════════════
+   Décision BP, 2026-09-12. Un champ évaluable se propose même s'il n'a
+   jamais reçu de note. La grille des 14 traits était gardée par
+   `isDetailedMode` — donc visible seulement si l'entraîneur avait déjà
+   noté : les nouveaux inscrits, ceux qui en ont le plus besoin, ne voyaient
+   rien.
+
+   Corollaire à ne pas relâcher : la LECTURE ne ment pas pour autant. Un
+   trait jamais noté rend « — », jamais cinq étoiles vides. C'est le GESTE
+   qui s'ouvre, pas la valeur qui s'invente.
 ═══════════════════════════════════════════════════════════════ */
 
 export const GREEN = "#22C55E";

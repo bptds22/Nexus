@@ -599,3 +599,50 @@ lui qui a transformé un daemon coincé en attente silencieuse. Au-delà de
 `Get-Process adb,qemu*,emulator* | Stop-Process -Force` (⚠️ tue aussi la VM),
 puis `adb start-server`, puis `emulator -avd Pixel_6 -no-snapshot-load`,
 puis vérifier `sys.boot_completed = 1` avant tout `install`.
+
+---
+
+## 23. Aligner web et iOS sur les deux règles d'évaluation du 2026-09-12
+
+Android a été corrigé le 2026-09-12. Les deux autres clients portent encore
+les mêmes défauts, et les règles sont désormais consignées en tête de
+`components/shared/wizard/modeIcons.tsx`.
+
+### a) « Proposer ne présuppose pas d'avoir été noté » — **WEB d'abord**
+
+`app/athlete/profil/page.tsx:559` porte le prédicat identique :
+
+```js
+const isDetailedMode = !!traitRatings && TRAIT_CHAMPS.some((t) => (traitRatings[t.camel] || 0) > 0);
+```
+
+et la grille des 14 traits est gardée par `{editing && isDetailedMode && …}`
+(:681). Conséquence : **un athlète jamais évalué ne peut pas proposer de note
+sur un trait**, sur le web comme sur l'Android d'avant-correctif. C'est le
+défaut qui a fait échouer la recette du 2026-09-12.
+
+Le web se déploie vite (push sur `main` → Vercel), et le correctif est du même
+ordre que côté mobile : retirer la garde sur le rendu de la grille, garder
+`isDetailedMode` pour la seule cote (miroir de `v_is_detailed`), et vérifier
+qu'un trait non noté rend « — » et non cinq étoiles vides.
+
+### b) iOS — au prochain binaire
+
+Le binaire 1.4 en production porte les deux défauts. Rien à faire dans
+l'immédiat : il n'y a pas de canal de correctif hors nouveau build. À inclure
+dans le prochain, avec la restauration du reste de la parité.
+
+### c) L'affichage de statut
+
+Android lit maintenant la dernière suggestion **quel que soit son statut** et
+rend « ⏳ En attente / ✓ Approuvée / ✕ Refusée » + motif. Le web a déjà son
+panneau « Mes suggestions » à trois onglets (:1980-2026), donc il affiche
+correctement les refus ; c'est iOS qui est aveugle, avec la même pastille
+EN_ATTENTE-seulement qu'Android avait.
+
+**Attention au séquencement avec le volet 6 (§19).** Une fois le volet 6
+appliqué, les propositions d'évaluation resteront `EN_ATTENTE` : les trois
+clients passeront alors de « ✕ Refusée » à « ⏳ En attente » **sans un seul
+changement de code**, puisqu'ils rendent le statut du serveur. C'est
+exactement ce que cette forme achète — et la raison de ne plus jamais câbler
+un état côté client.
