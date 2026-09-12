@@ -42,7 +42,6 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ecrireChampAthlete } from "@/lib/athlete/champVersColonne";
-import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { uploadAvatar } from "@/lib/storage/uploadAvatar";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
@@ -63,10 +62,14 @@ import { triggerHaptic } from "@/lib/haptics";
 import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
-/* Le sélecteur de badges, son catalogue et ses helpers de saisie sont partis
-   avec DistinctionsSuggestRow : les distinctions ne se proposent plus, elles
-   s'affichent. Seule la lecture reste. */
-import { badgesDepuisRaw, type BadgeAffiche } from "@/lib/queries/shared/athleteBadges";
+import {
+  BADGE_CONFIG,
+  type DistinctionEntry,
+} from "@/lib/config/badges";
+import BadgePicker from "@/components/shared/BadgePicker";
+import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
+import { entreesIncompletes, type BadgeEntry } from "@/lib/config/badgeCatalogue";
+import { chargerBadgesAthlete, badgesDepuisRaw, type BadgeAffiche } from "@/lib/queries/shared/athleteBadges";
 import { traitGroups, champToColumn, type GrilleRef, type TraitEntry } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 
@@ -915,6 +918,65 @@ export default function AthleteEditWizardMobile() {
     }
   }, [a, load]);
 
+  /* ── PROPOSITION D'ÉVALUATION — le SECOND chemin, et il est distinct ──────
+        `submitSuggestion` ci-dessus écrit EN DIRECT sur `athletes` : c'est le
+        régime des champs de profil (Physique / Sport / Médias), décidé le
+        2026-09-09, et il ne change pas.
+
+        La cote, les 14 traits et les distinctions n'appartiennent pas à
+        l'athlète : ils se PROPOSENT. Ce chemin-ci insère donc une vraie ligne
+        `athlete_suggestions` en EN_ATTENTE, destinée à la boîte du coach
+        (/coach/a-traiter) — exactement ce que font déjà le web
+        (athlete/profil) et le binaire iOS 1.4. Android rejoint la parité.
+
+        ⚠️ `champ` est écrit À L'IDENTIQUE de ce qu'attend
+        `apply_approved_suggestion` : libellé français exact pour la cote et
+        les distinctions, NOM DE COLONNE pour les 14 traits (découplage
+        libellé/clé du lot 3 — le libellé affiché vient de la grille de
+        position, il n'est donc PAS une clé stable). */
+  const proposerEvaluation = useCallback(async (
+    champ: string,
+    valeurProposee: string,
+    valeurActuelle: string,
+  ): Promise<string | null> => {
+    if (!a) return "Profil indisponible.";
+    setSubmitting(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return "Session expirée — reconnecte-toi.";
+
+      /* coach_id : on préfère la valeur déjà chargée, sinon relecture. La
+         colonne est un INSTANTANÉ du destinataire au moment du dépôt ; la
+         boîte du coach, elle, joint sur athletes.coach_id. */
+      let coachId: string | null = a.coachId;
+      if (!coachId) {
+        const { data: row } = await supabase
+          .from("athletes").select("coach_id").eq("id", a.id).maybeSingle();
+        coachId = (row?.coach_id as string) || null;
+      }
+
+      const { error } = await supabase.from("athlete_suggestions").insert({
+        athlete_id: a.id,
+        submitted_by: user.id,
+        coach_id: coachId,
+        champ,
+        valeur_actuelle: valeurActuelle,
+        valeur_proposee: valeurProposee,
+        status: "EN_ATTENTE",
+      });
+      if (error) {
+        console.error(`[AthleteEditWizard] proposition: ${error.code ?? ""} ${error.message}`);
+        return error.message;
+      }
+
+      await load();
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [a, load]);
+
   if (!a) {
     return (
       <div className="min-h-screen bg-[#111317]" style={{ overflowY: "auto", overflowX: "hidden", height: "100dvh" }}>
@@ -1013,6 +1075,9 @@ export default function AthleteEditWizardMobile() {
           <EvaluationStep
             groups={traitGroupsResolved}
             a={a}
+            getPending={getPending}
+            submitting={submitting}
+            onPropose={proposerEvaluation}
           />
         )}
       </div>
@@ -1846,17 +1911,22 @@ function MediasStep({
    isDetailedMode mirrors page.tsx :550 verbatim :
      !!traitRatings && groups.flatMap((g) => g.traits).some((t) => (traitRatings[t.camel] || 0) > 0)
 ═══════════════════════════════════════════════════════════════ */
-/* Cette étape est en LECTURE SEULE depuis que la cote, les distinctions et
-   les 14 traits appartiennent à l'entraîneur : elle n'a plus besoin de
-   `getPending`, `submitting` ni `onSubmit`. Les retirer plutôt que les
-   laisser inertes — une prop d'écriture sur un écran qui n'écrit pas
-   invite le prochain à s'en servir. */
+/* PROPOSITION, PAS ÉCRITURE — et c'est toute la différence avec les autres
+   étapes. Physique / Sport / Médias écrivent en direct sur `athletes` ; ici
+   l'athlète PROPOSE et l'entraîneur tranche. `onPropose` insère donc une
+   ligne `athlete_suggestions` en EN_ATTENTE, jamais un UPDATE.
+
+   Parité assumée avec les deux autres clients : le web (athlete/profil,
+   EvaluationSuggest) et le binaire iOS 1.4 offrent exactement ce geste. */
 function EvaluationStep({
-  a, groups,
+  a, groups, getPending, submitting, onPropose,
 }: {
   a: LoadedAthlete;
   /** Les 2 groupes (9 / 5), libellés résolus par la grille de l'athlète. */
   groups: { title: string; traits: TraitEntry[] }[];
+  getPending: (champ: string) => AthleteSuggestion | undefined;
+  submitting: boolean;
+  onPropose: (champ: string, valeurProposee: string, valeurActuelle: string) => Promise<string | null>;
 }) {
   const tr = a.traitRatings;
   const TRAIT_CHAMPS: TraitEntry[] = groups.flatMap((g) => g.traits);
@@ -1879,28 +1949,23 @@ function EvaluationStep({
 
   return (
     <div className="space-y-4">
-      {/* ÉVALUATION — LA SEULE ÉTAPE QUI N'APPARTIENT PAS À L'ATHLÈTE.
+      {/* ÉVALUATION — L'ÉTAPE OÙ L'ATHLÈTE PROPOSE.
 
-          Décision produit du 2026-09-09 : tout devient modifiable
-          directement, SAUF la cote et les distinctions, qui restent au
-          coach. Le badge vérifié atteste désormais le rattachement et
-          l'évaluation — plus chaque donnée du profil.
+          La cote, les 14 traits et les distinctions restent la propriété de
+          l'entraîneur : c'est ce qui leur donne leur valeur auprès des
+          recruteurs. Mais l'athlète peut les PROPOSER, et c'est ce que font
+          déjà le web et iOS 1.4 — Android rattrape la parité.
 
-          L'étape proposait encore. Ce n'était pas seulement inutile : le
-          trigger de transition REJETAIT ces propositions à l'instant même,
-          avec un motif. L'athlète recevait donc un refus pour avoir fait ce
-          que l'écran lui demandait — un cul-de-sac déguisé en action.
-
-          Plus de crayon, plus de bouton : un état qui explique. */}
+          Le texte dit exactement ce qui se passe : une soumission, pas un
+          enregistrement. Même formulation que le web. */}
       <div className="flex items-center gap-2 px-1">
         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/40">
           Évaluation
         </p>
+        <PencilIcon color={YELLOW} size={12} />
       </div>
       <p className="text-[12px] leading-relaxed text-white/55 px-1">
-        La cote et les distinctions sont attribuées par ton entraîneur. Tu ne
-        peux pas les modifier — c&apos;est ce qui leur donne leur valeur auprès
-        des recruteurs.
+        Modifications soumises à ton entraîneur pour approbation.
       </p>
 
       {/* ── Rapport entraîneur — LOCKED (display-only).
@@ -1947,15 +2012,22 @@ function EvaluationStep({
         </p>
         {!isDetailedMode ? (
           <Card>
-            {/* LECTURE SEULE. La rangée proposait une cote ; le trigger de
-                transition la rejetait aussitôt. On montre la valeur, ou son
-                absence — une cote ABSENTE n'est pas une cote de ZÉRO. */}
-            <div className="px-4 py-4 flex items-center justify-between gap-3">
-              <span className="text-[14px] text-white/70">Cote du coach</span>
-              <span className="text-[15px] font-bold text-white tabular-nums">
-                {a.overallRating > 0 ? `${a.overallRating.toFixed(1)}/5` : "Pas encore évaluée"}
-              </span>
-            </div>
+            {/* Demi-étoiles ici, et ici SEULEMENT : la cote plate accepte
+                4.5 ; les 14 traits sont des entiers (cast ::int côté
+                trigger). `valeur_proposee` part donc en toFixed(1). */}
+            <StarSuggestRow
+              label="Cote du coach"
+              currentValue={a.overallRating}
+              champ="Cote globale"
+              allowHalf
+              starSize={26}
+              pending={getPending("Cote globale")}
+              submitting={submitting}
+              onSubmit={async (proposed) => {
+                await onPropose("Cote globale", proposed.toFixed(1), a.overallRating > 0 ? a.overallRating.toFixed(1) : "");
+              }}
+              isLast
+            />
           </Card>
         ) : (
           <Card>
@@ -1993,10 +2065,22 @@ function EvaluationStep({
               {CHARACTER_TRAITS.map((t, i) => {
                 const current = getCurrent(camel(t));
                 return (
-                  <TraitLectureSeule
+                  <StarSuggestRow
                     key={t.column}
                     label={t.label}
-                    valeur={current}
+                    currentValue={current}
+                    champ={t.column}
+                    allowHalf={false}
+                    starSize={24}
+                    pending={getPending(t.column)}
+                    submitting={submitting}
+                    onSubmit={async (proposed) => {
+                      /* Même valeur = pas de ligne. Le trigger l'appliquerait
+                         sans dommage, mais elle encombrerait la boîte du
+                         coach pour un changement qui n'en est pas un. */
+                      if (proposed === current) return;
+                      await onPropose(t.column, String(proposed), current > 0 ? String(current) : "");
+                    }}
                     isLast={i === CHARACTER_TRAITS.length - 1}
                   />
                 );
@@ -2011,10 +2095,19 @@ function EvaluationStep({
               {TACTICAL_TRAITS.map((t, i) => {
                 const current = getCurrent(camel(t));
                 return (
-                  <TraitLectureSeule
+                  <StarSuggestRow
                     key={t.column}
                     label={t.label}
-                    valeur={current}
+                    currentValue={current}
+                    champ={t.column}
+                    allowHalf={false}
+                    starSize={24}
+                    pending={getPending(t.column)}
+                    submitting={submitting}
+                    onSubmit={async (proposed) => {
+                      if (proposed === current) return;
+                      await onPropose(t.column, String(proposed), current > 0 ? String(current) : "");
+                    }}
                     isLast={i === TACTICAL_TRAITS.length - 1}
                   />
                 );
@@ -2024,77 +2117,386 @@ function EvaluationStep({
         </>
       )}
 
-      {/* ── Distinctions — LECTURE SEULE ────────────────────────
-            Elles appartiennent au coach, comme la cote. La rangée offrait
-            encore un crayon et un chevron : l'athlète pouvait l'ouvrir,
-            choisir des badges, appuyer — et le trigger de transition
-            rejetait l'ensemble. Une affordance qui ne mène nulle part est
-            pire qu'une absence : elle fait croire à un droit.
-
-            On montre donc ce que le coach a attribué, et rien de cliquable.
-            Aucune distinction n'est pas une faute — c'est un début. */}
+      {/* ── Distinctions — PROPOSABLES ──────────────────────────
+            Les plafonds (« plafond atteint ») et l'exclusion mutuelle
+            (« déjà attribué par quelqu'un d'autre ») ne sont PAS ici : elles
+            vivent dans BadgePicker, partagé avec le web et iOS. C'est
+            pourquoi la parité de comportement est acquise sans la
+            réimplémenter — et pourquoi il ne faut surtout pas la dupliquer
+            ici le jour où une règle changera. */}
       <div>
         <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
           Distinctions
         </p>
         <Card>
-          <div className="px-4 py-4">
-            {a.coachDistinctions.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                {a.coachDistinctions.map((d) => (
-                  <DistinctionBadge
-                    key={d.badge}
-                    badge={d.badge}
-                    detail={d.detail}
-                    libelle={d.libelle}
-                    size="sm"
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-[13px] text-white/45">
-                Attribuées par ton entraîneur.
-              </p>
-            )}
-          </div>
+          <DistinctionsSuggestRow
+            athleteId={a.id}
+            sportId={a.sportId}
+            sportNom={a.primarySport || null}
+            currentDistinctions={a.coachDistinctions}
+            pending={getPending("Distinctions")}
+            submitting={submitting}
+            onSubmit={async (entries) => {
+              /* Une SEULE ligne pour tout le jeu de badges, sérialisée en
+                 JSON — la forme qu'attend le `::jsonb` du trigger, et celle
+                 que le web envoie déjà. Un badge par ligne casserait
+                 l'approbation côté coach. */
+              await onPropose("Distinctions", JSON.stringify(entries), "");
+            }}
+          />
         </Card>
       </div>
     </div>
   );
 }
 
+/* ── RESTAURÉ le 2026-09-11 depuis eb52329^ / 0b6e05b^ ────────────────────
+   Ces deux composants avaient été retirés la veille au motif que le trigger
+   de transition rejetait leurs propositions. Le motif était exact — il l'est
+   encore — mais la conclusion était fausse : le web et le binaire iOS 1.4
+   offrent ce geste EN PRODUCTION, les utilisateurs s'en servent, et Android
+   était le seul client à ne pas l'avoir. La parité passe avant.
+
+   Le rejet automatique tombe avec le volet 6 de la migration D6
+   (docs/d6-volet6-suggestion-evaluation.sql). D'ici là, les trois clients se
+   comportent pareil — ce qui est la condition pour que le correctif serveur
+   les répare tous les trois d'un coup.
+   ──────────────────────────────────────────────────────────────────────── */
+
 /* ═══════════════════════════════════════════════════════════════
-   TraitLectureSeule — un trait d'évaluation, AFFICHÉ et rien d'autre.
+   StarSuggestRow — parallel to SuggestRow but with a StarRow input
+   body (no text/picker overlap with SuggestExpand). Owns its own
+   expand state + yellow indicator + pending pill + Soumettre /
+   Annuler shell.
 
-   Les 14 traits appartiennent à l'entraîneur, comme la cote et les
-   distinctions. Ils utilisaient StarSuggestRow : des étoiles qu'on
-   pouvait toucher, un bouton « Soumettre » — et le trigger de transition
-   rejetait chaque proposition. Trois surfaces d'une même étape offraient
-   ainsi un geste qui n'aboutissait jamais.
+   Submit guard : refuses to commit if `proposed <= 0`. Per-row
+   semantic guards (e.g. "trait must differ from current") are
+   delegated to the caller's onSubmit. The trigger doesn't care
+   about identical values — they update the column to the same int —
+   but emitting them clutters the coach's approval inbox, so the
+   trait call sites in EvaluationStep skip when proposed === current.
 
-   Un trait non noté affiche « — », jamais zéro étoile pleine : une note
-   ABSENTE n'est pas une note de ZÉRO (lib/evaluations/presence).
+   `allowHalf` is forwarded to StarRow ; the row is half-star for
+   Cote globale and whole-star for individual traits.
 ═══════════════════════════════════════════════════════════════ */
-
-function TraitLectureSeule({
-  label, valeur, isLast,
+function StarSuggestRow({
+  label, currentValue, champ, allowHalf, starSize, pending, submitting, onSubmit, isLast,
 }: {
   label: string;
-  valeur: number;
-  isLast: boolean;
+  /** Currently-stored value in evaluations (0 = unset). Displayed
+   *  in the collapsed read state + struck-through in the expand
+   *  state for the "Actuel" context. */
+  currentValue: number;
+  /** Exact French champ string ; trigger-critical. Mirrored
+   *  byte-for-byte from TRAIT_CHAMPS labels OR the literal
+   *  "Cote globale" for the flat-cote row. */
+  champ: string;
+  allowHalf: boolean;
+  starSize: number;
+  pending: AthleteSuggestion | undefined;
+  submitting: boolean;
+  /** Called with the validated `proposed` number (always > 0). The
+   *  caller does the stringify (String(int) for traits, toFixed(1)
+   *  for cote) inside its own onSubmit closure. */
+  onSubmit: (proposed: number) => Promise<void>;
+  isLast?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState(0);
+
+  const hasPending = !!pending;
+
+  /* Collapsed surface — yellow pencil indicator + current value
+     stars + pending pill (mirrors SuggestRow's read state). The
+     pending pill appears when an EN_ATTENTE suggestion exists for
+     this champ. */
+  if (!expanded) {
+    return (
+      <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"}`}>
+        <button
+          type="button"
+          onClick={() => { void triggerHaptic("Light"); setDraft(currentValue); setExpanded(true); }}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
+        >
+          <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
+            <PencilIcon color={YELLOW} size={12} />
+            <span className="text-[14px] text-white/70 truncate">{label}</span>
+          </span>
+          <span className="flex items-center gap-2 shrink-0">
+            <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={starSize > 24 ? 18 : 16} />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </span>
+        </button>
+        {hasPending && (
+          <div className="px-4 pb-3 -mt-1">
+            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
+              ⏳ En attente : {pending?.proposed_value}/5
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* Expanded surface — current/proposed stars + Soumettre / Annuler.
+     Submit guard : refuse draft <= 0. */
+  const canSubmit = draft > 0 && !submitting;
   return (
-    <div
-      className="px-4 py-3.5 flex items-center justify-between gap-3"
-      style={{ borderBottom: isLast ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
-    >
-      <span className="text-[14px] text-white/70">{label}</span>
-      {valeur > 0 ? (
-        <StarRow value={valeur} onChange={() => { /* lecture seule */ }} size={16} />
-      ) : (
-        <span className="text-[13px] text-white/35">—</span>
+    <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"} px-4 py-3 bg-[#0E1015]`}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[14px] text-white font-semibold">{champ}</span>
+        <button
+          type="button"
+          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
+          className="text-[12px] text-white/45 active:text-white/70"
+        >
+          Annuler
+        </button>
+      </div>
+      {currentValue > 0 && (
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-white/40">Actuel</span>
+          <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={16} />
+          <span className="text-[12px] text-white/55">{allowHalf ? currentValue.toFixed(1) : currentValue}/5</span>
+        </div>
       )}
+      <div className="flex items-center gap-3">
+        <StarRow value={draft} onChange={setDraft} size={starSize} allowHalf={allowHalf} />
+        <span className="text-[13px] font-bold text-white w-12 text-right">
+          {draft > 0 ? `${allowHalf ? draft.toFixed(1) : draft}/5` : "—"}
+        </span>
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={async () => {
+            if (!canSubmit) return;
+            await onSubmit(draft);
+            setExpanded(false);
+          }}
+          disabled={!canSubmit}
+          className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
+        >
+          {submitting ? "..." : "Soumettre"}
+        </button>
+      </div>
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   DistinctionsSuggestRow — Sprint B-3b.
+
+   The ONLY structured-payload suggestion in the system : a JSONB
+   array of {badge, detail?} entries that ships as ONE suggestion row
+   (champ="Distinctions", valeur_proposee=JSON.stringify(entries)) ;
+   the trigger casts ::jsonb and the recruiter/coach read goes through
+   pastillesBadges. Symmetric round-trip.
+
+   Mirrors web DistinctionsSuggest (app/athlete/profil/page.tsx :695-
+   800) :
+     - 7 badges from BADGE_ORDER as a toggle list (custom label is
+       shown as "Personnalisée" — same display substitution as web
+       page.tsx :772).
+     - MAX_BADGES = 5 cap (enforced both on toggle AND visually : once
+       5 are selected, unselected entries dim + disable).
+     - 3 hasDetail badges (team_leader / league_leader / custom)
+       reveal an inline detail input capped at MAX_DETAIL_LENGTH = 30.
+       Placeholders : custom → "Titre", others → "Ex: Points, Buts,
+       Passes..." — verbatim mirror of web :780.
+     - On submit, entries with empty detail strings have their detail
+       key OMITTED (not detail:"") — same as web :716-718's
+       `detail: detail || undefined` idiom which JSON.stringify drops
+       from the serialized object.
+
+   INPUT SURFACE : inline-expand (no bottom sheet). The 7-badge list +
+   per-badge detail inputs fit comfortably inline at ~10 rows worst-
+   case, well below typical step height. Keeping it inline preserves
+   the no-popup canon of the rest of the athlete editor — every
+   suggest row in this wizard is inline-expand (text, picker, stars,
+   now distinctions). A bottom sheet would be the ONLY exception and
+   would have to ship + own its own animation/close semantics. Inline
+   stays simpler and consistent.
+
+   Submission shape is byte-identical to the web payload so the
+   apply_approved_suggestion trigger's `::jsonb` cast and the canonical
+   pastillesBadges read are both symmetric round-trips.
+═══════════════════════════════════════════════════════════════ */
+function DistinctionsSuggestRow({
+  athleteId, sportId, sportNom, currentDistinctions, pending, submitting, onSubmit,
+}: {
+  athleteId: string | null;
+  sportId: string | null;
+  sportNom: string | null;
+  currentDistinctions: DistinctionEntry[];
+  pending: AthleteSuggestion | undefined;
+  submitting: boolean;
+  onSubmit: (entries: DistinctionEntry[]) => Promise<void>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [autres, setAutres] = useState<BadgeEntry[]>([]);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const cat = useBadgeCatalogue();
+  /* Draft is seeded from currentDistinctions on expand (mirrors web
+     `startEditing` at page.tsx :727-730) so the athlete edits the
+     existing set rather than starting blank. */
+  const [draft, setDraft] = useState<BadgeEntry[]>([]);
+  const hasPending = !!pending;
+  const incomplets = entreesIncompletes(draft, cat);
+
+  /* Le picker part des badges issus de SUGGESTIONS, pas de
+     evaluations.distinctions. Ceux posés par un coach s'affichent en lecture
+     seule : une suggestion ne peut pas les retirer. Si la lecture échoue on
+     N'OUVRE PAS — ouvrir sur une liste vide proposerait de tout retirer. */
+  const ouvrir = async () => {
+    setErreur(null);
+    if (!athleteId) { setErreur("profil non chargé"); return; }
+    try {
+      const sb = createClient();
+      const { data: { user } } = await sb.auth.getUser();
+      const b = await chargerBadgesAthlete(sb, athleteId, user?.id ?? null, false, "suggestion");
+      setDraft(b.miens);
+      setAutres(b.autres);
+      setExpanded(true);
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const submit = async () => {
+    /* Normalize entries for the wire payload : drop empty detail keys
+       so JSON.stringify omits them (matches web exactly — empty detail
+       must NOT serialize as `"detail":""`). Preserve insertion order
+       (athlete's tap order = badge ordering in the recruiter view). */
+    /* Ancienne forme {badge, detail} avec les NOUVEAUX codes :
+       code_badge_catalogue accepte les deux vocabulaires, donc aucun SQL à
+       toucher et le contrat de onSubmit reste inchangé. */
+    const wire: DistinctionEntry[] = draft.map((e) => {
+      const d = (e.contexte || "").trim();
+      return d ? { badge: e.code, detail: d } : { badge: e.code };
+    });
+    await onSubmit(wire);
+    setExpanded(false);
+  };
+
+  /* ─── Collapsed surface ──────────────────────────────────────
+        Yellow pencil indicator + "Distinctions" + small chip summary
+        of currently-coach-set badges + pending pill. Same visual
+        canon as the StarSuggestRow read-state. */
+  if (!expanded) {
+    return (
+      <div className="w-full">
+        <button
+          type="button"
+          onClick={() => { void triggerHaptic("Light"); void ouvrir(); }}
+          className="w-full flex items-start justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
+        >
+          <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
+            <PencilIcon color={YELLOW} size={12} />
+            <span className="text-[14px] text-white/70 truncate">Distinctions</span>
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+        {/* `ouvrir()` REFUSE de déplier quand la lecture des badges échoue —
+            ouvrir sur une liste vide proposerait de tout retirer. Mais sans
+            ce message, l'athlète appuyait et il ne se passait RIEN : un bouton
+            mort, sans explication. La variable existait déjà et n'était pas
+            rendue ; la rendre coûte deux lignes. */}
+        {erreur && (
+          <p className="px-4 pb-2 text-[12px] leading-relaxed text-[#E63946]">
+            Impossible d&apos;ouvrir les distinctions : {erreur}
+          </p>
+        )}
+        {/* Current badges as small muted chips. Empty state shows an
+            em-dash via the read-only branch ; in expand mode the user
+            sees the same chip list reflected in the toggle states. */}
+        {currentDistinctions.length > 0 ? (
+          <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+            {currentDistinctions.map((e, i) => {
+              const cfg = BADGE_CONFIG[e.badge];
+              if (!cfg) return null;
+              const label = e.badge === "custom"
+                ? (e.detail || "Personnalisée")
+                : (e.detail ? `${cfg.label} — ${e.detail}` : cfg.label);
+              return (
+                <span
+                  key={`${e.badge}-${i}`}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/[0.06] border border-white/[0.08] text-white/75"
+                >
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-4 pb-3">
+            <span className="text-[12px] text-white/35">—</span>
+          </div>
+        )}
+        {hasPending && (
+          <div className="px-4 pb-3 -mt-1">
+            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
+              ⏳ En attente
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ─── Expanded surface ───────────────────────────────────────
+        7-badge toggle list + per-badge detail inputs (hasDetail
+        only) + Annuler/Soumettre. Cap counter (n/MAX_BADGES) sits
+        above the action row. */
+  return (
+    <div className="w-full px-4 py-3 bg-[#0E1015]">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[14px] text-white font-semibold">Distinctions</span>
+        <button
+          type="button"
+          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
+          className="text-[12px] text-white/45 active:text-white/70"
+        >
+          Annuler
+        </button>
+      </div>
+
+      {/* Ambre : l'accent des surfaces athlète mobile. Les compteurs (dont
+          le plafond par famille) sont portés par le picker. */}
+      <BadgePicker
+        value={draft}
+        onChange={setDraft}
+        sportId={sportId}
+        sportNom={sportNom}
+        autresBadges={autres}
+        layout="rangees"
+        accent="#EAB308"
+      />
+
+      {/* `entreesIncompletes` était calculée et jamais lue : un badge dont le
+          détail est obligatoire (titre d'une distinction personnalisée, par
+          ex.) partait quand même, et arrivait chez l'entraîneur sans son
+          libellé. Elle garde maintenant le bouton, et le dit. */}
+      {incomplets.length > 0 && (
+        <p className="mt-2 text-[12px] leading-relaxed text-[#EAB308]">
+          Complète {incomplets.length === 1 ? "le libellé manquant" : `les ${incomplets.length} libellés manquants`} avant de soumettre.
+        </p>
+      )}
+
+      <div className="mt-3 flex items-center justify-end gap-3 pb-2">
+        <button
+          type="button"
+          onClick={() => { void triggerHaptic("Light"); submit(); }}
+          disabled={submitting || incomplets.length > 0}
+          className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
+        >
+          {submitting ? "..." : "Soumettre"}
+        </button>
+      </div>
+    </div>
+  );
+}
