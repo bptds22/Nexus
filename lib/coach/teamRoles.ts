@@ -58,7 +58,7 @@ export type TeamRole = (typeof TEAM_ROLES)[number];
    `role = 'head_coach'` tout court, et garde les politiques INSERT/DELETE
    de `team_coaches`. Tant qu'elle n'est pas corrigée, un intérimaire peut
    CHANGER un rôle (branche école de la politique UPDATE) mais pas AJOUTER
-   ni RETIRER un entraîneur — d'où le drapeau `canManageStaff` côté client,
+   ni RETIRER un entraîneur — d'où les drapeaux `canAddStaff` / `canRemoveStaff`
    qui masque ces deux gestes plutôt que d'offrir des boutons qui échouent.
    Correction prévue au lot migration ; voir docs/fast-follow-1.4.2.md.
    ──────────────────────────────────────────────────────────────────── */

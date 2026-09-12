@@ -288,8 +288,14 @@ export default function CoachEquipeDetailMobile() {
      par la RLS à un entraîneur-chef PAR INTÉRIM, là où le changement de rôle
      passe (branche école de la politique UPDATE). On masque donc ces deux
      gestes plutôt que d'offrir des boutons qui échouent. Voir le champ
-     `canManageStaff` dans useCoachTeamDetail pour le détail des politiques. */
-  const canManageStaff = team.canManageStaff;
+     `canAddStaff` / `canRemoveStaff` dans useCoachTeamDetail : deux droits, deux
+     politiques en base. */
+  /* Deux droits distincts, parce que la base en a deux. Le ✕ ne s'affiche
+     qu'à la direction : la policy DELETE de `team_coaches` ne laisse passer
+     personne d'autre, et un bouton qui échoue au clic est pire qu'un bouton
+     absent. Cf. useCoachTeamDetail pour les deux politiques citées. */
+  const canAddStaff = team.canAddStaff;
+  const canRemoveStaff = team.canRemoveStaff;
 
   return (
     <div
@@ -391,7 +397,7 @@ export default function CoachEquipeDetailMobile() {
                       onChange={(next) => changeCoachRole(c, next)}
                     />
                   </div>
-                  {canManageStaff && (
+                  {canRemoveStaff && (
                     <button
                       type="button"
                       onClick={() => { void triggerHaptic("Light"); setConfirmRemoveCoach({ id: c.id, name: c.name }); }}
@@ -409,7 +415,7 @@ export default function CoachEquipeDetailMobile() {
                 </div>
               );
             })}
-            {canManageStaff && (
+            {canAddStaff && (
               <NavRow
                 label="Ajouter un entraîneur"
                 isFirst={coaches.length === 0}

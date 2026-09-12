@@ -51,7 +51,14 @@ export interface CoachTeamDetailHeader {
    *  contrôle absent. Ce drapeau disparaîtra quand `is_team_head_coach()`
    *  nommera REFERENT_ROLES (prévu au lot migration, cf.
    *  docs/fast-follow-1.4.2.md). */
-  canManageStaff: boolean;
+  /** Peut AJOUTER un entraîneur. Référents (titulaire ET intérimaire) +
+   *  direction. S'appuie sur `is_team_head_coach()`, que le volet 3 de D6
+   *  élargit aux REFERENT_ROLES. */
+  canAddStaff: boolean;
+  /** Peut RETIRER un entraîneur. DIRECTION SEULE — la policy DELETE de
+   *  `team_coaches` ne connaît pas `is_team_head_coach`. Décision produit
+   *  assumée, pas une limitation temporaire. */
+  canRemoveStaff: boolean;
 }
 
 export interface CoachTeamDetailCoach {
@@ -147,8 +154,29 @@ export function useCoachTeamDetail(teamId: string | null | undefined) {
          pour le responsable de l'équipe. Une liste blanche vérifiée par
          énumération laisse passer ce qu'elle n'a pas nommé. */
       const myRole: "ADMIN" | "COACH" = isReferentRole(rawRole) || rawRole === "ADMIN" ? "ADMIN" : "COACH";
-      /* Volontairement PLUS ÉTROIT que myRole — voir le commentaire du champ. */
-      const canManageStaff = rawRole === "head_coach" || rawRole === "ADMIN";
+      /* ── DEUX DROITS, PAS UN — décision BP, 2026-09-12 (règle 11) ────────
+         `canManageStaff` mélangeait « ajouter » et « retirer ». Ce sont deux
+         politiques différentes en base, et elles ne bougeront pas ensemble :
+
+         · AJOUTER  → policy `team_coaches scoped insert`, qui s'appuie sur
+           `is_team_head_coach()`. Le volet 3 de D6 élargit cette fonction aux
+           REFERENT_ROLES (head_coach + head_coach_interim) : l'intérimaire
+           gagnera donc ce droit, et `canAddStaff` s'ouvrira avec lui — SANS
+           retoucher ce fichier, puisqu'il lit déjà `isReferentRole`.
+
+         · RETIRER  → policy DELETE de `team_coaches`, qui ne mentionne
+           `is_team_head_coach` NULLE PART :
+               coach_id = auth.uid() OR is_director_of_team_school(team_id) OR is_admin()
+           Autrement dit : même un entraîneur-chef TITULAIRE ne peut retirer
+           personne d'autre que lui-même. Le retrait de staff appartient à la
+           DIRECTION — décision produit assumée (BP, 2026-09-12), pas un oubli.
+           Le volet 3 ne l'élargit pas et ne doit pas l'élargir.
+
+         Les garder fusionnés affichait le ✕ à un chef titulaire dont la base
+         refusait le geste : un contrôle mort, qui échoue au moment du clic.
+         Jamais de contrôle mort — c'est la règle qui motive la scission. */
+      const canAddStaff    = isReferentRole(rawRole) || rawRole === "ADMIN";
+      const canRemoveStaff = rawRole === "ADMIN";
 
       const header: CoachTeamDetailHeader = {
         id: teamId,
@@ -166,7 +194,8 @@ export function useCoachTeamDetail(teamId: string | null | undefined) {
         isCivil: isCivilType(schoolType),
         isActive: (tRec.is_active as boolean) ?? true,
         myRole,
-        canManageStaff,
+        canAddStaff,
+        canRemoveStaff,
       };
 
       const { data: tc } = await supabase
