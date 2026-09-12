@@ -7,7 +7,8 @@ Fin de la session Windows. Le Mac prend la suite pour le **build iOS**.
 ## 1. SHA à puller
 
 ```
-release/1.4.1 → 40cf85a
+release/1.4.1 → 5c96b30   (tête poussée ; ce document est le dernier commit)
+dernier commit de CODE → 40cf85a
 ```
 
 Dernier **build Android** de la session : **`e9a5dd6`** (APK 25 918 003 o,
