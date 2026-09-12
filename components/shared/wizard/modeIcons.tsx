@@ -83,6 +83,30 @@
    Corollaire à ne pas relâcher : la LECTURE ne ment pas pour autant. Un
    trait jamais noté rend « — », jamais cinq étoiles vides. C'est le GESTE
    qui s'ouvre, pas la valeur qui s'invente.
+
+   ══ L'ÉTAT MONTRÉ AU KID DÉCRIT SON PROCHAIN PAS ══════════════════
+   Décision BP, 2026-09-12 (règle 11). Un état affiché à un jeune répond à
+   « qu'est-ce que je fais maintenant ? », jamais à « comment c'est câblé ? ».
+
+   Les deux situations, et elles ne se disent pas pareil :
+     · AVEC entraîneur rattaché  → « ⏳ En attente d'approbation du coach »
+       (quelqu'un va lire — c'est vrai, et il n'a rien à faire)
+     · SANS entraîneur            → « ⏳ Invite ton coach pour qu'il approuve
+       cette évaluation », + le bouton vers /athlete/transfert (code d'équipe)
+       (personne ne lira — son prochain pas est d'aller en chercher un)
+
+   La proposition sans entraîneur est ACCEPTÉE et reste EN_ATTENTE : quand un
+   entraîneur se rattache, il hérite de la file dans sa boîte « À traiter ».
+   C'est le moteur, pas un effet de bord — le jeune recrute son entraîneur
+   pour débloquer son évaluation.
+
+   COROLLAIRE TECHNIQUE. `athlete_suggestions.note_systeme` marque les lignes
+   résolues par un TRIGGER, pas par un humain. Un refus qui en porte un n'est
+   pas un refus : personne n'a rien lu. L'écran montre alors l'attente, et le
+   motif technique (« Les distinctions et évaluations sont attribuées par ton
+   entraîneur ») ne s'affiche JAMAIS. Seul un refus SANS note_systeme est un
+   vrai refus d'entraîneur — rouge, et son motif est un message humain, donc
+   affichable. Voir `motifHumain()` dans AthleteEditWizardMobile.
 ═══════════════════════════════════════════════════════════════ */
 
 export const GREEN = "#22C55E";

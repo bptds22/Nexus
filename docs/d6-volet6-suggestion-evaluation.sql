@@ -96,6 +96,24 @@ BEGIN
   -- Aucune notification n'est émise à cette étape, et c'est correct :
   -- `notify_athlete_suggestion_result` est AFTER UPDATE, elle se déclenchera
   -- au VERDICT du coach, pas au dépôt.
+  -- ⚠️ AUCUNE CONDITION SUR L'EXISTENCE D'UN ENTRAÎNEUR — décision BP,
+  -- 2026-09-12, écrite ICI parce qu'une absence de test ne se relit pas.
+  --
+  -- Une garde « coach_id IS NULL → refus » avait été PROPOSÉE (rapport du
+  -- 2026-09-11) et n'a jamais été retenue. Elle est explicitement ÉCARTÉE :
+  -- 25 des 30 athlètes ayant déjà proposé une évaluation n'ont aucun
+  -- entraîneur rattaché. Les refuser, c'était fermer la porte à 83 % d'entre
+  -- eux.
+  --
+  -- Une proposition sans entraîneur est donc ACCEPTÉE et DORT en EN_ATTENTE.
+  -- Quand un entraîneur se rattache, il hérite de la file — c'est le moteur
+  -- du produit : le jeune recrute son entraîneur pour débloquer son
+  -- évaluation. L'écran le lui dit (« Invite ton coach pour qu'il approuve
+  -- cette évaluation ») au lieu de lui annoncer une approbation que personne
+  -- ne peut donner.
+  --
+  -- Si quelqu'un veut un jour refuser les propositions orphelines, il devra
+  -- AJOUTER un test ici — et se heurter à ce commentaire.
   IF NEW.champ = ANY (public.champs_autoevaluation_athlete()) THEN
     RETURN NEW;
   END IF;
@@ -165,6 +183,46 @@ CREATE POLICY "Athletes insert own suggestions"
   -- Était `auth.uid() IS NOT NULL` : tout compte authentifié pouvait déposer
   -- une suggestion sur la fiche de n'importe quel mineur.
   WITH CHECK (is_own_athlete(athlete_id));
+
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 4. ⚠️ L'HÉRITAGE PAR ÉQUIPE — sinon le moteur ne démarre pas
+--
+-- Relevé du 2026-09-12, et il contredit ce que j'avais écrit la veille : la
+-- boîte « À traiter » ne joint PAS sur `athletes.coach_id`. Elle borne son
+-- périmètre avec `get_coach_athletes` (lib/coach/tasks.ts) — owner ∪ équipe
+-- ∪ école si directeur — puis filtre `athlete_suggestions` sur ce set.
+--
+-- Bonne nouvelle : rien n'est figé au dépôt. Le périmètre est recalculé à
+-- CHAQUE lecture, donc un entraîneur qui se rattache voit immédiatement les
+-- EN_ATTENTE antérieures. Aucun ajustement de jointure n'est nécessaire.
+--
+-- MAUVAISE nouvelle, et c'est le vrai défaut : la RLS, elle, est plus étroite
+-- que le périmètre.
+--
+--   Coaches can read suggestions ...  USING (is_coach_of_athlete(athlete_id))
+--   is_coach_of_athlete(t)  ⇒  EXISTS (… athletes a WHERE a.id = t
+--                                        AND a.coach_id = auth.uid())
+--
+-- Un athlète rattaché à l'entraîneur PAR L'ÉQUIPE (code d'équipe) — et non
+-- par `athletes.coach_id` — apparaît donc dans son roster, mais ses
+-- suggestions sont filtrées par la RLS. Zéro ligne, sans erreur : ça se lit
+-- exactement comme « il n'a rien proposé ».
+--
+-- Or le code d'équipe est précisément le geste qu'on met en avant à l'athlète
+-- sans entraîneur (« Rejoindre mon équipe »). Sans ce correctif, le moteur
+-- s'arrête là où on vient de l'allumer.
+--
+-- ⚠️ NE PAS écrire une sous-requête `users`/`team_athletes` dans la policy
+-- (règle 4) : la lecture passe par un helper SECURITY DEFINER, qui doit
+-- recouvrir le MÊME périmètre que `get_coach_athletes` — à aligner sur lui au
+-- moment d'écrire ce bloc, pas à réinventer ici. C'est le seul point du volet
+-- qui reste à rédiger : il demande de lire `get_coach_athletes` en entier et
+-- d'en extraire la condition, ce qui n'a pas été fait.
+--
+-- PREUVE À PRODUIRE : un entraîneur relié à un athlète UNIQUEMENT par équipe
+-- voit la proposition EN_ATTENTE de cet athlète dans /coach/a-traiter.
+-- ───────────────────────────────────────────────────────────────────────────
 
 
 -- ═══════════════════════════════════════════════════════════════════════════

@@ -774,7 +774,7 @@ export default function AthleteEditWizardMobile() {
     // Pending suggestions — verbatim from page.tsx :1077-1094.
     const { data: sugs } = await supabase
       .from("athlete_suggestions")
-      .select("id, champ, valeur_actuelle, valeur_proposee, status, message, raison_rejet, created_at")
+      .select("id, champ, valeur_actuelle, valeur_proposee, status, message, raison_rejet, note_systeme, created_at")
       .eq("athlete_id", raw.id)
       .order("created_at", { ascending: false });
     if (sugs) {
@@ -787,6 +787,7 @@ export default function AthleteEditWizardMobile() {
         status: (STATUS_MAP[s.status] || "pending") as "pending" | "approved" | "rejected",
         submitted_at: s.created_at,
         rejection_reason: s.raison_rejet || undefined,
+        system_note: (s as { note_systeme?: string | null }).note_systeme ?? null,
       })));
     }
   }, []);
@@ -1101,6 +1102,7 @@ export default function AthleteEditWizardMobile() {
             a={a}
             derniereSuggestion={derniereSuggestion}
             suggestionsEvaluation={suggestionsEvaluation}
+            onRejoindreEquipe={() => router.push("/athlete/transfert")}
             submitting={submitting}
             onPropose={proposerEvaluation}
           />
@@ -1942,13 +1944,16 @@ function MediasStep({
    Parité assumée avec les deux autres clients : le web (athlete/profil,
    EvaluationSuggest) et le binaire iOS 1.4 offrent exactement ce geste. */
 function EvaluationStep({
-  a, groups, derniereSuggestion, suggestionsEvaluation, submitting, onPropose,
+  a, groups, derniereSuggestion, suggestionsEvaluation, onRejoindreEquipe, submitting, onPropose,
 }: {
   a: LoadedAthlete;
   /** Les 2 groupes (9 / 5), libellés résolus par la grille de l'athlète. */
   groups: { title: string; traits: TraitEntry[] }[];
   derniereSuggestion: (champ: string) => AthleteSuggestion | undefined;
   suggestionsEvaluation: AthleteSuggestion[];
+  /** Le geste qui débloque tout quand il n'y a pas d'entraîneur : le code
+   *  d'équipe, déjà en place sur /athlete/transfert (MonEquipeSection). */
+  onRejoindreEquipe: () => void;
   submitting: boolean;
   onPropose: (champ: string, valeurProposee: string, valeurActuelle: string) => Promise<string | null>;
 }) {
@@ -1970,6 +1975,12 @@ function EvaluationStep({
     : a.overallRating;
 
   const getCurrent = (key: keyof AthleteTraitRatings) => (tr ? tr[key] || 0 : 0);
+
+  /* Le prochain pas du jeune dépend d'UNE question : quelqu'un peut-il lire sa
+     proposition ? Sans entraîneur rattaché, elle attendra indéfiniment — et lui
+     dire « en attente d'approbation » serait lui promettre un lecteur qui
+     n'existe pas. On lui dit d'aller en chercher un. */
+  const aUnCoach = !!a.coachId;
 
   return (
     <div className="space-y-4">
@@ -2009,11 +2020,29 @@ function EvaluationStep({
           </span>
           <div className="min-w-0">
             <p className="text-[13px] font-bold text-[#EAB308] leading-snug">
-              Cette section se propose
+              {aUnCoach ? "Cette section se propose" : "Il te manque un entraîneur"}
             </p>
+            {/* Le même écran, deux situations. Avec un entraîneur, on décrit ce
+                qui va se passer. Sans, on décrit ce qu'il reste à faire — parce
+                que promettre une approbation à qui n'a personne pour approuver,
+                c'est la définition du mensonge qu'on vient de retirer deux fois. */}
             <p className="text-[12px] leading-relaxed text-white/60 mt-0.5">
-              Modifications soumises à ton entraîneur pour approbation.
+              {aUnCoach
+                ? "Modifications soumises à ton entraîneur pour approbation."
+                : "Tu peux proposer ton évaluation dès maintenant — elle attendra qu'un entraîneur rejoigne ton profil pour être approuvée."}
             </p>
+            {!aUnCoach && (
+              <button
+                type="button"
+                onClick={() => { void triggerHaptic("Light"); onRejoindreEquipe(); }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-bold bg-[#EAB308]/15 border border-[#EAB308]/30 text-[#EAB308] active:bg-[#EAB308]/25"
+              >
+                Rejoindre mon équipe
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </Card>
@@ -2072,6 +2101,7 @@ function EvaluationStep({
               allowHalf
               starSize={26}
               suggestion={derniereSuggestion("Cote globale")}
+              aUnCoach={aUnCoach}
               submitting={submitting}
               onSubmit={async (proposed) => {
                 await onPropose("Cote globale", proposed.toFixed(1), a.overallRating > 0 ? a.overallRating.toFixed(1) : "");
@@ -2142,6 +2172,7 @@ function EvaluationStep({
                     allowHalf={false}
                     starSize={24}
                     suggestion={derniereSuggestion(t.column)}
+                    aUnCoach={aUnCoach}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
                       /* Même valeur = pas de ligne. Le trigger l'appliquerait
@@ -2172,6 +2203,7 @@ function EvaluationStep({
                     allowHalf={false}
                     starSize={24}
                     suggestion={derniereSuggestion(t.column)}
+                    aUnCoach={aUnCoach}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
                       if (proposed === current) return;
@@ -2204,6 +2236,7 @@ function EvaluationStep({
             sportNom={a.primarySport || null}
             currentDistinctions={a.coachDistinctions}
             suggestion={derniereSuggestion("Distinctions")}
+            aUnCoach={aUnCoach}
             submitting={submitting}
             onSubmit={async (entries) => {
               /* Une SEULE ligne pour tout le jeu de badges, sérialisée en
@@ -2239,7 +2272,7 @@ function EvaluationStep({
                     <span className="text-[13px] font-semibold text-white/85 min-w-0 truncate">
                       {libelleChampProposition(s.field, groups)}
                     </span>
-                    <span className="shrink-0"><PastilleStatut s={s} /></span>
+                    <span className="shrink-0"><PastilleStatut s={s} aUnCoach={aUnCoach} /></span>
                   </div>
                   <p className="mt-1 text-[12px] text-white/55 break-words">
                     {s.field === "Distinctions"
@@ -2250,9 +2283,9 @@ function EvaluationStep({
                           <span className="font-bold text-white/85">{s.proposed_value}</span>
                         </>}
                   </p>
-                  {s.status === "rejected" && s.rejection_reason && (
+                  {motifHumain(s) && (
                     <p className="mt-1 text-[11px] leading-relaxed text-[#E63946]/85">
-                      {s.rejection_reason}
+                      {motifHumain(s)}
                     </p>
                   )}
                 </div>
@@ -2307,20 +2340,59 @@ function libelleChampProposition(
    un état qu'aucune ligne n'atteint aujourd'hui — donc rien ne s'affichait
    jamais, et l'athlète soumettait dans le noir.
 ═══════════════════════════════════════════════════════════════ */
-function PastilleStatut({ s, valeur }: { s: AthleteSuggestion; valeur?: string }) {
-  const skin = s.status === "pending"
-    ? { bord: "#EAB308", fond: "rgba(234,179,8,0.10)", texte: "⏳ En attente" }
+function PastilleStatut({ s, valeur, aUnCoach }: {
+  s: AthleteSuggestion;
+  valeur?: string;
+  /** L'athlète a-t-il un entraîneur rattaché ? Décide du PROCHAIN PAS montré. */
+  aUnCoach: boolean;
+}) {
+  /* ── UN REFUS MACHINE N'EST PAS UN REFUS ────────────────────────────────
+     `system_note` est posé par le trigger de transition, jamais par un
+     humain. Tant que le volet 6 de D6 n'est pas appliqué, TOUTE proposition
+     d'évaluation est rejetée à l'insertion — annoncer « Refusée » ferait
+     croire au jeune que son entraîneur l'a recalé, alors que personne n'a
+     rien lu. On montre donc l'attente, c'est-à-dire la vérité de sa
+     situation : ça n'a pas encore été regardé.
+
+     Le rouge reste pour les VRAIS refus, ceux qu'un entraîneur prononce —
+     ils n'ont pas de note_systeme, et leur motif est un message humain, donc
+     affichable. */
+  const refusMachine = s.status === "rejected" && !!s.system_note;
+  const enAttente = s.status === "pending" || refusMachine;
+
+  /* L'état décrit SON PROCHAIN PAS, jamais l'architecture (règle 11).
+     Sans entraîneur, le prochain pas n'est pas d'attendre — c'est d'aller
+     en chercher un. */
+  const texte = enAttente
+    ? (aUnCoach
+        ? "⏳ En attente d'approbation du coach"
+        : "⏳ Invite ton coach pour qu'il approuve cette évaluation")
     : s.status === "approved"
-      ? { bord: "#22C55E", fond: "rgba(34,197,94,0.10)", texte: "✓ Approuvée" }
-      : { bord: "#E63946", fond: "rgba(230,57,70,0.10)", texte: "✕ Refusée" };
+      ? "✓ Approuvée"
+      : "✕ Refusée";
+
+  const skin = enAttente
+    ? { bord: "#EAB308", fond: "rgba(234,179,8,0.10)" }
+    : s.status === "approved"
+      ? { bord: "#22C55E", fond: "rgba(34,197,94,0.10)" }
+      : { bord: "#E63946", fond: "rgba(230,57,70,0.10)" };
+
   return (
     <span
-      className="inline-block text-[11px] font-bold rounded-full px-2 py-0.5"
+      className="inline-block text-[11px] font-bold rounded-full px-2 py-0.5 leading-snug"
       style={{ color: skin.bord, background: skin.fond, border: `1px solid ${skin.bord}40` }}
     >
-      {skin.texte}{valeur ? ` : ${valeur}` : ""}
+      {texte}{valeur ? ` · ${valeur}` : ""}
     </span>
   );
+}
+
+/** Un vrai refus d'entraîneur — donc un motif ÉCRIT PAR UN HUMAIN, qu'on peut
+ *  montrer. Le motif d'un refus machine, lui, ne s'affiche jamais : c'est de
+ *  l'architecture, et l'architecture ne s'adresse pas au jeune. */
+function motifHumain(s: AthleteSuggestion): string | null {
+  if (s.status !== "rejected" || s.system_note) return null;
+  return s.rejection_reason ?? null;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2340,7 +2412,7 @@ function PastilleStatut({ s, valeur }: { s: AthleteSuggestion; valeur?: string }
    Cote globale and whole-star for individual traits.
 ═══════════════════════════════════════════════════════════════ */
 function StarSuggestRow({
-  label, currentValue, champ, allowHalf, starSize, suggestion, submitting, onSubmit, isLast,
+  label, currentValue, champ, allowHalf, starSize, suggestion, aUnCoach, submitting, onSubmit, isLast,
 }: {
   label: string;
   /** Currently-stored value in evaluations (0 = unset). Displayed
@@ -2355,6 +2427,7 @@ function StarSuggestRow({
   starSize: number;
   /** La DERNIÈRE proposition sur ce champ, quel que soit son statut. */
   suggestion: AthleteSuggestion | undefined;
+  aUnCoach: boolean;
   submitting: boolean;
   /** Called with the validated `proposed` number (always > 0). The
    *  caller does the stringify (String(int) for traits, toFixed(1)
@@ -2393,10 +2466,10 @@ function StarSuggestRow({
         </button>
         {suggestion && (
           <div className="px-4 pb-3 -mt-1">
-            <PastilleStatut s={suggestion} valeur={`${suggestion.proposed_value}/5`} />
-            {suggestion.status === "rejected" && suggestion.rejection_reason && (
+            <PastilleStatut s={suggestion} valeur={`${suggestion.proposed_value}/5`} aUnCoach={aUnCoach} />
+            {motifHumain(suggestion) && (
               <p className="mt-1 text-[11px] leading-relaxed text-white/45">
-                {suggestion.rejection_reason}
+                {motifHumain(suggestion)}
               </p>
             )}
           </div>
@@ -2513,13 +2586,14 @@ function badgesProposes(valeur: string | null | undefined): string[] {
 }
 
 function DistinctionsSuggestRow({
-  athleteId, sportId, sportNom, currentDistinctions, suggestion, submitting, onSubmit,
+  athleteId, sportId, sportNom, currentDistinctions, suggestion, aUnCoach, submitting, onSubmit,
 }: {
   athleteId: string | null;
   sportId: string | null;
   sportNom: string | null;
   currentDistinctions: DistinctionEntry[];
   suggestion: AthleteSuggestion | undefined;
+  aUnCoach: boolean;
   submitting: boolean;
   onSubmit: (entries: DistinctionEntry[]) => Promise<void>;
 }) {
@@ -2634,7 +2708,7 @@ function DistinctionsSuggestRow({
             planter — d'où le try/catch et le repli sur la pastille nue. */}
         {suggestion && (
           <div className="px-4 pb-3 -mt-1 flex flex-wrap items-center gap-1.5">
-            <PastilleStatut s={suggestion} />
+            <PastilleStatut s={suggestion} aUnCoach={aUnCoach} />
             {badgesProposes(suggestion.proposed_value).map((lib, i) => (
               <span
                 key={`${lib}-${i}`}
@@ -2643,9 +2717,9 @@ function DistinctionsSuggestRow({
                 {lib}
               </span>
             ))}
-            {suggestion.status === "rejected" && suggestion.rejection_reason && (
+            {motifHumain(suggestion) && (
               <p className="w-full mt-0.5 text-[11px] leading-relaxed text-white/45">
-                {suggestion.rejection_reason}
+                {motifHumain(suggestion)}
               </p>
             )}
           </div>
