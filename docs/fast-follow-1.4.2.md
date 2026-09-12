@@ -562,3 +562,40 @@ que l'un des deux sera mal traité.
 Pistes, non tranchées : section séparée ; accent gold sur la carte elle-même ;
 affichage systématique de l'écart (« tu as 3, tu proposes 5 ») ; ou exiger un
 message de l'athlète pour les seuls champs d'auto-évaluation.
+
+---
+
+## 22. §EBUSY — assainir l'environnement AVANT le build AAB final
+
+**Constat BP, 2026-09-11.** Deux symptômes qui vont ensemble sur cette machine :
+
+- **`cap sync android` échoue en EBUSY** sur `rmdir assets/public`, de façon
+  récurrente. L'hypothèse « Android Studio tient le dossier » est **INFIRMÉE** :
+  le 2026-09-11, `studio64` ne tournait pas et l'EBUSY est survenu quand même.
+  Contournement en place : `robocopy out assets\public /E` (sans `/MIR`, qui
+  emporterait `cordova.js`). Il fonctionne, mais il masque la cause.
+- **Accumulation de processus `adb` zombies** — jusqu'à 6 clients simultanés
+  relevés, dont des `adb logcat` de captures de recette laissées ouvertes. Un
+  `adb devices` a fini par ne plus répondre du tout (28 min d'attente morte),
+  puis l'émulateur est passé `offline`, puis le daemon a refusé de redémarrer
+  (`protocol fault (couldn't read status): connection reset`).
+
+**Les deux se nourrissent :** un client adb qui tient des poignées sur le
+dossier de l'app, et un `cap sync` qui veut le supprimer.
+
+**À faire avant le build AAB de release, et pas pendant :**
+1. redémarrage de la machine — pas seulement des processus ;
+2. un `npx cap sync android` **propre**, sans robocopy, pour vérifier que
+   l'EBUSY a bien disparu (s'il persiste après reboot, la cause est ailleurs
+   qu'un verrou transitoire, et ça se diagnostique à froid) ;
+3. **un seul build**, sans émulateur lancé, sans capture logcat en cours.
+
+**Règle de conduite adoptée le 2026-09-11 :** toute commande `adb` porte un
+timeout explicite. Plus jamais de `adb wait-for-device` sans limite — c'est
+lui qui a transformé un daemon coincé en attente silencieuse. Au-delà de
+60 secondes, on interrompt et on nomme l'étape bloquée.
+
+**Séquence de reset qui a fonctionné**, à reprendre telle quelle :
+`Get-Process adb,qemu*,emulator* | Stop-Process -Force` (⚠️ tue aussi la VM),
+puis `adb start-server`, puis `emulator -avd Pixel_6 -no-snapshot-load`,
+puis vérifier `sys.boot_completed = 1` avant tout `install`.
