@@ -13,6 +13,40 @@
      SUGGEST → YELLOW (athlete proposes via athlete_suggestions ;
                        coach approves via apply_approved_suggestion)
      LOCKED  → RED    (coach-only, display-only for the athlete)
+
+   ══ LE CODE COULEUR EST LA LOI — décision BP, 2026-09-11 (règle 11) ══
+
+   La couleur n'est pas une décoration : c'est la SEULE promesse faite à
+   l'athlète sur ce qui va arriver à sa saisie. Vert = c'est enregistré.
+   Jaune = c'est parti chez ton entraîneur. Rouge = tu regardes, tu ne
+   touches pas. Un écran qui se trompe de couleur ment sur le destin de la
+   donnée, et le jeune ne l'apprend qu'au moment où ça ne marche pas.
+
+   CE QUI EST ARRIVÉ, ET QUI EXPLIQUE POURQUOI C'EST ÉCRIT ICI. Le
+   2026-09-09, les champs Physique et Sport sont passés en écriture
+   DIRECTE. Le chrome, lui, est resté : crayon jaune, libellé « NOUVELLE
+   VALEUR PROPOSÉE », bouton jaune — sur des champs déjà enregistrés. Deux
+   jours, et personne ne l'a vu, parce que rien ne cassait. Le composant
+   s'appelait encore `SuggestRow` alors qu'il n'avait plus rien à proposer.
+
+   TROIS RÈGLES QUI EN DÉCOULENT :
+
+   1. Tout changement de RÉGIME d'écriture d'un champ (direct ↔ proposition)
+      oblige à revoir sa couleur, son libellé d'action ET le nom du composant
+      qui le rend, dans le même commit. Les quatre disent la même chose.
+
+   2. Le nom du composant porte le monde : `ChampDirectRow` écrit,
+      `StarSuggestRow` / `DistinctionsSuggestRow` proposent. Un nom qui ment
+      est ce qui a permis à la couleur de mentir deux jours.
+
+   3. Un état qui ne peut pas se produire ne se rend pas. La branche
+      « En attente » d'une rangée directe était morte et jaune : une
+      écriture immédiate ne crée aucune ligne `athlete_suggestions`. Garder
+      un chemin mort, c'est garder une couleur fausse en réserve.
+
+   Application, étape par étape : voir STEP_MODES / STEP_ACCENTS dans
+   AthleteEditWizardMobile.tsx. Aujourd'hui UNE seule étape propose
+   (Évaluation) ; les cinq autres écrivent.
 ═══════════════════════════════════════════════════════════════ */
 
 export const GREEN = "#22C55E";

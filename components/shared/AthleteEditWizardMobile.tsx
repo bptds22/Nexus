@@ -19,7 +19,7 @@
      - Step 0 : shell + IS_CAPACITOR dispatch + load + civil derivation.
      - MÉDIAS step (DIRECT) : 5 url fields, immediate UPDATE athletes,
        inline edit via InlineEditRow.
-     - PHYSIQUE step (SUGGEST) : 11 fields, inline-expand SuggestExpand
+     - PHYSIQUE step (SUGGEST) : 11 fields, inline-expand ChampDirectExpand
        wrapper (no overlay), INSERT athlete_suggestions per field,
        En-attente pill when a champ already has EN_ATTENTE.
 
@@ -175,8 +175,15 @@ const STEP_LABELS = ["Identité", "Académique", "Physique", "Sport", "Médias",
 /* Identité is MIXED (5 DIRECT + 5 LOCKED — green chip for dominant
    editable mode, per-row indicators show actual state). Académique
    was flipped to fully DIRECT in B-2.5 — every field is athlete-
-   editable, no coach approval gate. Physique and Sport stay SUGGEST
-   (coach approves), Médias stays DIRECT.
+   editable, no coach approval gate. Médias stays DIRECT.
+
+   ⚠️ CORRIGÉ le 2026-09-11 : Physique et Sport étaient encore déclarées
+   SUGGEST/JAUNE alors qu'elles écrivent EN DIRECT depuis le 2026-09-09
+   (submitSuggestion → ecrireChampAthlete). L'athlète voyait donc un crayon
+   jaune, un libellé « Nouvelle valeur proposée » et un bouton jaune sur un
+   champ qui s'enregistrait immédiatement. Un héritage de chrome, pas une
+   intention — et exactement le genre d'écart que le code couleur existe
+   pour rendre impossible.
 
    Évaluation (B-3a) is SUGGEST-dominant : athletes suggest cote +
    trait ratings + (B-3b) distinctions, all requiring coach approval
@@ -187,8 +194,18 @@ const STEP_LABELS = ["Identité", "Académique", "Physique", "Sport", "Médias",
    ALSO gates whether "Cote globale" can be suggested at all — this
    is a UI-level mirror of the apply_approved_suggestion trigger's
    v_is_detailed guard. */
-const STEP_MODES = ["MIXED", "DIRECT", "SUGGEST", "SUGGEST", "DIRECT", "SUGGEST"] as const;
-const STEP_ACCENTS: (string | undefined)[] = [GREEN, GREEN, YELLOW, YELLOW, GREEN, YELLOW];
+/* LE CODE COULEUR EST LA LOI — décision BP, 2026-09-11 (règle 11).
+   La convention vit en tête de components/shared/wizard/modeIcons.tsx ;
+   ces deux tableaux en sont l'application, étape par étape :
+     0 Identité   MIXED  → VERT   (direct + quelques champs verrouillés)
+     1 Académique DIRECT → VERT
+     2 Physique   DIRECT → VERT   (était JAUNE à tort)
+     3 Sport      DIRECT → VERT   (était JAUNE à tort)
+     4 Médias     DIRECT → VERT
+     5 Évaluation SUGGEST→ JAUNE  (cote, 14 traits, distinctions)
+   Une seule étape propose. Toutes les autres écrivent. */
+const STEP_MODES = ["MIXED", "DIRECT", "DIRECT", "DIRECT", "DIRECT", "SUGGEST"] as const;
+const STEP_ACCENTS: (string | undefined)[] = [GREEN, GREEN, GREEN, GREEN, GREEN, YELLOW];
 
 const STATUS_MAP: Record<string, "pending" | "approved" | "rejected"> = {
   EN_ATTENTE: "pending",
@@ -221,7 +238,7 @@ const GENDER_OPTIONS: PickerOption[] = [
    Les deux groupes sont désormais ceux du module (9 / 5). */
 
 /* ═══════════════════════════════════════════════════════════════
-   SuggestExpand — inline-expanding suggest form (NO overlay).
+   ChampDirectExpand — inline-expanding suggest form (NO overlay).
 
    Mirrors the web's SuggestibleField expanded state at page.tsx :340-360
    verbatim : current value struck through, proposed-value input, optional
@@ -232,7 +249,7 @@ const GENDER_OPTIONS: PickerOption[] = [
    a PickerRow + MobilePicker for choice fields — picked via the
    `inputType` prop.
 ═══════════════════════════════════════════════════════════════ */
-interface SuggestExpandProps {
+interface ChampDirectExpandProps {
   champ: string;                    // exact French label written into athlete_suggestions.champ
   currentValue: string;             // displayed struck-through above the input
   initialProposed: string;
@@ -268,10 +285,10 @@ function parseWeightSeed(v: string): string {
   return m ? m[0] : "";
 }
 
-function SuggestExpand({
+function ChampDirectExpand({
   champ, currentValue, initialProposed, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, onCancel,
-}: SuggestExpandProps) {
+}: ChampDirectExpandProps) {
   const [proposed, setProposed] = useState(initialProposed);
   /* `message` survit en constante vide : la signature onSubmit le porte
      encore pour les appelants non migrés. Il n'a plus de champ ni de
@@ -285,7 +302,7 @@ function SuggestExpand({
 
   /* ── Wheel state (inputType="wheel"). unitMode persists via the same
         key the coach wizard uses. Lazy init from localStorage is safe
-        here : SuggestExpand only mounts on tap (client-only, post-
+        here : ChampDirectExpand only mounts on tap (client-only, post-
         hydration), so there's no SSR mismatch. The imperial values
         below drive the wheel position + the canonical proposed string. ── */
   const [unitMode, setUnitMode] = useState<UnitMode>(() => {
@@ -309,17 +326,12 @@ function SuggestExpand({
   const canSubmit = trimmed.length > 0 && trimmed !== currentValue.trim();
 
   return (
-    <div className="px-4 py-3 bg-[#13151a] border-t border-[#EAB308]/20">
-      {/* Current value (struck through) */}
-      <p className="text-[11px] text-[#6b7280] line-through mb-2">
-        Actuel : {currentValue || "—"}
-      </p>
-
-      {/* Proposed value — text vs picker. Both inline (no overlay for
-          text ; bottom-sheet only on picker tap — the rest stays inline). */}
-      <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-[#EAB308] mb-1.5">
-        Nouvelle valeur proposée
-      </label>
+    <div className="px-4 py-3 bg-[#13151a] border-t border-[#22C55E]/20">
+      {/* CÉRÉMONIE RETIRÉE le 2026-09-11. Il y avait ici « Actuel : … » barré
+          et un libellé « NOUVELLE VALEUR PROPOSÉE ». Deux mensonges pour un
+          champ qui s'écrit directement : rien n'est proposé, et la valeur
+          courante est déjà visible sur la rangée juste au-dessus. Le champ
+          s'ouvre, on saisit, on enregistre. */}
       {inputType === "text" ? (
         <input
           type="text"
@@ -329,7 +341,7 @@ function SuggestExpand({
           inputMode={numericMode}
           pattern={numericMode === "numeric" ? "[0-9]*" : undefined}
           aria-label={champ}
-          className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none focus:border-[#EAB308]/40"
+          className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none focus:border-[#22C55E]/40"
           placeholder={placeholder}
         />
       ) : inputType === "wheel" ? (
@@ -417,7 +429,7 @@ function SuggestExpand({
           type="button"
           disabled={!canSubmit || submitting}
           onClick={async () => { void triggerHaptic("Light"); setErreur(await onSubmit(trimmed, message)); }}
-          className="flex-1 h-11 rounded-2xl bg-[#EAB308] text-white text-[13px] font-bold uppercase tracking-wider active:bg-[#CA8A04] disabled:opacity-40"
+          className="flex-1 h-11 rounded-2xl bg-[#22C55E] text-[#0A2E16] text-[13px] font-bold uppercase tracking-wider active:bg-[#16A34A] disabled:opacity-40"
         >
           {submitting ? "Enregistrement…" : "Enregistrer"}
         </button>
@@ -440,57 +452,45 @@ function SuggestExpand({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SuggestRow — wraps a row with the yellow indicator + tap-to-expand
-   into SuggestExpand. When a champ already has EN_ATTENTE, renders
-   the En-attente pill instead of the edit affordance.
+   ChampDirectRow — une rangée qui s'ÉCRIT, indicateur VERT.
+
+   Elle s'appelait `SuggestRow` et portait le jaune, l'« En attente » et le
+   vocabulaire de proposition. C'était vrai jusqu'au 2026-09-09 ; depuis,
+   ces champs écrivent droit sur `athletes` (ecrireChampAthlete). Le nom et
+   la couleur ont survécu à la décision — et c'est ainsi qu'un athlète a vu
+   « NOUVELLE VALEUR PROPOSÉE » sur un champ déjà enregistré.
+
+   Le nom dit maintenant le monde. Si un jour ces champs redeviennent des
+   propositions, il faudra renommer — ce qui est précisément le garde-fou
+   qui manquait.
+
+   La branche « En attente » est RETIRÉE : une écriture directe ne crée
+   aucune ligne athlete_suggestions, donc ce chemin ne pouvait plus
+   s'atteindre. Le `pending` disparaît avec elle.
 ═══════════════════════════════════════════════════════════════ */
-interface SuggestRowProps {
+interface ChampDirectRowProps {
   label: string;
   value: string;
   champ: string;
-  pending: AthleteSuggestion | undefined;
   inputType: "text" | "picker" | "wheel";
   wheelKind?: "height" | "weight";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
   /** Per-field placeholder for the text-input branch. Threaded to
-   *  SuggestExpand. Omit to render no placeholder. */
+   *  ChampDirectExpand. Omit to render no placeholder. */
   placeholder?: string;
   submitting: boolean;
   onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<string | null>;
   isLast?: boolean;
 }
 
-function SuggestRow({
-  label, value, champ, pending, inputType, wheelKind, pickerOptions, numericMode, placeholder,
+function ChampDirectRow({
+  label, value, champ, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, isLast,
-}: SuggestRowProps) {
+}: ChampDirectRowProps) {
   const [expanded, setExpanded] = useState(false);
 
-  // En-attente — display the pending proposed value, no edit affordance.
-  if (pending) {
-    return (
-      <div
-        className="px-4 py-3 flex items-center gap-3"
-        style={{ borderBottom: isLast ? undefined : "1px solid rgba(255,255,255,0.06)" }}
-      >
-        <span className="w-4 h-4 flex items-center justify-center shrink-0">
-          <PencilIcon color={YELLOW} size={12} />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] text-white/70 truncate">{label}</p>
-          <p className="text-[12px] text-[#EAB308] mt-0.5 truncate">
-            Suggéré : <span className="font-bold">{pending.proposed_value}</span>
-          </p>
-        </div>
-        <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#EAB308]/15 border border-[#EAB308]/30 text-[#EAB308] shrink-0">
-          En attente
-        </span>
-      </div>
-    );
-  }
-
-  // Default — collapsed row, tap to expand into SuggestExpand.
+  // Rangée repliée — on tape pour ouvrir la saisie en place.
   return (
     <div>
       <button
@@ -500,7 +500,7 @@ function SuggestRow({
         style={{ borderBottom: isLast && !expanded ? undefined : "1px solid rgba(255,255,255,0.06)" }}
       >
         <span className="w-4 h-4 flex items-center justify-center shrink-0">
-          <PencilIcon color={YELLOW} size={12} />
+          <PencilIcon color={GREEN} size={12} />
         </span>
         <span className="flex-1 text-[14px] text-white/70 truncate">{label}</span>
         <span className="text-[14px] font-semibold text-white max-w-[55%] truncate text-right">
@@ -511,7 +511,7 @@ function SuggestRow({
         </svg>
       </button>
       {expanded && (
-        <SuggestExpand
+        <ChampDirectExpand
           champ={champ}
           currentValue={value}
           initialProposed=""
@@ -1052,7 +1052,7 @@ export default function AthleteEditWizardMobile() {
         {step === 1 && <AcademiqueStep a={a} onDirect={saveDirect} />}
 
         {/* ── Step 2 : Physique (SUGGEST) ── */}
-        {step === 2 && <PhysiqueStep a={a} getPending={getPending} submitting={submitting} onSubmit={submitSuggestion} />}
+        {step === 2 && <PhysiqueStep a={a} submitting={submitting} onSubmit={submitSuggestion} />}
 
         {/* ── Step 3 : Sport (SUGGEST — B-2 wired) ── */}
         {step === 3 && (
@@ -1060,7 +1060,6 @@ export default function AthleteEditWizardMobile() {
             a={a}
             sportsOptions={sportsOptions}
             positionsOptions={positionsOptions}
-            getPending={getPending}
             submitting={submitting}
             onSubmit={submitSuggestion}
             saveDirect={saveDirect}
@@ -1644,13 +1643,15 @@ function CustomChip({ label, onRemove }: { label: string; onRemove: () => void }
    secondary by athletes.sport_secondaire_id (fallback sport_id when
    no secondary sport is set — mirrors page.tsx).
 ═══════════════════════════════════════════════════════════════ */
+/* `getPending` a disparu de la signature avec la branche « En attente » des
+   rangées directes : ces champs s'écrivent, ils n'attendent rien. Une prop
+   d'attente sur un écran qui n'attend pas invite le prochain à s'en servir. */
 function SportStep({
-  a, sportsOptions, positionsOptions, getPending, submitting, onSubmit, saveDirect,
+  a, sportsOptions, positionsOptions, submitting, onSubmit, saveDirect,
 }: {
   a: LoadedAthlete;
   sportsOptions: SportOption[];
   positionsOptions: PositionOption[];
-  getPending: (champ: string) => AthleteSuggestion | undefined;
   submitting: boolean;
   onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<string | null>;
   saveDirect: (column: string, value: string | string[] | boolean | TeamHistoryEntry[]) => Promise<void>;
@@ -1702,40 +1703,37 @@ function SportStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 px-1">
-        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: YELLOW }}>
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: GREEN }}>
           Sport
         </p>
-        <PencilIcon color={YELLOW} size={12} />
+        <PencilIcon color={GREEN} size={12} />
       </div>
       <p className="text-[12px] text-white/55 px-1">
         Tes modifications sont enregistrées tout de suite.
       </p>
       <Card>
-        <SuggestRow
+        <ChampDirectRow
           label="Sport principal"
           value={a.primarySport}
           champ="Sport principal"
-          pending={getPending("Sport principal")}
           inputType="picker"
           pickerOptions={sportPickerOptions}
           submitting={submitting}
           onSubmit={onSubmit}
         />
-        <SuggestRow
+        <ChampDirectRow
           label="Position principale"
           value={a.primaryPosition}
           champ="Position"
-          pending={getPending("Position")}
           inputType="picker"
           pickerOptions={primaryPositionOptions}
           submitting={submitting}
           onSubmit={onSubmit}
         />
-        <SuggestRow
+        <ChampDirectRow
           label="Numéro"
           value={a.jerseyNumber}
           champ="Numéro"
-          pending={getPending("Numéro")}
           inputType="text"
           numericMode="numeric"
           placeholder="Ex: 24"
@@ -1782,10 +1780,9 @@ function SportStep({
    AND the apply_approved_suggestion trigger CASE branches.
 ═══════════════════════════════════════════════════════════════ */
 function PhysiqueStep({
-  a, getPending, submitting, onSubmit,
+  a, submitting, onSubmit,
 }: {
   a: LoadedAthlete;
-  getPending: (champ: string) => AthleteSuggestion | undefined;
   submitting: boolean;
   onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<string | null>;
 }) {
@@ -1793,20 +1790,20 @@ function PhysiqueStep({
     <>
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: YELLOW }}>
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: GREEN }}>
             Physique
           </p>
-          <PencilIcon color={YELLOW} size={12} />
+          <PencilIcon color={GREEN} size={12} />
         </div>
         <p className="text-[12px] text-white/55 mb-3 px-1">
           Tes modifications sont enregistrées tout de suite.
         </p>
         <Card>
-          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="wheel" wheelKind="height" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="wheel" wheelKind="weight" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Envergure"       value={a.wingspan}        champ="Envergure"       pending={getPending("Envergure")}       inputType="text" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Main dominante"  value={a.dominantHand}    champ="Main dominante"  pending={getPending("Main dominante")}  inputType="picker" pickerOptions={HAND_OPTIONS} submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Pied dominant"   value={a.dominantFoot}    champ="Pied dominant"   pending={getPending("Pied dominant")}   inputType="picker" pickerOptions={FOOT_OPTIONS} submitting={submitting} onSubmit={onSubmit} isLast />
+          <ChampDirectRow label="Taille"          value={a.heightDisplay}   champ="Taille"          inputType="wheel" wheelKind="height" submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Poids"           value={a.weightDisplay}   champ="Poids"           inputType="wheel" wheelKind="weight" submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Envergure"       value={a.wingspan}        champ="Envergure"       inputType="text" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Main dominante"  value={a.dominantHand}    champ="Main dominante"  inputType="picker" pickerOptions={HAND_OPTIONS} submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Pied dominant"   value={a.dominantFoot}    champ="Pied dominant"   inputType="picker" pickerOptions={FOOT_OPTIONS} submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
       </div>
 
@@ -1815,12 +1812,12 @@ function PhysiqueStep({
           Tests athlétiques
         </p>
         <Card>
-          <SuggestRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         pending={getPending("40 yards")}         inputType="text" placeholder="Ex: 4.72s"     submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    pending={getPending("Saut vertical")}    inputType="text" placeholder="Ex: 32&quot;"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    pending={getPending("Saut longueur")}    inputType="text" placeholder="Ex: 9'2&quot;"  submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Développé couché" value={a.benchPress}     champ="Développé couché" pending={getPending("Développé couché")} inputType="text" placeholder="Ex: 225 × 8"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Navette"          value={a.shuttleAgility} champ="Navette"          pending={getPending("Navette")}          inputType="text" placeholder="Ex: 4.31s"     submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      pending={getPending("Sprint 100m")}      inputType="text" placeholder="Ex: 10.9s"     submitting={submitting} onSubmit={onSubmit} isLast />
+          <ChampDirectRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         inputType="text" placeholder="Ex: 4.72s"     submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    inputType="text" placeholder="Ex: 32&quot;"   submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    inputType="text" placeholder="Ex: 9'2&quot;"  submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Développé couché" value={a.benchPress}     champ="Développé couché" inputType="text" placeholder="Ex: 225 × 8"   submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Navette"          value={a.shuttleAgility} champ="Navette"          inputType="text" placeholder="Ex: 4.31s"     submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      inputType="text" placeholder="Ex: 10.9s"     submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
       </div>
     </>
@@ -1964,9 +1961,35 @@ function EvaluationStep({
         </p>
         <PencilIcon color={YELLOW} size={12} />
       </div>
-      <p className="text-[12px] leading-relaxed text-white/55 px-1">
-        Modifications soumises à ton entraîneur pour approbation.
-      </p>
+
+      {/* L'ENCART QUI DIT LE MONDE.
+          C'était une ligne de texte gris parmi d'autres — donc invisible, et
+          l'athlète découvrait la règle au moment du refus. Ici c'est une
+          carte teintée : elle se lit AVANT le premier geste, et sa couleur
+          est celle des trois rangées en dessous. Le jaune n'est pas un
+          ornement, c'est la même information que le crayon.
+
+          Même anatomie que les cartes d'état du design system (Card + pile
+          d'icône ronde + titre/corps) — cf. la carte « Mode démo » du
+          pipeline recruteur. */}
+      <Card>
+        <div className="px-4 py-3.5 flex items-start gap-3 bg-[#EAB308]/[0.06] border-l-2 border-[#EAB308]/50">
+          <span
+            aria-hidden
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[15px] bg-[#EAB308]/15 border border-[#EAB308]/25"
+          >
+            ⏳
+          </span>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-[#EAB308] leading-snug">
+              Cette section se propose
+            </p>
+            <p className="text-[12px] leading-relaxed text-white/60 mt-0.5">
+              Modifications soumises à ton entraîneur pour approbation.
+            </p>
+          </div>
+        </div>
+      </Card>
 
       {/* ── Rapport entraîneur — LOCKED (display-only).
             No champ in apply_approved_suggestion : the athlete cannot
@@ -2165,7 +2188,7 @@ function EvaluationStep({
 
 /* ═══════════════════════════════════════════════════════════════
    StarSuggestRow — parallel to SuggestRow but with a StarRow input
-   body (no text/picker overlap with SuggestExpand). Owns its own
+   body (no text/picker overlap with ChampDirectExpand). Owns its own
    expand state + yellow indicator + pending pill + Soumettre /
    Annuler shell.
 
@@ -2324,6 +2347,29 @@ function StarSuggestRow({
    apply_approved_suggestion trigger's `::jsonb` cast and the canonical
    pastillesBadges read are both symmetric round-trips.
 ═══════════════════════════════════════════════════════════════ */
+/** Les libellés des badges d'une proposition de distinctions, relus depuis
+ *  la valeur déposée. Rend une liste VIDE sur tout format inattendu : une
+ *  pastille sans détail reste correcte, une exception casserait l'étape. */
+function badgesProposes(valeur: string | null | undefined): string[] {
+  if (!valeur) return [];
+  try {
+    const brut: unknown = JSON.parse(valeur);
+    if (!Array.isArray(brut)) return [];
+    return brut.flatMap((e) => {
+      if (typeof e !== "object" || e === null) return [];
+      const { badge, detail } = e as { badge?: unknown; detail?: unknown };
+      if (typeof badge !== "string") return [];
+      const cfg = BADGE_CONFIG[badge];
+      const d = typeof detail === "string" ? detail.trim() : "";
+      if (badge === "custom") return [d || "Personnalisée"];
+      const base = cfg?.label ?? badge;
+      return [d ? `${base} — ${d}` : base];
+    });
+  } catch {
+    return [];
+  }
+}
+
 function DistinctionsSuggestRow({
   athleteId, sportId, sportNom, currentDistinctions, pending, submitting, onSubmit,
 }: {
@@ -2437,11 +2483,27 @@ function DistinctionsSuggestRow({
             <span className="text-[12px] text-white/35">—</span>
           </div>
         )}
+        {/* EN ATTENTE — on liste ce qui a été proposé, pas juste « il y a
+            quelque chose ». La pastille seule obligeait à rouvrir la rangée
+            pour savoir ce qu'on avait demandé, et ce qu'on y voyait était le
+            brouillon rechargé depuis la base, pas la proposition.
+
+            `proposed_value` est le JSON envoyé au dépôt. Il est reparsé ici :
+            si le format devait changer un jour, la liste disparaît au lieu de
+            planter — d'où le try/catch et le repli sur la pastille nue. */}
         {hasPending && (
-          <div className="px-4 pb-3 -mt-1">
+          <div className="px-4 pb-3 -mt-1 flex flex-wrap items-center gap-1.5">
             <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
               ⏳ En attente
             </span>
+            {badgesProposes(pending?.proposed_value).map((lib, i) => (
+              <span
+                key={`${lib}-${i}`}
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EAB308]/[0.08] border border-[#EAB308]/20 text-[#EAB308]/85"
+              >
+                {lib}
+              </span>
+            ))}
           </div>
         )}
       </div>
