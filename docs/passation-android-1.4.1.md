@@ -9,7 +9,7 @@ qu'un `gradlew assembleDebug` sur une machine équipée.
 ## 1. SHA à puller
 
 ```
-release/1.4.1 → 0e16c69   (poussé sur origin)
+release/1.4.1 → 617107d   (poussé sur origin)
 ```
 
 Deux commits depuis la passation précédente :
@@ -18,7 +18,8 @@ Deux commits depuis la passation précédente :
 |---|---|
 | `22f36af` | MapTiler, rebond horizontal, couches WebKit, polish (1re passe) |
 | `116a4e1` | Recadrages de cible : sheet pipeline, vert coach, vignettes WOW |
-| `0e16c69` | **Fix structurel du scroll de la fiche athlète — cause racine trouvée** |
+| `0e16c69` | Fix structurel du scroll — **REVERTÉ, ne pas recetter** |
+| `617107d` | **Revert de `0e16c69`** — régression critique, voir §6 |
 
 ---
 
@@ -130,43 +131,40 @@ L'état verrouillé du WOW, tel qu'il part dans l'APK :
 
 ---
 
-## 6. Le scroll de la fiche athlète — RÉGLÉ (`0e16c69`)
+## 6. Le scroll de la fiche athlète — REVERTÉ, reporté en 1.4.2
 
-**À lire avant de conclure quoi que ce soit sur Android.** La cause racine
-n'avait rien à voir avec le compositing, et elle est de la même famille que le
-`scrolled` mort documenté en §7 — donc **elle frappe Android autant qu'iOS**.
+Le correctif structurel (`0e16c69`) a été **annulé** (`617107d`). Il rendait la
+fiche inutilisable : dès le premier geste, la page sautait en butée — tout en
+bas, ou tout en haut selon le compte.
 
-`window.scrollY` vaut **0 en permanence** sous `.is-capacitor` : `html`/`body`
-sont `position: fixed; overflow: hidden` et le scroll vit dans le `<main>` du
-layout. Deux conséquences dans `AthleteRecruiterProfileBodyMobile.tsx` :
+**Le mécanisme, à connaître avant d'y retoucher.** `expandedSlideProgress`
+atteint 1 à `scrollTop = 140`, soit 60 px après `SCROLL_START`. Sur ces 60 px,
+`marginBottom` passe de 0 à `-heroHeight` (~1015 px) — et un `marginBottom`
+négatif sur un élément en flux retire cette hauteur au `scrollHeight` du
+conteneur. 60 px de doigt suppriment donc ~1015 px de hauteur scrollable :
+**amplification 17×**. Le contenu file vers le haut, le navigateur écrête
+`scrollTop`, la page atterrit en butée. Contenu long → saut en bas ; contenu
+court → `scrollHeight` tombe à ~`clientHeight` → saut en haut.
 
-1. **Les gardes du pull-to-refresh** (« n'autorise le pull que tout en haut »)
-   étaient donc TOUJOURS vraies. Glisser le doigt vers le bas — le geste pour
-   remonter — alimentait `pullDistance` à n'importe quelle position ;
-   `pullDistance` pilote `overscrollTranslate` et `overscrollScale` sur le
-   hero. Tout le bloc supérieur descendait et s'étirait par-dessus la barre
-   collante. **C'était ça, le symptôme des quatre itérations.**
-2. **L'écouteur de scroll de la fiche** était lui aussi sur `window` : toute la
-   chorégraphie (glissement du hero, entrée de HeroCollapsed, flou de la top
-   bar) était **inerte dans l'application** et ne s'animait que sur le web.
+**La boucle n'est pas dans la mesure, elle est dans le design** : la position
+de scroll retire de la hauteur scrollable. Elle existait déjà avec la constante
+800 (13×). Elle n'avait jamais tourné parce que `window.scrollY` est gelé à 0
+sous `.is-capacitor`. C'est le correctif de la source de scroll qui l'a
+**armée**. Toute reprise en 1.4.2 devra compenser `scrollTop` à chaque
+variation de hauteur du document — sinon la boucle revient.
 
-Les deux passent désormais par `trouverScroller()`, qui remonte au premier
-ancêtre réellement scrollable.
+### Conséquence pour Android : RIEN N'A CHANGÉ
 
-**Ce que ça implique pour la recette Android :** la chorégraphie du hero va
-s'animer pour la PREMIÈRE FOIS sur Android. Ce n'est pas une régression à
-signaler, c'est le comportement prévu qui n'avait jamais tourné. À recetter
-comme du neuf : descente, remontée, favori on/off, vue coach avec alertes,
-athlète à 1 badge et à 5.
+La chorégraphie du hero reste **dormante** sur les deux plateformes, comme elle
+l'a toujours été. `window.scrollY` vaut 0, `transitionProgress` reste à 0, le
+hero ne glisse pas, `HeroCollapsed` n'apparaît pas. **Ne pas recetter la
+chorégraphie du hero** — il n'y a rien à voir, et c'est l'état connu-bon.
 
-Par-dessus, le fix structurel demandé : `EXPANDED_SLIDE_DISTANCE = 1200` et
-`HERO_LAYOUT_HEIGHT = 800` sont supprimées au profit d'une hauteur unique
-mesurée par `ResizeObserver` dont dérivent le déplacement visuel ET la
-compensation de flux ; le `top` collant est devenu continu (le saut de 80 px a
-disparu) ; le `willChange` permanent de `HeroCollapsed` est retiré.
-Plus aucun littéral 80/124/800/1200 dans la chorégraphie.
-
----
+Le bug d'origine (le bloc supérieur qui s'étire et passe sous la barre en
+remontant) est **toujours présent**, sur les deux plateformes. Arbitrage BP :
+cosmétique et vivable pour la 1.4.1. Ne pas le re-patcher — surtout pas par la
+composition, trois tentatives ont déjà échoué : les couches vont bien, c'est la
+position de scroll qui est fausse.
 
 ## 7. Dette connue, inchangée
 
