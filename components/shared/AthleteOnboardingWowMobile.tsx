@@ -123,11 +123,23 @@ const T_BADGES_DELAY     = 300;  // après dernière étoile
    claque, puis il se range dans une rangée `xs`.
        5 × 28 + 4 × 12 = 188 px   ≤ 328 px (écran 360)  et  ≤ 379 px (écran 411)
    Le badge central en `lg` fait 110 px, qui tient aussi sur 360. */
-const T_BADGE_CADENCE    = 340;  // un badge toutes les 340 ms
-const T_BADGE_SETTLE     = 260;  // temps passé au centre avant de descendre
-const T_PIPELINE_LEAD    = 2800; // respiration avant pipeline (était 1500 —
-                                 // le défilé dure 4×340 + 260 = 1620 ms, et
-                                 // laisse 1180 ms de contemplation ensuite)
+const T_BADGE_CADENCE    = 700;  // un badge toutes les 700 ms — CALÉ SUR
+                                 // T_PILL_GAP, la cadence des statuts de
+                                 // recrutement qui suivent. Le défilé et la
+                                 // pipeline battent désormais la MÊME mesure :
+                                 // à 340 ms les badges passaient deux fois plus
+                                 // vite que ce qui les suit, et la chorégraphie
+                                 // se lisait comme deux séquences sans rapport.
+const T_BADGE_SETTLE     = 520;  // temps passé au centre avant de descendre.
+                                 // Suit la cadence (260/340 ≈ 520/700) : le badge
+                                 // doit être rangé AVANT l'arrivée du suivant,
+                                 // il reste 180 ms de battement.
+const T_PIPELINE_LEAD    = 4500; // respiration avant pipeline. Le défilé dure
+                                 // maintenant 4×700 + 520 = 3320 ms ; 4500 lui
+                                 // laisse les MÊMES 1180 ms de contemplation
+                                 // qu'avant le ralentissement. Recalculer cette
+                                 // constante à chaque changement de cadence,
+                                 // sinon la pipeline démarre sur le défilé.
 const T_PILL_FIRST       = 500;
 const T_PILL_GAP         = 700;  // cadence des titres de pill
 const T_AFTERGLOW_LEAD   = 900;
@@ -595,7 +607,12 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
             `mt-1` + `items-start` collent la scène SOUS LA CARTE. Celle-ci ne
             bouge pas : elle est au-dessus dans le flux, rien ici ne la pousse. */}
         <div
-          className="relative mt-1 h-[136px]"
+          /* 136 -> 172. La scene est dimensionnee A LA MAIN sur le badge
+             central : 136 = 96 (icone lg) + 10 (gap) + ~30 (libelle 11px).
+             En `xl` : 124 + 10 + ~34 (libelle 13px, deux lignes possibles)
+             = 168, arrondi a 172. Sans ce bump le badge agrandi se faisait
+             couper par le bas. A recalculer si la taille rebouge. */
+          className="relative mt-1 h-[172px]"
           style={{ pointerEvents: "none" }}
         >
           {SHOWCASE_BADGES.map((d, i) => {
@@ -616,18 +633,21 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
                     : "nx-wow-badge-file 240ms cubic-bezier(0.4, 0, 1, 1) forwards",
                 }}
               >
-                <DistinctionBadge badge={d.badge} libelle={d.libelle} size="lg" />
+                <DistinctionBadge badge={d.badge} libelle={d.libelle} size="xl" />
               </div>
             );
           })}
         </div>
 
         {/* ─── LE DÉFILÉ — la rangée qui se remplit ─────────────────────
-            `xs` (28 px) + `gap-3` (12 px) : 5 × 28 + 4 × 12 = 188 px. Tient
+            `md` (44 px) + `gap-3` (12 px) : 5 × 44 + 4 × 12 = 268 px. Tient
             sur 360 px d'écran (328 utiles) comme sur 411 (379 utiles), là où
             la rangée `sm` d'avant en réclamait 560 et se faisait couper.
-            `xs` ne rend AUCUN libellé (DistinctionBadge:246) — plus besoin
-            du `[&_span]:hidden` qui traînait ici. */}
+            Était `xs` (188 px) : lisible mais chétif — `md` est le palier
+            ajouté pour cette rangée, et il garde la grammaire compacte de
+            `xs` (ni reflet, ni onde, AUCUN libellé) — plus besoin du
+            `[&_span]:hidden` qui traînait ici.
+            Plafond avant coupure : 5 × W + 48 ≤ 328 → W ≤ 56 px. */}
         <div
           className="-mt-2 flex items-end justify-center gap-3"
           style={{ pointerEvents: "none" }}
@@ -641,7 +661,7 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
                 transition: "opacity 300ms ease-out",
               }}
             >
-              <DistinctionBadge badge={d.badge} libelle={d.libelle} size="xs" />
+              <DistinctionBadge badge={d.badge} libelle={d.libelle} size="md" />
             </div>
           ))}
         </div>

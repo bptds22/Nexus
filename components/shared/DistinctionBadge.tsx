@@ -23,7 +23,10 @@ interface Props {
   /** Taille EXPLICITE. Omise, le badge est toujours `lg` — la taille ne
    *  dépend plus du nombre de badges (voir effectiveSize plus bas).
    *  `xs` = rangée compacte 28 px : ni reflet ni onde (illisibles à cette taille). */
-  size?: "xs" | "sm" | "lg";
+  /** `md` (44 px) et `xl` (140 px) ajoutes pour le defile WOW : `xs` etait
+   *  trop petit dans la rangee finale, `lg` trop petit au centre. Les trois
+   *  tailles historiques sont inchangees. */
+  size?: "xs" | "md" | "sm" | "lg" | "xl";
   /**
    * @deprecated N'A PLUS AUCUN EFFET.
    *
@@ -154,7 +157,11 @@ export default function DistinctionBadge({
      le décalage de la frappe de déblocage suit `index` seul.
      Une taille EXPLICITE gagne toujours : `xs` (rangée compacte 28 px) et
      `sm` restent disponibles pour les appelants qui les demandent. */
-  const effectiveSize: "xs" | "sm" | "lg" = size ?? "lg";
+  const effectiveSize: "xs" | "md" | "sm" | "lg" | "xl" = size ?? "lg";
+  /* `md` partage la grammaire compacte de `xs` (ni reflet, ni onde, ni
+     libelle espace) : a 44 px ces effets restent illisibles. Il est juste
+     PLUS GROS. `xl` partage celle de `lg`. */
+  const estCompact = effectiveSize === "xs" || effectiveSize === "md";
 
   // Uniform outer tile + icon box so every badge occupies the same footprint
   // regardless of the SVG's natural aspect ratio.
@@ -179,7 +186,8 @@ export default function DistinctionBadge({
 
      La fiche web n'en souffre pas : sa rangée est `flex-wrap` en gap-9, et
      5 × 110 + 4 × 36 = 694 px là où elle en avait 852. */
-  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "sm" ? "w-[96px]" : "w-[110px]";
+  const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "md" ? "w-[44px]"
+    : effectiveSize === "sm" ? "w-[96px]" : effectiveSize === "xl" ? "w-[140px]" : "w-[110px]";
   /* 104 → 96. Le PICTO n'occupe que 57,7 % de la boîte : les SVG « biseau »
      dessinent le glyphe sur ~150 unités d'un viewBox de 260, le reste étant
      la marge où le halo déborde. Le glyphe visible passe donc de ~60 à
@@ -187,8 +195,10 @@ export default function DistinctionBadge({
      C'est l'écart cellule/picto qu'on a dépensé, pas le badge lui-même.
      96 dans 110 laisse 7 px de part et d'autre : avec la gouttière de 6, les
      pictos restent à 20 px les uns des autres et ne se touchent pas. */
-  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "sm" ? "w-16 h-16" : "w-[96px] h-[96px]";
-  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]" : "text-[11px] max-w-[110px]";
+  const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "md" ? "w-11 h-11"
+    : effectiveSize === "sm" ? "w-16 h-16" : effectiveSize === "xl" ? "w-[124px] h-[124px]" : "w-[96px] h-[96px]";
+  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]"
+    : effectiveSize === "xl" ? "text-[13px] max-w-[140px]" : "text-[11px] max-w-[110px]";
 
   /* 80 ms. Les etoiles de la carte sont CONTIGUES : un seul reflet les
      traverse toutes, la vague est dans le mouvement. Les badges sont separes
@@ -208,16 +218,16 @@ export default function DistinctionBadge({
   // zoom vit donc sur l'enveloppe, l'animation sur le badge.
   const classes = [
     "nx-badge", iconBox,
-    effectiveSize === "xs" ? "nx-badge--xs" : "",
+    estCompact ? "nx-badge--xs" : "",
     /* `is-metal` sans condition : ce composant ne rend QUE des badges
        attribués. Un badge affiché ici est, par construction, obtenu. */
-    effectiveSize !== "xs" ? "is-metal" : "",
-    estFrais && effectiveSize !== "xs" ? "is-fresh" : "",
+    !estCompact ? "is-metal" : "",
+    estFrais && !estCompact ? "is-fresh" : "",
     unlock ? "is-unlocking" : "",
   ].filter(Boolean).join(" ");
 
   return (
-    <div className={`flex flex-col items-center ${effectiveSize === "xs" ? "" : "gap-[10px]"} cursor-pointer group shrink-0 ${outerW}`}>
+    <div className={`flex flex-col items-center ${estCompact ? "" : "gap-[10px]"} cursor-pointer group shrink-0 ${outerW}`}>
       <div className="relative transition-transform duration-300 group-hover:scale-[1.18] group-hover:-translate-y-[3px]">
         {/* La lueur CSS est RETIRÉE : les SVG portent de nouveau leur halo,
             mais À L'INTÉRIEUR — il suit la forme du picto au lieu d'être un
@@ -238,11 +248,13 @@ export default function DistinctionBadge({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={svg} alt="" className="nx-badge__img" draggable={false} />
         </div>
-        {unlock && effectiveSize !== "xs" && (
+        {unlock && !estCompact && (
           <span className="nx-badge-wave" aria-hidden="true" style={{ "--nx-delay": decalage } as React.CSSProperties} />
         )}
       </div>
-      {effectiveSize !== "xs" && (
+      {/* Libelle masque en compact : sous 44 px, `max-w-[110px]` ferait
+         deborder la rangee de 5 bien avant que le texte soit lisible. */}
+      {!estCompact && (
         <span className={`${labelCls} font-bold tracking-[0.1em] uppercase text-center text-[#E0E0E0] leading-tight block`}>
           {label}
         </span>

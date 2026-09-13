@@ -159,6 +159,14 @@ export default function CoachLayout({
                   // → 0 : le composer du thread porte déjà son env(safe-area).
                   paddingBottom: chromeless ? 0 : "calc(env(safe-area-inset-bottom) + 88px)",
                   overflowX: "hidden",
+                  /* Rebond horizontal WebKit. `overscroll-behavior: contain`
+                     ci-dessus ne coupe QUE le chaînage vers l'ancêtre : l'élasticité
+                     DANS l'élément survit, et tout enfant plus large que le viewport
+                     redevient tirable au doigt malgré `overflow-x: hidden`. `none`
+                     sur l'axe X coupe les deux. Longhand APRÈS le shorthand —
+                     l'ordre des clés décide de la propriété gagnante.
+                     L'axe Y garde `contain` : le scroll vertical doit rester élastique. */
+                  overscrollBehaviorX: "none",
                 }
               : undefined
           }

@@ -11,9 +11,11 @@ import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
 import CoachFicheActionsMobile from "@/components/shared/coach/CoachFicheActionsMobile";
-import SegmentedTabs from "@/components/shared/SegmentedTabs";
+import SegmentedTabs from "@/components/shared/SegmentedTabs";
+
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
-import RelanceFiche from "@/components/shared/RelanceFiche";
+import RelanceFiche from "@/components/shared/RelanceFiche";
+
 import { plateformeDeUrl, type ClePlateforme } from "@/lib/config/plateformesLien";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -2497,7 +2499,28 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           plus sous le bloc sticky. */}
       <div
         className="sticky z-30 bg-[#111317]"
-        style={{ top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)" }}
+        style={{
+          top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)",
+          /* WebKit — pendant du Lot D4a, raisonnement INVERSE et c'est voulu.
+             Tout ce qui passe sous cette barre est deja promu en permanence :
+             la racine PlayerCardMobile (transform scale/translateY), .nx-v30-card
+             (rotate -2deg) et .nx-v30-badge (filter drop-shadow) sont chacun sur
+             leur propre couche de compositing. La barre, elle, n'avait NI
+             transform NI filter : elle restait dans la couche de contenu
+             scrollee. WebKit doit alors reordonner a chaque frame une couche
+             non promue contre trois couches promues — en REMONTANT il perd
+             l'ordre et les badges passent devant la barre.
+
+             D4a demontait une promotion permanente parce que la couche faisait
+             412x1015 px et devait se re-pixeliser au scroll. Ici c'est l'oppose :
+             la barre fait toute la largeur x ~56 px et ne bouge JAMAIS par
+             rapport au viewport (c'est un sticky) — sa tuile est rasterisee une
+             fois et reservie telle quelle. Promotion permanente justifiee.
+
+             N'affecte pas le fix Android : autre element, autre propriete. Le
+             willChange conditionnel du hero (~l.2205) n'est pas touche. */
+          transform: "translateZ(0)",
+        }}
       >
         <TabBar activeTab={activeTab} onChange={handleTabChange} />
       </div>
@@ -3125,7 +3148,20 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               type="button"
               onClick={coachExit ? () => { void handleContactCoach(); } : handleContactClick}
               disabled={coachExit ? contactingCoach : !contactable}
-              className="disabled:opacity-40 flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+              /* VERT quand l'action est « Écrire à son entraîneur ». Ce bouton
+                 vivait en #E63946 au milieu du rouge ambiant — crayon d'édition,
+                 accents, liserés — et ne se détachait plus de rien. Le vert est
+                 --wl-success (#22C55E), le MÊME que le statut OUVERT : c'est un
+                 chemin qui s'ouvre, pas une alerte. Actif : #16A34A (un cran
+                 plus sombre), lueur accordée.
+                 La bascule suit `coachExit`, exactement comme le libellé juste
+                 en dessous — « Contacter » reste rouge. Une seule condition
+                 gouverne les deux, elles ne peuvent pas se désynchroniser. */
+              className={`disabled:opacity-40 flex-1 flex items-center justify-center gap-2 text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest ${
+                coachExit
+                  ? "bg-[#22C55E] active:bg-[#16A34A] shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                  : "bg-[#E63946] active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+              }`}
             >
               {contactLocked ? (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -202,23 +202,28 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
               : "Filtrer — statistiques, tri, filtres, mode focus"
           }
           aria-haspopup="dialog"
-          className="relative h-11 pl-3 pr-3.5 rounded-full flex items-center gap-1.5 active:bg-white/5 flex-shrink-0"
+          className="relative h-11 pl-3.5 pr-4 rounded-full flex items-center gap-1.5 bg-[#E63946] active:bg-[#D42B22] shadow-[0_0_16px_rgba(230,57,70,0.28)] flex-shrink-0"
         >
-          {/* Rouge EN PERMANENCE, pas seulement quand un filtre est actif.
-              Le gris au repos faisait lire le bouton comme désactivé, alors
-              qu'il est la porte unique vers la feuille — c'est une action
-              toujours disponible, elle se présente comme telle. L'état
-              « des filtres tournent » se dit par la pastille, pas par la
-              couleur du bouton. */}
+          {/* PILE PLEINE, pas un libellé rouge posé sur le fond sombre.
+              L'étape d'avant avait déjà tranché « rouge en permanence, pas
+              seulement quand un filtre est actif » — le raisonnement tient
+              toujours : c'est la porte unique vers la feuille, une action
+              toujours disponible. Mais du #E63946 en TEXTE sur #111317 se
+              lisait comme un lien, pas comme un bouton, et se noyait dans le
+              rouge ambiant de l'écran. Le rouge passe donc au REMPLISSAGE,
+              l'encre passe en blanc.
+              L'état « des filtres tournent » se dit toujours par la pastille,
+              jamais par la couleur du bouton — elle s'inverse simplement
+              (blanc sur rouge) pour rester lisible sur le nouveau fond. */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
-          <span className="text-[13px] font-bold text-[#E63946]">
+          <span className="text-[13px] font-bold text-white">
             Filtrer
           </span>
           {nActiveFilters > 0 && (
-            <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#E63946] text-white text-[10px] font-black leading-none">
+            <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#E63946] text-[10px] font-black leading-none">
               {nActiveFilters}
             </span>
           )}
@@ -239,6 +244,29 @@ function StageTabsSticky({
   onTabTap: (lower: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /* « Collé ou pas » — via une sentinelle de hauteur nulle posee JUSTE avant
+     la rangee. Tant qu'elle est visible, la rangee est au repos sous
+     l'en-tete ; des qu'elle sort par le haut, la rangee est epinglee.
+
+     Pourquoi pas le prop `scrolled` qui existe deja : il est calcule sur
+     `window.scrollY` (~l.1721), et en Capacitor `html`/`body` sont
+     `position: fixed; overflow: hidden` — le scroll vit dans le <main> du
+     layout. `window.scrollY` reste donc a 0 et l'evenement ne part jamais :
+     `scrolled` est FAUX EN PERMANENCE dans l'app. Le flou et le lisere qu'il
+     pilote sont du code mort cote mobile (constat, pas corrige ici).
+     IntersectionObserver n'a pas ce defaut : son root par defaut est le
+     viewport, il fonctionne quel que soit le conteneur qui scrolle. */
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setStuck(!e.isIntersecting), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   // Auto-scroll horizontal pour garder l'onglet actif visible
   useEffect(() => {
     if (!containerRef.current) return;
@@ -247,14 +275,26 @@ function StageTabsSticky({
   }, [activeStage]);
 
   return (
+    <>
+      <div ref={sentinelRef} aria-hidden="true" style={{ height: 0 }} />
     <div
-      className="sticky top-0 z-30 nx-safe-top"
+      className="sticky top-0 z-30"
       style={{
+        /* `nx-safe-top` retire : il posait `env(safe-area-inset-top) + 0.75rem`
+           EN PERMANENCE, alors que l'en-tete « Mon processus » (~l.175) reserve
+           DEJA la safe-area. Sur iOS l'encoche etait donc comptee DEUX FOIS —
+           ~59 px morts entre le sous-titre et les pilules sur un 17 Pro Max.
+           Sur Android l'inset vaut 0, d'ou un ecart invisible : c'est ce qui
+           rendait le bug propre a iOS.
+           Desormais la safe-area n'est reservee que QUAND la rangee est
+           epinglee — la, elle est reellement sous la Dynamic Island et doit
+           s'en degager. Au repos elle remonte contre le sous-titre. */
+        paddingTop: stuck ? "calc(env(safe-area-inset-top, 0px) + 0.75rem)" : "0.25rem",
         backgroundColor: scrolled ? "rgba(17,19,23,0.85)" : "#111317",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         borderBottom: scrolled ? "0.5px solid rgba(255,255,255,0.08)" : "0.5px solid transparent",
-        transition: "background-color 200ms ease-out, backdrop-filter 200ms ease-out, border-bottom-color 200ms ease-out",
+        transition: "background-color 200ms ease-out, backdrop-filter 200ms ease-out, border-bottom-color 200ms ease-out, padding-top 160ms ease-out",
       }}
     >
       <div ref={containerRef} className="overflow-x-auto nx-no-scrollbar">
@@ -284,6 +324,7 @@ function StageTabsSticky({
         </div>
       </div>
     </div>
+    </>
   );
 }
 
