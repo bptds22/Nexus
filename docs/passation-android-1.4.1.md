@@ -9,7 +9,7 @@ qu'un `gradlew assembleDebug` sur une machine équipée.
 ## 1. SHA à puller
 
 ```
-release/1.4.1 → 1f798d9   (poussé sur origin)
+release/1.4.1 → c05d68c   (poussé sur origin)
 ```
 
 Deux commits depuis la passation précédente :
@@ -21,6 +21,7 @@ Deux commits depuis la passation précédente :
 | `0e16c69` | Fix structurel du scroll — **REVERTÉ, ne pas recetter** |
 | `617107d` | **Revert de `0e16c69`** — régression critique, voir §6 |
 | `1f798d9` | Réponse à l'admin — composeur conditionné, boîte admin (§8) |
+| `c05d68c` | Relance — tri par échéance + encart dashboard (§9) |
 
 ---
 
@@ -185,6 +186,34 @@ ensemble — voir `docs/registre-migration-reponse-admin.md`.
 
 La boîte de réception admin (onglet « Conversations » de `/admin/messages`) est
 du **web pur** : elle ne dépend d'aucun binaire et fonctionne dès le merge.
+
+## 9. Relance — deux features VIVES sur Android aussi
+
+Contrairement au composeur admin (§8), celles-ci sont **actives dès
+l'installation**, sans interrupteur serveur. À recetter.
+
+**Tri « Relance la plus proche »** — dans la feuille filtres/tri de
+« Mon processus ». Ordre croissant sur `next_action_at` : les relances
+**dépassées en tête**, les cartes sans relance à la fin. Le module de tri
+(`lib/pipeline/sortPipelineCards.ts`) étant partagé, l'option apparaît aussi
+dans le `<select>` du pipeline web — même passe, même comportement.
+
+**Encart « Relances aujourd'hui »** — sur le dashboard recruteur, entre le hero
+et le funnel « Mon processus ». Compte, trois premiers noms, retard et jour
+distingués (ambre = en retard, rouge = aujourd'hui). Tap sur un nom → la fiche
+athlète ; bouton → Mon processus.
+
+**Gaté `canUsePipeline` (pro | all_star).** Sur un compte Free, l'encart
+n'existe pas ET le pipeline n'est même pas chargé (`enabled: false`). Recetter
+les deux cas : un Pro avec relances dues doit voir l'encart, un Free ne doit
+rien voir du tout.
+
+⚠️ **Le jeu de données de prod est mince** : deux relances posées au moment de
+l'écriture, toutes deux dues. Pour recetter sérieusement, poser des dates
+variées à la main (passée, aujourd'hui, future) depuis le sheet du joueur.
+
+**Pas de migration**, pas de nouvelle requête : l'encart dérive du cache
+`usePipelineCards` déjà chargé par Mon processus.
 
 ## 7. Dette connue, inchangée
 
