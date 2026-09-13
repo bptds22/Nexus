@@ -88,76 +88,6 @@ import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
 import { triggerHaptic } from "@/lib/haptics";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
-/** Hauteur RÉELLE d'un élément, via ResizeObserver.
- *
- *  Raison d'être : toute la chorégraphie de scroll de cette fiche était
- *  pilotée par des CONSTANTES codées en dur — `EXPANDED_SLIDE_DISTANCE = 1200`
- *  pour le déplacement visuel, `HERO_LAYOUT_HEIGHT = 800` pour la compensation
- *  de flux. Deux nombres indépendants, qu'aucun mécanisme ne synchronisait, sur
- *  un bloc dont le contenu grandit (sélecteur de statut quand l'athlète passe
- *  en favori, pile d'alertes côté coach, nombre de badges variable). Le
- *  commentaire de D4a mesurait déjà ce bloc à 1015 px là où la constante en
- *  déclarait 800 : l'écart était acté dans le fichier, jamais corrigé.
- *
- *  Le hero se déplace par `transform`, qui NE TOUCHE PAS la boîte de layout.
- *  Position visuelle et empreinte de flux étaient donc deux couches distinctes
- *  avançant à des vitesses différentes (20× le doigt contre 13,3×), ce qui
- *  faisait diverger le rendu de la mise en page à chaque frame. Une seule
- *  hauteur mesurée alimente désormais les deux : la divergence est devenue
- *  impossible par construction, quelle que soit la croissance du contenu.
- *
- *  `borderBoxSize` et non `getBoundingClientRect()` : le premier ignore les
- *  transformations, le second les inclut. Le hero porte en permanence un
- *  `scale()` (overscroll) — mesurer le rect renverrait une hauteur qui varie
- *  avec le geste et réinjecterait l'instabilité qu'on vient de supprimer.
- *
- *  Ref de rappel plutôt que `useRef` + `useEffect([])` : le nœud peut monter
- *  après le premier rendu (chargement de l'athlète), et un effet à dépendances
- *  vides le manquerait. */
-function useMeasuredHeight(fallback = 0) {
-  const [hauteur, setHauteur] = useState(0);
-  const obs = useRef<ResizeObserver | null>(null);
-  const noeud = useRef<HTMLDivElement | null>(null);
-  const ref = useCallback((node: HTMLDivElement | null) => {
-    obs.current?.disconnect();
-    obs.current = null;
-    noeud.current = node;
-    if (!node || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      const e = entries[0];
-      const h = e?.borderBoxSize?.[0]?.blockSize ?? node.offsetHeight;
-      // Seuil 1px : un ResizeObserver qui setState à chaque sous-pixel
-      // rerendrait la fiche en boucle pendant le scroll.
-      setHauteur((prev) => (Math.abs(prev - h) < 1 ? prev : h));
-    });
-    ro.observe(node);
-    obs.current = ro;
-  }, []);
-  return [hauteur > 0 ? hauteur : fallback, ref, hauteur > 0, noeud] as const;
-}
-
-/** Le conteneur qui scrolle RÉELLEMENT au-dessus de `depart`.
- *
- *  Sous `.is-capacitor`, `<html>` et `<body>` sont `position: fixed;
- *  overflow: hidden` (globals.css, « App-shell scroll lock ») et le scroll vit
- *  dans le `<main>` borné du layout. `window.scrollY` y vaut donc 0 EN
- *  PERMANENCE et l'événement `scroll` de `window` ne part JAMAIS.
- *
- *  Cette fiche lisait `window.scrollY` : toute sa chorégraphie — glissement du
- *  hero, entrée de HeroCollapsed, flou de la top bar — était inerte dans
- *  l'application. Elle ne s'animait que sur le web. On remonte donc jusqu'au
- *  premier ancêtre réellement scrollable, et on retombe sur `window` hors
- *  Capacitor où le scroll de document est normal. */
-function trouverScroller(depart: HTMLElement | null): HTMLElement | null {
-  let el = depart?.parentElement ?? null;
-  while (el && el !== document.body && el !== document.documentElement) {
-    const oy = getComputedStyle(el).overflowY;
-    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) return el;
-    el = el.parentElement;
-  }
-  return null;
-}
-
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
 /** Surface viewer — drives recruteur-only gates + coach-only additions.
  *  Default "recruiter" → existing call sites unaffected.
@@ -1515,35 +1445,24 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   // (pas de transition CSS, c'est l'état React qui drive chaque frame).
   const SCROLL_START = 80;
   const SCROLL_END = 200;
-  /* EXPANDED_SLIDE_DISTANCE (1200) et HERO_LAYOUT_HEIGHT (800) sont SUPPRIMÉS.
-     Ils décrivaient le même bloc avec deux nombres différents, tous deux faux
-     (mesuré : 1015 px), et aucun ne suivait la croissance du contenu. Une seule
-     hauteur mesurée les remplace — voir useMeasuredHeight en tête de fichier. */
-  const [heroHeight, heroRef, heroMesure, heroNoeud] = useMeasuredHeight();
-  /* Résolu par l'effet de scroll, relu par le pull-to-refresh : les deux ont
-     besoin de savoir OÙ on est dans le scroll, et ni l'un ni l'autre ne peut
-     le demander à `window` sous Capacitor. */
-  const scrollerRef = useRef<HTMLElement | null>(null);
-  /* Hauteur déclarée du hero replié. Sert de repli avant la première mesure
-     ET de valeur de référence : la hauteur mesurée la confirme ou la corrige,
-     mais plus aucun `80` ni `124` littéral ne traîne dans les calculs. */
-  const COLLAPSED_H_DECLAREE = 80;
-  const [collapsedHeight, collapsedRef] = useMeasuredHeight(COLLAPSED_H_DECLAREE);
+  const EXPANDED_SLIDE_DISTANCE = 1200; // px à monter pour sortir le hero étendu complètement
+  // ↑ ajusté en iter 3.0 : le hero étendu fait ~800px (card 400 + name 60 +
+  // status 50 + pipeline 66 + KPIs 104 + badges 74 + paddings). Avec 600,
+  // les badges restaient encore visibles à progress=0.5. 1200 garantit que
+  // toute la zone est hors-écran y compris pour futures additions de contenu.
+  // HERO_LAYOUT_HEIGHT (iter 3.3) — plafond du marginBottom négatif. Doit
+  // correspondre à la hauteur RÉELLE de flux du hero étendu (~800px), pas à
+  // la distance de slide visuelle. Sinon le doc se rétracte trop et bloque
+  // le scroll jusqu'au bas du tab content.
+  const HERO_LAYOUT_HEIGHT = 800;
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
     let rafId = 0;
     let lastScrollY = 0;
     let ticking = false;
-    /* Résolu au montage : le <main> du layout sous Capacitor, `window` sur le
-       web. `scrollTop` sur un élément, `scrollY` sur window — d'où la lecture
-       conditionnelle plutôt qu'un accès unique. */
-    const scroller = trouverScroller(heroNoeud.current);
-    scrollerRef.current = scroller;
-    const cible: HTMLElement | Window = scroller ?? window;
-    const lire = () => (scroller ? scroller.scrollTop : (window.scrollY || window.pageYOffset || 0));
     const onScroll = () => {
-      lastScrollY = lire();
+      lastScrollY = window.scrollY || window.pageYOffset || 0;
       if (!ticking) {
         rafId = window.requestAnimationFrame(() => {
           setScrollY(lastScrollY);
@@ -1565,43 +1484,30 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         ticking = true;
       }
     };
-    cible.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => {
-      cible.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll);
       if (rafId) window.cancelAnimationFrame(rafId);
     };
-    /* heroMesure en dépendance : au tout premier rendu le hero n'est pas encore
-       monté, donc `trouverScroller` ne trouve rien (et le <main> n'est pas
-       encore assez haut pour être scrollable). On rebranche une fois le nœud
-       mesuré — c'est le seul moment où la résolution peut aboutir. */
-  }, [heroMesure]);
+  }, []);
 
   // Top bar dynamic blur (Fix 1 iter 3.5) — true dès scrollY > 20
   const topBarScrolled = scrollY > 20;
 
-  /* Verrouillé à 0 tant que le hero n'est pas mesuré (une frame, au montage).
-     Sans ce garde, heroHeight vaut 0 au premier rendu : le hero ne glisserait
-     pas alors que `expandedOpacity` le ferait DISPARAÎTRE à progress >= 1 —
-     il s'évanouirait sur place au lieu de sortir. Progression neutre = la page
-     scrolle normalement le temps que ResizeObserver réponde. */
-  const transitionProgress = heroMesure
-    ? Math.max(0, Math.min(1, (scrollY - SCROLL_START) / (SCROLL_END - SCROLL_START)))
-    : 0;
+  const transitionProgress = Math.max(0, Math.min(1, (scrollY - SCROLL_START) / (SCROLL_END - SCROLL_START)));
   // Phase A : HeroExpanded glisse vers le haut sur la première moitié (progress 0 → 0.5)
   // Phase B : HeroCollapsed glisse depuis le haut sur la seconde moitié (progress 0.5 → 1.0)
   const expandedSlideProgress = Math.max(0, Math.min(1, transitionProgress * 2));
   const collapsedSlideProgress = Math.max(0, Math.min(1, (transitionProgress - 0.5) * 2));
 
-  /* LES DEUX dérivent de heroHeight. Même multiplicande, même progression :
-     le déplacement visuel et le retrait de flux avancent désormais au MÊME
-     taux, et le bloc sort de l'écran exactement quand le flux cesse de le
-     réserver. C'est la fin de la classe de bugs — plus rien à resynchroniser
-     quand le contenu grandit, puisqu'il n'y a plus qu'un seul nombre. */
-  const expandedTranslateY = -expandedSlideProgress * heroHeight;
-  const expandedLayoutCollapse = -expandedSlideProgress * heroHeight;
+  const expandedTranslateY = -expandedSlideProgress * EXPANDED_SLIDE_DISTANCE;
+  // expandedLayoutCollapse (Fix iter 3.3) — découplé du translateY visuel.
+  // Plafonné à HERO_LAYOUT_HEIGHT pour éviter de retirer plus d'espace de flux
+  // que le hero n'en occupe naturellement → préserve la hauteur scrollable.
+  const expandedLayoutCollapse = -expandedSlideProgress * HERO_LAYOUT_HEIGHT;
   const expandedOpacity = expandedSlideProgress >= 1 ? 0 : 1; // binaire : visible jusqu'à totalement sorti
-  const collapsedTranslateY = (1 - collapsedSlideProgress) * -collapsedHeight;
+  const collapsedTranslateY = (1 - collapsedSlideProgress) * -80;
   const collapsedOpacity = collapsedSlideProgress > 0 ? 1 : 0; // binaire : visible dès que ça entre
   const collapsedActive = collapsedSlideProgress > 0;
   // alias pour compat avec le reste du code (anciens noms iter 2.6/2.8)
@@ -1860,27 +1766,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     let startY = 0;
     let currentDistance = 0;
 
-    /* LE bug de cette fiche, et il n'avait rien d'un problème de compositing.
-       Ces deux gardes disent « n'autorise le pull QUE tout en haut ». Elles
-       interrogeaient `window.scrollY` — qui sous `.is-capacitor` vaut 0 EN
-       PERMANENCE, puisque le scroll vit dans le <main> du layout. La condition
-       « on est en haut » était donc TOUJOURS vraie, à n'importe quelle position.
-
-       Conséquence : un glissement du doigt vers le bas — c'est-à-dire le geste
-       pour REMONTER dans la page — alimentait `pullDistance` au beau milieu du
-       scroll. Or `pullDistance` pilote `overscrollTranslate` (+0,3 px par px) et
-       `overscrollScale` (jusqu'à 1,05) sur le hero. Tout le bloc supérieur
-       descendait et s'étirait par-dessus la barre collante, exactement le
-       symptôme rapporté : « le contenu se tire et s'étire », « en remontant »,
-       « ce ne sont pas que les badges ». Les trois patchs de composition
-       précédents ne pouvaient rien y faire : rien n'était cassé dans les
-       couches, c'est la position de scroll qui était fausse. */
-    const positionScroll = () =>
-      scrollerRef.current ? scrollerRef.current.scrollTop : (window.scrollY || 0);
-
     const onTouchStart = (e: TouchEvent) => {
       if (showFlagModal) return;
-      if (positionScroll() <= 0) {
+      if ((window.scrollY || 0) === 0) {
         startY = e.touches[0].clientY;
       } else {
         startY = 0;
@@ -1888,7 +1776,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     };
     const onTouchMove = (e: TouchEvent) => {
       if (showFlagModal) return;
-      if (positionScroll() > 0) return;
+      if ((window.scrollY || 0) !== 0) return;
       if (startY === 0) return;
       currentDistance = Math.max(0, Math.min(e.touches[0].clientY - startY, 120));
       setPullDistance(currentDistance);
@@ -2301,7 +2189,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         const overscrollScale = canOverscroll ? 1 + Math.min(pullDistance / 800, 0.05) : 1;
         return (
         <div
-          ref={heroRef}
           className="px-4 pt-4 pb-4"
           style={{
             opacity: expandedOpacity,
@@ -2562,30 +2449,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           TopBar et sticky tabs). Cohérent avec le wrapper sticky tabs déjà
           opaque depuis 7.9. */}
       <div
-        ref={collapsedRef}
         className="bg-[#111317] border-b border-white/[0.04] overflow-hidden"
         style={{
           position: collapsedActive ? "sticky" : "absolute",
           // top suit le header (sticky top:0) qui fait désormais safe-area + 44px.
-          // Au repos : -collapsedHeight (hors écran par le haut), dérivé de la
-          // hauteur réelle et non du littéral -80 qu'on recopiait à trois
-          // endroits.
-          top: collapsedActive ? "calc(env(safe-area-inset-top) + 44px)" : -collapsedHeight,
+          top: collapsedActive ? "calc(env(safe-area-inset-top) + 44px)" : -80,
           left: 0,
           right: 0,
-          height: COLLAPSED_H_DECLAREE,
+          height: 80,
           opacity: collapsedOpacity,
           transform: `translateY(${collapsedTranslateY}px)`,
           pointerEvents: collapsedActive ? "auto" : "none",
           zIndex: 25,
-          /* willChange CONDITIONNEL — il était PERMANENT ici, ce qui contredisait
-             frontalement le Lot D4a appliqué au hero étendu quelques centaines de
-             lignes plus haut : une couche promise en permanence force le
-             compositeur à la garder pixelisée et à la re-pixeliser en remontant.
-             Promu seulement PENDANT le glissement (0 < progress < 1) : à 0 le
-             bloc est hors écran, à 1 il est épinglé et parfaitement immobile —
-             dans les deux cas la promotion ne paie rien. */
-          willChange: collapsedSlideProgress > 0 && collapsedSlideProgress < 1 ? "opacity, transform" : undefined,
+          willChange: "opacity, transform",
         }}
       >
         <div className="flex items-center gap-3 px-4 py-3 h-full">
@@ -2624,15 +2500,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       <div
         className="sticky z-30 bg-[#111317]"
         style={{
-          /* CONTINU, plus un saut. C'était `isCollapsedActive ? 124 : 44` — un
-             basculement INSTANTANÉ de 80 px au milieu d'un mouvement amplifié
-             20 fois par le doigt : le contenu semblait passer d'un coup sous la
-             barre. Le 124 était d'ailleurs `44 + 80` recopié à la main.
-             Désormais la barre descend en même temps que HeroCollapsed entre,
-             sur la MÊME progression et la MÊME hauteur mesurée — les deux
-             restent collés, il n'y a plus d'instant où l'un a bougé sans
-             l'autre. */
-          top: `calc(env(safe-area-inset-top) + ${44 + collapsedHeight * collapsedSlideProgress}px)`,
+          top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)",
           /* WebKit — pendant du Lot D4a, raisonnement INVERSE et c'est voulu.
              Tout ce qui passe sous cette barre est deja promu en permanence :
              la racine PlayerCardMobile (transform scale/translateY), .nx-v30-card
