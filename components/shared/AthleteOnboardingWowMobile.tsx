@@ -640,16 +640,17 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
         </div>
 
         {/* ─── LE DÉFILÉ — la rangée qui se remplit ─────────────────────
-            `md` (44 px) + `gap-3` (12 px) : 5 × 44 + 4 × 12 = 268 px. Tient
+            `md` (56 px) + `gap-2` (8 px) : 5 × 56 + 4 × 8 = 312 px. Tient
             sur 360 px d'écran (328 utiles) comme sur 411 (379 utiles), là où
             la rangée `sm` d'avant en réclamait 560 et se faisait couper.
             Était `xs` (188 px) : lisible mais chétif — `md` est le palier
             ajouté pour cette rangée, et il garde la grammaire compacte de
             `xs` (ni reflet, ni onde, AUCUN libellé) — plus besoin du
             `[&_span]:hidden` qui traînait ici.
-            Plafond avant coupure : 5 × W + 48 ≤ 328 → W ≤ 56 px. */}
+            Plafond avant coupure, gouttière 8 : 5 × W + 32 ≤ 328 → W ≤ 59 px.
+            On est à 56 : 16 px de marge sur l'écran le plus étroit visé. */}
         <div
-          className="-mt-2 flex items-end justify-center gap-3"
+          className="-mt-2 flex items-end justify-center gap-2"
           style={{ pointerEvents: "none" }}
         >
           {SHOWCASE_BADGES.slice(0, badgesRanges).map((d) => (

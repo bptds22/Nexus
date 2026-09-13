@@ -735,7 +735,19 @@ function PipelineMenuSheet({
               </svg>
             </button>
 
-            <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-5">
+            <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-5"
+              /* Verrou horizontal. `touch-action: pan-y` existe deja sur la
+                 RACINE du sheet, mais il ne protege pas ce conteneur-ci : c'est
+                 LUI qui scrolle (`overflow-y-auto`), et sans contrainte sur X un
+                 enfant plus large le rend scrollable lateralement — le contenu
+                 se tire au doigt et s'etire sous WebKit.
+                 Les trois ensemble : `hidden` interdit le scroll X, `none` coupe
+                 le rebond elastique sur X (l'axe Y garde le sien), `pan-y`
+                 declare au compositeur que seul le geste vertical compte — il
+                 cesse d'attendre pour arbitrer et le scroll vertical part plus
+                 franchement. */
+              style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}
+            >
               {/* Iter 6.1c Fix 8 — Stats funnel (total + breakdown horizontal) */}
               {(() => {
                 const counts: Record<string, number> = {};
@@ -1280,7 +1292,19 @@ function PipelineDetailSheet({
             </button>
 
             {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5"
+              /* Verrou horizontal. `touch-action: pan-y` existe deja sur la
+                 RACINE du sheet, mais il ne protege pas ce conteneur-ci : c'est
+                 LUI qui scrolle (`overflow-y-auto`), et sans contrainte sur X un
+                 enfant plus large le rend scrollable lateralement — le contenu
+                 se tire au doigt et s'etire sous WebKit.
+                 Les trois ensemble : `hidden` interdit le scroll X, `none` coupe
+                 le rebond elastique sur X (l'axe Y garde le sien), `pan-y`
+                 declare au compositeur que seul le geste vertical compte — il
+                 cesse d'attendre pour arbitrer et le scroll vertical part plus
+                 franchement. */
+              style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}
+            >
               {/* Header athlète : photo + meta + pill statut global (Fix 6)
                   + fade horizontal blend (Fix 1 iter 6.1e — bg #111317 du sheet) */}
               <div className="flex items-start gap-3">

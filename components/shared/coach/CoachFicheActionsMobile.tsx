@@ -97,14 +97,20 @@ export default function CoachFicheActionsMobile({
             transition: "opacity 200ms ease",
           }}
         >
-          {/* SECONDAIRE — action directe, 48px, sombre à bordure fine. */}
+          {/* SECONDAIRE — action directe, 48px, VERT PLEIN. Était
+              `bg-[#1A1D24]` + bordure fine : posée à côté du crayon rouge
+              plein de 56px, elle se lisait comme un fond, pas comme un
+              bouton. Le vert --wl-success (#22C55E) la détache du rouge
+              ambiant sans lui voler la primauté — elle reste la plus
+              petite des deux. Icône blanche, bordure retirée : un aplat
+              n'a pas besoin de contour pour exister. */}
           {actionDirecte && (
             <button
               type="button"
               onClick={() => { void triggerHaptic("Light"); actionDirecte.onTap(); }}
               aria-label={actionDirecte.libelle}
-              className="w-12 h-12 rounded-full bg-[#1A1D24] border border-white/[0.14] text-white flex items-center justify-center active:bg-white/[0.06]"
-              style={{ boxShadow: `${ANNEAU}, 0 6px 18px rgba(0,0,0,0.45)` }}
+              className="w-12 h-12 rounded-full bg-[#22C55E] text-white flex items-center justify-center active:bg-[#16A34A]"
+              style={{ boxShadow: `${ANNEAU}, 0 6px 18px rgba(0,0,0,0.45), 0 0 16px rgba(34,197,94,0.28)` }}
             >
               {actionDirecte.icone}
             </button>

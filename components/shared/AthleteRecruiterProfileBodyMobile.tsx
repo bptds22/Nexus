@@ -3148,20 +3148,10 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               type="button"
               onClick={coachExit ? () => { void handleContactCoach(); } : handleContactClick}
               disabled={coachExit ? contactingCoach : !contactable}
-              /* VERT quand l'action est « Écrire à son entraîneur ». Ce bouton
-                 vivait en #E63946 au milieu du rouge ambiant — crayon d'édition,
-                 accents, liserés — et ne se détachait plus de rien. Le vert est
-                 --wl-success (#22C55E), le MÊME que le statut OUVERT : c'est un
-                 chemin qui s'ouvre, pas une alerte. Actif : #16A34A (un cran
-                 plus sombre), lueur accordée.
-                 La bascule suit `coachExit`, exactement comme le libellé juste
-                 en dessous — « Contacter » reste rouge. Une seule condition
-                 gouverne les deux, elles ne peuvent pas se désynchroniser. */
-              className={`disabled:opacity-40 flex-1 flex items-center justify-center gap-2 text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest ${
-                coachExit
-                  ? "bg-[#22C55E] active:bg-[#16A34A] shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-                  : "bg-[#E63946] active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
-              }`}
+              /* ROUGE dans les deux cas. Le vert essayeé ici a été REPRIS
+                 (arbitrage BP) : le vert va à la bulle Message du duo flottant
+                 côté coach, pas à ce bouton-ci. */
+              className="disabled:opacity-40 flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
             >
               {contactLocked ? (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
