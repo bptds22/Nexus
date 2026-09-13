@@ -58,7 +58,13 @@ async function fetchGradeMap(
   return map;
 }
 
-export function usePipelineCards() {
+/** `enabled` FACULTATIF, défaut `true` : tous les appelants existants sont
+ *  inchangés. Le dashboard s'en sert pour ne PAS charger le pipeline d'un
+ *  recruteur Free, chez qui l'encart Relances n'a pas lieu d'être — on évite
+ *  la requête plutôt que de la faire et d'en jeter le résultat. La clé de
+ *  cache est identique, donc le pipeline et le dashboard partagent le même
+ *  chargement quand les deux sont montés. */
+export function usePipelineCards(options?: { enabled?: boolean }) {
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
 
@@ -189,7 +195,7 @@ export function usePipelineCards() {
 
       return { cards: mapped, competitorMap };
     },
-    enabled: !!userId,
+    enabled: !!userId && (options?.enabled ?? true),
     staleTime: 60 * 1000,
   });
 }

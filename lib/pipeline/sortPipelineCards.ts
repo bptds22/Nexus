@@ -51,7 +51,8 @@ export type PipelineSortMode =
   | "rating_desc"
   | "graduation_asc"
   | "name_asc"
-  | "grade_desc";
+  | "grade_desc"
+  | "next_action_asc";
 
 export const DEFAULT_PIPELINE_SORT: PipelineSortMode = "moved_at_desc";
 
@@ -62,6 +63,7 @@ export const PIPELINE_SORT_OPTIONS: { value: PipelineSortMode; label: string }[]
   { value: "grade_desc",     label: "Meilleur grade" },
   { value: "rating_desc",    label: "Meilleure cote" },
   { value: "graduation_asc", label: "Promotion proche" },
+  { value: "next_action_asc", label: "Relance la plus proche" },
   { value: "name_asc",       label: "Nom A-Z" },
 ];
 
@@ -72,6 +74,10 @@ export interface SortablePipelineCard {
   graduation_year?: number;
   full_name?: string;
   moved_at?: string | null;
+  /** `recruiter_pipeline.next_action_at` — une DATE (pas un timestamp), donc
+   *  pas de fuseau à arbitrer : « aujourd'hui » est le même jour pour tout le
+   *  monde. `null` = aucune relance posée. */
+  next_action_at?: string | null;
 }
 
 /** Le repli commun : dernière activité d'abord. Sert de mode par défaut ET de
@@ -106,6 +112,21 @@ function compareByMode(
       return (a.graduation_year || 9999) - (b.graduation_year || 9999);
     case "name_asc":
       return (a.full_name || "").localeCompare(b.full_name || "");
+    /* Croissant : la relance la plus proche d'abord, donc les DÉPASSÉES en
+       tête — c'est l'ordre d'une liste d'actions, pas d'un agenda. Ce qui est
+       en retard est ce qui presse le plus.
+
+       Les cartes SANS relance tombent à la fin, jamais mêlées aux autres :
+       `Infinity` et non une date lointaine arbitraire, pour qu'aucune relance
+       réelle ne puisse un jour passer derrière elles. À égalité de date, on
+       départage par dernière activité comme les autres modes — sinon dix
+       relances du même jour retomberaient dans l'ordre arbitraire du tableau. */
+    case "next_action_asc": {
+      const at = a.next_action_at ? new Date(a.next_action_at).getTime() : Infinity;
+      const bt = b.next_action_at ? new Date(b.next_action_at).getTime() : Infinity;
+      if (at !== bt) return at - bt;
+      return compareByMovedAt(a, b);
+    }
     case "moved_at_desc":
     default:
       return compareByMovedAt(a, b);
