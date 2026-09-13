@@ -9,7 +9,7 @@ qu'un `gradlew assembleDebug` sur une machine équipée.
 ## 1. SHA à puller
 
 ```
-release/1.4.1 → 116a4e1   (poussé sur origin)
+release/1.4.1 → 0e16c69   (poussé sur origin)
 ```
 
 Deux commits depuis la passation précédente :
@@ -18,6 +18,7 @@ Deux commits depuis la passation précédente :
 |---|---|
 | `22f36af` | MapTiler, rebond horizontal, couches WebKit, polish (1re passe) |
 | `116a4e1` | Recadrages de cible : sheet pipeline, vert coach, vignettes WOW |
+| `0e16c69` | **Fix structurel du scroll de la fiche athlète — cause racine trouvée** |
 
 ---
 
@@ -129,16 +130,41 @@ L'état verrouillé du WOW, tel qu'il part dans l'APK :
 
 ---
 
-## 6. Ce qui N'EST PAS réglé
+## 6. Le scroll de la fiche athlète — RÉGLÉ (`0e16c69`)
 
-**Le chevauchement au scroll de la fiche athlète.** Quatrième itération sur ce
-symptôme. Le diagnostic structurel est fait et rapporté ; le correctif attend
-un arbitrage et **n'est pas dans ces commits**. Cause identifiée :
-`AthleteRecruiterProfileBodyMobile.tsx` pilote le hero par deux valeurs
-découplées et codées en dur — `EXPANDED_SLIDE_DISTANCE = 1200` (déplacement
-visuel par `transform`) et `HERO_LAYOUT_HEIGHT = 800` (compensation de flux par
-`marginBottom` négatif) — alors que rien n'est mesuré nulle part dans le
-fichier. Ne pas re-patcher la composition en attendant.
+**À lire avant de conclure quoi que ce soit sur Android.** La cause racine
+n'avait rien à voir avec le compositing, et elle est de la même famille que le
+`scrolled` mort documenté en §7 — donc **elle frappe Android autant qu'iOS**.
+
+`window.scrollY` vaut **0 en permanence** sous `.is-capacitor` : `html`/`body`
+sont `position: fixed; overflow: hidden` et le scroll vit dans le `<main>` du
+layout. Deux conséquences dans `AthleteRecruiterProfileBodyMobile.tsx` :
+
+1. **Les gardes du pull-to-refresh** (« n'autorise le pull que tout en haut »)
+   étaient donc TOUJOURS vraies. Glisser le doigt vers le bas — le geste pour
+   remonter — alimentait `pullDistance` à n'importe quelle position ;
+   `pullDistance` pilote `overscrollTranslate` et `overscrollScale` sur le
+   hero. Tout le bloc supérieur descendait et s'étirait par-dessus la barre
+   collante. **C'était ça, le symptôme des quatre itérations.**
+2. **L'écouteur de scroll de la fiche** était lui aussi sur `window` : toute la
+   chorégraphie (glissement du hero, entrée de HeroCollapsed, flou de la top
+   bar) était **inerte dans l'application** et ne s'animait que sur le web.
+
+Les deux passent désormais par `trouverScroller()`, qui remonte au premier
+ancêtre réellement scrollable.
+
+**Ce que ça implique pour la recette Android :** la chorégraphie du hero va
+s'animer pour la PREMIÈRE FOIS sur Android. Ce n'est pas une régression à
+signaler, c'est le comportement prévu qui n'avait jamais tourné. À recetter
+comme du neuf : descente, remontée, favori on/off, vue coach avec alertes,
+athlète à 1 badge et à 5.
+
+Par-dessus, le fix structurel demandé : `EXPANDED_SLIDE_DISTANCE = 1200` et
+`HERO_LAYOUT_HEIGHT = 800` sont supprimées au profit d'une hauteur unique
+mesurée par `ResizeObserver` dont dérivent le déplacement visuel ET la
+compensation de flux ; le `top` collant est devenu continu (le saut de 80 px a
+disparu) ; le `willChange` permanent de `HeroCollapsed` est retiré.
+Plus aucun littéral 80/124/800/1200 dans la chorégraphie.
 
 ---
 
@@ -153,7 +179,9 @@ fichier. Ne pas re-patcher la composition en attendant.
 - `scrolled` dans `RecruteurPipelineMobile` est calculé sur `window.scrollY`,
   nul en permanence sous Capacitor (`body` fixed, scroll dans le `<main>`) :
   le flou et le liseré de la barre de pilules sont du **code mort côté
-  mobile**. Non corrigé.
+  mobile**. Non corrigé — MÊME RACINE que le bug de §6. À balayer sur tout le
+  dépôt : `grep -rn 'window.scrollY\|window.pageYOffset' app components`
+  liste les autres surfaces qui font le même pari faux.
 - 95 erreurs `tsc` préexistantes (types Supabase/Stripe générés), intouchées.
 - `MARKETING_VERSION` iOS est à **1.4.0** sur une branche `release/1.4.1`.
   À régler avant toute archive. Aucun bump n'a été fait.
