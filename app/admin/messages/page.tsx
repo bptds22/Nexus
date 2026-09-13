@@ -25,6 +25,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+import AdminConversations from "./_components/AdminConversations";
 
 const MAX_LEN = 4000; // Identique au plafond de la RPC — l'UI prévient, la base tranche.
 
@@ -98,6 +99,9 @@ function audienceSummary(a: Record<string, unknown>): string {
 export default function AdminMessagesPage() {
   const supabase = useMemo(() => createClient(), []);
 
+  /* Onglet. « Envoyer » reste le défaut : c'est le geste historique de
+     cette page, et la boîte de réception est un ajout, pas un remplacement. */
+  const [vue, setVue] = useState<"envoyer" | "conversations">("envoyer");
   const [kind, setKind] = useState<AudienceKind>("everyone");
   const [category, setCategory] = useState<Category>("service");
   const [content, setContent] = useState("");
@@ -327,6 +331,31 @@ export default function AdminMessagesPage() {
           Le destinataire le reçoit dans sa messagerie, en lecture seule.
         </p>
       </div>
+
+      {/* ── Onglets ──────────────────────────────────────────── */}
+      <div className="flex gap-2 border-b border-[#2D3748]">
+        {([["envoyer", "Envoyer"], ["conversations", "Conversations"]] as const).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setVue(k)}
+            className={`px-4 py-2.5 text-[13px] font-bold uppercase tracking-wider border-b-2 -mb-px transition-colors ${
+              vue === k
+                ? "border-[#E63946] text-white"
+                : "border-transparent text-[#6b7280] hover:text-[#9CA3AF]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {vue === "conversations" && <AdminConversations />}
+
+      {/* Masqué plutôt que démonté : l'onglet Envoyer garde son brouillon,
+          sa sélection de destinataires et son historique quand on va lire un
+          fil et qu'on revient. */}
+      <div className={vue === "envoyer" ? "space-y-6" : "hidden"}>
 
       {/* ── Audience ─────────────────────────────────────────── */}
       <section className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 space-y-4">
@@ -626,6 +655,8 @@ export default function AdminMessagesPage() {
           </div>
         </div>
       )}
+
+      </div>
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-[#22C55E] text-[#0b0d10] text-[13px] font-bold shadow-2xl">
