@@ -9,7 +9,7 @@ qu'un `gradlew assembleDebug` sur une machine équipée.
 ## 1. SHA à puller
 
 ```
-release/1.4.1 → 617107d   (poussé sur origin)
+release/1.4.1 → 1f798d9   (poussé sur origin)
 ```
 
 Deux commits depuis la passation précédente :
@@ -20,6 +20,7 @@ Deux commits depuis la passation précédente :
 | `116a4e1` | Recadrages de cible : sheet pipeline, vert coach, vignettes WOW |
 | `0e16c69` | Fix structurel du scroll — **REVERTÉ, ne pas recetter** |
 | `617107d` | **Revert de `0e16c69`** — régression critique, voir §6 |
+| `1f798d9` | Réponse à l'admin — composeur conditionné, boîte admin (§8) |
 
 ---
 
@@ -165,6 +166,25 @@ remontant) est **toujours présent**, sur les deux plateformes. Arbitrage BP :
 cosmétique et vivable pour la 1.4.1. Ne pas le re-patcher — surtout pas par la
 composition, trois tentatives ont déjà échoué : les couches vont bien, c'est la
 position de scroll qui est fausse.
+
+## 8. Le composeur « répondre à l'admin » — CONDITIONNÉ, dormant
+
+Nouveau dans `1f798d9`, et il ne changera RIEN tant qu'on ne bascule pas un
+drapeau en base. **Ne pas le recetter comme une feature vivante.**
+
+Les fils ADMIN_USER portent désormais un composeur sur les trois rôles, mais
+piloté par `app_settings.admin_reply_open`. Le défaut est FERMÉ : clé absente,
+erreur de lecture ou chargement en cours laissent le bandeau de lecture seule
+en place. **Comportement attendu sur l'APK : identique au build précédent** —
+le fil Nexus reste en lecture seule, avec son renvoi vers
+`support@nexussports.ca`.
+
+Pour l'essayer en préprod, poser le drapeau ne suffit PAS : le trigger
+`trg_admin_thread_readonly` refuse toujours l'insertion. Les deux vont
+ensemble — voir `docs/registre-migration-reponse-admin.md`.
+
+La boîte de réception admin (onglet « Conversations » de `/admin/messages`) est
+du **web pur** : elle ne dépend d'aucun binaire et fonctionne dès le merge.
 
 ## 7. Dette connue, inchangée
 
