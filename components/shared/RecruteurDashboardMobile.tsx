@@ -30,6 +30,7 @@ import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeti
 import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
 import { DashboardActivityFeed } from "@/components/shared/dashboard/DashboardActivityFeed";
 import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
+import { RelancesDuJour } from "@/components/shared/dashboard/RelancesDuJour";
 import { frenchDateUppercase, triggerHaptic } from "@/components/shared/dashboard/utils";
 
 /* ── DashboardHero (Iter 6.2-redesign — hero card rouge Nexus gradient) ─ */
@@ -41,99 +42,6 @@ import { frenchDateUppercase, triggerHaptic } from "@/components/shared/dashboar
 
 /* NotificationCard retiré en iter 6.2-redesign-fix Fix 3 — section Notifications
    supprimée car redondante avec les 2 stats du hero. */
-
-/* ── RelancesDuJour ───────────────────────────────────────────────
-   Le compte des relances dues, et les premières nommées.
-
-   AUCUNE REQUÊTE NOUVELLE : `usePipelineCards` charge déjà toutes les cartes
-   du recruteur avec `next_action_at`, le nom et la photo. Le badge se dérive
-   du même cache TanStack que « Mon processus » — pas d'aller-retour en plus,
-   pas de surface RLS en plus, et les deux écrans ne peuvent pas diverger.
-
-   `next_action_at` est une DATE en base, pas un timestamp : « aujourd'hui »
-   est le même jour pour tout le monde et il n'y a aucun fuseau à arbitrer.
-   On compare donc sur la chaîne AAAA-MM-JJ locale, sans passer par
-   `new Date()` qui réinterpréterait la date en UTC et décalerait d'un jour
-   les usagers à l'ouest de Greenwich.
-
-   EN RETARD ET AUJOURD'HUI SONT DISTINGUÉS, jamais fondus : « 3 relances »
-   dont deux datent de la semaine dernière ne dit pas la même chose que trois
-   relances du jour. Le retard passe en tête et se voit. */
-function RelancesDuJour({ cards, onTapAthlete, onTapToutVoir }: {
-  cards: { id?: string; full_name?: string; next_action_at?: string | null }[];
-  onTapAthlete: (id: string | undefined) => void;
-  onTapToutVoir: () => void;
-}) {
-  const aujourdhui = new Date();
-  const cle = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, "0")}-${String(aujourdhui.getDate()).padStart(2, "0")}`;
-
-  const dues = cards
-    .filter((c) => !!c.next_action_at && (c.next_action_at as string).slice(0, 10) <= cle)
-    .sort((a, b) => (a.next_action_at as string).slice(0, 10).localeCompare((b.next_action_at as string).slice(0, 10)));
-
-  if (dues.length === 0) return null;
-
-  const enRetard = dues.filter((c) => (c.next_action_at as string).slice(0, 10) < cle);
-  const duJour = dues.length - enRetard.length;
-  const apercu = dues.slice(0, 3);
-
-  return (
-    <div className="bg-[#1A1D24] rounded-2xl p-[18px] border border-white/[0.05]">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-head text-[15px] font-black text-white uppercase tracking-tight">
-          Relances aujourd&apos;hui
-        </h2>
-        <span className="text-[22px] font-black leading-none" style={{ color: "#E63946" }}>
-          {dues.length}
-        </span>
-      </div>
-
-      <p className="text-[12px] text-[#9CA3AF] mt-1">
-        {enRetard.length > 0 && (
-          <span className="font-bold" style={{ color: "#F59E0B" }}>
-            {enRetard.length} en retard
-          </span>
-        )}
-        {enRetard.length > 0 && duJour > 0 && " · "}
-        {duJour > 0 && `${duJour} aujourd'hui`}
-      </p>
-
-      <div className="mt-3 space-y-1">
-        {apercu.map((c) => {
-          const retard = (c.next_action_at as string).slice(0, 10) < cle;
-          return (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => onTapAthlete(c.id)}
-              className="w-full flex items-center gap-2.5 py-2 px-2 -mx-2 rounded-xl active:bg-white/[0.05] transition-colors text-left"
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ backgroundColor: retard ? "#F59E0B" : "#E63946" }}
-                aria-hidden
-              />
-              <span className="flex-1 text-[14px] text-white truncate">{c.full_name || "Athlète"}</span>
-              {retard && (
-                <span className="text-[10px] font-black uppercase tracking-[0.12em] shrink-0" style={{ color: "#F59E0B" }}>
-                  En retard
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      <button
-        type="button"
-        onClick={onTapToutVoir}
-        className="mt-3 w-full py-2.5 rounded-2xl bg-white/[0.04] active:bg-white/[0.08] text-[#E63946] font-semibold text-[14px] transition-colors"
-      >
-        {dues.length > apercu.length ? `Voir les ${dues.length} relances` : "Ouvrir Mon processus"}
-      </button>
-    </div>
-  );
-}
 
 /* ── MonProcessusFunnel (Iter 7.2 — rampe rouge intensité, premium) ── */
 

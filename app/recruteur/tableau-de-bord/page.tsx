@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ActionBar from "./_components/ActionBar";
 import KpiCards from "./_components/KpiCards";
 import TrendingAthletes from "./_components/TrendingAthletes";
@@ -9,6 +10,9 @@ import { useDashboardHeader } from "@/lib/queries/recruiter/useDashboardHeader";
 import { useDashboardKpi } from "@/lib/queries/recruiter/useDashboardKpi";
 import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes";
 import { useActivityFeed } from "@/lib/queries/recruiter/useActivityFeed";
+import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
+import { useSubscription } from "@/lib/hooks/useSubscription";
+import { RelancesDuJour } from "@/components/shared/dashboard/RelancesDuJour";
 import { RecruteurDashboardMobile } from "@/components/shared/RecruteurDashboardMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -68,10 +72,22 @@ export default function RecruteurTableauDeBordPage() {
   // Migration TanStack (iter 5.2) — 4 hooks parallèles remplacent le mega-useEffect.
   // Avantage : la 2e visite du dashboard est instantanée (cache hit), refetch
   // silencieux en background après staleTime.
+  const router = useRouter();
   const { data: header } = useDashboardHeader();
   const { data: kpiBundle } = useDashboardKpi();
   const { data: trendingAthletes = [] } = useTrendingAthletes();
   const { data: activityEvents = [] } = useActivityFeed();
+
+  /* Relances — même garde que la fiche athlète : la relance est une fonction
+     Pro de bout en bout (poser une date, la trier, en être averti). Le hook
+     n'est chargé QUE si la garde passe : `enabled` évite la requête pour les
+     Free plutôt que de la faire et d'en jeter le résultat. Miroir strict du
+     dashboard mobile. */
+  const subscription = useSubscription();
+  const tier = subscription.subscription?.tier;
+  const canUsePipeline = tier === "pro" || tier === "all_star";
+  const { data: pipelineData } = usePipelineCards({ enabled: canUsePipeline });
+  const relanceCards = pipelineData?.cards ?? [];
 
   const headerName = header?.headerName ?? "";
   const headerSchool = header?.headerSchool ?? "";
@@ -112,6 +128,21 @@ export default function RecruteurTableauDeBordPage() {
 
       {/* Zone 1: Action Bar */}
       <ActionBar data={actionBarData} />
+
+      {/* Relances dues — AU-DESSUS du funnel, comme sur mobile : ce qui est en
+          retard passe avant l'état d'ensemble. Le funnel « Mon processus » vit
+          ici dans KpiCards, juste en dessous.
+          Gaté `canUsePipeline` : sur un compte Free l'encart n'existe pas ET le
+          pipeline n'est même pas chargé. */}
+      {canUsePipeline && relanceCards.length > 0 && (
+        <div className="max-w-[520px]">
+          <RelancesDuJour
+            cards={relanceCards}
+            onTapAthlete={(athleteId) => { if (athleteId) router.push(`/recruteur/athletes/${athleteId}`); }}
+            onTapToutVoir={() => router.push("/recruteur/pipeline")}
+          />
+        </div>
+      )}
 
       {/* Zone 2: KPI Cards + Pipeline */}
       <KpiCards data={kpiData} pipelineCounts={pipelineCounts} />
