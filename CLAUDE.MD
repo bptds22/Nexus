@@ -16,6 +16,33 @@ explicitement le chantier web **TERMINÉ**. Le mobile se traite ensuite, en un
 **lot dédié**, sur **GO explicite de BP**. Le tronc partagé (`lib/`) est
 permis ; son branchement mobile attend le lot mobile.
 
+### GATES D'ACL — COMPARAISON COMPLÈTE, JAMAIS PAR INCLUSION (2026-09-07)
+
+**Tout gate d'ACL compare la liste complète triée, jamais par inclusion.**
+
+Leçon payée sur `recruiter_search_athletes` : un `DROP` + `CREATE` emporte
+l'ACL, et l'`ALTER DEFAULT PRIVILEGES` de Supabase sur le schéma `public`
+la repose en accordant `EXECUTE` à **`anon`**, `authenticated` et
+`service_role` sur toute fonction créée. Le gate vérifiait que les deux
+rôles attendus étaient présents et que `PUBLIC` n'était pas revenu — il a
+laissé passer `anon`, qu'il ne nommait pas. **Une liste blanche vérifiée par
+inclusion laisse entrer ce qu'elle n'a pas nommé.**
+
+La forme correcte (`20260908024711`) :
+
+```sql
+select array_agg(t.g order by t.g) into vus
+  from pg_proc pr,
+       lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g
+                  from unnest(pr.proacl::text[]) as x) t
+ where pr.oid = f;
+if vus is distinct from veut then raise exception 'NEXUS: ACL = %, attendu %', vus, veut; end if;
+```
+
+Corollaire : après tout `DROP`/`CREATE` d'une fonction, **relever l'ACL AVANT**
+et la comparer intégralement APRÈS. Reposer les grants ne suffit pas ; il faut
+aussi révoquer ce que les default privileges ont ajouté.
+
 ---
 
 ## PROJECT OVERVIEW
@@ -246,6 +273,29 @@ Read them freely; write to them only with an explicit per-change GO.
 - Empty: #4a4d56 (dark gray)
 - Cote globale = average of non-zero trait ratings (skip unrated traits, don't count as 0)
 
+#### L'écran WOW est une PROJECTION ASPIRATIONNELLE assumée (décision BP, 2026-09-11)
+
+**Cette décision REMPLACE celle du 2026-09-10**, qui faisait retomber les
+étoiles à vide en fin d'animation.
+
+`AthleteOnboardingWowMobile` montre **5 étoiles pleines qui le restent** et les
+**cinq distinctions** du défilé. Ce n'est pas la cote de l'athlète : c'est une
+**démo** de ce à quoi sa carte ressemblera quand tout sera là. Le WOW n'écrit
+rien en base — il ne l'a jamais fait.
+
+La version précédente vidait les étoiles pour ne pas « mentir ». Le problème
+n'était pas la valeur affichée, c'était le CADRE : une carte qui monte à 5/5
+puis se vide raconte un échec à un gamin qui vient de s'inscrire.
+
+**Ce qui rend la projection honnête, et qui doit survivre à toute retouche :**
+1. le **défilé des badges NOMMÉS** — un badge nommé se lit « voilà ce que tu
+   peux gagner », pas « voilà ce que tu as » ;
+2. la ligne **« Ton entraîneur t'évaluera. »**, affichée pendant TOUTE la scène
+   (elle ne dépend plus d'une redescente, qui n'existe plus).
+
+Retirer l'un des deux sans retirer les 5 étoiles rouvre le procès en mensonge.
+La projection se NOMME, elle ne se dément pas.
+
 ### Distinctions (from evaluations.distinctions JSONB)
 - captain → "Capitaine" (icon: shield)
 - allstar → "Équipe d'étoiles" (icon: star)
@@ -274,7 +324,12 @@ Read them freely; write to them only with an explicit per-change GO.
 - Cards show: photo, name, position, school, promotion, height/weight, stars, verified badge, favorite heart, distinction badges, recruitment status
 - Grid and list views
 - Favorites read/write from recruiter_favorites table
-- FeatureGate on results beyond first 6
+- ⚠️ **Aucun FeatureGate sur les résultats** (vérifié 2026-09-10). La ligne
+  « FeatureGate on results beyond first 6 » qui figurait ici décrivait un
+  comportement **inexistant**. Un compte gratuit voit TOUS les résultats ;
+  seules les IDENTITÉS sont masquées (`lockContent`). `search_results_limit: 10`
+  existe dans la table de features du SubscriptionProvider mais **n'est lu par
+  personne** — non appliqué au lancement, décision BP 2026-09-10.
 
 ### Recruiter Athlete Profile (/recruteur/athletes/[id]) — MOSTLY WIRED
 - Full Supabase query with all fields
@@ -369,6 +424,45 @@ Un `bottom: 0` **inline** bat cette règle et annule tout : ne jamais poser `bot
 - Profiles marked "Non vérifié" until coach verifies
 - Parent notification for minors (14-17) with 7-14 day response window
 
+#### Réclamation d'une fiche orpheline — ASSUMÉE (décision BP, 2026-09-11)
+
+Le trigger `on_user_created_link_athlete` (→ `link_athlete_on_signup`, baseline
+2026-04-17) rattache **dans la transaction d'inscription** toute fiche
+`athletes` orpheline portant le même courriel. C'est le parcours **coach →
+athlète NLS** : le coach sème la fiche, l'athlète la récupère sans ressaisir.
+
+Conséquences à connaître avant de diagnostiquer un « bug d'inscription » :
+- une inscription qui se croit neuve arrive **pré-remplie** (école, sport,
+  position, numéro) et démarre à l'**étape 2** — la reprise d'étape écrase le
+  `setStep(0)` parce que `school_id` est présent. **C'est voulu.**
+- la modale `ClaimProfileModal` est de ce fait **inatteignable** pour ce cas :
+  `user_id` est déjà posé quand le client s'exécute. Code mort d'allure vivante.
+- **L'app n'ANNONCE pas l'héritage** — défaut connu, registre `docs/fast-follow-1.4.2.md` §17.
+
+#### Périmètre d'auto-édition de l'athlète — la frontière est l'onboarding
+
+`enforce_athlete_self_edit_perimeter()` (migration `20260909191744`) interdit à
+l'athlète de modifier lui-même `user_id, coach_id, school_id, status, verified*,
+cote_globale_entraineur, profile_completion, is_showcase, consentement*,
+partner_visibility*, recruitment_status*, committed_school_id`.
+
+**Décision produit BP 2026-09-11 :** **pendant** l'onboarding
+(`users.onboarding_complete = false`), `school_id` et `coach_id` appartiennent à
+l'athlète — choisir son école EST le geste d'inscription. La garde s'applique
+pleinement **après**. Rien d'autre ne s'ouvre, à aucun moment.
+- DDL prêt, **non appliqué** : `docs/d6-volet5-perimetre-onboarding.sql`
+  (5ᵉ volet de la migration D6, registre §16).
+- Miroir client, **livré en 1.4.1** : `lib/athlete/perimetreProtege.ts`. Tout
+  écran qui écrit `athletes` sous l'identité de l'athlète doit passer son patch
+  dans `elaguerProtegees()` — sinon reposer une colonne protégée **à l'identique**
+  suffit à lever la garde et à rendre un 400.
+
+#### Journaliser une erreur dans du code qui tourne en WebView
+
+Le pont console de Capacitor passe ses arguments à `String()` : un
+`console.error("x:", error)` atterrit dans le logcat en **`[object Object]`**.
+Sérialiser à la main — `erreurLisible()` de `lib/athlete/perimetreProtege.ts`.
+
 ### School Registry
 - Pre-seeded from MEQ open data (Données Québec)
 - Coaches join existing schools, never create them
@@ -401,6 +495,43 @@ Un `bottom: 0` **inline** bat cette règle et annule tout : ne jamais poser `bot
 - Coaches evaluate athletes → evaluations table (8 criteria + distinctions)
 - Recruiters evaluate coaches → CoachReview (not yet built) → feeds coach reputation
 
+#### Auto-évaluation athlète → coach — FEATURE CONFIRMÉE (décision BP, 2026-09-11)
+
+**L'athlète PROPOSE sa cote et ses distinctions ; le COACH décide.** Ce n'est ni
+une écriture directe (ce serait de l'auto-notation) ni un refus (ce que la base
+fait aujourd'hui) : c'est une **proposition avec un destinataire réel**.
+
+Le flux a réellement tourné — 41 suggestions traitées à la main par un coach
+entre le 2026-07-14 et le 2026-09-09, dont 5 Distinctions, 3 Cote globale et
+6 traits. Il a été court-circuité, pas supprimé.
+
+**Ce qui existe déjà et n'est PAS à refaire :** la boîte du coach
+(`CoachATraiterMobile` + `/coach/a-traiter` + pastille + `loadCoachTaskCounts`),
+le moteur d'application du verdict (`apply_approved_suggestion`, qui traite
+toujours `Cote globale` et `Distinctions`), et **toute** la chaîne de
+notification (`trg_notify_suggestion_result` → `athlete_notifications` →
+onglet « suggestions » de la page athlète). Le modèle de données
+`athlete_suggestions` est réutilisable **tel quel**.
+
+**Séquence, et elle n'est pas négociable :**
+1. **Volet 6 de la migration D6** — trigger + resserrage RLS, indissociables
+   (`docs/d6-volet6-suggestion-evaluation.sql`, registre §19). Sans le
+   resserrage, l'athlète approuve sa propre proposition.
+2. **Web vivant immédiatement** — `app/athlete/profil/page.tsx` n'a JAMAIS été
+   retiré ; il redevient vrai sans qu'on touche une ligne (registre §20).
+3. **Mobile en 1.4.2** — restauration à la main de `StarSuggestRow` +
+   `DistinctionsSuggestRow` depuis `0b6e05b^` / `eb52329^`, ~320 lignes. Un
+   revert en bloc est FAUX : `261af44` a introduit dans les mêmes commits le
+   chemin d'écriture directe des champs physiques, qu'il ne faut pas défaire.
+
+**L'UI ne revient JAMAIS avant le trigger.** Dans l'autre sens on réexpédie le
+mensonge retiré le 2026-09-10 : « envoyée à ton coach » suivi d'un refus
+automatique.
+
+Question ouverte portée au lot 1.4.2 (registre §21) : la boîte coach doit-elle
+distinguer visuellement une auto-évaluation d'une correction de profil ? Se
+mettre 5/5 en leadership n'appelle pas la même lecture que corriger son poids.
+
 ### Pipeline Status
 - recruiter_pipeline.stage: IDENTIFIE → CONTACTE → EN_DISCUSSION → VISITE_PLANIFIEE → ENGAGE → LETTRE_SIGNEE
 - Separate from athlete's statut_recrutement_override
@@ -416,7 +547,16 @@ Un `bottom: 0` **inline** bat cette règle et annule tout : ne jamais poser `bot
 - Coach: Free / Pro / All Star
 - Athlete: Free / Pro
 - "Passe à Pro" sidebar element: small gold card with icon
-- Recherche page: first 6 results free, rest behind FeatureGate
+- Recherche page : **tous** les résultats sont rendus, identités masquées pour
+  le tier gratuit. Il n'y a PAS de coupure à 6 résultats — cette ligne décrivait
+  un comportement jamais implémenté (corrigé 2026-09-10).
+- ⚠️ **Le gating a deux sources de vérité** : la table `RECRUITER_FEATURES`
+  (déclarée, jamais lue) et des `requiredTier` écrits à la main dans chaque page
+  et chaque item de nav. La seconde décide. Chantier de réunification +
+  sort du palier **Starter** (décrit ci-dessous, absent du code, qui ne connaît
+  que `free | pro | all_star`) : voir `docs/fast-follow-1.4.2.md`.
+- « Mon processus » s'affiche en **mode démo** pour un compte gratuit — décision
+  produit assumée, écritures bloquées par `user_has_pro()` en RLS.
 
 ## Feature gating
 
@@ -557,6 +697,10 @@ lib/config/sportBadges.ts              — Badge configuration
 ### Recruiter Tiers
 - **Free:** Anonymized athlete profiles (stats, school, sport, rating visible; name, photo, position, jersey hidden)
 - **Starter:** $9.99/mo or $89/yr — full profile reveal, basic pipeline (2 statuses), auto-messaging, unlimited favorites
+  - ⚠️ **CE PALIER N'EXISTE PAS EN CODE** (vérifié 2026-09-10). `SubscriptionTier`
+    ne connaît que `free | pro | all_star` ; tout le milieu de gamme décrit ici est
+    absent, y compris le « pipeline à 2 statuts ». Statuer dessus fait partie du
+    chantier « source de vérité unique du gating » (`docs/fast-follow-1.4.2.md`).
 - **Pro:** $29.99/mo or $269/yr — full pipeline (8 statuses), full inbox, analytics, trends, custom prospect lists, export
 - Custom prospect lists are EXCLUSIVELY Pro — Free and Starter have no access
 

@@ -43,6 +43,7 @@ import {
 } from "@/lib/calendar/recruitingCalendar";
 import { RECRUITER_TIERS } from "@/lib/config/pricing";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote } from "@/lib/evaluations/presence";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { triggerHaptic } from "@/lib/haptics";
 
@@ -170,7 +171,7 @@ function TargetRow({ t }: { t: CalendarTarget }) {
         </b>
         {/* Cote coach — même composant partagé que le desktop et la
             Recherche. Athlète non coté : rien, pas de « N/A ». */}
-        {t.stars > 0 && <StarRating rating={t.stars} size="sm" className="mt-0.5" />}
+        {aUneCote(t.stars) && <StarRating rating={t.stars} size="sm" className="mt-0.5" />}
         <span className="block text-[12px] text-[#8A909C]">
           {[t.position, t.graduationYear ? `Promotion ${t.graduationYear}` : ""].filter(Boolean).join(" · ")}
         </span>

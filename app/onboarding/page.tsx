@@ -2878,7 +2878,6 @@ function CegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUse
 function InviteStep({ role }: { role: string; onFinish: () => void }) {
   const [emails, setEmails] = useState<string[]>([]);
   const [currentEmail, setCurrentEmail] = useState("");
-  const [toast, setToast] = useState("");
   const [copied, setCopied] = useState(false);
 
   const addEmail = () => {
@@ -2899,13 +2898,27 @@ function InviteStep({ role }: { role: string; onFinish: () => void }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-head text-xl font-black text-white uppercase">
-          Invite tes {role === "coach" ? "entraîneurs" : "recruteurs"}
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-head text-xl font-black text-white uppercase">
+            Invite tes {role === "coach" ? "entraîneurs" : "recruteurs"}
+          </h2>
+          <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+            Optionnel
+          </span>
+        </div>
         <p className="text-sm text-[#9CA3AF] mt-1">
           {role === "recruteur"
             ? "Ils auront accès à la base de données d’athlètes une fois validés par un admin."
             : "Ils pourront créer des profils athlètes pour ton école."}
+        </p>
+        {/* L'envoi n'est PAS encore câblé (Lot H, post-NLS). On ne peut donc
+            pas afficher une confirmation d'envoi — on le dit, et on laisse
+            passer. Les courriels saisis ne sont conservés nulle part : le
+            préciser évite qu'on croie les retrouver plus tard. */}
+        <p className="text-xs text-[#F59E0B] mt-2 leading-snug">
+          L&apos;envoi automatique des invitations arrive bientôt. En attendant, tu peux
+          passer cette étape — tes {role === "coach" ? "entraîneurs" : "recruteurs"} pourront
+          créer leur compte eux-mêmes, et tu pourras les inviter depuis ton portail.
         </p>
       </div>
 
@@ -2936,15 +2949,9 @@ function InviteStep({ role }: { role: string; onFinish: () => void }) {
         </div>
       )}
 
-      {emails.length > 0 && (
-        <button type="button" onClick={() => setToast("Invitations envoyées (POC)")} className="h-10 px-6 rounded-lg bg-[#E63946] text-xs font-bold text-white hover:bg-[#D42B22] transition-colors">
-          Envoyer les invitations ({emails.length})
-        </button>
-      )}
 
-      {toast && (
-        <p className="text-xs text-[#22C55E] font-bold">{toast}</p>
-      )}
+
+
 
       {/* Share link */}
       <div className="border-t border-white/5 pt-5 space-y-2">

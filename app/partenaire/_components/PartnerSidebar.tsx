@@ -7,6 +7,7 @@ import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import type { MediaPartner, PartnerStatus } from "@/lib/types/models";
 import { initialesOrganisation } from "@/lib/partners/initiales";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 const NAV_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [
   {
@@ -74,7 +75,7 @@ export default function PartnerSidebar({ mobileOpen, onClose }: { mobileOpen: bo
 
   const handleLogout = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     router.push("/auth");
   };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 /* ═══════════════════════════════════════════════════════════════
    deleteMyAccount — suppression de compte DÉFINITIVE.
@@ -63,7 +64,7 @@ export async function deleteMyAccount(opts?: {
     return false;
   }
   try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-  await supabase.auth.signOut();
+  await deconnexion(supabase);
   if (typeof window !== "undefined") {
     window.location.assign(opts?.redirectTo ?? "/auth");
   }

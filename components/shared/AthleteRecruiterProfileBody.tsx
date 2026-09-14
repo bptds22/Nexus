@@ -1,5 +1,6 @@
 "use client";
 
+import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
+import RelanceFiche from "@/components/shared/RelanceFiche";
 import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
@@ -33,6 +35,7 @@ import SuccessToast, { type SuccessToastData } from "@/components/ui/SuccessToas
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import { aUneCote } from "@/lib/evaluations/presence";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
@@ -90,31 +93,23 @@ const FLAG_REASONS = [
   "Autre",
 ];
 
-/* ── Profile Toggle ─────────────────────────────────────────── */
-
-function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChange: (m: "simple" | "detailed") => void }) {
-  const pill = (active: boolean) =>
-    `px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer ${
-      active
-        ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]"
-        : "text-[#6b7280] hover:text-white"
-    }`;
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>
-        Simplifié
-      </button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>
-        Détaillé
-      </button>
-    </div>
-  );
-}
-
 /* ── Completeness Indicator ─────────────────────────────────── */
 
 function CompletenessBar({ percent }: { percent: number }) {
-  const color = percent >= 90 ? "#3B82F6" : percent >= 60 ? "#22C55E" : percent >= 40 ? "#EAB308" : "#EF4444";
+  /* BLEU DU SYSTÈME (BP, 2026-09-09) : #3B82F6, la teinte du badge vérifié.
+     Le vert #22C55E disparaît de la jauge de complétion.
+
+     LE PALIER 90 A ÉTÉ FONDU dans le palier 60 : il rendait DÉJÀ #3B82F6.
+     Le garder aurait laissé deux seuils rendre exactement la même couleur —
+     un escalier à marche invisible, que le prochain lecteur prendrait pour un
+     bug. Rouge et ambre restent : en dessous de 60, le profil a encore quelque
+     chose à dire.
+
+     Cette jauge était la DERNIÈRE au vert. Les autres indicateurs de
+     complétion du produit — tableau de bord athlète, anneau du profil
+     athlète, pipeline recruteur, cartes de roster, stats et analytique école —
+     rendent déjà ce bleu. Le changement les aligne, il n'invente rien. */
+  const color = percent >= 60 ? "#3B82F6" : percent >= 40 ? "#EAB308" : "#EF4444";
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 bg-[#2D3748] rounded-full overflow-hidden">
@@ -1073,6 +1068,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         setCommittedSchoolName(committedSchoolNameVal);
         setOpenToOffers(openToOffersVal ?? null);
         const coach = d.users as { first_name: string; last_name: string } | null;
+        /* Lot F3 — résolution du référent (équipe → directeur → propriétaire).
+           Lecture séparée : les RPC recruteur ne projettent pas coach_id, et
+           fn_resolve_team_referent n'existe pas encore en base (vague 2). */
+        const referentName =
+          (await loadAthleteReferent(supabase, d.id as string)).name ?? "";
         const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
         const sport = sportRel as { nom: string } | null;
@@ -1236,7 +1236,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           gender: (d.genre as "M" | "F" | "Autre") || "M",
           commitmentStatus: (d.statut_recrutement_override as string) || "ouvert",
           coachReport: (eval0?.rapport_entraineur as string) || "",
-          coachName: coach ? `${coach.first_name} ${coach.last_name}` : "",
+          /* Lot F3 — le RÉFÉRENT résolu, pas le propriétaire brut. coach_id est
+             NULL pour 43 des 53 athlètes en équipe : lire le champ tel quel
+             affichait une carte de réputation sans nom dans 81 % des cas.
+             Repli sur le propriétaire quand la résolution ne donne rien. */
+          coachName: referentName || (coach ? `${coach.first_name} ${coach.last_name}` : ""),
           coachSchool: school?.name || "",
           coachReputation: undefined,
           overallRating: (eval0?.cote_globale as number) ?? (d.cote_globale_entraineur as number) ?? 0,
@@ -1384,7 +1388,15 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     });
   }, [id, isFreeRecruiter, tierLoading, viewerMode]);
 
-  const [mode, setMode] = useState<"simple" | "detailed">("simple");
+  /* DÉFAUT « DÉTAILLÉ » (BP, 2026-09-09). Le mode simplifié est en voie de
+     retrait : ce qu'un athlète a rempli s'affiche, sans qu'il faille le
+     demander. Le toggle RESTE le temps du 1.4.1 — son retrait complet est un
+     fast-follow post-Promote, parce qu'il déroule des centaines de branches.
+
+     ⚠ CE DÉFAUT N'OUVRE AUCUN VERROU. `lockContent` (tier gratuit) et les
+     masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
+     mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
+     DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
   /* LE FORCAGE « SIMPLE » EST RETIRE (2026-09-03).
 
      Il datait du 19 aout, quand la RPC partenaire ne projetait ni mesures,
@@ -1397,7 +1409,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
      substitut assume), le nom et la reputation de l'entraineur, le statut
      de recrutement. Ces masquages-la sont des decisions, pas des effets de
      bord du mode — ils sont gardes un par un, plus bas, par `isPartner`. */
-  const isDetailed = mode === "detailed";
+  /* LE TOGGLE « Aperçu / Profil complet » EST RETIRÉ (BP, 2026-09-09).
+     Rien n'était propre à l'Aperçu : sa seule section — l'étoile + la cote —
+     est re-rendue en tête du bloc détaillé, juste en dessous. Aucune
+     persistance, aucun deep-link, aucun effet ni fetch ne dépendait du mode.
+
+     `isDetailed` reste en constante et les blocs conditionnels restent EN
+     PLACE : l'élagage est un nettoyage séparé.
+
+     ⚠ CE RETRAIT N'OUVRE AUCUN VERROU. `lockContent`, `isPartner` et
+     `identityVisible` (décidé par le SERVEUR) ne lisent pas `mode` et ne l'ont
+     jamais lu — grep croisé refait sur ce fichier le 2026-09-09, zéro
+     occurrence. C'est le fichier où cette confusion coûterait le plus cher :
+     elle ouvrirait l'identité de mineurs à des comptes gratuits. */
+  const isDetailed = true;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
@@ -1816,7 +1841,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Le bascule est rendu au partenaire : les sections detaillees ne
               sont plus vides (migration 20260904130334). */}
-          <ProfileToggle mode={mode} onChange={setMode} />
           {/* La barre affichait « 0 % » a tout partenaire, parce que la RPC ne
               projetait pas profile_completion — une affirmation fausse la ou le
               reel va de 30 a 95. Elle etait donc masquee. La colonne est
@@ -1920,6 +1944,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </div>
             )}
 
+            {/* Relance — la DATE seule ; la note reste au pipeline. Le pourquoi
+                (frontières de données coach/recruteur) est écrit en tête de
+                RelanceFiche, avec la décision produit qui le fixe.
+                Gate : palier Pro ET athlète déjà dans le processus — sans ligne,
+                l'UPDATE n'aurait rien à écrire et la RLS refuserait l'INSERT.
+                `!isPreview` est ici l'équivalent web de `isRecruiter`
+                (isPreview = viewerMode !== "recruiter"). */}
+            {!isPreview && canUsePipeline && myPipelineStage && (
+              <div className="max-w-[420px]">
+                <RelanceFiche athleteId={id} />
+              </div>
+            )}
+
             {/* Visite planifiée + export agenda. Gate strict : le stage ET la
                 date. Une visite sans date affiche le stage, pas la carte. */}
             {!isPreview && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
@@ -1982,7 +2019,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                absence de note : c'est une note de zero, affirmee sur un
                athlete que personne n'a evalue, et lue par un recruteur comme
                par un partenaire. Un caractere, les deux portails. */
-           (a.coachReport || coteGlobale > 0) ? (
+           (a.coachReport || aUneCote(coteGlobale)) ? (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>
@@ -2011,11 +2048,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 {/* Detailed: Cote Globale + full 8-trait grid + distinctions */}
                 {isDetailed && (
                   <div className="mt-5 pl-5">
+                    {/* LA COMPENSATION DU RETRAIT DU TOGGLE (2026-09-09).
+                        La version « Aperçu » portait `coteGlobale > 0`, pas
+                        celle-ci. Sans cette garde, un athlète avec un rapport
+                        écrit mais aucune cote afficherait « 0,0/5 » sous cinq
+                        étoiles vides : une note de ZÉRO affirmée sur un jeune
+                        que personne n'a noté, lue par un recruteur. Le mode
+                        masquait le défaut ; le retirer sans reprendre la garde
+                        l'aurait rendu définitif. */}
+                    {aUneCote(coteGlobale) && (
                     <div className="flex items-center gap-3 mb-4">
                       <StarRating rating={coteGlobale} size="md" showNumber={false} />
                       <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
                       <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
                     </div>
+                    )}
 
                     {a.traitRatings && (
                       <div className="border-t border-[#2D3748]/50 pt-4">

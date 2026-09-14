@@ -678,7 +678,26 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
         </div>
       )}
 
-      {editing && isDetailedMode && (
+      {/* ⚠️ PLUS DE GARDE `isDetailedMode` ICI — décision BP, 2026-09-12.
+          La grille ne s'affichait que si au moins un trait était DÉJÀ noté par
+          l'entraîneur. Autrement dit : « tu ne peux proposer une note que si on
+          t'en a déjà mis une ». Pour tout nouvel inscrit — donc pour ceux qui en
+          ont le plus besoin — les 14 traits étaient invisibles et impossibles à
+          proposer. C'est le défaut qui a fait échouer la recette du 2026-09-12,
+          corrigé sur Android le jour même et resté sur le web jusqu'ici.
+
+          La règle devient : PROPOSER NE PRÉSUPPOSE PAS D'AVOIR ÉTÉ NOTÉ.
+
+          Ce qui ne change PAS : la LECTURE. Un trait jamais noté rend « — »
+          quelques lignes plus bas, jamais cinq étoiles vides — une note absente
+          n'est pas une note de zéro. C'est le GESTE qui s'ouvre, pas l'affichage
+          qui invente une valeur.
+
+          `isDetailedMode` sert encore juste au-dessus (:669), pour la cote : il
+          y est le miroir client de la garde `v_is_detailed` du trigger, qui
+          refuse d'appliquer une cote plate quand l'évaluation détaillée est
+          active. Cette garde-là est critique et ne bouge pas. */}
+      {editing && (
         <div className="mt-3 space-y-1">
           {TRAIT_CHAMPS.map((trait) => {
             const value = traitDraft[trait.column] ?? 0;
@@ -1269,7 +1288,7 @@ function AthleteProfilPageDesktop() {
       if (raw.id) {
         const { data: sugs } = await supabase
           .from("athlete_suggestions")
-          .select("id, champ, valeur_actuelle, valeur_proposee, status, message, raison_rejet, created_at")
+          .select("id, champ, valeur_actuelle, valeur_proposee, status, message, raison_rejet, note_systeme, created_at")
           .eq("athlete_id", raw.id)
           .order("created_at", { ascending: false });
         if (sugs) {
@@ -1283,6 +1302,7 @@ function AthleteProfilPageDesktop() {
             status: (STATUS_MAP[s.status] || "pending") as "pending" | "approved" | "rejected",
             submitted_at: s.created_at,
             rejection_reason: s.raison_rejet || undefined,
+            system_note: (s as { note_systeme?: string | null }).note_systeme ?? null,
           })));
         }
       }
@@ -1475,9 +1495,20 @@ function AthleteProfilPageDesktop() {
     showToast("Suggestion envoyée à ton coach");
   };
 
-  const pendingSugs = suggestions.filter((s) => s.status === "pending");
+  /* ── Un refus MACHINE n'est pas un refus ──────────────────────────────
+     `note_systeme` est posé par le trigger de transition, jamais par un
+     humain. Tant que le volet 6 de D6 n'est pas appliqué, toute proposition
+     d'évaluation est rejetée à l'insertion même — annoncer « Rejetée » ferait
+     croire au jeune que son entraîneur l'a recalé, alors que PERSONNE n'a rien
+     lu. On montre l'attente : c'est la vérité de sa situation.
+
+     Le rouge reste pour les VRAIS refus, ceux qu'un entraîneur prononce. Eux
+     n'ont pas de `note_systeme`, et leur motif est un message humain — donc
+     affichable. Miroir de `AthleteEditWizardMobile`. */
+  const estRefusMachine = (s: AthleteSuggestion) => s.status === "rejected" && !!s.system_note;
+  const pendingSugs = suggestions.filter((s) => s.status === "pending" || estRefusMachine(s));
   const approvedSugs = suggestions.filter((s) => s.status === "approved");
-  const rejectedSugs = suggestions.filter((s) => s.status === "rejected");
+  const rejectedSugs = suggestions.filter((s) => s.status === "rejected" && !estRefusMachine(s));
 
   const getPending = (field: string) => pendingSugs.find((s) => s.field === field);
 
@@ -1999,16 +2030,23 @@ function AthleteProfilPageDesktop() {
           </div>
 
           <div className="space-y-2">
-            {(sugTab === "pending" ? pendingSugs : sugTab === "approved" ? approvedSugs : rejectedSugs).map((s) => (
+            {(sugTab === "pending" ? pendingSugs : sugTab === "approved" ? approvedSugs : rejectedSugs).map((s) => {
+              /* L'état AFFICHÉ, pas l'état brut : un refus machine se rend en
+                 attente. `motifHumain` ne laisse passer que le motif d'un vrai
+                 refus d'entraîneur — celui d'un refus machine est de
+                 l'architecture, et l'architecture ne s'adresse pas au jeune. */
+              const enAttente = s.status === "pending" || estRefusMachine(s);
+              const motifHumain = s.status === "rejected" && !s.system_note ? (s.rejection_reason ?? null) : null;
+              return (
               <div key={s.id} className={`bg-[#13151a] rounded-lg border p-4 ${
-                s.status === "pending" ? "border-[#EAB308]/20" : s.status === "approved" ? "border-[#22C55E]/20" : "border-[#E63946]/20"
+                enAttente ? "border-[#EAB308]/20" : s.status === "approved" ? "border-[#22C55E]/20" : "border-[#E63946]/20"
               }`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[13px] font-bold text-white">{s.field}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    s.status === "pending" ? "bg-[#EAB308]/15 text-[#EAB308]" : s.status === "approved" ? "bg-[#22C55E]/15 text-[#22C55E]" : "bg-[#E63946]/15 text-[#E63946]"
+                    enAttente ? "bg-[#EAB308]/15 text-[#EAB308]" : s.status === "approved" ? "bg-[#22C55E]/15 text-[#22C55E]" : "bg-[#E63946]/15 text-[#E63946]"
                   }`}>
-                    {s.status === "pending" ? "En attente" : s.status === "approved" ? "Approuvée" : "Rejetée"}
+                    {enAttente ? "En attente" : s.status === "approved" ? "Approuvée" : "Rejetée"}
                   </span>
                 </div>
                 <p className="text-[12px] text-[#9CA3AF]">
@@ -2016,10 +2054,11 @@ function AthleteProfilPageDesktop() {
                   <span className="font-bold text-white">{s.proposed_value}</span>
                 </p>
                 {s.message && <p className="text-[11px] text-[#6b7280] mt-1 italic">&ldquo;{s.message}&rdquo;</p>}
-                {s.rejection_reason && <p className="text-[11px] text-[#E63946] mt-1">Coach: &ldquo;{s.rejection_reason}&rdquo;</p>}
+                {motifHumain && <p className="text-[11px] text-[#E63946] mt-1">Coach: &ldquo;{motifHumain}&rdquo;</p>}
                 <p className="text-[10px] text-[#4a4d56] mt-1.5">{s.submitted_at}</p>
               </div>
-            ))}
+              );
+            })}
             {(sugTab === "pending" ? pendingSugs : sugTab === "approved" ? approvedSugs : rejectedSugs).length === 0 && (
               <p className="text-[13px] text-[#4a4d56] text-center py-6">Aucune suggestion</p>
             )}

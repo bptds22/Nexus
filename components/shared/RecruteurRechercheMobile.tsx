@@ -38,6 +38,12 @@ import { useRecentViewedAthletes } from "@/lib/queries/recruiter/useRecentViewed
 import { useAthleteAutocomplete } from "@/lib/queries/recruiter/useAthleteAutocomplete";
 import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+/* Ligue et Division viennent du MEME module que la recherche coach et que le
+   web recruteur : predicats et options ne sont jamais recopies ici. */
+import {
+  leagueOptions, divisionOptions, matchesLeague, matchesDivision,
+  EMPTY_TAXONOMY, type TaxonomyOption,
+} from "@/lib/config/team-taxonomy";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -875,6 +881,13 @@ interface FiltersBottomSheetProps {
   promotion: string; setPromotion: (v: string) => void;
   region: string; setRegion: (v: string) => void;
   orgType: string; setOrgType: (v: string) => void;
+  /* Ligue et Division — LOT 3. Les options arrivent déjà construites par le
+     module partagé (comptes inclus, indisponibles grisées), l'écran ne fait
+     que les afficher. */
+  leagueFilter: string; setLeagueFilter: (v: string) => void;
+  divisionFilter: string; setDivisionFilter: (v: string) => void;
+  leagueOptionList: { value: string; label: string; disabled?: boolean }[];
+  divisionOptionList: { value: string; label: string; disabled?: boolean }[];
   minGpa: string; setMinGpa: (v: string) => void;
   sortBy: string; setSortBy: (v: string) => void;
   verifiedOnly: boolean; setVerifiedOnly: (v: boolean) => void;
@@ -906,6 +919,8 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const [openPromotion, setOpenPromotion] = useState(false);
   const [openRegion, setOpenRegion] = useState(false);
   const [openOrg, setOpenOrg] = useState(false);
+  const [openLeague, setOpenLeague] = useState(false);
+  const [openDivision, setOpenDivision] = useState(false);
   const [openGpa, setOpenGpa] = useState(false);
   const [openSort, setOpenSort] = useState(false);
 
@@ -924,6 +939,11 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const promotionLabel = PROMOTION_OPTIONS.find((p) => p.value === props.promotion)?.label || "Toutes les promotions";
   const regionLabel = props.regionOptions.find((r) => r.value === props.region)?.label || "Toutes les régions";
   const orgLabel = ORG_OPTIONS.find((o) => o.value === props.orgType)?.label || "Toutes";
+  /* Les options de Ligue/Division sont construites en amont (comptes compris),
+     on n'y relit donc qu'un libellé — jumeau de `libelleAxe` de la recherche
+     coach, gardé local parce que ces deux écrans ne partagent pas de module UI. */
+  const libelleAxeRecherche = (opts: { value: string; label: string }[], valeur: string, parDefaut: string) =>
+    valeur ? (opts.find((o) => o.value === valeur)?.label ?? parDefaut) : parDefaut;
   const gpaLabel = GPA_OPTIONS.find((g) => g.value === props.minGpa)?.label || "Aucun minimum";
   const sortLabel = SORT_OPTIONS.find((s) => s.value === props.sortBy)?.label || "Meilleure cote";
 
@@ -986,6 +1006,8 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
             <FilterRow label="Promotion" value={promotionLabel} onTap={() => setOpenPromotion(true)} />
             <FilterRow label="Région" value={regionLabel} onTap={() => setOpenRegion(true)} />
             <FilterRow label="Organisation" value={orgLabel} onTap={() => setOpenOrg(true)} />
+            <FilterRow label="Ligue" value={libelleAxeRecherche(props.leagueOptionList, props.leagueFilter, "Toutes")} onTap={() => setOpenLeague(true)} />
+            <FilterRow label="Division" value={libelleAxeRecherche(props.divisionOptionList, props.divisionFilter, "Toutes")} onTap={() => setOpenDivision(true)} />
             <FilterRow label="GPA minimum" value={gpaLabel} onTap={() => setOpenGpa(true)} />
             <FilterRow label="Trier par" value={sortLabel} onTap={() => setOpenSort(true)} />
           </div>
@@ -1041,6 +1063,8 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
       <MobilePicker open={openPromotion} onClose={() => setOpenPromotion(false)} title="Promotion" options={PROMOTION_OPTIONS} value={props.promotion} onChange={(v) => props.setPromotion((v as string) ?? "")} />
       <MobilePicker open={openRegion} onClose={() => setOpenRegion(false)} title="Région" options={props.regionOptions} value={props.region} onChange={(v) => props.setRegion((v as string) ?? "")} />
       <MobilePicker open={openOrg} onClose={() => setOpenOrg(false)} title="Organisation" options={ORG_OPTIONS} value={props.orgType} onChange={(v) => props.setOrgType((v as string) ?? "")} />
+      <MobilePicker open={openLeague} onClose={() => setOpenLeague(false)} title="Ligue" options={props.leagueOptionList} value={props.leagueFilter} onChange={(v) => props.setLeagueFilter((v as string) ?? "")} />
+      <MobilePicker open={openDivision} onClose={() => setOpenDivision(false)} title="Division" options={props.divisionOptionList} value={props.divisionFilter} onChange={(v) => props.setDivisionFilter((v as string) ?? "")} />
       <MobilePicker open={openGpa} onClose={() => setOpenGpa(false)} title="GPA minimum" options={GPA_OPTIONS} value={props.minGpa} onChange={(v) => props.setMinGpa((v as string) ?? "")} />
       <MobilePicker open={openSort} onClose={() => setOpenSort(false)} title="Trier par" options={SORT_OPTIONS.map((s) => ({ value: s.value, label: s.label }))} value={props.sortBy} onChange={(v) => props.setSortBy((v as string) ?? "rating_desc")} />
 
@@ -1117,6 +1141,7 @@ export function RecruteurRechercheMobile() {
   const { filtres, setFiltre, poserPlusieurs } = useFiltresRecherche();
   const {
     search, sport, genderFilter, position, region, promotion, orgType,
+    leagueFilter, divisionFilter,
     minGpa, minRating, sortBy, verifiedOnly, withVideoOnly, withSportBadge,
     withAcademicBadge, hideFavorites, filterOuvertDemenager, filterOuvertPrive,
     filterOuvertAnglophone, offertParMonCegep, filterNewOnly, progFilterIds,
@@ -1131,6 +1156,8 @@ export function RecruteurRechercheMobile() {
   const setRegion = useCallback((v: string) => setFiltre("region", v), [setFiltre]);
   const setPromotion = useCallback((v: string) => setFiltre("promotion", v), [setFiltre]);
   const setOrgType = useCallback((v: string) => setFiltre("orgType", v), [setFiltre]);
+  const setLeagueFilter = useCallback((v: string) => setFiltre("leagueFilter", v), [setFiltre]);
+  const setDivisionFilter = useCallback((v: string) => setFiltre("divisionFilter", v), [setFiltre]);
   const setMinGpa = useCallback((v: string) => setFiltre("minGpa", v), [setFiltre]);
   const setMinRating = useCallback((v: string) => setFiltre("minRating", v), [setFiltre]);
   const setSortBy = useCallback((v: string) => setFiltre("sortBy", v), [setFiltre]);
@@ -1268,6 +1295,11 @@ export function RecruteurRechercheMobile() {
     // Sans équipe → teamGender null → sort des résultats dès qu'un genre est choisi.
     if (genderFilter) list = list.filter((a) => a.teamGender === genderFilter);
     if (orgType) list = list.filter((a) => a.orgType === orgType);
+    /* Ligue / Division — predicats du module, jamais recopies. `?? EMPTY_TAXONOMY`
+       range une ligne sans taxonomie en « Non renseigne » plutot que de faire
+       tomber l'ecran. */
+    if (leagueFilter) list = list.filter((a) => matchesLeague(a.taxonomy ?? EMPTY_TAXONOMY, leagueFilter));
+    if (divisionFilter) list = list.filter((a) => matchesDivision(a.taxonomy ?? EMPTY_TAXONOMY, divisionFilter));
     if (withSportBadge) list = list.filter((a) => a.badges.length > 0);
     if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
     if (hideFavorites) list = list.filter((a) => !favorites.has(a.id));
@@ -1276,11 +1308,35 @@ export function RecruteurRechercheMobile() {
       list = [...list].sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
     }
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, position, region, genderFilter, orgType, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+  }, [athletes, position, region, genderFilter, orgType, leagueFilter, divisionFilter, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+
+  /* FACETTES DÉPENDANTES — chaque menu compte sur la population cadrée par les
+     DEUX AUTRES axes, exactement comme au web et sur la recherche coach. Une
+     option à 0 se grise, elle ne disparaît pas : sinon l'axe semble ne pas
+     exister au lieu de se dire vide. */
+  const taxonomyRows = useMemo(
+    () => athletes.map((a) => a.taxonomy ?? EMPTY_TAXONOMY),
+    [athletes],
+  );
+  const versPicker = useCallback(
+    (opts: TaxonomyOption[], tous: string) => [
+      { value: "", label: tous },
+      ...opts.map((o) => ({ value: o.value, label: `${o.label} (${o.count})`, disabled: o.disabled })),
+    ],
+    [],
+  );
+  const leagueOptionList = useMemo(
+    () => versPicker(leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter }), "Toutes"),
+    [versPicker, taxonomyRows, orgType, divisionFilter],
+  );
+  const divisionOptionList = useMemo(
+    () => versPicker(divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter }), "Toutes"),
+    [versPicker, taxonomyRows, orgType, leagueFilter],
+  );
 
   // Active filters count (badge)
   const activeFiltersCount = [
-    sport, genderFilter, position, promotion, region, orgType, minGpa,
+    sport, genderFilter, position, promotion, region, orgType, leagueFilter, divisionFilter, minGpa,
     verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge,
     hideFavorites, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone,
     filterNewOnly, sortBy !== "rating_desc",
@@ -1294,6 +1350,7 @@ export function RecruteurRechercheMobile() {
   const resetFilters = useCallback(() => {
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", promotion: "", region: "", orgType: "", minGpa: "",
+      leagueFilter: "", divisionFilter: "",
       sortBy: "rating_desc",
       verifiedOnly: false, withVideoOnly: false, minRating: "",
       withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
@@ -1476,6 +1533,9 @@ export function RecruteurRechercheMobile() {
         promotion={promotion} setPromotion={setPromotion}
         region={region} setRegion={setRegion}
         orgType={orgType} setOrgType={setOrgType}
+        leagueFilter={leagueFilter} setLeagueFilter={setLeagueFilter}
+        divisionFilter={divisionFilter} setDivisionFilter={setDivisionFilter}
+        leagueOptionList={leagueOptionList} divisionOptionList={divisionOptionList}
         minGpa={minGpa} setMinGpa={setMinGpa}
         sortBy={sortBy} setSortBy={setSortBy}
         verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}

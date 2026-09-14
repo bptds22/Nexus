@@ -49,6 +49,7 @@ import {
 } from "@/components/shared/settings";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { openLegalDocument } from "@/lib/legal";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -255,7 +256,7 @@ export function CoachParametresMobile() {
     triggerHaptic("Medium");
     const supabase = createClient();
     try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     setLogoutSheetOpen(false);
     router.push("/auth");
   }

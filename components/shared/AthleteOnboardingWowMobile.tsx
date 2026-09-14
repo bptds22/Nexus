@@ -37,10 +37,55 @@ import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constantes showcase ─────────────────────────────────────── */
 
-const SHOWCASE_BADGES: { badge: string }[] = [
-  { badge: "captain" },
-  { badge: "progression" },
-  { badge: "allstar" },
+/* QUATRE badges, et des codes de CATALOGUE — pas des codes hérités.
+
+   Avant : captain / progression / allstar. Trois déclarés, DEUX affichés :
+   « progression » n'a aucun équivalent au catalogue des 22, DistinctionBadge
+   rendait null et le signalait dans la console. Le troisième manquait donc
+   en silence depuis toujours.
+
+   Les codes hérités (captain, allstar) passaient par LEGACY_BADGE_TO_CATALOGUE
+   avant d'être dessinés. On écrit désormais les codes du catalogue directement :
+   un aller-retour de moins, et plus de risque qu'un code sans correspondance
+   s'installe sans qu'on le voie.
+
+   La séquence raconte une progression plutôt qu'un tas : le leadership, puis
+   l'explosivité, puis l'intelligence de jeu — qui dit que Nexus ne mesure pas
+   que le physique — et la consécration en bouquet final. */
+/* CINQ badges, en crescendo — et c'est de l'aspirationnel ASSUMÉ.
+
+   Les étoiles restent pleines elles aussi — décision BP du 2026-09-11, qui
+   REMPLACE la redescente à vide de la veille. La carte entière est une
+   projection : 5/5 et cinq distinctions, c'est la démo de ce à quoi ça
+   ressemble quand tout est là. Elle ne devient pas honnête en se démentant,
+   elle le devient en se NOMMANT — le défilé des badges nommés, et la ligne
+   « Ton entraîneur t'évaluera » affichée en permanence sous la rangée.
+
+   La séquence monte : le brassard, la vitesse, la tête, la sélection —
+   puis nexus-x, le badge maison, en bouquet. Chacune dit une facette
+   différente, pour qu'un jeune se reconnaisse dans au moins une.
+
+   Codes de CATALOGUE, jamais de codes hérités : un code sans équivalent
+   se rend en `null` sans bruit, et c'est comme ça qu'un des trois badges
+   d'origine manquait depuis toujours.
+
+   ⚠️ LE LIBELLÉ EST OBLIGATOIRE ICI, et c'est le même piège d'un cran plus
+   loin : BADGE_CONFIG ne connaît que les codes HÉRITÉS. Un code de catalogue
+   arrivant sans sa prop `libelle` tombe sur le second garde de
+   DistinctionBadge (`!config && !libelle`) et se rend en `null` — les cinq
+   badges auraient disparu d'un coup, en silence. Les libellés viennent de
+   public.badges, relevés le 2026-09-10.
+
+   Depuis le « défilé », le libellé est AFFICHÉ — le badge arrive seul au
+   centre en `lg` et se nomme. Il disparaît au rangement : la vignette `xs`
+   de la rangée ne rend aucun libellé (DistinctionBadge:246). Raison de plus
+   pour ne pas les inventer. */
+const SHOWCASE_BADGES: { badge: string; libelle: string }[] = [
+  { badge: "capitaine",      libelle: "Leadership" },        // universel
+  { badge: "fusee",          libelle: "Explosif" },          // sport — le physique
+  { badge: "qi",             libelle: "IQ" },                // universel — la tête
+  { badge: "equipe-etoiles", libelle: "Équipe d'étoiles" },  // honneur — la sélection
+  { badge: "mvp",            libelle: "MVP" },               // honneur — le bouquet
 ];
 
 // Pill labels — repris verbatim du brief b3-fix3 (override des shortLabel
@@ -63,8 +108,38 @@ const T_VERIFIED_DELAY   = 250;  // pause après scale-in avant Vérifié
 const T_STARS_LEAD       = 320;  // pause après Vérifié avant 1ère étoile
 const T_STAR_GAP         = 420;  // cadence étoile
 const T_BADGES_DELAY     = 300;  // après dernière étoile
-const T_BADGES_STAGGER   = 130;
-const T_PIPELINE_LEAD    = 1500; // respiration avant pipeline
+
+/* ── ACTE 2, « le défilé » ───────────────────────────────────────────────
+   Les cinq badges arrivaient ENSEMBLE, décalés de 130 ms : 940 ms pour les
+   cinq, ce qui se lit comme une volée, pas comme cinq arrivées. Et surtout
+   ils arrivaient en `sm` (96 px de cellule) sur une rangée à gouttière 20 :
+       5 × 96 + 4 × 20 = 560 px
+   pour 411 px d'écran utile sur l'émulateur (1080 / densité 420), 360 px sur
+   le plus étroit visé. La racine est en `overflow-hidden` : les badges 1 et 5
+   n'étaient pas serrés, ils étaient COUPÉS — il en restait 6 px et 5 px.
+   Régression introduite en passant de 3 à 5 badges (à 3 : 328 px, ça tenait).
+
+   Désormais : un badge arrive SEUL au centre, en `lg`, avec son nom, il
+   claque, puis il se range dans une rangée `xs`.
+       5 × 28 + 4 × 12 = 188 px   ≤ 328 px (écran 360)  et  ≤ 379 px (écran 411)
+   Le badge central en `lg` fait 110 px, qui tient aussi sur 360. */
+const T_BADGE_CADENCE    = 700;  // un badge toutes les 700 ms — CALÉ SUR
+                                 // T_PILL_GAP, la cadence des statuts de
+                                 // recrutement qui suivent. Le défilé et la
+                                 // pipeline battent désormais la MÊME mesure :
+                                 // à 340 ms les badges passaient deux fois plus
+                                 // vite que ce qui les suit, et la chorégraphie
+                                 // se lisait comme deux séquences sans rapport.
+const T_BADGE_SETTLE     = 520;  // temps passé au centre avant de descendre.
+                                 // Suit la cadence (260/340 ≈ 520/700) : le badge
+                                 // doit être rangé AVANT l'arrivée du suivant,
+                                 // il reste 180 ms de battement.
+const T_PIPELINE_LEAD    = 4500; // respiration avant pipeline. Le défilé dure
+                                 // maintenant 4×700 + 520 = 3320 ms ; 4500 lui
+                                 // laisse les MÊMES 1180 ms de contemplation
+                                 // qu'avant le ralentissement. Recalculer cette
+                                 // constante à chaque changement de cadence,
+                                 // sinon la pipeline démarre sur le défilé.
 const T_PILL_FIRST       = 500;
 const T_PILL_GAP         = 700;  // cadence des titres de pill
 const T_AFTERGLOW_LEAD   = 900;
@@ -149,7 +224,14 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
   const [act, setAct] = useState<Act>("anticipation");
   const [wowVerified, setWowVerified] = useState(false);
   const [wowStars, setWowStars] = useState(0);
-  const [showBadges, setShowBadges] = useState(false);
+  /* Le défilé se décrit avec deux compteurs, pas un drapeau.
+     `badgeAuCentre` = l'index qui occupe le centre (−1 = personne).
+     `badgesRanges`  = combien sont déjà descendus dans la rangée.
+     Le badge central n'est visible que tant qu'il n'est pas rangé, ce qui
+     enchaîne les deux animations sans avoir à mesurer quoi que ce soit. */
+  const [badgeAuCentre, setBadgeAuCentre] = useState(-1);
+  const [badgesRanges, setBadgesRanges] = useState(0);
+  const showBadges = badgesRanges > 0 || badgeAuCentre >= 0;
   const [activeStage, setActiveStage] = useState(0); // 0..6
   const [exiting, setExiting] = useState(false);
   // Portal vers document.body : ce WOW est un overlay `fixed inset-0`. Rendu
@@ -192,7 +274,20 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
       triggerHaptic("Medium");
     });
 
-    // 5 étoiles cascade — Light chacune
+    /* 5 étoiles cascade — Light chacune — ET ELLES RESTENT PLEINES.
+
+       Décision produit BP du 2026-09-11, qui REMPLACE celle de la veille :
+       la carte du WOW est une PROJECTION ASPIRATIONNELLE assumée. Elle ne
+       montre pas ce que l'athlète EST, elle montre ce à quoi ça ressemble
+       quand tout est là — 5 étoiles, cinq distinctions nommées.
+
+       La version précédente faisait retomber les étoiles à vide pour ne pas
+       « mentir ». Le problème n'était pas la valeur affichée, c'était le
+       cadre : une carte qui monte à 5/5 puis se vide raconte un échec à un
+       gamin qui vient de s'inscrire. Ce qui rend la projection honnête, ce
+       n'est pas de la démentir, c'est de la NOMMER — le défilé des badges
+       et la ligne « Ton entraîneur t'évaluera », affichée en permanence,
+       disent ensemble « voilà la démo, voilà qui la remplira pour de vrai ». */
     const starsStart = verifiedAt + T_STARS_LEAD;
     for (let i = 1; i <= 5; i++) {
       T(starsStart + (i - 1) * T_STAR_GAP, () => {
@@ -201,9 +296,20 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
       });
     }
 
-    // Badges (icônes seules) apparaissent
+    /* Le défilé : chaque badge arrive seul au centre, claque, puis se range.
+       L'haptique est ici et nulle part ailleurs dans l'acte 2 — c'était le
+       seul moment de la chorégraphie sans retour physique, alors que les
+       étoiles et la pipeline en ont un à chaque pas. Le cinquième porte
+       `Success` : c'est le bouquet, il ne se signale pas comme les autres. */
     const badgesStart = starsStart + 5 * T_STAR_GAP + T_BADGES_DELAY;
-    T(badgesStart, () => setShowBadges(true));
+    for (let i = 0; i < SHOWCASE_BADGES.length; i++) {
+      const arriveA = badgesStart + i * T_BADGE_CADENCE;
+      T(arriveA, () => {
+        setBadgeAuCentre(i);
+        triggerHaptic(i === SHOWCASE_BADGES.length - 1 ? "Success" : "Light");
+      });
+      T(arriveA + T_BADGE_SETTLE, () => setBadgesRanges(i + 1));
+    }
 
     // ACT 3 : pipeline pill (6 stages 700ms chacun)
     const pipelineStart = badgesStart + T_PIPELINE_LEAD;
@@ -485,35 +591,98 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
           </div>
         </div>
 
-        {/* Badges icônes seules — visible SCÈNE A uniquement. mt-7 pour
-            la respiration (rien ne colle la carte). */}
+        {/* ─── LE DÉFILÉ — scène du centre ──────────────────────────────
+            Un seul badge à la fois, en `lg` (110 px), AVEC son nom. Il est
+            monté tant qu'il n'est pas rangé ; l'instant où `badgesRanges`
+            le rattrape, il joue sa sortie vers la rangée et la vignette
+            apparaît en bas. Deux animations qui se relaient, aucune mesure
+            de position — donc rien à recalculer si la rangée bouge.
+
+            HAUTEUR FIXE, ET ELLE EST CALCULÉE : le badge `lg` mesure
+            96 (picto) + 10 (gouttière) + ~28 (libellé sur deux lignes, ex.
+            « ÉQUIPE D'ÉTOILES ») = 134 px. `h-[136px]` le contient au pixel
+            près. Trop généreuse, la boîte jouait le défilé plus bas que
+            nécessaire ; absente, le premier badge pousserait tout le reste.
+
+            `mt-1` + `items-start` collent la scène SOUS LA CARTE. Celle-ci ne
+            bouge pas : elle est au-dessus dans le flux, rien ici ne la pousse. */}
         <div
-          className="mt-7 flex items-end justify-center gap-5"
-          style={{
-            opacity: showBadges && showCardScene ? 1 : 0,
-            transform: showBadges && showCardScene
-              ? "translateY(0)"
-              : "translateY(-6px)",
-            transition: "opacity 480ms ease-out, transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-            pointerEvents: "none",
-          }}
+          /* 136 -> 172. La scene est dimensionnee A LA MAIN sur le badge
+             central : 136 = 96 (icone lg) + 10 (gap) + ~30 (libelle 11px).
+             En `xl` : 124 + 10 + ~34 (libelle 13px, deux lignes possibles)
+             = 168, arrondi a 172. Sans ce bump le badge agrandi se faisait
+             couper par le bas. A recalculer si la taille rebouge. */
+          className="relative mt-1 h-[172px]"
+          style={{ pointerEvents: "none" }}
         >
-          {SHOWCASE_BADGES.map((d, i) => (
+          {SHOWCASE_BADGES.map((d, i) => {
+            const auCentre = badgeAuCentre === i && badgesRanges <= i;
+            const descend  = badgeAuCentre >= i && badgesRanges === i + 1;
+            if (!showCardScene || (!auCentre && !descend)) return null;
+            return (
+              /* Chaque badge occupe TOUTE la scène, en absolu. Sans ça, le
+                 sortant et l'entrant coexistent ~240 ms dans le même flux :
+                 deux enfants flex, et l'entrant n'est plus au centre — il
+                 sautait de côté à chaque relais. */
+              <div
+                key={d.badge}
+                className="absolute inset-0 flex items-start justify-center"
+                style={{
+                  animation: auCentre
+                    ? "nx-wow-badge-slam 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+                    : "nx-wow-badge-file 240ms cubic-bezier(0.4, 0, 1, 1) forwards",
+                }}
+              >
+                <DistinctionBadge badge={d.badge} libelle={d.libelle} size="xl" />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ─── LE DÉFILÉ — la rangée qui se remplit ─────────────────────
+            `md` (56 px) + `gap-2` (8 px) : 5 × 56 + 4 × 8 = 312 px. Tient
+            sur 360 px d'écran (328 utiles) comme sur 411 (379 utiles), là où
+            la rangée `sm` d'avant en réclamait 560 et se faisait couper.
+            Était `xs` (188 px) : lisible mais chétif — `md` est le palier
+            ajouté pour cette rangée, et il garde la grammaire compacte de
+            `xs` (ni reflet, ni onde, AUCUN libellé) — plus besoin du
+            `[&_span]:hidden` qui traînait ici.
+            Plafond avant coupure, gouttière 8 : 5 × W + 32 ≤ 328 → W ≤ 59 px.
+            On est à 56 : 16 px de marge sur l'écran le plus étroit visé. */}
+        <div
+          className="-mt-2 flex items-end justify-center gap-2"
+          style={{ pointerEvents: "none" }}
+        >
+          {SHOWCASE_BADGES.slice(0, badgesRanges).map((d) => (
             <div
               key={d.badge}
-              className="[&_span]:hidden"
               style={{
-                opacity: showBadges && showCardScene ? 1 : 0,
-                transform: showBadges && showCardScene
-                  ? "translateY(0) scale(1)"
-                  : "translateY(8px) scale(0.85)",
-                transition: `opacity 380ms ease-out ${i * T_BADGES_STAGGER}ms, transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * T_BADGES_STAGGER}ms`,
+                opacity: showCardScene ? 1 : 0,
+                animation: "nx-wow-badge-land 260ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transition: "opacity 300ms ease-out",
               }}
             >
-              <DistinctionBadge badge={d.badge} size="sm" />
+              <DistinctionBadge badge={d.badge} libelle={d.libelle} size="md" />
             </div>
           ))}
         </div>
+
+        {/* CE QUI REND LA PROJECTION HONNÊTE.
+            Les étoiles restent pleines et les cinq badges sont là : la carte
+            montre une DÉMO, pas un bilan. Cette ligne le dit, et elle est
+            affichée pendant TOUTE la scène — elle ne dépend plus d'une
+            redescente des étoiles, qui n'existe plus. C'est elle, avec le
+            défilé nommé, qui nomme la projection au lieu de la démentir. */}
+        <p
+          className="mt-4 text-center text-[12px] text-white/50"
+          style={{
+            opacity: showCardScene ? 1 : 0,
+            transition: "opacity 420ms ease-out",
+            pointerEvents: "none",
+          }}
+        >
+          Ton entraîneur t&apos;évaluera.
+        </p>
       </div>
 
       {/* ─── ACT 3 : pill morphing FIXE au CENTRE ───────────────────

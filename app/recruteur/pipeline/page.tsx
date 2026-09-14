@@ -46,6 +46,7 @@ import { getCurrentSeason } from "@/lib/utils/season";
 // Pipeline movement is now unrestricted — no validation imports needed
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote } from "@/lib/evaluations/presence";
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
 import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteGrade";
 import type { Grade } from "@/lib/config/grades";
@@ -583,7 +584,11 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               d'un seul regard : les étoiles à gauche, ma puce poussée à
               droite par ml-auto. */}
           <div className="mt-2 flex items-center gap-2">
-            <StarRating rating={card.coach_rating} size="md" />
+            {/* Une cote ABSENTE n'est pas une cote de ZERO
+                (lib/evaluations/presence) : StarRating rendrait « 0.0 ». */}
+            {aUneCote(card.coach_rating)
+              ? <StarRating rating={card.coach_rating} size="md" />
+              : <span className="text-[12px] text-[#6b7280]">Pas encore évalué</span>}
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
         </div>
@@ -796,7 +801,7 @@ function SlideOver({
               <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
-            <div className="flex items-center gap-2 mt-3"><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></div>
+            <div className="flex items-center gap-2 mt-3">{aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
             {/* Mon grade — sous la cote du coach, et séparé d'elle : les
                 étoiles sont le jugement d'un tiers, le grade est le mien. */}
             <div className="mt-4">
@@ -1119,6 +1124,32 @@ function PipelinePageContent() {
   // garde, un All Star verrait le bandeau démo + les reverts de drag flasher au
   // login. On n'active donc le mode démo QU'UNE FOIS le tier réellement chargé.
   const { tier, loading: tierLoading } = useSubscription();
+  /* ── DÉCISION PRODUIT (BP, 2026-09-10) — écrite, jamais héritée ──────
+     LE MODE DÉMO GRATUIT DE « MON PROCESSUS » EST ASSUMÉ.
+
+     Un compte Free VOIT le pipeline et ne peut rien y écrire. Ce n'est pas
+     un verrou oublié : c'est un levier de conversion, et il est délibéré
+     depuis 0002c30 (« Pipeline demo mode for Free + sidebar unlock »), qui
+     a retiré le <FeatureGate feature="unlimited_pipeline" requiredTier="pro">
+     posé le matin même par 23c060e.
+
+     ⚠️ DEUX CHOSES CONTREDISENT CE CHOIX AILLEURS, et c'est voulu de les
+     laisser dire le contraire tant que le chantier « source de vérité unique
+     du gating » n'a pas tranché (docs/fast-follow-1.4.2.md) :
+
+       · la NAVIGATION reverrouille — `requiredTier: "pro"` sur l'item de la
+         sidebar (adea65b) et de la MobileTabBar. Le lien est donc bloqué,
+         la route ne l'est pas. C'est ce qui rend la démo atteignable par
+         lien direct et invisible depuis le menu.
+       · la TABLE DE FEATURES du SubscriptionProvider déclare
+         `free.can_use_pipeline: false`. Elle n'est lue par personne.
+
+     CE QUI TIENT VRAIMENT, ce n'est aucun de ces deux-là : c'est la RLS.
+     `user_has_pro()` garde le with_check de recruiter_pipeline en INSERT
+     ET en UPDATE. La démo est donc en lecture seule par construction, pas
+     par politesse du client. Ne retirez pas ces gardes `isFreeDemoMode`
+     en croyant simplifier : elles évitent à l'usager un refus serveur sec.
+     ──────────────────────────────────────────────────────────────────── */
   const isFreeDemoMode = !tierLoading && tier === "free";
 
   // Ex-mega useEffect fetchPipeline (200+ lignes) retiré en iter 5.3b — logique dans usePipelineCards.

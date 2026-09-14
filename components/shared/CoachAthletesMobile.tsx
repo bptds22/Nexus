@@ -34,6 +34,15 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { pastillesBadges, badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
+/* LES TROIS AXES VIENNENT DU MODULE PARTAGÉ, comme sur le web (2026-09-09).
+   Aucune règle recopiée ici : le repli d'organisation, `rseq_team_id => RSEQ`,
+   le regroupement d'orthographes et les facettes dépendantes vivent dans
+   lib/config/team-taxonomy. Le jour où ils bougent, cet écran ne bouge pas. */
+import {
+  taxonomyFromAthleteRow, organisationOptions, leagueOptions, divisionOptions,
+  matchesOrganisation, matchesLeague, matchesDivision,
+  EMPTY_TAXONOMY, type TaxonomySource, type TaxonomyOption,
+} from "@/lib/config/team-taxonomy";
 import { taRows } from "@/lib/queries/shared/embeds";
 import {
   lookupInvitableByEmail,
@@ -119,6 +128,14 @@ export interface CoachAthlete {
   noTeam: boolean;
   /** Genre de l'ÉQUIPE (teams.gender), jamais athletes.genre. null si sans équipe. */
   teamGender: string | null;
+  /** Source des trois axes organisation / ligue / division. On porte la
+   *  SOURCE, pas trois libellés : c'est le module qui décide.
+   *  OPTIONNELLE : `CoachEquipeDetailMobile` réutilise ce type sans faire la
+   *  requête d'où elle vient. Les appels la remplacent alors par
+   *  EMPTY_TAXONOMY — « Non renseigné », ce qui est la vérité pour cet écran,
+   *  plutôt qu'une exigence qui l'obligerait à charger des colonnes dont il
+   *  n'a pas l'usage. */
+  taxonomy?: TaxonomySource;
   coachId: string | null;
   /** Nom de l'évaluateur quand la note affichée n'est pas l'éval du coach
    *  connecté (attribution « Évalué par … »). Vide sinon. */
@@ -189,6 +206,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
     firstName: (a.first_name as string) || "",
     lastName: (a.last_name as string) || "",
     photo: (a.photo_url as string) || "",
+    taxonomy: taxonomyFromAthleteRow(a),
     position: posObj?.abreviation || posObj?.nom || "",
     sportName: sportObj?.nom || "",
     sport: sportSlug,
@@ -402,6 +420,19 @@ interface FiltersBottomSheetProps {
   minRating: string; setMinRating: (v: string) => void;
   positionOptions: PickerOption[];
   regionOptions: PickerOption[];
+  orgType: string; setOrgType: (v: string) => void;
+  leagueFilter: string; setLeagueFilter: (v: string) => void;
+  divisionFilter: string; setDivisionFilter: (v: string) => void;
+  orgOptions: PickerOption[];
+  leagueOptions: PickerOption[];
+  divisionOptions: PickerOption[];
+}
+
+/** Libellé d'une FilterRow d'axe : le libellé de l'option choisie (compte
+ *  compris), ou le mot « toutes » quand rien n'est coché. */
+function libelleAxe(options: PickerOption[], valeur: string, parDefaut: string): string {
+  if (!valeur) return parDefaut;
+  return options.find((o) => o.value === valeur)?.label ?? parDefaut;
 }
 
 function FiltersBottomSheet(props: FiltersBottomSheetProps) {
@@ -415,6 +446,9 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const [openPosition, setOpenPosition] = useState(false);
   const [openPromotion, setOpenPromotion] = useState(false);
   const [openRegion, setOpenRegion] = useState(false);
+  const [openOrg, setOpenOrg] = useState(false);
+  const [openLeague, setOpenLeague] = useState(false);
+  const [openDivision, setOpenDivision] = useState(false);
   const [openGpa, setOpenGpa] = useState(false);
   const [openSort, setOpenSort] = useState(false);
 
@@ -489,6 +523,11 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
             />
             <FilterRow label="Promotion" value={promotionLabel} onTap={() => setOpenPromotion(true)} />
             <FilterRow label="Région" value={regionLabel} onTap={() => setOpenRegion(true)} />
+            {/* Les trois axes, dans l'ordre de la cascade : cocher une
+                organisation recadre les deux suivants. */}
+            <FilterRow label="Organisation" value={libelleAxe(props.orgOptions, props.orgType, "Toutes")} onTap={() => setOpenOrg(true)} />
+            <FilterRow label="Ligue" value={libelleAxe(props.leagueOptions, props.leagueFilter, "Toutes")} onTap={() => setOpenLeague(true)} />
+            <FilterRow label="Division" value={libelleAxe(props.divisionOptions, props.divisionFilter, "Toutes")} onTap={() => setOpenDivision(true)} />
             <FilterRow label="GPA minimum" value={gpaLabel} onTap={() => setOpenGpa(true)} />
             <FilterRow label="Trier par" value={sortLabel} onTap={() => setOpenSort(true)} />
           </div>
@@ -521,6 +560,9 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
       <MobilePicker open={openPosition} onClose={() => setOpenPosition(false)} title="Position" options={props.positionOptions} value={props.position} onChange={(v) => props.setPosition((v as string) ?? "")} />
       <MobilePicker open={openPromotion} onClose={() => setOpenPromotion(false)} title="Promotion" options={PROMOTION_OPTIONS} value={props.promotion} onChange={(v) => props.setPromotion((v as string) ?? "")} />
       <MobilePicker open={openRegion} onClose={() => setOpenRegion(false)} title="Région" options={props.regionOptions} value={props.region} onChange={(v) => props.setRegion((v as string) ?? "")} />
+      <MobilePicker open={openOrg} onClose={() => setOpenOrg(false)} title="Organisation" options={props.orgOptions} value={props.orgType} onChange={(v) => props.setOrgType((v as string) ?? "")} />
+      <MobilePicker open={openLeague} onClose={() => setOpenLeague(false)} title="Ligue" options={props.leagueOptions} value={props.leagueFilter} onChange={(v) => props.setLeagueFilter((v as string) ?? "")} />
+      <MobilePicker open={openDivision} onClose={() => setOpenDivision(false)} title="Division" options={props.divisionOptions} value={props.divisionFilter} onChange={(v) => props.setDivisionFilter((v as string) ?? "")} />
       <MobilePicker open={openGpa} onClose={() => setOpenGpa(false)} title="GPA minimum" options={GPA_OPTIONS} value={props.minGpa} onChange={(v) => props.setMinGpa((v as string) ?? "")} />
       <MobilePicker open={openSort} onClose={() => setOpenSort(false)} title="Trier par" options={SORT_OPTIONS} value={props.sortBy} onChange={(v) => props.setSortBy((v as string) ?? "rating_desc")} />
 
@@ -985,6 +1027,10 @@ export function CoachAthletesMobile() {
   const [sport, setSport] = useState("");
   // Genre d'ÉQUIPE (teams.gender), PAS athletes.genre.
   const [genderFilter, setGenderFilter] = useState<string>("");
+  /* Les trois axes du 7 septembre, portés sur mobile le 2026-09-09. */
+  const [orgType, setOrgType] = useState<string>("");
+  const [leagueFilter, setLeagueFilter] = useState<string>("");
+  const [divisionFilter, setDivisionFilter] = useState<string>("");
   const [position, setPosition] = useState("");
   const [promotion, setPromotion] = useState("");
   const [region, setRegion] = useState("");
@@ -1072,9 +1118,10 @@ export function CoachAthletesMobile() {
           created_at,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
-          schools!school_id(name, region),
+          context,
+          schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
-          team_athletes(team_id, teams!team_id(gender)),
+          team_athletes(team_id, teams!team_id(gender, division, league, rseq_team_id, schools!school_id(type))),
           athlete_badges(contexte, retire_le, badges(code, libelle)),
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
             evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
@@ -1204,6 +1251,12 @@ export function CoachAthletesMobile() {
       );
     }
     if (sport) list = list.filter((a) => a.sport === sport);
+    /* Organisation / Ligue / Division — prédicats du module, jamais recopiés.
+       `?? EMPTY_TAXONOMY` : une ligne sans taxonomie se range en « Non
+       renseigné » au lieu de faire tomber l'écran. */
+    if (orgType) list = list.filter((a) => matchesOrganisation(a.taxonomy ?? EMPTY_TAXONOMY, orgType));
+    if (leagueFilter) list = list.filter((a) => matchesLeague(a.taxonomy ?? EMPTY_TAXONOMY, leagueFilter));
+    if (divisionFilter) list = list.filter((a) => matchesDivision(a.taxonomy ?? EMPTY_TAXONOMY, divisionFilter));
     // Sans équipe → teamGender null → sort des résultats dès qu'un genre est choisi.
     if (genderFilter) list = list.filter((a) => a.teamGender === genderFilter);
     if (position) list = list.filter((a) => a.position === position);
@@ -1226,10 +1279,40 @@ export function CoachAthletesMobile() {
     }
 
     return list;
-  }, [search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
+  }, [search, sport, genderFilter, orgType, leagueFilter, divisionFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
 
   const filtered = useMemo(() => applyFilters(myRoster), [applyFilters, myRoster]);
   const filteredSchool = useMemo(() => applyFilters(schoolAthletes), [applyFilters, schoolAthletes]);
+
+  /* FACETTES DÉPENDANTES — même règle que le web : chaque menu compte sur la
+     population cadrée par les DEUX AUTRES axes, le vocabulaire vient de toute
+     la page, et une option à zéro se GRISE au lieu de disparaître.
+     Bâties sur les athlètes RÉELS des deux sections, et AVANT les trois
+     filtres de taxonomie : une option ne doit pas s'évaporer parce qu'on vient
+     de la cocher. */
+  const taxonomyRows = useMemo(
+    () => [...myRoster, ...schoolAthletes].map((a) => a.taxonomy ?? EMPTY_TAXONOMY),
+    [myRoster, schoolAthletes],
+  );
+  const orgOptions = useMemo(
+    () => organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter }),
+    [taxonomyRows, leagueFilter, divisionFilter],
+  );
+  const leagueOptionList = useMemo(
+    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter }),
+    [taxonomyRows, orgType, divisionFilter],
+  );
+  const divisionOptionList = useMemo(
+    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter }),
+    [taxonomyRows, orgType, leagueFilter],
+  );
+
+  /* Un TaxonomyOption devient une option de MobilePicker : le compte entre
+     dans le libellé (« RSEQ (43) ») et `disabled` porte le grisé. */
+  const versPicker = (opts: TaxonomyOption[], tous: string) => [
+    { value: "", label: tous },
+    ...opts.map((o) => ({ value: o.value, label: `${o.label} (${o.count})`, disabled: o.disabled })),
+  ];
 
   const activeFiltersCount = [
     sport, genderFilter, position, promotion, region, minGpa,
@@ -1239,6 +1322,7 @@ export function CoachAthletesMobile() {
 
   const resetFilters = useCallback(() => {
     setSport(""); setGenderFilter(""); setPosition(""); setPromotion(""); setRegion(""); setMinGpa("");
+    setOrgType(""); setLeagueFilter(""); setDivisionFilter("");
     setSortBy("rating_desc");
     setVerifiedOnly(false); setWithVideoOnly(false); setMinRating("");
     setWithSportBadge(false); setWithAcademicBadge(false);
@@ -1703,6 +1787,12 @@ export function CoachAthletesMobile() {
         minRating={minRating} setMinRating={setMinRating}
         positionOptions={positionOptions}
         regionOptions={regionOptions}
+        orgType={orgType} setOrgType={setOrgType}
+        leagueFilter={leagueFilter} setLeagueFilter={setLeagueFilter}
+        divisionFilter={divisionFilter} setDivisionFilter={setDivisionFilter}
+        orgOptions={versPicker(orgOptions, "Toutes les organisations")}
+        leagueOptions={versPicker(leagueOptionList, "Toutes les ligues")}
+        divisionOptions={versPicker(divisionOptionList, "Toutes les divisions")}
       />
 
       {/* Confirm claim sheet */}

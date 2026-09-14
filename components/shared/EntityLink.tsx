@@ -36,8 +36,23 @@ function getEntityRoute(type: EntityType, id: string, portal: Portal): string {
       if (portal === "recruiter") return `/recruteur/coach/${id}`;
       return "#";
 
+    /* RECRUTEUR VU PAR UN COACH — AUCUNE DESTINATION (2026-09-09).
+       Ça pointait `/recruteur/${id}/profil`. Cette route N'EXISTE PAS : il n'y
+       a pas de segment `app/recruteur/[id]`, seulement `app/recruteur/profil`,
+       qui est « Mon profil » DANS le portail recruteur. Un coach qui cliquait
+       le nom du recruteur qui venait de le contacter tombait sur un 404.
+       Trois surfaces le rendaient — la liste Messages, l'en-tête du fil, et le
+       panneau latéral — et toutes les trois mentaient de la même façon.
+
+       On rend donc "#", et EntityLink dégrade en texte simple : pas de href,
+       pas de curseur main, pas de soulignement. Un nom qui ne mène nulle part
+       ne doit pas se présenter comme un lien.
+
+       ⚠ CE N'EST PAS LE BESOIN QUI EST NIÉ, C'EST LA DESTINATION QUI MANQUE.
+       « Qui me contacte ? » est une vraie question de coach. La page profil
+       recruteur vue coach est au backlog ; le jour où elle existe, cette ligne
+       redevient une route et les trois surfaces se rallument d'un coup. */
     case "recruiter":
-      if (portal === "coach") return `/recruteur/${id}/profil`;
       return "#";
 
     case "school":

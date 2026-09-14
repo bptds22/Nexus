@@ -26,6 +26,7 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import { aUneCote } from "@/lib/evaluations/presence";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 
@@ -43,21 +44,22 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
 
 /* ── inline helpers ────────────────────────────────────────────── */
 
-function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChange: (m: "simple" | "detailed") => void }) {
-  const pill = (active: boolean) =>
-    `px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer ${
-      active ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"
-    }`;
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Simplifié</button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Détaillé</button>
-    </div>
-  );
-}
 
 function CompletenessBar({ percent }: { percent: number }) {
-  const color = percent >= 90 ? "#3B82F6" : percent >= 60 ? "#22C55E" : percent >= 40 ? "#EAB308" : "#EF4444";
+  /* BLEU DU SYSTÈME (BP, 2026-09-09) : #3B82F6, la teinte du badge vérifié.
+     Le vert #22C55E disparaît de la jauge de complétion.
+
+     LE PALIER 90 A ÉTÉ FONDU dans le palier 60 : il rendait DÉJÀ #3B82F6.
+     Le garder aurait laissé deux seuils rendre exactement la même couleur —
+     un escalier à marche invisible, que le prochain lecteur prendrait pour un
+     bug. Rouge et ambre restent : en dessous de 60, le profil a encore quelque
+     chose à dire.
+
+     Cette jauge était la DERNIÈRE au vert. Les autres indicateurs de
+     complétion du produit — tableau de bord athlète, anneau du profil
+     athlète, pipeline recruteur, cartes de roster, stats et analytique école —
+     rendent déjà ce bleu. Le changement les aligne, il n'invente rien. */
+  const color = percent >= 60 ? "#3B82F6" : percent >= 40 ? "#EAB308" : "#EF4444";
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 bg-[#2D3748] rounded-full overflow-hidden">
@@ -119,7 +121,15 @@ export default function AthleteProfileView({
 }: AthleteProfileViewProps) {
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<"simple" | "detailed">("simple");
+  /* DÉFAUT « DÉTAILLÉ » (BP, 2026-09-09). Le mode simplifié est en voie de
+     retrait : ce qu'un athlète a rempli s'affiche, sans qu'il faille le
+     demander. Le toggle RESTE le temps du 1.4.1 — son retrait complet est un
+     fast-follow post-Promote, parce qu'il déroule des centaines de branches.
+
+     ⚠ CE DÉFAUT N'OUVRE AUCUN VERROU. `lockContent` (tier gratuit) et les
+     masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
+     mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
+     DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
   const grilleSet = useGrilles();
   /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE. Les deux
@@ -176,7 +186,22 @@ export default function AthleteProfileView({
     );
   }
 
-  const isDetailed = mode === "detailed";
+  /* LE TOGGLE « Aperçu / Profil complet » EST RETIRÉ (BP, 2026-09-09).
+     Le profil montre ce que l'athlète a rempli, sans qu'on le demande.
+
+     Diagnostic avant retrait : aucun contenu n'était propre à l'Aperçu — sa
+     seule section, l'étoile + la cote, est re-rendue en tête du bloc détaillé.
+     Aucune persistance, aucun deep-link, aucun effet ni fetch ne dépendait du
+     mode : il ne changeait que du DOM.
+
+     `isDetailed` reste, en constante : les blocs conditionnels sont laissés EN
+     PLACE. L'élagage des conditions devenues mortes est un nettoyage séparé,
+     invisible pour l'utilisateur — le mêler à ce retrait ferait un diff qu'on
+     relit mal.
+
+     ⚠ CE RETRAIT N'OUVRE AUCUN VERROU. `lockContent` et les masquages Loi 25
+     ne lisent pas `mode`, et ne l'ont jamais lu (grep croisé, zéro). */
+  const isDetailed = true;
   const coteGlobale = a.overallRating || 0;
   const age = (() => {
     if (!a.dateOfBirth) return 0;
@@ -193,7 +218,6 @@ export default function AthleteProfileView({
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-8 text-[#E0E0E0]" style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
       {/* Toggle + Completeness */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <ProfileToggle mode={mode} onChange={setMode} />
         <div className="w-full sm:w-56">
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
           <CompletenessBar percent={a.profileCompleteness || 0} />
@@ -263,7 +287,7 @@ export default function AthleteProfileView({
       </section>
 
       {/* COACH REPORT */}
-      {(a.coachReport || coteGlobale > 0) && (
+      {(a.coachReport || aUneCote(coteGlobale)) && (
         <section>
           <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
           <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>
@@ -279,7 +303,7 @@ export default function AthleteProfileView({
               </>
             )}
             <div className={a.coachReport ? "mt-3" : ""}>
-              {!isDetailed && coteGlobale > 0 && (
+              {!isDetailed && aUneCote(coteGlobale) && (
                 <div className="mt-3 pl-5 flex items-center gap-3">
                   <StarRating rating={coteGlobale} size="md" showNumber={false} />
                   <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
@@ -288,7 +312,7 @@ export default function AthleteProfileView({
               )}
               {isDetailed && (
                 <div className="mt-5 pl-5">
-                  {coteGlobale > 0 && (
+                  {aUneCote(coteGlobale) && (
                     <div className="flex items-center gap-3 mb-4">
                       <StarRating rating={coteGlobale} size="md" showNumber={false} />
                       <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>

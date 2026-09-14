@@ -6,6 +6,17 @@
 // Itération 1 = squelette fonctionnel mobile-first, viewerMode "recruiter"
 // uniquement. Si viewerMode preview/partner → on délègue au desktop body.
 
+import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
+import AthleteTransferSheet, {
+  loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
+} from "@/components/shared/coach/AthleteTransferSheet";
+import CoachFicheActionsMobile from "@/components/shared/coach/CoachFicheActionsMobile";
+import SegmentedTabs from "@/components/shared/SegmentedTabs";
+
+import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import RelanceFiche from "@/components/shared/RelanceFiche";
+
+import { plateformeDeUrl, type ClePlateforme } from "@/lib/config/plateformesLien";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -50,6 +61,7 @@ import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import { aUneCote, aDesCriteres } from "@/lib/evaluations/presence";
 import {
   calculateCompletion,
   type AthleteLike,
@@ -143,23 +155,6 @@ const FLAG_REASONS = [
 ];
 
 /* ── Helper sub-components (copiés du desktop body) ─────────────── */
-
-function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChange: (m: "simple" | "detailed") => void }) {
-  // Iter 7.8b Section B — pill plus lisible : padding bumpé (px-5 py-2.5),
-  // texte 13px (au lieu de 12), tracking moins serré, container plus aéré.
-  const pill = (active: boolean) =>
-    `px-5 py-2.5 rounded-full text-[13px] font-bold uppercase tracking-[0.08em] transition-all cursor-pointer ${
-      active
-        ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]"
-        : "text-[#9CA3AF] hover:text-white"
-    }`;
-  return (
-    <div className="flex items-center gap-1.5 bg-[#13151a] rounded-full p-1.5 w-fit">
-      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("simple"); }} className={pill(mode === "simple")}>Simplifié</button>
-      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("detailed"); }} className={pill(mode === "detailed")}>Détaillé</button>
-    </div>
-  );
-}
 
 function PreferencePill({ active, label: lbl }: { active?: boolean; label: string }) {
   if (active === undefined) return null;
@@ -447,44 +442,21 @@ function BadgesRow({
   );
 }
 
-/** Tab bar 3 onglets + indicateur rouge glissant (style MobileTabBar). */
+/** Tab bar 3 onglets — segmented control à pilule glissante (Lot D4b).
+ *
+ *  L'ancienne version posait trois libellés nus, l'actif en rouge, sous un
+ *  trait de 2px : rien ne disait que c'était un contrôle. Le rendu vit
+ *  maintenant dans SegmentedTabs (components/shared), partagé — mais branché
+ *  ici SEULEMENT pour 1.4.1, les six autres surfaces à onglets bricolés
+ *  attendent leur fast-follow.
+ *
+ *  Le fond #111317 reste sur CE wrapper : il appartient à la barre sticky,
+ *  pas au contrôle. (Iter 7.10 Section 2 — fond plein, jamais de
+ *  backdrop-blur sur un sticky : ligne fine perceptible en WebView iOS.) */
 function TabBar({ activeTab, onChange }: { activeTab: TabKey; onChange: (k: TabKey) => void }) {
-  const activeIndex = TABS.findIndex((t) => t.key === activeTab);
-  // Iter 7.10 Section 2 — bg-[#111317]/95 backdrop-blur-md → bg-[#111317]
-  // plein. Le backdrop-blur sur élément sticky bug sur iOS WebView et
-  // crée une ligne fine perceptible + 5% de transparence. Wrapper externe
-  // déjà bg-[#111317] plein, on aligne le TabBar interne pour cohérence.
   return (
-    <div className="relative bg-[#111317]">
-      <div className="flex">
-        {TABS.map((t) => {
-          const isActive = t.key === activeTab;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => { void triggerHaptic("Light"); onChange(t.key); }}
-              className={`flex-1 h-12 flex items-center justify-center text-[12px] font-bold uppercase tracking-[0.12em] transition-colors ${
-                isActive ? "text-[#E63946]" : "text-[#6b7280] active:text-white"
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-      {/* Sliding indicator — Iter 7.8b Section B : underline centré, ~50%
-          de la largeur de chaque tab (au lieu de 80%), centré sous le label
-          via mx-auto. Plus propre visuellement. */}
-      <div
-        className="absolute bottom-0 left-0 h-[2px] w-1/3 flex justify-center"
-        style={{
-          transform: `translateX(${activeIndex * 100}%)`,
-          transition: "transform 280ms cubic-bezier(0.4, 0.0, 0.2, 1)",
-        }}
-      >
-        <div className="w-[50%] h-full bg-[#E63946] rounded-full" />
-      </div>
+    <div className="bg-[#111317] px-4 py-2">
+      <SegmentedTabs tabs={TABS} active={activeTab} onChange={onChange} />
     </div>
   );
 }
@@ -752,6 +724,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const isCoach = viewer === "coach";
   const isSelfPreview = viewer === "self-preview";
 
+  /* Lot J — transfert depuis la fiche, variante mobile. Même moteur, mêmes
+     droits que le portail et que le web : tout vient du helper partagé. */
+  const [trState, setTrState] = useState<AthleteTransferState | null>(null);
+  const [trOpen, setTrOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isCoach || !athleteId) return;
+    let annule = false;
+    loadAthleteTransferState(athleteId).then((st) => { if (!annule) setTrState(st); });
+    return () => { annule = true; };
+  }, [isCoach, athleteId]);
+
   const id = athleteId;
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
@@ -999,6 +983,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         setCommittedSchoolName(committedSchoolNameVal);
         setOpenToOffers(openToOffersVal ?? null);
         const coach = d.users as { first_name: string; last_name: string } | null;
+        /* Lot F3 — résolution du référent (équipe → directeur → propriétaire).
+           Lecture séparée : les RPC recruteur ne projettent pas coach_id, et
+           fn_resolve_team_referent n'existe pas encore en base (vague 2). */
+        const referentName =
+          (await loadAthleteReferent(supabase, d.id as string)).name ?? "";
         const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
         const sport = sportRel as { nom: string } | null;
@@ -1125,7 +1114,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           gender: (d.genre as "M" | "F" | "Autre") || "M",
           commitmentStatus: (d.statut_recrutement_override as string) || "ouvert",
           coachReport: (eval0?.rapport_entraineur as string) || "",
-          coachName: coach ? `${coach.first_name} ${coach.last_name}` : "",
+          /* Lot F3 — le RÉFÉRENT résolu, pas le propriétaire brut. coach_id est
+             NULL pour 43 des 53 athlètes en équipe : lire le champ tel quel
+             affichait une carte de réputation sans nom dans 81 % des cas.
+             Repli sur le propriétaire quand la résolution ne donne rien. */
+          coachName: referentName || (coach ? `${coach.first_name} ${coach.last_name}` : ""),
           coachSchool: school?.name || "",
           coachReputation: undefined,
           // #1 latest-wins : la colonne dénormalisée cote_globale_entraineur est
@@ -1236,9 +1229,28 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       });
   }, [id, isFreeRecruiter, tierLoading, isRecruiter, isSelfPreview]);
 
-  const [mode, setMode] = useState<"simple" | "detailed">("simple");
-  const effectiveMode: "simple" | "detailed" = mode;
-  const isDetailed = effectiveMode === "detailed";
+  /* DÉFAUT « DÉTAILLÉ » (BP, 2026-09-09). Le mode simplifié est en voie de
+     retrait : ce qu'un athlète a rempli s'affiche, sans qu'il faille le
+     demander. Le toggle RESTE le temps du 1.4.1 — son retrait complet est un
+     fast-follow post-Promote, parce qu'il déroule des centaines de branches.
+
+     ⚠ CE DÉFAUT N'OUVRE AUCUN VERROU. `lockContent` (tier gratuit) et les
+     masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
+     mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
+     DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
+  /* LE TOGGLE « Aperçu / Profil complet » EST RETIRÉ (BP, 2026-09-09).
+     Aucun contenu ne lui était propre — cette surface n'avait même pas de
+     branche inverse. Aucune persistance, aucun deep-link, aucun geste : le
+     seul effet de bord était un haptique, parti avec le bouton.
+
+     `effectiveMode` disparaît aussi : c'était un alias mort (`= mode`), reste
+     d'un forçage retiré le 2026-09-03.
+
+     Les blocs conditionnels restent EN PLACE ; l'élagage est séparé.
+
+     ⚠ Aucun verrou ouvert : lockContent / identityVisible ne lisent pas
+     `mode`. Vérifié sur ce fichier aujourd'hui. */
+  const isDetailed = true;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
@@ -1263,7 +1275,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [actionSheetDragOffset, setActionSheetDragOffset] = useState(0);
   const [isDraggingSheet, setIsDraggingSheet] = useState(false);
 
-  // Bottom action bar hide-on-scroll-down (Fix 6 iter 3.5)
+  /* Bottom action bar hide-on-scroll-down (Fix 6 iter 3.5).
+
+     RECRUTEUR SEULEMENT depuis le passage du coach au FAB (Lot D3) : sa
+     barre fait 160px avec le bandeau RSEQ et masque vraiment le contenu,
+     donc l'escamotage garde son sens là. Le FAB coach, lui, fait 56px
+     dans un coin — il n'a rien à masquer, il reste posé. */
   const [actionBarVisible, setActionBarVisible] = useState(true);
   const lastScrollYRef = useRef(0);
 
@@ -1539,12 +1556,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     triggerHaptic("Light");
     setActiveTab(k);
     setTabFadeKey((v) => v + 1);
-  };
-
-  // Mode toggle Simplifié/Détaillé avec haptic (Fix 7 iter 3.1)
-  const handleModeChange = (m: "simple" | "detailed") => {
-    triggerHaptic("Light");
-    setMode(m);
   };
 
   // Reset offset modal à chaque fermeture (Fix 2 iter 3.2)
@@ -1913,6 +1924,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     toast.success({ message: iso ? "Date de visite enregistrée" : "Date de visite effacée" });
   }
 
+
   async function handleFlagSubmit() {
     if (!flagReason || flagSubmitting) return;
     if (!athleteUserId) {
@@ -1984,11 +1996,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   ];
   const hasTests = tests.some((t) => t.value);
 
-  const mediaLinks: { label: string; url?: string; iconName: string }[] = [
-    { label: "Hudl", url: a.hudlUrl, iconName: "chart" },
-    { label: "YouTube", url: a.youtubeUrl, iconName: "monitor" },
-    { label: "Instagram", url: a.instagramUrl, iconName: "camera" },
+  /* Colonnes NOMMÉES : la plateforme est connue, rien à deviner. Les trois
+     URL LIBRES (faits saillants, match complet, entraînement) passent, elles,
+     par plateformeDeUrl — l'URL dit la marque, et un domaine inconnu garde son
+     nom d'hôte en libellé plutôt qu'un « Lien » qui n'apprend rien. */
+  const mediaLinks: { label: string; url?: string; cle: ClePlateforme }[] = [
+    { label: "Hudl", url: a.hudlUrl, cle: "hudl" },
+    { label: "YouTube", url: a.youtubeUrl, cle: "youtube" },
+    { label: "Instagram", url: a.instagramUrl, cle: "instagram" },
   ];
+  const liensVideo = ([
+    { titre: "Faits saillants", url: a.highlightVideoUrl },
+    { titre: "Match complet", url: a.fullGameUrl },
+  ] as { titre: string; url?: string }[])
+    .map((v) => ({ ...v, p: plateformeDeUrl(v.url) }))
+    .filter((v) => v.url && v.p);
 
   /* ── Statut recrutement label (lisible) ── */
   const recruitmentLabel = (() => {
@@ -2174,7 +2196,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             transformOrigin: "top center",
             marginBottom: expandedLayoutCollapse,
             pointerEvents: expandedSlideProgress >= 1 ? "none" : "auto",
-            willChange: "opacity, transform, margin-bottom",
+            /* Lot D4a — will-change CONDITIONNEL, plus permanent. Ce bloc fait
+               412 × 1015 px (mesuré) : promu en permanence, il force le
+               compositeur à garder une grande couche à pixeliser, et en
+               REMONTANT il doit re-pixeliser des tuiles libérées — d'où le
+               contenu figé quelques frames puis rattrapé d'un coup. Aucune
+               contrepartie : la transformation ne bouge jamais (mesuré :
+               matrix(1,0,0,1,0,0) à tout scroll). Même idiome que le parallaxe
+               photo plus haut, qui ne promeut que pendant le mouvement. */
+            willChange: expandedSlideProgress > 0 || overscrollTranslate !== 0 ? "opacity, transform" : undefined,
           }}
         >
         {/* COACH-only — alert stack en haut du scroll (Step 6 unification).
@@ -2384,6 +2414,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           </div>
         )}
 
+        {/* Relance — la DATE seule ; la note reste au pipeline. Le pourquoi
+            (frontières de données coach/recruteur) est écrit en tête de
+            RelanceFiche, avec la décision produit qui le fixe.
+            Gate : palier Pro ET athlète déjà dans le processus — sans ligne,
+            l'UPDATE n'aurait rien à écrire et la RLS refuserait l'INSERT. */}
+        {isRecruiter && canUsePipeline && myPipelineStage && (
+          <RelanceFiche athleteId={id} />
+        )}
+
         {/* Visite planifiée + export agenda — gate strict : stage ET date. */}
         {isRecruiter && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
           <div className="mt-4">
@@ -2441,7 +2480,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#F59E0B" stroke="none" aria-hidden>
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span className="text-[14px] font-bold text-white">{coteGlobale.toFixed(1)}</span>
+            {/* Une note ABSENTE n'est pas une note de ZÉRO (cf.
+                lib/evaluations/presence). Sans cote, la barre ne montre que
+                les étoiles vides — elle n'affirme pas « 0,0 ». */}
+            {aUneCote(coteGlobale) && (
+              <span className="text-[14px] font-bold text-white">{coteGlobale.toFixed(1)}</span>
+            )}
           </div>
         </div>
       </div>
@@ -2455,14 +2499,30 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           plus sous le bloc sticky. */}
       <div
         className="sticky z-30 bg-[#111317]"
-        style={{ top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)" }}
+        style={{
+          top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)",
+          /* WebKit — pendant du Lot D4a, raisonnement INVERSE et c'est voulu.
+             Tout ce qui passe sous cette barre est deja promu en permanence :
+             la racine PlayerCardMobile (transform scale/translateY), .nx-v30-card
+             (rotate -2deg) et .nx-v30-badge (filter drop-shadow) sont chacun sur
+             leur propre couche de compositing. La barre, elle, n'avait NI
+             transform NI filter : elle restait dans la couche de contenu
+             scrollee. WebKit doit alors reordonner a chaque frame une couche
+             non promue contre trois couches promues — en REMONTANT il perd
+             l'ordre et les badges passent devant la barre.
+
+             D4a demontait une promotion permanente parce que la couche faisait
+             412x1015 px et devait se re-pixeliser au scroll. Ici c'est l'oppose :
+             la barre fait toute la largeur x ~56 px et ne bouge JAMAIS par
+             rapport au viewport (c'est un sticky) — sa tuile est rasterisee une
+             fois et reservie telle quelle. Promotion permanente justifiee.
+
+             N'affecte pas le fix Android : autre element, autre propriete. Le
+             willChange conditionnel du hero (~l.2205) n'est pas touche. */
+          transform: "translateZ(0)",
+        }}
       >
         <TabBar activeTab={activeTab} onChange={handleTabChange} />
-        {/* Toggle Simplifié/Détaillé centré. Iter 7.8c-UI Section B —
-            border-t retiré (séparation par l'espace seul, plus aéré). */}
-        <div className="px-4 py-2 flex justify-center">
-          <ProfileToggle mode={mode} onChange={handleModeChange} />
-        </div>
       </div>
 
       {/* ── Main scroll container (tab content) ──
@@ -2540,7 +2600,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   <div className="flex flex-col items-center pt-6 pb-6">
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
                     <p className="text-[32px] font-head font-black text-white mt-3 leading-none">
-                      {coteGlobale.toFixed(1)}<span className="text-[16px] text-[#6B7280] font-normal">/5</span>
+                      {aUneCote(coteGlobale) ? <>{coteGlobale.toFixed(1)}<span className="text-[16px] text-[#6B7280] font-normal">/5</span></> : <span className="text-[16px] text-[#6B7280] font-normal">Pas encore évalué</span>}
                     </p>
                     <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mt-2">Cote Globale</p>
                     {/* #1 attribution : quand la cote publique vient d'un AUTRE
@@ -2548,7 +2608,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                     {a.evaluatorCoachId && a.evaluatorName && a.evaluatorCoachId !== currentUserId && (
                       <p className="text-[11px] text-[#3B82F6] font-semibold mt-1">Évaluée par {a.evaluatorName}</p>
                     )}
-                    {isDetailed && ratedTraits.length > 0 && (
+                    {isDetailed && aDesCriteres(a.traitRatings) && (
                       <p className="text-[11px] text-[#6B7280] mt-1">Moyenne sur {ratedTraits.length} {ratedTraits.length > 1 ? "traits" : "trait"}</p>
                     )}
                   </div>
@@ -2566,7 +2626,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 )}
 
                 {/* DETAILED rapport */}
-                {isDetailed && a.traitRatings && ratedTraits.length > 0 && (
+                {isDetailed && aDesCriteres(a.traitRatings) && (
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Détail par trait</h2>
                     <div>
@@ -2624,13 +2684,25 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 )}
 
                 {/* DETAILED liens média (Hudl/YouTube/IG) */}
-                {isDetailed && (a.hudlUrl || a.youtubeUrl || a.instagramUrl) && (
+                {isDetailed && (a.hudlUrl || a.youtubeUrl || a.instagramUrl || liensVideo.length > 0) && (
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Liens externes</h2>
                     <div className="flex flex-col gap-2">
-                      {mediaLinks.filter((m) => ["Hudl", "YouTube", "Instagram"].includes(m.label) && m.url).map((m) => (
+                      {liensVideo.map((v) => (
+                        <a key={v.titre} href={v.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
+                          <PlateformeIcone cle={v.p!.cle} size={18} />
+                          <span className="flex-1 min-w-0 text-[14px] font-bold text-[#c8c8cc] truncate">
+                            {v.titre}
+                            <span className="ml-1.5 font-normal text-[12px] text-[#6b7280]">{v.p!.libelle}</span>
+                          </span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-[#6b7280] shrink-0">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                        </a>
+                      ))}
+                      {mediaLinks.filter((m) => m.url).map((m) => (
                         <a key={m.label} href={m.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
-                          <NxIcon name={m.iconName} size={18} className="text-[#6B7280]" />
+                          <PlateformeIcone cle={m.cle} size={18} />
                           <span className="flex-1 text-[14px] font-bold text-[#c8c8cc]">{m.label}</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-[#6b7280]">
                             <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
@@ -3076,6 +3148,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               type="button"
               onClick={coachExit ? () => { void handleContactCoach(); } : handleContactClick}
               disabled={coachExit ? contactingCoach : !contactable}
+              /* ROUGE dans les deux cas. Le vert essayeé ici a été REPRIS
+                 (arbitrage BP) : le vert va à la bulle Message du duo flottant
+                 côté coach, pas à ce bouton-ci. */
               className="disabled:opacity-40 flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
             >
               {contactLocked ? (
@@ -3199,46 +3274,65 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         document.body,
       )}
 
-      {/* ══ COACH-only — sticky "Modifier le profil" CTA + SuggestionSheet (Step 6) ══ */}
-      {isCoach && mounted && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed left-0 right-0 z-30 px-3 py-2.5"
-          style={{
-            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
-            backgroundColor: "rgba(17,19,23,0.85)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            borderTop: "0.5px solid rgba(255,255,255,0.08)",
-            transform: `translateY(${actionBarVisible && !sheetSuggestion ? 0 : 120}px)`,
-            transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
+      {/* ══ COACH-only — FAB + feuille d'actions + SuggestionSheet (Step 6) ══ */}
+      {isCoach && trOpen && trState && (
+        <AthleteTransferSheet
+          athleteId={athleteId}
+          athleteName={`${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || "cet athlète"}
+          state={trState}
+          variant="mobile"
+          onClose={() => setTrOpen(false)}
+          onDone={(msg) => {
+            setTrOpen(false);
+            toast.success({ message: msg });
+            loadAthleteTransferState(athleteId).then(setTrState);
           }}
-        >
-          <div className="flex items-stretch gap-2">
-            {/* Q4 — Envoyer un message (athlète↔coach). Find-or-create + route
-                vers le fil coach. Le coach est déjà sur la fiche de l'athlète. */}
-            <button
-              type="button"
-              onClick={async () => {
-                triggerHaptic("Light");
-                const supabase = createClient();
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
-                const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
-                if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
-                else toast.error({ message: "Impossible d'ouvrir la conversation" });
-              }}
-              className="flex items-center justify-center gap-1.5 shrink-0 px-4 py-4 rounded-2xl border border-[#22C55E]/40 text-[#22C55E] font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#22C55E]/10"
-              aria-label="Envoyer un message"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        />
+      )}
+
+      {/* ══ COACH — FAB + feuille d'actions (Lot D3) ══
+          La barre à trois boutons est morte : trois couleurs pour trois
+          actions dont aucune n'est un statut, et un « Transférer » réduit à
+          une icône faute de largeur. L'état d'ouverture vit dans le
+          composant, pas ici — ce corps ouvre par un retour anticipé devant
+          ses hooks, un hook de plus aurait grossi cette dette-là. */}
+      {isCoach && mounted && (
+        <CoachFicheActionsMobile
+          athleteName={a ? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() : ""}
+          masque={!!sheetSuggestion}
+          /* Écrire à son athlète est le geste fréquent : il agit au tap,
+             sans traverser la feuille. Q4 — find-or-create athlète↔coach
+             puis route vers le fil coach ; le coach est déjà sur la fiche. */
+          actionDirecte={{
+            libelle: "Envoyer un message",
+            icone: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              Message
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic("Medium");
+            ),
+            onTap: async () => {
+              const supabase = createClient();
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+              const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
+              if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
+              else toast.error({ message: "Impossible d'ouvrir la conversation" });
+            },
+          }}
+          /* Le bouton principal porte un crayon : « Modifier le profil »
+             ouvre donc la feuille en premier, Transférer ensuite. */
+          actions={[
+            {
+              libelle: "Modifier le profil",
+              contexte: "Ouvre le formulaire complet",
+              icone: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              ),
+              onTap: () => {
+                void triggerHaptic("Medium");
                 // Capacitor static export : matche le pattern stash-puis-push
                 // d'app/page.tsx (errorPath fallback). Sans le stash, le shell
                 // placeholder/modifier reçoit athleteId="placeholder" et la
@@ -3250,18 +3344,23 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 } else {
                   router.push(`/coach/athletes/${id}/modifier`);
                 }
-              }}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Modifier le profil
-            </button>
-          </div>
-        </div>,
-        document.body,
+              },
+            },
+            /* Sans équipe transférable, l'entrée n'existe pas — plutôt
+               qu'exister désactivée. Même condition qu'avant. */
+            ...(trState && canTransferAthlete(trState) ? [{
+              libelle: "Transférer",
+              contexte: `Équipe actuelle : ${trState.currentTeamName ?? "sans équipe"}`,
+              icone: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
+                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
+                </svg>
+              ),
+              onTap: () => setTrOpen(true),
+            }] : []),
+          ]}
+        />
       )}
 
       {/* SuggestionSheet (coach only, portaled inside the sheet component). */}

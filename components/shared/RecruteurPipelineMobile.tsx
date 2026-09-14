@@ -58,6 +58,7 @@ import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import VisitDateEditor from "@/components/shared/VisitDateEditor";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { triggerHaptic } from "@/lib/haptics";
+import { aUneCote } from "@/lib/evaluations/presence";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
 
@@ -160,7 +161,16 @@ function useClientNow(): number {
 
 /* ── PipelineHeader ──────────────────────────────────────────── */
 
-function PipelineHeader({ totalCount, onMenuTap }: { totalCount: number; onMenuTap: () => void }) {
+/* Le ⋮ ouvrait la seule porte vers les filtres — et la feuille s'ouvre sur
+   « Trier les athlètes par », si bien qu'on n'y voyait qu'un tri. Les facettes
+   existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
+   NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
+   qu'on ait à ouvrir quoi que ce soit. */
+function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
+  totalCount: number;
+  nActiveFilters: number;
+  onFilterTap: () => void;
+}) {
   return (
     <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
       <div className="flex items-start justify-between">
@@ -170,15 +180,53 @@ function PipelineHeader({ totalCount, onMenuTap }: { totalCount: number; onMenuT
             {totalCount} athlète{totalCount !== 1 ? "s" : ""} · Saison 2025-2026
           </p>
         </div>
+        {/* UNE pilule LABELLISÉE, et elle est la porte unique. Le ⋮ est mort —
+            il ouvrait exactement la même feuille, un second déclencheur pour
+            rien.
+
+            Un mot écrit plutôt qu'une icône seule (retour de recette, BP
+            2026-09-10) : « Filtrer » se lit sans apprentissage, là où un
+            pictogramme demande de deviner. L'entonnoir revient avec lui.
+
+            L'aria-label, lui, nomme les QUATRE sections de la feuille —
+            statistiques, tri, filtres, mode focus. Le libellé visible dit le
+            geste le plus fréquent ; l'étiquette d'accessibilité dit tout ce
+            qu'on trouve derrière, pour qui ne voit pas l'écran. La pastille ne
+            compte que les filtres : seule des quatre à avoir un état. */}
         <button
           type="button"
-          onClick={() => { triggerHaptic("Light"); onMenuTap(); }}
-          aria-label="Menu"
-          className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
+          onClick={() => { triggerHaptic("Light"); onFilterTap(); }}
+          aria-label={
+            nActiveFilters > 0
+              ? `Filtrer — statistiques, tri, filtres, mode focus — ${nActiveFilters} filtre${nActiveFilters > 1 ? "s" : ""} actif${nActiveFilters > 1 ? "s" : ""}`
+              : "Filtrer — statistiques, tri, filtres, mode focus"
+          }
+          aria-haspopup="dialog"
+          className="relative h-11 pl-3.5 pr-4 rounded-full flex items-center gap-1.5 bg-[#E63946] active:bg-[#D42B22] shadow-[0_0_16px_rgba(230,57,70,0.28)] flex-shrink-0"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
-            <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
+          {/* PILE PLEINE, pas un libellé rouge posé sur le fond sombre.
+              L'étape d'avant avait déjà tranché « rouge en permanence, pas
+              seulement quand un filtre est actif » — le raisonnement tient
+              toujours : c'est la porte unique vers la feuille, une action
+              toujours disponible. Mais du #E63946 en TEXTE sur #111317 se
+              lisait comme un lien, pas comme un bouton, et se noyait dans le
+              rouge ambiant de l'écran. Le rouge passe donc au REMPLISSAGE,
+              l'encre passe en blanc.
+              L'état « des filtres tournent » se dit toujours par la pastille,
+              jamais par la couleur du bouton — elle s'inverse simplement
+              (blanc sur rouge) pour rester lisible sur le nouveau fond. */}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
+          <span className="text-[13px] font-bold text-white">
+            Filtrer
+          </span>
+          {nActiveFilters > 0 && (
+            <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#E63946] text-[10px] font-black leading-none">
+              {nActiveFilters}
+            </span>
+          )}
         </button>
       </div>
     </div>
@@ -196,6 +244,29 @@ function StageTabsSticky({
   onTabTap: (lower: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /* « Collé ou pas » — via une sentinelle de hauteur nulle posee JUSTE avant
+     la rangee. Tant qu'elle est visible, la rangee est au repos sous
+     l'en-tete ; des qu'elle sort par le haut, la rangee est epinglee.
+
+     Pourquoi pas le prop `scrolled` qui existe deja : il est calcule sur
+     `window.scrollY` (~l.1721), et en Capacitor `html`/`body` sont
+     `position: fixed; overflow: hidden` — le scroll vit dans le <main> du
+     layout. `window.scrollY` reste donc a 0 et l'evenement ne part jamais :
+     `scrolled` est FAUX EN PERMANENCE dans l'app. Le flou et le lisere qu'il
+     pilote sont du code mort cote mobile (constat, pas corrige ici).
+     IntersectionObserver n'a pas ce defaut : son root par defaut est le
+     viewport, il fonctionne quel que soit le conteneur qui scrolle. */
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setStuck(!e.isIntersecting), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   // Auto-scroll horizontal pour garder l'onglet actif visible
   useEffect(() => {
     if (!containerRef.current) return;
@@ -204,14 +275,26 @@ function StageTabsSticky({
   }, [activeStage]);
 
   return (
+    <>
+      <div ref={sentinelRef} aria-hidden="true" style={{ height: 0 }} />
     <div
-      className="sticky top-0 z-30 nx-safe-top"
+      className="sticky top-0 z-30"
       style={{
+        /* `nx-safe-top` retire : il posait `env(safe-area-inset-top) + 0.75rem`
+           EN PERMANENCE, alors que l'en-tete « Mon processus » (~l.175) reserve
+           DEJA la safe-area. Sur iOS l'encoche etait donc comptee DEUX FOIS —
+           ~59 px morts entre le sous-titre et les pilules sur un 17 Pro Max.
+           Sur Android l'inset vaut 0, d'ou un ecart invisible : c'est ce qui
+           rendait le bug propre a iOS.
+           Desormais la safe-area n'est reservee que QUAND la rangee est
+           epinglee — la, elle est reellement sous la Dynamic Island et doit
+           s'en degager. Au repos elle remonte contre le sous-titre. */
+        paddingTop: stuck ? "calc(env(safe-area-inset-top, 0px) + 0.75rem)" : "0.25rem",
         backgroundColor: scrolled ? "rgba(17,19,23,0.85)" : "#111317",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         borderBottom: scrolled ? "0.5px solid rgba(255,255,255,0.08)" : "0.5px solid transparent",
-        transition: "background-color 200ms ease-out, backdrop-filter 200ms ease-out, border-bottom-color 200ms ease-out",
+        transition: "background-color 200ms ease-out, backdrop-filter 200ms ease-out, border-bottom-color 200ms ease-out, padding-top 160ms ease-out",
       }}
     >
       <div ref={containerRef} className="overflow-x-auto nx-no-scrollbar">
@@ -241,6 +324,7 @@ function StageTabsSticky({
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -331,10 +415,18 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
               2026-09-04) — même regroupement qu'au kanban web. */}
           <span className="flex-shrink-0 ml-auto flex items-center gap-1.5">
             <GradeChip grade={card.grade} />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            <span className="text-sm font-bold text-white">{(card.coach_rating ?? 0).toFixed(1)}</span>
+            {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence).
+                Sans elle, ni étoile ni chiffre — la carte n'affirme rien. */}
+            {aUneCote(card.coach_rating) ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span className="text-sm font-bold text-white">{card.coach_rating.toFixed(1)}</span>
+              </>
+            ) : (
+              <span className="text-[11px] text-[#6B7280]">Pas encore évalué</span>
+            )}
           </span>
         </div>
 
@@ -554,6 +646,7 @@ function PipelineMenuSheet({
   filters, setFilters,
   focusMode, setFocusMode,
   cards,
+  cardsFiltrees,
   visibleCount,
 }: {
   open: boolean;
@@ -565,6 +658,10 @@ function PipelineMenuSheet({
   focusMode: boolean;
   setFocusMode: (v: boolean) => void;
   cards: PipelineKanbanCard[];
+  /** Les mêmes, après filtres. La VENTILATION s'y compte ; le TOTAL, lui,
+   *  reste sur `cards` — « combien j'en suis » ne doit pas bouger parce que
+   *  je regarde un sous-ensemble. */
+  cardsFiltrees: PipelineKanbanCard[];
   /** Cartes restantes dans le stage courant, après filtres. */
   visibleCount: number;
 }) {
@@ -638,12 +735,26 @@ function PipelineMenuSheet({
               </svg>
             </button>
 
-            <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-5">
+            <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-5"
+              /* Verrou horizontal. `touch-action: pan-y` existe deja sur la
+                 RACINE du sheet, mais il ne protege pas ce conteneur-ci : c'est
+                 LUI qui scrolle (`overflow-y-auto`), et sans contrainte sur X un
+                 enfant plus large le rend scrollable lateralement — le contenu
+                 se tire au doigt et s'etire sous WebKit.
+                 Les trois ensemble : `hidden` interdit le scroll X, `none` coupe
+                 le rebond elastique sur X (l'axe Y garde le sien), `pan-y`
+                 declare au compositeur que seul le geste vertical compte — il
+                 cesse d'attendre pour arbitrer et le scroll vertical part plus
+                 franchement. */
+              style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}
+            >
               {/* Iter 6.1c Fix 8 — Stats funnel (total + breakdown horizontal) */}
               {(() => {
                 const counts: Record<string, number> = {};
                 for (const s of STAGES) counts[s.key] = 0;
-                for (const c of cards) {
+                /* Ventilation sur les cartes FILTRÉES — le total ci-dessous
+                   reste sur `cards`, brut, à dessein. */
+                for (const c of cardsFiltrees) {
                   const k = (c.status || "").toString().toUpperCase();
                   if (counts[k] !== undefined) counts[k]++;
                 }
@@ -1181,7 +1292,19 @@ function PipelineDetailSheet({
             </button>
 
             {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5"
+              /* Verrou horizontal. `touch-action: pan-y` existe deja sur la
+                 RACINE du sheet, mais il ne protege pas ce conteneur-ci : c'est
+                 LUI qui scrolle (`overflow-y-auto`), et sans contrainte sur X un
+                 enfant plus large le rend scrollable lateralement — le contenu
+                 se tire au doigt et s'etire sous WebKit.
+                 Les trois ensemble : `hidden` interdit le scroll X, `none` coupe
+                 le rebond elastique sur X (l'axe Y garde le sien), `pan-y`
+                 declare au compositeur que seul le geste vertical compte — il
+                 cesse d'attendre pour arbitrer et le scroll vertical part plus
+                 franchement. */
+              style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}
+            >
               {/* Header athlète : photo + meta + pill statut global (Fix 6)
                   + fade horizontal blend (Fix 1 iter 6.1e — bg #111317 du sheet) */}
               <div className="flex items-start gap-3">
@@ -1310,16 +1433,24 @@ function PipelineDetailSheet({
                 )}
               </div>
 
-              {/* Cote */}
+              {/* Cote — les étoiles vides restent visibles pour tenir la mise en
+                  page, mais SANS chiffre : « 0,0 » affirmerait une note de zéro
+                  là où il n'y a pas de note (lib/evaluations/presence). */}
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <svg key={i} width="14" height="14" viewBox="0 0 24 24"
-                    fill={i <= Math.round(card.coach_rating ?? 0) ? "#F59E0B" : "#4a4d56"} stroke="none">
+                    fill={aUneCote(card.coach_rating) && i <= Math.round(card.coach_rating) ? "#F59E0B" : "#4a4d56"} stroke="none">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 ))}
-                <span className="text-[13px] font-bold text-[#F59E0B] ml-1">{(card.coach_rating ?? 0).toFixed(1)}</span>
-                <span className="text-[11px] text-[#6B7280] ml-1">Cote du coach</span>
+                {aUneCote(card.coach_rating) ? (
+                  <>
+                    <span className="text-[13px] font-bold text-[#F59E0B] ml-1">{card.coach_rating.toFixed(1)}</span>
+                    <span className="text-[11px] text-[#6B7280] ml-1">Cote du coach</span>
+                  </>
+                ) : (
+                  <span className="text-[11px] text-[#6B7280] ml-1">Pas encore évalué par son entraîneur</span>
+                )}
               </div>
 
               {/* Progress completion */}
@@ -1538,13 +1669,42 @@ function SkeletonList() {
 
 export function RecruteurPipelineMobile() {
   const { tier, loading: tierLoading } = useSubscription();
+  /* ── DÉCISION PRODUIT (BP, 2026-09-10) — écrite, jamais héritée ──────
+     LE MODE DÉMO GRATUIT DE « MON PROCESSUS » EST ASSUMÉ.
+
+     Un compte Free VOIT le pipeline et ne peut rien y écrire. Ce n'est pas
+     un verrou oublié : c'est un levier de conversion, et il est délibéré
+     depuis 0002c30 (« Pipeline demo mode for Free + sidebar unlock »), qui
+     a retiré le <FeatureGate feature="unlimited_pipeline" requiredTier="pro">
+     posé le matin même par 23c060e.
+
+     ⚠️ DEUX CHOSES CONTREDISENT CE CHOIX AILLEURS, et c'est voulu de les
+     laisser dire le contraire tant que le chantier « source de vérité unique
+     du gating » n'a pas tranché (docs/fast-follow-1.4.2.md) :
+
+       · la NAVIGATION reverrouille — `requiredTier: "pro"` sur l'item de la
+         sidebar (adea65b) et de la MobileTabBar. Le lien est donc bloqué,
+         la route ne l'est pas. C'est ce qui rend la démo atteignable par
+         lien direct et invisible depuis le menu.
+       · la TABLE DE FEATURES du SubscriptionProvider déclare
+         `free.can_use_pipeline: false`. Elle n'est lue par personne.
+
+     CE QUI TIENT VRAIMENT, ce n'est aucun de ces deux-là : c'est la RLS.
+     `user_has_pro()` garde le with_check de recruiter_pipeline en INSERT
+     ET en UPDATE. La démo est donc en lecture seule par construction, pas
+     par politesse du client. Ne retirez pas ces gardes `isFreeDemoMode`
+     en croyant simplifier : elles évitent à l'usager un refus serveur sec.
+     ──────────────────────────────────────────────────────────────────── */
   const isFreeDemoMode = tier === "free";
   const queryClient = useQueryClient();
   const toast = useMobileToast();
   useCurrentUser(); // warm cache pour les hooks de mutation
 
   const { data: pipelineData, isLoading: pipelineLoading } = usePipelineCards();
-  const cards = pipelineData?.cards ?? [];
+  /* Mémoïsé : `?? []` fabriquait un tableau NEUF à chaque rendu, si bien que
+     tous les useMemo qui en dépendent se recalculaient sans arrêt — le lint le
+     signalait déjà avant l'ajout des compteurs filtrés. */
+  const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
   const loading = tierLoading || pipelineLoading;
 
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
@@ -1561,6 +1721,18 @@ export function RecruteurPipelineMobile() {
   const updateStage = useUpdatePipelineStage();
 
   // Groupage par stage + counts (counts pour les tabs, tous stages)
+  /* LES COMPTEURS SUIVENT LE FILTRE (patron du web, où FunnelSummary reçoit
+     `filteredCards` et garde `cards.length` à part pour le total).
+
+     Avant, `cardsByStage` était bâti sur `cards` brutes : les pastilles des
+     onglets et la ventilation du menu annonçaient 12 là où la liste filtrée
+     n'en rendait que 3. Un compteur qui ne suit pas le filtre ne décrit plus
+     rien — il dit juste combien il y en aurait sans filtre.
+
+     Le TOTAL, lui, reste brut : c'est « combien d'athlètes je suis », une
+     réponse qui ne doit pas bouger quand je regarde un sous-ensemble. */
+  const cardsFiltrees = useMemo(() => filterPipelineCards(cards, filters), [cards, filters]);
+
   const cardsByStage = useMemo(() => {
     const grouped: Record<string, PipelineKanbanCard[]> = {};
     for (const s of STAGES) grouped[s.lower] = [];
@@ -1570,11 +1742,16 @@ export function RecruteurPipelineMobile() {
     }
     return grouped;
   }, [cards]);
+  /* Les pastilles des onglets comptent sur les cartes FILTRÉES. */
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const s of STAGES) c[s.lower] = cardsByStage[s.lower].length;
+    for (const s of STAGES) c[s.lower] = 0;
+    for (const card of cardsFiltrees) {
+      const k = (card.status || "identifie").toString().toLowerCase();
+      if (c[k] !== undefined) c[k]++;
+    }
     return c;
-  }, [cardsByStage]);
+  }, [cardsFiltrees]);
 
   // Fix 2 (page-par-stage) + iter 6.1b sort/filter/focus + tri prioritaires
   const activeStageCards = useMemo(() => {
@@ -1732,7 +1909,11 @@ export function RecruteurPipelineMobile() {
         </div>
       )}
 
-      <PipelineHeader totalCount={cards.length} onMenuTap={handleMenuTap} />
+      <PipelineHeader
+        totalCount={cards.length}
+        nActiveFilters={activeFilterCount(filters)}
+        onFilterTap={handleMenuTap}
+      />
 
       {/* Free demo banner */}
       {isFreeDemoMode && !loading && cards.length > 0 && (
@@ -1831,6 +2012,7 @@ export function RecruteurPipelineMobile() {
         filters={filters} setFilters={setFilters}
         focusMode={focusMode} setFocusMode={setFocusMode}
         cards={cards}
+        cardsFiltrees={cardsFiltrees}
         visibleCount={activeStageCards.length}
       />
 

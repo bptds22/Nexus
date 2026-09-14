@@ -69,7 +69,7 @@ import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import {
   type BadgeEntry, type BadgeCatalogueEntry,
 } from "@/lib/config/badgeCatalogue";
-import { Card, ChipsBlock, DateRow, DetailedTag, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
+import { Card, ChipsBlock, DateRow, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { diffTeamHistory, isTeamHistoryDiffEmpty, summarizeTeamHistoryDiff } from "@/components/shared/athlete/teamHistory";
 import type { TeamHistoryEntry } from "@/lib/types/models";
@@ -2029,7 +2029,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               className={`px-4 py-2 rounded-xl text-[12px] font-bold uppercase tracking-[0.12em] transition-colors ${
                 sc.evalMode === opt ? "bg-[#E63946] text-white" : "text-white/55"
               }`}>
-              {opt === "simple" ? "Simplifié" : "Détaillé"}
+              {opt === "simple" ? "Cote rapide" : "Évaluation complète"}
             </button>
           ))}
         </div>
@@ -2054,7 +2054,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               </div>
               <p className="text-[12px] text-white/55 mt-3">
                 Évaluation détaillée active — la cote est calculée à partir des critères. Pour la
-                modifier, passe en mode <strong className="text-white/85">Détaillé</strong> et ajuste
+                modifier, passe en <strong className="text-white/85">Évaluation complète</strong> et ajuste
                 les critères.
               </p>
               <button
@@ -2614,7 +2614,7 @@ function CreateSummary({
     {
       title: "Évaluation",
       rows: [
-        { label: "Mode", value: form.scouting.evalMode === "detailed" ? "Détaillé" : "Simplifié" },
+        { label: "Évaluation", value: form.scouting.evalMode === "detailed" ? "Complète" : "Cote rapide" },
         { label: "Cote étoile", value: form.scouting.starRating ? String(form.scouting.starRating) : "" },
         { label: "Distinctions", value: form.scouting.badges.map((b) => badgeCat.byCode.get(b.code)?.libelle || b.code).join(", ") },
       ],

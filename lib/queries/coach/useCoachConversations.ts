@@ -133,19 +133,39 @@ export function useCoachConversations() {
       const convIds = data.map((c: Record<string, unknown>) => c.id as string);
       const lastMsgMap = new Map<string, string>();
       const lastSenderMap = new Map<string, string>();
+      /* Non-lus par fil. `read_at` est ajouté à CETTE requête plutôt que
+         comptés à part : elle balaie déjà tous les messages de tous mes fils,
+         le compte ne coûte donc aucun aller-retour de plus.
+
+         POURQUOI PAS `conversations.unread_count` : cette colonne est MORTE.
+         Aucun trigger, aucune fonction ne l'incrémente — `mark_conversation_read`
+         est la seule à y toucher, et uniquement pour la remettre à 0. Mesuré :
+         0 sur les 103 conversations de la production. La pastille de cette
+         boîte la lisait, elle était donc éteinte en permanence, sur tous les
+         fils et pour tous les coachs.
+
+         `read_at IS NULL` + `sender <> moi` est la MÊME règle que le badge de
+         l'onglet Messages (MobileTabBar, branche coach) et que la boîte
+         athlète (useAthleteConversations). Les trois surfaces comptent
+         désormais la même chose — un badge juste sur une seule apprend à
+         l'usager que le compteur ment. */
+      const unreadMap = new Map<string, number>();
       if (convIds.length > 0) {
         const { data: msgData } = await supabase
           .from("messages")
-          .select("conversation_id, content, created_at, sender_id")
+          .select("conversation_id, content, created_at, sender_id, read_at")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false });
         if (msgData) {
           // Premier vu par conversation = le plus récent (ordre desc) → on
           // capture son contenu ET son expéditeur en même temps.
-          for (const m of msgData as { conversation_id: string; content: string; sender_id: string }[]) {
+          for (const m of msgData as { conversation_id: string; content: string; sender_id: string; read_at: string | null }[]) {
             if (!lastMsgMap.has(m.conversation_id)) {
               lastMsgMap.set(m.conversation_id, m.content);
               lastSenderMap.set(m.conversation_id, m.sender_id);
+            }
+            if (m.sender_id !== userId && !m.read_at) {
+              unreadMap.set(m.conversation_id, (unreadMap.get(m.conversation_id) ?? 0) + 1);
             }
           }
         }
@@ -205,7 +225,7 @@ export function useCoachConversations() {
           lastMessage: lastMsgMap.get(c.id as string) || "",
           lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
           lastSenderId: lastSenderMap.get(c.id as string) ?? null,
-          unreadCount: (c.unread_count as number) || 0,
+          unreadCount: unreadMap.get(c.id as string) ?? 0,
           status: (c.status as string) || "ACTIVE",
         };
       });

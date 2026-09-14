@@ -48,6 +48,7 @@ import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { startMobileCheckout, startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 import { openLegalDocument } from "@/lib/legal";
 import { hapticTap } from "@/lib/haptics";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -267,7 +268,7 @@ export function RecruteurParametresMobile() {
     const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
     if (error) { toast.error({ message: "Échec désactivation", detail: error.message }); return; }
     try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     setDeactivateSheetOpen(false);
     router.push("/auth");
   }
@@ -284,7 +285,7 @@ export function RecruteurParametresMobile() {
     triggerHaptic("Medium");
     const supabase = createClient();
     try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     setLogoutSheetOpen(false);
     router.push("/auth");
   }

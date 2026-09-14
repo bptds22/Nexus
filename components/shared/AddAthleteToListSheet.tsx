@@ -113,7 +113,12 @@ export function AddAthleteToListSheet({
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[75] bg-[#111317] rounded-t-3xl flex flex-col"
-            style={{ maxHeight: "92vh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            /* Réserve la tab bar, pas seulement le home indicator : elle est
+               portalée sur document.body et passe donc AU-DESSUS de ce sheet
+               malgré son z. Sans cette réserve, la dernière rangée de la liste
+               est recouverte et devient intouchable. Même patron que les fils
+               coach/recruteur. */
+            style={{ maxHeight: "92vh", paddingBottom: "calc(var(--tabzone, calc(env(safe-area-inset-bottom) + 88px)) + 12px)" }}
           >
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 rounded-full bg-white/20" />

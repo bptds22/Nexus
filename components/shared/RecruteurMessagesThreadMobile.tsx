@@ -39,6 +39,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
 import { triggerHaptic } from "@/components/shared/messaging/utils";
+import { aUneCote } from "@/lib/evaluations/presence";
 
 /* Local helpers retired in favor of the shared messaging package :
    - triggerHaptic      → @/components/shared/messaging/utils
@@ -539,7 +540,16 @@ function AthleteThreadSheet({
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[65] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            /* La tab bar est PORTALÉE sur document.body (MobileTabBar, « Stacking-
+               context fix ») précisément pour que son z-40 échappe aux racines de
+               layout. Elle échappe donc aussi au z de CE sheet, qui vit dans
+               l'arbre du layout : le bas du sheet passe DESSOUS, et le CTA de la
+               carte s'y faisait couper — seul son haut dépassait.
+               `env(safe-area-inset-bottom)` seul ne réservait que le home
+               indicator, jamais la barre. On reprend le patron de MaPageMobile /
+               TransfertAthletesMobile : `--tabzone` quand un layout la pose
+               (app/college), repli 88px ailleurs, +12px de respiration. */
+            style={{ maxHeight: "85vh", paddingBottom: "calc(var(--tabzone, calc(env(safe-area-inset-bottom) + 88px)) + 12px)" }}
           >
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 rounded-full bg-white/20" />
@@ -631,13 +641,20 @@ function AthleteThreadSheet({
                     </div>
                   )}
 
-                  {/* Cote globale entraîneur */}
+                  {/* Cote globale entraîneur — une cote ABSENTE n'est pas une
+                      cote de ZÉRO (lib/evaluations/presence). Sans elle, la
+                      rangée le DIT au lieu d'afficher « 0.0 /5 » : la garder
+                      muette laisserait croire à une note manquante à l'écran. */}
                   <div className="flex items-center justify-between bg-white/[0.04] rounded-2xl px-4 py-3">
                     <span className="text-[13px] uppercase tracking-wider text-white/55 font-semibold">Cote coach</span>
-                    <div className="flex items-center gap-2.5">
-                      <StarBar value={Math.round(cote)} />
-                      <span className="text-[15px] font-bold text-white tabular-nums">{cote.toFixed(1)} <span className="text-[12px] text-white/45">/5</span></span>
-                    </div>
+                    {aUneCote(cote) ? (
+                      <div className="flex items-center gap-2.5">
+                        <StarBar value={Math.round(cote)} />
+                        <span className="text-[15px] font-bold text-white tabular-nums">{cote.toFixed(1)} <span className="text-[12px] text-white/45">/5</span></span>
+                      </div>
+                    ) : (
+                      <span className="text-[13px] text-white/45">Pas encore évalué</span>
+                    )}
                   </div>
 
                   {/* Profil complété */}

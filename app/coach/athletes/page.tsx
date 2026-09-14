@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { type RosterAthlete } from "./_data/mockRosterData";
 import ReclamerSection from "./_components/ReclamerSection";
+import RejetsSection from "./_components/RejetsSection";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -278,6 +279,13 @@ function MesAthletesContent() {
   const [rosterScopeIds, setRosterScopeIds] = useState<Set<string>>(() => new Set());
   /** Ids ramenés par la requête ÉCOLE — borne « À réclamer » + supervision. */
   const [schoolRowIds, setSchoolRowIds] = useState<Set<string>>(() => new Set());
+  /** Rejets ACTIFS de l'école : athlete_id → date ISO. Un athlète rejeté sort
+   *  de la file ; il n'y revient que si un attachement d'équipe réancre son
+   *  école (`_apply_team_attachment_core`). C'est là que la mention « déjà
+   *  rejeté le X » sert — la trace informe, elle ne bloque pas (décision BP).
+   *  La RLS de school_claim_rejections borne déjà à mon école : pas de filtre
+   *  d'école côté client, qui ne ferait que dupliquer la règle. */
+  const [rejections, setRejections] = useState<Record<string, string>>({});
 
   // Apply URL filter presets
   useEffect(() => {
@@ -486,7 +494,15 @@ function MesAthletesContent() {
           },
           views: 0,
           favorites: favCounts[a.id as string] || 0,
-          stars: Math.round(stars),
+          /* UNE décimale, pas un entier. L'arrondi à la source ne se voyait
+             pas comme une fausse précision — cette carte ne rend que des
+             étoiles pleines, jamais le nombre — mais il mentait deux fois :
+             un 4,6 allumait CINQ étoiles, et il répondait au filtre
+             « 5 étoiles » (`a.stars >= parseFloat(minRating)`). Le tri en
+             souffrait aussi. Avec la décimale, quatre étoiles s'allument et
+             le filtre dit vrai. Le rendu reste binaire, sans demi-étoile :
+             c'est le parti pris de cette carte, on n'y touche pas. */
+          stars: Math.round(stars * 10) / 10,
           heightWeight: (() => {
             const ft = a.taille_pieds as number | null;
             const inches = a.taille_pouces as number | null;
@@ -595,6 +611,22 @@ function MesAthletesContent() {
             };
           }));
         }
+      }
+
+      /* Rejets ACTIFS — lecture bornée par la RLS de la table à mon école.
+         Non bloquante : si elle échoue, la file s'affiche sans les mentions
+         plutôt que pas du tout. */
+      const { data: rejRows, error: rejError } = await supabase
+        .from("school_claim_rejections")
+        .select("athlete_id, rejected_at")
+        .is("cancelled_at", null);
+
+      if (rejError) {
+        console.error("[Coach roster] lecture des rejets échouée", rejError);
+      } else {
+        setRejections(Object.fromEntries(
+          (rejRows ?? []).map((r) => [r.athlete_id as string, r.rejected_at as string]),
+        ));
       }
 
       setLoading(false);
@@ -737,9 +769,21 @@ function MesAthletesContent() {
     () => [...myRoster, ...schoolAthletes].map((a) => a.taxonomy ?? EMPTY_TAXONOMY),
     [myRoster, schoolAthletes],
   );
-  const orgOptions = useMemo(() => organisationOptions(taxonomyRows), [taxonomyRows]);
-  const leagueOptionList = useMemo(() => leagueOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
-  const divisionOptionList = useMemo(() => divisionOptions(taxonomyRows, orgType), [taxonomyRows, orgType]);
+  /* FACETTES DÉPENDANTES (2026-09-09) — même règle que la recherche recruteur :
+     chaque menu compte sur la population cadrée par les DEUX autres axes, le
+     vocabulaire reste celui de toute la page, une option à 0 se grise. */
+  const orgOptions = useMemo(
+    () => organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter }),
+    [taxonomyRows, leagueFilter, divisionFilter],
+  );
+  const leagueOptionList = useMemo(
+    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter }),
+    [taxonomyRows, orgType, divisionFilter],
+  );
+  const divisionOptionList = useMemo(
+    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter }),
+    [taxonomyRows, orgType, leagueFilter],
+  );
 
   /* ── DANS QUEL ETAT AFFICHER CHAQUE MENU ? (regle finale BP du 2026-09-06) ──
      Les trois menus sont TOUJOURS AFFICHES, a position stable. Ce qui varie,
@@ -1025,14 +1069,25 @@ function MesAthletesContent() {
       {activeTab === "reclamer" && (
         <ReclamerSection
           unclaimedAthletes={unclaimedAthletes}
-          currentUserId={currentUserId}
+          orgType={coachOrgType}
+          isDirector={isDirector}
+          rejections={rejections}
           onClaimSuccess={() => setRefreshVersion((v) => v + 1)}
+          onRejectSuccess={() => setRefreshVersion((v) => v + 1)}
         />
       )}
 
       {/* ══════════ À TRAITER TAB ══════════ */}
       {activeTab === "traiter" && (
         <div className="space-y-6">
+          {/* Rattachements rejetés — DIRECTEUR seulement. La fonction ne rend
+              rien aux autres de toute façon ; on ne monte pas le composant pour
+              autant, pour ne pas poser une question sans objet. La section se
+              masque d'elle-même quand il n'y a aucun rejet actif. */}
+          {isDirector && (
+            <RejetsSection onCancelSuccess={() => setRefreshVersion((v) => v + 1)} />
+          )}
+
           {/* Section A: Profils à vérifier */}
           <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
             <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2">
@@ -1170,7 +1225,7 @@ function MesAthletesContent() {
           {orgAxis.state === "active" ? (
             <>
               <option value="">Toutes les organisations</option>
-              {orgOptions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
             </>
           ) : (
             <option value="">{orgAxis.label}</option>
@@ -1187,7 +1242,7 @@ function MesAthletesContent() {
           {leagueAxis.state === "active" ? (
             <>
               <option value="">Toutes les ligues</option>
-              {leagueOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
             </>
           ) : (
             <option value="">{leagueAxis.label}</option>
@@ -1204,7 +1259,7 @@ function MesAthletesContent() {
           {divisionAxis.state === "active" ? (
             <>
               <option value="">Toutes les divisions</option>
-              {divisionOptionList.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+              {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
             </>
           ) : (
             <option value="">{divisionAxis.label}</option>

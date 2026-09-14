@@ -960,6 +960,15 @@ export interface AthleteSuggestion {
   submitted_at: string;
   reviewed_at?: string;
   rejection_reason?: string;
+  /** `athlete_suggestions.note_systeme` — marqueur posé par la MACHINE, jamais
+   *  par un humain. Présent = la ligne a été résolue par un trigger (transition
+   *  d'édition directe), pas par un entraîneur.
+   *
+   *  Il sert à ne PAS annoncer « refusée » pour un refus que personne n'a
+   *  prononcé : tant que le volet 6 de D6 n'est pas appliqué, toute proposition
+   *  d'évaluation est rejetée automatiquement à l'insertion. L'écran de
+   *  l'athlète doit alors montrer son PROCHAIN PAS, pas la mécanique. */
+  system_note?: string | null;
 }
 
 /* ── Media partners (Phase 1) ─────────────────────────────── */

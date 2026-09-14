@@ -34,7 +34,7 @@
    composant est sélectionné via `if (IS_CAPACITOR)` dans page.tsx.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
@@ -55,6 +55,7 @@ import { teamDetails } from "@/lib/config/teamLabel";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
+import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -151,6 +152,10 @@ export function AthleteOnboardingMobile() {
 
   // Step machine 1|2 (consents + parent capturés au signup — iter 2b)
   const [step, setStep] = useState<0 | 1 | 2>(1);
+  /* L'aiguillage « Où joues-tu ? » (Step-0) a-t-il été SAUTÉ cette session ?
+     Vrai quand users.context était déjà posé à l'init — donc une REPRISE
+     d'inscription. Voir la box conditionnelle de l'étape 1. */
+  const [step0Saute, setStep0Saute] = useState(false);
   // Masque le CTA fixed bottom-0 quand un input est focus (clavier monté),
   // pour qu'il ne recouvre pas le champ saisi — même idiome que SignupMobile.
   const [inputFocused, setInputFocused] = useState(false);
@@ -160,6 +165,12 @@ export function AthleteOnboardingMobile() {
   const [email, setEmail] = useState<string>("");
   const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile">("scolaire");
   const [existingAthleteId, setExistingAthleteId] = useState<string | null>(null);
+  /* Les colonnes protégées TELLES QU'ELLES SONT EN BASE, relevées au
+     chargement de la fiche. Le submit s'en sert pour ne renvoyer que ce qui a
+     réellement changé — cf lib/athlete/perimetreProtege.
+     Un `ref` et pas un `state` : personne ne s'affiche à partir de ça, et un
+     re-render de plus entre le chargement et le submit ne servirait à rien. */
+  const ficheEnBase = useRef<Record<string, unknown> | null>(null);
 
   // Orphan claim
   const [orphanMatch, setOrphanMatch] = useState<OrphanProfile | null>(null);
@@ -428,6 +439,10 @@ export function AthleteOnboardingMobile() {
       // le Step-0 et la logique resume ci-dessous décide step 1 vs 2.
       let contextChosen = ctxRaw === "scolaire" || ctxRaw === "ligue_civile";
       if (!contextChosen) setStep(0);
+      /* Contexte déjà posé = on saute l'aiguillage. L'athlète n'aura donc
+         PAS vu le champ de code qui y vit — d'où la box de rattrapage à
+         l'étape 1. */
+      else setStep0Saute(true);
 
       // Resume : athletes row + team_athletes junction.
       // Iter team-3 — on tire aussi division/age_group/gender pour
@@ -442,6 +457,11 @@ export function AthleteOnboardingMobile() {
 
       if (existing) {
         setExistingAthleteId(existing.id as string);
+        /* Relevé AVANT tout pré-remplissage : c'est l'état de la base, pas
+           celui de l'écran. La fiche peut être héritée (orphelin réclamé par
+           `link_athlete_on_signup` à l'inscription) et porter déjà une école,
+           un coach, un statut — que le submit ne doit pas réécrire pour rien. */
+        ficheEnBase.current = instantaneProtege(existing as Record<string, unknown>);
 
         // Bypass dashboard UNIQUEMENT si onboarding_complete === true — même
         // critère que le layout (app/athlete/layout.tsx). Avant : on redirigeait
@@ -464,6 +484,27 @@ export function AthleteOnboardingMobile() {
         if (existing.photo_url) setPhoto(existing.photo_url as string);
         if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
 
+        /* ═══ RÉCLAMATION SILENCIEUSE PAR COURRIEL — ASSUMÉE EN 1.4.1 ═══
+           Décision produit BP, 2026-09-11.
+
+           Le trigger `on_user_created_link_athlete` (→ link_athlete_on_signup)
+           rattache, DANS LA TRANSACTION D'INSCRIPTION, toute fiche orpheline
+           portant le même courriel :
+             UPDATE athletes SET user_id = NEW.id
+              WHERE email = NEW.email AND user_id IS NULL;
+
+           Conséquence directe, et voulue : une inscription qui se croit neuve
+           arrive avec une école, un sport, une position et un numéro déjà
+           posés, et la reprise ci-dessous l'envoie à l'étape 2. C'est le
+           parcours coach → athlète NLS : le coach sème la fiche, l'athlète la
+           récupère sans rien ressaisir. Ce n'est PAS un accident du routage.
+
+           Ce qui manque, et qui est au registre 1.4.2 (§17) : l'app ne DIT pas
+           ce qu'elle a hérité. La modale de réclamation qui servait à ça
+           (`ClaimProfileModal`, branche `else if (user.email)` plus bas) est
+           devenue INATTEIGNABLE pour ce cas — le trigger a déjà posé user_id,
+           donc `existing` n'est jamais null. Elle est à ressusciter, ou à
+           remplacer par une bannière d'héritage. Pas dans 1.4.1. */
         const schoolRel = flatten(existing.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null);
         const schoolType = schoolRel?.type;
         // Fallback contexte (routage) : orphelin coach-créé (users.context null)
@@ -558,7 +599,7 @@ export function AthleteOnboardingMobile() {
         // Échec inattendu (réseau, auth) — état récupérable plutôt que
         // hang. La course 0-ligne du JWT est déjà gérée ci-dessus via
         // .maybeSingle() + retry, donc elle n'atterrit PAS ici.
-        console.error("[OnboardingMobile] init failed:", err);
+        console.error(`[OnboardingMobile] init failed: ${erreurLisible(err)}`);
         if (!cancelled) setInitError(true);
       } finally {
         // TOUJOURS libérer le spinner, quoi qu'il arrive au-dessus.
@@ -604,6 +645,9 @@ export function AthleteOnboardingMobile() {
     if (full.numero_jersey) setJerseyNumber(full.numero_jersey as string);
 
     setExistingAthleteId(orphanMatch.id);
+    /* Même relevé que dans l'effet d'init : dès qu'on passe en mode UPDATE,
+       le submit a besoin de savoir ce que la base porte déjà. */
+    ficheEnBase.current = instantaneProtege(full as Record<string, unknown>);
     setShowClaimModal(false);
   }, [orphanMatch]);
 
@@ -906,10 +950,10 @@ export function AthleteOnboardingMobile() {
     // effet, un resume d'onboarding ou un state périmé repose primarySport dans
     // le dos de l'utilisateur.
     if (codeLock && (primarySport !== codeLock.sportName || selectedTeamId !== codeLock.teamId)) {
-      console.error("[OnboardingMobile] incohérence code/profil", {
+      console.error("[OnboardingMobile] incohérence code/profil " + JSON.stringify({
         codeSport: codeLock.sportName, profilSport: primarySport,
         codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
-      });
+      }));
       toast.error({
         message: "Ton code ne correspond plus",
         detail: `Ton code pointe ${codeLock.teamName} (${codeLock.sportName}). Utilise « Changer » à la première étape pour choisir une autre équipe.`,
@@ -1031,9 +1075,24 @@ export function AthleteOnboardingMobile() {
 
     let athleteIdForTeam: string | null = existingAthleteId;
     if (existingAthleteId) {
-      const { error } = await supabase.from("athletes").update(athleteRecord).eq("id", existingAthleteId);
+      /* On n'envoie les colonnes du périmètre protégé que si elles ont
+         RÉELLEMENT changé. `athleteRecord` repose systématiquement user_id,
+         school_id, coach_id, status et verified ; sur une fiche héritée, les
+         reposer à l'identique suffisait à faire lever
+         `trg_athlete_self_edit_perimeter` (400, « Échec de sauvegarde ») alors
+         que l'athlète n'avait touché à rien d'interdit.
+         Ce n'est PAS un contournement : un vrai changement d'école part encore
+         et se fait encore refuser — tant que la décision produit « pendant
+         l'onboarding, l'école et le coach appartiennent à l'athlète » n'est pas
+         écrite en base (volet 5 de la migration D6). */
+      const patch = elaguerProtegees(athleteRecord, ficheEnBase.current);
+      const { error } = await supabase.from("athletes").update(patch).eq("id", existingAthleteId);
       if (error) {
-        console.error("[OnboardingMobile] update:", error);
+        /* Sérialisé À LA MAIN : le pont console de Capacitor passe ses
+           arguments à String(), donc un objet d'erreur atterrit dans le logcat
+           en « [object Object] » et il faut aller lire les logs Supabase pour
+           savoir ce qui s'est passé. */
+        console.error(`[OnboardingMobile] update: ${erreurLisible(error)}`);
         toast.error({ message: "Échec de sauvegarde", detail: error.message });
         setSaving(false); return;
       }
@@ -1041,7 +1100,7 @@ export function AthleteOnboardingMobile() {
       const { data: inserted, error } = await supabase
         .from("athletes").insert(athleteRecord).select("id").single();
       if (error) {
-        console.error("[OnboardingMobile] insert:", error);
+        console.error(`[OnboardingMobile] insert: ${erreurLisible(error)}`);
         toast.error({ message: "Échec de sauvegarde", detail: error.message });
         setSaving(false); return;
       }
@@ -1118,7 +1177,7 @@ export function AthleteOnboardingMobile() {
       if (ctxErr) {
         const m = ctxErr.message || "";
         if (!m.includes("CONTEXT_ALREADY_SET") && !m.includes("ALREADY_ONBOARDED")) {
-          console.error("[OnboardingMobile] set_initial_role_and_context:", ctxErr);
+          console.error(`[OnboardingMobile] set_initial_role_and_context: ${erreurLisible(ctxErr)}`);
         }
       }
     }
@@ -1152,7 +1211,7 @@ export function AthleteOnboardingMobile() {
           return; // ⚠️ pas de router.replace ici — c'est le CTA du WOW qui le fera
         }
       } catch (err) {
-        console.warn("[OnboardingMobile] WOW re-fetch failed, bypass:", err);
+        console.warn(`[OnboardingMobile] WOW re-fetch failed, bypass: ${erreurLisible(err)}`);
       }
     }
     // Fallback : pas d'athlète à montrer, on redirect directement.
@@ -1371,6 +1430,9 @@ export function AthleteOnboardingMobile() {
             onPick={(c) => {
               triggerHaptic("Light");
               setUserContext(c);
+              /* L'aiguillage a été VU : la box de rattrapage n'a plus lieu
+                 d'être — le champ de code était juste au-dessus. */
+              setStep0Saute(false);
               setStep(1);
             }}
             initialCode={joinCodePrefill}
@@ -1381,7 +1443,7 @@ export function AthleteOnboardingMobile() {
             // l'étape 0).
             onCodeAdopted={(v) => {
               applyCodeLock(v);
-              if (v) { triggerHaptic("Light"); setStep(1); }
+              if (v) { triggerHaptic("Light"); setStep0Saute(false); setStep(1); }
             }}
           />
         )}
@@ -1424,6 +1486,7 @@ export function AthleteOnboardingMobile() {
             // (organisation, contexte, sport) est faite par applyCodeLock, pas
             // ici — c'est le même corps que le web.
             onJoinCodeResolved={applyCodeLock}
+            step0Saute={step0Saute}
             codeLock={codeLock}
             // « Changer » RAMÈNE À L'ÉTAPE 0 (lot 2). Le code ayant décidé du
             // contexte sans que l'athlète ne réponde à « école ou club ? », le
@@ -1823,6 +1886,8 @@ interface Step1Props {
   /** Remonte l'équipe résolue COMPLÈTE — la dérivation est faite par le parent
    *  (applyCodeLock), pas par cet écran. */
   onJoinCodeResolved: (v: { code: string; team: ResolvedJoinTeam } | null) => void;
+  /** Vrai quand l'aiguillage « Où joues-tu ? » n'a pas été montré. */
+  step0Saute: boolean;
   /** Non-null = un code pilote le formulaire : sport verrouillé, équipe
    *  pré-confirmée, picker d'équipe masqué. */
   codeLock: {
@@ -1843,10 +1908,27 @@ function Step1Content(p: Step1Props) {
           ? "Choisis ton sport et ton équipe civile. Ce qui ira sur ta carte joueur."
           : "Choisis ton sport, ton école et — si elle existe — l'équipe à laquelle tu appartiens."}
       />
-      {/* ── VOIE RAPIDE : le code d'équipe, EN TÊTE ──────────────────────────
-          Il vivait plus bas, après le sport et l'école — donc après que
-          l'athlète ait pu se tromper. Ici il pilote : organisation, contexte
-          et sport en sont dérivés et verrouillés. */}
+      {/* ── LE CODE D'ÉQUIPE — CONDITIONNEL ──────────────────────────────────
+          La voie normale passe par l'aiguillage « Où joues-tu ? » (Step-0),
+          qui porte DÉJÀ un champ de code et qui PILOTE le reste : contexte,
+          organisation et sport en sont dérivés et verrouillés. Répéter la box
+          ici ferait deux portes pour une seule serrure, et la seconde arrive
+          après que l'athlète a pu choisir un sport que le code écrasera.
+
+          Elle ne s'affiche donc que dans DEUX cas :
+
+          · `step0Saute` — L'AIGUILLAGE A ÉTÉ SAUTÉ. Ça arrive à la REPRISE
+            d'inscription : `users.context` est déjà posé, l'init envoie droit
+            à l'étape 1. Le scénario concret : l'athlète commence seul un soir,
+            reçoit son code de l'entraîneur le lendemain, puis reprend — sans
+            cette box, il n'aurait aucun endroit où le saisir dans le wizard.
+            Le drapeau retombe dès qu'il revient sur l'aiguillage (bouton
+            Retour) : il y a vu le champ, la répétition redevient inutile.
+
+          · `codeLock` — UN CODE EST ACTIF. Il faut pouvoir lire l'équipe
+            adoptée et la relâcher ; masquer la box enfermerait l'athlète dans
+            un choix qu'il ne verrait plus. */}
+      {(p.codeLock || p.step0Saute) && (
       <div className="mt-2 mb-4 rounded-2xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
         {p.codeLock ? (
           <div className="flex items-start gap-3">
@@ -1875,17 +1957,28 @@ function Step1Content(p: Step1Props) {
           </div>
         ) : (
           <>
+            {/* OPTIONNEL, ET ÇA SE LIT. Le libellé disait « Ton entraîneur t'a
+                donné un code ? » — une question à laquelle un jeune sans code
+                ne sait pas quoi répondre, dans un encadré rouge qui ressemble à
+                un passage obligé. Le titre annonce maintenant un RACCOURCI, et
+                la ligne du bas donne la sortie explicitement : personne ne doit
+                rester bloqué là faute de code. */}
             <p className="mb-1 text-[13px] font-semibold text-white">
-              Ton entraîneur t&apos;a donné un code ?
+              Un code d&apos;équipe ? <span className="font-normal text-white/50">(facultatif)</span>
             </p>
             <p className="mb-3 text-[12px] leading-relaxed text-white/55">
-              Entre-le : ton équipe, ton école ou ton club et ton sport se
-              remplissent tout seuls.
+              Si ton entraîneur t&apos;en a donné un, entre-le : ton équipe, ton
+              école ou ton club et ton sport se remplissent tout seuls.
             </p>
             <JoinCodeField initialCode={p.joinCodePrefill} onResolved={p.onJoinCodeResolved} />
+            <p className="mt-3 text-[12px] leading-relaxed text-white/45">
+              Pas de code ? Continue sans — tu pourras rejoindre ton équipe plus
+              tard.
+            </p>
           </>
         )}
       </div>
+      )}
 
       <SectionTitle>Sport principal</SectionTitle>
       {/* Sport VERROUILLÉ quand un code est actif : il vient de l'équipe. Le

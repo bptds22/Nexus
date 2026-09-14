@@ -1,5 +1,7 @@
 "use client";
 
+import InterimCoachBanner from "@/components/shared/coach/InterimCoachBanner";
+import { loadMyInterimTeams, type InterimTeam } from "@/lib/queries/coach/interimTeams";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ActionBar from "./_components/ActionBar";
@@ -45,6 +47,7 @@ export default function TableauDeBordPage() {
   const [loading, setLoading] = useState(true);
   const [isDirector, setIsDirector] = useState(false);
   const [activeTeams, setActiveTeams] = useState(0);
+  const [interimTeams, setInterimTeams] = useState<InterimTeam[]>([]);
   const [isInterimDirector, setIsInterimDirector] = useState(false);
   const [interimSchoolName, setInterimSchoolName] = useState("");
   const [demotionNotifications, setDemotionNotifications] = useState<{
@@ -102,6 +105,10 @@ export default function TableauDeBordPage() {
       }
 
       // Director → school-wide dashboard scope (BP rule). Non-director unchanged.
+      /* Lot C — bandeau intérim. Lecture indépendante : le bandeau ne doit
+         jamais empêcher le tableau de bord de s'afficher. */
+      loadMyInterimTeams(supabase).then(setInterimTeams);
+
       const dir = await loadSchoolDirectorStatus(supabase, user.id);
       const isDir = dir.isDirector;
       setIsDirector(isDir);
@@ -303,7 +310,11 @@ export default function TableauDeBordPage() {
               rank: i + 1,
               name: `${(p?.first_name as string) || ""} ${(p?.last_name as string) || ""}`.trim(),
               position: posObj?.abreviation || posObj?.nom || "",
-              stars: Math.round((p?.cote_globale_entraineur as number) || 0),
+              /* UNE décimale conservée : StarRating gère les demi-étoiles et
+                 rend le nombre en `.toFixed(1)`. Arrondir à l'entier ici
+                 affichait « 5.0 » pour un 4,6 — une précision fabriquée, et
+                 cinq étoiles pleines au lieu de quatre et demie. */
+              stars: Math.round(((p?.cote_globale_entraineur as number) || 0) * 10) / 10,
               viewsThisWeek: views,
               uniqueRecruiters: favCounts.get(aid) || 0,
             };
@@ -423,6 +434,10 @@ export default function TableauDeBordPage() {
         </p>
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
       </div>
+
+      {/* Lot C — bandeau persistant « coach intérimaire ». Disparaît seul
+          dès qu'un entraîneur-chef titulaire est nommé. */}
+      <InterimCoachBanner teams={interimTeams} />
 
       {/* Interim director status (persistent while role is held) */}
       {isInterimDirector && (

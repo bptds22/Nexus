@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 interface WrongRoutePageProps {
   role: "COACH" | "RECRUTEUR" | null;
@@ -25,7 +26,7 @@ export default function WrongRoutePage({ role }: WrongRoutePageProps) {
 
   async function handleLogout() {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    await deconnexion(supabase);
     router.replace("/auth");
   }
 

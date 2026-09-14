@@ -21,6 +21,7 @@ import { useDashboardKpi } from "@/lib/queries/recruiter/useDashboardKpi";
 import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes";
 import { useActivityFeed } from "@/lib/queries/recruiter/useActivityFeed";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import type { TrendingAthlete } from "@/app/recruteur/_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
@@ -29,6 +30,7 @@ import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeti
 import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
 import { DashboardActivityFeed } from "@/components/shared/dashboard/DashboardActivityFeed";
 import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
+import { RelancesDuJour } from "@/components/shared/dashboard/RelancesDuJour";
 import { frenchDateUppercase, triggerHaptic } from "@/components/shared/dashboard/utils";
 
 /* ── DashboardHero (Iter 6.2-redesign — hero card rouge Nexus gradient) ─ */
@@ -286,6 +288,16 @@ export function RecruteurDashboardMobile() {
   const { data: favoritesArr = [] } = useFavorites();
   const favoritesSet = useMemo(() => new Set(favoritesArr), [favoritesArr]);
   const subscription = useSubscription();
+  /* Même garde que la fiche athlète (AthleteRecruiterProfileBodyMobile) :
+     la relance est une fonction Pro de bout en bout — poser une date, la
+     trier, en être averti. Un encart qui compterait des relances qu'un Free
+     ne peut pas planifier serait une vitrine, pas un outil. */
+  const tier = subscription.subscription?.tier;
+  const canUsePipeline = tier === "pro" || tier === "all_star";
+  /* Chargé SEULEMENT si la garde passe — `enabled` évite la requête pour les
+     Free plutôt que de la faire et d'en jeter le résultat. */
+  const { data: pipelineData } = usePipelineCards({ enabled: canUsePipeline });
+  const relanceCards = pipelineData?.cards ?? [];
 
   const loading = headerLoading || kpiLoading;
   const headerName = header?.headerName ?? "";
@@ -472,6 +484,19 @@ export function RecruteurDashboardMobile() {
           },
         ]}
       />
+
+      {canUsePipeline && relanceCards.length > 0 && (
+        <>
+          <SectionDivider />
+          <div className="py-6">
+            <RelancesDuJour
+              cards={relanceCards}
+              onTapAthlete={navAthlete}
+              onTapToutVoir={() => router.push("/recruteur/pipeline")}
+            />
+          </div>
+        </>
+      )}
 
       <SectionDivider />
 

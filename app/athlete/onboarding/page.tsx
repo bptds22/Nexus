@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
@@ -16,6 +16,7 @@ import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
+import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { AthleteOnboardingMobile } from "@/components/shared/AthleteOnboardingMobile";
 import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
@@ -686,6 +687,14 @@ function AthleteOnboardingDesktop() {
   const [initError, setInitError] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [existingAthleteId, setExistingAthleteId] = useState<string | null>(null);
+  /* Instantané des colonnes protégées TELLES QU'ELLES SONT EN BASE, relevé au
+     chargement de la fiche. Sert de référence à `elaguerProtegees` : sans lui
+     on ne retire rien (chemin INSERT), ce qui est le comportement voulu — le
+     trigger est BEFORE UPDATE seul. Jumeau web de `AthleteOnboardingMobile`. */
+  const ficheEnBase = useRef<Record<string, unknown> | null>(null);
+  /* L'échec de sauvegarde ne part plus au seul console.error : il s'affiche.
+     Un onboarding qui échoue en silence se lit comme un bouton mort. */
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // ── Rattachement d'équipe (transfer portal, phase 2) ──────────────────────
   // `joinCodeUsed` est non-null quand l'athlète est arrivé par /join ou a saisi
@@ -1008,6 +1017,11 @@ function AthleteOnboardingDesktop() {
 
       if (existing) {
         setExistingAthleteId(existing.id);
+        /* Relevé AVANT tout pré-remplissage : c'est l'état de la BASE, pas
+           celui de l'écran. La fiche peut être héritée (orphelin réclamé par
+           `link_athlete_on_signup` à l'inscription) et porter déjà une école,
+           un coach, un statut — que le submit ne doit pas réécrire pour rien. */
+        ficheEnBase.current = instantaneProtege(existing as Record<string, unknown>);
         // Skip onboarding ONLY when users.onboarding_complete is set — the SAME
         // criterion as the athlete layout guard. Previously this redirected on
         // the PRESENCE of athletes fields (first_name/last_name/sport_id/
@@ -1234,6 +1248,9 @@ function AthleteOnboardingDesktop() {
     // claim policy's WITH CHECK (user_id = auth.uid()) and the row
     // transitions from orphan to owned in a single write.
     setExistingAthleteId(orphanMatch.id);
+    /* Même relevé que dans l'effet d'init : dès qu'on passe en mode UPDATE,
+       le submit a besoin de savoir ce que la base porte déjà. */
+    ficheEnBase.current = instantaneProtege(full as Record<string, unknown>);
     setShowClaimModal(false);
   }
 
@@ -1279,6 +1296,7 @@ function AthleteOnboardingDesktop() {
   // Save current step's data to Supabase before advancing
   async function saveStepAndAdvance() {
     if (!canProceed() || !userId) return;
+    setSaveError(null);
     setSaving(true);
 
     const supabase = createClient();
@@ -1342,17 +1360,34 @@ function AthleteOnboardingDesktop() {
 
     try {
       if (existingAthleteId) {
-        const { error } = await supabase.from("athletes").update(payload).eq("id", existingAthleteId);
-        if (error) { console.error("[Onboarding step save] update:", error); setSaving(false); return; }
+        /* Les colonnes protégées inchangées ne partent plus : l'étape 1 repose
+           user_id, school_id, coach_id, status et verified à chaque « Suivant »,
+           ce qui suffisait à faire lever `trg_athlete_self_edit_perimeter` sur
+           une fiche héritée. Un vrai changement part encore, et se fait encore
+           refuser — l'élagage ne contourne pas la garde, il cesse de la
+           réveiller pour rien. */
+        const patch = elaguerProtegees(payload, ficheEnBase.current);
+        const { error } = await supabase.from("athletes").update(patch).eq("id", existingAthleteId);
+        if (error) {
+          console.error(`[Onboarding step save] update: ${erreurLisible(error)}`);
+          setSaveError(error.message || "La sauvegarde de cette étape a échoué.");
+          setSaving(false); return;
+        }
       } else {
         const { data, error } = await supabase.from("athletes").insert(payload).select("id").single();
-        if (error) { console.error("[Onboarding step save] insert:", error); setSaving(false); return; }
+        if (error) {
+          console.error(`[Onboarding step save] insert: ${erreurLisible(error)}`);
+          setSaveError(error.message || "La sauvegarde de cette étape a échoué.");
+          setSaving(false); return;
+        }
         if (data) setExistingAthleteId(data.id);
       }
+      setSaveError(null);
       setSaving(false);
       setStep(step + 1);
     } catch (err) {
-      console.error("[Onboarding step save] unexpected:", err);
+      console.error(`[Onboarding step save] unexpected: ${erreurLisible(err)}`);
+      setSaveError("Une erreur inattendue a interrompu la sauvegarde.");
       setSaving(false);
     }
   }
@@ -1362,6 +1397,7 @@ function AthleteOnboardingDesktop() {
     // Parental consent only blocks submit for minors (adults have no
     // parental consent and no parent section shown).
     if (isMinor && (!consentProfile || !consentVisibility)) return;
+    setSaveError(null);
     setSaving(true);
 
     try {
@@ -1475,11 +1511,25 @@ function AthleteOnboardingDesktop() {
 
     let athleteIdForTeam: string | null = existingAthleteId;
     if (existingAthleteId) {
-      const { error } = await supabase.from("athletes").update(athleteRecord).eq("id", existingAthleteId);
-      if (error) { console.error("[Onboarding] update failed:", error); setSaving(false); return; }
+      /* Jumeau web du correctif 1.4.1 (AthleteOnboardingMobile) : l'onboarding
+         envoie un UPDATE COMPLET, donc il reposait school_id, coach_id, status
+         et verified même quand rien n'avait bougé. Sur une fiche réclamée, ça
+         suffisait à faire lever le trigger — 400, « Échec de sauvegarde » —
+         alors que l'athlète n'avait touché à rien d'interdit. */
+      const patch = elaguerProtegees(athleteRecord, ficheEnBase.current);
+      const { error } = await supabase.from("athletes").update(patch).eq("id", existingAthleteId);
+      if (error) {
+        console.error(`[Onboarding] update failed: ${erreurLisible(error)}`);
+        setSaveError(error.message || "Échec de sauvegarde de ton profil.");
+        setSaving(false); return;
+      }
     } else {
       const { data: inserted, error } = await supabase.from("athletes").insert(athleteRecord).select("id").single();
-      if (error) { console.error("[Onboarding] insert failed:", error); setSaving(false); return; }
+      if (error) {
+        console.error(`[Onboarding] insert failed: ${erreurLisible(error)}`);
+        setSaveError(error.message || "Échec de sauvegarde de ton profil.");
+        setSaving(false); return;
+      }
       athleteIdForTeam = (inserted?.id as string) ?? null;
     }
 
@@ -2183,6 +2233,17 @@ function AthleteOnboardingDesktop() {
               <div><label className={labelCls}>YouTube</label><input type="url" value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} placeholder="https://youtube.com/..." className={inputCls} /></div>
               <div><label className={labelCls}>Instagram</label><input type="url" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} placeholder="https://instagram.com/..." className={inputCls} /></div>
             </div>
+          </div>
+        )}
+
+        {/* Échec de SAUVEGARDE du profil — à distinguer du rattachement plus
+            bas : ici rien n'est enregistré, et l'écran le disait en console
+            seulement. Un « Suivant » qui ne fait rien se lit comme un bouton
+            mort ; on nomme la cause et on laisse réessayer. */}
+        {saveError && (
+          <div className="rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-3" role="alert">
+            <p className="text-[13px] font-bold text-[#EF4444]">Échec de sauvegarde</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-[#9CA3AF]">{saveError}</p>
           </div>
         )}
 

@@ -25,6 +25,12 @@ export type PickerOption = {
   value: string | number | null;
   label: string;
   icon?: ReactNode;
+  /** Option VISIBLE mais non choisissable (2026-09-09). Règle maison : cacher
+   *  une option laisse croire qu'elle n'existe pas ; la griser apprend le
+   *  modèle. Sert aux facettes dépendantes, où une valeur peut tomber à zéro
+   *  sous la sélection courante. Absent = choisissable, donc aucun appelant
+   *  existant ne change de comportement. */
+  disabled?: boolean;
 };
 
 interface MobilePickerProps {
@@ -113,8 +119,9 @@ export function MobilePicker({ open, onClose, title, options, value, onChange }:
                 <button
                   key={`${opt.value}-${idx}`}
                   type="button"
+                  disabled={opt.disabled}
                   onClick={() => { void triggerHaptic("Light"); selectOption(opt.value); }}
-                  className="w-full flex items-center justify-between px-4 text-left active:bg-white/[0.04]"
+                  className={`w-full flex items-center justify-between px-4 text-left ${opt.disabled ? "opacity-40" : "active:bg-white/[0.04]"}`}
                   style={{
                     height: 56,
                     borderTop: idx > 0 ? "0.5px solid rgba(255,255,255,0.08)" : undefined,
@@ -122,7 +129,7 @@ export function MobilePicker({ open, onClose, title, options, value, onChange }:
                 >
                   <span className="flex items-center gap-3 flex-1 min-w-0">
                     {opt.icon && <span className="flex-shrink-0">{opt.icon}</span>}
-                    <span className="text-[15px] font-medium text-white truncate">{opt.label}</span>
+                    <span className={`text-[15px] font-medium truncate ${opt.disabled ? "text-[#6B7280]" : "text-white"}`}>{opt.label}</span>
                   </span>
                   {isSelected && (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 ml-3">

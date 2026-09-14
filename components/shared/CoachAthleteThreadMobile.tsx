@@ -220,8 +220,29 @@ export function CoachAthleteThreadMobile() {
             aria-hidden
           />
           <div
-            className={`fixed bottom-0 inset-x-0 z-[70] bg-[#1A1D24] border-t border-[#2D3748] rounded-t-2xl flex flex-col ${sheetOpen ? "translate-y-0" : "translate-y-full"}`}
-            style={{ maxHeight: "min(88vh, calc(100dvh - env(safe-area-inset-top, 0px)))", paddingBottom: "env(safe-area-inset-bottom)", transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+            /* nx-kbd-immobile — CONTRAT : cette feuille ne contient AUCUNE
+               saisie, elle ne doit donc jamais suivre le clavier.
+
+               Sans elle, la règle globale `html.is-capacitor .fixed.bottom-0`
+               (globals.css) lui posait `bottom: var(--kbd-h)` — et comme elle se
+               masque par TRANSLATION en restant montée, un clavier ouvert la
+               repoussait vers le HAUT : la feuille fermée redevenait visible
+               par-dessus la conversation.
+
+               Plus exposé encore que le MorePanel qui a révélé le défaut : on
+               est dans un FIL, le composer ouvre le clavier à chaque message
+               écrit, pas seulement à une recherche. */
+            className={`nx-kbd-immobile fixed bottom-0 inset-x-0 z-[70] bg-[#1A1D24] border-t border-[#2D3748] rounded-t-2xl flex flex-col ${sheetOpen ? "translate-y-0" : "translate-y-full"}`}
+            /* La tab bar est PORTALÉE sur document.body (MobileTabBar, « Stacking-
+               context fix ») précisément pour que son z-40 échappe aux racines de
+               layout. Elle échappe donc aussi au z de CE sheet, qui vit dans
+               l'arbre du layout : le bas du sheet passe DESSOUS, et le CTA de la
+               carte s'y faisait couper — seul son haut dépassait.
+               `env(safe-area-inset-bottom)` seul ne réservait que le home
+               indicator, jamais la barre. On reprend le patron de MaPageMobile /
+               TransfertAthletesMobile : `--tabzone` quand un layout la pose
+               (app/college), repli 88px ailleurs, +12px de respiration. */
+            style={{ maxHeight: "min(88vh, calc(100dvh - env(safe-area-inset-top, 0px)))", paddingBottom: "calc(var(--tabzone, calc(env(safe-area-inset-bottom) + 88px)) + 12px)", transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" }}
             role="dialog" aria-modal="true" aria-label="Fiche athlète"
           >
             <div className="flex justify-center pt-3 pb-2 shrink-0"><div className="w-10 h-1 rounded-full bg-[#4a4d56]" /></div>

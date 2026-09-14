@@ -42,20 +42,14 @@ import { TeamAddCoachSheet } from "@/components/shared/teams/TeamAddCoachSheet";
 import { TeamAddAthleteSheet } from "@/components/shared/teams/TeamAddAthleteSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
+import CoachRoleLine from "@/components/shared/coach/CoachRoleLine";
+import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
+import { isReferentRole, type TeamRole } from "@/lib/coach/teamRoles";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-const ROLE_LABEL: Record<string, string> = {
-  head_coach: "Chef",
-  assistant: "Assistant",
-  coordinator: "Coordo",
-};
-const ROLE_PILL: Record<string, string> = {
-  head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
-  assistant: "bg-white/[0.06] text-[#9CA3AF] border-white/10",
-  coordinator: "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
-};
+/* Rôles : lib/coach/teamRoles est LA source (parité stricte avec le web). */
 
 /* Adapter : map the team-detail's CoachTeamDetailAthlete row to the
    CoachAthlete shape consumed by the shared CoachAthleteRowMobile.
@@ -123,6 +117,7 @@ export default function CoachEquipeDetailMobile() {
   const teamId = useDynamicParam("teamId");
 
   const { data, isLoading } = useCoachTeamDetail(teamId);
+  const [roleBusy, setRoleBusy] = useState<string | null>(null);
   const team = data?.team;
   const coaches = data?.coaches ?? [];
   const athletes = data?.athletes ?? [];
@@ -144,6 +139,20 @@ export default function CoachEquipeDetailMobile() {
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["coach-team", teamId] });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
+  }
+
+  /* Lot D — changement de rôle, même mutation partagée que le web. */
+  async function changeCoachRole(row: { id: string; coachId: string; name: string; role: string }, nextRole: TeamRole) {
+    if (row.role === nextRole || roleBusy) return;
+    setRoleBusy(row.id);
+    const supabase = createClient();
+    const res = await setTeamCoachRole(supabase, { teamId, target: row, nextRole, roster: coaches });
+    setRoleBusy(null);
+    if (res.message) {
+      if (res.ok) toast.success({ message: res.message });
+      else toast.error({ message: res.message });
+    }
+    if (res.ok) invalidate();
   }
 
   async function addCoachToTeam(coachId: string, role: "head_coach" | "assistant" | "coordinator") {
@@ -275,6 +284,18 @@ export default function CoachEquipeDetailMobile() {
 
   const pills = [team.sportName, team.ageGroup, team.division, team.league, team.season].filter(Boolean);
   const isAdmin = team.myRole === "ADMIN";
+  /* Plus étroit qu'isAdmin : l'ajout et le retrait d'entraîneurs sont refusés
+     par la RLS à un entraîneur-chef PAR INTÉRIM, là où le changement de rôle
+     passe (branche école de la politique UPDATE). On masque donc ces deux
+     gestes plutôt que d'offrir des boutons qui échouent. Voir le champ
+     `canAddStaff` / `canRemoveStaff` dans useCoachTeamDetail : deux droits, deux
+     politiques en base. */
+  /* Deux droits distincts, parce que la base en a deux. Le ✕ ne s'affiche
+     qu'à la direction : la policy DELETE de `team_coaches` ne laisse passer
+     personne d'autre, et un bouton qui échoue au clic est pire qu'un bouton
+     absent. Cf. useCoachTeamDetail pour les deux politiques citées. */
+  const canAddStaff = team.canAddStaff;
+  const canRemoveStaff = team.canRemoveStaff;
 
   return (
     <div
@@ -340,28 +361,50 @@ export default function CoachEquipeDetailMobile() {
           <Group>
             {coaches.map((c, i) => {
               const initials = c.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+              /* Rythme vertical — la ligne porte deux étages (nom, puis
+                 select), donc `items-center` la centrait sur l'ensemble et
+                 désalignait l'avatar du nom. `items-start` + un padding
+                 vertical explicite remplacent le minHeight de 60 : celui-ci
+                 valait pour une ligne à un seul étage, et se faisait de toute
+                 façon dépasser par le select. */
               return (
                 <div
                   key={c.id}
-                  className="w-full flex items-center px-4 gap-3"
-                  style={{ minHeight: 60, borderTop: i === 0 ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
+                  className="w-full flex items-start px-4 py-3 gap-3"
+                  style={{ borderTop: i === 0 ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
                 >
                   <div className="w-10 h-10 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
                     <span className="text-[11px] font-bold text-[#9CA3AF]">{initials}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] text-white truncate">{c.name}</p>
-                    <span
-                      className={`inline-block mt-1 text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${ROLE_PILL[c.role] || ROLE_PILL.assistant}`}
-                    >
-                      {ROLE_LABEL[c.role] || c.role}
-                    </span>
+                    <p className="text-[15px] text-white truncate leading-10">{c.name}</p>
+                    {/* v3 — le select passe SOUS le nom : la ligne mobile
+                        (avatar + nom + bouton retirer) n'a pas la largeur du
+                        web pour l'accueillir à droite. Même composant, mêmes
+                        règles ; seuls le placement et la largeur diffèrent —
+                        d'où `variant="mobile"`, qui étend le select sur toute
+                        la largeur pour aligner le bord droit d'une ligne à
+                        l'autre. Sans droits (isAdmin), c'est du texte simple,
+                        pas un select grisé. */}
+                    <CoachRoleLine
+                      className="mt-1.5"
+                      role={c.role}
+                      canEdit={isAdmin}
+                      variant="mobile"
+                      teamCoachCount={coaches.length}
+                      teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
+                      busy={roleBusy !== null}
+                      onChange={(next) => changeCoachRole(c, next)}
+                    />
                   </div>
-                  {isAdmin && (
+                  {canRemoveStaff && (
                     <button
                       type="button"
                       onClick={() => { void triggerHaptic("Light"); setConfirmRemoveCoach({ id: c.id, name: c.name }); }}
-                      className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.04]"
+                      /* h-10 comme l'avatar et comme la ligne du nom : sous
+                         `items-start`, les trois colonnes s'alignent alors sur
+                         le premier étage, et le select occupe le second seul. */
+                      className="w-9 h-10 rounded-full flex items-center justify-center active:bg-white/[0.04] shrink-0"
                       aria-label="Retirer"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
@@ -372,7 +415,7 @@ export default function CoachEquipeDetailMobile() {
                 </div>
               );
             })}
-            {isAdmin && (
+            {canAddStaff && (
               <NavRow
                 label="Ajouter un entraîneur"
                 isFirst={coaches.length === 0}

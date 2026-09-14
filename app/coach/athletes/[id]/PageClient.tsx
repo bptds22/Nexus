@@ -9,6 +9,7 @@ import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/typ
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote, aDesCriteres as aDesCriteresPartage } from "@/lib/evaluations/presence";
 import { createClient } from "@/lib/supabase/client";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
@@ -29,6 +30,9 @@ import SuggestionsAlert from "@/components/coach/profile/SuggestionsAlert";
 // CoachAthleteProfileBodyMobile (paraphrase copy) supprimé.
 import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecruiterProfileBodyMobile";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import AthleteTransferSheet, {
+  loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
+} from "@/components/shared/coach/AthleteTransferSheet";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -49,23 +53,24 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
 
 /* ── Shared components (same as recruiter view) ───────────────── */
 
-function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChange: (m: "simple" | "detailed") => void }) {
-  const pill = (active: boolean) =>
-    `px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer ${
-      active ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"
-    }`;
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Simplifié</button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Détaillé</button>
-    </div>
-  );
-}
 
 /** Calculate profile completion from raw Supabase data */
 
 function CompletenessBar({ percent }: { percent: number }) {
-  const color = percent >= 90 ? "#3B82F6" : percent >= 60 ? "#22C55E" : percent >= 40 ? "#EAB308" : "#EF4444";
+  /* BLEU DU SYSTÈME (BP, 2026-09-09) : #3B82F6, la teinte du badge vérifié.
+     Le vert #22C55E disparaît de la jauge de complétion.
+
+     LE PALIER 90 A ÉTÉ FONDU dans le palier 60 : il rendait DÉJÀ #3B82F6.
+     Le garder aurait laissé deux seuils rendre exactement la même couleur —
+     un escalier à marche invisible, que le prochain lecteur prendrait pour un
+     bug. Rouge et ambre restent : en dessous de 60, le profil a encore quelque
+     chose à dire.
+
+     Cette jauge était la DERNIÈRE au vert. Les autres indicateurs de
+     complétion du produit — tableau de bord athlète, anneau du profil
+     athlète, pipeline recruteur, cartes de roster, stats et analytique école —
+     rendent déjà ce bleu. Le changement les aligne, il n'invente rien. */
+  const color = percent >= 60 ? "#3B82F6" : percent >= 40 ? "#EAB308" : "#EF4444";
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 bg-[#2D3748] rounded-full overflow-hidden">
@@ -242,8 +247,21 @@ export default function CoachAthleteProfilePage() {
   }
 
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
+  /* Lot J — transfert depuis la fiche. L'état de transfert est chargé une
+     fois ; le bouton n'existe que si les droits (dérivés de la RLS, pas
+     réinventés) le permettent. */
+  const [trState, setTrState] = useState<AthleteTransferState | null>(null);
+  const [trOpen, setTrOpen] = useState(false);
+  const [trToast, setTrToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const grilleSet = useGrilles();
+
+  useEffect(() => {
+    if (!id) return;
+    let annule = false;
+    loadAthleteTransferState(id).then((st) => { if (!annule) setTrState(st); });
+    return () => { annule = true; };
+  }, [id]);
   /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE. Les deux
      champs voyagent depuis mapToRecruiterView. */
   const grilleRef: GrilleRef = { grilleId: a?.grilleId ?? null, positionId: a?.positionId ?? null };
@@ -421,7 +439,15 @@ export default function CoachAthleteProfilePage() {
     }
   }
 
-  const [mode, setMode] = useState<"simple" | "detailed">("simple");
+  /* DÉFAUT « DÉTAILLÉ » (BP, 2026-09-09). Le mode simplifié est en voie de
+     retrait : ce qu'un athlète a rempli s'affiche, sans qu'il faille le
+     demander. Le toggle RESTE le temps du 1.4.1 — son retrait complet est un
+     fast-follow post-Promote, parce qu'il déroule des centaines de branches.
+
+     ⚠ CE DÉFAUT N'OUVRE AUCUN VERROU. `lockContent` (tier gratuit) et les
+     masquages Loi 25 sont gardés ailleurs, un par un, et ne dépendent pas du
+     mode. Le mode dit QUELLES SECTIONS on déroule ; eux disent CE QU'ON A LE
+     DROIT DE LIRE. Les confondre ouvrirait l'identité de mineurs. */
   const [athleteHasAccount, setAthleteHasAccount] = useState(false);
   const [athleteEmail, setAthleteEmail] = useState<string | null>(null);
   // #48 — lien de claim token-based (RPC create_athlete_invitation → /claim?token=).
@@ -432,7 +458,11 @@ export default function CoachAthleteProfilePage() {
   const isPreview = searchParams.get("preview") === "true";
   const [recruiterView, setRecruiterView] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [openMenu, setOpenMenu] = useState(false);
+  /* Le menu ⋮ portait « Exporter PDF / Archiver / Supprimer » : trois libellés
+     branchés sur UN handler générique qui affichait « … (POC) ». Aucune
+     écriture, aucun DELETE — trois promesses vides. Retirés pour 1.4.1 : un
+     menu qui ne fait rien coûte plus en confiance qu'il ne rapporte en
+     promesse. À rétablir entrée par entrée, quand chacune aura un flow. */
   const [pipelineData, setPipelineData] = useState<{ status: string; count: number }[]>([]);
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
@@ -445,7 +475,22 @@ export default function CoachAthleteProfilePage() {
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ id: string; champ: string; valeur_actuelle: string; valeur_proposee: string; message: string; created_at: string }[]>([]);
 
-  const isDetailed = mode === "detailed";
+  /* LE TOGGLE « Aperçu / Profil complet » EST RETIRÉ (BP, 2026-09-09).
+     Le profil montre ce que l'athlète a rempli, sans qu'on le demande.
+
+     Diagnostic avant retrait : aucun contenu n'était propre à l'Aperçu — sa
+     seule section, l'étoile + la cote, est re-rendue en tête du bloc détaillé.
+     Aucune persistance, aucun deep-link, aucun effet ni fetch ne dépendait du
+     mode : il ne changeait que du DOM.
+
+     `isDetailed` reste, en constante : les blocs conditionnels sont laissés EN
+     PLACE. L'élagage des conditions devenues mortes est un nettoyage séparé,
+     invisible pour l'utilisateur — le mêler à ce retrait ferait un diff qu'on
+     relit mal.
+
+     ⚠ CE RETRAIT N'OUVRE AUCUN VERROU. `lockContent` et les masquages Loi 25
+     ne lisent pas `mode`, et ne l'ont jamais lu (grep croisé, zéro). */
+  const isDetailed = true;
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   if (loading || !a) {
@@ -464,6 +509,13 @@ export default function CoachAthleteProfilePage() {
   const ratedTraits = traitEntries.filter(([, v]) => v > 0);
   const traitAvg = ratedTraits.length > 0 ? ratedTraits.reduce((s, [, v]) => s + v, 0) / ratedTraits.length : null;
   const coteGlobale = traitAvg ?? a.overallRating;
+  /* LA RÈGLE D'AFFICHAGE (BP, 2026-09-09) : l'écran montre ce que la DONNÉE
+     contient. Une cote rapide (étoile seule, aucun critère) ne doit jamais
+     s'afficher comme une évaluation complète — sinon les 14 critères sortent
+     à « 0/5 », et une note de zéro se trouve affirmée sur un jeune que
+     personne n'a noté. Le toggle décide de l'envie de détail ; `aDesCriteres`
+     décide de ce qu'il y a à détailler. Les deux doivent être vrais. */
+  const aDesCriteres = aDesCriteresPartage(a.traitRatings);
 
   // Attribution — la note/éval affichée (la plus récente) n'est PAS celle du
   // coach connecté : afficher « Évalué par {Prénom Nom} » (typiquement le
@@ -537,28 +589,25 @@ export default function CoachAthleteProfilePage() {
               Message
             </button>
 
+            {/* Lot J — Transférer. Même moteur que le portail ; le bouton
+                n'apparaît pas sans les droits. */}
+            {trState && canTransferAthlete(trState) && (
+              <button
+                type="button"
+                onClick={() => setTrOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 border border-[#3B82F6] text-[#3B82F6] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#3B82F6]/10 transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>
+                Transférer
+              </button>
+            )}
+
             {/* Edit */}
             <Link href={`/coach/athletes/${id}/modifier`} className="flex items-center gap-2 px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               Modifier
             </Link>
 
-            {/* 3-dot menu */}
-            <div className="relative">
-              <button type="button" title="Plus d'actions" onClick={() => setOpenMenu(!openMenu)} className="w-9 h-9 rounded-lg border border-[#2D3748] flex items-center justify-center text-[#6b7280] hover:text-white transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
-              </button>
-              {openMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-[#1A1D24] border border-[#2D3748] rounded-lg shadow-xl overflow-hidden">
-                    {["Exporter PDF", "Archiver", "Supprimer"].map((label) => (
-                      <button key={label} type="button" onClick={() => { setOpenMenu(false); showToast(`${label} (POC)`); }} className="w-full text-left px-4 py-2.5 text-[12px] text-[#9CA3AF] hover:text-white hover:bg-white/5 transition-colors">{label}</button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -634,7 +683,6 @@ export default function CoachAthleteProfilePage() {
 
       {/* ── Toggle + Completeness ─────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <ProfileToggle mode={mode} onChange={setMode} />
         <div className="w-full sm:w-56">
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
           <CompletenessBar percent={a.profileCompleteness} />
@@ -738,7 +786,7 @@ export default function CoachAthleteProfilePage() {
             )}
             <div className={a.coachReport ? "mt-3" : ""}>
 
-              {!isDetailed && (
+              {(!isDetailed || !aDesCriteres) && (
                 <div className="mt-3 pl-5">
                   <div className="flex items-center gap-3">
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
@@ -751,7 +799,7 @@ export default function CoachAthleteProfilePage() {
                 </div>
               )}
 
-              {isDetailed && (
+              {isDetailed && aDesCriteres && (
                 <div className="mt-5 pl-5">
                   {/* (1) Cote globale prominent — matches modifier card */}
                   <div className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-4 flex items-center justify-between mb-4">
@@ -767,11 +815,22 @@ export default function CoachAthleteProfilePage() {
 
                   {/* (2-4) Capacités athlétiques / Intelligence sportive / Caractère */}
                   <div className="space-y-4">
-                    {traitGroups(grilleSet, grilleRef).map((group) => (
+                    {traitGroups(grilleSet, grilleRef).map((group) => {
+                      /* Un groupe dont aucun critère n'est noté ne s'affiche
+                         pas : son titre seul laisserait croire à un oubli, et
+                         ses lignes à « 0/5 » à une mauvaise note. Règle déjà
+                         appliquée aux deux surfaces recruteur ; elle manquait
+                         ICI, et c'est la seule des quatre qui divergeait. */
+                      const notes = group.traits.filter((t) => {
+                        const v = a.traitRatings ? (a.traitRatings[t.camel as keyof typeof a.traitRatings] as number) : 0;
+                        return typeof v === "number" && v > 0;
+                      });
+                      if (notes.length === 0) return null;
+                      return (
                       <div key={group.title} className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-5">
                         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">{group.title}</p>
                         <div className="space-y-1">
-                          {group.traits.map((trait) => {
+                          {notes.map((trait) => {
                             const val = a.traitRatings ? (a.traitRatings[trait.camel as keyof typeof a.traitRatings] as number) : 0;
                             return (
                               <div key={trait.column} className="flex items-center justify-between py-2 px-2 rounded-lg">
@@ -785,7 +844,8 @@ export default function CoachAthleteProfilePage() {
                           })}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {dbDistinctions.length > 0 && (
@@ -1102,6 +1162,34 @@ export default function CoachAthleteProfilePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lot J — panneau de transfert + accusé de réception. */}
+      {trOpen && trState && (
+        <AthleteTransferSheet
+          athleteId={id}
+          athleteName={`${a?.firstName ?? ""} ${a?.lastName ?? ""}`.trim() || "cet athlète"}
+          state={trState}
+          variant="web"
+          onClose={() => setTrOpen(false)}
+          onDone={(msg) => {
+            setTrOpen(false);
+            setTrToast(msg);
+            /* Recharge l'état de transfert ET la fiche : le nom d'équipe
+               affiché sur la carte vient du chargement principal. */
+            loadAthleteTransferState(id).then(setTrState);
+            loadAthleteRaw(id).then(({ data: refreshed }) => {
+              if (refreshed) setA(mapToRecruiterView(refreshed as Record<string, unknown>));
+            });
+            setTimeout(() => setTrToast(null), 5000);
+          }}
+        />
+      )}
+
+      {trToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] rounded-lg border border-[#22C55E]/40 bg-[#12281c] px-5 py-3">
+          <p className="text-[13px] font-bold text-white">{trToast}</p>
         </div>
       )}
 

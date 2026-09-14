@@ -17,6 +17,26 @@
       il faussait les filtres client (on filtrait 10 lignes au lieu
       de la base). Voir 20260812100000.
 
+      ⚠ DÉPENDANCE À CONNAÎTRE AVANT DE RÉINTRODUIRE UNE PAGINATION.
+      Les menus Organisation / Ligue / Division de la page Recherche
+      construisent leurs options sur LE JEU RENVOYÉ PAR CETTE
+      REQUÊTE (`lib/config/team-taxonomy.ts`). Ces options sont
+      exactes uniquement PARCE QUE la requête rend tout : sans
+      plafond, « le jeu renvoyé » et « la population » sont la même
+      chose.
+
+      Le jour où un LIMIT/OFFSET revient — et il reviendra, un
+      LIMIT ALL client ne tiendra pas à 10 000 athlètes — les
+      options deviendraient « les valeurs présentes sur la page
+      courante », c'est-à-dire FAUSSES : une division absente de la
+      page 1 disparaîtrait du menu alors qu'elle existe. Le menu
+      mentirait sans rien signaler.
+
+      Il faudra alors un appel d'AGRÉGAT dédié (une RPC
+      `recruiter_search_facets` qui fait le GROUP BY côté serveur
+      sur les mêmes filtres), et surtout PAS déduire les options
+      d'une page. Consigné aussi au rapport du 2026-09-07.
+
    2. L'IDENTITÉ EST UNE DÉCISION SERVEUR, PAS UN TEST CLIENT.
       La RPC renvoie `identity_visible` PAR LIGNE et met first_name,
       last_name, photo_url et numero_jersey à NULL quand il est
@@ -62,6 +82,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createClient } from "@/lib/supabase/client";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
+import { taxonomyFromSearchRow, type TaxonomySource } from "@/lib/config/team-taxonomy";
 
 export interface AthleteSearchFilters {
   search: string;           // déjà débouncé en amont
@@ -160,6 +181,14 @@ interface RpcSearchRow {
   committed_school_name: string | null;
   evaluations: SearchEvalRow[] | null;
   team_gender: string | null;
+  /* LOT 3 (20260908015840) — division / ligue de l'equipe, BRUTES : le sens est
+     donne par lib/config/team-taxonomy.ts, jamais ici. `team_school_type` est
+     non nul SI ET SEULEMENT SI l'athlete a une equipe (teams.school_id est
+     NOT NULL) — c'est le signal `hasTeam`. */
+  team_division: string | null;
+  team_league: string | null;
+  team_is_rseq: boolean | null;
+  team_school_type: string | null;
 }
 
 export interface SearchAthleteRow {
@@ -223,6 +252,12 @@ export interface SearchAthleteRow {
    *  tout un effectif. Il reste donc hors du masquage identity_visible, comme
    *  l'école ou la position, et le filtre par genre fonctionne aussi en Free. */
   teamGender: string | null;
+  /** Source brute des axes ORGANISATION / LIGUE / DIVISION — voir
+   *  `lib/config/team-taxonomy.ts`. On porte la SOURCE, pas trois libellés
+   *  déjà calculés : les règles (replis d'organisation, `rseq_team_id => RSEQ`,
+   *  « équipe d'école sans ligue => RSEQ ») vivent dans le module, partagé mot
+   *  pour mot avec la page coach. */
+  taxonomy: TaxonomySource;
 }
 
 
@@ -346,6 +381,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           noTeam: !a.school_id,
           context: a.context ?? null,
           teamGender: a.team_gender ?? null,
+          taxonomy: taxonomyFromSearchRow(a),
         };
       });
     },

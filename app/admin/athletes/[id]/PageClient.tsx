@@ -11,6 +11,7 @@ import { embeddedSchool } from "@/lib/config/schoolTypes";
 import FormModeToggle from "@/app/coach/components/FormModeToggle";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StarRating from "@/components/ui/StarRating";
+import { aUneCote } from "@/lib/evaluations/presence";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -176,14 +177,27 @@ function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChan
     }`;
   return (
     <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Simplifié</button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Détaillé</button>
+      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Aperçu</button>
+      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Profil complet</button>
     </div>
   );
 }
 
 function CompletenessBar({ percent }: { percent: number }) {
-  const color = percent >= 90 ? "#3B82F6" : percent >= 60 ? "#22C55E" : percent >= 40 ? "#EAB308" : "#EF4444";
+  /* BLEU DU SYSTÈME (BP, 2026-09-09) : #3B82F6, la teinte du badge vérifié.
+     Le vert #22C55E disparaît de la jauge de complétion.
+
+     LE PALIER 90 A ÉTÉ FONDU dans le palier 60 : il rendait DÉJÀ #3B82F6.
+     Le garder aurait laissé deux seuils rendre exactement la même couleur —
+     un escalier à marche invisible, que le prochain lecteur prendrait pour un
+     bug. Rouge et ambre restent : en dessous de 60, le profil a encore quelque
+     chose à dire.
+
+     Cette jauge était la DERNIÈRE au vert. Les autres indicateurs de
+     complétion du produit — tableau de bord athlète, anneau du profil
+     athlète, pipeline recruteur, cartes de roster, stats et analytique école —
+     rendent déjà ce bleu. Le changement les aligne, il n'invente rien. */
+  const color = percent >= 60 ? "#3B82F6" : percent >= 40 ? "#EAB308" : "#EF4444";
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 bg-[#2D3748] rounded-full overflow-hidden">
@@ -1511,7 +1525,7 @@ export default function AdminAthleteDetailPage() {
         </section>
 
         {/* COACH REPORT */}
-        {(a.coachReport || coteGlobale > 0) && (
+        {(a.coachReport || aUneCote(coteGlobale)) && (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>
@@ -1527,7 +1541,7 @@ export default function AdminAthleteDetailPage() {
                 </>
               )}
               <div className={a.coachReport ? "mt-3" : ""}>
-                {!isDetailed && coteGlobale > 0 && (
+                {!isDetailed && aUneCote(coteGlobale) && (
                   <div className="mt-3 pl-5 flex items-center gap-3">
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
                     <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
@@ -1536,7 +1550,7 @@ export default function AdminAthleteDetailPage() {
                 )}
                 {isDetailed && (
                   <div className="mt-5 pl-5">
-                    {coteGlobale > 0 && (
+                    {aUneCote(coteGlobale) && (
                       <div className="flex items-center gap-3 mb-4">
                         <StarRating rating={coteGlobale} size="md" showNumber={false} />
                         <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>

@@ -59,6 +59,7 @@ export const MOBILE_EXCLUDED_PAGES = [
   '/pour-les-coachs',
   '/pour-les-recruteurs',
   '/pour-les-etudiant-athlete',
+  '/pour-les-parents',
 
   // Centre d'aide public — web seulement. L'aide mobile passera par un
   // sheet natif lisant le même content/aide/*, pas par une route.

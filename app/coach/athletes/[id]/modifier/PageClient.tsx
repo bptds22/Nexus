@@ -97,12 +97,12 @@ interface CoachTeamData {
 
 function emptyForm(): AthleteFormData {
   return {
-    identity: { identityMode: "simple", photo: "", firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "", school: "", city: "", region: "", phone: "", email: "", parentName: "", parentPhone: "" },
-    academic: { academicMode: "simple", gpa: "", strongSubjects: [], academicHonors: [], programmesVises: [], openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [] },
-    physical: { physicalMode: "simple", heightFeet: "", heightInches: "", weightLbs: "", wingspan: "", handSize: "", dominantHand: "", dominantFoot: "", fortyYard: "", verticalJump: "", broadJump: "", benchPress: "", shuttleAgility: "", sprint100m: "" },
-    sports: { sportsMode: "simple", primarySport: "", primarySportDetail: "", primaryPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false, parcoursEquipes: [] },
+    identity: { photo: "", firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "", school: "", city: "", region: "", phone: "", email: "", parentName: "", parentPhone: "" },
+    academic: { gpa: "", strongSubjects: [], academicHonors: [], programmesVises: [], openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [] },
+    physical: { heightFeet: "", heightInches: "", weightLbs: "", wingspan: "", handSize: "", dominantHand: "", dominantFoot: "", fortyYard: "", verticalJump: "", broadJump: "", benchPress: "", shuttleAgility: "", sprint100m: "" },
+    sports: { primarySport: "", primarySportDetail: "", primaryPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false, parcoursEquipes: [] },
     scouting: { evalMode: "simple", starRating: 0, traitRatings: {}, badges: [], coachEndorsement: "" },
-    media: { mediaMode: "simple", hudlLink: "", youtubeLink: "", instagramLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
+    media: { hudlLink: "", youtubeLink: "", instagramLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
     submission: { recruitingStatus: "", preferredDivision: "" },
     parentalConsent: false,
     // Requis par la forme canonique. CREATE-only a l'ecriture, mais il vit
@@ -239,30 +239,73 @@ function ModifierContent({ id }: { id: string }) {
         }),
       });
 
-      // Load athlete's current team assignment
-      const { data: currentTeamAssignment } = await supabase
+      /* Équipe ACTUELLE du jeune — préchargée QUOI QU'IL ARRIVE.
+         Deux trous se refermaient sur un champ vide, et un champ vide au
+         formulaire Modifier n'est pas une intention de retrait :
+           · .maybeSingle() ERREURAIT dès que le jeune avait plusieurs lignes
+             (multi-sport) et rendait NULL — on lit donc les lignes ;
+           · l'équipe n'était préchargée que si elle figurait dans la liste du
+             coach (même école + is_active). Une équipe d'une autre école, ou
+             désactivée, laissait le champ vide alors que l'appartenance
+             existait. On l'ajoute maintenant aux options pour qu'elle soit
+             affichable ET conservable. */
+      const { data: taRows } = await supabase
         .from("team_athletes")
-        .select("team_id")
-        .eq("athlete_id", id)
-        .maybeSingle();
-      if (currentTeamAssignment?.team_id) {
-        const matchedTeam = (teams || []).find((t: any) => t.id === currentTeamAssignment.team_id);
-        if (matchedTeam) {
-          const sportRel = (matchedTeam as any).sports;
-          const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
-          const level = [(matchedTeam as any).age_group, (matchedTeam as any).division].filter(Boolean).join(" ");
-          setForm((prev) => ({
-            ...prev,
-            sports: {
-              ...prev.sports,
-              selectedTeamId: matchedTeam.id,
-              currentTeam: matchedTeam.name || "",
-              teamLevel: level || "",
-              teamDivision: (matchedTeam as any).division || "",
-              league: (matchedTeam as any).league || "RSEQ",
-            },
-          }));
-        }
+        .select("team_id, teams!team_id(id, name, division, age_group, league, sport_id, sports!sport_id(nom))")
+        .eq("athlete_id", id);
+
+      type EquipeJointe = {
+        id: string;
+        name: string | null;
+        division: string | null;
+        age_group: string | null;
+        league: string | null;
+        sports: { nom?: string } | { nom?: string }[] | null;
+      };
+      const rows = (taRows ?? []) as { team_id: string; teams: EquipeJointe | EquipeJointe[] | null }[];
+      const idsListe = new Set((teams ?? []).map((t) => t.id as string));
+      const courante = rows.find((r) => idsListe.has(r.team_id)) ?? rows[0];
+      const tRel = courante?.teams;
+      const equipe = Array.isArray(tRel) ? tRel[0] : tRel;
+
+      if (equipe?.id) {
+        const sportRel = equipe.sports;
+        const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
+        const level = [equipe.age_group, equipe.division].filter(Boolean).join(" ");
+
+        // Absente de la liste (autre école, saison inactive) → on l'y met,
+        // sinon le <select> afficherait un champ vide pour une valeur posée.
+        setCoachTeam((prev) =>
+          prev.teams.some((t) => t.id === equipe.id)
+            ? prev
+            : {
+                ...prev,
+                teams: [
+                  ...prev.teams,
+                  {
+                    id: equipe.id,
+                    name: equipe.name || "",
+                    level: level || "",
+                    division: equipe.division || "",
+                    sport: sport?.nom || "",
+                    league: equipe.league || "RSEQ",
+                    gender: "M" as "M" | "F",
+                  },
+                ],
+              },
+        );
+
+        setForm((prev) => ({
+          ...prev,
+          sports: {
+            ...prev.sports,
+            selectedTeamId: equipe.id,
+            currentTeam: equipe.name || "",
+            teamLevel: level || "",
+            teamDivision: equipe.division || "",
+            league: equipe.league || "RSEQ",
+          },
+        }));
       }
 
     })();
@@ -419,7 +462,7 @@ function ModifierContent({ id }: { id: string }) {
       case 1: {
         const d = form.identity;
         const base = !!(d.firstName && d.lastName && d.dateOfBirth && d.gradYear);
-        if (d.identityMode === "detailed") return base && !!(d.gender && d.school);
+        return base && !!(d.gender && d.school);
         return base;
       }
       case 2: return true;
@@ -427,7 +470,7 @@ function ModifierContent({ id }: { id: string }) {
       case 4: {
         const s = form.sports;
         const base = !!(s.primarySport && s.primaryPosition && s.jerseyNumber);
-        if (s.sportsMode === "detailed") return base && !!(s.selectedTeamId || s.currentTeam);
+        return base && !!(s.selectedTeamId || s.currentTeam);
         return base;
       }
       case 5: return true;
@@ -528,7 +571,9 @@ function ModifierContent({ id }: { id: string }) {
   /* ── Step 1: Identité ─────────────────────────────────────── */
   function renderStep1() {
     const d = form.identity;
-    const isDetailed = d.identityMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
 
     const RECRUITMENT_STATUS_OPTIONS = [
       { value: "OUVERT", label: "Ouvert" },
@@ -543,7 +588,6 @@ function ModifierContent({ id }: { id: string }) {
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Identité de l&apos;étudiant-athlète</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Informations personnelles de base</p>
 
-        <FormModeToggle mode={d.identityMode} onChange={(m) => updateIdentity("identityMode", m)} />
 
         <div className="flex items-center gap-6 mb-8">
           <div className="relative group shrink-0">
@@ -588,11 +632,11 @@ function ModifierContent({ id }: { id: string }) {
           <div><label className={labelCls}>Promotion{req}</label><NxSelect value={d.gradYear} onChange={(v) => updateIdentity("gradYear", v)} hasError={isFieldEmpty(d.gradYear)} options={GRAD_YEAR_OPTIONS} /></div>
         </div>
 
-        {isDetailed && (
+        {(
           <div className="border-t border-[#1e2128] mt-6 pt-5">
             <p className={sectionTitle}>Détails additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div><label className={labelCls}>Genre{req}</label><NxSelect value={d.gender} onChange={(v) => updateIdentity("gender", v)} hasError={isDetailed && isFieldEmpty(d.gender)} options={[{ value: "M", label: "Masculin" }, { value: "F", label: "Féminin" }, { value: "X", label: "Non genré" }]} /></div>
+              <div><label className={labelCls}>Genre{req}</label><NxSelect value={d.gender} onChange={(v) => updateIdentity("gender", v)} hasError={isFieldEmpty(d.gender)} options={[{ value: "M", label: "Masculin" }, { value: "F", label: "Féminin" }, { value: "X", label: "Non genré" }]} /></div>
               <div><label className={labelCls}>École secondaire</label><div className="relative"><input type="text" value={d.school} readOnly aria-label="École secondaire" className={`${inputCls} !bg-[#0d0f13] opacity-70 cursor-not-allowed`} /><svg className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg></div></div>
               <div><label className={labelCls}>Ville</label><div className="relative"><input type="text" value={d.city} readOnly aria-label="Ville" className={`${inputCls} !bg-[#0d0f13] opacity-70 cursor-not-allowed`} /><svg className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg></div></div>
               <div><label className={labelCls}>Région</label><div className="relative"><input type="text" value={d.region} readOnly aria-label="Région" className={`${inputCls} !bg-[#0d0f13] opacity-70 cursor-not-allowed`} /><svg className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg></div></div>
@@ -675,7 +719,9 @@ function ModifierContent({ id }: { id: string }) {
   /* ── Step 2: Académique ───────────────────────────────────── */
   function renderStep2() {
     const d = form.academic;
-    const isDetailedAcad = d.academicMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
     const checkbox = (checked: boolean, onChange: () => void, label: string) => (
       <label className="flex items-center gap-3 cursor-pointer group">
         <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${checked ? "bg-[#E63946] border-[#E63946]" : "border-[#2a2d36] bg-[#13151a] group-hover:border-[#6b7280]"}`}>
@@ -691,7 +737,6 @@ function ModifierContent({ id }: { id: string }) {
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Profil académique</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Résultats scolaires et objectifs CÉGEP</p>
 
-        <FormModeToggle mode={d.academicMode} onChange={(m) => updateAcademic("academicMode", m)} />
 
         <div className="space-y-6">
           <div className="max-w-[220px]">
@@ -699,7 +744,7 @@ function ModifierContent({ id }: { id: string }) {
             <div className="relative"><input type="number" min="0" max="100" step="0.1" value={d.gpa} onChange={(e) => updateAcademic("gpa", e.target.value)} placeholder="85" className={`${inputCls} pr-8`} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280] text-[14px]">%</span></div>
           </div>
 
-          {isDetailedAcad && (
+          {(
             <div>
               <p className={labelCls}>Matières fortes</p>
               <div className="flex flex-wrap gap-2">
@@ -708,7 +753,7 @@ function ModifierContent({ id }: { id: string }) {
             </div>
           )}
 
-          {isDetailedAcad && (
+          {(
             <div><label className={labelCls}>Mentions académiques</label><TagInput tags={d.academicHonors} onChange={(tags) => updateAcademic("academicHonors", tags)} placeholder="Tapez une mention + Entrée" /></div>
           )}
 
@@ -735,7 +780,7 @@ function ModifierContent({ id }: { id: string }) {
             {checkbox(d.openToRelocate, () => updateAcademic("openToRelocate", !d.openToRelocate), "Prêt à changer de région")}
           </div>
 
-          {isDetailedAcad && (
+          {(
             <div>
               <p className={labelCls}>Régions CÉGEP préférées</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -751,22 +796,23 @@ function ModifierContent({ id }: { id: string }) {
   /* ── Step 3: Physique ─────────────────────────────────────── */
   function renderStep3() {
     const d = form.physical;
-    const isDetailedPhys = d.physicalMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Profil physique</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Mensurations et tests athlétiques</p>
-        <FormModeToggle mode={d.physicalMode} onChange={(m) => updatePhysical("physicalMode", m)} />
         <p className={sectionTitle}>Mensurations</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8">
           <div><label className={labelCls}>Taille — Pieds</label><NxSelect value={d.heightFeet} onChange={(v) => updatePhysical("heightFeet", v)} placeholder="—" options={[4, 5, 6, 7].map((f) => ({ value: String(f), label: `${f}'` }))} /></div>
           <div><label className={labelCls}>Pouces</label><NxSelect value={d.heightInches} onChange={(v) => updatePhysical("heightInches", v)} placeholder="—" options={Array.from({ length: 12 }, (_, i) => ({ value: String(i), label: `${i}"` }))} /></div>
           <div><label className={labelCls}>Poids (lbs)</label><input type="number" value={d.weightLbs} onChange={(e) => updatePhysical("weightLbs", e.target.value)} placeholder="185" className={inputCls} /></div>
-          {isDetailedPhys && (<><div><label className={labelCls}>Envergure</label><input type="text" value={d.wingspan} onChange={(e) => updatePhysical("wingspan", e.target.value)} placeholder={'6\'4"'} className={inputCls} /></div><div><label className={labelCls}>Taille des mains</label><input type="text" value={d.handSize} onChange={(e) => updatePhysical("handSize", e.target.value)} placeholder={'9.5"'} className={inputCls} /></div></>)}
+          {(<><div><label className={labelCls}>Envergure</label><input type="text" value={d.wingspan} onChange={(e) => updatePhysical("wingspan", e.target.value)} placeholder={'6\'4"'} className={inputCls} /></div><div><label className={labelCls}>Taille des mains</label><input type="text" value={d.handSize} onChange={(e) => updatePhysical("handSize", e.target.value)} placeholder={'9.5"'} className={inputCls} /></div></>)}
           <div><label className={labelCls}>Main dominante</label><NxSelect value={d.dominantHand} onChange={(v) => updatePhysical("dominantHand", v)} placeholder="—" options={[{ value: "Droite", label: "Droite" }, { value: "Gauche", label: "Gauche" }, { value: "Ambidextre", label: "Ambidextre" }]} /></div>
-          {isDetailedPhys && (<div><label className={labelCls}>Pied dominant</label><NxSelect value={d.dominantFoot} onChange={(v) => updatePhysical("dominantFoot", v)} placeholder="—" options={[{ value: "Droit", label: "Droit" }, { value: "Gauche", label: "Gauche" }, { value: "Les deux", label: "Les deux" }]} /></div>)}
+          {(<div><label className={labelCls}>Pied dominant</label><NxSelect value={d.dominantFoot} onChange={(v) => updatePhysical("dominantFoot", v)} placeholder="—" options={[{ value: "Droit", label: "Droit" }, { value: "Gauche", label: "Gauche" }, { value: "Les deux", label: "Les deux" }]} /></div>)}
         </div>
-        {isDetailedPhys && (
+        {(
           <div className="border-t border-[#1e2128] pt-5">
             <p className={sectionTitle}>Tests athlétiques (optionnel)</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
@@ -783,13 +829,14 @@ function ModifierContent({ id }: { id: string }) {
   /* ── Step 4: Sport ────────────────────────────────────────── */
   function renderStep4() {
     const d = form.sports;
-    const isDetailed = d.sportsMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Informations sportives</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Sport, position et niveau de compétition</p>
 
-        <FormModeToggle mode={d.sportsMode} onChange={(m) => updateSports("sportsMode", m)} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <div><label className={labelCls}>Sport principal{req}</label><NxSelect value={d.primarySport} onChange={(v) => { updateSports("primarySport", v); if (v !== "Autre") updateSports("primarySportDetail", ""); }} hasError={isFieldEmpty(d.primarySport)} options={SPORTS.map((s) => ({ value: s, label: s }))} />{d.primarySport === "Autre" && <input type="text" value={d.primarySportDetail} onChange={(e) => updateSports("primarySportDetail", e.target.value)} placeholder="Précisez le sport…" className={`${inputCls} mt-2`} />}</div>
@@ -797,7 +844,7 @@ function ModifierContent({ id }: { id: string }) {
           <div><label className={labelCls}>Numéro de chandail{req}</label><input type="text" inputMode="numeric" value={d.jerseyNumber} onChange={(e) => updateSports("jerseyNumber", e.target.value.replace(/\D/g, ""))} placeholder="#" className={`${inputCls} ${isFieldEmpty(d.jerseyNumber) ? errBorder : ""}`} /></div>
         </div>
 
-        {isDetailed && (
+        {(
           <div className="border-t border-[#1e2128] mt-2 pt-5">
             <p className={sectionTitle}>Détails additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
@@ -1007,7 +1054,9 @@ function ModifierContent({ id }: { id: string }) {
   /* ── Step 6: Médias ───────────────────────────────────────── */
   function renderStep6() {
     const d = form.media;
-    const isDetailed = d.mediaMode === "detailed";
+    /* Le mode « Simplifiée » est retiré (BP, 2026-09-09) : tous les champs
+       de la section sont désormais révélés. Le toggle et sa constante sont
+       partis avec lui. */
     const detailedFields = [
       { key: "hudlLink", label: "Lien Hudl", placeholder: "https://www.hudl.com/..." },
       { key: "youtubeLink", label: "Lien YouTube", placeholder: "https://youtube.com/..." },
@@ -1020,7 +1069,6 @@ function ModifierContent({ id }: { id: string }) {
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Vidéo &amp; Médias</h2>
         <p className="text-[14px] text-[#6b7280] mb-6">Liens vers les vidéos et profils en ligne</p>
 
-        <FormModeToggle mode={d.mediaMode} onChange={(m) => updateMedia("mediaMode", m)} />
 
         <div className="space-y-6">
           <div>
@@ -1034,7 +1082,7 @@ function ModifierContent({ id }: { id: string }) {
           </div>
         </div>
 
-        {isDetailed && (
+        {(
           <div className="border-t border-[#1e2128] mt-6 pt-5">
             <p className={sectionTitle}>Liens additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

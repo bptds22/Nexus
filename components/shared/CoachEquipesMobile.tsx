@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCoachTeams } from "@/lib/queries/coach/useCoachTeams";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { createTeam, joinTeam } from "@/lib/queries/coach/createTeam";
+import { loadTeamClaimPreview, claimPreviewMessage, type TeamClaimPreview } from "@/lib/queries/coach/teamClaimPreview";
 import {
   TeamCreateFormBlock,
   type TeamFormValues,
@@ -59,6 +60,11 @@ export default function CoachEquipesMobile() {
 
   const [scrolled, setScrolled] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  /* Lot C — même règle que le web : on annonce avant d'écrire. */
+  const [pendingClaim, setPendingClaim] = useState<
+    { team: TeamPickerItem; preview: TeamClaimPreview } | null
+  >(null);
+  const [claimBusy, setClaimBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
   const [formValues, setFormValues] = useState<TeamFormValues | null>(null);
@@ -115,22 +121,39 @@ export default function CoachEquipesMobile() {
     router.push(`/coach/equipes/${teamId}`);
   }, [formValues, formValid, saving, schoolId, userId, qc, router, toast]);
 
+  /* N'ÉCRIT RIEN — charge l'aperçu et ouvre la feuille de confirmation. */
   const handlePickExisting = useCallback(async (team: TeamPickerItem) => {
     if (!userId) return;
     const supabase = createClient();
-    const { error, role } = await joinTeam(supabase, { coachUserId: userId, teamId: team.id });
+    const preview = await loadTeamClaimPreview(supabase, team.id);
+    setShowPicker(false);
+    setPendingClaim({ team, preview });
+  }, [userId]);
+
+  const confirmClaim = useCallback(async () => {
+    if (!pendingClaim || !userId || claimBusy) return;
+    setClaimBusy(true);
+    const supabase = createClient();
+    const { error, role } = await joinTeam(supabase, { coachUserId: userId, teamId: pendingClaim.team.id });
+    setClaimBusy(false);
     if (error) {
-      toast.error({ message: (error as { message?: string }).message || "Impossible de rejoindre." });
+      const msg = (error as { message?: string }).message || "";
+      toast.error({
+        message: msg.includes("one_referent_per_team")
+          ? "Un autre entraîneur vient de prendre la responsabilité de cette équipe."
+          : msg || "Impossible de rejoindre.",
+      });
+      setPendingClaim(null);
       return;
     }
-    // Dit le rôle : revendiquer une équipe orpheline donne head_coach.
+    const teamId = pendingClaim.team.id;
+    setPendingClaim(null);
     toast.success({
-      message: role === "head_coach" ? "Équipe revendiquée — tu en es responsable" : "Équipe rejointe",
+      message: role === "head_coach_interim" ? "Tu es coach intérimaire de cette équipe" : "Équipe rejointe",
     });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
-    setShowPicker(false);
-    router.push(`/coach/equipes/${team.id}`);
-  }, [userId, qc, router, toast]);
+    router.push(`/coach/equipes/${teamId}`);
+  }, [pendingClaim, userId, claimBusy, qc, router, toast]);
 
   return (
     <div
@@ -255,6 +278,39 @@ export default function CoachEquipesMobile() {
       </div>
 
       {/* Picker sheet — pick-existing first (dedup) */}
+      {/* Lot C — confirmation AVANT écriture (parité stricte avec le web).
+          Aucun champ de saisie ici : pas de useSheetKeyboardGeometry requis. */}
+      {pendingClaim && (
+        <div className="fixed inset-0 z-[95] bg-black/70 flex items-end"
+             role="dialog" aria-modal="true">
+          <div className="w-full bg-[#1A1D24] border-t border-[#2D3748] rounded-t-2xl p-5 pb-8">
+            <div className="w-10 h-1 rounded-full bg-[#2D3748] mx-auto mb-4" />
+            <h3 className="font-head text-[17px] font-black text-white uppercase tracking-tight">
+              {pendingClaim.preview.hasReferent ? "Rejoindre l'équipe" : "Devenir coach intérimaire"}
+            </h3>
+            <p className="text-[13.5px] text-[#D1D5DB] mt-3 leading-relaxed">
+              {claimPreviewMessage(pendingClaim.preview, pendingClaim.team.name)}
+            </p>
+            {!pendingClaim.preview.hasReferent && (
+              <p className="text-[12.5px] text-[#9CA3AF] mt-3 border-l-2 border-[#F59E0B]/50 pl-3">
+                Tu deviens leur point de contact. Dès qu&apos;un entraîneur-chef sera désigné,
+                il reprendra la responsabilité et tu redeviendras assistant.
+              </p>
+            )}
+            <div className="flex flex-col gap-2 mt-6">
+              <button type="button" onClick={confirmClaim} disabled={claimBusy}
+                className="w-full bg-[#E63946] active:bg-[#D42B22] text-white py-3.5 rounded-xl font-head font-bold text-[13px] uppercase tracking-wider disabled:opacity-50">
+                {claimBusy ? "..." : pendingClaim.preview.hasReferent ? "Rejoindre" : "Confirmer"}
+              </button>
+              <button type="button" onClick={() => setPendingClaim(null)} disabled={claimBusy}
+                className="w-full py-3 rounded-xl text-[13px] font-bold text-[#9CA3AF] disabled:opacity-50">
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TeamPickerSheet
         open={showPicker}
         onClose={() => setShowPicker(false)}

@@ -474,6 +474,73 @@ file.
 
 ---
 
+## P1 — Sécurité / surface d'exposition
+
+- [ ] **63 fonctions `SECURITY DEFINER` appelables sont exécutables par `anon`,
+      dont 52 aussi par `PUBLIC`.** Relevé le 2026-09-07 en balayant tout le
+      schéma `public`, après avoir corrigé le même défaut sur
+      `recruiter_search_athletes` (migrations `20260908015840` puis
+      `20260908024711`).
+
+      **Cause systémique, pas une négligence ponctuelle.** Supabase pose un
+      `ALTER DEFAULT PRIVILEGES` sur le schéma `public` qui accorde `EXECUTE`
+      à `anon, authenticated, service_role` sur **toute** fonction créée. Toute
+      fonction qui n'a pas été explicitement révoquée l'a donc hérité. Le
+      `=X/postgres` en tête d'ACL (PUBLIC) vient du défaut Postgres lui-même.
+
+      **État exact du parc :**
+
+      | Catégorie | PUBLIC + anon | anon seul | propre |
+      |---|---|---|---|
+      | Appelables (RPC + helpers RLS) | **52** | **11** | 60 |
+      | Fonctions TRIGGER | 66 | 0 | 0 |
+
+      Les 66 fonctions TRIGGER ne sont **pas** invocables par un client via
+      PostgREST (elles retournent `trigger`) — bruit d'ACL, pas surface.
+      **Les 63 appelables sont le vrai sujet.**
+
+      **Ce n'est PAS 63 failles.** La quasi-totalité porte sa propre garde
+      interne (`is_admin()`, `is_recruiter()`, `auth.uid()`…), et un appelant
+      anonyme se fait renvoyer par le corps de la fonction. Le défaut est de
+      **posture** : la garde est à l'intérieur au lieu d'être à la porte, et
+      une garde interne qui se trompe un jour n'a plus de second rempart.
+      Différence mesurée sur `recruiter_search_athletes` : avant le revoke, un
+      appel anon entrait et recevait `42501 acces reserve aux recruteurs` ;
+      après, il est refusé au niveau du privilège — `401`,
+      `permission denied for function`.
+
+      **Certaines DOIVENT rester ouvertes à `anon`** — les flux pré-auth :
+      `resolve_invitation_token`, `resolve_team_join_token`,
+      `resolve_transfer_token`, `resolve_parent_invitation`,
+      `resolve_athlete_invitation`, `claim_parent_invitation`,
+      `consume_invitation_token`. Un lot correctif ne peut donc pas être un
+      `revoke` en masse : il faut **un triage fonction par fonction**.
+
+      **Les plus discutables au premier regard** (aucune raison qu'un
+      anonyme les atteigne) : `send_push_announcement`, `remove_cegep_member`,
+      `set_child_consent`, `get_child_consents`, `get_child_activity`,
+      `get_my_children`, `deactivate_my_account`, `create_athlete_invitation`,
+      `invite_anchored_athlete_to_team`, `lookup_my_orphans_by_email`,
+      `lookup_invitable_athletes_by_email`, `finish_*_onboarding`,
+      `count_coach_athletes` (le point de départ de ce balayage).
+
+      **Lot sécurité dédié à cadrer** — pas en marge d'un lot fonctionnel :
+      1. classer les 63 en « doit rester anon » / « authenticated seulement » ;
+      2. un mirror unique qui révoque `PUBLIC` et `anon` sur la seconde liste ;
+      3. un gate qui compare l'ACL **complète et triée** de chaque fonction
+         touchée (règle inscrite dans `CLAUDE.md`, section RÈGLES TRANSVERSES —
+         une vérification par inclusion laisse entrer ce qu'elle ne nomme pas) ;
+      4. une requête de conformité rejouable, sur le modèle de
+         `scripts/check-view-hardening.sql` : elle encode l'intention par
+         fonction et ne rend que les écarts. Sans ça, la prochaine fonction
+         créée réintroduira le défaut en silence.
+
+      ⚠️ Le `ALTER DEFAULT PRIVILEGES` continuera de rouvrir la porte à chaque
+      nouvelle fonction. Le lot doit décider s'il le **change** (le bon geste de
+      fond) ou s'il se contente de révoquer au cas par cas.
+
+---
+
 ## P2 — Observability
 
 - [x] **Athlete-route guard pushes non-athletes to onboarding.**
@@ -739,6 +806,61 @@ file.
 ---
 
 ## P3 — Latent / future work
+
+- [ ] **Page profil recruteur, vue coach — la destination manque, pas
+      l'intention (2026-09-09).** Le besoin est réel : « qui me contacte ? »
+
+      `EntityLink` pointait `/recruteur/<id>/profil` pour un recruteur vu par un
+      coach. **Cette route n'a jamais existé** — il n'y a pas de segment
+      `app/recruteur/[id]`, seulement `app/recruteur/profil`, qui est
+      « Mon profil » DANS le portail recruteur. Un coach qui cliquait le nom du
+      recruteur venant de le contacter tombait sur un 404. Trois surfaces le
+      rendaient : la liste Messages (`app/coach/demandes/page.tsx`), l'en-tête
+      du fil et le panneau latéral (`app/coach/demandes/[id]/PageClient.tsx`).
+
+      Corrigé en retirant le lien : `getEntityRoute` rend `"#"` pour ce cas, et
+      `EntityLink` dégrade alors en texte simple — pas de href, pas de curseur
+      main, pas de soulignement. La ligne, elle, reste cliquable et ouvre la
+      conversation : un seul comportement, aucune ambiguïté.
+
+      **Quand la page existera**, une seule ligne à rétablir dans
+      `getEntityRoute` rallume les trois surfaces d'un coup. Ce qu'elle devra
+      montrer : le nom, l'établissement, la division, et rien de plus — un coach
+      n'a pas à voir le pipeline ni les notes privées d'un recruteur.
+
+- [ ] **Même défaut, autre sens : `/recruteur/coach/<id>` n'existe pas non
+      plus (2026-09-09).** `EntityLink` le rend pour un COACH vu par un
+      RECRUTEUR — trois surfaces le portent, les widgets d'évaluation
+      (`ReviewWidgetTeaser`, `ReviewWidgetForm`, `ReviewWidgetConfirmation`).
+      Un recruteur qui clique le nom du coach qu'il évalue tombe sur un 404.
+      NON corrigé : hors du périmètre demandé le 2026-09-09, qui portait sur le
+      nom du recruteur côté coach. Le correctif est la même ligne, dans le même
+      `switch`. À trancher avec le sort de la page « Ma réputation », qui est
+      justement la fiche publique d'un coach.
+
+- [ ] **`athletes.equipe_id` : colonne piège, non synchronisée avec le vrai
+      roster (2026-09-09).** Décision — supprimer ou synchroniser — renvoyée à
+      la **session modèle club**. Pas maintenant.
+
+      LE ROSTER EST `team_athletes`. `athletes.equipe_id` est un vestige : elle
+      peut être NULL pour un jeune qui EST dans une équipe, et personne ne la
+      maintient. Rien ne signale l'écart — ni contrainte, ni trigger, ni
+      commentaire de colonne.
+
+      **Ce que ça a coûté, et pourquoi c'est noté ici :** le 2026-09-09, un
+      diagnostic « mauvais destinataire du contact coach » a conclu que
+      l'athlète n'était sur AUCUNE équipe, en lisant `equipe_id` (NULL). Il
+      était bien sur Wildcats D2, via `team_athletes`. La conclusion — « le
+      test attend le mauvais coach » — était fausse et inversait le verdict :
+      le référent attendu était le bon, et `athletes.coach_id` était périmé.
+      Une colonne qui répond faux sans jamais se taire est pire qu'une colonne
+      absente.
+
+      **En attendant la décision :** toute résolution d'équipe passe par
+      `team_athletes` (c'est déjà le cas de `fn_resolve_team_referent` et de
+      ses triggers, vague 2). Ne pas lire `equipe_id` pour décider de quoi que
+      ce soit — ni en SQL, ni côté client, ni dans un diagnostic.
+      Voir aussi `athletes.league_team_id`, même famille de vestiges.
 
 - [ ] **`flagged` : donnée conservée (visibilité admin), UI recruteur retirée
       au profit du grade (2026-09-04).** Nettoyage mobile + décision sur le

@@ -19,7 +19,7 @@
      - Step 0 : shell + IS_CAPACITOR dispatch + load + civil derivation.
      - MÉDIAS step (DIRECT) : 5 url fields, immediate UPDATE athletes,
        inline edit via InlineEditRow.
-     - PHYSIQUE step (SUGGEST) : 11 fields, inline-expand SuggestExpand
+     - PHYSIQUE step (SUGGEST) : 11 fields, inline-expand ChampDirectExpand
        wrapper (no overlay), INSERT athlete_suggestions per field,
        En-attente pill when a champ already has EN_ATTENTE.
 
@@ -41,6 +41,7 @@ import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ecrireChampAthlete } from "@/lib/athlete/champVersColonne";
 import { uploadAvatar } from "@/lib/storage/uploadAvatar";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
@@ -56,13 +57,13 @@ import {
 } from "@/components/shared/wizard/HeightWeightWheel";
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
+import { GREEN, YELLOW, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
 import { triggerHaptic } from "@/lib/haptics";
 import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import {
-  BADGE_CONFIG, MAX_DETAIL_LENGTH,
+  BADGE_CONFIG,
   type DistinctionEntry,
 } from "@/lib/config/badges";
 import BadgePicker from "@/components/shared/BadgePicker";
@@ -174,8 +175,15 @@ const STEP_LABELS = ["Identité", "Académique", "Physique", "Sport", "Médias",
 /* Identité is MIXED (5 DIRECT + 5 LOCKED — green chip for dominant
    editable mode, per-row indicators show actual state). Académique
    was flipped to fully DIRECT in B-2.5 — every field is athlete-
-   editable, no coach approval gate. Physique and Sport stay SUGGEST
-   (coach approves), Médias stays DIRECT.
+   editable, no coach approval gate. Médias stays DIRECT.
+
+   ⚠️ CORRIGÉ le 2026-09-11 : Physique et Sport étaient encore déclarées
+   SUGGEST/JAUNE alors qu'elles écrivent EN DIRECT depuis le 2026-09-09
+   (submitSuggestion → ecrireChampAthlete). L'athlète voyait donc un crayon
+   jaune, un libellé « Nouvelle valeur proposée » et un bouton jaune sur un
+   champ qui s'enregistrait immédiatement. Un héritage de chrome, pas une
+   intention — et exactement le genre d'écart que le code couleur existe
+   pour rendre impossible.
 
    Évaluation (B-3a) is SUGGEST-dominant : athletes suggest cote +
    trait ratings + (B-3b) distinctions, all requiring coach approval
@@ -186,8 +194,18 @@ const STEP_LABELS = ["Identité", "Académique", "Physique", "Sport", "Médias",
    ALSO gates whether "Cote globale" can be suggested at all — this
    is a UI-level mirror of the apply_approved_suggestion trigger's
    v_is_detailed guard. */
-const STEP_MODES = ["MIXED", "DIRECT", "SUGGEST", "SUGGEST", "DIRECT", "SUGGEST"] as const;
-const STEP_ACCENTS: (string | undefined)[] = [GREEN, GREEN, YELLOW, YELLOW, GREEN, YELLOW];
+/* LE CODE COULEUR EST LA LOI — décision BP, 2026-09-11 (règle 11).
+   La convention vit en tête de components/shared/wizard/modeIcons.tsx ;
+   ces deux tableaux en sont l'application, étape par étape :
+     0 Identité   MIXED  → VERT   (direct + quelques champs verrouillés)
+     1 Académique DIRECT → VERT
+     2 Physique   DIRECT → VERT   (était JAUNE à tort)
+     3 Sport      DIRECT → VERT   (était JAUNE à tort)
+     4 Médias     DIRECT → VERT
+     5 Évaluation SUGGEST→ JAUNE  (cote, 14 traits, distinctions)
+   Une seule étape propose. Toutes les autres écrivent. */
+const STEP_MODES = ["MIXED", "DIRECT", "DIRECT", "DIRECT", "DIRECT", "SUGGEST"] as const;
+const STEP_ACCENTS: (string | undefined)[] = [GREEN, GREEN, GREEN, GREEN, GREEN, YELLOW];
 
 const STATUS_MAP: Record<string, "pending" | "approved" | "rejected"> = {
   EN_ATTENTE: "pending",
@@ -220,7 +238,7 @@ const GENDER_OPTIONS: PickerOption[] = [
    Les deux groupes sont désormais ceux du module (9 / 5). */
 
 /* ═══════════════════════════════════════════════════════════════
-   SuggestExpand — inline-expanding suggest form (NO overlay).
+   ChampDirectExpand — inline-expanding suggest form (NO overlay).
 
    Mirrors the web's SuggestibleField expanded state at page.tsx :340-360
    verbatim : current value struck through, proposed-value input, optional
@@ -231,7 +249,7 @@ const GENDER_OPTIONS: PickerOption[] = [
    a PickerRow + MobilePicker for choice fields — picked via the
    `inputType` prop.
 ═══════════════════════════════════════════════════════════════ */
-interface SuggestExpandProps {
+interface ChampDirectExpandProps {
   champ: string;                    // exact French label written into athlete_suggestions.champ
   currentValue: string;             // displayed struck-through above the input
   initialProposed: string;
@@ -249,7 +267,8 @@ interface SuggestExpandProps {
    *  text SUGGEST field including Numéro. */
   placeholder?: string;
   submitting: boolean;
-  onSubmit: (proposed: string, message: string) => Promise<void>;
+  /** Rend le MOTIF d'un refus, ou null si l'écriture est passée. */
+  onSubmit: (proposed: string, message: string) => Promise<string | null>;
   onCancel: () => void;
 }
 
@@ -266,17 +285,24 @@ function parseWeightSeed(v: string): string {
   return m ? m[0] : "";
 }
 
-function SuggestExpand({
+function ChampDirectExpand({
   champ, currentValue, initialProposed, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, onCancel,
-}: SuggestExpandProps) {
+}: ChampDirectExpandProps) {
   const [proposed, setProposed] = useState(initialProposed);
-  const [message, setMessage] = useState("");
+  /* `message` survit en constante vide : la signature onSubmit le porte
+     encore pour les appelants non migrés. Il n'a plus de champ ni de
+     destination — le flux de proposition est mort. */
+  const message = "";
+  /* Le motif d'un refus vit ICI, pas chez le parent : il est propre à ce
+     champ et il s'affiche juste dessous. Le faire descendre sur deux étages
+     de props aurait élargi la surface pour un texte transitoire. */
+  const [erreur, setErreur] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   /* ── Wheel state (inputType="wheel"). unitMode persists via the same
         key the coach wizard uses. Lazy init from localStorage is safe
-        here : SuggestExpand only mounts on tap (client-only, post-
+        here : ChampDirectExpand only mounts on tap (client-only, post-
         hydration), so there's no SSR mismatch. The imperial values
         below drive the wheel position + the canonical proposed string. ── */
   const [unitMode, setUnitMode] = useState<UnitMode>(() => {
@@ -300,17 +326,12 @@ function SuggestExpand({
   const canSubmit = trimmed.length > 0 && trimmed !== currentValue.trim();
 
   return (
-    <div className="px-4 py-3 bg-[#13151a] border-t border-[#EAB308]/20">
-      {/* Current value (struck through) */}
-      <p className="text-[11px] text-[#6b7280] line-through mb-2">
-        Actuel : {currentValue || "—"}
-      </p>
-
-      {/* Proposed value — text vs picker. Both inline (no overlay for
-          text ; bottom-sheet only on picker tap — the rest stays inline). */}
-      <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-[#EAB308] mb-1.5">
-        Nouvelle valeur proposée
-      </label>
+    <div className="px-4 py-3 bg-[#13151a] border-t border-[#22C55E]/20">
+      {/* CÉRÉMONIE RETIRÉE le 2026-09-11. Il y avait ici « Actuel : … » barré
+          et un libellé « NOUVELLE VALEUR PROPOSÉE ». Deux mensonges pour un
+          champ qui s'écrit directement : rien n'est proposé, et la valeur
+          courante est déjà visible sur la rangée juste au-dessus. Le champ
+          s'ouvre, on saisit, on enregistre. */}
       {inputType === "text" ? (
         <input
           type="text"
@@ -320,7 +341,7 @@ function SuggestExpand({
           inputMode={numericMode}
           pattern={numericMode === "numeric" ? "[0-9]*" : undefined}
           aria-label={champ}
-          className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none focus:border-[#EAB308]/40"
+          className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none focus:border-[#22C55E]/40"
           placeholder={placeholder}
         />
       ) : inputType === "wheel" ? (
@@ -398,27 +419,19 @@ function SuggestExpand({
         </>
       )}
 
-      {/* Optional message — verbatim labels/placeholder from web SuggestibleField. */}
-      <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mt-3 mb-1.5">
-        Message pour ton coach (optionnel)
-      </label>
-      <textarea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        rows={2}
-        placeholder="Ex: Explique pourquoi tu proposes ce changement"
-        aria-label="Message"
-        className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[14px] text-white placeholder:text-white/40 outline-none focus:border-[#EAB308]/60 resize-none"
-      />
+      {/* Le champ « Message pour ton coach » est RETIRÉ avec le flux de
+          proposition : il n'y a plus d'approbation à motiver, et le message
+          n'était plus lu par personne. Un champ qui n'aboutit nulle part
+          coûte un geste et ment sur ce qui se passe. */}
 
       <div className="flex items-center gap-2 mt-3">
         <button
           type="button"
           disabled={!canSubmit || submitting}
-          onClick={() => { void triggerHaptic("Light"); onSubmit(trimmed, message); }}
-          className="flex-1 h-11 rounded-2xl bg-[#EAB308] text-white text-[13px] font-bold uppercase tracking-wider active:bg-[#CA8A04] disabled:opacity-40"
+          onClick={async () => { void triggerHaptic("Light"); setErreur(await onSubmit(trimmed, message)); }}
+          className="flex-1 h-11 rounded-2xl bg-[#22C55E] text-[#0A2E16] text-[13px] font-bold uppercase tracking-wider active:bg-[#16A34A] disabled:opacity-40"
         >
-          {submitting ? "Envoi…" : "Soumettre la suggestion"}
+          {submitting ? "Enregistrement…" : "Enregistrer"}
         </button>
         <button
           type="button"
@@ -428,62 +441,56 @@ function SuggestExpand({
           Annuler
         </button>
       </div>
+      {/* Le motif du refus, en toutes lettres. « Position introuvable pour ton
+          sport » se corrige ; un échec muet laisse le jeune retaper la même
+          chose. */}
+      {erreur && (
+        <p className="mt-2 text-[12px] leading-relaxed text-[#E63946]">{erreur}</p>
+      )}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SuggestRow — wraps a row with the yellow indicator + tap-to-expand
-   into SuggestExpand. When a champ already has EN_ATTENTE, renders
-   the En-attente pill instead of the edit affordance.
+   ChampDirectRow — une rangée qui s'ÉCRIT, indicateur VERT.
+
+   Elle s'appelait `SuggestRow` et portait le jaune, l'« En attente » et le
+   vocabulaire de proposition. C'était vrai jusqu'au 2026-09-09 ; depuis,
+   ces champs écrivent droit sur `athletes` (ecrireChampAthlete). Le nom et
+   la couleur ont survécu à la décision — et c'est ainsi qu'un athlète a vu
+   « NOUVELLE VALEUR PROPOSÉE » sur un champ déjà enregistré.
+
+   Le nom dit maintenant le monde. Si un jour ces champs redeviennent des
+   propositions, il faudra renommer — ce qui est précisément le garde-fou
+   qui manquait.
+
+   La branche « En attente » est RETIRÉE : une écriture directe ne crée
+   aucune ligne athlete_suggestions, donc ce chemin ne pouvait plus
+   s'atteindre. Le `pending` disparaît avec elle.
 ═══════════════════════════════════════════════════════════════ */
-interface SuggestRowProps {
+interface ChampDirectRowProps {
   label: string;
   value: string;
   champ: string;
-  pending: AthleteSuggestion | undefined;
   inputType: "text" | "picker" | "wheel";
   wheelKind?: "height" | "weight";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
   /** Per-field placeholder for the text-input branch. Threaded to
-   *  SuggestExpand. Omit to render no placeholder. */
+   *  ChampDirectExpand. Omit to render no placeholder. */
   placeholder?: string;
   submitting: boolean;
-  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<string | null>;
   isLast?: boolean;
 }
 
-function SuggestRow({
-  label, value, champ, pending, inputType, wheelKind, pickerOptions, numericMode, placeholder,
+function ChampDirectRow({
+  label, value, champ, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, isLast,
-}: SuggestRowProps) {
+}: ChampDirectRowProps) {
   const [expanded, setExpanded] = useState(false);
 
-  // En-attente — display the pending proposed value, no edit affordance.
-  if (pending) {
-    return (
-      <div
-        className="px-4 py-3 flex items-center gap-3"
-        style={{ borderBottom: isLast ? undefined : "1px solid rgba(255,255,255,0.06)" }}
-      >
-        <span className="w-4 h-4 flex items-center justify-center shrink-0">
-          <PencilIcon color={YELLOW} size={12} />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] text-white/70 truncate">{label}</p>
-          <p className="text-[12px] text-[#EAB308] mt-0.5 truncate">
-            Suggéré : <span className="font-bold">{pending.proposed_value}</span>
-          </p>
-        </div>
-        <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#EAB308]/15 border border-[#EAB308]/30 text-[#EAB308] shrink-0">
-          En attente
-        </span>
-      </div>
-    );
-  }
-
-  // Default — collapsed row, tap to expand into SuggestExpand.
+  // Rangée repliée — on tape pour ouvrir la saisie en place.
   return (
     <div>
       <button
@@ -493,7 +500,7 @@ function SuggestRow({
         style={{ borderBottom: isLast && !expanded ? undefined : "1px solid rgba(255,255,255,0.06)" }}
       >
         <span className="w-4 h-4 flex items-center justify-center shrink-0">
-          <PencilIcon color={YELLOW} size={12} />
+          <PencilIcon color={GREEN} size={12} />
         </span>
         <span className="flex-1 text-[14px] text-white/70 truncate">{label}</span>
         <span className="text-[14px] font-semibold text-white max-w-[55%] truncate text-right">
@@ -504,7 +511,7 @@ function SuggestRow({
         </svg>
       </button>
       {expanded && (
-        <SuggestExpand
+        <ChampDirectExpand
           champ={champ}
           currentValue={value}
           initialProposed=""
@@ -515,8 +522,11 @@ function SuggestRow({
           placeholder={placeholder}
           submitting={submitting}
           onSubmit={async (proposed, message) => {
-            await onSubmit(champ, proposed, message, value);
-            setExpanded(false);
+            const motif = await onSubmit(champ, proposed, message, value);
+            /* On ne referme QUE si l'écriture est passée : sur un refus, le
+               champ reste ouvert avec sa valeur et son motif sous les yeux. */
+            if (!motif) setExpanded(false);
+            return motif;
           }}
           onCancel={() => setExpanded(false)}
         />
@@ -764,7 +774,7 @@ export default function AthleteEditWizardMobile() {
     // Pending suggestions — verbatim from page.tsx :1077-1094.
     const { data: sugs } = await supabase
       .from("athlete_suggestions")
-      .select("id, champ, valeur_actuelle, valeur_proposee, status, message, raison_rejet, created_at")
+      .select("id, champ, valeur_actuelle, valeur_proposee, status, message, raison_rejet, note_systeme, created_at")
       .eq("athlete_id", raw.id)
       .order("created_at", { ascending: false });
     if (sugs) {
@@ -777,14 +787,13 @@ export default function AthleteEditWizardMobile() {
         status: (STATUS_MAP[s.status] || "pending") as "pending" | "approved" | "rejected",
         submitted_at: s.created_at,
         rejection_reason: s.raison_rejet || undefined,
+        system_note: (s as { note_systeme?: string | null }).note_systeme ?? null,
       })));
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  /* ── getPending — verbatim mirror of page.tsx :1290 helper. */
-  const pendingSugs = useMemo(() => suggestions.filter((s) => s.status === "pending"), [suggestions]);
   /* Compare sur la COLONNE : l'app 1.2 en magasin a pu créer la suggestion avec
      un libellé FR, celle-ci l'écrit en nom de colonne. Les deux doivent
      retrouver le même critère. */
@@ -796,11 +805,38 @@ export default function AthleteEditWizardMobile() {
     positionId: ((a as { positionId?: string | null } | null)?.positionId) ?? null,
   } as GrilleRef);
 
-  const getPending = useCallback((champ: string) => {
+  /* ── L'ÉTAT RÉEL, PAS L'ÉTAT ESPÉRÉ ──────────────────────────────────────
+        Décision BP du 2026-09-12, après une recette perdue à chasser un
+        fantôme. `getPending` ne rendait que les EN_ATTENTE — et il n'existe
+        AUCUNE ligne EN_ATTENTE en base : le trigger de transition résout tout
+        dans la transaction d'insertion (délai mesuré : 0.000000 s). La
+        pastille était donc structurellement invisible, et l'athlète soumettait
+        dans le noir.
+
+        `derniereSuggestion` rend la PLUS RÉCENTE quel que soit son statut. La
+        rangée affiche ce que le serveur dit — en attente, approuvée ou
+        refusée. Le jour où le volet 6 de D6 laisse les évaluations en
+        EN_ATTENTE, le même code se met à afficher « En attente » sans qu'on y
+        retouche : c'est le statut qui change, pas l'écran. */
+  const derniereSuggestion = useCallback((champ: string) => {
     const col = champToColumn(champ);
-    return pendingSugs.find((s) =>
+    /* `suggestions` arrive déjà trié created_at DESC (cf. load()), donc le
+       premier trouvé est le plus récent. */
+    return suggestions.find((s) =>
       s.field === champ || (col !== null && champToColumn(s.field) === col));
-  }, [pendingSugs]);
+  }, [suggestions]);
+
+  /* Le récapitulatif de l'étape Évaluation : uniquement les champs qui
+     APPARTIENNENT à l'entraîneur. Les champs de profil s'écrivent en direct
+     et n'ont produit de ligne que via l'ancien chemin — les mélanger ici
+     ferait croire qu'ils attendent une approbation. */
+  const suggestionsEvaluation = useMemo(
+    () => suggestions.filter((s) => s.field === "Distinctions"
+      || s.field === "Distinction personnalisée"
+      || s.field === "Cote globale"
+      || champToColumn(s.field) !== null).slice(0, 12),
+    [suggestions],
+  );
 
   /* ── DIRECT save — mirrors page.tsx :1224-1236 (Médias saveField)
         widened to cover the Académique JSONB + bool columns introduced
@@ -860,39 +896,108 @@ export default function AthleteEditWizardMobile() {
 
   /* ── SUGGEST submit — verbatim from page.tsx :1263-1272.
         One INSERT per field with the exact French champ string. */
+  /* `_message` reste dans la SIGNATURE parce que les appelants le passent
+     encore, mais il n'a plus de destination : le flux de proposition est
+     mort, il n'y a plus de coach à qui écrire. Le `void` le dit à eslint
+     sans le faire disparaître de la signature — le retirer obligerait à
+     toucher chaque appelant pour un paramètre qui partira de lui-même au
+     nettoyage de 1.4.2. */
   const submitSuggestion = useCallback(async (
     champ: string,
     proposed: string,
-    message: string,
+    _message: string,
     currentValue: string,
-  ) => {
-    if (!a) return;
+  ): Promise<string | null> => {
+    if (!a) return "Profil indisponible.";
+    /* Rien n'a changé : pas d'UPDATE, pas de rechargement. Le wizard
+       rouvre souvent la même rangée sans rien modifier. */
+    if (proposed === currentValue) return null;
+    void _message;
     setSubmitting(true);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return "Session expirée — reconnecte-toi.";
 
-      // coach_id : prefer the cached _raw value, fall back to a lookup
-      // (matches page.tsx :1257-1261).
+      /* ── ÉDITION DIRECTE (décision BP, 2026-09-09) ──────────────────
+         Ces champs ne passent plus par une proposition. L'écriture va
+         droit sur `athletes`, par le même mapping que le moteur SQL —
+         voir lib/athlete/champVersColonne.ts, qui cite le SQL qu'il
+         reproduit.
+
+         Ce qui existait avant, et pourquoi ça ne pouvait pas rester :
+         le wizard insérait dans athlete_suggestions, et un TRIGGER DE
+         TRANSITION approuvait aussitôt. La donnée arrivait donc bien —
+         mais l'écran disait « envoyé à ton coach pour approbation »
+         alors que la plateforme avait déjà tranché, et aucun coach ne
+         voyait rien. Un mensonge, à des mineurs.
+
+         Ce trigger est temporaire (retrait prévu 1.4.2). Tant qu'il est
+         là, les deux chemins coexistent et DOIVENT écrire pareil. */
+      const res = await ecrireChampAthlete(supabase, a.id, champ, proposed);
+      if (!res.ok) return res.motif;
+
+      await load();
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [a, load]);
+
+  /* ── PROPOSITION D'ÉVALUATION — le SECOND chemin, et il est distinct ──────
+        `submitSuggestion` ci-dessus écrit EN DIRECT sur `athletes` : c'est le
+        régime des champs de profil (Physique / Sport / Médias), décidé le
+        2026-09-09, et il ne change pas.
+
+        La cote, les 14 traits et les distinctions n'appartiennent pas à
+        l'athlète : ils se PROPOSENT. Ce chemin-ci insère donc une vraie ligne
+        `athlete_suggestions` en EN_ATTENTE, destinée à la boîte du coach
+        (/coach/a-traiter) — exactement ce que font déjà le web
+        (athlete/profil) et le binaire iOS 1.4. Android rejoint la parité.
+
+        ⚠️ `champ` est écrit À L'IDENTIQUE de ce qu'attend
+        `apply_approved_suggestion` : libellé français exact pour la cote et
+        les distinctions, NOM DE COLONNE pour les 14 traits (découplage
+        libellé/clé du lot 3 — le libellé affiché vient de la grille de
+        position, il n'est donc PAS une clé stable). */
+  const proposerEvaluation = useCallback(async (
+    champ: string,
+    valeurProposee: string,
+    valeurActuelle: string,
+  ): Promise<string | null> => {
+    if (!a) return "Profil indisponible.";
+    setSubmitting(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return "Session expirée — reconnecte-toi.";
+
+      /* coach_id : on préfère la valeur déjà chargée, sinon relecture. La
+         colonne est un INSTANTANÉ du destinataire au moment du dépôt ; la
+         boîte du coach, elle, joint sur athletes.coach_id. */
       let coachId: string | null = a.coachId;
       if (!coachId) {
-        const { data: row } = await supabase.from("athletes").select("coach_id").eq("id", a.id).single();
+        const { data: row } = await supabase
+          .from("athletes").select("coach_id").eq("id", a.id).maybeSingle();
         coachId = (row?.coach_id as string) || null;
       }
 
-      await supabase.from("athlete_suggestions").insert({
+      const { error } = await supabase.from("athlete_suggestions").insert({
         athlete_id: a.id,
         submitted_by: user.id,
         coach_id: coachId,
         champ,
-        valeur_actuelle: currentValue,
-        valeur_proposee: proposed,
+        valeur_actuelle: valeurActuelle,
+        valeur_proposee: valeurProposee,
         status: "EN_ATTENTE",
-        message: message || null,
       });
+      if (error) {
+        console.error(`[AthleteEditWizard] proposition: ${error.code ?? ""} ${error.message}`);
+        return error.message;
+      }
 
       await load();
+      return null;
     } finally {
       setSubmitting(false);
     }
@@ -973,7 +1078,7 @@ export default function AthleteEditWizardMobile() {
         {step === 1 && <AcademiqueStep a={a} onDirect={saveDirect} />}
 
         {/* ── Step 2 : Physique (SUGGEST) ── */}
-        {step === 2 && <PhysiqueStep a={a} getPending={getPending} submitting={submitting} onSubmit={submitSuggestion} />}
+        {step === 2 && <PhysiqueStep a={a} submitting={submitting} onSubmit={submitSuggestion} />}
 
         {/* ── Step 3 : Sport (SUGGEST — B-2 wired) ── */}
         {step === 3 && (
@@ -981,7 +1086,6 @@ export default function AthleteEditWizardMobile() {
             a={a}
             sportsOptions={sportsOptions}
             positionsOptions={positionsOptions}
-            getPending={getPending}
             submitting={submitting}
             onSubmit={submitSuggestion}
             saveDirect={saveDirect}
@@ -996,9 +1100,11 @@ export default function AthleteEditWizardMobile() {
           <EvaluationStep
             groups={traitGroupsResolved}
             a={a}
-            getPending={getPending}
+            derniereSuggestion={derniereSuggestion}
+            suggestionsEvaluation={suggestionsEvaluation}
+            onRejoindreEquipe={() => router.push("/athlete/transfert")}
             submitting={submitting}
-            onSubmit={submitSuggestion}
+            onPropose={proposerEvaluation}
           />
         )}
       </div>
@@ -1565,15 +1671,17 @@ function CustomChip({ label, onRemove }: { label: string; onRemove: () => void }
    secondary by athletes.sport_secondaire_id (fallback sport_id when
    no secondary sport is set — mirrors page.tsx).
 ═══════════════════════════════════════════════════════════════ */
+/* `getPending` a disparu de la signature avec la branche « En attente » des
+   rangées directes : ces champs s'écrivent, ils n'attendent rien. Une prop
+   d'attente sur un écran qui n'attend pas invite le prochain à s'en servir. */
 function SportStep({
-  a, sportsOptions, positionsOptions, getPending, submitting, onSubmit, saveDirect,
+  a, sportsOptions, positionsOptions, submitting, onSubmit, saveDirect,
 }: {
   a: LoadedAthlete;
   sportsOptions: SportOption[];
   positionsOptions: PositionOption[];
-  getPending: (champ: string) => AthleteSuggestion | undefined;
   submitting: boolean;
-  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<string | null>;
   saveDirect: (column: string, value: string | string[] | boolean | TeamHistoryEntry[]) => Promise<void>;
 }) {
   /* The picker `value` field is the same string the trigger receives
@@ -1623,40 +1731,37 @@ function SportStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 px-1">
-        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: YELLOW }}>
-          Sport · Suggest
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: GREEN }}>
+          Sport
         </p>
-        <PencilIcon color={YELLOW} size={12} />
+        <PencilIcon color={GREEN} size={12} />
       </div>
       <p className="text-[12px] text-white/55 px-1">
-        Tes propositions sont envoyées à ton coach pour approbation.
+        Tes modifications sont enregistrées tout de suite.
       </p>
       <Card>
-        <SuggestRow
+        <ChampDirectRow
           label="Sport principal"
           value={a.primarySport}
           champ="Sport principal"
-          pending={getPending("Sport principal")}
           inputType="picker"
           pickerOptions={sportPickerOptions}
           submitting={submitting}
           onSubmit={onSubmit}
         />
-        <SuggestRow
+        <ChampDirectRow
           label="Position principale"
           value={a.primaryPosition}
           champ="Position"
-          pending={getPending("Position")}
           inputType="picker"
           pickerOptions={primaryPositionOptions}
           submitting={submitting}
           onSubmit={onSubmit}
         />
-        <SuggestRow
+        <ChampDirectRow
           label="Numéro"
           value={a.jerseyNumber}
           champ="Numéro"
-          pending={getPending("Numéro")}
           inputType="text"
           numericMode="numeric"
           placeholder="Ex: 24"
@@ -1703,31 +1808,30 @@ function SportStep({
    AND the apply_approved_suggestion trigger CASE branches.
 ═══════════════════════════════════════════════════════════════ */
 function PhysiqueStep({
-  a, getPending, submitting, onSubmit,
+  a, submitting, onSubmit,
 }: {
   a: LoadedAthlete;
-  getPending: (champ: string) => AthleteSuggestion | undefined;
   submitting: boolean;
-  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<string | null>;
 }) {
   return (
     <>
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: YELLOW }}>
-            Physique · Suggest
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: GREEN }}>
+            Physique
           </p>
-          <PencilIcon color={YELLOW} size={12} />
+          <PencilIcon color={GREEN} size={12} />
         </div>
         <p className="text-[12px] text-white/55 mb-3 px-1">
-          Tes propositions sont envoyées à ton coach pour approbation.
+          Tes modifications sont enregistrées tout de suite.
         </p>
         <Card>
-          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="wheel" wheelKind="height" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="wheel" wheelKind="weight" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Envergure"       value={a.wingspan}        champ="Envergure"       pending={getPending("Envergure")}       inputType="text" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Main dominante"  value={a.dominantHand}    champ="Main dominante"  pending={getPending("Main dominante")}  inputType="picker" pickerOptions={HAND_OPTIONS} submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Pied dominant"   value={a.dominantFoot}    champ="Pied dominant"   pending={getPending("Pied dominant")}   inputType="picker" pickerOptions={FOOT_OPTIONS} submitting={submitting} onSubmit={onSubmit} isLast />
+          <ChampDirectRow label="Taille"          value={a.heightDisplay}   champ="Taille"          inputType="wheel" wheelKind="height" submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Poids"           value={a.weightDisplay}   champ="Poids"           inputType="wheel" wheelKind="weight" submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Envergure"       value={a.wingspan}        champ="Envergure"       inputType="text" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Main dominante"  value={a.dominantHand}    champ="Main dominante"  inputType="picker" pickerOptions={HAND_OPTIONS} submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Pied dominant"   value={a.dominantFoot}    champ="Pied dominant"   inputType="picker" pickerOptions={FOOT_OPTIONS} submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
       </div>
 
@@ -1736,12 +1840,12 @@ function PhysiqueStep({
           Tests athlétiques
         </p>
         <Card>
-          <SuggestRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         pending={getPending("40 yards")}         inputType="text" placeholder="Ex: 4.72s"     submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    pending={getPending("Saut vertical")}    inputType="text" placeholder="Ex: 32&quot;"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    pending={getPending("Saut longueur")}    inputType="text" placeholder="Ex: 9'2&quot;"  submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Développé couché" value={a.benchPress}     champ="Développé couché" pending={getPending("Développé couché")} inputType="text" placeholder="Ex: 225 × 8"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Navette"          value={a.shuttleAgility} champ="Navette"          pending={getPending("Navette")}          inputType="text" placeholder="Ex: 4.31s"     submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      pending={getPending("Sprint 100m")}      inputType="text" placeholder="Ex: 10.9s"     submitting={submitting} onSubmit={onSubmit} isLast />
+          <ChampDirectRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         inputType="text" placeholder="Ex: 4.72s"     submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    inputType="text" placeholder="Ex: 32&quot;"   submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    inputType="text" placeholder="Ex: 9'2&quot;"  submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Développé couché" value={a.benchPress}     champ="Développé couché" inputType="text" placeholder="Ex: 225 × 8"   submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Navette"          value={a.shuttleAgility} champ="Navette"          inputType="text" placeholder="Ex: 4.31s"     submitting={submitting} onSubmit={onSubmit} />
+          <ChampDirectRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      inputType="text" placeholder="Ex: 10.9s"     submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
       </div>
     </>
@@ -1832,15 +1936,26 @@ function MediasStep({
    isDetailedMode mirrors page.tsx :550 verbatim :
      !!traitRatings && groups.flatMap((g) => g.traits).some((t) => (traitRatings[t.camel] || 0) > 0)
 ═══════════════════════════════════════════════════════════════ */
+/* PROPOSITION, PAS ÉCRITURE — et c'est toute la différence avec les autres
+   étapes. Physique / Sport / Médias écrivent en direct sur `athletes` ; ici
+   l'athlète PROPOSE et l'entraîneur tranche. `onPropose` insère donc une
+   ligne `athlete_suggestions` en EN_ATTENTE, jamais un UPDATE.
+
+   Parité assumée avec les deux autres clients : le web (athlete/profil,
+   EvaluationSuggest) et le binaire iOS 1.4 offrent exactement ce geste. */
 function EvaluationStep({
-  a, getPending, submitting, onSubmit, groups,
+  a, groups, derniereSuggestion, suggestionsEvaluation, onRejoindreEquipe, submitting, onPropose,
 }: {
   a: LoadedAthlete;
-  getPending: (champ: string) => AthleteSuggestion | undefined;
-  submitting: boolean;
-  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
   /** Les 2 groupes (9 / 5), libellés résolus par la grille de l'athlète. */
   groups: { title: string; traits: TraitEntry[] }[];
+  derniereSuggestion: (champ: string) => AthleteSuggestion | undefined;
+  suggestionsEvaluation: AthleteSuggestion[];
+  /** Le geste qui débloque tout quand il n'y a pas d'entraîneur : le code
+   *  d'équipe, déjà en place sur /athlete/transfert (MonEquipeSection). */
+  onRejoindreEquipe: () => void;
+  submitting: boolean;
+  onPropose: (champ: string, valeurProposee: string, valeurActuelle: string) => Promise<string | null>;
 }) {
   const tr = a.traitRatings;
   const TRAIT_CHAMPS: TraitEntry[] = groups.flatMap((g) => g.traits);
@@ -1861,17 +1976,76 @@ function EvaluationStep({
 
   const getCurrent = (key: keyof AthleteTraitRatings) => (tr ? tr[key] || 0 : 0);
 
+  /* Le prochain pas du jeune dépend d'UNE question : quelqu'un peut-il lire sa
+     proposition ? Sans entraîneur rattaché, elle attendra indéfiniment — et lui
+     dire « en attente d'approbation » serait lui promettre un lecteur qui
+     n'existe pas. On lui dit d'aller en chercher un. */
+  const aUnCoach = !!a.coachId;
+
   return (
     <div className="space-y-4">
+      {/* ÉVALUATION — L'ÉTAPE OÙ L'ATHLÈTE PROPOSE.
+
+          La cote, les 14 traits et les distinctions restent la propriété de
+          l'entraîneur : c'est ce qui leur donne leur valeur auprès des
+          recruteurs. Mais l'athlète peut les PROPOSER, et c'est ce que font
+          déjà le web et iOS 1.4 — Android rattrape la parité.
+
+          Le texte dit exactement ce qui se passe : une soumission, pas un
+          enregistrement. Même formulation que le web. */}
       <div className="flex items-center gap-2 px-1">
-        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: YELLOW }}>
-          Évaluation · Suggest
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/40">
+          Évaluation
         </p>
         <PencilIcon color={YELLOW} size={12} />
       </div>
-      <p className="text-[12px] text-white/55 px-1">
-        Tes propositions sont envoyées à ton coach pour approbation.
-      </p>
+
+      {/* L'ENCART QUI DIT LE MONDE.
+          C'était une ligne de texte gris parmi d'autres — donc invisible, et
+          l'athlète découvrait la règle au moment du refus. Ici c'est une
+          carte teintée : elle se lit AVANT le premier geste, et sa couleur
+          est celle des trois rangées en dessous. Le jaune n'est pas un
+          ornement, c'est la même information que le crayon.
+
+          Même anatomie que les cartes d'état du design system (Card + pile
+          d'icône ronde + titre/corps) — cf. la carte « Mode démo » du
+          pipeline recruteur. */}
+      <Card>
+        <div className="px-4 py-3.5 flex items-start gap-3 bg-[#EAB308]/[0.06] border-l-2 border-[#EAB308]/50">
+          <span
+            aria-hidden
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[15px] bg-[#EAB308]/15 border border-[#EAB308]/25"
+          >
+            ⏳
+          </span>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-[#EAB308] leading-snug">
+              {aUnCoach ? "Cette section se propose" : "Il te manque un entraîneur"}
+            </p>
+            {/* Le même écran, deux situations. Avec un entraîneur, on décrit ce
+                qui va se passer. Sans, on décrit ce qu'il reste à faire — parce
+                que promettre une approbation à qui n'a personne pour approuver,
+                c'est la définition du mensonge qu'on vient de retirer deux fois. */}
+            <p className="text-[12px] leading-relaxed text-white/60 mt-0.5">
+              {aUnCoach
+                ? "Modifications soumises à ton entraîneur pour approbation."
+                : "Tu peux proposer ton évaluation dès maintenant — elle attendra qu'un entraîneur rejoigne ton profil pour être approuvée."}
+            </p>
+            {!aUnCoach && (
+              <button
+                type="button"
+                onClick={() => { void triggerHaptic("Light"); onRejoindreEquipe(); }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-bold bg-[#EAB308]/15 border border-[#EAB308]/30 text-[#EAB308] active:bg-[#EAB308]/25"
+              >
+                Rejoindre mon équipe
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* ── Rapport entraîneur — LOCKED (display-only).
             No champ in apply_approved_suggestion : the athlete cannot
@@ -1917,18 +2091,20 @@ function EvaluationStep({
         </p>
         {!isDetailedMode ? (
           <Card>
+            {/* Demi-étoiles ici, et ici SEULEMENT : la cote plate accepte
+                4.5 ; les 14 traits sont des entiers (cast ::int côté
+                trigger). `valeur_proposee` part donc en toFixed(1). */}
             <StarSuggestRow
-              label={a.overallRating > 0 ? `${a.overallRating.toFixed(1)}/5` : "—"}
+              label="Cote du coach"
               currentValue={a.overallRating}
               champ="Cote globale"
               allowHalf
-              starSize={28}
-              pending={getPending("Cote globale")}
+              starSize={26}
+              suggestion={derniereSuggestion("Cote globale")}
+              aUnCoach={aUnCoach}
               submitting={submitting}
               onSubmit={async (proposed) => {
-                /* Cote stringify : toFixed(1) → e.g. "4.5". Matches
-                   trigger ::numeric cast (migration L115). */
-                await onSubmit("Cote globale", proposed.toFixed(1), "", String(a.overallRating || ""));
+                await onPropose("Cote globale", proposed.toFixed(1), a.overallRating > 0 ? a.overallRating.toFixed(1) : "");
               }}
               isLast
             />
@@ -1958,8 +2134,27 @@ function EvaluationStep({
             Each row is a StarSuggestRow with whole-star input
             (allowHalf=false) and champ = the trait's exact French
             label. valeur_proposee = String(int) "1"-"5", matching
-            the trigger ::int cast for those 14 columns. */}
-      {isDetailedMode && (
+            the trigger ::int cast for those 14 columns.
+
+            ⚠️ PLUS DE GARDE `isDetailedMode` ICI — décision BP, 2026-09-12.
+            La grille ne s'affichait que si au moins un trait était DÉJÀ noté
+            par l'entraîneur. Autrement dit : « tu ne peux proposer une note
+            que si on t'en a déjà mis une ». Pour tout nouvel inscrit — donc
+            pour ceux qui en ont le plus besoin — les 14 traits étaient
+            invisibles et impossibles à proposer.
+
+            La règle devient : PROPOSER NE PRÉSUPPOSE PAS D'AVOIR ÉTÉ NOTÉ.
+
+            Ce qui ne change PAS : la LECTURE. Un trait jamais noté rend « — »
+            dans StarSuggestRow, jamais cinq étoiles vides — une note absente
+            n'est pas une note de zéro. C'est le GESTE qui s'ouvre, pas
+            l'affichage qui invente une valeur.
+
+            `isDetailedMode` sert encore juste au-dessus, pour la cote : elle
+            reste le miroir client de la garde `v_is_detailed` du trigger, qui
+            refuse d'appliquer une cote plate quand l'évaluation détaillée est
+            active. Cette garde-là est critique et ne bouge pas. */}
+      {(
         <>
           <div>
             <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
@@ -1975,17 +2170,16 @@ function EvaluationStep({
                     currentValue={current}
                     champ={t.column}
                     allowHalf={false}
-                    starSize={20}
-                    pending={getPending(t.column)}
+                    starSize={24}
+                    suggestion={derniereSuggestion(t.column)}
+                    aUnCoach={aUnCoach}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
-                      /* Submit guard mirrors page.tsx :587 :
-                         only emit if proposed > 0 && proposed !== current.
-                         StarSuggestRow's submit path enforces > 0 ;
-                         the equality check happens here. */
+                      /* Même valeur = pas de ligne. Le trigger l'appliquerait
+                         sans dommage, mais elle encombrerait la boîte du
+                         coach pour un changement qui n'en est pas un. */
                       if (proposed === current) return;
-                      // `champ` = NOM DE COLONNE (clé stable).
-                      await onSubmit(t.column, String(proposed), "", String(current || ""));
+                      await onPropose(t.column, String(proposed), current > 0 ? String(current) : "");
                     }}
                     isLast={i === CHARACTER_TRAITS.length - 1}
                   />
@@ -2007,13 +2201,13 @@ function EvaluationStep({
                     currentValue={current}
                     champ={t.column}
                     allowHalf={false}
-                    starSize={20}
-                    pending={getPending(t.column)}
+                    starSize={24}
+                    suggestion={derniereSuggestion(t.column)}
+                    aUnCoach={aUnCoach}
                     submitting={submitting}
                     onSubmit={async (proposed) => {
                       if (proposed === current) return;
-                      // `champ` = NOM DE COLONNE (clé stable).
-                      await onSubmit(t.column, String(proposed), "", String(current || ""));
+                      await onPropose(t.column, String(proposed), current > 0 ? String(current) : "");
                     }}
                     isLast={i === TACTICAL_TRAITS.length - 1}
                   />
@@ -2024,50 +2218,186 @@ function EvaluationStep({
         </>
       )}
 
-      {/* ── Distinctions (SUGGEST) ──────────────────────────────
-            Single-row, single-suggestion : the whole entries array is
-            JSON-stringified into one athlete_suggestions row with champ
-            "Distinctions" + valeur_proposee = JSON.stringify(entries).
-            Trigger casts ::jsonb on apply (migration L190-193) and the
-            recruiter/coach read goes through pastillesBadges, so the
-            stringify→jsonb→parse round-trip is symmetric. */}
+      {/* ── Distinctions — PROPOSABLES ──────────────────────────
+            Les plafonds (« plafond atteint ») et l'exclusion mutuelle
+            (« déjà attribué par quelqu'un d'autre ») ne sont PAS ici : elles
+            vivent dans BadgePicker, partagé avec le web et iOS. C'est
+            pourquoi la parité de comportement est acquise sans la
+            réimplémenter — et pourquoi il ne faut surtout pas la dupliquer
+            ici le jour où une règle changera. */}
       <div>
         <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
           Distinctions
         </p>
         <Card>
           <DistinctionsSuggestRow
-            athleteId={a.id ?? null}
+            athleteId={a.id}
             sportId={a.sportId}
             sportNom={a.primarySport || null}
             currentDistinctions={a.coachDistinctions}
-            pending={getPending("Distinctions")}
+            suggestion={derniereSuggestion("Distinctions")}
+            aUnCoach={aUnCoach}
             submitting={submitting}
             onSubmit={async (entries) => {
-              /* champ + payload format are trigger-critical. champ MUST
-                 be exactly "Distinctions" (single trigger CASE branch
-                 at migration L190). NEVER emit "Distinction
-                 personnalisée" — that's a SEPARATE branch (L195-196)
-                 used by a different admin flow ; emitting it from the
-                 athlete profile would INSERT into custom_distinctions
-                 instead of updating evaluations.distinctions, which is
-                 not what we want here. The custom badge's display title
-                 lives inside the entries array as { badge:"custom",
-                 detail:"<title>" } and ships through the regular
-                 Distinctions branch. */
-              const valueActuelle = JSON.stringify(a.coachDistinctions);
-              await onSubmit("Distinctions", JSON.stringify(entries), "", valueActuelle);
+              /* Une SEULE ligne pour tout le jeu de badges, sérialisée en
+                 JSON — la forme qu'attend le `::jsonb` du trigger, et celle
+                 que le web envoie déjà. Un badge par ligne casserait
+                 l'approbation côté coach. */
+              await onPropose("Distinctions", JSON.stringify(entries), "");
             }}
           />
         </Card>
       </div>
+
+      {/* ── MES PROPOSITIONS — le journal, pas la promesse ────────────────
+            Port du panneau « Mes suggestions » du web (athlete/profil
+            :1980-2026), en liste unique plutôt qu'en trois onglets : sur un
+            écran de 411 px, trois onglets pour douze lignes coûtent un geste
+            de plus qu'ils n'en économisent. Le statut est porté par la
+            pastille de chaque ligne, donc l'information est la même.
+
+            Il vit ICI, en bas de l'étape, et pas ailleurs : c'est la seule
+            étape dont les gestes attendent une décision de quelqu'un d'autre.
+            Les champs de profil s'écrivent — ils n'ont rien à journaliser. */}
+      {suggestionsEvaluation.length > 0 && (
+        <div>
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
+            Mes propositions
+          </p>
+          <Card>
+            <div className="divide-y divide-white/[0.06]">
+              {suggestionsEvaluation.map((s) => (
+                <div key={s.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-[13px] font-semibold text-white/85 min-w-0 truncate">
+                      {libelleChampProposition(s.field, groups)}
+                    </span>
+                    <span className="shrink-0"><PastilleStatut s={s} aUnCoach={aUnCoach} /></span>
+                  </div>
+                  <p className="mt-1 text-[12px] text-white/55 break-words">
+                    {s.field === "Distinctions"
+                      ? (badgesProposes(s.proposed_value).join(" · ") || s.proposed_value)
+                      : <>
+                          {s.current_value ? <span className="line-through text-white/30">{s.current_value}</span> : null}
+                          {s.current_value ? " → " : null}
+                          <span className="font-bold text-white/85">{s.proposed_value}</span>
+                        </>}
+                  </p>
+                  {motifHumain(s) && (
+                    <p className="mt-1 text-[11px] leading-relaxed text-[#E63946]/85">
+                      {motifHumain(s)}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
 
+/** Le libellé LISIBLE d'un champ proposé. `field` porte un nom de colonne
+ *  depuis le découplage du lot 3 (`esprit_equipe`), ou un libellé français
+ *  pour les lignes déposées par les clients plus anciens. On rend celui de
+ *  la grille de l'athlète quand on le retrouve, sinon la valeur telle quelle
+ *  — jamais une colonne brute présentée comme du français. */
+function libelleChampProposition(
+  field: string,
+  groups: { title: string; traits: TraitEntry[] }[],
+): string {
+  const col = champToColumn(field);
+  if (col) {
+    const t = groups.flatMap((g) => g.traits).find((x) => x.column === col);
+    if (t) return t.label;
+  }
+  return field;
+}
+
+/* ── RESTAURÉ le 2026-09-11 depuis eb52329^ / 0b6e05b^ ────────────────────
+   Ces deux composants avaient été retirés la veille au motif que le trigger
+   de transition rejetait leurs propositions. Le motif était exact — il l'est
+   encore — mais la conclusion était fausse : le web et le binaire iOS 1.4
+   offrent ce geste EN PRODUCTION, les utilisateurs s'en servent, et Android
+   était le seul client à ne pas l'avoir. La parité passe avant.
+
+   Le rejet automatique tombe avec le volet 6 de la migration D6
+   (docs/d6-volet6-suggestion-evaluation.sql). D'ici là, les trois clients se
+   comportent pareil — ce qui est la condition pour que le correctif serveur
+   les répare tous les trois d'un coup.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════
+   PastilleStatut — ce que le SERVEUR dit de la dernière proposition.
+
+   Une seule pastille pour les trois rangées de l'étape Évaluation, alignée
+   sur le panneau « Mes suggestions » du web (athlete/profil :1987-2020) :
+   jaune en attente, vert approuvé, rouge refusé.
+
+   ⚠️ AUCUN de ces trois états n'est deviné côté client. C'est la leçon de la
+   recette du 2026-09-12 : la version précédente n'affichait que EN_ATTENTE,
+   un état qu'aucune ligne n'atteint aujourd'hui — donc rien ne s'affichait
+   jamais, et l'athlète soumettait dans le noir.
+═══════════════════════════════════════════════════════════════ */
+function PastilleStatut({ s, valeur, aUnCoach }: {
+  s: AthleteSuggestion;
+  valeur?: string;
+  /** L'athlète a-t-il un entraîneur rattaché ? Décide du PROCHAIN PAS montré. */
+  aUnCoach: boolean;
+}) {
+  /* ── UN REFUS MACHINE N'EST PAS UN REFUS ────────────────────────────────
+     `system_note` est posé par le trigger de transition, jamais par un
+     humain. Tant que le volet 6 de D6 n'est pas appliqué, TOUTE proposition
+     d'évaluation est rejetée à l'insertion — annoncer « Refusée » ferait
+     croire au jeune que son entraîneur l'a recalé, alors que personne n'a
+     rien lu. On montre donc l'attente, c'est-à-dire la vérité de sa
+     situation : ça n'a pas encore été regardé.
+
+     Le rouge reste pour les VRAIS refus, ceux qu'un entraîneur prononce —
+     ils n'ont pas de note_systeme, et leur motif est un message humain, donc
+     affichable. */
+  const refusMachine = s.status === "rejected" && !!s.system_note;
+  const enAttente = s.status === "pending" || refusMachine;
+
+  /* L'état décrit SON PROCHAIN PAS, jamais l'architecture (règle 11).
+     Sans entraîneur, le prochain pas n'est pas d'attendre — c'est d'aller
+     en chercher un. */
+  const texte = enAttente
+    ? (aUnCoach
+        ? "⏳ En attente d'approbation du coach"
+        : "⏳ Invite ton coach pour qu'il approuve cette évaluation")
+    : s.status === "approved"
+      ? "✓ Approuvée"
+      : "✕ Refusée";
+
+  const skin = enAttente
+    ? { bord: "#EAB308", fond: "rgba(234,179,8,0.10)" }
+    : s.status === "approved"
+      ? { bord: "#22C55E", fond: "rgba(34,197,94,0.10)" }
+      : { bord: "#E63946", fond: "rgba(230,57,70,0.10)" };
+
+  return (
+    <span
+      className="inline-block text-[11px] font-bold rounded-full px-2 py-0.5 leading-snug"
+      style={{ color: skin.bord, background: skin.fond, border: `1px solid ${skin.bord}40` }}
+    >
+      {texte}{valeur ? ` · ${valeur}` : ""}
+    </span>
+  );
+}
+
+/** Un vrai refus d'entraîneur — donc un motif ÉCRIT PAR UN HUMAIN, qu'on peut
+ *  montrer. Le motif d'un refus machine, lui, ne s'affiche jamais : c'est de
+ *  l'architecture, et l'architecture ne s'adresse pas au jeune. */
+function motifHumain(s: AthleteSuggestion): string | null {
+  if (s.status !== "rejected" || s.system_note) return null;
+  return s.rejection_reason ?? null;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    StarSuggestRow — parallel to SuggestRow but with a StarRow input
-   body (no text/picker overlap with SuggestExpand). Owns its own
+   body (no text/picker overlap with ChampDirectExpand). Owns its own
    expand state + yellow indicator + pending pill + Soumettre /
    Annuler shell.
 
@@ -2082,7 +2412,7 @@ function EvaluationStep({
    Cote globale and whole-star for individual traits.
 ═══════════════════════════════════════════════════════════════ */
 function StarSuggestRow({
-  label, currentValue, champ, allowHalf, starSize, pending, submitting, onSubmit, isLast,
+  label, currentValue, champ, allowHalf, starSize, suggestion, aUnCoach, submitting, onSubmit, isLast,
 }: {
   label: string;
   /** Currently-stored value in evaluations (0 = unset). Displayed
@@ -2095,7 +2425,9 @@ function StarSuggestRow({
   champ: string;
   allowHalf: boolean;
   starSize: number;
-  pending: AthleteSuggestion | undefined;
+  /** La DERNIÈRE proposition sur ce champ, quel que soit son statut. */
+  suggestion: AthleteSuggestion | undefined;
+  aUnCoach: boolean;
   submitting: boolean;
   /** Called with the validated `proposed` number (always > 0). The
    *  caller does the stringify (String(int) for traits, toFixed(1)
@@ -2106,12 +2438,8 @@ function StarSuggestRow({
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState(0);
 
-  const hasPending = !!pending;
-
-  /* Collapsed surface — yellow pencil indicator + current value
-     stars + pending pill (mirrors SuggestRow's read state). The
-     pending pill appears when an EN_ATTENTE suggestion exists for
-     this champ. */
+  /* Surface repliée — crayon jaune, valeur COURANTE, puis l'état réel de la
+     dernière proposition s'il y en a une. */
   if (!expanded) {
     return (
       <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"}`}>
@@ -2125,17 +2453,25 @@ function StarSuggestRow({
             <span className="text-[14px] text-white/70 truncate">{label}</span>
           </span>
           <span className="flex items-center gap-2 shrink-0">
-            <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={starSize > 24 ? 18 : 16} />
+            {/* Un trait JAMAIS noté rend « — », pas cinq étoiles vides : une
+                note absente n'est pas une note de zéro. La LECTURE ne ment
+                pas ; c'est le geste de proposition, lui, qui reste ouvert. */}
+            {currentValue > 0
+              ? <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={starSize > 24 ? 18 : 16} />
+              : <span className="text-[13px] text-white/35">—</span>}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </span>
         </button>
-        {hasPending && (
+        {suggestion && (
           <div className="px-4 pb-3 -mt-1">
-            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
-              ⏳ En attente : {pending?.proposed_value}/5
-            </span>
+            <PastilleStatut s={suggestion} valeur={`${suggestion.proposed_value}/5`} aUnCoach={aUnCoach} />
+            {motifHumain(suggestion) && (
+              <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                {motifHumain(suggestion)}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -2226,14 +2562,38 @@ function StarSuggestRow({
    apply_approved_suggestion trigger's `::jsonb` cast and the canonical
    pastillesBadges read are both symmetric round-trips.
 ═══════════════════════════════════════════════════════════════ */
+/** Les libellés des badges d'une proposition de distinctions, relus depuis
+ *  la valeur déposée. Rend une liste VIDE sur tout format inattendu : une
+ *  pastille sans détail reste correcte, une exception casserait l'étape. */
+function badgesProposes(valeur: string | null | undefined): string[] {
+  if (!valeur) return [];
+  try {
+    const brut: unknown = JSON.parse(valeur);
+    if (!Array.isArray(brut)) return [];
+    return brut.flatMap((e) => {
+      if (typeof e !== "object" || e === null) return [];
+      const { badge, detail } = e as { badge?: unknown; detail?: unknown };
+      if (typeof badge !== "string") return [];
+      const cfg = BADGE_CONFIG[badge];
+      const d = typeof detail === "string" ? detail.trim() : "";
+      if (badge === "custom") return [d || "Personnalisée"];
+      const base = cfg?.label ?? badge;
+      return [d ? `${base} — ${d}` : base];
+    });
+  } catch {
+    return [];
+  }
+}
+
 function DistinctionsSuggestRow({
-  athleteId, sportId, sportNom, currentDistinctions, pending, submitting, onSubmit,
+  athleteId, sportId, sportNom, currentDistinctions, suggestion, aUnCoach, submitting, onSubmit,
 }: {
   athleteId: string | null;
   sportId: string | null;
   sportNom: string | null;
   currentDistinctions: DistinctionEntry[];
-  pending: AthleteSuggestion | undefined;
+  suggestion: AthleteSuggestion | undefined;
+  aUnCoach: boolean;
   submitting: boolean;
   onSubmit: (entries: DistinctionEntry[]) => Promise<void>;
 }) {
@@ -2245,7 +2605,6 @@ function DistinctionsSuggestRow({
      `startEditing` at page.tsx :727-730) so the athlete edits the
      existing set rather than starting blank. */
   const [draft, setDraft] = useState<BadgeEntry[]>([]);
-  const hasPending = !!pending;
   const incomplets = entreesIncompletes(draft, cat);
 
   /* Le picker part des badges issus de SUGGESTIONS, pas de
@@ -2303,6 +2662,16 @@ function DistinctionsSuggestRow({
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
+        {/* `ouvrir()` REFUSE de déplier quand la lecture des badges échoue —
+            ouvrir sur une liste vide proposerait de tout retirer. Mais sans
+            ce message, l'athlète appuyait et il ne se passait RIEN : un bouton
+            mort, sans explication. La variable existait déjà et n'était pas
+            rendue ; la rendre coûte deux lignes. */}
+        {erreur && (
+          <p className="px-4 pb-2 text-[12px] leading-relaxed text-[#E63946]">
+            Impossible d&apos;ouvrir les distinctions : {erreur}
+          </p>
+        )}
         {/* Current badges as small muted chips. Empty state shows an
             em-dash via the read-only branch ; in expand mode the user
             sees the same chip list reflected in the toggle states. */}
@@ -2329,11 +2698,30 @@ function DistinctionsSuggestRow({
             <span className="text-[12px] text-white/35">—</span>
           </div>
         )}
-        {hasPending && (
-          <div className="px-4 pb-3 -mt-1">
-            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
-              ⏳ En attente
-            </span>
+        {/* EN ATTENTE — on liste ce qui a été proposé, pas juste « il y a
+            quelque chose ». La pastille seule obligeait à rouvrir la rangée
+            pour savoir ce qu'on avait demandé, et ce qu'on y voyait était le
+            brouillon rechargé depuis la base, pas la proposition.
+
+            `proposed_value` est le JSON envoyé au dépôt. Il est reparsé ici :
+            si le format devait changer un jour, la liste disparaît au lieu de
+            planter — d'où le try/catch et le repli sur la pastille nue. */}
+        {suggestion && (
+          <div className="px-4 pb-3 -mt-1 flex flex-wrap items-center gap-1.5">
+            <PastilleStatut s={suggestion} aUnCoach={aUnCoach} />
+            {badgesProposes(suggestion.proposed_value).map((lib, i) => (
+              <span
+                key={`${lib}-${i}`}
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70"
+              >
+                {lib}
+              </span>
+            ))}
+            {motifHumain(suggestion) && (
+              <p className="w-full mt-0.5 text-[11px] leading-relaxed text-white/45">
+                {motifHumain(suggestion)}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -2369,11 +2757,21 @@ function DistinctionsSuggestRow({
         accent="#EAB308"
       />
 
+      {/* `entreesIncompletes` était calculée et jamais lue : un badge dont le
+          détail est obligatoire (titre d'une distinction personnalisée, par
+          ex.) partait quand même, et arrivait chez l'entraîneur sans son
+          libellé. Elle garde maintenant le bouton, et le dit. */}
+      {incomplets.length > 0 && (
+        <p className="mt-2 text-[12px] leading-relaxed text-[#EAB308]">
+          Complète {incomplets.length === 1 ? "le libellé manquant" : `les ${incomplets.length} libellés manquants`} avant de soumettre.
+        </p>
+      )}
+
       <div className="mt-3 flex items-center justify-end gap-3 pb-2">
         <button
           type="button"
           onClick={() => { void triggerHaptic("Light"); submit(); }}
-          disabled={submitting}
+          disabled={submitting || incomplets.length > 0}
           className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
         >
           {submitting ? "..." : "Soumettre"}

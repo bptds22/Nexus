@@ -8,19 +8,30 @@ import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicke
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
 import {
-  loadSchoolCoaches,
-  loadAthletesForCoach,
-  transferAthletes,
-  UNASSIGNED_COACH_ID,
-  type SchoolCoachOption,
+  loadSchoolTeams,
+  loadAthletesForTeam,
+  moveAthletesToTeam,
+  loadTransferContext,
+  pickInitialTeam,
+  destinationBlockReason,
+  NO_TEAM_ID,
+  REMOVE_FROM_TEAM_ID,
+  type TeamOption,
   type TransferAthlete,
+  type TransferContext,
 } from "@/lib/coach/transferAthletes";
 
 /* ═══════════════════════════════════════════════════════════════
    TransfertAthletesMobile — Capacitor variant of GESTION DES
    ATHLÈTES. Stacked top-to-bottom: source picker → athlete list →
-   sticky destination picker + CTA. Ownership only (coach_id); never
-   touches team_athletes. RLS scopes writes to the caller's school.
+   sticky destination picker + CTA.
+
+   PIVOTÉ PAR ÉQUIPE (Lot E) : déplace l'appartenance d'équipe
+   (team_athletes), plus la propriété (athletes.coach_id) — qui ne
+   décrivait que 9 des 53 athlètes en équipe. coach_id n'est PLUS écrit
+   ici : il est dérivé, maintenu par les triggers de la vague 2.
+   Parité stricte avec le web ; toute la logique vit dans
+   lib/coach/transferAthletes.
 ═══════════════════════════════════════════════════════════════ */
 
 export default function TransfertAthletesMobile() {
@@ -29,7 +40,8 @@ export default function TransfertAthletesMobile() {
 
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
-  const [coaches, setCoaches] = useState<SchoolCoachOption[]>([]);
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [ctx, setCtx] = useState<TransferContext>({ myTeamIds: new Set(), isDirector: false });
 
   const [sourceId, setSourceId] = useState<string>("");
   const [destId, setDestId] = useState<string>("");
@@ -43,9 +55,9 @@ export default function TransfertAthletesMobile() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const refreshCoaches = useCallback(async (sid: string) => {
+  const refreshTeams = useCallback(async (sid: string, c: TransferContext) => {
     const supabase = createClient();
-    setCoaches(await loadSchoolCoaches(supabase, sid));
+    setTeams(await loadSchoolTeams(supabase, sid, c));
   }, []);
 
   useEffect(() => {
@@ -57,16 +69,30 @@ export default function TransfertAthletesMobile() {
         .from("users").select("school_id").eq("id", session.user.id).maybeSingle();
       const sid = me?.school_id ?? null;
       setSchoolId(sid);
-      if (sid) await refreshCoaches(sid);
+      if (sid) {
+        /* Le contexte de droits (mes équipes + statut directeur) borne les
+           destinations proposées — il doit être lu AVANT la liste. */
+        const c = await loadTransferContext(supabase, sid);
+        setCtx(c);
+        const list = await loadSchoolTeams(supabase, sid, c);
+        setTeams(list);
+        const auto = pickInitialTeam(list);
+        if (auto) {
+          setSourceId(auto);
+          setLoadingAthletes(true);
+          setSourceAthletes(await loadAthletesForTeam(supabase, sid, auto));
+          setLoadingAthletes(false);
+        }
+      }
       setLoading(false);
     })();
-  }, [router, refreshCoaches]);
+  }, [router]);
 
   const loadSource = useCallback(async (sid: string, coachId: string) => {
     if (!coachId) { setSourceAthletes([]); return; }
     setLoadingAthletes(true);
     const supabase = createClient();
-    setSourceAthletes(await loadAthletesForCoach(supabase, sid, coachId));
+    setSourceAthletes(await loadAthletesForTeam(supabase, sid, coachId));
     setLoadingAthletes(false);
   }, []);
 
@@ -94,21 +120,41 @@ export default function TransfertAthletesMobile() {
     );
   }
 
-  const sourceCoach = useMemo(() => coaches.find((c) => c.id === sourceId) ?? null, [coaches, sourceId]);
-  const destCoach = useMemo(() => coaches.find((c) => c.id === destId) ?? null, [coaches, destId]);
-
+  const sourceTeam = useMemo(() => teams.find((t) => t.id === sourceId) ?? null, [teams, sourceId]);
   const sourceOptions: PickerOption[] = useMemo(
-    () => coaches.map((c) => ({ value: c.id, label: `${c.name} (${c.athleteCount})` })),
-    [coaches],
+    () => teams.map((t) => ({ value: t.id, label: `${t.name} (${t.athleteCount})` })),
+    [teams],
   );
+  /* Destinations : équipes + « Retirer de l'équipe » quand la source EST une
+     équipe. Une destination interdite reste VISIBLE, suffixée de son motif —
+     la MobilePicker n'a pas d'état désactivé, donc le motif porte l'info. */
+  const destTeams = useMemo<TeamOption[]>(() => {
+    const base = teams.filter((t) => t.id !== sourceId && t.id !== NO_TEAM_ID);
+    if (sourceId && sourceId !== NO_TEAM_ID) {
+      base.push({ id: REMOVE_FROM_TEAM_ID, name: "Retirer de l'équipe", sub: "Plus aucun alignement", athleteCount: 0, canManage: true });
+    }
+    return base;
+  }, [teams, sourceId]);
   const destOptions: PickerOption[] = useMemo(
-    () => coaches.filter((c) => c.id !== sourceId).map((c) => ({ value: c.id, label: `${c.name} (${c.athleteCount})` })),
-    [coaches, sourceId],
+    () => destTeams.map((t) => {
+      const motif = destinationBlockReason(t, sourceTeam);
+      return {
+        value: t.id,
+        label: `${t.name}${t.id === REMOVE_FROM_TEAM_ID ? "" : ` (${t.athleteCount})`}${motif ? " — réservé au directeur" : ""}`,
+      };
+    }),
+    [destTeams, sourceTeam],
   );
 
   const count = selectedIds.size;
-  const isAssign = sourceId === UNASSIGNED_COACH_ID;
-  const actionVerb = isAssign ? "Assigner" : "Transférer";
+  const isAssign = sourceId === NO_TEAM_ID;
+  const isRemoval = destId === REMOVE_FROM_TEAM_ID;
+  const actionVerb = isRemoval ? "Retirer" : isAssign ? "Assigner" : "Déplacer";
+  const destCoach = useMemo(() => destTeams.find((t) => t.id === destId) ?? null, [destTeams, destId]);
+  const destBlocked = useMemo(() => {
+    const d = destTeams.find((t) => t.id === destId);
+    return d ? destinationBlockReason(d, sourceTeam) : null;
+  }, [destTeams, destId, sourceTeam]);
   const canSubmit = count > 0 && !!destId && destId !== sourceId;
 
   async function handleTransfer() {
@@ -116,20 +162,20 @@ export default function TransfertAthletesMobile() {
     setSubmitting(true);
     const ids = Array.from(selectedIds);
     const supabase = createClient();
-    const res = await transferAthletes(supabase, ids, destId);
+    const res = await moveAthletesToTeam(supabase, sourceAthletes.filter((a) => selectedIds.has(a.id)), destId);
 
     if (!res.success) {
       console.error("[Transfert] failed", res.error);
-      toast.error({ message: "Échec du transfert", detail: "Impossible de déplacer ces athlètes." });
+      toast.error({ message: "Échec", detail: res.error || "Impossible de déplacer ces athlètes." });
       setSubmitting(false);
       setShowConfirm(false);
       return;
     }
 
-    const verbPast = isAssign ? "assigné" : "transféré";
+    const verbPast = isRemoval ? "retiré" : isAssign ? "assigné" : "déplacé";
     toast.success({
       message: `${ids.length} athlète${ids.length > 1 ? "s" : ""} ${verbPast}${ids.length > 1 ? "s" : ""}`,
-      detail: `Vers ${destCoach?.name ?? ""}.`,
+      detail: isRemoval ? "Retirés de leur alignement." : `Vers ${destCoach?.name ?? ""}.`,
     });
 
     setSelectedIds(new Set());
@@ -137,7 +183,7 @@ export default function TransfertAthletesMobile() {
     setSubmitting(false);
     setDestId("");
     if (schoolId) {
-      await refreshCoaches(schoolId);
+      await refreshTeams(schoolId, ctx);
       await loadSource(schoolId, sourceId);
     }
   }
@@ -169,7 +215,7 @@ export default function TransfertAthletesMobile() {
           sous l'heure système. */}
       <div className="px-5 pb-3 shrink-0 nx-safe-top">
         <h1 className="font-head text-[22px] font-black text-white uppercase tracking-tight">Gestion des athlètes</h1>
-        <p className="text-[13px] text-[#9CA3AF] mt-1">Assigne des athlètes à un entraîneur de ton école.</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-1">Assigne des athlètes à une équipe de ton école.</p>
 
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mt-4 mb-1.5">Source</label>
         <button
@@ -177,8 +223,8 @@ export default function TransfertAthletesMobile() {
           onClick={() => { void triggerHaptic("Light"); setSourcePickerOpen(true); }}
           className="w-full flex items-center justify-between bg-[#1A1D24] border border-[#2D3748] rounded-lg px-4 py-3 text-left"
         >
-          <span className={`text-[15px] ${sourceCoach ? "text-white font-semibold" : "text-[#6b7280]"}`}>
-            {sourceCoach ? `${sourceCoach.name} (${sourceCoach.athleteCount})` : "Sélectionner un coach"}
+          <span className={`text-[15px] ${sourceTeam ? "text-white font-semibold" : "text-[#6b7280]"}`}>
+            {sourceTeam ? `${sourceTeam.name} (${sourceTeam.athleteCount})` : "Sélectionner une équipe"}
           </span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
         </button>
@@ -205,7 +251,7 @@ export default function TransfertAthletesMobile() {
             mais son seul contenu était posé à son sommet. */}
         {!sourceId && (
           <div className="h-full flex items-center justify-center text-center text-[13px] text-[#6b7280]">
-            Sélectionne un entraîneur
+            Sélectionne une équipe
           </div>
         )}
         {sourceId && loadingAthletes && (
@@ -267,10 +313,13 @@ export default function TransfertAthletesMobile() {
           className="w-full flex items-center justify-between bg-[#111317] border border-[#2D3748] rounded-lg px-4 py-3 text-left disabled:opacity-40"
         >
           <span className={`text-[15px] ${destCoach ? "text-white font-semibold" : "text-[#6b7280]"}`}>
-            {destCoach ? `${destCoach.name} (${destCoach.athleteCount})` : isAssign ? "Assigner à…" : "Transférer vers…"}
+            {destCoach ? `${destCoach.name} (${destCoach.athleteCount})` : isAssign ? "Assigner à…" : "Déplacer vers…"}
           </span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
         </button>
+        {destBlocked && (
+          <p className="text-[12px] text-[#F59E0B] mt-2 leading-snug">{destBlocked}</p>
+        )}
         <button
           type="button"
           disabled={!canSubmit}
@@ -308,8 +357,8 @@ export default function TransfertAthletesMobile() {
               {actionVerb} {count} athlète{count > 1 ? "s" : ""}?
             </h3>
             <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">
-              {isAssign ? "Assigner" : "Transférer"} {count} athlète{count > 1 ? "s" : ""}
-              {sourceCoach && !isAssign ? ` de ${sourceCoach.name}` : ""} vers{" "}
+              {actionVerb} {count} athlète{count > 1 ? "s" : ""}
+              {sourceTeam && !isAssign ? ` de ${sourceTeam.name}` : ""} vers{" "}
               <span className="font-bold text-white">{destCoach.name}</span>?
             </p>
             <div className="flex items-center justify-end gap-3 mt-5">

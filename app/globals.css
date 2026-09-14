@@ -1013,6 +1013,38 @@ body.light-mode .nx-social-auth-btn:hover {
   100% { transform: scale(1);    opacity: 1; }
 }
 
+/* ACTE 2 « défilé » — un badge arrive SEUL au centre, en grand, nommé.
+
+   Le dépassement à 1.12 est le « claque » : sans lui, cinq badges qui se
+   posent proprement se lisent comme une liste, pas comme cinq arrivées.
+   Le flou d'entrée (6px → 0) fait le reste du travail d'impact — il coûte
+   moins cher qu'une ombre animée et ne déborde pas de la silhouette. */
+@keyframes nx-wow-badge-slam {
+  0%   { transform: scale(0.55) translateY(14px); opacity: 0; filter: blur(6px); }
+  55%  { transform: scale(1.12) translateY(0);    opacity: 1; filter: blur(0); }
+  78%  { transform: scale(0.97) translateY(0);    opacity: 1; filter: blur(0); }
+  100% { transform: scale(1)    translateY(0);    opacity: 1; filter: blur(0); }
+}
+
+/* …puis il PART se ranger : il rétrécit vers la taille de la rangée et
+   descend vers elle. La rangée reçoit sa vignette au même instant, ce qui
+   donne la lecture « il est descendu là » sans FLIP ni mesure de position. */
+@keyframes nx-wow-badge-file {
+  0%   { transform: scale(1)    translateY(0);    opacity: 1; }
+  /* 74px = l'écart réel entre le centre de la scène (136 / 2 = 68) et le
+     centre de la vignette de la rangée (136 − 8 de -mt-2, + 14 de demi-
+     vignette = 142). Recalculer si la hauteur de scène ou le -mt bougent. */
+  100% { transform: scale(0.26) translateY(74px); opacity: 0; }
+}
+
+/* La vignette qui apparaît dans la rangée, à 28px. Court et sec : elle ne
+   doit pas voler la vedette au badge suivant qui arrive déjà au centre. */
+@keyframes nx-wow-badge-land {
+  0%   { transform: scale(0.4); opacity: 0; }
+  65%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
 /* ACTE 3 sprint b3-fix3 — Pill pulse final (Lettre signée) : respire en
    boucle. Scale + box-shadow intensifié (le bg-color est dynamique côté
    JS, l'anim ne touche que transform / box-shadow). */
@@ -1450,6 +1482,29 @@ html.is-capacitor .fixed.bottom-0,
 html.is-capacitor .sticky.bottom-0 {
   bottom: var(--kbd-h, 0px);
   transition: bottom .22s cubic-bezier(.32,.72,0,1);
+}
+
+/* ── nx-kbd-immobile — l'exclusion NOMMÉE ────────────────────────
+   La règle ci-dessus s'applique à TOUT `.fixed.bottom-0`, y compris à des
+   surfaces qui n'ont aucune saisie et aucune raison de suivre le clavier.
+
+   Le cas qui l'a révélée (recette 2026-09-10) : le MorePanel de la tab bar se
+   masque par TRANSLATION en restant monté. Fermé, il est à `bottom: 0` +
+   `translateY(100%)`, donc sous l'écran. Clavier ouvert, `--kbd-h` le remontait
+   de 300px : le panneau fermé redevenait VISIBLE par-dessus la tab bar, coupé à
+   une hauteur variable selon le clavier.
+
+   Une surface porte cette classe quand elle affirme deux choses : elle ne
+   contient aucun champ, et elle ne doit jamais bouger avec le clavier. C'est
+   une déclaration d'intention, pas un correctif ponctuel — d'où un nom plutôt
+   qu'un `bottom: 0` inline, que le canon du dépôt interdit justement parce
+   qu'il annule la remontée SANS dire pourquoi.
+
+   ⚠️ À ne pas poser sur un sheet AVEC saisie : celui-là doit remonter ET se
+   plafonner (`useSheetKeyboardGeometry`), sinon le champ sort par le haut. */
+html.is-capacitor .nx-kbd-immobile.fixed.bottom-0,
+html.is-capacitor .nx-kbd-immobile.sticky.bottom-0 {
+  bottom: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   html.is-capacitor .fixed.bottom-0,

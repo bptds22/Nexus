@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
+import { deconnexion } from "@/lib/auth/deconnexion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const PUBLIC_BASE = "https://nexussports.ca";
@@ -255,7 +256,7 @@ export default function MorePanel({
             { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
               const supabase = createClient();
               try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-              await supabase.auth.signOut();
+              await deconnexion(supabase);
               router.push("/auth");
             } },
           ],
@@ -380,7 +381,7 @@ export default function MorePanel({
           { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
             const supabase = createClient();
             try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-            await supabase.auth.signOut();
+            await deconnexion(supabase);
             router.push("/auth");
           } },
         ],
@@ -414,7 +415,7 @@ export default function MorePanel({
           { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
             const supabase = createClient();
             try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-            await supabase.auth.signOut();
+            await deconnexion(supabase);
             router.push("/auth");
           } },
         ],
@@ -544,7 +545,17 @@ export default function MorePanel({
           supportent pas encore dvh — ça assure que le sheet ne déborde
           jamais sous la barre URL / safe-area. */}
       <div
+        /* nx-kbd-immobile — CONTRAT : ce panneau ne contient AUCUNE saisie, il
+           ne doit donc jamais suivre le clavier.
+
+           Sans cette classe, la règle globale `html.is-capacitor .fixed.bottom-0`
+           (globals.css) lui posait `bottom: var(--kbd-h)` — et comme il se
+           masque par TRANSLATION en restant monté, un clavier ouvert de 300px
+           le repoussait de 300px vers le HAUT : le panneau fermé redevenait
+           visible par-dessus la tab bar, coupé à une hauteur variable selon le
+           clavier. D'où le « Calendrier » un jour, « Mes favoris » le lendemain. */
         className={`
+          nx-kbd-immobile
           fixed bottom-0 inset-x-0 z-[70] bg-[#1A1D24] border-t border-[#2D3748]
           rounded-t-2xl flex flex-col
           ${open ? "translate-y-0" : "translate-y-full"}

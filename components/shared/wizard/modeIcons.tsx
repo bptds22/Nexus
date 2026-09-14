@@ -13,6 +13,100 @@
      SUGGEST → YELLOW (athlete proposes via athlete_suggestions ;
                        coach approves via apply_approved_suggestion)
      LOCKED  → RED    (coach-only, display-only for the athlete)
+
+   ══ LE CODE COULEUR EST LA LOI — décision BP, 2026-09-11 (règle 11) ══
+
+   La couleur n'est pas une décoration : c'est la SEULE promesse faite à
+   l'athlète sur ce qui va arriver à sa saisie. Vert = c'est enregistré.
+   Jaune = c'est parti chez ton entraîneur. Rouge = tu regardes, tu ne
+   touches pas. Un écran qui se trompe de couleur ment sur le destin de la
+   donnée, et le jeune ne l'apprend qu'au moment où ça ne marche pas.
+
+   CE QUI EST ARRIVÉ, ET QUI EXPLIQUE POURQUOI C'EST ÉCRIT ICI. Le
+   2026-09-09, les champs Physique et Sport sont passés en écriture
+   DIRECTE. Le chrome, lui, est resté : crayon jaune, libellé « NOUVELLE
+   VALEUR PROPOSÉE », bouton jaune — sur des champs déjà enregistrés. Deux
+   jours, et personne ne l'a vu, parce que rien ne cassait. Le composant
+   s'appelait encore `SuggestRow` alors qu'il n'avait plus rien à proposer.
+
+   TROIS RÈGLES QUI EN DÉCOULENT :
+
+   1. Tout changement de RÉGIME d'écriture d'un champ (direct ↔ proposition)
+      oblige à revoir sa couleur, son libellé d'action ET le nom du composant
+      qui le rend, dans le même commit. Les quatre disent la même chose.
+
+   2. Le nom du composant porte le monde : `ChampDirectRow` écrit,
+      `StarSuggestRow` / `DistinctionsSuggestRow` proposent. Un nom qui ment
+      est ce qui a permis à la couleur de mentir deux jours.
+
+   3. Un état qui ne peut pas se produire ne se rend pas. La branche
+      « En attente » d'une rangée directe était morte et jaune : une
+      écriture immédiate ne crée aucune ligne `athlete_suggestions`. Garder
+      un chemin mort, c'est garder une couleur fausse en réserve.
+
+   Application, étape par étape : voir STEP_MODES / STEP_ACCENTS dans
+   AthleteEditWizardMobile.tsx. Aujourd'hui UNE seule étape propose
+   (Évaluation) ; les cinq autres écrivent.
+
+   ══ JAMAIS D'ACCUSÉ DE RÉCEPTION SANS STATUT SERVEUR ══════════════
+   Décision BP, 2026-09-12 (règle 11). DEUXIÈME recette perdue sur cette
+   même classe de mensonge — d'où l'inscription ici plutôt qu'un commentaire
+   local de plus.
+
+   Un écran de proposition n'affiche JAMAIS d'état qu'il n'a pas lu du
+   serveur. Ni « Envoyé ! » posé côté client, ni pastille câblée sur le seul
+   statut qu'on espère.
+
+   Ce qui s'est passé, deux fois :
+     · 2026-09-10 — « envoyée à ton coach pour approbation » sur un chemin
+       dont un trigger avalait la ligne à l'instant même.
+     · 2026-09-12 — pastille « ⏳ En attente » branchée sur le seul statut
+       EN_ATTENTE, alors qu'AUCUNE ligne n'atteint cet état en base (le
+       trigger de transition résout dans la transaction d'insertion, délai
+       mesuré 0.000000 s). Rien ne s'affichait jamais. La plomberie était
+       juste — la requête partait, le filtre existait — et le résultat était
+       structurellement vide. Vérifier le mécanisme ne vaut pas vérifier le
+       RÉSULTAT.
+
+   La forme correcte : lire la DERNIÈRE ligne du serveur quel que soit son
+   statut, et rendre ce statut tel quel — en attente / approuvée / refusée,
+   motif de refus compris. L'écran devient alors juste par construction :
+   le jour où la base change d'avis, l'affichage suit sans qu'on y touche.
+
+   ══ PROPOSER NE PRÉSUPPOSE PAS D'AVOIR ÉTÉ NOTÉ ═══════════════════
+   Décision BP, 2026-09-12. Un champ évaluable se propose même s'il n'a
+   jamais reçu de note. La grille des 14 traits était gardée par
+   `isDetailedMode` — donc visible seulement si l'entraîneur avait déjà
+   noté : les nouveaux inscrits, ceux qui en ont le plus besoin, ne voyaient
+   rien.
+
+   Corollaire à ne pas relâcher : la LECTURE ne ment pas pour autant. Un
+   trait jamais noté rend « — », jamais cinq étoiles vides. C'est le GESTE
+   qui s'ouvre, pas la valeur qui s'invente.
+
+   ══ L'ÉTAT MONTRÉ AU KID DÉCRIT SON PROCHAIN PAS ══════════════════
+   Décision BP, 2026-09-12 (règle 11). Un état affiché à un jeune répond à
+   « qu'est-ce que je fais maintenant ? », jamais à « comment c'est câblé ? ».
+
+   Les deux situations, et elles ne se disent pas pareil :
+     · AVEC entraîneur rattaché  → « ⏳ En attente d'approbation du coach »
+       (quelqu'un va lire — c'est vrai, et il n'a rien à faire)
+     · SANS entraîneur            → « ⏳ Invite ton coach pour qu'il approuve
+       cette évaluation », + le bouton vers /athlete/transfert (code d'équipe)
+       (personne ne lira — son prochain pas est d'aller en chercher un)
+
+   La proposition sans entraîneur est ACCEPTÉE et reste EN_ATTENTE : quand un
+   entraîneur se rattache, il hérite de la file dans sa boîte « À traiter ».
+   C'est le moteur, pas un effet de bord — le jeune recrute son entraîneur
+   pour débloquer son évaluation.
+
+   COROLLAIRE TECHNIQUE. `athlete_suggestions.note_systeme` marque les lignes
+   résolues par un TRIGGER, pas par un humain. Un refus qui en porte un n'est
+   pas un refus : personne n'a rien lu. L'écran montre alors l'attente, et le
+   motif technique (« Les distinctions et évaluations sont attribuées par ton
+   entraîneur ») ne s'affiche JAMAIS. Seul un refus SANS note_systeme est un
+   vrai refus d'entraîneur — rouge, et son motif est un message humain, donc
+   affichable. Voir `motifHumain()` dans AthleteEditWizardMobile.
 ═══════════════════════════════════════════════════════════════ */
 
 export const GREEN = "#22C55E";
