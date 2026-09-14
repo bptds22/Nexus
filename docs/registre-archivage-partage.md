@@ -76,10 +76,19 @@ Puis la réécriture des filtres des **quatre boîtes** :
 | Recruteur web | `app/recruteur/messages/page.tsx` |
 | Prédicat partagé | `lib/messaging/threadStatus.ts` |
 
-⚠️ **`conversations.status` ne doit PAS être supprimée dans la même passe.**
-Elle porte aussi `nouveau` / `reponse_recue` / `repondu` / `envoye`, qui sont
-des états de FIL et restent légitimement partagés. Seul `ARCHIVE` doit migrer
-vers le participant. Confondre les deux ferait perdre les presets de statut.
+✅ **CORRECTION (2026-09-14).** Une version antérieure de ce document affirmait
+que `conversations.status` portait aussi `nouveau` / `reponse_recue` /
+`repondu` / `envoye`. **C'est faux.** La contrainte en base ne laisse passer
+que deux valeurs :
+
+```sql
+CHECK (status = ANY (ARRAY['ACTIVE'::text, 'ARCHIVE'::text]))
+```
+
+Les presets sont dérivés CÔTÉ CLIENT par `mapDbStatus` (lib/messaging/
+threadStatus.ts) à partir de qui a répondu ; la colonne ne contribue que la
+branche archive. **La colonne est donc purement un drapeau d'archive**, et elle
+migre ENTIÈREMENT vers le participant — il n'y a rien à préserver.
 
 Migration → **derrière le déblocage D6**, comme les volets 3, 5, 6 et la
 réponse admin.
@@ -116,3 +125,67 @@ aucune n'est l'archivage :
   `20260909191744_edition_directe_athlete`.
 
 Voir `docs/registre-volet3-elargi.md` pour le tableau complet.
+
+
+---
+
+## Annexe — `conversations.unread_count` est une colonne MORTE (2026-09-14)
+
+Découvert en cherchant pourquoi la pastille de non-lus restait éteinte.
+
+```
+fonctions qui la touchent : mark_conversation_read — et seulement SET = 0
+triggers qui l'incrémentent : AUCUN
+valeurs en production : 0 sur les 103 conversations
+```
+
+**Rien ne l'a jamais incrémentée.** Ce n'est pas une régression : le compteur
+n'a jamais été branché. Le vrai signal de non-lu est `messages.read_at`, posé
+par `mark_conversation_read` sur les messages dont on n'est pas l'expéditeur.
+
+### Qui lisait la colonne morte
+
+| Surface | Avant | Après |
+|---|---|---|
+| Badge onglet Messages, athlète | `read_at` ✅ | inchangé |
+| Badge onglet Messages, coach | `read_at` ✅ | inchangé |
+| Liste des fils, athlète | `read_at` ✅ | inchangé |
+| **Pastille par fil, coach MOBILE** | `unread_count` ❌ | **corrigé en 1.4.1** |
+| **Boîte coach WEB** (`app/coach/demandes/page.tsx:684`) | `unread_count` ❌ | **NON corrigé** |
+| **Fil coach WEB** (`app/coach/demandes/[id]/PageClient.tsx:251`) | `unread_count` ❌ | **NON corrigé** |
+
+Les deux surfaces web portent le même défaut. Elles ne sont pas dans le
+binaire — elles partent au merge, pas au build Android — et n'ont donc pas été
+touchées dans la passe 1.4.1. **À faire en 1.4.2**, en reprenant le même
+calcul.
+
+### Ménage à prévoir — 1.4.2, avec l'archivage par participant
+
+- `mark_conversation_read` (fonction SQL) fait un `SET unread_count = 0` sur
+  une colonne que plus personne ne lira. **Non retiré : y toucher ferait une
+  migration**, et la passe 1.4.1 est côté client uniquement.
+- Quatre écritures client `update({ unread_count: 0 })` subsistent
+  (`CoachCoachThreadView:125`, `coach/demandes/[id]/PageClient:281`,
+  `recruteur/messages/[id]/PageClient:357`,
+  `lib/queries/recruiter/useMarkConversationRead:21`). Inoffensives, mais
+  mortes.
+- **La colonne elle-même est candidate à suppression**, dans la même migration
+  que l'archivage par participant : les deux nettoient `conversations` des
+  états qui n'y ont pas leur place.
+
+### Le badge athlète est probablement SAIN
+
+Le symptôme rapporté — « l'athlète reçoit la push mais aucune pastille » — n'a
+PAS été reproduit en base. `countAthleteUnread` est correctement branché sur
+`read_at`, avec une allowlist explicite incluant `ATHLETE_COACH`.
+
+Ce que les traces montrent sur le fil de test : chaque message est marqué lu
+**~20 secondes après son envoi**, et `mark_conversation_read` n'est appelée que
+depuis les vues de fil (11 appelants vérifiés), jamais depuis la liste. Or
+taper la push ouvre DIRECTEMENT la conversation (`type: "message"` →
+`conversationId`) : la pastille n'a pas le temps d'exister.
+
+**Hypothèse la plus probable : artefact de méthode de test, pas un bug.**
+À confirmer par un test propre — faire envoyer un message et NE PAS ouvrir le
+fil, ni taper la push. Si l'onglet Messages badge, le compteur athlète est
+sain. Sinon, c'est un vrai défaut et il reste à creuser.
