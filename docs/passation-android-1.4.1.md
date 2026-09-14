@@ -9,7 +9,7 @@ qu'un `gradlew assembleDebug` sur une machine équipée.
 ## 1. SHA à puller
 
 ```
-release/1.4.1 → 9030ebc   (poussé sur origin)
+release/1.4.1 → 8f2584a   (poussé sur origin)
 ```
 
 Deux commits depuis la passation précédente :
@@ -23,6 +23,7 @@ Deux commits depuis la passation précédente :
 | `1f798d9` | Réponse à l'admin — composeur conditionné, boîte admin (§8) |
 | `c05d68c` | Relance — tri par échéance + encart dashboard (§9) |
 | `9030ebc` | Sheets — réserve de la tab bar (§10) |
+| `8f2584a` | Pastille de non-lus coach — colonne morte → read_at (§11) |
 
 ---
 
@@ -250,6 +251,29 @@ layouts, ce qui est la vraie solution et n'a pas été faite ici.
 **Dix autres sheets n'ont pas la réserve** et n'ont pas été touchés : aucun n'a
 d'élément actionnable collé au bas. Listés au commit `9030ebc` pour triage
 ultérieur.
+
+## 11. Pastille de non-lus coach (VIVE sur Android)
+
+Active dès l'installation. **Dernier changement de code du package.**
+
+`conversations.unread_count` n'est incrémentée par RIEN — aucun trigger, et
+`mark_conversation_read` est la seule fonction à y toucher, uniquement pour la
+remettre à 0. Mesuré en prod : **0 sur les 103 conversations**. La pastille par
+fil de la boîte coach la lisait : elle était éteinte en permanence, pour tous
+les coachs, sur tous les fils.
+
+Elle compte désormais `read_at IS NULL` + `sender <> moi` — la même règle que
+le badge de l'onglet Messages et que la boîte athlète.
+
+**À recetter sur Android :** coach connecté, faire envoyer un message par un
+athlète, **NE PAS ouvrir le fil**. La pastille doit apparaître sur la ligne du
+fil, et le badge de l'onglet Messages doit s'accorder avec elle. Ouvrir le fil
+doit éteindre les deux.
+
+⚠️ Le piège de recette : taper la notification ouvre DIRECTEMENT la
+conversation, ce qui la marque lue avant qu'on ait pu voir la pastille. C'est
+exactement ce qui a fait croire à un bug côté athlète. Ouvrir l'app par son
+icône, pas par la push.
 
 ## 7. Dette connue, inchangée
 
