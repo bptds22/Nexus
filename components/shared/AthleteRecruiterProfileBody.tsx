@@ -22,6 +22,7 @@ import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
+import RelanceFiche from "@/components/shared/RelanceFiche";
 import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
@@ -1940,6 +1941,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
                   onCelebrate={() => setShowCelebration(true)}
                 />
+              </div>
+            )}
+
+            {/* Relance — la DATE seule ; la note reste au pipeline. Le pourquoi
+                (frontières de données coach/recruteur) est écrit en tête de
+                RelanceFiche, avec la décision produit qui le fixe.
+                Gate : palier Pro ET athlète déjà dans le processus — sans ligne,
+                l'UPDATE n'aurait rien à écrire et la RLS refuserait l'INSERT.
+                `!isPreview` est ici l'équivalent web de `isRecruiter`
+                (isPreview = viewerMode !== "recruiter"). */}
+            {!isPreview && canUsePipeline && myPipelineStage && (
+              <div className="max-w-[420px]">
+                <RelanceFiche athleteId={id} />
               </div>
             )}
 
