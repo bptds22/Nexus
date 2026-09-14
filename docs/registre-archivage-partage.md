@@ -1,5 +1,12 @@
 # Registre — `conversations.status` est partagé : un archivage efface le fil de l'autre
 
+> ✅ **MITIGÉ le 2026-09-14** par la migration `20260914020335_resurrection_fil_archive`
+> (APPLIQUÉE en prod). Un fil archivé qui reçoit un message redevient `ACTIVE`.
+> Le masquage n'est plus permanent — il redevient transitoire.
+> **Le partage de la colonne demeure** : archiver masque toujours le fil chez
+> l'autre partie. Le correctif de fond (archivage par participant) reste en
+> 1.4.2, voir plus bas.
+
 **Découvert le 2026-09-13**, en cherchant tout autre chose.
 
 ---
