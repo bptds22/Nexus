@@ -505,7 +505,7 @@ function DemandesContent() {
         // Fetch conversations for this coach
         const { data: conversations, error: convError } = await supabase
           .from("conversations")
-          .select("id, conversation_type, recruiter_id, coach_id, coach_b_id, parent_id, admin_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
+          .select("id, conversation_type, recruiter_id, coach_id, coach_b_id, parent_id, admin_id, athlete_id, status, last_message_at, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
           .or(`coach_id.eq.${user.id},coach_b_id.eq.${user.id}`)
           .order("last_message_at", { ascending: false });
 
@@ -519,7 +519,7 @@ function DemandesContent() {
         const conversationIds = conversations.map((c: any) => c.id);
         const { data: latestMessages, error: msgError } = await supabase
           .from("messages")
-          .select("content, created_at, conversation_id, sender_id")
+          .select("content, created_at, conversation_id, sender_id, read_at")
           .in("conversation_id", conversationIds)
           .order("created_at", { ascending: false });
 
@@ -528,10 +528,30 @@ function DemandesContent() {
         const coachRepliedMap: Record<string, boolean> = {};
         const recruiterRepliedMap: Record<string, boolean> = {};
         const sendersByConv: Record<string, Set<string>> = {};
+        /* Non-lus par fil. `read_at` est ajouté à CETTE requête plutôt que
+           compté à part : elle balaie déjà tous les messages de tous mes fils,
+           le compte ne coûte donc aucun aller-retour de plus.
+
+           POURQUOI PAS `conversations.unread_count` : cette colonne est MORTE.
+           Aucun trigger ne l'incrémente — `mark_conversation_read` est la seule
+           à y toucher, et uniquement pour la remettre à 0. Mesuré en prod : 0
+           sur les 103 conversations. La pastille de cette boîte la lisait, elle
+           était donc éteinte en permanence, sur tous les fils et pour tous les
+           coachs — avec le compteur « N nouvelles » de l'en-tête.
+
+           `read_at IS NULL` + `sender <> moi` est la MÊME règle que le badge de
+           l'onglet Messages (CoachSidebar), que la boîte coach mobile
+           (useCoachConversations) et que les fils GROUP quelques lignes plus
+           haut (loadCoachGroupRows, via last_read_at). Les deux moitiés de
+           CETTE page comptaient deux choses différentes. */
+        const unreadMap: Record<string, number> = {};
         if (latestMessages) {
           for (const msg of latestMessages as any[]) {
             if (!latestMsgMap[msg.conversation_id]) {
               latestMsgMap[msg.conversation_id] = msg;
+            }
+            if (msg.sender_id !== user.id && !msg.read_at) {
+              unreadMap[msg.conversation_id] = (unreadMap[msg.conversation_id] || 0) + 1;
             }
             (sendersByConv[msg.conversation_id] ||= new Set()).add(msg.sender_id);
             // Track who has sent messages
@@ -681,7 +701,7 @@ function DemandesContent() {
             lastMessagePreview: latestMsg?.content ? latestMsg.content.slice(0, 80) + (latestMsg.content.length > 80 ? "..." : "") : "",
             lastMessageTime: latestMsg?.created_at || c.last_message_at || c.created_at,
             lastSenderId: latestMsg?.sender_id ?? null,
-            unread: (c.unread_count ?? 0) > 0,
+            unread: (unreadMap[c.id] ?? 0) > 0,
           };
         });
 

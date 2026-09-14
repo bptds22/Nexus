@@ -172,7 +172,7 @@ function ThreadDetailPage() {
         // Fetch conversation
         const { data: conv, error: convError } = await supabase
           .from("conversations")
-          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle)))")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle)))")
           .eq("id", id)
           .single();
 
@@ -248,7 +248,10 @@ function ThreadDetailPage() {
           status: mapDbStatus(conv.status, (msgs || []).some((m: any) => m.sender_id === conv.coach_id), (msgs || []).some((m: any) => m.sender_id === conv.recruiter_id)),
           lastMessagePreview: "",
           lastMessageTime: conv.last_message_at || conv.created_at,
-          unread: (conv.unread_count ?? 0) > 0,
+          /* `unread` RETIRÉ — il lisait `conversations.unread_count`, une
+             colonne morte (aucun trigger ne l'incrémente), et rien ne rendait
+             ce champ : l'objet n'est passé en bloc à aucun enfant. Un fil
+             ouvert est de toute façon marqué lu quinze lignes plus bas. */
         } as any;
 
         setThread(mappedThread);
