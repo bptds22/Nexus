@@ -9,7 +9,7 @@ qu'un `gradlew assembleDebug` sur une machine équipée.
 ## 1. SHA à puller
 
 ```
-release/1.4.1 → c05d68c   (poussé sur origin)
+release/1.4.1 → 9030ebc   (poussé sur origin)
 ```
 
 Deux commits depuis la passation précédente :
@@ -22,6 +22,7 @@ Deux commits depuis la passation précédente :
 | `617107d` | **Revert de `0e16c69`** — régression critique, voir §6 |
 | `1f798d9` | Réponse à l'admin — composeur conditionné, boîte admin (§8) |
 | `c05d68c` | Relance — tri par échéance + encart dashboard (§9) |
+| `9030ebc` | Sheets — réserve de la tab bar (§10) |
 
 ---
 
@@ -214,6 +215,41 @@ variées à la main (passée, aujourd'hui, future) depuis le sheet du joueur.
 
 **Pas de migration**, pas de nouvelle requête : l'encart dérive du cache
 `usePipelineCards` déjà chargé par Mon processus.
+
+## 10. Sheets — réserve de la tab bar (VIF sur Android)
+
+Actif dès l'installation, sans interrupteur. À recetter sur Android : la tab
+bar y a une hauteur et une safe-area différentes, c'est donc là que la valeur
+se vérifie vraiment.
+
+**Le défaut.** `MobileTabBar` est portalée sur `document.body` pour que son
+z-40 échappe aux racines de layout — elle échappe donc AUSSI au z des sheets,
+qui vivent dans l'arbre du layout. Un `z-[75]` n'y change rien. Les sheets ne
+réservaient que `env(safe-area-inset-bottom)` (le home indicator), jamais la
+barre : leur bas passait dessous.
+
+**Quatre sheets corrigés**, patron `calc(var(--tabzone, calc(env(safe-area-
+inset-bottom) + 88px)) + 12px)` :
+
+| Sheet | Ce qui était coupé |
+|---|---|
+| `CoachAthleteThreadMobile` | CTA de la carte « Athlète concerné » — le cas rapporté |
+| `RecruteurMessagesThreadMobile` | jumeau strict, même carte |
+| `AddAthleteToListSheet` | dernière rangée recouverte, donc intouchable |
+| `AddToListSheet` | idem |
+
+**À vérifier sur Android** : ouvrir le fil coach → tap sur l'athlète → le
+bouton du bas doit être entièrement visible ET tappable. Puis « ajouter à une
+liste » → la dernière ligne de la liste doit être atteignable.
+
+⚠️ `--tabzone` n'est posée que par `app/college/layout.tsx`. Partout ailleurs
+c'est le repli 88px qui s'applique. Si la tab bar Android s'avérait plus haute,
+c'est CE littéral qu'il faudrait revoir — ou poser `--tabzone` dans les autres
+layouts, ce qui est la vraie solution et n'a pas été faite ici.
+
+**Dix autres sheets n'ont pas la réserve** et n'ont pas été touchés : aucun n'a
+d'élément actionnable collé au bas. Listés au commit `9030ebc` pour triage
+ultérieur.
 
 ## 7. Dette connue, inchangée
 
