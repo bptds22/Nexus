@@ -540,7 +540,16 @@ function AthleteThreadSheet({
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[65] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            /* La tab bar est PORTALÉE sur document.body (MobileTabBar, « Stacking-
+               context fix ») précisément pour que son z-40 échappe aux racines de
+               layout. Elle échappe donc aussi au z de CE sheet, qui vit dans
+               l'arbre du layout : le bas du sheet passe DESSOUS, et le CTA de la
+               carte s'y faisait couper — seul son haut dépassait.
+               `env(safe-area-inset-bottom)` seul ne réservait que le home
+               indicator, jamais la barre. On reprend le patron de MaPageMobile /
+               TransfertAthletesMobile : `--tabzone` quand un layout la pose
+               (app/college), repli 88px ailleurs, +12px de respiration. */
+            style={{ maxHeight: "85vh", paddingBottom: "calc(var(--tabzone, calc(env(safe-area-inset-bottom) + 88px)) + 12px)" }}
           >
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 rounded-full bg-white/20" />
