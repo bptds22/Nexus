@@ -66,9 +66,29 @@ function QuickActions() {
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 
+/* Le SWITCH de plateforme, et RIEN d'autre — aucun hook ici.
+
+   Avant : la page ouvrait par `if (IS_CAPACITOR) return <…Mobile />` DEVANT ses
+   hooks, qui devenaient donc tous « conditionnels » aux yeux d'eslint. Chaque
+   hook ajouté à cet écran ajoutait une erreur `react-hooks/rules-of-hooks` —
+   l'encart « Relances aujourd'hui » en a coûté trois d'un coup.
+
+   Il n'y avait pas de danger à l'exécution : `IS_CAPACITOR` est une constante
+   bakée au build, donc l'ordre des hooks est identique à chaque rendu d'un même
+   bundle. Mais une règle qui crie faux sur sept lignes finit par ne plus être
+   lue nulle part, et c'est elle qui attrape les vrais cas.
+
+   Le corps web vit maintenant dans son propre composant : ses hooks sont
+   inconditionnels, et il n'est MONTÉ que hors Capacitor — donc le mobile ne
+   déclenche toujours aucune de ses requêtes. Comportement strictement inchangé
+   sur les deux plateformes. Patron déjà en place ailleurs dans le dépôt
+   (AthleteOnboardingDesktop, AthleteProfilPageDesktop). Fast-follow §3. */
 export default function RecruteurTableauDeBordPage() {
   if (IS_CAPACITOR) return <RecruteurDashboardMobile />;
+  return <RecruteurTableauDeBordDesktop />;
+}
 
+function RecruteurTableauDeBordDesktop() {
   // Migration TanStack (iter 5.2) — 4 hooks parallèles remplacent le mega-useEffect.
   // Avantage : la 2e visite du dashboard est instantanée (cache hit), refetch
   // silencieux en background après staleTime.
