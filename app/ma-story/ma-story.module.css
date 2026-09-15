@@ -344,6 +344,173 @@
   background: #1a1d24;
 }
 
+/* ── ÉCART 7 — textes fixes, bloc repliable ───────────────────────
+   Le seul ajout de ce fichier à la transposition de la référence.
+   Volontairement sobre : un filet, un en-tête cliquable, pas de carte
+   dans la carte. Le bloc vit DANS « Contenu » et ne doit pas se lire
+   comme une section de plus. */
+
+.fold {
+  border-top: 1px solid #2a2f38;
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.foldHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  color: #9ca3af;
+  font: 600 12px var(--font-story), system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+.foldHead:hover {
+  color: #fff;
+}
+
+/* Le « + / − » : largeur fixe pour que le libellé ne bouge pas d'un
+   pixel entre replié et déplié. */
+.foldCaret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #2a2f38;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1;
+  color: #9ca3af;
+}
+
+.foldHead:hover .foldCaret {
+  border-color: #3a4150;
+  color: #fff;
+}
+
+.foldBody {
+  padding-top: 12px;
+}
+
+.foldBody .f:last-of-type {
+  margin-bottom: 4px;
+}
+
+/* ── verdict : libellé + « ↺ auto » sur la même ligne ─────────────
+   `.f span` est en display:block ; il faut donc `.f span.labelRow`
+   pour le repasser en flex — une classe seule perdrait la cascade. */
+
+.f span.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.auto {
+  background: transparent;
+  border: 1px solid #2a2f38;
+  border-radius: 6px;
+  color: #9ca3af;
+  font: 600 11px var(--font-story), system-ui, sans-serif;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.auto:hover {
+  color: #fff;
+  border-color: #e63946;
+}
+
+/* ── v2.1 — zoom arrière ──────────────────────────────────────────
+   Le libellé dit ce qui se passe sous 100 % : sans ce repère, le fond
+   flouté ressemble à un bogue de rendu plutôt qu'à un parti pris. */
+
+.flou {
+  color: #e63946;
+  font-weight: 600;
+}
+
+/* ── v2.2 — sélecteur de badges ────────────────────────
+   Les pastilles de texte de la v2.1 sont remplacées par les vrais
+   badges. Le même fichier SVG sert ici en <img> et au canvas pour le
+   rendu — aucun actif dédié au sélecteur, donc aucun risque que la
+   vignette et la story montrent deux dessins différents. */
+
+.badgeSection {
+  margin-bottom: 12px;
+}
+
+.badgeFam {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* auto-fill et non auto-fit : à 390 px la grille tient trois colonnes et
+   ne s'étire pas quand une section n'en a qu'une. */
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+}
+
+.badgePick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  background: #111317;
+  border: 1px solid #2a2f38;
+  border-radius: 10px;
+  color: #9ca3af;
+  font: 600 10px var(--font-story), system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.badgePick img {
+  display: block;
+  /* Le SVG n'a pas de dimensions intrinsèques : sans une taille posée
+     des deux côtés, il s'effondre ou remplit la case. */
+  width: 38px;
+  height: 38px;
+}
+
+.badgePick:hover:not(:disabled) {
+  color: #fff;
+  border-color: #3a4150;
+}
+
+.badgePick.on {
+  color: #fff;
+  border-color: #e63946;
+  background: #22262f;
+}
+
+/* Quatre badges posés : les autres s'éteignent au lieu de disparaître —
+   la grille ne doit pas sauter sous le doigt. */
+.badgePick:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
 /* ── scène et aperçu ──────────────────────────────────────────── */
 
 .stage {
@@ -420,6 +587,19 @@
    place de cette barre. Valeurs identiques à la référence. */
 
 @media (max-width: 860px) {
+  /* v2.2 — le sélecteur est passé de 8 à 10 onglets. À 390 px la grille
+     tenait déjà, mais sur cinq rangées : elle poussait la photo et le
+     formulaire sous la ligne de flottaison. Onglets resserrés — quatre
+     rangées, mêmes libellés, aucune troncature. */
+  .tabs {
+    gap: 6px;
+  }
+
+  .tabs button {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
   .header {
     padding: 12px 20px;
   }
