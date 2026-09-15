@@ -210,10 +210,23 @@ export async function chargerBadgesAthlete(
        enregistrement l'effacerait sans qu'il l'ait jamais vu. Vrai pour
        l'administrateur depuis le 26, vrai pour le COACH et les
        'transposition' depuis le 27. Ces changements ne se séparent pas. */
-    const editable = mode === "suggestion"
-      ? l.origine === "suggestion"
-      : estAdmin || l.origine === "transposition"
-        || (l.origine === "saisie" && l.attribue_par === moi);
+    /* 'systeme' N'EST ÉDITABLE PAR PERSONNE ICI — pas même par un admin.
+       C'est le badge Ambassadeur, posé par la plateforme au palier 5 et
+       porté par la seule RPC ambassadeur_basculer_badge(). Il n'a pas
+       d'auteur à respecter (attribue_par = l'identité de service), mais il
+       n'a pas non plus de sens à être coché dans un picker : le catalogue le
+       porte en actif = false, donc aucune tuile ne le propose.
+       Il DOIT néanmoins apparaître dans `autres` — il compte au plafond en
+       base, et le taire donnerait un compteur qui ment (« 4/5 » quand
+       badge_plafond en voit 5, puis un enregistrement qui échoue sans
+       explication). Solidaire de 20260915090800 : la RPC exclut la même
+       origine de sa clause de retrait. */
+    const editable = l.origine === "systeme"
+      ? false
+      : mode === "suggestion"
+        ? l.origine === "suggestion"
+        : estAdmin || l.origine === "transposition"
+          || (l.origine === "saisie" && l.attribue_par === moi);
 
     if (editable) {
       miens.push(e);
@@ -233,7 +246,9 @@ export async function chargerBadgesAthlete(
        reste VIVANTE en mode 'suggestion', où ils demeurent verrouillés :
        la supprimer y ferait afficher « Attribué par quelqu'un d'autre »,
        qui renverrait l'athlète vers le porteur de la migration. */
-    if (l.origine === "transposition") {
+    if (l.origine === "systeme") {
+      e.raison = "Badge automatique — programme Ambassadeur";
+    } else if (l.origine === "transposition") {
       e.raison = "Historique (transposition)";
     } else if (l.origine === "suggestion") {
       e.raison = "Issu d'une suggestion de l'athlète";

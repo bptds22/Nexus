@@ -26,7 +26,14 @@ type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED"
   // valeur qui existe côté serveur et pas ici s'affiche sans pastille, sans
   // icône et dans aucun filtre — visible seulement dans « Tout ».
   | "SCHOOL_CLAIM_REJECTED"
-  | "COACH_CLAIMED";
+  | "COACH_CLAIMED"
+  /* Programme Ambassadeur. Même leçon que TEAM_INVITATION ci-dessus, dans
+     l'autre sens : le CHECK de la base les accepte (20260915090000), mais
+     sans les QUATRE ajouts de ce fichier — union, DOT_COLOR, TYPE_ICON,
+     filtre d'onglet — elles s'afficheraient sans pastille ni icône et dans
+     aucun onglet. La base qui accepte ne suffit pas. */
+  | "AMBASSADEUR_PALIER_3"
+  | "AMBASSADEUR_PALIER_5";
 
 interface AthleteNotif {
   id: string;
@@ -58,6 +65,12 @@ const DOT_COLOR: Record<NotifType, string> = {
   SCHOOL_CLAIM_REJECTED: "#F59E0B",
   // Bleu, comme les autres nouvelles qui viennent du coach.
   COACH_CLAIMED: "#3B82F6",
+  // Or — la couleur du badge Ambassadeur lui-même, et celle des jalons
+  // (PROFILE_MILESTONE porte déjà #F59E0B). Ce sont des récompenses, pas des
+  // demandes : l'ambre « action attendue » de TEAM_INVITATION est la même
+  // teinte, mais ici elle dit « c'est gagné », ce que le libellé porte.
+  AMBASSADEUR_PALIER_3: "#F59E0B",
+  AMBASSADEUR_PALIER_5: "#F59E0B",
 };
 
 const TYPE_ICON: Record<NotifType, React.ReactNode> = {
@@ -77,6 +90,11 @@ const TYPE_ICON: Record<NotifType, React.ReactNode> = {
   SCHOOL_CLAIM_REJECTED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>,
   // Poignée de main : quelqu'un répond désormais pour lui.
   COACH_CLAIMED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+  // Palier 3 — l'outil (la story). Une image, pas un trophée.
+  AMBASSADEUR_PALIER_3: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="12" cy="12" r="3.5" /><circle cx="17" cy="7" r="1" /></svg>,
+  // Palier 5 — le badge. Même géométrie que COACH_DISTINCTION_ADDED : c'en
+  // est un, et le dire deux fois différemment n'aiderait personne.
+  AMBASSADEUR_PALIER_5: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="6" /><path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" /></svg>,
 };
 
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
@@ -126,7 +144,11 @@ export default function NotificationsPage() {
       // Le rejet de rattachement va dans « Profil » : ce qu'il demande au jeune
       // est d'aller vérifier SON école, dans son profil. Le classer sous
       // « Coach » l'enverrait chercher au mauvais endroit.
-      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED"].includes(n.type));
+      /* Les paliers ambassadeur y vont aussi, avec PROFILE_MILESTONE : ce sont
+         des jalons personnels, pas des gestes de coach. Les oublier ici les
+         rendrait invisibles dans TOUS les onglets sauf « Tout » — le défaut
+         exact de TEAM_INVITATION avant son correctif. */
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5"].includes(n.type));
       case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
       case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION", "COACH_CLAIMED"].includes(n.type));
       default: return notifs;

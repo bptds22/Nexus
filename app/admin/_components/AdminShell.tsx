@@ -23,7 +23,16 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <DeactivationGuard />
       <PlaybookBackground />
       <AdminSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* min-w-0 : un élément flex a `min-width: auto` par défaut, donc il
+          REFUSE de rétrécir sous la largeur de son contenu. Une page admin
+          portant un tableau à largeur minimale (ex. /admin/ambassadeurs,
+          min-w-[720px] dans un conteneur overflow-x-auto) forçait alors TOUTE
+          la coquille à 770 px : à 390 px, c'est la PAGE entière qui défilait
+          latéralement au lieu du seul tableau — mesuré 770 vs 390, ramené à
+          390 par ce seul mot.
+          Inerte pour les autres pages : vérifié à 390 px, /admin/utilisateurs
+          et /admin/approvals rendent déjà 390 et n'ont donc rien à rétrécir. */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
         <PreMaintenanceBanner />
         {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-30 bg-[#111317]/90 backdrop-blur-sm border-b border-[#1e2128] h-16 flex items-center px-4 gap-3">
