@@ -883,6 +883,34 @@ function AthleteOnboardingDesktop() {
   const [consentVisibility, setConsentVisibility] = useState(false);
   const [consentComms, setConsentComms] = useState(false);
   const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
+  /* ═══ LES HORODATAGES DE CONSENTEMENT SONT CEUX DU SIGNUP ════════════════
+     Ils valaient `new Date().toISOString()` au moment de la sauvegarde. Deux
+     défauts dans la même ligne, et c'est le second qui a explosé en prod le
+     2026-09-15 sur une inscription réelle :
+
+     1. LOI 25 — la preuve, c'est la date à laquelle le consentement a été
+        DONNÉ, pas celle à laquelle l'écran l'a réenregistré. Un athlète qui
+        revient à l'étape 1 réécrivait la date et effaçait la vraie.
+
+     2. LA GARDE DE PÉRIMÈTRE — `consentement_parental_date` et
+        `partner_visibility_opted_in_at` sont des colonnes PROTÉGÉES
+        (trg_athlete_self_edit_perimeter). `elaguerProtegees()` ne retire du
+        patch que les colonnes dont la valeur est DÉJÀ celle de la base ; une
+        ISO recalculée à chaque sauvegarde diffère toujours, ne peut donc
+        JAMAIS être élaguée, et réveille la garde à tous les coups. Sur le
+        parcours MINEUR — le seul où ces colonnes portent une valeur non
+        nulle — l'inscription mourait sur un message Postgres illisible.
+
+     AthleteOnboardingMobile portait déjà la règle et le disait dans son
+     en-tête (« le timestamp = celui du signup, JAMAIS new Date() au submit »).
+     Le web ne l'avait jamais reprise : il lisait `consent_parental_profile`
+     comme un BOOLÉEN (`!!meta…`) alors que c'est une CHAÎNE ISO, et jetait la
+     valeur. D'où ces deux états — la valeur, pas le drapeau.
+
+     Repli `?? new Date()` : un compte créé hors du signup web n'a pas le
+     metadata. Mieux vaut une date approximative qu'un consentement sans date. */
+  const [consentProfileISO, setConsentProfileISO] = useState<string | null>(null);
+  const [partnerVisibilityISO, setPartnerVisibilityISO] = useState<string | null>(null);
   // Minor gate — set at init from hasParentalConsent (signup captured
   // parental consent = minor). Drives whether the parent/consent section
   // shows AND whether it is required (canProceed/submit). Adults: false.
@@ -930,8 +958,18 @@ function AthleteOnboardingDesktop() {
         if (meta.parent_relationship) setParentRelationship(meta.parent_relationship as string);
         setConsentProfile(true);
         setConsentVisibility(true);
+        /* La VALEUR, pas le drapeau : ces clés de metadata sont des chaînes
+           ISO posées par le signup. C'est l'horodatage qui fait foi. */
+        if (typeof meta.consent_parental_profile === "string") {
+          setConsentProfileISO(meta.consent_parental_profile);
+        }
         if (meta.consent_marketing) setConsentComms(true);
-        if (meta.consent_parental_partner_visibility) setConsentPartnerVisibility(true);
+        if (meta.consent_parental_partner_visibility) {
+          setConsentPartnerVisibility(true);
+          if (typeof meta.consent_parental_partner_visibility === "string") {
+            setPartnerVisibilityISO(meta.consent_parental_partner_visibility);
+          }
+        }
       }
 
       // Single retried read of public.users. Right after signup the JWT
@@ -1091,7 +1129,19 @@ function AthleteOnboardingDesktop() {
         if (existing.parent_email) setParentEmail(existing.parent_email);
         if (existing.telephone_parent) setParentPhone(existing.telephone_parent);
         if (existing.parent_relationship) setParentRelationship(existing.parent_relationship);
-        if (existing.consentement_parental) { setConsentProfile(true); setConsentVisibility(true); }
+        /* Sur une reprise, la LIGNE EN BASE fait foi devant le metadata : c'est
+           elle que la garde de périmètre compare, et c'est elle que
+           `elaguerProtegees` doit pouvoir reconnaître à l'identique. */
+        if (existing.consentement_parental) {
+          setConsentProfile(true);
+          setConsentVisibility(true);
+          if (existing.consentement_parental_date) {
+            setConsentProfileISO(existing.consentement_parental_date as string);
+          }
+        }
+        if (existing.partner_visibility_opted_in_at) {
+          setPartnerVisibilityISO(existing.partner_visibility_opted_in_at as string);
+        }
         if (existing.moyenne_generale) setGpa(String(existing.moyenne_generale));
         if (existing.matieres_fortes) setStrongSubjects(existing.matieres_fortes);
         if (existing.mentions_academiques) setAcademicHonors(existing.mentions_academiques);
@@ -1248,6 +1298,16 @@ function AthleteOnboardingDesktop() {
     // claim policy's WITH CHECK (user_id = auth.uid()) and the row
     // transitions from orphan to owned in a single write.
     setExistingAthleteId(orphanMatch.id);
+    /* Les horodatages de consentement que la fiche porte déjà. Sans ça, la
+       réclamation d'une fiche mineure repose une date DIFFÉRENTE de celle en
+       base, la garde de périmètre mord, et l'inscription meurt au premier
+       « Suivant » — c'est le chemin exact du signalement du 2026-09-15. */
+    if (full.consentement_parental_date) {
+      setConsentProfileISO(full.consentement_parental_date as string);
+    }
+    if (full.partner_visibility_opted_in_at) {
+      setPartnerVisibilityISO(full.partner_visibility_opted_in_at as string);
+    }
     /* Même relevé que dans l'effet d'init : dès qu'on passe en mode UPDATE,
        le submit a besoin de savoir ce que la base porte déjà. */
     ficheEnBase.current = instantaneProtege(full as Record<string, unknown>);
@@ -1331,11 +1391,15 @@ function AthleteOnboardingDesktop() {
         parent_email: parentEmail.trim() || null, telephone_parent: parentPhone.trim() || null,
         parent_relationship: parentRelationship || null,
         consentement_parental: consentProfile && consentVisibility,
-        consentement_parental_date: (consentProfile && consentVisibility) ? new Date().toISOString() : null,
+        // Horodatage DU SIGNUP, jamais celui de la sauvegarde — voir
+        // consentProfileISO plus haut.
+        consentement_parental_date: (consentProfile && consentVisibility)
+          ? (consentProfileISO ?? new Date().toISOString())
+          : null,
         ...(consentProfile && consentVisibility && consentPartnerVisibility ? {
           partner_visibility_parental_consent: true,
           partner_visibility_opt_in: true,
-          partner_visibility_opted_in_at: new Date().toISOString(),
+          partner_visibility_opted_in_at: partnerVisibilityISO ?? new Date().toISOString(),
         } : {}),
         status: "ACTIF", verified: false,
       };
@@ -1499,11 +1563,15 @@ function AthleteOnboardingDesktop() {
       telephone_parent: parentPhone.trim() || null,
       parent_relationship: parentRelationship || null,
       consentement_parental: consentProfile && consentVisibility,
-      consentement_parental_date: (consentProfile && consentVisibility) ? new Date().toISOString() : null,
+      // Horodatage DU SIGNUP, jamais celui de la sauvegarde — voir
+      // consentProfileISO plus haut.
+      consentement_parental_date: (consentProfile && consentVisibility)
+        ? (consentProfileISO ?? new Date().toISOString())
+        : null,
       ...(consentProfile && consentVisibility && consentPartnerVisibility ? {
         partner_visibility_parental_consent: true,
         partner_visibility_opt_in: true,
-        partner_visibility_opted_in_at: new Date().toISOString(),
+        partner_visibility_opted_in_at: partnerVisibilityISO ?? new Date().toISOString(),
       } : {}),
       status: "ACTIF",
       verified: false,
