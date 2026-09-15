@@ -19,7 +19,14 @@ type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED"
   // pastille ni icône (les deux maps rendaient `undefined`) et dans aucun
   // onglet. Le geste d'acceptation vit dans la carte <PendingInvitations>
   // en haut de cette même page.
-  | "TEAM_INVITATION";
+  | "TEAM_INVITATION"
+  /* Programme Ambassadeur. Même leçon que TEAM_INVITATION ci-dessus, dans
+     l'autre sens : le CHECK de la base les accepte (20260915090000), mais
+     sans les QUATRE ajouts de ce fichier — union, DOT_COLOR, TYPE_ICON,
+     filtre d'onglet — elles s'afficheraient sans pastille ni icône et dans
+     aucun onglet. La base qui accepte ne suffit pas. */
+  | "AMBASSADEUR_PALIER_3"
+  | "AMBASSADEUR_PALIER_5";
 
 interface AthleteNotif {
   id: string;
@@ -45,6 +52,12 @@ const DOT_COLOR: Record<NotifType, string> = {
   PROFILE_TIP: "#EAB308",
   // Ambre = action attendue de l'athlète, même hue que le badge « En attente ».
   TEAM_INVITATION: "#F59E0B",
+  // Or — la couleur du badge Ambassadeur lui-même, et celle des jalons
+  // (PROFILE_MILESTONE porte déjà #F59E0B). Ce sont des récompenses, pas des
+  // demandes : l'ambre « action attendue » de TEAM_INVITATION est la même
+  // teinte, mais ici elle dit « c'est gagné », ce que le libellé porte.
+  AMBASSADEUR_PALIER_3: "#F59E0B",
+  AMBASSADEUR_PALIER_5: "#F59E0B",
 };
 
 const TYPE_ICON: Record<NotifType, React.ReactNode> = {
@@ -60,6 +73,11 @@ const TYPE_ICON: Record<NotifType, React.ReactNode> = {
   PROFILE_MILESTONE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7" /><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" /><path d="M18 2H6v7a6 6 0 0012 0V2Z" /></svg>,
   PROFILE_TIP: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
   TEAM_INVITATION: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
+  // Palier 3 — l'outil (la story). Une image, pas un trophée.
+  AMBASSADEUR_PALIER_3: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="12" cy="12" r="3.5" /><circle cx="17" cy="7" r="1" /></svg>,
+  // Palier 5 — le badge. Même géométrie que COACH_DISTINCTION_ADDED : c'en
+  // est un, et le dire deux fois différemment n'aiderait personne.
+  AMBASSADEUR_PALIER_5: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="6" /><path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" /></svg>,
 };
 
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
@@ -106,7 +124,11 @@ export default function NotificationsPage() {
   const filtered = useMemo(() => {
     switch (filter) {
       case "unread": return notifs.filter((n) => !n.read);
-      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP"].includes(n.type));
+      /* Les paliers ambassadeur vont dans « Profil », avec PROFILE_MILESTONE :
+         ce sont des jalons personnels, pas des gestes de coach. Les oublier
+         ici les rendrait invisibles dans TOUS les onglets sauf « Tout » —
+         le défaut exact de TEAM_INVITATION avant son correctif. */
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5"].includes(n.type));
       case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
       case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION"].includes(n.type));
       default: return notifs;
