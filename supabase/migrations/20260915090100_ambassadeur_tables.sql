@@ -60,8 +60,13 @@ create table public.ambassadeur_revendications (
   filleul_athlete_id  uuid null references public.athletes(id) on delete cascade,
   candidats           jsonb null,
 
+  -- 'nom_approx' = confirmée par TOLÉRANCE ORTHOGRAPHIQUE (≤ 2 éditions sur
+  -- le nom complet, toujours dans un périmètre école/équipe). Distinguée des
+  -- autres pour que l'administrateur puisse, au besoin, relire ce qui a été
+  -- accepté à deux lettres près — c'est le seul chemin où la base a pardonné
+  -- quelque chose.
   methode             text not null
-    check (methode in ('courriel','nom_ecole','nom_equipe','admin')),
+    check (methode in ('courriel','nom_ecole','nom_equipe','nom_approx','admin')),
   statut              text not null default 'EN_ATTENTE'
     check (statut in ('EN_ATTENTE','CONFIRMEE','REJETEE')),
 

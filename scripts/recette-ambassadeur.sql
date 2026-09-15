@@ -37,19 +37,34 @@ select 'aaaaaaaa-0000-0000-0000-000000000002',
 -- 2026-09-15), alors qu'elle existe en prod (equipe@nexussports.ca). Sans
 -- elle, ambassadeur_basculer_badge lève. C'est un ÉCART LOCAL/CLOUD à
 -- connaître : toute recette du badge doit la semer d'abord.
+-- ⚠ `users_service_identity_uniq` est un index unique PARTIEL : il ne peut
+-- exister qu'UNE identité de service dans toute la base. La recette ne peut
+-- donc pas supposer que la place est libre — un jeu de fixtures de démo
+-- vivant en occupe une, et l'insert levait. Elle n'en pose une que s'il n'y
+-- en a pas, et ne supprime jamais celle d'un autre.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
                         email_confirmed_at, created_at, updated_at)
-values ('bbbbbbbb-0000-0000-0000-00000000000f', '00000000-0000-0000-0000-000000000000',
-        'authenticated', 'authenticated', 'service@recette.local', '', now(), now(), now());
+select 'bbbbbbbb-0000-0000-0000-00000000000f', '00000000-0000-0000-0000-000000000000',
+       'authenticated', 'authenticated', 'service@recette.local', '', now(), now(), now()
+where not exists (select 1 from public.users where is_service_identity);
 -- UPSERT obligatoire : le trigger `on_auth_user_created` a DÉJÀ créé la ligne
 -- public.users au moment de l'INSERT dans auth.users. L'insérer à la main lève
 -- users_email_key. (Écart de plomberie qu'il faut connaître pour toute recette
 -- qui sème des comptes.)
-insert into public.users (id, email, role, first_name, last_name, is_service_identity)
-values ('bbbbbbbb-0000-0000-0000-00000000000f', 'service@recette.local', 'ADMIN',
-        'Equipe', 'Recette', true)
-on conflict (id) do update set role = excluded.role, first_name = excluded.first_name,
-  last_name = excluded.last_name, is_service_identity = excluded.is_service_identity;
+update public.users set role = 'ADMIN', first_name = 'Equipe', last_name = 'Recette',
+       is_service_identity = true
+ where id = 'bbbbbbbb-0000-0000-0000-00000000000f'
+   and not exists (select 1 from public.users u2
+                    where u2.is_service_identity
+                      and u2.id <> 'bbbbbbbb-0000-0000-0000-00000000000f');
+
+do $$
+declare v_qui text;
+begin
+  select email into v_qui from public.users where is_service_identity;
+  if v_qui is null then raise exception 'NEXUS: aucune identite de service — la bascule du badge levera.'; end if;
+  raise notice 'Identite de service utilisee : %', v_qui;
+end $$;
 
 -- Acteurs : 1 parrain, 1 second parrain, 1 coach, 1 admin, 8 filleuls
 do $$
@@ -60,6 +75,10 @@ begin
     select * from (values
       ('bbbbbbbb-0000-0000-0000-000000000001'::uuid, 'parrain@recette.local',  'Parrain', 'Un',    'ATHLETE'),
       ('bbbbbbbb-0000-0000-0000-000000000002'::uuid, 'parrain2@recette.local', 'Parrain', 'Deux',  'ATHLETE'),
+      -- Parrain dedie aux sondes de TOLERANCE (S16-S19). Isole : sans lui,
+      -- ces sondes consommaient le quota et les lignes du parrain 2, sur
+      -- lesquels S2 (course) et S3 (quota) posent leurs assertions.
+      ('bbbbbbbb-0000-0000-0000-000000000005'::uuid, 'parrain3@recette.local', 'Parrain', 'Trois', 'ATHLETE'),
       ('bbbbbbbb-0000-0000-0000-000000000003'::uuid, 'coach@recette.local',    'Coach',   'Recette','COACH'),
       ('bbbbbbbb-0000-0000-0000-000000000004'::uuid, 'admin@recette.local',    'Admin',   'Recette','ADMIN'),
       ('cccccccc-0000-0000-0000-000000000001'::uuid, 'f1@recette.local', 'Alpha',  'Un',    'ATHLETE'),
@@ -70,7 +89,12 @@ begin
       ('cccccccc-0000-0000-0000-000000000006'::uuid, 'f6@recette.local', 'Zeta',   'Six',   'ATHLETE'),
       ('cccccccc-0000-0000-0000-000000000007'::uuid, 'h1@recette.local', 'Homo',   'Nyme',  'ATHLETE'),
       ('cccccccc-0000-0000-0000-000000000008'::uuid, 'h2@recette.local', 'Homo',   'Nyme',  'ATHLETE'),
-      ('cccccccc-0000-0000-0000-000000000009'::uuid, 'civil@recette.local','Civil','Neuf',  'ATHLETE')
+      ('cccccccc-0000-0000-0000-000000000009'::uuid, 'civil@recette.local','Civil','Neuf',  'ATHLETE'),
+      -- Ajoutes quand les sondes de tolerance ont commence a consommer f5 et
+      -- f6 : sans eux, parrain 1 ne pouvait plus atteindre 5 confirmees et
+      -- S7 (plafond de badges) n'avait plus de palier 5 a tester.
+      ('cccccccc-0000-0000-0000-00000000000a'::uuid, 'f7@recette.local', 'Eta',    'Sept',  'ATHLETE'),
+      ('cccccccc-0000-0000-0000-00000000000b'::uuid, 'f8@recette.local', 'Theta',  'Huit',  'ATHLETE')
     ) as t(id, email, prenom, nom, role)
   loop
     insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
@@ -148,6 +172,112 @@ begin
     raise exception 'S11 KO: statut=% methode=%', v_s, v_m;
   end if;
   raise notice 'S11 OK — athlete SANS ecole trouve par nom + equipe (methode nom_equipe)';
+end $$;
+
+-- ═══ SONDES 16-19 — TOLÉRANCE ORTHOGRAPHIQUE ════════════════════════════
+-- Parrain 3 est DEDIE a ces quatre sondes : elles consomment 4 des 5
+-- recherches du jour, et polluer un parrain partage ferait echouer S2 et S3
+-- plus bas (constate). Chaque sonde qui ecrit doit posseder son sujet.
+\echo '--- S16 une faute de frappe, bonne ecole ---'
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"bbbbbbbb-0000-0000-0000-000000000005","role":"authenticated"}';
+-- « Zéta Sixe » pour « Zeta Six » : l'accent est absorbé par unaccent (coût 0)
+-- et il reste UNE insertion (coût 1). Les deux effets dans la même sonde.
+select public.ambassadeur_revendiquer(
+  'Zéta','Sixe', null, 'aaaaaaaa-0000-0000-0000-000000000001') as s16;
+commit;
+
+do $$
+declare v_s text; v_m text;
+begin
+  select statut, methode into v_s, v_m from public.ambassadeur_revendications
+   where parrain_athlete_id='bbbbbbbb-0000-0000-0000-000000000005' and prenom='Zéta';
+  if v_s is distinct from 'CONFIRMEE' or v_m is distinct from 'nom_approx' then
+    raise exception 'S16 KO: statut=% methode=%', v_s, v_m;
+  end if;
+  raise notice 'S16 OK — « Zéta Sixe » -> Zeta Six (accent absorbe + 1 insertion), nom_approx';
+end $$;
+
+\echo '--- S17 deux lettres fausses ---'
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"bbbbbbbb-0000-0000-0000-000000000005","role":"authenticated"}';
+-- « Epsylon Cink » pour « Epsilon Cinq » : deux substitutions, soit le
+-- plafond EXACT du budget. Mesuré a 2.
+select public.ambassadeur_revendiquer(
+  'Epsylon','Cink', null, 'aaaaaaaa-0000-0000-0000-000000000001') as s17;
+commit;
+
+do $$
+declare v_s text; v_m text;
+begin
+  select statut, methode into v_s, v_m from public.ambassadeur_revendications
+   where parrain_athlete_id='bbbbbbbb-0000-0000-0000-000000000005' and prenom='Epsylon';
+  if v_s is distinct from 'CONFIRMEE' or v_m is distinct from 'nom_approx' then
+    raise exception 'S17 KO: statut=% methode=%', v_s, v_m;
+  end if;
+  raise notice 'S17 OK — deux editions (le plafond exact) pardonnees, nom_approx';
+end $$;
+
+\echo '--- S18 le flou attrape les DEUX Samuel -> EN_ATTENTE ---'
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"bbbbbbbb-0000-0000-0000-000000000005","role":"authenticated"}';
+-- « Homa Nym » : à ≤ 2 éditions des DEUX « Homo Nyme » de la même école.
+select public.ambassadeur_revendiquer(
+  'Homa','Nym', null, 'aaaaaaaa-0000-0000-0000-000000000001') as s18;
+commit;
+
+do $$
+declare v_s text; v_m text; v_c int;
+begin
+  select statut, methode, jsonb_array_length(coalesce(candidats,'[]'::jsonb))
+    into v_s, v_m, v_c
+    from public.ambassadeur_revendications
+   where parrain_athlete_id='bbbbbbbb-0000-0000-0000-000000000005' and prenom='Homa';
+  if v_s is distinct from 'EN_ATTENTE' or v_c <> 2 then
+    raise exception 'S18 KO: statut=% methode=% candidats=%', v_s, v_m, v_c;
+  end if;
+  raise notice 'S18 OK — le flou fait emerger 2 plausibles -> EN_ATTENTE, file admin';
+end $$;
+
+\echo '--- S19 flou SANS perimetre -> refuse ---'
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"bbbbbbbb-0000-0000-0000-000000000005","role":"authenticated"}';
+do $$
+declare v jsonb; v_avant int; v_apres int;
+begin
+  select count(*) into v_avant from public.ambassadeur_revendications;
+  -- Courriel fourni mais qui ne tombe sur personne, AUCUNE ecole, AUCUNE
+  -- equipe : le discriminant passe, mais l'approximatif n'a pas de perimetre.
+  -- « Zéta Sixe » est pourtant à 1 edition de Zeta Six, qui EXISTE.
+  v := public.ambassadeur_revendiquer('Zéta','Sixe','inconnu@nulle-part.test');
+  if v->>'motif' is distinct from 'introuvable' then
+    raise exception 'S19 KO: motif=% — le flou a balaye SANS perimetre (%)', v->>'motif', v::text;
+  end if;
+  select count(*) into v_apres from public.ambassadeur_revendications;
+  if v_apres <> v_avant then
+    raise exception 'S19 KO: % ligne(s) ecrite(s) pour une recherche infructueuse', v_apres - v_avant;
+  end if;
+  raise notice 'S19 OK — sans ecole ni equipe, aucun flou : introuvable, rien ecrit';
+end $$;
+commit;
+
+\echo '--- S20 prenom compose : tiret = espace ---'
+do $$
+declare v_a text; v_b text;
+begin
+  v_a := public.nexus_normaliser_nom('Marc-Antoine');
+  v_b := public.nexus_normaliser_nom('Marc Antoine');
+  if v_a is distinct from v_b then
+    raise exception 'S20 KO: « % » <> « % »', v_a, v_b;
+  end if;
+  if public.nexus_normaliser_nom('Éric  Côté') <> 'eric cote' then
+    raise exception 'S20 KO: accents/espaces non normalises (%)', public.nexus_normaliser_nom('Éric  Côté');
+  end if;
+  raise notice 'S20 OK — tiret = espace, accents retires, espaces reduites';
 end $$;
 
 -- ═══ SONDE 5 — auto-parrainage ═══════════════════════════════════════════
@@ -396,10 +526,10 @@ delete from public.ambassadeur_tentatives
 -- 2 confirmations de plus pour parrain 1 (il en a 3) → palier 5.
 begin; set local role authenticated;
 set local request.jwt.claims = '{"sub":"bbbbbbbb-0000-0000-0000-000000000001","role":"authenticated"}';
--- f6 et h2, PAS f2/f3 : parrain 2 les a déjà confirmés en S3, et
--- ambassadeur_filleul_unique_confirme est GLOBAL — « premier arrivé garde ».
--- (Le constater ici est en soi une preuve de la règle.)
-select public.ambassadeur_revendiquer('Zeta','Six','f6@recette.local'); commit;
+-- f7 et h2 : tout le reste est deja pris — f2/f3/f4 par parrain 2, f5/f6 par
+-- parrain 3 (sondes de tolerance). ambassadeur_filleul_unique_confirme est
+-- GLOBAL : « premier arrive garde ». Le constater ici est en soi une preuve.
+select public.ambassadeur_revendiquer('Eta','Sept','f7@recette.local'); commit;
 begin; set local role authenticated;
 set local request.jwt.claims = '{"sub":"bbbbbbbb-0000-0000-0000-000000000001","role":"authenticated"}';
 select public.ambassadeur_revendiquer('Homo','Nyme','h2@recette.local'); commit;
@@ -482,8 +612,8 @@ begin
    where ab.athlete_id='bbbbbbbb-0000-0000-0000-000000000001'
      and b.code='ambassadeur' and ab.retire_le is null;
   if v_org <> 'systeme' then raise exception 'S8 KO: origine=%', v_org; end if;
-  if v_auteur <> 'bbbbbbbb-0000-0000-0000-00000000000f' then
-    raise exception 'S8 KO: attribue_par=% au lieu de l''identite de service', v_auteur;
+  if v_auteur is distinct from (select id from public.users where is_service_identity) then
+    raise exception 'S8 KO: attribue_par=% n''est pas l''identite de service', v_auteur;
   end if;
   raise notice 'S8b OK — origine systeme, auteur = identite de service';
 end $$;
@@ -586,14 +716,17 @@ delete from auth.users where email like '%@recette.local';
 delete from public.teams   where id = 'aaaaaaaa-0000-0000-0000-000000000002';
 delete from public.schools where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 
+-- L'assertion porte sur CE QUE LA RECETTE A CREE, jamais sur la base entiere :
+-- un autre jeu de fixtures (demo, test appareil) a le droit d'exister a cote.
 do $$
-declare v_a int; v_r int; v_b int;
+declare v_a int; v_r int;
 begin
-  select count(*) into v_a from public.athletes;
-  select count(*) into v_r from public.ambassadeur_revendications;
-  select count(*) into v_b from public.athlete_badges;
-  if v_a <> 0 or v_r <> 0 or v_b <> 0 then
-    raise exception 'NETTOYAGE INCOMPLET: athletes=% revendications=% badges=%', v_a, v_r, v_b;
+  select count(*) into v_a from public.athletes where email like '%@recette.local';
+  select count(*) into v_r from public.ambassadeur_revendications r
+    join public.athletes a on a.id = r.parrain_athlete_id
+   where a.email like '%@recette.local';
+  if v_a <> 0 or v_r <> 0 then
+    raise exception 'NETTOYAGE INCOMPLET: % athlete(s) et % revendication(s) de recette subsistent', v_a, v_r;
   end if;
-  raise notice 'Nettoyage OK — base locale rendue a son etat initial (0 athlete).';
+  raise notice 'Nettoyage OK — toutes les fixtures @recette.local retirees (les autres jeux sont intacts).';
 end $$;

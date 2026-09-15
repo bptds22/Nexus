@@ -64,13 +64,85 @@
 -- is_admin()), et ambassadeur_mon_tableau() ne le projette pas. Un courriel
 -- même masqué reste une donnée de tiers mineur.
 --
--- ── PAS D'unaccent ──────────────────────────────────────────────────────
--- Ni unaccent ni pg_trgm ne sont installés sur le projet (vérifié 2026-09-15).
--- La comparaison de noms est donc lower(btrim()) STRICTE : « Gagne » ne
--- rapproche pas « Gagné ». C'est une limite connue de la concordance faible,
--- pas un oubli. La concordance forte (courriel) n'en souffre pas — l'adresse
--- est déjà normalisée par les index uniques existants.
+-- ── LA TOLÉRANCE ORTHOGRAPHIQUE (décision BP, 2026-09-15) ───────────────
+-- L'utilisateur SAIT qui il veut déclarer, il ne sait pas l'ÉCRIRE. Exiger
+-- l'orthographe exacte, c'est refuser une vraie recrue pour une lettre.
+--
+-- LE RÉFLEXE — un autocomplete — EST EXACTEMENT CE QU'ON INTERDIT. Un moteur
+-- qui suggère des noms de mineurs à tout compte connecté est un annuaire de
+-- mineurs, et c'est la chose que toute cette RPC existe pour empêcher.
+--
+-- La sortie : ASSOUPLIR LA CONCORDANCE SANS RIEN EXPOSER. Le serveur pardonne
+-- la faute, ne montre jamais rien, et rend le même verdict binaire. Aucune
+-- suggestion, aucune liste, aucun « vouliez-vous dire » — ce dernier serait
+-- l'oracle par la porte arrière, un test d'existence à la lettre près.
+--
+-- ⚠ LE PÉRIMÈTRE EST OBLIGATOIRE POUR L'APPROXIMATIF. Un flou sans école ni
+-- équipe balaierait toute la base à deux lettres près : ce serait un moteur
+-- de recherche sur des mineurs. C'est l'école/équipe qui fait la précision,
+-- pas l'orthographe — dans une équipe de vingt, « alex » + Wildcats n'a
+-- qu'un seul candidat plausible. La garde tient dans le fait que les deux
+-- disjonctions du WHERE sont fausses quand les deux paramètres sont nuls :
+-- aucune ligne ne sort, et le verdict est « introuvable ».
+--
+-- ── DEUX EXTENSIONS, ET POURQUOI unaccent N'EST PAS DU CONFORT ──────────
+-- `fuzzystrmatch` donne levenshtein_less_equal(), une distance BORNÉE qui
+-- court-circuite dès qu'elle dépasse le plafond — en C, pas en plpgsql. Une
+-- seconde implémentation maison serait plus lente et à re-prouver.
+--
+-- `unaccent` n'était PAS installé, contrairement à ce que supposait le
+-- cahier des charges, et la différence est décisive. Mesuré le 2026-09-15 :
+--     levenshtein('alexy tremblay', 'alexis tremblay')  = 2   ← passe
+--     levenshtein('eric cote',      'éric côté')        = 3   ← ÉCHOUE
+-- Sans unaccent, les accents MANGENT tout le budget de fautes et « Éric
+-- Côté » devient introuvable même sans faute de frappe. Sur des noms
+-- québécois, ce n'est pas un cas limite, c'est le cas courant. Les deux
+-- extensions partent donc ensemble.
+--
+-- Elles vivent dans le schéma `extensions` (comme pgcrypto, pg_net,
+-- uuid-ossp) et sont appelées QUALIFIÉES : le search_path de la fonction est
+-- épinglé à 'public','pg_temp', il ne les verrait pas autrement.
 -- ═══════════════════════════════════════════════════════════════════════════
+
+create extension if not exists fuzzystrmatch with schema extensions;
+create extension if not exists unaccent      with schema extensions;
+
+-- ── Normalisation partagée des noms ─────────────────────────────────────
+-- Utilisée par les DEUX chemins, strict et approximatif. Le tiret devient une
+-- espace, donc « Marc-Antoine » et « Marc Antoine » sont le MÊME nom pour le
+-- chemin strict — ils ne consomment pas le budget de fautes, ils n'en ont pas
+-- besoin.
+--
+-- STABLE et non IMMUTABLE : unaccent dépend d'un dictionnaire de recherche
+-- plein-texte, qui peut être rechargé. La conséquence pratique est qu'on ne
+-- peut pas l'indexer telle quelle — ce n'est pas un problème ici, la
+-- concordance faible est toujours bornée par une école ou une équipe, donc
+-- par un index existant sur school_id / team_athletes.
+create or replace function public.nexus_normaliser_nom(p_nom text)
+  returns text
+  language sql
+  stable
+  set search_path to 'public', 'extensions', 'pg_temp'
+as $fn$
+  select nullif(
+    btrim(regexp_replace(
+      lower(extensions.unaccent(replace(coalesce(p_nom, ''), '-', ' '))),
+      '\s+', ' ', 'g')), '');
+$fn$;
+
+comment on function public.nexus_normaliser_nom(text) is
+$c$Forme comparable d'un nom : minuscules, sans accents, tiret = espace,
+espaces multiples réduites. « Marc-Antoine Côté » → « marc antoine cote ».
+
+STABLE (pas IMMUTABLE) : unaccent dépend d'un dictionnaire. Ne pas l'indexer
+sans wrapper IMMUTABLE assumé.
+
+C'est la SEULE définition de « même nom » du programme Ambassadeur : le chemin
+strict et le chemin approximatif l'appellent tous les deux, sinon ils
+divergeraient sur les accents.$c$;
+
+revoke all on function public.nexus_normaliser_nom(text) from public, anon;
+grant execute on function public.nexus_normaliser_nom(text) to authenticated;
 
 -- ── Le masque ───────────────────────────────────────────────────────────
 -- « samuel.tremblay@exemple.com » → « samu•••@exe••• ».
@@ -163,8 +235,11 @@ begin
   end if;
 
   -- ── 3. Normalisation + garde du discriminant ─────────────────────────
-  v_prenom   := lower(btrim(coalesce(p_prenom, '')));
-  v_nom      := lower(btrim(coalesce(p_nom, '')));
+  -- Une seule définition de « même nom » : accents retirés, tiret = espace.
+  -- Voir nexus_normaliser_nom — les chemins strict et approximatif s'en
+  -- servent tous les deux, sinon ils divergeraient.
+  v_prenom   := coalesce(public.nexus_normaliser_nom(p_prenom), '');
+  v_nom      := coalesce(public.nexus_normaliser_nom(p_nom), '');
   v_courriel := nullif(lower(btrim(coalesce(p_courriel, ''))), '');
 
   if v_prenom = '' or v_nom = '' then
@@ -231,8 +306,8 @@ begin
      where a.status = 'ACTIF'
        and a.user_id is not null
        and a.id <> v_parrain
-       and lower(btrim(coalesce(a.first_name, ''))) = v_prenom
-       and lower(btrim(coalesce(a.last_name,  ''))) = v_nom
+       and public.nexus_normaliser_nom(a.first_name) = v_prenom
+       and public.nexus_normaliser_nom(a.last_name)  = v_nom
        and (
              (p_ecole_id is not null and a.school_id = p_ecole_id)
           or (p_team_id  is not null and exists (
@@ -241,6 +316,49 @@ begin
        );
 
     v_methode := case when p_ecole_id is not null then 'nom_ecole' else 'nom_equipe' end;
+
+    -- ── 6 bis. TOLÉRANCE ORTHOGRAPHIQUE ────────────────────────────────
+    -- Seulement si l'exact n'a RIEN donné : une correspondance exacte n'a
+    -- jamais à être départagée par une approximation.
+    --
+    -- Budget de DEUX éditions sur le nom COMPLET, pas deux par champ : deux
+    -- par champ autoriserait quatre fautes et rapprocherait des noms qui ne
+    -- se ressemblent plus. « alexy tremblay » → « alexis tremblay » vaut
+    -- exactement 2 (mesuré) : le plafond est donc le minimum qui rende le
+    -- service, pas un choix confortable.
+    --
+    -- levenshtein_less_equal court-circuite au plafond et rend min(d, max+1),
+    -- d'où le test `<= 2` et non `= `.
+    --
+    -- LE PÉRIMÈTRE EST LA GARDE. Les deux disjonctions ci-dessous sont
+    -- fausses quand p_ecole_id ET p_team_id sont nuls : la requête ne rend
+    -- alors aucune ligne, et le verdict retombe sur « introuvable ». Le flou
+    -- ne peut donc JAMAIS balayer la base entière — c'est la condition pour
+    -- qu'assouplir ne rouvre pas l'oracle.
+    if coalesce(array_length(v_ids, 1), 0) = 0 then
+      select array_agg(a.id) into v_ids
+        from public.athletes a
+       where a.status = 'ACTIF'
+         and a.user_id is not null
+         and a.id <> v_parrain
+         and (
+               (p_ecole_id is not null and a.school_id = p_ecole_id)
+            or (p_team_id  is not null and exists (
+                  select 1 from public.team_athletes ta
+                   where ta.athlete_id = a.id and ta.team_id = p_team_id))
+         )
+         and extensions.levenshtein_less_equal(
+               coalesce(public.nexus_normaliser_nom(a.first_name), '') || ' '
+                 || coalesce(public.nexus_normaliser_nom(a.last_name), ''),
+               v_prenom || ' ' || v_nom,
+               2) <= 2;
+
+      if coalesce(array_length(v_ids, 1), 0) > 0 then
+        -- Traçabilité : l'admin doit pouvoir distinguer une confirmation
+        -- obtenue au mot près d'une obtenue à deux lettres près.
+        v_methode := 'nom_approx';
+      end if;
+    end if;
 
     if coalesce(array_length(v_ids, 1), 0) = 1 then
       v_cible  := v_ids[1];

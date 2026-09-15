@@ -40,7 +40,47 @@ import {
 
 const OR = "#F59E0B";
 
-interface TeamRow { id: string; name: string }
+interface TeamRow {
+  id: string; name: string;
+  age_group: string | null; division: string | null; gender: string | null;
+  /* PostgREST rend l'embed tantôt objet, tantôt tableau selon la version —
+     même précaution que `badgeDe` dans lib/queries/shared/athleteBadges.ts. */
+  sports: { nom: string } | { nom: string }[] | null;
+}
+
+function sportDe(t: TeamRow): string | null {
+  const s = Array.isArray(t.sports) ? t.sports[0] : t.sports;
+  return s?.nom?.trim() || null;
+}
+
+/* ── LE LIBELLÉ D'ÉQUIPE ──────────────────────────────────────────────────
+   Un cégep nomme TOUTES ses équipes comme lui-même : les quinze de Garneau
+   s'appellent « Garneau ». Le premier libellé composait
+   `nom — catégorie · division · genre · saison` et produisait des SOSIES :
+   « Garneau — Collégial · D2 · Féminin · 2025-2026 » sortait trois fois (le
+   basketball, le soccer et le volleyball). Rien ne manquait au menu — les
+   quinze entrées étaient là — mais six étaient indiscernables, donc
+   inutilisables. Mesuré sur la base : 120 collisions sur 564 équipes (21 %),
+   sur 44 écoles ; avec le sport, ZÉRO.
+
+   Le SPORT passe donc en tête. C'est lui qui identifie quand le nom ne dit
+   rien, et c'est le premier mot qu'on cherche des yeux.
+   La SAISON sort : 563 des 564 équipes portent « 2025-2026 », elle n'a jamais
+   discriminé et allongeait la ligne.
+   La CATÉGORIE va en fin de ligne : inutile au collégial (« Collégial » sur
+   les 394 équipes de cégep), elle discrimine au secondaire (Juvénile, Cadet,
+   Benjamin — 153 équipes). Règle uniforme plutôt que conditionnelle : elle
+   traîne sans nuire.
+   Les nulls sont sautés — une équipe sans division ne gagne pas un
+   séparateur vide.                                                        */
+function libelleEquipe(t: TeamRow): string {
+  const sport = sportDe(t);
+  const tete = sport ? `${sport} — ${t.name}` : t.name;
+  const precisions = [t.division, t.gender, t.age_group]
+    .map((v) => v?.trim())
+    .filter((v): v is string => !!v);
+  return precisions.length ? `${tete} · ${precisions.join(" · ")}` : tete;
+}
 
 export default function AthleteAmbassadeurPage() {
   const [tableau, setTableau] = useState<TableauAmbassadeur | null>(null);
@@ -51,7 +91,6 @@ export default function AthleteAmbassadeurPage() {
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
   const [courriel, setCourriel] = useState("");
-  const [sansCourriel, setSansCourriel] = useState(false);
   const [ecoleId, setEcoleId] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string | null>(null);
   const [equipes, setEquipes] = useState<TeamRow[]>([]);
@@ -81,29 +120,47 @@ export default function AthleteAmbassadeurPage() {
     let vivant = true;
     (async () => {
       const { data } = await createClient()
-        .from("teams").select("id, name").eq("school_id", ecoleId).order("name");
-      if (vivant) setEquipes((data ?? []) as TeamRow[]);
+        .from("teams")
+        .select("id, name, age_group, division, gender, sports!sport_id(nom)")
+        .eq("school_id", ecoleId);
+      /* Tri par SPORT puis DIVISION, côté client. `order("name")` triait
+         quinze fois le même mot ; et PostgREST ne sait pas trier sur une
+         relation embarquée, donc le tri qui compte ne peut pas être demandé
+         au serveur. localeCompare pour que « Événement » se range comme
+         « Evenement » — la collation par défaut ne le ferait pas. */
+      const liste = ((data ?? []) as TeamRow[]).slice().sort((a, b) => {
+        const s = (sportDe(a) ?? "").localeCompare(sportDe(b) ?? "", "fr");
+        if (s !== 0) return s;
+        return (a.division ?? "").localeCompare(b.division ?? "", "fr")
+          || (a.gender ?? "").localeCompare(b.gender ?? "", "fr");
+      });
+      if (vivant) setEquipes(liste);
     })();
     return () => { vivant = false; };
   }, [ecoleId]);
 
-  const discriminant = sansCourriel ? !!ecoleId || !!teamId : courriel.trim().length > 0;
+  /* Le courriel N'EST PLUS le chemin par défaut. Les trois discriminants sont
+     à égalité devant le bouton — la RPC, elle, garde sa hiérarchie (courriel
+     d'abord s'il est fourni, école/équipe ensuite). L'ancien basculement
+     « Je ne connais pas son courriel » enterrait école et équipe derrière un
+     lien : l'athlète qui connaît l'école mais pas l'adresse — le cas normal —
+     devait deviner qu'il fallait cliquer ailleurs. */
+  const discriminant = courriel.trim().length > 0 || !!ecoleId || !!teamId;
   const peutEnvoyer = prenom.trim() && nom.trim() && discriminant && !envoi;
 
   const envoyer = async () => {
     if (!peutEnvoyer) return;
     setEnvoi(true);
     try {
-      const r = await revendiquer({
-        prenom, nom,
-        courriel: sansCourriel ? null : courriel,
-        ecoleId: sansCourriel ? ecoleId : null,
-        teamId: sansCourriel ? teamId : null,
-      });
+      /* On envoie TOUT ce qui est rempli : la hiérarchie est décidée en base,
+         pas ici. Le périmètre école/équipe reste utile même avec un courriel —
+         c'est lui qui autorise la tolérance orthographique si l'adresse ne
+         tombe sur personne. */
+      const r = await revendiquer({ prenom, nom, courriel, ecoleId, teamId });
       montrer(MESSAGES[r.motif] ?? "Réessaie dans un instant.");
       if (r.ok) {
         setPrenom(""); setNom(""); setCourriel("");
-        setEcoleId(null); setTeamId(null); setSansCourriel(false);
+        setEcoleId(null); setTeamId(null);
         await recharger();
         window.dispatchEvent(new Event("notifications-updated"));
       } else {
@@ -253,7 +310,8 @@ export default function AthleteAmbassadeurPage() {
           Déclarer une recrue
         </h2>
         <p className="text-[12px] text-[#6b7280] mt-1">
-          Elle doit déjà avoir un compte Nexus.
+          Elle doit déjà avoir un compte Nexus. Pas sûr de l&apos;orthographe ?
+          Écris ce que tu crois — son école ou son équipe suffit à la retrouver.
           {typeof tableau?.recherches_restantes === "number" && (
             <> {" · "}Il te reste {tableau.recherches_restantes} recherche
               {tableau.recherches_restantes === 1 ? "" : "s"} aujourd&apos;hui.</>
@@ -265,51 +323,46 @@ export default function AthleteAmbassadeurPage() {
           <Champ label="Nom" value={nom} onChange={setNom} placeholder="Tremblay" />
         </div>
 
-        {!sansCourriel ? (
-          <div className="mt-3">
-            <Champ
-              label="Son courriel"
-              value={courriel}
-              onChange={setCourriel}
-              placeholder="alex@exemple.com"
-              type="email"
-            />
-            <button
-              type="button"
-              onClick={() => setSansCourriel(true)}
-              className="mt-2 text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-white"
-            >
-              Je ne connais pas son courriel
-            </button>
+        {/* TOUT EST VISIBLE D'EMBLÉE. École et équipe vivaient derrière un lien
+            « Je ne connais pas son courriel » : l'athlète qui connaît l'école
+            mais pas l'adresse — le cas normal — devait deviner qu'il fallait
+            cliquer ailleurs pour avoir le droit de déclarer son ami. */}
+        <div className="mt-3 space-y-3">
+          <div>
+            <Label>Son école ou son club</Label>
+            <SchoolSelect value={ecoleId} onChange={(id) => setEcoleId(id)} />
           </div>
-        ) : (
-          <div className="mt-3 space-y-3">
+
+          {equipes.length > 0 && (
             <div>
-              <Label>Son école ou son club</Label>
-              <SchoolSelect value={ecoleId} onChange={(id) => setEcoleId(id)} />
+              <Label>Son équipe (optionnel)</Label>
+              <select
+                value={teamId ?? ""}
+                onChange={(e) => setTeamId(e.target.value || null)}
+                /* Pas de liseré rouge au focus : le rouge Nexus dit l'erreur
+                   partout ailleurs dans l'app, et ce champ est facultatif.
+                   Un champ optionnel qui rougit quand on le touche accuse
+                   l'utilisateur de rien. */
+                className="w-full rounded-lg bg-[#111317] border border-[#2D3748] px-3 py-2.5 text-[14px] text-white focus:border-[#4a4d56] outline-none"
+              >
+                <option value="">—</option>
+                {/* Libellé discriminé : un club aligne cinq équipes du même
+                    nom, le menu en montrait cinq fois la même ligne. */}
+                {equipes.map((t) => (
+                  <option key={t.id} value={t.id}>{libelleEquipe(t)}</option>
+                ))}
+              </select>
             </div>
-            {equipes.length > 0 && (
-              <div>
-                <Label>Son équipe (optionnel)</Label>
-                <select
-                  value={teamId ?? ""}
-                  onChange={(e) => setTeamId(e.target.value || null)}
-                  className="w-full rounded-lg bg-[#111317] border border-[#2D3748] px-3 py-2.5 text-[14px] text-white focus:border-[#E63946] outline-none"
-                >
-                  <option value="">—</option>
-                  {equipes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => { setSansCourriel(false); setEcoleId(null); setTeamId(null); }}
-              className="text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-white"
-            >
-              J&apos;ai son courriel finalement
-            </button>
-          </div>
-        )}
+          )}
+
+          <Champ
+            label="Son courriel, si tu l'as — c'est le plus fiable"
+            value={courriel}
+            onChange={setCourriel}
+            placeholder="alex@exemple.com"
+            type="email"
+          />
+        </div>
 
         <button
           type="button"
