@@ -173,10 +173,11 @@ export function sportDef(nom: string): SportDef | undefined {
 }
 
 /* ═══ LE CATALOGUE DES 22 BADGES ═════════════════════════════════════════
-   LES MÊMES QUE L'APPLICATION. Les fichiers sont ceux de public/badges/,
-   dessinés au canvas depuis leur URL same-origin : aucun export, aucune
-   copie, aucun actif dédié à la story. Une divergence de dessin entre la
-   story et la fiche serait pire qu'une ressemblance.
+   LES MÊMES QUE L'APPLICATION. La géométrie est celle de
+   public/badges/ ; la story lit public/story-badges/, qui en est GÉNÉRÉ
+   (contre-formes percées — voir badgeSvg plus bas). Aucun dessin à la
+   main, aucun export manuel : une divergence de DESSIN entre la story et
+   la fiche serait pire qu'une ressemblance.
 
    ── POURQUOI CETTE TABLE EST RECOPIÉE ICI ────────────────────────────
    La vérité vit en base (`public.badges` + `public.badge_sports`), lue
@@ -199,16 +200,45 @@ export function sportDef(nom: string): SportDef | undefined {
    contre les migrations. Le jour où /ma-story lira le vrai profil de
    l'athlète connecté, elle disparaît.
 
-   ── CE QU'ELLE NE PORTE PAS, DÉLIBÉRÉMENT ────────────────────────────
-   `requiert_contexte`. Dans l'application, les cinq honneurs exigent un
-   contexte (« MVP · 2026 ») parce qu'un honneur sans millésime ne veut
-   rien dire dans un dossier. Sur une story, le badge est auto-déclaré et
-   la ligne d'attribution renvoie au profil : ajouter un champ de
-   contexte donnerait à la déclaration la PRÉCISION d'un dossier sans en
-   avoir la valeur. Voir l'ÉCART 4 de MaStoryClient.tsx.
+   ── LE CONTEXTE : CE QU'ELLE PORTE, ET CE QU'ELLE N'EXIGE PAS ────────
+   Cette table a longtemps refusé tout contexte hors « Custom », au motif
+   qu'il donnerait à une déclaration la PRÉCISION d'un dossier. v2.3.2
+   revient sur la moitié de ce raisonnement, et il faut dire laquelle.
+
+   CE QUI NE CHANGE PAS : `requiert_contexte`. En base, les cinq honneurs
+   EXIGENT leur contexte — un `MVP` sans millésime ne s'enregistre pas
+   (trigger badge_contexte_requis). La story ne l'exige PAS et ne
+   l'exigera pas : elle ne peut rien vérifier, refuser une story pour un
+   millésime manquant serait une rigueur de façade. Le champ est
+   OPTIONNEL ici, vide ne peint rien (ÉCART 3).
+
+   CE QUI CHANGE : `contexte_forme`. Dans l'application, un honneur PORTE
+   son contexte — « MVP — Saison 2025 », « Leader de la ligue — 1 245
+   verges » (getBadgeLabel dans DistinctionBadge.tsx, `${libelle} —
+   ${detail}`). La story peignait le libellé nu. C'était un écart de
+   CONTENU avec la fiche, pas une garantie de plus : le millésime ne rend
+   pas la déclaration vérifiée, il la rend juste lisible. La forme est
+   donc recopiée de la base — voir `contexteForme` plus bas — et elle
+   sert exactement à ce qu'elle sert côté fiche : choisir le placeholder,
+   jamais un `if` sur un code.
+
+   `nexus-x` (« Custom ») reste à part, et pour la même raison qu'avant :
+   son contexte n'est pas un millésime, c'est le NOM de la distinction —
+   sans lui le badge ne dit rien, ni ici ni sur la fiche, qui peint elle
+   aussi ce texte SEUL à la place du libellé du catalogue. Les quatre
+   autres honneurs ajoutent une ligne SOUS leur libellé ; Custom
+   REMPLACE le sien. Voir l'ÉCART 4 de MaStoryClient.tsx.
+
+   Une seule borne pour les deux : MAX_CONTEXTE.
 ════════════════════════════════════════════════════════════════════════ */
 
 export type BadgeFamille = "universel" | "sport" | "honneur";
+
+/** Les trois formes de contexte du catalogue. Recopiées telles quelles de
+ *  `public.badges.contexte_forme` (migration
+ *  20260825144302_badges_contexte_forme_et_suggestions_vers_athlete_badges),
+ *  et du type `ContexteForme` de lib/config/badgeCatalogue.ts. */
+export type ContexteForme = "stat_annee" | "annee" | "libre";
 
 export type BadgeDef = {
   /** Code du catalogue. Nomme aussi le fichier : badge-{code}.svg. */
@@ -218,6 +248,14 @@ export type BadgeDef = {
   /** Vide pour `universel` et `honneur` : ils valent pour tous les
    *  sports. Rempli pour `sport`, par nom de sport. */
   sports: string[];
+  /** La forme du contexte, quand le badge en porte un. `null` partout
+   *  ailleurs — la base pose la même cohérence par contrainte
+   *  (`badges_contexte_forme_coherente`).
+   *
+   *  C'est une DONNÉE, pas un `if` sur les codes : ajouter un honneur au
+   *  catalogue ne doit rien recâbler dans le formulaire ni dans le rendu.
+   *  Même règle que côté fiche. */
+  contexteForme?: ContexteForme | null;
 };
 
 export const BADGES_CATALOGUE: BadgeDef[] = [
@@ -267,13 +305,76 @@ export const BADGES_CATALOGUE: BadgeDef[] = [
     sports: ["Football", "Flag football"],
   },
 
-  // ── honneurs (5) : tous sports
-  { code: "mvp", libelle: "MVP", famille: "honneur", sports: [] },
-  { code: "leader-equipe", libelle: "Leader d'équipe", famille: "honneur", sports: [] },
-  { code: "leader-ligue", libelle: "Leader de la ligue", famille: "honneur", sports: [] },
-  { code: "equipe-etoiles", libelle: "Équipe d'étoiles", famille: "honneur", sports: [] },
-  { code: "nexus-x", libelle: "Custom", famille: "honneur", sports: [] },
+  // ── honneurs (5) : tous sports, et les seuls à porter un contexte.
+  //    Les formes viennent de la migration citée sur ContexteForme.
+  { code: "mvp", libelle: "MVP", famille: "honneur", sports: [], contexteForme: "annee" },
+  {
+    code: "leader-equipe",
+    libelle: "Leader d'équipe",
+    famille: "honneur",
+    sports: [],
+    contexteForme: "stat_annee",
+  },
+  {
+    code: "leader-ligue",
+    libelle: "Leader de la ligue",
+    famille: "honneur",
+    sports: [],
+    contexteForme: "stat_annee",
+  },
+  {
+    code: "equipe-etoiles",
+    libelle: "Équipe d'étoiles",
+    famille: "honneur",
+    sports: [],
+    contexteForme: "annee",
+  },
+  { code: "nexus-x", libelle: "Custom", famille: "honneur", sports: [], contexteForme: "libre" },
 ];
+
+/** Le badge « Custom » du catalogue — le seul dont le libellé peint n'est
+ *  pas celui du catalogue mais un texte de l'athlète. Nommé plutôt que
+ *  répété : la fiche a payé pour avoir laissé ce code en dur (voir le
+ *  commentaire de getBadgeLabel dans DistinctionBadge.tsx). */
+export const CODE_CUSTOM = "nexus-x";
+
+/** Longueur d'un contexte de badge, EN CARACTÈRES. UNE seule borne pour
+ *  les cinq honneurs — le libellé de Custom comme le millésime de MVP.
+ *
+ *  Reprise de la fiche : `MAX_DETAIL_LENGTH` de lib/config/badges.ts, la
+ *  contrainte déclarée pour `athlete_badges.contexte`. Recopiée et non
+ *  importée — ce fichier est la table locale de /ma-story, qui ne dépend
+ *  de rien (voir l'en-tête). Revérifiée contre la fiche le 2026-09-15 au
+ *  moment d'étendre le champ aux quatre autres honneurs : toujours 30,
+ *  toujours une seule colonne `contexte`, donc rien à diviser en deux
+ *  bornes. C'est la même dette que les libellés ci-dessus, et elle se
+ *  résout le même jour, quand la page lira le vrai profil.
+ *
+ *  À SAVOIR : côté fiche, cette limite n'est PLUS APPLIQUÉE. Les quatre
+ *  surfaces qui l'importaient sont passées à BadgePicker, dont le champ
+ *  de contexte n'a pas de `maxLength`, et la colonne est un `text` sans
+ *  borne. La story la respecte quand même — 30 caractères est ce que la
+ *  composition peut peindre sous un badge héros sans le réduire à rien. */
+export const MAX_CONTEXTE = 30;
+
+/* Les MÊMES placeholders que le champ de contexte de la fiche
+   (PLACEHOLDER_CONTEXTE dans lib/config/badgeCatalogue.ts). Deux champs
+   pour une même donnée ne doivent pas suggérer deux formats : un coach qui
+   écrit « Plaqués · 2026 » sur la fiche doit reconnaître le champ ici.
+
+   Côté fiche, la forme n'est plus CONTRAINTE — trois champs là où une
+   phrase suffit, un millésime borné qui refuse « 2025-26 ». Elle ne
+   choisit que le placeholder. Ici non plus, et pour la même raison. */
+export const PLACEHOLDER_CONTEXTE: Record<ContexteForme, string> = {
+  stat_annee: "Ex. : 1 245 verges · 2026",
+  annee: "Ex. : Saison 2026",
+  libre: "Ex. : Joueur défensif de la ligue",
+};
+
+/** Le placeholder du champ de contexte, par forme. */
+export function placeholderContexte(forme: ContexteForme | null | undefined): string {
+  return PLACEHOLDER_CONTEXTE[forme ?? "libre"];
+}
 
 const BADGE_PAR_CODE = new Map(BADGES_CATALOGUE.map((b) => [b.code, b]));
 
@@ -281,19 +382,40 @@ export function badgeDef(code: string): BadgeDef | undefined {
   return BADGE_PAR_CODE.get(code);
 }
 
-/** L'URL same-origin du SVG d'un badge. Même dossier que l'application :
- *  un badge qui change de dessin change partout à la fois. */
+/** L'URL same-origin du SVG d'un badge, VERSION STORY.
+ *
+ *  C'est le MÊME dessin que public/badges/, à une chose près : les
+ *  contre-formes du glyphe — l'intérieur des anneaux d'une cible, le trou
+ *  de serrure d'un cadenas, le champ d'un panneau STOP — y sont PERCÉES
+ *  au lieu d'être peintes en `#131519`.
+ *
+ *  POURQUOI DEUX DOSSIERS. Ce sombre est invisible sur la fiche, dont le
+ *  fond est charbon : la contre-forme s'y confond avec la page et lit
+ *  comme un trou. Posé sur une photo, il devient un aplat noir au milieu
+ *  du badge. Les percer côté fiche ferait apparaître le fond de la carte
+ *  dans le glyphe — le défaut inverse. Un dossier par contexte, donc, et
+ *  une seule GÉOMÉTRIE : public/story-badges/ est GÉNÉRÉ depuis
+ *  public/badges/ par scripts/gen-story-badges.mjs, jamais dessiné à la
+ *  main. Un badge qui change de dessin change toujours partout — il faut
+ *  seulement relancer le script.
+ *
+ *  Le sélecteur du formulaire tire de CE dossier, lui aussi : la vignette
+ *  qu'on touche doit être le badge qui sera peint. */
 export function badgeSvg(code: string): string {
-  return `/badges/badge-${code}.svg`;
+  return `/story-badges/badge-${code}.svg`;
 }
 
 /** Ordre d'affichage des sections du sélecteur. Les honneurs en dernier,
  *  comme dans l'application. */
 export const ORDRE_FAMILLES: BadgeFamille[] = ["universel", "sport", "honneur"];
 
+/* Les MÊMES titres que le sélecteur de la fiche (TITRE_SECTION dans
+   lib/config/badgeCatalogue.ts). « Propres au sport » disait la même chose
+   avec un autre mot : deux sélecteurs pour un même catalogue ne doivent
+   pas nommer leurs sections différemment. */
 export const TITRE_FAMILLE: Record<BadgeFamille, string> = {
   universel: "Universels",
-  sport: "Propres au sport",
+  sport: "Spécifiques au sport",
   honneur: "Honneurs",
 };
 
