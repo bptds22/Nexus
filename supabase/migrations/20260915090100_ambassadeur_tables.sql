@@ -96,8 +96,16 @@ projection ambassadeur_mon_tableau() ne lui rend que sa propre saisie.$c$;
 
 comment on column public.ambassadeur_revendications.candidats is
 $c$Homonymes départagés par l'administrateur (statut EN_ATTENTE). Tableau jsonb
-d'objets {athlete_id, prenom, nom, ecole, equipe}. Lisible par l'admin
-uniquement — c'est de l'identité de mineur.$c$;
+d'objets {athlete_id, prenom, nom, ecole, equipe, promotion, courriel_masque}.
+
+`promotion` et `courriel_masque` sont les DISCRIMINANTS : sans eux, deux
+homonymes de même école et de même équipe sont identiques à l'écran et
+l'administrateur ne peut pas trancher (constaté en recette, 2026-09-15). Le
+masque (public.masquer_courriel) est irréversible — assez pour distinguer, pas
+assez pour écrire à la personne.
+
+Lisible par l'ADMIN UNIQUEMENT : c'est de l'identité de mineur, et
+ambassadeur_mon_tableau() ne le projette jamais vers le parrain.$c$;
 
 comment on column public.ambassadeur_revendications.courriel_normalise is
 $c$lower(btrim(courriel)) posé par la RPC. Jamais l'adresse brute : la forme

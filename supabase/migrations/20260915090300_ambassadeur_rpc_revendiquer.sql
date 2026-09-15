@@ -49,6 +49,21 @@
 -- ce serait l'outil d'énumération qu'on cherche à interdire. La fonction
 -- refuse. Ce n'est pas une commodité d'interface, c'est la garde.
 --
+-- ── LES DISCRIMINANTS DE LA FILE ADMIN (décision BP, 2026-09-15) ────────
+-- Deux homonymes de même école et de même équipe sont STRICTEMENT
+-- indistinguables à l'écran — constaté en recette, l'administrateur ne pouvait
+-- pas trancher. `candidats` porte donc aussi `promotion` (annee_diplomation)
+-- et `courriel_masque`.
+--
+-- LE MASQUE EST IRRÉVERSIBLE, ET C'EST TOUT L'INTÉRÊT. Il donne assez pour
+-- reconnaître (« samu•••@exe••• » vs « stre•••@gma••• ») et pas assez pour
+-- écrire à la personne ni pour confirmer une adresse devinée.
+--
+-- ⚠ CE CHAMP NE SORT JAMAIS VERS LE PARRAIN. `candidats` n'est lu que par
+-- l'administrateur (policy `ambassadeur revendications admin read`,
+-- is_admin()), et ambassadeur_mon_tableau() ne le projette pas. Un courriel
+-- même masqué reste une donnée de tiers mineur.
+--
 -- ── PAS D'unaccent ──────────────────────────────────────────────────────
 -- Ni unaccent ni pg_trgm ne sont installés sur le projet (vérifié 2026-09-15).
 -- La comparaison de noms est donc lower(btrim()) STRICTE : « Gagne » ne
@@ -56,6 +71,37 @@
 -- pas un oubli. La concordance forte (courriel) n'en souffre pas — l'adresse
 -- est déjà normalisée par les index uniques existants.
 -- ═══════════════════════════════════════════════════════════════════════════
+
+-- ── Le masque ───────────────────────────────────────────────────────────
+-- « samuel.tremblay@exemple.com » → « samu•••@exe••• ».
+-- IMMUTABLE : la sortie ne dépend que de l'entrée, donc le planner peut la
+-- replier et elle reste utilisable dans un index si le besoin venait.
+-- Une adresse plus courte que la fenêtre n'est PAS rallongée par du
+-- remplissage : masquer « al@bc.co » en « al••@bc•• » inventerait des
+-- caractères et ferait croire à une adresse plus longue qu'elle n'est.
+create or replace function public.masquer_courriel(p_courriel text)
+  returns text language sql immutable
+as $fn$
+  select case
+    when nullif(btrim(coalesce(p_courriel, '')), '') is null then null
+    when position('@' in btrim(p_courriel)) = 0 then '•••'
+    -- rtrim sur le point : un domaine court comme « bc.co » se coupe en
+    -- « bc. » et donnerait « bc.••• », qui se lit comme un point manquant.
+    else left(split_part(btrim(p_courriel), '@', 1), 4) || '•••'
+         || '@' || rtrim(left(split_part(btrim(p_courriel), '@', 2), 3), '.') || '•••'
+  end;
+$fn$;
+
+comment on function public.masquer_courriel(text) is
+$c$Masque irréversible pour la file admin du programme Ambassadeur :
+4 premiers caractères de la partie locale, 3 du domaine, le reste en •••.
+
+Assez pour DISTINGUER deux homonymes, pas assez pour écrire à la personne ni
+pour confirmer une adresse devinée. Ne jamais l'exposer au parrain — c'est une
+donnée de tiers, souvent mineur.$c$;
+
+revoke all on function public.masquer_courriel(text) from public, anon;
+grant execute on function public.masquer_courriel(text) to authenticated;
 
 create or replace function public.ambassadeur_revendiquer(
   p_prenom   text,
@@ -203,18 +249,24 @@ begin
       -- Homonymie RÉELLE : il en existe déjà une en prod, deux athlètes de
       -- même prénom, même nom ET même école. L'administrateur tranche.
       v_statut := 'EN_ATTENTE';
+      -- promotion + courriel masqué : SANS eux, deux homonymes de même école
+      -- et même équipe sont identiques à l'écran et l'admin ne peut pas
+      -- trancher (constaté en recette). Ne sortent jamais vers le parrain.
       select jsonb_agg(jsonb_build_object(
-               'athlete_id', a.id,
-               'prenom',     a.first_name,
-               'nom',        a.last_name,
-               'ecole',      s.name,
-               'equipe',     (select t.name from public.team_athletes ta
-                               join public.teams t on t.id = ta.team_id
-                              where ta.athlete_id = a.id
-                              order by ta.joined_at desc nulls last limit 1)))
+               'athlete_id',      a.id,
+               'prenom',          a.first_name,
+               'nom',             a.last_name,
+               'ecole',           s.name,
+               'promotion',       a.annee_diplomation,
+               'courriel_masque', public.masquer_courriel(coalesce(a.email, u.email)),
+               'equipe',          (select t.name from public.team_athletes ta
+                                    join public.teams t on t.id = ta.team_id
+                                   where ta.athlete_id = a.id
+                                   order by ta.joined_at desc nulls last limit 1)))
         into v_candidats
         from public.athletes a
         left join public.schools s on s.id = a.school_id
+        left join public.users   u on u.id = a.user_id
        where a.id = any(v_ids);
     end if;
   end if;

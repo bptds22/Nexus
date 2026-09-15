@@ -65,6 +65,12 @@ const NAV_ITEMS = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>,
   },
   {
+    /* Juste après Approbations : c'est la seconde file d'attente du portail,
+       et elle se lit de la même façon — quelqu'un attend une décision. */
+    label: "Ambassadeurs", href: "/admin/ambassadeurs",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>,
+  },
+  {
     label: "Abonnements", href: "/admin/subscriptions",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><path d="M1 10h22" /></svg>,
   },
@@ -92,6 +98,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
   const [pendingReports, setPendingReports] = useState<number>(0);
   const [newRecruiters, setNewRecruiters] = useState<number>(0);
   const [pendingClaims, setPendingClaims] = useState<number>(0);
+  const [pendingAmbassadeurs, setPendingAmbassadeurs] = useState<number>(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +138,19 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
       } else {
         if (!cancelled) setPendingClaims(claimCount ?? 0);
       }
+
+      // Homonymies à départager. Même forme que ci-dessus : un count head,
+      // et une erreur ne fait que taire la pastille — elle ne casse pas la
+      // barre latérale.
+      const { count: ambCount, error: ambErr } = await supabase
+        .from("ambassadeur_revendications")
+        .select("id", { count: "exact", head: true })
+        .eq("statut", "EN_ATTENTE");
+      if (ambErr) {
+        console.error("[AdminSidebar] pending ambassadeurs count error:", ambErr.message);
+      } else {
+        if (!cancelled) setPendingAmbassadeurs(ambCount ?? 0);
+      }
     })();
     return () => { cancelled = true; };
     // Re-count on every navigation — was a mount-only snapshot that went
@@ -141,6 +161,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
     "/admin/moderation": pendingReports,
     "/admin/recruteurs": newRecruiters,
     "/admin/approvals": pendingClaims,
+    "/admin/ambassadeurs": pendingAmbassadeurs,
   };
 
   const nav = (

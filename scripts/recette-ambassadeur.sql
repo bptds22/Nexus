@@ -192,6 +192,54 @@ begin
   raise notice 'S4a OK — EN_ATTENTE avec 2 candidats';
 end $$;
 
+-- ═══ SONDE 14 — les DISCRIMINANTS de la file admin ═══════════════════════
+-- Sans eux, deux homonymes de même école ET même équipe sont identiques à
+-- l'écran : l'administrateur voit deux lignes jumelles et ne peut pas trancher.
+\echo '--- S14 discriminants ---'
+do $$
+declare v_masque text; v_n int; v_brut int;
+begin
+  select count(*) into v_n
+    from public.ambassadeur_revendications r,
+         jsonb_array_elements(r.candidats) c
+   where r.prenom = 'Homo'
+     and c ? 'promotion' and c ? 'courriel_masque';
+  if v_n <> 2 then raise exception 'S14 KO: % candidat(s) portent les discriminants au lieu de 2', v_n; end if;
+
+  -- Le masque doit être IRRÉVERSIBLE : aucune adresse en clair ne subsiste.
+  select count(*) into v_brut
+    from public.ambassadeur_revendications r,
+         jsonb_array_elements(r.candidats) c
+   where r.prenom = 'Homo'
+     and (c->>'courriel_masque') like '%@recette.local';
+  if v_brut <> 0 then
+    raise exception 'S14 KO: % courriel(s) EN CLAIR dans candidats', v_brut;
+  end if;
+
+  select c->>'courriel_masque' into v_masque
+    from public.ambassadeur_revendications r,
+         jsonb_array_elements(r.candidats) c
+   where r.prenom = 'Homo' limit 1;
+  if v_masque !~ '•••' then raise exception 'S14 KO: masque absent (%)', v_masque; end if;
+  raise notice 'S14 OK — promotion + courriel masqué présents, aucune adresse en clair (ex. %)', v_masque;
+end $$;
+
+-- …et la PROJECTION PARRAIN ne les laisse pas fuir.
+\echo '--- S15 la projection ne projette pas les candidats ---'
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"bbbbbbbb-0000-0000-0000-000000000001","role":"authenticated"}';
+do $$
+declare v jsonb;
+begin
+  v := public.ambassadeur_mon_tableau();
+  if v::text ilike '%courriel_masque%' or v::text ilike '%promotion%' or v::text ilike '%•••%' then
+    raise exception 'S15 KO: un discriminant a fuite vers le parrain : %', v::text;
+  end if;
+  raise notice 'S15 OK — ni promotion, ni courriel masque, ni bullet dans la projection parrain';
+end $$;
+commit;
+
 -- arbitrage admin
 begin;
 set local role authenticated;
