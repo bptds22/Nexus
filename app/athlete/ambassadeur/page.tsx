@@ -40,6 +40,12 @@ import {
 
 const OR = "#F59E0B";
 
+/* Le lien que l'athlète partage. ABSOLU et en dur, pas `location.origin` :
+   il finit dans une bio Instagram, collé depuis un téléphone qui a très bien
+   pu ouvrir l'app par une préproduction ou une adresse LAN. Un lien qui
+   emmène ses amis sur 192.168.x.x ne mène nulle part. */
+const MA_STORY = "https://nexussports.ca/ma-story";
+
 interface TeamRow {
   id: string; name: string;
   age_group: string | null; division: string | null; gender: string | null;
@@ -198,6 +204,39 @@ export default function AthleteAmbassadeurPage() {
     }
   };
 
+  const atteint = useCallback(
+    (p: number) => (tableau?.paliers ?? []).includes(p),
+    [tableau],
+  );
+
+  /* COPIE — `navigator.clipboard` n'existe QUE sur une origine sécurisée
+     (https, ou localhost). En test d'appareil sur une adresse LAN en http,
+     il est `undefined` : sans repli, le bouton ne ferait RIEN et rien ne le
+     dirait. D'où le textarea + execCommand, déprécié mais universel, et un
+     dernier repli qui AFFICHE l'adresse pour qu'elle reste copiable à la
+     main plutôt que perdue. */
+  const copierLien = useCallback(async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(MA_STORY);
+        montrer("Lien copié — colle-le dans ta bio.");
+        return;
+      }
+      const z = document.createElement("textarea");
+      z.value = MA_STORY;
+      z.setAttribute("readonly", "");
+      z.style.position = "fixed";
+      z.style.opacity = "0";
+      document.body.appendChild(z);
+      z.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(z);
+      montrer(ok ? "Lien copié — colle-le dans ta bio." : MA_STORY);
+    } catch {
+      montrer(MA_STORY);
+    }
+  }, []);
+
   const prochain = useMemo(() => {
     const n = tableau?.confirmes ?? 0;
     return PALIERS.find((p) => n < p) ?? null;
@@ -274,20 +313,46 @@ export default function AthleteAmbassadeurPage() {
         )}
       </section>
 
-      {/* ── Le badge ───────────────────────────────────────────── */}
+      {/* ── Les récompenses ────────────────────────────────────────
+          Dans l'ordre des paliers, et PERMANENTES : une carte apparue ne
+          disparaît plus. Un palier ne se défait pas en base (le trigger
+          n'écrit que des franchissements), l'écran dit donc la même chose.
+          Elles se placent entre le compteur et le formulaire : ce qu'on a
+          gagné se lit avant ce qu'on peut encore faire. */}
+      {atteint(3) && (
+        <CarteRecompense
+          icone={<IconeStory />}
+          titre="Tes stories d'ambassadeur"
+          texte="Crée des stories aux couleurs de ton équipe et partage-les — chaque story amène du monde."
+          actions={
+            <>
+              <a
+                href={MA_STORY}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-lg bg-[#F59E0B] text-[#111317] text-[12px] font-bold uppercase tracking-[0.12em] hover:brightness-110 transition"
+              >
+                Créer ma story
+              </a>
+              <button
+                type="button"
+                onClick={copierLien}
+                className="px-4 py-2.5 rounded-lg border border-[#2D3748] text-[#9CA3AF] text-[12px] font-bold uppercase tracking-[0.12em] hover:text-white transition-colors"
+              >
+                Copier le lien
+              </button>
+            </>
+          }
+        />
+      )}
+
       {tableau?.badge_debloque && (
-        <section className="rounded-xl border border-[#F59E0B]/40 bg-[#F59E0B]/[0.07] p-5 mb-5">
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/badges/badge-ambassadeur.svg" alt="" width={56} height={56} className="shrink-0" />
-            <div className="flex-1 min-w-[180px]">
-              <h2 className="font-head text-[15px] font-black uppercase tracking-tight text-white">
-                Badge Ambassadeur
-              </h2>
-              <p className="text-[12px] text-[#9CA3AF] mt-0.5">
-                Il prend une des cinq places de ta ligne de badges. À toi de voir.
-              </p>
-            </div>
+        <CarteRecompense
+          /* eslint-disable-next-line @next/next/no-img-element */
+          icone={<img src="/badges/badge-ambassadeur.svg" alt="" width={56} height={56} />}
+          titre="Badge Ambassadeur"
+          texte="Il prend une des cinq places de ta ligne de badges. À toi de voir."
+          actions={
             <button
               type="button"
               onClick={() => changerBadge(!tableau.badge_porte)}
@@ -300,8 +365,16 @@ export default function AthleteAmbassadeurPage() {
             >
               {bascule ? "..." : tableau.badge_porte ? "Retirer" : "L'afficher"}
             </button>
-          </div>
-        </section>
+          }
+        />
+      )}
+
+      {atteint(10) && (
+        <CarteRecompense
+          icone={<IconeTrophee />}
+          titre="Ambassadeur Élite 🏆"
+          texte="Félicitations — tu fais partie des meilleurs ambassadeurs Nexus. L'équipe Nexus te contacte dans les prochains jours : surveille ton compte IG pour ton post sur @nexussportsca."
+        />
       )}
 
       {/* ── Déclarer ───────────────────────────────────────────── */}
@@ -355,13 +428,21 @@ export default function AthleteAmbassadeurPage() {
             </div>
           )}
 
-          <Champ
-            label="Son courriel, si tu l'as — c'est le plus fiable"
-            value={courriel}
-            onChange={setCourriel}
-            placeholder="alex@exemple.com"
-            type="email"
-          />
+          <div>
+            <Champ
+              label="Son courriel, si tu l'as — c'est le plus fiable"
+              value={courriel}
+              onChange={setCourriel}
+              placeholder="alex@exemple.com"
+              type="email"
+            />
+            {/* 15 % des athlètes revendicables en prod portent un relais privé
+                Apple : une adresse que PERSONNE d'autre ne connaît. Sans cette
+                ligne, l'ami cherche un courriel qui n'existe pas pour lui. */}
+            <p className="text-[12px] text-[#6b7280] mt-1.5">
+              Ton ami s&apos;est inscrit avec Apple ou Google ? Son nom et son école suffisent.
+            </p>
+          </div>
         </div>
 
         <button
@@ -398,6 +479,54 @@ export default function AthleteAmbassadeurPage() {
 }
 
 /* ── Primitives ──────────────────────────────────────────────── */
+
+/* ── Le gabarit des cartes de récompense ──────────────────────────────────
+   Un seul châssis pour les trois paliers. Il vient de la carte badge, qui
+   existait seule : la refaire à la main deux fois aurait garanti qu'elles
+   finissent par diverger d'un padding ou d'une bordure. `actions` est
+   optionnel — le palier 10 n'a rien à cliquer, c'est une reconnaissance,
+   pas une tâche. */
+function CarteRecompense({ icone, titre, texte, actions }: {
+  icone: React.ReactNode; titre: string; texte: string; actions?: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-[#F59E0B]/40 bg-[#F59E0B]/[0.07] p-5 mb-5">
+      <div className="flex items-center gap-4 flex-wrap">
+        <span className="shrink-0 w-14 h-14 flex items-center justify-center">{icone}</span>
+        <div className="flex-1 min-w-[180px]">
+          <h2 className="font-head text-[15px] font-black uppercase tracking-tight text-white">
+            {titre}
+          </h2>
+          <p className="text-[12px] text-[#9CA3AF] mt-0.5">{texte}</p>
+        </div>
+        {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
+      </div>
+    </section>
+  );
+}
+
+function IconeStory() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={OR} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <circle cx="12" cy="12" r="3.6" />
+      <circle cx="17" cy="7" r="1.1" fill={OR} stroke="none" />
+    </svg>
+  );
+}
+
+function IconeTrophee() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={OR} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7" />
+      <path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" />
+      <path d="M18 2H6v7a6 6 0 0012 0V2Z" />
+    </svg>
+  );
+}
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
