@@ -124,17 +124,27 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
-  {
-    // Déplacée du groupe primaire vers le groupe secondaire (avec Notifications
-    // / Paramètres) — Messages occupe désormais le slot primaire (#2).
-    label: "Ma visibilité",
-    href: "/athlete/visibilite",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-      </svg>
-    ),
-  },
+  /* ── UN DOUBLON A VÉCU ICI (2026-08-10 → 2026-09-15) ──────────────────
+     « Ma visibilité » figurait DEUX fois dans ce tableau, avec le même href,
+     et les deux se surlignaient actives en même temps. Ce n'est pas une
+     faute de frappe : c'est une union de merge. `f231185` a fusionné
+     `feat/messaging-athlete-coach` dans `feat/android-launch` ; la branche
+     messagerie avait DÉPLACÉ l'entrée du groupe primaire vers ici, sous
+     prétexte que Messages prenait le slot #2, l'autre branche ne l'avait pas
+     reçue, et la résolution a gardé les deux positions.
+
+     Celle du bas est retirée, pas celle du haut, et l'arbitrage est motivé :
+       · avant le doublon (b653160, 2026-08-06) l'entrée vivait entre
+         « Mon profil » et « Mon équipe » ;
+       · le panneau Plus du mobile l'y met toujours aujourd'hui ;
+       · deux commentaires de ce fichier — la pose de « Mon équipe » et celle
+         d'« Ambassadeur » — décrivent leur position PAR RAPPORT à elle dans
+         le groupe primaire. Les garder vrais valait mieux que conserver un
+         déplacement dont l'argument (« le groupe primaire est trop long »)
+         a de toute façon été démenti quand Ambassadeur y est entré.
+
+     Si le déplacement vers le bas doit revenir un jour, il revient des DEUX
+     côtés à la fois — ici et dans MorePanel — ou il recrée l'écart. */
   {
     label: "Paramètres",
     href: "/athlete/parametres",

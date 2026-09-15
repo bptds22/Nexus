@@ -77,6 +77,35 @@ const RECRUITER_ITEMS: NavItem[] = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /><line x1="15" y1="3" x2="15" y2="21" /></svg>,
   },
   {
+    /* « Ma page » — la VITRINE publique du CEGEP et de ses equipes, a ne pas
+       confondre avec « Mon CEGEP », qui en est la GESTION (recruteurs, stats,
+       recrues). Le nom vient de l'editeur lui-meme, dont la topbar affiche
+       deja « MA PAGE ».
+
+       REMONTEE du bloc du bas au bloc principal, sous « Mon processus »
+       (2026-09-15). Le bloc du bas est celui du COMPTE — profil, activites,
+       parametres ; « Ma page » n'y avait pas sa place : ce n'est pas un
+       reglage, c'est une surface de travail, et la ranger avec les reglages
+       la faisait disparaitre pour les recruteurs qui ne descendent jamais
+       jusque-la. Meme ordre dans le panneau Plus du mobile.
+
+       PAS DE requiredTier : publier sa vitrine releve de l'ACQUISITION, pas
+       de la valeur payante. Un recruteur gratuit doit pouvoir presenter son
+       CEGEP — c'est ce qui l'amene sur la plateforme. Les entrees voisines
+       qui portent encore requiredTier (« Listes », « Activites », les cinq
+       « Mon CEGEP ») sont d'une autre nature : elles donnent acces aux
+       ATHLETES, et restent verrouillees. Consequence de la remontee : « Ma
+       page » est desormais entouree d'entrees verrouillees en Free, ce qui
+       rend son ouverture d'autant plus visible — c'est voulu.
+
+       ⚠ DEPENDANCE DB NON LEVEE. can_edit_school_page exige encore un
+       abonnement pro/all_star (migration 20260807224410). Tant que le volet
+       DB n'est pas fait, l'ecran s'ouvre mais l'enregistrement echoue en
+       RLS. Les deux doivent redevenir d'accord. */
+    label: "Ma page", href: "/recruteur/ma-page",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 9h16" /><path d="M9 9v11" /></svg>,
+  },
+  {
     label: "Listes", href: "/recruteur/listes",
     requiredTier: "pro",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>,
@@ -122,26 +151,6 @@ const CEGEP_ITEMS: NavItem[] = [
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  {
-    /* « Ma page » — la VITRINE publique du CEGEP et de ses equipes, a ne pas
-       confondre avec « Mon CEGEP », qui en est la GESTION (recruteurs, stats,
-       recrues). Le nom vient de l'editeur lui-meme, dont la topbar affiche
-       deja « MA PAGE ».
-
-       PAS DE requiredTier : publier sa vitrine releve de l'ACQUISITION, pas
-       de la valeur payante. Un recruteur gratuit doit pouvoir presenter son
-       CEGEP — c'est ce qui l'amene sur la plateforme. Les entrees voisines
-       qui portent encore requiredTier (« Listes », « Activites », les cinq
-       « Mon CEGEP ») sont d'une autre nature : elles donnent acces aux
-       ATHLETES, et restent verrouillees.
-
-       ⚠ DEPENDANCE DB NON LEVEE. can_edit_school_page exige encore un
-       abonnement pro/all_star (migration 20260807224410). Tant que le volet
-       DB n'est pas fait, l'ecran s'ouvre mais l'enregistrement echoue en
-       RLS. Les deux doivent redevenir d'accord. */
-    label: "Ma page", href: "/recruteur/ma-page",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 9h16" /><path d="M9 9v11" /></svg>,
-  },
   {
     label: "Mon profil", href: "/recruteur/profil",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,

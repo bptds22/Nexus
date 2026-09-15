@@ -226,13 +226,19 @@ export default function MorePanel({
             // CTA Pro). Un lock ici ouvrirait l'UpgradeModal et le mur ne
             // serait jamais rendu.
             { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar },
-            { key: "listes", label: "Listes", href: "/recruteur/listes", icon: Icons.lists, requiredTier: "pro" },
-            { key: "activites", label: "Activités", href: "/recruteur/activites", icon: Icons.activity, requiredTier: "pro", badge: actBadge },
             // « Ma page » — l'editeur de la vitrine publique. L'ecran mobile ne
             // fait que renvoyer au web (les deux editeurs sont desktop). PAS de
             // requiredTier ici : meme raison que Calendrier et Listes ci-dessus
             // — un verrou ouvrirait la modale et le renvoi ne serait jamais lu.
+            //
+            // REMONTEE avec celle du web (2026-09-15), qui la pose sous « Mon
+            // processus ». « Mon processus » n'est PAS dans ce panneau — il vit
+            // dans la barre d'onglets (MobileTabBar, « Processus ») — donc la
+            // consigne se traduit ici par l'ORDRE RELATIF : apres Calendrier,
+            // avant Listes, exactement comme au web.
             { key: "ma-page", label: "Ma page", href: "/recruteur/ma-page", icon: Icons.lists },
+            { key: "listes", label: "Listes", href: "/recruteur/listes", icon: Icons.lists, requiredTier: "pro" },
+            { key: "activites", label: "Activités", href: "/recruteur/activites", icon: Icons.activity, requiredTier: "pro", badge: actBadge },
           ],
         },
         {
