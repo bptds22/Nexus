@@ -24,9 +24,31 @@
 -- pas le passé d'un jeune de 16 ans pour un ajustement de compteur. Le
 -- compteur, lui, est bien recalculé : c'est ce que montre l'onglet admin.
 --
--- PALIER 10 : aucune notification à l'athlète (le CHECK de M1 ne porte que
--- _3 et _5, délibérément). Son effet est une ALERTE ADMIN — la ligne de
--- palier suffit, l'onglet Ambassadeurs la lit. Zéro courriel, comme acté.
+-- PALIER 10 : aucune notification à l'ATHLÈTE (le CHECK de M1 ne porte que
+-- _3 et _5, délibérément) — mais une ALERTE ADMIN, ajoutée le 2026-09-15.
+--
+-- POURQUOI ELLE N'ÉTAIT PAS LÀ, ET POURQUOI ELLE L'EST MAINTENANT. La version
+-- initiale disait « la ligne de palier suffit, l'onglet Ambassadeurs la lit ».
+-- C'était vrai tant que l'écran ne promettait rien. Depuis, la carte du palier
+-- 10 dit à l'athlète que « l'équipe Nexus te contacte dans les prochains
+-- jours » : une promesse faite à un jeune que RIEN ne déclenchait. On ne met
+-- pas ça en production.
+--
+-- ⚠ CE QUE CETTE LIGNE NE SUFFIT PAS À FAIRE — lire docs/ ou le rapport :
+-- `public.admin_notifications` est un TROU NOIR. Deux écrans y écrivent
+-- (demandes d'accès Loi 25 dans ConfidentialiteSection, demandes de transfert
+-- dans TransfertSection) et AUCUN ne la lit. En prod elle porte la RLS
+-- ACTIVÉE avec ZÉRO policy : même un écran admin ne pourrait pas la lire sous
+-- `authenticated`. 35 lignes y dorment déjà.
+-- La trace écrite ici est donc un JOURNAL, pas une alerte. Ce qui tient
+-- réellement la promesse, c'est le marqueur « post IG à faire » de l'onglet
+-- /admin/ambassadeurs, qui lit `ambassadeur_paliers` (policy is_admin()) et
+-- `ambassadeur_suivi.post_ig_le` — deux tables réellement lisibles.
+--
+-- `type` n'a AUCUN check en base (vérifié) : pas de piège à la M1 ici.
+-- `related_user_id` n'a pas de FK non plus — on y met donc le `user_id` du
+-- parrain, PAS son athlete_id, sous peine d'un identifiant qui ne désigne
+-- rien dans la table qu'il prétend référencer.
 --
 -- L'ÉCRITURE DE NOTIFICATION EST ENVELOPPÉE. Une notification ne doit jamais
 -- faire échouer l'action qu'elle annonce. Mais c'est précisément ce qui rend
@@ -97,6 +119,38 @@ begin
             v_palier, v_parrain, sqlerrm;
         end;
       end if;
+
+      -- ── Palier 10 : la trace administrative ──
+      -- Même enveloppe que ci-dessus : une trace ne doit jamais faire échouer
+      -- le franchissement qu'elle documente. Même garde d'idempotence par
+      -- notifie_le — la ligne de palier n'est marquée qu'une fois, donc on
+      -- n'empile pas un rappel à chaque nouvelle recrue au-delà de dix.
+      if v_palier = 10 and exists (
+           select 1 from public.ambassadeur_paliers
+            where athlete_id = v_parrain and palier = 10 and notifie_le is null)
+      then
+        begin
+          insert into public.admin_notifications (type, title, message, related_user_id, read)
+          select 'AMBASSADEUR_ELITE',
+                 'Palier 10 — post IG à faire',
+                 coalesce(a.first_name || ' ' || a.last_name, 'Un athlète')
+                   || ' a atteint 10 recrues confirmées. L''écran lui a promis un contact : '
+                   || 'demander son @ Instagram et préparer le post sur @nexussportsca. '
+                   || 'Suivi dans /admin/ambassadeurs.',
+                 -- user_id, PAS athlete_id : related_user_id designe un compte.
+                 a.user_id,
+                 false
+            from public.athletes a
+           where a.id = v_parrain;
+
+          update public.ambassadeur_paliers
+             set notifie_le = now()
+           where athlete_id = v_parrain and palier = 10;
+        exception when others then
+          raise warning 'ambassadeur_recalculer_paliers: trace admin palier 10 non ecrite pour % (%)',
+            v_parrain, sqlerrm;
+        end;
+      end if;
     end if;
   end loop;
 
@@ -108,6 +162,12 @@ $fn$;
 -- INSERT couvre la confirmation instantanée (concordance forte) ;
 -- UPDATE OF statut couvre l'arbitrage admin — dans les deux sens, puisqu'une
 -- annulation doit faire redescendre le compteur affiché.
+-- `drop if exists` avant le create : sans lui la migration n'est PAS
+-- rejouable — elle passe sur une base vierge (le seul cas qui compte en prod)
+-- mais lève « trigger already exists » dès qu'on la relance en local, ce qui
+-- arrive à chaque fois qu'on corrige la fonction au-dessus. Le coût est nul,
+-- l'aller-retour perdu ne l'est pas.
+drop trigger if exists trg_ambassadeur_paliers on public.ambassadeur_revendications;
 create trigger trg_ambassadeur_paliers
   after insert or update of statut on public.ambassadeur_revendications
   for each row execute function public.ambassadeur_recalculer_paliers();

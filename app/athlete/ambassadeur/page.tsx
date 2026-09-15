@@ -373,7 +373,11 @@ export default function AthleteAmbassadeurPage() {
         <CarteRecompense
           icone={<IconeTrophee />}
           titre="Ambassadeur Élite 🏆"
-          texte="Félicitations — tu fais partie des meilleurs ambassadeurs Nexus. L'équipe Nexus te contacte dans les prochains jours : surveille ton compte IG pour ton post sur @nexussportsca."
+          /* « Écris-nous ton @ » plutôt que « surveille ton IG » : on n'a PAS
+             son handle Instagram, donc on ne peut pas le joindre là-bas. On le
+             lui demande — et la demande crée le premier contact au lieu de le
+             faire attendre un message qui ne viendrait pas. */
+          texte="Félicitations — tu fais partie des meilleurs ambassadeurs Nexus. Écris-nous ton @ Instagram par le chat de ton compte : on prépare ton post sur @nexussportsca."
         />
       )}
 

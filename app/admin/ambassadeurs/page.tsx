@@ -351,7 +351,22 @@ export default function AdminAmbassadeursPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <Case coche={!!a.post_ig_le} onClick={() => cocher(a.athlete_id, "post_ig_le", a.post_ig_le)} />
+                          <div className="flex items-center gap-2">
+                            <Case coche={!!a.post_ig_le} onClick={() => cocher(a.athlete_id, "post_ig_le", a.post_ig_le)} />
+                            {/* CE MARQUEUR EST CE QUI TIENT LA PROMESSE. La carte
+                                du palier 10 dit à l'athlète qu'on le contacte ;
+                                la trace écrite dans admin_notifications par le
+                                trigger n'y suffit pas — cette table est un trou
+                                noir (deux écrans y écrivent, AUCUN ne la lit, et
+                                en prod elle porte la RLS activée sans une seule
+                                policy). Ici on lit `ambassadeur_paliers`, que la
+                                policy is_admin() rend réellement lisible. */}
+                            {a.paliers.includes(10) && !a.post_ig_le && (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#E63946]/15 text-[#E63946]">
+                                À faire
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <Case coche={!!a.chandail_envoye_le} onClick={() => cocher(a.athlete_id, "chandail_envoye_le", a.chandail_envoye_le)} />

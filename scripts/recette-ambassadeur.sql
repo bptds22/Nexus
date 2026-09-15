@@ -704,6 +704,106 @@ exception when raise_exception then
 end $$;
 commit;
 
+-- ═══ SONDE 27 — palier 10 et sa trace administrative ════════════════════
+-- Le seul palier sans notification à l'athlète : son effet est une ALERTE
+-- ADMIN, parce que la carte du palier 10 lui promet un contact.
+\echo '--- S27 palier 10 -> trace admin ---'
+do $$
+declare v_parrain uuid := 'bbbbbbbb-0000-0000-0000-000000000006'; i int;
+begin
+  -- Un parrain neuf + dix filleuls neufs : le palier 10 exige dix confirmées,
+  -- et tous les filleuls existants sont deja pris par les sondes precedentes.
+  insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+                          email_confirmed_at, created_at, updated_at)
+  values (v_parrain, '00000000-0000-0000-0000-000000000000','authenticated','authenticated',
+          'parrain10@recette.local','',now(),now(),now());
+  update public.users set role='ATHLETE', first_name='Parrain', last_name='Dix' where id=v_parrain;
+  insert into public.athletes (id,user_id,first_name,last_name,email,school_id,status,date_naissance)
+  values (v_parrain, v_parrain,'Parrain','Dix','parrain10@recette.local',
+          'aaaaaaaa-0000-0000-0000-000000000001','ACTIF',date '2005-01-01');
+
+  for i in 1..10 loop
+    insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+                            email_confirmed_at, created_at, updated_at)
+    values (('dddddddd-0000-0000-0000-0000000000' || lpad(i::text,2,'0'))::uuid,
+            '00000000-0000-0000-0000-000000000000','authenticated','authenticated',
+            'r'||i||'@recette.local','',now(),now(),now());
+    insert into public.athletes (id,user_id,first_name,last_name,email,school_id,status,date_naissance)
+    values (('dddddddd-0000-0000-0000-0000000000' || lpad(i::text,2,'0'))::uuid,
+            ('dddddddd-0000-0000-0000-0000000000' || lpad(i::text,2,'0'))::uuid,
+            'Recrue', i::text, 'r'||i||'@recette.local',
+            'aaaaaaaa-0000-0000-0000-000000000001','ACTIF',date '2005-01-01');
+    -- INSERT direct : c'est le TRIGGER qu'on teste, pas la RPC (deja couverte).
+    insert into public.ambassadeur_revendications
+      (parrain_athlete_id, prenom, nom, filleul_athlete_id, methode, statut, confirmee_le)
+    values (v_parrain,'Recrue',i::text,
+            ('dddddddd-0000-0000-0000-0000000000' || lpad(i::text,2,'0'))::uuid,
+            'admin','CONFIRMEE',now());
+  end loop;
+end $$;
+
+do $$
+declare v_p int; v_notif record; v_uid uuid; v_athlete_notif int;
+begin
+  select count(*) into v_p from public.ambassadeur_paliers
+   where athlete_id='bbbbbbbb-0000-0000-0000-000000000006';
+  if v_p <> 3 then raise exception 'S27 KO: % paliers au lieu de 3 (3,5,10)', v_p; end if;
+
+  select * into v_notif from public.admin_notifications
+   where type='AMBASSADEUR_ELITE'
+     and related_user_id='bbbbbbbb-0000-0000-0000-000000000006';
+  if v_notif.id is null then raise exception 'S27 KO: aucune trace admin pour le palier 10'; end if;
+  if v_notif.title <> 'Palier 10 — post IG à faire' then
+    raise exception 'S27 KO: titre = « % »', v_notif.title;
+  end if;
+  if v_notif.message not ilike '%nexussportsca%' or v_notif.message not ilike '%Instagram%' then
+    raise exception 'S27 KO: le message ne dit pas quoi faire : %', v_notif.message;
+  end if;
+
+  -- related_user_id doit designer un COMPTE, pas une fiche.
+  select user_id into v_uid from public.athletes where id='bbbbbbbb-0000-0000-0000-000000000006';
+  if v_notif.related_user_id is distinct from v_uid then
+    raise exception 'S27 KO: related_user_id=% n''est pas le user_id du parrain (%)',
+      v_notif.related_user_id, v_uid;
+  end if;
+
+  -- L'athlete, lui, ne recoit RIEN au palier 10 (decision : c'est une alerte
+  -- interne ; sa carte a l'ecran suffit).
+  select count(*) into v_athlete_notif from public.athlete_notifications
+   where athlete_id='bbbbbbbb-0000-0000-0000-000000000006'
+     and type like 'AMBASSADEUR%' and type not in ('AMBASSADEUR_PALIER_3','AMBASSADEUR_PALIER_5');
+  if v_athlete_notif <> 0 then raise exception 'S27 KO: % notification(s) athlete au palier 10', v_athlete_notif; end if;
+
+  raise notice 'S27 OK — palier 10, trace admin « % », related_user_id = compte du parrain', v_notif.title;
+end $$;
+
+-- Idempotence : un 11e filleul ne doit PAS reecrire la trace.
+do $$
+declare v_avant int; v_apres int;
+begin
+  select count(*) into v_avant from public.admin_notifications where type='AMBASSADEUR_ELITE';
+  insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+                          email_confirmed_at, created_at, updated_at)
+  values ('dddddddd-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000000',
+          'authenticated','authenticated','r11@recette.local','',now(),now(),now());
+  insert into public.athletes (id,user_id,first_name,last_name,email,school_id,status,date_naissance)
+  values ('dddddddd-0000-0000-0000-000000000011','dddddddd-0000-0000-0000-000000000011',
+          'Recrue','11','r11@recette.local','aaaaaaaa-0000-0000-0000-000000000001','ACTIF',date '2005-01-01');
+  insert into public.ambassadeur_revendications
+    (parrain_athlete_id, prenom, nom, filleul_athlete_id, methode, statut, confirmee_le)
+  values ('bbbbbbbb-0000-0000-0000-000000000006','Recrue','11',
+          'dddddddd-0000-0000-0000-000000000011','admin','CONFIRMEE',now());
+  select count(*) into v_apres from public.admin_notifications where type='AMBASSADEUR_ELITE';
+  if v_apres <> v_avant then
+    raise exception 'S27b KO: la trace admin est REECRITE a chaque recrue (% -> %)', v_avant, v_apres;
+  end if;
+  raise notice 'S27b OK — une 11e recrue ne rejoue pas la trace (idempotence par notifie_le)';
+end $$;
+
+-- Nettoyage propre a cette sonde (la trace admin n'a pas de FK).
+delete from public.admin_notifications
+ where type='AMBASSADEUR_ELITE' and related_user_id='bbbbbbbb-0000-0000-0000-000000000006';
+
 \echo ''
 \echo '════════ TOUTES LES SONDES SONT PASSEES ════════'
 \echo ''
