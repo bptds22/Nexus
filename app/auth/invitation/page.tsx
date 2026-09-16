@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SignupContactLink } from "@/components/auth/signup/SignupExitLinks";
 import NexusLogo from "@/components/ui/NexusLogo";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
@@ -111,6 +112,9 @@ function InvalidCard({ reason }: { reason: string }) {
       <Link href="/auth" className="inline-block text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors">
         Retour à la page de connexion →
       </Link>
+      {/* Les deux états passent par ici. Celui qui compte est « révoquée » :
+          l'invité ne peut rien y faire seul, il lui faut un humain. */}
+      <SignupContactLink className="pt-1" />
     </div>
   );
 }

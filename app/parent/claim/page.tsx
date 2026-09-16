@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
-import SignupExitLinks from "@/components/auth/signup/SignupExitLinks";
+import SignupExitLinks, { SignupContactLink } from "@/components/auth/signup/SignupExitLinks";
 import NexusLogo from "@/components/ui/NexusLogo";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
@@ -246,6 +246,10 @@ function ParentClaimContent() {
           <Link href="/auth" className="inline-block text-[13px] font-bold text-[#E63946] hover:text-white transition-colors">
             Aller à la connexion
           </Link>
+          {/* Recours humain. RESOLVE_MSG.expired dit déjà « Contactez-nous »
+              (l.40) sans donner d'adresse : un parent sans compte n'a rien à
+              faire du lien de connexion ci-dessus. */}
+          <SignupContactLink className="pt-1" />
         </div>
       </Shell>
     );

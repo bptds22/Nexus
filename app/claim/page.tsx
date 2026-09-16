@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { signUp } from "@/lib/supabase/auth.actions";
-import SignupExitLinks from "@/components/auth/signup/SignupExitLinks";
+import SignupExitLinks, { SignupContactLink } from "@/components/auth/signup/SignupExitLinks";
 import { isUnder14 } from "@/lib/legal/ageGate";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import NexusLogo from "@/components/ui/NexusLogo";
@@ -251,6 +251,9 @@ function ClaimContent() {
           <Link href="/auth" className="inline-block text-[13px] font-bold text-[#E63946] hover:text-white transition-colors">
             Aller à la connexion
           </Link>
+          {/* Jumeau de /parent/claim : un athlète dont le lien d'invitation a
+              expiré n'a pas de compte — la connexion ne lui sert à rien. */}
+          <SignupContactLink className="pt-1" />
         </div>
       </Shell>
     );
