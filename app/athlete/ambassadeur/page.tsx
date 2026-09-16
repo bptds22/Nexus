@@ -18,6 +18,18 @@ import {
    d'accès est entièrement héritée du layout : session, rôle, onboarding,
    désactivation, maintenance. Rien à écrire ici.
 
+   ⚠ ET `nx-mobile-pb-tabbar` SUR LES DEUX CONTENEURS RACINES (2026-09-16).
+   Sans branche IS_CAPACITOR, cette page rend son markup web sur l'appareil —
+   où la MobileTabBar est en position fixe par-dessus. `pb-8` (32px) ne suffit
+   pas à la dégager : « Mes déclarations » passait dessous, sans moyen de
+   défiler plus bas. La classe (app/globals.css, miroir JS TABBAR_HEIGHT dans
+   lib/config/mobileTokens.ts) réserve `64px + safe-area-inset-bottom`.
+
+   LES DEUX COHABITENT, ce n'est pas un doublon : la classe dégage la barre,
+   `pb-8` donne la respiration au-dessus. Même combinaison que
+   /athlete/visibilite:71, la page de référence pour ce cas.
+   Ne jamais écrire le 64 en dur ici — il vit à un seul endroit.
+
    ── CE QUE CET ÉCRAN NE MONTRE JAMAIS ───────────────────────────────────────
    L'identité de la personne trouvée. La liste affiche le prénom et le nom que
    L'ATHLÈTE A TAPÉS — il ne peut donc rien y apprendre. C'est la raison d'être
@@ -244,7 +256,7 @@ export default function AthleteAmbassadeurPage() {
 
   if (chargement) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar">
         <div className="h-40 flex items-center justify-center">
           <div className="w-7 h-7 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
         </div>
@@ -255,7 +267,7 @@ export default function AthleteAmbassadeurPage() {
   const n = tableau?.confirmes ?? 0;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar">
       <header className="mb-6 nx-safe-top">
         <h1 className="font-head text-[26px] font-black text-white uppercase tracking-tight">
           Ambassadeur

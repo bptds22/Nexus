@@ -49,8 +49,14 @@ export default function AthleteTransfertPage() {
        son haut. Cette page-ci n'a pas de branche IS_CAPACITOR — c'est
        délibéré — donc elle rend le markup web tel quel sur l'appareil, et son
        titre entrait dans la barre de statut iOS. Garder py-8 empilerait le
-       padding haut par-dessus la safe-area. */
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8">
+       padding haut par-dessus la safe-area.
+
+       Et `nx-mobile-pb-tabbar` pour le BAS, par la même logique (2026-09-16) :
+       rendre le markup web sur l'appareil, c'est aussi hériter de la
+       MobileTabBar fixe qui recouvre les 64px du bas. Le défaut a été constaté
+       sur /athlete/ambassadeur, calquée sur cette page-ci ; il était donc ici
+       aussi, simplement invisible parce que le contenu est plus court. */
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar">
       <header className="mb-6 nx-safe-top">
         <h1 className="font-head text-[26px] font-black text-white uppercase tracking-tight">
           Mon équipe
