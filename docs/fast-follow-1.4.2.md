@@ -646,3 +646,157 @@ clients passeront alors de « ✕ Refusée » à « ⏳ En attente » **sans un 
 changement de code**, puisqu'ils rendent le statut du serveur. C'est
 exactement ce que cette forme achète — et la raison de ne plus jamais câbler
 un état côté client.
+
+---
+
+## 24. PROGRAMME AMBASSADEUR — l'activation du badge est COUPLÉE au ship 1.4.2
+
+**Décision BP, 2026-09-15.** Consignée ici plutôt que laissée à la mémoire de
+qui aura appliqué les migrations : le backend est **déjà en production** depuis
+ce jour (M1→M9, neuf migrations appliquées), et rien à l'écran ne le montre.
+C'est un état intermédiaire volontaire, pas un travail inachevé.
+
+### La règle
+
+> **Activation du badge = jour du ship 1.4.2. Les deux ensemble.**
+
+`public.badges` porte la ligne `ambassadeur` en **`actif = false`**. Tant que ce
+booléen est faux, `badgesPourSport()` (`lib/config/badgeCatalogue.ts:209`) le
+filtre et **aucun des sept pickers ne le propose** — coach web, admin, athlète,
+et surtout **le binaire mobile en magasin**, qui lit ce catalogue à chaque
+ouverture et que personne ne peut corriger à distance.
+
+Le passer à `true` est un `update` d'une ligne. **Ne pas le faire avant le ship
+1.4.2**, et le faire **le même jour**, pas la veille.
+
+### Pourquoi le couplage, et pas « dès que c'est prêt »
+
+L'UI mobile Ambassadeur entre au lot 1.4.2. Activer le badge avant que ce
+binaire soit en magasin donnerait un badge que des athlètes peuvent gagner et
+voir sur leur fiche, mais dont l'écran qui l'explique n'existe pas encore sur
+leur téléphone. Le badge arriverait sans son mode d'emploi.
+
+### Ce qui est DÉJÀ en production (ne pas le refaire)
+
+- Les 4 tables `ambassadeur_*`, RLS activée, **zéro droit pour `anon`**.
+- Les 5 fonctions : `ambassadeur_revendiquer`, `ambassadeur_mon_tableau`,
+  `ambassadeur_basculer_badge`, `ambassadeur_admin_trancher`,
+  `ambassadeur_recalculer_paliers` (+ `nexus_normaliser_nom`,
+  `masquer_courriel`).
+- Les extensions `fuzzystrmatch` et `unaccent` dans le schéma `extensions`.
+- Le trigger `trg_ambassadeur_paliers` et le job `ambassadeur-purge-hebdo`
+  (lundi 08:10 UTC).
+- `athlete_notifications.type` accepte `AMBASSADEUR_PALIER_3` et `_5`.
+- `athlete_badges.origine` accepte `'systeme'`, et `appliquer_badges_saisie`
+  **exclut cette origine de son remplacement** — sans quoi le picker admin
+  retirerait le badge au premier enregistrement.
+
+### Le contrat solidaire à ne pas casser
+
+`lib/queries/shared/athleteBadges.ts` verse `'systeme'` dans `autres`
+(verrouillé, non éditable). **Ce fichier et la clause `ab.origine <> 'systeme'`
+de `appliquer_badges_saisie` ne se séparent pas** : l'un sans l'autre perd le
+badge, silencieusement, au premier enregistrement du picker. C'est le piège
+payé le 2026-08-26 puis le 2026-08-27, et évité d'avance la troisième fois.
+
+### Le lot 1.4.2 tel qu'il se dessine
+
+UI mobile Ambassadeur · deep-link push relance · fix scroll · pastille coach
+web ×2 · archivage par participant · §15 · f3.
+
+### ⚠ AMENDEMENT DU 2026-09-16 — `actif = false` NE GARDE PLUS LE BADGE DORMANT
+
+Ce qui précède a été écrit la veille de la migration **M10**
+(`ambassadeur_badge_auto_palier5`, appliquée en production le 2026-09-16). M10
+change la donne, et la règle du couplage doit se relire à sa lumière.
+
+**Ce que M10 fait :** au palier 5, le trigger `ambassadeur_recalculer_paliers`
+**pose le badge tout seul**, en `origine = 'systeme'`, dès qu'il reste une
+place sur la ligne de cinq. Ligne pleine : pas de pose, et la notification du
+palier invite l'athlète à libérer une place.
+
+**Ce que `actif = false` masque, et ce qu'il ne masque pas.** Vérifié le
+2026-09-16, code à l'appui :
+
+| | |
+|---|---|
+| Les 7 pickers (coach, admin, athlète, **binaire mobile**) | **masqué** — `badgesPourSport()` filtre sur `b.actif` (`badgeCatalogue.ts:213`) |
+| La pose automatique de M10 | **PAS masquée** — le trigger ne lit jamais `badges.actif` |
+| `ambassadeur_basculer_badge()` | **PAS masquée** — `select id from badges where code='ambassadeur'`, sans clause sur `actif` |
+| L'affichage sur la fiche et l'aperçu recruteur | **PAS masqué** — `badgesDepuisRaw()` ne filtre que `retire_le` |
+
+**Conséquence, et elle est ASSUMÉE (décision BP, 2026-09-16) : un athlète qui
+atteint 5 recrues confirmées AVANT le ship 1.4.2 reçoit son badge, le voit sur
+sa fiche, et les recruteurs le voient aussi.** Rien ne l'en empêche, et on ne
+cherche pas à l'en empêcher — un badge gagné est un badge gagné.
+
+**Ce que devient « l'activation du jour J » :** une **annonce marketing + la
+mise en magasin de l'UI mobile**, pas un interrupteur technique. Le `update`
+de `badges.actif` à `true` ne fait plus qu'une chose — rouvrir le badge aux
+pickers, c'est-à-dire permettre à un coach ou à un admin de l'attribuer à la
+main. Ce n'est plus lui qui décide si le badge existe pour les athlètes.
+
+La règle du §24 reste donc utile, mais pour une autre raison qu'annoncée : ne
+pas ouvrir l'attribution manuelle avant que l'écran qui l'explique soit en
+magasin. Le badge, lui, est déjà vivant.
+
+---
+
+## 25. Les 20 recruteurs non vérifiés — REVUE FONDATEUR, clos sans code
+
+**Décision BP, 2026-09-15. Ce point est CLOS : il ne donne lieu à aucun
+développement.**
+
+### Le constat, pour mémoire
+
+`trg_check_recruiter_domain` (actif sur `public.users`) écrit une ligne
+`admin_notifications` de type `RECRUITER_VERIFICATION` à chaque inscription de
+recruteur dont le domaine n'est pas dans `cegep_email_domains` — et **ne bloque
+rien** : `RETURN NEW` dans tous les cas. La « vérification manuelle requise »
+n'est donc pas une porte, c'est une note.
+
+Mesuré le 2026-09-15 : **35 lignes, toutes non lues**, du 2026-05-26 au
+2026-09-02 ; 24 pointent un compte supprimé (`related_user_id` n'a aucune FK).
+Côté population : **21 recruteurs ACTIF, dont 20 sur un domaine non reconnu**.
+
+Aucune de ces 35 lignes n'est une demande d'accès Loi 25 ni un transfert —
+contrairement à ce qu'un premier diagnostic avait supposé en lisant le code
+sans regarder le contenu.
+
+### La décision
+
+Les 20 comptes sont **revus à la main par BP** (revue fondateur). Le
+mini-chantier `admin_notifications` — policy `is_admin()`, écran de lecture,
+FK sur `related_user_id` — **n'est pas ouvert**.
+
+### Ce qui reste vrai et qu'il faudra savoir si le sujet rouvre
+
+`public.admin_notifications` est **écrite par trois chemins** (le trigger
+ci-dessus, `ConfidentialiteSection.tsx:37`, `TransfertSection.tsx:113`) et
+**lue par aucun écran**. En prod, RLS activée + zéro policy : même un écran
+admin ne pourrait pas la lire sous `authenticated`. Le trigger continue de la
+remplir. Si un jour quelque chose de conséquent doit y atterrir — une demande
+Loi 25, par exemple — **il faudra ouvrir la boîte avant d'y écrire**.
+
+C'est d'ailleurs pour cette raison que la trace du palier 10 ambassadeur
+(§24) ne repose PAS dessus : ce qui tient la promesse faite à l'athlète est le
+marqueur « À faire » de `/admin/ambassadeurs`, qui lit `ambassadeur_paliers`.
+
+---
+
+## 26. Environnement de test local Ambassadeur — laissé en place, clos
+
+**Décision BP, 2026-09-15.** Aucun nettoyage requis.
+
+Restent volontairement en vie sur la machine de BP :
+- le serveur Next de test sur **3007**, branché sur le **Docker local** par des
+  variables de shell (`.env.local.docker`), `.env.local` non modifié ;
+- les fixtures **`@demo.local`** de la base locale (9 athlètes, une école et
+  une équipe de démo, une identité de service) ;
+- la pile Docker Supabase.
+
+Ces fixtures sont **locales et jetables**. Elles ne touchent pas le cloud.
+Les scripts qui les posent et les retirent sont au dépôt :
+`scripts/seed-demo-ambassadeur.sql` et `scripts/recette-ambassadeur.sql` — ce
+dernier est **étanche** (il ne touche que ses propres lignes `@recette.local`)
+et peut donc tourner à côté du jeu de démo sans l'effacer.
