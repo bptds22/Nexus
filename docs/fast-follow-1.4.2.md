@@ -800,3 +800,72 @@ Les scripts qui les posent et les retirent sont au dépôt :
 `scripts/seed-demo-ambassadeur.sql` et `scripts/recette-ambassadeur.sql` — ce
 dernier est **étanche** (il ne touche que ses propres lignes `@recette.local`)
 et peut donc tourner à côté du jeu de démo sans l'effacer.
+
+---
+
+## 27. « Confirm email » reste OFF — l'item #34 de l'audit est CLOS, pas reporté
+
+**Décision produit BP, 2026-09-16.** La confirmation de courriel à
+l'inscription **ne sera pas activée**. Ce n'est pas un report, pas une dette
+en attente de fenêtre : c'est un arbitrage assumé. Toute note antérieure
+présentant l'item **#34** de l'audit sécurité comme une dette « HAUTE » est
+**périmée** — l'item est clos par cette décision.
+
+Conséquence directe, et elle est visible en base : GoTrue auto-confirme.
+Relevé du 2026-09-16 sur `auth.users`, 45 derniers jours :
+
+```
+comptes_recents                   : 203
+jamais_confirmes                  : 0
+confirmes_instantanement (< 2 s)  : 203
+confirmes_plus_tard               : 0
+```
+
+**Le SMTP est DÉJÀ branché — et le goulot n'était pas là.** Vérifié au
+dashboard le 2026-09-16 : *Enable Custom SMTP* est actif depuis ~juillet 2026,
+sur `smtp.resend.com:465`, username `resend`, expéditeur `info@nexussports.ca`.
+Les courriels d'auth ne sont donc pas partis par le SMTP intégré depuis des
+mois.
+
+Ce qui plafonnait réellement était **le limiteur de Supabase, pas celui de
+Resend** : `Auth → Rate Limits → Emails sent per hour` était resté à son
+défaut de **30/h**, indépendant de la capacité du transporteur. **Relevé à
+80/h le 2026-09-16.** La leçon vaut au-delà de ce cas : brancher un SMTP
+performant ne sert à rien tant que le limiteur en amont n'est pas relevé — le
+plafond effectif est le **minimum des deux**, et seul celui de Supabase est
+silencieux.
+
+⚠ Toute note antérieure de ce registre ou d'un rapport de session présentant
+le branchement Resend comme « à faire » est **périmée**. L'ancienne rédaction
+de ce paragraphe en faisait partie.
+
+### Le filet `identities` reste en place — inerte, et correct
+
+Les fixes posés le 2026-09-16 sur `/claim` et `/parent/claim` détectent le cas
+« compte déjà existant » par **deux chemins**, parce que GoTrue en rend deux
+selon ce réglage (JSDoc de `signUp`, `@supabase/auth-js`) :
+
+| réglage | ce que rend `signUp` | chemin qui sert |
+|---|---|---|
+| Confirm email **OFF** — aujourd'hui | erreur `user_already_exists` | le chemin d'erreur |
+| Confirm email **ON** | user obfusqué, `identities` vide | le test `identities` |
+
+Le second est **mort tant que la décision tient**. Il reste au code
+délibérément : il ne coûte rien, il documente le comportement réel de GoTrue,
+et il évite qu'une réactivation future — la décision peut changer, les
+décisions changent — rouvre en silence un trou où l'athlète voit un message
+neutre suivi d'une redirection vers l'onboarding d'un compte qui n'est pas le
+sien. **Ne pas le retirer en croyant nettoyer du code mort.**
+
+### La page `/auth/verification-email` n'a jamais eu d'appelant
+
+Constat du balayage du 2026-09-16, à ne pas confondre avec une conséquence de
+la décision : cette page est orpheline **depuis sa création**. Aucun
+`router.push`, aucun lien, aucun `emailRedirectTo` ne l'a jamais visée — le
+seul commit qui mentionne sa route (`d5073cb`) ne fait qu'ajouter une ligne
+d'inventaire dans `docs/audits/mobile-scope-inventory.md`. Les six surfaces
+d'inscription redirigent toutes directement vers l'onboarding ou le tableau de
+bord.
+
+Son sort est traité à part ; la décision ci-dessus ne fait que retirer la
+dernière raison hypothétique de la garder.

@@ -42,7 +42,6 @@ Pages d'authentification — accessibles sans session active. Quelques-unes (inv
 | [app/auth/page.tsx](app/auth/page.tsx) | C | Login + signup (tab toggle) | non |
 | [app/auth/pro/page.tsx](app/auth/pro/page.tsx) | C | Signup flow Pro (Stripe à venir) — « Rejoins Nexus » | non |
 | [app/auth/pending/page.tsx](app/auth/pending/page.tsx) | C | État d'attente après signup (vérif email / approbation admin) | non |
-| [app/auth/verification-email/page.tsx](app/auth/verification-email/page.tsx) | C | Confirmation après envoi email de vérification | non |
 | [app/auth/reinitialiser/page.tsx](app/auth/reinitialiser/page.tsx) | C | Reset password (lien email) | non |
 | [app/auth/invite/page.tsx](app/auth/invite/page.tsx) | C | Accept invitation user (lien token) | non |
 | [app/auth/invite-admin/page.tsx](app/auth/invite-admin/page.tsx) | C | Accept invitation admin (lien token) | non |
