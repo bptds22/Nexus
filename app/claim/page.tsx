@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { signUp } from "@/lib/supabase/auth.actions";
+import SignupExitLinks from "@/components/auth/signup/SignupExitLinks";
 import { isUnder14 } from "@/lib/legal/ageGate";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import NexusLogo from "@/components/ui/NexusLogo";
@@ -335,6 +336,10 @@ function ClaimContent() {
         {!isMinor && age === null && (
           <p className="text-[11px] text-[#6b7280] text-center">Indique ta date de naissance pour continuer.</p>
         )}
+
+        {/* Porte de sortie — permanente, jamais conditionnelle (cf. le
+            composant : un affichage conditionnel serait un oracle). */}
+        <SignupExitLinks className="pt-1" />
       </div>
     </Shell>
   );

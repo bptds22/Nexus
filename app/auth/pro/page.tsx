@@ -361,6 +361,8 @@ function ProSignupContent() {
             <p className="font-sans text-sm text-[#9CA3AF] text-center mt-6">
               Déjà un compte?{" "}
               <Link href="/auth" className="text-[#9CA3AF] font-bold hover:text-[#E63946] transition-colors">Se connecter</Link>
+              <span className="mx-1.5 text-[#4a4d56]">·</span>
+              <Link href="/mot-de-passe-oublie" className="text-[#9CA3AF] font-bold hover:text-[#E63946] transition-colors">Mot de passe oublié?</Link>
             </p>
           </div>
         </div>

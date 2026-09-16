@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
+import SignupExitLinks from "@/components/auth/signup/SignupExitLinks";
 import NexusLogo from "@/components/ui/NexusLogo";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
@@ -155,7 +156,10 @@ function ParentClaimContent() {
       // (identities vide) + session null, SANS erreur. On bascule vers "Se connecter".
       if ((signUpData.user?.identities?.length ?? 0) === 0) {
         setExistingAccount(true);
-        setFormError("Un compte existe déjà avec ce courriel. Connectez-vous pour lier votre enfant.");
+        // Message NEUTRE, emprunté à la table canonique : il doit être
+        // indiscernable de celui d'une inscription légitime en attente.
+        // Décision BP 2026-09-16 — l'anti-énumération vaut partout.
+        setFormError(translateAuthError("User already registered"));
         setSubmitting(false);
         return;
       }
@@ -238,7 +242,7 @@ function ParentClaimContent() {
         <div>
           <label className={labelCls}>Mot de passe</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder={existingAccount ? "Mot de passe de votre compte" : "Au moins 8 caractères"} className={inputCls} />
+            placeholder="Au moins 8 caractères" className={inputCls} />
         </div>
         {!existingAccount && (
           <div>
@@ -275,6 +279,9 @@ function ParentClaimContent() {
             {submitting ? "Création…" : "Créer mon compte parent"}
           </button>
         )}
+
+        {/* Porte de sortie — permanente, jamais conditionnelle. */}
+        <SignupExitLinks className="pt-1" />
       </div>
     </Shell>
   );
