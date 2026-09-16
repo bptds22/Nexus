@@ -91,11 +91,60 @@ const CONTRAINTES: Record<string, string> = {
   team_events_lieu_check: "Le lieu de l'événement dépasse 40 caractères — raccourcis-le.",
 };
 
+/** Le message d'une erreur, QUELLE QUE SOIT SA FORME.
+ *
+ *  ── LE DÉFAUT QUE CETTE FONCTION CORRIGE (2026-09-16) ───────────────────
+ *  La ligne d'avant était `e instanceof Error ? e.message : String(e)`, et
+ *  elle partait d'une hypothèse fausse : qu'une erreur de Supabase est une
+ *  `Error`. Elle ne l'est pas. `@supabase/postgrest-js` ne construit une
+ *  vraie `PostgrestError` que sous `.throwOnError()` — que nous n'utilisons
+ *  NULLE PART, tous nos appels étant de la forme `const { error } = await …`.
+ *  Hors de ce cas, `error` est le corps de la réponse tel que parsé :
+ *
+ *      error = JSON.parse(body);        // dist/index.cjs l.145
+ *      else error = { message: body };  // l.156  — un OBJET NU
+ *
+ *  `instanceof Error` valait donc `false`, `String(e)` rendait
+ *  « [object Object] », et tout ce qui suit s'effondrait en silence : ni
+ *  PLAFOND ni surtout MARQUEUR ne pouvaient plus reconnaître quoi que ce
+ *  soit. Le message « NEXUS: tu as atteint la limite de recherches pour
+ *  aujourd'hui » de `ambassadeur_revendiquer` arrivait à l'athlète sous la
+ *  forme « [object Object] ».
+ *
+ *  ⚠ LE PIÈGE, POUR QUI RELIRA : la déclaration de types dit
+ *  `class PostgrestError extends Error`. C'est exact et sans rapport — cette
+ *  classe n'est instanciée que sur le chemin `throwOnError`. Lire le `.d.ts`
+ *  suffisait à se convaincre du contraire. Il a fallu lire le `.cjs`.
+ *
+ *  ── L'ORDRE, QUI COMPTE ─────────────────────────────────────────────────
+ *  1. une chaîne EST déjà le message ;
+ *  2. un objet porteur d'un `message` texte non vide : c'est lui (couvre
+ *     l'objet nu de PostgREST, `StorageError`, et toute `Error`) ;
+ *  3. un objet sans message : `JSON.stringify` tronqué, pour qu'il reste
+ *     quelque chose à lire dans un journal plutôt qu'« [object Object] ».
+ *     Tronqué à 300 : un corps d'erreur PostgREST entier n'a rien à faire
+ *     sur un écran d'athlète.
+ *  4. le reste (number, null, undefined, symbol) : `String()`, qui les rend
+ *     correctement. */
+function messageBrut(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object") {
+    const m = (e as { message?: unknown }).message;
+    if (typeof m === "string" && m) return m;
+    try {
+      return JSON.stringify(e).slice(0, 300);
+    } catch {
+      /* Référence cyclique : on retombe sur String(), ci-dessous. */
+    }
+  }
+  return String(e);
+}
+
 /** Traduit une erreur RLS/permission ou de plafond en message actionnable, et
  *  ajoute l'avertissement « ne recharge pas » quand des lignes ont déjà été
  *  supprimées. Sinon renvoie l'erreur telle quelle. */
 export function friendlyDbError(e: unknown): Error {
-  const msg = e instanceof Error ? e.message : String(e);
+  const msg = messageBrut(e);
   const code = (e as { code?: string; statusCode?: string })?.code;
   const status = (e as { statusCode?: string })?.statusCode;
   const quoi = (e as ErreurApresSuppression)?.nexusApresSuppression;
