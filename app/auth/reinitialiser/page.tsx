@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { translateAuthError } from "@/lib/utils/translateAuthError";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
@@ -90,7 +91,37 @@ function ResetPasswordContent() {
     setLoading(false);
 
     if (updateError) {
-      setError("Impossible de réinitialiser le mot de passe. Le lien a peut-être expiré — redemande un courriel de réinitialisation.");
+      /* AVANT (2026-09-16) : cette branche JETAIT `updateError` — ni
+         `.message` ni `.code` n'étaient lus — et rendait la phrase « lien
+         expiré » pour TOUTE erreur. Réutiliser son ancien mot de passe
+         affichait donc « redemande un courriel de réinitialisation » à
+         quelqu'un qui venait d'en ouvrir un. Le message n'était pas
+         mal traduit : il n'était pas regardé.
+
+         Trois étages, du plus sûr au plus flou :
+         1. `.code === "same_password"` — le signal serveur, insensible à
+            toute reformulation du message (union ErrorCode d'auth-js) ;
+         2. la table canonique, quand elle RECONNAÎT le message : on le
+            détecte au fait qu'elle rend autre chose que son entrée, donc
+            sans recopier ses motifs ici ;
+         3. sinon la phrase « lien expiré ». Ce repli est délibéré :
+            `recoveryReady` n'est établi qu'AU MONTAGE, et le listener
+            `onAuthStateChange` ne pose jamais `false` — une session qui
+            expire ENTRE l'arrivée et le submit laisse le formulaire
+            déverrouillé. L'erreur de session atterrit donc ici, et la
+            phrase y est juste. */
+      const codeErreur = (updateError as { code?: string }).code;
+      const brut = updateError.message || "";
+      const traduit = translateAuthError(brut);
+
+      if (codeErreur === "same_password") {
+        // Même source de vérité que la table, sans dupliquer sa chaîne.
+        setError(translateAuthError("New password should be different from the old password"));
+      } else if (traduit !== brut) {
+        setError(traduit);
+      } else {
+        setError("Impossible de réinitialiser le mot de passe. Le lien a peut-être expiré — redemande un courriel de réinitialisation.");
+      }
       return;
     }
     setSubmitted(true);
