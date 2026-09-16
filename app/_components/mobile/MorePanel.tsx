@@ -77,6 +77,12 @@ const Icons = {
   cegep: <svg {...I_PROPS}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" /></svg>,
   recruteurs: <svg {...I_PROPS}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
   users: <svg {...I_PROPS}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
+  /* Ambassadeur — « une personne + » : recopiée VERBATIM du menu desktop
+     (app/athlete/layout.tsx:110-113). I_PROPS porte déjà les mêmes attributs
+     (18×18, strokeWidth 2, round), donc les tracés suffisent. Volontairement
+     distincte de `users` et `recruteurs`, qui montrent DEUX personnes : ici
+     l'athlète amène quelqu'un, il ne consulte pas un groupe. */
+  ambassadeur: <svg {...I_PROPS}><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>,
   stats: <svg {...I_PROPS}><path d="M18 20V10M12 20V4M6 20v-6" /></svg>,
   layers: <svg {...I_PROPS}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>,
   shield: <svg {...I_PROPS}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
@@ -411,6 +417,17 @@ export default function MorePanel({
             // paramètres, il a maintenant sa route à lui — même composant
             // (MonEquipeSection), même URL des deux côtés.
             { key: "transfert", label: "Mon équipe", href: "/athlete/transfert", icon: Icons.users },
+            /* Ambassadeur — SANS pastille, et ce n'est pas un oubli. La règle
+               est déjà écrite côté desktop (app/athlete/layout.tsx:104-107) :
+               les pastilles existantes signalent quelque chose à TRAITER
+               (messages non lus, suggestions, invitations) ; en poser une pour
+               un compteur qui ne demande aucune action banaliserait les autres.
+
+               ⚠ CETTE ENTRÉE NE DOIT EXISTER QUE DANS CE FICHIER. Ne pas
+               l'ajouter à MobileTabBar : la barre est à cinq slots pleins, et
+               `recherche-cegep` a déjà fait l'aller-retour panel ↔ onglet en
+               laissant un doublon derrière lui. */
+            { key: "ambassadeur", label: "Ambassadeur", href: "/athlete/ambassadeur", icon: Icons.ambassadeur },
           { key: "notifications", label: "Notifications", href: "/athlete/notifications", icon: Icons.bell, badge: actBadge },
         ],
       },
