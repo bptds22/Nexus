@@ -14,6 +14,7 @@ import * as React from "react";
 import RealCampusSection from "@/components/program-page/CampusSection";
 import PreviewShell, { useDebounced } from "./PreviewShell";
 import { campusContent } from "./pageBridge";
+import { COURRIEL_SUPPORT, MAILTO_SUPPORT } from "@/lib/config/contact";
 import { SUGG } from "./fixture";
 import { langueDeSchool, reseauDeSchool } from "@/lib/queries/schoolPage/dbToProgramPage";
 import { useEditor } from "./editorContext";
@@ -117,7 +118,7 @@ export default function CampusSection() {
                 {ligne2 && <span>{ligne2}</span>}
               </div>
             )}
-            <div className="note" style={{ marginTop: 8 }}>Fiche + carte affichées dans l'aperçu → rendu réel. Une erreur ? → <a href="mailto:info@nexussports.ca" style={{ color: "var(--warn)", fontWeight: 700, textDecoration: "none" }}>info@nexussports.ca</a></div>
+            <div className="note" style={{ marginTop: 8 }}>Fiche + carte affichées dans l'aperçu → rendu réel. Une erreur ? → <a href={MAILTO_SUPPORT} style={{ color: "var(--warn)", fontWeight: 700, textDecoration: "none" }}>{COURRIEL_SUPPORT}</a></div>
           </div>
           )}
 

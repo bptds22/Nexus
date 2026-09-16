@@ -6,6 +6,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
 import { createClient } from "@/lib/supabase/client";
+import { COURRIEL_SUPPORT, MAILTO_SUPPORT } from "@/lib/config/contact";
 
 import { notFound } from "next/navigation";
 /* ─────────────────────────────────────────────────────────────────
@@ -39,8 +40,8 @@ const CONTACT_INFO = [
   },
   {
     label: "Courriel",
-    value: "info@nexussports.ca",
-    href: "mailto:info@nexussports.ca",
+    value: COURRIEL_SUPPORT,
+    href: MAILTO_SUPPORT,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -270,8 +271,8 @@ export default function ContactPage() {
                         </svg>
                         <p className="font-sans text-[13px] text-white leading-relaxed">
                           Échec de l&apos;envoi. Réessayez ou écrivez-nous directement à{" "}
-                          <a href="mailto:info@nexussports.ca" className="text-wl-red hover:underline">
-                            info@nexussports.ca
+                          <a href={MAILTO_SUPPORT} className="text-wl-red hover:underline">
+                            {COURRIEL_SUPPORT}
                           </a>
                           .
                         </p>

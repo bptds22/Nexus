@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { COURRIEL_SUPPORT, MAILTO_SUPPORT } from "@/lib/config/contact";
 import { useMessages, type MessageRow } from "@/lib/queries/recruiter/useMessages";
 import { useSendMessage } from "@/lib/queries/recruiter/useSendMessage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -180,8 +181,8 @@ function ReadOnlyNotice({ compact = false }: { compact?: boolean }) {
       </svg>
       <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
         Ce fil ne reçoit pas de réponse. Pour joindre l&apos;équipe Nexus, écris à{" "}
-        <a href="mailto:support@nexussports.ca" className="font-semibold text-[#e0e0e0] hover:text-white underline underline-offset-2">
-          support@nexussports.ca
+        <a href={MAILTO_SUPPORT} className="font-semibold text-[#e0e0e0] hover:text-white underline underline-offset-2">
+          {COURRIEL_SUPPORT}
         </a>
         .
       </p>

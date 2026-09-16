@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { needsConsent } from "@/lib/auth/needsConsent";
+import { MAILTO_SUPPORT } from "@/lib/config/contact";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
@@ -19,7 +20,7 @@ import { CoachOnboardingMobileCivil } from "@/components/shared/CoachOnboardingM
 import { RecruiterOnboardingMobile } from "@/components/shared/RecruiterOnboardingMobile";
 
 // Canonical Nexus support inbox for user-driven contact (school-not-found, etc.).
-const NEXUS_CONTACT_EMAIL = "support@nexussports.ca";
+// Remplaçait `support@` : la constante partagée tient désormais l'adresse.
 
 // Iter coach-3 — dispatch IS_CAPACITOR (mobile natif) plus bas dans
 // OnboardingPage, après le load de `user` (les hooks doivent rester en
@@ -2142,7 +2143,7 @@ function SchoolNotFound({ kind }: { kind: "ecole" | "cegep" }) {
     "Type (secondaire / cégep) :\n" +
     "Mon courriel (pour le suivi) :\n";
   const mailtoHref =
-    `mailto:${NEXUS_CONTACT_EMAIL}` +
+    `${MAILTO_SUPPORT}` +
     `?subject=${encodeURIComponent(`${confirmId} — Demande d'ajout d'établissement`)}` +
     `&body=${encodeURIComponent(body)}`;
 

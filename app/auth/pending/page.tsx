@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
+import { MAILTO_SUPPORT } from "@/lib/config/contact";
 import PlaybookBackground from "../../components/PlaybookBackground";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ export default function PendingPage() {
           <Link href="/" className="flex-1 h-11 flex items-center justify-center rounded-lg border border-white/10 text-sm font-bold text-white hover:border-white/20 transition-colors">
             Retour à l&apos;accueil
           </Link>
-          <a href="mailto:info@nexussports.ca" className="flex-1 h-11 flex items-center justify-center rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors">
+          <a href={MAILTO_SUPPORT} className="flex-1 h-11 flex items-center justify-center rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors">
             Contacter le support
           </a>
         </div>

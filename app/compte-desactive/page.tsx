@@ -1,4 +1,5 @@
 import NexusLogo from "@/components/ui/NexusLogo";
+import { COURRIEL_SUPPORT, MAILTO_SUPPORT } from "@/lib/config/contact";
 
 export const metadata = {
   title: "Compte désactivé — Nexus",
@@ -35,10 +36,10 @@ export default function CompteDesactivePage() {
           Votre compte a été désactivé par un administrateur. Si vous pensez
           qu&apos;il s&apos;agit d&apos;une erreur, contactez-nous à{" "}
           <a
-            href="mailto:support@nexussports.ca"
+            href={MAILTO_SUPPORT}
             className="text-[#E63946] font-bold hover:underline"
           >
-            support@nexussports.ca
+            {COURRIEL_SUPPORT}
           </a>
           .
         </p>

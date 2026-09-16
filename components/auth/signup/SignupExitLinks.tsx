@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { COURRIEL_SUPPORT, MAILTO_SUPPORT } from "@/lib/config/contact";
 
 /* ═══════════════════════════════════════════════════════════════
    SignupExitLinks — la porte de sortie sous un formulaire d'inscription.
@@ -45,10 +46,9 @@ import Link from "next/link";
  *  l'invitation a expiré n'a aucun compte, aucun mot de passe à récupérer, et
  *  rien à faire de « Connecte-toi » : il lui faut un humain.
  *
- *  `info@nexussports.ca` et pas `support@` : c'est l'expéditeur de TOUS les
- *  courriels transactionnels (`supabase/functions/_shared/emailLayout.ts:12`),
- *  donc l'adresse d'où vient le message que la personne a sous les yeux.
- *  Répondre au même endroit est le geste naturel.
+ *  L'adresse vient de `lib/config/contact.ts` — une seule définition pour
+ *  toute l'app, et le même identifiant sert au `href` et au texte visible,
+ *  qui ne peuvent donc plus diverger.
  *
  *  Comme le reste du composant : permanent, inconditionnel. */
 export function SignupContactLink({ className = "" }: { className?: string }) {
@@ -56,10 +56,10 @@ export function SignupContactLink({ className = "" }: { className?: string }) {
     <p className={`text-[11px] text-[#6b7280] text-center leading-snug ${className}`}>
       Toujours bloqué&nbsp;?{" "}
       <a
-        href="mailto:info@nexussports.ca"
+        href={MAILTO_SUPPORT}
         className="font-bold text-[#9CA3AF] hover:text-[#E63946] transition-colors"
       >
-        Écris-nous à info@nexussports.ca
+        Écris-nous à {COURRIEL_SUPPORT}
       </a>
     </p>
   );
