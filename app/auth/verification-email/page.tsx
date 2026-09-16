@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
+import { createClient } from "@/lib/supabase/client";
+import { translateAuthError } from "@/lib/utils/translateAuthError";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Email Verification Page
@@ -30,6 +32,8 @@ function VerificationEmailContent() {
   const confirmed = searchParams.get("confirmed") === "true";
   const [resent, setResent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [sending, setSending] = useState(false);
+  const [resendError, setResendError] = useState("");
 
   /* Resend cooldown timer */
   useEffect(() => {
@@ -38,11 +42,45 @@ function VerificationEmailContent() {
     return () => clearTimeout(t);
   }, [countdown]);
 
-  const handleResend = () => {
-    if (countdown > 0) return;
-    // TODO: integrate with Supabase Auth resend verification email
-    setResent(true);
-    setCountdown(60);
+  /* ── Renvoi RÉEL du courriel de confirmation ──────────────────────
+     CE QUI ÉTAIT LÀ AVANT (2026-09-16) : un `// TODO` suivi de
+     `setResent(true); setCountdown(60);`. Le bouton n'appelait RIEN et
+     affichait « Courriel renvoyé avec succès! » en vert. Le pire des
+     cas : l'utilisateur qui n'a jamais reçu son courriel recevait la
+     confirmation d'un envoi qui n'a jamais eu lieu, et n'avait aucune
+     raison de chercher ailleurs.
+
+     D'où les deux règles qui tiennent cette fonction :
+     1. le vert et le compte à rebours ne se posent QU'APRÈS un retour
+        sans erreur — un `return` sec sur le chemin d'erreur, jamais un
+        `finally` qui les poserait dans les deux cas ;
+     2. sans `?email=`, on ne part pas « à vide » : Supabase répondrait
+        sur une adresse absente et on afficherait un succès tout aussi
+        faux. Le bouton est désactivé et on renvoie vers la connexion.
+
+     `type: "signup"` et non `"email_change"` : c'est le courriel de
+     confirmation d'inscription. Anti-énumération : `resend` ne dit pas
+     si l'adresse existe, et translateAuthError neutralise de toute
+     façon « user already registered ». */
+  const handleResend = async () => {
+    if (countdown > 0 || sending || !email) return;
+    setSending(true);
+    setResendError("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) {
+        setResendError(translateAuthError(error.message));
+        return;
+      }
+      setResent(true);
+      setCountdown(60);
+    } catch (e) {
+      // Panne réseau : `resend` lève au lieu de rendre { error }.
+      setResendError(translateAuthError(e instanceof Error ? e.message : String(e)));
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -132,22 +170,41 @@ function VerificationEmailContent() {
                   <button
                     type="button"
                     onClick={handleResend}
-                    disabled={countdown > 0}
+                    disabled={countdown > 0 || sending || !email}
                     className={`nx-ghost-btn h-11 px-8 border font-head font-black text-xs uppercase tracking-widest transition-all ${
-                      countdown > 0 ? "opacity-50 cursor-not-allowed" : ""
+                      countdown > 0 || sending || !email ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                   >
-                    {countdown > 0
-                      ? `Renvoyer dans ${countdown}s`
-                      : resent
-                        ? "Renvoyer le courriel"
+                    {sending
+                      ? "Envoi…"
+                      : countdown > 0
+                        ? `Renvoyer dans ${countdown}s`
                         : "Renvoyer le courriel"
                     }
                   </button>
 
+                  {/* Le vert n'apparaît QUE derrière un retour sans erreur. */}
                   {resent && countdown > 0 && (
                     <p className="font-sans text-xs text-[#10b981] mt-3">
                       Courriel renvoyé avec succès!
+                    </p>
+                  )}
+
+                  {resendError && (
+                    <p className="font-sans text-xs text-[#EF4444] mt-3">
+                      {resendError}
+                    </p>
+                  )}
+
+                  {/* Pas d'adresse dans l'URL : on dit POURQUOI le bouton est
+                      inerte plutôt que de le laisser deviner. */}
+                  {!email && (
+                    <p className="font-sans text-xs text-[#9AA3B2] mt-3 leading-relaxed">
+                      Nous n&apos;avons pas ton adresse sous la main.{" "}
+                      <Link href="/auth" className="font-bold text-white hover:text-wl-red transition-colors">
+                        Connecte-toi
+                      </Link>{" "}
+                      pour recevoir un nouveau lien.
                     </p>
                   )}
 
