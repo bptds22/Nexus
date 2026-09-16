@@ -153,15 +153,19 @@ function RecruteurTableauDeBordDesktop() {
           retard passe avant l'état d'ensemble. Le funnel « Mon processus » vit
           ici dans KpiCards, juste en dessous.
           Gaté `canUsePipeline` : sur un compte Free l'encart n'existe pas ET le
-          pipeline n'est même pas chargé. */}
+          pipeline n'est même pas chargé.
+
+          PLEINE LARGEUR, comme ActionBar au-dessus et KpiCards en dessous. Un
+          `max-w-[520px]` vivait ici — le seul de la page. Il laissait 760px de
+          vide à droite dans un conteneur de 1280 et faisait flotter la carte
+          entre deux blocs pleine largeur. Cette page n'a que DEUX dispositions :
+          pleine largeur, ou la grille 5 colonnes découpée 3/2 (zones 3+4). */}
       {canUsePipeline && relanceCards.length > 0 && (
-        <div className="max-w-[520px]">
-          <RelancesDuJour
-            cards={relanceCards}
-            onTapAthlete={(athleteId) => { if (athleteId) router.push(`/recruteur/athletes/${athleteId}`); }}
-            onTapToutVoir={() => router.push("/recruteur/pipeline")}
-          />
-        </div>
+        <RelancesDuJour
+          cards={relanceCards}
+          onTapAthlete={(athleteId) => { if (athleteId) router.push(`/recruteur/athletes/${athleteId}`); }}
+          onTapToutVoir={() => router.push("/recruteur/pipeline")}
+        />
       )}
 
       {/* Zone 2: KPI Cards + Pipeline */}

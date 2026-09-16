@@ -116,6 +116,24 @@ function isTomorrow(dateStr: string | null, now: number): boolean {
   return d.getFullYear() === tom.getFullYear() && d.getMonth() === tom.getMonth() && d.getDate() === tom.getDate();
 }
 
+/** Relance DÉPASSÉE : strictement avant aujourd'hui, au jour près.
+ *
+ *  RÈGLE ALIGNÉE SUR LE MOBILE (2026-09-16). `formatRelancePill`
+ *  (RecruteurPipelineMobile.tsx:138) allume l'or quand la relance est EN
+ *  RETARD ; le web l'allumait quand elle tombait AUJOURD'HUI. Deux règles
+ *  pour la même donnée, et la moins utile des deux côté web : une relance
+ *  du jour est à l'heure, c'est celle d'hier qu'on a laissé filer.
+ *
+ *  Comparaison au jour, pas à l'instant : `next_action_at` est une colonne
+ *  `date`, une comparaison horaire la rendrait « en retard » dès minuit. */
+function isLate(dateStr: string | null, now: number): boolean {
+  if (!dateStr || !now) return false;
+  const d = new Date(dateStr);
+  const n = new Date(now);
+  const jour = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  return jour(d) < jour(n);
+}
+
 function formatDateFr(dateStr: string): string {
   const d = new Date(dateStr);
   const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
@@ -443,7 +461,8 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
   const staleDays = daysSince(card.moved_at, now);
   const compAhead = isCompetitorAhead(card.id, card.status, competitorMap);
   const hasAction = card.next_action_at || card.next_action_note;
-  const actionToday = isToday(card.next_action_at, now);
+  // L'or dit le RETARD, pas « aujourd'hui » — règle du mobile (cf. isLate).
+  const actionLate = isLate(card.next_action_at, now);
 
   // Left border
   const borderLeft = ring.color ? `4px solid ${ring.color}` : isCommitment ? "3px solid #E63946" : "none";
@@ -597,7 +616,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         {(hasAction || stale) && (
           <div className="px-3.5 pb-3 pt-2 border-t border-white/10" onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}>
             {hasAction ? (
-              <p className={`text-[11px] truncate ${actionToday ? "text-[#F59E0B]" : "text-[#6b7280]"}`}>
+              <p className={`text-[11px] truncate ${actionLate ? "text-[#F59E0B]" : "text-[#6b7280]"}`}>
                 {card.next_action_note && <>{card.next_action_note}</>}
                 {card.next_action_at && <>{card.next_action_note ? " — " : ""}{formatDateFr(card.next_action_at)}</>}
               </p>
@@ -722,6 +741,11 @@ function SlideOver({
   onTeaseUpgrade: () => void;
 }) {
   const [noteText, setNoteText] = useState("");
+  /* Même horloge que les cartes du kanban. Le hook rend 0 côté serveur et la
+     vraie valeur après montage ; `isLate` rend donc `false` avant montage —
+     pas de clignotement or au premier rendu. Passer `now` en prop aurait
+     élargi la signature et le site d'appel pour la même chose. */
+  const now = useClientNow();
   // Édition inline de la visite. Le panneau se ferme/rouvre par carte, donc
   // on seed depuis card.visit_at à chaque montage — pas besoin de resync.
   const [editingVisit, setEditingVisit] = useState(false);
@@ -884,6 +908,31 @@ function SlideOver({
               })}
             </div>
           </div>
+          {/* ── Relance ───────────────────────────────────────────────────
+              La date vivait déjà sur la carte du kanban (et sur mobile), mais
+              PAS ici : le panneau savait l'écrire (NextActionPopover) sans
+              jamais la lire. Un recruteur qui ouvrait la fiche perdait
+              l'information qu'il venait de voir sur la carte.
+
+              Aucune requête ajoutée — `next_action_at` est déjà dans `card`.
+              Même format (`formatDateFr`) et même règle de couleur
+              (`isLate`) que la carte : une seule vérité par donnée. */}
+          {(card.next_action_at || card.next_action_note) && (() => {
+            const enRetard = isLate(card.next_action_at, now);
+            return (
+              <div>
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-2">Relance</h3>
+                <p className="text-[13px]" style={{ color: enRetard ? "#F59E0B" : "#FFFFFF" }}>
+                  {card.next_action_at ? formatDateFr(card.next_action_at) : "Sans date"}
+                  {enRetard && <span className="text-[11px] font-bold ml-2">EN RETARD</span>}
+                </p>
+                {card.next_action_note && (
+                  <p className="text-[12px] text-[#9CA3AF] mt-1">{card.next_action_note}</p>
+                )}
+              </div>
+            );
+          })()}
+
           {/* ── Visite prévue ─────────────────────────────────────────────
               VISITE_PLANIFIEE uniquement. Sauvegarde immédiate à chaque
               changement d'input : pas de bouton « Enregistrer ». */}
@@ -896,8 +945,25 @@ function SlideOver({
             };
 
             return (
-              <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748]" style={{ padding: "12px 16px" }}>
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6B7280] mb-2">Visite prévue</h3>
+              /* Teinte OR — la même que la relance, ici et sur mobile. Une
+                 visite et une relance sont la même catégorie : un rendez-vous
+                 à tenir. Le bloc portait la surface et la bordure standard
+                 (#1A1D24 / #2D3748) et un titre dans le même gris que
+                 « Notes de suivi » : à la lecture rapide il pesait autant que
+                 les trois autres sections du panneau.
+                 Pas de rouge — #E63946 dit le retard et l'alerte dans cet
+                 écran ; une visite planifiée n'est pas un problème.
+                 La DATE reste blanche : c'est le contenu, il doit rester
+                 lisible. Le fond est à 8 % pour teinter sans écraser. */
+              <div
+                className="rounded-lg border"
+                style={{
+                  padding: "12px 16px",
+                  backgroundColor: "rgba(245,158,11,0.08)",
+                  borderColor: "rgba(245,158,11,0.35)",
+                }}
+              >
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] mb-2" style={{ color: "#F59E0B" }}>Visite prévue</h3>
 
                 {!editingVisit ? (
                   <button
