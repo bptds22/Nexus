@@ -57,14 +57,13 @@ export function RelancesDuJour({ cards, onTapAthlete, onTapToutVoir }: {
 
   return (
     <div className="bg-[#1A1D24] rounded-2xl p-[18px] border border-white/[0.05]">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-head text-[15px] font-black text-white uppercase tracking-tight">
-          Relances aujourd&apos;hui
-        </h2>
-        <span className="text-[22px] font-black leading-none" style={{ color: "#E63946" }}>
-          {dues.length}
-        </span>
-      </div>
+      {/* Pas de compteur à droite du titre (revue Preview 2026-09-16) : il
+          répétait le total que la ligne « N en retard · N aujourd'hui »
+          détaille juste en dessous. Le total reste dans « Voir les N
+          relances » quand l'aperçu en cache une partie. */}
+      <h2 className="font-head text-[15px] font-black text-white uppercase tracking-tight">
+        Relances aujourd&apos;hui
+      </h2>
 
       <p className="text-[12px] text-[#9CA3AF] mt-1">
         {enRetard.length > 0 && (

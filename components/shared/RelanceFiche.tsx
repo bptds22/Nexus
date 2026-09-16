@@ -34,12 +34,22 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
 
-export default function RelanceFiche({ athleteId }: { athleteId: string }) {
+const SOUS_TITRE_FICHE = "La note de relance se saisit dans Mon processus.";
+
+export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE }: {
+  athleteId: string;
+  /** Absent → le texte de la fiche athlète. `null` → aucune ligne (le
+   *  SlideOver du pipeline : on EST dans Mon processus, la phrase y serait
+   *  circulaire). Une chaîne → la remplace. */
+  sousTitre?: string | null;
+}) {
   const toast = useMobileToast();
+  const queryClient = useQueryClient();
   const [date, setDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [pret, setPret] = useState(false);
@@ -87,6 +97,11 @@ export default function RelanceFiche({ athleteId }: { athleteId: string }) {
       });
       return;
     }
+    /* Le cache `["pipeline", userId]` (usePipelineCards) porte aussi
+       `next_action_at` : sans invalidation, la carte du kanban et l'encart
+       Relances du dashboard gardaient l'ancienne date. Monté depuis le
+       SlideOver du pipeline, le kanban est juste derrière. */
+    void queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     toast.success({ message: valeur ? "Relance enregistrée" : "Relance effacée" });
   }
 
@@ -118,9 +133,11 @@ export default function RelanceFiche({ athleteId }: { athleteId: string }) {
           {saving ? "…" : "Enregistrer"}
         </button>
       </div>
-      <p className="mt-2 text-[11.5px] text-[#6b7280]">
-        La note de relance se saisit dans Mon processus.
-      </p>
+      {sousTitre && (
+        <p className="mt-2 text-[11.5px] text-[#6b7280]">
+          {sousTitre}
+        </p>
+      )}
     </div>
   );
 }

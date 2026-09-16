@@ -58,6 +58,7 @@ import {
 } from "./_data/mockKanbanData";
 import type { PipelineKanbanCard } from "./_data/mockKanbanData";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import RelanceFiche from "@/components/shared/RelanceFiche";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
@@ -101,16 +102,28 @@ function daysSince(dateStr: string | null, now: number): number {
   return Math.floor((now - new Date(dateStr).getTime()) / 86400000);
 }
 
+/** `next_action_at` (colonne `date`, « AAAA-MM-JJ ») → minuit LOCAL.
+ *
+ *  JAMAIS `new Date("2026-09-16")` : une chaîne date-seule est lue en UTC,
+ *  soit le 15 à 20 h au Québec. Toutes les lectures de relance de cet écran
+ *  passaient par là — la date s'affichait un jour trop tôt et une relance
+ *  du jour sortait « en retard ». Même principe que RelancesDuJour, qui
+ *  compare la chaîne AAAA-MM-JJ sans passer par `new Date(str)`. */
+function jourLocal(dateStr: string): Date {
+  const [a, m, j] = dateStr.slice(0, 10).split("-").map(Number);
+  return new Date(a, m - 1, j);
+}
+
 function isToday(dateStr: string | null, now: number): boolean {
   if (!dateStr || !now) return false;
-  const d = new Date(dateStr);
+  const d = jourLocal(dateStr);
   const n = new Date(now);
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
 
 function isTomorrow(dateStr: string | null, now: number): boolean {
   if (!dateStr || !now) return false;
-  const d = new Date(dateStr);
+  const d = jourLocal(dateStr);
   const tom = new Date(now);
   tom.setDate(tom.getDate() + 1);
   return d.getFullYear() === tom.getFullYear() && d.getMonth() === tom.getMonth() && d.getDate() === tom.getDate();
@@ -128,17 +141,17 @@ function isTomorrow(dateStr: string | null, now: number): boolean {
  *  `date`, une comparaison horaire la rendrait « en retard » dès minuit. */
 function isLate(dateStr: string | null, now: number): boolean {
   if (!dateStr || !now) return false;
-  const d = new Date(dateStr);
   const n = new Date(now);
-  const jour = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  return jour(d) < jour(n);
+  return jourLocal(dateStr).getTime() < new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
 }
 
-function formatDateFr(dateStr: string): string {
-  const d = new Date(dateStr);
-  const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+/** Format COURT de la relance sur la carte : « 16 sept. ». La carte fait
+ *  300px et partage la ligne avec la note ; le jour de la semaine ne tenait
+ *  pas. */
+function formatRelanceCourt(dateStr: string): string {
+  const d = jourLocal(dateStr);
+  const mois = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+  return `${d.getDate()} ${mois[d.getMonth()]}`;
 }
 
 /* ── Visite planifiée : formatage de visit_at ──────────────────────
@@ -615,10 +628,19 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         {/* Footer: Next action / staleness */}
         {(hasAction || stale) && (
           <div className="px-3.5 pb-3 pt-2 border-t border-white/10" onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}>
+            {/* La DATE est un élément à part, `shrink-0`, et seule la NOTE
+                tronque. Avant, date et note partageaient un seul `truncate`,
+                la date EN FIN : une note un peu longue poussait la date
+                derrière l'ellipse, et la carte semblait sans relance. */}
             {hasAction ? (
-              <p className={`text-[11px] truncate ${actionLate ? "text-[#F59E0B]" : "text-[#6b7280]"}`}>
-                {card.next_action_note && <>{card.next_action_note}</>}
-                {card.next_action_at && <>{card.next_action_note ? " — " : ""}{formatDateFr(card.next_action_at)}</>}
+              <p className="text-[11px] flex items-center gap-1.5 min-w-0">
+                {card.next_action_at && (
+                  <span className={`shrink-0 font-semibold ${actionLate ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`}>
+                    {formatRelanceCourt(card.next_action_at)}
+                  </span>
+                )}
+                {card.next_action_at && card.next_action_note && <span className="shrink-0 text-[#4a4d56]">·</span>}
+                {card.next_action_note && <span className="truncate text-[#6b7280]">{card.next_action_note}</span>}
               </p>
             ) : stale ? (
               <p className="text-[11px] text-[#E63946]">Aucun mouvement depuis {staleDays}j</p>
@@ -741,11 +763,6 @@ function SlideOver({
   onTeaseUpgrade: () => void;
 }) {
   const [noteText, setNoteText] = useState("");
-  /* Même horloge que les cartes du kanban. Le hook rend 0 côté serveur et la
-     vraie valeur après montage ; `isLate` rend donc `false` avant montage —
-     pas de clignotement or au premier rendu. Passer `now` en prop aurait
-     élargi la signature et le site d'appel pour la même chose. */
-  const now = useClientNow();
   // Édition inline de la visite. Le panneau se ferme/rouvre par carte, donc
   // on seed depuis card.visit_at à chaque montage — pas besoin de resync.
   const [editingVisit, setEditingVisit] = useState(false);
@@ -909,29 +926,23 @@ function SlideOver({
             </div>
           </div>
           {/* ── Relance ───────────────────────────────────────────────────
-              La date vivait déjà sur la carte du kanban (et sur mobile), mais
-              PAS ici : le panneau savait l'écrire (NextActionPopover) sans
-              jamais la lire. Un recruteur qui ouvrait la fiche perdait
-              l'information qu'il venait de voir sur la carte.
-
-              Aucune requête ajoutée — `next_action_at` est déjà dans `card`.
-              Même format (`formatDateFr`) et même règle de couleur
-              (`isLate`) que la carte : une seule vérité par donnée. */}
-          {(card.next_action_at || card.next_action_note) && (() => {
-            const enRetard = isLate(card.next_action_at, now);
-            return (
-              <div>
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-2">Relance</h3>
-                <p className="text-[13px]" style={{ color: enRetard ? "#F59E0B" : "#FFFFFF" }}>
-                  {card.next_action_at ? formatDateFr(card.next_action_at) : "Sans date"}
-                  {enRetard && <span className="text-[11px] font-bold ml-2">EN RETARD</span>}
-                </p>
-                {card.next_action_note && (
-                  <p className="text-[12px] text-[#9CA3AF] mt-1">{card.next_action_note}</p>
-                )}
-              </div>
-            );
-          })()}
+              LE MÊME bloc que la fiche athlète (RelanceFiche) : même champ
+              date, même UPDATE, mêmes toasts, même décision « la date seule,
+              la note reste au pipeline ». Le recruteur fixe ou déplace sa
+              relance sans quitter Mon processus.
+              Le composant invalide ["pipeline"] après écriture : la carte du
+              kanban et l'encart du dashboard suivent sans rechargement.
+              Gate : jamais en mode démo Free — la RLS refuserait l'UPDATE
+              (`user_has_pro()`), et un bouton qui échoue est pire qu'absent.
+              La ligne existe forcément : la carte EST la ligne du pipeline. */}
+          {!isFreeDemoMode && (
+            <div>
+              <RelanceFiche athleteId={card.id} sousTitre={null} />
+              {card.next_action_note && (
+                <p className="text-[12px] text-[#9CA3AF] mt-2">{card.next_action_note}</p>
+              )}
+            </div>
+          )}
 
           {/* ── Visite prévue ─────────────────────────────────────────────
               VISITE_PLANIFIEE uniquement. Sauvegarde immédiate à chaque
