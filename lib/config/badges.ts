@@ -105,6 +105,14 @@ export const CATALOGUE_BADGE_CODES = [
   "finisseur", "3-points", "insaisissable", "verrou", "fusee",
   "dans-la-mire", "vitesse", "mains-sures", "inarretable",
   "force-de-frappe", "rempart", "radar",
+  /* Le 23e. Ajouté au catalogue DB et à public/badges/ le 2026-09-15 avec le
+     programme Ambassadeur — mais PAS ici, et c'est ce qui l'a rendu invisible :
+     `badgeSvgPath()` rendait null, et DistinctionBadge (l.126) comme
+     BadgeVignette (l.51) retournent null sans rien afficher. Le badge était
+     bien posé en base et bien peint sur /athlete/ambassadeur (qui code son
+     chemin en dur), mais absent de la ligne du profil ET de l'aperçu
+     recruteur. Voir la règle d'ajout d'un badge dans CLAUDE.md. */
+  "ambassadeur",
 ] as const;
 
 const CATALOGUE_SET = new Set<string>(CATALOGUE_BADGE_CODES);

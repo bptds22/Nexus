@@ -258,6 +258,41 @@ Read them freely; write to them only with an explicit per-change GO.
 
 ## BADGE SYSTEM (Canonical — apply consistently)
 
+### AJOUTER UN BADGE AU CATALOGUE — les 4 endroits, pas 2 (leçon du 2026-09-16)
+
+`ambassadeur` a été ajouté à la base et à `public/badges/` le 2026-09-15. Il
+était **posé sur la fiche d'un athlète et invisible partout** : absent de la
+ligne de badges du profil ET de l'aperçu recruteur. Aucune erreur, aucun log
+côté serveur — `badgeSvgPath()` rend `null` pour un code inconnu, et les deux
+composants qui l'interrogent retournent `null` **sans rien afficher** :
+`DistinctionBadge` (l.126) et `BadgeVignette` (l.51).
+
+Ce qui a rendu le défaut si long à voir : `/athlete/ambassadeur` **code son
+chemin d'image en dur** (`src="/badges/badge-ambassadeur.svg"`). La page qui
+annonce le badge le montrait donc parfaitement, pendant que la fiche censée le
+porter ne le trouvait pas. Deux surfaces, deux mécanismes, une seule vérité.
+
+**Un badge n'existe que s'il est présent aux QUATRE endroits :**
+
+| # | Où | Quoi |
+|---|---|---|
+| 1 | `public.badges` (DB) | la ligne : `code`, `libelle`, `famille`, `actif`, `ordre` |
+| 2 | `public/badges/badge-<code>.svg` | l'asset du profil — **doit être suivi par git**, sinon il ne part pas en prod |
+| 3 | `lib/config/badges.ts` → `CATALOGUE_BADGE_CODES` | la liste FERMÉE que lit `badgeSvgPath()`. **C'est celle qu'on oublie.** |
+| 4 | `app/ma-story/taxonomie.ts` → `BADGES_CATALOGUE` | la table locale de /ma-story (zéro-réseau par contrat, donc recopiée) + `public/story-badges/badge-<code>.svg`, GÉNÉRÉ par `scripts/gen-story-badges.mjs` |
+
+**Ce qu'il ne faut PAS faire :** ajouter une entrée à `BADGE_CONFIG`. Cette
+table ne porte que les **7 codes legacy** (`captain`, `allstar`, `mvp`…) ;
+aucun des 23 codes de catalogue n'y figure sauf `mvp`, par coïncidence de
+nommage. La seconde porte de `DistinctionBadge` (l.135, `if (!config &&
+!libelle)`) se franchit par le **`libelle`**, qui voyage depuis la requête
+(`athlete_badges(… badges(code, libelle))`). Un badge sans `libelle` en base
+ne s'afficherait donc pas non plus.
+
+**La garde mécanique existe depuis :** `lib/config/__tests__/badgesAssets.test.ts`
+vérifie que chaque code du catalogue résout un chemin ET que le fichier est
+sur le disque. Elle échoue si on oublie l'étape 3 ou l'étape 2.
+
 ### Verification (BINARY)
 - Blue check #3B82F6 = verified (coach manually verified)
 - Gray check #4a4d56 = not verified

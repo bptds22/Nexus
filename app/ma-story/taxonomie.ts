@@ -330,6 +330,12 @@ export const BADGES_CATALOGUE: BadgeDef[] = [
     contexteForme: "annee",
   },
   { code: "nexus-x", libelle: "Custom", famille: "honneur", sports: [], contexteForme: "libre" },
+  /* Le 23e badge, arrivé avec le programme Ambassadeur (2026-09-15). Il ne
+     porte PAS de contexte (`requiert_contexte = false` en base, contrairement
+     aux quatre honneurs au-dessus) : il n'y a rien à préciser, on l'a ou on
+     ne l'a pas. Il se gagne à 5 recrues confirmées et se pose tout seul si
+     une place est libre (migration M10). */
+  { code: "ambassadeur", libelle: "Ambassadeur", famille: "honneur", sports: [] },
 ];
 
 /** Le badge « Custom » du catalogue — le seul dont le libellé peint n'est
