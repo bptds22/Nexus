@@ -147,7 +147,35 @@ function ParentClaimContent() {
         options: { data: { role: "PARENT", first_name: "", last_name: "" } },
       });
       if (signUpError) {
-        setFormError(translateAuthError(signUpError.message || "Création du compte échouée."));
+        const messageClair = translateAuthError(signUpError.message || "Création du compte échouée.");
+
+        /* « Compte existant » arrive par DEUX formes, selon le réglage
+           « Confirm email » du projet. La JSDoc de signUp le dit
+           explicitement (@supabase/auth-js, GoTrueClient : « When either
+           Confirm email or Confirm phone … is disabled, the error message
+           `User already registered` is returned ») :
+             ON  → aucune erreur, user obfusqué à identities vides → test B
+             OFF → erreur « User already registered »            → ICI
+
+           La prod auto-confirme (203 comptes sur 203 confirmés en moins
+           d'une seconde, 2026-09-16), donc c'est CE chemin qui sert, et
+           lui seul. Le test B plus bas ne s'exécutait jamais : ce `return`
+           passait avant. D'où un message neutre correct au-dessus d'un
+           formulaire resté en mode création, sans issue.
+
+           On compare la SORTIE de translateAuthError à sa propre sortie
+           pour « User already registered » plutôt que de recopier son
+           motif ici : une seule table de vérité, pas deux qui dérivent. */
+        const codeErreur = (signUpError as { code?: string }).code;
+        if (
+          codeErreur === "user_already_exists" ||
+          codeErreur === "email_exists" ||
+          messageClair === translateAuthError("User already registered")
+        ) {
+          setExistingAccount(true);
+        }
+
+        setFormError(messageClair);
         setSubmitting(false);
         return;
       }

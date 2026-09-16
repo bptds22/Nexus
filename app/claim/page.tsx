@@ -95,6 +95,12 @@ function ClaimContent() {
   const [acceptMarketing, setAcceptMarketing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  /* Le signup a buté sur un compte déjà existant. Cette page n'a PAS de
+     mode « connexion » (contrairement à /parent/claim) et lui en greffer
+     un serait une refonte : il faudrait un signInWithPassword puis toute
+     la liaison de l'orphelin. On se contente donc d'ENCADRER la porte de
+     sortie qui est déjà là — même liens, même texte, cadre en plus. */
+  const [compteExistant, setCompteExistant] = useState(false);
 
   // ── Résolution du token au mount ────────────────────────────
   useEffect(() => {
@@ -173,10 +179,42 @@ function ClaimContent() {
         },
       );
       if ("error" in result && result.error) {
-        setFormError(translateAuthError(result.error.message || "Création du compte échouée."));
+        const messageClair = translateAuthError(result.error.message || "Création du compte échouée.");
+
+        /* Même défaut que /parent/claim, même détection. Avec « Confirm
+           email » OFF — la configuration de la prod — un signup sur une
+           adresse déjà inscrite rend l'erreur « User already registered »
+           (JSDoc de signUp, @supabase/auth-js). L'athlète lisait alors le
+           message neutre sans aucune issue : le bouton « Créer mon compte »
+           était le dernier élément utile de la page.
+
+           `signUp` (lib/supabase/auth.actions) rend l'AuthError tel quel,
+           donc `.code` arrive intact jusqu'ici. Comparaison de la sortie
+           de translateAuthError à sa propre sortie en filet — sa table
+           n'est pas recopiée. */
+        const codeErreur = (result.error as { code?: string }).code;
+        if (
+          codeErreur === "user_already_exists" ||
+          codeErreur === "email_exists" ||
+          messageClair === translateAuthError("User already registered")
+        ) {
+          setCompteExistant(true);
+        }
+
+        setFormError(messageClair);
         setSubmitting(false);
         return;
       }
+
+      // Compte existant SANS erreur (user obfusqué, identities vides) : inerte tant que Confirm email est OFF ; devient le chemin actif à la dette #34.
+      const utilisateurCree = "data" in result ? result.data?.user : null;
+      if ((utilisateurCree?.identities?.length ?? 0) === 0) {
+        setCompteExistant(true);
+        setFormError(translateAuthError("User already registered"));
+        setSubmitting(false);
+        return;
+      }
+
       // Liaison orphelin = sous-unité 3. Pour l'instant on prépare le terrain :
       // redirection vers l'onboarding athlète.
       router.push("/athlete/onboarding");
@@ -337,9 +375,14 @@ function ClaimContent() {
           <p className="text-[11px] text-[#6b7280] text-center">Indique ta date de naissance pour continuer.</p>
         )}
 
-        {/* Porte de sortie — permanente, jamais conditionnelle (cf. le
-            composant : un affichage conditionnel serait un oracle). */}
-        <SignupExitLinks className="pt-1" />
+        {/* Porte de sortie — TOUJOURS rendue, jamais conditionnelle (cf. le
+            composant : un affichage conditionnel serait un oracle).
+            Quand le signup a buté sur un compte existant, on l'ENCADRE :
+            rien n'apparaît, rien ne disparaît, seul le cadre change. Les
+            liens et leur texte sont identiques dans les deux états. */}
+        <div className={compteExistant ? "rounded-lg border border-[#2a2d36] bg-[#13151a] px-4 py-3" : ""}>
+          <SignupExitLinks className={compteExistant ? "" : "pt-1"} />
+        </div>
       </div>
     </Shell>
   );
