@@ -14,12 +14,45 @@ const MONTHS_FR = [
 
 const DAYS_FR = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
 
+/* ─── Bornes ────────────────────────────────────────────────────────
+   POURQUOI (2026-09-16) : une fiche de test coach est partie en prod
+   avec « 11 septembre 1624 ». Personne n'a tapé 1624 — la flèche de
+   gauche en vue « années » faisait `setViewYear(viewYear - 1)` SANS
+   plancher, et rien en aval ne rattrapait : `isUnder14` attrape le trop
+   JEUNE, aucune garde n'attrapait le trop VIEUX.
+
+   D'où la règle : borner la NAVIGATION, pas seulement la sélection. Un
+   jour qu'on ne peut pas atteindre ne peut pas être choisi par erreur ;
+   un jour qu'on peut atteindre mais pas cliquer laisse l'utilisateur
+   deviner pourquoi.
+
+   Clé numérique plutôt que comparaison de chaînes : `selectDay` compose
+   `${viewYear}-MM-JJ`, et une année à 3 chiffres (« 624-09-11 ») casse
+   l'ordre lexicographique. Les bornes rendent ce cas inatteignable —
+   raison de plus pour ne pas en dépendre. */
+function cle(y: number, moisIdx: number, jour: number): number {
+  return y * 10000 + (moisIdx + 1) * 100 + jour;
+}
+function cleISO(iso: string): number | null {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return y * 10000 + m * 100 + d;
+}
+function joursDansMois(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
 interface DatePickerProps {
   value: string;          // "YYYY-MM-DD"
   onChange: (date: string) => void;
   placeholder?: string;
   hasError?: boolean;
   disabled?: boolean;     // read-only: shows the value, blocks the calendar
+  /** Date la plus ANCIENNE atteignable, ISO "YYYY-MM-DD". Borne la
+   *  navigation (mois, années, pagination) autant que la sélection. */
+  min?: string;
+  /** Date la plus RÉCENTE atteignable, ISO "YYYY-MM-DD". Idem. */
+  max?: string;
 }
 
 export default function DatePicker({
@@ -28,6 +61,8 @@ export default function DatePicker({
   placeholder = "Sélectionner une date",
   hasError = false,
   disabled = false,
+  min,
+  max,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -35,8 +70,47 @@ export default function DatePicker({
   // Parse current value or default to a reasonable view
   const parsed = value ? new Date(value + "T00:00:00") : null;
   const today = new Date();
-  const [viewYear, setViewYear] = useState(parsed?.getFullYear() ?? today.getFullYear() - 16);
-  const [viewMonth, setViewMonth] = useState(parsed?.getMonth() ?? today.getMonth());
+
+  const kMin = min ? cleISO(min) : null;
+  const kMax = max ? cleISO(max) : null;
+
+  /** Un jour est-il hors des bornes ? */
+  function jourFerme(y: number, moisIdx: number, jour: number) {
+    const k = cle(y, moisIdx, jour);
+    return (kMin !== null && k < kMin) || (kMax !== null && k > kMax);
+  }
+  /** Un mois est ouvert si AU MOINS UN de ses jours l'est. */
+  function moisOuvert(y: number, moisIdx: number) {
+    if (kMin !== null && cle(y, moisIdx, joursDansMois(y, moisIdx)) < kMin) return false;
+    if (kMax !== null && cle(y, moisIdx, 1) > kMax) return false;
+    return true;
+  }
+  /** Idem pour une année entière (31 décembre … 1er janvier). */
+  function anneeOuverte(y: number) {
+    if (kMin !== null && cle(y, 11, 31) < kMin) return false;
+    if (kMax !== null && cle(y, 0, 1) > kMax) return false;
+    return true;
+  }
+
+  /* La vue d'ouverture doit elle aussi tomber dans les bornes : sans ce
+     recadrage, un champ vide s'ouvrirait sur « aujourd'hui − 16 ans »
+     même quand cette année est fermée, et les deux flèches seraient
+     grises d'entrée de jeu. */
+  const anneeDepart = (() => {
+    let y = parsed?.getFullYear() ?? today.getFullYear() - 16;
+    if (kMin !== null) y = Math.max(y, Math.floor(kMin / 10000));
+    if (kMax !== null) y = Math.min(y, Math.floor(kMax / 10000));
+    return y;
+  })();
+
+  const [viewYear, setViewYear] = useState(anneeDepart);
+  const [viewMonth, setViewMonth] = useState(() => {
+    const m = parsed?.getMonth() ?? today.getMonth();
+    if (moisOuvert(anneeDepart, m)) return m;
+    // Année de bord : se poser sur le premier mois ouvert de cette année.
+    for (let i = 0; i < 12; i++) if (moisOuvert(anneeDepart, i)) return i;
+    return m;
+  });
   const [mode, setMode] = useState<"days" | "months" | "years">("days");
 
   // Close on outside click
@@ -61,19 +135,38 @@ export default function DatePicker({
 
   /* ── Navigation ─────────────────────────────────────────── */
 
-  function prevMonth() {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
-    else setViewMonth(viewMonth - 1);
+  /** Cible des flèches du bandeau : le mois voisin en vue « jours »,
+   *  l'année voisine sinon. Rendue explicite pour que le bouton sache
+   *  s'il mène quelque part AVANT d'être cliqué. */
+  const cibleGauche = mode === "days"
+    ? (viewMonth === 0 ? { y: viewYear - 1, m: 11 } : { y: viewYear, m: viewMonth - 1 })
+    : { y: viewYear - 1, m: viewMonth };
+  const cibleDroite = mode === "days"
+    ? (viewMonth === 11 ? { y: viewYear + 1, m: 0 } : { y: viewYear, m: viewMonth + 1 })
+    : { y: viewYear + 1, m: viewMonth };
+
+  const gaucheOuverte = mode === "days"
+    ? moisOuvert(cibleGauche.y, cibleGauche.m)
+    : anneeOuverte(cibleGauche.y);
+  const droiteOuverte = mode === "days"
+    ? moisOuvert(cibleDroite.y, cibleDroite.m)
+    : anneeOuverte(cibleDroite.y);
+
+  function allerGauche() {
+    if (!gaucheOuverte) return;
+    setViewYear(cibleGauche.y);
+    if (mode === "days") setViewMonth(cibleGauche.m);
   }
-  function nextMonth() {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
-    else setViewMonth(viewMonth + 1);
+  function allerDroite() {
+    if (!droiteOuverte) return;
+    setViewYear(cibleDroite.y);
+    if (mode === "days") setViewMonth(cibleDroite.m);
   }
 
   /* ── Calendar grid ──────────────────────────────────────── */
 
   function getDaysInMonth(year: number, month: number) {
-    return new Date(year, month + 1, 0).getDate();
+    return joursDansMois(year, month);
   }
 
   function getFirstDayOfWeek(year: number, month: number) {
@@ -82,6 +175,7 @@ export default function DatePicker({
   }
 
   function selectDay(day: number) {
+    if (jourFerme(viewYear, viewMonth, day)) return;
     const m = String(viewMonth + 1).padStart(2, "0");
     const d = String(day).padStart(2, "0");
     onChange(`${viewYear}-${m}-${d}`);
@@ -90,12 +184,19 @@ export default function DatePicker({
   }
 
   function selectMonth(month: number) {
+    if (!moisOuvert(viewYear, month)) return;
     setViewMonth(month);
     setMode("days");
   }
 
   function selectYear(year: number) {
+    if (!anneeOuverte(year)) return;
     setViewYear(year);
+    // Le mois courant peut être fermé dans l'année de bord : se reposer
+    // sur le premier mois ouvert plutôt que d'afficher une grille morte.
+    if (!moisOuvert(year, viewMonth)) {
+      for (let i = 0; i < 12; i++) if (moisOuvert(year, i)) { setViewMonth(i); break; }
+    }
     setMode("months");
   }
 
@@ -154,8 +255,9 @@ export default function DatePicker({
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e2128]">
-            <button type="button" onClick={() => mode === "days" ? prevMonth() : setViewYear(viewYear - 1)}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-[#8a8d96] hover:text-white hover:bg-white/5 transition-colors">
+            <button type="button" onClick={allerGauche} disabled={!gaucheOuverte}
+              aria-label="Précédent"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-[#8a8d96] hover:text-white hover:bg-white/5 transition-colors disabled:opacity-25 disabled:hover:text-[#8a8d96] disabled:hover:bg-transparent disabled:cursor-not-allowed">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 18l-6-6 6-6" />
               </svg>
@@ -171,8 +273,9 @@ export default function DatePicker({
               {mode === "years" && `${yearStart} — ${yearStart + 11}`}
             </button>
 
-            <button type="button" onClick={() => mode === "days" ? nextMonth() : setViewYear(viewYear + 1)}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-[#8a8d96] hover:text-white hover:bg-white/5 transition-colors">
+            <button type="button" onClick={allerDroite} disabled={!droiteOuverte}
+              aria-label="Suivant"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-[#8a8d96] hover:text-white hover:bg-white/5 transition-colors disabled:opacity-25 disabled:hover:text-[#8a8d96] disabled:hover:bg-transparent disabled:cursor-not-allowed">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 18l6-6-6-6" />
               </svg>
@@ -201,6 +304,7 @@ export default function DatePicker({
                     const isValid = dayNum >= 1 && dayNum <= daysInMonth;
                     const isSelected = isValid && dayNum === selectedDay;
                     const isToday = isValid && dayNum === todayDay;
+                    const ferme = isValid && jourFerme(viewYear, viewMonth, dayNum);
 
                     if (!isValid) {
                       return <div key={i} className="w-full aspect-square" />;
@@ -210,14 +314,17 @@ export default function DatePicker({
                       <button
                         key={i}
                         type="button"
+                        disabled={ferme}
                         onClick={() => selectDay(dayNum)}
                         className={`
                           w-full aspect-square rounded-lg flex items-center justify-center text-[12px] font-medium transition-all
-                          ${isSelected
-                            ? "bg-[#E63946] text-white font-bold shadow-[0_0_8px_rgba(230,57,70,0.3)]"
-                            : isToday
-                              ? "text-[#E63946] font-bold bg-[#E63946]/10"
-                              : "text-[#e0e0e0] hover:bg-white/8"
+                          ${ferme
+                            ? "text-[#4a4d56] cursor-not-allowed"
+                            : isSelected
+                              ? "bg-[#E63946] text-white font-bold shadow-[0_0_8px_rgba(230,57,70,0.3)]"
+                              : isToday
+                                ? "text-[#E63946] font-bold bg-[#E63946]/10"
+                                : "text-[#e0e0e0] hover:bg-white/8"
                           }
                         `}
                       >
@@ -234,13 +341,16 @@ export default function DatePicker({
               <div className="grid grid-cols-3 gap-2">
                 {MONTHS_FR.map((m, i) => {
                   const isCurrent = i === viewMonth;
+                  const ferme = !moisOuvert(viewYear, i);
                   return (
-                    <button key={m} type="button" onClick={() => selectMonth(i)}
+                    <button key={m} type="button" disabled={ferme} onClick={() => selectMonth(i)}
                       className={`
                         py-3 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] transition-all
-                        ${isCurrent
-                          ? "bg-[#E63946] text-white shadow-[0_0_8px_rgba(230,57,70,0.3)]"
-                          : "text-[#e0e0e0] hover:bg-white/8"
+                        ${ferme
+                          ? "text-[#4a4d56] cursor-not-allowed"
+                          : isCurrent
+                            ? "bg-[#E63946] text-white shadow-[0_0_8px_rgba(230,57,70,0.3)]"
+                            : "text-[#e0e0e0] hover:bg-white/8"
                         }
                       `}>
                       {m.slice(0, 3)}
@@ -255,13 +365,16 @@ export default function DatePicker({
               <div className="grid grid-cols-3 gap-2">
                 {years.map((y) => {
                   const isCurrent = y === viewYear;
+                  const ferme = !anneeOuverte(y);
                   return (
-                    <button key={y} type="button" onClick={() => selectYear(y)}
+                    <button key={y} type="button" disabled={ferme} onClick={() => selectYear(y)}
                       className={`
                         py-3 rounded-lg text-[12px] font-bold transition-all
-                        ${isCurrent
-                          ? "bg-[#E63946] text-white shadow-[0_0_8px_rgba(230,57,70,0.3)]"
-                          : "text-[#e0e0e0] hover:bg-white/8"
+                        ${ferme
+                          ? "text-[#4a4d56] cursor-not-allowed"
+                          : isCurrent
+                            ? "bg-[#E63946] text-white shadow-[0_0_8px_rgba(230,57,70,0.3)]"
+                            : "text-[#e0e0e0] hover:bg-white/8"
                         }
                       `}>
                       {y}
@@ -272,22 +385,29 @@ export default function DatePicker({
             )}
           </div>
 
-          {/* Footer — Today shortcut */}
-          <div className="border-t border-[#1e2128] px-4 py-2">
-            <button type="button"
-              onClick={() => {
-                const t = new Date();
-                const m = String(t.getMonth() + 1).padStart(2, "0");
-                const d = String(t.getDate()).padStart(2, "0");
-                onChange(`${t.getFullYear()}-${m}-${d}`);
-                setViewYear(t.getFullYear());
-                setViewMonth(t.getMonth());
-                setOpen(false);
-              }}
-              className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280] hover:text-[#E63946] transition-colors">
-              Aujourd&apos;hui
-            </button>
-          </div>
+          {/* Footer — Today shortcut.
+              Il CONTOURNE la grille : il écrit la date sans passer par
+              `selectDay`. Sur une DOB bornée à « aujourd'hui − 14 ans »
+              il poserait un âge de 0 an. On le retire quand aujourd'hui
+              est hors bornes plutôt que de le laisser griser — un
+              raccourci qu'on ne peut jamais prendre n'a rien à montrer. */}
+          {!jourFerme(today.getFullYear(), today.getMonth(), today.getDate()) && (
+            <div className="border-t border-[#1e2128] px-4 py-2">
+              <button type="button"
+                onClick={() => {
+                  const t = new Date();
+                  const m = String(t.getMonth() + 1).padStart(2, "0");
+                  const d = String(t.getDate()).padStart(2, "0");
+                  onChange(`${t.getFullYear()}-${m}-${d}`);
+                  setViewYear(t.getFullYear());
+                  setViewMonth(t.getMonth());
+                  setOpen(false);
+                }}
+                className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280] hover:text-[#E63946] transition-colors">
+                Aujourd&apos;hui
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

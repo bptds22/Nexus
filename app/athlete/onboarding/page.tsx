@@ -11,7 +11,7 @@ import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
-import { isUnder14 } from "@/lib/legal/ageGate";
+import { isUnder14, MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
@@ -1914,7 +1914,7 @@ function AthleteOnboardingDesktop() {
               </div>
               <div>
                 <label className={labelCls}>Date de naissance</label>
-                <DatePicker value={dateOfBirth} onChange={setDateOfBirth} placeholder="Sélectionner une date" disabled={dobLocked} />
+                <DatePicker value={dateOfBirth} onChange={setDateOfBirth} placeholder="Sélectionner une date" disabled={dobLocked} min={minBirthdateForAge()} max={maxBirthdateForAge(MIN_SIGNUP_AGE)} />
                 {dobRecoveryInvalid && (
                   <p className="text-[12px] text-[#EF4444] mt-1">Tu dois avoir au moins 14 ans pour créer un compte.</p>
                 )}

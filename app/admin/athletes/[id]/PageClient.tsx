@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import DatePicker from "@/app/coach/components/DatePicker";
+import { MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import { embeddedSchool } from "@/lib/config/schoolTypes";
 import FormModeToggle from "@/app/coach/components/FormModeToggle";
@@ -781,6 +782,8 @@ export default function AdminAthleteDetailPage() {
     <DatePicker
       value={(A(key) as string)?.slice(0, 10) ?? ""}
       onChange={(v) => setA(key, v || null)}
+      min={minBirthdateForAge()}
+      max={maxBirthdateForAge(MIN_SIGNUP_AGE)}
     />
   );
   const bool = (key: string) => (

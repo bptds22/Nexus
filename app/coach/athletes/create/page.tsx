@@ -30,7 +30,7 @@ import {
 import AthleteWizardMobile from "@/components/shared/AthleteWizardMobile";
 import { saveAthleteCreate, computeCoteGlobale } from "../_data/saveAthlete";
 import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
-import { isUnder14 } from "@/lib/legal/ageGate";
+import { isUnder14, MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
@@ -868,7 +868,7 @@ export default function CreateAthletePage() {
           </div>
           <div>
             <label className={labelCls}>Date de naissance{req}</label>
-            <DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth) || isUnder14(d.dateOfBirth)} />
+            <DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth) || isUnder14(d.dateOfBirth)} min={minBirthdateForAge()} max={maxBirthdateForAge(MIN_SIGNUP_AGE)} />
             {d.dateOfBirth && isUnder14(d.dateOfBirth) && (
               <p className="text-[12px] text-[#EF4444] mt-1">L&apos;inscription est réservée aux 14 ans et plus.</p>
             )}

@@ -10,6 +10,7 @@ import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileComp
 import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/utils/profileValidation";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import DatePicker from "@/app/coach/components/DatePicker";
+import { MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
 import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
 import TeamHistoryBlock, { type TeamHistoryAnchor } from "@/components/shared/athlete/TeamHistoryBlock";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
@@ -933,7 +934,7 @@ function PersonalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
       <div><label className={lblCls}>Prénom</label><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ex: Toa" className={inputCls} /></div>
       <div><label className={lblCls}>Nom</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Ex: Smith" className={inputCls} /></div>
       <div><label className={lblCls}>Genre</label><select title="Genre" value={genre} onChange={(e) => setGenre(e.target.value)} className={inputCls}><option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option><option value="X">Autre</option></select></div>
-      <div><label className={lblCls}>Date de naissance</label><DatePicker value={dob} onChange={setDob} placeholder="Sélectionner une date" /></div>
+      <div><label className={lblCls}>Date de naissance</label><DatePicker value={dob} onChange={setDob} placeholder="Sélectionner une date" min={minBirthdateForAge()} max={maxBirthdateForAge(MIN_SIGNUP_AGE)} /></div>
       <div><label className={lblCls}>Téléphone</label><input type="tel" value={tel} onChange={(e) => setTel(e.target.value)} placeholder="514-000-0000" className={inputCls} /></div>
       <div className="flex items-center gap-3 mt-3">
         <button type="button" onClick={() => onSave({ first_name: firstName.trim() || null, last_name: lastName.trim() || null, genre: genre || null, date_naissance: dob || null, telephone: tel || null })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
