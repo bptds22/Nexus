@@ -6,6 +6,7 @@ import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import {
   fetchRecruiterAthleteCards,
@@ -324,10 +325,10 @@ function ReassignationPage() {
       /* TEMPS 1 — la relation possédée, sans embed `athletes` : la RPC
          projette tout ce que cette page lit (nom, vérifié, sport, position,
          école, et l'agrégat d'évaluations pour la cote). */
-      const { data: pipelineData } = await supabase
-        .from("recruiter_pipeline")
-        .select("recruiter_id, athlete_id, stage, created_at, updated_at")
-        .in("recruiter_id", teamIds);
+      /* Lot 2a des frontières du pipeline : RPC sans colonnes privées
+         (recruiter_id, athlete_id, stage, dates) au lieu de la lecture
+         directe, qui rendait aussi notes de relance, visite et drapeau. */
+      const pipelineData = await fetchCegepPipelineOverview(supabase, teamIds);
 
       /* TEMPS 2 — l'identité et le reste, projetés par le serveur. */
       const cards = await fetchRecruiterAthleteCards(
@@ -453,46 +454,36 @@ function ReassignationPage() {
     const supabase = createClient();
     const athleteIds = Array.from(selected);
 
-    // Transfer pipeline entries in DB
-    for (const athleteId of athleteIds) {
-      await supabase
-        .from("recruiter_pipeline")
-        .update({ recruiter_id: destId })
-        .eq("recruiter_id", sourceId)
-        .eq("athlete_id", athleteId);
+    /* Lot 2a des frontières du pipeline — UN appel serveur, atomique par
+       athlète. `reassign_pipeline` DÉPLACE (UPDATE recruiter_id) le pipeline,
+       les notes, les favoris et les grades. Les écritures client d'avant
+       copiaient les notes (originales laissées à la source, dates perdues),
+       faisaient un upsert de favori qui renvoyait une fausse notification
+       « favori » à l'athlète et à son parent, oubliaient les grades, et
+       avalaient l'erreur quand le destinataire suivait déjà l'athlète.
+       Conflit = signalé, jamais fusionné : l'athlète reste chez la source. */
+    const { data: result, error } = await supabase.rpc("reassign_pipeline", {
+      p_from: sourceId,
+      p_to: destId,
+      p_athlete_ids: athleteIds,
+    });
+    if (error) {
+      console.error("[reassignation] reassign_pipeline:", error.message);
+      showToast("Transfert refusé : " + error.message);
+      return;
     }
+    const outcome = (result ?? {}) as {
+      deplaces?: string[];
+      conflits?: { athlete_id: string; tables: string[] }[];
+      absents?: string[];
+    };
+    const moved = new Set(outcome.deplaces ?? []);
+    const conflictCount = (outcome.conflits ?? []).length;
+    const absentCount = (outcome.absents ?? []).length;
 
-    // Transfer favorites
-    for (const athleteId of athleteIds) {
-      const { data: fav } = await supabase
-        .from("recruiter_favorites")
-        .select("id")
-        .eq("recruiter_id", sourceId)
-        .eq("athlete_id", athleteId)
-        .maybeSingle();
-      if (fav) {
-        await supabase.from("recruiter_favorites").upsert(
-          { recruiter_id: destId, athlete_id: athleteId },
-          { onConflict: "recruiter_id,athlete_id" }
-        );
-      }
-    }
-
-    // Transfer notes
-    for (const athleteId of athleteIds) {
-      const { data: noteRows } = await supabase
-        .from("recruiter_notes")
-        .select("content")
-        .eq("recruiter_id", sourceId)
-        .eq("athlete_id", athleteId);
-      for (const n of noteRows || []) {
-        await supabase.from("recruiter_notes").insert({ recruiter_id: destId, athlete_id: athleteId, content: n.content });
-      }
-    }
-
-    // Move athletes in local state
+    // Seuls les athlètes réellement déplacés changent de colonne à l'écran.
     setAthletes((prev) =>
-      prev.map((a) => selected.has(a.id) ? { ...a, recruiterId: destId } : a)
+      prev.map((a) => moved.has(a.id) ? { ...a, recruiterId: destId } : a)
     );
 
     // Log locally
@@ -501,22 +492,29 @@ function ReassignationPage() {
       date: new Date().toISOString(),
       fromName: `${sourceRec.firstName} ${sourceRec.lastName}`,
       toName: `${destRec.firstName} ${destRec.lastName}`,
-      athleteCount: selected.size,
+      athleteCount: moved.size,
       sport: selectedAthletes.length > 0 ? selectedAthletes[0].sport : "Mixte",
       reason: notes || "—",
       performedBy: "Dir. sportif",
     };
-    setTransferHistory((prev) => [newRecord, ...prev]);
+    if (moved.size > 0) setTransferHistory((prev) => [newRecord, ...prev]);
 
+    /* Le message dit ce qui s'est PASSÉ, pas ce qui était demandé : un athlète
+       déjà suivi par le destinataire n'a pas bougé et doit se lire comme tel. */
+    const nonDeplaces = [
+      conflictCount > 0 ? `${conflictCount} déjà suivi${conflictCount > 1 ? "s" : ""} par ${destRec.firstName} ${destRec.lastName} (non transféré${conflictCount > 1 ? "s" : ""})` : "",
+      absentCount > 0 ? `${absentCount} introuvable${absentCount > 1 ? "s" : ""} chez la source` : "",
+    ].filter(Boolean).join(" · ");
     setTransferActivity(
-      `✓ ${selected.size} athlète${selected.size > 1 ? "s" : ""} transféré${selected.size > 1 ? "s" : ""} de ${sourceRec.firstName} ${sourceRec.lastName} à ${destRec.firstName} ${destRec.lastName} le ${formatDate(new Date())}`
+      `✓ ${moved.size} athlète${moved.size > 1 ? "s" : ""} transféré${moved.size > 1 ? "s" : ""} de ${sourceRec.firstName} ${sourceRec.lastName} à ${destRec.firstName} ${destRec.lastName} le ${formatDate(new Date())}` +
+      (nonDeplaces ? ` — ${nonDeplaces}` : "")
     );
-    setTimeout(() => setTransferActivity(null), 5000);
+    setTimeout(() => setTransferActivity(null), 8000);
 
     setSelected(new Set());
     setNotes("");
     setShowConfirm(false);
-    showToast("Transfert effectué");
+    showToast(conflictCount + absentCount > 0 ? "Transfert partiel — voir le détail" : "Transfert effectué");
   }, [sourceRec, destRec, sourceId, destId, selected, selectedAthletes, notes, showToast]);
 
   /* Unique sports in source */

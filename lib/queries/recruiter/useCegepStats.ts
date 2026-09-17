@@ -3,13 +3,13 @@
    Groupe les ~10 queries séquentielles de la page Mon CÉGEP en un
    seul useQuery. staleTime 10 min car stats équipe peu volatiles.
 
-   TODO: optimize N+1 in iter 5.5+ via RPC group-by (recruiterActivity
-   ligne ~120 fait une query par recruiteur — acceptable pour <20
-   recruteurs/école mais à refactor pour scale).
+   Lot 2a (2026-09-17) : le pipeline de l'équipe vient d'UN appel à
+   `cegep_pipeline_overview` ; l'ancien N+1 par recruteur a disparu.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export interface CegepActivityRow {
@@ -69,31 +69,51 @@ export function useCegepStats() {
 
       if (recruiterIds.length === 0) return { ...EMPTY, schoolName };
 
-      // 3. KPIs 4 queries parallèles
+      // 3. KPIs — le pipeline de l'équipe en UN appel.
+      /* Lot 2a des frontières du pipeline : plus de lecture directe de
+         `recruiter_pipeline` (la RLS « cegep admin read pipeline » donnait les
+         lignes ENTIÈRES des collègues, notes de relance, visite et drapeau
+         compris). `cegep_pipeline_overview` rend recruiter_id, athlete_id,
+         stage et trois dates — même périmètre que la RLS, colonnes privées en
+         moins. Les quatre lectures d'avant (compte, athlètes, par sport, par
+         région) et la boucle N+1 par recruteur partent toutes de ce jeu. */
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const [recruesRes, pipelineRes, messagesRes, viewsRes] = await Promise.all([
-        supabase.from("recruiter_pipeline").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).eq("stage", "LETTRE_SIGNEE"),
-        supabase.from("recruiter_pipeline").select("athlete_id").in("recruiter_id", recruiterIds),
+      const [overview, messagesRes, viewsRes] = await Promise.all([
+        fetchCegepPipelineOverview(supabase, recruiterIds),
         supabase.from("messages").select("*", { count: "exact", head: true }).in("sender_id", recruiterIds).gte("created_at", thirtyDaysAgo),
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).gte("viewed_at", thirtyDaysAgo),
       ]);
-      const recruesCount = recruesRes.count ?? 0;
-      const uniqueAthletes = new Set((pipelineRes.data ?? []).map((p) => p.athlete_id));
+      const recruesCount = overview.filter((p) => p.stage === "LETTRE_SIGNEE").length;
+      const uniqueAthletes = new Set(overview.map((p) => p.athlete_id));
       const pipelineCount = uniqueAthletes.size;
       const messagesCount = messagesRes.count ?? 0;
       const viewsCount = viewsRes.count ?? 0;
 
+      /* Sport et région : ce que les embeds `athletes!athlete_id(...)` lisaient,
+         relu à part. Même table, même RLS recruteur (athlètes ACTIF) — un
+         athlète non visible retombe sur « Autre » / « Inconnue », comme l'embed
+         nul d'avant. */
+      const { data: athleteAttrs } = uniqueAthletes.size > 0
+        ? await supabase
+            .from("athletes")
+            .select("id, sports!sport_id(nom), schools!school_id(region)")
+            .in("id", [...uniqueAthletes])
+        : { data: [] };
+      const firstRel = <T,>(rel: T | T[] | null | undefined): T | null =>
+        (Array.isArray(rel) ? rel[0] : rel) ?? null;
+      const sportByAthlete = new Map<string, string>();
+      const regionByAthlete = new Map<string, string>();
+      for (const a of athleteAttrs ?? []) {
+        const sport = firstRel(a.sports as { nom?: string } | { nom?: string }[] | null)?.nom;
+        const region = firstRel(a.schools as { region?: string } | { region?: string }[] | null)?.region;
+        if (sport) sportByAthlete.set(a.id as string, sport);
+        if (region) regionByAthlete.set(a.id as string, region);
+      }
+
       // 4. Pipeline par sport
-      const { data: pipelineSports } = await supabase
-        .from("recruiter_pipeline")
-        .select("stage, athletes!athlete_id(sports!sport_id(nom))")
-        .in("recruiter_id", recruiterIds);
       const sportMap = new Map<string, { consulted: number; favorited: number; contacted: number; recruited: number }>();
-      for (const row of pipelineSports ?? []) {
-        const athleteRel = row.athletes as unknown as { sports?: { nom?: string } | { nom?: string }[] | null } | null;
-        const sportsRel = athleteRel?.sports;
-        const sportObj = Array.isArray(sportsRel) ? sportsRel[0] : sportsRel;
-        const sportName = sportObj?.nom || "Autre";
+      for (const row of overview) {
+        const sportName = sportByAthlete.get(row.athlete_id) || "Autre";
         if (!sportMap.has(sportName)) sportMap.set(sportName, { consulted: 0, favorited: 0, contacted: 0, recruited: 0 });
         const entry = sportMap.get(sportName)!;
         const stage = row.stage as string;
@@ -106,33 +126,22 @@ export function useCegepStats() {
         .map(([sport, counts]) => ({ sport, ...counts }))
         .sort((a, b) => (b.consulted + b.favorited + b.contacted + b.recruited) - (a.consulted + a.favorited + a.contacted + a.recruited));
 
-      // 5. Recruiter activity bar chart (N+1 — TODO RPC group-by iter 5.5+)
-      const activityBars: { short: string; name: string; messages: number }[] = [];
-      for (const r of rList) {
-        const { count } = await supabase
-          .from("recruiter_pipeline")
-          .select("*", { count: "exact", head: true })
-          .eq("recruiter_id", r.id as string);
-        activityBars.push({
-          short: `${((r.first_name as string) || "")[0] || ""}. ${r.last_name || ""}`,
-          name: `${r.first_name || ""} ${r.last_name || ""}`,
-          messages: count || 0,
-        });
-      }
+      // 5. Recruiter activity bar chart — compté sur le jeu déjà chargé
+      // (l'ancienne boucle faisait une requête par recruteur).
+      const rowsByRecruiter = new Map<string, number>();
+      for (const p of overview) rowsByRecruiter.set(p.recruiter_id, (rowsByRecruiter.get(p.recruiter_id) || 0) + 1);
+      const activityBars: { short: string; name: string; messages: number }[] = rList.map((r) => ({
+        short: `${((r.first_name as string) || "")[0] || ""}. ${r.last_name || ""}`,
+        name: `${r.first_name || ""} ${r.last_name || ""}`,
+        messages: rowsByRecruiter.get(r.id as string) || 0,
+      }));
       const recruiterActivity = activityBars.sort((a, b) => b.messages - a.messages);
 
       // 6. Provenance recrues (donut)
-      const { data: recrueRegions } = await supabase
-        .from("recruiter_pipeline")
-        .select("athletes!athlete_id(schools!school_id(region))")
-        .in("recruiter_id", recruiterIds)
-        .in("stage", ["ENGAGE", "LETTRE_SIGNEE"]);
       const regionMap = new Map<string, number>();
-      for (const row of recrueRegions ?? []) {
-        const athleteRel = row.athletes as unknown as { schools?: { region?: string } | { region?: string }[] | null } | null;
-        const schoolRel = athleteRel?.schools;
-        const schoolObj = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
-        const region = schoolObj?.region || "Inconnue";
+      for (const row of overview) {
+        if (row.stage !== "ENGAGE" && row.stage !== "LETTRE_SIGNEE") continue;
+        const region = regionByAthlete.get(row.athlete_id) || "Inconnue";
         regionMap.set(region, (regionMap.get(region) || 0) + 1);
       }
       const regionData = Array.from(regionMap.entries())

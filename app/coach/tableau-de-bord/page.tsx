@@ -4,6 +4,7 @@ import InterimCoachBanner from "@/components/shared/coach/InterimCoachBanner";
 import { loadMyInterimTeams, type InterimTeam } from "@/lib/queries/coach/interimTeams";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import ActionBar from "./_components/ActionBar";
 import KpiCards from "./_components/KpiCards";
 import HotAthletes from "./_components/HotAthletes";
@@ -161,12 +162,8 @@ export default function TableauDeBordPage() {
       // Banner 1: unread recruiter contacts (CONTACTE status in pipeline for coach's athletes)
       let unreadMessages = 0;
       if (coachAthleteIds.length > 0) {
-        const { count } = await supabase
-          .from("recruiter_pipeline")
-          .select("id", { count: "exact", head: true })
-          .eq("stage", "CONTACTE")
-          .in("athlete_id", coachAthleteIds);
-        unreadMessages = count || 0;
+        // Lot 2a — RPC coach (4 colonnes), plus de lecture directe du pipeline.
+        unreadMessages = (await fetchCoachPipeline(supabase, { athleteIds: coachAthleteIds, stages: ["CONTACTE"] })).length;
       }
 
       // Banner 2 + 3b + 4: tâches "à traiter" via le helper partagé.
@@ -226,15 +223,11 @@ export default function TableauDeBordPage() {
       // ── KPI 4: Active conversations (distinct recruiters in active pipeline statuses) ──
       let activeConversations = 0;
       if (coachAthleteIds.length > 0) {
-        const { data: activeRows } = await supabase
-          .from("recruiter_pipeline")
-          .select("recruiter_id")
-          .in("athlete_id", coachAthleteIds)
-          .in("stage", ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE"]);
-        if (activeRows) {
-          const uniqueRecruiters = new Set(activeRows.map((r: { recruiter_id: string }) => r.recruiter_id));
-          activeConversations = uniqueRecruiters.size;
-        }
+        const activeRows = await fetchCoachPipeline(supabase, {
+          athleteIds: coachAthleteIds,
+          stages: ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE"],
+        });
+        activeConversations = new Set(activeRows.map((r) => r.recruiter_id)).size;
       }
 
       setKpi({

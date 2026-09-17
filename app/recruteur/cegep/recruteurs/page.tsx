@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
 import type { TrainerOverview } from "@/lib/types/models";
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -138,12 +139,20 @@ function TrainersListPage() {
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
+      /* Lot 2a des frontières du pipeline : les lettres signées de toute
+         l'équipe en UN appel à la RPC sans colonnes privées, puis comptées par
+         recruteur — au lieu d'une lecture directe du pipeline par recruteur. */
+      const signedRows = await fetchCegepPipelineOverview(supabase, team.map((t) => t.id as string), ["LETTRE_SIGNEE"]);
+      const signedByRecruiter = new Map<string, number>();
+      for (const r of signedRows) {
+        signedByRecruiter.set(r.recruiter_id, (signedByRecruiter.get(r.recruiter_id) || 0) + 1);
+      }
+
       const trainers: TrainerOverview[] = await Promise.all(
         team.map(async (t) => {
-          const [favRes, msgRes, recruesRes] = await Promise.all([
+          const [favRes, msgRes] = await Promise.all([
             supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("recruiter_id", t.id),
             supabase.from("messages").select("*", { count: "exact", head: true }).eq("sender_id", t.id).gte("created_at", thirtyDaysAgo),
-            supabase.from("recruiter_pipeline").select("*", { count: "exact", head: true }).eq("recruiter_id", t.id).eq("stage", "LETTRE_SIGNEE"),
           ]);
           return {
             id: t.id,
@@ -153,7 +162,7 @@ function TrainersListPage() {
             division: (t.division as string) ? [(t.division as string).replace("Division ", "D") as "D1" | "D2" | "D3"] : [] as ("D1" | "D2" | "D3")[],
             activeFavorites: favRes.count ?? 0,
             messagesSent30d: msgRes.count ?? 0,
-            recruitsConfirmed: recruesRes.count ?? 0,
+            recruitsConfirmed: signedByRecruiter.get(t.id) ?? 0,
             lastLoginAt: (t.created_at as string) || new Date().toISOString(),
             status: "active" as const,
             accountStatus: "ACTIF" as const,

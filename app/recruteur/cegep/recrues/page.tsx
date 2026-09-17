@@ -5,6 +5,7 @@ import Link from "next/link";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -82,12 +83,11 @@ function RecrusCegepPage() {
          position, école, région). L'embed n'avait donc aucune raison de
          survivre — contrairement au profil ou au fil, où GPA et programmes
          obligent à un partage. */
-      const { data: recrueData } = await supabase
-        .from("recruiter_pipeline")
-        .select("stage, updated_at, recruiter_id, athlete_id")
-        .in("recruiter_id", teamIds)
-        .in("stage", ["ENGAGE", "LETTRE_SIGNEE"])
-        .order("updated_at", { ascending: false });
+      /* Lot 2a des frontières du pipeline : RPC sans colonnes privées, en
+         remplacement de la lecture directe. L'ordre (updated_at décroissant)
+         est rétabli ici, la RPC n'en garantit aucun. */
+      const recrueData = (await fetchCegepPipelineOverview(supabase, teamIds, ["ENGAGE", "LETTRE_SIGNEE"]))
+        .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
 
       /* TEMPS 2 — l'identité et le reste, projetés par le serveur. */
       const cards = await fetchRecruiterAthleteCards(

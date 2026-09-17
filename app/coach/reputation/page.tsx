@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import ReputationScoreCard from "@/components/reputation/ReputationScoreCard";
 import BadgeGrid from "@/components/reputation/BadgeGrid";
 import QuickStatsPills from "@/components/reputation/QuickStatsPills";
@@ -137,12 +138,8 @@ function CoachReputationDesktop() {
 
       // 3. Placed athletes
       if (athleteIds.length > 0) {
-        const { count } = await supabase
-          .from("recruiter_pipeline")
-          .select("athlete_id", { count: "exact", head: true })
-          .in("athlete_id", athleteIds)
-          .eq("stage", "LETTRE_SIGNEE");
-        const placements = count || 0;
+        // Lot 2a — RPC coach (4 colonnes), plus de lecture directe du pipeline.
+        const placements = (await fetchCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] })).length;
         setTotalPlacements(placements);
         if (placements >= 5) setHasPlaceurBadge(true);
       }

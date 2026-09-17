@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import PlacementsTable from "@/components/director/PlacementsTable";
 import type { Placement } from "@/lib/types/models";
@@ -54,11 +55,9 @@ function PlacementsPage() {
       const athleteIds = athletes.map(a => a.id);
 
       // Get pipeline entries with LETTRE_SIGNEE
-      const { data: pipelineEntries } = await supabase
-        .from("recruiter_pipeline")
-        .select("id, athlete_id, recruiter_id, updated_at")
-        .in("athlete_id", athleteIds)
-        .eq("stage", "LETTRE_SIGNEE");
+      /* Lot 2a — RPC coach : plus d'`id` de ligne pipeline. La clé du
+         placement devient (athlete_id, recruiter_id), unique en base. */
+      const pipelineEntries = await fetchCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] });
 
       if (!pipelineEntries || pipelineEntries.length === 0) {
         setPlacements([]);
@@ -103,7 +102,7 @@ function PlacementsPage() {
         const posObj = pos as { abreviation?: string; nom?: string } | null;
 
         return {
-          id: pe.id,
+          id: `${pe.athlete_id}:${pe.recruiter_id}`,
           athleteId: (athlete?.id as string) || "",
           athleteName: athlete ? `${(athlete.first_name as string) || ""} ${(athlete.last_name as string) || ""}`.trim() : "—",
           sport: sportObj?.nom || "—",

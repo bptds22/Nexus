@@ -20,6 +20,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import type { CoachReview, CoachBadge } from "@/lib/types/models";
 
@@ -173,12 +174,8 @@ export function useCoachReputationStats(coachId?: string | null) {
       /* ── 4. Placements (LETTRE_SIGNEE) ────────────────────── */
       let totalPlacements = 0;
       if (athleteIds.length > 0) {
-        const { count } = await supabase
-          .from("recruiter_pipeline")
-          .select("athlete_id", { count: "exact", head: true })
-          .in("athlete_id", athleteIds)
-          .eq("stage", "LETTRE_SIGNEE");
-        totalPlacements = count || 0;
+        // Lot 2a — RPC coach (4 colonnes), plus de lecture directe du pipeline.
+        totalPlacements = (await fetchCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] })).length;
       }
       const hasPlaceurBadge = totalPlacements >= 5;
 

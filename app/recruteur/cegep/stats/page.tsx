@@ -7,6 +7,7 @@ import CegepGate from "@/components/subscription/CegepGate";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
 import {
   fetchRecruiterAthleteCards,
   displayFullName,
@@ -181,12 +182,31 @@ function CegepStatsPage() {
          un embed lit `athletes` en direct et court-circuite entièrement la
          projection Loi 25, donc affichait le vrai nom d'un mineur sans
          consentement parental à n'importe quel admin CÉGEP en free. */
-      const { data: allPipeline } = await supabase
-        .from("recruiter_pipeline")
-        .select("recruiter_id, athlete_id, stage, created_at, updated_at, athletes!athlete_id(sport_id, sports!sport_id(nom), positions!position_id(abreviation), evaluations(cote_globale))")
-        .in("recruiter_id", teamIds);
+      /* Lot 2a des frontières du pipeline : la relation vient de
+         `cegep_pipeline_overview` (recruiter_id, athlete_id, stage, dates),
+         plus d'une lecture directe qui rendait aussi les notes de relance, la
+         visite et le drapeau des collègues. Une RPC ne s'embarque pas : les
+         attributs sportifs que l'embed lisait sont relus à part, sur la même
+         table et sous la même RLS, puis recollés sous `athletes` pour que le
+         reste de la page ne change pas. */
+      const overview = await fetchCegepPipelineOverview(supabase, teamIds);
+      const pipelineAthleteIds = [...new Set(overview.map((p) => p.athlete_id).filter(Boolean))];
+      const { data: athleteAttrs } = pipelineAthleteIds.length > 0
+        ? await supabase
+            .from("athletes")
+            .select("id, sport_id, sports!sport_id(nom), positions!position_id(abreviation), evaluations(cote_globale)")
+            .in("id", pipelineAthleteIds)
+        : { data: [] };
+      const attrsById = new Map((athleteAttrs ?? []).map((a) => [a.id as string, a]));
 
-      const pipeline: PipelineRow[] = allPipeline || [];
+      const pipeline: PipelineRow[] = overview.map((p) => ({
+        recruiter_id: p.recruiter_id,
+        athlete_id: p.athlete_id,
+        stage: p.stage,
+        created_at: p.created_at ?? undefined,
+        updated_at: p.updated_at ?? undefined,
+        athletes: attrsById.get(p.athlete_id) ?? null,
+      }));
       setRawPipeline(pipeline);
 
       /* TEMPS 2 — l'identité, projetée par le serveur. */

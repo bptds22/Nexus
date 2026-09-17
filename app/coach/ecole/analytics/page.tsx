@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 
@@ -159,15 +160,16 @@ function CoachAnalyticsPage() {
       //    page shows lifetime totals (the weekly chart buckets viewed_at itself).
       //    .limit(10000) overrides PostgREST's default 1000-row cap.
 
-      const [pipelineRes, viewsRes, favoritesRes, convsRes] = await Promise.all([
-        supabase.from("recruiter_pipeline").select("id, athlete_id, recruiter_id, stage", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
+      const [pipeline, viewsRes, favoritesRes, convsRes] = await Promise.all([
+        // Lot 2a — RPC coach (athlete_id, recruiter_id, stage, updated_at) ; pas de
+        // plafond PostgREST à contourner, le count n'était pas lu.
+        fetchCoachPipeline(supabase, { athleteIds }),
         // recruiter_athlete_views is the authoritative view-tracking table (matches the
         // counter shown on the recruiter-side athlete profile page).
         supabase.from("recruiter_athlete_views").select("athlete_id, recruiter_id, viewed_at", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
         supabase.from("recruiter_favorites").select("athlete_id, recruiter_id", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
         supabase.from("conversations").select("athlete_id, recruiter_id", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
       ]);
-      const pipeline = pipelineRes.data || [];
       const profileViews = viewsRes.data || [];
       const favorites = favoritesRes.data || [];
       const conversations = convsRes.data || [];

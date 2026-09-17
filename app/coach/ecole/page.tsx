@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import KpiCard from "@/components/director/KpiCard";
@@ -152,12 +153,10 @@ function SchoolDashboardContent() {
       // KPI 4: Placements (LETTRE_SIGNEE)
       let placementsCount = 0;
       if (athleteIds.length > 0) {
-        const { count } = await supabase
-          .from("recruiter_pipeline")
-          .select("id", { count: "exact", head: true })
-          .in("athlete_id", athleteIds)
-          .eq("stage", "LETTRE_SIGNEE");
-        placementsCount = count || 0;
+        /* Lot 2a — RPC coach. Périmètre = get_coach_athletes : un directeur
+           voit enfin le pipeline des athlètes des AUTRES coachs de l'école.
+           Sous l'ancienne policy (coach_id = moi), ce compte sous-comptait. */
+        placementsCount = (await fetchCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] })).length;
       }
 
       setStats({
@@ -192,10 +191,7 @@ function SchoolDashboardContent() {
 
       // Funnel — count pipeline by status
       if (athleteIds.length > 0) {
-        const { data: pipelineEntries } = await supabase
-          .from("recruiter_pipeline")
-          .select("stage")
-          .in("athlete_id", athleteIds);
+        const pipelineEntries = await fetchCoachPipeline(supabase, { athleteIds });
 
         const counts: Record<string, number> = {};
         (pipelineEntries || []).forEach((p: { stage: string }) => {

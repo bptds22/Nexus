@@ -869,3 +869,52 @@ bord.
 
 Son sort est traité à part ; la décision ci-dessus ne fait que retirer la
 dernière raison hypothétique de la garder.
+
+---
+
+## 28. Lot 2a pipeline — l'indicateur « contactés » du tableau de bord coach MOBILE tombe à 0
+
+**Décision BP, 2026-09-17 — régression acceptée jusqu'au lot mobile.**
+
+**Contexte.** Le Lot 2a des frontières du pipeline
+(`docs/pipeline-recruteur-frontieres.md`) rend `next_action_note`, `visit_at`
+et `flagged` privés au recruteur. La RLS filtrant des lignes et non des
+colonnes, le coach ne lit plus `recruiter_pipeline` en direct : il passe par la
+RPC `coach_pipeline_for_my_athletes` (athlete_id, recruiter_id, stage,
+updated_at). Les écrans coach **web** ont basculé. La policy
+`coaches read pipeline for own athletes` est retirée dans un second geste,
+**après** le déploiement du web.
+
+**Ce qui casse, et seulement ça.**
+`components/shared/CoachDashboardMobile.tsx:621` compte encore les dossiers au
+stade CONTACTE par lecture directe :
+
+```ts
+supabase.from("recruiter_pipeline")
+  .select("id", { count: "exact", head: true })
+  .eq("stage", "CONTACTE")
+  .in("athlete_id", coachAthleteIds)
+```
+
+Une fois la policy retirée, la RLS ne lui rend plus aucune ligne : **l'indicateur
+affiche 0**, sans erreur ni plantage, dans **tous les binaires coach publiés** et
+dans tout build mobile qui n'aurait pas basculé. Aucune autre surface mobile coach
+ne lit le pipeline.
+
+**À faire au lot mobile (1 appel, même forme que le web) :**
+
+```ts
+const { data } = await supabase.rpc("coach_pipeline_for_my_athletes", {
+  p_athlete_ids: coachAthleteIds,
+  p_stages: ["CONTACTE"],
+});
+const count = (data ?? []).length;
+```
+
+Référence web identique : `app/coach/tableau-de-bord/page.tsx` (bannière 1).
+
+**Hors de cette entrée — le Lot 2b**, reporté lui aussi au lot mobile :
+déplacement physique des trois colonnes privées vers une table propriétaire
+seul, avec trigger d'interception pour les binaires qui les écrivent encore.
+Le Lot 2a suffit à la garantie « ni le coach ni l'admin cégep, même par
+l'API » ; le 2b est une défense en profondeur.

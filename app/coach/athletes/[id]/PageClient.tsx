@@ -304,14 +304,16 @@ export default function CoachAthleteProfilePage() {
       // que si l'éval affichée (la plus récente) appartient à un AUTRE évaluateur.
       const { data: { user: authUser } } = await supabase.auth.getUser();
       setCurrentCoachId(authUser?.id ?? null);
-      const { data: pipeRows } = await supabase
-        .from("recruiter_pipeline")
-        .select("stage, updated_at")
-        .eq("athlete_id", id);
-      if (pipeRows && pipeRows.length > 0) {
+      /* Lot 2a des frontières du pipeline : le coach ne lit plus
+         `recruiter_pipeline` en direct (la RLS lui donnait la ligne ENTIÈRE,
+         notes de relance, visite et drapeau compris). La RPC ne renvoie que
+         athlete_id, recruiter_id, stage, updated_at. */
+      const { fetchCoachPipeline } = await import("@/lib/pipeline/pipelineVues");
+      const pipeRows = await fetchCoachPipeline(supabase, { athleteIds: [id] });
+      if (pipeRows.length > 0) {
         const counts: Record<string, number> = {};
         let maxAt = "";
-        pipeRows.forEach((r: { stage: string; updated_at: string }) => {
+        pipeRows.forEach((r) => {
           counts[r.stage] = (counts[r.stage] || 0) + 1;
           if (r.updated_at && r.updated_at > maxAt) maxAt = r.updated_at;
         });

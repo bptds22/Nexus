@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
 /* ── types ──────────────────────────────────────────────── */
@@ -78,11 +79,9 @@ function StatsPage() {
       if (!athletes || athletes.length === 0) { setLoading(false); return; }
       const athleteIds = athletes.map(a => a.id);
 
-      const { data: pipelineEntries } = await supabase
-        .from("recruiter_pipeline")
-        .select("id, athlete_id, recruiter_id, stage")
-        .in("athlete_id", athleteIds);
-      const pipeline = pipelineEntries || [];
+      /* Lot 2a — RPC coach (athlete_id, recruiter_id, stage, updated_at).
+         Périmètre get_coach_athletes : le directeur voit toute son école. */
+      const pipeline = await fetchCoachPipeline(supabase, { athleteIds });
 
       const sportIds = [...new Set(athletes.map(a => a.sport_id).filter(Boolean))];
       let sportsMap: Record<string, string> = {};
