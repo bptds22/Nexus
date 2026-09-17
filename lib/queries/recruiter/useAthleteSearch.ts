@@ -55,9 +55,12 @@
       main. Ce n'est plus un choix du client.
 
    3. LE TRI ET LA RECHERCHE PAR NOM SONT AUSSI ARBITRÉS SERVEUR.
-      La RPC neutralise `p_search` pour les Free et rabat
-      `name_asc` sur `rating_desc` — sinon l'ORDRE trahirait le nom
-      qu'on vient de masquer. On envoie donc les deux TELS QUELS et
+      Depuis le 2026-09-17, `p_search` cherche par mots dans l'école,
+      l'école de l'équipe et l'équipe pour TOUS les paliers ; la
+      branche prénom/nom n'est lue que pour un Pro ET une identité
+      visible (athlete_identity_ok). La RPC rabat aussi `name_asc`
+      sur `rating_desc` pour les Free — sinon l'ORDRE trahirait le
+      nom qu'on vient de masquer. On envoie donc les deux TELS QUELS et
       on laisse le serveur trancher. Ne pas ré-implémenter ces deux
       gardes ici : deux copies d'une règle de confidentialité, ça
       diverge.
@@ -292,10 +295,10 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
     queryFn: async (): Promise<SearchAthleteRow[]> => {
       const supabase = createClient();
 
-      // `%` et `_` sont les jokers d'ILIKE. La RPC interpole le terme dans
-      // '%' || v_search || '%' sans clause ESCAPE, donc un `%` tapé par
-      // l'utilisateur élargirait la recherche au lieu de la restreindre.
-      // Aucun enjeu d'injection ici (paramètre lié), juste de justesse.
+      // `%` et `_` sont les jokers d'ILIKE. La RPC les échappe elle-même
+      // depuis le 2026-09-17 (elle est appelable directement, Free compris) ;
+      // les retirer ici reste inoffensif et évite d'envoyer un mot vide de
+      // sens. Aucun enjeu d'injection (paramètre lié), juste de justesse.
       const raw = filters.search.trim().replace(/[%_]/g, "");
       const search = raw.length >= MIN_SEARCH_LEN ? raw : null;
 

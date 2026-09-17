@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useFiltresRecherche, usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
+import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
+import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
@@ -574,7 +576,7 @@ function RechercheContent() {
   const divisionAxis = useMemo(() => axisDisplay(divisionOptionList), [divisionOptionList]);
 
   /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
-     filtrer derriere un menu grise.
+     filtrer derriere un menu masque.
 
      ⚠ ICI, CE N'EST PAS SEULEMENT LE NIVEAU 1 QUI PEUT LE DECLENCHER. Le coach
      n'a aucun filtre serveur ; le recruteur en a douze. Cocher « Verifies
@@ -587,6 +589,18 @@ function RechercheContent() {
     if (divisionAxis.state !== "active" && divisionFilter) setDivisionFilter("");
   }, [orgAxis.state, leagueAxis.state, divisionAxis.state, orgType, leagueFilter,
       divisionFilter, setOrgType, setLeagueFilter, setDivisionFilter]);
+
+  /* Télémétrie d'usage des filtres (search_filter_events). Le compte écrit
+     est celui de la liste RENDUE, après les filtres client — ce que
+     l'utilisateur a vu. `pret` attend aussi le refetch : avec
+     keepPreviousData, l'ancienne grille resterait comptée sinon. */
+  const { journaliserReinitialisation, journaliserPanneauAvance } = useJournalFiltres({
+    surface: "recruteur_recherche",
+    filtres,
+    defauts: FILTRES_DEFAUT,
+    nbResultats: filtered.length,
+    pret: !loading && !athletesFetching,
+  });
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -623,6 +637,7 @@ function RechercheContent() {
      ce n'est pas le chantier des filtres persistants qui doit changer ça en
      douce. Jumeau exact du mobile. */
   const resetFilters = () => {
+    journaliserReinitialisation();
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", region: "", promotion: "", orgType: "",
       leagueFilter: "", divisionFilter: "",
@@ -676,14 +691,20 @@ function RechercheContent() {
           <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
           </svg>
+          {/* OUVERT À TOUS LES PALIERS depuis le 2026-09-17. Le serveur
+              cherche par mots dans l'école, l'école de l'équipe et l'équipe
+              pour tout le monde ; le prénom et le nom seulement pour un Pro,
+              et seulement si l'identité est visible. Le libellé annonce ce
+              que le champ fait VRAIMENT pour ce palier — « École ou équipe »
+              pour un Free, sinon il croirait chercher un nom et lirait « 0 »
+              comme « personne ». */}
           <input
             type="text"
-            placeholder={isFreeRecruiter ? "Recherche par nom (Pro)" : "Rechercher par nom..."}
-            value={isFreeRecruiter ? "" : search}
+            placeholder={isFreeRecruiter ? "École ou équipe" : "Nom, école ou équipe"}
+            aria-label={isFreeRecruiter ? "Rechercher par école ou équipe" : "Rechercher par nom, école ou équipe"}
+            value={search}
             onChange={(e) => setSearch(e.target.value)}
-            disabled={isFreeRecruiter}
-            title={isFreeRecruiter ? "La recherche par nom est réservée aux recruteurs Pro" : undefined}
-            className={`w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors${isFreeRecruiter ? " opacity-60 cursor-not-allowed" : ""}`}
+            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
           />
         </div>
 
@@ -768,7 +789,7 @@ function RechercheContent() {
           {/* Advanced toggle */}
           <button
             type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
+            onClick={() => { journaliserPanneauAvance(!showAdvanced); setShowAdvanced(!showAdvanced); }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-semibold transition-colors ${
               showAdvanced ? "bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/30" : "text-[#9CA3AF] hover:text-white border border-[#2D3748]"
             }`}

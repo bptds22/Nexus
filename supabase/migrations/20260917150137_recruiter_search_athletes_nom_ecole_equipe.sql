@@ -1,35 +1,70 @@
--- 20260917120000_recruiter_search_athletes_nom_complet
+-- 20260917150137_recruiter_search_athletes_nom_ecole_equipe
 --
--- NON APPLIQUEE en PROD. Validee en local ; apply prod sur GO explicite de BP.
+-- APPLIQUEE en PROD le 2026-09-17 via MCP apply_migration, sur GO de BP.
+-- Nom de fichier aligne sur la version REELLE assignee par MCP (redigee sous
+-- 20260917120000). md5 de la definition identique prod / local apres apply.
+-- REMPLACE `20260917120000_recruiter_search_athletes_nom_complet` (chantier A,
+-- jamais applique en prod) : meme horodatage, meme fonction, perimetre elargi.
 --
--- ── LE DEFAUT ────────────────────────────────────────────────────────────────
--- La recherche par nom testait
---     a.first_name ILIKE '%'||v_search||'%' OR a.last_name ILIKE '%'||v_search||'%'
--- La chaine ENTIERE contre CHAQUE colonne, separement. « Gabriel Mandziuk »
--- n'est contenu ni dans « Gabriel » ni dans « Mandziuk » : zero resultat pour
--- la saisie la plus naturelle qui soit, le nom complet.
+-- Quatre changements, tous dans le SEUL predicat de recherche :
 --
--- ── LA CORRECTION : RECHERCHE PAR MOTS ───────────────────────────────────────
--- La saisie est decoupee sur les blancs ; CHAQUE mot doit se retrouver dans le
--- prenom OU le nom. Retenue plutot qu'une concatenation « prenom nom » parce
--- qu'elle couvre aussi l'ordre inverse (« Mandziuk Gabriel ») et les fragments
--- (« gab mand »), sans rien retirer : une saisie d'un seul mot se comporte
--- exactement comme avant.
+-- ── 1. NOM COMPLET (chantier A) ──────────────────────────────────────────────
+-- L'ancien predicat testait la saisie ENTIERE contre first_name OU last_name :
+-- « Gabriel Mandziuk » ne trouvait rien. Recherche PAR MOTS : chaque mot doit
+-- se retrouver dans au moins un des champs cherches. Couvre l'ordre inverse et
+-- les fragments ; un mot seul se comporte comme avant.
 --
--- `v_search` est deja btrim-e et NULL si vide : le decoupage ne produit donc
--- jamais de mot vide (un mot vide ferait matcher '%%', donc tout).
+-- ── 2. ECOLE ET EQUIPE (decision BP 2026-09-17) ──────────────────────────────
+-- Les mots cherchent aussi dans le nom de l'ecole de l'athlete (`sc.name`), de
+-- l'ecole de son equipe (`tsc.name`) et de son equipe (`tm.name`) — trois
+-- tables DEJA jointes pour la projection. Recherche texte plutot que menus :
+-- `sc.name` designe aussi des CLUBS civils (24 athletes actifs au 2026-09-17),
+-- un menu « Ecole » aurait affirme qu'un club est une ecole ; et la barre de
+-- filtres est saturee. « Tremblay Saint-Sacrement » combine nom et ecole.
+--
+-- ── 3. PALIER GRATUIT (decision BP 2026-09-17) ───────────────────────────────
+-- AVANT : p_search entierement neutralise pour Free.
+-- APRES : Free cherche par ecole et equipe ; la branche NOM reste Pro seulement.
+-- Pourquoi ce n'est pas un oracle : l'ecole est deja affichee sur la carte
+-- gratuite, et les noms d'equipe releves en prod sont des noms d'ecole, de
+-- club ou de niveau (« Wildcats Midget D1 »), jamais de personne. Pour un Free,
+-- le prenom et le nom ne sont JAMAIS lus par le predicat : aucune reponse ne
+-- depend du nom d'un athlete. Le tri name_asc reste rabattu sur la cote.
+--
+-- ── 4. ORACLE D'IDENTITE MASQUEE — CORRIGE (decision BP 2026-09-17) ──────────
+-- AVANT : la recherche par nom d'un Pro comparait aussi les noms des athletes
+-- dont l'identite est masquee MEME POUR PRO (mineur sans consentement,
+-- athlete_identity_ok = false ; 2 en prod au 2026-09-17). Taper « Tremblay »
+-- faisait sortir une carte « Profil verrouille » : la confirmation qu'un
+-- mineur non consentant porte ce nom.
+-- APRES : la branche NOM exige athlete_identity_ok(...). Pour un Pro,
+-- identity_visible = athlete_identity_ok, donc un nom ne peut plus trouver
+-- que des fiches dont le nom est affiche. Un profil masque reste trouvable
+-- par ecole ou equipe — information deja visible sur sa carte.
+--
+-- ── MECANIQUE ────────────────────────────────────────────────────────────────
+-- · Insensible aux accents : `extensions.unaccent` (45 des 57 ecoles des
+--   athletes actifs portent un accent). QUALIFIE PAR SON SCHEMA — la fonction
+--   tourne en `search_path = public`. Et forme a DEUX arguments avec le
+--   dictionnaire qualifie : la forme a un argument resout le dictionnaire
+--   `unaccent` via le search_path, et echouerait ici. Present en local et en
+--   prod : extensions.unaccent 1.1, verifie le 2026-09-17.
+-- · Jokers neutralises COTE SERVEUR : `\`, `%`, `_` sont echappes dans chaque
+--   mot. Le client retirait deja `%` et `_`, mais un appel direct de la RPC —
+--   desormais ouvert aux Free — ne doit pas pouvoir elargir un motif, et un
+--   `\` final levait « LIKE pattern must not end with escape character ».
+-- · COALESCE(..., false) autour du test d'un mot : une ecole ou une equipe
+--   NULL rendrait sinon le test NULL, `NOT NULL` = NULL, et le mot serait
+--   compte comme TROUVE — un athlete sans ecole sortirait pour n'importe
+--   quelle saisie.
 --
 -- ── CE QUI NE CHANGE PAS ─────────────────────────────────────────────────────
--- Signature, RETURNS TABLE, gardes (is_recruiter, neutralisation Free de
--- p_search et du tri name_asc), projection, autres filtres, tri : identiques a
--- la definition PROD relevee le 2026-09-17 par pg_get_functiondef. Seul le
--- predicat de recherche est reecrit.
---
--- ── ACL ──────────────────────────────────────────────────────────────────────
--- CREATE OR REPLACE a signature identique : pas de DROP, l'ACL n'est pas
--- emportee et les DEFAULT PRIVILEGES ne s'appliquent pas. Relevee AVANT en
--- prod : {postgres, authenticated, service_role}. Le gate ci-dessous la
--- compare quand meme INTEGRALEMENT apres (regle CLAUDE.md du 2026-09-07).
+-- Signature, RETURNS TABLE, garde is_recruiter, projection (dont
+-- identity_visible), autres filtres, tri : identiques a la definition PROD
+-- relevee le 2026-09-17. Pas de DROP : CREATE OR REPLACE a signature et type
+-- de retour identiques, l'ACL n'est pas emportee. Relevee AVANT en prod :
+-- {postgres, authenticated, service_role}. Le gate la compare INTEGRALEMENT
+-- apres (regle CLAUDE.md du 2026-09-07).
 
 CREATE OR REPLACE FUNCTION public.recruiter_search_athletes(p_search text DEFAULT NULL::text, p_sport_id uuid DEFAULT NULL::uuid, p_promotion integer DEFAULT NULL::integer, p_verified_only boolean DEFAULT false, p_with_video_only boolean DEFAULT false, p_min_gpa numeric DEFAULT NULL::numeric, p_min_rating numeric DEFAULT NULL::numeric, p_ouvert_demenager boolean DEFAULT false, p_ouvert_prive boolean DEFAULT false, p_ouvert_anglophone boolean DEFAULT false, p_new_only boolean DEFAULT false, p_sort_by text DEFAULT 'rating_desc'::text, p_limit integer DEFAULT NULL::integer, p_programme_ids uuid[] DEFAULT NULL::uuid[], p_offert_par_mon_cegep boolean DEFAULT false)
  RETURNS TABLE(id uuid, identity_visible boolean, first_name text, last_name text, photo_url text, numero_jersey text, age integer, annee_diplomation integer, verified boolean, last_profile_validation timestamp with time zone, cote_globale numeric, profile_completion integer, taille_pieds integer, taille_pouces integer, poids_lbs numeric, moyenne_generale numeric, mentions_academiques jsonb, recruitment_status text, statut_recrutement_override text, open_to_offers boolean, a_une_video boolean, context text, created_at timestamp with time zone, sport_nom text, position_nom text, position_abbr text, school_id uuid, school_name text, school_region text, school_type text, committed_school_name text, evaluations jsonb, team_gender text, programmes jsonb, team_division text, team_league text, team_is_rseq boolean, team_school_type text)
@@ -40,7 +75,7 @@ CREATE OR REPLACE FUNCTION public.recruiter_search_athletes(p_search text DEFAUL
 AS $function$
 DECLARE
   v_tier_ok boolean;
-  v_search  text;
+  v_mots    text[];
   v_sort    text;
   v_school  uuid;
 BEGIN
@@ -50,15 +85,22 @@ BEGIN
 
   v_tier_ok := public.get_user_tier() IN ('pro', 'all_star');
 
-  -- Deux oracles fermes pour les Free : le filtre par nom est
-  -- neutralise, et le tri alphabetique rabattu sur la cote —
+  -- RECHERCHE TEXTE — ouverte a TOUS les paliers depuis le 2026-09-17, mais la
+  -- branche NOM du predicat reste Pro (et identite visible) : voir l'en-tete
+  -- de la migration 20260917120000. Mots sans accent, jokers LIKE echappes.
+  -- NULL si la saisie est vide.
+  SELECT array_agg(replace(replace(replace(
+           extensions.unaccent('extensions.unaccent'::regdictionary, m),
+           '\', '\\'), '%', '\%'), '_', '\_'))
+    INTO v_mots
+    FROM regexp_split_to_table(btrim(COALESCE(p_search, '')), '\s+') AS m
+   WHERE m <> '';
+
+  -- Oracle ferme pour les Free : le tri alphabetique est rabattu sur la cote —
   -- sinon l'ORDRE trahirait le nom qu'on vient de masquer.
   --
-  -- VITRINE : volontairement NON assouplis. La vitrine sort de toute
-  -- facon en tete du tri par cote ; rouvrir la recherche par nom pour
-  -- un Free n'apporterait rien et rouvrirait une surface d'oracle.
-  v_search := CASE WHEN v_tier_ok THEN NULLIF(btrim(COALESCE(p_search, '')), '') END;
-
+  -- VITRINE : volontairement NON assoupli. La vitrine sort de toute facon en
+  -- tete du tri par cote.
   v_sort := CASE WHEN p_sort_by = 'name_asc' AND NOT v_tier_ok
                  THEN 'rating_desc' ELSE p_sort_by END;
 
@@ -127,15 +169,22 @@ BEGIN
   -- `team_school_type` non nul <=> l'athlete a une equipe.
   LEFT JOIN public.schools       tsc ON tsc.id = tm.school_id
   WHERE a.status = 'ACTIF'::public.account_status
-    -- RECHERCHE PAR MOTS (2026-09-17) : chaque mot saisi doit figurer dans le
-    -- prenom OU le nom. « Gabriel Mandziuk », « Mandziuk Gabriel » et
-    -- « gab mand » trouvent tous la meme fiche ; un mot seul = comportement
-    -- d'avant. Lu « aucun mot saisi n'est absent des deux colonnes ».
-    AND (v_search IS NULL OR NOT EXISTS (
+    -- RECHERCHE PAR MOTS (2026-09-17). Lu : « aucun mot saisi n'est introuvable ».
+    -- Un mot est trouve s'il figure dans :
+    --   · le prenom ou le nom — PRO SEULEMENT et IDENTITE VISIBLE (oracle ferme) ;
+    --   · l'ecole de l'athlete, l'ecole de son equipe, ou son equipe — tous paliers.
+    AND (v_mots IS NULL OR NOT EXISTS (
           SELECT 1
-            FROM regexp_split_to_table(v_search, '\s+') AS mot
-           WHERE NOT (a.first_name ILIKE '%' || mot || '%'
-                   OR a.last_name  ILIKE '%' || mot || '%')))
+            FROM unnest(v_mots) AS mot
+           WHERE NOT COALESCE(
+                   (    v_tier_ok
+                    AND public.athlete_identity_ok(a.date_naissance, a.consentement_parental)
+                    AND (   extensions.unaccent('extensions.unaccent'::regdictionary, a.first_name) ILIKE '%' || mot || '%'
+                         OR extensions.unaccent('extensions.unaccent'::regdictionary, a.last_name)  ILIKE '%' || mot || '%'))
+                   OR extensions.unaccent('extensions.unaccent'::regdictionary, sc.name)  ILIKE '%' || mot || '%'
+                   OR extensions.unaccent('extensions.unaccent'::regdictionary, tsc.name) ILIKE '%' || mot || '%'
+                   OR extensions.unaccent('extensions.unaccent'::regdictionary, tm.name)  ILIKE '%' || mot || '%',
+                 false)))
     AND (p_sport_id  IS NULL OR a.sport_id = p_sport_id)
     AND (p_promotion IS NULL OR a.annee_diplomation = p_promotion)
     AND (NOT p_verified_only    OR a.verified = true)
@@ -169,13 +218,14 @@ BEGIN
 END;
 $function$;
 
--- ── GATE — ACL COMPLETE, triee, jamais par inclusion ─────────────────────────
+-- ── GATES ────────────────────────────────────────────────────────────────────
 do $$
 declare
   f    regprocedure := 'public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean)'::regprocedure;
   vus  text[];
   veut text[] := array['authenticated','postgres','service_role'];
 begin
+  -- ACL COMPLETE, triee, jamais par inclusion.
   select array_agg(t.g order by t.g) into vus
     from pg_proc pr,
          lateral (select coalesce(nullif(split_part(x, '=', 1), ''), 'PUBLIC') as g
@@ -186,5 +236,12 @@ begin
     raise exception 'NEXUS: ACL de recruiter_search_athletes = %, attendu %', vus, veut;
   end if;
 
-  raise notice 'NEXUS: ACL inchangee — %', vus;
+  -- unaccent doit resoudre sous le search_path de la fonction (public seul) :
+  -- sans ca la RPC leverait a la PREMIERE recherche, pas a l'apply.
+  perform set_config('search_path', 'public', true);
+  if extensions.unaccent('extensions.unaccent'::regdictionary, 'Séminaire École') <> 'Seminaire Ecole' then
+    raise exception 'NEXUS: extensions.unaccent ne rend pas le resultat attendu';
+  end if;
+
+  raise notice 'NEXUS: ACL inchangee — %, unaccent qualifie OK sous search_path=public', vus;
 end $$;
