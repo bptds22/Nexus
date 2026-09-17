@@ -699,61 +699,47 @@ function RechercheContent() {
             {TEAM_GENDER_FILTER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
           </select>
 
-          {/* ORGANISATION -> LIGUE -> DIVISION (Lot 3). Toujours affiches,
-              position stable. Mono-valeur => menu GRISE qui affiche cette
-              valeur (« RSEQ », « D3 ») : un libelle d'ETAT, pas un filtre — il
-              ne compte pas dans « X athletes trouves », ne declenche pas
-              « Reinitialiser », et porte :disabled, jamais nx-filter-active. */}
-          <select
-            value={orgType}
-            onChange={(e) => handleOrgTypeChange(e.target.value)}
-            disabled={orgAxis.state !== "active"}
-            className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
-            aria-label="Organisation"
-          >
-            {orgAxis.state === "active" ? (
-              <>
-                <option value="">Toutes les organisations</option>
-                {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-              </>
-            ) : (
-              <option value="">{orgAxis.label}</option>
-            )}
-          </select>
+          {/* ORGANISATION -> LIGUE -> DIVISION (Lot 3). Rendus SEULEMENT quand
+              l'axe a au moins deux valeurs a departager (state "active").
+              Jusqu'au 2026-09-17 un axe mono-valeur restait affiche, grise,
+              avec sa valeur pour libelle (« RSEQ », « D3 ») : trois menus
+              inertes dans une barre deja saturee. Masque desormais — la purge
+              ci-dessus garantit qu'aucune selection ne survit a sa disparition. */}
+          {orgAxis.state === "active" && (
+            <select
+              value={orgType}
+              onChange={(e) => handleOrgTypeChange(e.target.value)}
+              className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
+              aria-label="Organisation"
+            >
+              <option value="">Toutes les organisations</option>
+              {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+            </select>
+          )}
 
-          <select
-            value={leagueFilter}
-            onChange={(e) => setLeagueFilter(e.target.value)}
-            disabled={leagueAxis.state !== "active"}
-            className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
-            aria-label="Ligue"
-          >
-            {leagueAxis.state === "active" ? (
-              <>
-                <option value="">Toutes les ligues</option>
-                {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-              </>
-            ) : (
-              <option value="">{leagueAxis.label}</option>
-            )}
-          </select>
+          {leagueAxis.state === "active" && (
+            <select
+              value={leagueFilter}
+              onChange={(e) => setLeagueFilter(e.target.value)}
+              className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
+              aria-label="Ligue"
+            >
+              <option value="">Toutes les ligues</option>
+              {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+            </select>
+          )}
 
-          <select
-            value={divisionFilter}
-            onChange={(e) => setDivisionFilter(e.target.value)}
-            disabled={divisionAxis.state !== "active"}
-            className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
-            aria-label="Division"
-          >
-            {divisionAxis.state === "active" ? (
-              <>
-                <option value="">Toutes les divisions</option>
-                {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-              </>
-            ) : (
-              <option value="">{divisionAxis.label}</option>
-            )}
-          </select>
+          {divisionAxis.state === "active" && (
+            <select
+              value={divisionFilter}
+              onChange={(e) => setDivisionFilter(e.target.value)}
+              className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
+              aria-label="Division"
+            >
+              <option value="">Toutes les divisions</option>
+              {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+            </select>
+          )}
 
           <select value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
             <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
