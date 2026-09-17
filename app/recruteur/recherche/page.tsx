@@ -797,10 +797,15 @@ function RechercheContent() {
 
         {/* Quick preset chips */}
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setMinRating(minRating === "4" ? "" : "4")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${minRating === "4" ? "bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill={minRating === "4" ? "#F59E0B" : "#6b7280"} stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-            4+ étoiles
+          {/* Seul point d'entree de `minRating` depuis le retrait du menu Cote.
+              Allumee pour TOUTE valeur posee, pas seulement "4" : un lien
+              ancien peut encore porter `note=3` — la pastille l'affiche
+              (« 3+ etoiles ») et un clic l'efface, au lieu d'un filtre
+              invisible. */}
+          <button type="button" onClick={() => setMinRating(minRating ? "" : "4")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${minRating ? "bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill={minRating ? "#F59E0B" : "#6b7280"} stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+            {minRating || "4"}+ étoiles
           </button>
           <button type="button" onClick={() => setVerifiedOnly(!verifiedOnly)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${verifiedOnly ? "bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
@@ -838,14 +843,11 @@ function RechercheContent() {
                 deux menus du meme axe dans une meme barre en faisaient un de
                 trop, et celui-ci ne connaissait pas « Non renseigne ». */}
 
-            <select value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
-              <option value="">Toutes les cotes</option>
-              <option value="1">★ 1+</option>
-              <option value="2">★★ 2+</option>
-              <option value="3">★★★ 3+</option>
-              <option value="4">★★★★ 4+</option>
-              <option value="5">★★★★★ 5</option>
-            </select>
+            {/* Le menu « Toutes les cotes » vivait ici. Il ecrivait le MEME
+                `minRating` que la pastille « 4+ etoiles » : a 3+, la pastille
+                restait eteinte pendant qu'un filtre de cote agissait depuis un
+                panneau replie. Retire le 2026-09-17 — la pastille seule, comme
+                sur mobile. */}
 
             <select value={minGpa} onChange={(e) => setMinGpa(e.target.value)} className={`nx-filter-select${minGpa ? " nx-filter-active" : ""}`}>
               <option value="">Toutes les moyennes</option>

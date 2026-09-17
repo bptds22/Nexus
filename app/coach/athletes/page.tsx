@@ -1334,14 +1334,9 @@ function MesAthletesContent() {
             {regions.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
 
-          <select title="Cote" value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
-            <option value="">Toutes les cotes</option>
-            <option value="1">★ 1+</option>
-            <option value="2">★★ 2+</option>
-            <option value="3">★★★ 3+</option>
-            <option value="4">★★★★ 4+</option>
-            <option value="5">★★★★★ 5</option>
-          </select>
+          {/* Menu « Toutes les cotes » retire le 2026-09-17 : doublon de la
+              pastille « 4+ etoiles », sur le meme `minRating`. Meme decision
+              que la recherche recruteur. */}
 
           <select title="Moyenne" value={minGpa} onChange={(e) => setMinGpa(e.target.value)} className={`nx-filter-select${minGpa ? " nx-filter-active" : ""}`}>
             <option value="">Toutes les moyennes</option>
