@@ -204,6 +204,11 @@ export function normaliserMatchs(p: PayloadRetenu, meta: MetaLigue) {
         division: meta.division,
         category: meta.category,
         sex_type: meta.sex_type,
+        /* Provenance de la ligne (2026-09-17). Constante ici : cette fonction
+           ne normalise QUE du RSEQ. L'URL de vérification n'est pas portée —
+           elle se dérive de rseq_league_id, une seule fois, dans
+           lib/calendar/sourceMatch.ts. */
+        source_nom: "RSEQ",
       });
     }
   }

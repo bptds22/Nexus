@@ -45,6 +45,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { genderLabel } from "@/lib/config/gender";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import { sourceDuMatch, type SourceMatch } from "@/lib/calendar/sourceMatch";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -96,16 +97,18 @@ export interface CalendarGame {
   visitorName: string;
   /** "Football juvénile D2 · Masculin" — ligne `lg` de la carte. */
   competition: string;
+  /** D'où vient ce match et quand la source a été relue. PAR MATCH, jamais
+   *  en bandeau global : la source diffère d'une ligne à l'autre, et la
+   *  fraîcheur aussi. Voir lib/calendar/sourceMatch.ts. */
+  source: SourceMatch;
 }
 
 export interface RecruitingCalendarData {
   targets: CalendarTarget[];
   games: CalendarGame[];
-  /** MAX(games.updated_at) — « Mis à jour le X ». */
-  lastUpdated: string | null;
 }
 
-const EMPTY: RecruitingCalendarData = { targets: [], games: [], lastUpdated: null };
+const EMPTY: RecruitingCalendarData = { targets: [], games: [] };
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
@@ -299,7 +302,7 @@ export function useRecruitingCalendar(enabled: boolean = true) {
       });
 
       if (targets.length === 0) {
-        return { targets: [], games: [], lastUpdated: await fetchLastUpdated(supabase) };
+        return { targets: [], games: [] };
       }
 
       /* ── 3. Matchs à venir — UNE requête, array de teams.id ── */
@@ -311,7 +314,8 @@ export function useRecruitingCalendar(enabled: boolean = true) {
           id, game_date, game_time, venue,
           home_team_id, visitor_team_id,
           home_name_raw, visitor_name_raw,
-          league_name, sport, division, category, sex_type
+          league_name, sport, division, category, sex_type,
+          source_nom, source_url, collecte_le, rseq_league_id
         `)
         .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
         .gte("game_date", todayIso())
@@ -373,27 +377,26 @@ export function useRecruitingCalendar(enabled: boolean = true) {
               (g.visitor_name_raw as string) ||
               "Équipe à confirmer",
             competition: buildCompetition(g),
+            source: sourceDuMatch(g as {
+              source_nom?: string | null;
+              source_url?: string | null;
+              collecte_le?: string | null;
+              rseq_league_id?: string | null;
+            }),
           };
         });
 
-      return { targets, games, lastUpdated: await fetchLastUpdated(supabase) };
+      return { targets, games };
     },
     enabled: enabled && !!userId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-/** « Mis à jour le X » = MAX(games.updated_at). La colonne existe depuis
- *  la migration 20260723140000_rseq_games (DEFAULT now()), donc pas de
- *  repli sur created_at. */
-async function fetchLastUpdated(
-  supabase: ReturnType<typeof createClient>,
-): Promise<string | null> {
-  const { data } = await supabase
-    .from("games")
-    .select("updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(1);
-  const row = ((data ?? []) as { updated_at: string | null }[])[0];
-  return row?.updated_at ?? null;
-}
+/* `fetchLastUpdated` a été RETIRÉE le 2026-09-17, avec le bandeau qu'elle
+   alimentait. Elle lisait MAX(games.updated_at) — la dernière écriture, TOUTES
+   LIGNES CONFONDUES — et l'écran l'affichait sous chaque match. Un match de la
+   LFMM relevé le 15 août héritait ainsi de la date de la dernière passe
+   collégiale. La fraîcheur est désormais portée par `collecte_le`, par match.
+   Ne pas la réintroduire : ce n'est pas une commodité qui manque, c'est une
+   affirmation fausse qu'on a retirée. */

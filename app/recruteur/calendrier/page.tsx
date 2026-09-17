@@ -28,7 +28,6 @@ import {
   dayNumber,
   EMPTY_FILTERS,
   filterTargets,
-  formatLastUpdated,
   groupByWeek,
   hasActiveFilters,
   matchesOnDay,
@@ -39,6 +38,7 @@ import {
   type MatchView,
 } from "@/lib/calendar/recruitingCalendar";
 import { RECRUITER_TIERS } from "@/lib/config/pricing";
+import { formatCollecte, type SourceMatch } from "@/lib/calendar/sourceMatch";
 import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { RecruteurCalendrierMobile } from "@/components/shared/RecruteurCalendrierMobile";
@@ -349,6 +349,10 @@ function MatchCard({ m }: { m: MatchView }) {
         </div>
       </button>
 
+      {/* Provenance — HORS du <button> : un lien ne s'imbrique pas dans un
+          bouton (HTML invalide, et le clic partirait dans les deux). */}
+      <SourceMatchLigne source={m.game.source} />
+
       {open && (
         <div className="grid grid-cols-1 border-t border-[#1E2129] bg-[#171A20] md:grid-cols-2">
           <DetailColumn name={m.game.homeName} targets={m.homeTargets} />
@@ -358,6 +362,50 @@ function MatchCard({ m }: { m: MatchView }) {
             className="border-t border-[#1E2129] md:border-t-0 md:border-l"
           />
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Provenance d'un match ─────────────────────────────────────
+   Décision BP du 2026-09-17 : d'où vient l'information, et quand elle a été
+   relevée — par match, parce que les deux varient d'une ligne à l'autre.
+
+   LE LIBELLÉ NE PROMET PAS PLUS QUE CE QU'IL TIENT. Côté RSEQ le lien
+   télécharge le calendrier Excel de la LIGUE : il n'existe aucune page par
+   match (site sans route, vérifié le 2026-09-17). Écrire « voir ce match »
+   ferait rouler un recruteur sur une garantie qu'on n'a pas.
+   Sans URL connue, on affiche la source seule plutôt qu'un lien générique. */
+function SourceMatchLigne({ source }: { source: SourceMatch }) {
+  if (!source.nom) return null;
+  const releve = formatCollecte(source.collecteLe);
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[#1E2129] px-[22px] py-[9px] text-[12.5px] text-[#5C6575]">
+      <span>
+        Source&nbsp;: <span className="font-semibold text-[#8A909C]">{source.nom}</span>
+      </span>
+      {source.url && source.libelle && (
+        <>
+          <span aria-hidden>·</span>
+          {/* RSEQ : la réponse est un `Content-Disposition: attachment`, donc le
+              clic télécharge SANS quitter le calendrier — pas de target, qui
+              laisserait un onglet vide (Safari). Civil : vraie page, donc
+              nouvel onglet. `download` serait ignoré : cross-origin. */}
+          <a
+            href={source.url}
+            {...(source.telecharge ? {} : { target: "_blank", rel: "noopener noreferrer" })}
+            className="font-semibold text-[#8A909C] underline decoration-[#333B4A] underline-offset-2 transition-colors hover:text-[#EDEFF3]"
+          >
+            {source.libelle}
+          </a>
+        </>
+      )}
+      {releve && (
+        <>
+          <span aria-hidden>·</span>
+          <span>relevé le {releve}</span>
+        </>
       )}
     </div>
   );
@@ -518,8 +566,6 @@ function CalendrierContent() {
     [matches, selectedDay],
   );
 
-  const lastUpdated = formatLastUpdated(data?.lastUpdated ?? null);
-
   const set = <K extends keyof CalendarFilters>(k: K, v: CalendarFilters[K]) =>
     setFilters((f) => ({ ...f, [k]: v }));
 
@@ -579,18 +625,18 @@ function CalendrierContent() {
         </div>
       </div>
 
-      {/* ── Disclaimer + fraîcheur ── */}
-      <div className="mt-[18px] flex flex-wrap items-center justify-between gap-3.5 rounded-xl border border-[#1E2129] bg-[#1A1D24] px-4 py-3">
+      {/* ── Disclaimer ──
+          « Basé sur le calendrier officiel RSEQ » et « Mis à jour le X » ont
+          été RETIRÉS le 2026-09-17 : la première phrase était fausse pour les
+          446 matchs venus de sites civils, la seconde affichait
+          MAX(games.updated_at) — la dernière écriture toutes lignes confondues
+          — sous des matchs relevés des semaines plus tôt. Source et fraîcheur
+          sont désormais sur CHAQUE carte. Ce qui reste ici est vrai pour tous. */}
+      <div className="mt-[18px] rounded-xl border border-[#1E2129] bg-[#1A1D24] px-4 py-3">
         <div className="text-[14.5px] text-[#8A909C]">
-          <b className="font-semibold text-[#B9BFC9]">Basé sur le calendrier officiel RSEQ.</b>{" "}
-          Horaires et lieux à confirmer avant de vous déplacer.
+          Horaires et lieux <b className="font-semibold text-[#B9BFC9]">à confirmer à la source</b>{" "}
+          avant de vous déplacer — chaque match indique d’où vient l’information.
         </div>
-        {lastUpdated && (
-          <div className="whitespace-nowrap text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5C6575]">
-            <span className="mr-[7px] inline-block h-[7px] w-[7px] translate-y-px rounded-full bg-[#22C55E]" />
-            Mis à jour le {lastUpdated}
-          </div>
-        )}
       </div>
 
       {isFree ? (

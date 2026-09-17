@@ -32,7 +32,6 @@ import {
   dayNumber,
   EMPTY_FILTERS,
   filterTargets,
-  formatLastUpdated,
   groupByWeek,
   matchesOnDay,
   monthLabel,
@@ -441,8 +440,6 @@ export function RecruteurCalendrierMobile() {
     () => (selectedDay ? matchesOnDay(matches, selectedDay) : []),
     [matches, selectedDay],
   );
-  const lastUpdated = formatLastUpdated(data?.lastUpdated ?? null);
-
   const set = <K extends keyof CalendarFilters>(k: K, v: CalendarFilters[K]) =>
     setFilters((f) => ({ ...f, [k]: v }));
 
@@ -495,18 +492,21 @@ export function RecruteurCalendrierMobile() {
         <p className="mt-1 text-[14px] text-[#B9BFC9]">Vos prochains matchs à surveiller, selon vos cibles</p>
       </div>
 
-      {/* Disclaimer */}
+      {/* Disclaimer — EXCEPTION AU PROTOCOLE WEB-D'ABORD, décision BP du
+          2026-09-17, strictement limitée au RETRAIT de deux affirmations
+          fausses. Aucune fonctionnalité mobile n'est construite ici.
+            · « Basé sur le calendrier officiel RSEQ » : faux pour les 446
+              matchs venus de quatre sites civils (274 d'entre eux à venir) ;
+            · « Mis à jour le X » : c'était MAX(games.updated_at), toutes
+              lignes confondues — affiché sous des matchs relevés des semaines
+              plus tôt.
+          La source et la fraîcheur PAR MATCH arrivent au lot mobile ; le web
+          les porte déjà (SourceMatchLigne dans app/recruteur/calendrier). */}
       <div className="mx-4 rounded-xl border border-[#1E2129] bg-[#1A1D24] px-3.5 py-3">
         <div className="text-[13.5px] text-[#8A909C]">
-          <b className="font-semibold text-[#B9BFC9]">Basé sur le calendrier officiel RSEQ.</b>{" "}
-          Horaires et lieux à confirmer avant de vous déplacer.
+          Horaires et lieux <b className="font-semibold text-[#B9BFC9]">à confirmer à la source</b>{" "}
+          avant de vous déplacer.
         </div>
-        {lastUpdated && (
-          <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#5C6575]">
-            <span className="mr-1.5 inline-block h-[6px] w-[6px] translate-y-px rounded-full bg-[#22C55E]" />
-            Mis à jour le {lastUpdated}
-          </div>
-        )}
       </div>
 
       {isFree ? (

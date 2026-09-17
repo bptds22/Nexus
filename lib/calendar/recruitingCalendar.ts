@@ -295,12 +295,10 @@ export function matchesOnDay(views: MatchView[], iso: string): MatchView[] {
   return views.filter((v) => v.game.gameDate === iso);
 }
 
-/** « Mis à jour le 24 juillet 2026 ». */
-export function formatLastUpdated(iso: string | null): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat("fr-CA", {
-    day: "numeric", month: "long", year: "numeric",
-  }).format(d);
-}
+/* `formatLastUpdated` a été RETIRÉE le 2026-09-17 avec son unique usage : le
+   bandeau « Mis à jour le X », qui formatait MAX(games.updated_at) — la
+   dernière écriture TOUTES LIGNES CONFONDUES — et l'affichait sous des matchs
+   relevés des semaines plus tôt. La fraîcheur est désormais par match
+   (`games.collecte_le`), formatée par formatCollecte() dans
+   lib/calendar/sourceMatch.ts. Ne pas la recréer : le format n'était pas le
+   problème, la donnée l'était. */
