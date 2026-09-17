@@ -59,6 +59,7 @@ import {
 import type { PipelineKanbanCard } from "./_data/mockKanbanData";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import RelanceFiche from "@/components/shared/RelanceFiche";
+import { PencilIcon } from "@/components/shared/wizard/modeIcons";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
@@ -956,7 +957,10 @@ function SlideOver({
             };
 
             return (
-              /* Teinte OR — la même que la relance, ici et sur mobile. Une
+              /* Teinte OR — la même que la relance, sur le web. Le bloc mobile
+                 (RecruteurPipelineMobile, « Visite planifiée ») porte encore
+                 le titre gris sur fond neutre : sa teinte reste à faire au
+                 lot mobile (protocole web-d'abord). Une
                  visite et une relance sont la même catégorie : un rendez-vous
                  à tenir. Le bloc portait la surface et la bordure standard
                  (#1A1D24 / #2D3748) et un titre dans le même gris que
@@ -980,9 +984,13 @@ function SlideOver({
                   <button
                     type="button"
                     onClick={() => setEditingVisit(true)}
-                    className="text-[13px] text-white hover:text-[#E63946] transition-colors text-left"
+                    aria-label={`Modifier la date de visite${longLabel ? ` : ${longLabel}` : ""}`}
+                    className="inline-flex items-center gap-1.5 text-[13px] text-white hover:text-[#F59E0B] transition-colors text-left"
                   >
                     {longLabel ?? <span className="text-[#6B7280]">Aucune date</span>}
+                    {/* Crayon toujours visible : sans lui, rien ne dit que la
+                        date s'édite en place. Or du bloc, jamais le rouge. */}
+                    <PencilIcon color="#F59E0B" size={12} />
                   </button>
                 ) : (
                   <div className="space-y-2">
