@@ -8,6 +8,13 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: "https://ff9b0574720f3e4da653798546367a53@o4511733766619136.ingest.de.sentry.io/4511733773238352",
 
+  /* RIEN N'EST ENVOYÉ DEPUIS LE DÉVELOPPEMENT (2026-09-17) — même règle que
+     `instrumentation-client.ts`, où le raisonnement complet est écrit.
+     En deux mots : sur Vercel, `NODE_ENV` vaut `production` en Preview comme
+     en Production, donc la Preview continue de rapporter sous
+     `environment: preview` ; seules les sessions locales se taisent. */
+  enabled: process.env.NODE_ENV === "production",
+
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 0.2,
 

@@ -7,6 +7,25 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: "https://ff9b0574720f3e4da653798546367a53@o4511733766619136.ingest.de.sentry.io/4511733773238352",
 
+  /* RIEN N'EST ENVOYÉ DEPUIS LE DÉVELOPPEMENT (2026-09-17).
+     Les sessions locales (`next dev`, `dev:mobile`) arrivaient dans le même
+     projet Sentry que la production, sous `environment: development`, et
+     noyaient les vraies erreurs — replays compris, qui brûlent le quota.
+
+     `NODE_ENV` est le bon discriminant ici, et PAS un test sur
+     l'environnement Sentry : sur Vercel, `NODE_ENV` vaut `production` en
+     Preview comme en Production. Les erreurs de Preview continuent donc
+     d'arriver, rangées sous `environment: preview` — c'est ce qu'on veut
+     lire avant un Promote. Le build mobile (Capacitor) est lui aussi un
+     build de production : les binaires rapportent toujours.
+
+     L'étiquette `environment` reste calculée par le SDK, pas par nous :
+     `options.environment || SENTRY_ENVIRONMENT || getVercelEnv() || NODE_ENV`.
+
+     Le SDK s'initialise quand même — une erreur de configuration resterait
+     donc visible en local ; seul l'ENVOI est coupé. */
+  enabled: process.env.NODE_ENV === "production",
+
   // Add optional integrations for additional features
   integrations: [Sentry.replayIntegration()],
 
