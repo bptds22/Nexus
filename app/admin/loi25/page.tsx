@@ -676,6 +676,12 @@ function AuditTab() {
         if (dr) q3 = q3.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
         const { data: catRows } = await q3;
         zip.file("consent_audit_trail.csv", toCsv((catRows || []) as Record<string, unknown>[]));
+
+        // search_filter_events — télémétrie des filtres, porte user_id (2026-09-17).
+        let q4 = supabase.from("search_filter_events").select("*").eq("user_id", pickedUser.id);
+        if (dr) q4 = q4.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: sfeRows } = await q4;
+        zip.file("search_filter_events.csv", toCsv((sfeRows || []) as Record<string, unknown>[]));
       } else if (pickedUser.role === "RECRUTEUR") {
         let q1 = supabase.from("recruiter_athlete_views").select("*").eq("recruiter_id", pickedUser.id);
         if (dr) q1 = q1.gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
@@ -686,6 +692,12 @@ function AuditTab() {
         if (dr) q2 = q2.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
         const { data: ralRows } = await q2;
         zip.file("recruiter_activity_log.csv", toCsv((ralRows || []) as Record<string, unknown>[]));
+
+        // search_filter_events — télémétrie des filtres, porte user_id (2026-09-17).
+        let q3 = supabase.from("search_filter_events").select("*").eq("user_id", pickedUser.id);
+        if (dr) q3 = q3.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: sfeRows } = await q3;
+        zip.file("search_filter_events.csv", toCsv((sfeRows || []) as Record<string, unknown>[]));
       } else if (pickedUser.role === "ADMIN") {
         let q1 = supabase.from("loi25_incidents").select("*").eq("created_by", pickedUser.id);
         if (dr) q1 = q1.gte("created_at", dr.startIso).lte("created_at", dr.endIso);

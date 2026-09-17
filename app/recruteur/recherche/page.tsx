@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useFiltresRecherche, usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
+import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
+import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
@@ -574,7 +576,7 @@ function RechercheContent() {
   const divisionAxis = useMemo(() => axisDisplay(divisionOptionList), [divisionOptionList]);
 
   /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
-     filtrer derriere un menu grise.
+     filtrer derriere un menu masque.
 
      ⚠ ICI, CE N'EST PAS SEULEMENT LE NIVEAU 1 QUI PEUT LE DECLENCHER. Le coach
      n'a aucun filtre serveur ; le recruteur en a douze. Cocher « Verifies
@@ -587,6 +589,18 @@ function RechercheContent() {
     if (divisionAxis.state !== "active" && divisionFilter) setDivisionFilter("");
   }, [orgAxis.state, leagueAxis.state, divisionAxis.state, orgType, leagueFilter,
       divisionFilter, setOrgType, setLeagueFilter, setDivisionFilter]);
+
+  /* Télémétrie d'usage des filtres (search_filter_events). Le compte écrit
+     est celui de la liste RENDUE, après les filtres client — ce que
+     l'utilisateur a vu. `pret` attend aussi le refetch : avec
+     keepPreviousData, l'ancienne grille resterait comptée sinon. */
+  const { journaliserReinitialisation, journaliserPanneauAvance } = useJournalFiltres({
+    surface: "recruteur_recherche",
+    filtres,
+    defauts: FILTRES_DEFAUT,
+    nbResultats: filtered.length,
+    pret: !loading && !athletesFetching,
+  });
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -623,6 +637,7 @@ function RechercheContent() {
      ce n'est pas le chantier des filtres persistants qui doit changer ça en
      douce. Jumeau exact du mobile. */
   const resetFilters = () => {
+    journaliserReinitialisation();
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", region: "", promotion: "", orgType: "",
       leagueFilter: "", divisionFilter: "",
@@ -676,14 +691,20 @@ function RechercheContent() {
           <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
           </svg>
+          {/* OUVERT À TOUS LES PALIERS depuis le 2026-09-17. Le serveur
+              cherche par mots dans l'école, l'école de l'équipe et l'équipe
+              pour tout le monde ; le prénom et le nom seulement pour un Pro,
+              et seulement si l'identité est visible. Le libellé annonce ce
+              que le champ fait VRAIMENT pour ce palier — « École ou équipe »
+              pour un Free, sinon il croirait chercher un nom et lirait « 0 »
+              comme « personne ». */}
           <input
             type="text"
-            placeholder={isFreeRecruiter ? "Recherche par nom (Pro)" : "Rechercher par nom..."}
-            value={isFreeRecruiter ? "" : search}
+            placeholder={isFreeRecruiter ? "École ou équipe" : "Nom, école ou équipe"}
+            aria-label={isFreeRecruiter ? "Rechercher par école ou équipe" : "Rechercher par nom, école ou équipe"}
+            value={search}
             onChange={(e) => setSearch(e.target.value)}
-            disabled={isFreeRecruiter}
-            title={isFreeRecruiter ? "La recherche par nom est réservée aux recruteurs Pro" : undefined}
-            className={`w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors${isFreeRecruiter ? " opacity-60 cursor-not-allowed" : ""}`}
+            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
           />
         </div>
 
@@ -699,61 +720,47 @@ function RechercheContent() {
             {TEAM_GENDER_FILTER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
           </select>
 
-          {/* ORGANISATION -> LIGUE -> DIVISION (Lot 3). Toujours affiches,
-              position stable. Mono-valeur => menu GRISE qui affiche cette
-              valeur (« RSEQ », « D3 ») : un libelle d'ETAT, pas un filtre — il
-              ne compte pas dans « X athletes trouves », ne declenche pas
-              « Reinitialiser », et porte :disabled, jamais nx-filter-active. */}
-          <select
-            value={orgType}
-            onChange={(e) => handleOrgTypeChange(e.target.value)}
-            disabled={orgAxis.state !== "active"}
-            className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
-            aria-label="Organisation"
-          >
-            {orgAxis.state === "active" ? (
-              <>
-                <option value="">Toutes les organisations</option>
-                {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-              </>
-            ) : (
-              <option value="">{orgAxis.label}</option>
-            )}
-          </select>
+          {/* ORGANISATION -> LIGUE -> DIVISION (Lot 3). Rendus SEULEMENT quand
+              l'axe a au moins deux valeurs a departager (state "active").
+              Jusqu'au 2026-09-17 un axe mono-valeur restait affiche, grise,
+              avec sa valeur pour libelle (« RSEQ », « D3 ») : trois menus
+              inertes dans une barre deja saturee. Masque desormais — la purge
+              ci-dessus garantit qu'aucune selection ne survit a sa disparition. */}
+          {orgAxis.state === "active" && (
+            <select
+              value={orgType}
+              onChange={(e) => handleOrgTypeChange(e.target.value)}
+              className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
+              aria-label="Organisation"
+            >
+              <option value="">Toutes les organisations</option>
+              {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+            </select>
+          )}
 
-          <select
-            value={leagueFilter}
-            onChange={(e) => setLeagueFilter(e.target.value)}
-            disabled={leagueAxis.state !== "active"}
-            className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
-            aria-label="Ligue"
-          >
-            {leagueAxis.state === "active" ? (
-              <>
-                <option value="">Toutes les ligues</option>
-                {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-              </>
-            ) : (
-              <option value="">{leagueAxis.label}</option>
-            )}
-          </select>
+          {leagueAxis.state === "active" && (
+            <select
+              value={leagueFilter}
+              onChange={(e) => setLeagueFilter(e.target.value)}
+              className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
+              aria-label="Ligue"
+            >
+              <option value="">Toutes les ligues</option>
+              {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+            </select>
+          )}
 
-          <select
-            value={divisionFilter}
-            onChange={(e) => setDivisionFilter(e.target.value)}
-            disabled={divisionAxis.state !== "active"}
-            className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
-            aria-label="Division"
-          >
-            {divisionAxis.state === "active" ? (
-              <>
-                <option value="">Toutes les divisions</option>
-                {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-              </>
-            ) : (
-              <option value="">{divisionAxis.label}</option>
-            )}
-          </select>
+          {divisionAxis.state === "active" && (
+            <select
+              value={divisionFilter}
+              onChange={(e) => setDivisionFilter(e.target.value)}
+              className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
+              aria-label="Division"
+            >
+              <option value="">Toutes les divisions</option>
+              {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+            </select>
+          )}
 
           <select value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
             <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
@@ -782,7 +789,7 @@ function RechercheContent() {
           {/* Advanced toggle */}
           <button
             type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
+            onClick={() => { journaliserPanneauAvance(!showAdvanced); setShowAdvanced(!showAdvanced); }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-semibold transition-colors ${
               showAdvanced ? "bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/30" : "text-[#9CA3AF] hover:text-white border border-[#2D3748]"
             }`}
@@ -811,10 +818,15 @@ function RechercheContent() {
 
         {/* Quick preset chips */}
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setMinRating(minRating === "4" ? "" : "4")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${minRating === "4" ? "bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill={minRating === "4" ? "#F59E0B" : "#6b7280"} stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-            4+ étoiles
+          {/* Seul point d'entree de `minRating` depuis le retrait du menu Cote.
+              Allumee pour TOUTE valeur posee, pas seulement "4" : un lien
+              ancien peut encore porter `note=3` — la pastille l'affiche
+              (« 3+ etoiles ») et un clic l'efface, au lieu d'un filtre
+              invisible. */}
+          <button type="button" onClick={() => setMinRating(minRating ? "" : "4")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${minRating ? "bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill={minRating ? "#F59E0B" : "#6b7280"} stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+            {minRating || "4"}+ étoiles
           </button>
           <button type="button" onClick={() => setVerifiedOnly(!verifiedOnly)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${verifiedOnly ? "bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
@@ -852,14 +864,11 @@ function RechercheContent() {
                 deux menus du meme axe dans une meme barre en faisaient un de
                 trop, et celui-ci ne connaissait pas « Non renseigne ». */}
 
-            <select value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
-              <option value="">Toutes les cotes</option>
-              <option value="1">★ 1+</option>
-              <option value="2">★★ 2+</option>
-              <option value="3">★★★ 3+</option>
-              <option value="4">★★★★ 4+</option>
-              <option value="5">★★★★★ 5</option>
-            </select>
+            {/* Le menu « Toutes les cotes » vivait ici. Il ecrivait le MEME
+                `minRating` que la pastille « 4+ etoiles » : a 3+, la pastille
+                restait eteinte pendant qu'un filtre de cote agissait depuis un
+                panneau replie. Retire le 2026-09-17 — la pastille seule, comme
+                sur mobile. */}
 
             <select value={minGpa} onChange={(e) => setMinGpa(e.target.value)} className={`nx-filter-select${minGpa ? " nx-filter-active" : ""}`}>
               <option value="">Toutes les moyennes</option>

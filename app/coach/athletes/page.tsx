@@ -23,6 +23,8 @@ import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHe
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
+import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
+import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 import {
@@ -209,7 +211,7 @@ const ATHLETE_ROSTER_SELECT = `
           context,
           schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
-          team_athletes(team_id, teams!team_id(gender, division, league, rseq_team_id, schools!school_id(type))),
+          team_athletes(team_id, teams!team_id(name, gender, division, league, rseq_team_id, schools!school_id(type))),
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at),
           athlete_badges(contexte, retire_le, badges(code, libelle))
         `;
@@ -540,6 +542,18 @@ function MesAthletesContent() {
           // Genre de l'ÉQUIPE (teams.gender via team_athletes), PAS athletes.genre.
           // null quand l'athlète n'a aucune équipe → exclu si un genre est filtré.
           teamGender: firstTeamGender(a.team_athletes),
+          /* Nom de la première équipe — sert à la recherche texte seulement.
+             Même tolérance de forme que firstTeamGender (objet ou tableau). */
+          teamName: (() => {
+            const rel = a.team_athletes;
+            const liens = Array.isArray(rel) ? rel : rel ? [rel] : [];
+            for (const lien of liens) {
+              const t = (lien as Record<string, unknown>)?.teams;
+              const nom = (Array.isArray(t) ? t[0] : t as Record<string, unknown> | null)?.name;
+              if (typeof nom === "string" && nom) return nom;
+            }
+            return "";
+          })(),
           /* ORGANISATION / LIGUE / DIVISION — source unique lib/config/team-taxonomy.
              On porte la SOURCE brute, pas trois libellés déjà calculés : les
              regles (repli d'organisation, `rseq_team_id => RSEQ`) vivent dans le
@@ -705,15 +719,20 @@ function MesAthletesContent() {
       list = list.filter((a) => a.favorites > 0);
     }
 
+    /* RECHERCHE PAR MOTS (2026-09-17) — même règle que la RPC recruteur :
+       chaque mot doit se trouver dans le prénom, le nom, la position, l'école
+       ou l'équipe ; accents ignorés. « Tremblay Saint-Sacrement » combine nom
+       et école, « Mandziuk Gabriel » trouve Gabriel Mandziuk. Pas de garde
+       d'identité ici : le coach voit déjà tous les noms de son roster. */
     if (search.trim().length >= 2) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (a) =>
-          a.firstName.toLowerCase().includes(q) ||
-          a.lastName.toLowerCase().includes(q) ||
-          `${a.firstName} ${a.lastName}`.toLowerCase().includes(q) ||
-          a.position.toLowerCase().includes(q)
-      );
+      const sansAccent = (s: string) =>
+        s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const mots = sansAccent(search.trim()).split(/\s+/);
+      list = list.filter((a) => {
+        const champs = sansAccent(
+          [a.firstName, a.lastName, a.position, a.school ?? "", a.teamName ?? ""].join("\n"));
+        return mots.every((m) => champs.includes(m));
+      });
     }
     if (sport) list = list.filter((a) => a.sport === sport);
     if (position) list = list.filter((a) => a.position === position);
@@ -785,24 +804,22 @@ function MesAthletesContent() {
     [taxonomyRows, orgType, leagueFilter],
   );
 
-  /* ── DANS QUEL ETAT AFFICHER CHAQUE MENU ? (regle finale BP du 2026-09-06) ──
-     Les trois menus sont TOUJOURS AFFICHES, a position stable. Ce qui varie,
-     c'est ce qu'ils racontent : actif (>= 2 valeurs), pre-rempli (1 seule
-     valeur, menu grise qui AFFICHE cette valeur), ou vide (aucune donnee).
+  /* ── DANS QUEL ETAT AFFICHER CHAQUE MENU ? ──────────────────────────────────
+     actif (>= 2 valeurs), pre-rempli (1 seule valeur) ou vide (aucune donnee).
+     Seul l'etat « actif » est RENDU (decision BP 2026-09-17) : la regle du
+     2026-09-06 affichait les menus mono-valeur grises, a position stable, pour
+     qu'un directeur LISE « RSEQ » — dans une barre saturee, trois menus inertes
+     coutaient plus que l'information.
 
-     Un directeur scolaire n'a pas besoin de CHOISIR « RSEQ » : il a besoin de
-     LIRE qu'il y est. Le pre-rempli ne retire que le choix, pas l'information.
-
-     Juge sur les listes CADREES par l'organisation — sans danger ici, puisque
-     le menu ne disparait jamais : cocher « Scolaire » doit faire lire « RSEQ »
-     sur le menu Ligue. Ce qui remplace la garde du Lot 2b, c'est la purge
-     ci-dessous. */
+     Juge sur les listes CADREES par l'organisation : cocher « Scolaire » peut
+     faire disparaitre le menu Ligue s'il n'y reste que RSEQ. Ce qui empeche une
+     selection de survivre a sa disparition, c'est la purge ci-dessous. */
   const orgAxis = useMemo(() => axisDisplay(orgOptions), [orgOptions]);
   const leagueAxis = useMemo(() => axisDisplay(leagueOptionList), [leagueOptionList]);
   const divisionAxis = useMemo(() => axisDisplay(divisionOptionList), [divisionOptionList]);
 
   /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
-     filtrer derriere un menu grise. Sans ca, une selection posee quand l'axe
+     filtrer derriere un menu masque. Sans ca, une selection posee quand l'axe
      etait actif survivrait, invisible et agissante : le piege du Lot 2b, deplace
      du "menu disparu" au "menu desactive". */
   useEffect(() => {
@@ -825,7 +842,29 @@ function MesAthletesContent() {
 
   const hasFilters = sport || orgType || leagueFilter || divisionFilter || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
+  /* Télémétrie d'usage des filtres (search_filter_events) — même hook que la
+     recherche recruteur. Les clés sont un sous-ensemble de FiltresRecherche,
+     avec les mêmes défauts. Le compte est celui affiché en tête de page :
+     roster + pool école pour un directeur. */
+  const filtresJournal = useMemo(() => ({
+    search, sport, genderFilter, orgType, leagueFilter, divisionFilter, position,
+    region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge,
+    withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive,
+    filterOuvertAnglophone, filterNewOnly, sortBy,
+  }), [search, sport, genderFilter, orgType, leagueFilter, divisionFilter, position,
+    region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge,
+    withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive,
+    filterOuvertAnglophone, filterNewOnly, sortBy]);
+  const { journaliserReinitialisation, journaliserPanneauAvance } = useJournalFiltres({
+    surface: "coach_athletes",
+    filtres: filtresJournal,
+    defauts: FILTRES_DEFAUT,
+    nbResultats: isDirector ? filtered.length + filteredSchool.length : filtered.length,
+    pret: !loading,
+  });
+
   const resetFilters = () => {
+    journaliserReinitialisation();
     setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setLeagueFilter(""); setDivisionFilter(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
@@ -1188,7 +1227,8 @@ function MesAthletesContent() {
         </svg>
         <input
           type="text"
-          placeholder="Rechercher par nom ou position..."
+          placeholder="Nom, position, école ou équipe"
+          aria-label="Rechercher par nom, position, école ou équipe"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
@@ -1209,62 +1249,46 @@ function MesAthletesContent() {
         {/* ORGANISATION -> LIGUE -> DIVISION. Le niveau 1 cadre les deux suivants ;
             « Non renseigne » n'apparait QUE si au moins un athlete affiche est
             sans valeur, et reste SELECTIONNABLE (contrairement au genre, qui
-            exclut silencieusement les athletes sans equipe). */}
-        {/* ORGANISATION -> LIGUE -> DIVISION. Toujours affiches, position stable.
-            Mono-valeur => menu GRISE qui affiche cette valeur (« RSEQ », « D3 ») :
-            un libelle d'ETAT, pas un filtre — il ne compte pas dans « X sur Y »,
-            ne declenche pas « Reinitialiser », et porte `:disabled` (attenue),
-            jamais `nx-filter-active`. */}
-        <select
-          title="Organisation"
-          value={orgType}
-          onChange={(e) => handleOrgTypeChange(e.target.value)}
-          disabled={orgAxis.state !== "active"}
-          className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
-        >
-          {orgAxis.state === "active" ? (
-            <>
-              <option value="">Toutes les organisations</option>
-              {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-            </>
-          ) : (
-            <option value="">{orgAxis.label}</option>
-          )}
-        </select>
+            exclut silencieusement les athletes sans equipe).
+            Rendus SEULEMENT quand l'axe a au moins deux valeurs (state
+            "active") — un axe mono-valeur restait jusqu'au 2026-09-17 affiche
+            grise, inerte. La purge plus haut vide toute selection devenue
+            hors-cadre. Meme regle que la recherche recruteur. */}
+        {orgAxis.state === "active" && (
+          <select
+            title="Organisation"
+            value={orgType}
+            onChange={(e) => handleOrgTypeChange(e.target.value)}
+            className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
+          >
+            <option value="">Toutes les organisations</option>
+            {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+          </select>
+        )}
 
-        <select
-          title="Ligue"
-          value={leagueFilter}
-          onChange={(e) => setLeagueFilter(e.target.value)}
-          disabled={leagueAxis.state !== "active"}
-          className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
-        >
-          {leagueAxis.state === "active" ? (
-            <>
-              <option value="">Toutes les ligues</option>
-              {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-            </>
-          ) : (
-            <option value="">{leagueAxis.label}</option>
-          )}
-        </select>
+        {leagueAxis.state === "active" && (
+          <select
+            title="Ligue"
+            value={leagueFilter}
+            onChange={(e) => setLeagueFilter(e.target.value)}
+            className={`nx-filter-select${leagueFilter ? " nx-filter-active" : ""}`}
+          >
+            <option value="">Toutes les ligues</option>
+            {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+          </select>
+        )}
 
-        <select
-          title="Division"
-          value={divisionFilter}
-          onChange={(e) => setDivisionFilter(e.target.value)}
-          disabled={divisionAxis.state !== "active"}
-          className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
-        >
-          {divisionAxis.state === "active" ? (
-            <>
-              <option value="">Toutes les divisions</option>
-              {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
-            </>
-          ) : (
-            <option value="">{divisionAxis.label}</option>
-          )}
-        </select>
+        {divisionAxis.state === "active" && (
+          <select
+            title="Division"
+            value={divisionFilter}
+            onChange={(e) => setDivisionFilter(e.target.value)}
+            className={`nx-filter-select${divisionFilter ? " nx-filter-active" : ""}`}
+          >
+            <option value="">Toutes les divisions</option>
+            {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+          </select>
+        )}
 
         <select title="Position" value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
           <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
@@ -1291,7 +1315,7 @@ function MesAthletesContent() {
 
         <button
           type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
+          onClick={() => { journaliserPanneauAvance(!showAdvanced); setShowAdvanced(!showAdvanced); }}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-semibold transition-colors ${
             showAdvanced ? "bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/30" : "text-[#9CA3AF] hover:text-white border border-[#2D3748]"
           }`}
@@ -1350,14 +1374,9 @@ function MesAthletesContent() {
             {regions.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
 
-          <select title="Cote" value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
-            <option value="">Toutes les cotes</option>
-            <option value="1">★ 1+</option>
-            <option value="2">★★ 2+</option>
-            <option value="3">★★★ 3+</option>
-            <option value="4">★★★★ 4+</option>
-            <option value="5">★★★★★ 5</option>
-          </select>
+          {/* Menu « Toutes les cotes » retire le 2026-09-17 : doublon de la
+              pastille « 4+ etoiles », sur le meme `minRating`. Meme decision
+              que la recherche recruteur. */}
 
           <select title="Moyenne" value={minGpa} onChange={(e) => setMinGpa(e.target.value)} className={`nx-filter-select${minGpa ? " nx-filter-active" : ""}`}>
             <option value="">Toutes les moyennes</option>

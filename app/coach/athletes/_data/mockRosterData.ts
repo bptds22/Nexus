@@ -55,6 +55,8 @@ export interface RosterAthlete {
   committedSchoolName?: string;
   openToOffers?: boolean | null;
   school?: string;
+  /** Nom de la première équipe (teams.name). Recherche texte du roster seulement. */
+  teamName?: string;
   region?: string;
   sport?: string;
   hasVideo?: boolean;

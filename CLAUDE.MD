@@ -353,7 +353,7 @@ La projection se NOMME, elle ne se dément pas.
 ### Recruiter Recherche Page (/recruteur/recherche) — FULLY WIRED
 - Supabase query: athletes + sports + positions + schools + evaluations
 - All data from DB, no mock data (only TypeScript type imported from mock file)
-- Filters: sport (16), position (dynamic from DB), promotion, region (dynamic), rating, GPA, height, badges, academic, verified, video, hide favorites, sort
+- Filters: see « Filter UI (Two-tier) » under DESIGN SYSTEM — the detailed, verified list lives there (no height/weight filter exists)
 - Two-tier filter UI: primary filters always visible, advanced behind toggle
 - Quick preset chips for common filters
 - Cards show: photo, name, position, school, promotion, height/weight, stars, verified badge, favorite heart, distinction badges, recruitment status
@@ -432,10 +432,52 @@ La projection se NOMME, elle ne se dément pas.
 - Red distinction badges
 - Footer: region (left) + action links (right)
 
-### Filter UI (Two-tier)
-- Always visible: search bar, sport, position, promotion, sort dropdown
-- Quick chips: "4+ étoiles", "Vérifié", "Avec vidéo", "Avec distinction", "Masquer favoris"
-- Advanced (collapsible): region, organisation, rating dropdown, GPA, height, academic badge
+### Filter UI (Two-tier) — état vérifié dans le code le 2026-09-17
+
+Deux écrans portent cette barre, en **deux copies de code distinctes** (pas un
+composant partagé) : `app/recruteur/recherche/page.tsx` et
+`app/coach/athletes/page.tsx`. Il n'y a **pas** de `/recherche` coach.
+
+- **Barre principale :** champ texte (au-dessus), Sport, Genre d'équipe,
+  **Organisation → Ligue → Division** (en barre principale depuis le Lot 3),
+  Position (grisée sans sport), Promotion, Tri, bouton « Filtres avancés »,
+  « Réinitialiser » si un filtre est posé.
+  - Organisation / Ligue / Division ne sont **rendus que si l'axe a ≥ 2
+    valeurs** (`axisDisplay(...).state === "active"`, `lib/config/team-taxonomy.ts`).
+    Un axe à une seule valeur est **masqué**, plus grisé (2026-09-17).
+- **Pastilles rapides :** « 4+ étoiles », « Vérifié », « Avec vidéo »,
+  « Avec distinction », + « Masquer favoris » (**recruteur seulement**).
+  « 4+ étoiles » est le **seul** contrôle de cote : le menu « Toutes les cotes »
+  des avancés a été retiré le 2026-09-17 (doublon sur le même `minRating`).
+- **Filtres avancés (repliables) :** Région, Moyenne minimale, Mention
+  académique ; groupe Préférences : Ouvert à déménager, Ouvert au privé, Ouvert
+  anglophone ; groupe Nouveautés : Nouveaux profils (10 j). **Recruteur en plus :**
+  Programmes précis…, Programme offert chez nous (si le cégep a un catalogue).
+- **Il n'existe AUCUN filtre de taille / poids.**
+- **Aucune règle écrite** ne décide ce qui va en barre principale ou en avancés :
+  le découpage est historique. Avant de déplacer ou masquer un filtre, lire la
+  télémétrie ci-dessous plutôt que deviner.
+- **Recruteur :** filtres dans l'URL (`lib/recherche/useFiltresRecherche.ts`,
+  clés dans `filtres-url.ts`), partagés avec le mobile. **Coach :** `useState`
+  locaux, perdus à la navigation.
+- **École et Équipe passent par la recherche texte, PAS par des menus**
+  (décision BP 2026-09-17) : `schools.name` désigne aussi des **clubs civils** —
+  un menu « École » affirmerait qu'un club est une école — et la barre est
+  saturée. Aucun menu Équipe pour l'instant (il exigerait un DROP de la RPC).
+- **Recherche texte :** par MOTS, accents ignorés — chaque mot doit figurer dans
+  un des champs. Recruteur = RPC `recruiter_search_athletes` : école de
+  l'athlète, école de l'équipe et nom d'équipe pour **tous les paliers**
+  (champ « École ou équipe » en Free) ; prénom/nom **Pro seulement ET identité
+  visible** (`athlete_identity_ok`) — sinon chercher un nom confirmerait qu'un
+  mineur non consentant le porte (oracle fermé le 2026-09-17). `unaccent`
+  est appelé qualifié (`extensions.unaccent('extensions.unaccent'::regdictionary, …)`),
+  la RPC tournant en `search_path = public`. Coach = côté client, prénom / nom /
+  position / école / équipe. Le mobile recruteur garde son champ désactivé
+  en Free (lot mobile).
+- **Télémétrie :** `search_filter_events` via `lib/recherche/useJournalFiltres.ts`
+  (web seulement) — une ligne par filtre ACTIVÉ, `reinitialiser`,
+  `panneau_avance`, avec `nb_resultats`. Jamais le texte recherché. Purge
+  180 j (pg_cron), incluse dans l'export `/admin/loi25`.
 - Filter classes: nx-filter-select, nx-filter-active, nx-filter-checkbox
 
 ---
