@@ -2,49 +2,82 @@
 
 Créé le 2026-09-03 (Lot 0 « garder le trigger »). Ce fichier fixe trois décisions
 qui reviennent à chaque itération du pipeline recruteur. Les faits DB ci-dessous
-ont été relus sur le projet cloud `nrloizyemulbhujrqhgx` le 2026-09-03.
+ont été relus sur le projet cloud `nrloizyemulbhujrqhgx` le 2026-09-03, puis
+**mis à jour le 2026-09-17 après le Lot 2a** (§1 et §2 réécrits : les policies
+coach et admin cégep sont retirées, remplacées par des RPC).
 
 ---
 
-## 1. La policy `coaches read pipeline for own athletes`
+## 1. Qui lit `recruiter_pipeline` — état au 2026-09-17, Lot 2a appliqué
 
-**Ce qui est en base aujourd'hui** (`pg_policy` sur `public.recruiter_pipeline`) :
+**LA GARANTIE EST MAINTENANT EN BASE, PLUS SEULEMENT DANS L'UI.** C'est le
+changement de ce lot : jusqu'au 2026-09-17, « le coach ne voit que le stage »
+n'était vrai que parce qu'aucun écran ne sélectionnait les autres colonnes. Un
+appel direct à l'API rendait la ligne entière.
+
+**Décision BP du 2026-09-17 :** `next_action_note`, `visit_at` et `flagged` sont
+**privés au recruteur**. Ni le coach, ni l'admin cégep ne doivent pouvoir les
+lire, même par appel direct à l'API.
+
+**Ce qui est en base** (`pg_policy` sur `public.recruiter_pipeline`, 6 policies) :
 
 | policy | cmd | qual |
 |---|---|---|
 | `recruiter_pipeline_select` | SELECT | `recruiter_id = auth.uid()` |
-| `coaches read pipeline for own athletes` | SELECT | `is_coach_of_athlete(athlete_id)` |
-| `cegep admin read pipeline` | SELECT | `is_cegep_admin_over_recruiter(recruiter_id)` |
+| `recruiter_pipeline_insert / update / delete` | écriture | propriétaire (+ `user_has_pro()` en écriture) |
 | `admins read all` | SELECT | `is_admin()` |
+| `admins update all` | UPDATE | `is_admin()` |
 
-**Frontière produit assumée :** le coach voit la progression du dossier de son
-athlète chez un recruteur — c'est le cœur de la valeur « le coach suit ses
-joueurs ». Il n'a pas à voir la cuisine interne du recruteur.
+**Trois policies ont été RETIRÉES** (migration `20260917184623`) et remplacées
+par des RPC `SECURITY DEFINER` qui ne projettent aucune colonne privée
+(migration `20260917181701`) :
 
-**Précision technique — ne pas se raconter d'histoires :** la RLS PostgreSQL est
-*par ligne*, pas *par colonne*. La policy ci-dessus donne au coach la **ligne
-entière** de `recruiter_pipeline`, donc aussi `notes`, `flagged`,
-`next_action_at`, `next_action_note`, `visit_at`. Le cloisonnement « le coach ne
-voit que le stage » n'existe aujourd'hui que dans l'**UI** : aucune surface coach
-ne sélectionne ces colonnes. Ce n'est pas une garantie base de données.
+| policy retirée | remplacée par | ce que la RPC rend |
+|---|---|---|
+| `coaches read pipeline for own athletes` | `coach_pipeline_for_my_athletes(p_athlete_ids, p_stages)` | `athlete_id, recruiter_id, stage, updated_at` |
+| `cegep admin read pipeline` | `cegep_pipeline_overview(p_recruiter_ids, p_stages)` | + `created_at, moved_at` |
+| `cegep admin update pipeline` | `reassign_pipeline(p_from, p_to, p_athlete_ids)` | ne change QUE `recruiter_id` |
 
-**Règle qui en découle, et qui est la vraie règle :**
+**Périmètre coach, élargi au passage (décision BP) :** la RPC couvre les athlètes
+dont le coach est `coach_id` **∪** `get_coach_athletes(true)` (équipes coachées,
+et toute l'école pour un directeur). L'ancienne policy s'arrêtait à `coach_id` :
+les pages `/coach/ecole/*` d'un directeur **sous-comptaient en silence** tout ce
+qui touchait les athlètes des autres coachs. Prouvé sur fixture : 0 ligne en
+lecture directe, 4 par la RPC.
+
+**Vérifié en prod sous identité réelle, après l'apply :**
+
+| | avant | après |
+|---|---|---|
+| Coach, `select * from recruiter_pipeline` | 1 ligne, `visit_at` lisible | **0 ligne** |
+| Coach, RPC | 1 ligne | 1 ligne, 4 colonnes |
+| Admin cégep, lignes et notes d'un collègue en direct | lisibles | **0 / 0** |
+| Admin cégep, RPC d'aperçu | — | fonctionne |
+| Réassignation | copiait les notes, notifiait à tort | déplace tout, **0 notification, 0 ligne de journal** |
+
+**Ce qui reste lisible hors du propriétaire, délibérément :**
+- `admins read all` / `admins update all` — l'admin plateforme est hors décision.
+- `cegep admin read favorites` sur `recruiter_favorites` — deux écrans Mon CÉGEP
+  comptent encore les favoris de l'équipe (`cegep/recruteurs:154`, `cegep/stats:248`).
+  Hors périmètre : la décision ne vise que les trois colonnes privées.
+
+**La règle, inchangée et toujours la vraie règle :**
 
 > Toute donnée privée recruteur vit dans une table séparée, à RLS propriétaire
-> seul (`recruiter_id = auth.uid()`). On n'ajoute plus de colonne privée sur
-> `recruiter_pipeline` : cette table est lisible par le coach, le cégep admin et
-> l'admin.
+> seul (`recruiter_id = auth.uid()`).
 
-Conséquence directe, appliquée au Lot 1 : `next_action_at` (une **date**, qui ne
-dit rien de plus que « le recruteur compte relancer ») est portée au mobile ;
-`next_action_note` (du **texte libre** du recruteur) ne l'est pas, et migrera
-vers la table privée au Lot 2 avec les autres colonnes privées existantes.
+**Pourquoi elle reste vraie même maintenant :** les trois colonnes sont privées
+parce que **plus personne d'autre n'obtient la ligne**, pas parce qu'elles ont
+bougé. Ajouter demain une policy de lecture à un nouveau rôle rouvrirait tout
+d'un coup. Le **Lot 2b** — déplacer les colonnes dans une table propriétaire
+seul — reste au programme comme défense en profondeur, reporté au lot mobile :
+des binaires publiés écrivent encore `visit_at` et `flagged` en direct, et un
+`DROP` de colonne les casserait (règle 3 du CLAUDE.md, expand-then-contract).
 
-**L'existant n'est PAS conforme à cette règle — ne pas lire « on n'ajoute plus de
-colonne privée » comme « tout est propre ».** `next_action_note` est un legs non
-conforme : la colonne vit sur `recruiter_pipeline` (lisible par le coach) et le
-web l'écrit encore via `handleSaveAction`. À migrer vers la table privée
-recruteur au Lot 2. Le mobile ne l'écrit pas (périmètre Lot 1 = date seule).
+**Régression connue et acceptée** (registre `docs/fast-follow-1.4.2.md` §28) :
+`components/shared/CoachDashboardMobile.tsx:621` lit encore le pipeline en
+direct — son indicateur « contactés » affiche **0** dans les binaires coach
+publiés jusqu'au lot mobile. Aucune erreur, aucun plantage.
 
 ---
 
@@ -52,6 +85,13 @@ recruteur au Lot 2. Le mobile ne l'écrit pas (périmètre Lot 1 = date seule).
 
 **Canonique : `recruiter_notes`** (`useAddPipelineNote` / `usePipelineNotes`,
 feed de la page `/recruteur/pipeline`). Toute nouvelle note passe par là.
+
+**Depuis le Lot 2a (2026-09-17), la table est STRICTEMENT propriétaire :** une
+seule policy, `Recruiters manage own notes`. `cegep admin read notes` et
+`cegep admin insert notes` sont retirées — une note privée de recruteur n'a pas
+à être lue par l'admin de son cégep. Elles n'existaient que pour la
+réassignation, qui **copiait** les notes ; `reassign_pipeline()` les **déplace**
+désormais, en conservant leur `created_at` et sans écrire de faux `NOTE_ADDED`.
 
 **`recruiter_pipeline.notes` — deprecated.** Plus écrite nulle part dans l'app
 (grep 2026-09-03 : zéro `update`/`insert` la touchant). Elle n'est plus que
