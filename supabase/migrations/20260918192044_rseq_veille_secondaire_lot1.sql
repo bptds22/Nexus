@@ -1,4 +1,8 @@
--- 20260918143401_rseq_veille_secondaire_lot1
+-- 20260918192044_rseq_veille_secondaire_lot1
+--
+-- APPLIQUÉE en PROD le 2026-09-18 via MCP apply_migration, sur GO de BP.
+-- Nom de fichier aligné sur la version RÉELLE assignée par MCP (rédigée sous
+-- 20260918143401). Contenu envoyé = ce fichier aux commentaires d'en-tête près ; md5 des 7 fonctions identiques prod / recette locale après apply.
 --
 -- VEILLE RSEQ — ÉLARGISSEMENT AU SECONDAIRE, LOT 1 (base de données).
 -- Plan révisé validé par BP le 2026-09-18 (GO lots 1 à 4). LOCAL SEULEMENT
@@ -14,9 +18,9 @@
 --
 --    PROCÉDURE DE MISE EN PROD — docs/rseq-veille-secondaire-mise-en-prod.md
 --    (pré-vol, recette, retour arrière). En résumé, une seule fenêtre, hors mar./mer. :
---      1. cette migration, puis 20260918165007_rseq_sync_runs_mode (journal :
+--      1. cette migration, puis 20260918192106_rseq_sync_runs_mode (journal :
 --         colonnes `mode` sans défaut + `detail` — la nouvelle fonction les écrit),
---         puis 20260918171403_rseq_apply_games_matchs_partages ;
+--         puis 20260918192139_rseq_apply_games_matchs_partages ;
 --      2. redéploiement de `rseq-weekly-sync` (lot 2) ;
 --      3. cron (lot 3) : MODIFIER l'entrée existante (55 7 * * 3) pour qu'elle
 --         passe `?secteur=Collégial` — décision BP 2026-09-18 : `?secteur=` n'a

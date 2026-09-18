@@ -1,8 +1,29 @@
 # Veille RSEQ secondaire — procédure de mise en prod
 
-Préparée le 2026-09-18, branche `feat/rseq-veille-secondaire`. **Rien n'est
-appliqué en prod à la date de rédaction.** À exécuter sur GO explicite de BP,
-dans une seule fenêtre.
+Préparée le 2026-09-18, branche `feat/rseq-veille-secondaire`. **EXÉCUTÉE en
+prod le vendredi 2026-09-18, 19:18 → ~20:01 UTC**, sur GO de BP — voir le
+journal d'exécution ci-dessous. Le reste du document est la procédure telle
+qu'elle a été suivie, gardée pour la prochaine fois (et pour le retour arrière).
+
+## Journal d'exécution — 2026-09-18
+
+| Étape | Résultat |
+|---|---|
+| 1. Pré-vol (19:18 UTC) | conforme : dernière migration `20260917203126`, 5 signatures d'origine, cron unique sans secteur, 0 `RUNNING`, v6 |
+| M1 `20260918192044` | OK — md5 des 7 fonctions = recette locale ; 67 familles (22 + 45) ; 0 alerte sans secteur |
+| M2 `20260918192106` | OK — `mode` NOT NULL sans défaut ; 8 journaux → `passe` |
+| M3 `20260918192139` | OK — `apply_games` md5 `802495b4…` = recette locale |
+| 3. Déploiement | **v7**, `verify_jwt: false` (CLI, depuis la branche) |
+| 4a. Refus | 400 / 400, messages attendus |
+| 4b. Collégial | `DONE` 32 s, 38/38, 2 363 vus, 0 ins, 18 maj **toutes réelles** (5 scores, 1 date, 8 heures, 4 lieux), 0 alerte ; classements `Collégial` 312 |
+| 4c. Découverte | `DONE` 157 s, 195 appels / 0 échec, **200 ligues secondaires**, 7 primaires écartées |
+| 4d. Secondaire | `DONE` 152 s, **180/180**, 4 487 vus, 3 337 ins, 200 maj (148 scores, 13 dates, 22 heures, 12 lieux, 5 méta par la ligue d'origine) ; 1 098 classements `Secondaire` ; alertes : **18** `NOUVELLES_EQUIPES` (905 équipes, 851 à école prouvée), **21** `MATCH_RETIRE`, **2** `FAMILLE_ATTENDUE_ABSENTE`, 0 `MAPPING_DERIVE`, 0 `CHANGEMENT_DIVISION` ; 0 match partagé mal nommé |
+| M4 `20260918200033` | OK — 3 travaux actifs, paramètres attendus, secret lu du Vault dans les trois |
+
+Premiers déclenchements automatiques : **mardi 2026-09-22 07:55 UTC** (découverte),
+**mercredi 2026-09-23 07:55 UTC** (collégial) et **08:10 UTC** (secondaire).
+À lire mercredi : la passe secondaire doit retomber à ~0 mise à jour hors
+vrais changements.
 
 ## 0. La fenêtre
 
@@ -19,11 +40,11 @@ dans une seule fenêtre.
 
 | # | Objet | Nature |
 |---|---|---|
-| M1 | `20260918143401_rseq_veille_secondaire_lot1.sql` | catalogue, vue, clé à 3 args, `p_secteur` sur 4 RPC (DROP + CREATE), données |
-| M2 | `20260918165007_rseq_sync_runs_mode.sql` | journal : `mode` (sans défaut) + `detail` |
-| M3 | `20260918171403_rseq_apply_games_matchs_partages.sql` | matchs inter-sections (CREATE OR REPLACE) |
+| M1 | `20260918192044_rseq_veille_secondaire_lot1.sql` | catalogue, vue, clé à 3 args, `p_secteur` sur 4 RPC (DROP + CREATE), données |
+| M2 | `20260918192106_rseq_sync_runs_mode.sql` | journal : `mode` (sans défaut) + `detail` |
+| M3 | `20260918192139_rseq_apply_games_matchs_partages.sql` | matchs inter-sections (CREATE OR REPLACE) |
 | F | `supabase/functions/rseq-weekly-sync/index.ts` (+ `_shared/rseqWhitelist.ts`, inchangé) | v6 → v7 |
-| M4 | `20260918172143_rseq_cron_secteurs.sql` | cron : 1 modifié, 2 ajoutés — **en dernier** |
+| M4 | `20260918200033_rseq_cron_secteurs.sql` | cron : 1 modifié, 2 ajoutés — **en dernier** |
 
 État de départ relevé le 2026-09-18 (à revérifier au §1) : dernière migration
 `20260917203126`, fonction **v6** (`verify_jwt = false`, identique au fichier de
@@ -216,7 +237,7 @@ cron n'est pas posé.
 ## 5. Cron (M4) — en dernier
 
 `apply_migration` nom `rseq_cron_secteurs`, contenu de
-`20260918172143_rseq_cron_secteurs.sql`. NOTICE attendue :
+`20260918200033_rseq_cron_secteurs.sql`. NOTICE attendue :
 
 ```
 NEXUS lot3 : 3 travaux RSEQ conformes — {"rseq-decouverte-secondaire|55 7 * * 2|t|?mode=decouverte&secteur=Secondaire",

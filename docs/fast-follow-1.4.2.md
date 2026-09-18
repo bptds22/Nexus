@@ -1005,7 +1005,7 @@ mauvais environnement ») : un `db reset` complet bute dessus aussi.
 - **inscrites et appliquées** : `20260909202525` (commentaire posé à la main,
   cf. 29.1), `20260911200100_d6_volet2`, `20260914020335_resurrection_fil_archive`,
   `20260915090000_ambassadeur_notifications_types`, `20260917203126`,
-  `20260918143401_rseq_veille_secondaire_lot1` ;
+  `20260918192044_rseq_veille_secondaire_lot1` ;
 - **sautée, non inscrite** : `20260911200000_d6_volet1` (prod-only par design) ;
 - **non appliquées, non inscrites** : les 16 autres de `20260915090100` à
   `20260917184623` (ambassadeur, recherche, télémétrie, pipeline lot 2a) —
@@ -1029,7 +1029,7 @@ mercredi où Docker tourne, la base locale appelle donc la fonction de prod.
 **Sans effet aujourd'hui** : l'en-tête porte le secret du Vault LOCAL, différent
 de celui de la prod → `rseq_verifie_secret` rend faux → 403. Mais c'est du bruit
 dans les journaux de la fonction de prod, et c'est un fil tendu entre les deux
-environnements. Toute future migration cron (dont `20260918172143`) le reproduit
+environnements. Toute future migration cron (dont `20260918200033`) le reproduit
 si elle est rejouée en local — c'est pourquoi celle-ci ne se teste qu'en
 transaction annulée.
 

@@ -1,8 +1,12 @@
--- 20260918165007_rseq_sync_runs_mode
+-- 20260918192106_rseq_sync_runs_mode
+--
+-- APPLIQUÉE en PROD le 2026-09-18 via MCP apply_migration, sur GO de BP.
+-- Nom de fichier aligné sur la version RÉELLE assignée par MCP (rédigée sous
+-- 20260918165007). 8 journaux existants passés en mode 'passe', colonne sans défaut vérifiée en prod.
 --
 -- VEILLE RSEQ SECONDAIRE — complément du lot 2 (journal).
 -- LOCAL SEULEMENT. À appliquer en prod dans la même fenêtre que le lot 1
--- (20260918143401) et le redéploiement de `rseq-weekly-sync`.
+-- (20260918192044) et le redéploiement de `rseq-weekly-sync`.
 --
 -- Le lot 2 ajoute un mode `?mode=decouverte` à l'edge function. Ses passages
 -- s'inscrivent dans rseq_sync_runs comme les passes — sans cette colonne, une

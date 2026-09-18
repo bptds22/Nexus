@@ -1,4 +1,8 @@
--- 20260918172143_rseq_cron_secteurs
+-- 20260918200033_rseq_cron_secteurs
+--
+-- APPLIQUÉE en PROD le 2026-09-18 via MCP apply_migration, sur GO de BP.
+-- Nom de fichier aligné sur la version RÉELLE assignée par MCP (rédigée sous
+-- 20260918172143). Posée APRÈS le déploiement v7 et la recette 4a-4d ; 3 travaux vérifiés, secret lu du Vault dans les trois.
 -- ============================================================================
 -- VEILLE RSEQ SECONDAIRE — LOT 3 : le cron.
 --

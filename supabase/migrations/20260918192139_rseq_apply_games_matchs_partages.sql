@@ -1,8 +1,12 @@
--- 20260918171403_rseq_apply_games_matchs_partages
+-- 20260918192139_rseq_apply_games_matchs_partages
+--
+-- APPLIQUÉE en PROD le 2026-09-18 via MCP apply_migration, sur GO de BP.
+-- Nom de fichier aligné sur la version RÉELLE assignée par MCP (rédigée sous
+-- 20260918171403). md5 de rseq_sync_apply_games identique prod / recette locale (802495b4…).
 --
 -- VEILLE RSEQ SECONDAIRE — correctif trouvé à la recette du lot 4 (2026-09-18).
--- LOCAL SEULEMENT. À appliquer en prod dans la même fenêtre que 20260918143401
--- et 20260918165007 (voir docs/rseq-veille-secondaire-mise-en-prod.md).
+-- LOCAL SEULEMENT. À appliquer en prod dans la même fenêtre que 20260918192044
+-- et 20260918192106 (voir docs/rseq-veille-secondaire-mise-en-prod.md).
 --
 -- ── LE DÉFAUT ────────────────────────────────────────────────────────────────
 -- Au secondaire, un match INTER-SECTIONS (« Football J M D3 Section Est » contre
