@@ -1018,3 +1018,21 @@ Divergence associée : **cinq fonctions RSEQ locales ne correspondaient pas à l
 prod** (apply_standings, detect_teams, detect_familles, detect_mapping,
 detect_matchs_retires) — le lot 1 les a réécrites depuis les définitions prod,
 l'écart est donc résorbé pour elles, pas pour le reste de la base.
+
+### 29.4 La base LOCALE porte un travail cron qui appelle la fonction de PROD
+
+`cron.job` local contient `rseq-veille-hebdo` (`55 7 * * 3`, actif), rejoué
+depuis `20260902210200_rseq_cron_hebdomadaire.sql` : son URL est celle de la
+prod (`nrloizyemulbhujrqhgx.supabase.co/functions/v1/rseq-weekly-sync`). Chaque
+mercredi où Docker tourne, la base locale appelle donc la fonction de prod.
+
+**Sans effet aujourd'hui** : l'en-tête porte le secret du Vault LOCAL, différent
+de celui de la prod → `rseq_verifie_secret` rend faux → 403. Mais c'est du bruit
+dans les journaux de la fonction de prod, et c'est un fil tendu entre les deux
+environnements. Toute future migration cron (dont `20260918172143`) le reproduit
+si elle est rejouée en local — c'est pourquoi celle-ci ne se teste qu'en
+transaction annulée.
+
+Correction simple, locale : `select cron.unschedule('rseq-veille-hebdo');` sur la
+base Docker. Plus durable : faire lire l'URL cible dans le Vault (une URL par
+environnement) plutôt que de l'écrire dans la migration.
