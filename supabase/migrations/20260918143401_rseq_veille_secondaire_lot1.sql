@@ -13,7 +13,8 @@
 --    ligues secondaires : l'ancienne fonction les traiterait comme collégiales.
 --
 --    PROCÉDURE DE MISE EN PROD — une seule fenêtre, dans cet ordre, hors mar./mer. :
---      1. cette migration ;
+--      1. cette migration, puis 20260918165007_rseq_sync_runs_mode (journal :
+--         colonnes `mode` sans défaut + `detail` — la nouvelle fonction les écrit) ;
 --      2. redéploiement de `rseq-weekly-sync` (lot 2) ;
 --      3. cron (lot 3) : MODIFIER l'entrée existante (55 7 * * 3) pour qu'elle
 --         passe `?secteur=Collégial` — décision BP 2026-09-18 : `?secteur=` n'a
