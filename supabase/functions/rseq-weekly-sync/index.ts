@@ -31,8 +31,9 @@
 //
 // FUSIBLE — 330 s. Avant chaque appel au RSEQ, si la passe a dépassé 330 s,
 // elle s'arrête proprement : journal en PARTIAL, alerte PASSE_PARTIELLE, et
-// les étapes de fin (familles, mapping, journal) ont encore ~70 s devant le
-// plafond de 400 s. Sans lui, l'edge function serait tuée au plafond et le
+// les étapes de fin (familles, mapping, journal) ont encore ~40 s devant le
+// plafond de 400 s, même au pire : passé 300 s, chaque appel n'a plus droit
+// qu'à UNE tentative (voir SEUIL_TENTATIVE_UNIQUE_MS). Sans lui, l'edge function serait tuée au plafond et le
 // journal resterait RUNNING pour toujours, sans aucun signal. Quand il saute
 // régulièrement (basketball et futsal en octobre), c'est le déclencheur du
 // lot « tranches ».
@@ -75,6 +76,13 @@ const TENTATIVES = 2;
 // que pour la recette locale : provoquer un PARTIAL contre la vraie API sans
 // attendre qu'octobre le fasse. Non définie en prod.
 const FUSIBLE_MS = Math.min(330, Number(Deno.env.get("RSEQ_FUSIBLE_S")) || 330) * 1000;
+
+// Passé ce seuil (300 s en prod), UNE seule tentative par appel. Sinon un appel
+// lancé juste avant le fusible, dont les deux tentatives vont au bout du
+// délai (2 × 30 s + 1,5 s), pousserait la fin de passe vers 400 s — le plafond
+// où le runtime tue la fonction et laisse le journal en RUNNING. Avec une
+// seule tentative : 330 + 30 = 360 s au pire, ~40 s pour les étapes de fin.
+const SEUIL_TENTATIVE_UNIQUE_MS = FUSIBLE_MS - TIMEOUT_MS;
 
 const ENTETES = {
   "User-Agent":
@@ -137,10 +145,15 @@ class Rseq {
     return Date.now() - this.t0 > FUSIBLE_MS;
   }
 
-  /** GET -> JSON, seconde tentative sur échec de transport ou 5xx. */
+  /**
+   * GET -> JSON, seconde tentative sur échec de transport ou 5xx — sauf passé
+   * SEUIL_TENTATIVE_UNIQUE_MS, où l'on n'a plus le temps d'en offrir deux.
+   */
   async json(url: string): Promise<unknown> {
     let derniere = "";
-    for (let essai = 1; essai <= TENTATIVES; essai++) {
+    const tentatives =
+      Date.now() - this.t0 > SEUIL_TENTATIVE_UNIQUE_MS ? 1 : TENTATIVES;
+    for (let essai = 1; essai <= tentatives; essai++) {
       const attente = this.dernier + DELAI_MS - Date.now();
       if (attente > 0) await dodo(attente);
       this.dernier = Date.now();
@@ -160,7 +173,7 @@ class Rseq {
         clearTimeout(t);
         this.dernier = Date.now();
       }
-      if (essai < TENTATIVES) await dodo(1500);
+      if (essai < tentatives) await dodo(1500);
     }
     throw new Error(derniere || "echec inconnu");
   }

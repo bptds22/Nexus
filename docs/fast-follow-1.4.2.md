@@ -945,7 +945,29 @@ En local, le 2026-09-18, le commentaire a été posé à la main depuis le texte
 prod et la version inscrite dans `schema_migrations` — le fichier, lui, est
 resté tel quel.
 
-### 29.2 Ports Docker 54321 / 54322 injoignables — le CLI Supabase est inutilisable en local
+### 29.2 Ports Docker 54321 / 54322 injoignables — RÉGLÉ le 2026-09-18
+
+**Cause réelle : Windows, pas Docker.** WinNAT (Hyper-V / WSL) avait réservé
+la plage **54291–54390**, qui englobe 54321–54327. Diagnostic :
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+```
+
+Symptôme au démarrage d'un conteneur : `bind: An attempt was made to access a
+socket in a way forbidden by its access permissions`. Tant que les conteneurs
+étaient relancés par leur politique de redémarrage, l'erreur restait
+invisible — ils tournaient simplement sans ports publiés
+(`NetworkSettings.Ports` vide). Ni redémarrer Docker Desktop, ni
+`wsl --shutdown` n'y font rien.
+
+**Remède (admin requis)** : `net stop winnat` puis `net start winnat` dans un
+PowerShell élevé — les plages dynamiques disparaissent. Depuis une session non
+élevée : `Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-Command','net stop winnat; net start winnat'`
+(invite UAC). Puis `docker start` des conteneurs `*_Nexus`. Les plages
+pouvant être re-tirées au redémarrage de Windows, le défaut peut revenir.
+
+Constat d'origine, conservé :
 
 Les conteneurs sont `healthy`, `docker inspect` montre bien la liaison
 `5432/tcp → 54322`, mais rien n'écoute côté hôte (`Test-NetConnection` échoue
