@@ -12,6 +12,16 @@
 --    collégiale du mercredi casse. De plus, la vue renvoie désormais les
 --    ligues secondaires : l'ancienne fonction les traiterait comme collégiales.
 --
+--    PROCÉDURE DE MISE EN PROD — une seule fenêtre, dans cet ordre, hors mar./mer. :
+--      1. cette migration ;
+--      2. redéploiement de `rseq-weekly-sync` (lot 2) ;
+--      3. cron (lot 3) : MODIFIER l'entrée existante (55 7 * * 3) pour qu'elle
+--         passe `?secteur=Collégial` — décision BP 2026-09-18 : `?secteur=` n'a
+--         PAS de valeur par défaut, le secteur reste explicite partout. Sans
+--         cette modification, la passe collégiale du mercredi est refusée ;
+--         puis AJOUTER la découverte (mar. 07:55 UTC) et la passe secondaire
+--         (mer. 08:10 UTC).
+--
 -- Définitions de départ : relevées EN PROD le 2026-09-18 (pg_get_functiondef),
 -- pas dans le dépôt. Cinq des fonctions locales divergeaient de la prod
 -- (apply_standings, detect_teams, detect_familles, detect_mapping,
