@@ -113,10 +113,21 @@ export default withSentryConfig(nextConfig, {
   // which has no rewrites or route handlers. Mobile talks to ingest directly —
   // no ad-blockers in a native WebView anyway.
   //
-  // Note (July 2026): Turbopack does not honor tunnelRoute — verified on Next
-  // 16.1.6, no /monitoring in routes-manifest.json and the client chunk points
-  // straight at ingest. So this is currently inert on web too; the gate is here
-  // so the mobile build stays correct if/when Sentry ships Turbopack support.
+  // ⚠ LE TUNNEL FONCTIONNE — NE PAS LE RETIRER.
+  // Une note de juillet 2026 affirmait ici l'inverse (« Turbopack n'honore pas
+  // tunnelRoute, pas de /monitoring dans routes-manifest.json, donc inerte »).
+  // Les deux moitiés sont fausses. Vérifié le 2026-09-17, build local ET prod :
+  //   · routes-manifest.json porte la réécriture sous `afterFiles` :
+  //     /monitoring(/?) -> https://o:orgid.ingest.:region.sentry.io/api/:projectid/envelope/
+  //     (conditionnée aux query params o, p, r) ;
+  //   · le chunk client pose globalThis._sentryRewritesTunnelPath = "/monitoring" ;
+  //   · sur nexussports.ca : POST /monitoring?o=…&p=…&r=de -> **401**, c'est
+  //     SENTRY qui répond (enveloppe vide, non authentifiée). Une page Next ne
+  //     renvoie jamais 401. Et le GET rend 404 SANS `X-Matched-Path: /404`,
+  //     donc sans passer par la page 404 de Next — contrairement à une URL
+  //     inexistante, qui la porte.
+  // Autrement dit : les erreurs navigateur d'un utilisateur sous bloqueur de
+  // pub arrivent bien. Retirer cette ligne les perdrait.
   //
   // middleware.ts matches only /partenaire/:path* — no collision with /monitoring.
   ...(isCapacitorBuild ? {} : { tunnelRoute: "/monitoring" }),
