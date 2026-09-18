@@ -918,3 +918,81 @@ déplacement physique des trois colonnes privées vers une table propriétaire
 seul, avec trigger d'interception pour les binaires qui les écrivent encore.
 Le Lot 2a suffit à la garantie « ni le coach ni l'admin cégep, même par
 l'API » ; le 2b est une défense en profondeur.
+
+---
+
+## 29. Environnement local — trois défauts relevés le 2026-09-18, NON corrigés
+
+Relevés en préparant le lot 1 de la veille RSEQ secondaire. **Consignés sur
+décision BP, pas corrigés** : aucun ne concerne la veille, et chacun mérite son
+propre geste. Ils survivront à ce chantier.
+
+### 29.1 `20260909202525_calc_cote_globale_commentaire.sql` est CASSÉ dans le dépôt
+
+Le `COMMENT ON FUNCTION public.calc_cote_globale() IS` est sur une ligne
+**commentée** (`--   \`COMMENT ON …`), puis la chaîne `'Cote globale : …';` suit
+sur la ligne d'après, **orpheline** :
+
+```
+psql: ERROR:  syntax error at or near "'Cote globale : moyenne des critères notés. …"
+```
+
+La prod n'est pas touchée : le commentaire y est posé (appliqué par MCP le
+2026-09-09). Mais **le prochain `supabase db reset` s'arrêtera sur ce fichier.**
+Correction : décommenter la ligne `COMMENT ON` (le texte exact est celui de la
+prod, `obj_description('public.calc_cote_globale()'::regprocedure)`).
+En local, le 2026-09-18, le commentaire a été posé à la main depuis le texte
+prod et la version inscrite dans `schema_migrations` — le fichier, lui, est
+resté tel quel.
+
+### 29.2 Ports Docker 54321 / 54322 injoignables — le CLI Supabase est inutilisable en local
+
+Les conteneurs sont `healthy`, `docker inspect` montre bien la liaison
+`5432/tcp → 54322`, mais rien n'écoute côté hôte (`Test-NetConnection` échoue
+sur 54321, 54322, 54323 ; `supabase migration list --local` →
+`ECONNREFUSED 127.0.0.1:54322`). Un `docker restart` de `supabase_db_Nexus` et
+`supabase_kong_Nexus` n'y change rien : c'est la redirection de ports de
+Docker Desktop elle-même.
+
+Contournement en place : **tout passe par `docker exec` dans le conteneur**
+(`docker cp` + `psql -f`, la règle UTF-8 du projet). Ça suffit pour le SQL.
+**Ça ne suffit pas pour servir une edge function en local**
+(`supabase functions serve` a besoin de Kong sur 54321) — donc bloquant pour le
+lot 4 de la veille RSEQ s'il n'est pas réglé d'ici là. Piste : redémarrer
+Docker Desktop entièrement (ou WSL : `wsl --shutdown`), pas seulement les
+conteneurs.
+
+### 29.3 La base locale est dans un état MIXTE — objets présents, historique absent
+
+`supabase_migrations.schema_migrations` s'arrêtait au **20260909191916**, soit
+22 migrations de retard sur le dépôt. Or une partie de ces migrations était
+**déjà appliquée à la main**, sans inscription :
+- les tables ambassadeur (`ambassadeur_revendications`…) existent — cf. §26,
+  environnement de test Ambassadeur posé le 2026-09-15 ;
+- `games_source_tracabilite` (20260917203126) était entièrement présente
+  (3 colonnes, contrainte, RPC au md5 identique à la prod) — ses gates ont été
+  rejoués et passent ; elle a été **inscrite** le 2026-09-18.
+
+Conséquence : `supabase migration up` rejouerait des migrations déjà passées et
+échouerait (`relation "ambassadeur_revendications" already exists`). Et
+`20260911200000_d6_volet1_dedoublonnage_conversations.sql` refuse **par
+construction** de tourner hors prod (« conversation survivante … introuvable —
+mauvais environnement ») : un `db reset` complet bute dessus aussi.
+
+État d'inscription local au 2026-09-18, pour reprendre :
+- **inscrites et appliquées** : `20260909202525` (commentaire posé à la main,
+  cf. 29.1), `20260911200100_d6_volet2`, `20260914020335_resurrection_fil_archive`,
+  `20260915090000_ambassadeur_notifications_types`, `20260917203126`,
+  `20260918143401_rseq_veille_secondaire_lot1` ;
+- **sautée, non inscrite** : `20260911200000_d6_volet1` (prod-only par design) ;
+- **non appliquées, non inscrites** : les 16 autres de `20260915090100` à
+  `20260917184623` (ambassadeur, recherche, télémétrie, pipeline lot 2a) —
+  certaines partiellement présentes, à inventorier objet par objet.
+
+Deux sorties possibles, à trancher : (a) inventaire + inscription manuelle des
+migrations dont les objets sont présents ; (b) `db reset` complet, une fois
+29.1 corrigé et 29.2 réglé, avec un contournement pour `d6_volet1`.
+Divergence associée : **cinq fonctions RSEQ locales ne correspondaient pas à la
+prod** (apply_standings, detect_teams, detect_familles, detect_mapping,
+detect_matchs_retires) — le lot 1 les a réécrites depuis les définitions prod,
+l'écart est donc résorbé pour elles, pas pour le reste de la base.
