@@ -1,8 +1,13 @@
--- 20260918201523_app_redirect_counts
+-- 20260919014958_app_redirect_counts
+--
+-- APPLIQUÉE en PROD le 2026-09-18 (21:49 heure de Montréal) via MCP apply_migration, sur GO de BP.
+-- Nom de fichier aligné sur la version RÉELLE assignée par MCP (rédigée sous
+-- 20260918201523). Contre-vérifié en prod : ACL table et fonction
+-- {postgres, service_role} en liste complète, anon et authenticated refusés
+-- partout, CHECK plateforme / source / n, RLS active sans policy.
 --
 -- Compteur AGRÉGÉ des visites de nexussports.ca/app (lien de la bio
--- Instagram) — décision BP 2026-09-18. LOCAL SEULEMENT tant que BP n'a pas
--- donné son GO prod.
+-- Instagram) — décision BP 2026-09-18.
 --
 -- ── CE QUE LA TABLE PORTE, ET CE QU'ELLE NE PORTERA JAMAIS ──────────────────
 --   Une ligne par (jour, plateforme, source), et un nombre. RIEN d'autre :
