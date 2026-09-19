@@ -65,6 +65,12 @@ export const MOBILE_EXCLUDED_PAGES = [
   // sheet natif lisant le même content/aide/*, pas par une route.
   '/aide',
 
+  // Lien de la bio Instagram (2026-09-18) — redirige vers le bon store selon
+  // le User-Agent. WEB SEULEMENT : dynamique (headers()), et sans objet dans
+  // l'application. Masquée au build par HIDE_PATTERNS, gardée par notFound()
+  // en tête de app/app/page.tsx.
+  '/app',
+
   // Pages produit/marketing
   '/tarifs',
   '/a-propos',

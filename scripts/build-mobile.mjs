@@ -56,6 +56,12 @@ const HIDE_PATTERNS = [
   // SANS generateStaticParams — et elle ne peut pas en avoir, les codes sont
   // crees a l'execution. Sans ce masquage, output:'export' echoue.
   'app/join/\\[code\\]/page.tsx',
+  // /app — le lien de la bio Instagram (2026-09-18). WEB SEULEMENT : la page
+  // lit headers() (User-Agent) pour rediriger vers le bon store, ce qui la
+  // rend dynamique — output:'export' la refuserait. Sur l'appareil, elle n'a
+  // de toute façon aucun sens : on est déjà dans l'application.
+  // Le composant voisin AppLanding.tsx n'est pas une route : rien à masquer.
+  'app/app/page.tsx',
   // NOTE: app/page.tsx is NOT hidden — Capacitor needs an out/index.html
   // entry point. The page's redirect('/auth') guard fires on mobile load.
   // Centre d'aide public (chantier 5). WEB SEULEMENT pour l'instant :

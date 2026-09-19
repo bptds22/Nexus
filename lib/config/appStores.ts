@@ -25,6 +25,67 @@ export const PLAY_STORE_URL: string | null =
 
 export type DeviceKind = "ios" | "android" | "desktop";
 
+/* ── Liens AVEC ATTRIBUTION (page /app) ─────────────────────────────
+   Ce qui compte, ce sont les INSTALLATIONS par source, pas les clics : les
+   deux consoles savent les rapporter si le lien porte la campagne.
+     • App Store Connect → App Analytics > Sources : `pt` (identifiant
+       FOURNISSEUR du compte) + `ct` (jeton de campagne) + `mt=8`.
+       Sans `pt`, `ct` est ignoré — d'où le lien NU tant que le jeton
+       fournisseur n'est pas renseigné ci-dessous.
+     • Play Console → Acquisition : `referrer` URL-encodé porteur de
+       utm_source / utm_medium.
+   Seule la source `instagram-bio` est marquée aujourd'hui ; les autres
+   visites repartent vers les liens nus. */
+
+/** Identifiant fournisseur App Store Connect (`pt`). À renseigner — BP le
+ *  fournit. Tant qu'il est null, le lien App Store part sans campagne. */
+export const APP_STORE_PROVIDER_TOKEN: string | null = null;
+
+const CAMPAGNES = {
+  "instagram-bio": { ct: "instagram-bio", utmSource: "instagram", utmMedium: "bio" },
+} as const;
+
+type SourceCampagne = keyof typeof CAMPAGNES;
+const aCampagne = (s: string): s is SourceCampagne => s in CAMPAGNES;
+
+/** Lien App Store pour une source de visite. */
+export function lienAppStore(source: string): string {
+  if (!aCampagne(source) || !APP_STORE_PROVIDER_TOKEN) return APP_STORE_URL;
+  const q = new URLSearchParams({ pt: APP_STORE_PROVIDER_TOKEN, ct: CAMPAGNES[source].ct, mt: "8" });
+  return `${APP_STORE_URL}?${q}`;
+}
+
+/** Referrer Play (déjà URL-encodé une fois, comme l'attend la Play Console). */
+function referrerPlay(source: string): string | null {
+  if (!aCampagne(source)) return null;
+  const c = CAMPAGNES[source];
+  return encodeURIComponent(`utm_source=${c.utmSource}&utm_medium=${c.utmMedium}`);
+}
+
+/** Lien Play Store (https) pour une source de visite. */
+export function lienPlayStore(source: string): string {
+  const base = PLAY_STORE_URL ?? APP_STORE_URL;
+  const r = PLAY_STORE_URL ? referrerPlay(source) : null;
+  return r ? `${base}&referrer=${r}` : base;
+}
+
+/**
+ * URL d'INTENTION Android, pour les navigateurs intégrés (Instagram,
+ * Facebook) : elle demande explicitement l'application Play Store au lieu
+ * de charger la fiche web DANS la vue d'Instagram. `S.browser_fallback_url`
+ * renvoie vers la fiche https si l'intention n'aboutit pas.
+ * Null si la fiche Play n'existe pas (voir PLAY_STORE_URL).
+ */
+export function intentionPlayStore(source: string): string | null {
+  if (!PLAY_STORE_URL) return null;
+  const id = new URL(PLAY_STORE_URL).searchParams.get("id");
+  if (!id) return null;
+  const r = referrerPlay(source);
+  const chemin = `details?id=${id}${r ? `&referrer=${r}` : ""}`;
+  return `intent://${chemin}#Intent;scheme=market;package=com.android.vending;` +
+    `S.browser_fallback_url=${encodeURIComponent(lienPlayStore(source))};end`;
+}
+
 /**
  * L'URL du magasin pour une plateforme NATIVE, avec surcharge distante
  * facultative.

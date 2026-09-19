@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Barlow_Condensed, Bebas_Neue, Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { OG_DEFAUT } from "@/lib/config/og";
 import { GrainOverlay } from "@/components/editorial";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { MobileToastProvider } from "@/components/mobile/MobileToast";
@@ -147,23 +148,18 @@ export const metadata: Metadata = {
     title: "Nexus — Recrutement sportif au Québec",
     description:
       "Fais-toi voir, fais-toi recruter. La plateforme québécoise du recrutement sportif RSEQ × CÉGEP.",
-    images: [
-      {
-        // TODO SEO : créer /public/og-image.png 1200×630 dédié (logo + slogan)
-        // En attendant, on sert le logo brand existant.
-        url: "/brand/logo-white-red.png",
-        width: 1200,
-        height: 630,
-        alt: "Nexus — Recrutement sportif Québec",
-      },
-    ],
+    // Image dédiée 1200×630 (lib/config/og.ts). L'ancienne — le logo
+    // /brand/logo-white-red.png — était déclarée 1200×630 mais mesurait
+    // 1579×552, et blanche sur transparent. Dimensions vérifiées sur le
+    // fichier par lib/config/__tests__/ogImages.test.ts.
+    images: [OG_DEFAUT],
   },
   twitter: {
     card: "summary_large_image",
     title: "Nexus — Recrutement sportif au Québec",
     description:
       "Fais-toi voir, fais-toi recruter. Plateforme québécoise du recrutement sportif.",
-    images: ["/brand/logo-white-red.png"],
+    images: [OG_DEFAUT.url],
   },
   robots: {
     index: true,
