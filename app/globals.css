@@ -198,6 +198,13 @@ body {
   display: none !important;
 }
 
+/* /app (lien de la bio Instagram) — même règle pour le fond STATIQUE : sur
+   téléphone, le recadrage `slice` faisait dépasser « MVP » derrière le logo.
+   Schémas seulement, quelle que soit la tuile (app/components/PlaybookStatique.tsx). */
+.nx-app-landing .playbook-statique text {
+  display: none !important;
+}
+
 /* Red accent glow. Dark edge vignette removed — it was shading the
    playbook diagrams at page corners and the business ask was to let
    the playbook read uniformly across the full viewport. */

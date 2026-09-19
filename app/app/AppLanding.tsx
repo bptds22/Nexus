@@ -47,7 +47,9 @@ export default function AppLanding({ appStoreUrl, playStoreUrl, intentionAndroid
   const ordre = device === "android" ? ["play", "apple"] : ["apple", "play"];
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#111317] px-4 py-12 text-white">
+    // Fond TRANSPARENT : le #111317, le playbook et le halo sont posés par le
+    // parent (app/app/page.tsx). Un fond ici masquerait le playbook.
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center px-4 py-12 text-white">
       <div className="w-full max-w-sm text-center">
         <img
           src="/brand/logo-white-red.png"

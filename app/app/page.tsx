@@ -33,6 +33,7 @@ import { classerVisite, sourceDepuisParam, type Plateforme, type Source } from "
 import { intentionPlayStore, lienAppStore, lienPlayStore } from "@/lib/config/appStores";
 import { OG_APP } from "@/lib/config/og";
 import { createServiceClient } from "@/lib/supabase/service";
+import PlaybookStatique from "@/app/components/PlaybookStatique";
 import AppLanding from "./AppLanding";
 
 export const dynamic = "force-dynamic";
@@ -102,12 +103,18 @@ export default async function AppPage({
     if (visite.plateforme === "android") redirect(lienPlayStore(source));
   }
 
+  // Habillage de l'accueil : fond #111317, playbook FIGÉ rendu ici par le
+  // serveur (aucun JavaScript), halo rouge via .hero-playbook::after.
+  // nx-app-landing : masque les textes manuscrits du fond (globals.css).
   return (
-    <AppLanding
-      appStoreUrl={lienAppStore(source)}
-      playStoreUrl={lienPlayStore(source)}
-      intentionAndroid={intentionPlayStore(source)}
-      integre={visite.integre}
-    />
+    <div className="nx-app-landing hero-playbook min-h-[100dvh] bg-[#111317]">
+      <PlaybookStatique prefixe="app-" />
+      <AppLanding
+        appStoreUrl={lienAppStore(source)}
+        playStoreUrl={lienPlayStore(source)}
+        intentionAndroid={intentionPlayStore(source)}
+        integre={visite.integre}
+      />
+    </div>
   );
 }
