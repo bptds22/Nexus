@@ -62,6 +62,10 @@ const HIDE_PATTERNS = [
   // de toute façon aucun sens : on est déjà dans l'application.
   // Le composant voisin AppLanding.tsx n'est pas une route : rien à masquer.
   'app/app/page.tsx',
+  // /desabonnement — le lien LCAP des courriels de relance (2026-09-21). WEB
+  // SEULEMENT : searchParams la rend dynamique (export refusé), et le lien
+  // d'un courriel s'ouvre dans le navigateur, jamais dans l'application.
+  'app/desabonnement/page.tsx',
   // NOTE: app/page.tsx is NOT hidden — Capacitor needs an out/index.html
   // entry point. The page's redirect('/auth') guard fires on mobile load.
   // Centre d'aide public (chantier 5). WEB SEULEMENT pour l'instant :

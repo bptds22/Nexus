@@ -6,7 +6,9 @@
 // SDK, pas de dossier emails/). Tables + styles inline pour compatibilité
 // clients (Outlook, Gmail, Apple Mail, mobiles).
 //
-// Exports : renderEmail, FROM, APP_URL, CONTACT, LOGO_URL.
+// Exports : renderEmail, FROM, APP_URL, CONTACT, LOGO_URL, ADRESSE_POSTALE,
+// SUPPORT. Le pied LCAP (`lcap`) est optionnel : sans lui, le rendu est
+// identique à celui d'avant le 2026-09-21 pour les six courriels existants.
 
 /** Expéditeur unique (identique aux fonctions existantes). */
 export const FROM = "Nexus <info@nexussports.ca>";
@@ -20,6 +22,13 @@ export const CONTACT = "confidentialite@nexussports.ca";
 /** Logo public blanc + rouge (déjà servi absolu dans app/layout.tsx JSON-LD).
     Va sur la barre noire → variante wordmark blanc + flamme rouge. */
 export const LOGO_URL = "https://nexussports.ca/brand/logo-white-red.png";
+
+/** Adresse postale de l'expéditeur — mention OBLIGATOIRE (LCAP) sur tout
+ *  message électronique commercial, avec un moyen de contact valide 60 jours. */
+export const ADRESSE_POSTALE = "856, rue Basile-Routhier, Repentigny (Québec)";
+
+/** Adresse de support — répondre à un courriel de relance y arrive. */
+export const SUPPORT = "info@nexussports.ca";
 
 const FONT = "'Outfit','Segoe UI',Helvetica,Arial,sans-serif";
 
@@ -42,6 +51,17 @@ export interface RenderEmailOptions {
   bodyText: string;
   /** Texte brut optionnel ajouté après bodyText (ex. URL App Store). */
   extraText?: string;
+  /** PIED LCAP — à fournir pour tout courriel de relance ou de marketing.
+   *  Présent : le pied ajoute la raison de l'envoi, le lien de
+   *  désabonnement, l'adresse postale et l'adresse de support. Absent : le
+   *  pied est celui d'avant, à l'identique (les courriels transactionnels
+   *  existants n'en ont pas besoin et ne changent pas). */
+  lcap?: {
+    /** « Tu reçois ce courriel parce que… » */
+    raison: string;
+    /** URL absolue et signée de /desabonnement. */
+    desabonnementUrl: string;
+  };
 }
 
 /**
@@ -60,7 +80,13 @@ export function renderEmail(opts: RenderEmailOptions): { html: string; text: str
     footerNote,
     bodyText,
     extraText,
+    lcap,
   } = opts;
+
+  const lcapHtml = lcap
+    ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:12px;line-height:1.5;color:#71717A;">${lcap.raison} <a href="${lcap.desabonnementUrl}" target="_blank" style="color:#71717A;text-decoration:underline;">Ne plus recevoir ces courriels</a></p>
+              <p style="margin:0 0 10px;font-family:${FONT};font-size:12px;line-height:1.5;color:#A1A1AA;">Nexus — ${ADRESSE_POSTALE} · <a href="mailto:${SUPPORT}" style="color:#A1A1AA;text-decoration:none;">${SUPPORT}</a></p>`
+    : "";
 
   const html = `<!doctype html>
 <html lang="fr">
@@ -99,6 +125,7 @@ export function renderEmail(opts: RenderEmailOptions): { html: string; text: str
             <td style="padding:22px 30px 30px;font-family:${FONT};">
               <hr style="border:none;border-top:1px solid #E4E4E7;margin:0 0 16px;">
               ${footerNote ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:13px;line-height:1.5;color:#71717A;">${footerNote}</p>` : ""}
+              ${lcapHtml}
               <p style="margin:0 0 4px;font-family:${FONT};font-size:13px;line-height:1.5;color:#71717A;">Des questions ? <a href="mailto:${CONTACT}" style="color:#E63946;text-decoration:none;">${CONTACT}</a></p>
               <p style="margin:0;font-family:${FONT};font-size:12px;color:#A1A1AA;">© Nexus — nexussports.ca</p>
             </td>
@@ -113,6 +140,13 @@ export function renderEmail(opts: RenderEmailOptions): { html: string; text: str
   const textParts = [heading, "", bodyText, "", `${ctaLabel} : ${ctaUrl}`];
   if (extraText) textParts.push("", extraText);
   if (footerNote) textParts.push("", footerNote);
+  if (lcap) {
+    textParts.push(
+      "", lcap.raison,
+      `Ne plus recevoir ces courriels : ${lcap.desabonnementUrl}`,
+      `Nexus — ${ADRESSE_POSTALE} · ${SUPPORT}`,
+    );
+  }
   textParts.push("", `Des questions ? ${CONTACT}`, "© Nexus — nexussports.ca");
   const text = textParts.join("\n");
 
