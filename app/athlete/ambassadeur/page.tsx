@@ -274,8 +274,38 @@ export default function AthleteAmbassadeurPage() {
         )}
       </section>
 
+      {/* ── Les récompenses ────────────────────────────────────────
+          Dans l'ordre des paliers, et PERMANENTES : une carte apparue ne
+          disparaît plus. Un palier ne se défait pas en base. */}
+      {atteint(3) && (
+        <CarteRecompense
+          icone={<IconeStory />}
+          titre="Tes stories d'ambassadeur"
+          texte="Crée des stories aux couleurs de ton équipe et partage-les — chaque story amène du monde."
+          actions={
+            <>
+              <a
+                href={MA_STORY}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-lg bg-[#F59E0B] text-[#111317] text-[12px] font-bold uppercase tracking-[0.12em] hover:brightness-110 transition"
+              >
+                Créer ma story
+              </a>
+              <button
+                type="button"
+                onClick={copierLienStory}
+                className="px-4 py-2.5 rounded-lg border border-[#2D3748] text-[#9CA3AF] text-[12px] font-bold uppercase tracking-[0.12em] hover:text-white transition-colors"
+              >
+                Copier le lien
+              </button>
+            </>
+          }
+        />
+      )}
+
       {/* ── Inviter — L'ACTION PRINCIPALE ──────────────────────────
-          Avant les récompenses : c'est ce qui fait avancer le compteur. */}
+          Sous la carte story (décision BP 2026-09-21) : c'est ce qui fait avancer le compteur. */}
       <section className="rounded-xl border border-[#E63946]/35 bg-[#E63946]/[0.06] p-5 mb-5">
         <h2 className="font-head text-[15px] font-black uppercase tracking-tight text-white">
           Ton lien d&apos;invitation
@@ -337,36 +367,6 @@ export default function AthleteAmbassadeurPage() {
           </div>
         )}
       </section>
-
-      {/* ── Les récompenses ────────────────────────────────────────
-          Dans l'ordre des paliers, et PERMANENTES : une carte apparue ne
-          disparaît plus. Un palier ne se défait pas en base. */}
-      {atteint(3) && (
-        <CarteRecompense
-          icone={<IconeStory />}
-          titre="Tes stories d'ambassadeur"
-          texte="Crée des stories aux couleurs de ton équipe et partage-les — chaque story amène du monde."
-          actions={
-            <>
-              <a
-                href={MA_STORY}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2.5 rounded-lg bg-[#F59E0B] text-[#111317] text-[12px] font-bold uppercase tracking-[0.12em] hover:brightness-110 transition"
-              >
-                Créer ma story
-              </a>
-              <button
-                type="button"
-                onClick={copierLienStory}
-                className="px-4 py-2.5 rounded-lg border border-[#2D3748] text-[#9CA3AF] text-[12px] font-bold uppercase tracking-[0.12em] hover:text-white transition-colors"
-              >
-                Copier le lien
-              </button>
-            </>
-          }
-        />
-      )}
 
       {tableau?.badge_debloque && (
         <CarteRecompense
