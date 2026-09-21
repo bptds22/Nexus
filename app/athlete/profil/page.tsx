@@ -928,7 +928,7 @@ function PersonalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
   const [lastName, setLastName] = useState((raw?.last_name as string) || "");
   const [genre, setGenre] = useState((raw?.genre as string) || "");
   /* DATE DE NAISSANCE VERROUILLÉE (2026-09-21). Cette page n'est atteignable
-     qu'après l'onboarding, et depuis la migration 20260921180000 la base
+     qu'après l'onboarding, et depuis la migration 20260921173234 la base
      refuse à l'athlète de changer sa date une fois l'onboarding fini : se
      rajeunir contournait le consentement parental, se vieillir exposait
      l'identité d'un mineur sans consentement. Affichée, jamais envoyée —

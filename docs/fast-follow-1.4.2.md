@@ -1043,7 +1043,7 @@ environnement) plutôt que de l'écrire dans la migration.
 
 **Ce qui est fait (web + base).** `date_naissance` entre dans
 `enforce_athlete_self_edit_perimeter` (migration
-`20260921180000_date_naissance_protegee_et_vues_partenaire_actif`) : libre tant
+`20260921173234_date_naissance_protegee_et_vues_partenaire_actif`) : libre tant
 que `users.onboarding_complete` n'est pas vrai, **refusée à l'athlète ensuite**,
 dans les deux sens. Coach et admin la modifient toujours. `/athlete/profil`
 (web) affiche la date en lecture seule avec « Pour corriger ta date de
