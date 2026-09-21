@@ -1,54 +1,58 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    /admin/ambassadeurs — la contrepartie administrative du programme.
 
-   Trois choses, dans cet ordre : la FILE (les homonymies à départager, seul
-   endroit où quelqu'un attend une décision), le CLASSEMENT (compteurs,
-   paliers, annulation), le CARNET (post Instagram, chandail).
+   DEPUIS LE 2026-09-22 : les athlètes INVITENT par un lien personnel ; une
+   déclaration par courriel exact reste possible en secours. Une recrue compte
+   à la fin de son inscription (consentements passés).
+
+   L'ÉCRAN D'ARBITRAGE A ÉTÉ RETIRÉ. Il départageait les homonymes de la
+   recherche par nom ; cette recherche n'existe plus, et plus aucun chemin
+   n'écrit EN_ATTENTE (prod au 2026-09-21 : zéro ligne). S'il en restait une,
+   elle apparaîtrait dans les recrues de son parrain, annulable comme les
+   autres.
+
+   Ce que l'écran montre, par ambassadeur : recrues confirmées, dont par lien,
+   ouvertures du lien sur 30 jours, paliers, le carnet (post IG, chandail), et
+   le détail des recrues avec leur ANNULATION (rejet doux, motif consigné).
 
    ── POURQUOI CETTE PAGE LIT LES TABLES EN DIRECT ────────────────────────────
-   L'athlète passe par une projection parce que la table porte l'identité de
-   tiers mineurs. L'administrateur, lui, A le droit de la voir : la policy
-   `ambassadeur revendications admin read` est `is_admin()`, et il lit déjà
-   `athletes` en entier (`admins read all`). Une projection ici n'ajouterait
-   aucune garantie — elle ne ferait que dupliquer la RLS en JavaScript.
+   L'administrateur a le droit de les voir : `ambassadeur_revendications`,
+   `ambassadeur_paliers`, `ambassadeur_liens_clics` et `ambassadeur_suivi`
+   portent une policy SELECT `is_admin()`, et il lit déjà `athletes` et
+   `users` en entier. Une projection ici dupliquerait la RLS en JavaScript.
+   `ambassadeur_liens` (les jetons) reste FERMÉE, même à l'admin : l'écran n'en
+   a pas besoin.
 
-   ── LES ÉCRITURES, ELLES, PASSENT PAR RPC ───────────────────────────────────
-   `ambassadeur_admin_trancher` — parce qu'une confirmation peut heurter
-   l'index unique (course avec un autre parrain) et doit rendre un motif, pas
-   un 23505 dont le message nomme l'index. Seul `ambassadeur_suivi` s'écrit en
-   direct : c'est un carnet, sans contrainte de course.
+   ── LES ÉCRITURES PASSENT PAR RPC ───────────────────────────────────────────
+   L'annulation par `ambassadeur_admin_trancher(action = 'annuler')`, qui
+   exige un motif. Seul `ambassadeur_suivi` s'écrit en direct : c'est un
+   carnet, sans contrainte de course.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-interface Candidat {
-  athlete_id: string;
-  prenom: string | null;
-  nom: string | null;
-  ecole: string | null;
-  equipe: string | null;
-  /* Les deux DISCRIMINANTS. Sans eux, deux homonymes de même école et de même
-     équipe s'affichent à l'identique et il n'y a rien à trancher. Le courriel
-     est masqué en base (public.masquer_courriel) : il arrive déjà illisible,
-     l'écran n'a rien à tronquer lui-même. */
-  promotion: number | null;
-  courriel_masque: string | null;
-}
 
 interface Revendication {
   id: string;
   parrain_athlete_id: string;
-  prenom: string;
-  nom: string;
+  prenom: string | null;
   statut: "EN_ATTENTE" | "CONFIRMEE" | "REJETEE";
   methode: string;
-  candidats: Candidat[] | null;
   created_at: string;
   raison_rejet: string | null;
-  filleul_athlete_id: string | null;
+  filleul_user_id: string | null;
+}
+
+interface Recrue {
+  id: string;
+  qui: string;
+  courriel: string | null;
+  methode: string;
+  statut: Revendication["statut"];
+  le: string;
+  raison_rejet: string | null;
 }
 
 interface Ambassadeur {
@@ -56,124 +60,147 @@ interface Ambassadeur {
   nom: string;
   courriel: string | null;
   confirmes: number;
+  par_lien: number;
+  clics_30j: number;
   paliers: number[];
   post_ig_le: string | null;
   chandail_envoye_le: string | null;
+  recrues: Recrue[];
 }
+
+const METHODE: Record<string, string> = {
+  lien: "par lien",
+  courriel: "courriel",
+  nom_ecole: "nom + école",
+  nom_equipe: "nom + équipe",
+  nom_approx: "nom approx.",
+  admin: "admin",
+};
 
 const dateCourte = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-CA", { day: "2-digit", month: "2-digit", year: "numeric" });
 
 export default function AdminAmbassadeursPage() {
-  const [file, setFile] = useState<Revendication[]>([]);
   const [classement, setClassement] = useState<Ambassadeur[]>([]);
   const [chargement, setChargement] = useState(true);
+  const [ouvert, setOuvert] = useState<string | null>(null);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [rejetId, setRejetId] = useState<string | null>(null);
+  const [annulerId, setAnnulerId] = useState<string | null>(null);
   const [raison, setRaison] = useState("");
 
   const montrer = (m: string) => { setToast(m); setTimeout(() => setToast(null), 4000); };
 
-  /* LECTURE PURE — elle ne touche à AUCUN état, elle RENVOIE.
-     C'est ce qui permet à l'effet ci-dessous de poser l'état dans un callback
-     plutôt que dans son corps synchrone (react-hooks/set-state-in-effect), et
-     accessoirement ce qui rend l'annulation possible au démontage : un écran
-     quitté pendant les quatre requêtes ne pose plus rien. */
-  const lire = useCallback(async (): Promise<
-    { file: Revendication[]; classement: Ambassadeur[] } | null
-  > => {
+  /* LECTURE PURE — elle ne touche à AUCUN état, elle RENVOIE. C'est ce qui
+     permet à l'effet de poser l'état dans un callback plutôt que dans son
+     corps synchrone (react-hooks/set-state-in-effect), et d'annuler au
+     démontage. */
+  const lire = useCallback(async (): Promise<Ambassadeur[] | null> => {
     const supabase = createClient();
+    const depuis = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
 
-    const { data: revs, error } = await supabase
-      .from("ambassadeur_revendications")
-      .select("id, parrain_athlete_id, prenom, nom, statut, methode, candidats, created_at, raison_rejet, filleul_athlete_id")
-      .order("created_at", { ascending: false });
+    const [{ data: revs, error }, { data: clics }] = await Promise.all([
+      supabase
+        .from("ambassadeur_revendications")
+        .select("id, parrain_athlete_id, prenom, statut, methode, created_at, raison_rejet, filleul_user_id")
+        .order("created_at", { ascending: false }),
+      supabase.from("ambassadeur_liens_clics").select("athlete_id, jour, n").gt("jour", depuis),
+    ]);
 
     if (error) {
       console.error("[AdminAmbassadeurs] lecture:", error.message);
       return null;
     }
     const lignes = (revs ?? []) as unknown as Revendication[];
-    const enAttente = lignes.filter((r) => r.statut === "EN_ATTENTE");
-
-    /* Le classement se construit ici plutôt qu'en SQL : les parrains sont au
-       plus quelques centaines, et une vue de plus serait un objet à maintenir
-       (et à re-durcir à chaque CREATE OR REPLACE — cf. le piège documenté sur
-       top_athletes_view). */
-    const parParrain = new Map<string, number>();
-    for (const r of lignes) {
-      if (r.statut !== "CONFIRMEE") continue;
-      parParrain.set(r.parrain_athlete_id, (parParrain.get(r.parrain_athlete_id) ?? 0) + 1);
+    const clicsPar = new Map<string, number>();
+    for (const c of (clics ?? []) as { athlete_id: string; n: number }[]) {
+      clicsPar.set(c.athlete_id, (clicsPar.get(c.athlete_id) ?? 0) + c.n);
     }
-    const ids = [...new Set(lignes.map((r) => r.parrain_athlete_id))];
-    if (ids.length === 0) return { file: enAttente, classement: [] };
 
-    const [{ data: fiches }, { data: paliers }, { data: suivi }] = await Promise.all([
+    /* Un ambassadeur = quiconque a une recrue OU des ouvertures de lien : un
+       athlète qui partage beaucoup sans encore convertir se voit aussi. */
+    const ids = [...new Set([...lignes.map((r) => r.parrain_athlete_id), ...clicsPar.keys()])];
+    if (ids.length === 0) return [];
+    const filleuls = [...new Set(lignes.map((r) => r.filleul_user_id).filter((x): x is string => !!x))];
+
+    const [{ data: fiches }, { data: paliers }, { data: suivi }, { data: comptes }] = await Promise.all([
       supabase.from("athletes").select("id, first_name, last_name, email").in("id", ids),
       supabase.from("ambassadeur_paliers").select("athlete_id, palier").in("athlete_id", ids),
       supabase.from("ambassadeur_suivi").select("athlete_id, post_ig_le, chandail_envoye_le").in("athlete_id", ids),
+      filleuls.length
+        ? supabase.from("users").select("id, first_name, last_name, email").in("id", filleuls)
+        : Promise.resolve({ data: [] }),
     ]);
 
     const pal = new Map<string, number[]>();
     for (const p of (paliers ?? []) as { athlete_id: string; palier: number }[]) {
       pal.set(p.athlete_id, [...(pal.get(p.athlete_id) ?? []), p.palier].sort((a, b) => a - b));
     }
-    const sui = new Map(((suivi ?? []) as Ambassadeur[]).map((s) => [s.athlete_id, s]));
+    const sui = new Map(((suivi ?? []) as { athlete_id: string; post_ig_le: string | null; chandail_envoye_le: string | null }[])
+      .map((s) => [s.athlete_id, s]));
+    const cpt = new Map(((comptes ?? []) as { id: string; first_name: string | null; last_name: string | null; email: string | null }[])
+      .map((u) => [u.id, u]));
 
-    return {
-      file: enAttente,
-      classement: ((fiches ?? []) as { id: string; first_name: string; last_name: string; email: string | null }[])
-        .map((f) => ({
+    return ((fiches ?? []) as { id: string; first_name: string; last_name: string; email: string | null }[])
+      .map((f) => {
+        const siennes = lignes.filter((r) => r.parrain_athlete_id === f.id);
+        return {
           athlete_id: f.id,
           nom: `${f.first_name ?? ""} ${f.last_name ?? ""}`.trim() || "—",
           courriel: f.email,
-          confirmes: parParrain.get(f.id) ?? 0,
+          confirmes: siennes.filter((r) => r.statut === "CONFIRMEE").length,
+          par_lien: siennes.filter((r) => r.statut === "CONFIRMEE" && r.methode === "lien").length,
+          clics_30j: clicsPar.get(f.id) ?? 0,
           paliers: pal.get(f.id) ?? [],
           post_ig_le: sui.get(f.id)?.post_ig_le ?? null,
           chandail_envoye_le: sui.get(f.id)?.chandail_envoye_le ?? null,
-        }))
-        .sort((a, b) => b.confirmes - a.confirmes),
-    };
+          recrues: siennes.map((r) => {
+            const c = r.filleul_user_id ? cpt.get(r.filleul_user_id) : undefined;
+            return {
+              id: r.id,
+              qui: `${c?.first_name ?? ""} ${c?.last_name ?? ""}`.trim() || r.prenom?.trim() || "—",
+              courriel: c?.email ?? null,
+              methode: r.methode,
+              statut: r.statut,
+              le: r.created_at,
+              raison_rejet: r.raison_rejet,
+            };
+          }),
+        };
+      })
+      .sort((a, b) => b.confirmes - a.confirmes || b.clics_30j - a.clics_30j);
   }, []);
 
-  /* Le tic de rafraîchissement : les gestes (arbitrage, cases du carnet) ne
-     rechargent pas eux-mêmes, ils incrémentent — et c'est l'effet, seul point
-     d'écriture de l'état de liste, qui rejoue la lecture. */
   const [tic, setTic] = useState(0);
   const recharger = useCallback(() => setTic((n) => n + 1), []);
 
   useEffect(() => {
     let vivant = true;
     lire().then((r) => {
-      if (!vivant) return;          // écran quitté pendant la lecture
-      if (r) { setFile(r.file); setClassement(r.classement); }
+      if (!vivant) return;
+      if (r) setClassement(r);
       setChargement(false);
     });
     return () => { vivant = false; };
   }, [lire, tic]);
 
-  async function trancher(id: string, action: string, filleul?: string, motif?: string) {
+  async function annuler(id: string) {
     setOccupe(id);
     const { data, error } = await createClient().rpc("ambassadeur_admin_trancher", {
       p_revendication_id: id,
-      p_action: action,
-      p_filleul_athlete_id: filleul ?? null,
-      p_raison: motif ?? null,
+      p_action: "annuler",
+      p_filleul_athlete_id: null,
+      p_raison: raison,
     });
     setOccupe(null);
     if (error) { montrer(error.message); return; }
     const r = data as unknown as { ok: boolean; motif?: string };
     if (!r.ok) {
-      montrer(
-        r.motif === "deja_parrainee"
-          ? "Cette personne est déjà créditée à un autre parrain — le premier arrivé garde."
-          : `Refusé : ${r.motif}`,
-      );
-    } else {
-      montrer(action === "confirmer" ? "Confirmée." : "Écartée.");
-      setRejetId(null); setRaison("");
+      montrer(r.motif === "raison_requise" ? "Un motif est requis." : `Refusé : ${r.motif}`);
+      return;
     }
+    montrer("Recrue annulée. Le compteur baisse ; les paliers déjà atteints restent.");
+    setAnnulerId(null); setRaison("");
     recharger();
   }
 
@@ -188,6 +215,9 @@ export default function AdminAmbassadeursPage() {
     recharger();
   }
 
+  const totalLien = classement.reduce((s, a) => s + a.par_lien, 0);
+  const totalClics = classement.reduce((s, a) => s + a.clics_30j, 0);
+
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
       <div>
@@ -195,8 +225,8 @@ export default function AdminAmbassadeursPage() {
           Ambassadeurs
         </h1>
         <p className="text-[14px] text-[#9CA3AF] mt-1">
-          Les athlètes déclarent les personnes qu&apos;ils ont amenées. Une concordance
-          certaine se confirme seule ; les homonymies atterrissent ici.
+          Les athlètes invitent leurs coéquipiers par un lien personnel ; une déclaration par
+          courriel reste possible. Une recrue compte à la fin de son inscription.
         </p>
       </div>
 
@@ -205,127 +235,35 @@ export default function AdminAmbassadeursPage() {
           <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <>
-          {/* ── File d'attente ─────────────────────────────────── */}
-          <section>
-            <h2 className="font-head text-[13px] font-black uppercase tracking-[0.18em] text-[#6b7280] mb-3">
-              À départager ({file.length})
-            </h2>
-            {file.length === 0 ? (
-              <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-6 py-10 text-center">
-                <p className="text-[14px] text-[#9CA3AF]">Rien à départager.</p>
-                <p className="text-[12px] text-[#6b7280] mt-1">
-                  Une revendication n&apos;arrive ici que si plusieurs athlètes portent le nom déclaré.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {file.map((r) => (
-                  <div key={r.id} className="bg-[#1A1D24] rounded-xl border border-[#F59E0B]/30 p-5">
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#F59E0B]/15 text-[#F59E0B]">
-                        {r.methode === "nom_equipe" ? "nom + équipe" : "nom + école"}
-                      </span>
-                      <span className="text-[11px] text-[#6b7280]">déclarée le {dateCourte(r.created_at)}</span>
-                    </div>
-                    <h3 className="font-head text-lg font-black text-white tracking-tight">
-                      {r.prenom} {r.nom}
-                    </h3>
-                    <p className="text-[12px] text-[#6b7280] mt-0.5">
-                      Saisie du parrain. Choisis la bonne personne, ou écarte.
-                    </p>
-
-                    <div className="mt-4 space-y-2">
-                      {(r.candidats ?? []).map((c) => (
-                        <div key={c.athlete_id} className="flex items-center justify-between gap-3 flex-wrap rounded-lg bg-[#111317] border border-[#2D3748] px-4 py-3">
-                          <div className="min-w-0">
-                            <p className="text-[14px] text-white">{c.prenom} {c.nom}</p>
-                            <p className="text-[12px] text-[#6b7280] truncate">
-                              {c.ecole ?? "sans école"}{c.equipe ? ` · ${c.equipe}` : ""}
-                            </p>
-                            {/* La ligne qui permet de trancher. En police
-                                monospace : deux masques ne se comparent à
-                                l'œil que si les caractères s'alignent. */}
-                            <p className="text-[12px] text-[#9CA3AF] mt-0.5 font-mono truncate">
-                              {c.promotion ? `Promo ${c.promotion}` : "promo inconnue"}
-                              {c.courriel_masque ? ` · ${c.courriel_masque}` : ""}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => trancher(r.id, "confirmer", c.athlete_id)}
-                            disabled={occupe === r.id}
-                            className="h-9 px-4 rounded-lg bg-[#22C55E] hover:bg-[#16A34A] text-white font-bold text-[11px] uppercase tracking-wider transition-colors disabled:opacity-50"
-                          >
-                            C&apos;est elle
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {rejetId === r.id ? (
-                      <div className="mt-4 flex gap-2 flex-wrap">
-                        <input
-                          value={raison}
-                          onChange={(e) => setRaison(e.target.value)}
-                          placeholder="Motif (consigné)"
-                          className="flex-1 min-w-[200px] rounded-lg bg-[#111317] border border-[#2D3748] px-3 py-2 text-[13px] text-white outline-none focus:border-[#E63946]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => trancher(r.id, "rejeter", undefined, raison)}
-                          disabled={!raison.trim() || occupe === r.id}
-                          className="h-10 px-4 rounded-lg bg-[#EF4444] text-white font-bold text-[11px] uppercase tracking-wider disabled:opacity-40"
-                        >
-                          Écarter
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setRejetId(null); setRaison(""); }}
-                          className="h-10 px-4 rounded-lg border border-[#2D3748] text-[#9CA3AF] font-bold text-[11px] uppercase tracking-wider"
-                        >
-                          Annuler
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => { setRejetId(r.id); setRaison(""); }}
-                        className="mt-4 text-[12px] text-[#EF4444] underline underline-offset-2"
-                      >
-                        Aucune de celles-ci
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* ── Classement + carnet ────────────────────────────── */}
-          <section>
-            <h2 className="font-head text-[13px] font-black uppercase tracking-[0.18em] text-[#6b7280] mb-3">
+        <section>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
+            <h2 className="font-head text-[13px] font-black uppercase tracking-[0.18em] text-[#6b7280]">
               Ambassadeurs ({classement.length})
             </h2>
-            {classement.length === 0 ? (
-              <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-6 py-10 text-center">
-                <p className="text-[14px] text-[#9CA3AF]">Personne n&apos;a encore déclaré de recrue.</p>
-              </div>
-            ) : (
-              <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-x-auto">
-                <table className="w-full min-w-[720px]">
-                  <thead>
-                    <tr className="border-b border-[#2D3748]">
-                      {["Athlète", "Confirmées", "Paliers", "Post IG", "Chandail"].map((h) => (
-                        <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {classement.map((a) => (
-                      <tr key={a.athlete_id} className="border-b border-[#2D3748]/50 last:border-0">
+            <p className="text-[12px] text-[#9CA3AF]">
+              {totalClics} ouverture{totalClics > 1 ? "s" : ""} de lien (30 j) · {totalLien} inscription{totalLien > 1 ? "s" : ""} par lien
+            </p>
+          </div>
+          {classement.length === 0 ? (
+            <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-6 py-10 text-center">
+              <p className="text-[14px] text-[#9CA3AF]">Aucun ambassadeur pour l&apos;instant.</p>
+            </div>
+          ) : (
+            <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-x-auto">
+              <table className="w-full min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-[#2D3748]">
+                    {["Athlète", "Confirmées", "Par lien", "Ouvertures (30 j)", "Paliers", "Post IG", "Chandail", ""].map((h, i) => (
+                      <th key={i} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {classement.map((a) => (
+                    <Fragment key={a.athlete_id}>
+                      <tr className="border-b border-[#2D3748]/50">
                         <td className="px-4 py-3">
                           <p className="text-[14px] text-white">{a.nom}</p>
                           <p className="text-[11px] text-[#6b7280]">{a.courriel ?? "—"}</p>
@@ -335,6 +273,8 @@ export default function AdminAmbassadeursPage() {
                             {a.confirmes}
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-[14px] text-white tabular-nums">{a.par_lien}</td>
+                        <td className="px-4 py-3 text-[14px] text-[#9CA3AF] tabular-nums">{a.clics_30j}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
                             {[3, 5, 10].map((p) => (
@@ -353,14 +293,9 @@ export default function AdminAmbassadeursPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Case coche={!!a.post_ig_le} onClick={() => cocher(a.athlete_id, "post_ig_le", a.post_ig_le)} />
-                            {/* CE MARQUEUR EST CE QUI TIENT LA PROMESSE. La carte
-                                du palier 10 dit à l'athlète qu'on le contacte ;
-                                la trace écrite dans admin_notifications par le
-                                trigger n'y suffit pas — cette table est un trou
-                                noir (deux écrans y écrivent, AUCUN ne la lit, et
-                                en prod elle porte la RLS activée sans une seule
-                                policy). Ici on lit `ambassadeur_paliers`, que la
-                                policy is_admin() rend réellement lisible. */}
+                            {/* CE MARQUEUR EST CE QUI TIENT LA PROMESSE du palier
+                                10 : admin_notifications est un trou noir (RLS
+                                sans policy) ; ici on lit ambassadeur_paliers. */}
                             {a.paliers.includes(10) && !a.post_ig_le && (
                               <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#E63946]/15 text-[#E63946]">
                                 À faire
@@ -371,18 +306,95 @@ export default function AdminAmbassadeursPage() {
                         <td className="px-4 py-3">
                           <Case coche={!!a.chandail_envoye_le} onClick={() => cocher(a.athlete_id, "chandail_envoye_le", a.chandail_envoye_le)} />
                         </td>
+                        <td className="px-4 py-3 text-right">
+                          {a.recrues.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => { setOuvert(ouvert === a.athlete_id ? null : a.athlete_id); setAnnulerId(null); setRaison(""); }}
+                              className="text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-white"
+                            >
+                              {ouvert === a.athlete_id ? "Masquer" : `Recrues (${a.recrues.length})`}
+                            </button>
+                          )}
+                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <p className="text-[11px] text-[#6b7280] mt-2">
-              Les paliers ne se défont pas : annuler une revendication fait baisser le
-              compteur, pas l&apos;historique.
-            </p>
-          </section>
-        </>
+                      {ouvert === a.athlete_id && (
+                        <tr className="border-b border-[#2D3748]/50 bg-[#111317]">
+                          <td colSpan={8} className="px-4 py-3">
+                            <ul className="divide-y divide-[#2D3748]/60">
+                              {a.recrues.map((r) => (
+                                <li key={r.id} className="py-2.5">
+                                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                                    <div className="min-w-0">
+                                      <p className="text-[13px] text-white">
+                                        {r.qui}
+                                        <span className="ml-2 text-[11px] text-[#6b7280]">{METHODE[r.methode] ?? r.methode} · {dateCourte(r.le)}</span>
+                                      </p>
+                                      <p className="text-[11px] text-[#6b7280] truncate">
+                                        {r.courriel ?? "—"}
+                                        {r.statut === "REJETEE" && r.raison_rejet ? ` · annulée : ${r.raison_rejet}` : ""}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                        r.statut === "CONFIRMEE" ? "bg-[#22C55E]/15 text-[#22C55E]"
+                                          : r.statut === "EN_ATTENTE" ? "bg-[#F59E0B]/15 text-[#F59E0B]"
+                                          : "bg-white/5 text-[#9CA3AF]"}`}>
+                                        {r.statut === "CONFIRMEE" ? "Confirmée" : r.statut === "EN_ATTENTE" ? "En attente" : "Annulée"}
+                                      </span>
+                                      {r.statut !== "REJETEE" && annulerId !== r.id && (
+                                        <button
+                                          type="button"
+                                          onClick={() => { setAnnulerId(r.id); setRaison(""); }}
+                                          className="text-[12px] text-[#EF4444] underline underline-offset-2"
+                                        >
+                                          Annuler
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {annulerId === r.id && (
+                                    <div className="mt-2 flex gap-2 flex-wrap">
+                                      <input
+                                        value={raison}
+                                        onChange={(e) => setRaison(e.target.value)}
+                                        placeholder="Motif (consigné)"
+                                        className="flex-1 min-w-[200px] rounded-lg bg-[#1A1D24] border border-[#2D3748] px-3 py-2 text-[13px] text-white outline-none focus:border-[#E63946]"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => annuler(r.id)}
+                                        disabled={!raison.trim() || occupe === r.id}
+                                        className="h-9 px-4 rounded-lg bg-[#EF4444] text-white font-bold text-[11px] uppercase tracking-wider disabled:opacity-40"
+                                      >
+                                        Confirmer l&apos;annulation
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => { setAnnulerId(null); setRaison(""); }}
+                                        className="h-9 px-4 rounded-lg border border-[#2D3748] text-[#9CA3AF] font-bold text-[11px] uppercase tracking-wider"
+                                      >
+                                        Garder
+                                      </button>
+                                    </div>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="text-[11px] text-[#6b7280] mt-2">
+            Les paliers ne se défont pas : annuler une recrue fait baisser le compteur, pas
+            l&apos;historique.
+          </p>
+        </section>
       )}
 
       {toast && (

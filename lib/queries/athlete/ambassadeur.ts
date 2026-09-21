@@ -15,34 +15,43 @@
    exactement l'information que tout ce chantier refuse de divulguer.
    Les RPC attrapent déjà l'unique_violation côté base ; cet import est la
    seconde ligne de défense, et il traduit aussi les messages « NEXUS: ».
+
+   ── DEPUIS LE 2026-09-22 : L'INVITATION PAR LIEN ────────────────────────
+   Le chemin principal est le lien personnel (ambassadeur_mon_lien) ; la
+   déclaration est un secours, PAR COURRIEL EXACT seulement. La recherche
+   par nom, par école ou approximative n'existe plus côté serveur.
 ═══════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase/client";
 import { friendlyDbError } from "@/lib/queries/shared/dbErrors";
 
-/** Motifs rendus par ambassadeur_revendiquer. Fermés : tout autre motif est
- *  un bogue, pas un cas d'usage — d'où le `default` explicite dans MESSAGES. */
+/** Motifs rendus par ambassadeur_revendiquer depuis la déclaration par
+ *  courriel seul. `en_attente`, `discriminant_requis` et `saisie_incomplete`
+ *  ont disparu côté serveur (ils ne vivent plus que dans le binaire 1.4.2). */
 export type MotifRevendication =
   | "confirmee"
-  | "en_attente"
   | "introuvable"
   | "deja_parrainee"
-  | "soi_meme"
-  | "discriminant_requis"
-  | "saisie_incomplete";
+  | "soi_meme";
 
 export interface ResultatRevendication {
   ok: boolean;
   motif: MotifRevendication;
-  statut?: "CONFIRMEE" | "EN_ATTENTE";
+  /** `courriel_requis` quand aucun courriel valide n'a été fourni. */
+  motif_precis?: string;
+  statut?: "CONFIRMEE";
   id?: string;
+  /** Prénom de la recrue confirmée — le seul renseignement projeté. */
+  prenom?: string | null;
 }
 
 export interface LigneRevendication {
   id: string;
-  /** Ce que L'ATHLÈTE a tapé — jamais ce que la base a trouvé. */
+  /** PRÉNOM seulement (décision BP 2026-09-21), lu sur le compte de la recrue. */
   prenom: string;
+  /** Toujours vide depuis le 2026-09-22 ; gardé pour le binaire 1.4.2. */
   nom: string;
+  via: "lien" | "declaration";
   statut: "EN_ATTENTE" | "CONFIRMEE" | "REJETEE";
   le: string;
 }
@@ -53,6 +62,7 @@ export interface TableauAmbassadeur {
   badge_debloque: boolean;
   badge_porte: boolean;
   recherches_restantes: number;
+  lien: { clics_30j: number; inscriptions: number };
   revendications: LigneRevendication[];
 }
 
@@ -62,15 +72,13 @@ export interface TableauAmbassadeur {
  *  sait. */
 export const MESSAGES: Record<MotifRevendication, string> = {
   confirmee: "C'est confirmé — elle compte dans tes recrues.",
-  en_attente:
-    "Plusieurs personnes portent ce nom. On vérifie et ça apparaîtra ici dès que c'est réglé.",
   introuvable:
-    "On ne trouve personne avec ces informations. Vérifie l'orthographe, ou essaie avec son courriel.",
+    "On ne trouve aucun compte athlète avec ce courriel. Vérifie l'adresse de son compte Nexus.",
   deja_parrainee: "Cette déclaration ne peut pas être ajoutée.",
   soi_meme: "Celle-là, c'est toi.",
-  discriminant_requis: "Ajoute son courriel, son école ou son équipe.",
-  saisie_incomplete: "Il manque le prénom ou le nom.",
 };
+
+export const MESSAGE_COURRIEL_REQUIS = "Entre le courriel de ton ami.";
 
 export async function chargerTableau(): Promise<TableauAmbassadeur> {
   const supabase = createClient();
@@ -79,20 +87,17 @@ export async function chargerTableau(): Promise<TableauAmbassadeur> {
   return data as unknown as TableauAmbassadeur;
 }
 
-export async function revendiquer(saisie: {
-  prenom: string;
-  nom: string;
-  courriel?: string | null;
-  ecoleId?: string | null;
-  teamId?: string | null;
-}): Promise<ResultatRevendication> {
+/** Déclaration de secours, par COURRIEL EXACT. Les paramètres de nom,
+ *  d'école et d'équipe de la RPC sont ignorés côté serveur : on les envoie
+ *  nuls. */
+export async function revendiquer(courriel: string): Promise<ResultatRevendication> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("ambassadeur_revendiquer", {
-    p_prenom: saisie.prenom,
-    p_nom: saisie.nom,
-    p_courriel: saisie.courriel?.trim() || null,
-    p_ecole_id: saisie.ecoleId || null,
-    p_team_id: saisie.teamId || null,
+    p_prenom: null,
+    p_nom: null,
+    p_courriel: courriel.trim() || null,
+    p_ecole_id: null,
+    p_team_id: null,
   });
   /* Le quota du jour et l'absence de session LÈVENT (les seuls cas) ; tous les
      refus métier reviennent en `data`. friendlyDbError retire le marqueur
@@ -100,6 +105,29 @@ export async function revendiquer(saisie: {
      recherches pour aujourd'hui ». */
   if (error) throw friendlyDbError(error);
   return data as unknown as ResultatRevendication;
+}
+
+/** URL publique du lien d'invitation. ABSOLUE et en dur, pas
+ *  `location.origin` : le lien part dans un message, depuis un téléphone qui a
+ *  pu ouvrir l'app par une préproduction ou une adresse LAN. */
+export function urlInvitation(jeton: string): string {
+  return `https://nexussports.ca/i/${jeton}`;
+}
+
+/** Le jeton du lien personnel (créé au premier appel, stable ensuite). */
+export async function monLien(): Promise<string> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("ambassadeur_mon_lien");
+  if (error) throw friendlyDbError(error);
+  return (data as unknown as { jeton: string }).jeton;
+}
+
+/** Nouveau jeton — l'ancien lien cesse aussitôt de fonctionner. */
+export async function regenererLien(): Promise<string> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("ambassadeur_regenerer_lien");
+  if (error) throw friendlyDbError(error);
+  return (data as unknown as { jeton: string }).jeton;
 }
 
 /** Pose ou retire le badge. Motifs de refus : palier_non_atteint, plafond,

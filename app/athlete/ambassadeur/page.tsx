@@ -1,15 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import SchoolSelect from "@/components/ui/SchoolSelect";
-import { createClient } from "@/lib/supabase/client";
 import {
-  chargerTableau, revendiquer, basculerBadge, MESSAGES, PALIERS,
+  chargerTableau, revendiquer, basculerBadge, monLien, regenererLien, urlInvitation,
+  MESSAGES, MESSAGE_COURRIEL_REQUIS, PALIERS,
   type TableauAmbassadeur, type LigneRevendication,
 } from "@/lib/queries/athlete/ambassadeur";
+import { partagerLien } from "@/lib/partage/partagerLien";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   /athlete/ambassadeur — l'athlète déclare les personnes qu'il a amenées.
+   /athlete/ambassadeur — l'athlète INVITE ses coéquipiers par un lien.
+
+   ── DEPUIS LE 2026-09-22 (décisions BP du 2026-09-21) ──────────────────────
+   Le chemin principal est le LIEN PERSONNEL : « Inviter mes coéquipiers »
+   ouvre la feuille de partage. Une recrue compte à la fin de son inscription
+   (consentements passés). La déclaration n'est plus qu'un SECOURS, au second
+   plan, par COURRIEL EXACT — la recherche par nom, école ou équipe n'existe
+   plus côté serveur.
 
    ── GABARIT ─────────────────────────────────────────────────────────────────
    Calqué sur /athlete/transfert : un `page.tsx` seul, aucune branche
@@ -21,84 +28,36 @@ import {
    ⚠ ET `nx-mobile-pb-tabbar` SUR LES DEUX CONTENEURS RACINES (2026-09-16).
    Sans branche IS_CAPACITOR, cette page rend son markup web sur l'appareil —
    où la MobileTabBar est en position fixe par-dessus. `pb-8` (32px) ne suffit
-   pas à la dégager : « Mes déclarations » passait dessous, sans moyen de
-   défiler plus bas. La classe (app/globals.css, miroir JS TABBAR_HEIGHT dans
+   pas à la dégager. La classe (app/globals.css, miroir JS TABBAR_HEIGHT dans
    lib/config/mobileTokens.ts) réserve `64px + safe-area-inset-bottom`.
-
    LES DEUX COHABITENT, ce n'est pas un doublon : la classe dégage la barre,
    `pb-8` donne la respiration au-dessus. Même combinaison que
-   /athlete/visibilite:71, la page de référence pour ce cas.
-   Ne jamais écrire le 64 en dur ici — il vit à un seul endroit.
+   /athlete/visibilite:71. Ne jamais écrire le 64 en dur ici.
 
    ── CE QUE CET ÉCRAN NE MONTRE JAMAIS ───────────────────────────────────────
-   L'identité de la personne trouvée. La liste affiche le prénom et le nom que
-   L'ATHLÈTE A TAPÉS — il ne peut donc rien y apprendre. C'est la raison d'être
-   de la projection `ambassadeur_mon_tableau()` : la table est fermée
-   (une seule policy SELECT, `is_admin()`), et une lecture directe rendrait
-   `filleul_athlete_id` et `candidats`, c'est-à-dire l'identité de mineurs que
-   la RLS de `athletes` lui refuse partout ailleurs.
-
-   Même discipline sur les MESSAGES : « deja_parrainee » ne dit pas « quelqu'un
-   d'autre l'a déclarée », ce qui confirmerait que la personne a un compte.
+   · Le JETON du lien : il part dans la feuille de partage (ou le
+     presse-papier), il ne s'affiche pas.
+   · L'identité des recrues au-delà du PRÉNOM (décision BP) — la projection
+     `ambassadeur_mon_tableau()` ne rend rien d'autre.
+   · Ce que la base sait d'une adresse refusée : « deja_parrainee » ne dit pas
+     « quelqu'un d'autre l'a déclarée ».
 
    ── LE BADGE N'EST JAMAIS IMPOSÉ ────────────────────────────────────────────
-   Au palier 5, il devient DISPONIBLE. La bascule est ici, et elle est le seul
-   chemin : le catalogue porte `ambassadeur` en `actif = false`, donc aucun
-   picker — ni coach, ni admin, ni athlète, ni binaire mobile en magasin — ne
-   le propose. Et il prend une des CINQ places de la ligne de badges : si elle
-   est pleine, la RPC rend `plafond` et on le dit, plutôt que de laisser le
-   trigger lever un message que personne ne comprendrait.
+   Au palier 5, il se pose tout seul s'il reste une place ; sinon il devient
+   DISPONIBLE. La bascule est ici, et elle est le seul chemin : le catalogue
+   porte `ambassadeur` en `actif = false`, donc aucun picker ne le propose.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const OR = "#F59E0B";
 
-/* Le lien que l'athlète partage. ABSOLU et en dur, pas `location.origin` :
+/* Le lien de la story (palier 3). ABSOLU et en dur, pas `location.origin` :
    il finit dans une bio Instagram, collé depuis un téléphone qui a très bien
-   pu ouvrir l'app par une préproduction ou une adresse LAN. Un lien qui
-   emmène ses amis sur 192.168.x.x ne mène nulle part. */
+   pu ouvrir l'app par une préproduction ou une adresse LAN. */
 const MA_STORY = "https://nexussports.ca/ma-story";
 
-interface TeamRow {
-  id: string; name: string;
-  age_group: string | null; division: string | null; gender: string | null;
-  /* PostgREST rend l'embed tantôt objet, tantôt tableau selon la version —
-     même précaution que `badgeDe` dans lib/queries/shared/athleteBadges.ts. */
-  sports: { nom: string } | { nom: string }[] | null;
-}
-
-function sportDe(t: TeamRow): string | null {
-  const s = Array.isArray(t.sports) ? t.sports[0] : t.sports;
-  return s?.nom?.trim() || null;
-}
-
-/* ── LE LIBELLÉ D'ÉQUIPE ──────────────────────────────────────────────────
-   Un cégep nomme TOUTES ses équipes comme lui-même : les quinze de Garneau
-   s'appellent « Garneau ». Le premier libellé composait
-   `nom — catégorie · division · genre · saison` et produisait des SOSIES :
-   « Garneau — Collégial · D2 · Féminin · 2025-2026 » sortait trois fois (le
-   basketball, le soccer et le volleyball). Rien ne manquait au menu — les
-   quinze entrées étaient là — mais six étaient indiscernables, donc
-   inutilisables. Mesuré sur la base : 120 collisions sur 564 équipes (21 %),
-   sur 44 écoles ; avec le sport, ZÉRO.
-
-   Le SPORT passe donc en tête. C'est lui qui identifie quand le nom ne dit
-   rien, et c'est le premier mot qu'on cherche des yeux.
-   La SAISON sort : 563 des 564 équipes portent « 2025-2026 », elle n'a jamais
-   discriminé et allongeait la ligne.
-   La CATÉGORIE va en fin de ligne : inutile au collégial (« Collégial » sur
-   les 394 équipes de cégep), elle discrimine au secondaire (Juvénile, Cadet,
-   Benjamin — 153 équipes). Règle uniforme plutôt que conditionnelle : elle
-   traîne sans nuire.
-   Les nulls sont sautés — une équipe sans division ne gagne pas un
-   séparateur vide.                                                        */
-function libelleEquipe(t: TeamRow): string {
-  const sport = sportDe(t);
-  const tete = sport ? `${sport} — ${t.name}` : t.name;
-  const precisions = [t.division, t.gender, t.age_group]
-    .map((v) => v?.trim())
-    .filter((v): v is string => !!v);
-  return precisions.length ? `${tete} · ${precisions.join(" · ")}` : tete;
-}
+const TITRE_PARTAGE = "Rejoins-moi sur Nexus";
+const TEXTE_PARTAGE =
+  "Crée ton profil d'athlète sur Nexus et fais-toi voir des recruteurs des cégeps. C'est gratuit.";
 
 export default function AthleteAmbassadeurPage() {
   const [tableau, setTableau] = useState<TableauAmbassadeur | null>(null);
@@ -106,12 +65,12 @@ export default function AthleteAmbassadeurPage() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const [prenom, setPrenom] = useState("");
-  const [nom, setNom] = useState("");
+  const [jeton, setJeton] = useState<string | null>(null);
+  const [partage, setPartage] = useState(false);
+  const [confirmerRegen, setConfirmerRegen] = useState(false);
+  const [regen, setRegen] = useState(false);
+
   const [courriel, setCourriel] = useState("");
-  const [ecoleId, setEcoleId] = useState<string | null>(null);
-  const [teamId, setTeamId] = useState<string | null>(null);
-  const [equipes, setEquipes] = useState<TeamRow[]>([]);
   const [envoi, setEnvoi] = useState(false);
   const [bascule, setBascule] = useState(false);
 
@@ -130,67 +89,62 @@ export default function AthleteAmbassadeurPage() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  /* Les équipes de l'école choisie. La RLS de `teams` laisse tout compte
-     authentifié lire celles des SECONDAIRE, CEGEP et LIGUE_CIVILE — c'est
-     précisément le périmètre dont on a besoin, et rien de plus. */
-  useEffect(() => {
-    if (!ecoleId) { setEquipes([]); setTeamId(null); return; }
-    let vivant = true;
-    (async () => {
-      const { data } = await createClient()
-        .from("teams")
-        .select("id, name, age_group, division, gender, sports!sport_id(nom)")
-        .eq("school_id", ecoleId);
-      /* Tri par SPORT puis DIVISION, côté client. `order("name")` triait
-         quinze fois le même mot ; et PostgREST ne sait pas trier sur une
-         relation embarquée, donc le tri qui compte ne peut pas être demandé
-         au serveur. localeCompare pour que « Événement » se range comme
-         « Evenement » — la collation par défaut ne le ferait pas. */
-      const liste = ((data ?? []) as TeamRow[]).slice().sort((a, b) => {
-        const s = (sportDe(a) ?? "").localeCompare(sportDe(b) ?? "", "fr");
-        if (s !== 0) return s;
-        return (a.division ?? "").localeCompare(b.division ?? "", "fr")
-          || (a.gender ?? "").localeCompare(b.gender ?? "", "fr");
-      });
-      if (vivant) setEquipes(liste);
-    })();
-    return () => { vivant = false; };
-  }, [ecoleId]);
+  /* ── Inviter ───────────────────────────────────────────────────────────
+     Le jeton est demandé au PREMIER clic, pas au chargement : ambassadeur_
+     mon_lien crée le lien s'il n'existe pas, et un athlète qui ne fait que
+     passer n'a pas à en recevoir un. Ensuite il est gardé en mémoire. */
+  const inviter = async () => {
+    if (partage) return;
+    setPartage(true);
+    try {
+      const j = jeton ?? await monLien();
+      setJeton(j);
+      const issue = await partagerLien({ url: urlInvitation(j), titre: TITRE_PARTAGE, texte: TEXTE_PARTAGE });
+      if (issue === "copie") montrer("Lien copié — colle-le dans un message à tes coéquipiers.");
+      else if (issue === "echec") montrer("Impossible de partager ou de copier le lien sur cet appareil.");
+      // "partage" : la feuille s'est occupée de tout ; "annule" : rien à dire.
+    } catch (e) {
+      montrer(e instanceof Error ? e.message : "Réessaie dans un instant.");
+    } finally {
+      setPartage(false);
+    }
+  };
 
-  /* Le courriel N'EST PLUS le chemin par défaut. Les trois discriminants sont
-     à égalité devant le bouton — la RPC, elle, garde sa hiérarchie (courriel
-     d'abord s'il est fourni, école/équipe ensuite). L'ancien basculement
-     « Je ne connais pas son courriel » enterrait école et équipe derrière un
-     lien : l'athlète qui connaît l'école mais pas l'adresse — le cas normal —
-     devait deviner qu'il fallait cliquer ailleurs. */
-  const discriminant = courriel.trim().length > 0 || !!ecoleId || !!teamId;
-  const peutEnvoyer = prenom.trim() && nom.trim() && discriminant && !envoi;
+  const regenerer = async () => {
+    setRegen(true);
+    try {
+      setJeton(await regenererLien());
+      setConfirmerRegen(false);
+      montrer("Nouveau lien créé. L'ancien ne fonctionne plus.");
+    } catch (e) {
+      montrer(e instanceof Error ? e.message : "Réessaie dans un instant.");
+    } finally {
+      setRegen(false);
+    }
+  };
 
-  const envoyer = async () => {
-    if (!peutEnvoyer) return;
+  /* ── Déclarer (secours) ────────────────────────────────────────────────── */
+  const courrielPlausible = /\S+@\S+\.\S+/.test(courriel.trim());
+  const declarer = async () => {
+    if (!courrielPlausible || envoi) return;
     setEnvoi(true);
     try {
-      /* On envoie TOUT ce qui est rempli : la hiérarchie est décidée en base,
-         pas ici. Le périmètre école/équipe reste utile même avec un courriel —
-         c'est lui qui autorise la tolérance orthographique si l'adresse ne
-         tombe sur personne. */
-      const r = await revendiquer({ prenom, nom, courriel, ecoleId, teamId });
-      montrer(MESSAGES[r.motif] ?? "Réessaie dans un instant.");
-      if (r.ok) {
-        setPrenom(""); setNom(""); setCourriel("");
-        setEcoleId(null); setTeamId(null);
-        await recharger();
+      const r = await revendiquer(courriel);
+      if (r.motif_precis === "courriel_requis") {
+        montrer(MESSAGE_COURRIEL_REQUIS);
+      } else if (r.ok) {
+        montrer(r.prenom ? `C'est confirmé — ${r.prenom} compte dans tes recrues.` : MESSAGES.confirmee);
+        setCourriel("");
         window.dispatchEvent(new Event("notifications-updated"));
       } else {
-        /* Un refus consomme quand même une recherche : le compteur est la
-           borne d'énumération, il monte à chaque tentative. On rafraîchit
-           pour que « il te reste N recherches » ne mente pas. */
-        await recharger();
+        montrer(MESSAGES[r.motif] ?? "Réessaie dans un instant.");
       }
     } catch (e) {
       montrer(e instanceof Error ? e.message : "Réessaie dans un instant.");
-      await recharger();
     } finally {
+      /* Un refus consomme quand même un essai (borne d'énumération) : on
+         rafraîchit pour que « il te reste N essais » ne mente pas. */
+      await recharger();
       setEnvoi(false);
     }
   };
@@ -221,13 +175,11 @@ export default function AthleteAmbassadeurPage() {
     [tableau],
   );
 
-  /* COPIE — `navigator.clipboard` n'existe QUE sur une origine sécurisée
-     (https, ou localhost). En test d'appareil sur une adresse LAN en http,
-     il est `undefined` : sans repli, le bouton ne ferait RIEN et rien ne le
-     dirait. D'où le textarea + execCommand, déprécié mais universel, et un
-     dernier repli qui AFFICHE l'adresse pour qu'elle reste copiable à la
-     main plutôt que perdue. */
-  const copierLien = useCallback(async () => {
+  /* COPIE du lien de story — `navigator.clipboard` n'existe QUE sur une
+     origine sécurisée ; sans repli, le bouton ne ferait rien en http sur une
+     adresse LAN. D'où le textarea + execCommand, et un dernier repli qui
+     AFFICHE l'adresse (elle ne porte aucun jeton, elle). */
+  const copierLienStory = useCallback(async () => {
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(MA_STORY);
@@ -265,6 +217,8 @@ export default function AthleteAmbassadeurPage() {
   }
 
   const n = tableau?.confirmes ?? 0;
+  const clics = tableau?.lien?.clics_30j ?? 0;
+  const parLien = tableau?.lien?.inscriptions ?? 0;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar">
@@ -273,7 +227,7 @@ export default function AthleteAmbassadeurPage() {
           Ambassadeur
         </h1>
         <p className="text-[13px] text-[#9CA3AF] mt-1">
-          Déclare les personnes que tu as amenées sur Nexus.
+          Invite tes coéquipiers avec ton lien personnel. Chaque ami qui s&apos;inscrit compte dans tes recrues.
         </p>
       </header>
 
@@ -294,20 +248,15 @@ export default function AthleteAmbassadeurPage() {
 
         <div className="mt-4 flex gap-2">
           {PALIERS.map((p) => {
-            const atteint = (tableau?.paliers ?? []).includes(p);
+            const ok = (tableau?.paliers ?? []).includes(p);
             return (
               <div
                 key={p}
                 className={`flex-1 rounded-lg border px-3 py-2.5 text-center transition-colors ${
-                  atteint
-                    ? "border-[#F59E0B]/45 bg-[#F59E0B]/10"
-                    : "border-[#2D3748] bg-[#111317]"
+                  ok ? "border-[#F59E0B]/45 bg-[#F59E0B]/10" : "border-[#2D3748] bg-[#111317]"
                 }`}
               >
-                <div
-                  className="font-head text-[17px] font-black"
-                  style={{ color: atteint ? OR : "#4a4d56" }}
-                >
+                <div className="font-head text-[17px] font-black" style={{ color: ok ? OR : "#4a4d56" }}>
                   {p}
                 </div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b7280] mt-0.5">
@@ -325,12 +274,73 @@ export default function AthleteAmbassadeurPage() {
         )}
       </section>
 
+      {/* ── Inviter — L'ACTION PRINCIPALE ──────────────────────────
+          Avant les récompenses : c'est ce qui fait avancer le compteur. */}
+      <section className="rounded-xl border border-[#E63946]/35 bg-[#E63946]/[0.06] p-5 mb-5">
+        <h2 className="font-head text-[15px] font-black uppercase tracking-tight text-white">
+          Ton lien d&apos;invitation
+        </h2>
+        <p className="text-[12px] text-[#9CA3AF] mt-1">
+          Envoie-le à tes coéquipiers. Quand l&apos;un d&apos;eux crée son compte avec ton lien,
+          il compte dans tes recrues.
+        </p>
+
+        <button
+          type="button"
+          onClick={inviter}
+          disabled={partage}
+          className="mt-4 w-full sm:w-auto px-5 py-3 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-[0.14em] hover:brightness-110 disabled:opacity-50 transition"
+        >
+          {partage ? "..." : "Inviter mes coéquipiers"}
+        </button>
+
+        <p className="text-[12px] text-[#6b7280] mt-3">
+          {clics === 0 && parLien === 0
+            ? "Personne n'a encore ouvert ton lien."
+            : `${clics} ouverture${clics > 1 ? "s" : ""} de ton lien ces 30 derniers jours · ${parLien} inscription${parLien > 1 ? "s" : ""} grâce à lui.`}
+        </p>
+
+        {/* Régénérer — en deux temps : un lien déjà envoyé cessera de
+            marcher, ce n'est pas un geste à faire par mégarde. Confirmation
+            en ligne plutôt qu'une boîte window.confirm. */}
+        {!confirmerRegen ? (
+          <button
+            type="button"
+            onClick={() => setConfirmerRegen(true)}
+            className="mt-3 text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-white"
+          >
+            Régénérer mon lien
+          </button>
+        ) : (
+          <div className="mt-3 rounded-lg border border-[#2D3748] bg-[#111317] px-4 py-3">
+            <p className="text-[12px] text-[#9CA3AF]">
+              Ton lien actuel cessera de fonctionner, y compris pour ceux à qui tu l&apos;as déjà envoyé.
+              Tes recrues déjà comptées restent.
+            </p>
+            <div className="mt-3 flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={regenerer}
+                disabled={regen}
+                className="px-4 py-2 rounded-lg bg-[#E63946] text-white text-[11px] font-bold uppercase tracking-[0.12em] disabled:opacity-50"
+              >
+                {regen ? "..." : "Régénérer"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmerRegen(false)}
+                className="px-4 py-2 rounded-lg border border-[#2D3748] text-[#9CA3AF] text-[11px] font-bold uppercase tracking-[0.12em] hover:text-white"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* ── Les récompenses ────────────────────────────────────────
           Dans l'ordre des paliers, et PERMANENTES : une carte apparue ne
-          disparaît plus. Un palier ne se défait pas en base (le trigger
-          n'écrit que des franchissements), l'écran dit donc la même chose.
-          Elles se placent entre le compteur et le formulaire : ce qu'on a
-          gagné se lit avant ce qu'on peut encore faire. */}
+          disparaît plus. Un palier ne se défait pas en base. */}
       {atteint(3) && (
         <CarteRecompense
           icone={<IconeStory />}
@@ -348,7 +358,7 @@ export default function AthleteAmbassadeurPage() {
               </a>
               <button
                 type="button"
-                onClick={copierLien}
+                onClick={copierLienStory}
                 className="px-4 py-2.5 rounded-lg border border-[#2D3748] text-[#9CA3AF] text-[12px] font-bold uppercase tracking-[0.12em] hover:text-white transition-colors"
               >
                 Copier le lien
@@ -386,104 +396,64 @@ export default function AthleteAmbassadeurPage() {
           icone={<IconeTrophee />}
           titre="Ambassadeur Élite 🏆"
           /* « Écris-nous ton @ » plutôt que « surveille ton IG » : on n'a PAS
-             son handle Instagram, donc on ne peut pas le joindre là-bas. On le
-             lui demande — et la demande crée le premier contact au lieu de le
-             faire attendre un message qui ne viendrait pas. */
+             son handle Instagram, donc on ne peut pas le joindre là-bas. */
           texte="Félicitations — tu fais partie des meilleurs ambassadeurs Nexus. Écris-nous ton @ Instagram par le chat de ton compte : on prépare ton post sur @nexussportsca."
         />
       )}
 
-      {/* ── Déclarer ───────────────────────────────────────────── */}
+      {/* ── Mes recrues ────────────────────────────────────────── */}
       <section className="rounded-xl border border-[#2D3748] bg-[#1A1D24] p-5 mb-5">
-        <h2 className="font-head text-[15px] font-black uppercase tracking-tight text-white">
-          Déclarer une recrue
-        </h2>
-        <p className="text-[12px] text-[#6b7280] mt-1">
-          Elle doit déjà avoir un compte Nexus. Pas sûr de l&apos;orthographe ?
-          Écris ce que tu crois — son école ou son équipe suffit à la retrouver.
-          {typeof tableau?.recherches_restantes === "number" && (
-            <> {" · "}Il te reste {tableau.recherches_restantes} recherche
-              {tableau.recherches_restantes === 1 ? "" : "s"} aujourd&apos;hui.</>
-          )}
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-          <Champ label="Prénom" value={prenom} onChange={setPrenom} placeholder="Alex" />
-          <Champ label="Nom" value={nom} onChange={setNom} placeholder="Tremblay" />
-        </div>
-
-        {/* TOUT EST VISIBLE D'EMBLÉE. École et équipe vivaient derrière un lien
-            « Je ne connais pas son courriel » : l'athlète qui connaît l'école
-            mais pas l'adresse — le cas normal — devait deviner qu'il fallait
-            cliquer ailleurs pour avoir le droit de déclarer son ami. */}
-        <div className="mt-3 space-y-3">
-          <div>
-            <Label>Son école ou son club</Label>
-            <SchoolSelect value={ecoleId} onChange={(id) => setEcoleId(id)} />
-          </div>
-
-          {equipes.length > 0 && (
-            <div>
-              <Label>Son équipe (optionnel)</Label>
-              <select
-                value={teamId ?? ""}
-                onChange={(e) => setTeamId(e.target.value || null)}
-                /* Pas de liseré rouge au focus : le rouge Nexus dit l'erreur
-                   partout ailleurs dans l'app, et ce champ est facultatif.
-                   Un champ optionnel qui rougit quand on le touche accuse
-                   l'utilisateur de rien. */
-                className="w-full rounded-lg bg-[#111317] border border-[#2D3748] px-3 py-2.5 text-[14px] text-white focus:border-[#4a4d56] outline-none"
-              >
-                <option value="">—</option>
-                {/* Libellé discriminé : un club aligne cinq équipes du même
-                    nom, le menu en montrait cinq fois la même ligne. */}
-                {equipes.map((t) => (
-                  <option key={t.id} value={t.id}>{libelleEquipe(t)}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <Champ
-              label="Son courriel, si tu l'as — c'est le plus fiable"
-              value={courriel}
-              onChange={setCourriel}
-              placeholder="alex@exemple.com"
-              type="email"
-            />
-            {/* 15 % des athlètes revendicables en prod portent un relais privé
-                Apple : une adresse que PERSONNE d'autre ne connaît. Sans cette
-                ligne, l'ami cherche un courriel qui n'existe pas pour lui. */}
-            <p className="text-[12px] text-[#6b7280] mt-1.5">
-              Ton ami s&apos;est inscrit avec Apple ou Google ? Son nom et son école suffisent.
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={envoyer}
-          disabled={!peutEnvoyer}
-          className="mt-4 w-full sm:w-auto px-5 py-3 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-[0.14em] hover:brightness-110 disabled:opacity-40 disabled:hover:brightness-100 transition"
-        >
-          {envoi ? "..." : "Déclarer"}
-        </button>
-      </section>
-
-      {/* ── Mes déclarations ───────────────────────────────────── */}
-      <section className="rounded-xl border border-[#2D3748] bg-[#1A1D24] p-5">
         <h2 className="font-head text-[15px] font-black uppercase tracking-tight text-white mb-3">
-          Mes déclarations
+          Mes recrues
         </h2>
         {(tableau?.revendications.length ?? 0) === 0 ? (
-          <p className="text-[13px] text-[#6b7280]">Rien encore.</p>
+          <p className="text-[13px] text-[#6b7280]">Rien encore — envoie ton lien.</p>
         ) : (
           <ul className="divide-y divide-[#2D3748]/60">
             {tableau!.revendications.map((r) => <Ligne key={r.id} r={r} />)}
           </ul>
         )}
       </section>
+
+      {/* ── Déclarer — le SECOURS, au second plan ──────────────────
+          Replié par défaut : le chemin normal est le lien. Il reste pour
+          l'ami qui s'est inscrit sans le lien — dans l'app (qui n'a pas accès
+          au lien), ou avant qu'on le lui envoie. */}
+      <details className="rounded-xl border border-[#2D3748] bg-[#1A1D24] p-5 group">
+        <summary className="cursor-pointer list-none flex items-center justify-between gap-3">
+          <span className="text-[14px] font-bold text-white">Ton ami s&apos;est inscrit sans ton lien ?</span>
+          <span className="text-[#6b7280] text-[12px] group-open:rotate-180 transition-transform">▾</span>
+        </summary>
+        <p className="text-[12px] text-[#6b7280] mt-3">
+          Entre le courriel de son compte Nexus. S&apos;il s&apos;est inscrit avec Apple ou Google, c&apos;est
+          l&apos;adresse de ce compte-là.
+          {typeof tableau?.recherches_restantes === "number" && (
+            <> {" · "}Il te reste {tableau.recherches_restantes} essai
+              {tableau.recherches_restantes === 1 ? "" : "s"} aujourd&apos;hui.</>
+          )}
+        </p>
+        <div className="mt-3 flex flex-col sm:flex-row gap-2">
+          <label className="flex-1 block">
+            <span className="sr-only">Courriel de ton ami</span>
+            <input
+              type="email"
+              value={courriel}
+              onChange={(e) => setCourriel(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") declarer(); }}
+              placeholder="alex@exemple.com"
+              className="w-full rounded-lg bg-[#111317] border border-[#2D3748] px-3 py-2.5 text-[14px] text-white placeholder:text-[#4a4d56] focus:border-[#4a4d56] outline-none"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={declarer}
+            disabled={!courrielPlausible || envoi}
+            className="px-5 py-2.5 rounded-lg border border-[#2D3748] text-white text-[12px] font-bold uppercase tracking-[0.14em] hover:border-[#4a4d56] disabled:opacity-40 transition"
+          >
+            {envoi ? "..." : "Déclarer"}
+          </button>
+        </div>
+      </details>
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] max-w-[92vw] rounded-lg bg-[#1A1D24] border border-[#2D3748] px-5 py-3 shadow-lg">
@@ -497,11 +467,8 @@ export default function AthleteAmbassadeurPage() {
 /* ── Primitives ──────────────────────────────────────────────── */
 
 /* ── Le gabarit des cartes de récompense ──────────────────────────────────
-   Un seul châssis pour les trois paliers. Il vient de la carte badge, qui
-   existait seule : la refaire à la main deux fois aurait garanti qu'elles
-   finissent par diverger d'un padding ou d'une bordure. `actions` est
-   optionnel — le palier 10 n'a rien à cliquer, c'est une reconnaissance,
-   pas une tâche. */
+   Un seul châssis pour les trois paliers. `actions` est optionnel — le
+   palier 10 n'a rien à cliquer, c'est une reconnaissance, pas une tâche. */
 function CarteRecompense({ icone, titre, texte, actions }: {
   icone: React.ReactNode; titre: string; texte: string; actions?: React.ReactNode;
 }) {
@@ -544,32 +511,6 @@ function IconeTrophee() {
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="block text-[11px] font-bold tracking-[0.14em] uppercase text-[#6b7280] mb-1.5">
-      {children}
-    </span>
-  );
-}
-
-function Champ({ label, value, onChange, placeholder, type = "text" }: {
-  label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string;
-}) {
-  return (
-    <label className="block">
-      <Label>{label}</Label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg bg-[#111317] border border-[#2D3748] px-3 py-2.5 text-[14px] text-white placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none"
-      />
-    </label>
-  );
-}
-
 const PASTILLE: Record<LigneRevendication["statut"], { t: string; c: string; b: string }> = {
   CONFIRMEE:  { t: "Confirmée",  c: "#22C55E", b: "rgba(34,197,94,0.14)" },
   EN_ATTENTE: { t: "On vérifie", c: "#F59E0B", b: "rgba(245,158,11,0.14)" },
@@ -580,9 +521,13 @@ function Ligne({ r }: { r: LigneRevendication }) {
   const p = PASTILLE[r.statut];
   return (
     <li className="flex items-center justify-between gap-3 py-3">
-      {/* Le prénom et le nom viennent de la SAISIE de l'athlète, pas de la
-          fiche trouvée. Il ne peut rien apprendre d'une ligne qu'il a écrite. */}
-      <span className="text-[14px] text-white truncate">{r.prenom} {r.nom}</span>
+      <span className="min-w-0 flex items-center gap-2">
+        {/* PRÉNOM seulement (décision BP), lu sur le compte de la recrue. */}
+        <span className="text-[14px] text-white truncate">{r.prenom}</span>
+        <span className="shrink-0 text-[11px] text-[#6b7280]">
+          {r.via === "lien" ? "par ton lien" : "déclarée"}
+        </span>
+      </span>
       <span
         className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em]"
         style={{ color: p.c, backgroundColor: p.b }}
