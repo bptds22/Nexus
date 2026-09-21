@@ -1100,3 +1100,32 @@ parent déclaré ni lié). Sortie manuelle d'ici là : obtenir l'adresse du pare
 invitation depuis la fiche admin, consentement, puis
 `update athletes set status = 'ACTIF' where id = '58c57cb7-…'` — ou correction
 de la date si 2006 était la vraie, sur preuve.
+
+## 32. Ambassadeur — l'ancien formulaire de déclaration dans l'app 1.4.2
+
+**Décision BP, 2026-09-21 — invitation par lien ; déclaration par COURRIEL
+EXACT seulement.** Migration `20260922090000_ambassadeur_invitation_par_lien`.
+
+**Ce que la 1.4.2 publiée garde.** `/athlete/ambassadeur` n'a pas de branche
+mobile : le binaire embarque l'ANCIEN formulaire (prénom, nom, courriel, école,
+équipe) et ses messages (`MESSAGES`, `lib/queries/athlete/ambassadeur.ts`,
+compilés dans l'app — le serveur ne peut pas les changer).
+
+**Ce que le serveur fait pour qu'il ne mente pas.** `ambassadeur_revendiquer`
+garde sa signature (contraction interdite sous un binaire publié) et ignore
+prénom, nom, école et équipe. Sans courriel, il rend `introuvable` — texte
+embarqué : « On ne trouve personne avec ces informations. Vérifie
+l'orthographe, ou essaie avec son courriel. », ce qui est juste — et ne rend
+PLUS JAMAIS `discriminant_requis` (« Ajoute son courriel, son école ou son
+équipe »), qui mentirait. Un appel sans courriel ne consomme aucun essai.
+`mon_tableau` garde la clé `nom` (chaîne vide) : l'app affiche
+`{r.prenom} {r.nom}`.
+
+**À faire au lot mobile.** Remplacer le formulaire par le seul champ courriel
+(« Entre le courriel de ton ami »), retirer les messages morts
+(`en_attente`, `discriminant_requis`, `saisie_incomplete`), et ajouter le
+bouton « Inviter » (même page, cascade de partage `@capacitor/share` →
+`navigator.share` → presse-papier). Le lien, lui, reste web :
+`https://nexussports.ca/i/<jeton>` — une recrue qui s'inscrit DANS l'app n'est
+pas attribuée (pas de liens universels, décision BP) ; il lui reste la
+déclaration par courriel.
