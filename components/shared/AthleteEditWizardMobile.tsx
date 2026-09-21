@@ -48,7 +48,8 @@ import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
-import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
+import { Card, InlineEditRow, PickerRow, ReadOnlyRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
+import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import {
@@ -584,6 +585,10 @@ export default function AthleteEditWizardMobile() {
      failed upload visibly — pas de faux succès silencieux. */
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  /* Échec d'une écriture DIRECTE (saveDirect). Avant 1.4.3 l'erreur était
+     avalée : un refus de la base (RLS, trigger de périmètre) faisait
+     revenir le champ à l'ancienne valeur au load(), sans un mot. */
+  const [directError, setDirectError] = useState<string | null>(null);
   /* `mounted` gates createPortal — same SSR/hydration safety guard the
      coach "Modifier le profil" sticky bar uses at
      AthleteRecruiterProfileBodyMobile.tsx :2538. Without it, createPortal
@@ -863,7 +868,13 @@ export default function AthleteEditWizardMobile() {
     let payload: string | string[] | boolean | null;
     if (typeof value === "string") payload = value || null;
     else payload = value;                                  // array or bool — pass through
-    await supabase.from("athletes").update({ [column]: payload }).eq("id", a.id);
+    const { error } = await supabase.from("athletes").update({ [column]: payload }).eq("id", a.id);
+    if (error) {
+      console.error(`[saveDirect] ${column}: ${erreurLisible(error)}`);
+      setDirectError("Ta modification n'a pas été enregistrée. Réessaie dans un instant.");
+    } else {
+      setDirectError(null);
+    }
     await load();
   }, [a, load]);
 
@@ -1062,7 +1073,13 @@ export default function AthleteEditWizardMobile() {
           (height:100dvh + overflowY:auto), so this padding is the
           only buffer between the last row and the CTA's top edge. */}
       <div className="px-4 pt-4 pb-48 space-y-5">
-        {/* ── Step 0 : Identité (MIXED — 5 DIRECT + 5 LOCKED) ── */}
+        {directError && (
+          <div role="alert" className="rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-3 text-[13px] text-[#FCA5A5]">
+            {directError}
+          </div>
+        )}
+
+        {/* ── Step 0 : Identité (MIXED — 4 DIRECT + 6 LOCKED) ── */}
         {step === 0 && (
           <IdentiteStep
             a={a}
@@ -1158,15 +1175,16 @@ export default function AthleteEditWizardMobile() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   IDENTITÉ step — MIXED : 5 DIRECT + 5 LOCKED.
+   IDENTITÉ step — MIXED : 4 DIRECT + 6 LOCKED.
 
    Mirrors web page.tsx :1511-1533 post-conversion :
      - DIRECT (green pencil) : Prénom (first_name), Nom (last_name),
-       Date de naissance (date_naissance), Genre (genre via picker),
-       Téléphone (telephone). Each writes immediately via saveDirect
-       to the matching athletes column.
-     - LOCKED (red lock) : Âge (recomputed from date_naissance on
-       reload, no column of its own), Ville (schools.city via FK
+       Genre (genre via picker), Téléphone (telephone). Each writes
+       immediately via saveDirect to the matching athletes column.
+     - LOCKED (red lock) : Date de naissance — protégée après
+       l'onboarding (trigger de périmètre, migration 20260921173234 ;
+       registre §30), même renvoi courriel que le web —, Âge
+       (recomputed from date_naissance, no column of its own), Ville (schools.city via FK
        join), Région (schools.region), affiliation row École /
        Équipe civile (civil/école label swap mirrors page.tsx :1515),
        Graduation (annee_diplomation — coach-managed).
@@ -1234,13 +1252,6 @@ function IdentiteStep({
           />
         </DirectIndicatorRow>
         <DirectIndicatorRow>
-          <DateRow
-            label="Date de naissance"
-            value={a.dateNaissance}
-            onChange={(v) => { void onDirect("date_naissance", v); }}
-          />
-        </DirectIndicatorRow>
-        <DirectIndicatorRow>
           <PickerRow
             label="Genre"
             value={genderDisplay}
@@ -1275,6 +1286,9 @@ function IdentiteStep({
           Graduation are coach-managed. */}
       <Card>
         <LockedIndicatorRow>
+          <ReadOnlyRow label="Date de naissance" value={a.dateNaissance} />
+        </LockedIndicatorRow>
+        <LockedIndicatorRow>
           <ReadOnlyRow label="Âge" value={a.age > 0 ? `${a.age} ans` : ""} />
         </LockedIndicatorRow>
         <LockedIndicatorRow>
@@ -1290,6 +1304,10 @@ function IdentiteStep({
           <ReadOnlyRow label="Graduation" value={a.graduationYear} />
         </LockedIndicatorRow>
       </Card>
+      <p className="px-1 text-[12px] leading-relaxed text-white/55">
+        Pour corriger ta date de naissance, écris à{" "}
+        <a href="mailto:info@nexussports.ca?subject=Correction%20de%20date%20de%20naissance" className="text-[#E63946] underline underline-offset-2">info@nexussports.ca</a>.
+      </p>
     </div>
   );
 }

@@ -56,6 +56,11 @@ export const COLONNES_PROTEGEES: readonly string[] = Object.freeze([
   "recruitment_status_changed_by",
   "recruitment_status_changed_at",
   "committed_school_id",
+  /* Protégée APRÈS l'onboarding seulement (migration 20260921173234) : le
+     trigger la laisse passer tant que users.onboarding_complete n'est pas
+     vrai. L'élagage ne retire qu'une valeur INCHANGÉE — une vraie saisie
+     pendant l'onboarding part toujours, et le trigger l'accepte. */
+  "date_naissance",
 ]);
 
 /** Les colonnes protégées qui portent un HORODATAGE. Elles se comparent par
