@@ -1121,11 +1121,26 @@ PLUS JAMAIS `discriminant_requis` (« Ajoute son courriel, son école ou son
 `mon_tableau` garde la clé `nom` (chaîne vide) : l'app affiche
 `{r.prenom} {r.nom}`.
 
-**À faire au lot mobile.** Remplacer le formulaire par le seul champ courriel
-(« Entre le courriel de ton ami »), retirer les messages morts
-(`en_attente`, `discriminant_requis`, `saisie_incomplete`), et ajouter le
-bouton « Inviter » (même page, cascade de partage `@capacitor/share` →
-`navigator.share` → presse-papier). Le lien, lui, reste web :
-`https://nexussports.ca/i/<jeton>` — une recrue qui s'inscrit DANS l'app n'est
-pas attribuée (pas de liens universels, décision BP) ; il lui reste la
-déclaration par courriel.
+**Ce qui part TOUT SEUL au prochain build mobile.** `/athlete/ambassadeur` est
+une page PARTAGÉE (aucune branche mobile) : la version web livrée le
+2026-09-22 (L4-L6, `4988646`) — bouton « Inviter mes coéquipiers »,
+« Régénérer mon lien », déclaration réduite au seul courriel, « Mes recrues »
+au prénom seul — sera embarquée telle quelle dans l'app au prochain build.
+La cascade de partage (`lib/partage/partagerLien.ts`) essaie déjà
+`@capacitor/share` en premier dans l'app. Rien à recoder.
+
+**Ce qui reste au lot mobile — deux gestes seulement :**
+1. **Vérifier sur un VRAI téléphone** (iOS et Android) que la feuille de
+   partage native s'ouvre avec le bon titre, le bon texte et le lien
+   `https://nexussports.ca/i/<jeton>`, qu'une annulation ne déclenche pas de
+   copie, et que la copie de repli fonctionne si le partage échoue. Jamais
+   testé que dans un navigateur de bureau (partage simulé).
+2. **Retirer l'ancien formulaire de l'app 1.4.2** — c'est le build qui le fait :
+   tant que la 1.4.2 reste en circulation, son formulaire prénom / nom / école
+   / équipe et ses messages morts (`en_attente`, `discriminant_requis`,
+   `saisie_incomplete`) restent en magasin. Le serveur l'empêche déjà de mentir
+   (voir ci-dessus) ; la mise à jour de l'app le fait disparaître.
+
+Le lien, lui, reste web : `https://nexussports.ca/i/<jeton>` — une recrue qui
+s'inscrit DANS l'app n'est pas attribuée (pas de liens universels, décision
+BP) ; il lui reste la déclaration par courriel.
