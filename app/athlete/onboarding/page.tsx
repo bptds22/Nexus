@@ -866,6 +866,10 @@ function AthleteOnboardingDesktop() {
 
   // Step 4 — Sport & Media
   const [primarySport, setPrimarySport] = useState("");
+  /* Constat FIGÉ à l'entrée de l'étape 4 : un civil y arrive-t-il sans sport ?
+     Figé et non recalculé, sinon la grille disparaîtrait au premier clic —
+     le sport ne « manquerait » plus. */
+  const [sportARetrouver, setSportARetrouver] = useState(false);
   const [primaryPosition, setPrimaryPosition] = useState("");
   const [jerseyNumber, setJerseyNumber] = useState("");
   const [highlightVideo, setHighlightVideo] = useState("");
@@ -1325,6 +1329,49 @@ function AthleteOnboardingDesktop() {
   // d'âge Loi 25. Le cas normal (seedé + verrouillé) n'est jamais concerné.
   const dobRecoveryInvalid = !dobLocked && dateOfBirth.length > 0 && isUnder14(dateOfBirth);
 
+  useEffect(() => {
+    if (step === 4 && userContext === "ligue_civile" && !primarySport && !codeLock) {
+      setSportARetrouver(true);
+    }
+    // primarySport volontairement hors dépendances : le constat se fait à
+    // l'ENTRÉE de l'étape, pas à chaque clic.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, userContext, codeLock]);
+
+  /** Pourquoi le bouton de l'étape courante est grisé — ou null s'il ne l'est
+   *  pas. MIROIR de canProceed(), condition par condition : un bouton grisé
+   *  sans explication se lit comme un bouton mort (4 comptes en prod sont
+   *  restés devant). Toute condition ajoutée à canProceed() s'ajoute ICI. */
+  function raisonBlocage(): string | null {
+    const manque: string[] = [];
+    if (step === 1) {
+      if (!firstName.trim()) manque.push("ton prénom");
+      if (!lastName.trim()) manque.push("ton nom");
+      if (!gradYear) manque.push("ton année de diplomation");
+      if (isMinor) {
+        if (!parentFirstName.trim() || !parentLastName.trim() || !parentEmail.trim()) {
+          manque.push("le nom et le courriel de ton parent");
+        }
+        if (!consentProfile || !consentVisibility) manque.push("les deux autorisations parentales");
+      }
+      if (userContext === "ligue_civile") {
+        if (!primarySport) manque.push("ton sport");
+      } else if (!selectedSchoolId) {
+        manque.push("ton école");
+      }
+      if (dobRecoveryInvalid) {
+        return "Il faut avoir au moins 14 ans pour créer un profil sur Nexus.";
+      }
+    } else if (step === 4) {
+      if (!primarySport) manque.push("ton sport principal");
+    }
+    if (manque.length === 0) return null;
+    const liste = manque.length === 1
+      ? manque[0]
+      : `${manque.slice(0, -1).join(", ")} et ${manque[manque.length - 1]}`;
+    return `Pour continuer, il manque ${liste}.`;
+  }
+
   function canProceed(): boolean {
     switch (step) {
       case 1: {
@@ -1403,6 +1450,20 @@ function AthleteOnboardingDesktop() {
         } : {}),
         status: "ACTIF", verified: false,
       };
+      /* LE SPORT PART DÈS L'ÉTAPE 1 QUAND IL Y EST CHOISI (2026-09-21).
+         Le civil (et tout profil sous code d'équipe) choisit son sport ICI.
+         Il ne vivait qu'en mémoire jusqu'à la soumission finale : à la
+         moindre reprise (rechargement, retour un autre jour), le sport était
+         perdu, la reprise sautait à l'étape 4 — où la grille est cachée en
+         civil — et « Compléter mon profil » restait grisé sans un mot.
+         Constaté sur 4 comptes en prod, dont 2 revenus sans pouvoir finir.
+         Une fois écrit, la reprise le relit par la jointure `sports!sport_id`.
+         Scolaire sans code : primarySport est vide ici, rien ne part. */
+      if (primarySport) {
+        const { data: sportRow } = await supabase
+          .from("sports").select("id").eq("nom", primarySport).maybeSingle();
+        if (sportRow?.id) payload.sport_id = sportRow.id;
+      }
     } else if (step === 2) {
       payload = {
         ...payload,
@@ -1457,10 +1518,22 @@ function AthleteOnboardingDesktop() {
   }
 
   async function handleSubmit() {
-    if (!userId || !primarySport) return;
+    /* Plus aucun RETURN MUET : chacun de ces trois cas laissait l'athlète
+       devant un bouton qui ne faisait rien. On nomme la cause. */
+    if (!userId) {
+      setSaveError("Ta session a expiré. Reconnecte-toi pour terminer ton profil.");
+      return;
+    }
+    if (!primarySport) {
+      setSaveError("Choisis ton sport principal pour terminer.");
+      return;
+    }
     // Parental consent only blocks submit for minors (adults have no
     // parental consent and no parent section shown).
-    if (isMinor && (!consentProfile || !consentVisibility)) return;
+    if (isMinor && (!consentProfile || !consentVisibility)) {
+      setSaveError("Les deux autorisations parentales sont requises. Reviens à l'étape « Identité » pour les cocher.");
+      return;
+    }
     setSaveError(null);
     setSaving(true);
 
@@ -2225,9 +2298,19 @@ function AthleteOnboardingDesktop() {
                     <span className="text-[12px] text-[#6b7280]">— défini par ton code d&apos;équipe</span>
                   </div>
                 </div>
-              ) : userContext !== "ligue_civile" && (
+              ) : (userContext !== "ligue_civile" || sportARetrouver) && (
+                /* FILET DU CIVIL : la grille réapparaît quand le sport manque.
+                   « No dead-end possible » était faux dès qu'il y avait une
+                   reprise — le sport choisi à l'étape 1 n'était pas sauvé.
+                   L'étape 1 le sauve désormais, mais les comptes déjà coincés
+                   (et toute reprise avant ce correctif) arrivent ici sans. */
                 <div>
                   <label className={labelCls}>Sport principal <span className="text-[#EF4444]">*</span></label>
+                  {userContext === "ligue_civile" && (
+                    <p className="mb-2 text-[12px] leading-relaxed text-[#9CA3AF]">
+                      Ton sport n&apos;a pas été retrouvé — choisis-le à nouveau pour terminer.
+                    </p>
+                  )}
                   <div className="grid grid-cols-4 gap-2">
                     {SPORTS.map((s) => (
                       <button key={s} type="button" onClick={() => { setPrimarySport(s); setPrimaryPosition(""); }}
@@ -2339,6 +2422,11 @@ function AthleteOnboardingDesktop() {
             </button>
           )}
         </div>
+        )}
+        {step > 0 && !saving && raisonBlocage() && (
+          <p className="text-center text-[12px] leading-relaxed text-[#F59E0B]" role="status">
+            {raisonBlocage()}
+          </p>
         )}
 
         {/* Échec du rattachement — le profil EST enregistré, seul le lien à
