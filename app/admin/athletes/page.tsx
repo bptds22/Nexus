@@ -25,6 +25,9 @@ interface AthleteRow {
   video_entrainement_url: string | null;
   created_at: string;
   // computed
+  /** complete = compte + onboarding fini · commencee = compte, onboarding
+   *  non fini · sans_compte = fiche semée par un coach, jamais réclamée. */
+  inscription?: "complete" | "commencee" | "sans_compte";
   sport_name?: string | null;
   school_name?: string | null;
   school_type?: string | null;
@@ -44,6 +47,28 @@ interface UserRow {
   created_at: string | null;
 }
 
+/** Un compte ATHLETE sans AUCUNE ligne dans `athletes` — l'inscription
+ *  inachevée. Lu par la RPC admin_comptes_athletes_sans_fiche (auth.users
+ *  n'est pas lisible côté client : fournisseur, connexion, consentement). */
+interface SansFicheRow {
+  user_id: string;
+  email: string | null;
+  prenom: string | null;
+  nom: string | null;
+  fournisseur: string | null;
+  inscrit_le: string;
+  derniere_connexion: string | null;
+  consentement_passe: boolean;
+  consentement_le: string | null;
+  consentement_marketing: boolean;
+  age: number | null;
+  doublon_probable: boolean;
+  /** Inscrit au registre LCAP (courriel_desabonnements) — exclu des relances. */
+  desabonne: boolean;
+  relance_statut: "RESERVE" | "ENVOYE" | "ECHEC" | null;
+  relance_le: string | null;
+}
+
 interface Sport { id: string; nom: string }
 interface School { id: string; name: string }
 
@@ -59,11 +84,22 @@ const FILTER_LABELS: Record<string, string> = {
   "completion-76-100": "Profil complété à 76 – 100%",
   "pipeline-stagnant": "Athlètes stagnants (30+ jours)",
   "sans-consentement": "Athlètes sans consentement parental",
+  "fiche-complete": "Fiche complète",
+  "fiche-commencee": "Fiche commencée — onboarding non terminé",
+  "sans-fiche": "Inscription inachevée — compte sans fiche",
+  "sans-fiche-consentement": "Inscription inachevée — consentement passé",
+  "sans-fiche-jamais": "Inscription inachevée — /consentements jamais passé",
   "coach-sans-athletes": "Entraîneurs sans athlètes",
   "recruteur-fantome": "Recruteurs sans activité",
 };
 
 const USER_LIST_FILTERS = new Set(["coach-sans-athletes", "recruteur-fantome"]);
+/* Les comptes sans fiche ne sont pas des lignes `athletes` : ils ont leur
+   propre tableau (pas d'édition en ligne, pas de sport ni d'école). */
+const SANS_FICHE_FILTERS = new Set(["sans-fiche", "sans-fiche-consentement", "sans-fiche-jamais"]);
+const INSCRIPTION_FILTERS = new Set(["fiche-complete", "fiche-commencee", ...SANS_FICHE_FILTERS]);
+
+const FOURNISSEUR_LABEL: Record<string, string> = { email: "Courriel", apple: "Apple", google: "Google" };
 
 function bucketRecruitmentStatus(raw: string | null | undefined): "OUVERT" | "EN_PROCESSUS" | "RECRUTE" | "RETIRE" | null {
   if (!raw) return null;
@@ -107,10 +143,13 @@ function AdminAthletesPageInner() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [stagnantAthleteIds, setStagnantAthleteIds] = useState<Set<string>>(new Set());
   const [userRows, setUserRows] = useState<UserRow[]>([]);
+  const [sansFiche, setSansFiche] = useState<SansFicheRow[]>([]);
+  const [sansFicheErreur, setSansFicheErreur] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   const isUserView = !!filterParam && USER_LIST_FILTERS.has(filterParam);
+  const isSansFicheView = !!filterParam && SANS_FICHE_FILTERS.has(filterParam);
 
   function setParam(key: "filter" | "sport" | "school", value: string | null) {
     const params = new URLSearchParams(searchParams?.toString() || "");
@@ -128,6 +167,7 @@ function AdminAthletesPageInner() {
   const statutValue = filterParam && STATUT_FILTERS.has(filterParam) ? filterParam : "";
   const profilValue = filterParam && PROFIL_FILTERS.has(filterParam) ? filterParam : "";
   const recrutValue = filterParam && RECRUT_FILTERS.has(filterParam) ? filterParam : "";
+  const inscriptionValue = filterParam && INSCRIPTION_FILTERS.has(filterParam) ? filterParam : "";
   const anyActive = !!filterParam || !!sportParam || !!schoolParam || !!searchQuery.trim();
 
   useEffect(() => {
@@ -183,14 +223,33 @@ function AdminAthletesPageInner() {
       }
 
       // Standard athlete view.
+      // `compte:user_id(...)` — l'état d'inscription se lit sur le COMPTE
+      // (users.onboarding_complete), pas sur la fiche. La policy users
+      // « admins read all » (is_admin()) rend l'embed lisible ici.
       const athletesSelect =
-        "id,first_name,last_name,sport_id,school_id,coach_id,annee_diplomation,verified," +
+        "id,user_id,first_name,last_name,sport_id,school_id,coach_id,annee_diplomation,verified," +
         "cote_globale_entraineur,statut_recrutement_override,profile_completion,consentement_parental," +
         "video_faits_saillants_url,video_match_complet_url,video_entrainement_url,created_at," +
-        "sports:sport_id(nom), schools:school_id(name,type), coach:coach_id(first_name,last_name)";
+        "sports:sport_id(nom), schools:school_id(name,type), coach:coach_id(first_name,last_name)," +
+        "compte:user_id(onboarding_complete)";
+
+      /* Les comptes sans fiche arrivent par une RPC à part : un échec de
+         celle-ci (migration pas encore appliquée, par exemple) ne doit pas
+         vider la liste des athlètes — on le dit dans l'écran, et on continue. */
+      const sansFicheTask = supabase.rpc("admin_comptes_athletes_sans_fiche").then(({ data, error }) => {
+        if (error) {
+          console.error("[admin/athletes] admin_comptes_athletes_sans_fiche:", error.message);
+          setSansFicheErreur(error.message);
+          setSansFiche([]);
+        } else {
+          setSansFicheErreur(null);
+          setSansFiche((data as SansFicheRow[]) || []);
+        }
+      });
 
       const tasks: PromiseLike<unknown>[] = [
         supabase.from("athletes").select(athletesSelect).order("created_at", { ascending: false }),
+        sansFicheTask,
       ];
       if (filterParam === "pipeline-stagnant") {
         const cutoff = new Date(Date.now() - 30 * 86_400_000).toISOString();
@@ -200,12 +259,20 @@ function AdminAthletesPageInner() {
       }
       const results = await Promise.all(tasks);
       const aRes = results[0] as { data: unknown[] | null };
+      // results[1] = sansFicheTask (état posé dans son .then) ; le pipeline, s'il
+      // a été demandé, est en [2].
+      const STAGNANT_IDX = 2;
 
       const mapped: AthleteRow[] = ((aRes.data || []) as Record<string, unknown>[]).map((a) => {
         const coach = a.coach as { first_name?: string; last_name?: string } | null;
         const sportRel = a.sports as { nom?: string } | null;
         const schoolRel = embeddedSchool(a.schools);
+        const compteRel = (Array.isArray(a.compte) ? a.compte[0] : a.compte) as { onboarding_complete?: boolean | null } | null;
+        const inscription: AthleteRow["inscription"] = !a.user_id
+          ? "sans_compte"
+          : compteRel?.onboarding_complete === true ? "complete" : "commencee";
         return {
+          inscription,
           id: a.id as string,
           first_name: (a.first_name as string) ?? "",
           last_name: (a.last_name as string) ?? "",
@@ -230,8 +297,8 @@ function AdminAthletesPageInner() {
         };
       });
 
-      if (filterParam === "pipeline-stagnant" && results[1]) {
-        const pipeData = results[1] as { data: { athlete_id: string | null }[] | null };
+      if (filterParam === "pipeline-stagnant" && results[STAGNANT_IDX]) {
+        const pipeData = results[STAGNANT_IDX] as { data: { athlete_id: string | null }[] | null };
         const ids = new Set<string>();
         for (const p of pipeData.data || []) if (p.athlete_id) ids.add(p.athlete_id);
         setStagnantAthleteIds(ids);
@@ -258,6 +325,8 @@ function AdminAthletesPageInner() {
     else if (filterParam === "completion-76-100") list = list.filter((r) => (r.profile_completion ?? 0) >= 76 && (r.profile_completion ?? 0) <= 100);
     else if (filterParam === "sans-consentement") list = list.filter((r) => r.consentement_parental !== true);
     else if (filterParam === "pipeline-stagnant") list = list.filter((r) => stagnantAthleteIds.has(r.id));
+    else if (filterParam === "fiche-complete") list = list.filter((r) => r.inscription === "complete");
+    else if (filterParam === "fiche-commencee") list = list.filter((r) => r.inscription === "commencee");
 
     const q = searchQuery.trim().toLowerCase();
     return list.filter((r) => {
@@ -270,6 +339,30 @@ function AdminAthletesPageInner() {
       return true;
     });
   }, [rows, filterParam, stagnantAthleteIds, sportParam, schoolParam, searchQuery]);
+
+  const sansFicheFiltres = useMemo(() => {
+    let list = sansFiche;
+    if (filterParam === "sans-fiche-consentement") list = list.filter((r) => r.consentement_passe);
+    else if (filterParam === "sans-fiche-jamais") list = list.filter((r) => !r.consentement_passe);
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((r) =>
+      `${r.prenom ?? ""} ${r.nom ?? ""} ${r.email ?? ""}`.toLowerCase().includes(q));
+  }, [sansFiche, filterParam, searchQuery]);
+
+  /* Le VRAI total : un compte athlète, avec ou sans fiche. Les fiches sans
+     compte (semées par un coach, ou supprimées) ne sont pas des inscriptions —
+     elles sont comptées à part pour que le total ne mente dans aucun sens. */
+  const repartition = useMemo(() => {
+    let complete = 0, commencee = 0, sansCompte = 0;
+    for (const r of rows) {
+      if (r.inscription === "complete") complete++;
+      else if (r.inscription === "commencee") commencee++;
+      else sansCompte++;
+    }
+    return { complete, commencee, sansFiche: sansFiche.length, sansCompte,
+             comptes: complete + commencee + sansFiche.length };
+  }, [rows, sansFiche]);
 
   useEffect(() => {
     if (loading || isUserView) return;
@@ -289,15 +382,18 @@ function AdminAthletesPageInner() {
   }, [rows]);
 
   const activeLabel = filterParam ? FILTER_LABELS[filterParam] || filterParam : null;
-  const activeCount = isUserView ? userRows.length : filteredRows.length;
+  const activeCount = isUserView ? userRows.length : isSansFicheView ? sansFicheFiltres.length : filteredRows.length;
 
   const columns: AdminColumn<AthleteRow>[] = [
     {
       key: "first_name", label: "Prénom", readonly: true,
       render: (r) => (
-        <Link href={`/admin/athletes/${r.id}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors" onClick={(e) => e.stopPropagation()}>
-          {r.first_name}
-        </Link>
+        <span className="inline-flex items-center gap-2">
+          <Link href={`/admin/athletes/${r.id}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors" onClick={(e) => e.stopPropagation()}>
+            {r.first_name}
+          </Link>
+          {r.inscription === "commencee" && <InscriptionPill label="Fiche commencée" />}
+        </span>
       ),
     },
     {
@@ -382,9 +478,27 @@ function AdminAthletesPageInner() {
         <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">
           Gestion des athlètes
         </h1>
-        <p className="text-[13px] text-[#6b7280] mt-1">
-          {isUserView ? `${userRows.length} utilisateur(s)` : `${rows.length} profils au total`}
-        </p>
+        {isUserView ? (
+          <p className="text-[13px] text-[#6b7280] mt-1">{userRows.length} utilisateur(s)</p>
+        ) : (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
+            <span className="text-white font-bold tabular-nums">{repartition.comptes}</span>
+            <span className="text-[#6b7280]">comptes athlètes :</span>
+            <RepartitionChip n={repartition.complete} label="fiche complète" onClick={() => setParam("filter", "fiche-complete")} />
+            <RepartitionChip n={repartition.commencee} label="fiche commencée" onClick={() => setParam("filter", "fiche-commencee")} />
+            <RepartitionChip n={repartition.sansFiche} label="sans fiche" accent onClick={() => setParam("filter", "sans-fiche")} />
+            {repartition.sansCompte > 0 && (
+              <span className="text-[12px] text-[#6b7280]">
+                + {repartition.sansCompte} fiche{repartition.sansCompte > 1 ? "s" : ""} sans compte (semées par un coach ou supprimées)
+              </span>
+            )}
+          </div>
+        )}
+        {sansFicheErreur && (
+          <p className="mt-2 text-[12px] text-[#F59E0B]">
+            Comptes sans fiche indisponibles ({sansFicheErreur}) — le total ci-dessus les omet.
+          </p>
+        )}
       </div>
 
       {activeLabel && (
@@ -409,6 +523,19 @@ function AdminAthletesPageInner() {
       {!isUserView && (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
+            <FilterSelect
+              title="Inscription"
+              value={inscriptionValue}
+              onChange={(v) => setParam("filter", v || null)}
+              options={[
+                { value: "", label: "Inscription — Toutes les fiches" },
+                { value: "fiche-complete", label: "Fiche complète" },
+                { value: "fiche-commencee", label: "Fiche commencée" },
+                { value: "sans-fiche", label: "Inscription inachevée (sans fiche)" },
+                { value: "sans-fiche-consentement", label: "↳ consentement passé" },
+                { value: "sans-fiche-jamais", label: "↳ /consentements jamais passé" },
+              ]}
+            />
             <FilterSelect
               title="Statut"
               value={statutValue}
@@ -470,7 +597,7 @@ function AdminAthletesPageInner() {
               className={`${selectBase} w-56`}
             />
             <span className="text-[12px] text-[#9CA3AF] ml-auto">
-              <span className="font-bold text-white tabular-nums">{filteredRows.length}</span> résultat{filteredRows.length > 1 ? "s" : ""}
+              <span className="font-bold text-white tabular-nums">{activeCount}</span> résultat{activeCount > 1 ? "s" : ""}
             </span>
             {anyActive && (
               <button
@@ -489,6 +616,8 @@ function AdminAthletesPageInner() {
         <div className="text-center py-12 text-[#6b7280]">Chargement...</div>
       ) : isUserView ? (
         <UserListTable rows={userRows} />
+      ) : isSansFicheView ? (
+        <SansFicheTable rows={sansFicheFiltres} />
       ) : rows.length === 0 ? (
         <div className="text-center py-12 text-[#6b7280]">Aucun athlète</div>
       ) : (
@@ -513,6 +642,121 @@ function AdminAthletesPageInner() {
           }}
         />
       )}
+
+      {/* Vue par défaut (aucun filtre de liste) : les inscriptions inachevées
+          suivent la liste des fiches, pour qu'aucun compte athlète ne soit
+          absent de l'écran. Sport et école ne s'y appliquent pas — ces
+          comptes n'en ont pas. */}
+      {!loading && !isUserView && !isSansFicheView && !filterParam && !sportParam && !schoolParam
+        && sansFicheFiltres.length > 0 && (
+        <div className="space-y-3 pt-4">
+          <h2 className="font-head text-[15px] font-bold text-white uppercase tracking-tight">
+            Inscriptions inachevées <span className="text-[#6b7280] tabular-nums">({sansFicheFiltres.length})</span>
+          </h2>
+          <p className="text-[12px] text-[#6b7280]">
+            Comptes athlètes sans aucune fiche. L&apos;app n&apos;écrit la fiche qu&apos;à la fin de
+            l&apos;onboarding : un abandon dans l&apos;app n&apos;en laisse aucune.
+          </p>
+          <SansFicheTable rows={sansFicheFiltres} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InscriptionPill({ label }: { label: string }) {
+  // Ambre et non bleu : le bleu est réservé au signal « vérifié » (CLAUDE.md).
+  return (
+    <span className="inline-flex shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#F59E0B]/15 border border-[#F59E0B]/30 text-[#F59E0B]">
+      {label}
+    </span>
+  );
+}
+
+function RepartitionChip({ n, label, accent, onClick }: { n: number; label: string; accent?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] transition-colors ${
+        accent ? "border-[#F59E0B]/30 text-[#F59E0B] hover:bg-[#F59E0B]/10" : "border-white/10 text-[#9CA3AF] hover:text-white hover:border-white/20"
+      }`}
+    >
+      <span className="font-bold tabular-nums">{n}</span> {label}
+    </button>
+  );
+}
+
+function SansFicheTable({ rows }: { rows: SansFicheRow[] }) {
+  if (rows.length === 0) {
+    return <div className="text-center py-12 text-[#6b7280]">Aucun compte sans fiche</div>;
+  }
+  const th = "text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]";
+  return (
+    <div className="bg-[#1A1D24] border border-[#2D3748] rounded-lg overflow-x-auto">
+      <table className="w-full text-[13px] text-[#E0E0E0]">
+        <thead>
+          <tr className="bg-[#13151a] border-b border-[#2D3748]">
+            <th className={th}>Compte</th>
+            <th className={th}>Courriel</th>
+            <th className={th}>Fournisseur</th>
+            <th className={th}>Inscrit le</th>
+            <th className={th}>/consentements</th>
+            <th className={th}>Âge déclaré</th>
+            <th className={th}>Relance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const nom = `${r.prenom ?? ""} ${r.nom ?? ""}`.trim() || "—";
+            return (
+              <tr key={r.user_id} className="border-b border-[#2D3748] hover:bg-[#22252D]">
+                <td className="px-4 py-2.5">
+                  <span className="flex flex-col items-start gap-1">
+                    <span className="text-[13px] font-bold text-white">{nom}</span>
+                    <span className="flex flex-wrap gap-1">
+                      <InscriptionPill label="Inscription inachevée" />
+                      {r.doublon_probable && (
+                        <span
+                          title="Même nom et même date de naissance qu'une fiche active d'un autre compte"
+                          className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-[#9CA3AF]"
+                        >
+                          Doublon probable
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF] break-all">{r.email || "—"}</td>
+                <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF]">
+                  {r.fournisseur ? FOURNISSEUR_LABEL[r.fournisseur] ?? r.fournisseur : "—"}
+                </td>
+                <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF] whitespace-nowrap">
+                  {formatDate(r.inscrit_le)}
+                  <span className="block text-[11px] text-[#6b7280]">
+                    {r.derniere_connexion ? `vu ${formatDate(r.derniere_connexion)}` : "jamais connecté"}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-[13px]">
+                  {r.consentement_passe
+                    ? <span className="text-[#22C55E]">Passé{r.consentement_le ? ` · ${formatDate(r.consentement_le)}` : ""}</span>
+                    : <span className="text-[#6b7280]">Jamais passé</span>}
+                </td>
+                <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF] tabular-nums">
+                  {r.age != null ? `${r.age} ans` : "—"}
+                </td>
+                <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF] whitespace-nowrap">
+                  {r.relance_statut === "ENVOYE" ? `Envoyée ${formatDate(r.relance_le)}`
+                    : r.relance_statut === "RESERVE" ? "En cours"
+                    : r.relance_statut === "ECHEC" ? <span className="text-[#EF4444]">Échec</span>
+                    : "—"}
+                  {r.desabonne && <span className="block text-[11px] text-[#6b7280]">Désabonné</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

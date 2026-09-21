@@ -71,6 +71,12 @@ export const MOBILE_EXCLUDED_PAGES = [
   // en tête de app/app/page.tsx.
   '/app',
 
+  // Lien LCAP « Ne plus recevoir ces courriels » (2026-09-21). WEB SEULEMENT :
+  // dynamique (searchParams), et un lien de courriel s'ouvre dans le
+  // navigateur. Masquée par HIDE_PATTERNS, gardée par notFound() en tête de
+  // app/desabonnement/page.tsx.
+  '/desabonnement',
+
   // Pages produit/marketing
   '/tarifs',
   '/a-propos',
