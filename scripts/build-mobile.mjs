@@ -103,6 +103,13 @@ const HIDE_PATTERNS = [
   // output:export (cookies + searchParams → "force-static non configuré").
   // Inutile sur device (login social NATIF, pas de callback web).
   'app/auth/callback/route.ts',
+  // POST /api/desabonnement — désabonnement LCAP des courriels de relance
+  // (2026-09-21). Porte `dynamic = "force-dynamic"`, qu'output:'export'
+  // refuse : il a cassé le build mobile dès son arrivée sur main, et personne
+  // ne l'a vu avant le build 1.4.3 (aucun build mobile entre-temps). WEB
+  // SEULEMENT : ses deux appelants sont la page /desabonnement (masquée plus
+  // haut) et le bouton natif des messageries, jamais l'application.
+  'app/api/desabonnement/route.ts',
   // ⚠ CORRIGÉ le 2026-08-26. Cette liste portait : « les autres route.ts sous
   // app/api/* sont des POST → ignorés par l'export, pas besoin de les masquer ».
   // C'est vrai d'une route STATIQUE, faux dès qu'un segment est DYNAMIQUE :
