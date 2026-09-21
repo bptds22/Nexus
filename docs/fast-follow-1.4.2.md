@@ -1104,7 +1104,7 @@ de la date si 2006 était la vraie, sur preuve.
 ## 32. Ambassadeur — l'ancien formulaire de déclaration dans l'app 1.4.2
 
 **Décision BP, 2026-09-21 — invitation par lien ; déclaration par COURRIEL
-EXACT seulement.** Migration `20260922090000_ambassadeur_invitation_par_lien`.
+EXACT seulement.** Migration `20260921182205_ambassadeur_invitation_par_lien`.
 
 **Ce que la 1.4.2 publiée garde.** `/athlete/ambassadeur` n'a pas de branche
 mobile : le binaire embarque l'ANCIEN formulaire (prénom, nom, courriel, école,
