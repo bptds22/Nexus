@@ -31,6 +31,7 @@ import {
   type ParentPII,
 } from "@/lib/legal/persistInitialConsents";
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
+import { tenterAttribution } from "@/lib/ambassadeur/invitation";
 import { hapticSuccess } from "@/lib/haptics";
 
 type Role = "ATHLETE" | "COACH" | "RECRUTEUR";
@@ -222,6 +223,13 @@ export default function ConsentementsPage() {
         setSubmitting(false);
         return;
       }
+
+      // Invitation par lien (Google / Apple) : les consentements viennent
+      // d'être enregistrés, donc la recrue compte. Un moins de 14 ans n'arrive
+      // jamais ici — refusé plus haut, sans écriture. Silencieux et borné ;
+      // no-op sans jeton mémorisé (et toujours dans l'app : son stockage
+      // n'est pas celui du navigateur où /i/[jeton] a été ouvert).
+      await tenterAttribution(supabase);
 
       // Succès confirmé (RPC + persist OK) → feedback haptique avant le redirect.
       hapticSuccess();

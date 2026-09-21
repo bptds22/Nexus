@@ -62,6 +62,10 @@ const HIDE_PATTERNS = [
   // de toute façon aucun sens : on est déjà dans l'application.
   // Le composant voisin AppLanding.tsx n'est pas une route : rien à masquer.
   'app/app/page.tsx',
+  // /i/[jeton] — le lien d'invitation Ambassadeur (2026-09-22). WEB SEULEMENT
+  // (décision BP : pas de liens universels) : il mène à l'inscription web, et
+  // headers() le rend dynamique. Crochets échappés, voir plus haut.
+  'app/i/\\[jeton\\]/page.tsx',
   // /desabonnement — le lien LCAP des courriels de relance (2026-09-21). WEB
   // SEULEMENT : searchParams la rend dynamique (export refusé), et le lien
   // d'un courriel s'ouvre dans le navigateur, jamais dans l'application.

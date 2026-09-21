@@ -13,6 +13,7 @@ import { translateAuthError } from "@/lib/utils/translateAuthError";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { AuthMobileDispatcher } from "@/components/mobile/auth/AuthMobileDispatcher";
 import { persistInitialConsents } from "@/lib/legal/persistInitialConsents";
+import { tenterAttribution } from "@/lib/ambassadeur/invitation";
 import { usePartialSignup, resolveRoleContext } from "@/components/auth/signup/usePartialSignup";
 import { RolePicker } from "@/components/auth/signup/RolePicker";
 import { ConsentBlock } from "@/components/auth/signup/ConsentBlock";
@@ -202,6 +203,10 @@ function AuthContent() {
       if (!persistResult.ok) {
         console.warn("[signup consents] persist failed:", persistResult.error);
       }
+      // Invitation par lien : ICI les consentements sont passés (ils partent
+      // avec le signUp), donc la recrue compte. Silencieux et borné — ne
+      // bloque jamais l'inscription. No-op sans jeton mémorisé par /i/[jeton].
+      await tenterAttribution(createClient());
     }
 
     setLoading(false);

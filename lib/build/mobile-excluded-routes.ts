@@ -49,6 +49,10 @@ export const MOBILE_EXCLUDED_DYNAMIC_ROUTES = [
   // n'a pas de generateStaticParams(), qu'elle ne peut pas avoir : les codes
   // sont créés à l'exécution et ne sont pas énumérables à la compilation.
   '/join',
+  // /i/[jeton] — lien d'invitation Ambassadeur (2026-09-22). WEB SEULEMENT par
+  // décision BP (pas de liens universels) : il mène à l'inscription web.
+  // Masqué par HIDE_PATTERNS, gardé par notFound() en tête de la page.
+  '/i',
 ] as const;
 
 export const MOBILE_EXCLUDED_PAGES = [
