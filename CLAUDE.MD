@@ -523,6 +523,17 @@ l'athlète de modifier lui-même `user_id, coach_id, school_id, status, verified
 cote_globale_entraineur, profile_completion, is_showcase, consentement*,
 partner_visibility*, recruitment_status*, committed_school_id`.
 
+**`date_naissance` — protégée APRÈS l'onboarding (décision BP 2026-09-21,
+migration `20260921173234`, APPLIQUÉE en prod).** Libre tant que
+`users.onboarding_complete` n'est pas vrai ; refusée à l'athlète ensuite, dans
+les deux sens. Coach et admin la modifient toujours. Pourquoi : se rajeunir
+après `/consentements` contournait le consentement parental (cas `58c57cb7`) ;
+se vieillir à 18 ans rendait visible l'identité d'un mineur non consentant
+(`athlete_identity_ok()` passe à vrai par l'âge). Web : `/athlete/profil`
+l'affiche en lecture seule. Verrou mobile et option B (écritures coach/admin +
+consentement parental après onboarding) : registre `docs/fast-follow-1.4.2.md`
+§30–31.
+
 **Décision produit BP 2026-09-11 :** **pendant** l'onboarding
 (`users.onboarding_complete = false`), `school_id` et `coach_id` appartiennent à
 l'athlète — choisir son école EST le geste d'inscription. La garde s'applique
@@ -764,31 +775,62 @@ lib/config/sportBadges.ts              — Badge configuration
 
 ---
 
-## SUBSCRIPTION PRICING (confirmed — exact numbers)
+## SUBSCRIPTION PRICING — relevé 2026-09-19, chaque ligne porte sa source
 
-### Coach Tiers
-- **Free:** Profile creation, evaluations, verification (always free — coaches are the distribution channel)
-- **Pro:** $5.99/mo or $29.99/yr — unlocks Mon École, Stats École, Placement, Ma Réputation, Analytics
-- **All Star:** $29.99/mo or $200/yr — everything including school management
+> Les montants qui figuraient ici étaient **périmés sur toute la ligne** :
+> Recruteur Pro annoncé à 29,99 $ alors qu'un client a payé **19,99 $** le
+> 2026-09-19 ; Athlète Pro à 9,99 $ alors que le seul abonnement athlète jamais
+> encaissé en live était à **6,99 $** ; plus deux paliers coach et un palier
+> « Starter » qui **ne se vendent plus du tout**. Les deux écarts vérifiables
+> allaient dans le même sens — prix affiché SUPÉRIEUR au prix encaissé. Un écart
+> dans ce sens ne provoque aucune plainte client : c'est pourquoi il a duré.
 
-### Recruiter Tiers
-- **Free:** Anonymized athlete profiles (stats, school, sport, rating visible; name, photo, position, jersey hidden)
-- **Starter:** $9.99/mo or $89/yr — full profile reveal, basic pipeline (2 statuses), auto-messaging, unlimited favorites
-  - ⚠️ **CE PALIER N'EXISTE PAS EN CODE** (vérifié 2026-09-10). `SubscriptionTier`
-    ne connaît que `free | pro | all_star` ; tout le milieu de gamme décrit ici est
-    absent, y compris le « pipeline à 2 statuts ». Statuer dessus fait partie du
-    chantier « source de vérité unique du gating » (`docs/fast-follow-1.4.2.md`).
-- **Pro:** $29.99/mo or $269/yr — full pipeline (8 statuses), full inbox, analytics, trends, custom prospect lists, export
-- Custom prospect lists are EXCLUSIVELY Pro — Free and Starter have no access
+### Ce que les clients paient vraiment — SEUL le recruteur a des paliers payants
 
-### Athlete Tiers
-- **Free:** Basic profile
-- **Pro:** $9.99/mo or $79/yr — enhanced features
+`lib/config/pricing.ts` est la source unique d'affichage. `COACH_TIERS` et
+`ATHLETE_TIERS` y sont des tableaux **VIDES** : le compte coach et le compte
+athlète sont entièrement gratuits (lots 1 et 2, commit `3c84f44`).
 
-### Pricing Notes
-- Annual pricing ≈ 75% of annualized monthly cost (standard discount)
-- 60% option available as aggressive launch promotion
-- CÉGEP management features require All Star (sidebar label: red "ALL STAR" not gold "PRO")
+| Palier recruteur | Mensuel | Annuel | Éq. mensuel annualisé |
+|---|---|---|---|
+| Gratuit | 0 $ | 0 $ | — |
+| **Pro** | **19,99 $ CAD** | 159 $ CAD | 13,25 $ |
+| **All Star** | 29,99 $ CAD | 239 $ CAD | 19,92 $ |
+
+Remise annuelle ≈ **34 %** (`PERSONA_SAVINGS.recruteur`), pas les ~25 % que
+cette section annonçait.
+
+### Degré de preuve, montant par montant
+
+| Montant | Prouvé par | Niveau |
+|---|---|---|
+| Recruteur Pro **19,99 $/mois** | Stripe **LIVE** — `price_1TnqS3RuvqigviaJps86PqvA`, `amount_total = 1999 cad`, paiement client du 2026-09-19 | ✅ encaissé |
+| Athlète Pro 6,99 $/mois *(retiré du catalogue)* | Stripe **LIVE** — `price_1TnoyGRuvqigviaJBo1KgeLm`, abonnement du 2026-07-02, résilié le 2026-08-02 | ✅ encaissé |
+| Recruteur Pro 159 $/an | `pricing.ts`, corroboré par un price à **15900 cad/an** vu en mode test | ⚠️ jamais encaissé en live |
+| Recruteur All Star 29,99 $ / 239 $ | `pricing.ts`, corroboré par un price à **2999 cad/mois** vu en mode test | ⚠️ jamais encaissé en live |
+
+### Le catalogue est COMPLET à 4 prix (confirmé BP, 2026-09-19)
+
+Il n'existe que **quatre** prix, tous recruteur : Pro 19,99 / 159, All Star
+29,99 / 239. Les paliers coach et athlète ont été **coupés**, ils ne sont pas
+un relevé incomplet — ne pas repartir en chasse des « prix manquants ».
+
+Conséquence à connaître : `lib/stripe/prices.ts` déclare toujours **10**
+`ENV_KEYS`, et `assertAllPricesConfigured()` exige les 10. Cette fonction n'est
+**appelée nulle part** (vérifié 2026-09-19) ; la câbler telle quelle ferait
+échouer le démarrage, puisque six de ces variables n'ont plus de prix derrière.
+
+### Notes
+- Les fonctionnalités de gestion CÉGEP exigent All Star (libellé sidebar :
+  « ALL STAR » rouge, pas « PRO » doré).
+- Le palier **Starter** décrit dans les versions précédentes de ce fichier n'a
+  jamais existé en code et ne figure pas dans `RECRUITER_TIERS` — reconfirmé
+  2026-09-19. Voir `docs/fast-follow-1.4.2.md`.
+- Pour réintroduire une adhésion coach ou athlète : repeupler le tableau
+  correspondant dans `pricing.ts` et remettre `PERSONA_SAVINGS` à la bonne
+  valeur. Les anciennes définitions (Coach Pro 9,99 / All Star 19,99 ;
+  Athlète Pro 6,99) sont dans l'historique git du fichier — et ne
+  correspondent PAS aux 5,99 / 29,99 que cette section affirmait.
 
 ---
 
