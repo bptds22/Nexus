@@ -21,6 +21,7 @@ import { loadMyInterimTeams, type InterimTeam } from "@/lib/queries/coach/interi
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
 import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
@@ -617,12 +618,9 @@ export function CoachDashboardMobile() {
       // ActionBar #1: unread recruiter contacts (recruiter_pipeline stage CONTACTE)
       let unreadMessages = 0;
       if (coachAthleteIds.length > 0) {
-        const { count } = await supabase
-          .from("recruiter_pipeline")
-          .select("id", { count: "exact", head: true })
-          .eq("stage", "CONTACTE")
-          .in("athlete_id", coachAthleteIds);
-        unreadMessages = count || 0;
+        // Lot 2a — RPC coach (4 colonnes), plus de lecture directe du pipeline :
+        // la policy coach est retirée, la lecture directe rendait 0 (registre §28).
+        unreadMessages = (await fetchCoachPipeline(supabase, { athleteIds: coachAthleteIds, stages: ["CONTACTE"] })).length;
       }
 
       // ÉTAPE 3c — ActionBar #2/#4/#5 (non-vérifiés + suggestions + éval
