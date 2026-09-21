@@ -38,7 +38,7 @@ import {
   type MatchView,
 } from "@/lib/calendar/recruitingCalendar";
 import { RECRUITER_TIERS } from "@/lib/config/pricing";
-import { formatCollecte, type SourceMatch } from "@/lib/calendar/sourceMatch";
+import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { RecruteurCalendrierMobile } from "@/components/shared/RecruteurCalendrierMobile";
@@ -362,50 +362,6 @@ function MatchCard({ m }: { m: MatchView }) {
             className="border-t border-[#1E2129] md:border-t-0 md:border-l"
           />
         </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Provenance d'un match ─────────────────────────────────────
-   Décision BP du 2026-09-17 : d'où vient l'information, et quand elle a été
-   relevée — par match, parce que les deux varient d'une ligne à l'autre.
-
-   LE LIBELLÉ NE PROMET PAS PLUS QUE CE QU'IL TIENT. Côté RSEQ le lien
-   télécharge le calendrier Excel de la LIGUE : il n'existe aucune page par
-   match (site sans route, vérifié le 2026-09-17). Écrire « voir ce match »
-   ferait rouler un recruteur sur une garantie qu'on n'a pas.
-   Sans URL connue, on affiche la source seule plutôt qu'un lien générique. */
-function SourceMatchLigne({ source }: { source: SourceMatch }) {
-  if (!source.nom) return null;
-  const releve = formatCollecte(source.collecteLe);
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[#1E2129] px-[22px] py-[9px] text-[12.5px] text-[#5C6575]">
-      <span>
-        Source&nbsp;: <span className="font-semibold text-[#8A909C]">{source.nom}</span>
-      </span>
-      {source.url && source.libelle && (
-        <>
-          <span aria-hidden>·</span>
-          {/* RSEQ : la réponse est un `Content-Disposition: attachment`, donc le
-              clic télécharge SANS quitter le calendrier — pas de target, qui
-              laisserait un onglet vide (Safari). Civil : vraie page, donc
-              nouvel onglet. `download` serait ignoré : cross-origin. */}
-          <a
-            href={source.url}
-            {...(source.telecharge ? {} : { target: "_blank", rel: "noopener noreferrer" })}
-            className="font-semibold text-[#8A909C] underline decoration-[#333B4A] underline-offset-2 transition-colors hover:text-[#EDEFF3]"
-          >
-            {source.libelle}
-          </a>
-        </>
-      )}
-      {releve && (
-        <>
-          <span aria-hidden>·</span>
-          <span>relevé le {releve}</span>
-        </>
       )}
     </div>
   );

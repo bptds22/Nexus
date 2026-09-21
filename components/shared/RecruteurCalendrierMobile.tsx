@@ -45,6 +45,7 @@ import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { triggerHaptic } from "@/lib/haptics";
+import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 
 
 const SPORT_OPTIONS: PickerOption[] = [
@@ -263,6 +264,10 @@ function MatchCard({ m }: { m: MatchView }) {
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
+
+      {/* Provenance — HORS du <button> : un lien ne s'imbrique pas dans un
+          bouton (HTML invalide, et le tap partirait dans les deux). */}
+      <SourceMatchLigne source={m.game.source} className="px-4 py-2.5" />
 
       {open && (
         <div className="bg-[#171A20]">
@@ -500,8 +505,8 @@ export function RecruteurCalendrierMobile() {
             · « Mis à jour le X » : c'était MAX(games.updated_at), toutes
               lignes confondues — affiché sous des matchs relevés des semaines
               plus tôt.
-          La source et la fraîcheur PAR MATCH arrivent au lot mobile ; le web
-          les porte déjà (SourceMatchLigne dans app/recruteur/calendrier). */}
+          La source et la fraîcheur PAR MATCH sont portées par chaque carte
+          depuis 1.4.3 (components/shared/SourceMatchLigne, partagé avec le web). */}
       <div className="mx-4 rounded-xl border border-[#1E2129] bg-[#1A1D24] px-3.5 py-3">
         <div className="text-[13.5px] text-[#8A909C]">
           Horaires et lieux <b className="font-semibold text-[#B9BFC9]">à confirmer à la source</b>{" "}
