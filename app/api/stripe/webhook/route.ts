@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { getStripe } from "@/lib/stripe/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { planFromPriceId } from "@/lib/stripe/prices";
@@ -23,6 +24,21 @@ const HANDLED_EVENTS = new Set([
   "customer.subscription.deleted",
   "invoice.payment_failed",
 ]);
+
+/* supabase-js ne LÈVE pas sur erreur : il la RETOURNE dans `{ error }`.
+   Un `await supabase.rpc(...)` nu avale donc l'échec — le handler marque
+   PROCESSED, la route repond 200, et Stripe ne reessaie jamais. C'est
+   exactement ce qui a laissé un paiement réel de 19,99 $ sans abonnement
+   le 2026-09-19 : la RPC avait écrit zéro ligne et personne n'a regardé.
+
+   Toute écriture ou lecture critique de cette route passe désormais par
+   ici. L'exception remonte au try/catch du switch -> markEvent('FAILED')
+   avec le message -> 500 -> Stripe relance. */
+function exigerSucces(res: { error: PostgrestError | null }, quoi: string): void {
+  if (res.error) {
+    throw new Error(`${quoi} a échoué — ${res.error.code ?? "?"} ${res.error.message}`);
+  }
+}
 
 export async function POST(req: Request) {
   const stripe = getStripe();
@@ -71,6 +87,7 @@ export async function POST(req: Request) {
 
   if (!inserted) {
     // Shouldn't happen (insert succeeded but no row returned), treat as duplicate
+    console.warn(`[stripe/webhook] insert idempotence sans ligne rendue pour ${event.id} — traité en doublon`);
     return NextResponse.json({ received: true });
   }
 
@@ -119,7 +136,7 @@ async function markEvent(
   status: "PROCESSED" | "FAILED" | "IGNORED",
   error?: string,
 ) {
-  await supabase
+  const res = await supabase
     .from("stripe_webhook_events")
     .update({
       status,
@@ -127,6 +144,17 @@ async function markEvent(
       ...(error ? { error } : {}),
     })
     .eq("id", id);
+
+  /* Volontairement NON bloquant : markEvent tourne aussi dans le chemin
+     d'erreur, et lever ici masquerait l'exception d'origine. L'écriture
+     métier a déjà abouti — un 500 relancerait un travail déjà fait. On
+     trace, la ligne reste PENDING, et l'ecart est visible en base. */
+  if (res.error) {
+    console.error(
+      `[stripe/webhook] markEvent(${status}) a echoue pour ${id} — ` +
+        `${res.error.code ?? "?"} ${res.error.message}`,
+    );
+  }
 }
 
 function resolveUserId(metadata: Stripe.Metadata | null): string | null {
@@ -158,12 +186,18 @@ async function resolveUserIdFromCustomer(
   supabase: ReturnType<typeof createServiceClient>,
   customerId: string,
 ): Promise<string | null> {
-  const { data } = await supabase
+  const res = await supabase
     .from("subscriptions")
     .select("user_id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
-  return (data?.user_id as string) ?? null;
+
+  /* L'erreur était jetée. Une requete en panne rendait donc `null`, que
+     l'appelant traduisait en « Cannot resolve supabase_user_id » — un
+     message qui accuse les métadonnées Stripe alors que c'est la base qui
+     a lache. Deux causes, un seul symptôme : on les sépare. */
+  exigerSucces(res, `lecture subscriptions par stripe_customer_id=${customerId}`);
+  return (res.data?.user_id as string) ?? null;
 }
 
 /* ── checkout.session.completed ────────────────────────────── */
@@ -189,7 +223,7 @@ async function handleCheckoutCompleted(
 
   const period = readPeriod(item, subscription);
 
-  await supabase.rpc("apply_stripe_subscription", {
+  const res = await supabase.rpc("apply_stripe_subscription", {
     p_user_id: userId,
     p_tier: plan.tier,
     p_status: "active",
@@ -201,6 +235,7 @@ async function handleCheckoutCompleted(
     p_cancel_at_period_end: subscription.cancel_at_period_end,
     p_canceled_at: epochToIso(subscription.canceled_at),
   });
+  exigerSucces(res, `apply_stripe_subscription(checkout.session.completed, user=${userId})`);
 }
 
 /* ── customer.subscription.created / .updated ──────────────── */
@@ -232,7 +267,7 @@ async function handleSubscriptionUpdated(
 
   const period = readPeriod(item, subscription);
 
-  await supabase.rpc("apply_stripe_subscription", {
+  const res = await supabase.rpc("apply_stripe_subscription", {
     p_user_id: userId,
     p_tier: plan.tier,
     p_status: status,
@@ -244,6 +279,7 @@ async function handleSubscriptionUpdated(
     p_cancel_at_period_end: subscription.cancel_at_period_end,
     p_canceled_at: epochToIso(subscription.canceled_at),
   });
+  exigerSucces(res, `apply_stripe_subscription(${event.type}, user=${userId})`);
 }
 
 /* ── customer.subscription.deleted ─────────────────────────── */
@@ -259,7 +295,7 @@ async function handleSubscriptionDeleted(
   if (!userId) throw new Error("Cannot resolve supabase_user_id from subscription");
 
   // Reset to free — keep stripe_customer_id for future resubscription
-  await supabase.rpc("apply_stripe_subscription", {
+  const res = await supabase.rpc("apply_stripe_subscription", {
     p_user_id: userId,
     p_tier: "free",
     p_status: "canceled",
@@ -271,6 +307,7 @@ async function handleSubscriptionDeleted(
     p_cancel_at_period_end: false,
     p_canceled_at: epochToIso(subscription.canceled_at) ?? new Date().toISOString(),
   });
+  exigerSucces(res, `apply_stripe_subscription(customer.subscription.deleted, user=${userId})`);
 }
 
 /* ── invoice.payment_failed ────────────────────────────────── */
@@ -284,17 +321,25 @@ async function handlePaymentFailed(
   if (!subscriptionId) return; // One-off invoice, not subscription-related
 
   // Find the user by stripe_subscription_id
-  const { data: subRow } = await supabase
+  const lecture = await supabase
     .from("subscriptions")
     .select("user_id, tier, billing_cycle, stripe_price_id")
     .eq("stripe_subscription_id", subscriptionId)
     .maybeSingle();
 
-  if (!subRow) return; // Unknown subscription, ignore
+  /* Même piège que la RPC : l'erreur était jetée, et `!subRow` confondait
+     « abonnement inconnu » (légitime) avec « requête en panne » (à
+     relancer). Le premier se trace, le second lève. */
+  exigerSucces(lecture, `lecture subscriptions par stripe_subscription_id=${subscriptionId}`);
+  const subRow = lecture.data;
+  if (!subRow) {
+    console.warn(`[stripe/webhook] invoice.payment_failed : aucun abonnement connu pour ${subscriptionId} — ignoré`);
+    return;
+  }
 
   // Set status to past_due — get_user_tier only reads status='active',
   // so the user effectively drops to free until payment is resolved.
-  await supabase.rpc("apply_stripe_subscription", {
+  const res = await supabase.rpc("apply_stripe_subscription", {
     p_user_id: subRow.user_id,
     p_tier: subRow.tier,
     p_status: "past_due",
@@ -306,4 +351,5 @@ async function handlePaymentFailed(
     p_cancel_at_period_end: false,
     p_canceled_at: null,
   });
+  exigerSucces(res, `apply_stripe_subscription(invoice.payment_failed, sub=${subscriptionId})`);
 }
