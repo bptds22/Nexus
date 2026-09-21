@@ -815,88 +815,6 @@ function getGrain(): HTMLCanvasElement {
   return c;
 }
 
-/* ═══ LA SOURCE PHOTO ═══════════════════════════════════════════════════
-   Depuis la réduction au chargement (voir `reduirePhoto`), la photo n'est
-   plus forcément l'`Image` du fichier : au-dessus de PHOTO_MAX_PX c'est un
-   canevas déjà réduit. Les deux sont des sources valides pour drawImage ;
-   ce qui diffère, c'est la lecture des dimensions — `naturalWidth` sur une
-   Image, `width` sur un canevas. D'où ces deux accesseurs, et le fait
-   qu'on ne lise JAMAIS `.width` directement sur une photo : sur une Image,
-   `.width` est l'attribut de mise en page, que `loadImg()` positionne pour
-   les badges. Le jour où quelqu'un ferait passer une photo par loadImg(),
-   `.width` mentirait en silence. */
-type SourcePhoto = HTMLImageElement | HTMLCanvasElement;
-const photoW = (p: SourcePhoto) =>
-  p instanceof HTMLCanvasElement ? p.width : p.naturalWidth;
-const photoH = (p: SourcePhoto) =>
-  p instanceof HTMLCanvasElement ? p.height : p.naturalHeight;
-
-/* ═══ CACHE DE LA COUCHE PHOTO ══════════════════════════════════════════
-   MÊME MOTIF QUE getGrain() ci-dessus : un cache au niveau du module, vidé
-   en bloc quand son entrée change. La différence est qu'il y a ici
-   PLUSIEURS sorties possibles pour une même photo — chaque gabarit demande
-   son propre (largeur, hauteur, étalonnage) — d'où une petite table au
-   lieu d'une variable.
-
-   CE QUE ÇA CORRIGE. `pp()` allouait un canevas neuf, ré-échantillonnait
-   la photo et repassait 2 073 600 pixels dans `gradeData()` À CHAQUE
-   APPEL de drawStory — donc à chaque caractère tapé, alors que le texte
-   n'est entrée d'AUCUN de ces calculs. La couche photo ne dépend que de
-   (photo, w, h, fx, fy, zoom, étalonnage, dose, lowRes) : c'est exactement
-   la clé.
-
-   POURQUOI LA PHOTO N'EST PAS DANS LA CLÉ TEXTUELLE. Un objet n'a pas de
-   représentation de chaîne stable. On la garde donc à part et on vide TOUT
-   quand elle change — une photo remplacée périme l'intégralité du cache,
-   ce qui est vrai par construction.
-
-   POURQUOI 3. Un gabarit ne fait qu'UN appel à pp() ; 3 entrées couvrent
-   donc la frappe (0 miss) et laissent de la marge pour deux allers-retours
-   entre gabarits. Chaque entrée est un canevas 1080×1920, soit ~8,3 Mo de
-   mémoire graphique : monter cette borne se paie cash sur un téléphone, et
-   ne rapporte rien tant qu'un gabarit n'appelle pas pp() deux fois. */
-const PP_CACHE_MAX = 3;
-let ppCachePhoto: SourcePhoto | null = null;
-const ppCache = new Map<string, HTMLCanvasElement>();
-
-function ppCacheLire(photo: SourcePhoto | null, cle: string) {
-  if (photo !== ppCachePhoto) {
-    ppCache.clear();
-    ppCachePhoto = photo;
-    return null;
-  }
-  return ppCache.get(cle) ?? null;
-}
-
-function ppCacheEcrire(cle: string, c: HTMLCanvasElement) {
-  /* Map conserve l'ordre d'insertion : la première clé est la plus
-     ancienne. Éviction FIFO, pas LRU — avec 3 entrées et un seul appel par
-     gabarit, la distinction ne se voit pas, et un LRU demanderait de
-     toucher la table en LECTURE, donc à chaque frappe. */
-  if (ppCache.size >= PP_CACHE_MAX) {
-    const vieille = ppCache.keys().next().value;
-    if (vieille !== undefined) ppCache.delete(vieille);
-  }
-  ppCache.set(cle, c);
-}
-
-/** Vide le cache photo. Appelé au démontage : trois canevas 1080×1920
- *  retenus par une référence de module survivraient sinon à la page. */
-function ppCacheVider() {
-  ppCache.clear();
-  ppCachePhoto = null;
-  verreSrc = null;
-  verreOut = null;
-}
-
-/* Le verre dépoli (ÉCART 10) dérive UNIQUEMENT du canevas que pp() rend :
-   `k` et le rayon sont des constantes. Le mettre en cache sur l'IDENTITÉ de
-   cette source suffit donc, et devient efficace maintenant que pp() rend
-   le même objet d'un rendu à l'autre. Ce cache vivait dans drawStory, où
-   il ne servait qu'aux colonnes multiples d'un même appel. */
-let verreSrc: HTMLCanvasElement | null = null;
-let verreOut: HTMLCanvasElement | null = null;
-
 /* ─────────────────────────────────────────────────────────────────
    RENDU
    ───────────────────────────────────────────────────────────────── */
@@ -904,7 +822,7 @@ let verreOut: HTMLCanvasElement | null = null;
 type DrawOpts = {
   tpl: Tpl;
   v: (k: string) => string;
-  photo: SourcePhoto | null;
+  photo: HTMLImageElement | null;
   wm: HTMLImageElement | null;
   icon: HTMLImageElement | null;
   /** Les SVG de badge déjà chargés, par code. Absent = pas encore
