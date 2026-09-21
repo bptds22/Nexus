@@ -7,7 +7,7 @@ Relevé prod du 2026-09-21. **Aucun courriel n'est parti.**
 | Pièce | Où | État |
 |---|---|---|
 | Correctif cul-de-sac web civil | `fix/onboarding-civil-sport` (`0c9978a`) | poussé, **pas en prod** |
-| Journal, désabonnements, définition, écran admin, destinataires | migration `20260921120000_admin_comptes_athletes_sans_fiche` | prouvée en local (T1–T8), **pas en prod** |
+| Journal, désabonnements, définition, écran admin, destinataires | migration `20260921152458_admin_comptes_athletes_sans_fiche` | **en prod** (2026-09-21), empreintes identiques au local, refus hors admin vérifiés |
 | Écran `/admin/athletes` | `app/admin/athletes/page.tsx` | build vert |
 | Jeton de désabonnement signé | `lib/courriel/jetonDesabonnement.ts` + jumeau `supabase/functions/_shared/` | 6 tests verts (dont l'égalité des jumeaux) |
 | Page `/desabonnement` + `POST /api/desabonnement` | web seulement | testées en local (formulaire, un clic RFC 8058, rejeu, jeton faux, GET refusé) |
@@ -17,7 +17,7 @@ Relevé prod du 2026-09-21. **Aucun courriel n'est parti.**
 ## Ordre de mise en prod — chaque étape sur GO de BP
 
 1. Correctif civil → `main` (il débloque des athlètes réels, indépendant du reste).
-2. Migration `20260921120000` en prod (`apply_migration`), puis vérif :
+2. Migration `20260921152458` en prod (`apply_migration`), puis vérif :
    ACL des 3 fonctions et 2 tables, `select count(*) from
    admin_comptes_athletes_sans_fiche()` sous le compte admin ≈ 67.
 3. Secrets — **les mêmes valeurs des deux côtés pour DESABONNEMENT_SECRET** :
