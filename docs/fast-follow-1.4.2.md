@@ -1036,3 +1036,67 @@ transaction annulée.
 Correction simple, locale : `select cron.unschedule('rseq-veille-hebdo');` sur la
 base Docker. Plus durable : faire lire l'URL cible dans le Vault (une URL par
 environnement) plutôt que de l'écrire dans la migration.
+
+## 30. Date de naissance verrouillée — le verrou MOBILE reste à faire
+
+**Décision BP, 2026-09-21 — option A du diagnostic consentement.**
+
+**Ce qui est fait (web + base).** `date_naissance` entre dans
+`enforce_athlete_self_edit_perimeter` (migration
+`20260921180000_date_naissance_protegee_et_vues_partenaire_actif`) : libre tant
+que `users.onboarding_complete` n'est pas vrai, **refusée à l'athlète ensuite**,
+dans les deux sens. Coach et admin la modifient toujours. `/athlete/profil`
+(web) affiche la date en lecture seule avec « Pour corriger ta date de
+naissance, écris à info@nexussports.ca », et ne l'envoie plus.
+
+**Pourquoi.** Se rajeunir après `/consentements` contournait le consentement
+parental (cas réel `58c57cb7`, masqué en `EN_ATTENTE` le 2026-09-21) ; se
+vieillir à 18 ans rendait l'identité d'un mineur non consentant visible des
+recruteurs via `athlete_identity_ok()`.
+
+**Ce qui reste — lot mobile.** `AthleteEditWizardMobile` écrit encore
+`date_naissance` en direct (champ « DIRECT », l.92). Dans les binaires publiés :
+- date **inchangée** → passe (la garde compare `IS DISTINCT FROM`) ;
+- date **modifiée** → la base refuse avec « ces informations ne se modifient pas
+  depuis ton profil (date_naissance). Elles sont tenues par ton entraîneur ou
+  par Nexus. » — un refus clair, pas une corruption, mais un champ qui a l'air
+  modifiable et ne l'est pas.
+
+À faire au lot mobile : champ en lecture seule + le même renvoi vers
+info@nexussports.ca, et retirer `date_naissance` du patch. Même traitement à
+vérifier dans `AthleteParametresMobile` (lecture seule aujourd'hui, relevé
+2026-09-21).
+
+## 31. Option B — consentement parental APRÈS l'onboarding (au registre, pas commencé)
+
+**Décision BP, 2026-09-21 : plus tard.** L'option A ferme le trou pour
+l'athlète ; deux pièces restent ouvertes.
+
+**31.1 Les écritures coach / admin.** Un coach ou l'admin qui fait passer une
+date sous 18 ans (correction légitime ou non) recrée le cas `58c57cb7` : mineur,
+fiche active, aucun consentement parental. Piste retenue au diagnostic : un
+trigger qui, au passage sous 18 ans sans `consentement_parental`, passe la
+fiche en `EN_ATTENTE` et le signale à l'admin — PAS un refus (une vraie
+correction doit rester possible).
+
+Prérequis déjà posés le 2026-09-21 : `top_athletes_view` et
+`trending_athletes_view` filtrent `status = 'ACTIF'` (une fiche `EN_ATTENTE`
+n'y remonte plus) ; les RPC et la RLS recruteur le faisaient déjà.
+
+**31.2 La pièce qui manque vraiment : une voie de sortie.** Rien en base ne
+repose `consentement_parental = true` après l'onboarding — `set_child_consent`
+(portail parent) écrit d'autres clés (`marketing`, `image_partenaire`). Toute
+fiche masquée pour défaut de consentement ne peut donc être rouverte QU'À LA
+MAIN par l'admin. À construire : le parent consent au profil depuis son portail
+→ `consentement_parental = true` + date, trace dans `consent_audit_trail`,
+fiche remise en `ACTIF`.
+
+Sans 31.2, 31.1 masquerait des jeunes sans chemin de retour — et `athletes.status`
+n'est lu nulle part côté athlète : il ne saurait pas pourquoi plus aucun
+recruteur ne le voit. Construire 31.2 AVANT ou AVEC 31.1, jamais après.
+
+**Cas ouvert : `58c57cb7`** (16 ans, `EN_ATTENTE` depuis le 2026-09-21, aucun
+parent déclaré ni lié). Sortie manuelle d'ici là : obtenir l'adresse du parent,
+invitation depuis la fiche admin, consentement, puis
+`update athletes set status = 'ACTIF' where id = '58c57cb7-…'` — ou correction
+de la date si 2006 était la vraie, sur preuve.

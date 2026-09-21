@@ -927,17 +927,30 @@ function PersonalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
   const [firstName, setFirstName] = useState((raw?.first_name as string) || "");
   const [lastName, setLastName] = useState((raw?.last_name as string) || "");
   const [genre, setGenre] = useState((raw?.genre as string) || "");
-  const [dob, setDob] = useState((raw?.date_naissance as string) || "");
+  /* DATE DE NAISSANCE VERROUILLÉE (2026-09-21). Cette page n'est atteignable
+     qu'après l'onboarding, et depuis la migration 20260921180000 la base
+     refuse à l'athlète de changer sa date une fois l'onboarding fini : se
+     rajeunir contournait le consentement parental, se vieillir exposait
+     l'identité d'un mineur sans consentement. Affichée, jamais envoyée —
+     la corriger passe par le coach ou par Nexus. */
+  const [dob] = useState((raw?.date_naissance as string) || "");
   const [tel, setTel] = useState((raw?.telephone as string) || "");
   return (
     <div className="space-y-3">
       <div><label className={lblCls}>Prénom</label><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ex: Toa" className={inputCls} /></div>
       <div><label className={lblCls}>Nom</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Ex: Smith" className={inputCls} /></div>
       <div><label className={lblCls}>Genre</label><select title="Genre" value={genre} onChange={(e) => setGenre(e.target.value)} className={inputCls}><option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option><option value="X">Autre</option></select></div>
-      <div><label className={lblCls}>Date de naissance</label><DatePicker value={dob} onChange={setDob} placeholder="Sélectionner une date" min={minBirthdateForAge()} max={maxBirthdateForAge(MIN_SIGNUP_AGE)} /></div>
+      <div>
+        <label className={lblCls}>Date de naissance</label>
+        <DatePicker value={dob} onChange={() => {}} disabled placeholder="—" min={minBirthdateForAge()} max={maxBirthdateForAge(MIN_SIGNUP_AGE)} />
+        <p className="mt-1.5 text-[12px] leading-relaxed text-[#9CA3AF]">
+          Pour corriger ta date de naissance, écris à{" "}
+          <a href="mailto:info@nexussports.ca?subject=Correction%20de%20date%20de%20naissance" className="text-[#E63946] underline underline-offset-2">info@nexussports.ca</a>.
+        </p>
+      </div>
       <div><label className={lblCls}>Téléphone</label><input type="tel" value={tel} onChange={(e) => setTel(e.target.value)} placeholder="514-000-0000" className={inputCls} /></div>
       <div className="flex items-center gap-3 mt-3">
-        <button type="button" onClick={() => onSave({ first_name: firstName.trim() || null, last_name: lastName.trim() || null, genre: genre || null, date_naissance: dob || null, telephone: tel || null })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
+        <button type="button" onClick={() => onSave({ first_name: firstName.trim() || null, last_name: lastName.trim() || null, genre: genre || null, telephone: tel || null })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
         <button type="button" onClick={onCancel} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
       </div>
     </div>

@@ -51,12 +51,14 @@
 -- que les attendus seront déclarés de toute façon.
 -- ═══════════════════════════════════════════════════════════════════════════
 
-with attendu(vue, invoker_attendu, motif) as (values
+with attendu(vue, invoker_attendu, barriere_attendue, motif) as (values
   -- INVOKER : la RLS des tables de base suffit, la vue ne doit rien contourner.
-  ('athlete_view_details',     true,  'durcie 2026-06-16 (secure_athlete_view_details)'),
-  ('athlete_coaches',          true,  'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
-  ('athlete_views_weekly',     true,  'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
-  ('athlete_visibility_stats', true,  'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
+  -- 3e colonne, barriere_attendue (ajoutée 2026-09-21) : true = la vue DOIT
+  -- porter security_barrier ; null = aucune exigence. Voir trending plus bas.
+  ('athlete_view_details',     true,  null::boolean, 'durcie 2026-06-16 (secure_athlete_view_details)'),
+  ('athlete_coaches',          true,  null , 'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
+  ('athlete_views_weekly',     true,  null , 'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
+  ('athlete_visibility_stats', true,  null , 'durcie 2026-07-07 (convert_low_risk_views_to_invoker)'),
 
   /* ── top_athletes_view : ATTENDU CHANGÉ LE 2026-08-19, INVOKER → DEFINER ──
      Elle a été INVOKER de juillet au 18 août (régression), restaurée en INVOKER
@@ -80,7 +82,7 @@ with attendu(vue, invoker_attendu, motif) as (values
 
      Accès restreint par REVOKE anon + gate is_approved_partner(auth.uid())
      dans le WHERE : un non-partenaire authentifié lit 0 ligne. */
-  ('top_athletes_view',        false, 'DEFINER assume 2026-08-19 (top_athletes_view_back_to_definer)'),
+  ('top_athletes_view',        false, null , 'DEFINER assume 2026-08-19 (top_athletes_view_back_to_definer)'),
 
   -- DEFINER ASSUMÉ : ses CTE agrègent recruiter_athlete_views et
   -- recruiter_favorites, et AUCUNE de ces deux tables n'a de politique
@@ -88,7 +90,13 @@ with attendu(vue, invoker_attendu, motif) as (values
   -- → le `.gt("views_delta", 0)` de la page filtrerait tout → /partenaire/
   -- tendances vide en permanence, sans erreur. L'accès est restreint par
   -- REVOKE anon + le gate is_approved_partner(auth.uid()) dans le WHERE.
-  ('trending_athletes_view',   false, 'DEFINER assume 2026-07-07 (harden_trending_athletes_view)'),
+  --
+  -- ET security_barrier = true : sans elle, une fonction ou un opérateur fourni
+  -- par l'appelant peut être évalué AVANT le gate. Posée le 2026-07-07, PERDUE
+  -- le 2026-08-17 par trending_athletes_view_genre (CREATE OR REPLACE sans la
+  -- clause), restaurée le 2026-09-21 — un mois sans que rien ne le dise, parce
+  -- que ce script ne regardait que security_invoker. D'où la 3e colonne.
+  ('trending_athletes_view',   false, true , 'DEFINER assume 2026-07-07 (harden_trending_athletes_view) ; barriere restauree 2026-09-21'),
 
   /* ── Veille RSEQ (2026-09-02) — INVOKER toutes les deux ──────────────────
      Ni l'une ni l'autre n'a besoin de contourner quoi que ce soit : leur seul
@@ -104,17 +112,21 @@ with attendu(vue, invoker_attendu, motif) as (values
      voulue : la file de revue n'est pas une surface applicative. La passer en
      DEFINER l'ouvrirait a tout compte connecte sans qu'aucune policy ne le
      dise. */
-  ('rseq_ligues_a_appeler',    true,  'durcie a la creation 2026-09-02 (rseq_veille_collecte)'),
-  ('rseq_alertes_ouvertes',    true,  'durcie a la creation 2026-09-02 (rseq_veille_alertes)')
+  ('rseq_ligues_a_appeler',    true,  null , 'durcie a la creation 2026-09-02 (rseq_veille_collecte)'),
+  ('rseq_alertes_ouvertes',    true,  null , 'durcie a la creation 2026-09-02 (rseq_veille_alertes)')
 ),
 reel as (
   select a.vue,
          a.invoker_attendu,
+         a.barriere_attendue,
          a.motif,
          c.oid is not null as vue_existe,
          (select o.option_value
             from pg_options_to_table(c.reloptions) o
-           where o.option_name = 'security_invoker') as invoker_brut
+           where o.option_name = 'security_invoker') as invoker_brut,
+         (select o.option_value
+            from pg_options_to_table(c.reloptions) o
+           where o.option_name = 'security_barrier') as barriere_brut
   from attendu a
   left join pg_class c
          on c.relname     = a.vue
@@ -131,6 +143,10 @@ select
   case
     when not vue_existe
       then 'Vue absente du schema public — renommee, supprimee, ou attendu perime.'
+    when coalesce(invoker_brut::boolean, false) = invoker_attendu
+         and barriere_attendue and not coalesce(barriere_brut::boolean, false)
+      then 'BARRIERE PERDUE. Un CREATE OR REPLACE a efface security_barrier. '
+           || 'Reposer WITH (security_barrier = true) dans la redefinition.'
     when invoker_attendu
       then 'DURCISSEMENT PERDU. Un CREATE OR REPLACE a efface la clause. '
            || 'Reposer WITH (security_invoker = true) — MAIS verifier d abord '
@@ -143,4 +159,5 @@ select
 from reel
 where not vue_existe
    or coalesce(invoker_brut::boolean, false) <> invoker_attendu
+   or (barriere_attendue and not coalesce(barriere_brut::boolean, false))
 order by vue;
