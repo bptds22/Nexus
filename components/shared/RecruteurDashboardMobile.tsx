@@ -491,8 +491,8 @@ export function RecruteurDashboardMobile() {
           <div className="py-6">
             <RelancesDuJour
               cards={relanceCards}
-              onTapAthlete={navAthlete}
-              onTapToutVoir={() => router.push("/recruteur/pipeline")}
+              onTapAthlete={(id) => { if (id) router.push(`/recruteur/pipeline?athlete=${id}`); }}
+              onTapToutVoir={() => router.push("/recruteur/pipeline?filtre=relances")}
             />
           </div>
         </>

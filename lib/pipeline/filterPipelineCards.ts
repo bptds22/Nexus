@@ -91,6 +91,9 @@ export interface FilterablePipelineCard {
   grade?: string | null;
   coach_rating?: number;
   has_video?: boolean;
+  /** `recruiter_pipeline.next_action_at` — une DATE, pas un timestamp (même
+   *  remarque que sortPipelineCards) : sert la chip « relance ». */
+  next_action_at?: string | null;
 }
 
 /* ── LES CHIPS RAPIDES ──────────────────────────────────────────────────
@@ -108,19 +111,31 @@ export interface FilterablePipelineCard {
    d'abord », toggle des panneaux, point rouge des cartes) est en cours
    d'arbitrage. Rien d'autre n'a été retiré. Remettre la chip = remettre une
    ligne dans le tableau ci-dessous. */
-export type QuickKey = "flagged" | "graded" | "rating4" | "video";
+export type QuickKey = "flagged" | "graded" | "rating4" | "video" | "relance";
 
 export const QUICK_FILTERS: readonly { key: QuickKey; label: string }[] = [
   { key: "graded", label: "Avec grade" },
   { key: "rating4", label: "4+ étoiles" },
   { key: "video", label: "Avec vidéo" },
+  { key: "relance", label: "À relancer" },
 ] as const;
+
+/** AAAA-MM-JJ du jour, en local — même technique que RelancesDuJour.tsx :
+ *  comparaison de CHAÎNES sur `next_action_at` (une DATE), jamais de
+ *  re-parsing qui rouvrirait un débat de fuseau horaire. */
+function todayKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const QUICK_PREDICATES: Record<QuickKey, (c: FilterablePipelineCard) => boolean> = {
   flagged: (c) => !!c.flagged,
   graded: (c) => !!c.grade,
   rating4: (c) => (c.coach_rating ?? 0) >= 4,
   video: (c) => !!c.has_video,
+  /** Due = aujourd'hui ou en retard, même seuil que la carte « Relances
+   *  aujourd'hui » du dashboard (`<=`, pas `<`). */
+  relance: (c) => !!c.next_action_at && c.next_action_at.slice(0, 10) <= todayKey(),
 };
 
 /** Filtres qui ne se rangent pas en facettes. Passés à part pour que la
