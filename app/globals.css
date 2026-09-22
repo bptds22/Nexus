@@ -1445,18 +1445,22 @@ body.light-mode .nx-partner-slot--majeur:hover {
    garder les valeurs synchronisées. Importé par toutes les routes
    via `app/globals.css` (root). */
 .nx-mobile-pb-tabbar    { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
-/* Bas de page d'une page PARTAGÉE (markup web rendu dans l'app), mesuré sur
-   émulateur le 2026-09-22. Deux faits que `nx-mobile-pb-tabbar` ignore :
+/* DANS L'APP, la vraie zone de la barre — mesurée sur émulateur le 2026-09-22.
+   Les 64px ci-dessus ignoraient deux faits :
    · la barre est FLOTTANTE (85a8c19) : `bottom: safe + 10px`, hauteur 68px
-     bordure comprise → son bord haut est à `safe + 78px`, pas 64 ;
+     bordure comprise → son bord haut est à `safe + 78px` ;
    · AnimatedRoute enveloppe chaque page dans un `motion.div` en
      `position: absolute; inset: 0` : le `padding-bottom: 88px` du <main>
      N'ENTRE PAS dans la zone de défilement. Seul le padding de la page compte.
+   Avec 64px, le bas de tout écran qui ne comptait que sur ce jeton finissait
+   ~14px SOUS la barre (constaté sur /athlete/ambassadeur, 1.4.3).
    88px = la zone tabbar déjà servie par app/athlete/layout.tsx et
-   RechercheMobile (--tabzone) ; + 24px de respiration au-dessus. APP
-   SEULEMENT : sur le web, la classe ne fait rien et le `pb-*` de la page
-   s'applique (une règle non-layer écraserait la classe Tailwind). */
-html.is-capacitor .nx-mobile-pb-tabbar-partagee { padding-bottom: calc(88px + 24px + env(safe-area-inset-bottom)); }
+   RechercheMobile (--tabzone) ; + 24px de respiration au-dessus.
+   Les racines qui le portent sont `min-h-screen` en border-box : une page
+   courte ne se met pas à défiler pour autant.
+   Web (et mobile-web, qui n'a pas de barre) : les 64px d'origine, inchangés.
+   Miroir JS : TABBAR_PB_APP, lib/config/mobileTokens.ts. */
+html.is-capacitor .nx-mobile-pb-tabbar { padding-bottom: calc(88px + 24px + env(safe-area-inset-bottom)); }
 .nx-mobile-edge-x       { padding-left: 16px; padding-right: 16px; }
 .nx-mobile-radius-card  { border-radius: 16px; }
 .nx-mobile-radius-sheet { border-top-left-radius: 16px; border-top-right-radius: 16px; }

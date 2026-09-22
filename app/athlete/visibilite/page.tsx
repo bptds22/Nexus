@@ -200,8 +200,8 @@ export default function VisibilitePage() {
 
       {/* Trailing spacer — gives the last section the same ~32px breathing
           above the MobileTabBar that `py-8` gives at the top of the page.
-          `nx-mobile-pb-tabbar` clears the tab bar geometrically (64px +
-          safe-area) ; this spacer adds the symmetric top-style buffer
+          `nx-mobile-pb-tabbar` clears the tab bar geometrically (in the app :
+          the real floating-bar zone + breathing, see app/globals.css) ; this spacer adds the symmetric top-style buffer
           above the final card. Same canon as the recruiter/coach mobile
           companions' final `<div className="h-8" />`. */}
       <div className="h-8" />

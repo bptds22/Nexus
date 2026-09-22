@@ -53,7 +53,8 @@ export default function AthleteTransfertPage() {
 
        Et `nx-mobile-pb-tabbar` pour le BAS, par la même logique (2026-09-16) :
        rendre le markup web sur l'appareil, c'est aussi hériter de la
-       MobileTabBar fixe qui recouvre les 64px du bas. Le défaut a été constaté
+       MobileTabBar flottante qui recouvre le bas (zone réelle : voir le
+       jeton dans app/globals.css, corrigé le 2026-09-22). Le défaut a été constaté
        sur /athlete/ambassadeur, calquée sur cette page-ci ; il était donc ici
        aussi, simplement invisible parce que le contenu est plus court. */
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar">
