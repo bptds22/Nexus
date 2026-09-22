@@ -26,10 +26,16 @@
    ne dira JAMAIS, c'est « voir ce match » — le calendrier porte la ligue
    entière, pas la rencontre, et promettre l'inverse ferait rouler un
    recruteur sur une garantie qu'on n'a pas.
+
+   ── LE LIEN PASSE PAR NEXUS DEPUIS LE 2026-09-22 ────────────────
+   Le RSEQ sert ce .xlsx en `text/html` : Chrome Android l'affichait en texte
+   brut (bug 1.4.3). Le lien pointe donc vers /api/rseq/calendrier, qui
+   re-sert le même fichier avec le bon type — en URL ABSOLUE, pour que l'app
+   (servie depuis https://localhost) sorte vers la production.
+   Voir lib/calendar/rseqCalendrier.ts.
 ═══════════════════════════════════════════════════════════════ */
 
-const RSEQ_CALENDRIER =
-  "https://diffusion.s1.rseq.ca/api/LeagueApi/GenerateLeagueCalendar?leagueId=";
+import { estGuid, urlCalendrierRseq } from "@/lib/calendar/rseqCalendrier";
 
 /** Ce que la carte de match a besoin de savoir sur la provenance. */
 export interface SourceMatch {
@@ -42,17 +48,18 @@ export interface SourceMatch {
   /**
    * Le clic TÉLÉCHARGE-t-il un fichier, au lieu de naviguer ?
    *
-   * Vrai pour le RSEQ : la réponse porte `Content-Disposition: attachment`
-   * (vérifié le 2026-09-17), et une navigation qui aboutit à un téléchargement
+   * Vrai pour le RSEQ : la réponse de /api/rseq/calendrier porte
+   * `Content-Disposition: attachment` ET le type xlsx, et une navigation qui aboutit à un téléchargement
    * n'abandonne PAS le document courant — le recruteur reste sur son
    * calendrier. C'est pourquoi ce lien ne porte PAS `target="_blank"` : il
    * ouvrirait un onglet que le navigateur devrait ensuite refermer seul, et
    * Safari laisse un onglet vide derrière lui.
    *
-   * ⚠ L'attribut HTML `download` NE SERT À RIEN ICI : la spécification le fait
-   * ignorer pour une URL d'une AUTRE origine. Ce qui déclenche le
-   * téléchargement, c'est l'en-tête du serveur RSEQ, pas notre balise. Ne pas
-   * l'ajouter en croyant « sécuriser » le comportement.
+   * ⚠ L'attribut HTML `download` NE SERT À RIEN ICI : l'URL est absolue
+   * (nexussports.ca), donc d'une AUTRE origine dans l'app et sur le domaine
+   * vercel.app, où la spécification le fait ignorer. Ce qui déclenche le
+   * téléchargement, ce sont les en-têtes de /api/rseq/calendrier, pas notre
+   * balise. Ne pas l'ajouter en croyant « sécuriser » le comportement.
    *
    * Faux pour le civil : ces pages répondent `text/html` sans disposition —
    * c'est une vraie navigation, donc `target="_blank"` pour ne pas faire
@@ -68,14 +75,16 @@ export function sourceDuMatch(row: {
   source_url?: string | null;
   collecte_le?: string | null;
   rseq_league_id?: string | null;
+  /** Nom de la ligue — seulement pour le nom du fichier téléchargé. */
+  league_name?: string | null;
 }): SourceMatch {
   const nom = row.source_nom ?? null;
   const collecteLe = row.collecte_le ?? null;
 
-  if (nom === "RSEQ" && row.rseq_league_id) {
+  if (nom === "RSEQ" && estGuid(row.rseq_league_id)) {
     return {
       nom,
-      url: `${RSEQ_CALENDRIER}${row.rseq_league_id}`,
+      url: urlCalendrierRseq(row.rseq_league_id, row.league_name),
       libelle: "Calendrier officiel RSEQ",
       telecharge: true,
       collecteLe,

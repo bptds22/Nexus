@@ -382,6 +382,7 @@ export function useRecruitingCalendar(enabled: boolean = true) {
               source_url?: string | null;
               collecte_le?: string | null;
               rseq_league_id?: string | null;
+              league_name?: string | null;
             }),
           };
         });

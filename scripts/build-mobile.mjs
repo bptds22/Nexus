@@ -110,6 +110,11 @@ const HIDE_PATTERNS = [
   // SEULEMENT : ses deux appelants sont la page /desabonnement (masquée plus
   // haut) et le bouton natif des messageries, jamais l'application.
   'app/api/desabonnement/route.ts',
+  // GET /api/rseq/calendrier — relais du calendrier de ligue RSEQ avec le bon
+  // type (2026-09-22). `force-dynamic` + searchParams : l'export le refuse.
+  // WEB SEULEMENT : l'app l'appelle en URL absolue (nexussports.ca), jamais
+  // depuis son bundle.
+  'app/api/rseq/calendrier/route.ts',
   // ⚠ CORRIGÉ le 2026-08-26. Cette liste portait : « les autres route.ts sous
   // app/api/* sont des POST → ignorés par l'export, pas besoin de les masquer ».
   // C'est vrai d'une route STATIQUE, faux dès qu'un segment est DYNAMIQUE :
