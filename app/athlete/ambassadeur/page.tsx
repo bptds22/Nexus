@@ -25,14 +25,15 @@ import { partagerLien } from "@/lib/partage/partagerLien";
    d'accès est entièrement héritée du layout : session, rôle, onboarding,
    désactivation, maintenance. Rien à écrire ici.
 
-   ⚠ ET `nx-mobile-pb-tabbar` SUR LES DEUX CONTENEURS RACINES (2026-09-16).
+   ⚠ ET `nx-mobile-pb-tabbar-partagee` SUR LES DEUX CONTENEURS RACINES.
    Sans branche IS_CAPACITOR, cette page rend son markup web sur l'appareil —
-   où la MobileTabBar est en position fixe par-dessus. `pb-8` (32px) ne suffit
-   pas à la dégager. La classe (app/globals.css, miroir JS TABBAR_HEIGHT dans
-   lib/config/mobileTokens.ts) réserve `64px + safe-area-inset-bottom`.
-   LES DEUX COHABITENT, ce n'est pas un doublon : la classe dégage la barre,
-   `pb-8` donne la respiration au-dessus. Même combinaison que
-   /athlete/visibilite:71. Ne jamais écrire le 64 en dur ici.
+   où la MobileTabBar FLOTTE par-dessus. 2026-09-16 : `nx-mobile-pb-tabbar`
+   (64px) y avait été posée ; elle ne suffisait pas — la barre monte à
+   `safe + 78px`, et le padding du <main> ne compte pas (AnimatedRoute en
+   position absolue). La carte « Ton ami s'est inscrit sans ton lien ? »
+   passait encore dessous (constaté sur émulateur, 1.4.3). La nouvelle classe
+   (app/globals.css) réserve la zone réelle + une respiration, dans l'app
+   seulement ; sur le web, `pb-8` reste seul et suffit.
 
    ── CE QUE CET ÉCRAN NE MONTRE JAMAIS ───────────────────────────────────────
    · Le JETON du lien : il part dans la feuille de partage (ou le
@@ -208,7 +209,7 @@ export default function AthleteAmbassadeurPage() {
 
   if (chargement) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar-partagee">
         <div className="h-40 flex items-center justify-center">
           <div className="w-7 h-7 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
         </div>
@@ -221,7 +222,7 @@ export default function AthleteAmbassadeurPage() {
   const parLien = tableau?.lien?.inscriptions ?? 0;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 nx-mobile-pb-tabbar-partagee">
       <header className="mb-6 nx-safe-top">
         <h1 className="font-head text-[26px] font-black text-white uppercase tracking-tight">
           Ambassadeur
