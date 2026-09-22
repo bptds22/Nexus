@@ -16,7 +16,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { loadSearchData, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
+import { loadSearchData, trouverProgramme, equipesParSport, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
 import Link from "next/link";
 import type { MapFocus } from "./MapPane";
@@ -165,6 +165,7 @@ export default function CegepSearch() {
 
   const [q, setQ] = React.useState("");
   const [sports, setSports] = React.useState<string[]>([]);
+  /** cegep_programs.id sélectionnés — la clé du filtre, jamais un libellé. */
   const [progs, setProgs] = React.useState<string[]>([]);
   const [progQ, setProgQ] = React.useState("");
   const [regions, setRegions] = React.useState<string[]>([]);
@@ -248,10 +249,7 @@ export default function CegepSearch() {
         if (regions.length && !regions.includes(c.region)) return false;
         if (langues.length && (!c.langue || !langues.includes(c.langue))) return false;
         if (reseaux.length && (!c.reseau || !reseaux.includes(c.reseau))) return false;
-        if (progs.length) {
-          const offerts = c.programmes.map(norm);
-          if (!progs.some((p) => offerts.includes(norm(p)))) return false;
-        }
+        if (progs.length && !progs.some((id) => c.programmeIds.includes(id))) return false;
         if (pourMoi) {
           const v = data.viewer;
           if (!v) return false;
@@ -315,8 +313,8 @@ export default function CegepSearch() {
         setZoomNote(`« ${q.trim()} » — ${villes.length} collège${villes.length > 1 ? "s" : ""} cadré${villes.length > 1 ? "s" : ""}`);
         return;
       }
-      const prog = data.catalogueProgrammes.find((p) => norm(p).includes(nq));
-      setZoomNote(prog && !progs.includes(prog) ? `↵ Entrée pour filtrer sur « ${prog} »` : null);
+      const prog = trouverProgramme(data, nq, norm);
+      setZoomNote(prog && !progs.includes(prog.id) ? `↵ Entrée pour filtrer sur « ${prog.nom} »` : null);
     }, 450);
     return () => window.clearTimeout(t);
   }, [q, data, viser, progs]);
@@ -325,12 +323,12 @@ export default function CegepSearch() {
     if (!data) return;
     const nq = norm(q);
     if (nq.length < 3) return;
-    const prog = data.catalogueProgrammes.find((p) => norm(p).includes(nq));
+    const prog = trouverProgramme(data, nq, norm);
     const ecole = data.cegeps.filter((c) => norm(c.name).includes(nq));
-    if (!ecole.length && prog && !progs.includes(prog)) {
-      setProgs((x) => [...x, prog]);
+    if (!ecole.length && prog && !progs.includes(prog.id)) {
+      setProgs((x) => [...x, prog.id]);
       setQ("");
-      setZoomNote(`« ${prog} » ajouté au filtre programme`);
+      setZoomNote(`« ${prog.nom} » ajouté au filtre programme`);
     }
   };
 
@@ -354,7 +352,10 @@ export default function CegepSearch() {
   const pourMoiDispo = !!viewer && (viewer.programmesVises.length > 0 || !!viewer.positionId);
   const nbFiltres = sports.length + progs.length + regions.length + langues.length + reseaux.length;
   const selection = resultats.find((r) => r.c.id === selectedId) ?? null;
-  const catalogueFiltre = data.catalogueProgrammes.filter((p) => !progQ || norm(p).includes(norm(progQ)));
+  const catalogueFiltre = data.catalogueProgrammes
+    .filter((p) => !progQ || norm(p.nom).includes(norm(progQ)))
+    .map((p) => p.id);
+  const nomsProgrammes = Object.fromEntries(data.catalogueProgrammes.map((p) => [p.id, p.nom]));
 
   return (
     <div className="cs" ref={rootRef} style={{ ["--cs-h" as string]: hauteur }}>
@@ -392,7 +393,7 @@ export default function CegepSearch() {
                   placeholder={`${data.catalogueProgrammes.length} programmes…`} />
                 {progQ && <button className="clr" onClick={() => setProgQ("")} aria-label="Effacer">✕</button>}
               </span>
-              <ListeCases items={catalogueFiltre} selection={progs} onToggle={(v) => setProgs((x) => toggle(x, v))} />
+              <ListeCases items={catalogueFiltre} labels={nomsProgrammes} selection={progs} onToggle={(v) => setProgs((x) => toggle(x, v))} />
             </>
           )}
         </FiltreBtn>
@@ -515,11 +516,8 @@ function Apercu({
   const [ouvertProgs, setOuvertProgs] = React.useState(false);
   React.useEffect(() => { setOuvertEquipes(false); setOuvertProgs(false); }, [c.id]);
 
-  const equipes = React.useMemo(
-    () => [...c.teams].sort((a, b) =>
-      a.sport.localeCompare(b.sport, "fr") || (a.division ?? "").localeCompare(b.division ?? "", "fr")),
-    [c.teams],
-  );
+  // Une ligne par sport ; le compteur reste le nombre réel d'équipes.
+  const lignesSport = React.useMemo(() => equipesParSport(c.teams), [c.teams]);
   const programmes = React.useMemo(
     () => [...c.programmes].sort((a, b) => a.localeCompare(b, "fr")),
     [c.programmes],
@@ -558,21 +556,25 @@ function Apercu({
         </div>
       </div>
 
-      {equipes.length > 0 && (
+      {c.teams.length > 0 && (
         <div className={"acc" + (ouvertEquipes ? " open" : "")}>
           <button className="acch" onClick={() => setOuvertEquipes((o) => !o)}>
-            <span className="ptag">ÉQUIPES ({equipes.length})</span>
+            <span className="ptag">ÉQUIPES ({c.teams.length})</span>
             <span className="chev">{ouvertEquipes ? "▲" : "▼"}</span>
           </button>
           {ouvertEquipes && (
             <div className="accb">
-              {equipes.map((t, i) => {
-                const ciblePoste = enDemande && !!poste && viewer?.sportNom === t.sport;
+              {lignesSport.map((l) => {
+                const ciblePoste = enDemande && !!poste && viewer?.sportNom === l.sport;
                 return (
-                  <div key={`${t.sport}-${i}`} className="trow">
-                    <span className="tsport">{t.sport}</span>
-                    <span className="tmeta">{[t.division, t.gender].filter(Boolean).join(" · ") || "—"}</span>
-                    {ciblePoste && <span className="b need">{poste} recherché</span>}
+                  <div key={l.sport} className="trow">
+                    <span className="tsport">
+                      {l.sport}
+                      {ciblePoste && <span className="b need">{poste} recherché</span>}
+                    </span>
+                    <span className="tmeta">
+                      {l.details.length ? l.details.map((d) => <span key={d}>{d}</span>) : "—"}
+                    </span>
                   </div>
                 );
               })}
@@ -760,9 +762,10 @@ background:var(--bg);color:var(--txt);font-family:var(--f-body);height:var(--cs-
 .cs .acch:hover{background:#20252E}
 .cs .acch .chev{color:var(--mut);font-size:12px}
 .cs .accb{padding:2px 13px 12px;display:flex;flex-direction:column;gap:1px}
-.cs .trow{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #23293380;font-size:14px}
-.cs .tsport{color:var(--txt);font-weight:700;flex:1;min-width:0}
-.cs .tmeta{color:var(--soft);font-size:13px;white-space:nowrap}
+.cs .trow{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid #23293380;font-size:14px}
+.cs .tsport{color:var(--txt);font-weight:700;flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.cs .tmeta{color:var(--soft);font-size:13px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.cs .tmeta span{white-space:nowrap}
 .cs .prow{padding:10px 0;border-top:1px solid #23293380;font-size:14px;color:var(--soft)}
 .cs .b{font-family:var(--f-label);letter-spacing:.08em;font-size:13px;padding:4px 10px;border-radius:99px;border:1px solid var(--line2);color:var(--soft);background:#1E222A;white-space:nowrap}
 .cs .b.need{color:#fff;border-color:var(--ok);background:#14301F}

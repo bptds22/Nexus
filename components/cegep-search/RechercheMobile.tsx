@@ -20,7 +20,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { Heart, Search, X, Check, ChevronDown, ArrowRight, Sparkles, Info, Map as MapIcon, List } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { loadSearchData, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
+import { loadSearchData, equipesParSport, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
 import Link from "next/link";
 import type { MapFocus } from "./MapPane";
@@ -115,6 +115,7 @@ export default function RechercheMobile() {
   // ── filtres (mêmes états que le web, mêmes sémantiques) ──
   const [q, setQ] = React.useState("");
   const [sports, setSports] = React.useState<string[]>([]);
+  /** cegep_programs.id sélectionnés — la clé du filtre, jamais un libellé. */
   const [progs, setProgs] = React.useState<string[]>([]);
   const [regions, setRegions] = React.useState<string[]>([]);
   const [langues, setLangues] = React.useState<string[]>([]);
@@ -275,10 +276,7 @@ export default function RechercheMobile() {
         if (regions.length && !regions.includes(c.region)) return false;
         if (langues.length && (!c.langue || !langues.includes(c.langue))) return false;
         if (reseaux.length && (!c.reseau || !reseaux.includes(c.reseau))) return false;
-        if (progs.length) {
-          const offerts = c.programmes.map(norm);
-          if (!progs.some((p) => offerts.includes(norm(p)))) return false;
-        }
+        if (progs.length && !progs.some((id) => c.programmeIds.includes(id))) return false;
         if (pourMoi) {
           const v = data.viewer;
           if (!v) return false;
@@ -368,8 +366,8 @@ export default function RechercheMobile() {
     }
     const nq = norm(progQ);
     return data.catalogueProgrammes
-      .filter((p) => !nq || norm(p).includes(nq))
-      .map((p) => ({ v: p, label: p }));
+      .filter((p) => !nq || norm(p.nom).includes(nq))
+      .map((p) => ({ v: p.id, label: p.nom }));
   }, [data, progQ]);
 
   const selDe = (k: FKey): string[] =>
@@ -765,9 +763,11 @@ export default function RechercheMobile() {
                     <div className="kicker2">Sélectionnés ({selDe(fkey).length})</div>
                     {selDe(fkey).map((v) => {
                       const o = [...LANGUES, ...RESEAUX].find((x) => x.v === v);
+                      // Programme : la valeur est un cegep_programs.id → son nom.
+                      const nomProg = data?.catalogueProgrammes.find((p) => p.id === v)?.nom;
                       return (
                         <div key={v} className="selitem">
-                          {o?.label ?? v}
+                          {o?.label ?? nomProg ?? v}
                           <button onClick={() => { void triggerHaptic("Light"); setSelDe(fkey, v); }} aria-label="Retirer">
                             <X size={14} aria-hidden />
                           </button>
@@ -889,18 +889,21 @@ export default function RechercheMobile() {
                       Équipes ({courant.c.teams.length})<ChevronDown size={16} aria-hidden />
                     </div>
                     <div className="accBody">
-                      {[...courant.c.teams]
-                        .sort((a, b) => a.sport.localeCompare(b.sport, "fr") || (a.division ?? "").localeCompare(b.division ?? "", "fr"))
-                        .map((t, i) => {
-                          const poste = viewer?.positionAbrev || viewer?.positionNom;
-                          const ciblePoste = data!.postesEnDemande.has(courant.c.id) && !!poste && viewer?.sportNom === t.sport;
-                          return (
-                            <div key={`${t.sport}-${i}`} className="line">
-                              <span className="ln">{[t.sport, t.division, t.gender].filter(Boolean).join(" · ")}</span>
-                              {ciblePoste ? <span className="tag">{poste} recherché</span> : <span />}
-                            </div>
-                          );
-                        })}
+                      {/* Une ligne par sport, divisions et genres en détail ;
+                          le compteur ci-dessus reste le nombre réel d'équipes. */}
+                      {equipesParSport(courant.c.teams).map((l) => {
+                        const poste = viewer?.positionAbrev || viewer?.positionNom;
+                        const ciblePoste = data!.postesEnDemande.has(courant.c.id) && !!poste && viewer?.sportNom === l.sport;
+                        return (
+                          <div key={l.sport} className="line sport">
+                            <span className="ln">
+                              <b>{l.sport}</b>
+                              {l.details.length > 0 && <span className="det">{l.details.join(", ")}</span>}
+                            </span>
+                            {ciblePoste ? <span className="tag">{poste} recherché</span> : <span />}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1229,6 +1232,10 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
   border-bottom:1px solid rgba(255,255,255,.05)}
 .rm .line:last-child{border-bottom:0}
 .rm .line .ln{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rm .line.sport{align-items:flex-start}
+.rm .line.sport .ln{display:flex;flex-direction:column;gap:2px;overflow:visible}
+.rm .line.sport .ln b{font-weight:700}
+.rm .line.sport .det{font-size:12.5px;color:#8A909C;white-space:normal}
 .rm .tag{font-family:var(--font-bebas),sans-serif;font-size:12px;letter-spacing:.08em;padding:2px 7px;border-radius:5px;
   background:rgba(34,197,94,.13);border:1px solid rgba(34,197,94,.32);color:var(--green);white-space:nowrap;flex:0 0 auto}
 .rm .btn{min-height:50px;border-radius:13px;border:1px solid transparent;font-size:15px;font-weight:600;cursor:pointer;

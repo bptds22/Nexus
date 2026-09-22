@@ -15,7 +15,18 @@ import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
  *  seedées depuis les données MEQ/RSEQ et aucune ne s'appelle « Nexus … ». */
 export const isTestSchool = (name: string): boolean => /^nexus\b/i.test(name.trim());
 
-export interface TeamBadge { sport: string; division: string | null; gender: string | null }
+export interface TeamBadge {
+  sport: string;
+  division: string | null;
+  gender: string | null;
+  /** Nom de l'équipe — affiché SEULEMENT quand deux badges d'un même sport
+   *  seraient sinon identiques (« Chicoutimi » / « Chicoutimi 2 »). */
+  name: string | null;
+}
+
+/** Un programme du catalogue du rail : la clé est `cegep_programs.id`, le
+ *  libellé est le nom CANONIQUE — jamais le libellé propre à une école. */
+export interface ProgrammeCanonique { id: string; nom: string }
 
 export interface CegepRow {
   id: string;
@@ -61,8 +72,18 @@ export interface ViewerProfile {
 
 export interface SearchData {
   cegeps: CegepRow[];
-  /** Catalogue distinct, trié — la liste filtrable du rail. */
-  catalogueProgrammes: string[];
+  /** Catalogue du rail : un programme canonique par entrée, trié.
+   *
+   *  AVANT (jusqu'à 1.4.2) : la liste des LIBELLÉS distincts des écoles —
+   *  251 libellés pour 183 programmes réels (« Techniques policières » et
+   *  « DEC Techniques policières », dix façons d'écrire « Sciences de la
+   *  nature »…), et le filtre comparait le texte : choisir « Techniques
+   *  policières » rendait 1 cégep sur 14. Le filtre compare désormais
+   *  `programmeIds`. La carte, elle, garde le libellé de l'école. */
+  catalogueProgrammes: ProgrammeCanonique[];
+  /** Chaque libellé d'école distinct → son programme canonique. Sert à la
+   *  saisie libre (trouverProgramme), jamais à l'affichage du rail. */
+  libellesProgrammes: { libelle: string; id: string }[];
   regions: string[];
   sports: string[];
   /** Écoles (id) où le poste du viewer est en demande (niveau ≥ moyen). */
@@ -103,7 +124,7 @@ function logoDeLEcole(supabase: SupabaseClient, logoPath: string | null | undefi
 }
 
 export async function loadSearchData(supabase: SupabaseClient): Promise<SearchData> {
-  const [schools, teams, programs, pageContent, cards] = await Promise.all([
+  const [schools, teams, programs, pageContent, cards, canon] = await Promise.all([
     supabase.from("schools")
       // logo_url N'EST PAS lu : un champ chargé et jamais rendu est exactement
       // le piège qui a fait croire que la recherche affichait un logo. Voir
@@ -132,9 +153,18 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     ),
     supabase.from("school_page_content").select("school_id, nickname, logo_path, sell_text, color_primary"),
     supabase.from("school_campus_cards").select("school_id"),
+    // 183 lignes : le référentiel des programmes, pour les noms du rail.
+    supabase.from("cegep_programs").select("id, nom_canonique"),
   ]);
   // `programs` vient de fetchAllRows : c'est un tableau, sans .error.
   for (const r of [schools, teams, pageContent, cards]) if (r.error) throw r.error;
+  // `cegep_programs` n'est lisible que par `authenticated` : sans session (bancs
+  // d'essai du groupe (dev)), il rend zéro ligne, pas une erreur. Le rail
+  // retombe alors sur le premier libellé d'école rencontré — jamais d'entrée
+  // sans nom.
+  const nomCanonique = new Map(
+    ((canon.data ?? []) as { id: string; nom_canonique: string }[]).map((c) => [c.id, c.nom_canonique]),
+  );
 
   /* DÉDUPLICATION MULTI-SAISON — une équipe présente sur deux saisons est UNE
      équipe, donc UN badge. Sans elle, le tiroir « ÉQUIPES (n) » d'André-Grasset
@@ -170,7 +200,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     if (!vues.has(k)) {
       vues.add(k);
       const arr = teamsBy.get(t.school_id) ?? [];
-      arr.push({ sport, division: t.division, gender: t.gender });
+      arr.push({ sport, division: t.division, gender: t.gender, name: t.name });
       teamsBy.set(t.school_id, arr);
     }
     vuesParEcole.set(t.school_id, vues);
@@ -226,8 +256,23 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
-  const catalogueProgrammes = [...new Set(programs.map((p) => p.name.trim()).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "fr"));
+  const nomsCatalogue = new Map<string, string>();
+  for (const p of programs) {
+    if (!p.program_id || nomsCatalogue.has(p.program_id)) continue;
+    const nom = nomCanonique.get(p.program_id) ?? p.name.trim();
+    if (nom) nomsCatalogue.set(p.program_id, nom);
+  }
+  const catalogueProgrammes: ProgrammeCanonique[] = [...nomsCatalogue]
+    .map(([id, nom]) => ({ id, nom }))
+    .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  const vusLibelles = new Set<string>();
+  const libellesProgrammes: { libelle: string; id: string }[] = [];
+  for (const p of programs) {
+    const libelle = p.name.trim();
+    if (!p.program_id || !libelle || vusLibelles.has(libelle)) continue;
+    vusLibelles.add(libelle);
+    libellesProgrammes.push({ libelle, id: p.program_id });
+  }
   const regions = [...new Set(cegeps.map((c) => c.region).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
   const sports = [...new Set(cegeps.flatMap((c) => c.sports))].sort((a, b) => a.localeCompare(b, "fr"));
 
@@ -236,7 +281,56 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     ? await loadPostesEnDemande(supabase, viewer.positionId)
     : new Set<string>();
 
-  return { cegeps, catalogueProgrammes, regions, sports, postesEnDemande, viewer };
+  return { cegeps, catalogueProgrammes, libellesProgrammes, regions, sports, postesEnDemande, viewer };
+}
+
+/** Le programme qu'une saisie libre désigne (Entrée dans la barre de
+ *  recherche). Nom canonique d'abord ; à défaut, un LIBELLÉ d'école qui
+ *  contient la saisie, ramené à son programme — « DEC Techniques policières »
+ *  tapé tel quel filtre donc sur les 14 cégeps, pas sur le seul qui l'écrit
+ *  ainsi. `nq` est déjà normalisé par l'appelant. */
+export function trouverProgramme(
+  data: SearchData,
+  nq: string,
+  normaliser: (s: string) => string,
+): ProgrammeCanonique | null {
+  if (!nq) return null;
+  const direct = data.catalogueProgrammes.find((p) => normaliser(p.nom).includes(nq));
+  if (direct) return direct;
+  const viaLibelle = data.libellesProgrammes.find((l) => normaliser(l.libelle).includes(nq));
+  return viaLibelle ? data.catalogueProgrammes.find((p) => p.id === viaLibelle.id) ?? null : null;
+}
+
+/** Les équipes d'un cégep, UNE ligne par sport (décision BP 2026-09-22).
+ *  `details` porte les combinaisons division · genre ; le nom d'équipe ne
+ *  s'y ajoute que lorsque deux équipes du même sport tomberaient sur la même
+ *  combinaison. Le compteur « Équipes (n) » reste `teams.length` — le nombre
+ *  réel d'équipes, pas le nombre de lignes. */
+export interface LigneSport { sport: string; details: string[] }
+
+export function equipesParSport(teams: TeamBadge[]): LigneSport[] {
+  const parSport = new Map<string, TeamBadge[]>();
+  for (const t of teams) {
+    const arr = parSport.get(t.sport) ?? [];
+    arr.push(t);
+    parSport.set(t.sport, arr);
+  }
+  const combo = (t: TeamBadge) => [t.division, t.gender].filter(Boolean).join(" · ");
+  return [...parSport]
+    .sort(([a], [b]) => a.localeCompare(b, "fr"))
+    .map(([sport, liste]) => {
+      const occurrences = new Map<string, number>();
+      for (const t of liste) occurrences.set(combo(t), (occurrences.get(combo(t)) ?? 0) + 1);
+      const details = liste
+        .map((t) => {
+          const c = combo(t);
+          if ((occurrences.get(c) ?? 0) > 1 && t.name) return c ? `${c} (${t.name})` : t.name;
+          return c;
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, "fr"));
+      return { sport, details: [...new Set(details)] };
+    });
 }
 
 /** Athlète connecté. Visiteur non connecté / non-athlète → null : la page
