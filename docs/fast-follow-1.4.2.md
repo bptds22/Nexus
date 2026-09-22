@@ -1144,3 +1144,33 @@ La cascade de partage (`lib/partage/partagerLien.ts`) essaie déjà
 Le lien, lui, reste web : `https://nexussports.ca/i/<jeton>` — une recrue qui
 s'inscrit DANS l'app n'est pas attribuée (pas de liens universels, décision
 BP) ; il lui reste la déclaration par courriel.
+
+---
+
+## 33. Rattachements `school_programs.program_id` douteux (au registre, pas commencé)
+
+**Décision BP, 2026-09-22 : plus tard.** Relevé pendant le diagnostic des
+doublons de « Trouver mon cégep ». Le rail et le filtre comparent désormais
+`program_id` (1.4.3) : un rattachement faux ne crée plus de doublon visible,
+mais il place un cégep sous le mauvais programme — ou l'en retire.
+
+Tout vient du seed du 2026-07-24 (`source = 'seed'` sur les 1 263 lignes,
+aucune retouche d'école). Cas relevés :
+
+- le libellé **« Sciences humaines »** pointe vers `300.A1` dans certains
+  cégeps et vers `300.M1` (avec mathématiques) dans d'autres ;
+- les profils de **Maisonneuve** portent `code = 200.B0` mais sont rattachés à
+  `200.B1` ; sa ligne générique n'a pas de code ;
+- « DEC Sciences humaines : profil **Psychologie** et relations humaines » est
+  rattaché à `300.A2` « Sciences humaines gestion plus » ; « Relations et
+  développement international » à `300.A4` « gestion » ;
+- `cegep_programs` porte des entrées « canoniques » qui ressemblent à des noms
+  maison (« Sciences humaines gestion plus », « Arts, lettres et communication
+  Xtra ») — à confronter à la nomenclature officielle du Ministère.
+
+**Avant d'y toucher :** `cegep_programs` sert aussi aux recruteurs
+(« Programme offert chez nous ») et au score « Pour moi » (`programmes_vises`
+→ `cegep_program_labels.program_id`). Corriger un rattachement déplace des
+cégeps dans ces trois surfaces à la fois. Et l'éditeur de page école réécrit
+la liste d'un bloc (`replace_school_programs`) : une correction en base peut
+être défaite par la prochaine édition de l'école.
