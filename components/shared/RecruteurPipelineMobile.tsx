@@ -19,7 +19,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
@@ -42,7 +42,9 @@ import {
   activeFilterCount,
   FACETS,
   EMPTY_FILTERS,
+  QUICK_FILTERS,
   type PipelineFilters,
+  type QuickKey,
 } from "@/lib/pipeline/filterPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useUpdatePipelineStage } from "@/lib/queries/recruiter/useUpdatePipelineStage";
@@ -644,6 +646,7 @@ function PipelineMenuSheet({
   open, onClose,
   sortBy, setSortBy,
   filters, setFilters,
+  quick, setQuick,
   focusMode, setFocusMode,
   cards,
   cardsFiltrees,
@@ -655,6 +658,11 @@ function PipelineMenuSheet({
   setSortBy: (v: PipelineSortMode) => void;
   filters: PipelineFilters;
   setFilters: (updater: (f: PipelineFilters) => PipelineFilters) => void;
+  /** Chips rapides (Lot « relances », parité avec le web) — pour l'instant
+   *  la seule offerte côté mobile est « relance », pour ne pas faire
+   *  apparaître grade/étoiles/vidéo qui n'ont jamais eu de chip ici. */
+  quick: QuickKey[];
+  setQuick: (updater: (q: QuickKey[]) => QuickKey[]) => void;
   focusMode: boolean;
   setFocusMode: (v: boolean) => void;
   cards: PipelineKanbanCard[];
@@ -686,7 +694,9 @@ function PipelineMenuSheet({
                 .filter((x) => isFacetUseful(x.options)),
     [cards, filters],
   );
-  const nActiveFilters = activeFilterCount(filters);
+  const nActiveFilters = activeFilterCount(filters, { quick });
+  const relanceLabel = QUICK_FILTERS.find((q) => q.key === "relance")?.label ?? "À relancer";
+  const relanceOn = quick.includes("relance");
 
   return createPortal(
     <AnimatePresence>
@@ -836,6 +846,24 @@ function PipelineMenuSheet({
                 </div>
               </section>
 
+              {/* Chip « relance » (parité web/mobile) — section à part, PAS
+                  nichée sous `facetLists.length > 0` : cette chip doit exister
+                  même les jours où aucune facette n'offre de choix. */}
+              <section>
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Relances</h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic("Light");
+                    setQuick((cur) => cur.includes("relance") ? cur.filter((k) => k !== "relance") : [...cur, "relance"]);
+                  }}
+                  aria-pressed={relanceOn}
+                  className={`inline-flex items-center gap-1.5 border rounded-full px-3 py-1.5 text-[13px] transition-colors ${relanceOn ? "border-[#E63946]/40 text-white bg-[#E63946]/15" : "border-white/10 text-[#9CA3AF] active:bg-white/[0.03]"}`}
+                >
+                  {relanceLabel}
+                </button>
+              </section>
+
               {/* Section Filtres (Lot 2b) — CHIPS, PAS MobilePicker.
                   MobilePicker est un sélecteur à valeur UNIQUE
                   (`onChange(v: string | null)`), et il est partagé par
@@ -911,7 +939,7 @@ function PipelineMenuSheet({
                 <button
                   type="button"
                   onClick={() => {
-                    setSortBy(DEFAULT_PIPELINE_SORT); setFilters(() => EMPTY_FILTERS); setFocusMode(false);
+                    setSortBy(DEFAULT_PIPELINE_SORT); setFilters(() => EMPTY_FILTERS); setQuick(() => []); setFocusMode(false);
                     toast.info({ message: "Filtres réinitialisés" });
                   }}
                   className="w-full px-4 py-3.5 rounded-2xl text-[14px] text-[#E63946] font-bold active:bg-[#E63946]/10 transition-colors"
@@ -1668,6 +1696,7 @@ function SkeletonList() {
 ═══════════════════════════════════════════════════════════════ */
 
 export function RecruteurPipelineMobile() {
+  const searchParams = useSearchParams();
   const { tier, loading: tierLoading } = useSubscription();
   /* ── DÉCISION PRODUIT (BP, 2026-09-10) — écrite, jamais héritée ──────
      LE MODE DÉMO GRATUIT DE « MON PROCESSUS » EST ASSUMÉ.
@@ -1713,8 +1742,15 @@ export function RecruteurPipelineMobile() {
 
   // Iter 6.1b — ⋮ menu state
   const [menuOpen, setMenuOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<PipelineSortMode>(DEFAULT_PIPELINE_SORT);
+  /* ?filtre=relances (parité avec app/recruteur/pipeline/page.tsx) : chip
+     active + tri « relance la plus proche » dès le premier rendu. */
+  const [sortBy, setSortBy] = useState<PipelineSortMode>(() =>
+    searchParams.get("filtre") === "relances" ? "next_action_asc" : DEFAULT_PIPELINE_SORT,
+  );
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
+  const [quick, setQuick] = useState<QuickKey[]>(() =>
+    searchParams.get("filtre") === "relances" ? ["relance"] : [],
+  );
   const [focusMode, setFocusMode] = useState(false);
 
   // Mutation pour le swipe
@@ -1731,7 +1767,10 @@ export function RecruteurPipelineMobile() {
 
      Le TOTAL, lui, reste brut : c'est « combien d'athlètes je suis », une
      réponse qui ne doit pas bouger quand je regarde un sous-ensemble. */
-  const cardsFiltrees = useMemo(() => filterPipelineCards(cards, filters), [cards, filters]);
+  const cardsFiltrees = useMemo(
+    () => filterPipelineCards(cards, filters, { quick }),
+    [cards, filters, quick],
+  );
 
   const cardsByStage = useMemo(() => {
     const grouped: Record<string, PipelineKanbanCard[]> = {};
@@ -1758,10 +1797,10 @@ export function RecruteurPipelineMobile() {
     // FILTRER PUIS TRIER — même ordre qu'au web. Les facettes viennent de
     // lib/pipeline/filterPipelineCards, le tri de sortPipelineCards : les
     // deux surfaces appellent exactement les mêmes fonctions.
-    let list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters);
+    let list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters, { quick });
     if (focusMode) list = list.filter((c) => c.recruitment_status !== "RECRUTE");
     return sortPipelineCards(list, sortBy);
-  }, [cardsByStage, activeStage, filters, focusMode, sortBy]);
+  }, [cardsByStage, activeStage, filters, quick, focusMode, sortBy]);
 
   // Index du stage actif pour les bornes du swipe (canSwipeLeft/Right)
   const activeStageIndex = useMemo(
@@ -1838,6 +1877,17 @@ export function RecruteurPipelineMobile() {
     window.setTimeout(() => setSelectedCard(null), 320);
   };
 
+  /* ?athlete=<id> (clic sur un nom précis dans « Relances aujourd'hui ») :
+     ouvre directement sa fiche pipeline — même mécanique que le SlideOver
+     web. `cards` charge de façon async, l'effet réessaie à chaque changement
+     jusqu'à ce que la carte apparaisse. `card.id` est l'athlete_id. */
+  useEffect(() => {
+    const athleteId = searchParams.get("athlete");
+    if (!athleteId) return;
+    const found = cards.find((c) => c.id === athleteId);
+    if (found) handleCardTap(found);
+  }, [searchParams, cards]);
+
   // Fix 9 — ⋮ menu sheet
   const handleMenuTap = () => {
     setMenuOpen(true);
@@ -1911,7 +1961,7 @@ export function RecruteurPipelineMobile() {
 
       <PipelineHeader
         totalCount={cards.length}
-        nActiveFilters={activeFilterCount(filters)}
+        nActiveFilters={activeFilterCount(filters, { quick })}
         onFilterTap={handleMenuTap}
       />
 
@@ -2010,6 +2060,7 @@ export function RecruteurPipelineMobile() {
         onClose={() => setMenuOpen(false)}
         sortBy={sortBy} setSortBy={setSortBy}
         filters={filters} setFilters={setFilters}
+        quick={quick} setQuick={setQuick}
         focusMode={focusMode} setFocusMode={setFocusMode}
         cards={cards}
         cardsFiltrees={cardsFiltrees}

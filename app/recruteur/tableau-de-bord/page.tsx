@@ -163,8 +163,8 @@ function RecruteurTableauDeBordDesktop() {
       {canUsePipeline && relanceCards.length > 0 && (
         <RelancesDuJour
           cards={relanceCards}
-          onTapAthlete={(athleteId) => { if (athleteId) router.push(`/recruteur/athletes/${athleteId}`); }}
-          onTapToutVoir={() => router.push("/recruteur/pipeline")}
+          onTapAthlete={(athleteId) => { if (athleteId) router.push(`/recruteur/pipeline?athlete=${athleteId}`); }}
+          onTapToutVoir={() => router.push("/recruteur/pipeline?filtre=relances")}
         />
       )}
 

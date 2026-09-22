@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback, memo, useEffect } from "react";
+import { useState, useMemo, useCallback, memo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import Link from "next/link";
@@ -1176,11 +1177,20 @@ function FacetDropdown({
 ═══════════════════════════════════════════════════════════════ */
 
 export default function Page() {
-  return <PipelinePageContent />;
+  /* LA BASCULE CAPACITOR SE FAIT ICI, PAS DANS PipelinePageContent — même
+     patron et même raison que RecherchePage (app/recruteur/recherche/page.tsx) :
+     lire `?filtre=relances`/`?athlete=` exige useSearchParams(), qui exige un
+     Suspense. Les DEUX branches restent dans le Suspense : RecruteurPipelineMobile
+     lit désormais aussi l'URL (parité relances web/mobile). */
+  return (
+    <Suspense>
+      {IS_CAPACITOR ? <RecruteurPipelineMobile /> : <PipelinePageContent />}
+    </Suspense>
+  );
 }
 
 function PipelinePageContent() {
-  if (IS_CAPACITOR) return <RecruteurPipelineMobile />;
+  const searchParams = useSearchParams();
 
   // Migration TanStack (iter 5.3b) — kanban cards + competitorMap via hook.
   // Cache 60s → navigation tab → Pipeline instantanée.
@@ -1198,8 +1208,15 @@ function PipelinePageContent() {
   const [actionPopover, setActionPopover] = useState<PipelineKanbanCard | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
-  const [quick, setQuick] = useState<QuickKey[]>([]);
-  const [sortBy, setSortBy] = useState<PipelineSortMode>(DEFAULT_PIPELINE_SORT);
+  /* ?filtre=relances (bouton « Voir les N relances » du dashboard) : chip
+     ACTIVE dès le premier rendu, triée relance la plus proche d'abord — pas
+     un useEffect qui l'activerait un tick après affichage du kanban entier. */
+  const [quick, setQuick] = useState<QuickKey[]>(() =>
+    searchParams.get("filtre") === "relances" ? ["relance"] : [],
+  );
+  const [sortBy, setSortBy] = useState<PipelineSortMode>(() =>
+    searchParams.get("filtre") === "relances" ? "next_action_asc" : DEFAULT_PIPELINE_SORT,
+  );
   const now = useClientNow();
 
   // Free users get a read-only "demo" experience: kanban renders
@@ -1376,6 +1393,17 @@ function PipelinePageContent() {
     const fresh = cards.find((c) => c.id === card.id) || card;
     setSelectedCard(fresh);
   }, [cards]);
+
+  /* ?athlete=<id> (clic sur un nom précis dans « Relances aujourd'hui ») :
+     ouvre directement sa fiche pipeline, pas la liste entière. `cards` charge
+     de façon async — l'effet réessaie à chaque changement de `cards` jusqu'à
+     ce que la carte apparaisse. `card.id` est l'athlete_id (usePipelineCards). */
+  useEffect(() => {
+    const athleteId = searchParams.get("athlete");
+    if (!athleteId) return;
+    const found = cards.find((c) => c.id === athleteId);
+    if (found) setSelectedCard(found);
+  }, [searchParams, cards]);
 
   /* LES FACETTES (Lot 2b) — le sélecteur « sport » a disparu : le sport est
      devenu une facette parmi cinq, dans le même système. Deux mécaniques de
