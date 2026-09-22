@@ -33,6 +33,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { NexusLogoSvg } from "./NexusLogoSvg";
 import { SocialButtonsMobile } from "./SocialButtonsMobile";
 import { triggerHaptic } from "@/lib/haptics";
+import { openExternal } from "@/components/shared/settings/utils";
 
 
 interface LoginMobileProps {
@@ -99,10 +100,13 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
   }
 
   function handleForgotPassword() {
-    toast.info({
-      message: "Bientôt disponible",
-      detail: "La réinitialisation par courriel arrive dans une prochaine mise à jour.",
-    });
+    void triggerHaptic("Light");
+    // La réinitialisation se fait sur la page web (formulaire + envoi du
+    // courriel, message neutre anti-énumération déjà en place côté web) —
+    // le natif ouvre un navigateur in-app plutôt que de dupliquer le form.
+    void openExternal(
+      `${process.env.NEXT_PUBLIC_APP_URL || "https://nexussports.ca"}/mot-de-passe-oublie`,
+    );
   }
 
   function handleBackToWelcome() {
