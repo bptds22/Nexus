@@ -3,7 +3,7 @@
 -- Une seule transaction, ANNULÉE à la fin : rien ne reste en base.
 -- Rôles réels : SET LOCAL ROLE authenticated + request.jwt.claims.
 --
--- Prérequis : migration 20260923210000 appliquée ; fixtures locales Mathis
+-- Prérequis : migration 20260923161507 appliquée ; fixtures locales Mathis
 -- (owner = c1.coach@preuve.local), Maxime et Léa (sans owner, dans l'équipe
 -- dddddddd-…-02, sans staff).
 -- Lancer : docker cp + psql -f (jamais Get-Content | psql).

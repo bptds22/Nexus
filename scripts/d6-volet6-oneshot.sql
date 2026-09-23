@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- D6 volet 6 — ONE-SHOT données (plan §6), APRÈS la migration 20260923210000.
+-- D6 volet 6 — ONE-SHOT données (plan §6), APRÈS la migration 20260923161507.
 --
 -- Décisions BP 2026-09-23 :
 --   D1  les refus machine d'athlètes qui ont un coach repassent EN_ATTENTE,

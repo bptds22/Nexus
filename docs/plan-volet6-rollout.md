@@ -10,7 +10,7 @@
 
 | Fichier | Rôle |
 |---|---|
-| `supabase/migrations/20260923210000_d6_volet6_autoevaluation_proposition.sql` | le DDL (une migration, 5 volets, pré-vol + contrôles intégraux) |
+| `supabase/migrations/20260923161507_d6_volet6_autoevaluation_proposition.sql` | le DDL (une migration, 5 volets, pré-vol + contrôles intégraux) |
 | `scripts/d6-volet6-oneshot.sql` | les données, version psql : `-v mode=dryrun \| apply \| rollback` |
 | `scripts/d6-volet6-oneshot-prod.sql` | les mêmes, en SQL pur (MCP) : blocs A / B / C |
 | `scripts/d6-volet6-rollback-ddl.sql` | retour arrière du DDL |
@@ -161,7 +161,7 @@ touchés par la migration ont été comparés prod/local avant les preuves.
 | Étape | Quoi | Condition |
 |---|---|---|
 | 0 | Local : migration + preuves + one-shot + rollbacks | **fait** (§9) |
-| 1 | **Migration** `20260923210000` en prod (`apply_migration`) — pré-vol intégré : état attendu + 0 `EN_ATTENTE` | GO BP |
+| 1 | **Migration** `20260923161507` en prod (`apply_migration`) — pré-vol intégré : état attendu + 0 `EN_ATTENTE` | **FAIT le 2026-09-23** — voir « Journal » ci-dessous |
 | 2 | **One-shot** : `mode=dryrun` → relecture (attendu 4 / 2 / 4 / 0 / 12) → `mode=apply` | GO BP séparé · 1 appliquée |
 | 3 | **UI web** : fusion de la branche (diff `/athlete/profil`) | 1 + 2 appliqués |
 | 4 | Mobile 1.4.x : miroir du masquage + restauration `StarSuggestRow` / `DistinctionsSuggestRow` | lot mobile |
@@ -278,3 +278,26 @@ JWT, une transaction annulée, rejoué deux fois (dont après rollback/réapply)
 | — | UI : Mathis, refus machine | onglet « Rejetées (1) », motif affiché ✅ |
 
 Builds web + mobile OK, `npm test` 207/207. Lint de `/athlete/profil` = `main`.
+
+---
+
+## Journal de déploiement
+
+### Étape 1 — migration, appliquée en prod le 2026-09-23 (version `20260923161507`)
+
+- **Pré-vol (lecture seule)** : `trg_suggestion_transition` `5ab7…`, `apply_approved_suggestion`
+  `7f99…`, policies `187b…` — identiques au local prouvé ; 0 `EN_ATTENTE` ; aucune
+  fonction du volet présente.
+- **Apply** : contrôles intégrés passés (ACL, policies, listes disjointes, repli).
+- **Contre-vérifications indépendantes** :
+  - empreintes prod = local prouvé pour les 4 fonctions (`trg_suggestion_transition`
+    `68a9…`, `apply_approved_suggestion` `97ad…`, `peut_trancher_suggestion` `94c3…`,
+    `champs_autoevaluation_athlete` `338f…`) et les policies (`4cf2…`) ;
+  - ACL : `peut_trancher_suggestion` = `{authenticated, postgres, service_role}`,
+    `champs_autoevaluation_athlete` = `{postgres, service_role}` ;
+  - policies avant : 6, dont « Authenticated users update suggestions » (USING/CHECK
+    `auth.uid() IS NOT NULL`) ; après : 5 — insert `is_own_athlete`, lecture et
+    UPDATE coach `peut_trancher_suggestion` (UPDATE avec WITH CHECK), lecture
+    athlète et admin inchangées ;
+  - 0 `EN_ATTENTE` après.
+- Fichier renommé `20260923210000` → `20260923161507`.

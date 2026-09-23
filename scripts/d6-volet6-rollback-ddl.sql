@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- D6 volet 6 — ROLLBACK DDL de la migration 20260923210000.
+-- D6 volet 6 — ROLLBACK DDL de la migration 20260923161507.
 -- Rétablit l'état relevé en prod le 2026-09-23. Plan §7.
 --
 -- ⚠ ORDRE : UI d'abord (git revert du diff /athlete/profil), puis ce script,
