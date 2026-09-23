@@ -608,18 +608,13 @@ function RechercheContent() {
      est celui de la liste RENDUE, après les filtres client — ce que
      l'utilisateur a vu. `pret` attend aussi le refetch : avec
      keepPreviousData, l'ancienne grille resterait comptée sinon. */
-  /* `meCiblent` n'est PAS dans la liste fermée (CHECK) de
-     search_filter_events : les événements partent par lots, et une seule clé
-     refusée ferait échouer tout le lot — donc perdre aussi les autres filtres.
-     Retiré du journal jusqu'à l'élargissement du CHECK (migration à part). */
-  const filtresJournalises = useMemo(() => {
-    const copie: Partial<typeof filtres> = { ...filtres };
-    delete copie.meCiblent;
-    return copie as Omit<typeof filtres, "meCiblent">;
-  }, [filtres]);
+  // Toutes les clés de FiltresRecherche sont journalisées, `meCiblent`
+  // compris : la liste fermée de search_filter_events l'accepte depuis la
+  // migration 20260923170000 — à appliquer en prod AVANT ce code (sinon les
+  // lots qui la contiennent échouent en entier).
   const { journaliserReinitialisation, journaliserPanneauAvance } = useJournalFiltres({
     surface: "recruteur_recherche",
-    filtres: filtresJournalises,
+    filtres,
     defauts: FILTRES_DEFAUT,
     nbResultats: filtered.length,
     pret: !loading && !athletesFetching,
