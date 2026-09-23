@@ -138,7 +138,7 @@ function RecruteurTableauDeBordDesktop() {
     offertParMonCegep: false,
     tier: tier ?? "free",
   });
-  const PALIER_GRATUIT = "Mon processus est réservé aux membres Pro.";
+  const PALIER_GRATUIT = "Réservé aux forfaits payants";
   const valeurPipeline = (predicat: (c: (typeof relanceCards)[number]) => boolean): ValeurTuile =>
     tierEnCours ? { etat: "chargement" }
     : !canUsePipeline ? { etat: "sans_objet", motif: PALIER_GRATUIT }
@@ -153,23 +153,29 @@ function RecruteurTableauDeBordDesktop() {
   const tuiles: Tuile[] = [
     {
       cle: "relances", libelle: "Relances à faire", accent: ROUGE,
+      aide: "Dues aujourd'hui ou en retard",
       href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.relances}`,
       valeur: valeurPipeline(estRelanceAFaire),
     },
     {
       cle: "ciblent", libelle: "Te ciblent", accent: BLANC,
+      aide: "Ont ton cégep dans leurs cibles",
       href: `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`,
       valeur: !aUnCegepRattache
-        ? { etat: "sans_objet", motif: "Aucun cégep rattaché à ton compte : on ne peut pas savoir qui le cible." }
+        ? { etat: "sans_objet", motif: "Aucun cégep rattaché au compte" }
         : cibles ? { etat: "chiffre", n: cibles.length } : { etat: "chargement" },
     },
     {
       cle: "visites", libelle: "Visites à venir", accent: ROUGE,
+      aide: "Planifiées dès aujourd'hui",
       href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.visites}`,
       valeur: valeurPipeline(estVisiteAVenir),
     },
     {
       cle: "nouveaux", libelle: "Nouveaux (10 j)", accent: BLANC,
+      /* « créés », pas « inscrits » : le filtre lit athletes.created_at, et
+         une fiche semée par un coach compte aussi. */
+      aide: "Profils créés depuis 10 jours",
       href: `/recruteur/recherche?${CLES_FILTRES.filterNewOnly}=true`,
       valeur: nouveaux ? { etat: "chiffre", n: nouveaux.length } : { etat: "chargement" },
     },
