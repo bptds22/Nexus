@@ -3,11 +3,12 @@
 /* ═══════════════════════════════════════════════════════════════
    useCiblesSurMonCegep — quels athlètes ont ciblé MON cégep.
 
-   Source unique du bloc du tableau de bord (lot 2), de la pastille
+   Source unique de la tuile « Te ciblent » du tableau de bord (le bloc
+   détaillé du lot 2 a été retiré le 2026-09-23), de la pastille
    « Te cible » de la fiche athlète (lot 3) et du filtre « Te ciblent » de
    la recherche (lot 5, qui a retiré la pastille des cartes). Un seul appel
    réseau, un seul cache TanStack : les surfaces lisent la même vérité au
-   même instant — le compte du filtre ne peut pas contredire celui du bloc.
+   même instant — le compte du filtre ne peut pas contredire celui de la tuile.
 
    CE QUE LA RPC REND, ET CE QU'ELLE NE REND PAS.
    `athletes_targeting_my_cegep()` (migration 20260922171500) ne projette

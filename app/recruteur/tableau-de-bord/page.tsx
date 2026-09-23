@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import ActionBar from "./_components/ActionBar";
 import KpiCards from "./_components/KpiCards";
 import TrendingAthletes from "./_components/TrendingAthletes";
 import RecruiterActivityFeed from "./_components/RecruiterActivityFeed";
-import CiblesSurMonCegep from "./_components/CiblesSurMonCegep";
 import TuilesTableauDeBord, { type Tuile, type ValeurTuile } from "./_components/TuilesTableauDeBord";
 import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
@@ -18,7 +16,6 @@ import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes
 import { useActivityFeed } from "@/lib/queries/recruiter/useActivityFeed";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
 import { useSubscription } from "@/lib/hooks/useSubscription";
-import { RelancesDuJour } from "@/components/shared/dashboard/RelancesDuJour";
 import { RecruteurDashboardMobile } from "@/components/shared/RecruteurDashboardMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -98,7 +95,6 @@ function RecruteurTableauDeBordDesktop() {
   // Migration TanStack (iter 5.2) — 4 hooks parallèles remplacent le mega-useEffect.
   // Avantage : la 2e visite du dashboard est instantanée (cache hit), refetch
   // silencieux en background après staleTime.
-  const router = useRouter();
   const { data: header } = useDashboardHeader();
   const { data: kpiBundle } = useDashboardKpi();
   const { data: trendingAthletes = [] } = useTrendingAthletes();
@@ -148,26 +144,32 @@ function RecruteurTableauDeBordDesktop() {
     : !canUsePipeline ? { etat: "sans_objet", motif: PALIER_GRATUIT }
     : !pipelineData ? { etat: "chargement" }
     : { etat: "chiffre", n: relanceCards.filter(predicat).length };
+  /* Palette de l'entonnoir « Mon processus » juste au-dessus : rouge, gris,
+     blanc — rien d'autre (décision BP 2026-09-23). Rouge = ce qui appelle un
+     geste de ta part (relancer, préparer une visite — la visite est une étape
+     d'engagement, rouge dans l'entonnoir) ; blanc = information ; gris = 0 ou
+     « — » (géré par TuilesTableauDeBord). */
+  const ROUGE = "#E63946", BLANC = "#FFFFFF";
   const tuiles: Tuile[] = [
     {
-      cle: "relances", libelle: "Relances à faire", accent: "#F59E0B",
+      cle: "relances", libelle: "Relances à faire", accent: ROUGE,
       href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.relances}`,
       valeur: valeurPipeline(estRelanceAFaire),
     },
     {
-      cle: "ciblent", libelle: "Te ciblent", accent: "#22C55E",
+      cle: "ciblent", libelle: "Te ciblent", accent: BLANC,
       href: `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`,
       valeur: !aUnCegepRattache
         ? { etat: "sans_objet", motif: "Aucun cégep rattaché à ton compte : on ne peut pas savoir qui le cible." }
         : cibles ? { etat: "chiffre", n: cibles.length } : { etat: "chargement" },
     },
     {
-      cle: "visites", libelle: "Visites à venir", accent: "#A855F7",
+      cle: "visites", libelle: "Visites à venir", accent: ROUGE,
       href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.visites}`,
       valeur: valeurPipeline(estVisiteAVenir),
     },
     {
-      cle: "nouveaux", libelle: "Nouveaux (10 j)", accent: "#F5F5F5",
+      cle: "nouveaux", libelle: "Nouveaux (10 j)", accent: BLANC,
       href: `/recruteur/recherche?${CLES_FILTRES.filterNewOnly}=true`,
       valeur: nouveaux ? { etat: "chiffre", n: nouveaux.length } : { etat: "chargement" },
     },
@@ -210,44 +212,18 @@ function RecruteurTableauDeBordDesktop() {
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
       </div>
 
-      {/* Zone 0 : les 4 tuiles — remplacent le bandeau « nouveaux athlètes »
-          d'ActionBar. */}
-      <TuilesTableauDeBord tuiles={tuiles} />
-
-      {/* Zone 1 : Action Bar — ne porte plus que les réponses de coachs
-          (une notification, pas un compteur de tuile). */}
+      {/* Zone 1 : Action Bar — les réponses de coachs (une notification, pas
+          un compteur de tuile). */}
       <ActionBar data={actionBarData} />
 
-      {/* LOT 2 — « N athlètes ciblent ton cégep ». Placé juste sous ActionBar,
-          dans la zone « ce qui demande ton attention », et AU-DESSUS des
-          relances : une cible est un signal entrant, une relance est une
-          tâche sortante. Le composant se masque tout seul — pas de cégep
-          rattaché, ou aucune cible → il rend null. Aucun FeatureGate : le
-          gratuit le voit (les identités restent masquées par la RPC de
-          cartes, comme partout ailleurs). */}
-      <CiblesSurMonCegep />
-
-      {/* Relances dues — AU-DESSUS du funnel, comme sur mobile : ce qui est en
-          retard passe avant l'état d'ensemble. Le funnel « Mon processus » vit
-          ici dans KpiCards, juste en dessous.
-          Gaté `canUsePipeline` : sur un compte Free l'encart n'existe pas ET le
-          pipeline n'est même pas chargé.
-
-          PLEINE LARGEUR, comme ActionBar au-dessus et KpiCards en dessous. Un
-          `max-w-[520px]` vivait ici — le seul de la page. Il laissait 760px de
-          vide à droite dans un conteneur de 1280 et faisait flotter la carte
-          entre deux blocs pleine largeur. Cette page n'a que DEUX dispositions :
-          pleine largeur, ou la grille 5 colonnes découpée 3/2 (zones 3+4). */}
-      {canUsePipeline && relanceCards.length > 0 && (
-        <RelancesDuJour
-          cards={relanceCards}
-          onTapAthlete={(athleteId) => { if (athleteId) router.push(`/recruteur/pipeline?athlete=${athleteId}`); }}
-          onTapToutVoir={() => router.push("/recruteur/pipeline?filtre=relances")}
-        />
-      )}
-
-      {/* Zone 2: KPI Cards + Pipeline */}
+      {/* Zone 2 : Mon processus de recrutement (entonnoir + KPI). */}
       <KpiCards data={kpiData} pipelineCounts={pipelineCounts} />
+
+      {/* Zone 2b : les 4 tuiles, SOUS l'entonnoir (décision BP 2026-09-23).
+          Elles remplacent les blocs détaillés « N athlètes ciblent ton cégep »
+          et « Relances aujourd'hui », retirés : la tuile donne le chiffre et
+          ouvre la liste filtrée. */}
+      <TuilesTableauDeBord tuiles={tuiles} />
 
       {/* Zone 3 + 4: Trending Athletes + Activity Feed */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
