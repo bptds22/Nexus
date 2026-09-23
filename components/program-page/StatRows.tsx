@@ -8,6 +8,7 @@ import * as React from "react";
 import { Heart, Check } from "lucide-react";
 import GhostLayer from "./GhostLayer";
 import type { ProgramPageContent } from "./content";
+import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function StatRows({
   schoolName,
@@ -60,6 +61,9 @@ export default function StatRows({
               <span className="t">{inTargets ? "Dans tes cibles" : "Rajouter dans mes cibles"}</span>
             </button>
             <div className="hf-note"><b>{`${followers} athlètes`}</b> suivent ce collège</div>
+            {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Cibler
+                n'est pas un signet privé : le cégep le voit. */}
+            <div className="hf-disc">{divulgationCible(inTargets)}</div>
           </div>
         </div>
       </div>

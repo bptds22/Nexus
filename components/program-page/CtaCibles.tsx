@@ -3,19 +3,31 @@
 // components/program-page/CtaCibles.tsx
 // CTA band — "Ajouter à mes cibles". Shares ProgramPage's single targets state
 // (= S1 follow button) via props — no local state, no second backend.
-// TODO(bloc2): athlete_targets table + RLS + notification + idempotence.
+//
+// LE « NOTIFIÉ » A ÉTÉ RETIRÉ (lot 0, 2026-09-22). Cette bande affichait
+// « {nom} a été notifié » / « {nom} sera notifié de ton intérêt ». C'était
+// FAUX en production : rien n'écoute `athlete_targets`, aucune notification
+// n'est émise, et aucun recruteur ne pouvait même LIRE la ligne (la table
+// n'a qu'une policy, « Athletes manage own targets »). Le `TODO(bloc2): …
+// notification …` qui vivait ici n'a jamais été levé — la promesse, elle,
+// était partie en prod.
+//
+// La phrase la remplace par ce qui va RÉELLEMENT se produire, depuis la
+// source unique `lib/cibles/divulgation.ts` (six surfaces, une phrase).
+// La prop `notifyName` a disparu avec la promesse : elle ne servait qu'à
+// elle. `content.ctaNotifyName` reste dans le type de contenu (l'éditeur
+// de page l'écrit encore) mais plus personne ne le lit ici.
 
 import * as React from "react";
 import { GhostWords } from "@/components/shared/dna";
+import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function CtaCibles({
   ctaTitle,
-  notifyName,
   inTargets,
   onToggleTargets,
 }: {
   ctaTitle: string;
-  notifyName: string;
   inTargets: boolean;
   onToggleTargets: () => void;
 }) {
@@ -60,14 +72,15 @@ export default function CtaCibles({
           marginTop: 14,
         }}
       >
+        {divulgationCible(inTargets)}
         {inTargets ? (
           <>
-            ✓ {notifyName} a été notifié · le programme est dans{" "}
+            {" "}· le programme est dans{" "}
             <b style={{ color: "var(--p-soft)" }}>Mon parcours → Mes cibles</b>
           </>
         ) : (
           <>
-            {notifyName} sera notifié de ton intérêt · retrouve tes cibles dans{" "}
+            {" "}· retrouve tes cibles dans{" "}
             <b style={{ color: "var(--p-soft)" }}>Mon parcours</b>
           </>
         )}

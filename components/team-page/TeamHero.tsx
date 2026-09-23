@@ -12,6 +12,7 @@ import Image from "next/image";
 import { Heart } from "lucide-react";
 import SocialIcons from "@/components/marketing/SocialIcons";
 import type { TeamData } from "./content";
+import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function TeamHero({
   team, cible, onToggleCible,
@@ -94,6 +95,10 @@ export default function TeamHero({
           <Heart size={17} fill="currentColor" aria-hidden />
           {cible ? "Dans tes cibles" : "Rajouter à mes cibles"}
         </button>
+        {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Le bouton
+            écrit `athlete_targets(school_id)` : on cible le CÉGEP depuis une
+            page équipe, donc la phrase parle bien des recruteurs du cégep. */}
+        <p className="cibles-disc">{divulgationCible(cible)}</p>
       </div>
     </div>
   );
