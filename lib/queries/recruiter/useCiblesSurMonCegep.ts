@@ -3,11 +3,11 @@
 /* ═══════════════════════════════════════════════════════════════
    useCiblesSurMonCegep — quels athlètes ont ciblé MON cégep.
 
-   Source unique des lots 2 (bloc du tableau de bord) et 3 (pastille
-   « Te cible » sur la carte et la fiche). Un seul appel réseau, un seul
-   cache TanStack : les trois surfaces lisent la même vérité au même
-   instant, ce qui évite qu'une carte affiche la pastille pendant que le
-   compteur du tableau de bord dise autre chose.
+   Source unique du bloc du tableau de bord (lot 2), de la pastille
+   « Te cible » de la fiche athlète (lot 3) et du filtre « Te ciblent » de
+   la recherche (lot 5, qui a retiré la pastille des cartes). Un seul appel
+   réseau, un seul cache TanStack : les surfaces lisent la même vérité au
+   même instant — le compte du filtre ne peut pas contredire celui du bloc.
 
    CE QUE LA RPC REND, ET CE QU'ELLE NE REND PAS.
    `athletes_targeting_my_cegep()` (migration 20260922171500) ne projette
@@ -81,9 +81,8 @@ export function useCiblesSurMonCegep(actif = true) {
 
 /**
  * Index athleteId → date de ciblage, pour les surfaces qui testent
- * l'appartenance ligne par ligne (cartes de recherche, fiche athlète).
- * Une Map plutôt qu'un `.find()` dans le rendu : la recherche affiche
- * jusqu'à plusieurs centaines de cartes.
+ * l'appartenance d'un athlète (fiche athlète). Une Map plutôt qu'un
+ * `.find()` dans le rendu.
  *
  * Rend une Map VIDE tant que la requête n'a pas répondu, ou si le compte
  * n'a pas de cégep. Une pastille absente est le bon défaut : on n'affirme

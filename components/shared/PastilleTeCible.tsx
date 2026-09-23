@@ -1,8 +1,9 @@
 /* ─────────────────────────────────────────────────────────────────
    LOT 3 — pastille « Te cible · depuis le … »
 
-   Posée sur les surfaces recruteur qui montrent un athlète : carte de
-   recherche (grille + liste) et fiche. UN composant, pas trois copies —
+   Posée sur la fiche athlète, côté recruteur. Elle était aussi sur les
+   cartes de recherche (grille + liste) jusqu'au lot 5 : le filtre « Te
+   ciblent » l'y remplace (décision BP 2026-09-23). UN composant, pas des copies —
    même raison que `lib/cibles/divulgation.ts` : trois pastilles
    recopiées dérivent, et la quatrième surface naît sans pastille.
 

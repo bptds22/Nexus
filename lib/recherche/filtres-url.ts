@@ -59,6 +59,10 @@ export interface FiltresRecherche {
   filterOuvertAnglophone: boolean;
   offertParMonCegep: boolean;
   filterNewOnly: boolean;
+  /** LOT 5 — athlètes qui ont mis le cégep du recruteur dans leurs cibles
+   *  (RPC athletes_targeting_my_cegep). Filtre CLIENT, juste parce que la
+   *  recherche charge tout (p_limit null) — registre §35. */
+  meCiblent: boolean;
   /** Libellés de programmes CÉGEP. La conversion libellé → programme se fait
    *  chez l'appelant, via le catalogue — pas ici. */
   progFilterIds: string[];
@@ -87,6 +91,7 @@ export const FILTRES_DEFAUT: FiltresRecherche = Object.freeze({
   filterOuvertAnglophone: false,
   offertParMonCegep: false,
   filterNewOnly: false,
+  meCiblent: false,
   progFilterIds: [],
 });
 
@@ -117,6 +122,7 @@ const CLES: Record<keyof FiltresRecherche, string> = {
   filterOuvertAnglophone: "anglo",
   offertParMonCegep: "mon_cegep",
   filterNewOnly: "nouveau",
+  meCiblent: "me_ciblent",
   progFilterIds: "prog",
 };
 
@@ -168,6 +174,7 @@ export function decoderFiltres(params: SourceParams): FiltresRecherche {
     filterOuvertAnglophone: bool("filterOuvertAnglophone"),
     offertParMonCegep: bool("offertParMonCegep"),
     filterNewOnly: bool("filterNewOnly"),
+    meCiblent: bool("meCiblent"),
     /* Liste séparée par des virgules. On filtre les segments vides : "a,,b"
        et "a,b," ne doivent pas produire d'identifiant vide, qui ne
        correspondrait à rien au catalogue et fausserait le compteur de
@@ -219,6 +226,7 @@ export function encoderFiltres(f: FiltresRecherche): string {
   poserBool("filterOuvertAnglophone");
   poserBool("offertParMonCegep");
   poserBool("filterNewOnly");
+  poserBool("meCiblent");
 
   if (f.progFilterIds.length) p.set(CLES.progFilterIds, f.progFilterIds.join(","));
 

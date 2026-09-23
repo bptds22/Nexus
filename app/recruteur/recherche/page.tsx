@@ -8,8 +8,7 @@ import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
-import PastilleTeCible from "@/components/shared/PastilleTeCible";
-import { useCiblesParAthleteId } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
+import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
@@ -80,13 +79,11 @@ const sportLabel = (value: string): string => {
 
 /* ── Athlete Search Card ──────────────────────────────────── */
 
-function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, cibleDepuis }: {
+function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
-  /** LOT 3 — date de ciblage de MON cégep par cet athlète, ou null. */
-  cibleDepuis: string | null;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
@@ -187,15 +184,6 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, cib
           />
         </div>
 
-        {/* LOT 3 — « Te cible ». Placée APRÈS le statut de recrutement et
-            AVANT les distinctions : c'est une information de relation, pas
-            une distinction sportive. Vert, jamais rouge — cf. PastilleTeCible. */}
-        {cibleDepuis && (
-          <div className="mt-1.5">
-            <PastilleTeCible targetedAt={cibleDepuis} />
-          </div>
-        )}
-
         {/* Badges */}
         {a.badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -238,13 +226,11 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, cib
 
 /* ── Athlete Search Row (list view) ─────────────────────────── */
 
-function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, cibleDepuis }: {
+function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
-  /** LOT 3 — date de ciblage de MON cégep par cet athlète, ou null. */
-  cibleDepuis: string | null;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
@@ -328,10 +314,8 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, cibl
       {/* Promotion */}
       <span className="text-[13px] text-[#9CA3AF] shrink-0 w-[50px]">{a.graduationYear}</span>
 
-      {/* Badges — la pastille « Te cible » ouvre la zone : un signal de
-          relation se lit avant les distinctions sportives. */}
+      {/* Badges */}
       <div className="flex gap-1.5 flex-1 min-w-0">
-        {cibleDepuis && <PastilleTeCible targetedAt={cibleDepuis} taille="compacte" />}
         {a.badges.map((b) => (
           <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946] whitespace-nowrap">
             {b.icon && <NxIcon name={b.icon} size={10} className="text-[#E63946]" />} {b.label}
@@ -412,7 +396,7 @@ function RechercheContent() {
     leagueFilter, divisionFilter,
     minGpa, minRating, sortBy, verifiedOnly, withVideoOnly, withSportBadge,
     withAcademicBadge, hideFavorites, filterOuvertDemenager, filterOuvertPrive,
-    filterOuvertAnglophone, offertParMonCegep, filterNewOnly, progFilterIds,
+    filterOuvertAnglophone, offertParMonCegep, filterNewOnly, meCiblent, progFilterIds,
   } = filtres;
 
   /* Adaptateurs de nom. Aucun n'est appelé avec une forme fonctionnelle
@@ -441,6 +425,7 @@ function RechercheContent() {
   const setWithSportBadge = useCallback((v: boolean) => setFiltre("withSportBadge", v), [setFiltre]);
   const setWithAcademicBadge = useCallback((v: boolean) => setFiltre("withAcademicBadge", v), [setFiltre]);
   const setHideFavorites = useCallback((v: boolean) => setFiltre("hideFavorites", v), [setFiltre]);
+  const setMeCiblent = useCallback((v: boolean) => setFiltre("meCiblent", v), [setFiltre]);
   const setFilterOuvertDemenager = useCallback((v: boolean) => setFiltre("filterOuvertDemenager", v), [setFiltre]);
   const setFilterOuvertPrive = useCallback((v: boolean) => setFiltre("filterOuvertPrive", v), [setFiltre]);
   const setFilterOuvertAnglophone = useCallback((v: boolean) => setFiltre("filterOuvertAnglophone", v), [setFiltre]);
@@ -453,11 +438,18 @@ function RechercheContent() {
   const [progFilterOpen, setProgFilterOpen] = useState(false);
   const { data: catalogueProg } = useCegepPrograms();
   const { data: monCegepAUnCatalogue = false } = useMonCegepOffreDesProgrammes();
-  // LOT 3 — index athleteId → date de ciblage de MON cégep. Un seul appel
-  // réseau partagé avec le bloc du tableau de bord (même clé TanStack) : les
-  // deux surfaces ne peuvent pas se contredire. Map vide tant que la réponse
-  // n'est pas là, ou si le compte n'a pas de cégep → aucune pastille.
-  const ciblesParAthlete = useCiblesParAthleteId();
+  // LOT 5 — les athlètes qui ciblent MON cégep, pour le filtre « Te ciblent ».
+  // Même appel (même clé TanStack) que le bloc du tableau de bord : le
+  // compteur de la pastille et celui du bloc ne peuvent pas se contredire.
+  // La pastille « Te cible » a quitté les cartes : elle ne vit plus que sur
+  // la fiche athlète, le filtre la remplace ici.
+  const {
+    data: cibles, isPending: ciblesEnAttente, aUnCegepRattache,
+  } = useCiblesSurMonCegep();
+  const idsQuiMeCiblent = useMemo(() => new Set((cibles ?? []).map((c) => c.athleteId)), [cibles]);
+  // Sans cégep rattaché, on ne SAIT pas qui te cible : un `?me_ciblent=true`
+  // venu d'un lien est ignoré plutôt que de rendre une liste vide sans raison.
+  const filtreMeCiblentActif = meCiblent && aUnCegepRattache;
   const progFilterProgramIds = [...new Set(
     (catalogueProg ?? []).filter((l) => progFilterIds.includes(l.id)).map((l) => l.programId))];
 
@@ -513,7 +505,7 @@ function RechercheContent() {
     offertParMonCegep: offertParMonCegep && monCegepAUnCatalogue,
     tier,
   });
-  const loading = tierLoading || athletesLoading;
+  const loading = tierLoading || athletesLoading || (filtreMeCiblentActif && ciblesEnAttente);
 
   // Reset position quand le sport change (legacy behavior)
   useEffect(() => { if (!sport) setPosition(""); }, [sport, setPosition]);
@@ -553,6 +545,8 @@ function RechercheContent() {
     if (withSportBadge) list = list.filter((a) => a.badges.length > 0);
     if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
     if (hideFavorites) list = list.filter((a) => !favorites.has(a.id));
+    // Filtre CLIENT sur le jeu complet (p_limit null) — registre §35.
+    if (filtreMeCiblentActif) list = list.filter((a) => idsQuiMeCiblent.has(a.id));
 
     // favorites_desc sort is a client-side refinement of the returned page
     // (the DB query already applied rating_desc as a fallback ordering).
@@ -561,7 +555,7 @@ function RechercheContent() {
     }
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts]);
 
   /* ── OPTIONS ET ETATS DES TROIS MENUS ─────────────────────────────────────
      Construites sur `athletes` — LE JEU RENVOYE PAR LA RPC, donc apres les
@@ -614,9 +608,18 @@ function RechercheContent() {
      est celui de la liste RENDUE, après les filtres client — ce que
      l'utilisateur a vu. `pret` attend aussi le refetch : avec
      keepPreviousData, l'ancienne grille resterait comptée sinon. */
+  /* `meCiblent` n'est PAS dans la liste fermée (CHECK) de
+     search_filter_events : les événements partent par lots, et une seule clé
+     refusée ferait échouer tout le lot — donc perdre aussi les autres filtres.
+     Retiré du journal jusqu'à l'élargissement du CHECK (migration à part). */
+  const filtresJournalises = useMemo(() => {
+    const copie: Partial<typeof filtres> = { ...filtres };
+    delete copie.meCiblent;
+    return copie as Omit<typeof filtres, "meCiblent">;
+  }, [filtres]);
   const { journaliserReinitialisation, journaliserPanneauAvance } = useJournalFiltres({
     surface: "recruteur_recherche",
-    filtres,
+    filtres: filtresJournalises,
     defauts: FILTRES_DEFAUT,
     nbResultats: filtered.length,
     pret: !loading && !athletesFetching,
@@ -638,7 +641,7 @@ function RechercheContent() {
     if (!res.ok) setErreurFavori(res.message);
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
 
   /* PÉRIMÈTRE INCHANGÉ. Ce bouton ne vide NI `search`, NI `progFilterIds`, NI
      `offertParMonCegep` — c'était déjà le cas avant la bascule vers l'URL, et
@@ -653,7 +656,7 @@ function RechercheContent() {
       verifiedOnly: false, withVideoOnly: false,
       withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
       filterOuvertDemenager: false, filterOuvertPrive: false, filterOuvertAnglophone: false,
-      filterNewOnly: false,
+      filterNewOnly: false, meCiblent: false,
     });
   };
 
@@ -861,6 +864,17 @@ function RechercheContent() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill={hideFavorites ? "#E63946" : "none"} stroke={hideFavorites ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
             Masquer favoris
           </button>
+          {/* LOT 5 — remplace la pastille « Te cible » des cartes. Masquée sans
+              cégep rattaché : on ne saurait pas qui te cible. Le compte vient
+              du même appel que le bloc du tableau de bord. */}
+          {aUnCegepRattache && (
+            <button type="button" onClick={() => setMeCiblent(!meCiblent)}
+              title="Athlètes qui ont mis ton cégep dans leurs cibles"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${meCiblent ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={meCiblent ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>
+              Te ciblent{cibles ? ` (${idsQuiMeCiblent.size})` : ""}
+            </button>
+          )}
         </div>
 
         {/* Advanced filters — collapsible */}
@@ -1013,7 +1027,6 @@ function RechercheContent() {
                   <AthleteSearchCard
                     key={a.id}
                     a={a}
-                    cibleDepuis={ciblesParAthlete.get(a.id) ?? null}
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}
@@ -1026,7 +1039,6 @@ function RechercheContent() {
                   <AthleteSearchRow
                     key={a.id}
                     a={a}
-                    cibleDepuis={ciblesParAthlete.get(a.id) ?? null}
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}

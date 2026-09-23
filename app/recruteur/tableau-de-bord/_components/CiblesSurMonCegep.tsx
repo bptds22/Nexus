@@ -35,6 +35,7 @@ import Link from "next/link";
 import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
 import { useAthletesByIds } from "@/lib/queries/shared/useAthletesByIds";
 import { displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import { CLES_FILTRES } from "@/lib/recherche/filtres-url";
 
 /** « depuis le 14 septembre » — date longue sans l'année quand c'est
  *  l'année courante, comme le reste des dates du tableau de bord. */
@@ -47,6 +48,10 @@ function dateCourte(iso: string): string {
     ...(memeAnnee ? {} : { year: "numeric" }),
   });
 }
+
+/** LOT 5 — la recherche filtrée sur « Te ciblent ». Clé d'URL lue dans
+ *  CLES_FILTRES, jamais recopiée à la main. */
+const LIEN_FILTRE_ME_CIBLENT = `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`;
 
 const APERCU_MAX = 4;
 
@@ -91,9 +96,13 @@ export default function CiblesSurMonCegep() {
           </p>
         </div>
 
-        <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#22C55E] text-white text-[13px] font-black shrink-0">
-          {n}
-        </span>
+        {/* LOT 5 — le compte devient l'entrée du filtre « Te ciblent ». */}
+        <Link
+          href={LIEN_FILTRE_ME_CIBLENT}
+          className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-[#22C55E] text-white text-[12px] font-black shrink-0 hover:bg-[#16A34A] transition-colors"
+        >
+          Voir les {n} →
+        </Link>
       </div>
 
       {/* Les plus récents — nom résolu par recruiter_athlete_cards, donc
@@ -121,8 +130,10 @@ export default function CiblesSurMonCegep() {
 
       {n > APERCU_MAX && (
         <p className="text-[12px] text-[#6b7280] mt-2.5 px-3">
-          et {n - APERCU_MAX} autre{n - APERCU_MAX > 1 ? "s" : ""} — la pastille
-          « Te cible » les signale dans la recherche.
+          et {n - APERCU_MAX} autre{n - APERCU_MAX > 1 ? "s" : ""} —{" "}
+          <Link href={LIEN_FILTRE_ME_CIBLENT} className="text-[#22C55E] font-semibold hover:underline">
+            les voir dans la recherche →
+          </Link>
         </p>
       )}
     </div>
