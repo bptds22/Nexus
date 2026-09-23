@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
-import { inscriptionDeFiche, repartitionComptesAthletes } from "@/lib/admin/comptesAthletes";
+import { EMBED_COMPTE, inscriptionDeFiche, repartitionComptesAthletes, type InscriptionFiche } from "@/lib/admin/comptesAthletes";
 
 interface AthleteRow {
   id: string;
@@ -27,8 +27,9 @@ interface AthleteRow {
   created_at: string;
   // computed
   /** complete = compte + onboarding fini · commencee = compte, onboarding
-   *  non fini · sans_compte = fiche semée par un coach, jamais réclamée. */
-  inscription?: "complete" | "commencee" | "sans_compte";
+   *  non fini · sans_compte = fiche semée par un coach, jamais réclamée ·
+   *  compte_non_athlete = fiche sur un compte d'un autre rôle (ADMIN…). */
+  inscription?: InscriptionFiche;
   sport_name?: string | null;
   school_name?: string | null;
   school_type?: string | null;
@@ -246,7 +247,7 @@ function AdminAthletesPageInner() {
         "cote_globale_entraineur,statut_recrutement_override,profile_completion,consentement_parental," +
         "video_faits_saillants_url,video_match_complet_url,video_entrainement_url,created_at," +
         "sports:sport_id(nom), schools:school_id(name,type), coach:coach_id(first_name,last_name)," +
-        "compte:user_id(onboarding_complete)";
+        EMBED_COMPTE;
 
       /* Les comptes sans fiche arrivent par une RPC à part : un échec de
          celle-ci (migration pas encore appliquée, par exemple) ne doit pas
@@ -569,6 +570,11 @@ function AdminAthletesPageInner() {
             {repartition.sansCompte > 0 && (
               <span className="text-[12px] text-[#6b7280]">
                 + {repartition.sansCompte} fiche{repartition.sansCompte > 1 ? "s" : ""} sans compte (semées par un coach ou supprimées)
+              </span>
+            )}
+            {repartition.compteNonAthlete > 0 && (
+              <span className="text-[12px] text-[#6b7280]">
+                + {repartition.compteNonAthlete} fiche{repartition.compteNonAthlete > 1 ? "s" : ""} sur un compte non athlète (hors total)
               </span>
             )}
           </div>
