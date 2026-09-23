@@ -66,6 +66,11 @@ export interface PipelineKanbanCard {
    *  libellé de la facette « École / ligue » du filtre, pas au filtrage.
    *  Optionnel : les fixtures mock ne le portent pas. */
   school_type?: string | null;
+  /** Mensurations (recruiter_athlete_cards) — colonnes Taille / Poids de la
+   *  vue tableau. Optionnelles : les fixtures mock ne les portent pas. */
+  taille_pieds?: number | null;
+  taille_pouces?: number | null;
+  poids_lbs?: number | null;
 }
 
 export const KANBAN_COLUMNS: {

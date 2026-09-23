@@ -122,8 +122,13 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Main column */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* Main column — `min-w-0` (2026-09-23) : sans lui, un élément flex ne
+          descend jamais sous la largeur de son contenu. Le kanban de « Mon
+          processus » (7 colonnes) élargissait toute la colonne à 1600 px :
+          la page défilait à l'horizontale sous 1860 px d'écran, entonnoir et
+          en-tête coupés à droite. Les zones larges ont leur propre
+          overflow-x-auto — c'est à elles de défiler, pas à la page. */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
         <PreMaintenanceBanner />
         {!isPreview && <PendingAdminClaimBanner />}
         {/* Mobile top bar — masquée en Capacitor (la tab bar prend le relais) */}
