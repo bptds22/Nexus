@@ -646,7 +646,9 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               <p className="text-[11px] flex items-center gap-1.5 min-w-0">
                 {card.next_action_at && (
                   <span className={`shrink-0 font-semibold ${actionLate ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`}>
-                    {formatRelanceCourt(card.next_action_at)}
+                    {/* « Relance 16 sept. », pas la date nue (retour BP
+                        2026-09-23) : seule, une date ne dit pas ce qu'elle date. */}
+                    Relance {formatRelanceCourt(card.next_action_at)}
                   </span>
                 )}
                 {card.next_action_at && card.next_action_note && <span className="shrink-0 text-[#4a4d56]">·</span>}
@@ -691,8 +693,7 @@ const TRI_PAR_COLONNE: Partial<Record<string, PipelineSortMode>> = {
 /* TROIS BLOCS (retour BP 2026-09-23) : qui est le joueur, ce qu'il vaut,
    où j'en suis avec lui. Un bloc = un titre au-dessus et un filet vertical
    à sa gauche, pour que l'œil trouve le bloc avant la colonne.
-   Dans « Mon suivi », l'étape passe AVANT le grade : c'est l'état du
-   dossier, le grade le qualifie. */
+   L'ordre des colonnes est celui de BP (2e passe), dans COLONNES_TABLEAU. */
 type BlocTableau = "identification" | "evaluation" | "suivi";
 
 const BLOCS_TABLEAU: { cle: BlocTableau; libelle: string }[] = [
@@ -702,19 +703,20 @@ const BLOCS_TABLEAU: { cle: BlocTableau; libelle: string }[] = [
 ];
 
 const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = [
+  /* Ordre fixé par BP le 2026-09-23 (2e passe) — ne pas « ranger ». */
   { cle: "nom", libelle: "Nom", bloc: "identification" },
   { cle: "numero", libelle: "#", bloc: "identification" },
-  { cle: "position", libelle: "Position", bloc: "identification" },
   { cle: "ecole", libelle: "École / Club", bloc: "identification" },
-  { cle: "cote", libelle: "Cote coach", bloc: "evaluation" },
+  { cle: "position", libelle: "Position", bloc: "identification" },
   { cle: "taille", libelle: "Taille", bloc: "evaluation" },
   { cle: "poids", libelle: "Poids", bloc: "evaluation" },
-  { cle: "etape", libelle: "Étape", bloc: "suivi" },
+  { cle: "cote", libelle: "Cote coach", bloc: "evaluation" },
   { cle: "grade", libelle: "Mon grade", bloc: "suivi" },
+  { cle: "etape", libelle: "Étape", bloc: "suivi" },
   { cle: "relance", libelle: "Relance", bloc: "suivi" },
   { cle: "visite", libelle: "Visite", bloc: "suivi" },
-  { cle: "note", libelle: "Note de suivi", bloc: "suivi" },
   { cle: "video", libelle: "Faits saillants", bloc: "suivi" },
+  { cle: "note", libelle: "Note de suivi", bloc: "suivi" },
 ];
 
 /** Première colonne de chaque bloc : c'est elle qui porte le filet. */
@@ -1785,16 +1787,17 @@ function PipelinePageContent() {
           <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon processus de recrutement</h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">Saison {getCurrentSeason()} · Suivez vos prospects de l&apos;identification à la signature</p>
         </div>
-        {/* Bascule kanban ⇄ tableau — même contrôle que grille/liste de la Recherche. */}
-        <div className="flex items-center bg-[#13151a] border border-[#2a2d36] rounded-lg overflow-hidden" role="group" aria-label="Affichage">
+        {/* Bascule kanban ⇄ tableau — agrandie (retour BP 2026-09-23) : c'est
+            le choix principal de la page, pas un réglage discret. */}
+        <div className="flex items-center bg-[#13151a] border border-[#2a2d36] rounded-xl overflow-hidden" role="group" aria-label="Affichage">
           <button
             type="button"
             title="Vue kanban"
             aria-pressed={vue === "kanban"}
             onClick={() => setVue("kanban")}
-            className={`flex items-center gap-1.5 px-3 py-2 text-[12px] font-bold transition-colors ${vue === "kanban" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}
+            className={`flex items-center gap-2 px-5 py-3 text-[14px] font-bold transition-colors ${vue === "kanban" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
               <rect x="3" y="3" width="5" height="18" rx="1" /><rect x="10" y="3" width="5" height="12" rx="1" /><rect x="17" y="3" width="4" height="8" rx="1" />
             </svg>
             Kanban
@@ -1804,9 +1807,9 @@ function PipelinePageContent() {
             title="Vue tableau"
             aria-pressed={vue === "tableau"}
             onClick={() => setVue("tableau")}
-            className={`flex items-center gap-1.5 px-3 py-2 text-[12px] font-bold transition-colors ${vue === "tableau" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}
+            className={`flex items-center gap-2 px-5 py-3 text-[14px] font-bold transition-colors ${vue === "tableau" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
               <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 10h18" /><path d="M3 15h18" /><path d="M9 4v16" />
             </svg>
             Tableau
