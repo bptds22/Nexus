@@ -14,6 +14,8 @@ import {
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import { BADGE_COLORS } from "@/lib/types/models";
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
+import PastilleTeCible from "@/components/shared/PastilleTeCible";
+import { useCiblesParAthleteId } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { MAX_BADGES_AFFICHES } from "@/lib/config/badgeCatalogue";
@@ -806,6 +808,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // Free recruiters only — excludes preview (athlete self-view) and
   // partner (own gating). Drives the name strip + content locks.
   const isFreeRecruiter = viewerMode === "recruiter" && tier === "free";
+  // LOT 3 — cet athlète cible-t-il MON cégep, et depuis quand ? Requête coupée
+  // hors mode recruteur (cf. le paramètre `actif` du hook). Même cache TanStack
+  // que la recherche et le tableau de bord : une seule vérité.
+  const ciblesParAthlete = useCiblesParAthleteId(viewerMode === "recruiter");
+  const cibleDepuis = ciblesParAthlete.get(athleteId) ?? null;
   /* VITRINE — aucun verrou d'AFFICHAGE sur le profil demo.
 
      `lockContent` remplace `isFreeRecruiter` sur tout ce qui masque une
@@ -1930,6 +1937,17 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 <div className="bg-[#111317] rounded-lg px-4 py-2">
                   <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
                   <RecruitmentStatusBadgeGlobal status={recruitmentStatus as GlobalRecruitmentStatus} committedSchoolName={committedSchoolName} openToOffers={openToOffers} size="sm" />
+                </div>
+              )}
+
+              {/* LOT 3 — « Te cible ». Dernière de la rangée, et RECRUTEUR
+                  SEULEMENT (`!isPreview`) : en mode preview l'athlète se relit,
+                  et lui montrer « te cible » n'aurait aucun sens ; en mode
+                  partner la notion de « mon cégep » n'existe pas. */}
+              {!isPreview && cibleDepuis && (
+                <div className="bg-[#111317] rounded-lg px-4 py-2">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Ses cibles</span>
+                  <PastilleTeCible targetedAt={cibleDepuis} />
                 </div>
               )}
 
