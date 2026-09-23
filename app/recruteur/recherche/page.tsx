@@ -610,7 +610,7 @@ function RechercheContent() {
      keepPreviousData, l'ancienne grille resterait comptée sinon. */
   // Toutes les clés de FiltresRecherche sont journalisées, `meCiblent`
   // compris : la liste fermée de search_filter_events l'accepte depuis la
-  // migration 20260923170000 — à appliquer en prod AVANT ce code (sinon les
+  // migration 20260923144821 — appliquée en prod le 2026-09-23 (sinon les
   // lots qui la contiennent échouent en entier).
   const { journaliserReinitialisation, journaliserPanneauAvance } = useJournalFiltres({
     surface: "recruteur_recherche",
