@@ -47,23 +47,27 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
             const isCommitment = cfg.phase === "commitment";
             const isActive = count > 0;
 
-            // Color scheme:
-            // - Commitment stages (en_discussion, visite, engage, lettre_signee): always red,
-            //   muted when empty so active stages still stand out
-            // - Auto stages (identifie, contacte): cfg.color when active, gray when empty
+            // Couleurs — relevées le 2026-09-23 (retour BP : « trop pâle, peu
+            // lisible » depuis que le bloc est sur fond rouge léger). Le
+            // principe ne change pas : les étapes d'engagement restent
+            // rouges, les étapes automatiques grises, et une étape VIDE reste
+            // en retrait d'une pleine — mais un retrait LISIBLE, plus un
+            // effacement. Aucun niveau ne descend sous 70 % d'opacité.
+            // - Commitment stages (en_discussion, visite, engage, lettre_signee): rouge
+            // - Auto stages (identifie, contacte): blanc cassé actif, gris clair vide
             const iconColor = isCommitment
-              ? (isActive ? cfg.color : "rgba(230,57,70,0.45)")
-              : (isActive ? cfg.color : "#4a4d56");
+              ? (isActive ? "#E63946" : "rgba(230,57,70,0.75)")
+              : (isActive ? "#FFFFFF" : "#9CA3AF");
             const numberColor = iconColor;
             const labelColor = isCommitment
-              ? (isActive ? "rgba(230,57,70,0.7)" : "rgba(230,57,70,0.4)")
-              : (isActive ? "rgba(107,114,128,0.7)" : "#4a4d56");
+              ? (isActive ? "#F87171" : "rgba(248,113,113,0.8)")
+              : (isActive ? "#D1D5DB" : "#9CA3AF");
             const borderColor = isCommitment
-              ? (isActive ? "rgba(230,57,70,0.3)" : "rgba(230,57,70,0.15)")
-              : (isActive ? "rgba(107,114,128,0.25)" : "#2D3748");
+              ? (isActive ? "rgba(230,57,70,0.5)" : "rgba(230,57,70,0.3)")
+              : (isActive ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.12)");
             const background = isCommitment
-              ? (isActive ? "rgba(230,57,70,0.06)" : "transparent")
-              : (isActive ? "rgba(107,114,128,0.05)" : "transparent");
+              ? (isActive ? "rgba(230,57,70,0.12)" : "rgba(17,19,23,0.35)")
+              : (isActive ? "rgba(255,255,255,0.06)" : "rgba(17,19,23,0.35)");
 
             return (
               /* Plus un lien : `?stage=` n'était lu par aucune page (web ni
@@ -88,7 +92,7 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
                 <p className="text-[26px] font-head font-black leading-none" style={{ color: numberColor }}>
                   {count}
                 </p>
-                <p className="text-[10px] font-bold tracking-[0.15em] uppercase mt-1" style={{ color: labelColor }}>
+                <p className="text-[11px] font-bold tracking-[0.15em] uppercase mt-1" style={{ color: labelColor }}>
                   {cfg.shortLabel}
                 </p>
               </div>
@@ -97,13 +101,13 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
         </div>
 
         {/* Total + retired */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#2D3748]/50">
-          <span className="text-[12px] text-[#6b7280]">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E63946]/20">
+          <span className="text-[13px] text-[#D1D5DB]">
             <span className="font-bold text-white">{totalActive}</span> athlète{totalActive !== 1 ? "s" : ""} actif{totalActive !== 1 ? "s" : ""} dans ton processus
-            <span className="text-[10px] text-[#6B7280] ml-2">· 50 max en gratuit</span>
+            <span className="text-[11px] text-[#9CA3AF] ml-2">· 50 max en gratuit</span>
           </span>
           {counts.retire > 0 && (
-            <span className="text-[12px] text-[#6b7280]">
+            <span className="text-[13px] text-[#D1D5DB]">
               {counts.retire} retiré{counts.retire !== 1 ? "s" : ""}
             </span>
           )}
