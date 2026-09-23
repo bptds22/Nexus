@@ -688,21 +688,39 @@ const TRI_PAR_COLONNE: Partial<Record<string, PipelineSortMode>> = {
   relance: "next_action_asc",
 };
 
-const COLONNES_TABLEAU: { cle: string; libelle: string }[] = [
-  { cle: "etape", libelle: "Étape" },
-  { cle: "visite", libelle: "Visite" },
-  { cle: "position", libelle: "Position" },
-  { cle: "numero", libelle: "#" },
-  { cle: "nom", libelle: "Nom" },
-  { cle: "ecole", libelle: "École / Club" },
-  { cle: "taille", libelle: "Taille" },
-  { cle: "poids", libelle: "Poids" },
-  { cle: "cote", libelle: "Cote coach" },
-  { cle: "grade", libelle: "Grade" },
-  { cle: "relance", libelle: "Relance" },
-  { cle: "note", libelle: "Note de relance" },
-  { cle: "video", libelle: "Faits saillants" },
+/* TROIS BLOCS (retour BP 2026-09-23) : qui est le joueur, ce qu'il vaut,
+   où j'en suis avec lui. Un bloc = un titre au-dessus et un filet vertical
+   à sa gauche, pour que l'œil trouve le bloc avant la colonne.
+   Dans « Mon suivi », l'étape passe AVANT le grade : c'est l'état du
+   dossier, le grade le qualifie. */
+type BlocTableau = "identification" | "evaluation" | "suivi";
+
+const BLOCS_TABLEAU: { cle: BlocTableau; libelle: string }[] = [
+  { cle: "identification", libelle: "Identification" },
+  { cle: "evaluation", libelle: "Évaluation" },
+  { cle: "suivi", libelle: "Mon suivi" },
 ];
+
+const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = [
+  { cle: "nom", libelle: "Nom", bloc: "identification" },
+  { cle: "numero", libelle: "#", bloc: "identification" },
+  { cle: "position", libelle: "Position", bloc: "identification" },
+  { cle: "ecole", libelle: "École / Club", bloc: "identification" },
+  { cle: "cote", libelle: "Cote coach", bloc: "evaluation" },
+  { cle: "taille", libelle: "Taille", bloc: "evaluation" },
+  { cle: "poids", libelle: "Poids", bloc: "evaluation" },
+  { cle: "etape", libelle: "Étape", bloc: "suivi" },
+  { cle: "grade", libelle: "Mon grade", bloc: "suivi" },
+  { cle: "relance", libelle: "Relance", bloc: "suivi" },
+  { cle: "visite", libelle: "Visite", bloc: "suivi" },
+  { cle: "note", libelle: "Note de relance", bloc: "suivi" },
+  { cle: "video", libelle: "Faits saillants", bloc: "suivi" },
+];
+
+/** Première colonne de chaque bloc : c'est elle qui porte le filet. */
+const DEBUT_DE_BLOC = new Set(
+  COLONNES_TABLEAU.filter((c, i) => i > 0 && COLONNES_TABLEAU[i - 1].bloc !== c.bloc).map((c) => c.cle),
+);
 
 function formatTaille(card: PipelineKanbanCard): string | null {
   return card.taille_pieds ? `${card.taille_pieds}'${card.taille_pouces ?? 0}"` : null;
@@ -713,6 +731,94 @@ function formatPoids(card: PipelineKanbanCard): string | null {
 }
 
 const VIDE = <span className="text-[#4a4d56]">—</span>;
+
+/** Contenu d'une cellule — une seule fonction pour les treize colonnes, pour
+ *  que l'ORDRE vive dans COLONNES_TABLEAU et nulle part ailleurs. */
+function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): React.ReactNode {
+  switch (cle) {
+    case "nom":
+      return <span className={`line-clamp-2 text-[15px] font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>;
+    case "numero":
+      return card.jersey ? <span className="font-black text-[#E63946]">{card.jersey}</span> : VIDE;
+    case "position":
+      return card.position
+        ? <span className="inline-flex items-center px-2 py-0.5 rounded bg-white/[0.06] text-[12px] font-bold uppercase tracking-wider text-white">{card.position}</span>
+        : VIDE;
+    case "ecole":
+      return card.noTeam
+        ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Ligue Civile</span>
+        : card.school ? <span className="line-clamp-2 leading-snug text-[#c8c8cc]" title={card.school}>{card.school}</span> : VIDE;
+    case "cote":
+      /* Compacte (★ 4.5) : cinq étoiles pour un chiffre prenaient 120 px.
+         Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence). */
+      return aUneCote(card.coach_rating) ? (
+        <span className="inline-flex items-center gap-1 font-bold text-[#F59E0B] tabular-nums" title={`Cote du coach : ${card.coach_rating.toFixed(1)} / 5`}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" aria-hidden><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          {card.coach_rating.toFixed(1)}
+        </span>
+      ) : VIDE;
+    case "taille": {
+      const t = formatTaille(card);
+      return t ? <span className="text-[#e0e0e0] tabular-nums">{t}</span> : VIDE;
+    }
+    case "poids": {
+      const p = formatPoids(card);
+      return p ? <span className="text-[#e0e0e0] tabular-nums">{p}</span> : VIDE;
+    }
+    case "etape": {
+      const col = KANBAN_COLUMNS.find((c) => c.id === card.status);
+      const engagement = col?.phase === "commitment";
+      return (
+        <span className={`inline-flex items-center gap-1.5 font-semibold whitespace-nowrap ${engagement ? "text-[#E63946]" : "text-[#9CA3AF]"}`}>
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: col?.color ?? GRAY }} />
+          {col?.label ?? card.status}
+        </span>
+      );
+    }
+    case "grade":
+      return card.grade ? <GradeChip grade={card.grade} /> : VIDE;
+    case "relance":
+      return card.next_action_at
+        ? <span className={`font-semibold whitespace-nowrap ${isLate(card.next_action_at, now) ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`}>{formatRelanceCourt(card.next_action_at)}</span>
+        : VIDE;
+    case "visite": {
+      const v = card.visit_at ? formatVisitPill(card.visit_at, now) : null;
+      return v
+        ? <span className={`font-semibold whitespace-nowrap ${v.isPast ? "text-[#E63946]" : "text-[#F59E0B]"}`} title={v.isPast ? "Visite passée" : "Visite planifiée"}>{v.label}</span>
+        : VIDE;
+    }
+    case "note":
+      return card.next_action_note
+        ? <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.next_action_note}>{card.next_action_note}</span>
+        : VIDE;
+    case "video":
+      return card.has_video ? (
+        <Link
+          href={`/recruteur/athletes/${card.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1 font-bold text-white hover:text-[#E63946] transition-colors whitespace-nowrap"
+          title="Ouvrir la fiche pour voir les faits saillants"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
+          Voir
+        </Link>
+      ) : VIDE;
+    default:
+      return VIDE;
+  }
+}
+
+/** Largeurs minimales : les colonnes à texte libre (nom, école, note) passent
+ *  sur deux lignes plutôt que d'écraser les autres. */
+const LARGEUR_MIN: Partial<Record<string, string>> = {
+  /* Nom FIGÉ à gauche (comme une colonne figée d'Excel) : sous ~1600 px
+     d'écran le tableau défile dans son cadre, et « Mon suivi » se lit sans
+     perdre de vue de quel joueur il s'agit. Fond opaque obligatoire, sinon
+     les cellules défilent en transparence dessous. */
+  nom: "min-w-[150px] sticky left-0 z-[1] bg-[#1A1D24] shadow-[1px_0_0_#2D3748] group-hover:bg-[#1f2229] group-focus:bg-[#20232a]",
+  ecole: "min-w-[160px] max-w-[260px]",
+  note: "min-w-[180px] max-w-[320px]",
+};
 
 function PipelineTable({
   cards,
@@ -731,18 +837,30 @@ function PipelineTable({
   onRowClick: (card: PipelineKanbanCard) => void;
   onOpenAction: (card: PipelineKanbanCard) => void;
 }) {
+  const filet = (cle: string) => (DEBUT_DE_BLOC.has(cle) ? "border-l border-[#2D3748]" : "");
   return (
     <div className="overflow-x-auto rounded-xl border border-[#2D3748] bg-[#1A1D24]">
-      <table className="w-full min-w-[1060px] text-[13px]">
+      <table className="w-full text-[14px]">
         <thead>
+          {/* Rangée des blocs. */}
+          <tr>
+            {BLOCS_TABLEAU.map((b, i) => (
+              <th
+                key={b.cle}
+                scope="colgroup"
+                colSpan={COLONNES_TABLEAU.filter((c) => c.bloc === b.cle).length}
+                className={`text-left px-4 pt-3.5 pb-1 text-[11px] font-black uppercase tracking-[0.2em] ${b.cle === "suivi" ? "text-[#E63946]" : "text-[#9CA3AF]"} ${i > 0 ? "border-l border-[#2D3748]" : ""}`}
+              >
+                {b.libelle}
+              </th>
+            ))}
+          </tr>
           <tr className="border-b border-[#2D3748]">
             {COLONNES_TABLEAU.map((col) => {
               const mode = TRI_PAR_COLONNE[col.cle];
               const actif = mode !== undefined && sortBy === mode;
-              /* En-têtes sur DEUX lignes permises : sinon « Faits saillants » ou
-                 « Cote coach » dictent la largeur de colonnes dont le contenu
-                 tient en 40 px, et le tableau ne tient plus à 1440 px. */
-              const base = "text-left align-bottom px-2 py-3 text-[11px] leading-tight font-bold uppercase tracking-wide";
+              const fige = col.cle === "nom" ? "sticky left-0 z-[1] bg-[#1A1D24] shadow-[1px_0_0_#2D3748]" : "";
+              const base = `text-left align-bottom px-4 pt-1 pb-3 text-[12px] leading-tight font-bold uppercase tracking-wide whitespace-nowrap ${filet(col.cle)} ${fige}`;
               if (!mode) {
                 return <th key={col.cle} scope="col" className={`${base} text-[#6b7280]`}>{col.libelle}</th>;
               }
@@ -753,7 +871,7 @@ function PipelineTable({
                   <button
                     type="button"
                     onClick={() => onSort(actif ? DEFAULT_PIPELINE_SORT : mode)}
-                    className={`inline-flex items-end gap-1 text-left uppercase tracking-wide transition-colors ${actif ? "text-white" : "text-[#6b7280] hover:text-[#9CA3AF]"}`}
+                    className={`inline-flex items-center gap-1 uppercase tracking-wide transition-colors ${actif ? "text-white" : "text-[#6b7280] hover:text-[#9CA3AF]"}`}
                     title={actif ? "Revenir au tri par dernière activité" : `Trier : ${PIPELINE_SORT_OPTIONS.find((o) => o.value === mode)?.label}`}
                   >
                     {col.libelle}
@@ -769,104 +887,38 @@ function PipelineTable({
         <tbody>
           {cards.length === 0 ? (
             <tr>
-              <td colSpan={COLONNES_TABLEAU.length} className="px-2 py-12 text-center text-[13px] text-[#4a4d56]">
+              <td colSpan={COLONNES_TABLEAU.length} className="px-4 py-14 text-center text-[14px] text-[#4a4d56]">
                 Aucun athlète ne correspond
               </td>
             </tr>
           ) : cards.map((card) => {
-            const col = KANBAN_COLUMNS.find((c) => c.id === card.status);
-            const engagement = col?.phase === "commitment";
             const ring = getCardRing(card, now, competitorMap);
-            const visite = card.visit_at ? formatVisitPill(card.visit_at, now) : null;
-            const enRetard = isLate(card.next_action_at, now);
-            const taille = formatTaille(card);
-            const poids = formatPoids(card);
             return (
               <tr
                 key={card.id}
                 tabIndex={0}
                 onClick={() => onRowClick(card)}
                 onKeyDown={(e) => { if (e.key === "Enter") onRowClick(card); }}
-                className="border-t border-[#2D3748]/60 cursor-pointer hover:bg-white/[0.03] focus:bg-white/[0.04] outline-none transition-colors"
+                className="group border-t border-[#2D3748]/60 cursor-pointer hover:bg-white/[0.03] focus:bg-white/[0.04] outline-none transition-colors"
                 aria-label={ring.reason ? `${card.full_name} — ${ring.reason}` : card.full_name}
               >
-                {/* Le liséré de la carte (inactivité, relance proche) passe
-                    sur le bord gauche de la ligne. */}
-                <td className="px-2 py-2.5 whitespace-nowrap" style={ring.color ? { boxShadow: `inset 3px 0 0 ${ring.color}` } : undefined}>
-                  <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold ${engagement ? "text-[#E63946]" : "text-[#9CA3AF]"}`}>
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: col?.color ?? GRAY }} />
-                    {col?.label ?? card.status}
-                  </span>
-                </td>
-                <td className="px-2 py-2.5 whitespace-nowrap">
-                  {visite
-                    ? <span className={`text-[12px] font-semibold ${visite.isPast ? "text-[#E63946]" : "text-[#F59E0B]"}`} title={visite.isPast ? "Visite passée" : "Visite planifiée"}>{visite.label}</span>
-                    : VIDE}
-                </td>
-                <td className="px-2 py-2.5 whitespace-nowrap">
-                  {card.position
-                    ? <span className="inline-flex items-center px-2 py-0.5 rounded bg-white/[0.06] text-[11px] font-bold uppercase tracking-wider text-white">{card.position}</span>
-                    : VIDE}
-                </td>
-                <td className="px-2 py-2.5 whitespace-nowrap font-black text-[#E63946]">
-                  {card.jersey ? card.jersey : VIDE}
-                </td>
-                <td className="px-2 py-2.5 min-w-[110px]">
-                  <span className={`line-clamp-2 font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>
-                </td>
-                {/* École et note : deux lignes au plus, puis ellipse — elles
-                    prennent la place qui reste au lieu d'élargir le tableau. */}
-                <td className="px-2 py-2.5 min-w-[120px] max-w-[200px]">
-                  {card.noTeam ? (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF]">Ligue Civile</span>
-                  ) : card.school ? (
-                    <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.school}>{card.school}</span>
-                  ) : VIDE}
-                </td>
-                <td className="px-2 py-2.5 whitespace-nowrap text-[#e0e0e0] tabular-nums">{taille ?? VIDE}</td>
-                <td className="px-2 py-2.5 whitespace-nowrap text-[#e0e0e0] tabular-nums">{poids ?? VIDE}</td>
-                <td className="px-2 py-2.5 whitespace-nowrap">
-                  {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence). */}
-                  {/* Compacte (★ 4.5) et non cinq étoiles : 120 px pour un chiffre. */}
-                  {aUneCote(card.coach_rating) ? (
-                    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#F59E0B] tabular-nums" title={`Cote du coach : ${card.coach_rating.toFixed(1)} / 5`}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B" aria-hidden><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                      {card.coach_rating.toFixed(1)}
-                    </span>
-                  ) : VIDE}
-                </td>
-                <td className="px-2 py-2.5 whitespace-nowrap">
-                  {card.grade ? <GradeChip grade={card.grade} /> : VIDE}
-                </td>
-                {/* Relance : ouvre le même popover que le pied de carte — y
-                    compris pour en POSER une sur une ligne qui n'en a pas. */}
-                <td
-                  className="px-2 py-2.5 whitespace-nowrap hover:bg-white/[0.04]"
-                  onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}
-                  title="Modifier la relance"
-                >
-                  {card.next_action_at
-                    ? <span className={`text-[12px] font-semibold ${enRetard ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`}>{formatRelanceCourt(card.next_action_at)}</span>
-                    : VIDE}
-                </td>
-                <td className="px-2 py-2.5 min-w-[140px] max-w-[260px]">
-                  {card.next_action_note
-                    ? <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.next_action_note}>{card.next_action_note}</span>
-                    : VIDE}
-                </td>
-                <td className="px-2 py-2.5 whitespace-nowrap">
-                  {card.has_video ? (
-                    <Link
-                      href={`/recruteur/athletes/${card.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 text-[12px] font-bold text-white hover:text-[#E63946] transition-colors"
-                      title="Ouvrir la fiche pour voir les faits saillants"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
-                      Voir
-                    </Link>
-                  ) : VIDE}
-                </td>
+                {COLONNES_TABLEAU.map((col, i) => {
+                  const cls = `px-4 py-3.5 ${filet(col.cle)} ${LARGEUR_MIN[col.cle] ?? "whitespace-nowrap"}`;
+                  /* Le liséré de la carte (inactivité, relance proche) passe
+                     sur le bord gauche de la ligne. */
+                  const style = i === 0 && ring.color ? { boxShadow: `inset 3px 0 0 ${ring.color}` } : undefined;
+                  if (col.cle === "relance") {
+                    /* Relance : ouvre le même popover que le pied de carte —
+                       y compris pour en POSER une sur une ligne qui n'en a pas. */
+                    return (
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} title="Modifier la relance"
+                        onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}>
+                        {celluleTableau(col.cle, card, now)}
+                      </td>
+                    );
+                  }
+                  return <td key={col.cle} className={cls} style={style}>{celluleTableau(col.cle, card, now)}</td>;
+                })}
               </tr>
             );
           })}
@@ -1707,7 +1759,7 @@ function PipelinePageContent() {
   const dropCardName = pendingDrop ? cards.find((c) => c.id === pendingDrop.cardId)?.full_name : "";
 
   return (
-    <div className="px-4 sm:px-6 lg:px-10 py-8 max-w-[1600px] mx-auto space-y-5">
+    <div className={`px-4 sm:px-6 lg:px-10 py-8 mx-auto space-y-5 ${vue === "tableau" ? "max-w-none" : "max-w-[1600px]"}`}>
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon processus de recrutement</h1>
