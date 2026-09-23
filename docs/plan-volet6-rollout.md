@@ -162,7 +162,7 @@ touchés par la migration ont été comparés prod/local avant les preuves.
 |---|---|---|
 | 0 | Local : migration + preuves + one-shot + rollbacks | **fait** (§9) |
 | 1 | **Migration** `20260923161507` en prod (`apply_migration`) — pré-vol intégré : état attendu + 0 `EN_ATTENTE` | **FAIT le 2026-09-23** — voir « Journal » ci-dessous |
-| 2 | **One-shot** : `mode=dryrun` → relecture (attendu 4 / 2 / 4 / 0 / 12) → `mode=apply` | GO BP séparé · 1 appliquée |
+| 2 | **One-shot** : `mode=dryrun` → relecture (attendu 4 / 2 / 4 / 0 / 12) → `mode=apply` | **FAIT le 2026-09-23** — voir « Journal » |
 | 3 | **UI web** : fusion de la branche (diff `/athlete/profil`) | 1 + 2 appliqués |
 | 4 | Mobile 1.4.x : miroir du masquage + restauration `StarSuggestRow` / `DistinctionsSuggestRow` | lot mobile |
 
@@ -301,3 +301,15 @@ Builds web + mobile OK, `npm test` 207/207. Lint de `/athlete/profil` = `main`.
     athlète et admin inchangées ;
   - 0 `EN_ATTENTE` après.
 - Fichier renommé `20260923210000` → `20260923161507`.
+
+### Étape 2 — one-shot, appliqué en prod le 2026-09-23 (`scripts/d6-volet6-oneshot-prod.sql`)
+
+- **Bloc A (dry-run)** : 4 suggestions à rouvrir · 2 athlètes · 4 notifications à
+  retirer · 0 `EN_ATTENTE` avant · 12 refus sans coach laissés — exactement l'attendu.
+- **Bloc B (apply)** : transaction validée, assertions passées.
+- **Après** : 4 `EN_ATTENTE` (note système, motif et `reviewed_at` vides), 2 athlètes ;
+  12 refus sans coach intacts ; les 4 notifications retirées ; **0 notification
+  émise** pendant l'opération.
+- **Sauvegarde** `public._volet6_sauvegarde` : 4 suggestions + 4 notifications, qui
+  correspondent aux 4 rouvertes ; RLS active sans policy, illisible par `anon` et
+  `authenticated`. Rollback = bloc C. À supprimer à la main quand plus rien n'en dépend.
