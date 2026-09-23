@@ -1174,3 +1174,58 @@ aucune retouche d'école). Cas relevés :
 cégeps dans ces trois surfaces à la fois. Et l'éditeur de page école réécrit
 la liste d'un bloc (`replace_school_programs`) : une correction en base peut
 être défaite par la prochaine édition de l'école.
+
+---
+
+## 34. `log_new_athlete` triple chaque ligne `NEW_ATHLETE` (au registre, pas commencé)
+
+Relevé le **2026-09-22** en préparant le lot 4A (bouton « tout marquer comme
+lu » + nettoyage unique des non-lues du flux recruteur). **La cause du
+compteur qui se resalit, à corriger avant que le nettoyage ait un sens
+durable.**
+
+Le trigger `log_new_athlete()` (AFTER INSERT sur `athletes`) fait un éventail
+sans périmètre :
+
+```sql
+INSERT INTO recruiter_activity_log (recruiter_id, athlete_id, action_type, details)
+SELECT DISTINCT rf.recruiter_id, NEW.id, 'NEW_ATHLETE',
+       jsonb_build_object('first_name', NEW.first_name, 'last_name', NEW.last_name)
+  FROM recruiter_favorites rf;     -- ← aucune clause WHERE
+```
+
+Il écrit **une ligne par recruteur ayant AU MOINS UN favori, quel qu'il
+soit** — pas par recruteur concerné par cet athlète. Aucun lien de sport, de
+région, de cégep ou de favori avec l'athlète créé.
+
+**Mesuré en prod au 2026-09-22 :**
+
+| | |
+|---|---|
+| Lignes `NEW_ATHLETE` | **287** sur 669 lignes du journal (43 %) |
+| Lignes par athlète créé | **3, systématiquement** (3 recruteurs avaient un favori) |
+| Non lues `NEW_ATHLETE` | **181** sur 250 non lues au total (**72 %**) |
+
+Conséquences en chaîne :
+
+1. **La pastille de la barre latérale recruteur est saturée par du doublon.**
+   Les deux plus gros porteurs (112 et 70 non lues) cumulent 73 % du total et
+   sont **tous deux au tier gratuit** — donc incapables de vider le compteur,
+   puisque le marquage en lu n'a lieu qu'en visitant `/recruteur/activites`,
+   page Pro. Le lot 4A corrige l'effacement ; il ne corrige pas la source.
+2. **Le coach voyait le même événement trois fois.** La policy
+   `Coaches read activity for their claimed athletes` laissait passer
+   `NEW_ATHLETE` (51 lignes lisibles par 5 coachs), rendu avec le libellé
+   générique de repli de l'UI. **Fermé par la liste blanche du lot 4A** —
+   mais les lignes continuent d'être écrites.
+3. Le facteur de multiplication **croît avec le nombre de recruteurs ayant un
+   favori**. À 3 aujourd'hui ; à 30 recruteurs actifs, chaque inscription
+   d'athlète écrira 30 lignes.
+
+**À décider quand le lot s'ouvrira** (rien n'est tranché) : scoper l'éventail
+(même sport ? même région ? recruteurs Pro seulement ?), ou remplacer le
+journal par une lecture à la volée (« athlètes créés depuis ta dernière
+visite »), qui ne stocke rien et ne peut pas se désynchroniser. Noter aussi
+que `details` y recopie `first_name`/`last_name` — le même motif que le lot 4A
+interdit désormais aux nouveaux journaliseurs, pour que l'affichage suive un
+retrait de consentement.

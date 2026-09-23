@@ -20,6 +20,7 @@ import { loadSearchData, trouverProgramme, equipesParSport, type SearchData, typ
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
 import Link from "next/link";
 import type { MapFocus } from "./MapPane";
+import { divulgationCible } from "@/lib/cibles/divulgation";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const PUBLIC_BASE = "https://nexussports.ca";
@@ -621,6 +622,10 @@ function Apercu({
           <Heart size={16} fill={cible ? "currentColor" : "none"} aria-hidden />
           {cible ? "Dans tes cibles" : "Ajouter à mes cibles"}
         </button>
+        {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Rendue pour
+            un athlète connecté seulement : sans `viewer` le bouton est inerte,
+            et annoncer une conséquence à un geste impossible embrouille. */}
+        {viewer && <span className="note">{divulgationCible(cible)}</span>}
         {!viewer && <span className="note">Connecte-toi avec ton compte athlète pour cibler un collège.</span>}
       </div>
     </div>

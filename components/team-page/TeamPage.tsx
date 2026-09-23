@@ -379,5 +379,9 @@ export const TP_CSS = `
 /* variante compacte du bouton cibles (dans la box) + état actif partagé */
 .tp .cibles.sm{font-size:14px;padding:11px 18px;border-radius:11px}
 .tp .cibles.on{background:var(--nx-red-deep);box-shadow:0 8px 22px -12px rgba(230,57,70,.6)}
+/* divulgation du ciblage (hero + box besoins) — lib/cibles/divulgation.ts.
+   Discrète, jamais masquée : cibler un cégep le lui fait savoir.
+   (Pas de backtick dans ce bloc : il vit dans un template literal.) */
+.tp .cibles-disc{font-family:'Outfit';font-weight:500;font-size:12.5px;line-height:1.45;color:var(--p-mut);margin-top:9px;max-width:340px}
 @media(max-width:720px){.tp section{padding:44px 20px 40px}.tp .stage{height:360px}.tp .needbox{padding:16px 18px}.tp .needbox .nb-l{font-size:15px}}
 `;

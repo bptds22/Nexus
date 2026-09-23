@@ -14,6 +14,7 @@ import {
 } from "@/lib/config/badgeCatalogue";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
+import { CIBLE_DIVULGATION_LISTE } from "@/lib/cibles/divulgation";
 import { toPng } from "html-to-image";
 import MonParcoursMobile from "@/components/shared/MonParcoursMobile";
 
@@ -829,8 +830,14 @@ function MonParcoursPageDesktop() {
             Mes cibles
           </h2>
         </div>
+        {/* « Construis ta liste, sache vers quoi tu travailles » cadrait Mes
+            cibles comme un PENSE-BÊTE PRIVÉ. C'était le cadrage le plus faux
+            des six surfaces de ciblage : la page collège promettait déjà (à
+            tort) une notification, pendant qu'ici la même action se présentait
+            comme un plan personnel. Une seule vérité, partout — décision BP :
+            cibler un cégep le lui fait savoir. */}
         <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-6 max-w-2xl">
-          Choisis les CÉGEPs où tu veux jouer. Construis ta liste, sache vers quoi tu travailles.
+          Choisis les CÉGEPs où tu veux jouer. {CIBLE_DIVULGATION_LISTE}
         </p>
 
         <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">

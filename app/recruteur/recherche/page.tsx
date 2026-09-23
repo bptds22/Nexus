@@ -8,6 +8,8 @@ import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import PastilleTeCible from "@/components/shared/PastilleTeCible";
+import { useCiblesParAthleteId } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
@@ -78,11 +80,13 @@ const sportLabel = (value: string): string => {
 
 /* ── Athlete Search Card ──────────────────────────────────── */
 
-function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
+function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, cibleDepuis }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
+  /** LOT 3 — date de ciblage de MON cégep par cet athlète, ou null. */
+  cibleDepuis: string | null;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
@@ -183,6 +187,15 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
           />
         </div>
 
+        {/* LOT 3 — « Te cible ». Placée APRÈS le statut de recrutement et
+            AVANT les distinctions : c'est une information de relation, pas
+            une distinction sportive. Vert, jamais rouge — cf. PastilleTeCible. */}
+        {cibleDepuis && (
+          <div className="mt-1.5">
+            <PastilleTeCible targetedAt={cibleDepuis} />
+          </div>
+        )}
+
         {/* Badges */}
         {a.badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -225,11 +238,13 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
 
 /* ── Athlete Search Row (list view) ─────────────────────────── */
 
-function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
+function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, cibleDepuis }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
+  /** LOT 3 — date de ciblage de MON cégep par cet athlète, ou null. */
+  cibleDepuis: string | null;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
@@ -313,8 +328,10 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
       {/* Promotion */}
       <span className="text-[13px] text-[#9CA3AF] shrink-0 w-[50px]">{a.graduationYear}</span>
 
-      {/* Badges */}
+      {/* Badges — la pastille « Te cible » ouvre la zone : un signal de
+          relation se lit avant les distinctions sportives. */}
       <div className="flex gap-1.5 flex-1 min-w-0">
+        {cibleDepuis && <PastilleTeCible targetedAt={cibleDepuis} taille="compacte" />}
         {a.badges.map((b) => (
           <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946] whitespace-nowrap">
             {b.icon && <NxIcon name={b.icon} size={10} className="text-[#E63946]" />} {b.label}
@@ -436,6 +453,11 @@ function RechercheContent() {
   const [progFilterOpen, setProgFilterOpen] = useState(false);
   const { data: catalogueProg } = useCegepPrograms();
   const { data: monCegepAUnCatalogue = false } = useMonCegepOffreDesProgrammes();
+  // LOT 3 — index athleteId → date de ciblage de MON cégep. Un seul appel
+  // réseau partagé avec le bloc du tableau de bord (même clé TanStack) : les
+  // deux surfaces ne peuvent pas se contredire. Map vide tant que la réponse
+  // n'est pas là, ou si le compte n'a pas de cégep → aucune pastille.
+  const ciblesParAthlete = useCiblesParAthleteId();
   const progFilterProgramIds = [...new Set(
     (catalogueProg ?? []).filter((l) => progFilterIds.includes(l.id)).map((l) => l.programId))];
 
@@ -991,6 +1013,7 @@ function RechercheContent() {
                   <AthleteSearchCard
                     key={a.id}
                     a={a}
+                    cibleDepuis={ciblesParAthlete.get(a.id) ?? null}
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}
@@ -1003,6 +1026,7 @@ function RechercheContent() {
                   <AthleteSearchRow
                     key={a.id}
                     a={a}
+                    cibleDepuis={ciblesParAthlete.get(a.id) ?? null}
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}

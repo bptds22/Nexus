@@ -176,7 +176,7 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
           />
         )}
         {!hidden.includes("news") && <NewsSection news={content.news} />}
-        <CtaCibles ctaTitle={content.ctaTitle} notifyName={content.ctaNotifyName} inTargets={inTargets} onToggleTargets={toggleTargets} />
+        <CtaCibles ctaTitle={content.ctaTitle} inTargets={inTargets} onToggleTargets={toggleTargets} />
         <div className="pfoot">⚡ Propulsé par Nexus · données de démonstration</div>
       </div>
     </div>
@@ -234,6 +234,10 @@ export const PP_CSS = `
 .pp .hf-btn.on .p{color:var(--green)}
 .pp .hf-note{font-family:'Outfit';font-weight:600;font-size:14.5px;color:var(--p-mut);text-align:right;max-width:230px}
 .pp .hf-note b{color:var(--p-soft)}
+/* divulgation du ciblage — c'est une information, pas une mention légale à
+   enterrer : --p-mut (#8A909C, ~5.3:1 sur le fond) et non --p-faint (#5A616D,
+   ~3.4:1), qui passerait sous le seuil AA pour du petit texte. */
+.pp .hf-disc{font-family:'Outfit';font-weight:500;font-size:12.5px;line-height:1.45;color:var(--p-mut);text-align:right;max-width:230px}
 .pp .man{display:inline-block;font-family:'Outfit';font-weight:600;font-size:12px;letter-spacing:.12em;color:var(--p-mut);border:1px dashed #3a3f49;border-radius:6px;padding:2px 7px;margin-left:14px;vertical-align:middle;text-transform:uppercase}
 .pp .tr-red .man{color:#fff;border-color:rgba(255,255,255,.5)}
 /* S2 — L'affiche (liste éditoriale, aucune icône) */

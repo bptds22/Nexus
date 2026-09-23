@@ -14,6 +14,7 @@ import {
   SPORT_CONFIGS, resolveFacette, countNoYear, matchState,
   type TeamData, type SportConfig,
 } from "./content";
+import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function BesoinsWidget({
   team, cible, onToggleCible,
@@ -103,14 +104,20 @@ export default function BesoinsWidget({
       )}
       {ms?.kind === "none" && (
         <div className="needbox none">
+          {/* « les coachs voient qui les suit » disait le MAUVAIS RÔLE : la
+              cible se pose sur le cégep, elle est lue par ses RECRUTEURS, pas
+              par des coachs. Corrigé lot 0 en même temps que le « notifié »
+              de la bande CTA de la page collège. */}
           <div className="nb-l">
             Pas d&apos;ouverture à ton poste pour l&apos;instant — mais montre ton intérêt :
-            les coachs voient qui les suit.
+            les recruteurs voient qui les cible.
           </div>
           <button type="button" className={`cibles sm${cible ? " on" : ""}`} onClick={onToggleCible}>
             <Heart size={15} fill="currentColor" aria-hidden />
             {cible ? "Dans tes cibles" : "Rajouter à mes cibles"}
           </button>
+          {/* Divulgation — source unique `lib/cibles/divulgation.ts`. */}
+          <p className="cibles-disc">{divulgationCible(cible)}</p>
         </div>
       )}
       </div>
