@@ -1506,23 +1506,24 @@ function AthleteProfilPageDesktop() {
       message, status: "pending", submitted_at: inserted.created_at,
     };
     setSuggestions((prev) => [newSug, ...prev]);
-    showToast("Suggestion envoyée à ton coach");
+    /* L'état décrit le PROCHAIN PAS, jamais l'architecture — jumeau du mobile
+       (AthleteEditWizardMobile, `aUnCoach`, décision BP 2026-09-12). Sans
+       entraîneur, la proposition dort en EN_ATTENTE : son prochain pas n'est
+       pas d'attendre, c'est d'aller en chercher un. */
+    showToast(coachId
+      ? "Suggestion envoyée à ton coach"
+      : "⏳ Invite ton coach pour qu'il approuve cette évaluation");
   };
 
-  /* ── Un refus MACHINE n'est pas un refus ──────────────────────────────
-     `note_systeme` est posé par le trigger de transition, jamais par un
-     humain. Tant que le volet 6 de D6 n'est pas appliqué, toute proposition
-     d'évaluation est rejetée à l'insertion même — annoncer « Rejetée » ferait
-     croire au jeune que son entraîneur l'a recalé, alors que PERSONNE n'a rien
-     lu. On montre l'attente : c'est la vérité de sa situation.
-
-     Le rouge reste pour les VRAIS refus, ceux qu'un entraîneur prononce. Eux
-     n'ont pas de `note_systeme`, et leur motif est un message humain — donc
-     affichable. Miroir de `AthleteEditWizardMobile`. */
-  const estRefusMachine = (s: AthleteSuggestion) => s.status === "rejected" && !!s.system_note;
-  const pendingSugs = suggestions.filter((s) => s.status === "pending" || estRefusMachine(s));
+  /* Depuis le volet 6 de D6, une proposition d'évaluation reste EN_ATTENTE
+     jusqu'au verdict d'un coach ou d'un directeur. Un refus portant
+     `note_systeme` est donc un VRAI refus : champ hors périmètre, ou refus
+     automatique antérieur au volet 6 laissé tel quel (décision BP 2026-09-23).
+     Il s'affiche comme tel — le masquer en « En attente » mentirait.
+     (Le mobile garde son masquage jusqu'au lot 1.4.x.) */
+  const pendingSugs = suggestions.filter((s) => s.status === "pending");
   const approvedSugs = suggestions.filter((s) => s.status === "approved");
-  const rejectedSugs = suggestions.filter((s) => s.status === "rejected" && !estRefusMachine(s));
+  const rejectedSugs = suggestions.filter((s) => s.status === "rejected");
 
   const getPending = (field: string) => pendingSugs.find((s) => s.field === field);
 
@@ -2045,12 +2046,12 @@ function AthleteProfilPageDesktop() {
 
           <div className="space-y-2">
             {(sugTab === "pending" ? pendingSugs : sugTab === "approved" ? approvedSugs : rejectedSugs).map((s) => {
-              /* L'état AFFICHÉ, pas l'état brut : un refus machine se rend en
-                 attente. `motifHumain` ne laisse passer que le motif d'un vrai
-                 refus d'entraîneur — celui d'un refus machine est de
-                 l'architecture, et l'architecture ne s'adresse pas au jeune. */
-              const enAttente = s.status === "pending" || estRefusMachine(s);
+              const enAttente = s.status === "pending";
+              /* Motif d'un coach : préfixé « Coach: ». Motif système : affiché
+                 sans préfixe — celui de la sortie 3 (« Ce champ ne se modifie
+                 plus depuis ton profil. ») est écrit pour l'athlète. */
               const motifHumain = s.status === "rejected" && !s.system_note ? (s.rejection_reason ?? null) : null;
+              const motifSysteme = s.status === "rejected" && s.system_note ? (s.rejection_reason ?? null) : null;
               return (
               <div key={s.id} className={`bg-[#13151a] rounded-lg border p-4 ${
                 enAttente ? "border-[#EAB308]/20" : s.status === "approved" ? "border-[#22C55E]/20" : "border-[#E63946]/20"
@@ -2069,6 +2070,7 @@ function AthleteProfilPageDesktop() {
                 </p>
                 {s.message && <p className="text-[11px] text-[#6b7280] mt-1 italic">&ldquo;{s.message}&rdquo;</p>}
                 {motifHumain && <p className="text-[11px] text-[#E63946] mt-1">Coach: &ldquo;{motifHumain}&rdquo;</p>}
+                {motifSysteme && <p className="text-[11px] text-[#6b7280] mt-1">{motifSysteme}</p>}
                 <p className="text-[10px] text-[#4a4d56] mt-1.5">{s.submitted_at}</p>
               </div>
               );
