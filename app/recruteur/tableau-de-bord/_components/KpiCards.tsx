@@ -5,25 +5,32 @@ import { getStatusConfig } from "@/lib/config/recruitmentStatuses";
 import { StatusIcon } from "../../_components/RecruitmentStatusBadge";
 
 /* ─────────────────────────────────────────────────────────────────
-   Zone 2 — PIPELINE + METRICS
-   Unified view: pipeline funnel + compact messaging stats.
+   Zone 2 — deux composants, deux zones (option A de BP, 2026-09-23)
+
+   · EntonnoirProcessus — « Mon processus de recrutement », sur fond rouge
+     léger, bordure rouge, barre rouge à gauche. Même grammaire que le bloc
+     « Parcours d'équipes » de la fiche : c'est LE bloc principal.
+   · IndicateursMessagerie — messages, réponses, conversion. Cartes grises
+     neutres, rangées par la page sous « Mon activité » avec les 4 tuiles.
+
+   Avant, les deux vivaient dans une seule carte grise, et l'entonnoir se
+   confondait avec tout ce qui l'entourait.
 ───────────────────────────────────────────────────────────────── */
 
 const PIPELINE_STATUSES: RecruitmentStatus[] = [
   "identifie", "contacte", "en_discussion", "visite_planifiee", "engage", "lettre_signee",
 ];
 
-export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiData; pipelineCounts?: Record<string, number> }) {
+export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record<string, number> }) {
   const counts = (pipelineCounts || {}) as Record<RecruitmentStatus, number>;
   const totalActive = PIPELINE_STATUSES.reduce((s, k) => s + (counts[k] || 0), 0);
 
   return (
-    <div className="space-y-4">
-
-      {/* ── Pipeline Funnel ─────────────────────────────────── */}
-      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+      /* Fond #E63946 à 4 %, bordure à 25 %, barre de 4 px à gauche (ombre
+         interne : elle suit l'arrondi sans élément de plus). */
+      <section className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.04] shadow-[inset_4px_0_0_#E63946] p-5 pl-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Mon processus de recrutement</h2>
+          <h2 className="font-head font-bold text-[15px] tracking-[0.15em] uppercase text-white">Mon processus de recrutement</h2>
           <Link href="/recruteur/pipeline" className="text-[12px] font-bold text-[#E63946] hover:text-[#60A5FA] transition-colors flex items-center gap-1">
             Voir tout
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -101,9 +108,15 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
             </span>
           )}
         </div>
-      </div>
+      </section>
+  );
+}
 
-      {/* ── Messaging Metrics (compact row) ─────────────────── */}
+export function IndicateursMessagerie({ data, pipelineCounts }: { data: RecruiterKpiData; pipelineCounts?: Record<string, number> }) {
+  const counts = (pipelineCounts || {}) as Record<RecruitmentStatus, number>;
+  // Le taux de conversion rapporte les engagés au total ACTIF de l'entonnoir.
+  const totalActive = PIPELINE_STATUSES.reduce((s, k) => s + (counts[k] || 0), 0);
+  return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="group bg-[#1A1D24] rounded-xl border border-[#2D3748] hover:border-[#E63946]/20 px-5 py-4 flex items-center gap-4 relative overflow-hidden transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E63946] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -158,6 +171,5 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
           );
         })()}
       </div>
-    </div>
   );
 }
