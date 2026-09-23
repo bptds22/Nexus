@@ -33,6 +33,20 @@ interface AthleteRow {
   school_type?: string | null;
   coach_name?: string | null;
   created_at_fmt?: string;
+  /* ── VUE UNIFIÉE (décision BP) ──────────────────────────────────────
+     La liste par défaut montre TOUS les comptes athlètes, fiches et
+     comptes sans fiche mêlés. `kind` dit ce qu'on regarde :
+       "fiche"      → une ligne de `athletes`, `id` = athletes.id ;
+       "sans_fiche" → un compte sans aucune fiche, `id` = users.id.
+     ⚠️ `id` ne désigne donc PAS la même chose selon `kind`. Toute
+     navigation ou écriture qui suppose un athlete.id doit tester `kind`
+     d'abord — c'est pour ça que le discriminant existe plutôt qu'un
+     simple `email != null`. */
+  kind?: "fiche" | "sans_fiche";
+  /** sans_fiche seulement — la seule identité qu'on ait sur ces comptes. */
+  email?: string | null;
+  /** sans_fiche seulement — google / apple / email. */
+  fournisseur?: string | null;
 }
 
 interface UserRow {
@@ -272,6 +286,7 @@ function AdminAthletesPageInner() {
           ? "sans_compte"
           : compteRel?.onboarding_complete === true ? "complete" : "commencee";
         return {
+          kind: "fiche" as const,
           inscription,
           id: a.id as string,
           first_name: (a.first_name as string) ?? "",
@@ -350,6 +365,56 @@ function AdminAthletesPageInner() {
       `${r.prenom ?? ""} ${r.nom ?? ""} ${r.email ?? ""}`.toLowerCase().includes(q));
   }, [sansFiche, filterParam, searchQuery]);
 
+  /* ── LA LISTE UNIFIÉE (décision BP) ────────────────────────────────────
+     La vue par DÉFAUT montre tous les comptes athlètes ensemble : fiches
+     complètes, fiches commencées et comptes sans fiche, triés par date.
+     Avant, la liste s'arrêtait aux fiches et les comptes sans fiche
+     vivaient dans une section à part sous le tableau : le compteur du haut
+     annonçait le vrai total, l'écran en montrait une partie. Le chiffre et
+     la liste ne racontaient pas la même chose.
+
+     LA FUSION N'A LIEU QUE SANS FILTRE DE CATÉGORIE, NI SPORT, NI ÉCOLE.
+     Un compte sans fiche n'a ni sport ni école : le laisser apparaître sous
+     ces filtres serait un faux positif. La RECHERCHE TEXTE, elle, s'applique
+     aux deux — chercher un courriel doit trouver le compte qui ne porte
+     que ça, et c'est souvent tout ce qu'on a pour le retrouver.
+
+     TRI — `created_at` des deux côtés : `athletes.created_at` pour une
+     fiche, `inscrit_le` (le compte) pour un sans-fiche. Ce n'est pas tout à
+     fait la même horloge — une fiche semée par un coach date de sa création,
+     pas d'une inscription — mais c'est le seul axe commun aux deux, et c'est
+     déjà celui sur lequel la liste était triée. */
+  const lignesAffichees = useMemo(() => {
+    if (filterParam || sportParam || schoolParam) return filteredRows;
+
+    const q = searchQuery.trim().toLowerCase();
+    const lignesSansFiche: AthleteRow[] = sansFiche
+      .filter((r) =>
+        !q || `${r.prenom ?? ""} ${r.nom ?? ""} ${r.email ?? ""}`.toLowerCase().includes(q))
+      .map((r) => ({
+        kind: "sans_fiche" as const,
+        // ⚠️ `id` porte ici un users.id, PAS un athletes.id. Sans danger
+        // d'écriture (les dix colonnes sont readonly), mais la navigation
+        // est coupée pour ce kind — voir onRowClick plus bas.
+        id: r.user_id,
+        first_name: r.prenom ?? "",
+        last_name: r.nom ?? "",
+        email: r.email,
+        fournisseur: r.fournisseur,
+        sport_id: null, school_id: null, coach_id: null,
+        annee_diplomation: null, verified: false,
+        cote_globale_entraineur: null, statut_recrutement_override: null,
+        profile_completion: null, consentement_parental: null,
+        video_faits_saillants_url: null, video_match_complet_url: null,
+        video_entrainement_url: null,
+        created_at: r.inscrit_le,
+        created_at_fmt: formatDate(r.inscrit_le),
+      }));
+
+    return [...filteredRows, ...lignesSansFiche].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [filteredRows, sansFiche, filterParam, sportParam, schoolParam, searchQuery]);
+
   /* Le VRAI total : un compte athlète, avec ou sans fiche. Les fiches sans
      compte (semées par un coach, ou supprimées) ne sont pas des inscriptions —
      elles sont comptées à part pour que le total ne mente dans aucun sens. */
@@ -382,23 +447,42 @@ function AdminAthletesPageInner() {
   }, [rows]);
 
   const activeLabel = filterParam ? FILTER_LABELS[filterParam] || filterParam : null;
-  const activeCount = isUserView ? userRows.length : isSansFicheView ? sansFicheFiltres.length : filteredRows.length;
+  const activeCount = isUserView ? userRows.length : isSansFicheView ? sansFicheFiltres.length : lignesAffichees.length;
 
   const columns: AdminColumn<AthleteRow>[] = [
     {
       key: "first_name", label: "Prénom", readonly: true,
       render: (r) => (
         <span className="inline-flex items-center gap-2">
-          <Link href={`/admin/athletes/${r.id}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors" onClick={(e) => e.stopPropagation()}>
-            {r.first_name}
-          </Link>
+          {/* PAS DE LIEN sur une ligne sans fiche : `id` y est un users.id et
+              /admin/athletes/<user_id> ne résout rien. Un lien mort qui a
+              l'air vivant est pire que pas de lien. */}
+          {r.kind === "sans_fiche" ? (
+            <span className="text-[13px] font-bold text-[#c0c4cc]">
+              {r.first_name || <span className="text-[#4a4d56]">—</span>}
+            </span>
+          ) : (
+            <Link href={`/admin/athletes/${r.id}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors" onClick={(e) => e.stopPropagation()}>
+              {r.first_name}
+            </Link>
+          )}
+          {r.kind === "sans_fiche" && <InscriptionPill label="Inscription inachevée" />}
           {r.inscription === "commencee" && <InscriptionPill label="Fiche commencée" />}
         </span>
       ),
     },
     {
       key: "last_name", label: "Nom", readonly: true,
-      render: (r) => (
+      render: (r) => r.kind === "sans_fiche" ? (
+        // Le courriel sous le nom : sur ces comptes c'est souvent la SEULE
+        // identité disponible (prénom et nom sont vides tant que
+        // l'onboarding n'a rien écrit).
+        <span className="flex flex-col items-start leading-tight gap-0.5">
+          {r.last_name && <span className="text-[13px] font-bold text-[#c0c4cc]">{r.last_name}</span>}
+          <span className="text-[12px] text-[#9CA3AF] break-all">{r.email ?? "—"}</span>
+          {r.fournisseur && <FournisseurPill fournisseur={r.fournisseur} />}
+        </span>
+      ) : (
         <Link href={`/admin/athletes/${r.id}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors" onClick={(e) => e.stopPropagation()}>
           {r.last_name}
         </Link>
@@ -618,16 +702,22 @@ function AdminAthletesPageInner() {
         <UserListTable rows={userRows} />
       ) : isSansFicheView ? (
         <SansFicheTable rows={sansFicheFiltres} />
-      ) : rows.length === 0 ? (
+      ) : lignesAffichees.length === 0 ? (
         <div className="text-center py-12 text-[#6b7280]">Aucun athlète</div>
       ) : (
         <AdminTable<AthleteRow>
-          rows={filteredRows}
+          rows={lignesAffichees}
           columns={columns}
           table="athletes"
           searchFields={["first_name", "last_name"]}
           searchPlaceholder="Rechercher un athlète..."
-          onRowClick={(r) => router.push(`/admin/athletes/${r.id}`)}
+          onRowClick={(r) => {
+            // Une ligne sans fiche n'a pas de fiche a ouvrir : son `id` est un
+            // users.id, /admin/athletes/<user_id> ne resout rien. On ne
+            // navigue pas plutot que d'envoyer l'admin sur une page vide.
+            if (r.kind === "sans_fiche") return;
+            router.push(`/admin/athletes/${r.id}`);
+          }}
           onSaved={(id, patch) => {
             setRows((prev) =>
               prev.map((r) => {
@@ -643,24 +733,30 @@ function AdminAthletesPageInner() {
         />
       )}
 
-      {/* Vue par défaut (aucun filtre de liste) : les inscriptions inachevées
-          suivent la liste des fiches, pour qu'aucun compte athlète ne soit
-          absent de l'écran. Sport et école ne s'y appliquent pas — ces
-          comptes n'en ont pas. */}
-      {!loading && !isUserView && !isSansFicheView && !filterParam && !sportParam && !schoolParam
-        && sansFicheFiltres.length > 0 && (
-        <div className="space-y-3 pt-4">
-          <h2 className="font-head text-[15px] font-bold text-white uppercase tracking-tight">
-            Inscriptions inachevées <span className="text-[#6b7280] tabular-nums">({sansFicheFiltres.length})</span>
-          </h2>
-          <p className="text-[12px] text-[#6b7280]">
-            Comptes athlètes sans aucune fiche. L&apos;app n&apos;écrit la fiche qu&apos;à la fin de
-            l&apos;onboarding : un abandon dans l&apos;app n&apos;en laisse aucune.
-          </p>
-          <SansFicheTable rows={sansFicheFiltres} />
-        </div>
-      )}
+      {/* LA SECTION SÉPARÉE « Inscriptions inachevées » A ÉTÉ RETIRÉE.
+          Elle vivait ici, sous le tableau : la liste montrait les fiches, et
+          les comptes sans fiche arrivaient après, dans un second tableau que
+          rien n'obligeait à faire défiler. Ces lignes sont désormais FONDUES
+          dans la liste principale (`lignesAffichees`), triées avec le reste.
+          Le tableau dédié `SansFicheTable` reste utilisé — mais seulement
+          quand on ISOLE la catégorie via le filtre « Inscription », où ses
+          colonnes propres (consentement, relance, doublon) ont un sens. */}
     </div>
+  );
+}
+
+/** Fournisseur d'authentification d'un compte sans fiche. Neutre et discret :
+ *  c'est une donnée technique utile au diagnostic (un compte Apple qui revient
+ *  par courriel crée un DOUBLON), pas un statut à mettre en avant. */
+function FournisseurPill({ fournisseur }: { fournisseur: string }) {
+  // FOURNISSEUR_LABEL est la table déjà utilisée par SansFicheTable : une
+  // seule traduction pour les deux surfaces, sinon « Courriel » ici et
+  // « email » là-bas finissent par diverger.
+  const label = FOURNISSEUR_LABEL[fournisseur] ?? fournisseur;
+  return (
+    <span className="inline-flex shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-[#9CA3AF]">
+      {label}
+    </span>
   );
 }
 
