@@ -85,7 +85,7 @@ Prouvé en local (4 scénarios, transactions annulées, équipe de 9 athlètes s
 |---|---|
 | S1 — un **head coach** arrive | les 9 reçoivent son `coach_id` ✅ |
 | S2 — un coach **s'ajoute lui-même** en assistant (onboarding « rejoindre ») | promu intérimaire, les 9 le suivent ✅ |
-| S3 — un head coach arrive **après** un intérimaire | **refusé** par l'index `team_coaches_one_referent_per_team` ❌ |
+| S3 — un head coach arrive **après** un intérimaire | en SQL direct, refusé par l'index — **mais le produit passe par la passation, voir ci-dessous** ✅ |
 | S4 — un assistant **ajouté par un tiers**, équipe sans référent | reste assistant, les 9 restent **sans owner** ❌ |
 
 Les onboardings coach passent tous par S1/S2 (`finish_coach_*_onboarding` :
@@ -93,18 +93,41 @@ Les onboardings coach passent tous par S1/S2 (`finish_coach_*_onboarding` :
 qui a déjà du staff → `assistant`). Les 57 (43 équipes, aucune avec staff, aucun
 référent résoluble aujourd'hui) sont donc couverts **à l'arrivée d'un coach**.
 
-### Ce que le mécanisme ne fait PAS — à savoir, dit franchement
+### La passation intérimaire → head coach — EXISTE (corrigé le 2026-09-23)
 
-- **« Quand un head coach arrive, l'intérimaire passe assistant » n'existe pas
-  pour les équipes.** Aucun trigger, RPC ni écran. Un coach qui arrive dans une
-  équipe qui a déjà un intérimaire devient `assistant` ; l'index interdit un
-  second référent. La propriété reste à l'intérimaire.
-- Ce qui existe est au niveau **école** : `trg_demote_interim_on_director_appointment`
-  ramène un `DIRECTEUR_INTERIM` à `COACH` quand un `DIRECTEUR` est nommé (avec
-  une notification). Il **ne réattribue pas** les athlètes.
-- Effet de bord constaté en preuve : **nommer un directeur lui donne les
-  athlètes orphelins de son école** (`school_coaches` → `users.school_id` →
-  `backfill_athletes_on_coach_join`).
+⚠ **Une version précédente de ce plan disait que cette passation n'existait
+pas. C'était FAUX** : je n'avais cherché qu'en base, et mon scénario S3
+insérait un head coach en SQL, ce que le produit ne fait jamais.
+
+- **Le mécanisme est côté client** : `lib/queries/coach/setTeamCoachRole.ts`,
+  appelé par le menu de rôle de la page équipe (web `app/coach/equipes/[teamId]`
+  et mobile `CoachEquipeDetailMobile`). Il rétrograde le responsable en place
+  en `assistant`, PUIS promeut le nouveau ; si la promotion échoue, il remet
+  l'ancien. Rollback applicatif, pas transactionnel.
+- **L'index** `team_coaches_one_referent_per_team` : `UNIQUE (team_id) WHERE
+  role IN ('head_coach','head_coach_interim')` — un seul responsable, intérim
+  compris. D'où l'ordre rétrograder-puis-promouvoir.
+- **Rejoué en local par l'interface** (arrivées par les écritures exactes de
+  `joinExistingTeam` sous le JWT de chaque coach ; passation par clic) :
+  A rejoint une équipe sans staff → `head_coach_interim`, les 9 athlètes à A ;
+  B rejoint → `assistant`. Puis **B, sur son propre écran, choisit
+  « Entraîneur-chef »** → toast « Bruno Chef est maintenant responsable —
+  Martin Bélanger devient assistant. », en base A `assistant`, B `head_coach`,
+  **les 9 athlètes à B**. Même résultat quand c'est A qui nomme B.
+- L'onboarding n'offre aucun choix de rôle : rejoindre une équipe existante
+  insère toujours `assistant` ; la passation se fait ensuite sur la page équipe.
+
+**À savoir (question produit, pas un bug démontré) :** le menu de rôle est
+actif pour **tous** les coachs de l'équipe (`canEdit` sans condition), et la RLS
+de `team_coaches` accepte la mise à jour. Un **assistant peut donc se nommer
+lui-même entraîneur-chef** et rétrograder le responsable — et, par le
+ré-ancrage, prendre la propriété des athlètes (donc leurs évaluations et, avec
+le volet 6, leurs propositions). C'est ce que le rejeu a fait. Voulu ?
+
+Au niveau école, `trg_demote_interim_on_director_appointment` ramène un
+`DIRECTEUR_INTERIM` à `COACH` quand un `DIRECTEUR` est nommé (sans réattribuer
+les athlètes). Et nommer un directeur lui donne les athlètes orphelins de son
+école (`backfill_athletes_on_coach_join`).
 
 ### b. §4 reste-t-il nécessaire ? — OUI, mais plus pour la raison annoncée
 
