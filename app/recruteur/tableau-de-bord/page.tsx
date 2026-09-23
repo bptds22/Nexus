@@ -6,6 +6,7 @@ import ActionBar from "./_components/ActionBar";
 import KpiCards from "./_components/KpiCards";
 import TrendingAthletes from "./_components/TrendingAthletes";
 import RecruiterActivityFeed from "./_components/RecruiterActivityFeed";
+import CiblesSurMonCegep from "./_components/CiblesSurMonCegep";
 import { useDashboardHeader } from "@/lib/queries/recruiter/useDashboardHeader";
 import { useDashboardKpi } from "@/lib/queries/recruiter/useDashboardKpi";
 import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes";
@@ -148,6 +149,15 @@ function RecruteurTableauDeBordDesktop() {
 
       {/* Zone 1: Action Bar */}
       <ActionBar data={actionBarData} />
+
+      {/* LOT 2 — « N athlètes ciblent ton cégep ». Placé juste sous ActionBar,
+          dans la zone « ce qui demande ton attention », et AU-DESSUS des
+          relances : une cible est un signal entrant, une relance est une
+          tâche sortante. Le composant se masque tout seul — pas de cégep
+          rattaché, ou aucune cible → il rend null. Aucun FeatureGate : le
+          gratuit le voit (les identités restent masquées par la RPC de
+          cartes, comme partout ailleurs). */}
+      <CiblesSurMonCegep />
 
       {/* Relances dues — AU-DESSUS du funnel, comme sur mobile : ce qui est en
           retard passe avant l'état d'ensemble. Le funnel « Mon processus » vit
