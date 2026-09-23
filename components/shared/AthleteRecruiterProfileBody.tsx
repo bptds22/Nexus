@@ -2184,6 +2184,15 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             (contrairement aux badges) : `parcours_equipes` a dû être ajouté
             à la RPC dans la même migration. Le bloc se masque de lui-même
             quand il n'y a ni entrée ni anchor. */}
+        {/* Verrouillé au palier gratuit (décision BP 2026-09-23), comme le
+            rapport, les vidéos et le profil académique. Le bloc ouvert se rend
+            quasi toujours (l'anchor suffit), donc le cadenas aussi. */}
+        {lockContent ? (
+          <section>
+            <h2 className={sectionLabel}>Parcours d&apos;équipes</h2>
+            <FreeLock />
+          </section>
+        ) : (
         <div className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.04] p-4 sm:p-5">
           <TeamHistoryBlock
             entries={a.teamHistory}
@@ -2196,6 +2205,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             headingClassName="font-head text-[17px] sm:text-[19px] font-black tracking-tight uppercase text-white mb-4 flex items-center gap-2.5 before:content-[''] before:w-1 before:h-5 before:rounded-full before:bg-[#E63946]"
           />
         </div>
+        )}
 
         {/* ══════════ ACADEMIC PROFILE — partner mode swaps for a
             locked placeholder so the redaction reads as
@@ -2440,7 +2450,18 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             )}
 
             {/* ── Media & Links ────────────────────────────── */}
-            {hasMedia && (
+            {/* Verrouillé au palier gratuit (décision BP 2026-09-23). Avant, la
+                section n'avait AUCUN verrou : un recruteur gratuit ouvrait ici
+                les vidéos que « Faits saillants » lui cadenasse, et l'Instagram
+                d'un athlète dont le nom lui est masqué — ce qui le démasque.
+                Cadenas seulement s'il y a des liens : pas de promesse vide. */}
+            {hasMedia && lockContent && (
+              <section className="nx-slide-section">
+                <h2 className={sectionLabel}>Médias & liens</h2>
+                <FreeLock />
+              </section>
+            )}
+            {hasMedia && !lockContent && (
               <section className="nx-slide-section">
                 <h2 className={sectionLabel}>Médias & liens</h2>
                 <div className={`${cardBase} p-5`}>
