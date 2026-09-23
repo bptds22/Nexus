@@ -36,6 +36,9 @@ export function useAddPipelineNote() {
       queryClient.invalidateQueries({
         queryKey: ["pipeline-notes", userId, variables.athleteId],
       });
+      // La vue tableau affiche la DERNIÈRE note (usePipelineCards) : sans
+      // cette invalidation elle resterait sur l'ancienne jusqu'au rechargement.
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     },
   });
 }

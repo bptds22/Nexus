@@ -713,7 +713,7 @@ const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = 
   { cle: "grade", libelle: "Mon grade", bloc: "suivi" },
   { cle: "relance", libelle: "Relance", bloc: "suivi" },
   { cle: "visite", libelle: "Visite", bloc: "suivi" },
-  { cle: "note", libelle: "Note de relance", bloc: "suivi" },
+  { cle: "note", libelle: "Note de suivi", bloc: "suivi" },
   { cle: "video", libelle: "Faits saillants", bloc: "suivi" },
 ];
 
@@ -731,6 +731,17 @@ function formatPoids(card: PipelineKanbanCard): string | null {
 }
 
 const VIDE = <span className="text-[#4a4d56]">—</span>;
+
+/** Date d'une note de suivi : « 18 sept. », année ajoutée si elle diffère.
+ *  `created_at` est un timestamptz — lu en heure LOCALE (new Date), pas
+ *  tranché en chaîne comme jourLocal() le fait pour les colonnes `date` :
+ *  une note écrite à 21 h serait sinon datée du lendemain (UTC). */
+function formatDateNote(iso: string, now: number): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const annee = now ? new Date(now).getFullYear() : d.getFullYear();
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}${d.getFullYear() !== annee ? ` ${d.getFullYear()}` : ""}`;
+}
 
 /** Contenu d'une cellule — une seule fonction pour les treize colonnes, pour
  *  que l'ORDRE vive dans COLONNES_TABLEAU et nulle part ailleurs. */
@@ -788,9 +799,14 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
         : VIDE;
     }
     case "note":
-      return card.next_action_note
-        ? <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.next_action_note}>{card.next_action_note}</span>
-        : VIDE;
+      /* La DERNIÈRE note de suivi (recruiter_notes), avec sa date — pas la
+         note de relance, qui passe au survol de la colonne Relance. */
+      return card.derniere_note ? (
+        <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.derniere_note.content}>
+          <span className="font-semibold text-[#6b7280]">{formatDateNote(card.derniere_note.created_at, now)} — </span>
+          {card.derniere_note.content}
+        </span>
+      ) : VIDE;
     case "video":
       return card.has_video ? (
         <Link
@@ -911,7 +927,8 @@ function PipelineTable({
                     /* Relance : ouvre le même popover que le pied de carte —
                        y compris pour en POSER une sur une ligne qui n'en a pas. */
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} title="Modifier la relance"
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}
+                        title={card.next_action_note ? `Note de relance : ${card.next_action_note}\n\nCliquer pour modifier la relance` : "Modifier la relance"}
                         onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}>
                         {celluleTableau(col.cle, card, now)}
                       </td>
@@ -1070,6 +1087,9 @@ function SlideOver({
       .select("id, content, created_at")
       .single();
     queryClient.invalidateQueries({ queryKey: ["pipeline-notes"] });
+    // Colonne « Note de suivi » de la vue tableau (dernière note, lue par
+    // usePipelineCards) : sans ceci elle resterait sur l'ancienne note.
+    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     setNoteText("");
     setPosting(false);
   };

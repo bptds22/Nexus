@@ -71,6 +71,11 @@ export interface PipelineKanbanCard {
   taille_pieds?: number | null;
   taille_pouces?: number | null;
   poids_lbs?: number | null;
+  /** Dernière note de SUIVI du recruteur sur cet athlète (recruiter_notes,
+   *  la plus récente) — colonne « Note de suivi » de la vue tableau. Pas
+   *  next_action_note, qui est la note attachée à la RELANCE. `null` = aucune
+   *  note. Optionnel : les fixtures mock ne le portent pas. */
+  derniere_note?: { content: string; created_at: string } | null;
 }
 
 export const KANBAN_COLUMNS: {

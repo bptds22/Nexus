@@ -58,6 +58,44 @@ async function fetchGradeMap(
   return map;
 }
 
+/** Dernière note de suivi (recruiter_notes) par athlète — colonne « Note de
+ *  suivi » de la vue tableau (décision BP 2026-09-23 : la plus récente, avec
+ *  sa date ; le panneau garde l'historique complet).
+ *
+ *  Une requête, triée du plus récent au plus ancien : la PREMIÈRE ligne vue
+ *  pour un athlète est la sienne. Pas de migration — la RLS propriétaire seul
+ *  de recruiter_notes suffit, et le `.eq("recruiter_id")` est explicite quand
+ *  même (même idiome que fetchGradeMap). Si le plafond PostgREST (1 000
+ *  lignes) tronquait un jour la réponse, c'est l'ancien qui tomberait, jamais
+ *  la dernière note.
+ *
+ *  Une erreur ne casse PAS le pipeline : colonne vide plutôt que kanban
+ *  blanc. Elle est journalisée, pas avalée. */
+async function fetchDerniereNoteMap(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  athleteIds: string[],
+): Promise<Record<string, { content: string; created_at: string }>> {
+  const map: Record<string, { content: string; created_at: string }> = {};
+  if (athleteIds.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("recruiter_notes")
+    .select("athlete_id, content, created_at")
+    .eq("recruiter_id", userId)
+    .in("athlete_id", athleteIds)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[usePipelineCards] dernière note :", error.message);
+    return map;
+  }
+  for (const row of (data ?? []) as { athlete_id: string; content: string; created_at: string }[]) {
+    if (!map[row.athlete_id]) map[row.athlete_id] = { content: row.content, created_at: row.created_at };
+  }
+  return map;
+}
+
 /** `enabled` FACULTATIF, défaut `true` : tous les appelants existants sont
  *  inchangés. Le dashboard s'en sert pour ne PAS charger le pipeline d'un
  *  recruteur Free, chez qui l'encart Relances n'a pas lieu d'être — on évite
@@ -111,9 +149,10 @@ export function usePipelineCards(options?: { enabled?: boolean }) {
          En parallèle : les deux ne dépendent que de la liste d'athlètes, les
          sérialiser ajouterait un aller-retour à l'ouverture du kanban. */
       const pipelineAthleteIds = data.map((p) => p.athlete_id as string);
-      const [cardMap, gradeMap] = await Promise.all([
+      const [cardMap, gradeMap, noteMap] = await Promise.all([
         fetchRecruiterAthleteCards(supabase, pipelineAthleteIds),
         fetchGradeMap(supabase, userId, pipelineAthleteIds),
+        fetchDerniereNoteMap(supabase, userId, pipelineAthleteIds),
       ]);
 
       const mapped: PipelineKanbanCard[] = data.map((p: Record<string, unknown>) => {
@@ -172,6 +211,7 @@ export function usePipelineCards(options?: { enabled?: boolean }) {
           taille_pieds: card?.taille_pieds ?? null,
           taille_pouces: card?.taille_pouces ?? null,
           poids_lbs: card?.poids_lbs ?? null,
+          derniere_note: noteMap[p.athlete_id as string] ?? null,
         } as PipelineKanbanCard;
       });
 
