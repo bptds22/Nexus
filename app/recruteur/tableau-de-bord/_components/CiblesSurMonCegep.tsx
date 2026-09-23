@@ -101,7 +101,7 @@ export default function CiblesSurMonCegep() {
           href={LIEN_FILTRE_ME_CIBLENT}
           className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-[#22C55E] text-white text-[12px] font-black shrink-0 hover:bg-[#16A34A] transition-colors"
         >
-          Voir les {n} →
+          {n > 1 ? `Voir les ${n} →` : "Le voir →"}
         </Link>
       </div>
 
