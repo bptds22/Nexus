@@ -1229,3 +1229,29 @@ visite »), qui ne stocke rien et ne peut pas se désynchroniser. Noter aussi
 que `details` y recopie `first_name`/`last_name` — le même motif que le lot 4A
 interdit désormais aux nouveaux journaliseurs, pour que l'affichage suive un
 retrait de consentement.
+
+## 35. Filtres client de la recherche recruteur — deux limites à connaître (au registre)
+
+Relevé le **2026-09-23** en choisissant le chemin du lot 5 (« Me ciblent »).
+
+**1. Le jour où la pagination revient, « Me ciblent » passe par la RPC.**
+La recherche charge tout : `useAthleteSearch` appelle
+`recruiter_search_athletes` avec `p_limit: null` (LIMIT ALL, aucun offset —
+migration `20260812100000`). C'est ce qui rend juste un filtre **client** :
+« Me ciblent » croise le jeu complet avec les ids de
+`athletes_targeting_my_cegep()`, comme « Masquer favoris » le fait déjà.
+Avec un LIMIT/OFFSET, ce croisement ne porterait plus que sur la page
+chargée, sans erreur. Il faudra alors un paramètre dans la RPC — donc un
+`DROP`/`CREATE` de `recruiter_search_athletes`, gate d'ACL par comparaison
+intégrale et preuves par rôle (règle transverse du 2026-09-07) — **dans le
+même lot** que la RPC d'agrégat déjà prévue pour les menus Organisation /
+Ligue / Division (en-tête de `useAthleteSearch.ts`), qui ont exactement le
+même défaut.
+
+**2. Le plafond PostgREST de 1 000 lignes vaut pour TOUS les filtres client.**
+`max_rows = 1000` (`supabase/config.toml` ; défaut Supabase, valeur prod non
+relevée). Au-delà, la réponse de la RPC est tronquée **sans erreur** :
+« Masquer favoris », « Me ciblent », les menus de taxonomie et le compte de
+résultats ne porteraient que sur les 1 000 premières lignes. **121** athlètes
+actifs en prod au relevé — loin du seuil, mais c'est ce seuil, et non un
+changement de code, qui déclenchera le point 1.
