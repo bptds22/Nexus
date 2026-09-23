@@ -320,11 +320,10 @@ export default function AdminDashboard() {
           <BigStat
             label="Comptes athlètes"
             value={comptesAthletes?.repartition?.comptes}
-            detail={comptesAthletes?.repartition ? (
-              <Link href="/admin/athletes" className="hover:text-[#9CA3AF] transition-colors">
-                {pluriel(comptesAthletes.repartition.complete, "fiche complète", "fiches complètes")} · {pluriel(comptesAthletes.repartition.commencee, "commencée", "commencées")} · {comptesAthletes.repartition.sansFiche} sans fiche
-              </Link>
-            ) : comptesAthletes?.erreur ? (
+            /* Le détail (fiches complètes / commencées / sans fiche) vit sur
+               /admin/athletes — retiré de la carte le 2026-09-23 (décision BP).
+               Seule l'erreur de chargement reste signalée ici. */
+            detail={!comptesAthletes?.repartition && comptesAthletes?.erreur ? (
               <span className="text-[#F59E0B]">Comptes indisponibles ({comptesAthletes.erreur})</span>
             ) : undefined}
             delta={counts?.athletesThisWeek ?? 0}
@@ -508,9 +507,6 @@ function StatShell({
     </div>
   );
 }
-
-const pluriel = (n: number, un: string, plusieurs: string) =>
-  `${n.toLocaleString("fr-CA")} ${n > 1 ? plusieurs : un}`;
 
 function BigStat({
   label, value, delta, deltaLabel, sublabel, detail, loading,
