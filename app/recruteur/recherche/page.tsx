@@ -861,13 +861,15 @@ function RechercheContent() {
           </button>
           {/* LOT 5 — remplace la pastille « Te cible » des cartes. Masquée sans
               cégep rattaché : on ne saurait pas qui te cible. Le compte vient
-              du même appel que la tuile « Athlètes qui te ciblent » du tableau de bord. */}
+              du même appel que la tuile « Athlètes qui te ciblent » du tableau de bord,
+              dont elle porte le libellé (2026-09-23). La rangée est en flex-wrap :
+              à 1280 px+ elle tient sur une ligne ; sous ~1100 px elle se replie. */}
           {aUnCegepRattache && (
             <button type="button" onClick={() => setMeCiblent(!meCiblent)}
               title="Athlètes qui ont mis ton cégep dans leurs cibles"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${meCiblent ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={meCiblent ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>
-              Te ciblent{cibles ? ` (${idsQuiMeCiblent.size})` : ""}
+              Athlètes qui te ciblent{cibles ? ` (${idsQuiMeCiblent.size})` : ""}
             </button>
           )}
         </div>
