@@ -169,6 +169,9 @@ export function usePipelineCards(options?: { enabled?: boolean }) {
           // aucune ligne dans recruiter_athlete_grades = pas encore jugé.
           grade: gradeMap[p.athlete_id as string] ?? null,
           noTeam: !card?.school_id,
+          taille_pieds: card?.taille_pieds ?? null,
+          taille_pouces: card?.taille_pouces ?? null,
+          poids_lbs: card?.poids_lbs ?? null,
         } as PipelineKanbanCard;
       });
 

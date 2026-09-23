@@ -30,6 +30,7 @@ import {
   type QuickKey,
 } from "@/lib/pipeline/filterPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
+import { usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import {
   DndContext,
@@ -67,6 +68,11 @@ import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMo
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+/** Valeurs admises de la préférence kanban/tableau — constante de module :
+ *  usePreferenceLocale la met dans ses dépendances, un tableau recréé à
+ *  chaque rendu la relirait sans fin. */
+const VUES_PIPELINE = ["kanban", "tableau"] as const;
 
 /* ═══════════════════════════════════════════════════════════════
    Pipeline de Recrutement — Kanban Board with Drag-and-Drop
@@ -656,6 +662,220 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
   );
 });
 
+/* ── Vue tableau (Lot A, décision BP 2026-09-23) ─────────────────────
+   Les MÊMES cartes que le kanban (déjà filtrées et triées par la page),
+   à plat, en colonnes façon Excel — la feuille de suivi que les
+   recruteurs tiennent à côté. Aucun champ neuf : tout vient de
+   usePipelineCards.
+
+   Ce que le tableau ne fait PAS, exprès : aucune édition en ligne. Un clic
+   sur une ligne ouvre le même panneau latéral que la carte ; un clic sur la
+   relance ouvre le même popover. Les gardes du mode démo gratuit vivent
+   dans ces deux surfaces — le tableau en hérite sans en dupliquer une.
+
+   « Faits saillants » = oui/non + lien vers la fiche : recruiter_athlete_cards
+   ne rend que `a_une_video` (video_faits_saillants_url non nul), pas l'URL.
+   Option retenue par BP plutôt qu'une migration de la RPC. Conséquence : un
+   athlète qui n'a QU'UN lien Hudl s'affiche « — » ici ; la fiche le montre. */
+
+/** Colonnes dont l'en-tête pilote un tri EXISTANT (sortPipelineCards). Les
+ *  autres ne sont pas triables : pas de mode de tri inventé pour le tableau,
+ *  le menu « Trier » et les en-têtes restent un seul et même état. */
+const TRI_PAR_COLONNE: Partial<Record<string, PipelineSortMode>> = {
+  nom: "name_asc",
+  cote: "rating_desc",
+  grade: "grade_desc",
+  relance: "next_action_asc",
+};
+
+const COLONNES_TABLEAU: { cle: string; libelle: string }[] = [
+  { cle: "etape", libelle: "Étape" },
+  { cle: "visite", libelle: "Visite" },
+  { cle: "position", libelle: "Position" },
+  { cle: "numero", libelle: "#" },
+  { cle: "nom", libelle: "Nom" },
+  { cle: "ecole", libelle: "École / Club" },
+  { cle: "taille", libelle: "Taille" },
+  { cle: "poids", libelle: "Poids" },
+  { cle: "cote", libelle: "Cote coach" },
+  { cle: "grade", libelle: "Grade" },
+  { cle: "relance", libelle: "Relance" },
+  { cle: "note", libelle: "Note de relance" },
+  { cle: "video", libelle: "Faits saillants" },
+];
+
+function formatTaille(card: PipelineKanbanCard): string | null {
+  return card.taille_pieds ? `${card.taille_pieds}'${card.taille_pouces ?? 0}"` : null;
+}
+
+function formatPoids(card: PipelineKanbanCard): string | null {
+  return card.poids_lbs ? `${card.poids_lbs} lbs` : null;
+}
+
+const VIDE = <span className="text-[#4a4d56]">—</span>;
+
+function PipelineTable({
+  cards,
+  now,
+  competitorMap,
+  sortBy,
+  onSort,
+  onRowClick,
+  onOpenAction,
+}: {
+  cards: PipelineKanbanCard[];
+  now: number;
+  competitorMap: Record<string, number>;
+  sortBy: PipelineSortMode;
+  onSort: (mode: PipelineSortMode) => void;
+  onRowClick: (card: PipelineKanbanCard) => void;
+  onOpenAction: (card: PipelineKanbanCard) => void;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-[#2D3748] bg-[#1A1D24]">
+      <table className="w-full min-w-[1060px] text-[13px]">
+        <thead>
+          <tr className="border-b border-[#2D3748]">
+            {COLONNES_TABLEAU.map((col) => {
+              const mode = TRI_PAR_COLONNE[col.cle];
+              const actif = mode !== undefined && sortBy === mode;
+              /* En-têtes sur DEUX lignes permises : sinon « Faits saillants » ou
+                 « Cote coach » dictent la largeur de colonnes dont le contenu
+                 tient en 40 px, et le tableau ne tient plus à 1440 px. */
+              const base = "text-left align-bottom px-2 py-3 text-[11px] leading-tight font-bold uppercase tracking-wide";
+              if (!mode) {
+                return <th key={col.cle} scope="col" className={`${base} text-[#6b7280]`}>{col.libelle}</th>;
+              }
+              return (
+                <th key={col.cle} scope="col" className={base} aria-sort={actif ? "ascending" : "none"}>
+                  {/* Re-cliquer l'en-tête actif rend le tri par défaut : on ne
+                      reste jamais coincé dans un tri choisi par mégarde. */}
+                  <button
+                    type="button"
+                    onClick={() => onSort(actif ? DEFAULT_PIPELINE_SORT : mode)}
+                    className={`inline-flex items-end gap-1 text-left uppercase tracking-wide transition-colors ${actif ? "text-white" : "text-[#6b7280] hover:text-[#9CA3AF]"}`}
+                    title={actif ? "Revenir au tri par dernière activité" : `Trier : ${PIPELINE_SORT_OPTIONS.find((o) => o.value === mode)?.label}`}
+                  >
+                    {col.libelle}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className={actif ? "opacity-100" : "opacity-30"} aria-hidden>
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {cards.length === 0 ? (
+            <tr>
+              <td colSpan={COLONNES_TABLEAU.length} className="px-2 py-12 text-center text-[13px] text-[#4a4d56]">
+                Aucun athlète ne correspond
+              </td>
+            </tr>
+          ) : cards.map((card) => {
+            const col = KANBAN_COLUMNS.find((c) => c.id === card.status);
+            const engagement = col?.phase === "commitment";
+            const ring = getCardRing(card, now, competitorMap);
+            const visite = card.visit_at ? formatVisitPill(card.visit_at, now) : null;
+            const enRetard = isLate(card.next_action_at, now);
+            const taille = formatTaille(card);
+            const poids = formatPoids(card);
+            return (
+              <tr
+                key={card.id}
+                tabIndex={0}
+                onClick={() => onRowClick(card)}
+                onKeyDown={(e) => { if (e.key === "Enter") onRowClick(card); }}
+                className="border-t border-[#2D3748]/60 cursor-pointer hover:bg-white/[0.03] focus:bg-white/[0.04] outline-none transition-colors"
+                aria-label={ring.reason ? `${card.full_name} — ${ring.reason}` : card.full_name}
+              >
+                {/* Le liséré de la carte (inactivité, relance proche) passe
+                    sur le bord gauche de la ligne. */}
+                <td className="px-2 py-2.5 whitespace-nowrap" style={ring.color ? { boxShadow: `inset 3px 0 0 ${ring.color}` } : undefined}>
+                  <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold ${engagement ? "text-[#E63946]" : "text-[#9CA3AF]"}`}>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: col?.color ?? GRAY }} />
+                    {col?.label ?? card.status}
+                  </span>
+                </td>
+                <td className="px-2 py-2.5 whitespace-nowrap">
+                  {visite
+                    ? <span className={`text-[12px] font-semibold ${visite.isPast ? "text-[#E63946]" : "text-[#F59E0B]"}`} title={visite.isPast ? "Visite passée" : "Visite planifiée"}>{visite.label}</span>
+                    : VIDE}
+                </td>
+                <td className="px-2 py-2.5 whitespace-nowrap">
+                  {card.position
+                    ? <span className="inline-flex items-center px-2 py-0.5 rounded bg-white/[0.06] text-[11px] font-bold uppercase tracking-wider text-white">{card.position}</span>
+                    : VIDE}
+                </td>
+                <td className="px-2 py-2.5 whitespace-nowrap font-black text-[#E63946]">
+                  {card.jersey ? card.jersey : VIDE}
+                </td>
+                <td className="px-2 py-2.5 min-w-[110px]">
+                  <span className={`line-clamp-2 font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>
+                </td>
+                {/* École et note : deux lignes au plus, puis ellipse — elles
+                    prennent la place qui reste au lieu d'élargir le tableau. */}
+                <td className="px-2 py-2.5 min-w-[120px] max-w-[200px]">
+                  {card.noTeam ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF]">Ligue Civile</span>
+                  ) : card.school ? (
+                    <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.school}>{card.school}</span>
+                  ) : VIDE}
+                </td>
+                <td className="px-2 py-2.5 whitespace-nowrap text-[#e0e0e0] tabular-nums">{taille ?? VIDE}</td>
+                <td className="px-2 py-2.5 whitespace-nowrap text-[#e0e0e0] tabular-nums">{poids ?? VIDE}</td>
+                <td className="px-2 py-2.5 whitespace-nowrap">
+                  {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence). */}
+                  {/* Compacte (★ 4.5) et non cinq étoiles : 120 px pour un chiffre. */}
+                  {aUneCote(card.coach_rating) ? (
+                    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#F59E0B] tabular-nums" title={`Cote du coach : ${card.coach_rating.toFixed(1)} / 5`}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B" aria-hidden><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                      {card.coach_rating.toFixed(1)}
+                    </span>
+                  ) : VIDE}
+                </td>
+                <td className="px-2 py-2.5 whitespace-nowrap">
+                  {card.grade ? <GradeChip grade={card.grade} /> : VIDE}
+                </td>
+                {/* Relance : ouvre le même popover que le pied de carte — y
+                    compris pour en POSER une sur une ligne qui n'en a pas. */}
+                <td
+                  className="px-2 py-2.5 whitespace-nowrap hover:bg-white/[0.04]"
+                  onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}
+                  title="Modifier la relance"
+                >
+                  {card.next_action_at
+                    ? <span className={`text-[12px] font-semibold ${enRetard ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`}>{formatRelanceCourt(card.next_action_at)}</span>
+                    : VIDE}
+                </td>
+                <td className="px-2 py-2.5 min-w-[140px] max-w-[260px]">
+                  {card.next_action_note
+                    ? <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.next_action_note}>{card.next_action_note}</span>
+                    : VIDE}
+                </td>
+                <td className="px-2 py-2.5 whitespace-nowrap">
+                  {card.has_video ? (
+                    <Link
+                      href={`/recruteur/athletes/${card.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-[12px] font-bold text-white hover:text-[#E63946] transition-colors"
+                      title="Ouvrir la fiche pour voir les faits saillants"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
+                      Voir
+                    </Link>
+                  ) : VIDE}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /* ── Drag Overlay Card ───────────────────────────────────────── */
 
 function DragOverlayCard({ card }: { card: PipelineKanbanCard }) {
@@ -1220,6 +1440,12 @@ function PipelinePageContent() {
   );
   const now = useClientNow();
 
+  /* Kanban ⇄ tableau (Lot A). Préférence d'AFFICHAGE : localStorage, comme
+     grille/liste de la Recherche — elle ne change pas les données et un lien
+     partagé n'impose pas la vue. */
+  const [vue, setVue] = usePreferenceLocale<"kanban" | "tableau">(
+    "nexus:pipeline:vue", "kanban", VUES_PIPELINE);
+
   // Free users get a read-only "demo" experience: kanban renders
   // with their real pipeline data, drags revert on drop, save
   // actions show a tease toast instead of persisting.
@@ -1482,9 +1708,38 @@ function PipelinePageContent() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-8 max-w-[1600px] mx-auto space-y-5">
-      <div>
-        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon processus de recrutement</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">Saison {getCurrentSeason()} · Suivez vos prospects de l&apos;identification à la signature</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon processus de recrutement</h1>
+          <p className="text-[14px] text-[#9CA3AF] mt-1">Saison {getCurrentSeason()} · Suivez vos prospects de l&apos;identification à la signature</p>
+        </div>
+        {/* Bascule kanban ⇄ tableau — même contrôle que grille/liste de la Recherche. */}
+        <div className="flex items-center bg-[#13151a] border border-[#2a2d36] rounded-lg overflow-hidden" role="group" aria-label="Affichage">
+          <button
+            type="button"
+            title="Vue kanban"
+            aria-pressed={vue === "kanban"}
+            onClick={() => setVue("kanban")}
+            className={`flex items-center gap-1.5 px-3 py-2 text-[12px] font-bold transition-colors ${vue === "kanban" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <rect x="3" y="3" width="5" height="18" rx="1" /><rect x="10" y="3" width="5" height="12" rx="1" /><rect x="17" y="3" width="4" height="8" rx="1" />
+            </svg>
+            Kanban
+          </button>
+          <button
+            type="button"
+            title="Vue tableau"
+            aria-pressed={vue === "tableau"}
+            onClick={() => setVue("tableau")}
+            className={`flex items-center gap-1.5 px-3 py-2 text-[12px] font-bold transition-colors ${vue === "tableau" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 10h18" /><path d="M3 15h18" /><path d="M9 4v16" />
+            </svg>
+            Tableau
+          </button>
+        </div>
       </div>
 
       {isFreeDemoMode && (
@@ -1613,6 +1868,17 @@ function PipelinePageContent() {
         </div>
       </div>
 
+      {vue === "tableau" ? (
+        <PipelineTable
+          cards={sortedCards}
+          now={now}
+          competitorMap={competitorMap}
+          sortBy={sortBy}
+          onSort={setSortBy}
+          onRowClick={openSlideOver}
+          onOpenAction={setActionPopover}
+        />
+      ) : (<>
       {/* Mobile tab bar */}
       <p className="lg:hidden text-[12px] text-[#6b7280] text-center">Appuie sur une carte pour changer son statut</p>
       <div className="lg:hidden overflow-x-auto -mx-4 px-4">
@@ -1657,6 +1923,7 @@ function PipelinePageContent() {
           {activeCard ? <DragOverlayCard card={activeCard} /> : null}
         </DragOverlay>
       </DndContext>
+      </>)}
 
       {/* Slide-Over */}
       {selectedCard && (
