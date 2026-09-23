@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════
    useCiblesSurMonCegep — quels athlètes ont ciblé MON cégep.
 
-   Source unique de la tuile « Te ciblent » du tableau de bord (le bloc
+   Source unique de la tuile « Athlètes qui te ciblent » du tableau de bord (le bloc
    détaillé du lot 2 a été retiré le 2026-09-23), de la pastille
    « Te cible » de la fiche athlète (lot 3) et du filtre « Te ciblent » de
    la recherche (lot 5, qui a retiré la pastille des cartes). Un seul appel

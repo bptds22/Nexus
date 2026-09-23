@@ -158,7 +158,7 @@ function RecruteurTableauDeBordDesktop() {
       valeur: valeurPipeline(estRelanceAFaire),
     },
     {
-      cle: "ciblent", libelle: "Te ciblent", accent: BLANC,
+      cle: "ciblent", libelle: "Athlètes qui te ciblent", accent: BLANC,
       aide: "Ont ton cégep dans leurs cibles",
       href: `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`,
       valeur: !aUnCegepRattache

@@ -5,7 +5,7 @@ import Link from "next/link";
 /* ─────────────────────────────────────────────────────────────────
    Tuiles du tableau de bord recruteur — 4 chiffres, 4 portes.
 
-   Ordre (décision BP 2026-09-23) : Relances à faire · Te ciblent ·
+   Ordre (décision BP 2026-09-23) : Relances à faire · Athlètes qui te ciblent ·
    Visites à venir · Nouveaux (10 j).
 
    Chaque tuile ne CALCULE rien : la page lui passe un chiffre obtenu avec

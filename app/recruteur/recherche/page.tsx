@@ -439,7 +439,7 @@ function RechercheContent() {
   const { data: catalogueProg } = useCegepPrograms();
   const { data: monCegepAUnCatalogue = false } = useMonCegepOffreDesProgrammes();
   // LOT 5 — les athlètes qui ciblent MON cégep, pour le filtre « Te ciblent ».
-  // Même appel (même clé TanStack) que la tuile « Te ciblent » du tableau de bord : le
+  // Même appel (même clé TanStack) que la tuile « Athlètes qui te ciblent » du tableau de bord : le
   // compteur de la pastille et celui du bloc ne peuvent pas se contredire.
   // La pastille « Te cible » a quitté les cartes : elle ne vit plus que sur
   // la fiche athlète, le filtre la remplace ici.
@@ -861,7 +861,7 @@ function RechercheContent() {
           </button>
           {/* LOT 5 — remplace la pastille « Te cible » des cartes. Masquée sans
               cégep rattaché : on ne saurait pas qui te cible. Le compte vient
-              du même appel que la tuile « Te ciblent » du tableau de bord. */}
+              du même appel que la tuile « Athlètes qui te ciblent » du tableau de bord. */}
           {aUnCegepRattache && (
             <button type="button" onClick={() => setMeCiblent(!meCiblent)}
               title="Athlètes qui ont mis ton cégep dans leurs cibles"
