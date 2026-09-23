@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import ActionBar from "./_components/ActionBar";
-import KpiCards from "./_components/KpiCards";
+import { EntonnoirProcessus, IndicateursMessagerie } from "./_components/KpiCards";
 import TrendingAthletes from "./_components/TrendingAthletes";
 import RecruiterActivityFeed from "./_components/RecruiterActivityFeed";
 import TuilesTableauDeBord, { type Tuile, type ValeurTuile } from "./_components/TuilesTableauDeBord";
@@ -222,14 +222,21 @@ function RecruteurTableauDeBordDesktop() {
           un compteur de tuile). */}
       <ActionBar data={actionBarData} />
 
-      {/* Zone 2 : Mon processus de recrutement (entonnoir + KPI). */}
-      <KpiCards data={kpiData} pipelineCounts={pipelineCounts} />
+      {/* Zone 2 : Mon processus de recrutement — l'entonnoir SEUL, sur fond
+          rouge léger (option A, décision BP 2026-09-23). */}
+      <EntonnoirProcessus pipelineCounts={pipelineCounts} />
 
-      {/* Zone 2b : les 4 tuiles, SOUS l'entonnoir (décision BP 2026-09-23).
-          Elles remplacent les blocs détaillés « N athlètes ciblent ton cégep »
-          et « Relances aujourd'hui », retirés : la tuile donne le chiffre et
-          ouvre la liste filtrée. */}
-      <TuilesTableauDeBord tuiles={tuiles} />
+      {/* Zone 2b : « Mon activité » — les 3 indicateurs de messagerie et les
+          4 tuiles, en cartes grises neutres, sous leur propre titre : ils ne
+          se confondent plus avec l'entonnoir. Les tuiles remplacent les blocs
+          détaillés « N athlètes ciblent ton cégep » et « Relances
+          aujourd'hui », retirés : la tuile donne le chiffre et ouvre la liste
+          filtrée. */}
+      <section className="space-y-4">
+        <h2 className="font-head font-bold text-[15px] tracking-[0.15em] uppercase text-white">Mon activité</h2>
+        <IndicateursMessagerie data={kpiData} pipelineCounts={pipelineCounts} />
+        <TuilesTableauDeBord tuiles={tuiles} />
+      </section>
 
       {/* Zone 3 + 4: Trending Athletes + Activity Feed */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
