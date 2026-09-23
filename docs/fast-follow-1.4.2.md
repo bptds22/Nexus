@@ -1255,3 +1255,32 @@ relevée). Au-delà, la réponse de la RPC est tronquée **sans erreur** :
 résultats ne porteraient que sur les 1 000 premières lignes. **121** athlètes
 actifs en prod au relevé — loin du seuil, mais c'est ce seuil, et non un
 changement de code, qui déclenchera le point 1.
+
+## 36. Loi 25 — notes de recruteurs et demande d'accès d'un athlète (décision produit REPORTÉE)
+
+Relevé le **2026-09-23** en cadrant le chantier « feuille Excel » (lot D, avis
+d'équipe signés). **Décision BP du même jour : reportée, à trancher plus tard.**
+
+**La question.** Un athlète (ou son parent) qui exerce son droit d'accès doit-il
+recevoir ce que les recruteurs ont écrit sur lui ?
+
+**Ce qui existe aujourd'hui.**
+- `recruiter_notes` — notes privées, propriétaire seul (Lot 2a, 2026-09-17).
+  1 ligne en prod au relevé.
+- `recruiter_athlete_grades` — grade privé A+…D. 5 lignes.
+- `recruiter_pipeline.next_action_note` — note de relance, privée depuis le
+  2026-09-17.
+- **Aucune** de ces surfaces n'est incluse dans l'export `/admin/loi25`
+  (vérifié par grep : `recruiter_notes` n'apparaît que dans des migrations,
+  dont la suppression de compte).
+
+**Ce qui la rend pressante.** Le lot D1 (avis d'équipe signés,
+`recruiter_team_notes`, proposé le 2026-09-23) ajouterait des jugements
+**signés et partagés** sur des athlètes majoritairement mineurs (111 sur 121
+ACTIF au relevé). Et le lot B (export CSV du pipeline) sortira la note privée
+du recruteur de la plateforme (décision BP : oui, dans une seule case).
+
+**À trancher avant la mise en prod de D1**, pas avant son développement :
+inclusion ou non dans l'export d'accès, durée de conservation, et sort des avis
+quand l'athlète supprime son compte (la cascade sur `athlete_id` les emporte
+aujourd'hui pour `recruiter_notes`).
