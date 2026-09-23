@@ -7,6 +7,11 @@ import KpiCards from "./_components/KpiCards";
 import TrendingAthletes from "./_components/TrendingAthletes";
 import RecruiterActivityFeed from "./_components/RecruiterActivityFeed";
 import CiblesSurMonCegep from "./_components/CiblesSurMonCegep";
+import TuilesTableauDeBord, { type Tuile, type ValeurTuile } from "./_components/TuilesTableauDeBord";
+import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
+import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
+import { CLES_FILTRES, FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
+import { estRelanceAFaire, estVisiteAVenir, FILTRE_PIPELINE_URL } from "@/lib/pipeline/filterPipelineCards";
 import { useDashboardHeader } from "@/lib/queries/recruiter/useDashboardHeader";
 import { useDashboardKpi } from "@/lib/queries/recruiter/useDashboardKpi";
 import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes";
@@ -110,6 +115,64 @@ function RecruteurTableauDeBordDesktop() {
   const { data: pipelineData } = usePipelineCards({ enabled: canUsePipeline });
   const relanceCards = pipelineData?.cards ?? [];
 
+  /* ── LES 4 TUILES — une définition par tuile, celle de sa destination ──
+     Relances / Visites : les prédicats de la chip correspondante de Mon
+     processus (filterPipelineCards), sur les mêmes cartes (usePipelineCards).
+     Te ciblent : le même appel que le filtre `?me_ciblent=true` et que le
+     bloc ci-dessous. Nouveaux : LA MÊME requête que la recherche ouverte sur
+     `?nouveau=true` (même RPC, même fenêtre de 10 jours côté serveur, même
+     clé de cache) — le chiffre est le « N athlètes trouvés » de l'arrivée. */
+  const tierEnCours = subscription.loading;
+  const { data: cibles, aUnCegepRattache } = useCiblesSurMonCegep();
+  const { data: nouveaux } = useAthleteSearch({
+    search: "",
+    sport: FILTRES_DEFAUT.sport,
+    promotion: FILTRES_DEFAUT.promotion,
+    verifiedOnly: false,
+    withVideoOnly: false,
+    minRating: FILTRES_DEFAUT.minRating,
+    filterOuvertDemenager: false,
+    filterOuvertPrive: false,
+    filterOuvertAnglophone: false,
+    filterNewOnly: true,
+    minGpa: FILTRES_DEFAUT.minGpa,
+    sortBy: FILTRES_DEFAUT.sortBy,
+    sportId: null,
+    programmeIds: [],
+    offertParMonCegep: false,
+    tier: tier ?? "free",
+  });
+  const PALIER_GRATUIT = "Mon processus est réservé aux membres Pro.";
+  const valeurPipeline = (predicat: (c: (typeof relanceCards)[number]) => boolean): ValeurTuile =>
+    tierEnCours ? { etat: "chargement" }
+    : !canUsePipeline ? { etat: "sans_objet", motif: PALIER_GRATUIT }
+    : !pipelineData ? { etat: "chargement" }
+    : { etat: "chiffre", n: relanceCards.filter(predicat).length };
+  const tuiles: Tuile[] = [
+    {
+      cle: "relances", libelle: "Relances à faire", accent: "#F59E0B",
+      href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.relances}`,
+      valeur: valeurPipeline(estRelanceAFaire),
+    },
+    {
+      cle: "ciblent", libelle: "Te ciblent", accent: "#22C55E",
+      href: `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`,
+      valeur: !aUnCegepRattache
+        ? { etat: "sans_objet", motif: "Aucun cégep rattaché à ton compte : on ne peut pas savoir qui le cible." }
+        : cibles ? { etat: "chiffre", n: cibles.length } : { etat: "chargement" },
+    },
+    {
+      cle: "visites", libelle: "Visites à venir", accent: "#A855F7",
+      href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.visites}`,
+      valeur: valeurPipeline(estVisiteAVenir),
+    },
+    {
+      cle: "nouveaux", libelle: "Nouveaux (10 j)", accent: "#F5F5F5",
+      href: `/recruteur/recherche?${CLES_FILTRES.filterNewOnly}=true`,
+      valeur: nouveaux ? { etat: "chiffre", n: nouveaux.length } : { etat: "chargement" },
+    },
+  ];
+
   const headerName = header?.headerName ?? "";
   const headerSchool = header?.headerSchool ?? "";
   const actionBarData = kpiBundle?.actionBarData ?? { coachReplies: 0, newAthletesThisWeek: 0 };
@@ -147,7 +210,12 @@ function RecruteurTableauDeBordDesktop() {
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
       </div>
 
-      {/* Zone 1: Action Bar */}
+      {/* Zone 0 : les 4 tuiles — remplacent le bandeau « nouveaux athlètes »
+          d'ActionBar. */}
+      <TuilesTableauDeBord tuiles={tuiles} />
+
+      {/* Zone 1 : Action Bar — ne porte plus que les réponses de coachs
+          (une notification, pas un compteur de tuile). */}
       <ActionBar data={actionBarData} />
 
       {/* LOT 2 — « N athlètes ciblent ton cégep ». Placé juste sous ActionBar,

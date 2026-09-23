@@ -94,6 +94,12 @@ export interface FilterablePipelineCard {
   /** `recruiter_pipeline.next_action_at` — une DATE, pas un timestamp (même
    *  remarque que sortPipelineCards) : sert la chip « relance ». */
   next_action_at?: string | null;
+  /** Étape du pipeline, en minuscules (`visite_planifiee`…) — sert la chip
+   *  « visites à venir » avec `visit_at`. */
+  status?: string;
+  /** `recruiter_pipeline.visit_at` (timestamptz) — posée seulement en
+   *  VISITE_PLANIFIEE, remise à NULL quand la carte quitte l'étape. */
+  visit_at?: string | null;
 }
 
 /* ── LES CHIPS RAPIDES ──────────────────────────────────────────────────
@@ -111,13 +117,14 @@ export interface FilterablePipelineCard {
    d'abord », toggle des panneaux, point rouge des cartes) est en cours
    d'arbitrage. Rien d'autre n'a été retiré. Remettre la chip = remettre une
    ligne dans le tableau ci-dessous. */
-export type QuickKey = "flagged" | "graded" | "rating4" | "video" | "relance";
+export type QuickKey = "flagged" | "graded" | "rating4" | "video" | "relance" | "visite";
 
 export const QUICK_FILTERS: readonly { key: QuickKey; label: string }[] = [
   { key: "graded", label: "Avec grade" },
   { key: "rating4", label: "4+ étoiles" },
   { key: "video", label: "Avec vidéo" },
   { key: "relance", label: "À relancer" },
+  { key: "visite", label: "Visites à venir" },
 ] as const;
 
 /** AAAA-MM-JJ du jour, en local — même technique que RelancesDuJour.tsx :
@@ -128,6 +135,39 @@ function todayKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/* ── UNE définition par tuile du tableau de bord ─────────────────────────
+   La tuile compte avec ces prédicats, la page Mon processus filtre avec les
+   MÊMES (chips `relance` / `visite`), et le lien de la tuile passe par
+   FILTRE_PIPELINE_URL : le chiffre de la tuile est, par construction, le
+   nombre de cartes affichées à l'arrivée. */
+
+/** « Relances à faire » : échéance aujourd'hui OU passée (`<=`, pas `<`). */
+export function estRelanceAFaire(c: Pick<FilterablePipelineCard, "next_action_at">): boolean {
+  return !!c.next_action_at && c.next_action_at.slice(0, 10) <= todayKey();
+}
+
+/** « Visites à venir » : visite planifiée dont la date est aujourd'hui ou
+ *  plus tard (jour local). Une visite déjà passée, ou sans date, n'est pas
+ *  « à venir » — c'est ce que l'ancien compteur (étape seule) confondait. */
+export function estVisiteAVenir(c: Pick<FilterablePipelineCard, "status" | "visit_at">): boolean {
+  if (c.status !== "visite_planifiee" || !c.visit_at) return false;
+  const d = new Date(c.visit_at);
+  if (Number.isNaN(d.getTime())) return false;
+  const jour = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return jour >= todayKey();
+}
+
+/** Valeurs de `?filtre=` sur /recruteur/pipeline — les liens du tableau de
+ *  bord et la lecture de la page passent par ici. */
+export const FILTRE_PIPELINE_URL = { relances: "relances", visites: "visites" } as const;
+
+/** `?filtre=` → chip active à l'arrivée sur Mon processus. */
+export function quickDepuisFiltreUrl(filtre: string | null): QuickKey[] {
+  if (filtre === FILTRE_PIPELINE_URL.relances) return ["relance"];
+  if (filtre === FILTRE_PIPELINE_URL.visites) return ["visite"];
+  return [];
+}
+
 const QUICK_PREDICATES: Record<QuickKey, (c: FilterablePipelineCard) => boolean> = {
   flagged: (c) => !!c.flagged,
   graded: (c) => !!c.grade,
@@ -135,7 +175,8 @@ const QUICK_PREDICATES: Record<QuickKey, (c: FilterablePipelineCard) => boolean>
   video: (c) => !!c.has_video,
   /** Due = aujourd'hui ou en retard, même seuil que la carte « Relances
    *  aujourd'hui » du dashboard (`<=`, pas `<`). */
-  relance: (c) => !!c.next_action_at && c.next_action_at.slice(0, 10) <= todayKey(),
+  relance: estRelanceAFaire,
+  visite: estVisiteAVenir,
 };
 
 /** Filtres qui ne se rangent pas en facettes. Passés à part pour que la

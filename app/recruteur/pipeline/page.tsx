@@ -22,6 +22,8 @@ import {
   FACETS,
   EMPTY_FILTERS,
   QUICK_FILTERS,
+  FILTRE_PIPELINE_URL,
+  quickDepuisFiltreUrl,
   type FacetDef,
   type FacetOption,
   type PipelineFilters,
@@ -1208,14 +1210,13 @@ function PipelinePageContent() {
   const [actionPopover, setActionPopover] = useState<PipelineKanbanCard | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
-  /* ?filtre=relances (bouton « Voir les N relances » du dashboard) : chip
-     ACTIVE dès le premier rendu, triée relance la plus proche d'abord — pas
-     un useEffect qui l'activerait un tick après affichage du kanban entier. */
-  const [quick, setQuick] = useState<QuickKey[]>(() =>
-    searchParams.get("filtre") === "relances" ? ["relance"] : [],
-  );
+  /* ?filtre=relances | visites (tuiles du tableau de bord) : chip ACTIVE dès
+     le premier rendu — pas un useEffect qui l'activerait un tick après
+     affichage du kanban entier. Relances : triées la plus proche d'abord.
+     Valeurs et prédicats partagés avec les tuiles (filterPipelineCards). */
+  const [quick, setQuick] = useState<QuickKey[]>(() => quickDepuisFiltreUrl(searchParams.get("filtre")));
   const [sortBy, setSortBy] = useState<PipelineSortMode>(() =>
-    searchParams.get("filtre") === "relances" ? "next_action_asc" : DEFAULT_PIPELINE_SORT,
+    searchParams.get("filtre") === FILTRE_PIPELINE_URL.relances ? "next_action_asc" : DEFAULT_PIPELINE_SORT,
   );
   const now = useClientNow();
 

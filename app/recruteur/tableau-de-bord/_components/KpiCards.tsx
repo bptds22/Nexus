@@ -59,10 +59,12 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
               : (isActive ? "rgba(107,114,128,0.05)" : "transparent");
 
             return (
-              <Link
+              /* Plus un lien : `?stage=` n'était lu par aucune page (web ni
+                 mobile) et ouvrait le kanban non filtré. Retiré (décision BP
+                 2026-09-23) plutôt que de faire lire un paramètre de plus. */
+              <div
                 key={status}
-                href={`/recruteur/pipeline?stage=${status.toUpperCase()}`}
-                className="relative group rounded-lg border p-3 text-center transition-all hover:-translate-y-0.5 cursor-pointer hover:brightness-110"
+                className="relative rounded-lg border p-3 text-center"
                 style={{ borderColor, background }}
               >
                 {/* Connector arrow between cards (hidden on first) */}
@@ -82,7 +84,7 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
                 <p className="text-[10px] font-bold tracking-[0.15em] uppercase mt-1" style={{ color: labelColor }}>
                   {cfg.shortLabel}
                 </p>
-              </Link>
+              </div>
             );
           })}
         </div>
