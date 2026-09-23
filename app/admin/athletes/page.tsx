@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import { inscriptionDeFiche, repartitionComptesAthletes } from "@/lib/admin/comptesAthletes";
 
 interface AthleteRow {
   id: string;
@@ -281,10 +282,8 @@ function AdminAthletesPageInner() {
         const coach = a.coach as { first_name?: string; last_name?: string } | null;
         const sportRel = a.sports as { nom?: string } | null;
         const schoolRel = embeddedSchool(a.schools);
-        const compteRel = (Array.isArray(a.compte) ? a.compte[0] : a.compte) as { onboarding_complete?: boolean | null } | null;
-        const inscription: AthleteRow["inscription"] = !a.user_id
-          ? "sans_compte"
-          : compteRel?.onboarding_complete === true ? "complete" : "commencee";
+        // Même classement que le tableau de bord (lib/admin/comptesAthletes).
+        const inscription: AthleteRow["inscription"] = inscriptionDeFiche(a);
         return {
           kind: "fiche" as const,
           inscription,
@@ -418,16 +417,12 @@ function AdminAthletesPageInner() {
   /* Le VRAI total : un compte athlète, avec ou sans fiche. Les fiches sans
      compte (semées par un coach, ou supprimées) ne sont pas des inscriptions —
      elles sont comptées à part pour que le total ne mente dans aucun sens. */
-  const repartition = useMemo(() => {
-    let complete = 0, commencee = 0, sansCompte = 0;
-    for (const r of rows) {
-      if (r.inscription === "complete") complete++;
-      else if (r.inscription === "commencee") commencee++;
-      else sansCompte++;
-    }
-    return { complete, commencee, sansFiche: sansFiche.length, sansCompte,
-             comptes: complete + commencee + sansFiche.length };
-  }, [rows, sansFiche]);
+  // Calcul partagé avec /admin/dashboard (lib/admin/comptesAthletes) : les
+  // deux écrans ne peuvent pas afficher deux totaux différents.
+  const repartition = useMemo(
+    () => repartitionComptesAthletes(rows.map((r) => r.inscription), sansFiche.length),
+    [rows, sansFiche],
+  );
 
   useEffect(() => {
     if (loading || isUserView) return;

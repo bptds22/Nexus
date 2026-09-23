@@ -7,6 +7,7 @@ import {
   Tooltip, CartesianGrid, BarChart, Bar, Cell,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { chargerRepartitionComptesAthletes, type RepartitionComptes } from "@/lib/admin/comptesAthletes";
 
 /* ─────────────────────────────────────────────────────────────────
    Admin Dashboard — full platform health view
@@ -25,7 +26,9 @@ const SECTION_HEADING =
   "text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF]";
 
 type Counts = {
-  totalAthletes: number;
+  /** FICHES (lignes `athletes`) — dénominateur du taux de vérification, qui
+   *  porte sur une fiche. Le total affiché est celui des COMPTES (comptesAthletes). */
+  totalFiches: number;
   athletesThisWeek: number;
   totalCoaches: number;
   totalRecruiters: number;
@@ -104,6 +107,8 @@ export default function AdminDashboard() {
   const [funnel, setFunnel] = useState<StageCount[]>([]);
   const [topSchools, setTopSchools] = useState<SchoolRank[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [comptesAthletes, setComptesAthletes] =
+    useState<{ repartition: RepartitionComptes | null; erreur: string | null } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -117,7 +122,7 @@ export default function AdminDashboard() {
       const [
         athletesTot, athletesWeek, coachesTot, recruitersTot,
         schoolsTot, activeSchoolsData, verifiedCount, noEvalCount,
-        athletesCompletion, evalsCote, complianceDirectors,
+        athletesCompletion, evalsCote, complianceDirectors, repartitionComptes,
       ] = await Promise.all([
         supabase.from("athletes").select("id", { count: "exact", head: true }),
         supabase.from("athletes").select("id", { count: "exact", head: true }).gte("created_at", startOfWeekISO),
@@ -134,16 +139,20 @@ export default function AdminDashboard() {
         // tab's approach; avoids PostgREST JSONB-key-IS-NULL filter syntax
         // gymnastics that may differ across supabase-js versions.
         supabase.from("users").select("profile_data").eq("is_school_admin", true),
+        // Même source et même calcul que /admin/athletes — voir lib/admin/comptesAthletes.
+        chargerRepartitionComptesAthletes(supabase),
       ]);
+      if (repartitionComptes.erreur) console.error("[admin/dashboard] comptes athlètes :", repartitionComptes.erreur);
+      setComptesAthletes(repartitionComptes);
 
-      const totalAthletes = athletesTot.count ?? 0;
+      const totalFiches = athletesTot.count ?? 0;
       const activeSchools = new Set(
         (activeSchoolsData.data || [])
           .map((a: { school_id: string | null }) => a.school_id)
           .filter(Boolean) as string[],
       ).size;
       const nextCounts: Counts = {
-        totalAthletes,
+        totalFiches,
         athletesThisWeek: athletesWeek.count ?? 0,
         totalCoaches: coachesTot.count ?? 0,
         totalRecruiters: recruitersTot.count ?? 0,
@@ -154,7 +163,7 @@ export default function AdminDashboard() {
 
       // Quality
       const verified = verifiedCount.count ?? 0;
-      const verifRate = totalAthletes > 0 ? Math.round((verified / totalAthletes) * 100) : 0;
+      const verifRate = totalFiches > 0 ? Math.round((verified / totalFiches) * 100) : 0;
       const completionRows = (athletesCompletion.data || []) as { profile_completion: number | null }[];
       const completionValues = completionRows
         .map((r) => Number(r.profile_completion))
@@ -304,8 +313,15 @@ export default function AdminDashboard() {
         <h2 className={SECTION_HEADING}>Nombres clés</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <BigStat
-            label="Athlètes"
-            value={counts?.totalAthletes}
+            label="Comptes athlètes"
+            value={comptesAthletes?.repartition?.comptes}
+            detail={comptesAthletes?.repartition ? (
+              <Link href="/admin/athletes" className="hover:text-[#9CA3AF] transition-colors">
+                {pluriel(comptesAthletes.repartition.complete, "fiche complète", "fiches complètes")} · {pluriel(comptesAthletes.repartition.commencee, "commencée", "commencées")} · {comptesAthletes.repartition.sansFiche} sans fiche
+              </Link>
+            ) : comptesAthletes?.erreur ? (
+              <span className="text-[#F59E0B]">Comptes indisponibles ({comptesAthletes.erreur})</span>
+            ) : undefined}
             delta={counts?.athletesThisWeek ?? 0}
             deltaLabel="cette semaine"
             loading={loading}
@@ -488,14 +504,19 @@ function StatShell({
   );
 }
 
+const pluriel = (n: number, un: string, plusieurs: string) =>
+  `${n.toLocaleString("fr-CA")} ${n > 1 ? plusieurs : un}`;
+
 function BigStat({
-  label, value, delta, deltaLabel, sublabel, loading,
+  label, value, delta, deltaLabel, sublabel, detail, loading,
 }: {
   label: string;
   value: number | null | undefined;
   delta?: number;
   deltaLabel?: string;
   sublabel?: string;
+  /** Ligne sous le chiffre, affichée en plus du delta / sous-libellé. */
+  detail?: React.ReactNode;
   loading: boolean;
 }) {
   return (
@@ -512,6 +533,7 @@ function BigStat({
       <p className="font-head text-[48px] leading-none font-black text-[#E63946] tabular-nums">
         {loading || value == null ? <span className="text-[#4a4d56]">—</span> : value.toLocaleString("fr-CA")}
       </p>
+      {detail && !loading && <p className="text-[11px] text-[#6b7280] mt-2">{detail}</p>}
     </StatShell>
   );
 }
