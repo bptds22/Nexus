@@ -1953,45 +1953,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
             </div>
 
-            {!isPreview && canUsePipeline && pipelineStatus !== "none" && (
-              <div className="flex items-center gap-3">
-                <StatusChangeDropdown
-                  currentStatus={pipelineStatus}
-                  athleteId={id}
-                  hasExistingThread={false}
-                  onStatusChange={handleStatusChange}
-                  onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
-                  onCelebrate={() => setShowCelebration(true)}
-                />
-              </div>
-            )}
-
-            {/* Relance — la DATE seule ; la note reste au pipeline. Le pourquoi
-                (frontières de données coach/recruteur) est écrit en tête de
-                RelanceFiche, avec la décision produit qui le fixe.
-                Gate : palier Pro ET athlète déjà dans le processus — sans ligne,
-                l'UPDATE n'aurait rien à écrire et la RLS refuserait l'INSERT.
-                `!isPreview` est ici l'équivalent web de `isRecruiter`
-                (isPreview = viewerMode !== "recruiter"). */}
-            {!isPreview && canUsePipeline && myPipelineStage && (
-              <div className="max-w-[420px]">
-                <RelanceFiche athleteId={id} />
-              </div>
-            )}
-
-            {/* Visite planifiée + export agenda. Gate strict : le stage ET la
-                date. Une visite sans date affiche le stage, pas la carte. */}
-            {!isPreview && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
-              <div className="max-w-[420px]">
-                <VisitCalendarCard
-                  visitAtIso={visitAt}
-                  athleteName={`${a.firstName} ${a.lastName}`}
-                  sport={a.primarySport}
-                  schoolName={a.schoolName}
-                />
-              </div>
-            )}
-
             {/* Profil Athlète */}
             <div>
               <h3 className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-6">Profil athlète</h3>
@@ -2027,6 +1988,55 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
           </div>
         </section>
+
+        {/* ══════════ STATUT + RELANCE + VISITE — SOUS la carte (retour BP 2026-09-23) ══
+            Ces deux blocs vivaient dans la colonne de droite du héros, entre le
+            statut et « Profil athlète ». Ils n'y apparaissent que selon l'état
+            du processus : leur présence DÉPLAÇAIT la taille, le poids et les
+            badges d'une fiche à l'autre. Ils sont désormais sur leur propre
+            rangée, après le héros : la carte, la taille/poids et les badges
+            restent toujours à la même place.
+
+            Relance — la DATE seule ; la note reste au pipeline (décision écrite
+            en tête de RelanceFiche). Gate : palier Pro ET athlète déjà dans le
+            processus — sans ligne, l'UPDATE n'aurait rien à écrire et la RLS
+            refuserait l'INSERT. `!isPreview` est l'équivalent web de
+            `isRecruiter` (isPreview = viewerMode !== "recruiter").
+            Visite — gate strict : le stage ET la date. */}
+        {!isPreview && canUsePipeline && (pipelineStatus !== "none" || myPipelineStage) && (
+          <section className="flex flex-wrap items-start gap-4">
+            {myPipelineStage && (
+              <div className="w-full sm:w-[380px]">
+                <RelanceFiche athleteId={id} />
+              </div>
+            )}
+            {myPipelineStage && pipelineStatus === "visite_planifiee" && visitAt && (
+              <div className="w-full sm:w-[380px]">
+                <VisitCalendarCard
+                  visitAtIso={visitAt}
+                  athleteName={`${a.firstName} ${a.lastName}`}
+                  sport={a.primarySport}
+                  schoolName={a.schoolName}
+                />
+              </div>
+            )}
+            {/* « Changer le statut » descend AVEC eux : il n'apparaît lui aussi
+                que si l'athlète est dans le processus, et décalait le héros de
+                50 px (mesuré). EN DERNIER dans la rangée : son menu s'ouvre
+                aligné à DROITE du bouton (w-[260px], right-0) ; en tête de
+                rangée il débordait de 70 px sur la barre latérale. */}
+            {pipelineStatus !== "none" && (
+              <StatusChangeDropdown
+                currentStatus={pipelineStatus}
+                athleteId={id}
+                hasExistingThread={false}
+                onStatusChange={handleStatusChange}
+                onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
+                onCelebrate={() => setShowCelebration(true)}
+              />
+            )}
+          </section>
+        )}
 
         {/* ══════════ COACH REPORT (both modes — content varies) ══════════ */}
         {lockContent ? (
