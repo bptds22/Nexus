@@ -120,12 +120,11 @@ export default function AdminDashboard() {
 
       // ── Row 1 + row 3 counts ───────────────────────────────────
       const [
-        athletesTot, athletesWeek, coachesTot, recruitersTot,
+        athletesTot, coachesTot, recruitersTot,
         schoolsTot, activeSchoolsData, verifiedCount, noEvalCount,
         athletesCompletion, evalsCote, complianceDirectors, repartitionComptes,
       ] = await Promise.all([
         supabase.from("athletes").select("id", { count: "exact", head: true }),
-        supabase.from("athletes").select("id", { count: "exact", head: true }).gte("created_at", startOfWeekISO),
         supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "COACH"),
         supabase.from("users").select("id", { count: "exact", head: true }).in("role", ["RECRUTEUR"]),
         supabase.from("schools").select("id", { count: "exact", head: true }),
@@ -153,7 +152,9 @@ export default function AdminDashboard() {
       ).size;
       const nextCounts: Counts = {
         totalFiches,
-        athletesThisWeek: athletesWeek.count ?? 0,
+        // COMPTES créés depuis lundi — même unité que le total (comptesAthletes).
+        athletesThisWeek: repartitionComptes.datesCreation
+          .filter((d) => new Date(d).getTime() >= startOfWeek.getTime()).length,
         totalCoaches: coachesTot.count ?? 0,
         totalRecruiters: recruitersTot.count ?? 0,
         activeSchools,
@@ -224,24 +225,28 @@ export default function AdminDashboard() {
       setEng(nextEng);
 
       // ── Row 4 — registrations by week (last 8 weeks) ───────────
+      // Des COMPTES, pas des fiches : une inscription abandonnée avant la
+      // fiche compte (c'est ce qu'on mesure), une fiche semée par un coach
+      // n'en est pas une. Même source que le total (comptesAthletes).
       const eightWeeksAgo = startOfWeekMinus(7);
-      const { data: regs } = await supabase
-        .from("athletes")
-        .select("created_at")
-        .gte("created_at", eightWeeksAgo.toISOString());
+      const regs = repartitionComptes.datesCreation
+        .filter((d) => new Date(d).getTime() >= eightWeeksAgo.getTime());
       const bucket = new Map<number, number>();
       for (let i = 7; i >= 0; i--) bucket.set(i, 0);
-      for (const r of (regs || []) as { created_at: string }[]) {
-        const diffWeeks = Math.floor((startOfCurrentWeek().getTime() - new Date(r.created_at).getTime()) / (7 * 86400000));
+      const debutSemaine = startOfCurrentWeek().getTime();
+      for (const created_at of regs) {
+        // 0 = semaine en cours ; n = n semaines avant. `floor` rangeait la
+        // semaine dernière dans la semaine en cours (écart < 7 j → 0) : un
+        // créé il y a 3 jours et un créé aujourd'hui tombaient ensemble.
+        const t = new Date(created_at).getTime();
+        const diffWeeks = t >= debutSemaine ? 0 : Math.ceil((debutSemaine - t) / (7 * 86400000));
         const idx = Math.max(0, Math.min(7, diffWeeks));
         bucket.set(idx, (bucket.get(idx) ?? 0) + 1);
       }
-      const now = new Date();
       const series: WeekPoint[] = [];
       for (let i = 7; i >= 0; i--) {
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay() + 1 - i * 7);
-        weekStart.setHours(0, 0, 0, 0);
+        // Même début de semaine que le regroupement et que « +N cette semaine ».
+        const weekStart = startOfWeekMinus(i);
         const label = weekStart.toLocaleDateString("fr-CA", { day: "numeric", month: "short" });
         series.push({ week: label, count: bucket.get(i) ?? 0 });
       }

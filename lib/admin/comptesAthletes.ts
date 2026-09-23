@@ -20,14 +20,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type InscriptionFiche = "complete" | "commencee" | "sans_compte";
 
 /** Colonnes minimales d'une fiche pour la classer. */
-export const SELECT_INSCRIPTION = "user_id, compte:user_id(onboarding_complete)";
+export const SELECT_INSCRIPTION = "user_id, compte:user_id(onboarding_complete, created_at)";
 
-type CompteEmbed = { onboarding_complete?: boolean | null } | null;
+type CompteEmbed = { onboarding_complete?: boolean | null; created_at?: string | null } | null;
+
+const compteDe = (fiche: { compte?: unknown }): CompteEmbed =>
+  (Array.isArray(fiche.compte) ? fiche.compte[0] : fiche.compte) as CompteEmbed;
 
 export function inscriptionDeFiche(fiche: { user_id?: unknown; compte?: unknown }): InscriptionFiche {
   if (!fiche.user_id) return "sans_compte";
-  const compte = (Array.isArray(fiche.compte) ? fiche.compte[0] : fiche.compte) as CompteEmbed;
-  return compte?.onboarding_complete === true ? "complete" : "commencee";
+  return compteDe(fiche)?.onboarding_complete === true ? "complete" : "commencee";
 }
 
 export interface RepartitionComptes {
@@ -53,21 +55,39 @@ export function repartitionComptesAthletes(
   return { complete, commencee, sansFiche: nbSansFiche, sansCompte, comptes: complete + commencee + nbSansFiche };
 }
 
+/** Date de création de chaque COMPTE compté dans le total — même périmètre
+ *  que `comptes` : fiches avec compte (users.created_at, identique à
+ *  auth.users.created_at à 0,15 s près, vérifié en prod) + comptes sans fiche
+ *  (inscrit_le = auth.users.created_at). Les fiches sans compte n'y sont pas :
+ *  ce ne sont pas des inscriptions. */
+export function datesCreationComptes(
+  fiches: { user_id?: unknown; compte?: unknown }[],
+  sansFiche: { inscrit_le?: string | null }[],
+): string[] {
+  const dates: string[] = [];
+  for (const f of fiches) {
+    const d = f.user_id ? compteDe(f)?.created_at : null;
+    if (d) dates.push(d);
+  }
+  for (const c of sansFiche) if (c.inscrit_le) dates.push(c.inscrit_le);
+  return dates;
+}
+
 /** Pour les écrans qui n'ont besoin que des chiffres (tableau de bord). */
 export async function chargerRepartitionComptesAthletes(
   supabase: SupabaseClient,
-): Promise<{ repartition: RepartitionComptes | null; erreur: string | null }> {
+): Promise<{ repartition: RepartitionComptes | null; datesCreation: string[]; erreur: string | null }> {
   const [fiches, sansFiche] = await Promise.all([
     supabase.from("athletes").select(SELECT_INSCRIPTION),
     supabase.rpc("admin_comptes_athletes_sans_fiche"),
   ]);
   const erreur = fiches.error?.message ?? sansFiche.error?.message ?? null;
-  if (erreur) return { repartition: null, erreur };
+  if (erreur) return { repartition: null, datesCreation: [], erreur };
+  const lignesFiches = (fiches.data ?? []) as { user_id?: unknown; compte?: unknown }[];
+  const lignesSansFiche = (sansFiche.data ?? []) as { inscrit_le?: string | null }[];
   return {
-    repartition: repartitionComptesAthletes(
-      ((fiches.data ?? []) as { user_id?: unknown; compte?: unknown }[]).map(inscriptionDeFiche),
-      ((sansFiche.data ?? []) as unknown[]).length,
-    ),
+    repartition: repartitionComptesAthletes(lignesFiches.map(inscriptionDeFiche), lignesSansFiche.length),
+    datesCreation: datesCreationComptes(lignesFiches, lignesSansFiche),
     erreur: null,
   };
 }
