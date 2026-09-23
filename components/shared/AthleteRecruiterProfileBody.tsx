@@ -1,5 +1,6 @@
 "use client";
 
+import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
 import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -1434,27 +1435,27 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const favButtonDisabled = favAtCap && !isFavorited;
   const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte. Passez à Pro pour plus.`;
 
-  const toggleFav = async () => {
-    if (favButtonDisabled) return;
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-    const userId = session.user.id;
-    const { data: existing } = await supabase
-      .from("recruiter_favorites")
-      .select("id")
-      .eq("recruiter_id", userId)
-      .eq("athlete_id", id)
-      .maybeSingle();
-    if (existing) {
-      await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-      setIsFavorited(false);
-      setMyFavCount((c) => Math.max(0, c - 1));
-    } else {
-      await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
-      setIsFavorited(true);
-      setMyFavCount((c) => c + 1);
-    }
+  /* Écriture partagée (definirFavori) : erreur vérifiée + invalidation de
+     favorites / favoriteCounts / dashboard.kpi — sans elle, « Mes favoris »
+     gardait sa liste en cache et n'affichait pas l'athlète ajouté ici.
+     Le cœur ne change d'état que si la base a accepté. Renvoie le message
+     d'échec, ou null. */
+  const definirFavoriRecruteur = useDefinirFavori();
+  const [erreurFavori, setErreurFavori] = useState<string | null>(null);
+  useEffect(() => {
+    if (!erreurFavori) return;
+    const t = window.setTimeout(() => setErreurFavori(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [erreurFavori]);
+  const toggleFav = async (): Promise<string | null> => {
+    if (favButtonDisabled) return null;
+    setErreurFavori(null);
+    const veut = !isFavorited;
+    const res = await definirFavoriRecruteur(id, veut);
+    if (!res.ok) { setErreurFavori(res.message); return res.message; }
+    setIsFavorited(res.favori);
+    setMyFavCount((c) => (veut ? c + 1 : Math.max(0, c - 1)));
+    return null;
   };
 
   useEffect(() => {
@@ -1501,7 +1502,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   };
 
   const favoriteAndContact = async () => {
-    await toggleFav();       // adds to favorites (isFavorited flips true)
+    // L'ajout aux favoris est la porte du contact : s'il échoue, on reste
+    // dans la modale avec le motif, on n'ouvre pas la conversation.
+    const echec = await toggleFav();
+    if (echec) { setContactError(echec); return; }
     await openAthleteThread();
   };
 
@@ -2681,6 +2685,12 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {erreurFavori && !showFavContactPrompt && (
+        <div role="alert" className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#EF4444]/40 rounded-lg px-4 py-3 shadow-2xl max-w-[90vw]">
+          <p className="text-[13px] text-[#EF4444]">{erreurFavori}</p>
         </div>
       )}
 

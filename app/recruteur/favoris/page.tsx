@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, Suspense } from "react";
+import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import NxIcon from "@/components/ui/NxIcon";
@@ -285,7 +284,6 @@ function FavorisContent() {
   // Migration TanStack (iter 5.3a) — fetch + transformation déléguées
   const { athletes, isLoading: dataLoading } = useFavoriteAthletes();
   const loading = dataLoading || tierLoading;
-  const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
@@ -297,25 +295,21 @@ function FavorisContent() {
   const [withSportBadge, setWithSportBadge] = useState(false);
   const [withAcademicBadge, setWithAcademicBadge] = useState(false);
 
-  // Mutation : retirer un favori + invalider les caches concernés (iter 5.3a)
+  // Retrait via l'écriture partagée (definirFavori) : erreur vérifiée, caches
+  // favorites / favoriteCounts / dashboard.kpi invalidés. En cas d'échec la
+  // carte reste (la liste relue du serveur la contient toujours) et on le dit.
+  const definirFavoriRecruteur = useDefinirFavori();
+  const [erreurFavori, setErreurFavori] = useState<string | null>(null);
+  useEffect(() => {
+    if (!erreurFavori) return;
+    const t = window.setTimeout(() => setErreurFavori(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [erreurFavori]);
   const handleUnfavorite = useCallback(async (athleteId: string) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: existing } = await supabase
-      .from("recruiter_favorites")
-      .select("id")
-      .eq("recruiter_id", user.id)
-      .eq("athlete_id", athleteId)
-      .maybeSingle();
-    if (existing) {
-      await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-    }
-    // Invalidations TanStack : la liste des favoris + counts globaux + KPI dashboard
-    queryClient.invalidateQueries({ queryKey: ["favorites"] });
-    queryClient.invalidateQueries({ queryKey: ["favoriteCounts"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
-  }, [queryClient]);
+    setErreurFavori(null);
+    const res = await definirFavoriRecruteur(athleteId, false);
+    if (!res.ok) setErreurFavori(res.message);
+  }, [definirFavoriRecruteur]);
 
   // Derived filter options
   const sports = useMemo(() => {
@@ -358,6 +352,11 @@ function FavorisContent() {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
+      {erreurFavori && (
+        <div role="alert" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#EF4444]/40 rounded-lg px-4 py-3 shadow-2xl max-w-[90vw]">
+          <p className="text-[13px] text-[#EF4444]">{erreurFavori}</p>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

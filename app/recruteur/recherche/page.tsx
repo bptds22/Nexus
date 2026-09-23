@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useFiltresRecherche, usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
 import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
-import { useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -18,6 +16,7 @@ import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
+import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -452,7 +451,6 @@ function RechercheContent() {
     (v: boolean) => setShowAdvancedPref(v ? "1" : "0"), [setShowAdvancedPref]);
   // Migration TanStack (iter 5.3b) — états fetch-related délégués aux hooks.
   // Cache TanStack → navigation tab→Recherche instantanée avec mêmes filtres.
-  const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
   const { data: favoritesArr = [] } = useFavorites();
   const { data: favCounts = {} } = useFavoriteCounts();
@@ -602,32 +600,20 @@ function RechercheContent() {
     pret: !loading && !athletesFetching,
   });
 
+  /* Écriture partagée (definirFavori) : vérifie l'erreur et invalide
+     favorites / favoriteCounts / dashboard.kpi. Le cœur lit useFavorites :
+     il ne devient rouge que si la ligne existe vraiment. */
+  const definirFavoriRecruteur = useDefinirFavori();
+  const [erreurFavori, setErreurFavori] = useState<string | null>(null);
+  useEffect(() => {
+    if (!erreurFavori) return;
+    const t = window.setTimeout(() => setErreurFavori(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [erreurFavori]);
   const toggleFav = async (id: string) => {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-    const userId = session.user.id;
-
-    // Check if already favorited
-    const { data: existing } = await supabase
-      .from("recruiter_favorites")
-      .select("id")
-      .eq("recruiter_id", userId)
-      .eq("athlete_id", id)
-      .maybeSingle();
-
-    if (existing) {
-      // Already favorited → DELETE (unfavorite)
-      await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-    } else {
-      // Not favorited → INSERT (favorite only; pipeline entries are created
-      // by explicit user action on the Kanban page, not as a side-effect here)
-      await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
-    }
-    // Invalidations TanStack — favorites/counts/dashboard se rafraîchissent (iter 5.3b)
-    queryClient.invalidateQueries({ queryKey: ["favorites"] });
-    queryClient.invalidateQueries({ queryKey: ["favoriteCounts"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+    setErreurFavori(null);
+    const res = await definirFavoriRecruteur(id, !favorites.has(id));
+    if (!res.ok) setErreurFavori(res.message);
   };
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
@@ -651,6 +637,11 @@ function RechercheContent() {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
+      {erreurFavori && (
+        <div role="alert" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#EF4444]/40 rounded-lg px-4 py-3 shadow-2xl max-w-[90vw]">
+          <p className="text-[13px] text-[#EF4444]">{erreurFavori}</p>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

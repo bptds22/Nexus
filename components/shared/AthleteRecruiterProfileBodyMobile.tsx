@@ -6,6 +6,7 @@
 // Itération 1 = squelette fonctionnel mobile-first, viewerMode "recruiter"
 // uniquement. Si viewerMode preview/partner → on délègue au desktop body.
 
+import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
 import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
 import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
@@ -1587,26 +1588,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const favButtonDisabled = favAtCap && !isFavorited;
   const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte — favoris illimités réservés aux membres Pro.`;
 
-  const toggleFav = async () => {
-    if (favButtonDisabled) return;
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-    const userId = session.user.id;
-    const { data: existing } = await supabase
-      .from("recruiter_favorites").select("id")
-      .eq("recruiter_id", userId).eq("athlete_id", id).maybeSingle();
-    if (existing) {
-      await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-      setIsFavorited(false);
-      setMyFavCount((c) => Math.max(0, c - 1));
-    } else {
-      await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
-      setIsFavorited(true);
-      setMyFavCount((c) => c + 1);
-      // Haptic + scale animation gérés par HeartButton (iter 5.4) — pas de burst
-      triggerHaptic("Medium");
-    }
+  /* Écriture partagée (definirFavori) : erreur vérifiée + invalidation de
+     favorites / favoriteCounts / dashboard.kpi — sans elle, « Mes favoris »
+     gardait sa liste en cache et n'affichait pas l'athlète ajouté ici.
+     Le cœur ne change d'état que si la base a accepté. */
+  const definirFavoriRecruteur = useDefinirFavori();
+  const toggleFav = async (): Promise<boolean> => {
+    if (favButtonDisabled) return false;
+    const veut = !isFavorited;
+    const res = await definirFavoriRecruteur(id, veut);
+    if (!res.ok) { toast.error({ message: "Échec", detail: res.message }); return false; }
+    setIsFavorited(res.favori);
+    setMyFavCount((c) => (veut ? c + 1 : Math.max(0, c - 1)));
+    // Haptic + scale animation gérés par HeartButton (iter 5.4) — pas de burst
+    if (veut) triggerHaptic("Medium");
+    return true;
   };
 
   // ── "Contacter l'athlète" (RECRUTEUR_ATHLETE) — favorite-first gate ──
@@ -1650,9 +1646,13 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   }, [favButtonDisabled, contactingAthlete, contactable, isFavorited, openAthleteThread]);
 
   const favoriteAndContact = useCallback(async () => {
-    await toggleFav();
+    // L'ajout aux favoris est la porte du contact : s'il échoue (toast déjà
+    // affiché), on n'ouvre pas la conversation.
+    if (!(await toggleFav())) { setShowFavContactPrompt(false); return; }
     await openAthleteThread();
-  }, [openAthleteThread]);
+    // toggleFav dans les dépendances : l'ancienne version capturait un
+    // isFavorited périmé.
+  }, [openAthleteThread, toggleFav]);
 
   useEffect(() => {
     // Recruiter-only — recruiter_favorites RLS scopes to the row owner,
@@ -3187,7 +3187,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             >
               <HeartButton
                 isFavorited={isFavorited}
-                onToggle={toggleFav}
+                onToggle={async () => { await toggleFav(); }}
                 size="md"
                 disabled={favButtonDisabled}
               />

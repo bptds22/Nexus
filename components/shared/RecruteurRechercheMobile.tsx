@@ -28,6 +28,7 @@ import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
+import { definirFavori } from "@/lib/queries/shared/definirFavori";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
@@ -48,7 +49,6 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { useMobileToast } from "@/components/mobile/MobileToast";
-import { createClient } from "@/lib/supabase/client";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
 import { triggerHaptic } from "@/lib/haptics";
@@ -1364,28 +1364,19 @@ export function RecruteurRechercheMobile() {
 
   // toggleFav avec invalidations TanStack + toast
   const toggleFav = async (id: string) => {
-    const supabase = createClient();
-    const userId = currentUser?.authUser.id;
-    if (!userId) return;
+    if (!currentUser?.authUser.id) return;
     const isFav = favorites.has(id);
     const atCap = maxFavorites !== -1 && favorites.size >= maxFavorites;
     if (!isFav && atCap) {
       toast.warning({ message: "Limite de favoris atteinte", detail: "Favoris supplémentaires réservés aux membres Pro" });
       return;
     }
-    const { data: existing } = await supabase
-      .from("recruiter_favorites").select("id")
-      .eq("recruiter_id", userId).eq("athlete_id", id).maybeSingle();
-    if (existing) {
-      await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-      toast.info({ message: "Retiré des favoris" });
-    } else {
-      await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
-      toast.success({ message: "Ajouté aux favoris" });
-    }
-    queryClient.invalidateQueries({ queryKey: ["favorites"] });
-    queryClient.invalidateQueries({ queryKey: ["favoriteCounts"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+    // Écriture partagée : erreur vérifiée, caches invalidés. Le toast de
+    // succès ne part que si la base a réellement accepté.
+    const res = await definirFavori(queryClient, id, !isFav);
+    if (!res.ok) { toast.error({ message: "Échec", detail: res.message }); return; }
+    if (res.favori) toast.success({ message: "Ajouté aux favoris" });
+    else toast.info({ message: "Retiré des favoris" });
   };
 
   const atFavCap = maxFavorites !== -1 && favorites.size >= maxFavorites;
