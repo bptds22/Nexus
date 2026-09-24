@@ -1,4 +1,4 @@
--- 20260925120000_b2_0_signatures_unite
+-- 20260924203244_b2_0_signatures_unite (version enregistrée en prod ; écrite 20260925120000)
 --
 -- LOT B2-0 — le tableau blanc, CHAQUE GESTE SIGNÉ PAR CELUI QUI AGIT
 -- (décisions BP du 2026-09-24). Suite de B1 (20260924201029). Aucune
@@ -33,7 +33,7 @@
 -- AUCUNE contrainte modifiée, AUCUNE signature de fonction existante changée,
 -- AUCUN DROP de fonction.
 --
--- Rollback : supabase/rollback/20260925120000_rollback_b2_0_signatures_unite.sql
+-- Rollback : supabase/rollback/20260924203244_rollback_b2_0_signatures_unite.sql
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 0. SAUVEGARDE — définitions et ACL des 4 fonctions modifiées, et des 20

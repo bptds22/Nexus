@@ -1327,3 +1327,23 @@ processus). Mais le binaire publié **ne connaît pas l'unité**. Limites
 
 Aucun de ces écarts n'expose une donnée hors de l'unité : ce sont des gestes
 **moins partagés** que le web, jamais plus.
+
+## 39. Retrait d'unité par un admin cégep sur un AUTRE sport — la ligne de journal va dans son unité (B2-0, à corriger à l'étape 3 de B2)
+
+`unite_retirer_favori` et `unite_retirer_du_processus` acceptent `p_sport_id`
+(un admin cégep agit sur un autre sport de son cégep). Les lignes retirées sont
+bien celles de l'unité visée, mais **la ligne de journal unique** est insérée
+par la fonction (SECURITY INVOKER, rôle `authenticated`) : le trigger
+`unite_poser_journal` ne fait pas confiance à une unité fournie par un client
+et range la ligne dans **l'unité du signataire** — celle de l'admin, pas celle
+du dossier retiré.
+
+Effet : les collègues du sport visé ne voient pas ce retrait dans leur
+historique d'unité ; les collègues de l'admin le voient à tort. Aucun accès
+élargi : c'est une ligne mal rangée, pas une fuite.
+
+**À corriger à l'étape 3 de B2** (Calendrier, Tableau de bord, Mon CÉGEP —
+c'est là que l'admin agit sur les autres sports) : écrire cette ligne depuis
+une fonction serveur qui fournit l'unité du dossier (le trigger la garde quand
+l'appelant n'est pas un client), sur le modèle de `log_pipeline_change`.
+Registre de décision : BP, 2026-09-24.

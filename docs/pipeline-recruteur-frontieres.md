@@ -63,7 +63,7 @@ lisent et se modifient. Ce qui du 17 septembre **reste vrai** :
    web le retire pour l'unité ; **le mobile 1.4.3 ne retire que le sien** jusqu'à
    la 1.4.4 (registre `docs/fast-follow-1.4.2.md` §38).
 
-**Lot B2-0 (migration `20260925120000_b2_0_signatures_unite`) — ce qui a changé :**
+**Lot B2-0 (migration `20260924203244_b2_0_signatures_unite`) — ce qui a changé :**
 - **Gratuit = tout bloqué, en base** (décision BP 2026-09-24). Les 20 policies
   `unite_*` passent par `acces_unite_pro()` : unité (ou admin cégep) **et** Pro,
   en lecture comme en écriture et suppression. Un recruteur gratuit ne lit

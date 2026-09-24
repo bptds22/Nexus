@@ -1,4 +1,4 @@
--- ROLLBACK de 20260925120000_b2_0_signatures_unite (lot B2-0)
+-- ROLLBACK de 20260924203244_b2_0_signatures_unite (lot B2-0)
 --
 -- Remet l'état exact de B1 :
 --   · les 20 policies unite_* sont RECRÉÉES depuis leurs expressions
