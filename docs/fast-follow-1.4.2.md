@@ -1307,3 +1307,23 @@ le profil ne permet plus de vider le sport.
 **À faire au lot mobile 1.4.4 :** brancher les deux écrans sur
 `SPORTS_PROPOSES`, retirer l'option de vidage du profil mobile. Rien à faire en
 base : le trigger absorbe déjà les deux chemins.
+
+## 38. Tableau blanc par unité — ce que l'app 1.4.3 ne fait pas (lot B1, 2026-09-24, pour 1.4.4)
+
+Le lot B1 rend dossiers, grades, notes, favoris et listes **communs à l'unité**
+(cégep × sport ; `docs/pipeline-recruteur-frontieres.md` §0). La base est prête
+et l'app 1.4.3 continue d'écrire normalement (prouvé : `recruiter_id` = soi,
+unité posée par trigger, création de liste qui relit sa ligne, upsert du
+processus). Mais le binaire publié **ne connaît pas l'unité**. Limites
+**acceptées par BP jusqu'à la 1.4.4** (décision du 2026-09-24, question 6) :
+
+| Geste sur mobile 1.4.3 | Ce qui se passe | Attendu en 1.4.4 |
+|---|---|---|
+| Retirer un favori | ne retire que **sa** ligne ; l'athlète reste favori de l'unité si un collègue l'a | retirer pour l'unité |
+| Retirer du processus | ne supprime que **sa** ligne ; le dossier reste dans l'unité par les lignes des collègues | retirer pour l'unité (avec confirmation) |
+| Changer d'étape hors VISITE_PLANIFIEE | l'ancien `persistPipelineStage` met `visit_at` à NULL ; la synchronisation **efface la visite de l'unité** | règle `regleVisite` (la visite survit au changement d'étape) |
+| Voir « Mon processus », « Mes favoris », « Mes listes » | lectures filtrées `recruiter_id = soi` : **seulement ses propres lignes** (leurs étapes, grades et relances suivent toutefois l'unité par synchronisation) | lectures par unité (`unite_pipeline`, `unite_favoris`, listes de l'unité) |
+| « X recruteurs intéressés » (recherche) | compte désormais **aussi les favoris des collègues de l'unité** — exact, mais nouveau pour un recruteur non admin | inchangé (c'est la bonne donnée) |
+
+Aucun de ces écarts n'expose une donnée hors de l'unité : ce sont des gestes
+**moins partagés** que le web, jamais plus.

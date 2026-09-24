@@ -8,6 +8,73 @@ coach et admin cégep sont retirées, remplacées par des RPC).
 
 ---
 
+## 0. RETOUR ASSUMÉ SUR LE 17 SEPTEMBRE — le tableau blanc par unité (décision BP, 2026-09-24)
+
+**Ce qui est décidé.** Entre recruteurs d'une même **unité = cégep × sport**
+(`users.school_id` × `users.sport_id`, lot A), **rien n'est privé, sauf les
+messages**. « Mon processus » devient un tableau blanc partagé : dossiers,
+étapes, grades, notes, relances, visites, favoris, listes (et leurs membres et
+notes), calendrier appartiennent à l'unité. **Chaque geste reste signé** par
+son auteur (`recruiter_id`, et `added_by` pour les membres de liste).
+L'admin cégep lit et modifie **tout son cégep**, avec un filtre par sport ouvert
+sur le sien ; un recruteur non admin ne voit que son unité.
+
+**Ce que ça renverse.** La décision du 2026-09-17 (§1 ci-dessous) rendait
+`next_action_note`, `visit_at` et `flagged` **privés au recruteur**, admin cégep
+compris. **Entre collègues d'une même unité, ce n'est plus vrai** : ils se
+lisent et se modifient. Ce qui du 17 septembre **reste vrai** :
+- le **coach** et le **parent** ne lisent toujours ni les notes, ni les
+  relances, ni les visites (aucune policy nouvelle ne les concerne) ;
+- un recruteur d'un **autre cégep**, ou d'un **autre sport** du même cégep
+  (hors admin), ne voit rien de l'unité ;
+- un recruteur **sans cégep ou sans sport** n'a pas d'unité : ses lignes restent
+  privées exactement comme le 17 septembre.
+
+**Les règles, telles que posées en base (lot B1, migration `…_b1_tableau_blanc_unite`) :**
+1. **L'unité d'une ligne se pose à la création**, d'après son auteur (ou d'après
+   la liste pour membres et notes de liste), par trigger — la valeur envoyée par
+   le client est ignorée. **Elle ne bouge plus jamais** : un recruteur qui change
+   de sport ou de cégep laisse tout dans l'ancienne unité.
+2. **Policies élargies, additives** (`unite_select / unite_update / unite_delete`,
+   `unite_insert` sur les membres de liste) via `acces_unite(cégep, sport)` :
+   même unité, ou admin de ce cégep. Chacune **reproduit la policy propriétaire**
+   de la même commande (mêmes exigences `user_has_pro()`). Les policies
+   propriétaire sont **conservées** ; leur retrait viendra dans une migration
+   séparée, sur GO distinct, **après B2**.
+3. **On n'écrit jamais au nom d'un collègue** : l'INSERT reste « `recruiter_id` =
+   soi ». Un collègue peut modifier la ligne d'un autre, **jamais en changer
+   l'auteur** (trigger `unite_figer`, erreur 42501).
+4. **Une ligne par unité et par athlète, sans toucher `UNIQUE(recruiter_id,
+   athlete_id)`** : les lignes de chaque recruteur restent distinctes (« lignes
+   sœurs ») ; un trigger recopie sur les sœurs ce qui vient d'être écrit
+   (processus : étape, relance, visite, drapeau ; grades). Dernière écriture =
+   état de l'unité. Un collègue qui ajoute un athlète déjà suivi **rejoint** le
+   dossier à son étape, il ne le fait pas reculer. Les lectures par unité
+   (`unite_pipeline`, `unite_grades`, `unite_favoris`) rendent une ligne par
+   athlète ; `unite_auteurs()` rend le nom des auteurs (users n'est pas lisible
+   entre collègues).
+5. **Les effets de bord ne se jouent qu'une fois**, sur la ligne écrite : journal
+   (`log_pipeline_change`), notifications parent (étape, visite), statut global
+   de l'athlète. Les quatre fonctions trigger portent une garde
+   (`nexus.sync_unite`) qui les coupe pendant la recopie des sœurs. Un collègue
+   qui rejoint un dossier déjà à cette étape ne déclenche pas de « progression »
+   chez le parent.
+6. **Favori d'unité** = au moins un recruteur de l'unité l'a. Le retirer sur le
+   web le retire pour l'unité ; **le mobile 1.4.3 ne retire que le sien** jusqu'à
+   la 1.4.4 (registre `docs/fast-follow-1.4.2.md` §38).
+
+**Point ouvert pour B2 — la signature d'une modification.** Quand un collègue
+modifie la ligne d'un autre, le journal est signé par l'**auteur de la ligne**
+(`NEW.recruiter_id`), pas par celui qui a agi. Pour que « chaque geste soit
+signé » par son acteur, **l'interface B2 écrit par la ligne de l'acteur** (en
+la créant si besoin — elle naît alignée sur l'unité) plutôt que par celle d'un
+collègue ; la synchronisation fait le reste. Les policies le permettent déjà.
+
+La suite de ce fichier décrit l'état **du 17 septembre** : elle reste exacte
+pour le coach, le parent, l'admin plateforme et les recruteurs sans unité.
+
+---
+
 ## 1. Qui lit `recruiter_pipeline` — état au 2026-09-17, Lot 2a appliqué
 
 **LA GARANTIE EST MAINTENANT EN BASE, PLUS SEULEMENT DANS L'UI.** C'est le
