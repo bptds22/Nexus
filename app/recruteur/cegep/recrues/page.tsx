@@ -10,6 +10,8 @@ import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/share
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
+import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 
 /* ── Types ── */
 
@@ -62,8 +64,17 @@ function RecrusCegepPage() {
   const [recruits, setRecruits] = useState<RecrueCegep[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Filtre « sport de l'unité » (lot A) : les recrues des recruteurs du
+  // sport choisi (par défaut celui de l'admin). Le menu existant filtre, lui,
+  // par sport de l'ATHLÈTE.
+  const filtreSport = useFiltreSportUnite();
+  const cleFiltre = filtreSport.ids ? [...filtreSport.ids].sort().join(",") : "tous";
+
   useEffect(() => {
+    if (!filtreSport.pret) return;
     async function load() {
+      setLoading(true);
+      setRecruits([]); // un changement de sport ne doit pas laisser l'ancienne liste
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
@@ -71,7 +82,9 @@ function RecrusCegepPage() {
       const { data: currentUser } = await supabase.from("users").select("school_id").eq("id", user.id).single();
       if (!currentUser?.school_id) { setLoading(false); return; }
 
-      const { data: team } = await supabase.from("users").select("id, first_name, last_name").eq("school_id", currentUser.school_id);
+      const { data: equipe } = await supabase.from("users").select("id, first_name, last_name").eq("school_id", currentUser.school_id);
+      const retenus = filtreSport.ids;
+      const team = (equipe || []).filter((t) => !retenus || retenus.has(t.id as string));
       const teamIds = team?.map((t) => t.id) || [];
       const teamNameMap = new Map(team?.map((t) => [t.id, `${t.first_name || ""} ${t.last_name || ""}`]) || []);
 
@@ -121,7 +134,8 @@ function RecrusCegepPage() {
       setLoading(false);
     }
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtreSport.pret, cleFiltre]);
 
   const sports = useMemo(
     () => ["Tous", ...Array.from(new Set(recruits.map((r) => r.sport).filter(Boolean)))],
@@ -176,9 +190,10 @@ function RecrusCegepPage() {
 
       {/* ── Sport filter ──────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
-        <select value={sportFilter} onChange={(e) => setSportFilter(e.target.value)} aria-label="Filtrer par sport" className={selectClass}>
+        <FiltreSportUnite filtre={filtreSport} />
+        <select value={sportFilter} onChange={(e) => setSportFilter(e.target.value)} aria-label="Filtrer par sport de l'athlète" className={selectClass}>
           {sports.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>Sport de l&apos;athlète : {s}</option>
           ))}
         </select>
       </div>

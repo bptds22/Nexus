@@ -43,12 +43,16 @@ const EMPTY: CegepStatsData = {
   recentActivity: [],
 };
 
-export function useCegepStats() {
+/** `recruteurs` : le filtre « sport de l'unité » (lot A) — null = tout le
+ *  cégep, sinon les recruteurs retenus. `filtrePret` retient la requête tant
+ *  que le choix n'est pas connu, pour ne pas charger deux fois. */
+export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret = true) {
   const { data: currentUser } = useCurrentUser();
   const schoolId = currentUser?.profile.school_id;
+  const cleFiltre = recruteurs ? [...recruteurs].sort().join(",") : "tous";
 
   return useQuery<CegepStatsData>({
-    queryKey: ["cegep-stats", schoolId],
+    queryKey: ["cegep-stats", schoolId, cleFiltre],
     queryFn: async (): Promise<CegepStatsData> => {
       if (!schoolId) return EMPTY;
       const supabase = createClient();
@@ -63,7 +67,7 @@ export function useCegepStats() {
         .from("users")
         .select("id, first_name, last_name, role")
         .eq("school_id", schoolId);
-      const rList = teamMembers ?? [];
+      const rList = (teamMembers ?? []).filter((r) => !recruteurs || recruteurs.has(r.id as string));
       const recruiterIds = rList.map((r) => r.id as string);
       const recruiterFullMap = new Map(rList.map((r) => [r.id as string, `${r.first_name || ""} ${r.last_name || ""}`]));
 
@@ -175,7 +179,7 @@ export function useCegepStats() {
         recentActivity,
       };
     },
-    enabled: !!schoolId,
+    enabled: !!schoolId && filtrePret,
     staleTime: 10 * 60 * 1000,
   });
 }

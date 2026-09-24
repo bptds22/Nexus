@@ -1284,3 +1284,26 @@ du recruteur de la plateforme (décision BP : oui, dans une seule case).
 inclusion ou non dans l'export d'accès, durée de conservation, et sort des avis
 quand l'athlète supprime son compte (la cascade sur `athlete_id` les emporte
 aujourd'hui pour `recruiter_notes`).
+
+## 37. Sport du recruteur — listes mobiles à aligner sur `sports` (lot A, 2026-09-24, pour 1.4.4)
+
+Le lot A pose `users.sport_id` (unité = cégep × sport) et le **déduit du
+texte** `users.sport` par trigger (`trg_users_sport_id`) : l'app 1.4.3 continue
+de fonctionner sans connaître la colonne. Mais la déduction se fait **par nom** :
+un libellé absent de `public.sports` laisse `sport_id` à NULL — **sans erreur**,
+et le recruteur sort de toute unité sans le savoir.
+
+Deux listes du binaire publié posent ce problème :
+
+| Écran 1.4.3 | Liste | Écart |
+|---|---|---|
+| `RecruteurProfilMobile` (profil) | 27 sports en dur | **6 n'existent pas** en base : Danse, Escrime, Gymnastique, Karaté, Softball, Tennis de table. Handball manque. Choisir l'un des six = quitter son unité. |
+| `RecruiterOnboardingMobile` (inscription) | 16 sports en dur | tous en base, **mais « Autre » est proposé** : il crée une unité « cégep × Autre » qui ne regroupe personne de sens. Le sport y est déjà obligatoire (`canProceedSlide1`). |
+
+Au web, les deux écrans lisent désormais `lib/config/sportsProposes.ts`
+(22 libellés, tous vérifiés en base, ni « Autre » ni « Soccer intérieur ») et
+le profil ne permet plus de vider le sport.
+
+**À faire au lot mobile 1.4.4 :** brancher les deux écrans sur
+`SPORTS_PROPOSES`, retirer l'option de vidage du profil mobile. Rien à faire en
+base : le trigger absorbe déjà les deux chemins.

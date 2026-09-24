@@ -6,6 +6,8 @@ import CegepGate from "@/components/subscription/CegepGate";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import { useCegepStats } from "@/lib/queries/recruiter/useCegepStats";
+import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
+import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import {
   BarChart,
   Bar,
@@ -205,7 +207,9 @@ interface ActivityRow {
 function CegepDashboardContent() {
   // Migration TanStack (iter 5.3a) — 10 queries séquentielles regroupées en 1 hook.
   // Cache 10 min → navigation tab → CÉGEP instantanée la 2e visite.
-  const { data: stats, isLoading: loading } = useCegepStats();
+  // Filtre « sport de l'unité » (lot A) : ouvert sur le sport de l'admin.
+  const filtreSport = useFiltreSportUnite();
+  const { data: stats, isLoading: loading } = useCegepStats(filtreSport.ids, filtreSport.pret);
 
   const schoolName = stats?.schoolName ?? "Mon CÉGEP";
   const recruesCount = stats?.recruesCount ?? 0;
@@ -241,6 +245,7 @@ function CegepDashboardContent() {
         <span className="text-[11px] font-bold tracking-[0.2em] uppercase bg-[#E63946]/15 text-[#E63946] px-3 py-1 rounded-full">
           {schoolName}
         </span>
+        <FiltreSportUnite filtre={filtreSport} className="ml-auto" />
       </div>
 
       {/* ── Section 1: KPI Cards ────────────────────────────── */}

@@ -8,6 +8,7 @@ import { uploadImage } from "@/lib/upload/uploadImage";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
 import { useSchoolsList } from "@/lib/queries/shared/useSchoolsList";
 import { RecruteurProfilMobile } from "@/components/shared/RecruteurProfilMobile";
+import { SPORTS_PROPOSES_ALPHA } from "@/lib/config/sportsProposes";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -25,13 +26,9 @@ const TITLES = [
 
 const DIVISIONS = ["Division 1", "Division 2", "Division 3"];
 
-const SPORTS = [
-  "Athlétisme", "Badminton", "Baseball", "Basketball", "Cheerleading",
-  "Cross-country", "Danse", "Flag football", "Escrime", "Football",
-  "Futsal", "Golf", "Gymnastique", "Hockey", "Judo", "Karaté", "Natation",
-  "Rugby", "Ski alpin", "Ski de fond", "Soccer", "Softball", "Tennis",
-  "Tennis de table", "Ultimate frisbee", "Volleyball", "Water-polo",
-];
+// Liste partagée : chaque libellé existe dans public.sports (lot A). L'ancienne
+// liste locale proposait six sports absents de la base.
+const SPORTS = SPORTS_PROPOSES_ALPHA;
 
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors";
 const labelCls = "text-[12px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF] mb-1.5 block";
@@ -165,7 +162,9 @@ function RecruiterProfilDesktop() {
     setSaving(false);
   }
 
-  const requiredFilled = form.firstName && form.lastName && form.schoolId;
+  // Le sport est requis (lot A) : il définit l'unité du recruteur. On peut
+  // le CHANGER, jamais le vider.
+  const requiredFilled = form.firstName && form.lastName && form.schoolId && form.sport;
   const initials = (form.firstName[0] || "") + (form.lastName[0] || "");
 
   if (loading) {
@@ -283,9 +282,13 @@ function RecruiterProfilDesktop() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Sport</label>
-                <select title="Sport" value={form.sport} onChange={(e) => update("sport", e.target.value)} className={inputCls}>
-                  <option value="">Sélectionner</option>
+                <label className={labelCls}>Sport recruté *</label>
+                <select title="Sport recruté" value={form.sport} onChange={(e) => update("sport", e.target.value)} className={inputCls}>
+                  {/* « Sélectionner » n'est offert qu'à un profil encore sans sport :
+                      une fois posé, le sport se change mais ne se vide plus. Un
+                      ancien texte hors liste reste affiché tel quel. */}
+                  {!form.sport && <option value="">Sélectionner</option>}
+                  {form.sport && !SPORTS.includes(form.sport) && <option value={form.sport}>{form.sport}</option>}
                   {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>

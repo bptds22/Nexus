@@ -8,6 +8,8 @@ import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
 import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
 import type { TrainerOverview } from "@/lib/types/models";
+import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
+import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -80,15 +82,6 @@ type SortKey =
 
 type SortDir = "asc" | "desc";
 
-const SPORTS_FILTER = [
-  "Tous",
-  "Football",
-  "Hockey",
-  "Basketball",
-  "Volleyball",
-  "Soccer",
-];
-
 const STATUS_FILTER = [
   { value: "all", label: "Tous" },
   { value: "active", label: "Actif" },
@@ -114,7 +107,9 @@ function TrainersListPage() {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [sportFilter, setSportFilter] = useState("Tous");
+  // Filtre « sport de l'unité » (lot A) : remplace l'ancien menu Sport, qui
+  // comparait le TEXTE users.sport à une liste en dur (sans Flag football).
+  const filtreSport = useFiltreSportUnite();
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -183,8 +178,9 @@ function TrainersListPage() {
   const filtered = useMemo(() => {
     let list = [...activeTrainers];
 
-    if (sportFilter !== "Tous") {
-      list = list.filter((t) => t.sports.includes(sportFilter));
+    if (filtreSport.ids) {
+      const ids = filtreSport.ids;
+      list = list.filter((t) => ids.has(t.id));
     }
     if (statusFilter !== "all") {
       list = list.filter((t) => t.status === statusFilter);
@@ -236,7 +232,10 @@ function TrainersListPage() {
     });
 
     return list;
-  }, [sortKey, sortDir, sportFilter, statusFilter, searchQuery]);
+    // allTrainers manquait aux dépendances : la liste restait figée sur son
+    // état d'avant chargement jusqu'au premier tri ou filtre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTrainers, sortKey, sortDir, filtreSport.ids, statusFilter, searchQuery]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -276,18 +275,8 @@ function TrainersListPage() {
 
       {/* Filters bar */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* Sport dropdown */}
-        <select
-          value={sportFilter}
-          onChange={(e) => setSportFilter(e.target.value)}
-          className="bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] outline-none focus:border-[#E63946] transition-colors"
-        >
-          {SPORTS_FILTER.map((s) => (
-            <option key={s} value={s}>
-              Sport : {s}
-            </option>
-          ))}
-        </select>
+        {/* Sport de l'unité (lot A) */}
+        <FiltreSportUnite filtre={filtreSport} />
 
         {/* Status dropdown */}
         <select

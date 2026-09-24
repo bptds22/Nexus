@@ -18,6 +18,7 @@ import { genderLabel } from "@/lib/config/gender";
 import { CoachOnboardingMobileSchool } from "@/components/shared/CoachOnboardingMobileSchool";
 import { CoachOnboardingMobileCivil } from "@/components/shared/CoachOnboardingMobileCivil";
 import { RecruiterOnboardingMobile } from "@/components/shared/RecruiterOnboardingMobile";
+import { SPORTS_PROPOSES } from "@/lib/config/sportsProposes";
 
 // Canonical Nexus support inbox for user-driven contact (school-not-found, etc.).
 // Remplaçait `support@` : la constante partagée tient désormais l'adresse.
@@ -37,13 +38,8 @@ const inputClass =
   "w-full h-11 px-4 bg-[#111317] border border-white/10 rounded-lg text-white font-sans text-sm placeholder:text-[#6B7280] focus:border-[#E63946] focus:outline-none transition-colors";
 
 /* ── Shared data ── */
-const SPORTS = [
-  "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
-  "Athlétisme", "Flag football", "Rugby", "Cheerleading",
-  "Natation", "Badminton", "Cross-country", "Futsal",
-  "Baseball", "Ultimate frisbee", "Golf", "Tennis",
-  "Ski alpin", "Ski de fond", "Judo", "Handball", "Water-polo",
-];
+// Liste partagée : chaque libellé existe dans public.sports (lot A).
+const SPORTS = SPORTS_PROPOSES;
 const REGIONS = ["Montréal", "Québec", "Saguenay-Lac-Saint-Jean", "Estrie", "Outaouais", "Mauricie", "Laurentides", "Lanaudière", "Montérégie", "Chaudière-Appalaches", "Laval", "Centre-du-Québec", "Bas-Saint-Laurent", "Abitibi-Témiscamingue", "Côte-Nord", "Nord-du-Québec", "Gaspésie"];
 
 // School-card city + region — never renders "X, X" when city == region (or
@@ -461,7 +457,10 @@ export default function OnboardingPage() {
     // recovery. School coaches with null sport also leave users.sport
     // null, which hides their athletes from sport-scoped recruiter
     // searches. Gate at the source.
-    if (step === 0 && user.role === "coach") {
+    // Même garde pour le recruteur (lot A, décision BP 2026-09-24) : son
+    // sport définit son unité (cégep × sport). Sans lui, trg_users_sport_id
+    // laisse users.sport_id NULL et le recruteur n'appartient à aucune unité.
+    if (step === 0 && (user.role === "coach" || user.role === "recruiter")) {
       const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
       const localUser = raw ? JSON.parse(raw) : {};
       const profile = localUser.profile as Record<string, unknown> | null;
@@ -3041,7 +3040,7 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
       </div>
 
       <div>
-        <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Sport principal recruté</label>
+        <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Sport principal recruté *</label>
         <select value={sport} onChange={(e) => setSport(e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
           <option value="">Sélectionner...</option>
           {SPORTS.map((s) => <option key={s} value={s}>{s}</option>)}

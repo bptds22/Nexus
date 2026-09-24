@@ -22,6 +22,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Link from "next/link";
+import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
+import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 
 /* ── Dark Recharts tooltip ───────────────────────────────── */
 
@@ -147,8 +149,19 @@ function CegepStatsPage() {
 
   const [recruiterSort, setRecruiterSort] = useState<{ col: string; dir: "asc" | "desc" }>({ col: "signed", dir: "desc" });
 
+  // Filtre « sport de l'unité » (lot A) : l'équipe chargée se limite aux
+  // recruteurs du sport choisi (par défaut celui de l'admin). À ne pas
+  // confondre avec le menu « Sport de l'athlète » de l'entonnoir.
+  const filtreSport = useFiltreSportUnite();
+  const cleFiltre = filtreSport.ids ? [...filtreSport.ids].sort().join(",") : "tous";
+
   useEffect(() => {
+    if (!filtreSport.pret) return;
     async function load() {
+      setLoading(true);
+      // Un changement de sport repart de zéro : une équipe vide ne doit pas
+      // laisser à l'écran les chiffres de l'équipe précédente.
+      setRawPipeline([]); setAthleteCards(new Map()); setSportData([]); setContactsCount(0);
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
@@ -164,7 +177,8 @@ function CegepStatsPage() {
       if (school) setSchoolName(school.name);
 
       const { data: teamData } = await supabase.from("users").select("id, first_name, last_name").eq("school_id", currentUser.school_id);
-      const teamList: TeamMember[] = teamData || [];
+      const retenus = filtreSport.ids;
+      const teamList: TeamMember[] = (teamData || []).filter((t) => !retenus || retenus.has(t.id));
       setTeam(teamList);
       const teamIds = teamList.map((t) => t.id);
       if (teamIds.length === 0) { setLoading(false); return; }
@@ -272,7 +286,8 @@ function CegepStatsPage() {
       setLoading(false);
     }
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtreSport.pret, cleFiltre]);
 
   /* === Filter-derived data === */
   const STAGE_MAP: Record<string, keyof FunnelData> = {
@@ -481,6 +496,7 @@ function CegepStatsPage() {
         <span className="text-[11px] font-bold tracking-[0.2em] uppercase bg-[#E63946]/15 text-[#E63946] px-3 py-1 rounded-full">
           {schoolName}
         </span>
+        <FiltreSportUnite filtre={filtreSport} className="ml-auto" />
       </div>
 
       {/* SECTION 1 — Hero KPI Bar */}
@@ -524,7 +540,7 @@ function CegepStatsPage() {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
           <h2 className="text-white font-head font-bold text-[16px]">Entonnoir de recrutement</h2>
           <div className="flex items-center gap-2">
-            <label htmlFor="sport-filter" className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6B7280]">Sport</label>
+            <label htmlFor="sport-filter" className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6B7280]">Sport de l&apos;athlète</label>
             <select
               id="sport-filter"
               value={selectedSportId}
