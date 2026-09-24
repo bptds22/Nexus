@@ -7,6 +7,11 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
+import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
+import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
+import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import {
   sortPipelineCards,
   PIPELINE_SORT_OPTIONS,
@@ -32,7 +37,6 @@ import {
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import type { CelluleXlsx } from "@/lib/export/xlsx";
-import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import {
   DndContext,
   DragOverlay,
@@ -53,7 +57,6 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
-import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteGrade";
 import { GRADES, type Grade } from "@/lib/config/grades";
 import { champVisitePourEtape, etapePorteVisite } from "@/lib/pipeline/regleVisite";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -68,6 +71,8 @@ import RelanceFiche from "@/components/shared/RelanceFiche";
 import { PencilIcon } from "@/components/shared/wizard/modeIcons";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
 import OngletInfosPanneau from "./_components/OngletInfosPanneau";
+import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
+import { useNotesUnite, useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -541,6 +546,12 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               : <span className="text-[12px] text-[#6b7280]">Pas encore évalué</span>}
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
+          {/* Tableau blanc (lot B2) : qui, dans l'unité, suit cet athlète. */}
+          {card.suivi_par_noms && card.suivi_par_noms.length > 0 && (
+            <p className="mt-1.5 text-[11px] text-[#6b7280] truncate" title={`Suivi par ${card.suivi_par_noms.join(", ")}`}>
+              Suivi par <span className="font-semibold text-[#9CA3AF]">{nomsCourts(card.suivi_par_noms)}</span>
+            </p>
+          )}
         </div>
 
         {/* Footer: Next action / staleness */}
@@ -610,7 +621,7 @@ type BlocTableau = "identification" | "evaluation" | "suivi";
 const BLOCS_TABLEAU: { cle: BlocTableau; libelle: string }[] = [
   { cle: "identification", libelle: "Identification" },
   { cle: "evaluation", libelle: "Évaluation" },
-  { cle: "suivi", libelle: "Mon suivi" },
+  { cle: "suivi", libelle: "Suivi" },
 ];
 
 const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = [
@@ -622,12 +633,16 @@ const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = 
   { cle: "taille", libelle: "Taille", bloc: "evaluation" },
   { cle: "poids", libelle: "Poids", bloc: "evaluation" },
   { cle: "cote", libelle: "Cote coach", bloc: "evaluation" },
-  { cle: "grade", libelle: "Mon grade", bloc: "suivi" },
+  { cle: "grade", libelle: "Grade", bloc: "suivi" },
   { cle: "etape", libelle: "Étape", bloc: "suivi" },
   { cle: "relance", libelle: "Relance", bloc: "suivi" },
   { cle: "visite", libelle: "Visite", bloc: "suivi" },
   { cle: "video", libelle: "Faits saillants", bloc: "suivi" },
   { cle: "note", libelle: "Note de suivi", bloc: "suivi" },
+  /* Tableau blanc (lot B2) : qui, dans l'unité, suit l'athlète. En fin de
+     bloc pour ne pas déplacer l'ordre fixé par BP. Aussi exporté (« Suivi
+     par », la colonne Auteur de l'export). */
+  { cle: "suivi_par", libelle: "Suivi par", bloc: "suivi" },
 ];
 
 /** Première colonne de chaque bloc : c'est elle qui porte le filet. */
@@ -639,11 +654,35 @@ function formatTaille(card: PipelineKanbanCard): string | null {
   return card.taille_pieds ? `${card.taille_pieds}'${card.taille_pouces ?? 0}"` : null;
 }
 
+/** Les COLLÈGUES qui suivent l'athlète (moi exclu), par nom. */
+function collegues(card: PipelineKanbanCard | undefined, moi: string | null): string[] {
+  if (!card?.suivi_par || !card.suivi_par_noms) return [];
+  return card.suivi_par.map((id, i) => (id === moi ? null : card.suivi_par_noms![i])).filter((n): n is string => !!n);
+}
+
+/** Texte de la confirmation d'un retrait (décision BP 3). */
+function messageRetrait(noms: string[], modeUnite: boolean): string {
+  if (!modeUnite) return "Il ne sera plus dans ton suivi actif.";
+  if (noms.length === 0) return "Le dossier sera retiré du processus de ton unité.";
+  const liste = noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}`;
+  return `Suivi aussi par ${liste}. Le dossier sera retiré pour toute l'unité — pour ${noms.length === 1 ? "ce collègue" : "ces collègues"} aussi.`;
+}
+
 function formatPoids(card: PipelineKanbanCard): string | null {
   return card.poids_lbs ? `${card.poids_lbs} lbs` : null;
 }
 
 const VIDE = <span className="text-[#4a4d56]">—</span>;
+
+/** « Robin A., Rémi C. » — les recruteurs qui suivent l'athlète (tableau
+ *  blanc, lot B2). Le nom complet est dans l'infobulle et dans le panneau. */
+function nomsCourts(noms: string[] | undefined): string {
+  return (noms ?? []).map((n) => {
+    const [prenom, ...reste] = n.split(/\s+/);
+    const nom = reste.join(" ");
+    return nom ? `${prenom} ${nom[0]}.` : prenom;
+  }).join(", ");
+}
 
 /* ── Export Excel (lot B, décisions BP 2026-09-24) ─────────────────
    Un vrai classeur .xlsx (lib/export/xlsx) — le CSV tombait en colonne A sur
@@ -661,7 +700,7 @@ const VIDE = <span className="text-[#4a4d56]">—</span>;
    numéro est vide — l'export ne sort que ce que l'écran montre. */
 const LARGEUR_EXPORT: Record<string, number> = {
   nom: 24, numero: 5, ecole: 32, position: 10, taille: 8, poids: 10, cote: 11,
-  grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70,
+  grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70, suivi_par: 28,
 };
 
 function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): CelluleXlsx {
@@ -684,6 +723,7 @@ function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): Cel
     }
     case "video": return card.has_video ? { t: "texte", v: "Oui" } : null;
     case "note": return texte(notes);
+    case "suivi_par": return texte((card.suivi_par_noms ?? []).join(", "));
     default: return null;
   }
 }
@@ -709,6 +749,10 @@ function formatDateNote(iso: string, now: number): string {
  *  que l'ORDRE vive dans COLONNES_TABLEAU et nulle part ailleurs. */
 function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): React.ReactNode {
   switch (cle) {
+    case "suivi_par":
+      return card.suivi_par_noms && card.suivi_par_noms.length > 0 ? (
+        <span className="text-[#9CA3AF]" title={card.suivi_par_noms.join(", ")}>{nomsCourts(card.suivi_par_noms)}</span>
+      ) : VIDE;
     case "nom":
       return <span className={`line-clamp-2 text-[15px] font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>;
     case "numero":
@@ -767,7 +811,7 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
          note de relance, qui passe au survol de la colonne Relance. */
       return card.derniere_note ? (
         <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.derniere_note.content}>
-          <span className="font-semibold text-[#6b7280]">{formatDateNote(card.derniere_note.created_at, now)} — </span>
+          <span className="font-semibold text-[#6b7280]">{formatDateNote(card.derniere_note.created_at, now)}{card.derniere_note.auteur ? ` · ${card.derniere_note.auteur}` : ""} — </span>
           {card.derniere_note.content}
         </span>
       ) : VIDE;
@@ -1231,7 +1275,7 @@ interface NoteEntry {
 
 function SlideOver({
   card, onClose, onStatusChange, onSetGrade, onSaveVisit, onSaveRelanceNote,
-  isFreeDemoMode, onTeaseUpgrade,
+  isFreeDemoMode, onTeaseUpgrade, modeUnite, moi, lectureSeule,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
   onStatusChange: (cardId: string, newStatus: RecruitmentStatus) => void;
@@ -1243,10 +1287,19 @@ function SlideOver({
   onSaveRelanceNote: (pipelineId: string, note: string | null) => void;
   isFreeDemoMode: boolean;
   onTeaseUpgrade: () => void;
+  /** Tableau blanc (lot B2) : le panneau montre le dossier de l'UNITÉ —
+   *  notes signées, « Suivi par », grade et relance de l'unité. */
+  modeUnite: boolean;
+  /** L'utilisateur courant : « Toi » plutôt que son propre nom, et exclu de
+   *  la liste des collègues à la confirmation d'un retrait. */
+  moi: string | null;
+  /** Dossier d'une autre unité (admin cégep, autre sport) : consultable,
+   *  pas modifiable à cette étape. */
+  lectureSeule: boolean;
 }) {
-  // Onglet courant (lot C1). Le panneau se remonte à chaque carte
-  // (key={card.id}) : il rouvre toujours sur « Actions ».
-  const [onglet, setOnglet] = useState<"actions" | "infos">("actions");
+  // Onglet courant (lot C1, + « Historique » au lot B2). Le panneau se
+  // remonte à chaque carte (key={card.id}) : il rouvre toujours sur « Actions ».
+  const [onglet, setOnglet] = useState<"actions" | "infos" | "historique">("actions");
   const [noteText, setNoteText] = useState("");
   // Note de RELANCE (next_action_note) — distincte des notes de suivi. Seedée
   // au montage : le panneau se remonte à chaque carte (key={card.id}).
@@ -1258,7 +1311,16 @@ function SlideOver({
   const [visitTime, setVisitTime] = useState(() => isoToInputs(card.visit_at ?? null).time);
   // Migration TanStack (iter 5.3b) — notes en cache per-athlete on-demand.
   const queryClient = useQueryClient();
-  const { data: noteHistory = [] } = usePipelineNotes(card.id);
+  /* Notes : celles de l'UNITÉ, signées (lot B2) — ou, en mode démo, les
+     siennes seulement (usePipelineNotes, partagé avec le mobile). Les notes
+     des collègues sont en LECTURE SEULE (décision BP 2) : le panneau n'offre
+     de toute façon ni modification ni suppression. */
+  const { data: notesDemo = [] } = usePipelineNotes(modeUnite ? null : card.id);
+  const { data: notesUnite = [] } = useNotesUnite(modeUnite ? card.id : null);
+  const noteHistory: { id: string; content: string; created_at: string; recruiter_id?: string }[] = modeUnite ? notesUnite : notesDemo;
+  const { data: auteurs = {} } = useAuteursUnite(modeUnite);
+  const signature = (id: string | undefined) => (!id ? null : id === moi ? "Toi" : nomAuteur(auteurs[id]));
+  const colleguesQuiSuivent = collegues(card, moi);
   const [posting, setPosting] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<RecruitmentStatus | null>(null);
   const [retireReason, setRetireReason] = useState("");
@@ -1283,8 +1345,10 @@ function SlideOver({
       .single();
     queryClient.invalidateQueries({ queryKey: ["pipeline-notes"] });
     // Colonne « Note de suivi » de la vue tableau (dernière note, lue par
-    // usePipelineCards) : sans ceci elle resterait sur l'ancienne note.
+    // usePipelineCards / useProcessusUnite) : sans ceci elle resterait sur
+    // l'ancienne note. Et l'onglet Historique (NOTE_ADDED).
     queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    queryClient.invalidateQueries({ queryKey: ["pipeline-historique"] });
     setNoteText("");
     setPosting(false);
   };
@@ -1333,6 +1397,14 @@ function SlideOver({
               <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
+            {card.suivi_par && card.suivi_par.length > 0 && (
+              <p className="text-[13px] text-[#6b7280] mt-1">
+                Suivi par{" "}
+                <span className="font-semibold text-[#9CA3AF]">
+                  {card.suivi_par.map((id, i) => (id === moi ? "toi" : card.suivi_par_noms?.[i] ?? "Recruteur")).join(", ")}
+                </span>
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-3">{aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
           </div>
           {/* ONGLETS (lot C1, décision BP 2026-09-24) — sous le nom. « Actions »
@@ -1340,7 +1412,7 @@ function SlideOver({
               le même ordre. « Infos » : les informations du joueur, par les
               sections partagées de la fiche (OngletInfosPanneau). */}
           <div role="tablist" aria-label="Contenu du panneau" className="flex gap-1 p-1 bg-[#13151a] border border-[#2D3748] rounded-lg">
-            {([["actions", "Actions"], ["infos", "Infos"]] as const).map(([cle, libelle]) => (
+            {([["actions", "Actions"], ["infos", "Infos"], ["historique", "Historique"]] as const).map(([cle, libelle]) => (
               <button
                 key={cle}
                 type="button"
@@ -1355,13 +1427,20 @@ function SlideOver({
           </div>
           {onglet === "infos" ? (
             <OngletInfosPanneau athleteId={card.id} />
+          ) : onglet === "historique" ? (
+            <OngletHistoriquePanneau athleteId={card.id} />
           ) : (
           <>
+          {lectureSeule && (
+            <p className="rounded-lg border border-[#2D3748] bg-[#13151a] px-3 py-2 text-[12px] text-[#9CA3AF] leading-snug" role="note">
+              Ce dossier appartient à l&apos;unité {card.sport || "d'un autre sport"} de ton cégep : tu le consultes, sans le modifier pour l&apos;instant.
+            </p>
+          )}
           <div>
             {/* Mon grade — sous la cote du coach, et séparé d'elle : les
                 étoiles sont le jugement d'un tiers, le grade est le mien. */}
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Mon grade</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">{modeUnite ? "Grade de l'unité" : "Mon grade"}</span>
               <div className="mt-2">
                 <GradePicker value={card.grade} onSelect={(g) => onSetGrade(card.id, g, card.grade ?? null)} />
               </div>
@@ -1379,8 +1458,9 @@ function SlideOver({
           {/* Notes — ServiceNow-style work notes + activity feed */}
           <div>
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-2">Notes de suivi</h3>
-            {/* Input */}
-            <div className="flex gap-2">
+            {/* Input — absent sur un dossier d'une autre unité (une note s'y
+                rangerait dans l'unité de l'admin, invisible pour ce sport). */}
+            {!lectureSeule && <div className="flex gap-2">
               <textarea
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
@@ -1397,7 +1477,7 @@ function SlideOver({
               >
                 {posting ? "..." : "Poster"}
               </button>
-            </div>
+            </div>}
 
             {/* Activity timeline */}
             {noteHistory.length > 0 && (
@@ -1416,7 +1496,10 @@ function SlideOver({
                         {/* Timeline dot */}
                         <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-[#E63946]" />
                         <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <span className="text-[11px] font-bold text-[#9CA3AF]">{dateStr}</span>
+                          <span className="text-[11px] font-bold text-[#9CA3AF]">
+                            {signature(note.recruiter_id) && <span className="text-white">{signature(note.recruiter_id)} · </span>}
+                            {dateStr}
+                          </span>
                           <span className="text-[10px] text-[#4a4d56]">{timeStr}</span>
                         </div>
                         <p className="text-[13px] text-[#e0e0e0] leading-relaxed whitespace-pre-wrap">{note.content}</p>
@@ -1450,9 +1533,9 @@ function SlideOver({
               Gate : jamais en mode démo Free — la RLS refuserait l'UPDATE
               (`user_has_pro()`), et un bouton qui échoue est pire qu'absent.
               La ligne existe forcément : la carte EST la ligne du pipeline. */}
-          {!isFreeDemoMode && (
+          {!isFreeDemoMode && !lectureSeule && (
             <div>
-              <RelanceFiche athleteId={card.id} sousTitre={null} />
+              <RelanceFiche athleteId={card.id} sousTitre={null} modeUnite={modeUnite} />
               {/* Note de relance — ÉDITABLE ici, et seulement ici (la fenêtre
                   « Prochain suivi » est retirée). Enregistrée en quittant le
                   champ ou sur Entrée. Privée au recruteur depuis le Lot 2a
@@ -1618,7 +1701,7 @@ function SlideOver({
       {pendingStatus && (
         <ConfirmModal
           title={pendingIsRetire ? `Retirer ${card.full_name} ?` : `Déplacer vers ${pendingLabel} ?`}
-          message={pendingIsRetire ? "Il ne sera plus dans ton suivi actif." : `${card.full_name} sera déplacé vers ${pendingLabel}.`}
+          message={pendingIsRetire ? messageRetrait(colleguesQuiSuivent, modeUnite) : `${card.full_name} sera déplacé vers ${pendingLabel}.`}
           confirmLabel={pendingIsRetire ? "Retirer" : "Confirmer"}
           confirmColor={pendingIsRetire ? "#EF4444" : RED}
           textarea={pendingIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}
@@ -1728,9 +1811,6 @@ function PipelinePageContent() {
   // Migration TanStack (iter 5.3b) — kanban cards + competitorMap via hook.
   // Cache 60s → navigation tab → Pipeline instantanée.
   const queryClient = useQueryClient();
-  const { data: pipelineData } = usePipelineCards();
-  const cards = pipelineData?.cards ?? [];
-  const competitorMap = pipelineData?.competitorMap ?? {};
 
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -1762,7 +1842,7 @@ function PipelinePageContent() {
   // `tierLoading` : le Provider défaute tier→"free" avant le fetch — sans ce
   // garde, un All Star verrait le bandeau démo + les reverts de drag flasher au
   // login. On n'active donc le mode démo QU'UNE FOIS le tier réellement chargé.
-  const { tier, loading: tierLoading } = useSubscription();
+  const { tier, loading: tierLoading, isSchoolAdmin } = useSubscription();
   /* ── DÉCISION PRODUIT (BP, 2026-09-10) — écrite, jamais héritée ──────
      LE MODE DÉMO GRATUIT DE « MON PROCESSUS » EST ASSUMÉ.
 
@@ -1791,6 +1871,59 @@ function PipelinePageContent() {
      ──────────────────────────────────────────────────────────────────── */
   const isFreeDemoMode = !tierLoading && tier === "free";
 
+  /* ── LE TABLEAU BLANC DE L'UNITÉ (lot B2, étape 1 — décisions BP 2026-09-24)
+     Un Pro ou All Star voit le processus de son UNITÉ (cégep × sport) : une
+     carte par athlète, qui le suit, les notes signées. Un gratuit reste sur
+     SES lignes en mode démo (décision BP 1) — la base le garantit aussi :
+     les policies d'unité exigent Pro (B2-0).
+     Pendant le chargement du palier, rien n'est lu : ni la démo ni l'unité
+     ne doivent flasher l'une avant l'autre.
+     L'admin cégep a un filtre par sport, ouvert sur le sien (lot A) : un
+     autre sport de son cégep, ou tout le cégep. */
+  const modeUnite = !tierLoading && (tier === "pro" || tier === "all_star");
+  const adminCegep = modeUnite && isSchoolAdmin;
+  const filtreSport = useFiltreSportUnite();
+  const choixSport = adminCegep ? filtreSport.choix : null;
+  const sportParam = choixSport && choixSport !== TOUS && choixSport !== SANS_SPORT ? choixSport : null;
+  const toutCegep = choixSport === TOUS;
+  const { data: donneesDemo } = usePipelineCards({ enabled: isFreeDemoMode });
+  const { data: donneesUnite } = useProcessusUnite({
+    enabled: modeUnite && (!adminCegep || filtreSport.pret),
+    sportId: sportParam,
+    toutLeCegep: toutCegep,
+  });
+  const pipelineData = modeUnite ? donneesUnite : isFreeDemoMode ? donneesDemo : undefined;
+  const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
+  const competitorMap = pipelineData?.competitorMap ?? {};
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
+  const { data: auteursUnite = {} } = useAuteursUnite(modeUnite);
+  const monSportId = moi ? auteursUnite[moi]?.sport_id ?? null : null;
+
+  /* DOSSIER D'UNE AUTRE UNITÉ = LECTURE SEULE (étape 1 de B2).
+     L'admin cégep VOIT les autres sports de son cégep, mais toute écriture
+     passe par la ligne de l'acteur, et cette ligne vit dans l'unité de
+     l'acteur : déplacer le dossier Basketball depuis un compte Football en
+     créerait un SECOND, en Football. Tant que l'écriture inter-unités n'existe
+     pas (étape 3, registre §40), ces dossiers se lisent sans se modifier. */
+  const estAutreUnite = useCallback((card: PipelineKanbanCard | null | undefined) =>
+    !!card && modeUnite && !!card.unite_sport_id && !!monSportId && card.unite_sport_id !== monSportId,
+  [modeUnite, monSportId]);
+
+  /* Toute écriture passe par la ligne de l'ACTEUR (unite_ecrire_dossier,
+     lot B2-0) : créée au besoin, alignée sur l'unité, et le journal est signé
+     par celui qui agit. En mode démo, les handlers s'arrêtent avant. */
+  const ecrireDossier = useCallback(async (athleteId: string, champs: Record<string, unknown>) => {
+    const { error } = await createClient().rpc("unite_ecrire_dossier", { p_athlete_id: athleteId, p_champs: champs });
+    if (error) console.error("[pipeline] unite_ecrire_dossier :", error.message);
+    return error;
+  }, []);
+  const invaliderProcessus = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    queryClient.invalidateQueries({ queryKey: ["pipeline-historique"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+  }, [queryClient]);
+
   // Ex-mega useEffect fetchPipeline (200+ lignes) retiré en iter 5.3b — logique dans usePipelineCards.
 
   const sensors = useSensors(
@@ -1807,54 +1940,48 @@ function PipelinePageContent() {
     showToast("Passe à Pro pour sauvegarder ton processus");
   }, [showToast]);
 
-  // Iter 6.1b — hook DELETE pour le statut "retire" qui violait
-  // chk_recruiter_pipeline_stage en UPDATE (RETIRE pas dans l'enum DB).
-  const removeFromPipeline = useRemoveFromPipeline();
+  const refuserAutreUnite = useCallback(() => {
+    showToast("Dossier d'une autre unité : lecture seule pour l'instant");
+  }, [showToast]);
+  /** Vrai si l'écriture doit être refusée (dossier d'une autre unité). */
+  const bloqueAutreUnite = useCallback((athleteId: string) => {
+    if (!estAutreUnite(cards.find((c) => c.id === athleteId))) return false;
+    refuserAutreUnite();
+    return true;
+  }, [cards, estAutreUnite, refuserAutreUnite]);
 
-  /* ── Status change handler ─────────────────────────────────── */
+  /* ── Status change handler ─────────────────────────────────────
+     « Retiré » = retrait POUR L'UNITÉ (unite_retirer_du_processus : les
+     lignes de tous les collègues, UNE ligne de journal signée). La
+     confirmation qui nomme les collègues a lieu AVANT (ConfirmModal). Les
+     autres étapes s'écrivent sur la ligne de l'acteur ; regleVisite (décision
+     BP 2026-09-23) : la date de visite n'est effacée que sous « Visite
+     planifiée ». */
   const handleStatusChange = useCallback(async (cardId: string, newStatus: RecruitmentStatus) => {
     if (isFreeDemoMode) {
       teaseUpgrade();
       setSelectedCard(null);
       return;
     }
-    // Fix 10 iter 6.1b — "retire" = DELETE row (et non UPDATE stage='RETIRE'
-    // qui échouait silencieusement à cause de chk_recruiter_pipeline_stage).
+    if (bloqueAutreUnite(cardId)) return;
     if (newStatus === "retire") {
-      try {
-        await removeFromPipeline.mutateAsync({ cardId });
-        setSelectedCard(null);
-        showToast("Athlète retiré du processus");
-      } catch {
-        showToast("Erreur lors du retrait");
-      }
+      const dossier = cards.find((c) => c.id === cardId);
+      const { error } = await createClient().rpc("unite_retirer_du_processus", {
+        p_athlete_id: cardId,
+        p_sport_id: dossier?.unite_sport_id ?? null,
+      });
+      if (error) { showToast("Erreur lors du retrait"); return; }
+      invaliderProcessus();
+      setSelectedCard(null);
+      showToast("Athlète retiré du processus");
       return;
     }
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const now = new Date().toISOString();
-      // regleVisite (décision BP 2026-09-23) : la date de visite survit de
-      // « Visite planifiée » à « Lettre signée » ; elle n'est effacée que si
-      // l'étape redescend SOUS « Visite planifiée ».
-      const payload: Record<string, unknown> = {
-        stage: newStatus.toUpperCase(), moved_at: now, updated_at: now,
-        ...champVisitePourEtape(newStatus),
-      };
-
-      await supabase
-        .from("recruiter_pipeline")
-        .update(payload)
-        .eq("athlete_id", cardId)
-        .eq("recruiter_id", user.id);
-
-      // Invalidations TanStack (iter 5.3b) — pipeline + dashboard.kpi (pipelineCounts).
-      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
-    }
+    const error = await ecrireDossier(cardId, { stage: newStatus.toUpperCase(), ...champVisitePourEtape(newStatus) });
+    if (error) { showToast("Statut non enregistré"); return; }
+    invaliderProcessus();
     setSelectedCard(null);
     showToast(`Statut changé → ${KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus}`);
-  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient, removeFromPipeline]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, cards, ecrireDossier, invaliderProcessus, bloqueAutreUnite]);
 
   /* ── Grade (slide-over) ─────────────────────────────────────────
      `selectedCard` est un SNAPSHOT : l'optimistic update du hook patche le
@@ -1864,28 +1991,31 @@ function PipelinePageContent() {
      Le garde isFreeDemoMode n'est pas décoratif : user_has_pro() est en with
      check sur INSERT et UPDATE, donc un compte free verrait la sélection se
      poser puis se défaire au revert. On l'arrête avant l'aller-retour. */
-  const upsertGrade = useUpsertAthleteGrade();
   const handleSetGrade = useCallback((cardId: string, grade: Grade | null, previousGrade: Grade | null) => {
     if (isFreeDemoMode) {
       teaseUpgrade();
       return;
     }
+    if (bloqueAutreUnite(cardId)) return;
     // `previousGrade` vient du panneau, qui l'a sous les yeux au moment du
     // clic. Le rechercher dans `cards` ici rendrait ce callback dépendant
     // d'un tableau recréé à chaque rendu, pour une valeur que l'appelant
     // connaît déjà.
+    /* Grade de l'UNITÉ (unite_ecrire_grade) : écrit sur la ligne de
+       l'acteur, recopié sur celles des collègues ; `null` le retire pour
+       l'unité. Le panneau est patché tout de suite, remis en cas d'échec. */
     setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, grade } : prev));
-    upsertGrade.mutate(
-      { athleteId: cardId, grade },
-      {
-        onError: () => {
-          setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, grade: previousGrade } : prev));
-          showToast("Grade non enregistré");
-        },
-        onSuccess: () => showToast(grade ? `Grade ${grade} enregistré` : "Grade retiré"),
-      },
-    );
-  }, [isFreeDemoMode, teaseUpgrade, upsertGrade, showToast]);
+    void (async () => {
+      const { error } = await createClient().rpc("unite_ecrire_grade", { p_athlete_id: cardId, p_grade: grade });
+      if (error) {
+        setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, grade: previousGrade } : prev));
+        showToast("Grade non enregistré");
+        return;
+      }
+      invaliderProcessus();
+      showToast(grade ? `Grade ${grade} enregistré` : "Grade retiré");
+    })();
+  }, [isFreeDemoMode, teaseUpgrade, showToast, invaliderProcessus, bloqueAutreUnite]);
 
   /* ── Save visit_at (slide-over) ─────────────────────────────────
      Écriture immédiate à chaque changement d'input — pas de bouton
@@ -1897,21 +2027,18 @@ function PipelinePageContent() {
       teaseUpgrade();
       return;
     }
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("recruiter_pipeline")
-      .update({ visit_at: visitAtIso, updated_at: new Date().toISOString() })
-      .eq("id", pipelineId);
-
+    // En mode unité, pipeline_id EST l'athlète (useProcessusUnite).
+    if (bloqueAutreUnite(pipelineId)) return;
+    const error = await ecrireDossier(pipelineId, { visit_at: visitAtIso });
     if (error) {
       showToast("Date de visite non enregistrée");
       return;
     }
 
     setSelectedCard((prev) => (prev ? { ...prev, visit_at: visitAtIso } : prev));
-    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    invaliderProcessus();
     showToast(visitAtIso ? "Date de visite mise à jour" : "Date de visite retirée");
-  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, ecrireDossier, invaliderProcessus, bloqueAutreUnite]);
 
   /* ── Relance : date (cellule du tableau) et note (panneau) ─────────
      Plus de fenêtre dédiée (décision BP 2026-09-23) : la DATE s'édite dans la
@@ -1921,36 +2048,36 @@ function PipelinePageContent() {
      colonne reste en base (admin, mobile). */
   const handleSaveRelanceDate = useCallback(async (pipelineId: string, date: string | null) => {
     if (isFreeDemoMode) { teaseUpgrade(); return; }
-    const supabase = createClient();
-    const { error } = await supabase.from("recruiter_pipeline").update({ next_action_at: date }).eq("id", pipelineId);
+    if (bloqueAutreUnite(pipelineId)) return;
+    const error = await ecrireDossier(pipelineId, { next_action_at: date });
     if (error) { showToast("Relance non enregistrée"); return; }
-    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+    invaliderProcessus();
     showToast(date ? "Relance mise à jour" : "Relance retirée");
-  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, ecrireDossier, invaliderProcessus, bloqueAutreUnite]);
 
   const handleSaveRelanceNote = useCallback(async (pipelineId: string, note: string | null) => {
     if (isFreeDemoMode) { teaseUpgrade(); return; }
-    const supabase = createClient();
-    const { error } = await supabase.from("recruiter_pipeline").update({ next_action_note: note }).eq("id", pipelineId);
+    if (bloqueAutreUnite(pipelineId)) return;
+    const error = await ecrireDossier(pipelineId, { next_action_note: note });
     if (error) { showToast("Note de relance non enregistrée"); return; }
     // `selectedCard` est un SNAPSHOT (même piège que handleSaveVisit).
     setSelectedCard((prev) => (prev && prev.pipeline_id === pipelineId ? { ...prev, next_action_note: note } : prev));
-    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    invaliderProcessus();
     showToast(note ? "Note de relance enregistrée" : "Note de relance retirée");
-  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, ecrireDossier, invaliderProcessus, bloqueAutreUnite]);
 
   /* ── Cellules du tableau : étape et visite ─────────────────────────
      Étape : même handler que le kanban ; « Retiré » passe par la
      confirmation existante (pendingDrop → ConfirmModal), jamais direct. */
   const handleChangeEtapeTableau = useCallback((card: PipelineKanbanCard, etape: RecruitmentStatus) => {
     if (isFreeDemoMode) { teaseUpgrade(); return; }
+    if (estAutreUnite(card)) { refuserAutreUnite(); return; }
     if (etape === "retire") {
       setPendingDrop({ cardId: card.id, from: card.status, to: "retire" });
       return;
     }
     void handleStatusChange(card.id, etape);
-  }, [isFreeDemoMode, teaseUpgrade, handleStatusChange]);
+  }, [isFreeDemoMode, teaseUpgrade, handleStatusChange, estAutreUnite, refuserAutreUnite]);
 
   /* Visite : regleVisite. Une date posée sur une étape ANTÉRIEURE à « Visite
      planifiée » y fait passer l'athlète (même écriture qu'un changement
@@ -1959,18 +2086,16 @@ function PipelinePageContent() {
      est conservée. */
   const handleSaveVisiteTableau = useCallback(async (card: PipelineKanbanCard, date: string | null) => {
     if (isFreeDemoMode) { teaseUpgrade(); return; }
+    if (estAutreUnite(card)) { refuserAutreUnite(); return; }
     const visitAt = date ? inputsToIso(date, isoToInputs(card.visit_at ?? null).time) : null;
     const avance = !!visitAt && !etapePorteVisite(card.status);
-    const maintenant = new Date().toISOString();
-    const payload: Record<string, unknown> = { visit_at: visitAt, updated_at: maintenant };
-    if (avance) { payload.stage = "VISITE_PLANIFIEE"; payload.moved_at = maintenant; }
-    const supabase = createClient();
-    const { error } = await supabase.from("recruiter_pipeline").update(payload).eq("id", card.pipeline_id);
+    const champs: Record<string, unknown> = { visit_at: visitAt };
+    if (avance) champs.stage = "VISITE_PLANIFIEE";
+    const error = await ecrireDossier(card.id, champs);
     if (error) { showToast("Date de visite non enregistrée"); return; }
-    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+    invaliderProcessus();
     showToast(!visitAt ? "Date de visite retirée" : avance ? "Visite planifiée — étape mise à jour" : "Date de visite mise à jour");
-  }, [isFreeDemoMode, teaseUpgrade, showToast, queryClient]);
+  }, [isFreeDemoMode, teaseUpgrade, showToast, ecrireDossier, invaliderProcessus, estAutreUnite, refuserAutreUnite]);
 
   const openSlideOver = useCallback((card: PipelineKanbanCard) => {
     const fresh = cards.find((c) => c.id === card.id) || card;
@@ -2043,17 +2168,25 @@ function PipelinePageContent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { showToast("Session expirée — reconnecte-toi"); return; }
 
+      /* Tableau blanc (lot B2) : les notes de l'UNITÉ (la RLS les rend à un
+         Pro), chacune signée : « date — Auteur — texte ». */
       const ids = sortedCards.map((c) => c.id);
-      const { data: lignesNotes, error: errNotes } = await supabase
-        .from("recruiter_notes")
-        .select("athlete_id, content, created_at")
-        .eq("recruiter_id", user.id)
-        .in("athlete_id", ids)
-        .order("created_at", { ascending: true });
+      const [{ data: lignesNotes, error: errNotes }, { data: auteurs }] = await Promise.all([
+        supabase
+          .from("recruiter_notes")
+          .select("athlete_id, content, created_at, recruiter_id")
+          .in("athlete_id", ids)
+          .order("created_at", { ascending: true }),
+        supabase.rpc("unite_auteurs"),
+      ]);
       if (errNotes) { showToast("Export impossible : notes de suivi illisibles"); return; }
+      const nomPar: Record<string, string> = {};
+      for (const a of (auteurs ?? []) as { id: string; first_name: string | null; last_name: string | null }[]) {
+        nomPar[a.id] = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim() || "Recruteur";
+      }
       const notesPar: Record<string, string[]> = {};
-      for (const n of (lignesNotes ?? []) as { athlete_id: string; content: string; created_at: string }[]) {
-        (notesPar[n.athlete_id] ??= []).push(`${dateLocale(n.created_at)} — ${n.content}`);
+      for (const n of (lignesNotes ?? []) as { athlete_id: string; content: string; created_at: string; recruiter_id: string }[]) {
+        (notesPar[n.athlete_id] ??= []).push(`${dateLocale(n.created_at)} — ${nomPar[n.recruiter_id] ?? "Recruteur"} — ${n.content}`);
       }
 
       const { error: errJournal } = await supabase.from("pipeline_exports").insert({ nb_lignes: sortedCards.length });
@@ -2104,9 +2237,10 @@ function PipelinePageContent() {
       teaseUpgrade();
       return;
     }
+    if (estAutreUnite(card)) { refuserAutreUnite(); return; }
 
     setPendingDrop({ cardId: card.id, from: card.status, to: targetCol });
-  }, [isFreeDemoMode, teaseUpgrade]);
+  }, [isFreeDemoMode, teaseUpgrade, estAutreUnite, refuserAutreUnite]);
 
   const confirmDrop = useCallback(() => {
     if (!pendingDrop) return;
@@ -2120,15 +2254,26 @@ function PipelinePageContent() {
   const dropIsRetire = pendingDrop?.to === "retire";
   const dropLabel = pendingDrop ? KANBAN_COLUMNS.find((c) => c.id === pendingDrop.to)?.label : "";
   const dropCardName = pendingDrop ? cards.find((c) => c.id === pendingDrop.cardId)?.full_name : "";
+  /* Décision BP 3 : le retrait vaut pour toute l'unité — la confirmation
+     NOMME les collègues qui suivent l'athlète. */
+  const dropCollegues = pendingDrop ? collegues(cards.find((c) => c.id === pendingDrop.cardId), moi) : [];
 
   return (
     <div className={`px-4 sm:px-6 lg:px-10 py-8 mx-auto space-y-5 ${vue === "tableau" ? "max-w-none" : "max-w-[1600px]"}`}>
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon processus de recrutement</h1>
-          <p className="text-[14px] text-[#9CA3AF] mt-1">Saison {getCurrentSeason()} · Suivez vos prospects de l&apos;identification à la signature</p>
+          <p className="text-[14px] text-[#9CA3AF] mt-1">
+            Saison {getCurrentSeason()} · {modeUnite
+              ? "Le tableau partagé de ton unité, de l'identification à la signature"
+              : "Suivez vos prospects de l'identification à la signature"}
+          </p>
         </div>
         <div className="flex items-center gap-3">
+        {/* Filtre sport de l'admin cégep (lot A, repris ici au lot B2) : ouvert
+            sur son sport, un autre sport ou tout son cégep. Masqué pour un
+            recruteur non admin, qui ne voit que son unité. */}
+        {adminCegep && <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport />}
         {/* Export Excel (lot B) — désactivé en mode démo (réservé au Pro). */}
         <button
           type="button"
@@ -2374,6 +2519,9 @@ function PipelinePageContent() {
           onSaveRelanceNote={handleSaveRelanceNote}
           isFreeDemoMode={isFreeDemoMode}
           onTeaseUpgrade={teaseUpgrade}
+          modeUnite={modeUnite}
+          moi={moi}
+          lectureSeule={estAutreUnite(selectedCard)}
         />
       )}
 
@@ -2381,7 +2529,7 @@ function PipelinePageContent() {
       {pendingDrop && (
         <ConfirmModal
           title={dropIsRetire ? `Retirer ${dropCardName} ?` : `Déplacer vers ${dropLabel} ?`}
-          message={dropIsRetire ? "Il ne sera plus dans ton suivi actif." : `${dropCardName} sera déplacé vers ${dropLabel}.`}
+          message={dropIsRetire ? messageRetrait(dropCollegues, modeUnite) : `${dropCardName} sera déplacé vers ${dropLabel}.`}
           confirmLabel={dropIsRetire ? "Retirer" : "Confirmer"}
           confirmColor={dropIsRetire ? "#EF4444" : RED}
           textarea={dropIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}

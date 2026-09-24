@@ -41,8 +41,14 @@ import { triggerHaptic } from "@/lib/haptics";
 
 const SOUS_TITRE_FICHE = "La note de relance se saisit dans Mon processus.";
 
-export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, className }: {
+export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, className, modeUnite = false }: {
   athleteId: string;
+  /** Tableau blanc (lot B2) : la relance est celle du DOSSIER DE L'UNITÉ.
+   *  Lecture sur n'importe quelle ligne de l'unité (les lignes sœurs sont
+   *  synchronisées), écriture par unite_ecrire_dossier — toujours sur la
+   *  ligne de l'acteur, créée au besoin. Absent → comportement d'origine
+   *  (sa propre ligne) : la fiche athlète et le mobile ne changent pas. */
+  modeUnite?: boolean;
   /** Classes du cadre qui REMPLACENT la marge par défaut (`mt-4`) — la fiche
    *  web aligne ce bloc sur la carte de visite, dans une grille. Absente →
    *  rendu inchangé. */
@@ -64,19 +70,27 @@ export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, 
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user || annule) return;
-      const { data } = await supabase
-        .from("recruiter_pipeline")
-        .select("next_action_at")
-        .eq("recruiter_id", session.user.id)
-        .eq("athlete_id", athleteId)
-        .maybeSingle();
+      const { data } = modeUnite
+        ? await supabase
+            .from("recruiter_pipeline")
+            .select("next_action_at")
+            .eq("athlete_id", athleteId)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : await supabase
+            .from("recruiter_pipeline")
+            .select("next_action_at")
+            .eq("recruiter_id", session.user.id)
+            .eq("athlete_id", athleteId)
+            .maybeSingle();
       if (annule) return;
       const iso = (data?.next_action_at as string | null) ?? null;
       setDate(iso ? String(iso).slice(0, 10) : "");
       setPret(true);
     })();
     return () => { annule = true; };
-  }, [athleteId]);
+  }, [athleteId, modeUnite]);
 
   async function enregistrer() {
     void triggerHaptic("Light");
@@ -87,11 +101,13 @@ export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, 
     if (!session?.user) { setSaving(false); return; }
     /* UPDATE, jamais upsert : la ligne existe forcément — le parent ne monte
        ce bloc que pour un athlète déjà dans le processus. */
-    const { error } = await supabase
-      .from("recruiter_pipeline")
-      .update({ next_action_at: valeur })
-      .eq("recruiter_id", session.user.id)
-      .eq("athlete_id", athleteId);
+    const { error } = modeUnite
+      ? await supabase.rpc("unite_ecrire_dossier", { p_athlete_id: athleteId, p_champs: { next_action_at: valeur } })
+      : await supabase
+          .from("recruiter_pipeline")
+          .update({ next_action_at: valeur })
+          .eq("recruiter_id", session.user.id)
+          .eq("athlete_id", athleteId);
     setSaving(false);
     if (error) {
       const refusTier = /permission|policy|row-level/i.test(error.message);

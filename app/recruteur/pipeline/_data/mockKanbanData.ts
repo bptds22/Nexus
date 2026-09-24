@@ -75,7 +75,15 @@ export interface PipelineKanbanCard {
    *  la plus récente) — colonne « Note de suivi » de la vue tableau. Pas
    *  next_action_note, qui est la note attachée à la RELANCE. `null` = aucune
    *  note. Optionnel : les fixtures mock ne le portent pas. */
-  derniere_note?: { content: string; created_at: string } | null;
+  derniere_note?: { content: string; created_at: string; auteur?: string } | null;
+  /** Tableau blanc (lot B2) : les recruteurs de l'unité qui suivent
+   *  l'athlète, et leurs noms prêts à afficher (useProcessusUnite). Absents
+   *  en mode démo gratuit (ses seules lignes). */
+  suivi_par?: string[];
+  suivi_par_noms?: string[];
+  /** Sport de l'unité du dossier — sert au retrait d'unité quand l'admin
+   *  cégep regarde un autre sport que le sien. */
+  unite_sport_id?: string | null;
 }
 
 export const KANBAN_COLUMNS: {

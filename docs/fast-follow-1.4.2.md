@@ -1327,3 +1327,27 @@ processus). Mais le binaire publié **ne connaît pas l'unité**. Limites
 
 Aucun de ces écarts n'expose une donnée hors de l'unité : ce sont des gestes
 **moins partagés** que le web, jamais plus.
+
+## 40. Admin cégep : les dossiers d'un AUTRE sport sont en lecture seule (B2, étape 1 — à trancher à l'étape 3)
+
+Le filtre sport de « Mon processus » laisse l'admin cégep **voir** les autres
+sports de son cégep (décision BP, question 4 : lecture ET modification). La
+modification n'est pas livrée à l'étape 1, volontairement :
+
+- toute écriture passe par la **ligne de l'acteur** (`unite_ecrire_dossier`,
+  `unite_ecrire_grade`, notes), et cette ligne naît dans **l'unité de
+  l'acteur** (B1 : l'unité se pose d'après l'auteur) ;
+- un admin Football qui déplacerait un dossier Basketball créerait donc un
+  **second dossier, en Football**, au lieu de faire avancer le dossier
+  Basketball ; une note ou un grade y seraient invisibles pour ce sport.
+
+Ce qui est livré : ces dossiers s'ouvrent en **lecture seule** (avis dans le
+panneau, champs d'écriture absents, gestes refusés avec un toast ; aucune
+ligne n'est créée — prouvé en local). En « tout le cégep », un athlète suivi
+par deux unités n'a qu'une carte (celle de l'unité de l'admin si elle existe).
+
+**À trancher à l'étape 3** (Mon CÉGEP, où l'admin agit sur les autres sports),
+avec le §39 : une écriture inter-unités par fonction serveur qui écrit dans le
+dossier de l'unité VISÉE (ligne existante, journal signé par l'admin et rangé
+dans cette unité) — et décider si un admin peut **ouvrir** un dossier dans un
+sport qu'il ne recrute pas.
