@@ -31,7 +31,7 @@ import {
 } from "@/lib/pipeline/filterPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
-import { construireCsv, decimalFr, type ValeurCsv } from "@/lib/export/csv";
+import type { CelluleXlsx } from "@/lib/export/xlsx";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import {
   DndContext,
@@ -643,38 +643,46 @@ function formatPoids(card: PipelineKanbanCard): string | null {
 
 const VIDE = <span className="text-[#4a4d56]">—</span>;
 
-/* ── Export CSV (lot B, décision BP 2026-09-24) ─────────────────────
-   MÊMES colonnes, MÊME ordre que la vue tableau : les en-têtes et les
-   valeurs dérivent de COLONNES_TABLEAU, rien n'est listé deux fois.
+/* ── Export Excel (lot B, décisions BP 2026-09-24) ─────────────────
+   Un vrai classeur .xlsx (lib/export/xlsx) — le CSV tombait en colonne A sur
+   un Windows anglais (testé dans Excel 16). MÊMES colonnes, MÊME ordre que
+   la vue tableau : en-têtes et valeurs dérivent de COLONNES_TABLEAU.
    Différences voulues avec l'écran, parce qu'un tableur n'est pas un écran :
-   · dates en AAAA-MM-JJ (triables dans Excel), visite avec l'heure si posée ;
-   · cote en décimal français (4,5) ;
+   · Relance et Visite : VRAIES dates Excel, affichées AAAA-MM-JJ (et hh:mm
+     pour une visite avec heure), triables et filtrables ;
+   · Cote coach : vrai nombre, format 0.0 ;
    · Faits saillants : « Oui » ou vide (la RPC ne rend pas l'URL) ;
    · Note de suivi : TOUTES les notes de suivi, datées, du plus ancien au plus
-     récent, RASSEMBLÉES dans une seule case (décision BP) — le tableau n'en
-     montre que la dernière.
+     récent, RASSEMBLÉES dans une seule case, une note par ligne (multiligne
+     natif d'Excel) — le tableau n'en montre que la dernière.
    Identité masquée : `full_name` vaut déjà « Identité réservée » et le
    numéro est vide — l'export ne sort que ce que l'écran montre. */
-function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): ValeurCsv {
+const LARGEUR_EXPORT: Record<string, number> = {
+  nom: 24, numero: 5, ecole: 32, position: 10, taille: 8, poids: 10, cote: 11,
+  grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70,
+};
+
+function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): CelluleXlsx {
+  const texte = (v: string | null | undefined): CelluleXlsx => (v ? { t: "texte", v } : null);
   switch (cle) {
-    case "nom": return card.full_name;
-    case "numero": return card.jersey || "";
-    case "ecole": return card.noTeam ? "Ligue civile" : card.school;
-    case "position": return card.position;
-    case "taille": return formatTaille(card) ?? "";
-    case "poids": return formatPoids(card) ?? "";
-    case "cote": return aUneCote(card.coach_rating) ? decimalFr(card.coach_rating) : "";
-    case "grade": return card.grade ?? "";
-    case "etape": return KANBAN_COLUMNS.find((c) => c.id === card.status)?.label ?? card.status;
-    case "relance": return card.next_action_at ? card.next_action_at.slice(0, 10) : "";
+    case "nom": return texte(card.full_name);
+    case "numero": return texte(card.jersey);
+    case "ecole": return texte(card.noTeam ? "Ligue civile" : card.school);
+    case "position": return texte(card.position);
+    case "taille": return texte(formatTaille(card));
+    case "poids": return texte(formatPoids(card));
+    case "cote": return aUneCote(card.coach_rating) ? { t: "nombre", v: card.coach_rating, format: "0.0" } : null;
+    case "grade": return texte(card.grade);
+    case "etape": return texte(KANBAN_COLUMNS.find((c) => c.id === card.status)?.label ?? card.status);
+    case "relance": return card.next_action_at ? { t: "date", v: card.next_action_at.slice(0, 10) } : null;
     case "visite": {
-      if (!card.visit_at) return "";
+      if (!card.visit_at) return null;
       const { date, time } = isoToInputs(card.visit_at);
-      return time ? `${date} ${time}` : date;
+      return { t: "date", v: time ? `${date} ${time}` : date };
     }
-    case "video": return card.has_video ? "Oui" : "";
-    case "note": return notes;
-    default: return "";
+    case "video": return card.has_video ? { t: "texte", v: "Oui" } : null;
+    case "note": return texte(notes);
+    default: return null;
   }
 }
 
@@ -1775,7 +1783,7 @@ function PipelinePageContent() {
     [filteredCards, sortBy],
   );
 
-  /* ── Export CSV (lot B) ─────────────────────────────────────────
+  /* ── Export Excel (lot B) ───────────────────────────────────────
      Exporte les athlètes AFFICHÉS (filtres, recherche et tri en cours).
      Ordre des gestes, et il compte :
        1. lire toutes les notes de suivi des athlètes exportés ;
@@ -1786,7 +1794,7 @@ function PipelinePageContent() {
      Réservé au Pro : bouton désactivé en mode démo, et user_has_pro() garde
      l'INSERT du journal en base. */
   const [exportEnCours, setExportEnCours] = useState(false);
-  const handleExportCsv = useCallback(async () => {
+  const handleExportExcel = useCallback(async () => {
     if (isFreeDemoMode) { teaseUpgrade(); return; }
     if (exportEnCours || sortedCards.length === 0) return;
     setExportEnCours(true);
@@ -1811,14 +1819,19 @@ function PipelinePageContent() {
       const { error: errJournal } = await supabase.from("pipeline_exports").insert({ nb_lignes: sortedCards.length });
       if (errJournal) { showToast("Export annulé : il n'a pas pu être journalisé"); return; }
 
-      const csv = construireCsv(
-        COLONNES_TABLEAU.map((c) => c.libelle),
+      // Chargé À LA DEMANDE : ni lib/export/xlsx ni jszip ne pèsent sur la page.
+      const { construireXlsx } = await import("@/lib/export/xlsx");
+      const octets = await construireXlsx(
+        "Mon processus",
+        COLONNES_TABLEAU.map((c) => ({ titre: c.libelle, largeur: LARGEUR_EXPORT[c.cle] ?? 14 })),
         sortedCards.map((card) => COLONNES_TABLEAU.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n")))),
       );
-      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const url = URL.createObjectURL(new Blob([octets as BlobPart], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }));
       const lien = document.createElement("a");
       lien.href = url;
-      lien.download = `processus-recrutement-${dateLocale(new Date().toISOString())}.csv`;
+      lien.download = `processus-recrutement-${dateLocale(new Date().toISOString())}.xlsx`;
       document.body.appendChild(lien);
       lien.click();
       lien.remove();
@@ -1876,14 +1889,14 @@ function PipelinePageContent() {
           <p className="text-[14px] text-[#9CA3AF] mt-1">Saison {getCurrentSeason()} · Suivez vos prospects de l&apos;identification à la signature</p>
         </div>
         <div className="flex items-center gap-3">
-        {/* Export CSV (lot B) — désactivé en mode démo (réservé au Pro). */}
+        {/* Export Excel (lot B) — désactivé en mode démo (réservé au Pro). */}
         <button
           type="button"
-          onClick={handleExportCsv}
+          onClick={handleExportExcel}
           disabled={isFreeDemoMode || exportEnCours || sortedCards.length === 0}
           title={isFreeDemoMode
             ? "L'export est réservé aux membres Pro"
-            : `Exporter les ${sortedCards.length} athlète${sortedCards.length > 1 ? "s" : ""} affiché${sortedCards.length > 1 ? "s" : ""} (CSV pour Excel)`}
+            : `Exporter les ${sortedCards.length} athlète${sortedCards.length > 1 ? "s" : ""} affiché${sortedCards.length > 1 ? "s" : ""} (fichier Excel)`}
           className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#2a2d36] bg-[#13151a] text-[14px] font-bold text-white hover:border-[#4a4d56] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
