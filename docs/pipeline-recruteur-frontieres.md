@@ -38,7 +38,7 @@ lisent et se modifient. Ce qui du 17 septembre **reste vrai** :
 2. **Policies élargies, additives** (`unite_select / unite_update / unite_delete`,
    `unite_insert` sur les membres de liste) via `acces_unite(cégep, sport)` :
    même unité, ou admin de ce cégep. Chacune **reproduit la policy propriétaire**
-   de la même commande (mêmes exigences `user_has_pro()`). Les policies
+   de la même commande (Pro exigé partout depuis B2-0, voir plus bas). Les policies
    propriétaire sont **conservées** ; leur retrait viendra dans une migration
    séparée, sur GO distinct, **après B2**.
 3. **On n'écrit jamais au nom d'un collègue** : l'INSERT reste « `recruiter_id` =
@@ -63,12 +63,33 @@ lisent et se modifient. Ce qui du 17 septembre **reste vrai** :
    web le retire pour l'unité ; **le mobile 1.4.3 ne retire que le sien** jusqu'à
    la 1.4.4 (registre `docs/fast-follow-1.4.2.md` §38).
 
-**Point ouvert pour B2 — la signature d'une modification.** Quand un collègue
-modifie la ligne d'un autre, le journal est signé par l'**auteur de la ligne**
-(`NEW.recruiter_id`), pas par celui qui a agi. Pour que « chaque geste soit
-signé » par son acteur, **l'interface B2 écrit par la ligne de l'acteur** (en
-la créant si besoin — elle naît alignée sur l'unité) plutôt que par celle d'un
-collègue ; la synchronisation fait le reste. Les policies le permettent déjà.
+**Lot B2-0 (migration `20260924203244_b2_0_signatures_unite`) — ce qui a changé :**
+- **Gratuit = tout bloqué, en base** (décision BP 2026-09-24). Les 20 policies
+  `unite_*` passent par `acces_unite_pro()` : unité (ou admin cégep) **et** Pro,
+  en lecture comme en écriture et suppression. Un recruteur gratuit ne lit
+  **aucune** ligne d'un collègue par appel direct ; ses propres lignes restent
+  aux policies propriétaire, et « Mon processus » reste en mode démo pour lui.
+  Admin ou pas : il faut payer pour voir et modifier le tableau blanc.
+  (Dérogation à la règle 1 accordée par BP pour ces 20 policies seulement.)
+- **Chaque geste signé par celui qui agit.** Les journaux d'étape, de retrait
+  de favori et d'ajout/retrait de membre de liste signent le recruteur
+  appelant (`acteur_recruteur()`), plus l'auteur de la ligne ni le
+  propriétaire de la liste. L'interface écrit par `unite_ecrire_dossier` /
+  `unite_ecrire_grade` : **toujours sur la ligne de l'acteur** (créée au besoin,
+  alignée sur l'unité, sans bruit de journal).
+- **Retraits d'unité** : `unite_retirer_favori`, `unite_retirer_du_processus`,
+  `unite_retirer_grade` — une fonction par geste, **une** ligne de journal
+  signée par l'acteur (aucune pour les grades, qui ne se journalisent pas).
+  Un retrait de processus s'écrit `PIPELINE_CHANGED` avec `new_stage = null`
+  et `retire = true` (la contrainte du journal n'est pas touchée).
+- **Journal de l'unité** : `recruiter_activity_log` porte l'unité du geste
+  (celle du dossier touché, jamais choisie par un client). Les collègues Pro
+  lisent les **gestes du tableau blanc** (étapes, favoris, notes, listes) ; les
+  vues de profil et les notifications rangées dans la même table restent
+  privées. Le journal d'unité commence à l'apply de B2-0 (pas de rattrapage).
+- **Notes des collègues** : la base permet à un Pro de l'unité de les
+  modifier ; **l'interface les montre en lecture seule** (décision BP) — chacun
+  ne modifie que les siennes.
 
 La suite de ce fichier décrit l'état **du 17 septembre** : elle reste exacte
 pour le coach, le parent, l'admin plateforme et les recruteurs sans unité.
