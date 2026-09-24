@@ -834,7 +834,6 @@ function CelluleRelance({
       title={card.next_action_note ? `Note de relance : ${card.next_action_note}\n\nCliquer pour modifier la date` : "Cliquer pour poser ou modifier la date de relance"}
     >
       {celluleTableau("relance", card, now)}
-      <PencilIcon color="#6B7280" size={11} />
     </button>
   );
 }
@@ -846,6 +845,10 @@ function CelluleRelance({
  *  l'édition de la case, comme si le bouton avait été cliqué.
  *  Un clic sur le bouton lui-même, ou sur le champ en cours d'édition,
  *  n'arrive pas ici : ils arrêtent la propagation eux-mêmes. */
+/** Survol d'une case éditable : un peu plus claire que la ligne survolée
+ *  (bg-white/[0.03]) et bordée d'un liseré intérieur — sans icône. */
+const CLASSE_CELLULE_EDITABLE = "hover:bg-white/[0.07] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]";
+
 function cliquerCelluleEditable(e: React.MouseEvent<HTMLTableCellElement>) {
   e.stopPropagation();
   if (e.target !== e.currentTarget) return;
@@ -860,8 +863,9 @@ function arreterToucheCellule(e: React.KeyboardEvent<HTMLTableCellElement>) {
   e.stopPropagation();
 }
 
-/** Le petit crayon des cellules éditables : il dit que la case se modifie. */
-const CRAYON = <PencilIcon color="#6B7280" size={11} />;
+/* Aucune icône permanente sur les cellules éditables (décision BP
+   2026-09-24) : l'indice de modifiabilité est au SURVOL seulement — la case
+   s'éclaire et prend un fin liseré (CLASSE_CELLULE_EDITABLE). */
 
 /** MON GRADE éditable dans la cellule (décision BP 2026-09-23). Un clic pose
  *  un menu A+ … D (et « Aucun ») DANS la case ; choisir enregistre aussitôt.
@@ -899,7 +903,6 @@ function CelluleGrade({ card, isFreeDemoMode, onTease, onSave }: {
     <button type="button" className="inline-flex items-center gap-1.5" title="Cliquer pour modifier mon grade"
       onClick={(e) => { e.stopPropagation(); if (isFreeDemoMode) { onTease(); return; } setEdition(true); }}>
       {card.grade ? <GradeChip grade={card.grade} /> : VIDE}
-      {CRAYON}
     </button>
   );
 }
@@ -938,7 +941,6 @@ function CelluleEtape({ card, isFreeDemoMode, onTease, onChange }: {
     <button type="button" className="inline-flex items-center gap-1.5" title="Cliquer pour changer l'étape"
       onClick={(e) => { e.stopPropagation(); if (isFreeDemoMode) { onTease(); return; } setEdition(true); }}>
       {celluleTableau("etape", card, 0)}
-      {CRAYON}
     </button>
   );
 }
@@ -980,7 +982,6 @@ function CelluleVisite({ card, now, isFreeDemoMode, onTease, onSave }: {
       title={etapePorteVisite(card.status) ? "Cliquer pour poser ou modifier la date de visite" : "Poser une date de visite fait passer l'athlète à « Visite planifiée »"}
       onClick={(e) => { e.stopPropagation(); if (isFreeDemoMode) { onTease(); return; } setEdition(true); }}>
       {celluleTableau("visite", card, now)}
-      {CRAYON}
     </button>
   );
 }
@@ -1094,21 +1095,21 @@ function PipelineTable({
                      Mon grade, Étape, Relance, Visite. Aucune fenêtre dédiée. */
                   if (col.cle === "grade") {
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
+                      <td key={col.cle} className={`${cls} ${CLASSE_CELLULE_EDITABLE}`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleGrade card={card} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSetGrade} />
                       </td>
                     );
                   }
                   if (col.cle === "etape") {
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
+                      <td key={col.cle} className={`${cls} ${CLASSE_CELLULE_EDITABLE}`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleEtape card={card} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onChange={onChangeEtape} />
                       </td>
                     );
                   }
                   if (col.cle === "visite") {
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
+                      <td key={col.cle} className={`${cls} ${CLASSE_CELLULE_EDITABLE}`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleVisite card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveVisite} />
                       </td>
                     );
@@ -1117,7 +1118,7 @@ function PipelineTable({
                     /* Relance : éditable SUR PLACE (CelluleRelance) — y compris
                        pour en POSER une sur une ligne qui n'en a pas. */
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
+                      <td key={col.cle} className={`${cls} ${CLASSE_CELLULE_EDITABLE}`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleRelance card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveRelance} />
                       </td>
                     );
