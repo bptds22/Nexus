@@ -67,6 +67,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import RelanceFiche from "@/components/shared/RelanceFiche";
 import { PencilIcon } from "@/components/shared/wizard/modeIcons";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
+import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -1234,6 +1235,9 @@ function SlideOver({
   isFreeDemoMode: boolean;
   onTeaseUpgrade: () => void;
 }) {
+  // Onglet courant (lot C1). Le panneau se remonte à chaque carte
+  // (key={card.id}) : il rouvre toujours sur « Actions ».
+  const [onglet, setOnglet] = useState<"actions" | "infos">("actions");
   const [noteText, setNoteText] = useState("");
   // Note de RELANCE (next_action_note) — distincte des notes de suivi. Seedée
   // au montage : le panneau se remonte à chaque carte (key={card.id}).
@@ -1321,15 +1325,39 @@ function SlideOver({
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
             <div className="flex items-center gap-2 mt-3">{aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
+          </div>
+          {/* ONGLETS (lot C1, décision BP 2026-09-24) — sous le nom. « Actions »
+              par défaut : tout ce que le panneau portait déjà, inchangé et dans
+              le même ordre. « Infos » : les informations du joueur, par les
+              sections partagées de la fiche (OngletInfosPanneau). */}
+          <div role="tablist" aria-label="Contenu du panneau" className="flex gap-1 p-1 bg-[#13151a] border border-[#2D3748] rounded-lg">
+            {([["actions", "Actions"], ["infos", "Infos"]] as const).map(([cle, libelle]) => (
+              <button
+                key={cle}
+                type="button"
+                role="tab"
+                aria-selected={onglet === cle}
+                onClick={() => setOnglet(cle)}
+                className={`flex-1 px-3 py-2 rounded-md text-[12px] font-bold uppercase tracking-wider transition-colors ${onglet === cle ? "bg-[#E63946] text-white" : "text-[#9CA3AF] hover:text-white"}`}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+          {onglet === "infos" ? (
+            <OngletInfosPanneau athleteId={card.id} />
+          ) : (
+          <>
+          <div>
             {/* Mon grade — sous la cote du coach, et séparé d'elle : les
                 étoiles sont le jugement d'un tiers, le grade est le mien. */}
-            <div className="mt-4">
+            <div>
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Mon grade</span>
               <div className="mt-2">
                 <GradePicker value={card.grade} onSelect={(g) => onSetGrade(card.id, g, card.grade ?? null)} />
               </div>
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Profil complété</span>
                 <span className="text-[13px] font-bold" style={{ color: pctColor }}>{card.profile_completeness}%</span>
@@ -1574,6 +1602,8 @@ function SlideOver({
               </button>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
       {pendingStatus && (
