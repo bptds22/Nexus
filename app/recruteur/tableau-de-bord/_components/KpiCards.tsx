@@ -104,7 +104,6 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E63946]/20">
           <span className="text-[13px] text-[#D1D5DB]">
             <span className="font-bold text-white">{totalActive}</span> athlète{totalActive !== 1 ? "s" : ""} actif{totalActive !== 1 ? "s" : ""} dans ton processus
-            <span className="text-[11px] text-[#9CA3AF] ml-2">· 50 max en gratuit</span>
           </span>
           {counts.retire > 0 && (
             <span className="text-[13px] text-[#D1D5DB]">
