@@ -543,7 +543,13 @@ export default function OnboardingPage() {
               experience_years: profileData.experience_years || null,
             },
           }).eq("id", authUser.id);
-          if (error) { console.error("[Onboarding] step 0 save error:", error); setStepSaving(false); return; }
+          if (error) {
+            console.error("[Onboarding] step 0 save error:", error);
+            // Sur place, jamais en silence : l'utilisateur reste à l'étape et sait pourquoi.
+            setNavError("Enregistrement impossible — réessaye.");
+            setStepSaving(false);
+            return;
+          }
         }
 
         // Step 1 = School/CÉGEP selection. Civil-coach onboarding
@@ -580,6 +586,7 @@ export default function OnboardingPage() {
     }
     setStepSaving(false);
 
+    setNavError(null);
     setSlideDir("right");
     setStep((s) => s + 1);
   };
@@ -1204,6 +1211,13 @@ export default function OnboardingPage() {
           {navError && (
             <div className="mt-4 text-[13px] text-[#EF4444] text-right" role="alert">
               {navError}
+            </div>
+          )}
+          {/* Étape Profil sans sport : le bouton est grisé, on dit pourquoi
+              (lot A — le sport définit l'unité du recruteur). */}
+          {!navError && step === 0 && (user.role === "coach" || user.role === "recruiter") && !canProceed() && (
+            <div className="mt-4 text-[13px] text-[#9CA3AF] text-right" role="status">
+              Choisis ton sport pour continuer.
             </div>
           )}
         </div>
@@ -3180,19 +3194,19 @@ function RecruiterProgramStep({ user, save }: { user: NexusUser; save: (u: Parti
   // by name below.
   const cegepIdFromLocal = (inst.id as string) || "";
 
-  // Pre-fill the sport filter from the recruiter's profile step
-  // (sport_principal). NOT hard-gated: canProceed() at the top of this
-  // file only enforces sport_principal for coaches (step 0 && role===coach).
-  // A recruiter can land here with profileSportName="" if they skipped
-  // the profile sport selector — in that case sportId stays "" and the
-  // list defaults to all sports (UmbrellaStep skips .eq("sport_id", ...)
-  // when sportId === "").
+  // Filtre des programmes = le sport du Profil (sport_principal), exigé à
+  // l'étape 0 depuis le lot A. Si le nom ne se résout pas (reprise d'une
+  // session antérieure), sportId reste "" et UmbrellaStep montre tous les
+  // sports — jamais d'erreur bloquante.
   const profileData = (localUser.profile || {}) as Record<string, unknown>;
   const profileSportName = (profileData.sport_principal as string) || "";
 
   const [cegepId, setCegepId] = useState<string>(cegepIdFromLocal);
+  // Le sport vient de l'étape Profil, SEULE à le demander (retour BP
+  // 2026-09-24 : il était redemandé ici par un menu « Sport »). Les
+  // programmes proposés sont ceux de ce sport ; pour en changer, on revient
+  // au Profil.
   const [sportId, setSportId] = useState<string>("");
-  const [sportOptions, setSportOptions] = useState<{ id: string; nom: string }[]>([]);
   const [resolving, setResolving] = useState<boolean>(true);
   const [selected, setSelected] = useState<NexusUser["primary_team"]>(
     (localUser.primary_team ?? null) as NexusUser["primary_team"]
@@ -3212,7 +3226,6 @@ function RecruiterProgramStep({ user, save }: { user: NexusUser; save: (u: Parti
       const sportsRes = await supabase.from("sports").select("id, nom").order("nom");
       if (cancelled) return;
       const opts = (sportsRes.data ?? []) as { id: string; nom: string }[];
-      setSportOptions(opts);
       if (profileSportName) {
         // RecruiterProfile (line ~2228) writes the FR sport name (e.g.
         // "Football") from the SPORTS constant. Match by exact nom; if
@@ -3282,31 +3295,12 @@ function RecruiterProgramStep({ user, save }: { user: NexusUser; save: (u: Parti
         </p>
       </div>
 
-      {/* Sport filter picker. Value = sportId state, seeded from
-          profile.sport_principal on mount. Recruiter can switch to
-          browse other sports — purely a search scope, doesn't alter
-          their declared sport. Empty value = "Tous les sports"; the
-          UmbrellaStep contract treats sportId === "" as no filter
-          (parity with the SchoolCoachTeamStep / civil flow patterns,
-          but the recruiter is the only consumer that ever sends ""). */}
-      <div>
-        <label htmlFor="recruiter-program-sport" className={`${label} text-[#9CA3AF] mb-1.5 block`}>Sport</label>
-        <select
-          id="recruiter-program-sport"
-          value={sportId}
-          onChange={(e) => setSportId(e.target.value)}
-          className={`${inputClass} appearance-none cursor-pointer`}
-          aria-label="Filtrer les programmes par sport"
-        >
-          <option value="">Tous les sports</option>
-          {sportOptions.map((s) => (
-            <option key={s.id} value={s.id}>{s.nom}</option>
-          ))}
-        </select>
-        <p className="text-[11px] text-[#6B7280] mt-1.5">
-          Pré-rempli depuis votre profil — changez-le pour parcourir les programmes d&apos;un autre sport.
+      {/* Le sport n'est plus un menu ici : c'est celui du Profil (rappel). */}
+      {profileSportName && (
+        <p className="text-[13px] text-[#9CA3AF]">
+          Programmes de <span className="text-white font-bold">{profileSportName}</span>, ton sport choisi à l&apos;étape Profil.
         </p>
-      </div>
+      )}
 
       <UmbrellaStep
         schoolId={cegepId}

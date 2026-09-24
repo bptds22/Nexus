@@ -165,6 +165,14 @@ function RecruiterProfilDesktop() {
   // Le sport est requis (lot A) : il définit l'unité du recruteur. On peut
   // le CHANGER, jamais le vider.
   const requiredFilled = form.firstName && form.lastName && form.schoolId && form.sport;
+  // Le bouton grisé ne disait pas POURQUOI (retour BP 2026-09-24 : un compte
+  // sans prénom ni nom ne pouvait rien enregistrer, sans un mot).
+  const champsManquants = [
+    !form.firstName && "prénom",
+    !form.lastName && "nom",
+    !form.schoolId && "CÉGEP",
+    !form.sport && "sport recruté",
+  ].filter(Boolean) as string[];
   const initials = (form.firstName[0] || "") + (form.lastName[0] || "");
 
   if (loading) {
@@ -307,6 +315,11 @@ function RecruiterProfilDesktop() {
               >
                 {saving ? "Sauvegarde..." : "Sauvegarder le profil"}
               </button>
+              {champsManquants.length > 0 && (
+                <p className="mt-2 text-[12px] text-[#E63946]" role="status">
+                  Pour enregistrer, complète : {champsManquants.join(", ")}.
+                </p>
+              )}
             </div>
           </div>
         </div>
