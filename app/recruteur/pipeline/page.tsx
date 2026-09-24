@@ -139,21 +139,11 @@ function isTomorrow(dateStr: string | null, now: number): boolean {
   return d.getFullYear() === tom.getFullYear() && d.getMonth() === tom.getMonth() && d.getDate() === tom.getDate();
 }
 
-/** Relance DÉPASSÉE : strictement avant aujourd'hui, au jour près.
- *
- *  RÈGLE ALIGNÉE SUR LE MOBILE (2026-09-16). `formatRelancePill`
- *  (RecruteurPipelineMobile.tsx:138) allume l'or quand la relance est EN
- *  RETARD ; le web l'allumait quand elle tombait AUJOURD'HUI. Deux règles
- *  pour la même donnée, et la moins utile des deux côté web : une relance
- *  du jour est à l'heure, c'est celle d'hier qu'on a laissé filer.
- *
- *  Comparaison au jour, pas à l'instant : `next_action_at` est une colonne
- *  `date`, une comparaison horaire la rendrait « en retard » dès minuit. */
-function isLate(dateStr: string | null, now: number): boolean {
-  if (!dateStr || !now) return false;
-  const n = new Date(now);
-  return jourLocal(dateStr).getTime() < new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
-}
+/* `isLate` (relance dépassée → or) est RETIRÉE le 2026-09-23 : décision BP,
+   les dates de relance et de visite sont en BLANC, le jaune est réservé aux
+   étoiles de la cote du coach. Le retard n'a plus de couleur sur le web ; le
+   filtre « À relancer » (estRelanceAFaire) le couvre toujours. Le mobile
+   garde son or (formatRelancePill) jusqu'au lot mobile. */
 
 /** Format COURT de la relance sur la carte : « 16 sept. ». La carte fait
  *  300px et partage la ligne avec la note ; le jour de la semaine ne tenait
@@ -397,63 +387,6 @@ function TrashIcon() {
   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>;
 }
 
-/* ── TASK 5: Next Action Popover ─────────────────────────────── */
-
-function NextActionPopover({
-  card,
-  onSave,
-  onClose,
-}: {
-  card: PipelineKanbanCard;
-  onSave: (id: string, fields: { flagged: boolean; next_action_at: string | null; next_action_note: string | null }) => void;
-  onClose: () => void;
-}) {
-  const [date, setDate] = useState(card.next_action_at?.slice(0, 10) || "");
-  const [note, setNote] = useState(card.next_action_note || "");
-  const [flagged, setFlagged] = useState(card.flagged);
-
-  return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 w-full max-w-xs shadow-2xl animate-[modalIn_0.2s_ease-out]" onClick={(e) => e.stopPropagation()}>
-        <h4 className="text-[12px] font-bold uppercase tracking-[0.15em] text-white mb-4">Prochain suivi</h4>
-
-        <label className="block text-[11px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">Date de suivi</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} placeholder="AAAA-MM-JJ" title="Date de suivi" className="w-full h-9 px-3 bg-[#13151a] border border-[#2a2d36] rounded-lg text-[13px] text-white focus:border-[#E63946] outline-none transition-colors mb-3" />
-
-        <label className="block text-[11px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">Note</label>
-        <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex: Appeler l'entraîneur..." className="w-full h-9 px-3 bg-[#13151a] border border-[#2a2d36] rounded-lg text-[13px] text-white placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors mb-3" />
-
-        <label className="flex items-center gap-2 cursor-pointer mb-4">
-          <button
-            type="button"
-            onClick={() => setFlagged(!flagged)}
-            className={`w-9 h-5 rounded-full transition-colors relative ${flagged ? "bg-[#E63946]" : "bg-[#2D3748]"}`}
-          >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${flagged ? "left-[18px]" : "left-0.5"}`} />
-          </button>
-          <span className="text-[12px] font-bold text-[#9CA3AF]">Marquer urgent</span>
-        </label>
-
-        <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="flex-1 h-9 text-[12px] font-bold text-[#6b7280] hover:text-white transition-colors">Annuler</button>
-          <button
-            type="button"
-            onClick={() => onSave(card.pipeline_id, {
-              flagged,
-              next_action_at: date || null,
-              next_action_note: note || null,
-            })}
-            className="flex-1 h-9 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg transition-colors"
-          >
-            Sauvegarder
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Draggable Kanban Card (TASKS 3, 4, 7) ───────────────────── */
 
 const DraggableKanbanCard = memo(function DraggableKanbanCard({
@@ -461,7 +394,6 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
   isCommitment,
   isDraggable,
   onClick,
-  onOpenAction,
   now,
   competitorMap,
 }: {
@@ -469,7 +401,6 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
   isCommitment: boolean;
   isDraggable: boolean;
   onClick: () => void;
-  onOpenAction: (card: PipelineKanbanCard) => void;
   now: number;
   competitorMap: Record<string, number>;
 }) {
@@ -484,8 +415,6 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
   const staleDays = daysSince(card.moved_at, now);
   const compAhead = isCompetitorAhead(card.id, card.status, competitorMap);
   const hasAction = card.next_action_at || card.next_action_note;
-  // L'or dit le RETARD, pas « aujourd'hui » — règle du mobile (cf. isLate).
-  const actionLate = isLate(card.next_action_at, now);
 
   // Left border
   const borderLeft = ring.color ? `4px solid ${ring.color}` : isCommitment ? "3px solid #E63946" : "none";
@@ -585,14 +514,16 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             {card.status === "visite_planifiee" && card.visit_at && (() => {
               const v = formatVisitPill(card.visit_at, now);
               if (!v) return null;
-              const fg = v.isPast ? "#E63946" : "#F59E0B";
+              /* BLANC (décision BP 2026-09-23) : le jaune est réservé aux
+                 étoiles de la cote du coach. */
+              const fg = "#FFFFFF";
               return (
                 <span
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0"
                   style={{
                     color: fg,
-                    background: v.isPast ? "rgba(230,57,70,0.1)" : "rgba(245,158,11,0.1)",
-                    border: `1px solid ${v.isPast ? "rgba(230,57,70,0.3)" : "rgba(245,158,11,0.3)"}`,
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.2)",
                   }}
                   title={v.isPast ? "Visite passée" : "Visite planifiée"}
                 >
@@ -606,8 +537,10 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             })()}
           </div>
           {card.recruitment_status === 'RECRUTE' && ['identifie', 'contacte', 'en_discussion', 'visite_planifiee'].includes(card.status) && (
-            <div className="mt-1.5 px-2 py-1 rounded bg-[#F59E0B]/10 border-l-2 border-[#F59E0B]">
-              <span className="text-[10px] font-bold text-[#F59E0B]">⚠ Athlète recruté ailleurs</span>
+            <div className="mt-1.5 px-2 py-1 rounded bg-[#E63946]/10 border-l-2 border-[#E63946]">
+              {/* Rouge, comme « Un autre CÉGEP est plus avancé » : une alerte.
+                  Plus de jaune hors des étoiles (décision BP 2026-09-23). */}
+              <span className="text-[10px] font-bold text-[#E63946]">⚠ Athlète recruté ailleurs</span>
             </div>
           )}
           {card.recruitment_status === 'RETIRE' && (
@@ -637,7 +570,10 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
 
         {/* Footer: Next action / staleness */}
         {(hasAction || stale) && (
-          <div className="px-3.5 pb-3 pt-2 border-t border-white/10" onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}>
+          /* Plus de fenêtre dédiée à la relance (décision BP 2026-09-23) : le
+             pied n'a plus son propre clic, il fait partie de la carte — un clic
+             n'importe où ouvre le panneau latéral, seul lieu de la relance. */
+          <div className="px-3.5 pb-3 pt-2 border-t border-white/10">
             {/* La DATE est un élément à part, `shrink-0`, et seule la NOTE
                 tronque. Avant, date et note partageaient un seul `truncate`,
                 la date EN FIN : une note un peu longue poussait la date
@@ -645,7 +581,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             {hasAction ? (
               <p className="text-[11px] flex items-center gap-1.5 min-w-0">
                 {card.next_action_at && (
-                  <span className={`shrink-0 font-semibold ${actionLate ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`}>
+                  <span className="shrink-0 font-semibold text-white">
                     {/* « Relance 16 sept. », pas la date nue (retour BP
                         2026-09-23) : seule, une date ne dit pas ce qu'elle date. */}
                     Relance {formatRelanceCourt(card.next_action_at)}
@@ -791,13 +727,15 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
     case "grade":
       return card.grade ? <GradeChip grade={card.grade} /> : VIDE;
     case "relance":
+      /* Rendu en LECTURE seulement : la cellule éditable (CelluleRelance)
+         l'enveloppe dans le tableau. Blanc — le jaune est réservé aux étoiles. */
       return card.next_action_at
-        ? <span className={`font-semibold whitespace-nowrap ${isLate(card.next_action_at, now) ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`}>{formatRelanceCourt(card.next_action_at)}</span>
+        ? <span className="font-semibold whitespace-nowrap text-white">{formatRelanceCourt(card.next_action_at)}</span>
         : VIDE;
     case "visite": {
       const v = card.visit_at ? formatVisitPill(card.visit_at, now) : null;
       return v
-        ? <span className={`font-semibold whitespace-nowrap ${v.isPast ? "text-[#E63946]" : "text-[#F59E0B]"}`} title={v.isPast ? "Visite passée" : "Visite planifiée"}>{v.label}</span>
+        ? <span className="font-semibold whitespace-nowrap text-white" title={v.isPast ? "Visite passée" : "Visite planifiée"}>{v.label}</span>
         : VIDE;
     }
     case "note":
@@ -826,6 +764,57 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
   }
 }
 
+/** Relance ÉDITABLE dans la cellule (décision BP 2026-09-23 : il aime modifier
+ *  la date sur place ; aucune fenêtre dédiée). Un clic pose un champ date DANS
+ *  la case ; choisir une date l'enregistre aussitôt, la vider retire la
+ *  relance, Échap annule. La NOTE de relance ne s'édite pas ici : elle vit au
+ *  panneau latéral (seul lieu complet de la relance) et s'affiche au survol.
+ *  Mode démo : le clic affiche l'invitation Pro, rien n'est écrit. */
+function CelluleRelance({
+  card, now, isFreeDemoMode, onTease, onSave,
+}: {
+  card: PipelineKanbanCard;
+  now: number;
+  isFreeDemoMode: boolean;
+  onTease: () => void;
+  onSave: (pipelineId: string, date: string | null) => void;
+}) {
+  const [edition, setEdition] = useState(false);
+  if (edition) {
+    return (
+      <input
+        type="date"
+        autoFocus
+        defaultValue={card.next_action_at?.slice(0, 10) ?? ""}
+        aria-label="Date de relance"
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const v = e.target.value;
+          // Une saisie clavier partielle rend "" : on n'efface que si le champ
+          // est vraiment vide ET valide (bouton « Effacer » du sélecteur).
+          if (!v && !e.target.validity.valid) return;
+          setEdition(false);
+          if (v !== (card.next_action_at?.slice(0, 10) ?? "")) onSave(card.pipeline_id, v || null);
+        }}
+        onBlur={() => setEdition(false)}
+        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setEdition(false); } }}
+        className="w-[150px] bg-[#13151a] border border-[#E63946] rounded-md px-2 py-1 text-[13px] text-white outline-none [color-scheme:dark]"
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); if (isFreeDemoMode) { onTease(); return; } setEdition(true); }}
+      className="inline-flex items-center gap-1.5 group/relance"
+      title={card.next_action_note ? `Note de relance : ${card.next_action_note}\n\nCliquer pour modifier la date` : "Cliquer pour poser ou modifier la date de relance"}
+    >
+      {celluleTableau("relance", card, now)}
+      <PencilIcon color="#6B7280" size={11} />
+    </button>
+  );
+}
+
 /** Largeurs minimales : les colonnes à texte libre (nom, école, note) passent
  *  sur deux lignes plutôt que d'écraser les autres. */
 const LARGEUR_MIN: Partial<Record<string, string>> = {
@@ -845,7 +834,9 @@ function PipelineTable({
   sortBy,
   onSort,
   onRowClick,
-  onOpenAction,
+  isFreeDemoMode,
+  onTease,
+  onSaveRelance,
 }: {
   cards: PipelineKanbanCard[];
   now: number;
@@ -853,7 +844,9 @@ function PipelineTable({
   sortBy: PipelineSortMode;
   onSort: (mode: PipelineSortMode) => void;
   onRowClick: (card: PipelineKanbanCard) => void;
-  onOpenAction: (card: PipelineKanbanCard) => void;
+  isFreeDemoMode: boolean;
+  onTease: () => void;
+  onSaveRelance: (pipelineId: string, date: string | null) => void;
 }) {
   const filet = (cle: string) => (DEBUT_DE_BLOC.has(cle) ? "border-l border-[#2D3748]" : "");
   return (
@@ -926,13 +919,11 @@ function PipelineTable({
                      sur le bord gauche de la ligne. */
                   const style = i === 0 && ring.color ? { boxShadow: `inset 3px 0 0 ${ring.color}` } : undefined;
                   if (col.cle === "relance") {
-                    /* Relance : ouvre le même popover que le pied de carte —
-                       y compris pour en POSER une sur une ligne qui n'en a pas. */
+                    /* Relance : éditable SUR PLACE (CelluleRelance) — y compris
+                       pour en POSER une sur une ligne qui n'en a pas. */
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}
-                        title={card.next_action_note ? `Note de relance : ${card.next_action_note}\n\nCliquer pour modifier la relance` : "Modifier la relance"}
-                        onClick={(e) => { e.stopPropagation(); onOpenAction(card); }}>
-                        {celluleTableau(col.cle, card, now)}
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} style={style}>
+                        <CelluleRelance card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveRelance} />
                       </td>
                     );
                   }
@@ -975,13 +966,12 @@ function DragOverlayCard({ card }: { card: PipelineKanbanCard }) {
 /* ── Droppable Kanban Column ─────────────────────────────────── */
 
 function KanbanColumn({
-  colDef, cards, activeCardStatus, onCardClick, onOpenAction, now, competitorMap,
+  colDef, cards, activeCardStatus, onCardClick, now, competitorMap,
 }: {
   colDef: typeof KANBAN_COLUMNS[number];
   cards: PipelineKanbanCard[];
   activeCardStatus: RecruitmentStatus | null;
   onCardClick: (card: PipelineKanbanCard) => void;
-  onOpenAction: (card: PipelineKanbanCard) => void;
   now: number;
   competitorMap: Record<string, number>;
 }) {
@@ -1028,7 +1018,7 @@ function KanbanColumn({
           <div className="py-8 text-center"><p className="text-[11px] text-[#4a4d56]">Aucun athlète</p></div>
         ) : (
           cards.map((card) => (
-            <DraggableKanbanCard key={card.id} card={card} isCommitment={isCommitment} isDraggable={isDraggable} onClick={() => onCardClick(card)} onOpenAction={onOpenAction} now={now} competitorMap={competitorMap} />
+            <DraggableKanbanCard key={card.id} card={card} isCommitment={isCommitment} isDraggable={isDraggable} onClick={() => onCardClick(card)} now={now} competitorMap={competitorMap} />
           ))
         )}
       </div>
@@ -1045,7 +1035,7 @@ interface NoteEntry {
 }
 
 function SlideOver({
-  card, onClose, onStatusChange, onSetGrade, onSaveVisit,
+  card, onClose, onStatusChange, onSetGrade, onSaveVisit, onSaveRelanceNote,
   isFreeDemoMode, onTeaseUpgrade,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
@@ -1054,10 +1044,15 @@ function SlideOver({
   onSetGrade: (cardId: string, grade: Grade | null, previousGrade: Grade | null) => void;
   /** Écrit recruiter_pipeline.visit_at. `null` efface la date. */
   onSaveVisit: (pipelineId: string, visitAtIso: string | null) => void;
+  /** Écrit recruiter_pipeline.next_action_note. `null` l'efface. */
+  onSaveRelanceNote: (pipelineId: string, note: string | null) => void;
   isFreeDemoMode: boolean;
   onTeaseUpgrade: () => void;
 }) {
   const [noteText, setNoteText] = useState("");
+  // Note de RELANCE (next_action_note) — distincte des notes de suivi. Seedée
+  // au montage : le panneau se remonte à chaque carte (key={card.id}).
+  const [noteRelance, setNoteRelance] = useState(card.next_action_note ?? "");
   // Édition inline de la visite. Le panneau se ferme/rouvre par carte, donc
   // on seed depuis card.visit_at à chaque montage — pas besoin de resync.
   const [editingVisit, setEditingVisit] = useState(false);
@@ -1236,9 +1231,24 @@ function SlideOver({
           {!isFreeDemoMode && (
             <div>
               <RelanceFiche athleteId={card.id} sousTitre={null} />
-              {card.next_action_note && (
-                <p className="text-[12px] text-[#9CA3AF] mt-2">{card.next_action_note}</p>
-              )}
+              {/* Note de relance — ÉDITABLE ici, et seulement ici (la fenêtre
+                  « Prochain suivi » est retirée). Enregistrée en quittant le
+                  champ ou sur Entrée. Privée au recruteur depuis le Lot 2a
+                  (2026-09-17) : ni le coach ni l'admin cégep ne lisent la ligne. */}
+              <label className="block text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] mt-3 mb-1" htmlFor={`note-relance-${card.id}`}>Note de relance</label>
+              <input
+                id={`note-relance-${card.id}`}
+                type="text"
+                value={noteRelance}
+                onChange={(e) => setNoteRelance(e.target.value)}
+                onBlur={() => {
+                  const v = noteRelance.trim();
+                  if (v !== (card.next_action_note ?? "")) onSaveRelanceNote(card.pipeline_id, v || null);
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                placeholder="Ex. : appeler l'entraîneur après le match"
+                className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors"
+              />
             </div>
           )}
 
@@ -1254,7 +1264,10 @@ function SlideOver({
             };
 
             return (
-              /* Teinte OR — la même que la relance, sur le web. Le bloc mobile
+              /* NEUTRE depuis le 2026-09-23 (décision BP : le jaune est réservé
+                 aux étoiles de la cote du coach). Ce qui suit est l'historique
+                 de la teinte or, remplacée par la surface standard.
+                 Teinte OR — la même que la relance, sur le web. Le bloc mobile
                  (RecruteurPipelineMobile, « Visite planifiée ») porte encore
                  le titre gris sur fond neutre : sa teinte reste à faire au
                  lot mobile (protocole web-d'abord). Une
@@ -1271,23 +1284,23 @@ function SlideOver({
                 className="rounded-lg border"
                 style={{
                   padding: "12px 16px",
-                  backgroundColor: "rgba(245,158,11,0.08)",
-                  borderColor: "rgba(245,158,11,0.35)",
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  borderColor: "#2D3748",
                 }}
               >
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] mb-2" style={{ color: "#F59E0B" }}>Visite prévue</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] mb-2 text-white">Visite prévue</h3>
 
                 {!editingVisit ? (
                   <button
                     type="button"
                     onClick={() => setEditingVisit(true)}
                     aria-label={`Modifier la date de visite${longLabel ? ` : ${longLabel}` : ""}`}
-                    className="inline-flex items-center gap-1.5 text-[13px] text-white hover:text-[#F59E0B] transition-colors text-left"
+                    className="inline-flex items-center gap-1.5 text-[13px] text-white hover:text-[#D1D5DB] transition-colors text-left"
                   >
                     {longLabel ?? <span className="text-[#6B7280]">Aucune date</span>}
                     {/* Crayon toujours visible : sans lui, rien ne dit que la
-                        date s'édite en place. Or du bloc, jamais le rouge. */}
-                    <PencilIcon color="#F59E0B" size={12} />
+                        date s'édite en place. Gris, jamais le rouge. */}
+                    <PencilIcon color="#9CA3AF" size={12} />
                   </button>
                 ) : (
                   <div className="space-y-2">
@@ -1501,7 +1514,6 @@ function PipelinePageContent() {
   const [activeCard, setActiveCard] = useState<PipelineKanbanCard | null>(null);
   const [pendingDrop, setPendingDrop] = useState<{ cardId: string; from: RecruitmentStatus; to: RecruitmentStatus } | null>(null);
   const [retireReason, setRetireReason] = useState("");
-  const [actionPopover, setActionPopover] = useState<PipelineKanbanCard | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
   /* ?filtre=relances | visites (tuiles du tableau de bord) : chip ACTIVE dès
@@ -1676,18 +1688,31 @@ function PipelinePageContent() {
     showToast(visitAtIso ? "Date de visite mise à jour" : "Date de visite retirée");
   }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
 
-  /* ── Save next action ───────────────────────────────────────── */
-  const handleSaveAction = useCallback(async (pipelineId: string, fields: { flagged: boolean; next_action_at: string | null; next_action_note: string | null }) => {
-    if (isFreeDemoMode) {
-      teaseUpgrade();
-      setActionPopover(null);
-      return;
-    }
-    setActionPopover(null);
+  /* ── Relance : date (cellule du tableau) et note (panneau) ─────────
+     Plus de fenêtre dédiée (décision BP 2026-09-23) : la DATE s'édite dans la
+     cellule du tableau ou dans le panneau (RelanceFiche), la NOTE dans le
+     panneau seulement. `flagged` n'est plus écrit par le web — sa dernière
+     interface (« Marquer urgent », dans la fenêtre) part avec elle ; la
+     colonne reste en base (admin, mobile). */
+  const handleSaveRelanceDate = useCallback(async (pipelineId: string, date: string | null) => {
+    if (isFreeDemoMode) { teaseUpgrade(); return; }
     const supabase = createClient();
-    await supabase.from("recruiter_pipeline").update(fields).eq("id", pipelineId);
+    const { error } = await supabase.from("recruiter_pipeline").update({ next_action_at: date }).eq("id", pipelineId);
+    if (error) { showToast("Relance non enregistrée"); return; }
     queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    showToast("Suivi mis à jour");
+    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+    showToast(date ? "Relance mise à jour" : "Relance retirée");
+  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
+
+  const handleSaveRelanceNote = useCallback(async (pipelineId: string, note: string | null) => {
+    if (isFreeDemoMode) { teaseUpgrade(); return; }
+    const supabase = createClient();
+    const { error } = await supabase.from("recruiter_pipeline").update({ next_action_note: note }).eq("id", pipelineId);
+    if (error) { showToast("Note de relance non enregistrée"); return; }
+    // `selectedCard` est un SNAPSHOT (même piège que handleSaveVisit).
+    setSelectedCard((prev) => (prev && prev.pipeline_id === pipelineId ? { ...prev, next_action_note: note } : prev));
+    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    showToast(note ? "Note de relance enregistrée" : "Note de relance retirée");
   }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
 
   const openSlideOver = useCallback((card: PipelineKanbanCard) => {
@@ -1951,7 +1976,9 @@ function PipelinePageContent() {
           sortBy={sortBy}
           onSort={setSortBy}
           onRowClick={openSlideOver}
-          onOpenAction={setActionPopover}
+          isFreeDemoMode={isFreeDemoMode}
+          onTease={teaseUpgrade}
+          onSaveRelance={handleSaveRelanceDate}
         />
       ) : (<>
       {/* Mobile tab bar */}
@@ -1980,7 +2007,7 @@ function PipelinePageContent() {
               {colCards.length === 0 ? (
                 <div className="py-12 text-center"><p className="text-[13px] text-[#4a4d56]">Aucun athlète dans cette colonne</p></div>
               ) : colCards.map((card) => (
-                <DraggableKanbanCard key={card.id} card={card} isCommitment={col.phase === "commitment"} isDraggable={false} onClick={() => openSlideOver(card)} onOpenAction={setActionPopover} now={now} competitorMap={competitorMap} />
+                <DraggableKanbanCard key={card.id} card={card} isCommitment={col.phase === "commitment"} isDraggable={false} onClick={() => openSlideOver(card)} now={now} competitorMap={competitorMap} />
               ))}
             </div>
           );
@@ -1991,7 +2018,7 @@ function PipelinePageContent() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="hidden lg:flex gap-4 overflow-x-auto pb-4">
           {KANBAN_COLUMNS.map((col) => (
-            <KanbanColumn key={col.id} colDef={col} cards={getCardsByStatus(sortedCards, col.id)} activeCardStatus={activeCard?.status || null} onCardClick={openSlideOver} onOpenAction={setActionPopover} now={now} competitorMap={competitorMap} />
+            <KanbanColumn key={col.id} colDef={col} cards={getCardsByStatus(sortedCards, col.id)} activeCardStatus={activeCard?.status || null} onCardClick={openSlideOver} now={now} competitorMap={competitorMap} />
           ))}
         </div>
         <DragOverlay dropAnimation={null}>
@@ -2009,14 +2036,10 @@ function PipelinePageContent() {
           onStatusChange={handleStatusChange}
           onSetGrade={handleSetGrade}
           onSaveVisit={handleSaveVisit}
+          onSaveRelanceNote={handleSaveRelanceNote}
           isFreeDemoMode={isFreeDemoMode}
           onTeaseUpgrade={teaseUpgrade}
         />
-      )}
-
-      {/* TASK 5: Next action popover */}
-      {actionPopover && (
-        <NextActionPopover card={actionPopover} onSave={handleSaveAction} onClose={() => setActionPopover(null)} />
       )}
 
       {/* Drop Confirmation Modal */}
