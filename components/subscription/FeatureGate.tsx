@@ -2,6 +2,7 @@
 
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import UpgradePlaceholder from "./UpgradePlaceholder";
+import GateChargement from "./GateChargement";
 
 /* ═══════════════════════════════════════════════════════════════
    FeatureGate — DB-backed gate that CONDITIONALLY RENDERS children.
@@ -47,7 +48,8 @@ export default function FeatureGate({
 }: FeatureGateProps) {
   const { tier, isSchoolAdmin, loading } = useSubscription();
 
-  if (loading) return null;
+  // Forfait pas encore connu : on le DIT, au lieu d'une page vide.
+  if (loading) return <GateChargement />;
 
   // Per-call admin bypass (default false): only items that should
   // unlock for directors regardless of tier set this true.
