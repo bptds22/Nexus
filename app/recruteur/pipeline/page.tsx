@@ -84,7 +84,6 @@ const GRAY = "#6B7280";
 const RED = "#E63946";
 const BLUE = "#3B82F6";
 const GREEN = "#22C55E";
-const ORANGE = "#EAB308";
 
 /* ── Staleness logic — all date functions accept a stable `now` timestamp
    to avoid hydration mismatches (server vs client Date.now() differ) ──── */
@@ -124,20 +123,6 @@ function jourLocal(dateStr: string): Date {
   return new Date(a, m - 1, j);
 }
 
-function isToday(dateStr: string | null, now: number): boolean {
-  if (!dateStr || !now) return false;
-  const d = jourLocal(dateStr);
-  const n = new Date(now);
-  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
-}
-
-function isTomorrow(dateStr: string | null, now: number): boolean {
-  if (!dateStr || !now) return false;
-  const d = jourLocal(dateStr);
-  const tom = new Date(now);
-  tom.setDate(tom.getDate() + 1);
-  return d.getFullYear() === tom.getFullYear() && d.getMonth() === tom.getMonth() && d.getDate() === tom.getDate();
-}
 
 /* `isLate` (relance dépassée → or) est RETIRÉE le 2026-09-23 : décision BP,
    les dates de relance et de visite sont en BLANC, le jaune est réservé aux
@@ -236,20 +221,13 @@ function isCompetitorAhead(
   return competitorOrder > myOrder;
 }
 
-/* ── Card ring color ─────────────────────────────────────────── */
-
-function getCardRing(card: PipelineKanbanCard, now: number, competitorMap: Record<string, number>): { color: string | null; reason: string } {
-  if (!now) return { color: null, reason: "" };
-  const stale = isStale(card.status, card.moved_at, now);
-  const compAhead = isCompetitorAhead(card.id, card.status, competitorMap);
-  if (compAhead || stale) {
-    return { color: RED, reason: compAhead ? "Un autre CÉGEP est plus avancé" : "Aucun mouvement récent" };
-  }
-  if (isToday(card.next_action_at, now) || isTomorrow(card.next_action_at, now)) {
-    return { color: ORANGE, reason: "Action prévue prochainement" };
-  }
-  return { color: null, reason: "" };
-}
+/* ── Liseré coloré des cartes — RETIRÉ (décision BP 2026-09-23) ─────
+   `getCardRing` peignait le bord gauche : rouge 4 px (aucun mouvement
+   récent, ou « autre cégep plus avancé » — mort depuis le 17 septembre),
+   jaune 4 px (relance aujourd'hui ou demain), et rouge 3 px décoratif sur
+   les colonnes d'engagement. Trois sens, une seule couleur, rien à l'écran
+   pour les départager. Les cartes n'ont plus de liséré ; « Aucun mouvement
+   depuis N j » reste écrit au pied de la carte. */
 
 /* ── Hook: stable client-side timestamp (0 on server, real after mount) */
 
@@ -391,14 +369,12 @@ function TrashIcon() {
 
 const DraggableKanbanCard = memo(function DraggableKanbanCard({
   card,
-  isCommitment,
   isDraggable,
   onClick,
   now,
   competitorMap,
 }: {
   card: PipelineKanbanCard;
-  isCommitment: boolean;
   isDraggable: boolean;
   onClick: () => void;
   now: number;
@@ -410,14 +386,12 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
     disabled: !isDraggable,
   });
 
-  const ring = getCardRing(card, now, competitorMap);
   const stale = isStale(card.status, card.moved_at, now);
   const staleDays = daysSince(card.moved_at, now);
   const compAhead = isCompetitorAhead(card.id, card.status, competitorMap);
   const hasAction = card.next_action_at || card.next_action_note;
 
   // Left border
-  const borderLeft = ring.color ? `4px solid ${ring.color}` : isCommitment ? "3px solid #E63946" : "none";
 
   return (
     <div
@@ -435,8 +409,6 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         type="button"
         onClick={onClick}
         className={`w-full text-left bg-[#1A1D24] rounded-lg border border-[#2D3748] transition-all duration-200 hover:shadow-[0_0_16px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 overflow-hidden ${isDraggable ? "" : ""}`}
-        style={{ borderLeft }}
-        aria-label={ring.reason || undefined}
       >
         {/* Photo banner */}
         <div className="relative h-20 bg-[#2F3440] overflow-hidden">
@@ -830,7 +802,6 @@ const LARGEUR_MIN: Partial<Record<string, string>> = {
 function PipelineTable({
   cards,
   now,
-  competitorMap,
   sortBy,
   onSort,
   onRowClick,
@@ -840,7 +811,6 @@ function PipelineTable({
 }: {
   cards: PipelineKanbanCard[];
   now: number;
-  competitorMap: Record<string, number>;
   sortBy: PipelineSortMode;
   onSort: (mode: PipelineSortMode) => void;
   onRowClick: (card: PipelineKanbanCard) => void;
@@ -903,7 +873,6 @@ function PipelineTable({
               </td>
             </tr>
           ) : cards.map((card) => {
-            const ring = getCardRing(card, now, competitorMap);
             return (
               <tr
                 key={card.id}
@@ -911,23 +880,22 @@ function PipelineTable({
                 onClick={() => onRowClick(card)}
                 onKeyDown={(e) => { if (e.key === "Enter") onRowClick(card); }}
                 className="group border-t border-[#2D3748]/60 cursor-pointer hover:bg-white/[0.03] focus:bg-white/[0.04] outline-none transition-colors"
-                aria-label={ring.reason ? `${card.full_name} — ${ring.reason}` : card.full_name}
+                aria-label={card.full_name}
               >
-                {COLONNES_TABLEAU.map((col, i) => {
+                {COLONNES_TABLEAU.map((col) => {
                   const cls = `px-4 py-3.5 ${filet(col.cle)} ${LARGEUR_MIN[col.cle] ?? "whitespace-nowrap"}`;
-                  /* Le liséré de la carte (inactivité, relance proche) passe
-                     sur le bord gauche de la ligne. */
-                  const style = i === 0 && ring.color ? { boxShadow: `inset 3px 0 0 ${ring.color}` } : undefined;
+                  /* Plus de liséré coloré en bord de ligne : retiré avec
+                     celui des cartes (décision BP 2026-09-23). */
                   if (col.cle === "relance") {
                     /* Relance : éditable SUR PLACE (CelluleRelance) — y compris
                        pour en POSER une sur une ligne qui n'en a pas. */
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} style={style}>
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}>
                         <CelluleRelance card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveRelance} />
                       </td>
                     );
                   }
-                  return <td key={col.cle} className={cls} style={style}>{celluleTableau(col.cle, card, now)}</td>;
+                  return <td key={col.cle} className={cls}>{celluleTableau(col.cle, card, now)}</td>;
                 })}
               </tr>
             );
@@ -977,7 +945,6 @@ function KanbanColumn({
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: colDef.id });
   const isExit = colDef.phase === "exit";
-  const isCommitment = colDef.phase === "commitment";
   const isDraggable = true;
   const isValidTarget = activeCardStatus ? activeCardStatus !== colDef.id : false;
   const dropHighlight = isOver && isValidTarget;
@@ -1018,7 +985,7 @@ function KanbanColumn({
           <div className="py-8 text-center"><p className="text-[11px] text-[#4a4d56]">Aucun athlète</p></div>
         ) : (
           cards.map((card) => (
-            <DraggableKanbanCard key={card.id} card={card} isCommitment={isCommitment} isDraggable={isDraggable} onClick={() => onCardClick(card)} now={now} competitorMap={competitorMap} />
+            <DraggableKanbanCard key={card.id} card={card} isDraggable={isDraggable} onClick={() => onCardClick(card)} now={now} competitorMap={competitorMap} />
           ))
         )}
       </div>
@@ -1972,7 +1939,6 @@ function PipelinePageContent() {
         <PipelineTable
           cards={sortedCards}
           now={now}
-          competitorMap={competitorMap}
           sortBy={sortBy}
           onSort={setSortBy}
           onRowClick={openSlideOver}
@@ -2007,7 +1973,7 @@ function PipelinePageContent() {
               {colCards.length === 0 ? (
                 <div className="py-12 text-center"><p className="text-[13px] text-[#4a4d56]">Aucun athlète dans cette colonne</p></div>
               ) : colCards.map((card) => (
-                <DraggableKanbanCard key={card.id} card={card} isCommitment={col.phase === "commitment"} isDraggable={false} onClick={() => openSlideOver(card)} now={now} competitorMap={competitorMap} />
+                <DraggableKanbanCard key={card.id} card={card} isDraggable={false} onClick={() => openSlideOver(card)} now={now} competitorMap={competitorMap} />
               ))}
             </div>
           );
