@@ -37,7 +37,10 @@ export const RECRUITMENT_STATUS_CONFIG: Record<GlobalRecruitmentStatus, {
   dotColor: string;
 }> = {
   OUVERT: { label: 'Ouvert', color: 'text-green-400', bgColor: 'bg-green-400/10', dotColor: '#22C55E' },
-  EN_PROCESSUS: { label: 'En processus', color: 'text-yellow-400', bgColor: 'bg-yellow-400/10', dotColor: '#F59E0B' },
+  // Blanc cassé depuis le 2026-09-23 (décision BP) : le jaune est réservé aux
+  // étoiles de la cote du coach. « En processus » est une INFORMATION (un
+  // autre recruteur travaille l'athlète) — ni alerte (rouge) ni positif (vert).
+  EN_PROCESSUS: { label: 'En processus', color: 'text-gray-200', bgColor: 'bg-gray-200/10', dotColor: '#E5E7EB' },
   RECRUTE: { label: 'Recruté', color: 'text-red-400', bgColor: 'bg-red-400/10', dotColor: '#E63946' },
   RETIRE: { label: 'Retiré', color: 'text-gray-500', bgColor: 'bg-gray-500/10', dotColor: '#6B7280' },
 };
