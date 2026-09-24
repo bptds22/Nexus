@@ -1,4 +1,4 @@
--- ROLLBACK de 20260924200000_b1_tableau_blanc_unite (lot B1)
+-- ROLLBACK de 20260924201029_b1_tableau_blanc_unite (lot B1)
 --
 -- Retire exactement ce que la migration a posé, dans l'ordre inverse :
 --   policies unite_* → triggers trg_unite_* → fonctions nouvelles →

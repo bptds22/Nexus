@@ -1,4 +1,4 @@
--- 20260924200000_b1_tableau_blanc_unite
+-- 20260924201029_b1_tableau_blanc_unite (version enregistrée en prod ; écrite 20260924200000)
 --
 -- LOT B1 — le tableau blanc par unité, CÔTÉ DONNÉES (décision BP 2026-09-24).
 -- Invisible à l'écran : B2 apporte l'interface.
@@ -40,7 +40,7 @@
 --     même athlète. Les effets de bord (journal, notifications parent, statut
 --     global de l'athlète) ne se déclenchent QU'UNE fois, sur la ligne écrite.
 --
--- Rollback : supabase/rollback/20260924200000_rollback_b1_tableau_blanc_unite.sql
+-- Rollback : supabase/rollback/20260924201029_rollback_b1_tableau_blanc_unite.sql
 -- (il rejoue les définitions EXACTES des fonctions sauvegardées ici).
 
 -- ════════════════════════════════════════════════════════════════════════════

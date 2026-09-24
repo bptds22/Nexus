@@ -30,7 +30,7 @@ lisent et se modifient. Ce qui du 17 septembre **reste vrai** :
 - un recruteur **sans cégep ou sans sport** n'a pas d'unité : ses lignes restent
   privées exactement comme le 17 septembre.
 
-**Les règles, telles que posées en base (lot B1, migration `…_b1_tableau_blanc_unite`) :**
+**Les règles, telles que posées en base (lot B1, migration `20260924201029_b1_tableau_blanc_unite`) :**
 1. **L'unité d'une ligne se pose à la création**, d'après son auteur (ou d'après
    la liste pour membres et notes de liste), par trigger — la valeur envoyée par
    le client est ignorée. **Elle ne bouge plus jamais** : un recruteur qui change
