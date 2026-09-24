@@ -39,6 +39,11 @@ test("visites à venir : étape VISITE_PLANIFIEE ET date aujourd'hui ou plus tar
   assert.equal(estVisiteAVenir({ status: "visite_planifiee", visit_at: midi(5) }), true);
   assert.equal(estVisiteAVenir({ status: "visite_planifiee", visit_at: midi(-1) }), false, "passée");
   assert.equal(estVisiteAVenir({ status: "visite_planifiee", visit_at: null }), false, "sans date");
+  // regleVisite (2026-09-23) : la visite survit à Engagé / Lettre signée…
+  assert.equal(estVisiteAVenir({ status: "engage", visit_at: midi(3) }), true, "engagé avec visite");
+  assert.equal(estVisiteAVenir({ status: "lettre_signee", visit_at: midi(3) }), true, "lettre signée avec visite");
+  // …mais jamais sous Visite planifiée.
+  assert.equal(estVisiteAVenir({ status: "contacte", visit_at: midi(3) }), false, "sous visite planifiée");
   assert.equal(estVisiteAVenir({ status: "en_discussion", visit_at: midi(2) }), false, "autre étape");
   assert.equal(estVisiteAVenir({ status: "visite_planifiee", visit_at: "pas une date" }), false);
 });

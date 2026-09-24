@@ -54,7 +54,8 @@ import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
 import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteGrade";
-import type { Grade } from "@/lib/config/grades";
+import { GRADES, type Grade } from "@/lib/config/grades";
+import { champVisitePourEtape, etapePorteVisite } from "@/lib/pipeline/regleVisite";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import { generateCalendarLinks, downloadIcs } from "@/lib/calendar/generateCalendarLinks";
 import {
@@ -66,6 +67,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import RelanceFiche from "@/components/shared/RelanceFiche";
 import { PencilIcon } from "@/components/shared/wizard/modeIcons";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
+import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -484,7 +486,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 size="sm"
               />
             )}
-            {card.status === "visite_planifiee" && card.visit_at && (() => {
+            {etapePorteVisite(card.status) && card.visit_at && (() => {
               const v = formatVisitPill(card.visit_at, now);
               if (!v) return null;
               /* BLANC (décision BP 2026-09-23) : le jaune est réservé aux
@@ -837,6 +839,152 @@ function CelluleRelance({
   );
 }
 
+/** Clic DANS une cellule éditable mais HORS de son bouton (la marge de la
+ *  case, qui s'éclaire au survol) : il ne doit JAMAIS remonter à la ligne,
+ *  dont le clic ouvre le panneau latéral — sinon les deux se déclenchaient
+ *  (bug relevé par BP le 2026-09-23). On arrête la propagation et on ouvre
+ *  l'édition de la case, comme si le bouton avait été cliqué.
+ *  Un clic sur le bouton lui-même, ou sur le champ en cours d'édition,
+ *  n'arrive pas ici : ils arrêtent la propagation eux-mêmes. */
+function cliquerCelluleEditable(e: React.MouseEvent<HTMLTableCellElement>) {
+  e.stopPropagation();
+  if (e.target !== e.currentTarget) return;
+  e.currentTarget.querySelector<HTMLButtonElement>("button")?.click();
+}
+
+/** Même garde au CLAVIER : la ligne ouvre le panneau sur Entrée
+ *  (onKeyDown du <tr>). Entrée sur le bouton d'une cellule, ou dans son champ
+ *  en cours d'édition, déclenchait l'édition ET le panneau. Les touches d'une
+ *  cellule éditable restent dans la cellule. */
+function arreterToucheCellule(e: React.KeyboardEvent<HTMLTableCellElement>) {
+  e.stopPropagation();
+}
+
+/** Le petit crayon des cellules éditables : il dit que la case se modifie. */
+const CRAYON = <PencilIcon color="#6B7280" size={11} />;
+
+/** MON GRADE éditable dans la cellule (décision BP 2026-09-23). Un clic pose
+ *  un menu A+ … D (et « Aucun ») DANS la case ; choisir enregistre aussitôt.
+ *  Même écriture que le panneau (handleSetGrade, optimiste, garde démo). */
+function CelluleGrade({ card, isFreeDemoMode, onTease, onSave }: {
+  card: PipelineKanbanCard;
+  isFreeDemoMode: boolean;
+  onTease: () => void;
+  onSave: (cardId: string, grade: Grade | null, previous: Grade | null) => void;
+}) {
+  const [edition, setEdition] = useState(false);
+  if (edition) {
+    return (
+      <select
+        autoFocus
+        defaultValue={card.grade ?? ""}
+        aria-label="Mon grade"
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const v = e.target.value;
+          setEdition(false);
+          const suivant = (GRADES as readonly string[]).includes(v) ? (v as Grade) : null;
+          if (suivant !== (card.grade ?? null)) onSave(card.id, suivant, card.grade ?? null);
+        }}
+        onBlur={() => setEdition(false)}
+        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setEdition(false); } }}
+        className="bg-[#13151a] border border-[#E63946] rounded-md px-2 py-1 text-[13px] text-white outline-none [color-scheme:dark]"
+      >
+        <option value="">Aucun</option>
+        {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+      </select>
+    );
+  }
+  return (
+    <button type="button" className="inline-flex items-center gap-1.5" title="Cliquer pour modifier mon grade"
+      onClick={(e) => { e.stopPropagation(); if (isFreeDemoMode) { onTease(); return; } setEdition(true); }}>
+      {card.grade ? <GradeChip grade={card.grade} /> : VIDE}
+      {CRAYON}
+    </button>
+  );
+}
+
+/** ÉTAPE éditable dans la cellule. « Retiré » passe par la CONFIRMATION
+ *  existante (décision BP : elle retire l'athlète du processus) ; les autres
+ *  étapes s'appliquent aussitôt, par le même handler que le kanban. */
+function CelluleEtape({ card, isFreeDemoMode, onTease, onChange }: {
+  card: PipelineKanbanCard;
+  isFreeDemoMode: boolean;
+  onTease: () => void;
+  onChange: (card: PipelineKanbanCard, etape: RecruitmentStatus) => void;
+}) {
+  const [edition, setEdition] = useState(false);
+  if (edition) {
+    return (
+      <select
+        autoFocus
+        defaultValue={card.status}
+        aria-label="Étape"
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const v = e.target.value as RecruitmentStatus;
+          setEdition(false);
+          if (v !== card.status) onChange(card, v);
+        }}
+        onBlur={() => setEdition(false)}
+        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setEdition(false); } }}
+        className="bg-[#13151a] border border-[#E63946] rounded-md px-2 py-1 text-[13px] text-white outline-none [color-scheme:dark]"
+      >
+        {KANBAN_COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+      </select>
+    );
+  }
+  return (
+    <button type="button" className="inline-flex items-center gap-1.5" title="Cliquer pour changer l'étape"
+      onClick={(e) => { e.stopPropagation(); if (isFreeDemoMode) { onTease(); return; } setEdition(true); }}>
+      {celluleTableau("etape", card, 0)}
+      {CRAYON}
+    </button>
+  );
+}
+
+/** DATE DE VISITE éditable dans la cellule — règle BP (lib/pipeline/regleVisite) :
+ *  poser une date fait passer l'étape AU MOINS à « Visite planifiée » (jamais
+ *  de recul depuis Engagé / Lettre signée) ; vider la date ne change pas
+ *  l'étape. L'heure éventuelle d'une visite existante est conservée. */
+function CelluleVisite({ card, now, isFreeDemoMode, onTease, onSave }: {
+  card: PipelineKanbanCard;
+  now: number;
+  isFreeDemoMode: boolean;
+  onTease: () => void;
+  onSave: (card: PipelineKanbanCard, date: string | null) => void;
+}) {
+  const [edition, setEdition] = useState(false);
+  if (edition) {
+    return (
+      <input
+        type="date"
+        autoFocus
+        defaultValue={isoToInputs(card.visit_at ?? null).date}
+        aria-label="Date de visite"
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (!v && !e.target.validity.valid) return;
+          setEdition(false);
+          if (v !== isoToInputs(card.visit_at ?? null).date) onSave(card, v || null);
+        }}
+        onBlur={() => setEdition(false)}
+        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setEdition(false); } }}
+        className="w-[150px] bg-[#13151a] border border-[#E63946] rounded-md px-2 py-1 text-[13px] text-white outline-none [color-scheme:dark]"
+      />
+    );
+  }
+  return (
+    <button type="button" className="inline-flex items-center gap-1.5"
+      title={etapePorteVisite(card.status) ? "Cliquer pour poser ou modifier la date de visite" : "Poser une date de visite fait passer l'athlète à « Visite planifiée »"}
+      onClick={(e) => { e.stopPropagation(); if (isFreeDemoMode) { onTease(); return; } setEdition(true); }}>
+      {celluleTableau("visite", card, now)}
+      {CRAYON}
+    </button>
+  );
+}
+
 /** Largeurs minimales : les colonnes à texte libre (nom, école, note) passent
  *  sur deux lignes plutôt que d'écraser les autres. */
 const LARGEUR_MIN: Partial<Record<string, string>> = {
@@ -858,6 +1006,9 @@ function PipelineTable({
   isFreeDemoMode,
   onTease,
   onSaveRelance,
+  onSetGrade,
+  onChangeEtape,
+  onSaveVisite,
 }: {
   cards: PipelineKanbanCard[];
   now: number;
@@ -867,6 +1018,9 @@ function PipelineTable({
   isFreeDemoMode: boolean;
   onTease: () => void;
   onSaveRelance: (pipelineId: string, date: string | null) => void;
+  onSetGrade: (cardId: string, grade: Grade | null, previous: Grade | null) => void;
+  onChangeEtape: (card: PipelineKanbanCard, etape: RecruitmentStatus) => void;
+  onSaveVisite: (card: PipelineKanbanCard, date: string | null) => void;
 }) {
   const filet = (cle: string) => (DEBUT_DE_BLOC.has(cle) ? "border-l border-[#2D3748]" : "");
   return (
@@ -936,11 +1090,34 @@ function PipelineTable({
                   const cls = `px-4 py-3.5 ${filet(col.cle)} ${LARGEUR_MIN[col.cle] ?? "whitespace-nowrap"}`;
                   /* Plus de liséré coloré en bord de ligne : retiré avec
                      celui des cartes (décision BP 2026-09-23). */
+                  /* Cellules ÉDITABLES sur place (décision BP 2026-09-23) :
+                     Mon grade, Étape, Relance, Visite. Aucune fenêtre dédiée. */
+                  if (col.cle === "grade") {
+                    return (
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
+                        <CelluleGrade card={card} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSetGrade} />
+                      </td>
+                    );
+                  }
+                  if (col.cle === "etape") {
+                    return (
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
+                        <CelluleEtape card={card} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onChange={onChangeEtape} />
+                      </td>
+                    );
+                  }
+                  if (col.cle === "visite") {
+                    return (
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
+                        <CelluleVisite card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveVisite} />
+                      </td>
+                    );
+                  }
                   if (col.cle === "relance") {
                     /* Relance : éditable SUR PLACE (CelluleRelance) — y compris
                        pour en POSER une sur une ligne qui n'en a pas. */
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}>
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleRelance card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveRelance} />
                       </td>
                     );
@@ -1066,6 +1243,9 @@ function SlideOver({
   isFreeDemoMode: boolean;
   onTeaseUpgrade: () => void;
 }) {
+  // Onglet courant (lot C1). Le panneau se remonte à chaque carte
+  // (key={card.id}) : il rouvre toujours sur « Actions ».
+  const [onglet, setOnglet] = useState<"actions" | "infos">("actions");
   const [noteText, setNoteText] = useState("");
   // Note de RELANCE (next_action_note) — distincte des notes de suivi. Seedée
   // au montage : le panneau se remonte à chaque carte (key={card.id}).
@@ -1153,15 +1333,39 @@ function SlideOver({
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
             <div className="flex items-center gap-2 mt-3">{aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
+          </div>
+          {/* ONGLETS (lot C1, décision BP 2026-09-24) — sous le nom. « Actions »
+              par défaut : tout ce que le panneau portait déjà, inchangé et dans
+              le même ordre. « Infos » : les informations du joueur, par les
+              sections partagées de la fiche (OngletInfosPanneau). */}
+          <div role="tablist" aria-label="Contenu du panneau" className="flex gap-1 p-1 bg-[#13151a] border border-[#2D3748] rounded-lg">
+            {([["actions", "Actions"], ["infos", "Infos"]] as const).map(([cle, libelle]) => (
+              <button
+                key={cle}
+                type="button"
+                role="tab"
+                aria-selected={onglet === cle}
+                onClick={() => setOnglet(cle)}
+                className={`flex-1 px-3 py-2 rounded-md text-[12px] font-bold uppercase tracking-wider transition-colors ${onglet === cle ? "bg-[#E63946] text-white" : "text-[#9CA3AF] hover:text-white"}`}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+          {onglet === "infos" ? (
+            <OngletInfosPanneau athleteId={card.id} />
+          ) : (
+          <>
+          <div>
             {/* Mon grade — sous la cote du coach, et séparé d'elle : les
                 étoiles sont le jugement d'un tiers, le grade est le mien. */}
-            <div className="mt-4">
+            <div>
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Mon grade</span>
               <div className="mt-2">
                 <GradePicker value={card.grade} onSelect={(g) => onSetGrade(card.id, g, card.grade ?? null)} />
               </div>
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Profil complété</span>
                 <span className="text-[13px] font-bold" style={{ color: pctColor }}>{card.profile_completeness}%</span>
@@ -1272,7 +1476,7 @@ function SlideOver({
           {/* ── Visite prévue ─────────────────────────────────────────────
               VISITE_PLANIFIEE uniquement. Sauvegarde immédiate à chaque
               changement d'input : pas de bouton « Enregistrer ». */}
-          {card.status === "visite_planifiee" && (() => {
+          {etapePorteVisite(card.status) && (() => {
             const longLabel = card.visit_at ? formatVisitLong(card.visit_at) : null;
 
             const commit = (nextDate: string, nextTime: string) => {
@@ -1406,6 +1610,8 @@ function SlideOver({
               </button>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
       {pendingStatus && (
@@ -1627,12 +1833,13 @@ function PipelinePageContent() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const now = new Date().toISOString();
-      // visit_at n'a de sens que sous VISITE_PLANIFIEE. En quittant ce stage on
-      // l'efface, sinon la date survivrait au déplacement et ressortirait telle
-      // quelle si la carte revenait dans la colonne (rendez-vous fantôme).
-      // En y ENTRANT on ne touche pas à la clé — une date déjà posée est gardée.
-      const payload: Record<string, unknown> = { stage: newStatus.toUpperCase(), moved_at: now, updated_at: now };
-      if (newStatus !== "visite_planifiee") payload.visit_at = null;
+      // regleVisite (décision BP 2026-09-23) : la date de visite survit de
+      // « Visite planifiée » à « Lettre signée » ; elle n'est effacée que si
+      // l'étape redescend SOUS « Visite planifiée ».
+      const payload: Record<string, unknown> = {
+        stage: newStatus.toUpperCase(), moved_at: now, updated_at: now,
+        ...champVisitePourEtape(newStatus),
+      };
 
       await supabase
         .from("recruiter_pipeline")
@@ -1731,6 +1938,38 @@ function PipelinePageContent() {
     queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     showToast(note ? "Note de relance enregistrée" : "Note de relance retirée");
   }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
+
+  /* ── Cellules du tableau : étape et visite ─────────────────────────
+     Étape : même handler que le kanban ; « Retiré » passe par la
+     confirmation existante (pendingDrop → ConfirmModal), jamais direct. */
+  const handleChangeEtapeTableau = useCallback((card: PipelineKanbanCard, etape: RecruitmentStatus) => {
+    if (isFreeDemoMode) { teaseUpgrade(); return; }
+    if (etape === "retire") {
+      setPendingDrop({ cardId: card.id, from: card.status, to: "retire" });
+      return;
+    }
+    void handleStatusChange(card.id, etape);
+  }, [isFreeDemoMode, teaseUpgrade, handleStatusChange]);
+
+  /* Visite : regleVisite. Une date posée sur une étape ANTÉRIEURE à « Visite
+     planifiée » y fait passer l'athlète (même écriture qu'un changement
+     d'étape : stage + moved_at) ; sur Engagé / Lettre signée l'étape ne bouge
+     pas. Une date vidée n'enlève que la date. L'heure d'une visite existante
+     est conservée. */
+  const handleSaveVisiteTableau = useCallback(async (card: PipelineKanbanCard, date: string | null) => {
+    if (isFreeDemoMode) { teaseUpgrade(); return; }
+    const visitAt = date ? inputsToIso(date, isoToInputs(card.visit_at ?? null).time) : null;
+    const avance = !!visitAt && !etapePorteVisite(card.status);
+    const maintenant = new Date().toISOString();
+    const payload: Record<string, unknown> = { visit_at: visitAt, updated_at: maintenant };
+    if (avance) { payload.stage = "VISITE_PLANIFIEE"; payload.moved_at = maintenant; }
+    const supabase = createClient();
+    const { error } = await supabase.from("recruiter_pipeline").update(payload).eq("id", card.pipeline_id);
+    if (error) { showToast("Date de visite non enregistrée"); return; }
+    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+    showToast(!visitAt ? "Date de visite retirée" : avance ? "Visite planifiée — étape mise à jour" : "Date de visite mise à jour");
+  }, [isFreeDemoMode, teaseUpgrade, showToast, queryClient]);
 
   const openSlideOver = useCallback((card: PipelineKanbanCard) => {
     const fresh = cards.find((c) => c.id === card.id) || card;
@@ -2071,6 +2310,9 @@ function PipelinePageContent() {
           isFreeDemoMode={isFreeDemoMode}
           onTease={teaseUpgrade}
           onSaveRelance={handleSaveRelanceDate}
+          onSetGrade={handleSetGrade}
+          onChangeEtape={handleChangeEtapeTableau}
+          onSaveVisite={handleSaveVisiteTableau}
         />
       ) : (<>
       {/* Mobile tab bar */}
