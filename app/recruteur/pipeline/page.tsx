@@ -788,6 +788,27 @@ function CelluleRelance({
   );
 }
 
+/** Clic DANS une cellule éditable mais HORS de son bouton (la marge de la
+ *  case, qui s'éclaire au survol) : il ne doit JAMAIS remonter à la ligne,
+ *  dont le clic ouvre le panneau latéral — sinon les deux se déclenchaient
+ *  (bug relevé par BP le 2026-09-23). On arrête la propagation et on ouvre
+ *  l'édition de la case, comme si le bouton avait été cliqué.
+ *  Un clic sur le bouton lui-même, ou sur le champ en cours d'édition,
+ *  n'arrive pas ici : ils arrêtent la propagation eux-mêmes. */
+function cliquerCelluleEditable(e: React.MouseEvent<HTMLTableCellElement>) {
+  e.stopPropagation();
+  if (e.target !== e.currentTarget) return;
+  e.currentTarget.querySelector<HTMLButtonElement>("button")?.click();
+}
+
+/** Même garde au CLAVIER : la ligne ouvre le panneau sur Entrée
+ *  (onKeyDown du <tr>). Entrée sur le bouton d'une cellule, ou dans son champ
+ *  en cours d'édition, déclenchait l'édition ET le panneau. Les touches d'une
+ *  cellule éditable restent dans la cellule. */
+function arreterToucheCellule(e: React.KeyboardEvent<HTMLTableCellElement>) {
+  e.stopPropagation();
+}
+
 /** Le petit crayon des cellules éditables : il dit que la case se modifie. */
 const CRAYON = <PencilIcon color="#6B7280" size={11} />;
 
@@ -1022,21 +1043,21 @@ function PipelineTable({
                      Mon grade, Étape, Relance, Visite. Aucune fenêtre dédiée. */
                   if (col.cle === "grade") {
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}>
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleGrade card={card} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSetGrade} />
                       </td>
                     );
                   }
                   if (col.cle === "etape") {
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}>
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleEtape card={card} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onChange={onChangeEtape} />
                       </td>
                     );
                   }
                   if (col.cle === "visite") {
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}>
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleVisite card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveVisite} />
                       </td>
                     );
@@ -1045,7 +1066,7 @@ function PipelineTable({
                     /* Relance : éditable SUR PLACE (CelluleRelance) — y compris
                        pour en POSER une sur une ligne qui n'en a pas. */
                     return (
-                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`}>
+                      <td key={col.cle} className={`${cls} hover:bg-white/[0.04]`} onClick={cliquerCelluleEditable} onKeyDown={arreterToucheCellule}>
                         <CelluleRelance card={card} now={now} isFreeDemoMode={isFreeDemoMode} onTease={onTease} onSave={onSaveRelance} />
                       </td>
                     );
