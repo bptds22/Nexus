@@ -1,4 +1,4 @@
--- 20260924190000_users_sport_id_recruteur
+-- 20260924185901_users_sport_id_recruteur (version enregistrée en prod ; écrite 20260924190000)
 --
 -- LOT A du tableau blanc par unité (décision BP 2026-09-24).
 -- Unité = (cégep = users.school_id, sport). Le sport du recruteur était un
@@ -16,7 +16,7 @@
 -- Football 6, Soccer 1, Volleyball 1). Les coachs et parents qui portent un
 -- users.sport ne sont PAS touchés : le concept d'unité est recruteur.
 --
--- Rollback : supabase/rollback/20260924190000_rollback_users_sport_id_recruteur.sql
+-- Rollback : supabase/rollback/20260924185901_rollback_users_sport_id_recruteur.sql
 
 -- ── 1. La colonne ───────────────────────────────────────────────────────────
 alter table public.users

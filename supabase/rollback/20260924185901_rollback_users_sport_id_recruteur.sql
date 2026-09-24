@@ -1,4 +1,4 @@
--- ROLLBACK de 20260924190000_users_sport_id_recruteur
+-- ROLLBACK de 20260924185901_users_sport_id_recruteur
 --
 -- Retire exactement ce que la migration a posé : trigger, fonction, index,
 -- colonne (et sa FK avec elle). users.sport n'a jamais cessé d'être écrit :
