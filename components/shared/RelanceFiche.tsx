@@ -41,8 +41,12 @@ import { triggerHaptic } from "@/lib/haptics";
 
 const SOUS_TITRE_FICHE = "La note de relance se saisit dans Mon processus.";
 
-export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE }: {
+export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, className }: {
   athleteId: string;
+  /** Classes du cadre qui REMPLACENT la marge par défaut (`mt-4`) — la fiche
+   *  web aligne ce bloc sur la carte de visite, dans une grille. Absente →
+   *  rendu inchangé. */
+  className?: string;
   /** Absent → le texte de la fiche athlète. `null` → aucune ligne (le
    *  SlideOver du pipeline : on EST dans Mon processus, la phrase y serait
    *  circulaire). Une chaîne → la remplace. */
@@ -106,7 +110,7 @@ export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE }
   }
 
   return (
-    <div className="mt-4 rounded-2xl border border-[#2D3748] bg-[#1A1D24] p-4">
+    <div className={`rounded-2xl border border-[#2D3748] bg-[#1A1D24] p-4 ${className ?? "mt-4"}`}>
       <div className="flex items-center gap-2 mb-3">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15.5 14" />

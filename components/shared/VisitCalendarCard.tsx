@@ -22,6 +22,11 @@ interface Props {
   sport?: string;
   /** École de l'athlète — devient LOCATION dans l'événement. */
   schoolName?: string;
+  /** Mise en forme du cadre. Fournie, elle REMPLACE le défaut
+   *  (`rounded-lg px-4 py-3`) au lieu de s'y ajouter : deux arrondis ou deux
+   *  paddings dans la même chaîne, c'est l'ordre du CSS qui tranche, pas nous.
+   *  Absente → rendu inchangé (pipeline, mobile). */
+  className?: string;
 }
 
 /* L'app est FR-CA et le produit est québécois : on formate dans le
@@ -42,7 +47,7 @@ function hasTimeComponent(d: Date): boolean {
   return d.getHours() !== 0 || d.getMinutes() !== 0;
 }
 
-export default function VisitCalendarCard({ visitAtIso, athleteName, sport, schoolName }: Props) {
+export default function VisitCalendarCard({ visitAtIso, athleteName, sport, schoolName, className }: Props) {
   const start = new Date(visitAtIso);
   if (Number.isNaN(start.getTime())) return null;
 
@@ -113,7 +118,7 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
   };
 
   return (
-    <div className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-4 py-3">
+    <div className={`bg-[#1A1D24] border border-[#2D3748] ${className ?? "rounded-lg px-4 py-3"}`}>
       <div className="flex items-center gap-2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" aria-hidden>
           <rect x="3" y="4" width="18" height="18" rx="2" />
