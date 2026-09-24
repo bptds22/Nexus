@@ -25,6 +25,15 @@ interface Props {
   onStatusChange: (newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) => void;
   onComposeIntro?: () => void;
   onCelebrate?: () => void;
+  /** Contenu du déclencheur. Absent → le bouton « Changer le statut ». La
+   *  fiche web passe la VALEUR du statut : elle devient elle-même le
+   *  déclencheur (décision BP 2026-09-23 : un seul endroit, pas deux). */
+  declencheur?: React.ReactNode;
+  /** Classes du déclencheur quand `declencheur` est fourni (elles REMPLACENT
+   *  le style du bouton par défaut). */
+  classeDeclencheur?: string;
+  /** Menu aligné à GAUCHE du déclencheur au lieu de la droite. */
+  menuAGauche?: boolean;
 }
 
 /* combineVisitInstant vit désormais dans lib/pipeline/visitInstant.ts
@@ -37,6 +46,9 @@ export default function StatusChangeDropdown({
   onStatusChange,
   onComposeIntro,
   onCelebrate,
+  declencheur,
+  classeDeclencheur,
+  menuAGauche = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [showRetireReason, setShowRetireReason] = useState(false);
@@ -122,16 +134,24 @@ export default function StatusChangeDropdown({
       <button
         type="button"
         onClick={() => { setOpen(!open); setShowRetireReason(false); setShowVisitDate(false); }}
-        className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border border-[#2D3748] bg-[#13151a] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={declencheur
+          ? (classeDeclencheur ?? "")
+          : "flex items-center gap-1.5 text-[11px] font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border border-[#2D3748] bg-[#13151a] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"}
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-        Changer le statut
+        {declencheur ?? (
+          <>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+            Changer le statut
+          </>
+        )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-[260px] bg-[#1A1D24] border border-[#2D3748] rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className={`absolute ${menuAGauche ? "left-0" : "right-0"} top-full mt-1 w-[260px] bg-[#1A1D24] border border-[#2D3748] rounded-xl shadow-2xl z-50 overflow-hidden`}>
           {/* Status options */}
           {!showRetireReason && !showVisitDate && (
             <div className="py-1">

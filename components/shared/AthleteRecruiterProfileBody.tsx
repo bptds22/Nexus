@@ -1904,14 +1904,41 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               {!isPreview && (
                 <div className="bg-[#111317] rounded-lg px-4 py-2">
                   <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Mon statut</span>
-                  {myPipelineStage ? (
-                    <span className="text-[12px] font-bold text-white uppercase tracking-wider">
-                      {({
-                        IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion",
-                        VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée",
-                      } as Record<string, string>)[myPipelineStage.toUpperCase()] || myPipelineStage.replace(/_/g, " ")}
-                    </span>
-                  ) : tier === "free" ? (
+                  {myPipelineStage ? (() => {
+                    const libelleStatut = ({
+                      IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion",
+                      VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée",
+                    } as Record<string, string>)[myPipelineStage.toUpperCase()] || myPipelineStage.replace(/_/g, " ");
+                    /* LA VALEUR EST LE BOUTON (décision BP 2026-09-23) : un clic
+                       sur le statut ouvre le choix des étapes. L'ancien bouton
+                       « Changer le statut », séparé sous la rangée, est retiré —
+                       un seul endroit, pas deux. Même gate qu'avant : palier
+                       Pro (canUsePipeline) et stage connu ; sinon, valeur en
+                       lecture seule. */
+                    if (!canUsePipeline || pipelineStatus === "none") {
+                      return <span className="text-[12px] font-bold text-white uppercase tracking-wider">{libelleStatut}</span>;
+                    }
+                    return (
+                      <StatusChangeDropdown
+                        currentStatus={pipelineStatus}
+                        athleteId={id}
+                        hasExistingThread={false}
+                        onStatusChange={handleStatusChange}
+                        onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
+                        onCelebrate={() => setShowCelebration(true)}
+                        menuAGauche
+                        classeDeclencheur="group inline-flex items-center gap-1.5 text-[12px] font-bold text-white uppercase tracking-wider hover:text-[#E63946] transition-colors"
+                        declencheur={
+                          <>
+                            {libelleStatut}
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-[#6b7280] group-hover:text-[#E63946] transition-colors" aria-hidden>
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </>
+                        }
+                      />
+                    );
+                  })() : tier === "free" ? (
                     <button
                       type="button"
                       onClick={() => { setUpgradeFeatureTitle("Le processus de recrutement"); setShowUpgradeModal(true); }}
@@ -1953,22 +1980,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
             </div>
 
-            {/* « Changer le statut » — à sa place d'origine, dans l'en-tête sous
-                le nom (retour BP 2026-09-23, 2e passe). Conséquence connue et
-                acceptée : sa présence (athlète dans le processus) décale le
-                bloc taille/poids/badges d'une ligne. */}
-            {!isPreview && canUsePipeline && pipelineStatus !== "none" && (
-              <div className="flex items-center gap-3">
-                <StatusChangeDropdown
-                  currentStatus={pipelineStatus}
-                  athleteId={id}
-                  hasExistingThread={false}
-                  onStatusChange={handleStatusChange}
-                  onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
-                  onCelebrate={() => setShowCelebration(true)}
-                />
-              </div>
-            )}
 
             {/* Profil Athlète */}
             <div>
