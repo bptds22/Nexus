@@ -21,6 +21,10 @@ const PIPELINE_STATUSES: RecruitmentStatus[] = [
   "identifie", "contacte", "en_discussion", "visite_planifiee", "engage", "lettre_signee",
 ];
 
+/** Opacité du fond rouge (#E63946) d'une étape NON VIDE, dans l'ordre de
+ *  PIPELINE_STATUSES : de 6 % (Identifié) à 60 % (Lettre signée). */
+const FOND_PAR_ETAPE = [0.06, 0.12, 0.2, 0.3, 0.42, 0.6];
+
 export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record<string, number> }) {
   const counts = (pipelineCounts || {}) as Record<RecruitmentStatus, number>;
   const totalActive = PIPELINE_STATUSES.reduce((s, k) => s + (counts[k] || 0), 0);
@@ -31,7 +35,7 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
       <section className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.04] shadow-[inset_4px_0_0_#E63946] p-5 pl-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-head font-bold text-[15px] tracking-[0.15em] uppercase text-white">Mon processus de recrutement</h2>
-          <Link href="/recruteur/pipeline" className="text-[12px] font-bold text-[#E63946] hover:text-[#60A5FA] transition-colors flex items-center gap-1">
+          <Link href="/recruteur/pipeline" className="text-[12px] font-bold text-[#E63946] hover:text-white transition-colors flex items-center gap-1">
             Voir tout
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
@@ -44,30 +48,23 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
           {PIPELINE_STATUSES.map((status, i) => {
             const cfg = getStatusConfig(status);
             const count = counts[status] || 0;
-            const isCommitment = cfg.phase === "commitment";
             const isActive = count > 0;
 
-            // Couleurs — relevées le 2026-09-23 (retour BP : « trop pâle, peu
-            // lisible » depuis que le bloc est sur fond rouge léger). Le
-            // principe ne change pas : les étapes d'engagement restent
-            // rouges, les étapes automatiques grises, et une étape VIDE reste
-            // en retrait d'une pleine — mais un retrait LISIBLE, plus un
-            // effacement. Aucun niveau ne descend sous 70 % d'opacité.
-            // - Commitment stages (en_discussion, visite, engage, lettre_signee): rouge
-            // - Auto stages (identifie, contacte): blanc cassé actif, gris clair vide
-            const iconColor = isCommitment
-              ? (isActive ? "#E63946" : "rgba(230,57,70,0.75)")
-              : (isActive ? "#FFFFFF" : "#9CA3AF");
-            const numberColor = iconColor;
-            const labelColor = isCommitment
-              ? (isActive ? "#F87171" : "rgba(248,113,113,0.8)")
-              : (isActive ? "#D1D5DB" : "#9CA3AF");
-            const borderColor = isCommitment
-              ? (isActive ? "rgba(230,57,70,0.5)" : "rgba(230,57,70,0.3)")
-              : (isActive ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.12)");
-            const background = isCommitment
-              ? (isActive ? "rgba(230,57,70,0.12)" : "rgba(17,19,23,0.35)")
-              : (isActive ? "rgba(255,255,255,0.06)" : "rgba(17,19,23,0.35)");
+            // PALETTE B (décision BP 2026-09-23) : UN SEUL ROUGE, dont le fond
+            // s'intensifie de gauche à droite avec l'avancement ; texte BLANC
+            // partout. L'entonnoir « chauffe » vers la signature.
+            // - Étape AVEC athlètes : fond #E63946 à FOND_PAR_ETAPE[i], bordure
+            //   rouge pleine, chiffre / icône / libellé blancs.
+            // - Étape VIDE : pas de fond, contour rouge pointillé, texte blanc
+            //   à 50 % — en retrait, jamais effacée.
+            const fond = FOND_PAR_ETAPE[i] ?? 0.3;
+            const texte = isActive ? "#FFFFFF" : "rgba(255,255,255,0.5)";
+            const iconColor = texte;
+            const numberColor = texte;
+            const labelColor = texte;
+            const borderColor = isActive ? "rgba(230,57,70,0.85)" : "rgba(230,57,70,0.45)";
+            const background = isActive ? `rgba(230,57,70,${fond})` : "transparent";
+            const borderStyle = isActive ? "solid" : "dashed";
 
             return (
               /* Plus un lien : `?stage=` n'était lu par aucune page (web ni
@@ -76,7 +73,7 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
               <div
                 key={status}
                 className="relative rounded-lg border p-3 text-center"
-                style={{ borderColor, background }}
+                style={{ borderColor, background, borderStyle }}
               >
                 {/* Connector arrow between cards (hidden on first) */}
                 {i > 0 && (
