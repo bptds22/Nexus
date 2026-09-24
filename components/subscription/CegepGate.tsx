@@ -2,6 +2,7 @@
 
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import UpgradePlaceholder from "./UpgradePlaceholder";
+import GateChargement from "./GateChargement";
 
 /* ═══════════════════════════════════════════════════════════════
    CegepGate — wraps CÉGEP management pages.
@@ -18,7 +19,8 @@ import UpgradePlaceholder from "./UpgradePlaceholder";
 export default function CegepGate({ children }: { children: React.ReactNode }) {
   const { tier, isSchoolAdmin, loading } = useSubscription();
 
-  if (loading) return null;
+  // Forfait pas encore connu : on le DIT, au lieu d'une page vide.
+  if (loading) return <GateChargement />;
 
   const hasAccess = isSchoolAdmin || tier === "all_star";
 
