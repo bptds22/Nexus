@@ -44,6 +44,8 @@
    ligne — c'était la condition posée à l'ouverture du lot.
 ═══════════════════════════════════════════════════════════════ */
 
+import { etapePorteVisite } from "@/lib/pipeline/regleVisite";
+
 export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region";
 
 /** Sentinelle « Non renseigné ». Encadrée de doubles tirets bas : aucune
@@ -146,11 +148,13 @@ export function estRelanceAFaire(c: Pick<FilterablePipelineCard, "next_action_at
   return !!c.next_action_at && c.next_action_at.slice(0, 10) <= todayKey();
 }
 
-/** « Visites à venir » : visite planifiée dont la date est aujourd'hui ou
- *  plus tard (jour local). Une visite déjà passée, ou sans date, n'est pas
- *  « à venir » — c'est ce que l'ancien compteur (étape seule) confondait. */
+/** « Visites à venir » : visite dont la date est aujourd'hui ou plus tard
+ *  (jour local), sur une étape qui PORTE une visite — de « Visite planifiée »
+ *  à « Lettre signée » depuis le 2026-09-23 (regleVisite : une visite
+ *  survit à l'engagement). Une visite passée, ou sans date, n'est pas « à
+ *  venir » — c'est ce que l'ancien compteur (étape seule) confondait. */
 export function estVisiteAVenir(c: Pick<FilterablePipelineCard, "status" | "visit_at">): boolean {
-  if (c.status !== "visite_planifiee" || !c.visit_at) return false;
+  if (!c.status || !etapePorteVisite(c.status) || !c.visit_at) return false;
   const d = new Date(c.visit_at);
   if (Number.isNaN(d.getTime())) return false;
   const jour = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

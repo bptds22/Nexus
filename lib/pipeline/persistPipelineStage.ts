@@ -16,9 +16,10 @@
    - `none` n'est pas un stage → no-op.
    - upsert sur la contrainte unique (recruiter_id, athlete_id) : couvre
      d'un coup la row absente (INSERT) et la row existante (UPDATE).
-   - visit_at n'est porté QUE par VISITE_PLANIFIEE. Tout autre stage
-     l'efface (NULL) — sinon une date de visite survivrait à un passage
-     vers « Engagé » et on afficherait un rendez-vous fantôme.
+   - visit_at suit lib/pipeline/regleVisite.ts (décision BP 2026-09-23) :
+     il survit de « Visite planifiée » à « Lettre signée » et n'est effacé
+     que si l'étape redescend SOUS « Visite planifiée ». (Avant : porté par
+     VISITE_PLANIFIEE seulement, effacé en passant à « Engagé ».)
    - RLS : INSERT/UPDATE exigent user_has_pro() (tier pro | all_star).
      Un recruteur Free se fait refuser par Postgres → on renvoie
      { ok: false, reason: "pro_required" } pour un toast propre, pas un
@@ -26,6 +27,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase/client";
+import { champVisitePourEtape, etapePorteVisite } from "@/lib/pipeline/regleVisite";
 
 /** Stages acceptés par chk_recruiter_pipeline_stage. */
 const DB_STAGES = [
@@ -53,7 +55,8 @@ export interface PersistStageInput {
   athleteId: string;
   /** Statut UI, lowercase (RecruitmentStatus). */
   status: string;
-  /** Instant ISO complet (date + heure éventuelle). Ignoré hors VISITE_PLANIFIEE. */
+  /** Instant ISO complet (date + heure éventuelle). Écrit seulement à partir
+   *  de « Visite planifiée » ; absent → la date existante n'est pas touchée. */
   visitAtIso?: string;
 }
 
@@ -86,7 +89,6 @@ export async function persistPipelineStage(
     return { ok: false, reason: "invalid_stage" };
   }
 
-  const isVisit = stage === "VISITE_PLANIFIEE";
 
   const { error } = await supabase
     .from("recruiter_pipeline")
@@ -97,8 +99,10 @@ export async function persistPipelineStage(
         stage,
         moved_at: now,
         updated_at: now,
-        // Porté par VISITE_PLANIFIEE uniquement ; effacé partout ailleurs.
-        visit_at: isVisit ? (visitAtIso ?? null) : null,
+        // regleVisite : effacé sous « Visite planifiée », sinon la date saisie
+        // ou — clé absente — la date existante (PostgREST ne touche pas une
+        // colonne absente du upsert).
+        ...champVisitePourEtape(stage, visitAtIso),
       },
       { onConflict: "recruiter_id,athlete_id" },
     );
@@ -109,5 +113,5 @@ export async function persistPipelineStage(
       : { ok: false, reason: "failed", message: error.message };
   }
 
-  return { ok: true, cleared: !isVisit };
+  return { ok: true, cleared: !etapePorteVisite(stage) };
 }

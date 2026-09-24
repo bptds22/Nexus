@@ -27,6 +27,7 @@ import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdo
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import RelanceFiche from "@/components/shared/RelanceFiche";
 import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
+import { etapePorteVisite, visiteApresChangementEtape } from "@/lib/pipeline/regleVisite";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
@@ -1686,7 +1687,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) {
     const prevStatus = pipelineStatus;
     const prevVisitAt = visitAt;
-    const nextVisitAt = newStatus === "visite_planifiee" ? (extra?.visitDate ?? null) : null;
+    // regleVisite : la date survit à Engagé / Lettre signée, disparaît sous
+    // « Visite planifiée ».
+    const nextVisitAt = visiteApresChangementEtape(newStatus, extra?.visitDate, prevVisitAt);
 
     setPipelineStatus(newStatus);
     setVisitAt(nextVisitAt);
@@ -2038,7 +2041,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {!isPreview && canUsePipeline && myPipelineStage && (
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
             <RelanceFiche athleteId={id} className="h-full" />
-            {pipelineStatus === "visite_planifiee" && visitAt && (
+            {etapePorteVisite(pipelineStatus) && visitAt && (
               <VisitCalendarCard
                 visitAtIso={visitAt}
                 athleteName={`${a.firstName} ${a.lastName}`}
