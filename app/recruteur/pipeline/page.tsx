@@ -1815,7 +1815,10 @@ function PipelinePageContent() {
         COLONNES_TABLEAU.map((c) => c.libelle),
         sortedCards.map((card) => COLONNES_TABLEAU.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n")))),
       );
-      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      // UTF-16LE + BOM + tabulation (lib/export/csv) : le seul format texte
+      // qu’Excel ouvre en colonnes et avec les accents sur un Windows français
+      // comme anglais (testé dans Excel 16, 2026-09-24).
+      const url = URL.createObjectURL(new Blob([csv as BlobPart], { type: "text/csv;charset=utf-16le" }));
       const lien = document.createElement("a");
       lien.href = url;
       lien.download = `processus-recrutement-${dateLocale(new Date().toISOString())}.csv`;
