@@ -84,6 +84,10 @@ export interface PipelineKanbanCard {
   /** Sport de l'unité du dossier — sert au retrait d'unité quand l'admin
    *  cégep regarde un autre sport que le sien. */
   unite_sport_id?: string | null;
+  /** Division de l'ÉQUIPE de l'athlète (teams.division, comme la Recherche).
+   *  `null` = pas d'équipe ou équipe sans division. Le champ `division`
+   *  ci-dessus est un reliquat des fixtures (toujours « D1 ») : ne pas le lire. */
+  division_equipe?: string | null;
 }
 
 export const KANBAN_COLUMNS: {

@@ -12,6 +12,7 @@ import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { trierTableau, triApresClic, triVersMode, MODE_VERS_TRI, type TriTableau } from "@/lib/pipeline/triTableau";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import {
   sortPipelineCards,
@@ -597,15 +598,9 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
    Option retenue par BP plutôt qu'une migration de la RPC. Conséquence : un
    athlète qui n'a QU'UN lien Hudl s'affiche « — » ici ; la fiche le montre. */
 
-/** Colonnes dont l'en-tête pilote un tri EXISTANT (sortPipelineCards). Les
- *  autres ne sont pas triables : pas de mode de tri inventé pour le tableau,
- *  le menu « Trier » et les en-têtes restent un seul et même état. */
-const TRI_PAR_COLONNE: Partial<Record<string, PipelineSortMode>> = {
-  nom: "name_asc",
-  cote: "rating_desc",
-  grade: "grade_desc",
-  relance: "next_action_asc",
-};
+/* Tri PAR EN-TÊTE sur toutes les colonnes (décision BP 2026-09-24) :
+   lib/pipeline/triTableau. Les modes du menu « Trier » qui ont leur colonne
+   (Nom, Cote, Grade, Relance, Promotion) restent synchronisés avec l'en-tête. */
 
 /* TROIS BLOCS (retour BP 2026-09-23) : qui est le joueur, ce qu'il vaut,
    où j'en suis avec lui. Un bloc = un titre au-dessus et un filet vertical
@@ -621,10 +616,14 @@ const BLOCS_TABLEAU: { cle: BlocTableau; libelle: string }[] = [
 
 const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = [
   /* Ordre fixé par BP le 2026-09-23 (2e passe) — ne pas « ranger ». */
+  /* Bloc Identification réordonné par BP le 2026-09-24 : Nom · # · Position ·
+     Promotion · École/Club · Division. Évaluation et Suivi inchangés. */
   { cle: "nom", libelle: "Nom", bloc: "identification" },
   { cle: "numero", libelle: "#", bloc: "identification" },
-  { cle: "ecole", libelle: "École / Club", bloc: "identification" },
   { cle: "position", libelle: "Position", bloc: "identification" },
+  { cle: "promotion", libelle: "Promotion", bloc: "identification" },
+  { cle: "ecole", libelle: "École / Club", bloc: "identification" },
+  { cle: "division", libelle: "Division", bloc: "identification" },
   { cle: "taille", libelle: "Taille", bloc: "evaluation" },
   { cle: "poids", libelle: "Poids", bloc: "evaluation" },
   { cle: "cote", libelle: "Cote coach", bloc: "evaluation" },
@@ -681,7 +680,7 @@ const VIDE = <span className="text-[#4a4d56]">—</span>;
    Identité masquée : `full_name` vaut déjà « Identité réservée » et le
    numéro est vide — l'export ne sort que ce que l'écran montre. */
 const LARGEUR_EXPORT: Record<string, number> = {
-  nom: 24, numero: 5, ecole: 32, position: 10, taille: 8, poids: 10, cote: 11,
+  nom: 24, numero: 5, position: 10, promotion: 11, ecole: 32, division: 10, taille: 8, poids: 10, cote: 11,
   grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70,
 };
 
@@ -692,6 +691,8 @@ function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): Cel
     case "numero": return texte(card.jersey);
     case "ecole": return texte(card.noTeam ? "Ligue civile" : card.school);
     case "position": return texte(card.position);
+    case "promotion": return card.graduation_year > 0 ? { t: "nombre", v: card.graduation_year } : null;
+    case "division": return texte(card.division_equipe);
     case "taille": return texte(formatTaille(card));
     case "poids": return texte(formatPoids(card));
     case "cote": return aUneCote(card.coach_rating) ? { t: "nombre", v: card.coach_rating, format: "0.0" } : null;
@@ -739,6 +740,12 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
       return card.position
         ? <span className="inline-flex items-center px-2 py-0.5 rounded bg-white/[0.06] text-[12px] font-bold uppercase tracking-wider text-white">{card.position}</span>
         : VIDE;
+    case "promotion":
+      return card.graduation_year > 0 ? <span className="text-[#e0e0e0] tabular-nums">{card.graduation_year}</span> : VIDE;
+    case "division":
+      /* Division de l'ÉQUIPE (teams.division, comme la Recherche). Pas
+         d'équipe, ou équipe sans division : « — ». */
+      return card.division_equipe ? <span className="text-[#e0e0e0]">{card.division_equipe}</span> : VIDE;
     case "ecole":
       return card.noTeam
         ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Ligue Civile</span>
@@ -1023,8 +1030,8 @@ const LARGEUR_MIN: Partial<Record<string, string>> = {
 function PipelineTable({
   cards,
   now,
-  sortBy,
-  onSort,
+  tri,
+  onTri,
   onRowClick,
   isFreeDemoMode,
   onTease,
@@ -1035,8 +1042,9 @@ function PipelineTable({
 }: {
   cards: PipelineKanbanCard[];
   now: number;
-  sortBy: PipelineSortMode;
-  onSort: (mode: PipelineSortMode) => void;
+  /** Tri d'en-tête actif (null = ordre du menu « Trier »). */
+  tri: TriTableau | null;
+  onTri: (cle: string) => void;
   onRowClick: (card: PipelineKanbanCard) => void;
   isFreeDemoMode: boolean;
   onTease: () => void;
@@ -1065,26 +1073,23 @@ function PipelineTable({
           </tr>
           <tr className="border-b border-[#2D3748]">
             {COLONNES_TABLEAU.map((col) => {
-              const mode = TRI_PAR_COLONNE[col.cle];
-              const actif = mode !== undefined && sortBy === mode;
-              const fige = col.cle === "nom" ? "sticky left-0 z-[1] bg-[#1A1D24] shadow-[1px_0_0_#2D3748]" : "";
+              const actif = tri?.cle === col.cle;
+              const sens = actif ? tri!.sens : null;
+              const fige = col.cle === "nom" ? "sticky left-0 z-[2] bg-[#1A1D24] shadow-[1px_0_0_#2D3748]" : "";
               const base = `text-left align-bottom px-4 pt-1 pb-3 text-[12px] leading-tight font-bold uppercase tracking-wide whitespace-nowrap ${filet(col.cle)} ${fige}`;
-              if (!mode) {
-                return <th key={col.cle} scope="col" className={`${base} text-[#6b7280]`}>{col.libelle}</th>;
-              }
               return (
-                <th key={col.cle} scope="col" className={base} aria-sort={actif ? "ascending" : "none"}>
-                  {/* Re-cliquer l'en-tête actif rend le tri par défaut : on ne
-                      reste jamais coincé dans un tri choisi par mégarde. */}
+                <th key={col.cle} scope="col" className={base} aria-sort={sens === "asc" ? "ascending" : sens === "desc" ? "descending" : "none"}>
+                  {/* Comme Excel : un clic trie en croissant, un second en
+                      décroissant. La flèche dit le sens de l'en-tête actif. */}
                   <button
                     type="button"
-                    onClick={() => onSort(actif ? DEFAULT_PIPELINE_SORT : mode)}
+                    onClick={() => onTri(col.cle)}
                     className={`inline-flex items-center gap-1 uppercase tracking-wide transition-colors ${actif ? "text-white" : "text-[#6b7280] hover:text-[#9CA3AF]"}`}
-                    title={actif ? "Revenir au tri par dernière activité" : `Trier : ${PIPELINE_SORT_OPTIONS.find((o) => o.value === mode)?.label}`}
+                    title={`Trier par ${col.libelle.toLowerCase()} — ${sens === "asc" ? "décroissant au prochain clic" : "croissant"}`}
                   >
                     {col.libelle}
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className={actif ? "opacity-100" : "opacity-30"} aria-hidden>
-                      <path d="M6 9l6 6 6-6" />
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className={actif ? "opacity-100" : "opacity-0"} aria-hidden>
+                      {sens === "desc" ? <path d="M6 9l6 6 6-6" /> : <path d="M6 15l6-6 6 6" />}
                     </svg>
                   </button>
                 </th>
@@ -1361,8 +1366,10 @@ function SlideOver({
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: currentCol?.phase === "commitment" ? "rgba(230,57,70,0.25)" : "rgba(107,114,128,0.25)" }}>{card.sport}</span>
               <span className="text-[13px] text-[#9CA3AF]">{card.position}</span>
-              <span className="text-[#2D3748]">·</span>
-              <span className="text-[13px] text-[#9CA3AF]">{card.division}</span>
+              {card.division_equipe && <>
+                <span className="text-[#2D3748]">·</span>
+                <span className="text-[13px] text-[#9CA3AF]">{card.division_equipe}</span>
+              </>}
             </div>
             {card.noTeam ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mt-1">
@@ -1796,6 +1803,21 @@ function PipelinePageContent() {
   const [sortBy, setSortBy] = useState<PipelineSortMode>(() =>
     searchParams.get("filtre") === FILTRE_PIPELINE_URL.relances ? "next_action_asc" : DEFAULT_PIPELINE_SORT,
   );
+  /* Tri PAR EN-TÊTE de la vue tableau (décision BP 2026-09-24). Un seul état
+     avec le menu « Trier » quand le mode existe (triTableau.MODE_VERS_TRI) ;
+     sinon, un tri de tableau seulement — le kanban garde l'ordre du menu. */
+  const [triTab, setTriTab] = useState<TriTableau | null>(() =>
+    searchParams.get("filtre") === FILTRE_PIPELINE_URL.relances ? MODE_VERS_TRI.next_action_asc ?? null : null,
+  );
+  const choisirModeMenu = useCallback((mode: PipelineSortMode) => {
+    setSortBy(mode);
+    setTriTab(MODE_VERS_TRI[mode] ?? null);
+  }, []);
+  const cliquerEnTete = useCallback((cle: string) => {
+    const suivant = triApresClic(triTab, cle);
+    setTriTab(suivant);
+    setSortBy(triVersMode(suivant) ?? DEFAULT_PIPELINE_SORT);
+  }, [triTab]);
   const now = useClientNow();
 
   /* Kanban ⇄ tableau (Lot A). Préférence d'AFFICHAGE : localStorage, comme
@@ -2104,6 +2126,8 @@ function PipelinePageContent() {
   );
 
   const nActiveFilters = activeFilterCount(filters, extra);
+  // Tri d'en-tête sans mode équivalent dans le menu : tableau seulement.
+  const triColonneSeule = vue === "tableau" && !!triTab && !triVersMode(triTab);
 
   /* LA COUCHE DE TRI, qui n'existait pas côté web (Lot 2). Les colonnes
      rendaient jusqu'ici l'ordre brut de la requête (`moved_at desc`), et les
@@ -2115,6 +2139,14 @@ function PipelinePageContent() {
     () => sortPipelineCards(filteredCards, sortBy),
     [filteredCards, sortBy],
   );
+  /* Ordre du TABLEAU : l'en-tête actif s'il y en a un, sinon le menu. Tri
+     client sur le jeu complet affiché (pas de pagination). */
+  const lignesTableau = useMemo(
+    () => (triTab ? trierTableau(filteredCards, triTab) : sortedCards),
+    [filteredCards, triTab, sortedCards],
+  );
+  // L'export suit l'ordre de la vue affichée.
+  const lignesExport = vue === "tableau" ? lignesTableau : sortedCards;
 
   /* ── Export Excel (lot B) ───────────────────────────────────────
      Exporte les athlètes AFFICHÉS (filtres, recherche et tri en cours).
@@ -2129,7 +2161,7 @@ function PipelinePageContent() {
   const [exportEnCours, setExportEnCours] = useState(false);
   const handleExportExcel = useCallback(async () => {
     if (isFreeDemoMode) { teaseUpgrade(); return; }
-    if (exportEnCours || sortedCards.length === 0) return;
+    if (exportEnCours || lignesExport.length === 0) return;
     setExportEnCours(true);
     try {
       const supabase = createClient();
@@ -2138,7 +2170,7 @@ function PipelinePageContent() {
 
       /* Tableau blanc (lot B2) : les notes de l'UNITÉ (la RLS les rend à un
          Pro), chacune signée : « date — Auteur — texte ». */
-      const ids = sortedCards.map((c) => c.id);
+      const ids = lignesExport.map((c) => c.id);
       const [{ data: lignesNotes, error: errNotes }, { data: auteurs }] = await Promise.all([
         supabase
           .from("recruiter_notes")
@@ -2157,7 +2189,7 @@ function PipelinePageContent() {
         (notesPar[n.athlete_id] ??= []).push(`${dateLocale(n.created_at)} — ${nomPar[n.recruiter_id] ?? "Recruteur"} — ${n.content}`);
       }
 
-      const { error: errJournal } = await supabase.from("pipeline_exports").insert({ nb_lignes: sortedCards.length });
+      const { error: errJournal } = await supabase.from("pipeline_exports").insert({ nb_lignes: lignesExport.length });
       if (errJournal) { showToast("Export annulé : il n'a pas pu être journalisé"); return; }
 
       // Chargé À LA DEMANDE : ni lib/export/xlsx ni jszip ne pèsent sur la page.
@@ -2165,7 +2197,7 @@ function PipelinePageContent() {
       const octets = await construireXlsx(
         "Mon processus",
         COLONNES_TABLEAU.map((c) => ({ titre: c.libelle, largeur: LARGEUR_EXPORT[c.cle] ?? 14 })),
-        sortedCards.map((card) => COLONNES_TABLEAU.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n")))),
+        lignesExport.map((card) => COLONNES_TABLEAU.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n")))),
       );
       const url = URL.createObjectURL(new Blob([octets as BlobPart], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -2177,11 +2209,11 @@ function PipelinePageContent() {
       lien.click();
       lien.remove();
       URL.revokeObjectURL(url);
-      showToast(`${sortedCards.length} athlète${sortedCards.length > 1 ? "s" : ""} exporté${sortedCards.length > 1 ? "s" : ""}`);
+      showToast(`${lignesExport.length} athlète${lignesExport.length > 1 ? "s" : ""} exporté${lignesExport.length > 1 ? "s" : ""}`);
     } finally {
       setExportEnCours(false);
     }
-  }, [isFreeDemoMode, teaseUpgrade, exportEnCours, sortedCards, showToast]);
+  }, [isFreeDemoMode, teaseUpgrade, exportEnCours, lignesExport, showToast]);
 
   /* ── DnD Handlers ──────────────────────────────────────────── */
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -2357,20 +2389,27 @@ function PipelinePageContent() {
           {facetLists.length > 0 && <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />}
 
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as PipelineSortMode)}
+            value={triColonneSeule ? "__colonne" : sortBy}
+            onChange={(e) => { if (e.target.value !== "__colonne") choisirModeMenu(e.target.value as PipelineSortMode); }}
             aria-label="Trier les athlètes"
-            className={`nx-filter-select${sortBy !== DEFAULT_PIPELINE_SORT ? " nx-filter-active" : ""}`}
+            className={`nx-filter-select${sortBy !== DEFAULT_PIPELINE_SORT || triColonneSeule ? " nx-filter-active" : ""}`}
           >
+            {/* Tri d'en-tête sans mode équivalent (#, Position, École…) : le
+                menu le dit plutôt que d'afficher un ordre qui n'est pas le bon. */}
+            {triColonneSeule && triTab && (
+              <option value="__colonne" disabled>
+                Trier: {COLONNES_TABLEAU.find((c) => c.cle === triTab.cle)?.libelle} {triTab.sens === "asc" ? "↑" : "↓"}
+              </option>
+            )}
             {PIPELINE_SORT_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>Trier: {opt.label}</option>
             ))}
           </select>
 
-          {(nActiveFilters > 0 || sortBy !== DEFAULT_PIPELINE_SORT) && (
+          {(nActiveFilters > 0 || sortBy !== DEFAULT_PIPELINE_SORT || !!triTab) && (
             <button
               type="button"
-              onClick={() => { setFilters(EMPTY_FILTERS); setSearch(""); setQuick([]); setSortBy(DEFAULT_PIPELINE_SORT); }}
+              onClick={() => { setFilters(EMPTY_FILTERS); setSearch(""); setQuick([]); setSortBy(DEFAULT_PIPELINE_SORT); setTriTab(null); }}
               className="nx-filter-reset flex items-center gap-1.5 text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors ml-1"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -2416,10 +2455,10 @@ function PipelinePageContent() {
 
       {vue === "tableau" ? (
         <PipelineTable
-          cards={sortedCards}
+          cards={lignesTableau}
           now={now}
-          sortBy={sortBy}
-          onSort={setSortBy}
+          tri={triTab}
+          onTri={cliquerEnTete}
           onRowClick={openSlideOver}
           isFreeDemoMode={isFreeDemoMode}
           onTease={teaseUpgrade}
