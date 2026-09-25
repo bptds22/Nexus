@@ -547,12 +547,6 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               : <span className="text-[12px] text-[#6b7280]">Pas encore évalué</span>}
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
-          {/* Tableau blanc (lot B2) : qui, dans l'unité, suit cet athlète. */}
-          {card.suivi_par_noms && card.suivi_par_noms.length > 0 && (
-            <p className="mt-1.5 text-[11px] text-[#6b7280] truncate" title={`Suivi par ${card.suivi_par_noms.join(", ")}`}>
-              Suivi par <span className="font-semibold text-[#9CA3AF]">{nomsCourts(card.suivi_par_noms)}</span>
-            </p>
-          )}
         </div>
 
         {/* Footer: Next action / staleness */}
@@ -640,10 +634,6 @@ const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = 
   { cle: "visite", libelle: "Visite", bloc: "suivi" },
   { cle: "video", libelle: "Faits saillants", bloc: "suivi" },
   { cle: "note", libelle: "Note de suivi", bloc: "suivi" },
-  /* Tableau blanc (lot B2) : qui, dans l'unité, suit l'athlète. En fin de
-     bloc pour ne pas déplacer l'ordre fixé par BP. Aussi exporté (« Suivi
-     par », la colonne Auteur de l'export). */
-  { cle: "suivi_par", libelle: "Suivi par", bloc: "suivi" },
 ];
 
 /** Première colonne de chaque bloc : c'est elle qui porte le filet. */
@@ -675,15 +665,6 @@ function formatPoids(card: PipelineKanbanCard): string | null {
 
 const VIDE = <span className="text-[#4a4d56]">—</span>;
 
-/** « Robin A., Rémi C. » — les recruteurs qui suivent l'athlète (tableau
- *  blanc, lot B2). Le nom complet est dans l'infobulle et dans le panneau. */
-function nomsCourts(noms: string[] | undefined): string {
-  return (noms ?? []).map((n) => {
-    const [prenom, ...reste] = n.split(/\s+/);
-    const nom = reste.join(" ");
-    return nom ? `${prenom} ${nom[0]}.` : prenom;
-  }).join(", ");
-}
 
 /* ── Export Excel (lot B, décisions BP 2026-09-24) ─────────────────
    Un vrai classeur .xlsx (lib/export/xlsx) — le CSV tombait en colonne A sur
@@ -701,7 +682,7 @@ function nomsCourts(noms: string[] | undefined): string {
    numéro est vide — l'export ne sort que ce que l'écran montre. */
 const LARGEUR_EXPORT: Record<string, number> = {
   nom: 24, numero: 5, ecole: 32, position: 10, taille: 8, poids: 10, cote: 11,
-  grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70, suivi_par: 28,
+  grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70,
 };
 
 function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): CelluleXlsx {
@@ -724,7 +705,6 @@ function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): Cel
     }
     case "video": return card.has_video ? { t: "texte", v: "Oui" } : null;
     case "note": return texte(notes);
-    case "suivi_par": return texte((card.suivi_par_noms ?? []).join(", "));
     default: return null;
   }
 }
@@ -750,10 +730,7 @@ function formatDateNote(iso: string, now: number): string {
  *  que l'ORDRE vive dans COLONNES_TABLEAU et nulle part ailleurs. */
 function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): React.ReactNode {
   switch (cle) {
-    case "suivi_par":
-      return card.suivi_par_noms && card.suivi_par_noms.length > 0 ? (
-        <span className="text-[#9CA3AF]" title={card.suivi_par_noms.join(", ")}>{nomsCourts(card.suivi_par_noms)}</span>
-      ) : VIDE;
+
     case "nom":
       return <span className={`line-clamp-2 text-[15px] font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>;
     case "numero":
@@ -1289,7 +1266,7 @@ function SlideOver({
   isFreeDemoMode: boolean;
   onTeaseUpgrade: () => void;
   /** Tableau blanc (lot B2) : le panneau montre le dossier de l'UNITÉ —
-   *  notes signées, « Suivi par », grade et relance de l'unité. */
+   *  notes signées, grade et relance de l'unité. */
   modeUnite: boolean;
   /** L'utilisateur courant : « Toi » plutôt que son propre nom, et exclu de
    *  la liste des collègues à la confirmation d'un retrait. */
@@ -1395,14 +1372,7 @@ function SlideOver({
               <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
-            {card.suivi_par && card.suivi_par.length > 0 && (
-              <p className="text-[13px] text-[#6b7280] mt-1">
-                Suivi par{" "}
-                <span className="font-semibold text-[#9CA3AF]">
-                  {card.suivi_par.map((id, i) => (id === moi ? "toi" : card.suivi_par_noms?.[i] ?? "Recruteur")).join(", ")}
-                </span>
-              </p>
-            )}
+
             <div className="flex items-center gap-2 mt-3">{aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
           </div>
           {/* ONGLETS (lot C1, décision BP 2026-09-24) — sous le nom. « Actions »
