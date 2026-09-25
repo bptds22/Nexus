@@ -3,6 +3,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { estCleTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState, type ReactNode } from "react";
 
@@ -121,11 +122,15 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         // reload — l'encart « contact suspendu » disparaîtrait alors que le
         // trigger refuse encore, ou l'inverse. Une règle de ligue se redemande
         // toujours au serveur.
+        // Le TABLEAU BLANC (lot B2) non plus : plusieurs recruteurs l'écrivent
+        // en même temps, et un F5 servait l'écran d'il y a jusqu'à 30 min
+        // (bug du 2026-09-24, lib/queries/tableauBlanc.ts).
         dehydrateOptions: {
           shouldDehydrateQuery: (q) =>
             q.state.status === "success"
             && q.queryKey?.[0] !== "currentUser"
-            && q.queryKey?.[0] !== "athlete-blackout",
+            && q.queryKey?.[0] !== "athlete-blackout"
+            && !estCleTableauBlanc(q.queryKey),
         },
       }}
     >

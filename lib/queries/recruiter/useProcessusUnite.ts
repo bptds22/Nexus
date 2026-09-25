@@ -92,7 +92,9 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
   return useQuery<PipelineData>({
     queryKey: ["pipeline", "unite", userId, sportId, tout],
     enabled: !!userId && options.enabled,
-    staleTime: 60 * 1000,
+    // Tableau PARTAGÉ : toujours périmé d'office — rechargé à chaque
+    // affichage et au retour sur l'onglet (refetchOnWindowFocus, défaut).
+    staleTime: 0,
     queryFn: async (): Promise<PipelineData> => {
       const supabase = createClient();
       const params = { p_sport_id: sportId, p_tout_le_cegep: tout };
@@ -217,7 +219,7 @@ export function useNotesUnite(athleteId: string | null, enabled = true) {
   return useQuery<NoteUnite[]>({
     queryKey: ["pipeline-notes", "unite", userId, athleteId],
     enabled: !!userId && !!athleteId && enabled,
-    staleTime: 30 * 1000,
+    staleTime: 0,
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase
@@ -255,7 +257,7 @@ export function useHistoriqueUnite(athleteId: string | null, enabled = true) {
   return useQuery<GesteUnite[]>({
     queryKey: ["pipeline-historique", userId, athleteId],
     enabled: !!userId && !!athleteId && enabled,
-    staleTime: 30 * 1000,
+    staleTime: 0,
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase

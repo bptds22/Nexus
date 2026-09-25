@@ -26,6 +26,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback } from "react";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { erreurLisible } from "@/lib/athlete/perimetreProtege";
@@ -58,6 +59,10 @@ export async function definirFavori(
     : await supabase.from("recruiter_favorites").delete().eq("recruiter_id", recruteurId).eq("athlete_id", athleteId);
 
   for (const queryKey of CLES_A_INVALIDER) queryClient.invalidateQueries({ queryKey: [...queryKey] });
+  // Un favori AJOUTE aussi l'athlète au processus (trigger fav_insert_to_pipeline)
+  // et se lit dans le journal de l'unité : tout le tableau blanc se recharge
+  // (correctif 2026-09-24 — Mon processus restait sans l'athlète).
+  void invaliderTableauBlanc(queryClient);
 
   if (error && !(veut && error.code === "23505")) {
     // Sérialisé à la main : en WebView, un objet passé à console.error sort en [object Object].

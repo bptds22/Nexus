@@ -1,6 +1,8 @@
 "use client";
 
 import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
+import { useQueryClient } from "@tanstack/react-query";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useState, useEffect } from "react";
 import { useFicheAthleteDonnees } from "@/components/shared/athlete/useFicheAthleteDonnees";
 import {
@@ -314,6 +316,7 @@ function CoachReputationCard({ rep, coachName }: { rep: NonNullable<AthleteProfi
 
 
 export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: AthleteRecruiterProfileBodyProps) {
+  const queryClient = useQueryClient();
   const id = athleteId;
   // Both "preview" and "partner" are non-recruiter viewers; the
   // existing isPreview gates already hide everything that's
@@ -702,6 +705,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
     // Garde « Mon statut » (lu depuis la DB) cohérent avec le dropdown.
     setMyPipelineStage(newStatus === "retire" ? null : newStatus.toUpperCase());
+    // Mon processus, le calendrier et le tableau de bord lisent ce dossier :
+    // sans ceci, ils restaient sur l'ancienne étape (correctif 2026-09-24).
+    void invaliderTableauBlanc(queryClient);
   }
 
   // INSERT into public.reports. type/status forced to DB CHECK-allowed

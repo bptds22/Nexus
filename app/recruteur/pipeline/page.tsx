@@ -12,6 +12,7 @@ import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import {
   sortPipelineCards,
   PIPELINE_SORT_OPTIONS,
@@ -1343,12 +1344,9 @@ function SlideOver({
       .insert({ recruiter_id: user.id, athlete_id: card.id, content: noteText.trim() })
       .select("id, content, created_at")
       .single();
-    queryClient.invalidateQueries({ queryKey: ["pipeline-notes"] });
-    // Colonne « Note de suivi » de la vue tableau (dernière note, lue par
-    // usePipelineCards / useProcessusUnite) : sans ceci elle resterait sur
-    // l'ancienne note. Et l'onglet Historique (NOTE_ADDED).
-    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    queryClient.invalidateQueries({ queryKey: ["pipeline-historique"] });
+    // Toutes les lectures du tableau blanc : la note elle-même, la colonne
+    // « Note de suivi », l'onglet Historique (NOTE_ADDED)…
+    void invaliderTableauBlanc(queryClient);
     setNoteText("");
     setPosting(false);
   };
@@ -1918,10 +1916,10 @@ function PipelinePageContent() {
     if (error) console.error("[pipeline] unite_ecrire_dossier :", error.message);
     return error;
   }, []);
+  // TOUTES les lectures du tableau blanc (correctif 2026-09-24) : processus,
+  // notes, historique, favoris, listes, calendrier, tableau de bord.
   const invaliderProcessus = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    queryClient.invalidateQueries({ queryKey: ["pipeline-historique"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+    void invaliderTableauBlanc(queryClient);
   }, [queryClient]);
 
   // Ex-mega useEffect fetchPipeline (200+ lignes) retiré en iter 5.3b — logique dans usePipelineCards.

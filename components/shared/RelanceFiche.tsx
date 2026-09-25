@@ -36,6 +36,7 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
 
@@ -121,7 +122,7 @@ export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, 
        `next_action_at` : sans invalidation, la carte du kanban et l'encart
        Relances du dashboard gardaient l'ancienne date. Monté depuis le
        SlideOver du pipeline, le kanban est juste derrière. */
-    void queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    void invaliderTableauBlanc(queryClient);
     toast.success({ message: valeur ? "Relance enregistrée" : "Relance effacée" });
   }
 
