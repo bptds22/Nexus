@@ -119,8 +119,9 @@ migration : tout repose sur B1/B2-0.
   (jamais persistées), toutes les écritures appellent `invaliderTableauBlanc`.
 - Mobile 1.4.3 : inchangé (registre §38) — les hooks mobiles
   (`useFavorites`, `useRecruiterLists`, `useFavoriteAthletes`) n'ont pas bougé.
-- **Trou connu, au registre §41** : la policy propriétaire de
-  `recruiter_list_notes` ne vérifie pas la liste.
+- **§41 appliqué en prod (`20260928143738`)** : on n'écrit une note de liste
+  que dans sa liste ou celle de son unité. Reste l'incohérence `unite_update`
+  (déplacer sa note vers une autre unité), au registre §41.
 
 La suite de ce fichier décrit l'état **du 17 septembre** : elle reste exacte
 pour le coach, le parent, l'admin plateforme et les recruteurs sans unité.

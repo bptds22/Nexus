@@ -1372,7 +1372,28 @@ dossier de l'unité VISÉE (ligne existante, journal signé par l'admin et rang�
 dans cette unité) — et décider si un admin peut **ouvrir** un dossier dans un
 sport qu'il ne recrute pas.
 
-## 41. Notes de liste — n'importe quel recruteur peut écrire dans la liste d'une autre unité (préexistant, rendu visible par B1 ; policy à remplacer sur GO séparé)
+## 41. Notes de liste — n'importe quel recruteur pouvait écrire dans la liste d'une autre unité — ✅ APPLIQUÉ EN PROD (version `20260928143738`)
+
+> **Appliqué le 2026-09-28** (GO BP), migration
+> `20260928143738_list_notes_policy_liste`. La policy FOR ALL est remplacée
+> par `list_notes_select / insert / update / delete` ; l'INSERT exige Pro et
+> `liste_ouverte_a_moi(list_id)` (sa liste ou celle de son unité). Contre-
+> vérifié en prod : nouvelle policy en place, ancienne retirée, ACL de la
+> table identique au caractère près, fonction à `{authenticated, postgres,
+> service_role}`. **Identité réelle** : un Pro d'un autre cégep est refusé
+> (42501), l'auteur de la liste (témoin) accepté, tout annulé. Local : 14/14,
+> rollback testé.
+>
+> **Reste ouvert — incohérence, pas une fuite :** la policy `unite_update`
+> (B2-0) laisse un Pro de l'unité **déplacer sa propre note** vers la liste
+> d'une AUTRE unité (`list_id` modifiable ; seule l'unité est figée par
+> `unite_figer`). La note garde l'unité d'origine : le propriétaire de l'autre
+> liste ne la lit pas (prouvé en local, N9b). **À fermer avec le retrait des
+> policies propriétaire, sur GO séparé** — p. ex. figer `list_id` dans
+> `unite_figer`, ou ajouter `liste_ouverte_a_moi(list_id)` au `with check` de
+> `unite_update`.
+
+*Historique — le constat d'origine :*
 
 La policy propriétaire `Recruiters manage their own list notes` (commande ALL)
 n'exige que `recruiter_id = auth.uid()` — **jamais** que la liste soit la
