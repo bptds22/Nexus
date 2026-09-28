@@ -18,6 +18,8 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useListesUnite, useNotesListeUnite } from "@/lib/queries/recruiter/useListesUnite";
+import { lireCartes, versMembreListe, ajouterCarteAListe, retirerCarteDeListe } from "@/lib/cartes/carteProspect";
+import { LegendeProspect, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import { useFavorisUnite } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useAuteursUnite, useNotesUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 
@@ -274,11 +276,14 @@ function CreateListModal({
 
 function AddAthleteModal({
   listName,
+  uniteSportId,
   existingIds,
   onClose,
   onAdd,
 }: {
   listName: string;
+  /** Sport de l'unité de la liste — null : liste personnelle, sans cartes. */
+  uniteSportId: string | null;
   existingIds: Set<string>;
   onClose: () => void;
   onAdd: (athlete: ProspectListAthlete, note: string) => void;
@@ -290,6 +295,30 @@ function AddAthleteModal({
   // depuis les cœurs de toute l'unité, pas seulement les siens.
   const favoris = useFavorisUnite();
   const idsFavoris = useMemo(() => [...favoris.ids].sort().join(","), [favoris.ids]);
+  const { data: currentUser } = useCurrentUser();
+  const monCegep = currentUser?.profile.school_id ?? null;
+
+  /* Les CARTES PROSPECT de l'unité (lot C, retour BP) : une carte s'ajoute
+     à une liste d'unité comme un athlète. La base refuse toute autre liste. */
+  const [cartesDispo, setCartesDispo] = useState<ProspectListAthlete[]>([]);
+  useEffect(() => {
+    if (!uniteSportId || !monCegep) { setCartesDispo([]); return; }
+    let annule = false;
+    void (async () => {
+      const supabase = createClient();
+      try {
+        const [lignes, { data: sport }] = await Promise.all([
+          lireCartes(supabase, { cegepId: monCegep, sportId: uniteSportId }),
+          supabase.from("sports").select("nom").eq("id", uniteSportId).maybeSingle(),
+        ]);
+        if (annule) return;
+        setCartesDispo(lignes.map((l) => versMembreListe(l, (sport?.nom as string | undefined) ?? "")).filter((c) => !existingIds.has(c.id)));
+      } catch (e) {
+        console.error("[listes] cartes prospect :", e instanceof Error ? e.message : String(e));
+      }
+    })();
+    return () => { annule = true; };
+  }, [uniteSportId, monCegep, existingIds]);
 
   useEffect(() => {
     if (favoris.isLoading) return;
@@ -329,14 +358,16 @@ function AddAthleteModal({
   }, [existingIds, idsFavoris, favoris.isLoading]);
 
   const filtered = useMemo(() => {
-    if (search.trim().length < 2) return available;
+    const tous = [...available, ...cartesDispo];
+    if (search.trim().length < 2) return tous;
     const q = search.toLowerCase();
-    return available.filter(a => a.full_name.toLowerCase().includes(q) || a.sport.toLowerCase().includes(q));
-  }, [search, available]);
+    return tous.filter(a => a.full_name.toLowerCase().includes(q) || a.sport.toLowerCase().includes(q));
+  }, [search, available, cartesDispo]);
 
   const handleAdd = (athlete: ProspectListAthlete) => {
     onAdd(athlete, "");
     setAvailable(prev => prev.filter(a => a.id !== athlete.id));
+    setCartesDispo(prev => prev.filter(a => a.id !== athlete.id));
   };
 
   return (
@@ -368,11 +399,12 @@ function AddAthleteModal({
             <p className="text-[13px] text-[#4a4d56] text-center py-8">Chargement...</p>
           ) : filtered.length === 0 ? (
             <p className="text-[13px] text-[#4a4d56] text-center py-8">
-              {search ? "Aucun athlète trouvé" : "Tous les favoris de l'unité sont déjà dans cette liste"}
+              {search ? "Aucun athlète trouvé" : "Tous les favoris et cartes prospect de l'unité sont déjà dans cette liste"}
             </p>
           ) : (
             filtered.map((a) => (
-              <div key={a.id} className="bg-[#13151a] rounded-lg border border-[#2a2d36] p-3">
+              <div key={a.id} className="bg-[#13151a] rounded-lg border border-[#2a2d36] p-3"
+                style={a.prospect ? { backgroundColor: SURFACE_PROSPECT } : undefined} data-prospect={a.prospect ? "1" : undefined}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {(() => {
@@ -398,13 +430,13 @@ function AddAthleteModal({
                         {a.jersey && <span className="text-[12px] font-black text-[#E63946]">#{a.jersey}</span>}
                       </div>
                       <p className="text-[11px] text-[#6b7280]">{a.position && <>{a.position} · </>}{a.school}</p>
-                      <div className="flex items-center gap-0.5 mt-0.5">
+                      {!a.prospect && <div className="flex items-center gap-0.5 mt-0.5">
                         {Array.from({ length: 5 }, (_, i) => (
                           <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill={a.coach_rating >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                           </svg>
                         ))}
-                      </div>
+                      </div>}
                     </div>
                   </div>
                   <button
@@ -419,6 +451,8 @@ function AddAthleteModal({
             ))
           )}
         </div>
+
+        {cartesDispo.length > 0 && <div className="mt-3"><LegendeProspect /></div>}
 
         <button type="button" onClick={onClose} className="mt-4 w-full px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] border border-[#2D3748] rounded-lg hover:text-white hover:border-[#4a4d56] transition-colors text-center">
           Fermer
@@ -726,7 +760,8 @@ function ExpandedListView({
         <div className="flex flex-col gap-2">
           {list.athletes.map((a) => (
             <React.Fragment key={a.id}>
-              <div className={`bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out ${expandedNotes === a.id ? "border-[#E63946]/20" : ""}`}>
+              <div className={`bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out ${expandedNotes === a.id ? "border-[#E63946]/20" : ""}`}
+                style={a.prospect ? { backgroundColor: SURFACE_PROSPECT } : undefined} data-prospect={a.prospect ? "1" : undefined}>
                 <div className="flex items-center px-4 py-3 gap-3">
                   {/* Avatar + check */}
                   {(() => {
@@ -740,12 +775,12 @@ function ExpandedListView({
                       identityVisible={a.identity_visible}
                       size={40}
                     />
-                    <div className="absolute -top-0.5 -right-0.5 z-10">
+                    {!a.prospect && <div className="absolute -top-0.5 -right-0.5 z-10">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill={a.is_verified ? "#3B82F6" : "#4a4d56"} stroke="none">
                         <circle cx="12" cy="12" r="10" />
                         <path d="M9 12l2 2 4-4" stroke={a.is_verified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                       </svg>
-                    </div>
+                    </div>}
                   </div>
                     );
                   })()}
@@ -753,7 +788,7 @@ function ExpandedListView({
                   {/* Name + jersey + school — fixed width */}
                   <div className="w-[200px] shrink-0">
                     <div className="flex items-center gap-1.5">
-                      <Link href={`/recruteur/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate">
+                      <Link href={a.prospect ? `/recruteur/pipeline?athlete=${a.id}` : `/recruteur/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate">
                         {a.full_name}
                       </Link>
                       {a.jersey && <span className="text-[13px] font-black text-[#E63946]">#{a.jersey}</span>}
@@ -776,7 +811,7 @@ function ExpandedListView({
 
                   {/* Stars — fixed width */}
                   <div className="w-[120px] shrink-0">
-                    <StarRating rating={a.coach_rating} size="sm" />
+                    {!a.prospect && <StarRating rating={a.coach_rating} size="sm" />}
                   </div>
 
                   {/* Added date + who added it — fixed width */}
@@ -790,12 +825,12 @@ function ExpandedListView({
                   {/* Spacer */}
                   <div className="flex-1" />
 
-                  {/* Notes + Actions */}
-                  <button type="button" onClick={() => setExpandedNotes(expandedNotes === a.id ? null : a.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors shrink-0 ${expandedNotes === a.id ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#6b7280] hover:text-white hover:bg-white/5"}`}>
+                  {/* Notes + Actions — les notes d'une carte vivent dans son panneau. */}
+                  {!a.prospect && <button type="button" onClick={() => setExpandedNotes(expandedNotes === a.id ? null : a.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors shrink-0 ${expandedNotes === a.id ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#6b7280] hover:text-white hover:bg-white/5"}`}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
                     Notes
-                  </button>
-                  <Link href={`/recruteur/athletes/${a.id}`} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors shrink-0" title="Voir le profil">
+                  </button>}
+                  <Link href={a.prospect ? `/recruteur/pipeline?athlete=${a.id}` : `/recruteur/athletes/${a.id}`} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors shrink-0" title={a.prospect ? "Ouvrir la carte" : "Voir le profil"}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                   </Link>
                   <button type="button" onClick={() => setRemoveTarget(a.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-[#EF4444] hover:bg-[#EF4444]/5 transition-colors shrink-0" title="Retirer">
@@ -812,6 +847,7 @@ function ExpandedListView({
               </div>
             </React.Fragment>
           ))}
+          {list.athletes.some((a) => a.prospect) && <div className="pt-1"><LegendeProspect /></div>}
         </div>
       )}
 
@@ -852,6 +888,7 @@ function ExpandedListView({
       {showAddModal && (
         <AddAthleteModal
           listName={list.name}
+          uniteSportId={list.unite_sport_id ?? null}
           existingIds={existingIds}
           onClose={() => setShowAddModal(false)}
           onAdd={(athlete, note) => {
@@ -984,15 +1021,21 @@ function ListesPageContent() {
 
   /* Remove athlete from list — journal signé par qui retire (B2-0). */
   const handleRemoveAthlete = useCallback(async (listId: string, athleteId: string) => {
-    const { error } = await createClient().from("recruiter_list_members").delete().eq("list_id", listId).eq("athlete_id", athleteId);
+    const carte = !!lists.find((l) => l.id === listId)?.athletes.find((a) => a.id === athleteId)?.prospect;
+    const { error } = carte
+      ? { error: await retirerCarteDeListe(createClient(), listId, athleteId) }
+      : await createClient().from("recruiter_list_members").delete().eq("list_id", listId).eq("athlete_id", athleteId);
     relire();
     if (error) { showErreur("Athlète non retiré de la liste"); return; }
     showToast("Athlète retiré de la liste");
-  }, [relire, showToast, showErreur]);
+  }, [lists, relire, showToast, showErreur]);
 
-  /* Add athlete to list — added_by posé par trigger (B1) : c'est soi. */
+  /* Add athlete to list — added_by posé par trigger (B1) : c'est soi.
+     Une carte prospect passe par sa propre liaison (ajoute_par, idem). */
   const handleAddAthlete = useCallback(async (listId: string, athlete: ProspectListAthlete) => {
-    const { error } = await createClient().from("recruiter_list_members").insert({ list_id: listId, athlete_id: athlete.id });
+    const { error } = athlete.prospect
+      ? { error: await ajouterCarteAListe(createClient(), listId, athlete.id) }
+      : await createClient().from("recruiter_list_members").insert({ list_id: listId, athlete_id: athlete.id });
     relire();
     if (error && error.code !== "23505") { showErreur("Athlète non ajouté à la liste"); return; }
     showToast(`${athlete.full_name} ajouté à la liste`);

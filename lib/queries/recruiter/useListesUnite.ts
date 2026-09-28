@@ -27,6 +27,7 @@ import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/share
 import { nomAuteur, type AuteurUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import type { ProspectList, ProspectListAthlete } from "@/app/recruteur/listes/_data/mockListsData";
+import { lireCartesParIds, versMembreListe } from "@/lib/cartes/carteProspect";
 
 interface LigneListe {
   id: string;
@@ -91,6 +92,31 @@ export function useListesUnite(enabled = true) {
 
       const cartes = await fetchRecruiterAthleteCards(supabase, [...new Set(membres.map((m) => m.athlete_id))]);
 
+      /* CARTES PROSPECT dans les listes (lot C, retour BP) : liaison à part,
+         cartes_prospect_listes. Une erreur de lecture laisse les athlètes. */
+      let liaisons: { list_id: string; carte_id: string; created_at: string; ajoute_par: string | null }[] = [];
+      let cartesProspect = new Map<string, Awaited<ReturnType<typeof lireCartesParIds>>[number]>();
+      const nomsSports = new Map<string, string>();
+      if (ids.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from("cartes_prospect_listes")
+            .select("list_id, carte_id, created_at, ajoute_par")
+            .in("list_id", ids);
+          if (error) throw error;
+          liaisons = (data ?? []) as typeof liaisons;
+          const lues = await lireCartesParIds(supabase, [...new Set(liaisons.map((l) => l.carte_id))]);
+          cartesProspect = new Map(lues.map((c) => [c.id, c]));
+          const sports = [...new Set(lues.map((c) => c.unite_sport_id))];
+          if (sports.length > 0) {
+            const { data: s } = await supabase.from("sports").select("id, nom").in("id", sports);
+            for (const x of (s ?? []) as { id: string; nom: string }[]) nomsSports.set(x.id, x.nom);
+          }
+        } catch (e) {
+          console.error("[useListesUnite] cartes prospect :", e instanceof Error ? e.message : String(e));
+        }
+      }
+
       return listes.map((l) => ({
         id: l.id,
         name: l.name,
@@ -99,7 +125,8 @@ export function useListesUnite(enabled = true) {
         updated_at: l.updated_at,
         recruiter_id: l.recruiter_id,
         auteur: nomAuteur(auteurs[l.recruiter_id]),
-        athletes: membres
+        unite_sport_id: l.unite_sport_id,
+        athletes: [...membres
           .filter((m) => m.list_id === l.id)
           .map((m): ProspectListAthlete | null => {
             const card = cartes.get(m.athlete_id);
@@ -125,6 +152,17 @@ export function useListesUnite(enabled = true) {
             };
           })
           .filter((a): a is ProspectListAthlete => a !== null),
+          ...liaisons
+            .filter((x) => x.list_id === l.id && cartesProspect.has(x.carte_id))
+            .map((x): ProspectListAthlete => {
+              const c = cartesProspect.get(x.carte_id)!;
+              return {
+                ...versMembreListe(c, nomsSports.get(c.unite_sport_id) ?? ""),
+                added_at: x.created_at,
+                ajoute_par: x.ajoute_par ? nomAuteur(auteurs[x.ajoute_par]) : undefined,
+              };
+            }),
+        ].sort((a, b) => (b.added_at || "").localeCompare(a.added_at || "")),
       }));
     },
   });

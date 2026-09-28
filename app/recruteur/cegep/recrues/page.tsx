@@ -7,7 +7,7 @@ import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
 import { lireCartesCegep } from "@/lib/cartes/carteProspect";
-import { MarqueurProspect } from "@/components/recruteur/cartes/PanneauCarte";
+import { LegendeProspect, FOND_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -252,15 +252,13 @@ function RecrusCegepPage() {
                 {filtered.map((r, i) => {
                   const stageCfg = STAGE_COLORS[r.stage] || STAGE_COLORS.ENGAGE;
                   return (
-                    <tr key={`${r.athleteId}-${i}`} className="border-t border-[#1e2128] hover:bg-[#22262E] transition-colors">
+                    <tr key={`${r.athleteId}-${i}`} className="border-t border-[#1e2128] hover:bg-[#22262E] transition-colors"
+                      style={r.prospect ? { backgroundColor: FOND_PROSPECT } : undefined} data-prospect={r.prospect ? "1" : undefined}>
                       {/* Athlète */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {r.prospect ? (
-                            <>
-                              <span className="text-[13px] font-bold text-white whitespace-nowrap">{r.name}</span>
-                              <MarqueurProspect taille="sm" />
-                            </>
+                            <span className="text-[13px] font-bold text-white whitespace-nowrap">{r.name}</span>
                           ) : (
                           <Link href={`/recruteur/athletes/${r.athleteId}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors whitespace-nowrap">
                             {r.name}
@@ -341,6 +339,7 @@ function RecrusCegepPage() {
               </tbody>
             </table>
           </div>
+          {filtered.some((r) => r.prospect) && <div className="px-4 py-3 border-t border-[#1e2128]"><LegendeProspect /></div>}
         </div>
       ) : (
         <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] py-16 flex flex-col items-center justify-center gap-4">

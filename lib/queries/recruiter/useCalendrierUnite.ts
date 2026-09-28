@@ -148,6 +148,16 @@ export function useCalendrierUnite(enabled: boolean) {
       } catch (e) {
         console.error("[useCalendrierUnite] cartes prospect :", e instanceof Error ? e.message : String(e));
       }
+      const listesParCarte = new Map<string, string[]>();
+      if (cartesProspect.length > 0 && listIds.length > 0) {
+        const { data } = await supabase
+          .from("cartes_prospect_listes")
+          .select("carte_id, list_id")
+          .in("list_id", listIds);
+        for (const m of (data ?? []) as { carte_id: string; list_id: string }[]) {
+          listesParCarte.set(m.carte_id, [...(listesParCarte.get(m.carte_id) ?? []), m.list_id]);
+        }
+      }
       const nomSportUnite = monSport && cartesProspect.length > 0
         ? ((await supabase.from("sports").select("nom").eq("id", monSport).maybeSingle()).data?.nom as string | undefined) ?? ""
         : "";
@@ -173,7 +183,7 @@ export function useCalendrierUnite(enabled: boolean) {
           gpa: 0,
           orgType: (c.teams?.schools?.type === "LIGUE_CIVILE" ? "ligue_civile" : "scolaire") as "scolaire" | "ligue_civile",
           pipelineStage: c.etape,
-          listIds: [],
+          listIds: listesParCarte.get(c.id) ?? [],
           teamId: c.team_id!,
           teamName: c.teams?.name ?? "",
           prospect: true,

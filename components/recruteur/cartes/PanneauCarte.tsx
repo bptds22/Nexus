@@ -17,17 +17,33 @@ import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
 import { joursAvantPurge, AVIS_JOURS, type CarteKanban } from "@/lib/cartes/carteProspect";
 import { KANBAN_COLUMNS } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 
-/** Pastille « Pas encore sur Nexus ». */
-export function MarqueurProspect({ taille = "md" }: { taille?: "sm" | "md" }) {
+/* MARQUEUR D'UNE CARTE (retour BP) : plus de pastille dans les listes —
+   un FOND ROUGE TRÈS LÉGER (#E63946 à 5 %) sur la ligne du tableau et sur la
+   carte du kanban, expliqué par une légende discrète en bas de la vue. Le
+   panneau garde une mention en toutes lettres. */
+
+/** #E63946 à 5 % — en calque, pour les fonds transparents (lignes). */
+export const FOND_PROSPECT = "rgba(230,57,70,0.05)";
+/** #E63946 à 5 % posé sur la surface #1A1D24, en couleur OPAQUE : le dégradé
+ *  de la photo du kanban fond vers la couleur de la carte et doit la connaître. */
+export const SURFACE_PROSPECT = "#241E26";
+
+/** Légende en bas de la vue, affichée seulement s'il y a des cartes. */
+export function LegendeProspect() {
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border border-[#9CA3AF]/40 bg-white/5 font-bold uppercase tracking-wider text-[#D1D5DB] shrink-0 ${
-        taille === "sm" ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-0.5 text-[10px]"
-      }`}
-      title="Carte prospect : cet athlète n'est pas encore sur Nexus. Seule ton unité la voit."
-    >
-      Pas encore sur Nexus
-    </span>
+    <p className="flex items-center gap-2 text-[12px] text-[#6b7280]" data-testid="legende-prospect">
+      <span aria-hidden="true" className="inline-block w-3.5 h-3.5 rounded border border-[#E63946]/25" style={{ backgroundColor: SURFACE_PROSPECT }} />
+      Fond rouge = pas encore sur Nexus
+    </p>
+  );
+}
+
+/** Mention en tête du panneau d'une carte. */
+export function MentionProspect() {
+  return (
+    <p className="text-[13px] text-[#E5A0A6]">
+      Pas encore sur Nexus — carte prospect de ton unité.
+    </p>
   );
 }
 

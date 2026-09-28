@@ -150,7 +150,7 @@ migration : tout repose sur B1/B2-0.
   d'unité fait dans un autre sport va dans l'unité **visée**.
 
 **Lot C (2026-09-28) — CARTES PROSPECT : un athlète pas encore sur Nexus.**
-Migration `lot_c_cartes_prospect` (additive : quatre tables nouvelles, aucune
+Migration `lot_c_cartes_prospect` (additive : cinq tables nouvelles, aucune
 existante touchée).
 - **Propriété : l'UNITÉ** (cégep × sport), posée par trigger d'après le créateur,
   jamais modifiable. Lecture et écriture : Pro/All Star de l'unité ; admin cégep
@@ -169,10 +169,33 @@ existante touchée).
 - **Rétention** : purge pg_cron quotidienne 12 mois après la dernière activité ;
   avis à l'écran 30 jours avant (bandeau dans Mon processus, marqueur sur la
   carte). Tout geste repousse l'échéance.
+- **Choix de l'équipe en deux temps** (retour BP) : Scolaire (écoles secondaires
+  et cégeps) ou Civil (clubs `LIGUE_CIVILE`), puis l'établissement par son nom —
+  seuls ceux qui ont une équipe du sport de l'unité —, puis une de ses équipes
+  de ce sport, libellée « Football juvénile D1 · Masculin ». L'école se déduit
+  de l'équipe.
+- **Doublons — avertir, jamais bloquer** : même nom normalisé + même
+  établissement avec un prénom compatible (composé ou abrégé :
+  « Bruno-Philippe » ↔ « Bruno »), contre les cartes de l'unité et les athlètes
+  Nexus ; même courriel, contre une carte de l'unité ou un athlète Nexus
+  (`athlete_nexus_par_courriel()`, SECURITY DEFINER). **Un athlète masqué n'est
+  jamais suggéré** : la recherche recruteur et cette fonction ne rendent une
+  identité que si `athlete_identity_ok()` passe, et seulement à un recruteur Pro
+  — sinon un courriel confirmerait qu'un mineur non consentant est inscrit.
+- **Listes** : une carte s'ajoute à une liste **de son unité** comme un athlète,
+  par une liaison à part (`cartes_prospect_listes` : ajout et retrait, signés,
+  journalisés `LISTE`). `recruiter_list_members` (athlete_id NOT NULL, lu par
+  l'app 1.4.3) n'est pas touchée. Une liste d'une autre unité, ou personnelle,
+  est refusée par trigger (22023). Supprimer la carte emporte ses liaisons.
+- **Marqueur** : pas de pastille dans les listes — un **fond rouge très léger**
+  (#E63946 à 5 %) sur la ligne du tableau, la carte du kanban, la ligne d'une
+  liste et de Mon CÉGEP › Recrues, avec la légende « Fond rouge = pas encore sur
+  Nexus » en bas de la vue. Le panneau garde la mention en toutes lettres.
 - **Interface** : kanban, tableau, panneau (Actions / Infos / Historique), export
-  xlsx (colonnes « Sur Nexus » et « Courriel »), entonnoir, tuiles, calendrier
-  (matchs de leur équipe, visites et relances, marqués « prospect ») et Mon
-  CÉGEP. Pas de profil complet, pas de messagerie ; « Inviter » arrive au lot D.
+  xlsx (colonnes « Profil Nexus » Oui/Non et « Courriel »), entonnoir, tuiles,
+  listes, calendrier (matchs de leur équipe, visites et relances, marqués
+  « prospect » ; filtre par liste) et Mon CÉGEP. Pas de profil complet, pas de
+  messagerie ; « Inviter » arrive au lot D.
 
 ### LOI 25 — LE CÉGEP EST PROPRIÉTAIRE DES DONNÉES DES CARTES PROSPECT
 

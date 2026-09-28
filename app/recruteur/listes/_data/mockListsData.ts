@@ -29,6 +29,9 @@ export interface ProspectListAthlete {
   priority: boolean;
   /** Qui l'a ajouté à la liste (lot B2, étape 2) — nom d'affichage. */
   ajoute_par?: string;
+  /** Carte prospect (lot C) : pas encore sur Nexus — `id` est celui de la
+   *  carte, pas d'un athlète ; pas de fiche, pas de notes d'athlète. */
+  prospect?: boolean;
 }
 
 export interface ProspectList {
@@ -41,6 +44,8 @@ export interface ProspectList {
   /** Auteur de la liste (lot B2, étape 2) : id et nom d'affichage. */
   recruiter_id?: string;
   auteur?: string;
+  /** Unité de la liste (lot C) : seule une liste d'unité reçoit des cartes. */
+  unite_sport_id?: string | null;
 }
 
 /* ── List 1: QB prioritaires ──────────────────────────────────── */

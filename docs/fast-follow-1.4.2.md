@@ -1493,12 +1493,15 @@ passe désormais par la RPC (tronc partagé) — effectif au prochain build mobi
 
 ## 44. Cartes prospect — ce que l'app 1.4.3 ne montre pas (lot C, 2026-09-28, pour le lot mobile)
 
-Les cartes prospect vivent dans quatre tables nouvelles
-(`cartes_prospect*`) que l'app 1.4.3 ne lit pas. **Rien ne casse** (prouvé : ses
+Les cartes prospect vivent dans cinq tables nouvelles
+(`cartes_prospect*`, dont la liaison aux listes `cartes_prospect_listes`) que
+l'app 1.4.3 ne lit pas. **Rien ne casse** (prouvé : ses
 lectures de processus, favoris, listes, activité et `unite_pipeline` rendent
 exactement la même chose avant et après la création de cartes). Mais l'app ne
 les **montre** pas : Mon processus mobile, le tableau de bord et le calendrier
-mobiles n'affichent que les athlètes Nexus. À ajouter au lot mobile : lecture
-des cartes, marqueur « Pas encore sur Nexus », panneau Infos/Historique de la
-carte, création.
+mobiles n'affichent que les athlètes Nexus, et une liste mobile n'affiche pas
+les cartes qu'elle contient. À ajouter au lot mobile : lecture des cartes (et
+de leurs liaisons de listes), marqueur par fond rouge léger + légende, panneau
+Infos/Historique de la carte, création (équipe en deux temps, doublons par nom
+et par courriel).
 

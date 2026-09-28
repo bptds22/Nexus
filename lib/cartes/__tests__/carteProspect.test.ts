@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { expireLe, joursAvantPurge, bientotPurgee, estCarte, AVIS_JOURS } from "@/lib/cartes/carteProspect";
+import { expireLe, joursAvantPurge, bientotPurgee, estCarte, AVIS_JOURS, memePersonneProbable, libelleEquipe } from "@/lib/cartes/carteProspect";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 
 const JOUR = 86400000;
@@ -30,4 +30,18 @@ test("un dossier d'athlète Nexus n'est jamais une carte, ni bientôt purgé", (
   const dossier = { id: "a" } as PipelineKanbanCard;
   assert.equal(estCarte(dossier), false);
   assert.equal(bientotPurgee(dossier), false);
+});
+
+test("doublons : prénom composé ou abrégé, nom normalisé", () => {
+  assert.equal(memePersonneProbable("Bruno-Philippe", "Simard", "Bruno", "SIMARD"), true);
+  assert.equal(memePersonneProbable("Alex", "Tremblay", "Alexandre", "Tremblay"), true);
+  assert.equal(memePersonneProbable("J.", "Côté", "Jean", "Cote"), true);
+  assert.equal(memePersonneProbable("Émile", "Gagnon", "emile", "gagnon "), true);
+  assert.equal(memePersonneProbable("Bruno", "Simard", "Mathis", "Simard"), false);
+  assert.equal(memePersonneProbable("Bruno", "Simard", "Bruno", "Simardi"), false);
+});
+
+test("libellé d'équipe : sport, âge, division · genre", () => {
+  assert.equal(libelleEquipe("Football", { name: "X", age_group: "Juvénile", division: "D1", gender: "Masculin" }), "Football juvénile D1 · Masculin");
+  assert.equal(libelleEquipe("Football", { name: "Wildcats", age_group: null, division: null, gender: null }), "Football — Wildcats");
 });

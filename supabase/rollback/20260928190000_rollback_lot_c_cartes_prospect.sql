@@ -5,12 +5,16 @@
 
 select cron.unschedule(jobid) from cron.job where jobname = 'cartes-prospect-purge-quotidienne';
 
+drop table public.cartes_prospect_listes;
 drop table public.cartes_prospect_notes;
 drop table public.cartes_prospect_journal;
 drop table public.cartes_prospect;              -- ses triggers et policies partent avec elle
 drop table public.cartes_prospect_suppressions;
 
 drop function public.purger_cartes_prospect();
+drop function public.athlete_nexus_par_courriel(text);
+drop function public.cartes_prospect_listes_journal();
+drop function public.cartes_prospect_listes_avant();
 drop function public.cartes_prospect_notes_apres();
 drop function public.cartes_prospect_notes_avant();
 drop function public.cartes_prospect_tracer_suppression();
@@ -31,7 +35,9 @@ begin
               and proname in ('acces_carte_ecriture','acces_carte_lecture','carte_lecture_ok','carte_ecriture_ok',
                               'purger_cartes_prospect','cartes_prospect_avant_insert','cartes_prospect_avant_update',
                               'cartes_prospect_journaliser','cartes_prospect_tracer_suppression',
-                              'cartes_prospect_notes_avant','cartes_prospect_notes_apres')) then
+                              'cartes_prospect_notes_avant','cartes_prospect_notes_apres',
+                              'cartes_prospect_listes_avant','cartes_prospect_listes_journal',
+                              'athlete_nexus_par_courriel')) then
     raise exception 'NEXUS: une fonction des cartes existe encore';
   end if;
   if exists (select 1 from cron.job where jobname = 'cartes-prospect-purge-quotidienne') then

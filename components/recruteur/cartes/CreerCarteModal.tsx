@@ -3,18 +3,24 @@
 /* ═══════════════════════════════════════════════════════════════
    CreerCarteModal — créer une CARTE PROSPECT depuis Mon processus (lot C).
 
-   Formulaire court : prénom, nom et ÉQUIPE RÉELLE obligatoires (recherche
-   par nom parmi les vraies équipes du sport de l'unité), puis position,
-   numéro, promotion, taille, poids, lien vidéo, courriel — tous facultatifs.
-   Aucune autre coordonnée (décision BP).
+   Formulaire court : prénom, nom et ÉQUIPE RÉELLE obligatoires, puis
+   position, numéro, promotion, taille, poids, lien vidéo, courriel — tous
+   facultatifs. Aucune autre coordonnée (décision BP).
 
-   Doublons (décision BP : avertir sans bloquer) :
-   - une carte de l'unité au même nom dans la même équipe ;
-   - un athlète NEXUS au même nom dans la même école et le même sport — lu
-     par la recherche recruteur (recruiter_search_athletes), qui ne rend un
-     nom que si l'identité est visible : aucun nom masqué n'est confirmé.
-   Le premier « Créer » affiche l'avertissement ; un second clic crée quand
-   même.
+   L'équipe se choisit EN DEUX TEMPS (retour BP) : Scolaire ou Civil, puis
+   l'établissement (école ou club) cherché par son nom — seuls ceux qui ont
+   une équipe du sport de l'unité —, puis une de SES équipes de ce sport,
+   libellée « Football juvénile D1 · Masculin ». L'école se déduit de
+   l'équipe.
+
+   Doublons (décision BP : avertir, jamais bloquer) :
+   - même NOM normalisé + même ÉTABLISSEMENT, prénom compatible (composé ou
+     abrégé) : contre les cartes de l'unité et contre les athlètes Nexus ;
+   - même COURRIEL : contre une carte de l'unité ou un athlète Nexus.
+   Un athlète MASQUÉ n'est jamais suggéré : la recherche recruteur et
+   athlete_nexus_par_courriel ne rendent une identité que si elle est
+   visible. Le premier « Créer » affiche l'avertissement ; un second clic
+   crée quand même.
 
    La base pose l'unité d'après le créateur et refuse une équipe d'un autre
    sport : le formulaire ne propose que le bon sport, la base le garantit.
@@ -23,14 +29,19 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { creerCarte, carteDoublon } from "@/lib/cartes/carteProspect";
+import {
+  creerCarte, cartesDoublons, carteAuCourriel, athleteAuCourriel,
+  memePersonneProbable, libelleEquipe,
+} from "@/lib/cartes/carteProspect";
 
-interface Equipe { id: string; name: string; division: string | null; school_id: string | null; ecole: string | null }
+type Genre = "SCOLAIRE" | "CIVIL";
+/** Scolaire = les écoles (secondaire, et le collégial pour un transfert) ;
+ *  Civil = les clubs (LIGUE_CIVILE, rangés dans schools pour la plomberie). */
+const TYPES: Record<Genre, string[]> = { SCOLAIRE: ["SECONDAIRE", "CEGEP"], CIVIL: ["LIGUE_CIVILE"] };
+
+interface Etablissement { id: string; name: string; city: string | null }
+interface Equipe { id: string; name: string; age_group: string | null; division: string | null; gender: string | null; libelle: string }
 interface Position { id: string; abreviation: string | null; nom: string }
-
-function sansAccents(s: string): string {
-  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-}
 
 const champ = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const etiquette = "block text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] mb-1";
@@ -42,9 +53,13 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
 }) {
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
-  const [rechercheEquipe, setRechercheEquipe] = useState("");
+  const [genre, setGenre] = useState<Genre>("SCOLAIRE");
+  const [recherche, setRecherche] = useState("");
+  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
+  const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
-  const [equipe, setEquipe] = useState<Equipe | null>(null);
+  const [equipeId, setEquipeId] = useState("");
+  const [nomSport, setNomSport] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
   const [positionId, setPositionId] = useState("");
   const [numero, setNumero] = useState("");
@@ -58,36 +73,67 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  // Positions du sport de l'unité.
+  // Positions et nom du sport de l'unité.
   useEffect(() => {
     void (async () => {
-      const { data } = await createClient().from("positions").select("id, abreviation, nom").eq("sport_id", sportId).order("nom");
+      const supabase = createClient();
+      const [{ data }, { data: sport }] = await Promise.all([
+        supabase.from("positions").select("id, abreviation, nom").eq("sport_id", sportId).order("nom"),
+        supabase.from("sports").select("nom").eq("id", sportId).maybeSingle(),
+      ]);
       setPositions((data ?? []) as Position[]);
+      setNomSport((sport?.nom as string | undefined) ?? "");
     })();
   }, [sportId]);
 
-  // Recherche d'équipe par nom, du sport de l'unité seulement.
+  // 1. L'établissement, par son nom, parmi ceux du bon genre qui ont au
+  //    moins une équipe du sport de l'unité.
   useEffect(() => {
-    const q = rechercheEquipe.trim();
-    if (equipe || q.length < 2) { setEquipes([]); return; }
+    const q = recherche.trim();
+    if (etablissement || q.length < 2) { setEtablissements([]); return; }
     let annule = false;
     const t = window.setTimeout(async () => {
       const { data } = await createClient()
-        .from("teams")
-        .select("id, name, division, school_id, schools!school_id(name)")
-        .eq("sport_id", sportId)
+        .from("schools")
+        .select("id, name, city, teams!inner(id)")
+        .in("type", TYPES[genre])
+        .eq("teams.sport_id", sportId)
         .ilike("name", `%${q.replace(/[%_]/g, "")}%`)
         .order("name")
         .limit(15);
       if (annule) return;
-      setEquipes(((data ?? []) as unknown as { id: string; name: string; division: string | null; school_id: string | null; schools: { name: string | null } | { name: string | null }[] | null }[])
-        .map((e) => {
-          const ecole = Array.isArray(e.schools) ? e.schools[0] : e.schools;
-          return { id: e.id, name: e.name, division: e.division, school_id: e.school_id, ecole: ecole?.name ?? null };
-        }));
+      setEtablissements(((data ?? []) as { id: string; name: string; city: string | null }[])
+        .map((e) => ({ id: e.id, name: e.name, city: e.city })));
     }, 250);
     return () => { annule = true; window.clearTimeout(t); };
-  }, [rechercheEquipe, equipe, sportId]);
+  }, [recherche, etablissement, genre, sportId]);
+
+  // 2. Ses équipes du sport de l'unité.
+  useEffect(() => {
+    if (!etablissement) { setEquipes([]); setEquipeId(""); return; }
+    let annule = false;
+    void (async () => {
+      const { data } = await createClient()
+        .from("teams")
+        .select("id, name, age_group, division, gender")
+        .eq("school_id", etablissement.id)
+        .eq("sport_id", sportId)
+        .order("age_group")
+        .order("division");
+      if (annule) return;
+      const lignes = ((data ?? []) as Omit<Equipe, "libelle">[])
+        .map((e) => ({ ...e, libelle: libelleEquipe(nomSport, e) }));
+      // Deux équipes au même libellé (fréquent chez les clubs) : on ajoute le nom.
+      const vus = new Map<string, number>();
+      for (const e of lignes) vus.set(e.libelle, (vus.get(e.libelle) ?? 0) + 1);
+      const finales = lignes.map((e) => (vus.get(e.libelle)! > 1 ? { ...e, libelle: `${e.libelle} — ${e.name}` } : e));
+      setEquipes(finales);
+      setEquipeId(finales.length === 1 ? finales[0].id : "");
+    })();
+    return () => { annule = true; };
+  }, [etablissement, sportId, nomSport]);
+
+  const equipe = equipes.find((e) => e.id === equipeId) ?? null;
 
   const nombre = (v: string) => (v.trim() === "" ? null : Number(v));
   const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!equipe;
@@ -97,26 +143,42 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   }, []);
 
   const verifierDoublons = async (): Promise<{ texte: string; lien?: string }[]> => {
-    if (!equipe) return [];
+    if (!equipe || !etablissement) return [];
     const supabase = createClient();
     const trouves: { texte: string; lien?: string }[] = [];
-    if (await carteDoublon(supabase, prenom, nom, equipe.id)) {
-      trouves.push({ texte: `Ton unité a déjà une carte « ${prenom.trim()} ${nom.trim()} » dans cette équipe.` });
+
+    // Même nom + même établissement, prénom compatible — cartes de l'unité.
+    const cartes = await cartesDoublons(supabase, { prenom, nom, sportId, schoolId: etablissement.id });
+    if (cartes.length > 0) {
+      const c = cartes[0];
+      trouves.push({ texte: `Ton unité suit déjà « ${c.prenom} ${c.nom} » (${etablissement.name}).` });
     }
-    const { data } = await supabase.rpc("recruiter_search_athletes", {
-      p_search: `${prenom.trim()} ${nom.trim()}`,
-      p_sport_id: sportId,
-      p_limit: 10,
-    });
-    const cible = `${sansAccents(prenom)} ${sansAccents(nom)}`;
+
+    // … et athlètes Nexus : la recherche ne rend un nom que s'il est visible.
+    const { data } = await supabase.rpc("recruiter_search_athletes", { p_search: nom.trim(), p_limit: 50 });
     const nexus = ((data ?? []) as { id: string; identity_visible: boolean; first_name: string | null; last_name: string | null; school_id: string | null }[])
-      .find((a) => a.identity_visible && a.school_id === equipe.school_id
-        && `${sansAccents(a.first_name ?? "")} ${sansAccents(a.last_name ?? "")}` === cible);
+      .find((a) => a.identity_visible && a.school_id === etablissement.id
+        && memePersonneProbable(prenom, nom, a.first_name ?? "", a.last_name ?? ""));
     if (nexus) {
       trouves.push({
-        texte: "Un athlète de ce nom, de cette école, est déjà sur Nexus — ajoute-le plutôt à ton processus depuis sa fiche.",
+        texte: `« ${nexus.first_name} ${nexus.last_name} », de ${etablissement.name}, est déjà sur Nexus — ajoute-le plutôt à ton processus depuis sa fiche.`,
         lien: `/recruteur/athletes/${nexus.id}`,
       });
+    }
+
+    // Même courriel.
+    if (courriel.trim()) {
+      const [carteC, athleteC] = await Promise.all([
+        carteAuCourriel(supabase, courriel, sportId),
+        athleteAuCourriel(supabase, courriel),
+      ]);
+      if (carteC) trouves.push({ texte: `Ce courriel est déjà celui de la carte « ${carteC.prenom} ${carteC.nom} » de ton unité.` });
+      if (athleteC && athleteC.id !== nexus?.id) {
+        trouves.push({
+          texte: `Ce courriel est celui de « ${athleteC.first_name} ${athleteC.last_name} », déjà sur Nexus.`,
+          lien: `/recruteur/athletes/${athleteC.id}`,
+        });
+      }
     }
     return trouves;
   };
@@ -171,38 +233,59 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
           </div>
 
           <div className="col-span-2 relative">
-            <label className={etiquette} htmlFor="carte-equipe">Équipe <span className="text-[#E63946]">*</span></label>
-            {equipe ? (
+            <span className={etiquette}>École ou club <span className="text-[#E63946]">*</span></span>
+            {etablissement ? (
               <div className="flex items-center justify-between gap-2 rounded-lg border border-[#2a2d36] bg-[#13151a] px-3 py-2">
-                <span className="text-[13px] text-white truncate">
-                  {equipe.name}{equipe.division ? ` · ${equipe.division}` : ""}{equipe.ecole ? ` — ${equipe.ecole}` : ""}
+                <span className="text-[13px] text-white truncate" data-testid="carte-etablissement-choisi">
+                  {etablissement.name}{etablissement.city ? <span className="text-[#6b7280]"> · {etablissement.city}</span> : null}
                 </span>
-                <button type="button" onClick={() => { setEquipe(null); setRechercheEquipe(""); setAvertissements(null); }} className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280] hover:text-white shrink-0">
+                <button type="button" onClick={() => { setEtablissement(null); setRecherche(""); setAvertissements(null); }} className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280] hover:text-white shrink-0">
                   Changer
                 </button>
               </div>
             ) : (
               <>
-                <input id="carte-equipe" className={champ} value={rechercheEquipe} onChange={(e) => setRechercheEquipe(e.target.value)} placeholder="Nom de l'équipe (2 lettres minimum)" autoComplete="off" />
-                {equipes.length > 0 && (
-                  <ul className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[#2D3748] bg-[#13151a] shadow-xl" role="listbox" aria-label="Équipes">
-                    {equipes.map((e) => (
+                <div className="flex gap-1.5 mb-2" role="radiogroup" aria-label="Scolaire ou civil">
+                  {(["SCOLAIRE", "CIVIL"] as Genre[]).map((g) => (
+                    <button key={g} type="button" role="radio" aria-checked={genre === g}
+                      onClick={() => { setGenre(g); setEtablissements([]); }}
+                      className={`px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-wider border transition-colors ${genre === g ? "bg-[#E63946]/15 border-[#E63946]/40 text-[#E63946]" : "border-[#2a2d36] text-[#6b7280] hover:text-white"}`}>
+                      {g === "SCOLAIRE" ? "Scolaire" : "Civil"}
+                    </button>
+                  ))}
+                </div>
+                <input id="carte-etablissement" aria-label={genre === "SCOLAIRE" ? "Nom de l'école" : "Nom du club"} className={champ} value={recherche} onChange={(e) => setRecherche(e.target.value)}
+                  placeholder={genre === "SCOLAIRE" ? "Nom de l'école (2 lettres minimum)" : "Nom du club (2 lettres minimum)"} autoComplete="off" />
+                {etablissements.length > 0 && (
+                  <ul className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[#2D3748] bg-[#13151a] shadow-xl" role="listbox" aria-label={genre === "SCOLAIRE" ? "Écoles" : "Clubs"}>
+                    {etablissements.map((e) => (
                       <li key={e.id}>
-                        <button type="button" role="option" aria-selected={false} onClick={() => { setEquipe(e); setEquipes([]); setAvertissements(null); }} className="w-full text-left px-3 py-2 text-[13px] text-[#e0e0e0] hover:bg-white/5">
+                        <button type="button" role="option" aria-selected={false} onClick={() => { setEtablissement(e); setEtablissements([]); setAvertissements(null); }} className="w-full text-left px-3 py-2 text-[13px] text-[#e0e0e0] hover:bg-white/5">
                           <span className="font-semibold text-white">{e.name}</span>
-                          {e.division && <span className="text-[#9CA3AF]"> · {e.division}</span>}
-                          {e.ecole && <span className="block text-[12px] text-[#6b7280]">{e.ecole}</span>}
+                          {e.city && <span className="text-[#6b7280]"> · {e.city}</span>}
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
-                {rechercheEquipe.trim().length >= 2 && equipes.length === 0 && (
-                  <p className="text-[12px] text-[#6b7280] mt-1">Aucune équipe de ce sport ne correspond. L&apos;équipe doit exister sur Nexus.</p>
+                {recherche.trim().length >= 2 && etablissements.length === 0 && (
+                  <p className="text-[12px] text-[#6b7280] mt-1">
+                    {genre === "SCOLAIRE" ? "Aucune école" : "Aucun club"} avec une équipe de ce sport ne correspond.
+                  </p>
                 )}
               </>
             )}
           </div>
+
+          {etablissement && (
+            <div className="col-span-2">
+              <label className={etiquette} htmlFor="carte-equipe">Équipe <span className="text-[#E63946]">*</span></label>
+              <select id="carte-equipe" className={champ} value={equipeId} onChange={(e) => { setEquipeId(e.target.value); setAvertissements(null); }}>
+                {equipes.length !== 1 && <option value="">{equipes.length === 0 ? "Aucune équipe de ce sport" : "Choisir l'équipe"}</option>}
+                {equipes.map((e) => <option key={e.id} value={e.id}>{e.libelle}</option>)}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className={etiquette} htmlFor="carte-position">Position</label>
@@ -235,7 +318,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
           </div>
           <div>
             <label className={etiquette} htmlFor="carte-courriel">Courriel</label>
-            <input id="carte-courriel" type="email" className={champ} value={courriel} onChange={(e) => setCourriel(e.target.value)} placeholder="Facultatif" />
+            <input id="carte-courriel" type="email" className={champ} value={courriel} onChange={(e) => { setCourriel(e.target.value); setAvertissements(null); }} placeholder="Facultatif" />
           </div>
           <div className="col-span-2">
             <label className={etiquette} htmlFor="carte-video">Lien vidéo</label>

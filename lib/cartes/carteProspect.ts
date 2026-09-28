@@ -67,7 +67,7 @@ export function bientotPurgee(c: PipelineKanbanCard, maintenant = Date.now()): b
   return estCarte(c) && joursAvantPurge(c.carte.expireLe, maintenant) <= AVIS_JOURS;
 }
 
-interface LigneCarte {
+export interface LigneCarte {
   id: string;
   unite_cegep_id: string;
   unite_sport_id: string;
@@ -124,6 +124,41 @@ export async function lireCartes(
     teams: un(l.teams as never) as LigneCarte["teams"],
     positions: un(l.positions as never) as LigneCarte["positions"],
   }));
+}
+
+/** Des cartes précises, par id (membres d'une liste). */
+export async function lireCartesParIds(supabase: SupabaseClient, ids: string[]): Promise<LigneCarte[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from("cartes_prospect").select(SELECT_CARTE).in("id", ids);
+  if (error) throw error;
+  return ((data ?? []) as unknown as LigneCarte[]).map((l) => ({
+    ...l,
+    teams: un(l.teams as never) as LigneCarte["teams"],
+    positions: un(l.positions as never) as LigneCarte["positions"],
+  }));
+}
+
+/** Une carte au format d'un membre de liste. */
+export function versMembreListe(l: LigneCarte, nomSport: string) {
+  return {
+    id: l.id,
+    identity_visible: true,
+    full_name: `${l.prenom} ${l.nom}`.trim(),
+    photo_url: "",
+    jersey: l.numero ?? "",
+    sport: nomSport,
+    position: l.positions?.abreviation ?? "",
+    school: l.teams?.schools?.name ?? "",
+    division: "D1" as const,
+    graduation_year: l.promotion ?? 0,
+    coach_rating: 0,
+    is_verified: false,
+    pipeline_status: (l.etape || "IDENTIFIE").toLowerCase() as RecruitmentStatus,
+    added_at: "",
+    recruiter_note: "",
+    priority: false,
+    prospect: true as const,
+  };
 }
 
 /** Dernière note par carte, avec son auteur (colonne « Note de suivi »). */
@@ -291,16 +326,96 @@ export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
   return { id: (data?.id as string | undefined) ?? null, error };
 }
 
-/** Doublon dans l'unité : une carte au même nom dans la même équipe. */
-export async function carteDoublon(supabase: SupabaseClient, prenom: string, nom: string, teamId: string): Promise<boolean> {
+/* ── DOUBLONS (retour BP : avertir, jamais bloquer) ─────────────────
+   Déclencheur : même NOM normalisé + même ÉTABLISSEMENT (l'école ou le club
+   de l'équipe), avec un prénom COMPATIBLE — composé ou abrégé :
+   « Bruno-Philippe » ↔ « Bruno », « Alex » ↔ « Alexandre », « J. » ↔ « Jean ».
+   Plus : le même COURRIEL qu'une carte de l'unité ou qu'un athlète Nexus. */
+
+/** Minuscules, sans accents, espaces resserrés. */
+export function normaliserNom(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/** Deux prénoms désignent-ils possiblement la même personne ? Le premier
+ *  élément de l'un est le début du premier élément de l'autre. */
+export function prenomsCompatibles(a: string, b: string): boolean {
+  const premier = (s: string) => normaliserNom(s).split(/[\s.\-']+/).filter(Boolean)[0] ?? "";
+  const x = premier(a);
+  const y = premier(b);
+  if (!x || !y) return false;
+  return x.startsWith(y) || y.startsWith(x);
+}
+
+/** Même personne probable : nom identique (normalisé) et prénoms compatibles. */
+export function memePersonneProbable(p1: string, n1: string, p2: string, n2: string): boolean {
+  return normaliserNom(n1) !== "" && normaliserNom(n1) === normaliserNom(n2) && prenomsCompatibles(p1, p2);
+}
+
+/** Cartes de l'unité (le sport ; la RLS borne au cégep) dont l'équipe est
+ *  dans le même établissement, au même nom avec un prénom compatible. */
+export async function cartesDoublons(
+  supabase: SupabaseClient,
+  c: { prenom: string; nom: string; sportId: string; schoolId: string },
+): Promise<{ prenom: string; nom: string }[]> {
   const { data } = await supabase
     .from("cartes_prospect")
-    .select("id")
-    .eq("team_id", teamId)
-    .ilike("prenom", prenom.trim())
-    .ilike("nom", nom.trim())
+    .select("prenom, nom, teams!team_id!inner(school_id)")
+    .eq("unite_sport_id", c.sportId)
+    .eq("teams.school_id", c.schoolId);
+  return ((data ?? []) as unknown as { prenom: string; nom: string }[])
+    .filter((l) => memePersonneProbable(c.prenom, c.nom, l.prenom, l.nom));
+}
+
+/** Une carte de l'unité porte-t-elle déjà ce courriel ? */
+export async function carteAuCourriel(
+  supabase: SupabaseClient,
+  courriel: string,
+  sportId: string,
+): Promise<{ prenom: string; nom: string } | null> {
+  const q = courriel.trim();
+  if (!q) return null;
+  const { data } = await supabase
+    .from("cartes_prospect")
+    .select("prenom, nom")
+    .eq("unite_sport_id", sportId)
+    .ilike("courriel", q.replace(/[%_\\]/g, (m) => `\\${m}`))
     .limit(1);
-  return (data ?? []).length > 0;
+  return ((data ?? []) as { prenom: string; nom: string }[])[0] ?? null;
+}
+
+/** Un athlète Nexus porte-t-il ce courriel ? La base ne le rend QUE si son
+ *  identité est visible pour l'appelant — un athlète masqué n'est jamais
+ *  suggéré (athlete_nexus_par_courriel). */
+export async function athleteAuCourriel(
+  supabase: SupabaseClient,
+  courriel: string,
+): Promise<{ id: string; first_name: string | null; last_name: string | null } | null> {
+  const q = courriel.trim();
+  if (!q) return null;
+  const { data, error } = await supabase.rpc("athlete_nexus_par_courriel", { p_courriel: q });
+  if (error) { console.error("[cartes] courriel :", error.message); return null; }
+  return ((data ?? []) as { id: string; first_name: string | null; last_name: string | null }[])[0] ?? null;
+}
+
+/* ── LISTES (retour BP) : une carte dans une liste de son unité ────── */
+export async function ajouterCarteAListe(supabase: SupabaseClient, listId: string, carteId: string) {
+  const { error } = await supabase.from("cartes_prospect_listes").insert({ list_id: listId, carte_id: carteId });
+  if (error && error.code !== "23505") console.error("[cartes] liste :", error.message);
+  return error && error.code !== "23505" ? error : null;
+}
+
+export async function retirerCarteDeListe(supabase: SupabaseClient, listId: string, carteId: string) {
+  const { error } = await supabase.from("cartes_prospect_listes").delete().eq("list_id", listId).eq("carte_id", carteId);
+  if (error) console.error("[cartes] liste (retrait) :", error.message);
+  return error;
+}
+
+/** Libellé d'une équipe : « Football juvénile D1 · Masculin ». */
+export function libelleEquipe(sport: string, e: { name: string; age_group: string | null; division: string | null; gender: string | null }): string {
+  const corps = [sport, e.age_group?.toLowerCase(), e.division].filter(Boolean).join(" ");
+  const base = e.age_group || e.division ? corps : [sport, e.name].filter(Boolean).join(" — ");
+  return e.gender ? `${base} · ${e.gender}` : base;
 }
 
 /* ── MON CÉGEP (admin) ──────────────────────────────────────────────

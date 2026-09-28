@@ -77,7 +77,7 @@ import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
 import { estCarte, bientotPurgee, ecrireCarte, retirerCarte, ajouterNoteCarte } from "@/lib/cartes/carteProspect";
 import { useNotesCarte } from "@/lib/cartes/useCartes";
-import { MarqueurProspect, MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte } from "@/components/recruteur/cartes/PanneauCarte";
+import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import { useNotesUnite, useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
@@ -424,6 +424,8 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         type="button"
         onClick={onClick}
         className={`w-full text-left bg-[#1A1D24] rounded-lg border border-[#2D3748] transition-all duration-200 hover:shadow-[0_0_16px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 overflow-hidden ${isDraggable ? "" : ""}`}
+        style={estCarte(card) ? { backgroundColor: SURFACE_PROSPECT } : undefined}
+        data-prospect={estCarte(card) ? "1" : undefined}
       >
         {/* Photo banner */}
         <div className="relative h-20 bg-[#2F3440] overflow-hidden">
@@ -440,11 +442,9 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               />
             );
           })()}
-          <div className="absolute inset-0 z-[2]" style={{ background: "linear-gradient(to top, #1A1D24 0%, transparent 60%)" }} />
-          {/* Verified badge — une carte prospect porte son marqueur à la place. */}
-          {estCarte(card) ? (
-            <div className="absolute top-2 left-2 z-[3]"><MarqueurProspect taille="sm" /></div>
-          ) : (
+          <div className="absolute inset-0 z-[2]" style={{ background: `linear-gradient(to top, ${estCarte(card) ? SURFACE_PROSPECT : "#1A1D24"} 0%, transparent 60%)` }} />
+          {/* Verified badge — une carte prospect n'en porte pas : son fond la marque. */}
+          {estCarte(card) ? null : (
           <div className="absolute top-2 left-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill={card.is_verified ? BLUE : "#4a4d56"} stroke="none">
               <circle cx="12" cy="12" r="10" />
@@ -751,7 +751,7 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
       return (
         <span className="flex flex-col items-start gap-1">
           <span className={`line-clamp-2 text-[15px] font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>
-          {estCarte(card) && <span className="flex flex-wrap gap-1"><MarqueurProspect taille="sm" /><MarqueurExpiration carte={card} /></span>}
+          {estCarte(card) && <MarqueurExpiration carte={card} />}
         </span>
       );
     case "numero":
@@ -1148,6 +1148,8 @@ function PipelineTable({
                 onClick={() => onRowClick(card)}
                 onKeyDown={(e) => { if (e.key === "Enter") onRowClick(card); }}
                 className="group border-t border-[#2D3748]/60 cursor-pointer hover:bg-white/[0.03] focus:bg-white/[0.04] outline-none transition-colors"
+                style={estCarte(card) ? { backgroundColor: FOND_PROSPECT } : undefined}
+                data-prospect={estCarte(card) ? "1" : undefined}
                 aria-label={card.full_name}
               >
                 {COLONNES_TABLEAU.map((col) => {
@@ -1410,7 +1412,7 @@ function SlideOver({
               <h2 className="font-head text-[20px] font-black text-white uppercase tracking-tight">{card.full_name}</h2>
               {card.is_verified && <svg width="18" height="18" viewBox="0 0 24 24" fill={BLUE} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
             </div>
-            {carte && <div className="flex flex-wrap gap-1.5 mt-2"><MarqueurProspect /><MarqueurExpiration carte={carte} /></div>}
+            {carte && <div className="mt-1.5 space-y-1.5"><MentionProspect /><MarqueurExpiration carte={carte} /></div>}
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: currentCol?.phase === "commitment" ? "rgba(230,57,70,0.25)" : "rgba(107,114,128,0.25)" }}>{card.sport}</span>
               <span className="text-[13px] text-[#9CA3AF]">{card.position}</span>
@@ -2292,14 +2294,14 @@ function PipelinePageContent() {
 
       // Chargé À LA DEMANDE : ni lib/export/xlsx ni jszip ne pèsent sur la page.
       const { construireXlsx } = await import("@/lib/export/xlsx");
-      /* Deux colonnes de plus que le tableau (lot C) : « Sur Nexus » (Non pour
+      /* Deux colonnes de plus que le tableau (lot C) : « Profil Nexus » (Non pour
          une carte prospect) et « Courriel » — celui des cartes, inclus par
          décision BP ; vide pour un athlète Nexus. */
       const octets = await construireXlsx(
         "Mon processus",
         [
           ...COLONNES_TABLEAU.map((c) => ({ titre: c.libelle, largeur: LARGEUR_EXPORT[c.cle] ?? 14 })),
-          { titre: "Sur Nexus", largeur: 10 },
+          { titre: "Profil Nexus", largeur: 12 },
           { titre: "Courriel", largeur: 28 },
         ],
         lignesExport.map((card) => [
@@ -2655,6 +2657,8 @@ function PipelinePageContent() {
         </DragOverlay>
       </DndContext>
       </>)}
+
+      {cards.some((c) => estCarte(c)) && <LegendeProspect />}
 
       {/* Slide-Over */}
       {selectedCard && (

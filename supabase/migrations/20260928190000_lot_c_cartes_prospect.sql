@@ -26,7 +26,16 @@
 -- L'avis 30 jours avant est CALCULÉ à l'écran (bandeau + marqueur, décision
 -- BP) — aucune table d'avis.
 --
--- ADDITIF : quatre tables nouvelles, fonctions nouvelles, une tâche pg_cron.
+-- LISTES (retour BP) : une carte s'ajoute à une liste de SON unité, par une
+-- table de liaison à part (cartes_prospect_listes) — recruiter_list_members
+-- porte athlete_id NOT NULL et est lue par l'app 1.4.3 : on n'y touche pas.
+--
+-- DOUBLONS PAR COURRIEL (retour BP) : athlete_nexus_par_courriel() dit si un
+-- courriel appartient à un athlète Nexus, SEULEMENT si son identité est
+-- visible pour l'appelant (même règle que la recherche : athlete_identity_ok
+-- + Pro). Un athlète masqué n'est jamais suggéré : pas d'oracle.
+--
+-- ADDITIF : cinq tables nouvelles, fonctions nouvelles, une tâche pg_cron.
 -- AUCUNE table, colonne, contrainte, policy ni fonction existante touchée —
 -- l'app 1.4.3 ne lit aucune de ces tables.
 --
@@ -86,7 +95,7 @@ create table public.cartes_prospect_journal (
   id         uuid primary key default gen_random_uuid(),
   carte_id   uuid not null references public.cartes_prospect(id) on delete cascade,
   acteur     uuid references auth.users(id) on delete set null,
-  action     text not null check (action in ('CREEE','ETAPE','GRADE','RELANCE','VISITE','DRAPEAU','MODIFIEE','NOTE')),
+  action     text not null check (action in ('CREEE','ETAPE','GRADE','RELANCE','VISITE','DRAPEAU','MODIFIEE','NOTE','LISTE')),
   details    jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -104,6 +113,17 @@ create table public.cartes_prospect_suppressions (
   derniere_activite timestamptz,
   supprimee_le    timestamptz not null default now()
 );
+-- Une carte dans une liste de son unité (retour BP).
+create table public.cartes_prospect_listes (
+  id         uuid primary key default gen_random_uuid(),
+  list_id    uuid not null references public.recruiter_lists(id) on delete cascade,
+  carte_id   uuid not null references public.cartes_prospect(id) on delete cascade,
+  ajoute_par uuid default auth.uid() references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (list_id, carte_id)
+);
+create index cartes_prospect_listes_carte_idx on public.cartes_prospect_listes (carte_id);
+
 comment on table public.cartes_prospect_suppressions is
   'Lot C : trace minimale de chaque carte prospect supprimée (retrait par un recruteur ou purge de rétention). Aucune donnée de l''athlète.';
 
@@ -314,6 +334,63 @@ create trigger trg_carte_note_avant before insert or update on public.cartes_pro
 create trigger trg_carte_note_apres after insert or update on public.cartes_prospect_notes
   for each row execute function public.cartes_prospect_notes_apres();
 
+-- 3f. Liaison liste ↔ carte : même unité, signée, journalisée.
+create function public.cartes_prospect_listes_avant()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_liste record; v_carte record;
+begin
+  select unite_cegep_id, unite_sport_id into v_liste from public.recruiter_lists where id = new.list_id;
+  select unite_cegep_id, unite_sport_id into v_carte from public.cartes_prospect where id = new.carte_id;
+  if v_liste.unite_cegep_id is distinct from v_carte.unite_cegep_id
+     or v_liste.unite_sport_id is distinct from v_carte.unite_sport_id
+     or v_liste.unite_cegep_id is null then
+    raise exception 'NEXUS: la liste doit appartenir à l''unité de la carte' using errcode = '22023';
+  end if;
+  new.ajoute_par := auth.uid();
+  new.created_at := now();
+  return new;
+end $$;
+
+create function public.cartes_prospect_listes_journal()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_carte uuid := coalesce(new.carte_id, old.carte_id);
+  v_liste uuid := coalesce(new.list_id, old.list_id);
+begin
+  -- La carte peut être en train d'être supprimée (cascade) : rien à journaliser.
+  if not exists (select 1 from public.cartes_prospect where id = v_carte) then
+    return coalesce(new, old);
+  end if;
+  insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+  select v_carte, auth.uid(), 'LISTE',
+         jsonb_build_object('ajout', tg_op = 'INSERT', 'liste', l.name)
+    from public.recruiter_lists l where l.id = v_liste;
+  update public.cartes_prospect set derniere_activite = now() where id = v_carte;
+  return coalesce(new, old);
+end $$;
+
+create trigger trg_carte_liste_avant before insert on public.cartes_prospect_listes
+  for each row execute function public.cartes_prospect_listes_avant();
+create trigger trg_carte_liste_journal after insert or delete on public.cartes_prospect_listes
+  for each row execute function public.cartes_prospect_listes_journal();
+
+-- 3g. Doublons par courriel — l'athlète Nexus n'est rendu que si son identité
+--     est visible pour l'appelant (recruteur Pro), comme dans la recherche.
+create function public.athlete_nexus_par_courriel(p_courriel text)
+returns table (id uuid, first_name text, last_name text)
+language sql stable security definer set search_path = public as $$
+  select a.id, a.first_name, a.last_name
+    from public.athletes a
+   where p_courriel is not null
+     and lower(btrim(a.email)) = lower(btrim(p_courriel))
+     and a.status = 'ACTIF'::public.account_status
+     and public.athlete_identity_ok(a.date_naissance, a.consentement_parental)
+     and exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'RECRUTEUR'::public.user_role)
+     and public.user_has_pro()
+   limit 1
+$$;
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- 4. RLS
 -- ════════════════════════════════════════════════════════════════════════════
@@ -321,6 +398,14 @@ alter table public.cartes_prospect enable row level security;
 alter table public.cartes_prospect_notes enable row level security;
 alter table public.cartes_prospect_journal enable row level security;
 alter table public.cartes_prospect_suppressions enable row level security;
+alter table public.cartes_prospect_listes enable row level security;
+
+create policy cartes_listes_select on public.cartes_prospect_listes for select to authenticated
+  using (public.carte_lecture_ok(carte_id));
+create policy cartes_listes_insert on public.cartes_prospect_listes for insert to authenticated
+  with check (public.carte_ecriture_ok(carte_id));
+create policy cartes_listes_delete on public.cartes_prospect_listes for delete to authenticated
+  using (public.carte_ecriture_ok(carte_id));
 
 create policy cartes_select on public.cartes_prospect for select to authenticated
   using (public.acces_carte_lecture(unite_cegep_id, unite_sport_id));
@@ -355,10 +440,12 @@ create policy cartes_suppressions_select on public.cartes_prospect_suppressions 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 5. DROITS — anon n'a rien ; le journal et la trace ne s'écrivent pas par l'API.
 -- ════════════════════════════════════════════════════════════════════════════
-revoke all on public.cartes_prospect, public.cartes_prospect_notes,
+revoke all on public.cartes_prospect, public.cartes_prospect_notes, public.cartes_prospect_listes,
               public.cartes_prospect_journal, public.cartes_prospect_suppressions from public, anon;
 revoke all on public.cartes_prospect_journal, public.cartes_prospect_suppressions from authenticated;
 grant select, insert, update, delete on public.cartes_prospect, public.cartes_prospect_notes to authenticated;
+revoke all on public.cartes_prospect_listes from authenticated;
+grant select, insert, delete on public.cartes_prospect_listes to authenticated;
 grant select on public.cartes_prospect_journal, public.cartes_prospect_suppressions to authenticated;
 
 revoke execute on function public.acces_carte_ecriture(uuid, uuid) from public, anon;
@@ -376,6 +463,10 @@ revoke execute on function public.cartes_prospect_journaliser()         from pub
 revoke execute on function public.cartes_prospect_tracer_suppression()  from public, anon, authenticated;
 revoke execute on function public.cartes_prospect_notes_avant()         from public, anon, authenticated;
 revoke execute on function public.cartes_prospect_notes_apres()         from public, anon, authenticated;
+revoke execute on function public.cartes_prospect_listes_avant()        from public, anon, authenticated;
+revoke execute on function public.cartes_prospect_listes_journal()      from public, anon, authenticated;
+revoke execute on function public.athlete_nexus_par_courriel(text)      from public, anon;
+grant  execute on function public.athlete_nexus_par_courriel(text)      to authenticated;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 6. RÉTENTION — purge quotidienne, 12 mois après la dernière activité.
@@ -409,7 +500,8 @@ begin
       ('public.cartes_prospect',              array['authenticated','postgres','service_role']),
       ('public.cartes_prospect_notes',        array['authenticated','postgres','service_role']),
       ('public.cartes_prospect_journal',      array['authenticated','postgres','service_role']),
-      ('public.cartes_prospect_suppressions', array['authenticated','postgres','service_role'])
+      ('public.cartes_prospect_suppressions', array['authenticated','postgres','service_role']),
+      ('public.cartes_prospect_listes',       array['authenticated','postgres','service_role'])
     ) as v(t, veut)
   loop
     select array_agg(distinct t.g order by t.g) into vus
@@ -424,6 +516,13 @@ begin
       raise exception 'NEXUS: RLS inactive sur %', r.t;
     end if;
   end loop;
+
+  -- 7b'. La liaison liste ↔ carte ne se MODIFIE pas : ajout et retrait seulement.
+  if exists (select 1 from information_schema.role_table_grants
+              where table_schema = 'public' and grantee = 'authenticated'
+                and table_name = 'cartes_prospect_listes' and privilege_type not in ('SELECT','INSERT','DELETE')) then
+    raise exception 'NEXUS: authenticated a trop de droits sur cartes_prospect_listes';
+  end if;
 
   -- 7b. Droits fins : journal et trace en LECTURE seule pour authenticated.
   if exists (select 1 from information_schema.role_table_grants
@@ -446,7 +545,10 @@ begin
       ('public.cartes_prospect_tracer_suppression()',       array['postgres','service_role']),
       ('public.cartes_prospect_notes_avant()',              array['postgres','service_role']),
       ('public.cartes_prospect_notes_apres()',              array['postgres','service_role']),
-      ('public.purger_cartes_prospect()',                   array['postgres','service_role'])
+      ('public.purger_cartes_prospect()',                   array['postgres','service_role']),
+      ('public.cartes_prospect_listes_avant()',             array['postgres','service_role']),
+      ('public.cartes_prospect_listes_journal()',           array['postgres','service_role']),
+      ('public.athlete_nexus_par_courriel(text)',           array['authenticated','postgres','service_role'])
     ) as v(f, veut)
   loop
     select array_agg(t.g order by t.g) into vus
@@ -465,7 +567,8 @@ begin
       ('public.cartes_prospect',              array['cartes_delete','cartes_insert','cartes_select','cartes_update']),
       ('public.cartes_prospect_notes',        array['cartes_notes_delete','cartes_notes_insert','cartes_notes_select','cartes_notes_update']),
       ('public.cartes_prospect_journal',      array['cartes_journal_select']),
-      ('public.cartes_prospect_suppressions', array['cartes_suppressions_select'])
+      ('public.cartes_prospect_suppressions', array['cartes_suppressions_select']),
+      ('public.cartes_prospect_listes',       array['cartes_listes_delete','cartes_listes_insert','cartes_listes_select'])
     ) as v(t, veut)
   loop
     select array_agg(polname::text order by polname::text) into vus from pg_policy where polrelid = r.t::regclass;
