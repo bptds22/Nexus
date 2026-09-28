@@ -105,6 +105,14 @@ migration : tout repose sur B1/B2-0.
   avec qui l'a ajouté (`added_by`), notes de liste et notes d'athlète signées ;
   celles des collègues en **lecture seule**. Supprimer une liste la supprime
   pour l'unité — la confirmation nomme l'auteur si ce n'est pas soi.
+- **Retirer un favori retire aussi du processus** (décision BP 2026-09-28,
+  web, Pro) : dossier à Identifié ou Contacté → les deux partent sans question
+  (sauf la confirmation d'unité si des collègues l'ont en favori) ; dossier
+  plus avancé → confirmation « Cet athlète est en [étape]. Retirer le favori le
+  retirera aussi du processus de l'unité. ». Deux appels client dans l'ordre,
+  `unite_retirer_favori` puis `unite_retirer_du_processus` — aucune fonction en
+  base touchée, chacun signe sa ligne de journal. Si le second échoue, le
+  favori est déjà parti et l'écran le dit. Gratuit : inchangé.
 - L'admin cégep voit ici **son sport** seulement ; les autres sports de son
   cégep relèvent de l'étape 3 (registre §39–40).
 - Toutes les lectures sont sous les clés de `lib/queries/tableauBlanc.ts`

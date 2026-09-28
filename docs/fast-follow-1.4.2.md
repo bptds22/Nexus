@@ -1319,7 +1319,7 @@ processus). Mais le binaire publié **ne connaît pas l'unité**. Limites
 
 | Geste sur mobile 1.4.3 | Ce qui se passe | Attendu en 1.4.4 |
 |---|---|---|
-| Retirer un favori | ne retire que **sa** ligne ; l'athlète reste favori de l'unité si un collègue l'a | retirer pour l'unité |
+| Retirer un favori | ne retire que **sa** ligne ; l'athlète reste favori de l'unité si un collègue l'a, **et reste dans le processus** | retirer pour l'unité, **et du processus** (confirmation au-delà de Contacté — comportement web du 2026-09-28) |
 | Retirer du processus | ne supprime que **sa** ligne ; le dossier reste dans l'unité par les lignes des collègues | retirer pour l'unité (avec confirmation) |
 | Changer d'étape hors VISITE_PLANIFIEE | l'ancien `persistPipelineStage` met `visit_at` à NULL ; la synchronisation **efface la visite de l'unité** | règle `regleVisite` (la visite survit au changement d'étape) |
 | Voir « Mon processus », « Mes favoris », « Mes listes » | lectures filtrées `recruiter_id = soi` : **seulement ses propres lignes** (leurs étapes, grades et relances suivent toutefois l'unité par synchronisation) | lectures par unité (`unite_pipeline`, `unite_favoris`, listes de l'unité) |
