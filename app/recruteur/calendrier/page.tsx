@@ -38,7 +38,7 @@ import {
   type CalendarSort,
   type MatchView,
 } from "@/lib/calendar/recruitingCalendar";
-import { RECRUITER_TIERS } from "@/lib/config/pricing";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
@@ -120,13 +120,6 @@ const CalendarIcon = ({ size = 15, strokeWidth = 2.2 }: { size?: number; strokeW
     <line x1="16" y1="2" x2="16" y2="6" />
     <line x1="8" y1="2" x2="8" y2="6" />
     <line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-
-const LockIcon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <rect x="3" y="11" width="18" height="11" rx="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 );
 
@@ -510,62 +503,19 @@ function NoMatchForFilters({ minTargets, onReset }: { minTargets: number; onRese
 /** Mur Free — planche `.board.lock` de la réf. Le fond flouté est le
  *  décor de la réf (fixture), pas de la donnée : aucune requête ne
  *  part pour un recruteur Free. */
-function FreeWall() {
-  const pro = RECRUITER_TIERS.find((t) => t.id === "rec_pro");
-  const price = pro ? `${pro.monthly.toFixed(2).replace(".", ",")} $/mois` : "";
-
-  const Ghost = ({ day, month, home, visitor, meta, count }: {
-    day: string; month: string; home: string; visitor: string; meta: string; count: number;
-  }) => (
-    <div className="mb-3 overflow-hidden rounded-2xl border border-[#262A33] bg-[#1A1D24]">
-      <div className="flex items-center gap-[22px] px-[22px] py-[18px]">
-        <div className="w-16 shrink-0 text-center">
-          <div className="text-[30px] font-extrabold leading-none tracking-[-0.02em] text-[#EDEFF3]">{day}</div>
-          <div className="mt-[3px] text-[12px] font-bold uppercase tracking-[0.1em] text-[#E63946]">{month}</div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[17px] font-bold leading-[1.35] text-[#EDEFF3]">
-            {home}<span className="px-1 text-[14.5px] font-medium text-[#5C6575]">vs</span>{visitor}
-          </div>
-          <div className="mt-1 text-[14.5px] font-medium text-[#8A909C]">{meta}</div>
-        </div>
-        <span className="inline-flex shrink-0 items-center gap-[7px] rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-[15px] py-[7px] text-[14px] font-semibold text-[#EDEFF3]">
-          <b className="font-extrabold text-[#E63946]">{count}</b> cibles
-        </span>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="relative mt-[34px] overflow-hidden rounded-2xl border border-[#262A33] bg-[#1A1D24] px-[30px] py-[60px] text-center">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none p-6 opacity-45 blur-[7px]">
-        <Ghost day="12" month="Oct" home="Vulkins Jean-Eudes" visitor="Phénix André-Grasset" meta="14:00 · Stade Jean-Eudes" count={6} />
-        <Ghost day="14" month="Oct" home="Titans Limoilou" visitor="Élans Garneau" meta="19:30 · Terrain Limoilou" count={2} />
-      </div>
-      <div className="relative z-[2]">
-        <div className="mb-[18px] inline-flex h-[58px] w-[58px] items-center justify-center rounded-full bg-[#20242C] text-[#8A909C]">
-          <LockIcon />
-        </div>
-        <h3 className="mb-2 text-[20px] font-bold text-[#EDEFF3]">Planifiez vos déplacements avec le tier Pro</h3>
-        <p className="mx-auto max-w-[520px] text-[15px] text-[#8A909C]">
-          Voyez quels matchs regroupent le plus de vos cibles, filtrés par position, promotion et région.
-        </p>
-        <Link
-          href="/tarifs"
-          className="mt-5 inline-flex items-center gap-[9px] rounded-xl border-0 bg-[#E63946] px-[26px] py-[13px] text-[15px] font-bold text-white shadow-[0_8px_22px_-10px_rgba(230,57,70,0.7)]"
-        >
-          Passer au tier Pro{price ? ` — ${price}` : ""}
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 /* ── Page ──────────────────────────────────────────────────── */
 
 export default function CalendrierPage() {
   if (IS_CAPACITOR) return <RecruteurCalendrierMobile />;
-  return <CalendrierContent />;
+  /* Pro depuis le 2026-09-28 (décision BP) : même verrou que Listes et Mon
+     processus. FeatureGate ne MONTE PAS le contenu pour un gratuit — aucune
+     requête ne part, rien n'est téléchargé puis masqué. */
+  return (
+    <FeatureGate feature="recruiting_calendar" requiredTier="pro">
+      <CalendrierContent />
+    </FeatureGate>
+  );
 }
 
 function CalendrierContent() {
@@ -751,9 +701,7 @@ function CalendrierContent() {
         </div>
       </div>
 
-      {isFree ? (
-        <FreeWall />
-      ) : (
+      {(
         <>
           {/* ── Filtres — deux étages, pattern de recherche/page.tsx ── */}
           <div className="mt-[22px] space-y-3">
