@@ -6,6 +6,8 @@
 select cron.unschedule(jobid) from cron.job where jobname = 'cartes-prospect-purge-quotidienne';
 
 drop table public.cartes_prospect_listes;
+drop table public.cartes_prospect_invitations;
+drop table public.courriel_desabonnements_adresses;
 drop table public.cartes_prospect_notes;
 drop table public.cartes_prospect_journal;
 drop table public.cartes_prospect;              -- ses triggers et policies partent avec elle
@@ -13,6 +15,9 @@ drop table public.cartes_prospect_suppressions;
 
 drop function public.purger_cartes_prospect();
 drop function public.athlete_nexus_par_courriel(text);
+drop function public.cartes_prospect_inviter();
+drop function public.envoyer_invitation_carte(uuid);
+drop function public.empreinte_courriel(text);
 drop function public.cartes_prospect_listes_journal();
 drop function public.cartes_prospect_listes_avant();
 drop function public.cartes_prospect_notes_apres();
@@ -28,7 +33,7 @@ drop function public.acces_carte_ecriture(uuid, uuid);
 
 do $$
 begin
-  if exists (select 1 from pg_class where relnamespace = 'public'::regnamespace and relname like 'cartes\_prospect%') then
+  if exists (select 1 from pg_class where relnamespace = 'public'::regnamespace and (relname like 'cartes\_prospect%' or relname = 'courriel_desabonnements_adresses')) then
     raise exception 'NEXUS: une table cartes_prospect* existe encore';
   end if;
   if exists (select 1 from pg_proc where pronamespace = 'public'::regnamespace
@@ -37,7 +42,8 @@ begin
                               'cartes_prospect_journaliser','cartes_prospect_tracer_suppression',
                               'cartes_prospect_notes_avant','cartes_prospect_notes_apres',
                               'cartes_prospect_listes_avant','cartes_prospect_listes_journal',
-                              'athlete_nexus_par_courriel')) then
+                              'athlete_nexus_par_courriel','cartes_prospect_inviter',
+                              'envoyer_invitation_carte','empreinte_courriel')) then
     raise exception 'NEXUS: une fonction des cartes existe encore';
   end if;
   if exists (select 1 from cron.job where jobname = 'cartes-prospect-purge-quotidienne') then

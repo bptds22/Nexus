@@ -37,7 +37,6 @@ import {
   type PipelineFilters,
   type QuickKey,
 } from "@/lib/pipeline/filterPipelineCards";
-import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import type { CelluleXlsx } from "@/lib/export/xlsx";
 import {
@@ -75,11 +74,11 @@ import { PencilIcon } from "@/components/shared/wizard/modeIcons";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
 import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
-import { estCarte, bientotPurgee, ecrireCarte, retirerCarte, ajouterNoteCarte } from "@/lib/cartes/carteProspect";
-import { useNotesCarte } from "@/lib/cartes/useCartes";
-import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
+import { estCarte, bientotPurgee, ecrireCarte, retirerCarte } from "@/lib/cartes/carteProspect";
+import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
+import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
-import { useNotesUnite, useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
+import { useAuteursUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -427,8 +426,8 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         style={estCarte(card) ? { backgroundColor: SURFACE_PROSPECT } : undefined}
         data-prospect={estCarte(card) ? "1" : undefined}
       >
-        {/* Photo banner */}
-        <div className="relative h-20 bg-[#2F3440] overflow-hidden">
+        {/* Photo banner — teinté lui aussi pour une carte prospect. */}
+        <div className="relative h-20 bg-[#2F3440] overflow-hidden" style={estCarte(card) ? { backgroundColor: BANDEAU_PROSPECT } : undefined}>
           {(() => {
             const [first, ...rest] = (card.full_name || "").split(/\s+/);
             return (
@@ -528,6 +527,22 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 </span>
               );
             })()}
+            {/* RELANCE : une pastille du corps, sur TOUTES les cartes, comme
+                celle de la visite (retour BP) — plus de pied de carte. La note
+                de relance se lit au survol et dans le panneau. */}
+            {hasAction && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 text-white"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.2)" }}
+                title={card.next_action_note ? `Relance : ${card.next_action_note}` : "Relance"}
+                data-testid="pastille-relance"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                  <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M5 3 2 6M19 3l3 3" />
+                </svg>
+                {card.next_action_at ? `Relance ${formatRelanceCourt(card.next_action_at)}` : "Relance"}
+              </span>
+            )}
           </div>
           {card.recruitment_status === 'RECRUTE' && ['identifie', 'contacte', 'en_discussion', 'visite_planifiee'].includes(card.status) && (
             <div className="mt-1.5 px-2 py-1 rounded bg-[#E63946]/10 border-l-2 border-[#E63946]">
@@ -546,6 +561,10 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
           {compAhead && (
             <p className="text-[11px] text-[#E63946] mt-1.5">⚠️ Un autre CÉGEP est plus avancé</p>
           )}
+          {/* Sans relance, l'inactivité se dit ici (l'ancien pied de carte). */}
+          {!hasAction && stale && (
+            <p className="text-[11px] text-[#E63946] mt-1.5">Aucun mouvement depuis {staleDays}j</p>
+          )}
 
           {/* Cote du coach + mon grade, sur la même ligne (retour terrain
               2026-09-04). Les deux jugements portés sur l'athlète se lisent
@@ -556,38 +575,12 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 (lib/evaluations/presence) : StarRating rendrait « 0.0 ». */}
             {aUneCote(card.coach_rating)
               ? <StarRating rating={card.coach_rating} size="md" />
+              : estCarte(card) ? null /* un prospect ne sera jamais évalué par un coach */
               : <span className="text-[12px] text-[#6b7280]">Pas encore évalué</span>}
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
         </div>
 
-        {/* Footer: Next action / staleness */}
-        {(hasAction || stale) && (
-          /* Plus de fenêtre dédiée à la relance (décision BP 2026-09-23) : le
-             pied n'a plus son propre clic, il fait partie de la carte — un clic
-             n'importe où ouvre le panneau latéral, seul lieu de la relance. */
-          <div className="px-3.5 pb-3 pt-2 border-t border-white/10">
-            {/* La DATE est un élément à part, `shrink-0`, et seule la NOTE
-                tronque. Avant, date et note partageaient un seul `truncate`,
-                la date EN FIN : une note un peu longue poussait la date
-                derrière l'ellipse, et la carte semblait sans relance. */}
-            {hasAction ? (
-              <p className="text-[11px] flex items-center gap-1.5 min-w-0">
-                {card.next_action_at && (
-                  <span className="shrink-0 font-semibold text-white">
-                    {/* « Relance 16 sept. », pas la date nue (retour BP
-                        2026-09-23) : seule, une date ne dit pas ce qu'elle date. */}
-                    Relance {formatRelanceCourt(card.next_action_at)}
-                  </span>
-                )}
-                {card.next_action_at && card.next_action_note && <span className="shrink-0 text-[#4a4d56]">·</span>}
-                {card.next_action_note && <span className="truncate text-[#6b7280]">{card.next_action_note}</span>}
-              </p>
-            ) : stale ? (
-              <p className="text-[11px] text-[#E63946]">Aucun mouvement depuis {staleDays}j</p>
-            ) : null}
-          </div>
-        )}
       </button>
     </div>
   );
@@ -1188,7 +1181,9 @@ function PipelineTable({
                       </td>
                     );
                   }
-                  return <td key={col.cle} className={cls}>{celluleTableau(col.cle, card, now)}</td>;
+                  // Colonne Nom FIGÉE : son fond est opaque — il doit porter la teinte lui-même.
+                  const fondFige = col.cle === "nom" && estCarte(card) ? { backgroundColor: SURFACE_PROSPECT } : undefined;
+                  return <td key={col.cle} className={cls} style={fondFige}>{celluleTableau(col.cle, card, now)}</td>;
                 })}
               </tr>
             );
@@ -1288,11 +1283,6 @@ function KanbanColumn({
 
 /* ── Slide-Over Panel ─────────────────────────────────────────── */
 
-interface NoteEntry {
-  id: string;
-  content: string;
-  created_at: string;
-}
 
 function SlideOver({
   card, onClose, onStatusChange, onSetGrade, onSaveVisit, onSaveRelanceNote, onSaveRelanceDate,
@@ -1324,7 +1314,6 @@ function SlideOver({
   // Onglet courant (lot C1, + « Historique » au lot B2). Le panneau se
   // remonte à chaque carte (key={card.id}) : il rouvre toujours sur « Actions ».
   const [onglet, setOnglet] = useState<"actions" | "infos" | "historique">("actions");
-  const [noteText, setNoteText] = useState("");
   // Note de RELANCE (next_action_note) — distincte des notes de suivi. Seedée
   // au montage : le panneau se remonte à chaque carte (key={card.id}).
   const [noteRelance, setNoteRelance] = useState(card.next_action_note ?? "");
@@ -1333,54 +1322,12 @@ function SlideOver({
   const [editingVisit, setEditingVisit] = useState(false);
   const [visitDate, setVisitDate] = useState(() => isoToInputs(card.visit_at ?? null).date);
   const [visitTime, setVisitTime] = useState(() => isoToInputs(card.visit_at ?? null).time);
-  // Migration TanStack (iter 5.3b) — notes en cache per-athlete on-demand.
-  const queryClient = useQueryClient();
-  /* Notes : celles de l'UNITÉ, signées (lot B2) — ou, en mode démo, les
-     siennes seulement (usePipelineNotes, partagé avec le mobile). Les notes
-     des collègues sont en LECTURE SEULE (décision BP 2) : le panneau n'offre
-     de toute façon ni modification ni suppression. */
-  // Carte prospect (lot C) : ses notes vivent dans cartes_prospect_notes.
+  // Notes de suivi : FilNotesSuivi (un seul fil par joueur, retour BP).
   const carte = estCarte(card) ? card : null;
-  const { data: notesDemo = [] } = usePipelineNotes(modeUnite || carte ? null : card.id);
-  const { data: notesUnite = [] } = useNotesUnite(modeUnite && !carte ? card.id : null);
-  const { data: notesCarte = [] } = useNotesCarte(carte ? card.id : null);
-  const noteHistory: { id: string; content: string; created_at: string; recruiter_id?: string }[] =
-    carte ? notesCarte : modeUnite ? notesUnite : notesDemo;
-  const { data: auteurs = {} } = useAuteursUnite(modeUnite);
-  const signature = (id: string | undefined) => (!id ? null : id === moi ? "Toi" : nomAuteur(auteurs[id]));
   const colleguesQuiSuivent = collegues(card, moi);
-  const [posting, setPosting] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<RecruitmentStatus | null>(null);
   const [retireReason, setRetireReason] = useState("");
   const currentCol = KANBAN_COLUMNS.find((c) => c.id === card.status);
-
-  // Post a new note + invalidation cache
-  const handlePostNote = async () => {
-    if (!noteText.trim()) return;
-    if (isFreeDemoMode) {
-      onTeaseUpgrade();
-      setNoteText("");
-      return;
-    }
-    setPosting(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setPosting(false); return; }
-    if (carte) {
-      await ajouterNoteCarte(supabase, card.id, noteText);
-    } else {
-      await supabase
-        .from("recruiter_notes")
-        .insert({ recruiter_id: user.id, athlete_id: card.id, content: noteText.trim() })
-        .select("id, content, created_at")
-        .single();
-    }
-    // Toutes les lectures du tableau blanc : la note elle-même, la colonne
-    // « Note de suivi », l'onglet Historique (NOTE_ADDED)…
-    void invaliderTableauBlanc(queryClient);
-    setNoteText("");
-    setPosting(false);
-  };
 
   const handleStatusClick = (status: RecruitmentStatus) => {
     if (status === card.status) return;
@@ -1412,7 +1359,7 @@ function SlideOver({
               <h2 className="font-head text-[20px] font-black text-white uppercase tracking-tight">{card.full_name}</h2>
               {card.is_verified && <svg width="18" height="18" viewBox="0 0 24 24" fill={BLUE} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
             </div>
-            {carte && <div className="mt-1.5 space-y-1.5"><MentionProspect /><MarqueurExpiration carte={carte} /></div>}
+            {carte && <div className="mt-1.5 space-y-1.5"><MentionProspect inviteeLe={carte.carte.inviteeLe} /><MarqueurExpiration carte={carte} /></div>}
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: currentCol?.phase === "commitment" ? "rgba(230,57,70,0.25)" : "rgba(107,114,128,0.25)" }}>{card.sport}</span>
               <span className="text-[13px] text-[#9CA3AF]">{card.position}</span>
@@ -1428,7 +1375,7 @@ function SlideOver({
             ) : (
               <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
             )}
-            <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
+            {card.graduation_year > 0 && <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>}
 
             <div className="flex items-center gap-2 mt-3">{carte ? <span className="text-[12px] text-[#4a4d56]">Cote du coach : disponible quand l&apos;athlète sera sur Nexus</span> : aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
           </div>
@@ -1480,61 +1427,17 @@ function SlideOver({
               </div>
             </div>}
           </div>
-          {/* Notes — ServiceNow-style work notes + activity feed */}
-          <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-2">Notes de suivi</h3>
-            {/* Input — absent sur un dossier d'une autre unité (une note s'y
-                rangerait dans l'unité de l'admin, invisible pour ce sport). */}
-            {!lectureSeule && <div className="flex gap-2">
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                rows={2}
-                placeholder="Ajouter une note..."
-                className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePostNote(); } }}
-              />
-              <button
-                type="button"
-                onClick={handlePostNote}
-                disabled={posting || !noteText.trim()}
-                className="self-end px-3 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors shrink-0"
-              >
-                {posting ? "..." : "Poster"}
-              </button>
-            </div>}
-
-            {/* Activity timeline */}
-            {noteHistory.length > 0 && (
-              <div className="mt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Activités</span>
-                  <span className="text-[10px] text-[#4a4d56]">{noteHistory.length}</span>
-                </div>
-                <div className="space-y-0">
-                  {noteHistory.map((note, idx) => {
-                    const d = new Date(note.created_at);
-                    const dateStr = d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
-                    const timeStr = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
-                    return (
-                      <div key={note.id} className={`relative pl-5 pb-4 ${idx < noteHistory.length - 1 ? "border-l border-[#2D3748]" : "border-l border-transparent"} ml-1.5`}>
-                        {/* Timeline dot */}
-                        <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-[#E63946]" />
-                        <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <span className="text-[11px] font-bold text-[#9CA3AF]">
-                            {signature(note.recruiter_id) && <span className="text-white">{signature(note.recruiter_id)} · </span>}
-                            {dateStr}
-                          </span>
-                          <span className="text-[10px] text-[#4a4d56]">{timeStr}</span>
-                        </div>
-                        <p className="text-[13px] text-[#e0e0e0] leading-relaxed whitespace-pre-wrap">{note.content}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Notes de suivi — LE fil du joueur, le même composant que le
+              panneau d'une liste (retour BP : un seul fil par joueur). Absent
+              en écriture sur un dossier d'une autre unité (une note s'y
+              rangerait dans l'unité de l'admin, invisible pour ce sport). */}
+          <FilNotesSuivi
+            sujet={{ type: carte ? "carte" : "athlete", id: card.id }}
+            lecture={modeUnite || carte ? "unite" : "siennes"}
+            bloque={isFreeDemoMode}
+            lectureSeule={lectureSeule}
+            onTease={onTeaseUpgrade}
+          />
           <div>
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Changer le statut</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -2589,11 +2492,15 @@ function PipelinePageContent() {
           {/* Conditionnel : « 15 sur 15 » en permanence serait du bruit. Il
               n'apparaît que quand un filtre retire réellement des cartes —
               c'est lui qui explique un kanban à moitié vide. */}
-          {nActiveFilters > 0 && (
-            <span className="ml-auto text-[12px] text-[#9CA3AF]">
-              <span className="font-bold text-white">{filteredCards.length}</span> sur {cards.length}
-            </span>
-          )}
+          <div className="ml-auto flex items-center gap-4">
+            {/* Légende des cartes prospect (retour BP) : EN HAUT, à côté des filtres. */}
+            {cards.some((c) => estCarte(c)) && <LegendeProspect />}
+            {nActiveFilters > 0 && (
+              <span className="text-[12px] text-[#9CA3AF]">
+                <span className="font-bold text-white">{filteredCards.length}</span> sur {cards.length}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2657,8 +2564,6 @@ function PipelinePageContent() {
         </DragOverlay>
       </DndContext>
       </>)}
-
-      {cards.some((c) => estCarte(c)) && <LegendeProspect />}
 
       {/* Slide-Over */}
       {selectedCard && (

@@ -35,7 +35,23 @@
 -- visible pour l'appelant (même règle que la recherche : athlete_identity_ok
 -- + Pro). Un athlète masqué n'est jamais suggéré : pas d'oracle.
 --
--- ADDITIF : cinq tables nouvelles, fonctions nouvelles, une tâche pg_cron.
+-- INVITATION AUTOMATIQUE (retour BP) : une carte créée AVEC un courriel, dont
+-- l'adresse n'appartient à aucun compte ni athlète Nexus, déclenche UN courriel
+-- d'invitation, à la création seulement (trigger AFTER INSERT : une
+-- modification ne déclenche jamais rien). La base DÉCIDE et RÉSERVE
+-- (cartes_prospect_invitations, une ligne par carte au plus) ; l'edge function
+-- send-invitation-carte ENVOIE (Resend) et pose cartes_prospect.invitee_le,
+-- que le journal trace (INVITATION). Écartée, sans envoi : adresse d'un compte
+-- ou d'un athlète existant, adresse désabonnée, ou adresse déjà invitée depuis
+-- moins de 90 jours par N'IMPORTE QUEL cégep (règle anti-doublon d'envoi).
+-- Le motif d'un écart n'est lisible que par l'admin plateforme : le
+-- recruteur ne voit que « Invitation envoyée le … », ou rien.
+--
+-- DÉSABONNEMENT PAR ADRESSE : courriel_desabonnements est indexé par COMPTE ;
+-- le destinataire d'une invitation n'en a pas. courriel_desabonnements_adresses
+-- garde l'EMPREINTE (sha256) de l'adresse, jamais l'adresse en clair.
+--
+-- ADDITIF : sept tables nouvelles, fonctions nouvelles, une tâche pg_cron.
 -- AUCUNE table, colonne, contrainte, policy ni fonction existante touchée —
 -- l'app 1.4.3 ne lit aucune de ces tables.
 --
@@ -69,6 +85,8 @@ create table public.cartes_prospect (
   relance_note      text check (relance_note is null or char_length(relance_note) <= 500),
   visite_le         timestamptz,
   drapeau           boolean not null default false,
+  -- Posée par l'edge function send-invitation-carte, jamais par l'API.
+  invitee_le        timestamptz,
   -- Dernier changement d'étape (« depuis N jours » du kanban), posé par trigger.
   etape_le          timestamptz not null default now(),
   derniere_activite timestamptz not null default now(),
@@ -95,7 +113,7 @@ create table public.cartes_prospect_journal (
   id         uuid primary key default gen_random_uuid(),
   carte_id   uuid not null references public.cartes_prospect(id) on delete cascade,
   acteur     uuid references auth.users(id) on delete set null,
-  action     text not null check (action in ('CREEE','ETAPE','GRADE','RELANCE','VISITE','DRAPEAU','MODIFIEE','NOTE','LISTE')),
+  action     text not null check (action in ('CREEE','ETAPE','GRADE','RELANCE','VISITE','DRAPEAU','MODIFIEE','NOTE','LISTE','INVITATION')),
   details    jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -113,6 +131,35 @@ create table public.cartes_prospect_suppressions (
   derniere_activite timestamptz,
   supprimee_le    timestamptz not null default now()
 );
+-- Invitations automatiques : décision et réservation (une par carte au plus).
+-- L'adresse n'y est JAMAIS en clair : l'empreinte suffit à la règle des 90
+-- jours et au désabonnement ; l'envoi relit l'adresse sur la carte.
+create table public.cartes_prospect_invitations (
+  id             uuid primary key default gen_random_uuid(),
+  carte_id       uuid references public.cartes_prospect(id) on delete set null,
+  unite_cegep_id uuid not null,
+  empreinte      text not null check (empreinte ~ '^[0-9a-f]{64}$'),
+  statut         text not null check (statut in ('A_ENVOYER','EN_COURS','ENVOYE','ECHEC','ECARTE')),
+  motif          text check (motif is null or motif in ('COMPTE_EXISTANT','DESABONNE','DEJA_INVITE')),
+  resend_id      text,
+  erreur         text,
+  created_at     timestamptz not null default now(),
+  envoye_le      timestamptz
+);
+create unique index cartes_prospect_invitations_une_par_carte
+  on public.cartes_prospect_invitations (carte_id) where carte_id is not null;
+create index cartes_prospect_invitations_empreinte_idx
+  on public.cartes_prospect_invitations (empreinte, created_at desc);
+
+-- Registre LCAP par ADRESSE (empreinte) — pour qui n'a pas de compte.
+create table public.courriel_desabonnements_adresses (
+  empreinte    text primary key check (empreinte ~ '^[0-9a-f]{64}$'),
+  desabonne_le timestamptz not null default now(),
+  source       text not null check (source in ('lien','un_clic','admin'))
+);
+comment on table public.courriel_desabonnements_adresses is
+  'Registre LCAP des adresses SANS compte (invitations des cartes prospect) : empreinte sha256 de l''adresse normalisée, jamais l''adresse. Écriture : service_role (/api/desabonnement, jeton HMAC). Lecture : admin.';
+
 -- Une carte dans une liste de son unité (retour BP).
 create table public.cartes_prospect_listes (
   id         uuid primary key default gen_random_uuid(),
@@ -171,6 +218,7 @@ returns trigger language plpgsql security definer set search_path = public as $$
 declare
   v_cegep uuid; v_sport uuid; v_sport_equipe uuid; v_sport_position uuid;
 begin
+  new.invitee_le := null;
   select u.school_id, u.sport_id into v_cegep, v_sport
     from public.users u where u.id = auth.uid() and u.role = 'RECRUTEUR'::public.user_role;
   if v_cegep is null or v_sport is null then
@@ -213,7 +261,11 @@ begin
   new.cree_par := old.cree_par;
   new.created_at := old.created_at;
   new.updated_at := now();
-  if auth.uid() is not null then new.modifie_par := auth.uid(); end if;
+  if auth.uid() is not null then
+    new.modifie_par := auth.uid();
+    -- L'invitation n'est posée que par l'edge function (service_role).
+    new.invitee_le := old.invitee_le;
+  end if;
   new.derniere_activite := now();
   new.etape_le := case when new.etape is distinct from old.etape then now() else old.etape_le end;
 
@@ -265,6 +317,11 @@ begin
   if new.drapeau is distinct from old.drapeau then
     insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
     values (new.id, v_acteur, 'DRAPEAU', jsonb_build_object('drapeau', new.drapeau));
+  end if;
+  if new.invitee_le is distinct from old.invitee_le and new.invitee_le is not null then
+    -- Envoi système : au nom du créateur de la carte, qui l'a déclenché.
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, new.cree_par, 'INVITATION', jsonb_build_object('le', new.invitee_le));
   end if;
   if (new.prenom, new.nom, new.team_id, new.position_id, new.numero, new.promotion, new.taille_pieds,
       new.taille_pouces, new.poids_lbs, new.lien_video, new.courriel)
@@ -375,6 +432,70 @@ create trigger trg_carte_liste_avant before insert on public.cartes_prospect_lis
 create trigger trg_carte_liste_journal after insert or delete on public.cartes_prospect_listes
   for each row execute function public.cartes_prospect_listes_journal();
 
+-- 3h. Invitation automatique — à la CRÉATION seulement.
+create function public.empreinte_courriel(p text)
+returns text language sql immutable set search_path = public as $$
+  select encode(extensions.digest(lower(btrim(p)), 'sha256'), 'hex')
+$$;
+
+-- L'appel HTTP : secret au vault, net.http_post, TOUT avalé. Un envoi raté
+-- ne doit jamais faire échouer la création de la carte ; la ligne reste
+-- A_ENVOYER, visible par l'admin, et se relance à la main.
+create function public.envoyer_invitation_carte(p_invitation uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_secret text;
+  v_url    text := 'https://nrloizyemulbhujrqhgx.supabase.co/functions/v1/send-invitation-carte';
+begin
+  select decrypted_secret into v_secret from vault.decrypted_secrets where name = 'CARTE_INVITATION_SECRET' limit 1;
+  if v_secret is null then return; end if;
+  perform net.http_post(
+    url     := v_url,
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-carte-invitation-secret', v_secret),
+    body    := jsonb_build_object('invitation_id', p_invitation)
+  );
+exception when others then
+  raise warning 'envoyer_invitation_carte: % : %', p_invitation, sqlerrm;
+end $$;
+
+create function public.cartes_prospect_inviter()
+returns trigger language plpgsql security definer set search_path = public set row_security = off as $$
+declare
+  v_adresse text;
+  v_emp     text;
+  v_motif   text;
+  v_id      uuid;
+begin
+  if new.courriel is null or btrim(new.courriel) = '' then return new; end if;
+  v_adresse := lower(btrim(new.courriel));
+  v_emp := public.empreinte_courriel(v_adresse);
+  -- Deux cégeps qui créent la même adresse au même instant : l'un attend l'autre.
+  perform pg_advisory_xact_lock(hashtext('carte-invitation:' || v_emp));
+
+  v_motif := case
+    when exists (select 1 from public.athletes a where lower(btrim(a.email)) = v_adresse)
+      or exists (select 1 from public.users u where lower(btrim(u.email)) = v_adresse)
+      or exists (select 1 from auth.users au where lower(btrim(au.email)) = v_adresse)
+      then 'COMPTE_EXISTANT'
+    when exists (select 1 from public.courriel_desabonnements_adresses d where d.empreinte = v_emp)
+      then 'DESABONNE'
+    when exists (select 1 from public.cartes_prospect_invitations i
+                  where i.empreinte = v_emp and i.statut in ('A_ENVOYER','EN_COURS','ENVOYE')
+                    and i.created_at > now() - interval '90 days')
+      then 'DEJA_INVITE'
+  end;
+
+  insert into public.cartes_prospect_invitations (carte_id, unite_cegep_id, empreinte, statut, motif)
+  values (new.id, new.unite_cegep_id, v_emp, case when v_motif is null then 'A_ENVOYER' else 'ECARTE' end, v_motif)
+  returning id into v_id;
+
+  if v_motif is null then perform public.envoyer_invitation_carte(v_id); end if;
+  return new;
+end $$;
+
+create trigger trg_carte_z_inviter after insert on public.cartes_prospect
+  for each row execute function public.cartes_prospect_inviter();
+
 -- 3g. Doublons par courriel — l'athlète Nexus n'est rendu que si son identité
 --     est visible pour l'appelant (recruteur Pro), comme dans la recherche.
 create function public.athlete_nexus_par_courriel(p_courriel text)
@@ -399,6 +520,13 @@ alter table public.cartes_prospect_notes enable row level security;
 alter table public.cartes_prospect_journal enable row level security;
 alter table public.cartes_prospect_suppressions enable row level security;
 alter table public.cartes_prospect_listes enable row level security;
+alter table public.cartes_prospect_invitations enable row level security;
+alter table public.courriel_desabonnements_adresses enable row level security;
+
+create policy cartes_invitations_admin_select on public.cartes_prospect_invitations for select to authenticated
+  using (public.is_admin());
+create policy desabonnements_adresses_admin_select on public.courriel_desabonnements_adresses for select to authenticated
+  using (public.is_admin());
 
 create policy cartes_listes_select on public.cartes_prospect_listes for select to authenticated
   using (public.carte_lecture_ok(carte_id));
@@ -447,6 +575,10 @@ grant select, insert, update, delete on public.cartes_prospect, public.cartes_pr
 revoke all on public.cartes_prospect_listes from authenticated;
 grant select, insert, delete on public.cartes_prospect_listes to authenticated;
 grant select on public.cartes_prospect_journal, public.cartes_prospect_suppressions to authenticated;
+-- Invitations et registre par adresse : l'API ne les écrit jamais ; lecture
+-- bornée à l'admin plateforme par la RLS.
+revoke all on public.cartes_prospect_invitations, public.courriel_desabonnements_adresses from public, anon, authenticated;
+grant select on public.cartes_prospect_invitations, public.courriel_desabonnements_adresses to authenticated;
 
 revoke execute on function public.acces_carte_ecriture(uuid, uuid) from public, anon;
 revoke execute on function public.acces_carte_lecture(uuid, uuid)  from public, anon;
@@ -465,6 +597,9 @@ revoke execute on function public.cartes_prospect_notes_avant()         from pub
 revoke execute on function public.cartes_prospect_notes_apres()         from public, anon, authenticated;
 revoke execute on function public.cartes_prospect_listes_avant()        from public, anon, authenticated;
 revoke execute on function public.cartes_prospect_listes_journal()      from public, anon, authenticated;
+revoke execute on function public.cartes_prospect_inviter()             from public, anon, authenticated;
+revoke execute on function public.envoyer_invitation_carte(uuid)         from public, anon, authenticated;
+revoke execute on function public.empreinte_courriel(text)               from public, anon, authenticated;
 revoke execute on function public.athlete_nexus_par_courriel(text)      from public, anon;
 grant  execute on function public.athlete_nexus_par_courriel(text)      to authenticated;
 
@@ -479,6 +614,7 @@ begin
   delete from public.cartes_prospect where derniere_activite < now() - interval '12 months';
   get diagnostics n = row_count;
   perform set_config('nexus.purge_cartes', 'off', true);
+  delete from public.cartes_prospect_invitations where created_at < now() - interval '12 months';
   return n;
 end $$;
 revoke execute on function public.purger_cartes_prospect() from public, anon, authenticated;
@@ -501,7 +637,9 @@ begin
       ('public.cartes_prospect_notes',        array['authenticated','postgres','service_role']),
       ('public.cartes_prospect_journal',      array['authenticated','postgres','service_role']),
       ('public.cartes_prospect_suppressions', array['authenticated','postgres','service_role']),
-      ('public.cartes_prospect_listes',       array['authenticated','postgres','service_role'])
+      ('public.cartes_prospect_listes',       array['authenticated','postgres','service_role']),
+      ('public.cartes_prospect_invitations',  array['authenticated','postgres','service_role']),
+      ('public.courriel_desabonnements_adresses', array['authenticated','postgres','service_role'])
     ) as v(t, veut)
   loop
     select array_agg(distinct t.g order by t.g) into vus
@@ -527,7 +665,8 @@ begin
   -- 7b. Droits fins : journal et trace en LECTURE seule pour authenticated.
   if exists (select 1 from information_schema.role_table_grants
               where table_schema = 'public' and grantee = 'authenticated'
-                and table_name in ('cartes_prospect_journal', 'cartes_prospect_suppressions')
+                and table_name in ('cartes_prospect_journal', 'cartes_prospect_suppressions',
+                                   'cartes_prospect_invitations', 'courriel_desabonnements_adresses')
                 and privilege_type <> 'SELECT') then
     raise exception 'NEXUS: authenticated peut écrire dans le journal ou la trace des cartes';
   end if;
@@ -548,7 +687,10 @@ begin
       ('public.purger_cartes_prospect()',                   array['postgres','service_role']),
       ('public.cartes_prospect_listes_avant()',             array['postgres','service_role']),
       ('public.cartes_prospect_listes_journal()',           array['postgres','service_role']),
-      ('public.athlete_nexus_par_courriel(text)',           array['authenticated','postgres','service_role'])
+      ('public.athlete_nexus_par_courriel(text)',           array['authenticated','postgres','service_role']),
+      ('public.cartes_prospect_inviter()',                  array['postgres','service_role']),
+      ('public.envoyer_invitation_carte(uuid)',             array['postgres','service_role']),
+      ('public.empreinte_courriel(text)',                   array['postgres','service_role'])
     ) as v(f, veut)
   loop
     select array_agg(t.g order by t.g) into vus
@@ -568,7 +710,9 @@ begin
       ('public.cartes_prospect_notes',        array['cartes_notes_delete','cartes_notes_insert','cartes_notes_select','cartes_notes_update']),
       ('public.cartes_prospect_journal',      array['cartes_journal_select']),
       ('public.cartes_prospect_suppressions', array['cartes_suppressions_select']),
-      ('public.cartes_prospect_listes',       array['cartes_listes_delete','cartes_listes_insert','cartes_listes_select'])
+      ('public.cartes_prospect_listes',       array['cartes_listes_delete','cartes_listes_insert','cartes_listes_select']),
+      ('public.cartes_prospect_invitations',  array['cartes_invitations_admin_select']),
+      ('public.courriel_desabonnements_adresses', array['desabonnements_adresses_admin_select'])
     ) as v(t, veut)
   loop
     select array_agg(polname::text order by polname::text) into vus from pg_policy where polrelid = r.t::regclass;
@@ -576,6 +720,19 @@ begin
       raise exception 'NEXUS: policies de % = %, attendu %', r.t, vus, r.veut;
     end if;
   end loop;
+
+  -- 7f. Aucune fonction HORS lot C ne lit les cartes : pas de recherche, pas
+  --     de vue. Liste complète des fonctions et des vues qui les nomment.
+  select array_agg(proname::text order by proname::text) into vus
+    from pg_proc where pronamespace = 'public'::regnamespace and prosrc ilike '%cartes\_prospect%';
+  if vus is distinct from array['carte_ecriture_ok','carte_lecture_ok','cartes_prospect_inviter','cartes_prospect_journaliser',
+                                'cartes_prospect_listes_avant','cartes_prospect_listes_journal','cartes_prospect_notes_apres',
+                                'cartes_prospect_tracer_suppression','purger_cartes_prospect'] then
+    raise exception 'NEXUS: fonctions qui lisent les cartes = %', vus;
+  end if;
+  if exists (select 1 from pg_views where schemaname = 'public' and definition ilike '%cartes_prospect%') then
+    raise exception 'NEXUS: une vue lit les cartes';
+  end if;
 
   -- 7e. La purge est planifiée, une seule fois.
   if (select count(*) from cron.job where jobname = 'cartes-prospect-purge-quotidienne') <> 1 then

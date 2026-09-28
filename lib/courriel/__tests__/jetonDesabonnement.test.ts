@@ -7,7 +7,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { signerJetonDesabonnement, verifierJetonDesabonnement } from "@/lib/courriel/jetonDesabonnement";
+import { signerJetonDesabonnement, verifierJetonDesabonnement, signerJetonInvitation, verifierJetonInvitation } from "@/lib/courriel/jetonDesabonnement";
 // @ts-ignore TS5097 — node --experimental-strip-types EXIGE l'extension .ts.
 import * as jumeauDeno from "../../../supabase/functions/_shared/jetonDesabonnement.ts";
 
@@ -61,4 +61,29 @@ test("la casse du user_id ne change pas le jeton", async () => {
 test("un secret absent ou court refuse de signer", async () => {
   await assert.rejects(() => signerJetonDesabonnement(UID, ""));
   await assert.rejects(() => signerJetonDesabonnement(UID, "court"));
+});
+
+/* ── Jeton d'invitation (carte prospect, lot C) ─────────────────── */
+const INV = "9a1b2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d";
+
+test("invitation : signé par le jumeau Deno, vérifié par la route", async () => {
+  const j = await jumeauDeno.signerJetonInvitation(INV, SECRET);
+  assert.equal(j, await signerJetonInvitation(INV, SECRET));
+  assert.equal(await verifierJetonInvitation(j, SECRET), INV);
+});
+
+test("invitation et compte ne se confondent jamais", async () => {
+  const inv = await signerJetonInvitation(INV, SECRET);
+  const compte = await signerJetonDesabonnement(INV, SECRET);
+  assert.equal(await verifierJetonDesabonnement(inv, SECRET), null);
+  assert.equal(await verifierJetonInvitation(compte, SECRET), null);
+  assert.equal(await verifierJetonInvitation(`i.${compte}`, SECRET), null);
+});
+
+test("invitation : falsifiée, autre id ou autre secret refusée", async () => {
+  const j = await signerJetonInvitation(INV, SECRET);
+  const sig = j.split(".")[2];
+  assert.equal(await verifierJetonInvitation(`i.11111111-2222-3333-4444-555555555555.${sig}`, SECRET), null);
+  assert.equal(await verifierJetonInvitation(j, SECRET + "-autre"), null);
+  assert.equal(await verifierJetonInvitation(j.slice(0, -2), SECRET), null);
 });

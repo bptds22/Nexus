@@ -17,18 +17,23 @@ import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
 import { joursAvantPurge, AVIS_JOURS, type CarteKanban } from "@/lib/cartes/carteProspect";
 import { KANBAN_COLUMNS } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 
-/* MARQUEUR D'UNE CARTE (retour BP) : plus de pastille dans les listes —
-   un FOND ROUGE TRÈS LÉGER (#E63946 à 5 %) sur la ligne du tableau et sur la
-   carte du kanban, expliqué par une légende discrète en bas de la vue. Le
-   panneau garde une mention en toutes lettres. */
+/* MARQUEUR D'UNE CARTE (retours BP) : plus de pastille dans les listes —
+   un FOND ROUGE LÉGER (#E63946 à 11 %) sur TOUTE la ligne du tableau (colonne
+   Nom figée comprise) et sur TOUTE la carte du kanban (bandeau photo
+   compris), expliqué par une légende en haut de la vue, à côté des filtres.
+   Le panneau garde une mention en toutes lettres.
+   11 % : à 5 %, la carte ne se distinguait pas d'une vraie ; au-delà de 12 %,
+   le rouge se lit comme une alerte. */
 
-/** #E63946 à 5 % — en calque, pour les fonds transparents (lignes). */
-export const FOND_PROSPECT = "rgba(230,57,70,0.05)";
-/** #E63946 à 5 % posé sur la surface #1A1D24, en couleur OPAQUE : le dégradé
- *  de la photo du kanban fond vers la couleur de la carte et doit la connaître. */
-export const SURFACE_PROSPECT = "#241E26";
+/** #E63946 à 11 % — en calque, pour les fonds transparents (lignes). */
+export const FOND_PROSPECT = "rgba(230,57,70,0.11)";
+/** Le même, posé sur la surface #1A1D24, en couleur OPAQUE : la colonne figée
+ *  du tableau et le dégradé de la photo du kanban doivent le connaître. */
+export const SURFACE_PROSPECT = "#302028";
+/** Le même, posé sur le bandeau photo du kanban (#2F3440). */
+export const BANDEAU_PROSPECT = "#433541";
 
-/** Légende en bas de la vue, affichée seulement s'il y a des cartes. */
+/** Légende, en haut de la vue, affichée seulement s'il y a des cartes. */
 export function LegendeProspect() {
   return (
     <p className="flex items-center gap-2 text-[12px] text-[#6b7280]" data-testid="legende-prospect">
@@ -38,13 +43,24 @@ export function LegendeProspect() {
   );
 }
 
-/** Mention en tête du panneau d'une carte. */
-export function MentionProspect() {
+/** Mention en tête du panneau d'une carte, et l'invitation si elle est partie. */
+export function MentionProspect({ inviteeLe }: { inviteeLe?: string | null }) {
   return (
-    <p className="text-[13px] text-[#E5A0A6]">
-      Pas encore sur Nexus — carte prospect de ton unité.
-    </p>
+    <>
+      <p className="text-[13px] text-[#E5A0A6]">
+        Pas encore sur Nexus — carte prospect de ton unité.
+      </p>
+      {inviteeLe && (
+        <p className="text-[12px] text-[#9CA3AF] mt-0.5" data-testid="invitation-envoyee">
+          Invitation envoyée le {dateInvitation(inviteeLe)}
+        </p>
+      )}
+    </>
   );
+}
+
+function dateInvitation(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
 }
 
 /** « Supprimée le … faute d'activité » — affiché dans les 30 derniers jours. */
@@ -101,6 +117,7 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
             : <span className="text-[#6b7280]">—</span>}
         />
         <Ligne libelle="Courriel" valeur={c.courriel ?? <span className="text-[#6b7280]">—</span>} />
+        {c.inviteeLe && <Ligne libelle="Invitation" valeur={`Envoyée le ${dateInvitation(c.inviteeLe)}`} />}
         <Ligne libelle="Carte créée" valeur={`${creeLe}${card.suivi_par_noms?.[0] ? ` · par ${card.suivi_par_noms[0]}` : ""}`} />
       </div>
       <SectionGrisee titre="Cote du coach" />
@@ -127,6 +144,10 @@ export function phraseGesteCarte(g: GesteCarte): string {
     case "DRAPEAU": return d.drapeau ? "a signalé la carte" : "a retiré le signalement";
     case "MODIFIEE": return "a modifié les informations de la carte";
     case "NOTE": return "a ajouté une note de suivi";
+    case "LISTE": return d.ajout
+      ? `a ajouté la carte à la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`
+      : `a retiré la carte de la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`;
+    case "INVITATION": return "a invité l'athlète par courriel (envoi automatique à la création)";
     default: return "a agi sur la carte";
   }
 }

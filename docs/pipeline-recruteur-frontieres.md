@@ -150,7 +150,7 @@ migration : tout repose sur B1/B2-0.
   d'unité fait dans un autre sport va dans l'unité **visée**.
 
 **Lot C (2026-09-28) — CARTES PROSPECT : un athlète pas encore sur Nexus.**
-Migration `lot_c_cartes_prospect` (additive : cinq tables nouvelles, aucune
+Migration `lot_c_cartes_prospect` (additive : sept tables nouvelles, aucune
 existante touchée).
 - **Propriété : l'UNITÉ** (cégep × sport), posée par trigger d'après le créateur,
   jamais modifiable. Lecture et écriture : Pro/All Star de l'unité ; admin cégep
@@ -187,10 +187,37 @@ existante touchée).
   journalisés `LISTE`). `recruiter_list_members` (athlete_id NOT NULL, lu par
   l'app 1.4.3) n'est pas touchée. Une liste d'une autre unité, ou personnelle,
   est refusée par trigger (22023). Supprimer la carte emporte ses liaisons.
-- **Marqueur** : pas de pastille dans les listes — un **fond rouge très léger**
-  (#E63946 à 5 %) sur la ligne du tableau, la carte du kanban, la ligne d'une
-  liste et de Mon CÉGEP › Recrues, avec la légende « Fond rouge = pas encore sur
-  Nexus » en bas de la vue. Le panneau garde la mention en toutes lettres.
+- **Marqueur** : pas de pastille dans les listes — un **fond rouge léger**
+  (#E63946 à 11 %) sur TOUTE la ligne du tableau (colonne Nom figée comprise),
+  TOUTE la carte du kanban (bandeau photo compris), la ligne d'une liste et de
+  Mon CÉGEP › Recrues, avec la légende « Fond rouge = pas encore sur Nexus » EN
+  HAUT, à côté des filtres. Le panneau garde la mention en toutes lettres.
+- **Invitation automatique, à la création seulement** : une carte créée avec un
+  courriel qui n'appartient à aucun compte ni athlète Nexus déclenche UN
+  courriel (Resend, `send-invitation-carte`), au nom du recruteur, nommant le
+  cégep, avec le lien d'inscription pré-rempli et le désabonnement LCAP. La base
+  décide et réserve (`cartes_prospect_invitations`, trigger AFTER INSERT : une
+  modification ne déclenche jamais rien ; au plus une par carte) ; l'envoi pose
+  `invitee_le`, que le panneau affiche (« Invitation envoyée le … ») et que le
+  journal trace. **Écartée sans envoi** : adresse d'un compte ou d'un athlète,
+  adresse désabonnée, ou adresse **déjà invitée depuis moins de 90 jours par
+  n'importe quel cégep** (règle anti-doublon d'envoi, proposée, à confirmer).
+  Le motif d'un écart n'est lisible que par l'admin plateforme ; le recruteur
+  voit « Invitation envoyée le … » ou rien. L'adresse n'est jamais stockée en
+  clair hors de la carte : empreinte sha256 dans les invitations et dans le
+  registre `courriel_desabonnements_adresses` (le registre par compte ne couvre
+  pas quelqu'un qui n'a pas de compte). L'import du lot F n'enverra rien
+  (décision à part).
+- **Un seul fil de notes par joueur** : `FilNotesSuivi` — Mon processus et le
+  panneau d'une liste lisent et écrivent le même fil (`recruiter_notes` de
+  l'unité, ou `cartes_prospect_notes` pour une carte), signé, les notes des
+  collègues en lecture seule. Le web n'écrit plus `recruiter_list_notes`
+  (registre §38).
+- **Jamais un athlète, jamais dans une recherche** (prouvé, R1–R6) : créer une
+  carte ne touche ni `athletes`, ni `users`, ni `auth.users` ; aucune fonction
+  hors lot C et aucune vue ne lit les cartes (gate 7f de la migration, liste
+  complète) ; la recherche recruteur ne les rend pas ; admin plateforme,
+  partenaire, coach, athlète et anon n'en lisent aucune.
 - **Interface** : kanban, tableau, panneau (Actions / Infos / Historique), export
   xlsx (colonnes « Profil Nexus » Oui/Non et « Courriel »), entonnoir, tuiles,
   listes, calendrier (matchs de leur équipe, visites et relances, marqués

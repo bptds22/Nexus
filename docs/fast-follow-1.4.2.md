@@ -1328,6 +1328,19 @@ processus). Mais le binaire publié **ne connaît pas l'unité**. Limites
 Aucun de ces écarts n'expose une donnée hors de l'unité : ce sont des gestes
 **moins partagés** que le web, jamais plus.
 
+**Notes de LISTE (`recruiter_list_notes`) — ajout du 2026-09-28 (lot C).**
+Décision BP : **un seul fil de notes par joueur**, celui de `recruiter_notes`
+(ou de la carte prospect). Le web n'écrit plus `recruiter_list_notes` : le
+panneau de notes d'une liste lit et écrit le fil de suivi du joueur
+(`FilNotesSuivi`, le même composant que Mon processus). **L'app 1.4.3, elle,
+y écrit encore** (`RecruteurListeDetailMobile` → `useAddListNote`, onglet
+« Notes » d'une liste). Tant que ce binaire circule, le web **affiche** ces
+lignes en lecture seule dans la vue d'une liste, marquées « depuis l'app ».
+Relevé prod du 2026-09-28 : **0 ligne**. En 1.4.4 : retirer l'onglet Notes de
+la liste mobile (ou le brancher sur le fil du joueur), puis retirer
+l'affichage web ; la table pourra être contractée après vérification qu'aucun
+binaire publié ne l'écrit plus.
+
 ## 39. Retrait d'unité par un admin cégep sur un AUTRE sport — la ligne de journal va dans son unité (B2-0, à corriger à l'étape 3 de B2)
 
 > **CORRIGÉ en base et APPLIQUÉ EN PROD le 2026-09-28** (GO BP) — migration
@@ -1501,7 +1514,12 @@ exactement la même chose avant et après la création de cartes). Mais l'app ne
 les **montre** pas : Mon processus mobile, le tableau de bord et le calendrier
 mobiles n'affichent que les athlètes Nexus, et une liste mobile n'affiche pas
 les cartes qu'elle contient. À ajouter au lot mobile : lecture des cartes (et
-de leurs liaisons de listes), marqueur par fond rouge léger + légende, panneau
-Infos/Historique de la carte, création (équipe en deux temps, doublons par nom
-et par courriel).
+de leurs liaisons de listes), marqueur par fond rouge (11 %) + légende en haut,
+panneau Infos/Historique de la carte (dont « Invitation envoyée le … »),
+création (équipe en deux temps, recherche sans accents, taille/poids en champ
+unique avec la règle sous le champ, doublons par nom et par courriel), fil de
+notes unique (`FilNotesSuivi`), pastille de relance dans le corps de la carte,
+vue liste du calendrier chronologique. L'invitation automatique part de la
+base (trigger) : une carte créée depuis le mobile déclenchera l'envoi sans
+rien changer au binaire.
 

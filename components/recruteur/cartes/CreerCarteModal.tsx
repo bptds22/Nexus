@@ -31,8 +31,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   creerCarte, cartesDoublons, carteAuCourriel, athleteAuCourriel,
-  memePersonneProbable, libelleEquipe,
+  memePersonneProbable, libelleEquipe, normaliserNom,
 } from "@/lib/cartes/carteProspect";
+import { lireTaille, lirePoids, lireCourriel, lireLien } from "@/lib/cartes/saisie";
+
+type Champ = "taille" | "poids" | "courriel" | "video";
 
 type Genre = "SCOLAIRE" | "CIVIL";
 /** Scolaire = les écoles (secondaire, et le collégial pour un transfert) ;
@@ -55,7 +58,11 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [nom, setNom] = useState("");
   const [genre, setGenre] = useState<Genre>("SCOLAIRE");
   const [recherche, setRecherche] = useState("");
-  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
+  /* Tous les établissements du genre qui ont une équipe du sport, chargés
+     UNE fois : la recherche se fait ici, sans accents ni casse (la même
+     normalisation que les doublons) — « academie » trouve « Académie les
+     Estacades ». Un ilike côté base ne sait pas ignorer les accents. */
+  const [tousEtablissements, setTousEtablissements] = useState<(Etablissement & { cle: string })[] | null>(null);
   const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
   const [equipeId, setEquipeId] = useState("");
@@ -64,9 +71,9 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [positionId, setPositionId] = useState("");
   const [numero, setNumero] = useState("");
   const [promotion, setPromotion] = useState("");
-  const [pieds, setPieds] = useState("");
-  const [pouces, setPouces] = useState("");
+  const [taille, setTaille] = useState("");
   const [poids, setPoids] = useState("");
+  const [erreurs, setErreurs] = useState<Partial<Record<Champ, string>>>({});
   const [video, setVideo] = useState("");
   const [courriel, setCourriel] = useState("");
   const [avertissements, setAvertissements] = useState<{ texte: string; lien?: string }[] | null>(null);
@@ -86,27 +93,37 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     })();
   }, [sportId]);
 
-  // 1. L'établissement, par son nom, parmi ceux du bon genre qui ont au
-  //    moins une équipe du sport de l'unité.
+  // 1. Les établissements du genre choisi qui ont au moins une équipe du
+  //    sport de l'unité — par pages de 1000 (plafond PostgREST).
   useEffect(() => {
-    const q = recherche.trim();
-    if (etablissement || q.length < 2) { setEtablissements([]); return; }
     let annule = false;
-    const t = window.setTimeout(async () => {
-      const { data } = await createClient()
-        .from("schools")
-        .select("id, name, city, teams!inner(id)")
-        .in("type", TYPES[genre])
-        .eq("teams.sport_id", sportId)
-        .ilike("name", `%${q.replace(/[%_]/g, "")}%`)
-        .order("name")
-        .limit(15);
-      if (annule) return;
-      setEtablissements(((data ?? []) as { id: string; name: string; city: string | null }[])
-        .map((e) => ({ id: e.id, name: e.name, city: e.city })));
-    }, 250);
-    return () => { annule = true; window.clearTimeout(t); };
-  }, [recherche, etablissement, genre, sportId]);
+    void (async () => {
+      const supabase = createClient();
+      const tous: (Etablissement & { cle: string })[] = [];
+      for (let debut = 0; debut < 10000; debut += 1000) {
+        const { data, error } = await supabase
+          .from("schools")
+          .select("id, name, city, teams!inner(sport_id)")
+          .in("type", TYPES[genre])
+          .eq("teams.sport_id", sportId)
+          .order("name")
+          .range(debut, debut + 999);
+        if (error || !data) break;
+        for (const e of data as { id: string; name: string; city: string | null }[]) {
+          tous.push({ id: e.id, name: e.name, city: e.city, cle: normaliserNom(`${e.name} ${e.city ?? ""}`) });
+        }
+        if (data.length < 1000) break;
+      }
+      if (!annule) setTousEtablissements(tous);
+    })();
+    return () => { annule = true; };
+  }, [genre, sportId]);
+
+  const etablissements = useMemo(() => {
+    const mots = normaliserNom(recherche).split(" ").filter(Boolean);
+    if (etablissement || !tousEtablissements || recherche.trim().length < 2) return [];
+    return tousEtablissements.filter((e) => mots.every((m) => e.cle.includes(m))).slice(0, 15);
+  }, [recherche, etablissement, tousEtablissements]);
 
   // 2. Ses équipes du sport de l'unité.
   useEffect(() => {
@@ -136,6 +153,20 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const equipe = equipes.find((e) => e.id === equipeId) ?? null;
 
   const nombre = (v: string) => (v.trim() === "" ? null : Number(v));
+
+  /* Chaque champ libre se lit à la sortie du champ ET à l'envoi ; l'erreur
+     s'affiche SOUS lui, avec la règle attendue (retour BP). */
+  const lectures = () => ({
+    taille: lireTaille(taille),
+    poids: lirePoids(poids),
+    courriel: lireCourriel(courriel),
+    video: lireLien(video),
+  });
+  const verifierChamp = (c: Champ) => {
+    const r = lectures()[c];
+    setErreurs((e) => ({ ...e, [c]: r.ok ? undefined : r.regle }));
+  };
+  const effacerErreur = (c: Champ) => setErreurs((e) => (e[c] ? { ...e, [c]: undefined } : e));
   const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!equipe;
   const promotions = useMemo(() => {
     const an = new Date().getFullYear();
@@ -143,6 +174,8 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   }, []);
 
   const verifierDoublons = async (): Promise<{ texte: string; lien?: string }[]> => {
+    const courrielLu = lireCourriel(courriel);
+    const adresse = courrielLu.ok ? courrielLu.valeur ?? "" : "";
     if (!equipe || !etablissement) return [];
     const supabase = createClient();
     const trouves: { texte: string; lien?: string }[] = [];
@@ -167,10 +200,10 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     }
 
     // Même courriel.
-    if (courriel.trim()) {
+    if (adresse) {
       const [carteC, athleteC] = await Promise.all([
-        carteAuCourriel(supabase, courriel, sportId),
-        athleteAuCourriel(supabase, courriel),
+        carteAuCourriel(supabase, adresse, sportId),
+        athleteAuCourriel(supabase, adresse),
       ]);
       if (carteC) trouves.push({ texte: `Ce courriel est déjà celui de la carte « ${carteC.prenom} ${carteC.nom} » de ton unité.` });
       if (athleteC && athleteC.id !== nexus?.id) {
@@ -186,6 +219,17 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const soumettre = async () => {
     if (!valide || enCours || !equipe) return;
     setErreur(null);
+    const l = lectures();
+    const fautes: Partial<Record<Champ, string>> = {};
+    for (const c of ["taille", "poids", "courriel", "video"] as Champ[]) {
+      const r = l[c];
+      if (!r.ok) fautes[c] = r.regle;
+    }
+    if (Object.keys(fautes).length > 0) {
+      setErreurs(fautes);
+      document.getElementById(`carte-${Object.keys(fautes)[0]}`)?.focus();
+      return;
+    }
     setEnCours(true);
     try {
       if (avertissements === null) {
@@ -197,14 +241,14 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         positionId: positionId || null,
         numero: numero || null,
         promotion: nombre(promotion),
-        taillePieds: nombre(pieds), taillePouces: nombre(pouces), poidsLbs: nombre(poids),
-        lienVideo: video || null,
-        courriel: courriel || null,
+        taillePieds: l.taille.ok ? l.taille.valeur.pieds : null,
+        taillePouces: l.taille.ok ? l.taille.valeur.pouces : null,
+        poidsLbs: l.poids.ok ? l.poids.valeur : null,
+        lienVideo: l.video.ok ? l.video.valeur : null,
+        courriel: l.courriel.ok ? l.courriel.valeur : null,
       });
       if (error) {
-        setErreur(error.code === "23514"
-          ? "Un champ n'est pas valide (courriel, lien vidéo, taille ou poids)."
-          : "La carte n'a pas pu être créée. Réessaie.");
+        setErreur("La carte n'a pas pu être créée. Réessaie.");
         return;
       }
       onCreee(`Carte prospect créée : ${prenom.trim()} ${nom.trim()}`);
@@ -248,7 +292,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
                 <div className="flex gap-1.5 mb-2" role="radiogroup" aria-label="Scolaire ou civil">
                   {(["SCOLAIRE", "CIVIL"] as Genre[]).map((g) => (
                     <button key={g} type="button" role="radio" aria-checked={genre === g}
-                      onClick={() => { setGenre(g); setEtablissements([]); }}
+                      onClick={() => { setGenre(g); setTousEtablissements(null); }}
                       className={`px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-wider border transition-colors ${genre === g ? "bg-[#E63946]/15 border-[#E63946]/40 text-[#E63946]" : "border-[#2a2d36] text-[#6b7280] hover:text-white"}`}>
                       {g === "SCOLAIRE" ? "Scolaire" : "Civil"}
                     </button>
@@ -260,7 +304,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
                   <ul className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[#2D3748] bg-[#13151a] shadow-xl" role="listbox" aria-label={genre === "SCOLAIRE" ? "Écoles" : "Clubs"}>
                     {etablissements.map((e) => (
                       <li key={e.id}>
-                        <button type="button" role="option" aria-selected={false} onClick={() => { setEtablissement(e); setEtablissements([]); setAvertissements(null); }} className="w-full text-left px-3 py-2 text-[13px] text-[#e0e0e0] hover:bg-white/5">
+                        <button type="button" role="option" aria-selected={false} onClick={() => { setEtablissement(e); setAvertissements(null); }} className="w-full text-left px-3 py-2 text-[13px] text-[#e0e0e0] hover:bg-white/5">
                           <span className="font-semibold text-white">{e.name}</span>
                           {e.city && <span className="text-[#6b7280]"> · {e.city}</span>}
                         </button>
@@ -268,7 +312,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
                     ))}
                   </ul>
                 )}
-                {recherche.trim().length >= 2 && etablissements.length === 0 && (
+                {recherche.trim().length >= 2 && tousEtablissements !== null && etablissements.length === 0 && (
                   <p className="text-[12px] text-[#6b7280] mt-1">
                     {genre === "SCOLAIRE" ? "Aucune école" : "Aucun club"} avec une équipe de ce sport ne correspond.
                   </p>
@@ -306,23 +350,36 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
             </select>
           </div>
           <div>
-            <span className={etiquette}>Taille</span>
-            <div className="flex gap-2">
-              <input aria-label="Taille, pieds" className={champ} value={pieds} onChange={(e) => setPieds(e.target.value.replace(/\D/g, "").slice(0, 1))} placeholder="pi" inputMode="numeric" />
-              <input aria-label="Taille, pouces" className={champ} value={pouces} onChange={(e) => setPouces(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="po" inputMode="numeric" />
-            </div>
+            <label className={etiquette} htmlFor="carte-taille">Taille</label>
+            <input id="carte-taille" className={`${champ} ${erreurs.taille ? "border-[#EF4444]" : ""}`} value={taille}
+              onChange={(e) => { setTaille(e.target.value); effacerErreur("taille"); }} onBlur={() => verifierChamp("taille")}
+              placeholder={`6'2" ou 188 cm`} aria-invalid={!!erreurs.taille} aria-describedby={erreurs.taille ? "erreur-taille" : undefined} />
+            {erreurs.taille && <p id="erreur-taille" className="text-[12px] text-[#EF4444] mt-1">{erreurs.taille}</p>}
           </div>
           <div>
-            <label className={etiquette} htmlFor="carte-poids">Poids (lb)</label>
-            <input id="carte-poids" className={champ} value={poids} onChange={(e) => setPoids(e.target.value.replace(/\D/g, "").slice(0, 3))} inputMode="numeric" />
+            <label className={etiquette} htmlFor="carte-poids">Poids</label>
+            <input id="carte-poids" className={`${champ} ${erreurs.poids ? "border-[#EF4444]" : ""}`} value={poids}
+              onChange={(e) => { setPoids(e.target.value); effacerErreur("poids"); }} onBlur={() => verifierChamp("poids")}
+              placeholder="121 ou 121 lbs" aria-invalid={!!erreurs.poids} aria-describedby={erreurs.poids ? "erreur-poids" : undefined} />
+            {erreurs.poids && <p id="erreur-poids" className="text-[12px] text-[#EF4444] mt-1">{erreurs.poids}</p>}
           </div>
-          <div>
+          <div className="col-span-2">
             <label className={etiquette} htmlFor="carte-courriel">Courriel</label>
-            <input id="carte-courriel" type="email" className={champ} value={courriel} onChange={(e) => { setCourriel(e.target.value); setAvertissements(null); }} placeholder="Facultatif" />
+            <input id="carte-courriel" type="text" inputMode="email" autoComplete="off" className={`${champ} ${erreurs.courriel ? "border-[#EF4444]" : ""}`} value={courriel}
+              onChange={(e) => { setCourriel(e.target.value); setAvertissements(null); effacerErreur("courriel"); }} onBlur={() => verifierChamp("courriel")}
+              placeholder="nom@exemple.com (facultatif)" aria-invalid={!!erreurs.courriel} aria-describedby={erreurs.courriel ? "erreur-courriel" : "aide-courriel"} />
+            {erreurs.courriel
+              ? <p id="erreur-courriel" className="text-[12px] text-[#EF4444] mt-1">{erreurs.courriel}</p>
+              : <p id="aide-courriel" className="text-[12px] text-[#6b7280] mt-1">
+                  Si cette adresse n&apos;est pas déjà sur Nexus, l&apos;athlète reçoit à la création un courriel l&apos;invitant à s&apos;inscrire, à ton nom et à celui de ton cégep. Une seule fois.
+                </p>}
           </div>
           <div className="col-span-2">
             <label className={etiquette} htmlFor="carte-video">Lien vidéo</label>
-            <input id="carte-video" type="url" className={champ} value={video} onChange={(e) => setVideo(e.target.value)} placeholder="https://…" />
+            <input id="carte-video" type="text" inputMode="url" autoComplete="off" className={`${champ} ${erreurs.video ? "border-[#EF4444]" : ""}`} value={video}
+              onChange={(e) => { setVideo(e.target.value); effacerErreur("video"); }} onBlur={() => verifierChamp("video")}
+              placeholder="youtube.com/… ou https://hudl.com/…" aria-invalid={!!erreurs.video} aria-describedby={erreurs.video ? "erreur-video" : undefined} />
+            {erreurs.video && <p id="erreur-video" className="text-[12px] text-[#EF4444] mt-1">{erreurs.video}</p>}
           </div>
         </div>
 

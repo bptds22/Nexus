@@ -232,6 +232,8 @@ function RecrusCegepPage() {
             <option key={s} value={s}>Sport de l&apos;athlète : {s}</option>
           ))}
         </select>
+        {/* Légende des cartes prospect : en haut, à côté des filtres (retour BP). */}
+        {filtered.some((r) => r.prospect) && <span className="ml-auto"><LegendeProspect /></span>}
       </div>
       {/* §40 : un autre sport que le sien (ou tout le cégep) se lit sans s'écrire. */}
       <AvisLectureSeule filtre={filtreSport} />
@@ -339,7 +341,6 @@ function RecrusCegepPage() {
               </tbody>
             </table>
           </div>
-          {filtered.some((r) => r.prospect) && <div className="px-4 py-3 border-t border-[#1e2128]"><LegendeProspect /></div>}
         </div>
       ) : (
         <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] py-16 flex flex-col items-center justify-center gap-4">

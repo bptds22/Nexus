@@ -18,10 +18,11 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useListesUnite, useNotesListeUnite } from "@/lib/queries/recruiter/useListesUnite";
+import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { lireCartes, versMembreListe, ajouterCarteAListe, retirerCarteDeListe } from "@/lib/cartes/carteProspect";
 import { LegendeProspect, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import { useFavorisUnite } from "@/lib/queries/recruiter/useFavorisUnite";
-import { useAuteursUnite, useNotesUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
+import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Listes de Prospects — Organized folders for pipeline athletes
@@ -302,7 +303,8 @@ function AddAthleteModal({
      à une liste d'unité comme un athlète. La base refuse toute autre liste. */
   const [cartesDispo, setCartesDispo] = useState<ProspectListAthlete[]>([]);
   useEffect(() => {
-    if (!uniteSportId || !monCegep) { setCartesDispo([]); return; }
+    // Liste personnelle (sans unité) : aucune carte proposée — dérivé au rendu.
+    if (!uniteSportId || !monCegep) return;
     let annule = false;
     void (async () => {
       const supabase = createClient();
@@ -358,11 +360,11 @@ function AddAthleteModal({
   }, [existingIds, idsFavoris, favoris.isLoading]);
 
   const filtered = useMemo(() => {
-    const tous = [...available, ...cartesDispo];
+    const tous = [...available, ...(uniteSportId && monCegep ? cartesDispo : [])];
     if (search.trim().length < 2) return tous;
     const q = search.toLowerCase();
     return tous.filter(a => a.full_name.toLowerCase().includes(q) || a.sport.toLowerCase().includes(q));
-  }, [search, available, cartesDispo]);
+  }, [search, available, cartesDispo, uniteSportId, monCegep]);
 
   const handleAdd = (athlete: ProspectListAthlete) => {
     onAdd(athlete, "");
@@ -452,7 +454,7 @@ function AddAthleteModal({
           )}
         </div>
 
-        {cartesDispo.length > 0 && <div className="mt-3"><LegendeProspect /></div>}
+        {uniteSportId && monCegep && cartesDispo.length > 0 && <div className="mt-3"><LegendeProspect /></div>}
 
         <button type="button" onClick={onClose} className="mt-4 w-full px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] border border-[#2D3748] rounded-lg hover:text-white hover:border-[#4a4d56] transition-colors text-center">
           Fermer
@@ -523,122 +525,23 @@ function ListCard({
 
 /* ── Expanded List View ───────────────────────────────────────── */
 
-/* ── Note entry for activity feed ─────────────────────────────── */
-interface NoteEntry { id: string; content: string; created_at: string; }
-
-function initiales(nom: string): string {
-  return nom.split(/\s+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase();
-}
-
-function NoteCard({ note, initials, fullName, onDelete }: { note: NoteEntry; initials: string; fullName: string; onDelete?: (id: string) => void }) {
-  const [confirming, setConfirming] = useState(false);
-  const d = new Date(note.created_at);
-  const dateStr = d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
-  const timeStr = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
-  return (
-    <div className="bg-[#13151a] border border-[#2A2D35] rounded-lg p-4 mb-3 relative group">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#E63946] flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-bold text-white">{initials}</span>
-          </div>
-          <span className="text-[13px] font-bold text-white">{fullName}</span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] text-[#6b7280]">Note ajoutée · {dateStr} {timeStr}</span>
-          {onDelete && !confirming && (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#6b7280] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100"
-              aria-label="Supprimer cette note"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-            </button>
-          )}
-        </div>
-      </div>
-      <p className="text-[13px] text-[#d1d5db] leading-relaxed whitespace-pre-wrap mt-2 ml-[42px]">{note.content}</p>
-      {confirming && (
-        <div className="flex items-center gap-2 mt-2 ml-[42px]">
-          <span className="text-[11px] text-[#9CA3AF]">Supprimer cette note ?</span>
-          <button type="button" onClick={() => { onDelete?.(note.id); setConfirming(false); }} className="text-[11px] font-bold text-[#EF4444] hover:text-[#DC2626] transition-colors">Supprimer</button>
-          <button type="button" onClick={() => setConfirming(false)} className="text-[11px] font-bold text-[#6b7280] hover:text-white transition-colors">Annuler</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* Notes de suivi d'un athlète — les notes de l'UNITÉ, signées (lot B2) :
-   les mêmes que le panneau de Mon processus. Celles des collègues se lisent
-   sans se supprimer (décision BP 2). */
-function AthleteNotesPanel({ athleteId, athleteName, moi, auteurs, onErreur }: {
+/* Notes d'un joueur de la liste : LE fil de suivi (FilNotesSuivi), le même
+   que dans Mon processus — recruiter_notes de l'unité pour un athlète, le fil
+   de la carte pour une carte prospect (retour BP : un seul fil par joueur). */
+function AthleteNotesPanel({ athleteId, prospect, onErreur }: {
   athleteId: string;
-  athleteName: string;
-  moi: string | null;
-  auteurs: Record<string, { id: string; first_name: string | null; last_name: string | null; sport_id: string | null }>;
+  prospect?: boolean;
   onErreur: (msg: string) => void;
 }) {
-  const queryClient = useQueryClient();
-  const { data: notes = [] } = useNotesUnite(athleteId);
-  const [noteText, setNoteText] = useState("");
-  const [posting, setPosting] = useState(false);
-
-  const handlePost = async () => {
-    if (!noteText.trim() || !moi) return;
-    setPosting(true);
-    const { error } = await createClient()
-      .from("recruiter_notes")
-      .insert({ recruiter_id: moi, athlete_id: athleteId, content: noteText.trim() });
-    setPosting(false);
-    if (error) { onErreur("Note non enregistrée"); return; }
-    setNoteText("");
-    void invaliderTableauBlanc(queryClient);
-  };
-
-  const handleDelete = async (id: string) => {
-    const { error } = await createClient().from("recruiter_notes").delete().eq("id", id);
-    if (error) onErreur("Note non supprimée");
-    void invaliderTableauBlanc(queryClient);
-  };
-
   return (
     <div className="px-5 py-4">
-      <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Notes — {athleteName}</h4>
-      <textarea
-        value={noteText}
-        onChange={(e) => setNoteText(e.target.value)}
-        rows={2}
-        placeholder="Ajouter une note..."
-        className="w-full bg-[#111317] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
-        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePost(); } }}
-      />
-      <div className="flex justify-end mt-2">
-        <button type="button" onClick={handlePost} disabled={posting || !noteText.trim()} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors">
-          {posting ? "..." : "Poster"}
-        </button>
-      </div>
-      {notes.length > 0 && (
-        <div className="mt-4">
-          <p className="text-[13px] font-bold text-white mb-3">Activités: {notes.length}</p>
-          {notes.map(note => {
-            const nom = nomAuteur(auteurs[note.recruiter_id]);
-            return (
-              <NoteCard key={note.id} note={note} initials={initiales(nom)} fullName={nom}
-                onDelete={note.recruiter_id === moi ? handleDelete : undefined} />
-            );
-          })}
-        </div>
-      )}
-      {notes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cet athlète.</p>}
+      <FilNotesSuivi sujet={{ type: prospect ? "carte" : "athlete", id: athleteId }} onErreur={onErreur} />
     </div>
   );
 }
 
 function ExpandedListView({
   list,
-  moi,
   auteurs,
   onBack,
   onRemoveAthlete,
@@ -646,43 +549,20 @@ function ExpandedListView({
   onErreur,
 }: {
   list: ProspectList;
-  moi: string | null;
   auteurs: Record<string, { id: string; first_name: string | null; last_name: string | null; sport_id: string | null }>;
   onBack: () => void;
   onRemoveAthlete: (listId: string, athleteId: string) => void;
   onAddAthlete: (listId: string, athlete: ProspectListAthlete) => void;
   onErreur: (msg: string) => void;
 }) {
-  const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
 
-  // Notes de liste — celles de TOUTE l'unité, signées (lot B2, étape 2).
+  /* Notes de LISTE (recruiter_list_notes) : le web n'en écrit plus (retour
+     BP — un seul fil de notes, celui du joueur). L'app 1.4.3 en écrit encore :
+     les siennes restent LISIBLES ici, marquées « depuis l'app », jusqu'à la
+     1.4.4 (registre §38). */
   const { data: listNotes = [] } = useNotesListeUnite(list.id);
-  const [listNoteText, setListNoteText] = useState("");
-  const [listNotePosting, setListNotePosting] = useState(false);
-  // Ouvert d'office s'il y a des notes, tant que l'usager n'a pas choisi.
-  const [choixOuvert, setListNotesOpen] = useState<boolean | null>(null);
-  const listNotesOpen = choixOuvert ?? listNotes.length > 0;
-
-  const handlePostListNote = async () => {
-    if (!listNoteText.trim() || !moi) return;
-    setListNotePosting(true);
-    const { error } = await createClient()
-      .from("recruiter_list_notes")
-      .insert({ list_id: list.id, recruiter_id: moi, content: listNoteText.trim() });
-    setListNotePosting(false);
-    if (error) { onErreur("Note non enregistrée"); return; }
-    setListNoteText("");
-    setListNotesOpen(true);
-    void invaliderTableauBlanc(queryClient);
-  };
-
-  const handleDeleteListNote = async (id: string) => {
-    const { error } = await createClient().from("recruiter_list_notes").delete().eq("id", id);
-    if (error) onErreur("Note non supprimée");
-    void invaliderTableauBlanc(queryClient);
-  };
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const verifiedCount = list.athletes.filter((a) => a.is_verified).length;
@@ -738,6 +618,8 @@ function ExpandedListView({
           </svg>
           {avgRating} moyenne
         </span>
+        {/* Légende des cartes prospect : en haut (retour BP). */}
+        {list.athletes.some((a) => a.prospect) && <span className="ml-auto"><LegendeProspect /></span>}
       </div>
 
       {/* Athletes */}
@@ -825,11 +707,11 @@ function ExpandedListView({
                   {/* Spacer */}
                   <div className="flex-1" />
 
-                  {/* Notes + Actions — les notes d'une carte vivent dans son panneau. */}
-                  {!a.prospect && <button type="button" onClick={() => setExpandedNotes(expandedNotes === a.id ? null : a.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors shrink-0 ${expandedNotes === a.id ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#6b7280] hover:text-white hover:bg-white/5"}`}>
+                  {/* Notes + Actions — une carte ouvre SON fil (cartes_prospect_notes). */}
+                  <button type="button" onClick={() => setExpandedNotes(expandedNotes === a.id ? null : a.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors shrink-0 ${expandedNotes === a.id ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#6b7280] hover:text-white hover:bg-white/5"}`}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
                     Notes
-                  </button>}
+                  </button>
                   <Link href={a.prospect ? `/recruteur/pipeline?athlete=${a.id}` : `/recruteur/athletes/${a.id}`} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors shrink-0" title={a.prospect ? "Ouvrir la carte" : "Voir le profil"}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                   </Link>
@@ -841,48 +723,33 @@ function ExpandedListView({
                 {/* Expandable notes panel */}
                 {expandedNotes === a.id && (
                   <div className="border-t border-[#2D3748]">
-                    <AthleteNotesPanel athleteId={a.id} athleteName={a.full_name} moi={moi} auteurs={auteurs} onErreur={onErreur} />
+                    <AthleteNotesPanel athleteId={a.id} prospect={a.prospect} onErreur={onErreur} />
                   </div>
                 )}
               </div>
             </React.Fragment>
           ))}
-          {list.athletes.some((a) => a.prospect) && <div className="pt-1"><LegendeProspect /></div>}
         </div>
       )}
 
-      {/* List-level notes — at bottom */}
-      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden">
-        <button type="button" onClick={() => setListNotesOpen(!listNotesOpen)} className="w-full flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Notes de liste</span>
-            {listNotes.length > 0 && <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full bg-[#E63946] text-[10px] font-black text-white">{listNotes.length}</span>}
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" className={`transition-transform ${listNotesOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
-        </button>
-        {listNotesOpen && (
-          <div className="px-5 pb-5 border-t border-[#2D3748]">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mt-4 mb-2">Notes</p>
-            <textarea value={listNoteText} onChange={(e) => setListNoteText(e.target.value)} rows={2} placeholder="Ajouter une note à cette liste..." className="w-full bg-[#111317] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePostListNote(); } }} />
-            <div className="flex justify-end mt-2">
-              <button type="button" onClick={handlePostListNote} disabled={listNotePosting || !listNoteText.trim()} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors">{listNotePosting ? "..." : "Poster"}</button>
-            </div>
-            {listNotes.length > 0 && (
-              <div className="mt-4">
-                <p className="text-[13px] font-bold text-white mb-3">Activités: {listNotes.length}</p>
-                {listNotes.map(note => {
-                  const nom = nomAuteur(auteurs[note.recruiter_id]);
-                  return (
-                    <NoteCard key={note.id} note={note} initials={initiales(nom)} fullName={nom}
-                      onDelete={note.recruiter_id === moi ? handleDeleteListNote : undefined} />
-                  );
-                })}
+      {/* Notes écrites depuis l'app 1.4.3 (notes de LISTE) — lecture seule. */}
+      {listNotes.length > 0 && (
+        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-5 py-4" data-testid="notes-liste-app">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Notes de la liste — depuis l&apos;app</p>
+          {listNotes.map((note) => {
+            const nom = nomAuteur(auteurs[note.recruiter_id]);
+            return (
+              <div key={note.id} className="mb-3 last:mb-0">
+                <p className="text-[11px] font-bold text-[#9CA3AF]">
+                  <span className="text-white">{nom}</span> · {new Date(note.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
+                  <span className="ml-2 inline-flex items-center rounded-full border border-[#2D3748] px-1.5 py-[1px] text-[10px] font-bold uppercase tracking-wider text-[#6b7280]">depuis l&apos;app</span>
+                </p>
+                <p className="text-[13px] text-[#e0e0e0] whitespace-pre-wrap mt-1">{note.content}</p>
               </div>
-            )}
-            {listNotes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cette liste.</p>}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Add Athlete Modal */}
       {showAddModal && (
@@ -1054,7 +921,6 @@ function ListesPageContent() {
         <ExpandedListView
           key={selectedList.id}
           list={selectedList}
-          moi={moi}
           auteurs={auteurs}
           onBack={() => setSelectedListId(null)}
           onRemoveAthlete={handleRemoveAthlete}

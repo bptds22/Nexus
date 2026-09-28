@@ -65,3 +65,31 @@ export async function verifierJetonDesabonnement(jeton: string | null | undefine
   const ok = await crypto.subtle.verify("HMAC", k, sig, new TextEncoder().encode(PREFIXE + userId));
   return ok ? userId : null;
 }
+
+/* ── Jeton d'INVITATION (carte prospect, lot C) ─────────────────────
+   Le destinataire d'une invitation n'a PAS de compte : le jeton porte l'id
+   de la ligne cartes_prospect_invitations, jamais l'adresse. Préfixe signé
+   distinct, et forme « i.<id>.<sig> » : un jeton de compte ne peut pas
+   passer pour un jeton d'invitation, ni l'inverse. */
+const PREFIXE_INVITATION = "desabonnement:invitation:v1:";
+
+export async function signerJetonInvitation(invitationId: string, secret: string): Promise<string> {
+  if (!UUID_RE.test(invitationId)) throw new Error("id d'invitation invalide pour un jeton de désabonnement.");
+  const k = await cle(secret, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(PREFIXE_INVITATION + invitationId.toLowerCase()));
+  return `i.${invitationId.toLowerCase()}.${base64url(sig)}`;
+}
+
+/** Rend l'id d'invitation si le jeton est authentique, sinon null. */
+export async function verifierJetonInvitation(jeton: string | null | undefined, secret: string): Promise<string | null> {
+  if (!jeton || jeton.length > 200 || !jeton.startsWith("i.")) return null;
+  const reste = jeton.slice(2);
+  const point = reste.indexOf(".");
+  if (point < 0) return null;
+  const id = reste.slice(0, point).toLowerCase();
+  const sig = depuisBase64url(reste.slice(point + 1));
+  if (!UUID_RE.test(id) || !sig) return null;
+  const k = await cle(secret, ["verify"]);
+  const ok = await crypto.subtle.verify("HMAC", k, sig, new TextEncoder().encode(PREFIXE_INVITATION + id));
+  return ok ? id : null;
+}

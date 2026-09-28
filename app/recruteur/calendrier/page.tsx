@@ -29,7 +29,8 @@ import {
   dayNumber,
   EMPTY_FILTERS,
   filterTargets,
-  groupByWeek,
+  weekKey,
+  weekLabel,
   hasActiveFilters,
   matchesOnDay,
   monthLabel,
@@ -309,17 +310,6 @@ function RelanceCard({ r }: { r: RelanceUnite }) {
   );
 }
 
-/** Titre d'une section de la vue liste, avec la couleur de son type. */
-function SectionTitre({ couleur, titre, detail }: { couleur: string; titre: string; detail: string }) {
-  return (
-    <div className="mb-4 flex items-baseline gap-3.5 border-b border-[#1E2129] pb-2.5">
-      <span className="inline-block h-[10px] w-[10px] shrink-0 self-center rounded-full" style={{ backgroundColor: couleur }} aria-hidden="true" />
-      <h2 className="text-[15px] font-bold uppercase tracking-[0.14em] text-[#EDEFF3]">{titre}</h2>
-      <span className="text-[12.5px] font-medium text-[#5C6575]">{detail}</span>
-    </div>
-  );
-}
-
 /** Carte prospect (lot C) : athlète pas encore sur Nexus, suivi par l'unité. */
 function PastilleProspect() {
   return (
@@ -593,7 +583,29 @@ function CalendrierContent() {
     () => buildMatches(games, targets, sort).length,
     [games, targets, sort],
   );
-  const weeks = useMemo(() => groupByWeek(matches), [matches]);
+  /* VUE LISTE (retour BP) : UNE liste chronologique — matchs, visites et
+     relances mêlés par date, différenciés par leur couleur ; les pastilles
+     du haut filtrent les types. Même jour : relances, puis visites, puis
+     matchs (ce qui est à faire avant ce qui est à voir). */
+  const semaines = useMemo(() => {
+    type Ev =
+      | { type: "r"; jour: string; cle: string; r: RelanceUnite }
+      | { type: "v"; jour: string; cle: string; v: VisiteUnite }
+      | { type: "m"; jour: string; cle: string; m: (typeof matches)[number] };
+    const ordre = { r: 0, v: 1, m: 2 } as const;
+    const evs: Ev[] = [
+      ...(actifs.r ? relances.map((r): Ev => ({ type: "r", jour: r.jour, cle: `r-${r.athleteId}`, r })) : []),
+      ...(actifs.v ? visites.map((v): Ev => ({ type: "v", jour: v.jour, cle: `v-${v.athleteId}`, v })) : []),
+      ...(actifs.m ? matches.map((m): Ev => ({ type: "m", jour: m.game.gameDate, cle: `m-${m.game.id}`, m })) : []),
+    ].sort((a, b) => a.jour.localeCompare(b.jour) || ordre[a.type] - ordre[b.type]);
+    const parSemaine = new Map<string, Ev[]>();
+    for (const e of evs) {
+      const k = weekKey(e.jour);
+      parSemaine.set(k, [...(parSemaine.get(k) ?? []), e]);
+    }
+    return [...parSemaine.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([cle, evenements]) => ({ cle, label: weekLabel(cle), evenements }));
+  }, [actifs, relances, visites, matches]);
   const grid = useMemo(
     () => buildMonthGrid(cursor.year, cursor.month, matches, today),
     [cursor, matches, today],
@@ -910,76 +922,34 @@ function CalendrierContent() {
               Active au moins un type d&apos;événement : Matchs, Visites ou Relances.
             </div>
           ) : view === "list" ? (
-            /* ── VUE LISTE — une section par type, chacune dans l'ordre
-               chronologique. Les filtres (sport, position…) ne portent que
-               sur les matchs : une visite ou une relance n'est pas un match,
-               la cacher parce qu'un filtre est posé ferait manquer un
-               rendez-vous. */
-            <div className="mt-[34px] flex flex-col gap-[44px]">
-              {actifs.m && (
-                <section aria-label="Matchs à recruter">
-                  <SectionTitre couleur={COULEUR.m} titre="Matchs à recruter" detail={pluriel(matches.length, "match")} />
-                  {matches.length === 0 ? (
-                    /* Deux vides distincts : aucun match du tout (planche de
-                       la réf) vs des matchs existent mais rien ne franchit le
-                       seuil ou les filtres (message contextuel, actionnable). */
-                    baseMatchCount > 0 ? (
-                      <NoMatchForFilters
-                        minTargets={filters.minTargets}
-                        onReset={() => setFilters(EMPTY_FILTERS)}
-                      />
-                    ) : (
-                      <EmptyBoard />
-                    )
-                  ) : (
-                    <div className="flex flex-col gap-[30px]">
-                      {weeks.map((w) => (
-                        <div key={w.key} className="flex flex-col">
-                          <div className="mb-3 flex items-baseline gap-3.5">
-                            <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#8A909C]">{w.label}</h3>
-                            <span className="text-[12.5px] font-medium text-[#5C6575]">
-                              {w.matchCount} match{w.matchCount > 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount > 1 ? "s" : ""}
-                            </span>
-                          </div>
-                          <div className="flex flex-col gap-3">
-                            {w.matches.map((m) => <MatchCard key={m.game.id} m={m} />)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
+            /* ── VUE LISTE — UNE liste chronologique (retour BP), les trois
+               types mêlés par date et reconnus à leur couleur. Les filtres
+               (sport, position…) ne portent que sur les matchs : une visite
+               ou une relance n'est pas un match, la cacher parce qu'un filtre
+               est posé ferait manquer un rendez-vous. */
+            <div className="mt-[34px] flex flex-col gap-[30px]" data-testid="liste-chronologique">
+              {actifs.m && matches.length === 0 && baseMatchCount > 0 && (
+                <NoMatchForFilters minTargets={filters.minTargets} onReset={() => setFilters(EMPTY_FILTERS)} />
               )}
-
-              {actifs.v && (
-                <section aria-label="Visites planifiées">
-                  <SectionTitre couleur={COULEUR.v} titre="Visites planifiées" detail={pluriel(visites.length, "visite")} />
-                  {visites.length === 0 ? (
-                    <p className="text-[14px] text-[#5C6575]">Aucune visite planifiée dans ton unité.</p>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {visites.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {actifs.r && (
-                <section aria-label="Relances">
-                  <SectionTitre
-                    couleur={COULEUR.r}
-                    titre="Relances"
-                    detail={`${pluriel(relances.length, "relance")}${relances.some((r) => r.enRetard) ? ` · ${relances.filter((r) => r.enRetard).length} en retard` : ""}`}
-                  />
-                  {relances.length === 0 ? (
-                    <p className="text-[14px] text-[#5C6575]">Aucune relance posée dans ton unité.</p>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {relances.map((r) => <RelanceCard key={r.athleteId} r={r} />)}
-                    </div>
-                  )}
-                </section>
-              )}
+              {semaines.length === 0 ? (
+                actifs.m && !actifs.v && !actifs.r && baseMatchCount === 0 ? <EmptyBoard /> : (
+                  <p className="text-[14px] text-[#5C6575]">Rien à venir pour les types choisis.</p>
+                )
+              ) : semaines.map((w) => (
+                <div key={w.cle} className="flex flex-col">
+                  <div className="mb-3 flex items-baseline gap-3.5 border-b border-[#1E2129] pb-2">
+                    <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#8A909C]">{w.label}</h3>
+                    <span className="text-[12.5px] font-medium text-[#5C6575]">{pluriel(w.evenements.length, "événement")}</span>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {w.evenements.map((e) => (
+                      <div key={e.cle} data-jour={e.jour} data-type={e.type}>
+                        {e.type === "m" ? <MatchCard m={e.m} /> : e.type === "v" ? <VisiteCard v={e.v} /> : <RelanceCard r={e.r} />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             /* ── VUE MOIS — de courts libellés colorés dans la case du jour,

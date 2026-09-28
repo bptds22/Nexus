@@ -43,6 +43,8 @@ export interface CarteMeta {
   derniereActivite: string;
   /** Date de la purge automatique si rien ne bouge d'ici là. */
   expireLe: string;
+  /** Invitation automatique envoyée (acceptée par Resend) — null sinon. */
+  inviteeLe: string | null;
 }
 
 export type CarteKanban = PipelineKanbanCard & { carte: CarteMeta };
@@ -89,6 +91,7 @@ export interface LigneCarte {
   relance_note: string | null;
   visite_le: string | null;
   drapeau: boolean;
+  invitee_le: string | null;
   etape_le: string;
   derniere_activite: string;
   created_at: string;
@@ -99,7 +102,7 @@ export interface LigneCarte {
 const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, etape, grade, relance_le, relance_note,
-  visite_le, drapeau, etape_le, derniere_activite, created_at,
+  visite_le, drapeau, invitee_le, etape_le, derniere_activite, created_at,
   teams!team_id(name, division, schools!school_id(name, region, type)),
   positions!position_id(abreviation)
 `;
@@ -248,6 +251,7 @@ export function versKanban(
       creeLe: l.created_at,
       derniereActivite: l.derniere_activite,
       expireLe: expire,
+      inviteeLe: l.invitee_le,
     },
   };
 }
