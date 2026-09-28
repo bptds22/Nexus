@@ -25,6 +25,8 @@ export type GatedFeature =
   | "unlimited_pipeline" | "unlimited_favorites" | "unlimited_profiles"
   | "school_management" | "cegep_management"
   | "custom_lists" | "activity_feed"
+  // Calendrier de recrutement — Pro depuis le 2026-09-28 (décision BP).
+  | "recruiting_calendar"
   // « Ma page » — l'editeur de la page publique du CEGEP (recruteur).
   | "public_page";
 

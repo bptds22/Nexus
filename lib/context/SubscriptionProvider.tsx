@@ -92,7 +92,8 @@ type FeatureSet = Record<string, FeatureValue>;
    DÉCISIONS DE LANCEMENT (BP, 2026-09-10), pour que personne ne « corrige »
    ces écarts en croyant bien faire :
      · Mon processus — démo Free ASSUMÉE, aucun changement.
-     · Calendrier — reste OUVERT aux comptes gratuits ; gating à trancher.
+     · Calendrier — TRANCHÉ le 2026-09-28 (BP) : Pro, comme Mon processus
+       et Listes (cadenas de barre latérale + FeatureGate « recruiting_calendar »).
      · `search_results_limit` — NON appliqué au lancement.
 
    Réunifier les deux sources est un chantier nommé, pas un nettoyage de
