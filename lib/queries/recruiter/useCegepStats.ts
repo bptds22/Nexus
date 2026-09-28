@@ -9,7 +9,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
+import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export interface CegepActivityRow {
@@ -80,10 +80,13 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
          compris). `cegep_pipeline_overview` rend recruiter_id, athlete_id,
          stage et trois dates — même périmètre que la RLS, colonnes privées en
          moins. Les quatre lectures d'avant (compte, athlètes, par sport, par
-         région) et la boucle N+1 par recruteur partent toutes de ce jeu. */
+         région) et la boucle N+1 par recruteur partent toutes de ce jeu.
+         Lot B2, étape 3 : ce jeu est dédoublonné PAR UNITÉ (une ligne par
+         athlète × sport) — les lignes sœurs de deux collègues ne comptent
+         plus l'athlète deux fois (fetchDossiersUniteCegep). */
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const [overview, messagesRes, viewsRes] = await Promise.all([
-        fetchCegepPipelineOverview(supabase, recruiterIds),
+        fetchDossiersUniteCegep(supabase, recruiterIds),
         supabase.from("messages").select("*", { count: "exact", head: true }).in("sender_id", recruiterIds).gte("created_at", thirtyDaysAgo),
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).gte("viewed_at", thirtyDaysAgo),
       ]);
@@ -133,7 +136,8 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
       // 5. Recruiter activity bar chart — compté sur le jeu déjà chargé
       // (l'ancienne boucle faisait une requête par recruteur).
       const rowsByRecruiter = new Map<string, number>();
-      for (const p of overview) rowsByRecruiter.set(p.recruiter_id, (rowsByRecruiter.get(p.recruiter_id) || 0) + 1);
+      // Chaque recruteur qui SUIT un dossier le compte (lignes sœurs comprises).
+      for (const p of overview) for (const r of p.suivi_par) rowsByRecruiter.set(r, (rowsByRecruiter.get(r) || 0) + 1);
       const activityBars: { short: string; name: string; messages: number }[] = rList.map((r) => ({
         short: `${((r.first_name as string) || "")[0] || ""}. ${r.last_name || ""}`,
         name: `${r.first_name || ""} ${r.last_name || ""}`,

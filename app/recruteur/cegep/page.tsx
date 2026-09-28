@@ -8,6 +8,7 @@ import KpiCardRow from "@/components/director/KpiCardRow";
 import { useCegepStats } from "@/lib/queries/recruiter/useCegepStats";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
+import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
 import {
   BarChart,
   Bar,
@@ -247,6 +248,8 @@ function CegepDashboardContent() {
         </span>
         <FiltreSportUnite filtre={filtreSport} className="ml-auto" />
       </div>
+      {/* §40 : un autre sport que le sien (ou tout le cégep) se lit sans s'écrire. */}
+      <AvisLectureSeule filtre={filtreSport} />
 
       {/* ── Section 1: KPI Cards ────────────────────────────── */}
       <KpiCardRow>

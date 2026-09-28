@@ -1,0 +1,145 @@
+/* ═══════════════════════════════════════════════════════════════
+   useCalendrierUnite — le calendrier de l'UNITÉ (lot B2, étape 3, web).
+
+   Décision BP 2026-09-28 : pour un Pro, le calendrier montre
+   · les matchs des athlètes suivis par l'UNITÉ (cégep × sport) — processus,
+     favoris, listes —, qu'ils aient été ajoutés par soi ou par un collègue ;
+   · les VISITES PLANIFIÉES de toute l'unité, comme événements.
+
+   Sources (toutes filtrées par la RLS, Pro exigé) :
+     · unite_pipeline()  — une ligne par athlète : étape, visite, qui suit ;
+     · unite_favoris()   — une ligne par athlète ;
+     · recruiter_lists / recruiter_list_members — les siennes et celles de
+       SON unité (même filtre que useListesUnite).
+   Puis la même construction que le calendrier d'avant
+   (construireCalendrier). Les équipes des athlètes suivis par un collègue
+   sont lisibles grâce à la policy unite_equipes_suivies (migration
+   b2_3_unite_journal_calendrier) ; sans elle, ces athlètes n'auraient pas
+   d'équipe, donc pas de match.
+
+   Admin cégep : son sport seulement, comme ses collègues (les autres sports
+   se lisent dans Mon CÉGEP).
+
+   Web seulement : l'app 1.4.3 garde useRecruitingCalendar (registre §38).
+   Clé sous ["recruiting-calendar"] : dans tableauBlanc.ts.
+═══════════════════════════════════════════════════════════════ */
+
+import { useQuery } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import { nomAuteur, type AuteurUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import { construireCalendrier, type RecruitingCalendarData } from "@/lib/queries/recruiter/useRecruitingCalendar";
+
+/** Une visite planifiée de l'unité (recruiter_pipeline.visit_at). */
+export interface VisiteUnite {
+  athleteId: string;
+  identityVisible: boolean;
+  fullName: string;
+  /** timestamptz ISO. */
+  visitAt: string;
+  /** Jour local "YYYY-MM-DD", pour la grille du mois. */
+  jour: string;
+  stage: string;
+  /** Qui suit le dossier, par nom (« Suivi par »). */
+  suiviPar: string[];
+}
+
+export interface CalendrierUniteData extends RecruitingCalendarData {
+  visites: VisiteUnite[];
+}
+
+interface LigneUnite {
+  athlete_id: string;
+  stage: string | null;
+  visit_at: string | null;
+  recruteurs: string[] | null;
+}
+
+/** "YYYY-MM-DD" en temps local — une visite à 20 h le 12 reste le 12. */
+export function jourLocal(iso: string): string {
+  const d = new Date(iso);
+  const p = (v: number) => String(v).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+export function useCalendrierUnite(enabled: boolean) {
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
+  const monCegep = currentUser?.profile.school_id ?? null;
+
+  return useQuery<CalendrierUniteData>({
+    queryKey: ["recruiting-calendar", "unite", moi],
+    enabled: enabled && !!moi,
+    // Tableau PARTAGÉ : rechargé à chaque affichage et au retour sur l'onglet.
+    staleTime: 0,
+    queryFn: async () => {
+      const supabase = createClient();
+      const [pipeRes, favRes, listesRes, auteursRes] = await Promise.all([
+        supabase.rpc("unite_pipeline"),
+        supabase.rpc("unite_favoris"),
+        supabase.from("recruiter_lists").select("id, recruiter_id, unite_cegep_id, unite_sport_id"),
+        supabase.rpc("unite_auteurs"),
+      ]);
+      if (pipeRes.error) throw pipeRes.error;
+      if (favRes.error) throw favRes.error;
+      if (listesRes.error) throw listesRes.error;
+      const auteurs: Record<string, AuteurUnite> = {};
+      for (const a of (auteursRes.data ?? []) as AuteurUnite[]) auteurs[a.id] = a;
+      const monSport = moi ? auteurs[moi]?.sport_id ?? null : null;
+
+      // Les listes : les siennes, et celles de SON unité (cf. useListesUnite).
+      const listIds = ((listesRes.data ?? []) as { id: string; recruiter_id: string; unite_cegep_id: string | null; unite_sport_id: string | null }[])
+        .filter((l) => l.recruiter_id === moi
+          || (!!monCegep && !!monSport && l.unite_cegep_id === monCegep && l.unite_sport_id === monSport))
+        .map((l) => l.id);
+      let membres: { athlete_id: string; list_id: string }[] = [];
+      if (listIds.length > 0) {
+        const { data, error } = await supabase
+          .from("recruiter_list_members")
+          .select("athlete_id, list_id")
+          .in("list_id", listIds);
+        if (error) throw error;
+        membres = (data ?? []) as { athlete_id: string; list_id: string }[];
+      }
+
+      const lignes = (pipeRes.data ?? []) as LigneUnite[];
+      const stageByAthlete = new Map<string, string>();
+      for (const l of lignes) if (l.stage) stageByAthlete.set(l.athlete_id, l.stage);
+      const listsByAthlete = new Map<string, string[]>();
+      for (const m of membres) listsByAthlete.set(m.athlete_id, [...(listsByAthlete.get(m.athlete_id) ?? []), m.list_id]);
+
+      const targetIds = Array.from(new Set<string>([
+        ...lignes.map((l) => l.athlete_id),
+        ...((favRes.data ?? []) as { athlete_id: string }[]).map((f) => f.athlete_id),
+        ...membres.map((m) => m.athlete_id),
+      ]));
+
+      const base = await construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete);
+
+      /* Visites À VENIR de l'unité (à partir d'aujourd'hui, 0 h locale). */
+      const debut = new Date();
+      debut.setHours(0, 0, 0, 0);
+      const avecVisite = lignes.filter((l) => l.visit_at && new Date(l.visit_at) >= debut);
+      const cartes = avecVisite.length > 0
+        ? await fetchRecruiterAthleteCards(supabase, avecVisite.map((l) => l.athlete_id))
+        : new Map();
+      const visites: VisiteUnite[] = avecVisite
+        .map((l) => {
+          const card = cartes.get(l.athlete_id) ?? null;
+          return {
+            athleteId: l.athlete_id,
+            identityVisible: card?.identity_visible ?? false,
+            fullName: displayFullName(card),
+            visitAt: l.visit_at!,
+            jour: jourLocal(l.visit_at!),
+            stage: (l.stage || "VISITE_PLANIFIEE").toUpperCase(),
+            suiviPar: (l.recruteurs ?? []).map((id) => nomAuteur(auteurs[id])),
+          };
+        })
+        .sort((a, b) => a.visitAt.localeCompare(b.visitAt));
+
+      return { ...base, visites };
+    },
+  });
+}

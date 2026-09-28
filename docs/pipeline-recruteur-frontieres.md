@@ -122,6 +122,32 @@ migration : tout repose sur B1/B2-0.
 - **Trou connu, au registre §41** : la policy propriétaire de
   `recruiter_list_notes` ne vérifie pas la liste.
 
+**Lot B2, étape 3 (web, 2026-09-28) — Calendrier, Tableau de bord, Mon CÉGEP par unité.**
+- **Calendrier** (`useCalendrierUnite`) : les matchs des athlètes suivis par
+  l'unité (processus, favoris, listes — de soi ou d'un collègue) et les
+  **visites planifiées** de toute l'unité comme événements (section en vue
+  liste, marqueur vert en vue mois, « Suivi par … »). Les équipes des athlètes
+  suivis par un collègue se lisent grâce à la policy additive
+  `unite_equipes_suivies` sur `team_athletes` (migration
+  `b2_3_unite_journal_calendrier`). La construction cibles → matchs est
+  partagée (`construireCalendrier`) : l'app 1.4.3 garde ses propres cibles.
+- **Tableau de bord** : entonnoir et tuiles Relances / Visites sur
+  `useProcessusUnite` (la lecture de Mon processus, même clé de cache) ; fil
+  d'activité de l'unité (`useActiviteUnite`) — les gestes du tableau blanc de
+  toute l'unité, chacun « par … », plus ses propres événements privés. Gratuit :
+  inchangé.
+- **Mon CÉGEP** : l'admin lit toutes les unités de son cégep, filtre par sport.
+  Les comptes portent désormais sur des **dossiers** (athlète × unité) et non
+  sur des lignes : deux collègues qui suivent le même athlète ne le comptent
+  plus deux fois (`fetchDossiersUniteCegep`, `lib/cegep/dossiersUnite.ts`).
+  `cegep_pipeline_overview` reste la source — Mon CÉGEP est ouvert à l'admin
+  gratuit, que les lectures d'unité (Pro) laisseraient vide.
+- **§40 tranché** : un admin qui regarde un autre sport (ou tout le cégep) lit
+  sans écrire — avis « lecture seule » en tête de Mon CÉGEP et de Mon
+  processus (`AvisLectureSeule`), dossiers d'un autre sport non modifiables.
+- **§39 corrigé en base** (même migration) : la ligne de journal d'un retrait
+  d'unité fait dans un autre sport va dans l'unité **visée**.
+
 La suite de ce fichier décrit l'état **du 17 septembre** : elle reste exacte
 pour le coach, le parent, l'admin plateforme et les recruteurs sans unité.
 

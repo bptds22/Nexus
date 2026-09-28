@@ -39,6 +39,8 @@ export interface FiltreSportUnite {
   visible: boolean;
   /** null = Tous ; sinon les recruteurs retenus. */
   ids: Set<string> | null;
+  /** Le sport de l'admin (son unité) — lot B2 étape 3, avis de lecture seule. */
+  monSportId: string | null;
 }
 
 export function useFiltreSportUnite(): FiltreSportUnite {
@@ -83,6 +85,7 @@ export function useFiltreSportUnite(): FiltreSportUnite {
       options,
       visible: menuUtile(options),
       ids: data ? idsRetenus(membres, choix) : null,
+      monSportId,
     };
   }, [data, isSuccess, memorise, setChoix]);
 }

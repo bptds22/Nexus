@@ -33,7 +33,7 @@ const TIME_GROUP_ORDER: ActivityEvent["timeGroup"][] = [
 
 const INITIAL_LIMIT = 15;
 
-export default function RecruiterActivityFeed({ events }: { events: ActivityEvent[] }) {
+export default function RecruiterActivityFeed({ events, sousTitre }: { events: ActivityEvent[]; sousTitre?: string }) {
   const [showAll, setShowAll] = useState(false);
 
   /* ── Empty state ─────────────────────────────────────────── */
@@ -104,7 +104,7 @@ export default function RecruiterActivityFeed({ events }: { events: ActivityEven
         <h2 className="font-head font-bold text-[15px] tracking-[0.15em] uppercase text-white">
           Activités récentes
         </h2>
-        <p className="text-[13px] text-[#9CA3AF] mt-1">De tes athlètes favoris</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-1">{sousTitre ?? "De tes athlètes favoris"}</p>
       </div>
 
       {/* Feed list */}

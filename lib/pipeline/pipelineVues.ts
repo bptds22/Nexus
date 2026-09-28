@@ -22,6 +22,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { dossiersParUnite, type DossierUnite } from "@/lib/cegep/dossiersUnite";
 
 /** Miroir de `coach_pipeline_for_my_athletes` — quatre colonnes, pas une de plus. */
 export interface CoachPipelineRow {
@@ -84,4 +85,28 @@ export async function fetchCegepPipelineOverview(
     return [];
   }
   return (data ?? []) as CegepPipelineRow[];
+}
+
+/**
+ * Les DOSSIERS des recruteurs `recruiterIds` (lot B2, étape 3) : le
+ * pipeline de l'équipe, une ligne par athlète et par unité (cégep × sport),
+ * à l'étape la plus avancée — voir lib/cegep/dossiersUnite.ts. À utiliser
+ * dès qu'on COMPTE des athlètes : depuis B1, deux collègues d'une unité qui
+ * suivent le même athlète ont chacun leur ligne.
+ */
+export async function fetchDossiersUniteCegep(
+  supabase: SupabaseClient,
+  recruiterIds: readonly string[],
+  stages?: readonly string[],
+): Promise<DossierUnite[]> {
+  if (recruiterIds.length === 0) return [];
+  const [lignes, sportsRes] = await Promise.all([
+    fetchCegepPipelineOverview(supabase, recruiterIds, stages),
+    supabase.from("users").select("id, sport_id").in("id", recruiterIds as string[]),
+  ]);
+  if (sportsRes.error) console.error("[pipeline] sports de l'équipe :", sportsRes.error.message);
+  const sportParRecruteur = new Map<string, string | null>(
+    ((sportsRes.data ?? []) as { id: string; sport_id: string | null }[]).map((u) => [u.id, u.sport_id]),
+  );
+  return dossiersParUnite(lignes, sportParRecruteur);
 }
