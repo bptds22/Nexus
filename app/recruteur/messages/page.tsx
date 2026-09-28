@@ -10,6 +10,7 @@ import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { useConversations, type ThreadData } from "@/lib/queries/recruiter/useConversations";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { conversationCompte } from "@/lib/messaging/nonLusRecruteur";
 import { RecruteurMessagesMobile } from "@/components/shared/RecruteurMessagesMobile";
 import UpgradePlaceholder from "@/components/subscription/UpgradePlaceholder";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -274,7 +275,9 @@ function MessagesPageContent() {
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
 
-  const unreadCount = threads.filter(t => t.unreadCount > 0).length;
+  // Règle unique (lib/messaging/nonLusRecruteur.ts) : une conversation
+  // archivée ne compte pas — ni ici, ni dans « Non lu », ni dans la pastille.
+  const unreadCount = threads.filter(t => t.unreadCount > 0 && conversationCompte(t.status)).length;
 
   const filtered = useMemo(() => {
     let list = [...threads];
@@ -289,7 +292,7 @@ function MessagesPageContent() {
     }
 
     switch (activeFilter) {
-      case "non_lu": list = list.filter(t => t.unreadCount > 0); break;
+      case "non_lu": list = list.filter(t => t.unreadCount > 0 && conversationCompte(t.status)); break;
       // "Sans réponse" : dernier message du recruteur courant → en attente (def. (a)).
       case "sans_reponse": list = list.filter(t => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "ARCHIVE"); break;
       case "archive": list = list.filter(t => t.status === "ARCHIVE"); break;

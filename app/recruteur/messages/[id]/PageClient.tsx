@@ -14,6 +14,7 @@ import FeatureGate from "@/components/subscription/FeatureGate";
 import { RecruteurMessagesThreadMobile } from "@/components/shared/RecruteurMessagesThreadMobile";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 import { useQueryClient } from "@tanstack/react-query";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 import { useAthleteContactable, blackoutMessageFil } from "@/lib/queries/recruiter/useAthleteContactable";
 import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import NexusThreadView, { NexusThreadMobile } from "@/components/messaging/NexusThreadView";
@@ -353,8 +354,15 @@ function RecruiterThreadPage() {
         })));
       }
 
-      // Mark as read
-      await supabase.from("conversations").update({ unread_count: 0 }).eq("id", id);
+      /* Marquer lu : la RPC mark_conversation_read, qui pose messages.read_at
+         (et remet unread_count à 0). L'ancien UPDATE ne touchait QUE
+         unread_count, colonne morte : read_at restait vide et la pastille
+         comptait tous les messages reçus depuis toujours (bug du « 8 »,
+         2026-09-28). Même RPC que les fils coach, athlète et parent. */
+      const { error: errLu } = await supabase.rpc("mark_conversation_read", { p_conv: id });
+      if (errLu) console.error("[messages/[id]] marquer lu :", errLu.message);
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      signalerCompteursAJour();
     }
     load()
       .catch((e: unknown) => {

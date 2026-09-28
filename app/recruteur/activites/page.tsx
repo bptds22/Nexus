@@ -6,6 +6,7 @@ import ActivityFeedFull from "@/app/components/activities/ActivityFeedFull";
 import { RecruteurActivitesMobile } from "@/components/shared/RecruteurActivitesMobile";
 import type { Activity, ActivityType } from "@/lib/types/activity";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -80,6 +81,8 @@ function RecruteurActivitesPageContent() {
       if (error) {
         console.error("[activites markAsRead] failed to clear unread:", error);
       }
+      // La pastille Activités de la barre latérale se relit tout de suite.
+      signalerCompteursAJour();
     };
     markAllAsRead();
   }, []);

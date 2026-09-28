@@ -8,6 +8,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export function useMarkAllActivitiesRead() {
@@ -29,6 +30,7 @@ export function useMarkAllActivitiesRead() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["activity-feed", userId] });
       queryClient.invalidateQueries({ queryKey: ["unread-activity-count", userId] });
+      signalerCompteursAJour();
     },
   });
 }

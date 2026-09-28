@@ -1,30 +1,29 @@
 /* ═══════════════════════════════════════════════════════════════
    useMarkConversationRead — TanStack mutation (iter 7.8b)
-   UPDATE conversations.unread_count = 0 pour une conversation donnée.
-   À appeler au mount du thread detail (côté recruteur).
-   Note : on reste sur unread_count thread-level (cohérent avec
-   l'existant). read_at par message existe en colonne mais n'est pas
-   utilisé en V1.
+   Marque une conversation lue par la RPC mark_conversation_read (pose
+   messages.read_at, remet unread_count à 0). À appeler au mount du thread
+   detail (côté recruteur).
+   Correctif du 2026-09-28 : l'ancien UPDATE ne touchait qu'unread_count,
+   colonne que rien n'incrémente ; read_at restait vide et les pastilles
+   comptaient faux. La règle unique : lib/messaging/nonLusRecruteur.ts.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 
 export function useMarkConversationRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ conversationId }: { conversationId: string }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("conversations")
-        .update({ unread_count: 0 })
-        .eq("id", conversationId);
+      const { error } = await createClient().rpc("mark_conversation_read", { p_conv: conversationId });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+      signalerCompteursAJour();
     },
   });
 }

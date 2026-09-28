@@ -130,6 +130,12 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             q.state.status === "success"
             && q.queryKey?.[0] !== "currentUser"
             && q.queryKey?.[0] !== "athlete-blackout"
+            // Compteurs de non-lus (2026-09-28) : les pastilles de la barre
+            // latérale et la liste des conversations se relisent toujours
+            // au serveur — réhydratées, elles contredisaient ce que
+            // l'usager venait de lire.
+            && q.queryKey?.[0] !== "badges-recruteur"
+            && q.queryKey?.[0] !== "conversations"
             && !estCleTableauBlanc(q.queryKey),
         },
       }}

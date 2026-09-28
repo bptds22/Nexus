@@ -1459,3 +1459,34 @@ comme « positive status, active » et les couleurs d'étape de recrutement
 (VISITE = violet) : à réaligner si la palette du calendrier doit s'étendre aux
 autres écrans. Tant que ce n'est pas tranché, la décision ci-dessus vaut pour
 le calendrier.
+
+## 43. Non-lus recruteur — une seule définition (bug du « 8 », 2026-09-28)
+
+**Constat (test prod BP).** La pastille Messages affichait « 8 », le filtre
+« Non lu » de la page Messages ne montrait rien. Les deux avaient tort :
+- la page lisait `conversations.unread_count`, colonne **morte** (rien ne
+  l'incrémente ; `mark_conversation_read` ne fait que la remettre à 0) — le
+  filtre n'aurait jamais rien montré, même un vrai nouveau message ;
+- le fil web du recruteur ne posait jamais `messages.read_at` (il remettait
+  seulement `unread_count` à 0) : la pastille, qui compte `read_at IS NULL`,
+  comptait tous les messages reçus depuis toujours. Les « 8 » de BP = 3 + 2 +
+  1 + 1 + 1 messages reçus dans 5 conversations, jamais marqués lus.
+
+**Règle unique (web, `lib/messaging/nonLusRecruteur.ts`)** : un message est non
+lu s'il est reçu (`sender_id <> moi`) et `read_at IS NULL`, dans une conversation
+non archivée ; on le marque lu par la RPC `mark_conversation_read`. Pastille,
+compte par fil et filtre « Non lu » l'appliquent tous. Les pastilles (Messages,
+Activités) se relisent à chaque geste (événement `notifications-updated`), au
+retour sur l'onglet et chaque minute ; ni elles ni la liste des conversations ne
+sont persistées.
+
+**À savoir au déploiement.** Les messages déjà reçus et jamais marqués lus
+(`read_at` vide) restent comptés jusqu'à l'ouverture de leur fil — c'est la
+vérité de la base, pas un nouveau bug. Pour BP : ouvrir les 5 fils concernés
+remet sa pastille à 0.
+
+**Lot mobile.** La barre d'onglets (`MobileTabBar`, branche recruteur) compte
+déjà `read_at IS NULL` mais sans exclure les archivées, et ne se relit qu'au
+changement de page ; le fil mobile marque lu par `useMarkConversationRead`, qui
+passe désormais par la RPC (tronc partagé) — effectif au prochain build mobile.
+À aligner sur `nonLusRecruteur.ts` au lot mobile.

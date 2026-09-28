@@ -5,6 +5,7 @@ import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useBadgesRecruteur } from "@/lib/queries/recruiter/useBadgesRecruteur";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -216,43 +217,13 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
     } catch { /* use defaults */ }
   }, [isSchoolAdmin]);
 
-  // Real badge counts from Supabase
-  const [msgBadge, setMsgBadge] = useState(0);
-  const [actBadge, setActBadge] = useState(0);
-
-  useEffect(() => {
-    async function loadBadges() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Unread messages: messages.read_at IS NULL means not yet read
-      const { data: convs } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("recruiter_id", user.id)
-        .eq("status", "ACTIVE");
-      const convIds = convs?.map((c) => c.id) || [];
-      if (convIds.length > 0) {
-        const { count } = await supabase
-          .from("messages")
-          .select("*", { count: "exact", head: true })
-          .in("conversation_id", convIds)
-          .neq("sender_id", user.id)
-          .is("read_at", null);
-        setMsgBadge(count ?? 0);
-      }
-
-      // Unread activities — auto-marked as read when user visits /recruteur/activites
-      const { count: actCount } = await supabase
-        .from("recruiter_activity_log")
-        .select("*", { count: "exact", head: true })
-        .eq("recruiter_id", user.id)
-        .eq("is_read", false);
-      setActBadge(actCount ?? 0);
-    }
-    loadBadges();
-  }, []);
+  /* Pastilles Messages / Activités — relues à chaque geste qui les change
+     (événement notifications-updated), au retour sur l'onglet et au plus tard
+     chaque minute ; jamais persistées. Messages : la règle unique de
+     lib/messaging/nonLusRecruteur.ts (bug du « 8 », 2026-09-28). */
+  const { data: badges } = useBadgesRecruteur();
+  const msgBadge = badges?.messages ?? 0;
+  const actBadge = badges?.activites ?? 0;
 
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
 

@@ -6,6 +6,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery } from "@tanstack/react-query";
+import { estNonLu } from "@/lib/messaging/nonLusRecruteur";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
@@ -98,19 +99,26 @@ export function useConversations() {
       const convIds = data.map((c: Record<string, unknown>) => c.id as string);
       const lastMsgMap = new Map<string, string>();
       const lastSenderMap = new Map<string, string>();
+      /* Non-lus par fil — la règle unique (lib/messaging/nonLusRecruteur.ts) :
+         reçu + read_at IS NULL. PAS `conversations.unread_count`, colonne
+         morte (rien ne l'incrémente) : elle valait 0 partout, et le filtre
+         « Non lu » ne montrait jamais rien (bug du 2026-09-28). `read_at`
+         vient de la même requête, qui balaie déjà tous les messages. */
+      const nonLusMap = new Map<string, number>();
       if (convIds.length > 0) {
         const { data: msgData } = await supabase
           .from("messages")
-          .select("conversation_id, content, sender_id")
+          .select("conversation_id, content, sender_id, read_at")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false });
         if (msgData) {
           // Premier vu par conversation = le plus récent (ordre desc) → contenu + expéditeur.
-          for (const m of msgData as { conversation_id: string; content: string; sender_id: string }[]) {
+          for (const m of msgData as { conversation_id: string; content: string; sender_id: string; read_at: string | null }[]) {
             if (!lastMsgMap.has(m.conversation_id)) {
               lastMsgMap.set(m.conversation_id, m.content);
               lastSenderMap.set(m.conversation_id, m.sender_id);
             }
+            if (estNonLu(m, userId)) nonLusMap.set(m.conversation_id, (nonLusMap.get(m.conversation_id) ?? 0) + 1);
           }
         }
       }
@@ -176,7 +184,7 @@ export function useConversations() {
           lastMessage: lastMsgMap.get(c.id as string) || "",
           lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
           lastSenderId: lastSenderMap.get(c.id as string) ?? null,
-          unreadCount: (c.unread_count as number) || 0,
+          unreadCount: nonLusMap.get(c.id as string) ?? 0,
           status: (c.status as string) || "ACTIVE",
         };
       });
