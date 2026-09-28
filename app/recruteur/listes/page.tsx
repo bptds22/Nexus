@@ -3,6 +3,7 @@
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { RecruteurListesMobile } from "@/components/shared/RecruteurListesMobile";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import Link from "next/link";
@@ -14,10 +15,26 @@ import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import type { ProspectList, ProspectListAthlete } from "./_data/mockListsData";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { useListesUnite, useNotesListeUnite } from "@/lib/queries/recruiter/useListesUnite";
+import { useFavorisUnite } from "@/lib/queries/recruiter/useFavorisUnite";
+import { useAuteursUnite, useNotesUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Listes de Prospects — Organized folders for pipeline athletes
    Grid overview → expanded list view with athlete table
+
+   LISTES DE L'UNITÉ (lot B2, étape 2 — décisions BP 2026-09-24). La page
+   est réservée au Pro (FeatureGate) : elle montre les listes de l'UNITÉ
+   (cégep × sport), que tous les Pro de l'unité voient et modifient.
+   - chaque liste porte son auteur, chaque membre qui l'a ajouté, chaque
+     note son auteur ;
+   - les notes des collègues se lisent sans se modifier (décision BP 2) ;
+   - toutes les lectures passent par les clés du tableau blanc
+     (lib/queries/tableauBlanc.ts : jamais persistées), toutes les
+     écritures les invalident — un geste d'un collègue apparaît au prochain
+     affichage ou au retour sur l'onglet.
 ═══════════════════════════════════════════════════════════════ */
 
 const GOLD = "#F59E0B";
@@ -25,11 +42,13 @@ const BLUE = "#3B82F6";
 
 /* ── Toast ────────────────────────────────────────────────────── */
 
-function Toast({ message, onDone }: { message: string; onDone: () => void }) {
+function Toast({ message, erreur, onDone }: { message: string; erreur?: boolean; onDone: () => void }) {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] animate-[fadeInUp_0.3s_ease-out]">
-      <div className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-5 py-3 shadow-lg flex items-center gap-3">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+    <div role={erreur ? "alert" : undefined} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] animate-[fadeInUp_0.3s_ease-out]">
+      <div className={`bg-[#1A1D24] border rounded-lg px-5 py-3 shadow-lg flex items-center gap-3 ${erreur ? "border-[#EF4444]/40" : "border-[#2D3748]"}`}>
+        {erreur
+          ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+          : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
         <span className="text-[13px] font-bold text-white">{message}</span>
         <button type="button" onClick={onDone} className="text-[#6b7280] hover:text-white ml-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
@@ -267,26 +286,21 @@ function AddAthleteModal({
   const [search, setSearch] = useState("");
   const [available, setAvailable] = useState<ProspectListAthlete[]>([]);
   const [loading, setLoading] = useState(true);
+  // Les favoris de l'UNITÉ (lot B2, étape 2) : on ajoute à une liste d'unité
+  // depuis les cœurs de toute l'unité, pas seulement les siens.
+  const favoris = useFavorisUnite();
+  const idsFavoris = useMemo(() => [...favoris.ids].sort().join(","), [favoris.ids]);
 
-  // Load favorited athletes from Supabase
   useEffect(() => {
+    if (favoris.isLoading) return;
+    let annule = false;
     async function loadFavs() {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      /* Temps 1 — la relation SEULE (embed athletes retiré). */
-      const { data } = await supabase
-        .from("recruiter_favorites")
-        .select("athlete_id")
-        .eq("recruiter_id", user.id);
-
-      if (data) {
-        /* Temps 2 — les cartes projetées, résolues par lot. */
-        const cardMap = await fetchRecruiterAthleteCards(
-          supabase,
-          (data as { athlete_id: string }[]).map((f) => f.athlete_id),
-        );
+      const ids = idsFavoris ? idsFavoris.split(",") : [];
+      {
+        /* Les cartes projetées, résolues par lot. */
+        const cardMap = await fetchRecruiterAthleteCards(supabase, ids);
+        if (annule) return;
 
         const mapped: ProspectListAthlete[] = [...cardMap.values()].map((card) => ({
           id: card.id,
@@ -311,7 +325,8 @@ function AddAthleteModal({
       setLoading(false);
     }
     loadFavs();
-  }, [existingIds]);
+    return () => { annule = true; };
+  }, [existingIds, idsFavoris, favoris.isLoading]);
 
   const filtered = useMemo(() => {
     if (search.trim().length < 2) return available;
@@ -353,7 +368,7 @@ function AddAthleteModal({
             <p className="text-[13px] text-[#4a4d56] text-center py-8">Chargement...</p>
           ) : filtered.length === 0 ? (
             <p className="text-[13px] text-[#4a4d56] text-center py-8">
-              {search ? "Aucun athlète trouvé" : "Tous les favoris sont déjà dans cette liste"}
+              {search ? "Aucun athlète trouvé" : "Tous les favoris de l'unité sont déjà dans cette liste"}
             </p>
           ) : (
             filtered.map((a) => (
@@ -443,6 +458,9 @@ function ListCard({
         />
       </div>
 
+      {/* Auteur (lot B2, étape 2 : la liste appartient à l'unité, pas à lui) */}
+      {list.auteur && <p className="text-[11px] text-[#6b7280] mt-1">Par {list.auteur}</p>}
+
       {/* Description */}
       <p className="text-[13px] text-[#9CA3AF] mt-1.5 line-clamp-1">{list.description}</p>
 
@@ -473,6 +491,10 @@ function ListCard({
 
 /* ── Note entry for activity feed ─────────────────────────────── */
 interface NoteEntry { id: string; content: string; created_at: string; }
+
+function initiales(nom: string): string {
+  return nom.split(/\s+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase();
+}
 
 function NoteCard({ note, initials, fullName, onDelete }: { note: NoteEntry; initials: string; fullName: string; onDelete?: (id: string) => void }) {
   const [confirming, setConfirming] = useState(false);
@@ -514,51 +536,37 @@ function NoteCard({ note, initials, fullName, onDelete }: { note: NoteEntry; ini
   );
 }
 
-function AthleteNotesPanel({ athleteId, athleteName }: { athleteId: string; athleteName: string }) {
-  const [notes, setNotes] = useState<NoteEntry[]>([]);
+/* Notes de suivi d'un athlète — les notes de l'UNITÉ, signées (lot B2) :
+   les mêmes que le panneau de Mon processus. Celles des collègues se lisent
+   sans se supprimer (décision BP 2). */
+function AthleteNotesPanel({ athleteId, athleteName, moi, auteurs, onErreur }: {
+  athleteId: string;
+  athleteName: string;
+  moi: string | null;
+  auteurs: Record<string, { id: string; first_name: string | null; last_name: string | null; sport_id: string | null }>;
+  onErreur: (msg: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { data: notes = [] } = useNotesUnite(athleteId);
   const [noteText, setNoteText] = useState("");
   const [posting, setPosting] = useState(false);
-  const [userName, setUserName] = useState({ initials: "", fullName: "" });
-
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: userData } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
-      if (userData) {
-        setUserName({
-          initials: `${(userData.first_name || "")[0] || ""}${(userData.last_name || "")[0] || ""}`.toUpperCase(),
-          fullName: `${userData.first_name || ""} ${userData.last_name || ""}`.trim(),
-        });
-      }
-
-      const { data } = await supabase
-        .from("recruiter_notes")
-        .select("id, content, created_at")
-        .eq("recruiter_id", user.id)
-        .eq("athlete_id", athleteId)
-        .order("created_at", { ascending: false });
-      if (data) setNotes(data);
-    }
-    load();
-  }, [athleteId]);
 
   const handlePost = async () => {
-    if (!noteText.trim()) return;
+    if (!noteText.trim() || !moi) return;
     setPosting(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setPosting(false); return; }
-    const { data } = await supabase
+    const { error } = await createClient()
       .from("recruiter_notes")
-      .insert({ recruiter_id: user.id, athlete_id: athleteId, content: noteText.trim() })
-      .select("id, content, created_at")
-      .single();
-    if (data) setNotes(prev => [data, ...prev]);
-    setNoteText("");
+      .insert({ recruiter_id: moi, athlete_id: athleteId, content: noteText.trim() });
     setPosting(false);
+    if (error) { onErreur("Note non enregistrée"); return; }
+    setNoteText("");
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await createClient().from("recruiter_notes").delete().eq("id", id);
+    if (error) onErreur("Note non supprimée");
+    void invaliderTableauBlanc(queryClient);
   };
 
   return (
@@ -580,7 +588,13 @@ function AthleteNotesPanel({ athleteId, athleteName }: { athleteId: string; athl
       {notes.length > 0 && (
         <div className="mt-4">
           <p className="text-[13px] font-bold text-white mb-3">Activités: {notes.length}</p>
-          {notes.map(note => <NoteCard key={note.id} note={note} initials={userName.initials} fullName={userName.fullName} onDelete={async (id) => { const supabase = createClient(); await supabase.from("recruiter_notes").delete().eq("id", id); setNotes(prev => prev.filter(n => n.id !== id)); }} />)}
+          {notes.map(note => {
+            const nom = nomAuteur(auteurs[note.recruiter_id]);
+            return (
+              <NoteCard key={note.id} note={note} initials={initiales(nom)} fullName={nom}
+                onDelete={note.recruiter_id === moi ? handleDelete : undefined} />
+            );
+          })}
         </div>
       )}
       {notes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cet athlète.</p>}
@@ -590,72 +604,50 @@ function AthleteNotesPanel({ athleteId, athleteName }: { athleteId: string; athl
 
 function ExpandedListView({
   list,
+  moi,
+  auteurs,
   onBack,
   onRemoveAthlete,
   onAddAthlete,
-  onToast,
+  onErreur,
 }: {
   list: ProspectList;
+  moi: string | null;
+  auteurs: Record<string, { id: string; first_name: string | null; last_name: string | null; sport_id: string | null }>;
   onBack: () => void;
   onRemoveAthlete: (listId: string, athleteId: string) => void;
   onAddAthlete: (listId: string, athlete: ProspectListAthlete) => void;
-  onToast: (msg: string) => void;
+  onErreur: (msg: string) => void;
 }) {
+  const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
 
-  // List-level notes
-  const [listNotes, setListNotes] = useState<{ id: string; content: string; created_at: string }[]>([]);
+  // Notes de liste — celles de TOUTE l'unité, signées (lot B2, étape 2).
+  const { data: listNotes = [] } = useNotesListeUnite(list.id);
   const [listNoteText, setListNoteText] = useState("");
   const [listNotePosting, setListNotePosting] = useState(false);
-  const [listNotesOpen, setListNotesOpen] = useState(false);
-  const [listUserName, setListUserName] = useState({ initials: "", fullName: "" });
-
-  useEffect(() => {
-    async function loadListNotes() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: userData } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
-      if (userData) {
-        setListUserName({
-          initials: `${(userData.first_name || "")[0] || ""}${(userData.last_name || "")[0] || ""}`.toUpperCase(),
-          fullName: `${userData.first_name || ""} ${userData.last_name || ""}`.trim(),
-        });
-      }
-
-      const { data } = await supabase
-        .from("recruiter_list_notes")
-        .select("id, content, created_at")
-        .eq("list_id", list.id)
-        .eq("recruiter_id", user.id)
-        .order("created_at", { ascending: false });
-      if (data) {
-        setListNotes(data);
-        if (data.length > 0) setListNotesOpen(true);
-      }
-    }
-    loadListNotes();
-  }, [list.id]);
+  // Ouvert d'office s'il y a des notes, tant que l'usager n'a pas choisi.
+  const [choixOuvert, setListNotesOpen] = useState<boolean | null>(null);
+  const listNotesOpen = choixOuvert ?? listNotes.length > 0;
 
   const handlePostListNote = async () => {
-    if (!listNoteText.trim()) return;
+    if (!listNoteText.trim() || !moi) return;
     setListNotePosting(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setListNotePosting(false); return; }
-    const { data } = await supabase
+    const { error } = await createClient()
       .from("recruiter_list_notes")
-      .insert({ list_id: list.id, recruiter_id: user.id, content: listNoteText.trim() })
-      .select("id, content, created_at")
-      .single();
-    if (data) {
-      setListNotes(prev => [data, ...prev]);
-      setListNotesOpen(true);
-    }
-    setListNoteText("");
+      .insert({ list_id: list.id, recruiter_id: moi, content: listNoteText.trim() });
     setListNotePosting(false);
+    if (error) { onErreur("Note non enregistrée"); return; }
+    setListNoteText("");
+    setListNotesOpen(true);
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const handleDeleteListNote = async (id: string) => {
+    const { error } = await createClient().from("recruiter_list_notes").delete().eq("id", id);
+    if (error) onErreur("Note non supprimée");
+    void invaliderTableauBlanc(queryClient);
   };
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
@@ -684,6 +676,7 @@ function ExpandedListView({
           </button>
           <div>
             <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">{list.name}</h1>
+            {list.auteur && <p className="text-[12px] text-[#6b7280] mt-1">Créée par {list.auteur}</p>}
             <p className="text-[14px] text-[#9CA3AF] mt-1">{list.description}</p>
           </div>
         </div>
@@ -786,9 +779,12 @@ function ExpandedListView({
                     <StarRating rating={a.coach_rating} size="sm" />
                   </div>
 
-                  {/* Added date — fixed width */}
-                  <div className="w-[90px] shrink-0">
-                    <span className="text-[12px] text-[#6b7280] whitespace-nowrap">{a.added_at ? formatDate(a.added_at) : ""}</span>
+                  {/* Added date + who added it — fixed width */}
+                  <div className="w-[130px] shrink-0 min-w-0">
+                    <span className="block text-[12px] text-[#6b7280] whitespace-nowrap">{a.added_at ? formatDate(a.added_at) : ""}</span>
+                    {a.ajoute_par && (
+                      <span className="block text-[11px] text-[#4a4d56] truncate" title={`Ajouté par ${a.ajoute_par}`}>par {a.ajoute_par}</span>
+                    )}
                   </div>
 
                   {/* Spacer */}
@@ -810,7 +806,7 @@ function ExpandedListView({
                 {/* Expandable notes panel */}
                 {expandedNotes === a.id && (
                   <div className="border-t border-[#2D3748]">
-                    <AthleteNotesPanel athleteId={a.id} athleteName={a.full_name} />
+                    <AthleteNotesPanel athleteId={a.id} athleteName={a.full_name} moi={moi} auteurs={auteurs} onErreur={onErreur} />
                   </div>
                 )}
               </div>
@@ -838,7 +834,13 @@ function ExpandedListView({
             {listNotes.length > 0 && (
               <div className="mt-4">
                 <p className="text-[13px] font-bold text-white mb-3">Activités: {listNotes.length}</p>
-                {listNotes.map(note => <NoteCard key={note.id} note={note} initials={listUserName.initials} fullName={listUserName.fullName} onDelete={async (id) => { const supabase = createClient(); await supabase.from("recruiter_list_notes").delete().eq("id", id); setListNotes(prev => prev.filter(n => n.id !== id)); }} />)}
+                {listNotes.map(note => {
+                  const nom = nomAuteur(auteurs[note.recruiter_id]);
+                  return (
+                    <NoteCard key={note.id} note={note} initials={initiales(nom)} fullName={nom}
+                      onDelete={note.recruiter_id === moi ? handleDeleteListNote : undefined} />
+                  );
+                })}
               </div>
             )}
             {listNotes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cette liste.</p>}
@@ -853,8 +855,8 @@ function ExpandedListView({
           existingIds={existingIds}
           onClose={() => setShowAddModal(false)}
           onAdd={(athlete, note) => {
+            // Le toast (succès ou échec) vient de l'écriture elle-même.
             onAddAthlete(list.id, { ...athlete, added_at: new Date().toISOString(), recruiter_note: note });
-            onToast(`${athlete.full_name} ajouté à la liste`);
           }}
         />
       )}
@@ -863,10 +865,10 @@ function ExpandedListView({
       {removeTarget && (
         <ConfirmModal
           title="Retirer de la liste"
-          message={`Retirer cet athlète de « ${list.name} » ? Il restera dans vos favoris.`}
+          message={`Retirer cet athlète de « ${list.name} » ? Il sera retiré pour toute l'unité ; il restera dans les favoris.`}
           confirmLabel="Retirer"
           danger
-          onConfirm={() => { onRemoveAthlete(list.id, removeTarget); setRemoveTarget(null); onToast("Athlète retiré de la liste"); }}
+          onConfirm={() => { onRemoveAthlete(list.id, removeTarget); setRemoveTarget(null); }}
           onCancel={() => setRemoveTarget(null)}
         />
       )}
@@ -917,130 +919,57 @@ export default function Page() {
 }
 
 function ListesPageContent() {
-  const [lists, setLists] = useState<ProspectList[]>([]);
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
+  const { data: lists = [], isLoading: loading } = useListesUnite();
+  const { data: auteurs = {} } = useAuteursUnite();
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string; erreur: boolean } | null>(null);
 
   const selectedList = useMemo(() => lists.find((l) => l.id === selectedListId) || null, [lists, selectedListId]);
+  const deleteList = useMemo(() => lists.find((l) => l.id === deleteTarget) || null, [lists, deleteTarget]);
 
   const showToast = useCallback((msg: string) => {
-    setToast(msg);
+    setToast({ message: msg, erreur: false });
     setTimeout(() => setToast(null), 3000);
   }, []);
-
-  /* ── Load lists from Supabase ─────────────────────────────── */
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      // 1. Fetch lists
-      const { data: listsData, error: listsErr } = await supabase
-        .from("recruiter_lists")
-        .select("id, name, description, created_at, updated_at")
-        .eq("recruiter_id", user.id)
-        .order("updated_at", { ascending: false });
-
-      if (!listsData) { setLoading(false); return; }
-
-      // 2. Fetch all list-athlete links
-      const listIds = listsData.map(l => l.id);
-      let athleteLinks: { list_id: string; athlete_id: string; added_at: string }[] = [];
-      if (listIds.length > 0) {
-        const { data: linksData, error: linksErr } = await supabase
-          .from("recruiter_list_members")
-          .select("list_id, athlete_id, added_at")
-          .in("list_id", listIds);
-        athleteLinks = linksData || [];
-      }
-
-      // 3. Fetch athlete details for all linked athletes
-      const athleteIds = [...new Set(athleteLinks.map(l => l.athlete_id))];
-      let athleteMap = new Map<string, ProspectListAthlete>();
-      if (athleteIds.length > 0) {
-        /* Temps 2 — les membres sont déjà résolus (temps 1 sur
-           recruiter_list_members), il ne reste que les cartes projetées. */
-        const cardMap = await fetchRecruiterAthleteCards(supabase, athleteIds);
-
-        for (const card of cardMap.values()) {
-          athleteMap.set(card.id, {
-            id: card.id,
-            identity_visible: card.identity_visible,
-            full_name: displayFullName(card),
-            photo_url: card.photo_url ?? "",
-            jersey: card.numero_jersey != null && card.numero_jersey !== "" ? String(card.numero_jersey) : "",
-            sport: card.sport_nom ?? "",
-            position: card.position_abbr ?? "",
-            school: card.school_name ?? "",
-            division: "D1",
-            graduation_year: card.annee_diplomation ?? 0,
-            coach_rating: card.cote_globale ?? 0,
-            is_verified: !!card.verified,
-            pipeline_status: (card.recruitment_status || "OUVERT").toLowerCase() as RecruitmentStatus,
-            added_at: "",
-            recruiter_note: "",
-            priority: false,
-          });
-        }
-      }
-
-      // 4. Assemble lists
-      const assembled: ProspectList[] = listsData.map(l => ({
-        id: l.id,
-        name: l.name,
-        description: l.description || "",
-        created_at: l.created_at,
-        updated_at: l.updated_at,
-        athletes: athleteLinks
-          .filter(link => link.list_id === l.id)
-          .map(link => {
-            const base = athleteMap.get(link.athlete_id);
-            if (!base) return null;
-            return { ...base, added_at: link.added_at, priority: false };
-          })
-          .filter(Boolean) as ProspectListAthlete[],
-      }));
-
-      setLists(assembled);
-      setLoading(false);
-    }
-    load();
+  const showErreur = useCallback((msg: string) => {
+    setToast({ message: msg, erreur: true });
+    setTimeout(() => setToast(null), 5000);
   }, []);
+
+  /* Toute écriture relit le tableau blanc (listes, membres, notes, journal,
+     processus) : un geste se voit chez l'auteur tout de suite, chez ses
+     collègues au prochain affichage ou au retour sur l'onglet. */
+  const relire = useCallback(() => { void invaliderTableauBlanc(queryClient); }, [queryClient]);
 
   /* Create list */
   const handleCreateList = useCallback(async (name: string, description: string) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
+    if (!moi) return;
+    const { data, error } = await createClient()
       .from("recruiter_lists")
-      .insert({ recruiter_id: user.id, name, description })
-      .select("id, name, description, created_at, updated_at")
+      .insert({ recruiter_id: moi, name, description })
+      .select("id")
       .single();
-
-    if (data) {
-      const newList: ProspectList = { ...data, description: data.description || "", athletes: [] };
-      setLists(prev => [newList, ...prev]);
-      setSelectedListId(data.id);
-    }
     setShowCreateModal(false);
+    if (error || !data) { showErreur("Liste non créée"); return; }
+    relire();
+    setSelectedListId(data.id);
     showToast("Liste créée");
-  }, [showToast]);
+  }, [moi, relire, showToast, showErreur]);
 
-  /* Delete list */
+  /* Delete list — pour toute l'unité (unite_delete, B2-0). */
   const handleDeleteList = useCallback(async (listId: string) => {
-    const supabase = createClient();
-    await supabase.from("recruiter_lists").delete().eq("id", listId);
-    setLists(prev => prev.filter(l => l.id !== listId));
-    if (selectedListId === listId) setSelectedListId(null);
+    const { error } = await createClient().from("recruiter_lists").delete().eq("id", listId);
     setDeleteTarget(null);
+    relire();
+    if (error) { showErreur("Liste non supprimée"); return; }
+    if (selectedListId === listId) setSelectedListId(null);
     showToast("Liste supprimée");
-  }, [selectedListId, showToast]);
+  }, [selectedListId, relire, showToast, showErreur]);
 
   /* Menu actions */
   const handleMenuAction = useCallback((listId: string, action: string) => {
@@ -1053,23 +982,21 @@ function ListesPageContent() {
     }
   }, [showToast]);
 
-  /* Remove athlete from list */
+  /* Remove athlete from list — journal signé par qui retire (B2-0). */
   const handleRemoveAthlete = useCallback(async (listId: string, athleteId: string) => {
-    const supabase = createClient();
-    await supabase.from("recruiter_list_members").delete().eq("list_id", listId).eq("athlete_id", athleteId);
-    setLists(prev => prev.map(l =>
-      l.id === listId ? { ...l, athletes: l.athletes.filter(a => a.id !== athleteId) } : l
-    ));
-  }, []);
+    const { error } = await createClient().from("recruiter_list_members").delete().eq("list_id", listId).eq("athlete_id", athleteId);
+    relire();
+    if (error) { showErreur("Athlète non retiré de la liste"); return; }
+    showToast("Athlète retiré de la liste");
+  }, [relire, showToast, showErreur]);
 
-  /* Add athlete to list */
+  /* Add athlete to list — added_by posé par trigger (B1) : c'est soi. */
   const handleAddAthlete = useCallback(async (listId: string, athlete: ProspectListAthlete) => {
-    const supabase = createClient();
-    await supabase.from("recruiter_list_members").insert({ list_id: listId, athlete_id: athlete.id });
-    setLists(prev => prev.map(l =>
-      l.id === listId ? { ...l, athletes: [...l.athletes, { ...athlete, added_at: new Date().toISOString() }] } : l
-    ));
-  }, []);
+    const { error } = await createClient().from("recruiter_list_members").insert({ list_id: listId, athlete_id: athlete.id });
+    relire();
+    if (error && error.code !== "23505") { showErreur("Athlète non ajouté à la liste"); return; }
+    showToast(`${athlete.full_name} ajouté à la liste`);
+  }, [relire, showToast, showErreur]);
 
   /* Les notes vivent dans le fil d'activité d'ExpandedListView, qui écrit
      réellement dans recruiter_notes (insert + delete + relecture). Un second
@@ -1082,11 +1009,14 @@ function ListesPageContent() {
       {selectedList ? (
         /* ── Expanded List View ─────────────────────────────── */
         <ExpandedListView
+          key={selectedList.id}
           list={selectedList}
+          moi={moi}
+          auteurs={auteurs}
           onBack={() => setSelectedListId(null)}
           onRemoveAthlete={handleRemoveAthlete}
           onAddAthlete={handleAddAthlete}
-          onToast={showToast}
+          onErreur={showErreur}
         />
       ) : (
         /* ── Grid Overview ─────────────────────────────────── */
@@ -1098,7 +1028,7 @@ function ListesPageContent() {
                 Mes listes de prospects
               </h1>
               <p className="text-[14px] text-[#9CA3AF] mt-1">
-                Organisez vos prospects en listes personnalisées
+                Les listes de ton unité — visibles et modifiables par tes collègues Pro
               </p>
             </div>
             <button
@@ -1111,7 +1041,9 @@ function ListesPageContent() {
             </button>
           </div>
 
-          {lists.length === 0 ? (
+          {loading ? (
+            <p className="text-[13px] text-[#6b7280] py-8">Chargement...</p>
+          ) : lists.length === 0 ? (
             <EmptyState onCreate={() => setShowCreateModal(true)} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -1140,7 +1072,11 @@ function ListesPageContent() {
       {deleteTarget && (
         <ConfirmModal
           title="Supprimer cette liste"
-          message="Cette action est irréversible. Les athlètes resteront dans vos favoris."
+          message={
+            deleteList?.recruiter_id && deleteList.recruiter_id !== moi
+              ? `Liste créée par ${deleteList.auteur}. Elle sera supprimée pour toute l'unité — cette action est irréversible. Les athlètes resteront dans les favoris.`
+              : "Elle sera supprimée pour toute l'unité — cette action est irréversible. Les athlètes resteront dans les favoris."
+          }
           confirmLabel="Supprimer"
           danger
           onConfirm={() => handleDeleteList(deleteTarget)}
@@ -1149,7 +1085,7 @@ function ListesPageContent() {
       )}
 
       {/* Toast */}
-      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} erreur={toast.erreur} onDone={() => setToast(null)} />}
 
       {/* Animations */}
       <style jsx>{`

@@ -72,6 +72,22 @@ export async function definirFavori(
   return { ok: true, favori: veut };
 }
 
+/** RETIRER POUR L'UNITÉ (lot B2, étape 2 — web, Pro seulement).
+ *  unite_retirer_favori (B2-0) supprime les lignes de TOUS les collègues de
+ *  l'unité et écrit UNE ligne de journal signée par l'acteur. La confirmation
+ *  qui nomme les collègues a lieu AVANT, chez l'appelant. 0 ligne retirée
+ *  n'est pas un échec : l'état voulu (pas favori) est atteint. */
+export async function retirerFavoriUnite(queryClient: QueryClient, athleteId: string): Promise<ResultatFavori> {
+  const { error } = await createClient().rpc("unite_retirer_favori", { p_athlete_id: athleteId });
+  for (const queryKey of CLES_A_INVALIDER) queryClient.invalidateQueries({ queryKey: [...queryKey] });
+  void invaliderTableauBlanc(queryClient);
+  if (error) {
+    console.error(`[favoris] retrait d'unité refusé — ${erreurLisible(error)}`);
+    return { ok: false, message: messageEchec(false, error.code) };
+  }
+  return { ok: true, favori: false };
+}
+
 /** Variante liée au QueryClient courant, pour les composants. */
 export function useDefinirFavori() {
   const queryClient = useQueryClient();

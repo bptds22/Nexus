@@ -1,6 +1,7 @@
 "use client";
 
-import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
+import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
+import { joindreNoms } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useQueryClient } from "@tanstack/react-query";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useState, useEffect } from "react";
@@ -436,12 +437,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const favButtonDisabled = favAtCap && !isFavorited;
   const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte. Passez à Pro pour plus.`;
 
-  /* Écriture partagée (definirFavori) : erreur vérifiée + invalidation de
-     favorites / favoriteCounts / dashboard.kpi — sans elle, « Mes favoris »
-     gardait sa liste en cache et n'affichait pas l'athlète ajouté ici.
-     Le cœur ne change d'état que si la base a accepté. Renvoie le message
-     d'échec, ou null. */
-  const definirFavoriRecruteur = useDefinirFavori();
+  /* Écriture partagée (useBasculeFavori → definirFavori / retrait d'unité) :
+     erreur vérifiée + invalidation de tout le tableau blanc — sans elle,
+     « Mes favoris » gardait sa liste en cache et n'affichait pas l'athlète
+     ajouté ici. Le cœur ne change d'état que si la base a accepté. Renvoie
+     le message d'échec, ou null (annulation comprise).
+     Lot B2, étape 2 : pour un Pro, le cœur est celui de l'UNITÉ — rouge si un
+     collègue l'a posé ; le retirer le retire pour l'unité, après une
+     confirmation qui nomme les collègues. */
+  const { favoris: favorisUnite, basculer: basculerFavori, modale: modaleFavori } = useBasculeFavori();
+  const favoriPar = favorisUnite.modeUnite && isFavorited
+    ? joindreNoms((favorisUnite.parAthlete[id] ?? []).map(favorisUnite.nom))
+    : "";
+  const titreCoeur = isFavorited
+    ? (favoriPar ? `Favori de ${favoriPar} — retirer` : "Retirer des favoris")
+    : "Ajouter aux favoris";
   const [erreurFavori, setErreurFavori] = useState<string | null>(null);
   useEffect(() => {
     if (!erreurFavori) return;
@@ -452,23 +462,21 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     if (favButtonDisabled) return null;
     setErreurFavori(null);
     const veut = !isFavorited;
-    const res = await definirFavoriRecruteur(id, veut);
+    const nom = a && a.identityVisible !== false ? `${a.firstName} ${a.lastName}`.trim() : undefined;
+    const res = await basculerFavori(id, isFavorited, nom);
+    if (!res) return null;
     if (!res.ok) { setErreurFavori(res.message); return res.message; }
     setIsFavorited(res.favori);
     setMyFavCount((c) => (veut ? c + 1 : Math.max(0, c - 1)));
     return null;
   };
 
+  // L'état du cœur suit les favoris relus du serveur (de l'unité pour un Pro,
+  // les siens pour un gratuit) : un cœur posé par un collègue s'allume ici.
   useEffect(() => {
-    const checkFav = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      const { data } = await supabase.from("recruiter_favorites").select("id").eq("recruiter_id", session.user.id).eq("athlete_id", id).maybeSingle();
-      setIsFavorited(!!data);
-    };
-    checkFav();
-  }, [id]);
+    if (favorisUnite.isLoading) return;
+    setIsFavorited(favorisUnite.ids.has(id));
+  }, [favorisUnite.ids, favorisUnite.isLoading, id]);
 
   // ── "Contacter l'athlète" (RECRUTEUR_ATHLETE) — favorite-first gate ──
   // Not favorited → auto-prompt "Ajouter aux favoris pour contacter" ; once
@@ -1303,7 +1311,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           </button>
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
-            title={favButtonDisabled ? favDisabledTitle : (isFavorited ? "Retirer des favoris" : "Ajouter aux favoris")}
+            title={favButtonDisabled ? favDisabledTitle : titreCoeur}
             className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${favButtonDisabled ? "cursor-not-allowed opacity-40" : ""} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
@@ -1337,7 +1345,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
             className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${favButtonDisabled ? "cursor-not-allowed opacity-40" : "hover:-translate-y-0.5"} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : `bg-[#1A1D24] border-[#2D3748] ${favButtonDisabled ? "" : "hover:border-[#E63946]/30"}`}`}
-            title={favButtonDisabled ? favDisabledTitle : (isFavorited ? "Retirer des favoris" : "Ajouter aux favoris")}>
+            title={favButtonDisabled ? favDisabledTitle : titreCoeur}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
             </svg>
@@ -1432,6 +1440,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           </div>
         </div>
       )}
+
+      {modaleFavori}
 
       {erreurFavori && !showFavContactPrompt && (
         <div role="alert" className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#EF4444]/40 rounded-lg px-4 py-3 shadow-2xl max-w-[90vw]">
