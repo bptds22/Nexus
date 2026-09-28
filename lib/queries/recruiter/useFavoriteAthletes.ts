@@ -10,6 +10,7 @@
 
 import { useMemo } from "react";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
+import { useFavorisUnite, joindreNoms } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useAthletesByIds } from "@/lib/queries/shared/useAthletesByIds";
 import { displayFullName, type RecruiterAthleteCard } from "@/lib/queries/shared/recruiterAthleteCards";
@@ -49,6 +50,9 @@ export interface FavoriAthlete {
   openToOffers: boolean | null;
   badges: { badgeId: string; label: string; icon?: string }[];
   noTeam: boolean;
+  /** Favori d'UNITÉ (web, Pro) : « Marie Tremblay et Luc Roy ». Absent
+   *  pour un gratuit et sur mobile, qui ne lisent que leurs propres favoris. */
+  favoriPar?: string;
 }
 
 /* VOIE 2 — BADGE_MAP est SUPPRIMÉE. Elle ne connaissait que 3 des 22 codes
@@ -130,5 +134,29 @@ export function useFavoriteAthletes() {
   return {
     athletes: transformedAthletes,
     isLoading: l1 || (favoriteIds.length > 0 && l2) || l3,
+  };
+}
+
+/* Mes favoris WEB (lot B2, étape 2) : les favoris de l'UNITÉ pour un Pro,
+   avec qui les a posés ; les siens pour un gratuit. Le mobile garde
+   useFavoriteAthletes (registre §38). */
+export function useFavoriteAthletesUnite() {
+  const favoris = useFavorisUnite();
+  const ids = useMemo(() => [...favoris.ids], [favoris.ids]);
+  const { data: athletes = [], isLoading: l2 } = useAthletesByIds(ids);
+  const { data: favCountMap = {}, isLoading: l3 } = useFavoriteCounts();
+
+  const transformedAthletes = useMemo(
+    () => athletes.map((a) => ({
+      ...transformAthlete(a, favCountMap[a.id] || 1),
+      favoriPar: favoris.modeUnite ? joindreNoms((favoris.parAthlete[a.id] ?? []).map(favoris.nom)) : undefined,
+    })),
+    [athletes, favCountMap, favoris],
+  );
+
+  return {
+    favoris,
+    athletes: transformedAthletes,
+    isLoading: favoris.isLoading || (ids.length > 0 && l2) || l3,
   };
 }

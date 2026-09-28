@@ -16,8 +16,8 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
-import { useFavorites } from "@/lib/queries/shared/useFavorites";
-import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
+import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
+import { joindreNoms } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -33,7 +33,7 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    n'a rien à recalculer, seulement à rendre le placeholder verrouillé.
    ouvert{Demenager,Prive,Anglophone} retirés : la RPC ne les projette pas
    (ce sont des filtres, pas des colonnes) et rien ne les lisait. */
-type ExtendedAthlete = SearchAthlete & { identityVisible: boolean; academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null };
+type ExtendedAthlete = SearchAthlete & { identityVisible: boolean; academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null; favoriPar?: string };
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
@@ -118,7 +118,7 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
           {/* HeartButton premium (iter 5.4) */}
           <div
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            title={favDisabled ? favDisabledReason : undefined}
+            title={favDisabled ? favDisabledReason : a.favoriPar}
           >
             <HeartButton
               isFavorited={a.isFavorited}
@@ -328,7 +328,7 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
       <div
         className="shrink-0 bg-[#13151a] border border-[#2D3748] rounded-full flex items-center justify-center"
         style={{ width: 32, height: 32 }}
-        title={favDisabled ? favDisabledReason : undefined}
+        title={favDisabled ? favDisabledReason : a.favoriPar}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
       >
         <HeartButton
@@ -466,11 +466,13 @@ function RechercheContent() {
   // Migration TanStack (iter 5.3b) — états fetch-related délégués aux hooks.
   // Cache TanStack → navigation tab→Recherche instantanée avec mêmes filtres.
   const { data: currentUser } = useCurrentUser();
-  const { data: favoritesArr = [] } = useFavorites();
+  /* Favoris de l'UNITÉ pour un Pro (lot B2, étape 2) : le cœur d'un collègue
+     s'affiche ici aussi ; les siens seulement pour un gratuit. Le cap du
+     forfait gratuit lit la même liste — pour lui, ce sont ses lignes. */
+  const { favoris: favorisUnite, basculer: basculerFavori, modale: modaleFavori } = useBasculeFavori();
+  const favorites = favorisUnite.ids;
   const { data: favCounts = {} } = useFavoriteCounts();
   const { data: regions = [] } = useRegions();
-  // favorites en Set pour préserver l'API utilisée par les useMemo/cartes
-  const favorites = useMemo(() => new Set(favoritesArr), [favoritesArr]);
   // Debounce du search text uniquement (iter 5.3b). Autres filtres = instantané.
   const debouncedSearch = useDebouncedValue(search, 250);
   // Positions dynamiques selon le sport sélectionné
@@ -554,8 +556,15 @@ function RechercheContent() {
       list = [...list].sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
     }
 
-    return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts]);
+    return list.map((a) => ({
+      ...a,
+      isFavorited: favorites.has(a.id),
+      favorites: favCounts[a.id] || 0,
+      favoriPar: favorisUnite.modeUnite && favorites.has(a.id)
+        ? `Favori de ${joindreNoms((favorisUnite.parAthlete[a.id] ?? []).map(favorisUnite.nom))}`
+        : undefined,
+    }));
+  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite]);
 
   /* ── OPTIONS ET ETATS DES TROIS MENUS ─────────────────────────────────────
      Construites sur `athletes` — LE JEU RENVOYE PAR LA RPC, donc apres les
@@ -620,10 +629,10 @@ function RechercheContent() {
     pret: !loading && !athletesFetching,
   });
 
-  /* Écriture partagée (definirFavori) : vérifie l'erreur et invalide
-     favorites / favoriteCounts / dashboard.kpi. Le cœur lit useFavorites :
-     il ne devient rouge que si la ligne existe vraiment. */
-  const definirFavoriRecruteur = useDefinirFavori();
+  /* Écriture partagée (useBasculeFavori → definirFavori / retrait d'unité) :
+     vérifie l'erreur et invalide tout le tableau blanc. Le cœur lit les
+     favoris relus du serveur : il ne change que si la base a accepté. Un
+     retrait Pro vaut pour l'unité — confirmation nommant les collègues. */
   const [erreurFavori, setErreurFavori] = useState<string | null>(null);
   useEffect(() => {
     if (!erreurFavori) return;
@@ -632,8 +641,10 @@ function RechercheContent() {
   }, [erreurFavori]);
   const toggleFav = async (id: string) => {
     setErreurFavori(null);
-    const res = await definirFavoriRecruteur(id, !favorites.has(id));
-    if (!res.ok) setErreurFavori(res.message);
+    const a = filtered.find((x) => x.id === id);
+    const nom = a?.identityVisible ? `${a.firstName} ${a.lastName}`.trim() : undefined;
+    const res = await basculerFavori(id, favorites.has(id), nom);
+    if (res && !res.ok) setErreurFavori(res.message);
   };
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
@@ -662,6 +673,7 @@ function RechercheContent() {
           <p className="text-[13px] text-[#EF4444]">{erreurFavori}</p>
         </div>
       )}
+      {modaleFavori}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

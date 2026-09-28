@@ -91,6 +91,37 @@ lisent et se modifient. Ce qui du 17 septembre **reste vrai** :
   modifier ; **l'interface les montre en lecture seule** (décision BP) — chacun
   ne modifie que les siennes.
 
+**Lot B2, étape 2 (web, 2026-09-28) — Favoris et Listes par unité.** Aucune
+migration : tout repose sur B1/B2-0.
+- **Favori d'unité** (`useFavorisUnite` → `unite_favoris()`) : un cœur posé
+  par un collègue Pro s'allume chez tous les Pro de l'unité — recherche, fiche,
+  Mes favoris — avec « Favori de … ». Un seul chemin d'écriture web,
+  `useBasculeFavori` : ajout = `definirFavori` (sa ligne) ; retrait Pro =
+  `unite_retirer_favori` (une ligne de journal signée par l'acteur), après une
+  confirmation qui **nomme les collègues** s'ils l'ont aussi ; seul à l'avoir,
+  pas de modale. Un gratuit garde ses propres favoris, inchangé.
+- **Listes de l'unité** (`useListesUnite`) : visibles et modifiables par tous
+  les Pro de l'unité, avec l'auteur (« Par … », « Créée par … »), chaque membre
+  avec qui l'a ajouté (`added_by`), notes de liste et notes d'athlète signées ;
+  celles des collègues en **lecture seule**. Supprimer une liste la supprime
+  pour l'unité — la confirmation nomme l'auteur si ce n'est pas soi.
+- **Retirer un favori retire aussi du processus** (décision BP 2026-09-28,
+  web, Pro) : dossier à Identifié ou Contacté → les deux partent sans question
+  (sauf la confirmation d'unité si des collègues l'ont en favori) ; dossier
+  plus avancé → confirmation « Cet athlète est en [étape]. Retirer le favori le
+  retirera aussi du processus de l'unité. ». Deux appels client dans l'ordre,
+  `unite_retirer_favori` puis `unite_retirer_du_processus` — aucune fonction en
+  base touchée, chacun signe sa ligne de journal. Si le second échoue, le
+  favori est déjà parti et l'écran le dit. Gratuit : inchangé.
+- L'admin cégep voit ici **son sport** seulement ; les autres sports de son
+  cégep relèvent de l'étape 3 (registre §39–40).
+- Toutes les lectures sont sous les clés de `lib/queries/tableauBlanc.ts`
+  (jamais persistées), toutes les écritures appellent `invaliderTableauBlanc`.
+- Mobile 1.4.3 : inchangé (registre §38) — les hooks mobiles
+  (`useFavorites`, `useRecruiterLists`, `useFavoriteAthletes`) n'ont pas bougé.
+- **Trou connu, au registre §41** : la policy propriétaire de
+  `recruiter_list_notes` ne vérifie pas la liste.
+
 La suite de ce fichier décrit l'état **du 17 septembre** : elle reste exacte
 pour le coach, le parent, l'admin plateforme et les recruteurs sans unité.
 

@@ -27,6 +27,8 @@ export interface ProspectListAthlete {
   added_at: string;
   recruiter_note: string;
   priority: boolean;
+  /** Qui l'a ajouté à la liste (lot B2, étape 2) — nom d'affichage. */
+  ajoute_par?: string;
 }
 
 export interface ProspectList {
@@ -36,6 +38,9 @@ export interface ProspectList {
   athletes: ProspectListAthlete[];
   created_at: string;
   updated_at: string;
+  /** Auteur de la liste (lot B2, étape 2) : id et nom d'affichage. */
+  recruiter_id?: string;
+  auteur?: string;
 }
 
 /* ── List 1: QB prioritaires ──────────────────────────────────── */

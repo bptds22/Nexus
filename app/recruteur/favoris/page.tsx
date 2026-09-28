@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
+import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import NxIcon from "@/components/ui/NxIcon";
@@ -10,7 +10,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
-import { useFavoriteAthletes } from "@/lib/queries/recruiter/useFavoriteAthletes";
+import { useFavoriteAthletesUnite } from "@/lib/queries/recruiter/useFavoriteAthletes";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { RecruteurFavorisMobile } from "@/components/shared/RecruteurFavorisMobile";
 
@@ -144,8 +144,13 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
-          <span className="text-[12px] text-[#6b7280]">{a.region}</span>
-          <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <span className="text-[12px] text-[#6b7280]">{a.region}</span>
+            {a.favoriPar && (
+              <p className="text-[11px] text-[#9CA3AF] truncate" title={`Favori de ${a.favoriPar}`}>Favori de {a.favoriPar}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
             {/* HeartButton premium (iter 5.4) */}
             <HeartButton isFavorited={true} onToggle={() => onUnfavorite(a.id)} size="sm" />
             <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-semibold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1">
@@ -248,6 +253,12 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
       {/* Spacer */}
       <div className="flex-1" />
 
+      {a.favoriPar && (
+        <span className="text-[11px] text-[#9CA3AF] truncate max-w-[180px] shrink-0" title={`Favori de ${a.favoriPar}`}>
+          Favori de {a.favoriPar}
+        </span>
+      )}
+
       {/* HeartButton premium (iter 5.4) */}
       <div className="shrink-0">
         <HeartButton isFavorited={true} onToggle={() => onUnfavorite(a.id)} size="sm" />
@@ -282,7 +293,8 @@ function FavorisContent() {
   // de favoris.
   const { maxFavorites, loading: tierLoading } = useSubscription();
   // Migration TanStack (iter 5.3a) — fetch + transformation déléguées
-  const { athletes, isLoading: dataLoading } = useFavoriteAthletes();
+  // Lot B2, étape 2 : pour un Pro, les favoris de l'UNITÉ, avec qui les a posés.
+  const { athletes, favoris, isLoading: dataLoading } = useFavoriteAthletesUnite();
   const loading = dataLoading || tierLoading;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
@@ -295,10 +307,11 @@ function FavorisContent() {
   const [withSportBadge, setWithSportBadge] = useState(false);
   const [withAcademicBadge, setWithAcademicBadge] = useState(false);
 
-  // Retrait via l'écriture partagée (definirFavori) : erreur vérifiée, caches
-  // favorites / favoriteCounts / dashboard.kpi invalidés. En cas d'échec la
-  // carte reste (la liste relue du serveur la contient toujours) et on le dit.
-  const definirFavoriRecruteur = useDefinirFavori();
+  // Retrait via l'écriture partagée (useBasculeFavori) : erreur vérifiée, tout
+  // le tableau blanc invalidé. Un Pro retire pour l'UNITÉ — confirmation qui
+  // nomme les collègues s'ils l'ont aussi. En cas d'échec la carte reste (la
+  // liste relue du serveur la contient toujours) et on le dit.
+  const { basculer: basculerFavori, modale: modaleFavori } = useBasculeFavori();
   const [erreurFavori, setErreurFavori] = useState<string | null>(null);
   useEffect(() => {
     if (!erreurFavori) return;
@@ -307,9 +320,10 @@ function FavorisContent() {
   }, [erreurFavori]);
   const handleUnfavorite = useCallback(async (athleteId: string) => {
     setErreurFavori(null);
-    const res = await definirFavoriRecruteur(athleteId, false);
-    if (!res.ok) setErreurFavori(res.message);
-  }, [definirFavoriRecruteur]);
+    const a = athletes.find((x) => x.id === athleteId);
+    const res = await basculerFavori(athleteId, true, a?.identityVisible ? a.fullName : undefined);
+    if (res && !res.ok) setErreurFavori(res.message);
+  }, [basculerFavori, athletes]);
 
   // Derived filter options
   const sports = useMemo(() => {
@@ -357,13 +371,14 @@ function FavorisContent() {
           <p className="text-[13px] text-[#EF4444]">{erreurFavori}</p>
         </div>
       )}
+      {modaleFavori}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mes favoris</h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">
             {maxFavorites === -1
-              ? <>Favoris&nbsp;: <span className="font-bold text-white">{athletes.length}</span></>
+              ? <>{favoris.modeUnite ? "Favoris de ton unité" : "Favoris"}&nbsp;: <span className="font-bold text-white">{athletes.length}</span></>
               : <>Favoris&nbsp;: <span className={`font-bold ${athletes.length >= maxFavorites ? "text-[#E63946]" : "text-white"}`}>{athletes.length} / {maxFavorites}</span></>}
           </p>
         </div>

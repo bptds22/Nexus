@@ -1319,7 +1319,7 @@ processus). Mais le binaire publié **ne connaît pas l'unité**. Limites
 
 | Geste sur mobile 1.4.3 | Ce qui se passe | Attendu en 1.4.4 |
 |---|---|---|
-| Retirer un favori | ne retire que **sa** ligne ; l'athlète reste favori de l'unité si un collègue l'a | retirer pour l'unité |
+| Retirer un favori | ne retire que **sa** ligne ; l'athlète reste favori de l'unité si un collègue l'a, **et reste dans le processus** | retirer pour l'unité, **et du processus** (confirmation au-delà de Contacté — comportement web du 2026-09-28) |
 | Retirer du processus | ne supprime que **sa** ligne ; le dossier reste dans l'unité par les lignes des collègues | retirer pour l'unité (avec confirmation) |
 | Changer d'étape hors VISITE_PLANIFIEE | l'ancien `persistPipelineStage` met `visit_at` à NULL ; la synchronisation **efface la visite de l'unité** | règle `regleVisite` (la visite survit au changement d'étape) |
 | Voir « Mon processus », « Mes favoris », « Mes listes » | lectures filtrées `recruiter_id = soi` : **seulement ses propres lignes** (leurs étapes, grades et relances suivent toutefois l'unité par synchronisation) | lectures par unité (`unite_pipeline`, `unite_favoris`, listes de l'unité) |
@@ -1371,3 +1371,27 @@ avec le §39 : une écriture inter-unités par fonction serveur qui écrit dans 
 dossier de l'unité VISÉE (ligne existante, journal signé par l'admin et rangé
 dans cette unité) — et décider si un admin peut **ouvrir** un dossier dans un
 sport qu'il ne recrute pas.
+
+## 41. Notes de liste — n'importe quel recruteur peut écrire dans la liste d'une autre unité (préexistant, rendu visible par B1 ; policy à remplacer sur GO séparé)
+
+La policy propriétaire `Recruiters manage their own list notes` (commande ALL)
+n'exige que `recruiter_id = auth.uid()` — **jamais** que la liste soit la
+sienne ou celle de son unité. Avant B1, une note glissée dans la liste d'un
+autre restait invisible pour lui (lectures filtrées par `recruiter_id`).
+Depuis B1, `unite_poser` range la note dans l'unité **de la liste**, et
+`unite_select` la rend lisible à toute cette unité.
+
+**Prouvé en local le 2026-09-28** (script de preuves de l'étape 2, sonde
+hors périmètre de l'app) : r4, Pro d'un **autre cégep**, insère une note dans
+une liste de l'unité de r1/r3 → **acceptée**. Condition : connaître l'UUID de
+la liste (non devinable, et exposé à la seule unité). Aucune fuite en lecture :
+c'est une **injection d'écriture**.
+
+**Correctif proposé (non appliqué)** : remplacer la policy par quatre policies
+propriétaire dont l'INSERT exige aussi `user_has_pro()` et que la liste soit
+lisible par l'acteur (la sienne, ou `acces_unite_pro` sur l'unité de la liste),
+via une fonction `SECURITY DEFINER` (checklist, règle 4). C'est un
+**remplacement de policy** : migration séparée, sur GO de BP, preuves par rôle
+et rollback avant apply. L'app 1.4.3 n'écrit des notes que dans ses propres
+listes : le resserrage ne casse aucun client livré.
+
