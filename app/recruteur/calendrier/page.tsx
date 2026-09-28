@@ -21,7 +21,8 @@ import {
   todayIso,
   type CalendarTarget,
 } from "@/lib/queries/recruiter/useRecruitingCalendar";
-import { useCalendrierUnite, type VisiteUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
+import { useCalendrierUnite, type VisiteUnite, type RelanceUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
+import { usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import {
   buildMatches,
   buildMonthGrid,
@@ -83,6 +84,27 @@ const STAGE_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 const DOW = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+/* ── Les trois types d'événements (amélioration du calendrier, 2026-09-28) ──
+   Décision BP 2026-09-28 : rouge = matchs (la couleur du produit) ; vert =
+   visites ; ambre = relances. Le vert n'est plus réservé aux messages et
+   l'ambre marque les relances ici (registre §42). Le bleu reste au badge
+   vérifié. */
+const COULEUR = { m: "#E63946", v: "#22C55E", r: "#F59E0B" } as const;
+type TypeEvenement = keyof typeof COULEUR;
+const TYPES: { cle: TypeEvenement; libelle: string }[] = [
+  { cle: "m", libelle: "Matchs" },
+  { cle: "v", libelle: "Visites" },
+  { cle: "r", libelle: "Relances" },
+];
+/* Le choix est mémorisé (localStorage) : une combinaison de lettres, « - »
+   quand aucun type n'est actif. */
+const COMBINAISONS = ["mvr", "mv", "mr", "vr", "m", "v", "r", "-"] as const;
+type Combinaison = (typeof COMBINAISONS)[number];
+
+function pluriel(n: number, mot: string): string {
+  return `${n} ${mot}${n > 1 ? "s" : ""}`;
+}
 
 /* ── Primitives de la réf ──────────────────────────────────── */
 
@@ -258,6 +280,47 @@ function VisiteCard({ v }: { v: VisiteUnite }) {
         )}
       </div>
       <StagePill stage={v.stage} />
+    </div>
+  );
+}
+
+/* ── Relance de l'unité — à sa date d'échéance ─────────────────── */
+function RelanceCard({ r }: { r: RelanceUnite }) {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-[rgba(245,158,11,0.30)] bg-[#1A1D24] px-5 py-4">
+      <div className="w-[64px] shrink-0 text-center">
+        <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#F59E0B]">{shortMonthLabel(r.jour)}</div>
+        <div className="text-[24px] font-extrabold leading-none text-[#EDEFF3]">{dayNumber(r.jour)}</div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#F59E0B]">Relance</span>
+          {r.enRetard && (
+            <span className="rounded-full border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.10)] px-2 py-[1px] text-[11px] font-bold uppercase tracking-[0.06em] text-[#F59E0B]">
+              En retard
+            </span>
+          )}
+          <Link href={`/recruteur/athletes/${r.athleteId}`} className="truncate text-[16px] font-bold text-[#EDEFF3] hover:text-[#E63946]">
+            {r.fullName}
+          </Link>
+        </div>
+        {r.note && <div className="mt-0.5 truncate text-[13.5px] text-[#B9BFC9]">{r.note}</div>}
+        {r.suiviPar.length > 0 && (
+          <div className="mt-0.5 truncate text-[13px] text-[#8A909C]">Suivi par {r.suiviPar.join(", ")}</div>
+        )}
+      </div>
+      <StagePill stage={r.stage} />
+    </div>
+  );
+}
+
+/** Titre d'une section de la vue liste, avec la couleur de son type. */
+function SectionTitre({ couleur, titre, detail }: { couleur: string; titre: string; detail: string }) {
+  return (
+    <div className="mb-4 flex items-baseline gap-3.5 border-b border-[#1E2129] pb-2.5">
+      <span className="inline-block h-[10px] w-[10px] shrink-0 self-center rounded-full" style={{ backgroundColor: couleur }} aria-hidden="true" />
+      <h2 className="text-[15px] font-bold uppercase tracking-[0.14em] text-[#EDEFF3]">{titre}</h2>
+      <span className="text-[12.5px] font-medium text-[#5C6575]">{detail}</span>
     </div>
   );
 }
@@ -534,11 +597,19 @@ function CalendrierContent() {
   const targets = data?.targets ?? [];
   const games = data?.games ?? [];
   const visites = useMemo(() => data?.visites ?? [], [data]);
-  const joursVisite = useMemo(() => new Set(visites.map((v) => v.jour)), [visites]);
-  const visitesDuJour = useMemo(
-    () => (selectedDay ? visites.filter((v) => v.jour === selectedDay) : []),
-    [visites, selectedDay],
+  const relances = useMemo(() => data?.relances ?? [], [data]);
+
+  /* Types affichés — tous actifs par défaut, choix mémorisé. */
+  const [combinaison, setCombinaison] = usePreferenceLocale<Combinaison>("nexus:calendrier:types", "mvr", COMBINAISONS);
+  const actifs = useMemo(
+    () => ({ m: combinaison.includes("m"), v: combinaison.includes("v"), r: combinaison.includes("r") }),
+    [combinaison],
   );
+  const basculerType = (t: TypeEvenement) => {
+    const suivant = TYPES.map((x) => x.cle).filter((c) => (c === t ? !actifs[c] : actifs[c])).join("");
+    setCombinaison((suivant || "-") as Combinaison);
+  };
+
 
   const matches = useMemo(
     () => buildMatches(games, filterTargets(targets, filters), sort, filters.minTargets),
@@ -559,6 +630,28 @@ function CalendrierContent() {
   const dayMatches = useMemo(
     () => (selectedDay ? matchesOnDay(matches, selectedDay) : []),
     [matches, selectedDay],
+  );
+  /* Par jour, pour la vue mois : combien de matchs (★ si fort potentiel),
+     de visites, de relances. */
+  const parJour = useMemo(() => {
+    const m = new Map<string, { matchs: number; hot: boolean; visites: number; relances: number }>();
+    const caseDuJour = (iso: string) => {
+      let c = m.get(iso);
+      if (!c) { c = { matchs: 0, hot: false, visites: 0, relances: 0 }; m.set(iso, c); }
+      return c;
+    };
+    for (const v of matches) { const c = caseDuJour(v.game.gameDate); c.matchs++; if (v.hot) c.hot = true; }
+    for (const v of visites) caseDuJour(v.jour).visites++;
+    for (const r of relances) caseDuJour(r.jour).relances++;
+    return m;
+  }, [matches, visites, relances]);
+  const visitesDuJour = useMemo(
+    () => (selectedDay ? visites.filter((v) => v.jour === selectedDay) : []),
+    [visites, selectedDay],
+  );
+  const relancesDuJour = useMemo(
+    () => (selectedDay ? relances.filter((r) => r.jour === selectedDay) : []),
+    [relances, selectedDay],
   );
 
   const set = <K extends keyof CalendarFilters>(k: K, v: CalendarFilters[K]) =>
@@ -590,8 +683,31 @@ function CalendrierContent() {
             Calendrier de recrutement
           </h1>
           <div className="mt-1.5 text-[16px] font-normal text-[#B9BFC9]">
-            Les prochains matchs et visites de ton unité, selon ses cibles
+            Les matchs à recruter, les visites et les relances de ton unité
           </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
+        {/* Filtre des types d'événements — ensemble ou séparément, mémorisé. */}
+        <div className="flex items-center gap-2" role="group" aria-label="Types d'événements">
+          {TYPES.map((t) => {
+            const on = actifs[t.cle];
+            const c = COULEUR[t.cle];
+            return (
+              <button
+                key={t.cle}
+                type="button"
+                aria-pressed={on}
+                onClick={() => basculerType(t.cle)}
+                className="flex items-center gap-2 rounded-full border px-[14px] py-[9px] text-[13.5px] font-semibold transition-colors"
+                style={on
+                  ? { borderColor: `${c}66`, backgroundColor: `${c}1A`, color: c }
+                  : { borderColor: "#262A33", backgroundColor: "#1A1D24", color: "#5C6575" }}
+              >
+                <span className="inline-block h-[8px] w-[8px] rounded-full" style={{ backgroundColor: on ? c : "#3A404C" }} aria-hidden="true" />
+                {t.libelle}
+              </button>
+            );
+          })}
         </div>
         <div className="flex shrink-0 overflow-hidden rounded-xl border border-[#262A33] bg-[#1A1D24]">
           <button
@@ -617,6 +733,7 @@ function CalendrierContent() {
             <CalendarIcon />
             Calendrier
           </button>
+        </div>
         </div>
       </div>
 
@@ -800,24 +917,6 @@ function CalendrierContent() {
             )}
           </div>
 
-          {/* ── Visites planifiées de l'unité (vue liste) ──
-              Toutes les visites à venir de l'unité, hors filtres de matchs :
-              une visite n'est pas un match, et la cacher parce qu'un filtre
-              de sport ou de position est posé ferait manquer un rendez-vous. */}
-          {!isLoading && !isError && view === "list" && visites.length > 0 && (
-            <div className="mt-[34px] flex flex-col">
-              <div className="mb-4 flex items-baseline gap-3.5 border-b border-[#1E2129] pb-2.5">
-                <h2 className="text-[14px] font-bold uppercase tracking-[0.14em] text-[#B9BFC9]">Visites planifiées de l&apos;unité</h2>
-                <span className="text-[12.5px] font-medium text-[#5C6575]">
-                  {visites.length} visite{visites.length > 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {visites.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
-              </div>
-            </div>
-          )}
-
           {/* ── Contenu ── */}
           {isLoading ? (
             <div className="flex items-center justify-center py-20 text-[14px] text-[#5C6575]">
@@ -837,37 +936,85 @@ function CalendrierContent() {
                 Les matchs n&apos;ont pas pu être chargés. Réessayez dans un moment.
               </p>
             </div>
-          ) : matches.length === 0 && !(view === "cal" && visites.length > 0) ? (
-            /* En vue mois, des visites sans match gardent la grille (leurs
-               jours sont marqués) ; en vue liste, elles ont leur section. */
-            /* Deux vides distincts : aucun match RSEQ du tout (planche de la
-               réf) vs des matchs existent mais rien ne franchit le seuil ou
-               les filtres (message contextuel, actionnable). */
-            baseMatchCount > 0 ? (
-              <NoMatchForFilters
-                minTargets={filters.minTargets}
-                onReset={() => setFilters(EMPTY_FILTERS)}
-              />
-            ) : (
-              <EmptyBoard />
-            )
+          ) : !actifs.m && !actifs.v && !actifs.r ? (
+            <div className="mt-[34px] rounded-2xl border border-[#262A33] bg-[#1A1D24] px-[30px] py-[40px] text-center text-[15px] text-[#8A909C]">
+              Active au moins un type d&apos;événement : Matchs, Visites ou Relances.
+            </div>
           ) : view === "list" ? (
-            <div className="mt-[34px] flex flex-col gap-[34px]">
-              {weeks.map((w) => (
-                <div key={w.key} className="flex flex-col">
-                  <div className="mb-4 flex items-baseline gap-3.5 border-b border-[#1E2129] pb-2.5">
-                    <h2 className="text-[14px] font-bold uppercase tracking-[0.14em] text-[#B9BFC9]">{w.label}</h2>
-                    <span className="text-[12.5px] font-medium text-[#5C6575]">
-                      {w.matchCount} match{w.matchCount > 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {w.matches.map((m) => <MatchCard key={m.game.id} m={m} />)}
-                  </div>
-                </div>
-              ))}
+            /* ── VUE LISTE — une section par type, chacune dans l'ordre
+               chronologique. Les filtres (sport, position…) ne portent que
+               sur les matchs : une visite ou une relance n'est pas un match,
+               la cacher parce qu'un filtre est posé ferait manquer un
+               rendez-vous. */
+            <div className="mt-[34px] flex flex-col gap-[44px]">
+              {actifs.m && (
+                <section aria-label="Matchs à recruter">
+                  <SectionTitre couleur={COULEUR.m} titre="Matchs à recruter" detail={pluriel(matches.length, "match")} />
+                  {matches.length === 0 ? (
+                    /* Deux vides distincts : aucun match du tout (planche de
+                       la réf) vs des matchs existent mais rien ne franchit le
+                       seuil ou les filtres (message contextuel, actionnable). */
+                    baseMatchCount > 0 ? (
+                      <NoMatchForFilters
+                        minTargets={filters.minTargets}
+                        onReset={() => setFilters(EMPTY_FILTERS)}
+                      />
+                    ) : (
+                      <EmptyBoard />
+                    )
+                  ) : (
+                    <div className="flex flex-col gap-[30px]">
+                      {weeks.map((w) => (
+                        <div key={w.key} className="flex flex-col">
+                          <div className="mb-3 flex items-baseline gap-3.5">
+                            <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#8A909C]">{w.label}</h3>
+                            <span className="text-[12.5px] font-medium text-[#5C6575]">
+                              {w.matchCount} match{w.matchCount > 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount > 1 ? "s" : ""}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-3">
+                            {w.matches.map((m) => <MatchCard key={m.game.id} m={m} />)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {actifs.v && (
+                <section aria-label="Visites planifiées">
+                  <SectionTitre couleur={COULEUR.v} titre="Visites planifiées" detail={pluriel(visites.length, "visite")} />
+                  {visites.length === 0 ? (
+                    <p className="text-[14px] text-[#5C6575]">Aucune visite planifiée dans ton unité.</p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {visites.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {actifs.r && (
+                <section aria-label="Relances">
+                  <SectionTitre
+                    couleur={COULEUR.r}
+                    titre="Relances"
+                    detail={`${pluriel(relances.length, "relance")}${relances.some((r) => r.enRetard) ? ` · ${relances.filter((r) => r.enRetard).length} en retard` : ""}`}
+                  />
+                  {relances.length === 0 ? (
+                    <p className="text-[14px] text-[#5C6575]">Aucune relance posée dans ton unité.</p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {relances.map((r) => <RelanceCard key={r.athleteId} r={r} />)}
+                    </div>
+                  )}
+                </section>
+              )}
             </div>
           ) : (
+            /* ── VUE MOIS — de courts libellés colorés dans la case du jour,
+               un par type (« 2 matchs », « Visite », « Relance »). */
             <div className="mt-[34px]">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-[19px] font-bold capitalize">{monthLabel(cursor.year, cursor.month)}</h2>
@@ -900,12 +1047,24 @@ function CalendrierContent() {
                 ))}
                 {grid.map((c) => {
                   const selected = selectedDay === c.iso;
+                  const jour = parJour.get(c.iso);
+                  const libelles: { cle: TypeEvenement; texte: string }[] = [];
+                  if (jour && actifs.m && jour.matchs > 0) {
+                    libelles.push({ cle: "m", texte: `${jour.hot ? "★ " : ""}${pluriel(jour.matchs, "match")}` });
+                  }
+                  if (jour && actifs.v && jour.visites > 0) {
+                    libelles.push({ cle: "v", texte: jour.visites > 1 ? pluriel(jour.visites, "visite") : "Visite" });
+                  }
+                  if (jour && actifs.r && jour.relances > 0) {
+                    libelles.push({ cle: "r", texte: jour.relances > 1 ? pluriel(jour.relances, "relance") : "Relance" });
+                  }
                   return (
                     <button
                       key={c.iso}
                       type="button"
+                      data-jour={c.iso}
                       onClick={() => setSelectedDay(selected ? null : c.iso)}
-                      className={`relative aspect-[1.15] rounded-xl border px-[11px] py-[9px] text-left text-[14px] font-semibold transition-colors ${
+                      className={`flex min-h-[104px] flex-col items-stretch gap-1 rounded-xl border px-[9px] py-[8px] text-left text-[14px] font-semibold transition-colors ${
                         c.outside ? "opacity-[0.32]" : ""
                       } ${
                         selected
@@ -915,46 +1074,35 @@ function CalendrierContent() {
                             : "border-[#1E2129] bg-[#1A1D24] text-[#8A909C]"
                       }`}
                     >
-                      {c.day}
-                      {/* Marqueur, pas compteur : point rouge si le jour porte
-                          au moins un match à cibles, ★ rouge s'il contient un
-                          « fort potentiel ». Le détail vit dans les cartes
-                          rendues sous la grille. */}
-                      {joursVisite.has(c.iso) && (
+                      <span>{c.day}</span>
+                      {libelles.map((l) => (
                         <span
-                          className="absolute bottom-2 right-[11px] block h-[7px] w-[7px] rounded-full bg-[#22C55E]"
-                          aria-label="Visite planifiée"
-                        />
-                      )}
-                      {c.hasMatch && (
-                        <span
-                          className="absolute bottom-2 left-[11px] leading-none text-[#E63946]"
-                          aria-label={c.hasHot ? "Match à fort potentiel" : "Match à surveiller"}
+                          key={l.cle}
+                          data-type-evenement={l.cle}
+                          className="block truncate rounded-md px-1.5 py-[2px] text-[11.5px] font-bold leading-tight"
+                          style={{ color: COULEUR[l.cle], backgroundColor: `${COULEUR[l.cle]}1F` }}
                         >
-                          {c.hasHot ? (
-                            <span className="text-[13px]">★</span>
-                          ) : (
-                            <span className="block h-[7px] w-[7px] rounded-full bg-[#E63946]" />
-                          )}
+                          {l.texte}
                         </span>
-                      )}
+                      ))}
                     </button>
                   );
                 })}
               </div>
 
               {selectedDay ? (
-                dayMatches.length > 0 || visitesDuJour.length > 0 ? (
+                (actifs.m && dayMatches.length > 0) || (actifs.v && visitesDuJour.length > 0) || (actifs.r && relancesDuJour.length > 0) ? (
                   <div className="mt-4 flex flex-col gap-3">
-                    {visitesDuJour.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
-                    {dayMatches.map((m) => <MatchCard key={m.game.id} m={m} />)}
+                    {actifs.m && dayMatches.map((m) => <MatchCard key={m.game.id} m={m} />)}
+                    {actifs.v && visitesDuJour.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
+                    {actifs.r && relancesDuJour.map((r) => <RelanceCard key={r.athleteId} r={r} />)}
                   </div>
                 ) : (
-                  <div className="mt-3.5 text-[13.5px] text-[#5C6575]">Aucun match ni visite ce jour-là pour ton unité.</div>
+                  <div className="mt-3.5 text-[13.5px] text-[#5C6575]">Rien ce jour-là pour ton unité.</div>
                 )
               ) : (
                 <div className="mt-3.5 text-[13.5px] text-[#5C6575]">
-                  Sélectionnez un jour pour voir ses matchs.
+                  Sélectionnez un jour pour voir ses matchs, visites et relances.
                 </div>
               )}
             </div>

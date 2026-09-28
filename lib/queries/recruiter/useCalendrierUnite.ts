@@ -4,7 +4,9 @@
    Décision BP 2026-09-28 : pour un Pro, le calendrier montre
    · les matchs des athlètes suivis par l'UNITÉ (cégep × sport) — processus,
      favoris, listes —, qu'ils aient été ajoutés par soi ou par un collègue ;
-   · les VISITES PLANIFIÉES de toute l'unité, comme événements.
+   · les VISITES PLANIFIÉES de toute l'unité, comme événements ;
+   · les RELANCES de l'unité, à leur date d'échéance (next_action_at) —
+     en retard comprises : ce sont celles qui appellent un geste.
 
    Sources (toutes filtrées par la RLS, Pro exigé) :
      · unite_pipeline()  — une ligne par athlète : étape, visite, qui suit ;
@@ -45,14 +47,31 @@ export interface VisiteUnite {
   suiviPar: string[];
 }
 
+/** Une relance de l'unité (recruiter_pipeline.next_action_at). */
+export interface RelanceUnite {
+  athleteId: string;
+  identityVisible: boolean;
+  fullName: string;
+  /** Échéance, jour "YYYY-MM-DD" (next_action_at est une date). */
+  jour: string;
+  note: string;
+  stage: string;
+  /** Échéance passée : la relance est en retard. */
+  enRetard: boolean;
+  suiviPar: string[];
+}
+
 export interface CalendrierUniteData extends RecruitingCalendarData {
   visites: VisiteUnite[];
+  relances: RelanceUnite[];
 }
 
 interface LigneUnite {
   athlete_id: string;
   stage: string | null;
   visit_at: string | null;
+  next_action_at: string | null;
+  next_action_note: string | null;
   recruteurs: string[] | null;
 }
 
@@ -121,8 +140,10 @@ export function useCalendrierUnite(enabled: boolean) {
       const debut = new Date();
       debut.setHours(0, 0, 0, 0);
       const avecVisite = lignes.filter((l) => l.visit_at && new Date(l.visit_at) >= debut);
-      const cartes = avecVisite.length > 0
-        ? await fetchRecruiterAthleteCards(supabase, avecVisite.map((l) => l.athlete_id))
+      const avecRelance = lignes.filter((l) => !!l.next_action_at);
+      const aNommer = Array.from(new Set([...avecVisite, ...avecRelance].map((l) => l.athlete_id)));
+      const cartes = aNommer.length > 0
+        ? await fetchRecruiterAthleteCards(supabase, aNommer)
         : new Map();
       const visites: VisiteUnite[] = avecVisite
         .map((l) => {
@@ -139,7 +160,26 @@ export function useCalendrierUnite(enabled: boolean) {
         })
         .sort((a, b) => a.visitAt.localeCompare(b.visitAt));
 
-      return { ...base, visites };
+      /* Relances : toutes celles qui ont une échéance, en retard comprises. */
+      const aujourdhui = jourLocal(new Date().toISOString());
+      const relances: RelanceUnite[] = avecRelance
+        .map((l) => {
+          const card = cartes.get(l.athlete_id) ?? null;
+          const jour = l.next_action_at!.slice(0, 10);
+          return {
+            athleteId: l.athlete_id,
+            identityVisible: card?.identity_visible ?? false,
+            fullName: displayFullName(card),
+            jour,
+            note: (l.next_action_note ?? "").trim(),
+            stage: (l.stage || "IDENTIFIE").toUpperCase(),
+            enRetard: jour < aujourdhui,
+            suiviPar: (l.recruteurs ?? []).map((id) => nomAuteur(auteurs[id])),
+          };
+        })
+        .sort((a, b) => a.jour.localeCompare(b.jour));
+
+      return { ...base, visites, relances };
     },
   });
 }

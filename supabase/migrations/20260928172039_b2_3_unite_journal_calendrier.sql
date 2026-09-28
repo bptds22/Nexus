@@ -1,4 +1,4 @@
--- 20260928160000_b2_3_unite_journal_calendrier (renommée à la version prod après apply)
+-- 20260928172039_b2_3_unite_journal_calendrier (version enregistrée en prod ; écrite 20260928160000)
 --
 -- LOT B2, ÉTAPE 3 — deux correctifs en base pour le tableau blanc par unité.
 --
@@ -35,7 +35,7 @@
 -- ACL relevées AVANT et comparées intégralement APRÈS (gates). Aucune
 -- contrainte ni colonne touchée, aucune policy retirée, aucune signature
 -- existante changée.
--- Rollback : supabase/rollback/20260928160000_rollback_b2_3_unite_journal_calendrier.sql
+-- Rollback : supabase/rollback/20260928172039_rollback_b2_3_unite_journal_calendrier.sql
 
 create temp table _b2_3_avant on commit drop as
   select p.oid, p.proname::text as nom, p.proacl::text as acl, pg_get_functiondef(p.oid) as def

@@ -1330,8 +1330,11 @@ Aucun de ces écarts n'expose une donnée hors de l'unité : ce sont des gestes
 
 ## 39. Retrait d'unité par un admin cégep sur un AUTRE sport — la ligne de journal va dans son unité (B2-0, à corriger à l'étape 3 de B2)
 
-> **CORRIGÉ en base à l'étape 3 (2026-09-28)** — migration
-> `b2_3_unite_journal_calendrier`, **en attente du GO prod**. Les deux retraits
+> **CORRIGÉ en base et APPLIQUÉ EN PROD le 2026-09-28** (GO BP) — migration
+> `20260928172039_b2_3_unite_journal_calendrier`. Prouvé en prod sous identité
+> réelle, tout annulé : l'admin `a0000000-…a1` range une ligne dans un autre
+> sport de SON cégep (gardée) ; l'admin d'un autre cégep qui force cette unité
+> est ramené à la sienne. Les deux retraits
 > fournissent l'unité visée ; `unite_poser_journal` la garde si l'appelant y a
 > accès (`acces_unite_pro`), sinon la dérive de l'acteur comme avant. Un non-admin
 > ne peut donc ranger une ligne que dans son unité. Preuves locales 8/8 ; le
@@ -1360,10 +1363,13 @@ Registre de décision : BP, 2026-09-24.
 > **TRANCHÉ à l'étape 3 (décision BP 2026-09-28)** : lecture seule, **affichée**.
 > Avis `AvisLectureSeule` en tête de Mon CÉGEP (tableau de bord, stats,
 > recrues) et de Mon processus dès que le filtre sport n'est pas celui de
-> l'admin. Pas d'écriture inter-unités. **Question ouverte** : la
-> **réassignation** (`reassign_pipeline`, Mon CÉGEP) reste possible entre deux
-> recruteurs d'un autre sport — outil de gestion d'équipe plutôt que geste du
-> tableau blanc ; à confirmer par BP.
+> l'admin. Pas d'écriture inter-unités.
+>
+> **Réassignation — décision BP 2026-09-28 : GARDÉE ouverte à tout le cégep.**
+> `reassign_pipeline` (Mon CÉGEP) reste possible entre deux recruteurs de
+> n'importe quel sport du cégep de l'admin : c'est un outil de gestion
+> d'équipe, pas un geste du tableau blanc. La lecture seule du §40 ne s'y
+> applique pas.
 
 Le filtre sport de « Mon processus » laisse l'admin cégep **voir** les autres
 sports de son cégep (décision BP, question 4 : lecture ET modification). La
@@ -1431,3 +1437,25 @@ via une fonction `SECURITY DEFINER` (checklist, règle 4). C'est un
 et rollback avant apply. L'app 1.4.3 n'écrit des notes que dans ses propres
 listes : le resserrage ne casse aucun client livré.
 
+
+## 42. Palette — le vert marque aussi les visites, l'ambre les relances (décision BP 2026-09-28)
+
+**Ce qui change.** Jusqu'ici le vert `#22C55E` était tenu pour réservé aux
+**messages**. Décision BP du 2026-09-28, au calendrier recruteur à trois types :
+- **rouge `#E63946`** = matchs à recruter (la couleur du produit) ;
+- **vert `#22C55E`** = **visites planifiées** — le vert n'est plus réservé aux
+  messages ;
+- **ambre `#F59E0B`** = **relances** dans le calendrier (déjà la teinte des
+  étoiles et de l'étape « En discussion » ; ici, l'« à faire »).
+Le **bleu `#3B82F6`** reste au badge vérifié, sans exception.
+
+**Où c'est appliqué.** `app/recruteur/calendrier/page.tsx` (constante
+`COULEUR`, pastilles de filtre, libellés de la vue mois, cartes Visite /
+Relance, étiquette d'étape « Visite planifiée »). Une proposition violette pour
+les visites a été écartée.
+
+**À faire ensuite.** CLAUDE.md (section Design System) décrit encore le vert
+comme « positive status, active » et les couleurs d'étape de recrutement
+(VISITE = violet) : à réaligner si la palette du calendrier doit s'étendre aux
+autres écrans. Tant que ce n'est pas tranché, la décision ci-dessus vaut pour
+le calendrier.

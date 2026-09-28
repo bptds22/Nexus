@@ -1,4 +1,4 @@
--- Rollback de 20260928160000_b2_3_unite_journal_calendrier (lot B2, étape 3).
+-- Rollback de 20260928172039_b2_3_unite_journal_calendrier (lot B2, étape 3 ; écrite 20260928160000).
 -- B : retire la policy unite_equipes_suivies et athlete_suivi_par_mon_unite().
 -- A (§39) :
 -- Rejoue les trois définitions d'origine sauvegardées, vérifie les ACL,

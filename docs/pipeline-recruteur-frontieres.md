@@ -130,7 +130,7 @@ migration : tout repose sur B1/B2-0.
   liste, marqueur vert en vue mois, « Suivi par … »). Les équipes des athlètes
   suivis par un collègue se lisent grâce à la policy additive
   `unite_equipes_suivies` sur `team_athletes` (migration
-  `b2_3_unite_journal_calendrier`). La construction cibles → matchs est
+  `b2_3_unite_journal_calendrier`, appliquée en prod : `20260928172039`). La construction cibles → matchs est
   partagée (`construireCalendrier`) : l'app 1.4.3 garde ses propres cibles.
 - **Tableau de bord** : entonnoir et tuiles Relances / Visites sur
   `useProcessusUnite` (la lecture de Mon processus, même clé de cache) ; fil
