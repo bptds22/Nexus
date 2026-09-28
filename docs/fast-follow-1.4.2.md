@@ -1410,3 +1410,25 @@ via une fonction `SECURITY DEFINER` (checklist, règle 4). C'est un
 et rollback avant apply. L'app 1.4.3 n'écrit des notes que dans ses propres
 listes : le resserrage ne casse aucun client livré.
 
+
+## 42. Palette — le vert marque aussi les visites, l'ambre les relances (décision BP 2026-09-28)
+
+**Ce qui change.** Jusqu'ici le vert `#22C55E` était tenu pour réservé aux
+**messages**. Décision BP du 2026-09-28, au calendrier recruteur à trois types :
+- **rouge `#E63946`** = matchs à recruter (la couleur du produit) ;
+- **vert `#22C55E`** = **visites planifiées** — le vert n'est plus réservé aux
+  messages ;
+- **ambre `#F59E0B`** = **relances** dans le calendrier (déjà la teinte des
+  étoiles et de l'étape « En discussion » ; ici, l'« à faire »).
+Le **bleu `#3B82F6`** reste au badge vérifié, sans exception.
+
+**Où c'est appliqué.** `app/recruteur/calendrier/page.tsx` (constante
+`COULEUR`, pastilles de filtre, libellés de la vue mois, cartes Visite /
+Relance, étiquette d'étape « Visite planifiée »). Une proposition violette pour
+les visites a été écartée.
+
+**À faire ensuite.** CLAUDE.md (section Design System) décrit encore le vert
+comme « positive status, active » et les couleurs d'étape de recrutement
+(VISITE = violet) : à réaligner si la palette du calendrier doit s'étendre aux
+autres écrans. Tant que ce n'est pas tranché, la décision ci-dessus vaut pour
+le calendrier.

@@ -86,10 +86,11 @@ const STAGE_LABEL: Record<string, string> = Object.fromEntries(
 const DOW = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 /* ── Les trois types d'événements (amélioration du calendrier, 2026-09-28) ──
-   Rouge = matchs (la couleur du produit) ; violet = visites (le « VISITE =
-   violet » du système de badges) ; ambre = relances (l'« à faire / attention »
-   de l'app). Le vert reste aux messages, le bleu au badge vérifié. */
-const COULEUR = { m: "#E63946", v: "#A855F7", r: "#F59E0B" } as const;
+   Décision BP 2026-09-28 : rouge = matchs (la couleur du produit) ; vert =
+   visites ; ambre = relances. Le vert n'est plus réservé aux messages et
+   l'ambre marque les relances ici (registre §42). Le bleu reste au badge
+   vérifié. */
+const COULEUR = { m: "#E63946", v: "#22C55E", r: "#F59E0B" } as const;
 type TypeEvenement = keyof typeof COULEUR;
 const TYPES: { cle: TypeEvenement; libelle: string }[] = [
   { cle: "m", libelle: "Matchs" },
@@ -243,7 +244,7 @@ function StagePill({ stage }: { stage: string | null }) {
     <span
       className={`shrink-0 rounded-full px-[10px] py-[3px] text-[11.5px] font-semibold tracking-[0.04em] whitespace-nowrap ${
         isVisit
-          ? "bg-[rgba(168,85,247,0.10)] border border-[rgba(168,85,247,0.30)] text-[#A855F7]"
+          ? "bg-[rgba(34,197,94,0.10)] border border-[rgba(34,197,94,0.30)] text-[#22C55E]"
           : "bg-[#20242C] text-[#B9BFC9]"
       }`}
     >
@@ -261,15 +262,15 @@ function VisiteCard({ v }: { v: VisiteUnite }) {
   const heure = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
   const aHeure = !(d.getHours() === 0 && d.getMinutes() === 0);
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-[rgba(168,85,247,0.30)] bg-[#1A1D24] px-5 py-4">
+    <div className="flex items-center gap-4 rounded-2xl border border-[rgba(34,197,94,0.30)] bg-[#1A1D24] px-5 py-4">
       <div className="w-[64px] shrink-0 text-center">
-        <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#A855F7]">{shortMonthLabel(v.jour)}</div>
+        <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#22C55E]">{shortMonthLabel(v.jour)}</div>
         <div className="text-[24px] font-extrabold leading-none text-[#EDEFF3]">{dayNumber(v.jour)}</div>
         {aHeure && <div className="mt-1 text-[12px] text-[#8A909C]">{heure}</div>}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#A855F7]">Visite</span>
+          <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#22C55E]">Visite</span>
           <Link href={`/recruteur/athletes/${v.athleteId}`} className="truncate text-[16px] font-bold text-[#EDEFF3] hover:text-[#E63946]">
             {v.fullName}
           </Link>
