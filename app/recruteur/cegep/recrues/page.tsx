@@ -5,13 +5,14 @@ import Link from "next/link";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
+import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
+import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
 
 /* ── Types ── */
 
@@ -99,7 +100,9 @@ function RecrusCegepPage() {
       /* Lot 2a des frontières du pipeline : RPC sans colonnes privées, en
          remplacement de la lecture directe. L'ordre (updated_at décroissant)
          est rétabli ici, la RPC n'en garantit aucun. */
-      const recrueData = (await fetchCegepPipelineOverview(supabase, teamIds, ["ENGAGE", "LETTRE_SIGNEE"]))
+      // Lot B2, étape 3 : une recrue = un dossier (athlète × unité), pas une
+      // ligne par collègue qui la suit.
+      const recrueData = (await fetchDossiersUniteCegep(supabase, teamIds, ["ENGAGE", "LETTRE_SIGNEE"]))
         .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
 
       /* TEMPS 2 — l'identité et le reste, projetés par le serveur. */
@@ -124,7 +127,7 @@ function RecrusCegepPage() {
           sourceRegion: card?.school_region || "",
           coteGlobale: card?.cote_globale ?? 0,
           recruitmentStatus: card?.recruitment_status || "OUVERT",
-          recruiterName: teamNameMap.get(row.recruiter_id) || "",
+          recruiterName: row.suivi_par.map((id) => teamNameMap.get(id)).filter(Boolean).join(", "),
           stage: (row.stage as string) || "",
           updatedAt: (row.updated_at as string) || "",
         };
@@ -197,6 +200,8 @@ function RecrusCegepPage() {
           ))}
         </select>
       </div>
+      {/* §40 : un autre sport que le sien (ou tout le cégep) se lit sans s'écrire. */}
+      <AvisLectureSeule filtre={filtreSport} />
 
       {/* ── Table or empty state ──────────────────────────── */}
       {count > 0 ? (

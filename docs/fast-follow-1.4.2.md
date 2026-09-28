@@ -1330,6 +1330,13 @@ Aucun de ces écarts n'expose une donnée hors de l'unité : ce sont des gestes
 
 ## 39. Retrait d'unité par un admin cégep sur un AUTRE sport — la ligne de journal va dans son unité (B2-0, à corriger à l'étape 3 de B2)
 
+> **CORRIGÉ en base à l'étape 3 (2026-09-28)** — migration
+> `b2_3_unite_journal_calendrier`, **en attente du GO prod**. Les deux retraits
+> fournissent l'unité visée ; `unite_poser_journal` la garde si l'appelant y a
+> accès (`acces_unite_pro`), sinon la dérive de l'acteur comme avant. Un non-admin
+> ne peut donc ranger une ligne que dans son unité. Preuves locales 8/8 ; le
+> rollback reproduit le défaut.
+
 `unite_retirer_favori` et `unite_retirer_du_processus` acceptent `p_sport_id`
 (un admin cégep agit sur un autre sport de son cégep). Les lignes retirées sont
 bien celles de l'unité visée, mais **la ligne de journal unique** est insérée
@@ -1349,6 +1356,14 @@ l'appelant n'est pas un client), sur le modèle de `log_pipeline_change`.
 Registre de décision : BP, 2026-09-24.
 
 ## 40. Admin cégep : les dossiers d'un AUTRE sport sont en lecture seule (B2, étape 1 — à trancher à l'étape 3)
+
+> **TRANCHÉ à l'étape 3 (décision BP 2026-09-28)** : lecture seule, **affichée**.
+> Avis `AvisLectureSeule` en tête de Mon CÉGEP (tableau de bord, stats,
+> recrues) et de Mon processus dès que le filtre sport n'est pas celui de
+> l'admin. Pas d'écriture inter-unités. **Question ouverte** : la
+> **réassignation** (`reassign_pipeline`, Mon CÉGEP) reste possible entre deux
+> recruteurs d'un autre sport — outil de gestion d'équipe plutôt que geste du
+> tableau blanc ; à confirmer par BP.
 
 Le filtre sport de « Mon processus » laisse l'admin cégep **voir** les autres
 sports de son cégep (décision BP, question 4 : lecture ET modification). La

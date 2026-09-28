@@ -41,6 +41,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery } from "@tanstack/react-query";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { genderLabel } from "@/lib/config/gender";
@@ -213,185 +214,198 @@ export function useRecruitingCalendar(enabled: boolean = true) {
 
       if (targetIds.length === 0) return EMPTY;
 
-      /* ── 2a. Les cartes projetées (famille 1 : lot d'IDs) ──
-         targetIds vient de pipeline ∪ favoris ∪ listes, donc c'est
-         bien un lot d'IDs connus, pas une recherche filtrée. */
-      const cardMap = await fetchRecruiterAthleteCards(supabase, targetIds);
-
-      /* ── 2b. Le rattachement d'équipe, à part ──
-         Les RPC de projection ne portent AUCUN champ d'équipe. On le lit
-         donc directement : team_athletes et teams ne contiennent
-         aucune donnée personnelle d'athlète, seulement un lien.
-
-         La RLS reste le gardien, à l'identique de l'embed d'avant :
-         « Recruiters read own target team rows » couvre tout athlète
-         ACTIF présent dans le pipeline, les favoris ou les listes du
-         recruteur — c'est exactement la définition de targetIds, donc
-         la couverture est totale ici, vérifiés ou non. */
-      const { data: linkRows, error: linkErr } = await supabase
-        .from("team_athletes")
-        .select("athlete_id, team_id, teams!team_id(id, name)")
-        .in("athlete_id", targetIds);
-      if (linkErr) throw linkErr;
-
-      const linksByAthlete = new Map<string, Record<string, unknown>[]>();
-      for (const row of (linkRows ?? []) as Record<string, unknown>[]) {
-        const aid = row.athlete_id as string;
-        const cur = linksByAthlete.get(aid) ?? [];
-        cur.push(row);
-        linksByAthlete.set(aid, cur);
-      }
-
-      const targets: CalendarTarget[] = [];
-      const teamIds = new Set<string>();
-
-      targetIds.forEach((athleteId) => {
-        // `?? null` explicite : la RPC ne rend rien pour un athlète
-        // inactif — l'ancien `.eq("status","ACTIF")` le filtrait pareil.
-        const card = cardMap.get(athleteId) ?? null;
-        if (!card) return;
-
-        const links = linksByAthlete.get(athleteId) ?? [];
-
-        const base = {
-          athleteId: card.id,
-          identityVisible: card.identity_visible,
-          fullName: displayFullName(card),
-          firstName: card.first_name ?? "",
-          lastName: card.last_name ?? "",
-          // Sous masquage, pas d'initiales : elles recoupées à l'école
-          // et à la position réidentifient. Le rendu bascule sur le
-          // placeholder via identityVisible.
-          initials: card.identity_visible
-            ? initialsOf(card.first_name ?? "", card.last_name ?? "")
-            : "",
-          photo: card.photo_url ?? "",
-          sport: (card.sport_nom || "").toLowerCase().replace(/ /g, "_"),
-          sportName: card.sport_nom ?? "",
-          position: card.position_abbr ?? "",
-          graduationYear: card.annee_diplomation ?? 0,
-          region: card.school_region ?? "",
-          school: card.school_name ?? "",
-          verified: card.verified === true,
-          hasVideo: !!card.a_une_video,
-          stars: card.cote_globale ?? 0,
-          gpa: card.moyenne_generale ?? 0,
-          orgType: (!card.school_id
-            ? undefined
-            : card.school_type === "LIGUE_CIVILE"
-              ? "ligue_civile"
-              : "scolaire") as "scolaire" | "ligue_civile" | undefined,
-          pipelineStage: stageByAthlete.get(athleteId) ?? null,
-          listIds: listsByAthlete.get(athleteId) ?? [],
-        };
-
-        links.forEach((link) => {
-          const team = pickOne<Record<string, unknown>>(link.teams);
-          // teams.id est la seule clé de jointure. Une équipe sans match
-          // reste une cible légitime : elle apparaît simplement sans
-          // calendrier, au lieu d'être écartée en amont.
-          const teamId = (team?.id as string) || (link.team_id as string) || "";
-          if (!teamId) return;
-          teamIds.add(teamId);
-          targets.push({
-            ...base,
-            teamId,
-            teamName: (team?.name as string) || "",
-          });
-        });
-      });
-
-      if (targets.length === 0) {
-        return { targets: [], games: [] };
-      }
-
-      /* ── 3. Matchs à venir — UNE requête, array de teams.id ── */
-      const ids = Array.from(teamIds);
-      const inList = `(${ids.join(",")})`;
-      const { data: gameRows, error: gameErr } = await supabase
-        .from("games")
-        .select(`
-          id, game_date, game_time, venue,
-          home_team_id, visitor_team_id,
-          home_name_raw, visitor_name_raw,
-          league_name, sport, division, category, sex_type,
-          source_nom, source_url, collecte_le, rseq_league_id
-        `)
-        .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
-        .gte("game_date", todayIso())
-        .order("game_date", { ascending: true });
-      if (gameErr) throw gameErr;
-
-      /* Nom d'équipe : le nom Nexus prime des DEUX côtés, sinon le
-         libellé brut du calendrier source. La policy « Recruiters see
-         teams » autorise la lecture de toutes les équipes, donc
-         l'adversaire est résolu lui aussi — sans quoi une carte
-         afficherait « Amitié vs Thérèse-Martin », un nom Nexus contre
-         un libellé brut. Une seule requête à plat sur l'ensemble des
-         teams.id apparus dans les matchs.
-         L'adversaire peut n'avoir AUCUNE ligne `teams` (équipe hors
-         base) : son côté est alors NULL et on retombe sur *_name_raw. */
-      const teamNameById = new Map<string, string>();
-      targets.forEach((t) => {
-        if (t.teamName && !teamNameById.has(t.teamId)) {
-          teamNameById.set(t.teamId, t.teamName);
-        }
-      });
-
-      const opponentIds = Array.from(new Set(
-        ((gameRows ?? []) as Record<string, unknown>[])
-          .flatMap((g) => [g.home_team_id, g.visitor_team_id])
-          .filter((v): v is string => typeof v === "string" && !teamNameById.has(v)),
-      ));
-      if (opponentIds.length > 0) {
-        const { data: oppRows } = await supabase
-          .from("teams")
-          .select("id, name")
-          .in("id", opponentIds);
-        ((oppRows ?? []) as { id: string | null; name: string | null }[])
-          .forEach((r) => {
-            if (r.id && r.name && !teamNameById.has(r.id)) {
-              teamNameById.set(r.id, r.name);
-            }
-          });
-      }
-
-      const games: CalendarGame[] = ((gameRows ?? []) as Record<string, unknown>[])
-        .filter((g) => !!g.game_date)
-        .map((g) => {
-          const homeId = (g.home_team_id as string | null) ?? null;
-          const visId = (g.visitor_team_id as string | null) ?? null;
-          return {
-            id: g.id as string,
-            gameDate: g.game_date as string,
-            gameTime: (g.game_time as string) || "",
-            venue: (g.venue as string) || "",
-            homeTeamId: homeId,
-            visitorTeamId: visId,
-            homeName:
-              (homeId && teamNameById.get(homeId)) ||
-              (g.home_name_raw as string) ||
-              "Équipe à confirmer",
-            visitorName:
-              (visId && teamNameById.get(visId)) ||
-              (g.visitor_name_raw as string) ||
-              "Équipe à confirmer",
-            competition: buildCompetition(g),
-            source: sourceDuMatch(g as {
-              source_nom?: string | null;
-              source_url?: string | null;
-              collecte_le?: string | null;
-              rseq_league_id?: string | null;
-              league_name?: string | null;
-            }),
-          };
-        });
-
-      return { targets, games };
+      return construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete);
     },
     enabled: enabled && !!userId,
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/* ── Construction partagée : cibles → cartes → équipes → matchs ──────
+   Appelée par useRecruitingCalendar (ses propres cibles — web d'avant et
+   app 1.4.3) et par useCalendrierUnite (les cibles de l'UNITÉ, web, lot B2
+   étape 3). Les sources changent, la construction est la même. */
+export async function construireCalendrier(
+  supabase: SupabaseClient,
+  targetIds: string[],
+  stageByAthlete: Map<string, string>,
+  listsByAthlete: Map<string, string[]>,
+): Promise<RecruitingCalendarData> {
+  if (targetIds.length === 0) return EMPTY;
+  /* ── 2a. Les cartes projetées (famille 1 : lot d'IDs) ──
+     targetIds vient de pipeline ∪ favoris ∪ listes, donc c'est
+     bien un lot d'IDs connus, pas une recherche filtrée. */
+  const cardMap = await fetchRecruiterAthleteCards(supabase, targetIds);
+
+  /* ── 2b. Le rattachement d'équipe, à part ──
+     Les RPC de projection ne portent AUCUN champ d'équipe. On le lit
+     donc directement : team_athletes et teams ne contiennent
+     aucune donnée personnelle d'athlète, seulement un lien.
+
+     La RLS reste le gardien, à l'identique de l'embed d'avant :
+     « Recruiters read own target team rows » couvre tout athlète
+     ACTIF présent dans le pipeline, les favoris ou les listes du
+     recruteur — c'est exactement la définition de targetIds, donc
+     la couverture est totale ici, vérifiés ou non. */
+  const { data: linkRows, error: linkErr } = await supabase
+    .from("team_athletes")
+    .select("athlete_id, team_id, teams!team_id(id, name)")
+    .in("athlete_id", targetIds);
+  if (linkErr) throw linkErr;
+
+  const linksByAthlete = new Map<string, Record<string, unknown>[]>();
+  for (const row of (linkRows ?? []) as Record<string, unknown>[]) {
+    const aid = row.athlete_id as string;
+    const cur = linksByAthlete.get(aid) ?? [];
+    cur.push(row);
+    linksByAthlete.set(aid, cur);
+  }
+
+  const targets: CalendarTarget[] = [];
+  const teamIds = new Set<string>();
+
+  targetIds.forEach((athleteId) => {
+    // `?? null` explicite : la RPC ne rend rien pour un athlète
+    // inactif — l'ancien `.eq("status","ACTIF")` le filtrait pareil.
+    const card = cardMap.get(athleteId) ?? null;
+    if (!card) return;
+
+    const links = linksByAthlete.get(athleteId) ?? [];
+
+    const base = {
+      athleteId: card.id,
+      identityVisible: card.identity_visible,
+      fullName: displayFullName(card),
+      firstName: card.first_name ?? "",
+      lastName: card.last_name ?? "",
+      // Sous masquage, pas d'initiales : elles recoupées à l'école
+      // et à la position réidentifient. Le rendu bascule sur le
+      // placeholder via identityVisible.
+      initials: card.identity_visible
+        ? initialsOf(card.first_name ?? "", card.last_name ?? "")
+        : "",
+      photo: card.photo_url ?? "",
+      sport: (card.sport_nom || "").toLowerCase().replace(/ /g, "_"),
+      sportName: card.sport_nom ?? "",
+      position: card.position_abbr ?? "",
+      graduationYear: card.annee_diplomation ?? 0,
+      region: card.school_region ?? "",
+      school: card.school_name ?? "",
+      verified: card.verified === true,
+      hasVideo: !!card.a_une_video,
+      stars: card.cote_globale ?? 0,
+      gpa: card.moyenne_generale ?? 0,
+      orgType: (!card.school_id
+        ? undefined
+        : card.school_type === "LIGUE_CIVILE"
+          ? "ligue_civile"
+          : "scolaire") as "scolaire" | "ligue_civile" | undefined,
+      pipelineStage: stageByAthlete.get(athleteId) ?? null,
+      listIds: listsByAthlete.get(athleteId) ?? [],
+    };
+
+    links.forEach((link) => {
+      const team = pickOne<Record<string, unknown>>(link.teams);
+      // teams.id est la seule clé de jointure. Une équipe sans match
+      // reste une cible légitime : elle apparaît simplement sans
+      // calendrier, au lieu d'être écartée en amont.
+      const teamId = (team?.id as string) || (link.team_id as string) || "";
+      if (!teamId) return;
+      teamIds.add(teamId);
+      targets.push({
+        ...base,
+        teamId,
+        teamName: (team?.name as string) || "",
+      });
+    });
+  });
+
+  if (targets.length === 0) {
+    return { targets: [], games: [] };
+  }
+
+  /* ── 3. Matchs à venir — UNE requête, array de teams.id ── */
+  const ids = Array.from(teamIds);
+  const inList = `(${ids.join(",")})`;
+  const { data: gameRows, error: gameErr } = await supabase
+    .from("games")
+    .select(`
+      id, game_date, game_time, venue,
+      home_team_id, visitor_team_id,
+      home_name_raw, visitor_name_raw,
+      league_name, sport, division, category, sex_type,
+      source_nom, source_url, collecte_le, rseq_league_id
+    `)
+    .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
+    .gte("game_date", todayIso())
+    .order("game_date", { ascending: true });
+  if (gameErr) throw gameErr;
+
+  /* Nom d'équipe : le nom Nexus prime des DEUX côtés, sinon le
+     libellé brut du calendrier source. La policy « Recruiters see
+     teams » autorise la lecture de toutes les équipes, donc
+     l'adversaire est résolu lui aussi — sans quoi une carte
+     afficherait « Amitié vs Thérèse-Martin », un nom Nexus contre
+     un libellé brut. Une seule requête à plat sur l'ensemble des
+     teams.id apparus dans les matchs.
+     L'adversaire peut n'avoir AUCUNE ligne `teams` (équipe hors
+     base) : son côté est alors NULL et on retombe sur *_name_raw. */
+  const teamNameById = new Map<string, string>();
+  targets.forEach((t) => {
+    if (t.teamName && !teamNameById.has(t.teamId)) {
+      teamNameById.set(t.teamId, t.teamName);
+    }
+  });
+
+  const opponentIds = Array.from(new Set(
+    ((gameRows ?? []) as Record<string, unknown>[])
+      .flatMap((g) => [g.home_team_id, g.visitor_team_id])
+      .filter((v): v is string => typeof v === "string" && !teamNameById.has(v)),
+  ));
+  if (opponentIds.length > 0) {
+    const { data: oppRows } = await supabase
+      .from("teams")
+      .select("id, name")
+      .in("id", opponentIds);
+    ((oppRows ?? []) as { id: string | null; name: string | null }[])
+      .forEach((r) => {
+        if (r.id && r.name && !teamNameById.has(r.id)) {
+          teamNameById.set(r.id, r.name);
+        }
+      });
+  }
+
+  const games: CalendarGame[] = ((gameRows ?? []) as Record<string, unknown>[])
+    .filter((g) => !!g.game_date)
+    .map((g) => {
+      const homeId = (g.home_team_id as string | null) ?? null;
+      const visId = (g.visitor_team_id as string | null) ?? null;
+      return {
+        id: g.id as string,
+        gameDate: g.game_date as string,
+        gameTime: (g.game_time as string) || "",
+        venue: (g.venue as string) || "",
+        homeTeamId: homeId,
+        visitorTeamId: visId,
+        homeName:
+          (homeId && teamNameById.get(homeId)) ||
+          (g.home_name_raw as string) ||
+          "Équipe à confirmer",
+        visitorName:
+          (visId && teamNameById.get(visId)) ||
+          (g.visitor_name_raw as string) ||
+          "Équipe à confirmer",
+        competition: buildCompetition(g),
+        source: sourceDuMatch(g as {
+          source_nom?: string | null;
+          source_url?: string | null;
+          collecte_le?: string | null;
+          rseq_league_id?: string | null;
+          league_name?: string | null;
+        }),
+      };
+    });
+  return { targets, games };
 }
 
 /* `fetchLastUpdated` a été RETIRÉE le 2026-09-17, avec le bandeau qu'elle

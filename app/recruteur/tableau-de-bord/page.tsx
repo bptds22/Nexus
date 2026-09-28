@@ -13,8 +13,8 @@ import { estRelanceAFaire, estVisiteAVenir, FILTRE_PIPELINE_URL } from "@/lib/pi
 import { useDashboardHeader } from "@/lib/queries/recruiter/useDashboardHeader";
 import { useDashboardKpi } from "@/lib/queries/recruiter/useDashboardKpi";
 import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes";
-import { useActivityFeed } from "@/lib/queries/recruiter/useActivityFeed";
-import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
+import { useActivityFeed, useActiviteUnite } from "@/lib/queries/recruiter/useActivityFeed";
+import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { RecruteurDashboardMobile } from "@/components/shared/RecruteurDashboardMobile";
 
@@ -91,6 +91,16 @@ export default function RecruteurTableauDeBordPage() {
   return <RecruteurTableauDeBordDesktop />;
 }
 
+/** Cartes du processus → compte par étape (clés en minuscules, celles de
+ *  l'entonnoir). Une carte par athlète : c'est le dossier de l'unité. */
+function compterParEtape(cards: { status: string }[]): Record<string, number> {
+  const out: Record<string, number> = {
+    identifie: 0, contacte: 0, en_discussion: 0, visite_planifiee: 0, engage: 0, lettre_signee: 0, retire: 0,
+  };
+  for (const c of cards) if (c.status in out) out[c.status]++;
+  return out;
+}
+
 function RecruteurTableauDeBordDesktop() {
   // Migration TanStack (iter 5.2) — 4 hooks parallèles remplacent le mega-useEffect.
   // Avantage : la 2e visite du dashboard est instantanée (cache hit), refetch
@@ -98,7 +108,7 @@ function RecruteurTableauDeBordDesktop() {
   const { data: header } = useDashboardHeader();
   const { data: kpiBundle } = useDashboardKpi();
   const { data: trendingAthletes = [] } = useTrendingAthletes();
-  const { data: activityEvents = [] } = useActivityFeed();
+  const { data: activiteSoi = [] } = useActivityFeed();
 
   /* Relances — même garde que la fiche athlète : la relance est une fonction
      Pro de bout en bout (poser une date, la trier, en être averti). Le hook
@@ -108,8 +118,15 @@ function RecruteurTableauDeBordDesktop() {
   const subscription = useSubscription();
   const tier = subscription.subscription?.tier;
   const canUsePipeline = tier === "pro" || tier === "all_star";
-  const { data: pipelineData } = usePipelineCards({ enabled: canUsePipeline });
+  /* Lot B2, étape 3 : pour un Pro, tuiles et entonnoir comptent le processus
+     de l'UNITÉ — la même lecture (et la même clé de cache) que Mon processus,
+     où ces tuiles mènent. Un gratuit n'a ni tuile de relance ni processus
+     d'unité : son entonnoir reste celui de useDashboardKpi (ses lignes). */
+  const { data: pipelineData } = useProcessusUnite({ enabled: canUsePipeline });
   const relanceCards = pipelineData?.cards ?? [];
+  // Le fil : gestes de l'unité signés (Pro), ou son propre journal (gratuit).
+  const { data: activiteUnite = [] } = useActiviteUnite(canUsePipeline);
+  const activityEvents = canUsePipeline ? activiteUnite : activiteSoi;
 
   /* ── LES 4 TUILES — une définition par tuile, celle de sa destination ──
      Relances / Visites : les prédicats de la chip correspondante de Mon
@@ -184,8 +201,13 @@ function RecruteurTableauDeBordDesktop() {
   const headerName = header?.headerName ?? "";
   const headerSchool = header?.headerSchool ?? "";
   const actionBarData = kpiBundle?.actionBarData ?? { coachReplies: 0, newAthletesThisWeek: 0 };
-  const pipelineCounts = kpiBundle?.pipelineCounts ?? {};
-  const kpiData = kpiBundle?.kpiData ?? { totalFavoris: 0, messagesSent: 0, responsesReceived: 0, responseRate: 0, upcomingVisits: 0 };
+  const pipelineCounts = canUsePipeline && pipelineData
+    ? compterParEtape(relanceCards)
+    : kpiBundle?.pipelineCounts ?? {};
+  const kpiBase = kpiBundle?.kpiData ?? { totalFavoris: 0, messagesSent: 0, responsesReceived: 0, responseRate: 0, upcomingVisits: 0 };
+  const kpiData = canUsePipeline && pipelineData
+    ? { ...kpiBase, upcomingVisits: pipelineCounts.visite_planifiee ?? 0 }
+    : kpiBase;
   // Loading global : on attend que le header ET les KPI critiques soient là.
   // Trending + Activity peuvent arriver après sans bloquer le rendu.
   const loading = !header || !kpiBundle;
@@ -244,7 +266,10 @@ function RecruteurTableauDeBordDesktop() {
           <TrendingAthletes athletes={trendingAthletes} />
         </div>
         <div className="xl:col-span-2">
-          <RecruiterActivityFeed events={activityEvents} />
+          <RecruiterActivityFeed
+            events={activityEvents}
+            sousTitre={canUsePipeline ? "Les gestes de ton unité, signés" : undefined}
+          />
         </div>
       </div>
 

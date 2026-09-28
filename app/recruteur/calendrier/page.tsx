@@ -16,12 +16,12 @@ import Link from "next/link";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
-import { useRecruiterLists } from "@/lib/queries/recruiter/useRecruiterLists";
+import { useListesUnite } from "@/lib/queries/recruiter/useListesUnite";
 import {
-  useRecruitingCalendar,
   todayIso,
   type CalendarTarget,
 } from "@/lib/queries/recruiter/useRecruitingCalendar";
+import { useCalendrierUnite, type VisiteUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
 import {
   buildMatches,
   buildMonthGrid,
@@ -228,6 +228,37 @@ function StagePill({ stage }: { stage: string | null }) {
     >
       {label}
     </span>
+  );
+}
+
+/* ── Visite planifiée de l'unité (lot B2, étape 3) ─────────────────
+   Un événement du calendrier au même titre qu'un match : la date posée
+   dans le processus (recruiter_pipeline.visit_at), par n'importe quel
+   recruteur de l'unité. */
+function VisiteCard({ v }: { v: VisiteUnite }) {
+  const d = new Date(v.visitAt);
+  const heure = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  const aHeure = !(d.getHours() === 0 && d.getMinutes() === 0);
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-[rgba(34,197,94,0.30)] bg-[#1A1D24] px-5 py-4">
+      <div className="w-[64px] shrink-0 text-center">
+        <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#22C55E]">{shortMonthLabel(v.jour)}</div>
+        <div className="text-[24px] font-extrabold leading-none text-[#EDEFF3]">{dayNumber(v.jour)}</div>
+        {aHeure && <div className="mt-1 text-[12px] text-[#8A909C]">{heure}</div>}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#22C55E]">Visite</span>
+          <Link href={`/recruteur/athletes/${v.athleteId}`} className="truncate text-[16px] font-bold text-[#EDEFF3] hover:text-[#E63946]">
+            {v.fullName}
+          </Link>
+        </div>
+        {v.suiviPar.length > 0 && (
+          <div className="mt-0.5 truncate text-[13px] text-[#8A909C]">Suivi par {v.suiviPar.join(", ")}</div>
+        )}
+      </div>
+      <StagePill stage={v.stage} />
+    </div>
   );
 }
 
@@ -492,14 +523,22 @@ function CalendrierContent() {
 
   // Le mur Free ne monte aucune requête : le contenu n'est pas
   // téléchargé puis masqué, il n'est jamais demandé.
-  const { data, isLoading, isError } = useRecruitingCalendar(!isFree && !tierLoading);
+  // Lot B2, étape 3 : le calendrier de l'UNITÉ — cibles de tous les
+  // collègues, et leurs visites planifiées (useCalendrierUnite).
+  const { data, isLoading, isError } = useCalendrierUnite(!isFree && !tierLoading);
   const { data: regions = [] } = useRegions();
-  const { data: lists = [] } = useRecruiterLists();
+  const { data: lists = [] } = useListesUnite(!isFree && !tierLoading);
   const { data: posData } = usePositionsBySport(filters.sport || null);
   const positions = posData?.positions ?? [];
 
   const targets = data?.targets ?? [];
   const games = data?.games ?? [];
+  const visites = useMemo(() => data?.visites ?? [], [data]);
+  const joursVisite = useMemo(() => new Set(visites.map((v) => v.jour)), [visites]);
+  const visitesDuJour = useMemo(
+    () => (selectedDay ? visites.filter((v) => v.jour === selectedDay) : []),
+    [visites, selectedDay],
+  );
 
   const matches = useMemo(
     () => buildMatches(games, filterTargets(targets, filters), sort, filters.minTargets),
@@ -551,7 +590,7 @@ function CalendrierContent() {
             Calendrier de recrutement
           </h1>
           <div className="mt-1.5 text-[16px] font-normal text-[#B9BFC9]">
-            Vos prochains matchs à surveiller, selon vos cibles
+            Les prochains matchs et visites de ton unité, selon ses cibles
           </div>
         </div>
         <div className="flex shrink-0 overflow-hidden rounded-xl border border-[#262A33] bg-[#1A1D24]">
@@ -726,7 +765,7 @@ function CalendrierContent() {
 
                 <MultiFilterSelect
                   values={filters.listIds}
-                  placeholder="Mes listes"
+                  placeholder="Listes de l'unité"
                   renderLabel={(v) =>
                     v.length === 1
                       ? `Liste : ${lists.find((l) => l.id === v[0])?.name ?? "—"}`
@@ -761,6 +800,24 @@ function CalendrierContent() {
             )}
           </div>
 
+          {/* ── Visites planifiées de l'unité (vue liste) ──
+              Toutes les visites à venir de l'unité, hors filtres de matchs :
+              une visite n'est pas un match, et la cacher parce qu'un filtre
+              de sport ou de position est posé ferait manquer un rendez-vous. */}
+          {!isLoading && !isError && view === "list" && visites.length > 0 && (
+            <div className="mt-[34px] flex flex-col">
+              <div className="mb-4 flex items-baseline gap-3.5 border-b border-[#1E2129] pb-2.5">
+                <h2 className="text-[14px] font-bold uppercase tracking-[0.14em] text-[#B9BFC9]">Visites planifiées de l&apos;unité</h2>
+                <span className="text-[12.5px] font-medium text-[#5C6575]">
+                  {visites.length} visite{visites.length > 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {visites.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
+              </div>
+            </div>
+          )}
+
           {/* ── Contenu ── */}
           {isLoading ? (
             <div className="flex items-center justify-center py-20 text-[14px] text-[#5C6575]">
@@ -780,7 +837,9 @@ function CalendrierContent() {
                 Les matchs n&apos;ont pas pu être chargés. Réessayez dans un moment.
               </p>
             </div>
-          ) : matches.length === 0 ? (
+          ) : matches.length === 0 && !(view === "cal" && visites.length > 0) ? (
+            /* En vue mois, des visites sans match gardent la grille (leurs
+               jours sont marqués) ; en vue liste, elles ont leur section. */
             /* Deux vides distincts : aucun match RSEQ du tout (planche de la
                réf) vs des matchs existent mais rien ne franchit le seuil ou
                les filtres (message contextuel, actionnable). */
@@ -861,6 +920,12 @@ function CalendrierContent() {
                           au moins un match à cibles, ★ rouge s'il contient un
                           « fort potentiel ». Le détail vit dans les cartes
                           rendues sous la grille. */}
+                      {joursVisite.has(c.iso) && (
+                        <span
+                          className="absolute bottom-2 right-[11px] block h-[7px] w-[7px] rounded-full bg-[#22C55E]"
+                          aria-label="Visite planifiée"
+                        />
+                      )}
                       {c.hasMatch && (
                         <span
                           className="absolute bottom-2 left-[11px] leading-none text-[#E63946]"
@@ -879,12 +944,13 @@ function CalendrierContent() {
               </div>
 
               {selectedDay ? (
-                dayMatches.length > 0 ? (
+                dayMatches.length > 0 || visitesDuJour.length > 0 ? (
                   <div className="mt-4 flex flex-col gap-3">
+                    {visitesDuJour.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
                     {dayMatches.map((m) => <MatchCard key={m.game.id} m={m} />)}
                   </div>
                 ) : (
-                  <div className="mt-3.5 text-[13.5px] text-[#5C6575]">Aucun match ce jour-là pour vos cibles.</div>
+                  <div className="mt-3.5 text-[13.5px] text-[#5C6575]">Aucun match ni visite ce jour-là pour ton unité.</div>
                 )
               ) : (
                 <div className="mt-3.5 text-[13.5px] text-[#5C6575]">

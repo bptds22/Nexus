@@ -9,6 +9,16 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
+import { GESTES_UNITE, nomAuteur, type AuteurUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+
+interface LigneJournal {
+  id: string;
+  action_type: string;
+  details: unknown;
+  created_at: string;
+  athlete_id: string | null;
+  recruiter_id?: string;
+}
 
 // Mapping action_type → event metadata (copié de tableau-de-bord/page.tsx pour
 // que le hook soit autonome — duplication temporaire à factoriser plus tard).
@@ -35,6 +45,50 @@ function getTimeGroup(iso: string): ActivityEvent["timeGroup"] {
   return "Semaine dernière";
 }
 
+/** Une ligne du journal → un événement du fil. `signataire` : le nom de qui a
+ *  fait le geste (fil de l'UNITÉ, lot B2 étape 3) — ajouté au message. */
+export function versEvenement(a: LigneJournal, signataire?: string): ActivityEvent {
+  const details = (a.details as Record<string, unknown>) || {};
+  const mapping = ACTION_TYPE_TO_EVENT[a.action_type] || {
+    type: "profile_updated_bulk" as const,
+    direction: "outbound" as const,
+    priority: 3 as const,
+    icon: "activity",
+    iconColor: "#6B7280",
+  };
+  const athleteName = `${(details.first_name as string) || ""} ${(details.last_name as string) || ""}`.trim();
+
+  // Relative time
+  const diffMs = Date.now() - new Date(a.created_at).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  let relativeTime = "À l'instant";
+  if (diffMin >= 60) { const h = Math.floor(diffMin / 60); relativeTime = `Il y a ${h}h`; }
+  else if (diffMin >= 1) { relativeTime = `Il y a ${diffMin} min`; }
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffDays === 1) relativeTime = "Hier";
+  else if (diffDays > 1 && diffDays < 7) relativeTime = `Il y a ${diffDays}j`;
+  else if (diffDays >= 7) relativeTime = `Il y a ${Math.floor(diffDays / 7)} sem.`;
+
+  return {
+    id: a.id,
+    type: mapping.type,
+    direction: mapping.direction,
+    priority: mapping.priority,
+    icon: mapping.icon,
+    iconColor: mapping.iconColor,
+    timeGroup: getTimeGroup(a.created_at),
+    timestamp: a.created_at,
+    relativeTime,
+    athleteId: a.athlete_id || undefined,
+    athleteName: athleteName || undefined,
+    message: `${athleteName || "Athlète"} — ${a.action_type.replace(/_/g, " ").toLowerCase()}${signataire ? ` · par ${signataire}` : ""}`,
+    recruiterId: a.recruiter_id,
+    recruiterName: signataire,
+    actionLabel: "Voir",
+    actionUrl: a.athlete_id ? `/recruteur/athletes/${a.athlete_id}` : undefined,
+  };
+}
+
 export function useActivityFeed() {
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
@@ -53,47 +107,57 @@ export function useActivityFeed() {
 
       if (!activityData) return [];
 
-      return activityData.map((a): ActivityEvent => {
-        const details = (a.details as Record<string, unknown>) || {};
-        const mapping = ACTION_TYPE_TO_EVENT[a.action_type] || {
-          type: "profile_updated_bulk" as const,
-          direction: "outbound" as const,
-          priority: 3 as const,
-          icon: "activity",
-          iconColor: "#6B7280",
-        };
-        const athleteName = `${(details.first_name as string) || ""} ${(details.last_name as string) || ""}`.trim();
-
-        // Relative time
-        const diffMs = Date.now() - new Date(a.created_at).getTime();
-        const diffMin = Math.floor(diffMs / 60000);
-        let relativeTime = "À l'instant";
-        if (diffMin >= 60) { const h = Math.floor(diffMin / 60); relativeTime = `Il y a ${h}h`; }
-        else if (diffMin >= 1) { relativeTime = `Il y a ${diffMin} min`; }
-        const diffDays = Math.floor(diffMs / 86400000);
-        if (diffDays === 1) relativeTime = "Hier";
-        else if (diffDays > 1 && diffDays < 7) relativeTime = `Il y a ${diffDays}j`;
-        else if (diffDays >= 7) relativeTime = `Il y a ${Math.floor(diffDays / 7)} sem.`;
-
-        return {
-          id: a.id,
-          type: mapping.type,
-          direction: mapping.direction,
-          priority: mapping.priority,
-          icon: mapping.icon,
-          iconColor: mapping.iconColor,
-          timeGroup: getTimeGroup(a.created_at),
-          timestamp: a.created_at,
-          relativeTime,
-          athleteId: a.athlete_id || undefined,
-          athleteName: athleteName || undefined,
-          message: `${athleteName || "Athlète"} — ${a.action_type.replace(/_/g, " ").toLowerCase()}`,
-          actionLabel: "Voir",
-          actionUrl: a.athlete_id ? `/recruteur/athletes/${a.athlete_id}` : undefined,
-        };
-      });
+      return (activityData as LigneJournal[]).map((a) => versEvenement(a));
     },
     staleTime: 1 * 60 * 1000,
     enabled: !!userId,
+  });
+}
+
+/* ── Le fil de l'UNITÉ (lot B2, étape 3 — web, Pro) ─────────────────
+   Les GESTES du tableau blanc de toute l'unité (étapes, favoris, notes,
+   listes), chacun SIGNÉ par qui l'a fait ; plus ses propres événements
+   (vues de profil, réponses de coach…), qui restent privés. La même liste
+   de gestes que la policy unite_journal_select (GESTES_UNITE).
+
+   Admin cégep : son unité seulement. La RLS lui ouvre aussi le journal de
+   tous ses collègues (policy « cegep admin read activity_log ») — on borne
+   explicitement à SON unité ; les autres sports se lisent dans Mon CÉGEP.
+
+   Web seulement : l'app 1.4.3 garde useActivityFeed (registre §38). Clé
+   sous ["dashboard"] : dans tableauBlanc.ts. */
+export function useActiviteUnite(enabled: boolean) {
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
+  const monCegep = currentUser?.profile.school_id ?? null;
+
+  return useQuery<ActivityEvent[]>({
+    queryKey: ["dashboard", "activity", "unite", moi],
+    enabled: enabled && !!moi,
+    staleTime: 0,
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: auteursData, error: auteursErr } = await supabase.rpc("unite_auteurs");
+      if (auteursErr) throw auteursErr;
+      const auteurs: Record<string, AuteurUnite> = {};
+      for (const a of (auteursData ?? []) as AuteurUnite[]) auteurs[a.id] = a;
+      const monSport = moi ? auteurs[moi]?.sport_id ?? null : null;
+
+      const gestes = `(${GESTES_UNITE.join(",")})`;
+      const filtre = monCegep && monSport
+        ? `recruiter_id.eq.${moi},and(unite_cegep_id.eq.${monCegep},unite_sport_id.eq.${monSport},action_type.in.${gestes})`
+        : `recruiter_id.eq.${moi}`;
+      const { data, error } = await supabase
+        .from("recruiter_activity_log")
+        .select("id, action_type, details, created_at, athlete_id, recruiter_id")
+        .or(filtre)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+
+      return ((data ?? []) as LigneJournal[]).map((a) =>
+        versEvenement(a, a.recruiter_id === moi ? "toi" : nomAuteur(auteurs[a.recruiter_id ?? ""])),
+      );
+    },
   });
 }

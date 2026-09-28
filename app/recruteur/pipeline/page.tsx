@@ -10,6 +10,7 @@ import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
 import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
+import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
 import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { trierTableau, triApresClic, triVersMode, MODE_VERS_TRI, type TriTableau } from "@/lib/pipeline/triTableau";
@@ -2335,6 +2336,10 @@ function PipelinePageContent() {
           </p>
         </div>
       )}
+
+      {/* §40 (lot B2, étape 3) : un autre sport, ou tout le cégep, se lit sans
+          s'écrire — dit en tête de page, pas seulement dans le panneau. */}
+      {adminCegep && <AvisLectureSeule filtre={filtreSport} />}
 
       <FunnelSummary cards={filteredCards} totalCards={cards.length} />
 

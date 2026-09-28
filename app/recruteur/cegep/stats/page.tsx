@@ -7,7 +7,7 @@ import CegepGate from "@/components/subscription/CegepGate";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
+import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
 import {
   fetchRecruiterAthleteCards,
   displayFullName,
@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
+import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
 
 /* ── Dark Recharts tooltip ───────────────────────────────── */
 
@@ -117,6 +118,8 @@ type TeamMember = { id: string; first_name: string | null; last_name: string | n
 // Pipeline row shape returned by Supabase — loosely typed since the join structure is complex
 type PipelineRow = {
   recruiter_id: string;
+  /** Les recruteurs qui suivent ce dossier (lot B2, étape 3). */
+  suivi_par: string[];
   athlete_id: string;
   stage: string;
   created_at?: string;
@@ -203,7 +206,10 @@ function CegepStatsPage() {
          attributs sportifs que l'embed lisait sont relus à part, sur la même
          table et sous la même RLS, puis recollés sous `athletes` pour que le
          reste de la page ne change pas. */
-      const overview = await fetchCegepPipelineOverview(supabase, teamIds);
+      /* Lot B2, étape 3 : des DOSSIERS (athlète × unité), plus des lignes —
+         deux collègues d'une unité qui suivent le même athlète ne le
+         comptent plus deux fois. */
+      const overview = await fetchDossiersUniteCegep(supabase, teamIds);
       const pipelineAthleteIds = [...new Set(overview.map((p) => p.athlete_id).filter(Boolean))];
       const { data: athleteAttrs } = pipelineAthleteIds.length > 0
         ? await supabase
@@ -215,6 +221,7 @@ function CegepStatsPage() {
 
       const pipeline: PipelineRow[] = overview.map((p) => ({
         recruiter_id: p.recruiter_id,
+        suivi_par: p.suivi_par,
         athlete_id: p.athlete_id,
         stage: p.stage,
         created_at: p.created_at ?? undefined,
@@ -260,9 +267,14 @@ function CegepStatsPage() {
       // Favorisés = athletes in recruiter_favorites per sport
       const { data: favsBySport } = await supabase
         .from("recruiter_favorites")
-        .select("athletes!athlete_id(sports!sport_id(nom))")
+        .select("athlete_id, recruiter_id, unite_sport_id, athletes!athlete_id(sports!sport_id(nom))")
         .in("recruiter_id", teamIds);
+      // Un favori d'unité compte une fois, même posé par deux collègues.
+      const favorisVus = new Set<string>();
       for (const f of favsBySport || []) {
+        const cle = `${f.athlete_id}|${f.unite_sport_id ?? `seul:${f.recruiter_id}`}`;
+        if (favorisVus.has(cle)) continue;
+        favorisVus.add(cle);
         ensureSport(extractSport(f)).favorited++;
       }
 
@@ -348,8 +360,9 @@ function CegepStatsPage() {
         conversion_rate: 0, avg_days_to_sign: 0, activity_7d: 0,
       });
     }
-    for (const p of filteredPipeline) {
-      const perf = perfMap.get(p.recruiter_id);
+    // Chaque recruteur qui SUIT un dossier le compte (tableau blanc).
+    for (const p of filteredPipeline) for (const rid of p.suivi_par) {
+      const perf = perfMap.get(rid);
       if (!perf) continue;
       const stage = p.stage;
       if (stage === "IDENTIFIE") perf.identified++;
@@ -418,7 +431,7 @@ function CegepStatsPage() {
           name: displayFullName(athleteCards.get(p.athlete_id)),
           sport: sportObj?.nom || "",
           position: posObj?.abreviation || "",
-          recruiterName: teamNameMap.get(p.recruiter_id) || "",
+          recruiterName: p.suivi_par.map((id) => teamNameMap.get(id)).filter(Boolean).join(", "),
           stage: p.stage,
           pipelineStatus: STAGE_LABELS[p.stage] || p.stage,
         };
@@ -498,6 +511,8 @@ function CegepStatsPage() {
         </span>
         <FiltreSportUnite filtre={filtreSport} className="ml-auto" />
       </div>
+      {/* §40 : un autre sport que le sien (ou tout le cégep) se lit sans s'écrire. */}
+      <AvisLectureSeule filtre={filtreSport} />
 
       {/* SECTION 1 — Hero KPI Bar */}
       <KpiCardRow>
