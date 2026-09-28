@@ -37,6 +37,7 @@ import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade } from "@/lib/config/grades";
 import type { PipelineData } from "@/lib/queries/recruiter/usePipelineCards";
 import { fetchDivisionsEquipe } from "@/lib/queries/recruiter/divisionsEquipe";
+import { lireCartes, lireDernieresNotesCartes, versKanban } from "@/lib/cartes/carteProspect";
 
 export interface AuteurUnite {
   id: string;
@@ -87,12 +88,14 @@ interface LigneUnite {
 export function useProcessusUnite(options: { enabled: boolean; sportId?: string | null; toutLeCegep?: boolean }) {
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
+  const monCegep = currentUser?.profile.school_id ?? null;
   const sportId = options.sportId ?? null;
   const tout = !!options.toutLeCegep;
 
   return useQuery<PipelineData>({
     queryKey: ["pipeline", "unite", userId, sportId, tout],
     enabled: !!userId && options.enabled,
+    // Lot C : cartes prospect incluses (même clé, même invalidation).
     // Tableau PARTAGÉ : toujours périmé d'office — rechargé à chaque
     // affichage et au retour sur l'onglet (refetchOnWindowFocus, défaut).
     staleTime: 0,
@@ -204,9 +207,31 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
         } as PipelineKanbanCard;
       });
 
+      /* CARTES PROSPECT (lot C) : les athlètes pas encore sur Nexus que
+         l'unité suit. Converties au format d'un dossier (versKanban) : kanban,
+         tableau, entonnoir et tuiles du tableau de bord les comptent sans
+         savoir ce qu'elles sont. Même filtre de sport que les dossiers. Une
+         erreur de lecture ne casse pas le processus : les dossiers restent. */
+      let cartes: PipelineKanbanCard[] = [];
+      try {
+        const [lignesCartes, sportsRes] = await Promise.all([
+          lireCartes(supabase, { cegepId: monCegep, sportId: sportId ?? monSport, toutLeCegep: tout }),
+          supabase.from("sports").select("id, nom"),
+        ]);
+        const nomsSports = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
+        const notesCartes = await lireDernieresNotesCartes(supabase, lignesCartes.map((l) => l.id));
+        cartes = lignesCartes.map((l) => versKanban(l, {
+          nomSport: (id) => nomsSports.get(id) ?? "",
+          nomAuteur: (id) => (id ? nomAuteur(parAuteur[id]) : "Recruteur"),
+          derniereNote: notesCartes[l.id] ?? null,
+        }));
+      } catch (e) {
+        console.error("[useProcessusUnite] cartes prospect :", e instanceof Error ? e.message : String(e));
+      }
+
       /* Pas de « concurrents » en mode unité : les lignes lisibles d'autres
          recruteurs sont celles des COLLÈGUES, pas d'autres cégeps. */
-      return { cards, competitorMap: {} };
+      return { cards: [...cards, ...cartes], competitorMap: {} };
     },
   });
 }

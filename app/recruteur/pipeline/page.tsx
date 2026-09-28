@@ -75,6 +75,10 @@ import { PencilIcon } from "@/components/shared/wizard/modeIcons";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
 import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
+import { estCarte, bientotPurgee, ecrireCarte, retirerCarte, ajouterNoteCarte } from "@/lib/cartes/carteProspect";
+import { useNotesCarte } from "@/lib/cartes/useCartes";
+import { MarqueurProspect, MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte } from "@/components/recruteur/cartes/PanneauCarte";
+import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import { useNotesUnite, useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
@@ -437,13 +441,17 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             );
           })()}
           <div className="absolute inset-0 z-[2]" style={{ background: "linear-gradient(to top, #1A1D24 0%, transparent 60%)" }} />
-          {/* Verified badge */}
+          {/* Verified badge — une carte prospect porte son marqueur à la place. */}
+          {estCarte(card) ? (
+            <div className="absolute top-2 left-2 z-[3]"><MarqueurProspect taille="sm" /></div>
+          ) : (
           <div className="absolute top-2 left-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill={card.is_verified ? BLUE : "#4a4d56"} stroke="none">
               <circle cx="12" cy="12" r="10" />
               <path d="M9 12l2 2 4-4" stroke={card.is_verified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </svg>
           </div>
+          )}
           {/* Position pill */}
           {card.position && (
             <span className="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-[11px] font-bold uppercase tracking-wider text-white">{card.position}</span>
@@ -457,6 +465,8 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             <span className="text-[14px] font-semibold text-white truncate">{card.full_name}</span>
             {card.jersey && <span className="text-[12px] font-black text-[#E63946] shrink-0">#{card.jersey}</span>}
           </div>
+          {/* Carte prospect : avis de suppression dans les 30 derniers jours. */}
+          {estCarte(card) && <div className="mt-1"><MarqueurExpiration carte={card} /></div>}
 
           {/* School + Year (or "Ligue Civile" badge) */}
           <p className="text-[12px] text-[#6b7280] mt-1 truncate flex items-center gap-1.5">
@@ -651,6 +661,10 @@ function collegues(card: PipelineKanbanCard | undefined, moi: string | null): st
   return card.suivi_par.map((id, i) => (id === moi ? null : card.suivi_par_noms![i])).filter((n): n is string => !!n);
 }
 
+/** Retirer une carte prospect la SUPPRIME (décision BP, lot C). */
+const MESSAGE_RETRAIT_CARTE =
+  "Cette carte prospect sera supprimée pour toute l'unité, avec ses notes. Il ne restera qu'une trace de la suppression, sans les informations de l'athlète.";
+
 /** Texte de la confirmation d'un retrait (décision BP 3). */
 function messageRetrait(noms: string[], modeUnite: boolean): string {
   if (!modeUnite) return "Il ne sera plus dans ton suivi actif.";
@@ -734,7 +748,12 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
   switch (cle) {
 
     case "nom":
-      return <span className={`line-clamp-2 text-[15px] font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>;
+      return (
+        <span className="flex flex-col items-start gap-1">
+          <span className={`line-clamp-2 text-[15px] font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>
+          {estCarte(card) && <span className="flex flex-wrap gap-1"><MarqueurProspect taille="sm" /><MarqueurExpiration carte={card} /></span>}
+        </span>
+      );
     case "numero":
       return card.jersey ? <span className="font-black text-[#E63946]">{card.jersey}</span> : VIDE;
     case "position":
@@ -802,6 +821,22 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
         </span>
       ) : VIDE;
     case "video":
+      // Carte prospect : pas de fiche Nexus — le lien vidéo saisi, en externe.
+      if (estCarte(card)) {
+        return card.carte.lienVideo ? (
+          <a
+            href={card.carte.lienVideo}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 font-bold text-white hover:text-[#E63946] transition-colors whitespace-nowrap"
+            title="Ouvrir le lien vidéo de la carte"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
+            Voir
+          </a>
+        ) : VIDE;
+      }
       return card.has_video ? (
         <Link
           href={`/recruteur/athletes/${card.id}`}
@@ -1258,7 +1293,7 @@ interface NoteEntry {
 }
 
 function SlideOver({
-  card, onClose, onStatusChange, onSetGrade, onSaveVisit, onSaveRelanceNote,
+  card, onClose, onStatusChange, onSetGrade, onSaveVisit, onSaveRelanceNote, onSaveRelanceDate,
   isFreeDemoMode, onTeaseUpgrade, modeUnite, moi, lectureSeule,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
@@ -1269,6 +1304,9 @@ function SlideOver({
   onSaveVisit: (pipelineId: string, visitAtIso: string | null) => void;
   /** Écrit recruiter_pipeline.next_action_note. `null` l'efface. */
   onSaveRelanceNote: (pipelineId: string, note: string | null) => void;
+  /** Date de relance d'une CARTE PROSPECT (lot C) — RelanceFiche ne sert
+   *  qu'aux athlètes Nexus. `null` l'efface. */
+  onSaveRelanceDate: (pipelineId: string, date: string | null) => void;
   isFreeDemoMode: boolean;
   onTeaseUpgrade: () => void;
   /** Tableau blanc (lot B2) : le panneau montre le dossier de l'UNITÉ —
@@ -1299,9 +1337,13 @@ function SlideOver({
      siennes seulement (usePipelineNotes, partagé avec le mobile). Les notes
      des collègues sont en LECTURE SEULE (décision BP 2) : le panneau n'offre
      de toute façon ni modification ni suppression. */
-  const { data: notesDemo = [] } = usePipelineNotes(modeUnite ? null : card.id);
-  const { data: notesUnite = [] } = useNotesUnite(modeUnite ? card.id : null);
-  const noteHistory: { id: string; content: string; created_at: string; recruiter_id?: string }[] = modeUnite ? notesUnite : notesDemo;
+  // Carte prospect (lot C) : ses notes vivent dans cartes_prospect_notes.
+  const carte = estCarte(card) ? card : null;
+  const { data: notesDemo = [] } = usePipelineNotes(modeUnite || carte ? null : card.id);
+  const { data: notesUnite = [] } = useNotesUnite(modeUnite && !carte ? card.id : null);
+  const { data: notesCarte = [] } = useNotesCarte(carte ? card.id : null);
+  const noteHistory: { id: string; content: string; created_at: string; recruiter_id?: string }[] =
+    carte ? notesCarte : modeUnite ? notesUnite : notesDemo;
   const { data: auteurs = {} } = useAuteursUnite(modeUnite);
   const signature = (id: string | undefined) => (!id ? null : id === moi ? "Toi" : nomAuteur(auteurs[id]));
   const colleguesQuiSuivent = collegues(card, moi);
@@ -1322,11 +1364,15 @@ function SlideOver({
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setPosting(false); return; }
-    await supabase
-      .from("recruiter_notes")
-      .insert({ recruiter_id: user.id, athlete_id: card.id, content: noteText.trim() })
-      .select("id, content, created_at")
-      .single();
+    if (carte) {
+      await ajouterNoteCarte(supabase, card.id, noteText);
+    } else {
+      await supabase
+        .from("recruiter_notes")
+        .insert({ recruiter_id: user.id, athlete_id: card.id, content: noteText.trim() })
+        .select("id, content, created_at")
+        .single();
+    }
     // Toutes les lectures du tableau blanc : la note elle-même, la colonne
     // « Note de suivi », l'onglet Historique (NOTE_ADDED)…
     void invaliderTableauBlanc(queryClient);
@@ -1364,6 +1410,7 @@ function SlideOver({
               <h2 className="font-head text-[20px] font-black text-white uppercase tracking-tight">{card.full_name}</h2>
               {card.is_verified && <svg width="18" height="18" viewBox="0 0 24 24" fill={BLUE} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
             </div>
+            {carte && <div className="flex flex-wrap gap-1.5 mt-2"><MarqueurProspect /><MarqueurExpiration carte={carte} /></div>}
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: currentCol?.phase === "commitment" ? "rgba(230,57,70,0.25)" : "rgba(107,114,128,0.25)" }}>{card.sport}</span>
               <span className="text-[13px] text-[#9CA3AF]">{card.position}</span>
@@ -1381,7 +1428,7 @@ function SlideOver({
             )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
 
-            <div className="flex items-center gap-2 mt-3">{aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
+            <div className="flex items-center gap-2 mt-3">{carte ? <span className="text-[12px] text-[#4a4d56]">Cote du coach : disponible quand l&apos;athlète sera sur Nexus</span> : aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
           </div>
           {/* ONGLETS (lot C1, décision BP 2026-09-24) — sous le nom. « Actions »
               par défaut : tout ce que le panneau portait déjà, inchangé et dans
@@ -1402,9 +1449,9 @@ function SlideOver({
             ))}
           </div>
           {onglet === "infos" ? (
-            <OngletInfosPanneau athleteId={card.id} />
+            carte ? <OngletInfosCarte card={carte} /> : <OngletInfosPanneau athleteId={card.id} />
           ) : onglet === "historique" ? (
-            <OngletHistoriquePanneau athleteId={card.id} />
+            carte ? <OngletHistoriqueCarte carteId={card.id} /> : <OngletHistoriquePanneau athleteId={card.id} />
           ) : (
           <>
           {lectureSeule && (
@@ -1421,7 +1468,7 @@ function SlideOver({
                 <GradePicker value={card.grade} onSelect={(g) => onSetGrade(card.id, g, card.grade ?? null)} />
               </div>
             </div>
-            <div className="mt-4">
+            {!carte && <div className="mt-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Profil complété</span>
                 <span className="text-[13px] font-bold" style={{ color: pctColor }}>{card.profile_completeness}%</span>
@@ -1429,7 +1476,7 @@ function SlideOver({
               <div className="h-1.5 bg-[#2D3748] rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all" style={{ width: `${card.profile_completeness}%`, backgroundColor: pctColor }} />
               </div>
-            </div>
+            </div>}
           </div>
           {/* Notes — ServiceNow-style work notes + activity feed */}
           <div>
@@ -1511,7 +1558,22 @@ function SlideOver({
               La ligne existe forcément : la carte EST la ligne du pipeline. */}
           {!isFreeDemoMode && !lectureSeule && (
             <div>
-              <RelanceFiche athleteId={card.id} sousTitre={null} modeUnite={modeUnite} />
+              {carte ? (
+                /* Carte prospect : la date de relance s'écrit sur la carte
+                   (RelanceFiche ne connaît que les dossiers d'athlètes Nexus). */
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1" htmlFor={`relance-${card.id}`}>Relance</label>
+                  <input
+                    id={`relance-${card.id}`}
+                    type="date"
+                    defaultValue={card.next_action_at?.slice(0, 10) ?? ""}
+                    onChange={(e) => onSaveRelanceDate(card.pipeline_id, e.target.value || null)}
+                    className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] focus:border-[#E63946] outline-none"
+                  />
+                </div>
+              ) : (
+                <RelanceFiche athleteId={card.id} sousTitre={null} modeUnite={modeUnite} />
+              )}
               {/* Note de relance — ÉDITABLE ici, et seulement ici (la fenêtre
                   « Prochain suivi » est retirée). Enregistrée en quittant le
                   champ ou sur Entrée. Privée au recruteur depuis le Lot 2a
@@ -1655,6 +1717,9 @@ function SlideOver({
           })()}
 
           <div className="space-y-2 pt-2 border-t border-[#2D3748]">
+            {/* Carte prospect : pas de profil ni de messagerie — l'athlète
+                n'est pas sur Nexus. « Inviter » arrivera au lot D (masqué d'ici là). */}
+            {!carte && <>
             <Link href={`/recruteur/athletes/${card.id}`} className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#13151a] border border-[#2D3748] rounded-lg text-[13px] font-bold text-white hover:border-[#E63946]/40 transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
               Voir le profil complet
@@ -1663,6 +1728,7 @@ function SlideOver({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
               Envoyer un message
             </Link>
+            </>}
             {card.status !== "retire" && (
               <button type="button" onClick={() => handleStatusClick("retire")} className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-transparent border border-[#EF4444]/30 rounded-lg text-[13px] font-bold text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6" /><path d="M9 9l6 6" /></svg>
@@ -1677,7 +1743,9 @@ function SlideOver({
       {pendingStatus && (
         <ConfirmModal
           title={pendingIsRetire ? `Retirer ${card.full_name} ?` : `Déplacer vers ${pendingLabel} ?`}
-          message={pendingIsRetire ? messageRetrait(colleguesQuiSuivent, modeUnite) : `${card.full_name} sera déplacé vers ${pendingLabel}.`}
+          message={pendingIsRetire
+            ? (carte ? MESSAGE_RETRAIT_CARTE : messageRetrait(colleguesQuiSuivent, modeUnite))
+            : `${card.full_name} sera déplacé vers ${pendingLabel}.`}
           confirmLabel={pendingIsRetire ? "Retirer" : "Confirmer"}
           confirmColor={pendingIsRetire ? "#EF4444" : RED}
           textarea={pendingIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}
@@ -1789,6 +1857,8 @@ function PipelinePageContent() {
   const queryClient = useQueryClient();
 
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
+  // Lot C : fenêtre « Ajouter un prospect » (carte prospect).
+  const [creerCarte, setCreerCarte] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<RecruitmentStatus>("identifie");
   const [activeCard, setActiveCard] = useState<PipelineKanbanCard | null>(null);
@@ -1905,10 +1975,12 @@ function PipelinePageContent() {
      lot B2-0) : créée au besoin, alignée sur l'unité, et le journal est signé
      par celui qui agit. En mode démo, les handlers s'arrêtent avant. */
   const ecrireDossier = useCallback(async (athleteId: string, champs: Record<string, unknown>) => {
+    // Carte prospect (lot C) : mêmes champs, traduits vers la carte.
+    if (estCarte(cards.find((c) => c.id === athleteId))) return ecrireCarte(createClient(), athleteId, champs);
     const { error } = await createClient().rpc("unite_ecrire_dossier", { p_athlete_id: athleteId, p_champs: champs });
     if (error) console.error("[pipeline] unite_ecrire_dossier :", error.message);
     return error;
-  }, []);
+  }, [cards]);
   // TOUTES les lectures du tableau blanc (correctif 2026-09-24) : processus,
   // notes, historique, favoris, listes, calendrier, tableau de bord.
   const invaliderProcessus = useCallback(() => {
@@ -1957,6 +2029,15 @@ function PipelinePageContent() {
     if (bloqueAutreUnite(cardId)) return;
     if (newStatus === "retire") {
       const dossier = cards.find((c) => c.id === cardId);
+      // Carte prospect : la retirer la SUPPRIME (décision BP), trace en base.
+      if (estCarte(dossier)) {
+        const errCarte = await retirerCarte(createClient(), cardId);
+        if (errCarte) { showToast("Erreur lors du retrait"); return; }
+        invaliderProcessus();
+        setSelectedCard(null);
+        showToast("Carte prospect supprimée");
+        return;
+      }
       const { error } = await createClient().rpc("unite_retirer_du_processus", {
         p_athlete_id: cardId,
         p_sport_id: dossier?.unite_sport_id ?? null,
@@ -1996,8 +2077,11 @@ function PipelinePageContent() {
        l'acteur, recopié sur celles des collègues ; `null` le retire pour
        l'unité. Le panneau est patché tout de suite, remis en cas d'échec. */
     setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, grade } : prev));
+    const surCarte = estCarte(cards.find((c) => c.id === cardId));
     void (async () => {
-      const { error } = await createClient().rpc("unite_ecrire_grade", { p_athlete_id: cardId, p_grade: grade });
+      const { error } = surCarte
+        ? { error: await ecrireCarte(createClient(), cardId, { grade }) }
+        : await createClient().rpc("unite_ecrire_grade", { p_athlete_id: cardId, p_grade: grade });
       if (error) {
         setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, grade: previousGrade } : prev));
         showToast("Grade non enregistré");
@@ -2006,7 +2090,7 @@ function PipelinePageContent() {
       invaliderProcessus();
       showToast(grade ? `Grade ${grade} enregistré` : "Grade retiré");
     })();
-  }, [isFreeDemoMode, teaseUpgrade, showToast, invaliderProcessus, bloqueAutreUnite]);
+  }, [isFreeDemoMode, teaseUpgrade, showToast, invaliderProcessus, bloqueAutreUnite, cards]);
 
   /* ── Save visit_at (slide-over) ─────────────────────────────────
      Écriture immédiate à chaque changement d'input — pas de bouton
@@ -2189,16 +2273,40 @@ function PipelinePageContent() {
       for (const n of (lignesNotes ?? []) as { athlete_id: string; content: string; created_at: string; recruiter_id: string }[]) {
         (notesPar[n.athlete_id] ??= []).push(`${dateLocale(n.created_at)} — ${nomPar[n.recruiter_id] ?? "Recruteur"} — ${n.content}`);
       }
+      // Cartes prospect (lot C) : leurs notes, signées de la même façon.
+      const idsCartes = lignesExport.filter((c) => estCarte(c)).map((c) => c.id);
+      if (idsCartes.length > 0) {
+        const { data: notesCartes, error: errCartes } = await supabase
+          .from("cartes_prospect_notes")
+          .select("carte_id, contenu, created_at, auteur")
+          .in("carte_id", idsCartes)
+          .order("created_at", { ascending: true });
+        if (errCartes) { showToast("Export impossible : notes des cartes illisibles"); return; }
+        for (const n of (notesCartes ?? []) as { carte_id: string; contenu: string; created_at: string; auteur: string | null }[]) {
+          (notesPar[n.carte_id] ??= []).push(`${dateLocale(n.created_at)} — ${(n.auteur && nomPar[n.auteur]) || "Recruteur"} — ${n.contenu}`);
+        }
+      }
 
       const { error: errJournal } = await supabase.from("pipeline_exports").insert({ nb_lignes: lignesExport.length });
       if (errJournal) { showToast("Export annulé : il n'a pas pu être journalisé"); return; }
 
       // Chargé À LA DEMANDE : ni lib/export/xlsx ni jszip ne pèsent sur la page.
       const { construireXlsx } = await import("@/lib/export/xlsx");
+      /* Deux colonnes de plus que le tableau (lot C) : « Sur Nexus » (Non pour
+         une carte prospect) et « Courriel » — celui des cartes, inclus par
+         décision BP ; vide pour un athlète Nexus. */
       const octets = await construireXlsx(
         "Mon processus",
-        COLONNES_TABLEAU.map((c) => ({ titre: c.libelle, largeur: LARGEUR_EXPORT[c.cle] ?? 14 })),
-        lignesExport.map((card) => COLONNES_TABLEAU.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n")))),
+        [
+          ...COLONNES_TABLEAU.map((c) => ({ titre: c.libelle, largeur: LARGEUR_EXPORT[c.cle] ?? 14 })),
+          { titre: "Sur Nexus", largeur: 10 },
+          { titre: "Courriel", largeur: 28 },
+        ],
+        lignesExport.map((card) => [
+          ...COLONNES_TABLEAU.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n"))),
+          { t: "texte" as const, v: estCarte(card) ? "Non" : "Oui" },
+          estCarte(card) && card.carte.courriel ? { t: "texte" as const, v: card.carte.courriel } : null,
+        ]),
       );
       const url = URL.createObjectURL(new Blob([octets as BlobPart], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -2275,6 +2383,19 @@ function PipelinePageContent() {
             sur son sport, un autre sport ou tout son cégep. Masqué pour un
             recruteur non admin, qui ne voit que son unité. */}
         {adminCegep && <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport />}
+        {/* Carte prospect (lot C) : un Pro ajoute un athlète pas encore sur
+            Nexus à SON unité. Masqué quand l'admin regarde un autre sport
+            (la carte naîtrait dans son unité, pas dans celle affichée). */}
+        {modeUnite && !!monSportId && !(adminCegep && filtreSport.choix !== monSportId) && (
+          <button
+            type="button"
+            onClick={() => setCreerCarte(true)}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#E63946] hover:bg-[#D42B22] text-[14px] font-bold text-white transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+            Ajouter un prospect
+          </button>
+        )}
         {/* Export Excel (lot B) — désactivé en mode démo (réservé au Pro). */}
         <button
           type="button"
@@ -2340,6 +2461,22 @@ function PipelinePageContent() {
       {/* §40 (lot B2, étape 3) : un autre sport, ou tout le cégep, se lit sans
           s'écrire — dit en tête de page, pas seulement dans le panneau. */}
       {adminCegep && <AvisLectureSeule filtre={filtreSport} />}
+
+      {/* Rétention des cartes prospect (lot C, décision BP) : avis 30 jours
+          avant la suppression automatique, faute d'activité. Calculé ici,
+          sans table d'avis : tout geste sur la carte repousse l'échéance. */}
+      {(() => {
+        const n = cards.filter((c) => bientotPurgee(c) && !estAutreUnite(c)).length;
+        if (n === 0) return null;
+        return (
+          <div role="note" className="rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/[0.06] px-4 py-3 text-[13px] text-[#E5E7EB]">
+            <span className="font-bold text-[#F59E0B]">
+              {n > 1 ? `${n} cartes prospect seront supprimées` : "1 carte prospect sera supprimée"} dans moins de 30 jours
+            </span>{" "}
+            faute d&apos;activité depuis 11 mois. Une note, une étape ou une relance la garde un an de plus.
+          </div>
+        );
+      })()}
 
       <FunnelSummary cards={filteredCards} totalCards={cards.length} />
 
@@ -2529,6 +2666,7 @@ function PipelinePageContent() {
           onSetGrade={handleSetGrade}
           onSaveVisit={handleSaveVisit}
           onSaveRelanceNote={handleSaveRelanceNote}
+          onSaveRelanceDate={handleSaveRelanceDate}
           isFreeDemoMode={isFreeDemoMode}
           onTeaseUpgrade={teaseUpgrade}
           modeUnite={modeUnite}
@@ -2541,12 +2679,22 @@ function PipelinePageContent() {
       {pendingDrop && (
         <ConfirmModal
           title={dropIsRetire ? `Retirer ${dropCardName} ?` : `Déplacer vers ${dropLabel} ?`}
-          message={dropIsRetire ? messageRetrait(dropCollegues, modeUnite) : `${dropCardName} sera déplacé vers ${dropLabel}.`}
+          message={dropIsRetire
+            ? (estCarte(cards.find((c) => c.id === pendingDrop.cardId)) ? MESSAGE_RETRAIT_CARTE : messageRetrait(dropCollegues, modeUnite))
+            : `${dropCardName} sera déplacé vers ${dropLabel}.`}
           confirmLabel={dropIsRetire ? "Retirer" : "Confirmer"}
           confirmColor={dropIsRetire ? "#EF4444" : RED}
           textarea={dropIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}
           onConfirm={confirmDrop}
           onCancel={cancelDrop}
+        />
+      )}
+
+      {creerCarte && monSportId && (
+        <CreerCarteModal
+          sportId={monSportId}
+          onClose={() => setCreerCarte(false)}
+          onCreee={(message) => { setCreerCarte(false); invaliderProcessus(); showToast(message); }}
         />
       )}
 

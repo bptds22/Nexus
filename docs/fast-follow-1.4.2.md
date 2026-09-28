@@ -1490,3 +1490,15 @@ déjà `read_at IS NULL` mais sans exclure les archivées, et ne se relit qu'au
 changement de page ; le fil mobile marque lu par `useMarkConversationRead`, qui
 passe désormais par la RPC (tronc partagé) — effectif au prochain build mobile.
 À aligner sur `nonLusRecruteur.ts` au lot mobile.
+
+## 44. Cartes prospect — ce que l'app 1.4.3 ne montre pas (lot C, 2026-09-28, pour le lot mobile)
+
+Les cartes prospect vivent dans quatre tables nouvelles
+(`cartes_prospect*`) que l'app 1.4.3 ne lit pas. **Rien ne casse** (prouvé : ses
+lectures de processus, favoris, listes, activité et `unite_pipeline` rendent
+exactement la même chose avant et après la création de cartes). Mais l'app ne
+les **montre** pas : Mon processus mobile, le tableau de bord et le calendrier
+mobiles n'affichent que les athlètes Nexus. À ajouter au lot mobile : lecture
+des cartes, marqueur « Pas encore sur Nexus », panneau Infos/Historique de la
+carte, création.
+

@@ -84,6 +84,9 @@ export interface CalendarTarget {
   /** Clé de jointure aux matchs (games.home_team_id / visitor_team_id). */
   teamId: string;
   teamName: string;
+  /** Carte prospect (lot C) : athlète pas encore sur Nexus, suivi par
+   *  l'unité — marquée « prospect » à l'écran, sans fiche à ouvrir. */
+  prospect?: boolean;
 }
 
 export interface CalendarGame {
@@ -230,12 +233,15 @@ export async function construireCalendrier(
   targetIds: string[],
   stageByAthlete: Map<string, string>,
   listsByAthlete: Map<string, string[]>,
+  /** Cibles déjà construites (cartes prospect, lot C) : leur équipe entre
+   *  dans la recherche des matchs. Le calendrier mobile n'en passe pas. */
+  ciblesSupplementaires: CalendarTarget[] = [],
 ): Promise<RecruitingCalendarData> {
-  if (targetIds.length === 0) return EMPTY;
+  if (targetIds.length === 0 && ciblesSupplementaires.length === 0) return EMPTY;
   /* ── 2a. Les cartes projetées (famille 1 : lot d'IDs) ──
      targetIds vient de pipeline ∪ favoris ∪ listes, donc c'est
      bien un lot d'IDs connus, pas une recherche filtrée. */
-  const cardMap = await fetchRecruiterAthleteCards(supabase, targetIds);
+  const cardMap = targetIds.length > 0 ? await fetchRecruiterAthleteCards(supabase, targetIds) : new Map();
 
   /* ── 2b. Le rattachement d'équipe, à part ──
      Les RPC de projection ne portent AUCUN champ d'équipe. On le lit
@@ -247,10 +253,12 @@ export async function construireCalendrier(
      ACTIF présent dans le pipeline, les favoris ou les listes du
      recruteur — c'est exactement la définition de targetIds, donc
      la couverture est totale ici, vérifiés ou non. */
-  const { data: linkRows, error: linkErr } = await supabase
-    .from("team_athletes")
-    .select("athlete_id, team_id, teams!team_id(id, name)")
-    .in("athlete_id", targetIds);
+  const { data: linkRows, error: linkErr } = targetIds.length > 0
+    ? await supabase
+        .from("team_athletes")
+        .select("athlete_id, team_id, teams!team_id(id, name)")
+        .in("athlete_id", targetIds)
+    : { data: [], error: null };
   if (linkErr) throw linkErr;
 
   const linksByAthlete = new Map<string, Record<string, unknown>[]>();
@@ -319,6 +327,12 @@ export async function construireCalendrier(
       });
     });
   });
+
+  for (const t of ciblesSupplementaires) {
+    if (!t.teamId) continue;
+    teamIds.add(t.teamId);
+    targets.push(t);
+  }
 
   if (targets.length === 0) {
     return { targets: [], games: [] };

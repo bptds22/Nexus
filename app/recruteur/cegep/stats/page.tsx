@@ -8,6 +8,7 @@ import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
+import { lireCartesCegep } from "@/lib/cartes/carteProspect";
 import {
   fetchRecruiterAthleteCards,
   displayFullName,
@@ -125,6 +126,8 @@ type PipelineRow = {
   created_at?: string;
   updated_at?: string;
   athletes?: unknown;
+  /** Carte prospect (lot C) : son nom, faute de fiche Nexus à projeter. */
+  nomCarte?: string;
 };
 
 function extractPipelineSport(row: PipelineRow): { id: string | null; name: string } {
@@ -179,7 +182,7 @@ function CegepStatsPage() {
       const { data: school } = await supabase.from("schools").select("name").eq("id", currentUser.school_id).single();
       if (school) setSchoolName(school.name);
 
-      const { data: teamData } = await supabase.from("users").select("id, first_name, last_name").eq("school_id", currentUser.school_id);
+      const { data: teamData } = await supabase.from("users").select("id, first_name, last_name, sport_id").eq("school_id", currentUser.school_id);
       const retenus = filtreSport.ids;
       const teamList: TeamMember[] = (teamData || []).filter((t) => !retenus || retenus.has(t.id));
       setTeam(teamList);
@@ -228,6 +231,32 @@ function CegepStatsPage() {
         updated_at: p.updated_at ?? undefined,
         athletes: attrsById.get(p.athlete_id) ?? null,
       }));
+      /* Cartes prospect (lot C) : comptées comme des dossiers, au même
+         format (sport de l'unité, position), sans cote ni fiche. */
+      const sportsRetenus = retenus
+        ? new Set(teamList.map((t) => (t as { sport_id?: string | null }).sport_id).filter((x): x is string => !!x))
+        : null;
+      const [cartes, sportsRes] = await Promise.all([
+        lireCartesCegep(supabase, currentUser.school_id as string, sportsRetenus),
+        supabase.from("sports").select("id, nom"),
+      ]);
+      const nomSport = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
+      for (const c of cartes) {
+        pipeline.push({
+          recruiter_id: c.creePar ?? "",
+          suivi_par: c.creePar ? [c.creePar] : [],
+          athlete_id: c.id,
+          stage: c.etape,
+          updated_at: c.miseAJour,
+          athletes: {
+            sport_id: c.sportId,
+            sports: { nom: nomSport.get(c.sportId) ?? "Autre" },
+            positions: { abreviation: c.positionAbbr },
+            evaluations: null,
+          },
+          nomCarte: `${c.prenom} ${c.nom}`.trim(),
+        });
+      }
       setRawPipeline(pipeline);
 
       /* TEMPS 2 — l'identité, projetée par le serveur. */
@@ -428,7 +457,7 @@ function CegepStatsPage() {
           athleteId: p.athlete_id,
           rank: 0,
           rating: (evalObj?.cote_globale as number) || 0,
-          name: displayFullName(athleteCards.get(p.athlete_id)),
+          name: p.nomCarte ? `${p.nomCarte} (prospect)` : displayFullName(athleteCards.get(p.athlete_id)),
           sport: sportObj?.nom || "",
           position: posObj?.abreviation || "",
           recruiterName: p.suivi_par.map((id) => teamNameMap.get(id)).filter(Boolean).join(", "),

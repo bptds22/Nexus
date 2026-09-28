@@ -10,6 +10,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
+import { lireCartesCegep } from "@/lib/cartes/carteProspect";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export interface CegepActivityRow {
@@ -65,7 +66,7 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
       // 2. Team members
       const { data: teamMembers } = await supabase
         .from("users")
-        .select("id, first_name, last_name, role")
+        .select("id, first_name, last_name, role, sport_id")
         .eq("school_id", schoolId);
       const rList = (teamMembers ?? []).filter((r) => !recruteurs || recruteurs.has(r.id as string));
       const recruiterIds = rList.map((r) => r.id as string);
@@ -90,9 +91,22 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
         supabase.from("messages").select("*", { count: "exact", head: true }).in("sender_id", recruiterIds).gte("created_at", thirtyDaysAgo),
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).gte("viewed_at", thirtyDaysAgo),
       ]);
-      const recruesCount = overview.filter((p) => p.stage === "LETTRE_SIGNEE").length;
+      /* CARTES PROSPECT (lot C) : les athlètes pas encore sur Nexus suivis par
+         les unités du cégep, dans les sports des recruteurs retenus par le
+         filtre. Elles comptent comme des dossiers. */
+      const sportsRetenus = recruteurs
+        ? new Set(rList.map((r) => r.sport_id as string | null).filter((x): x is string => !!x))
+        : null;
+      const [cartes, sportsRes] = await Promise.all([
+        lireCartesCegep(supabase, schoolId, sportsRetenus),
+        supabase.from("sports").select("id, nom"),
+      ]);
+      const nomSport = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
+
+      const recruesCount = overview.filter((p) => p.stage === "LETTRE_SIGNEE").length
+        + cartes.filter((c) => c.etape === "LETTRE_SIGNEE").length;
       const uniqueAthletes = new Set(overview.map((p) => p.athlete_id));
-      const pipelineCount = uniqueAthletes.size;
+      const pipelineCount = uniqueAthletes.size + cartes.length;
       const messagesCount = messagesRes.count ?? 0;
       const viewsCount = viewsRes.count ?? 0;
 
@@ -129,6 +143,15 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
         else if (stage === "EN_DISCUSSION" || stage === "VISITE_PLANIFIEE") entry.favorited++;
         else if (stage === "ENGAGE" || stage === "LETTRE_SIGNEE") entry.recruited++;
       }
+      for (const c of cartes) {
+        const sportName = nomSport.get(c.sportId) || "Autre";
+        if (!sportMap.has(sportName)) sportMap.set(sportName, { consulted: 0, favorited: 0, contacted: 0, recruited: 0 });
+        const entry = sportMap.get(sportName)!;
+        if (c.etape === "IDENTIFIE") entry.consulted++;
+        else if (c.etape === "CONTACTE") entry.contacted++;
+        else if (c.etape === "EN_DISCUSSION" || c.etape === "VISITE_PLANIFIEE") entry.favorited++;
+        else if (c.etape === "ENGAGE" || c.etape === "LETTRE_SIGNEE") entry.recruited++;
+      }
       const pipelineBySport = Array.from(sportMap.entries())
         .map(([sport, counts]) => ({ sport, ...counts }))
         .sort((a, b) => (b.consulted + b.favorited + b.contacted + b.recruited) - (a.consulted + a.favorited + a.contacted + a.recruited));
@@ -138,6 +161,8 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
       const rowsByRecruiter = new Map<string, number>();
       // Chaque recruteur qui SUIT un dossier le compte (lignes sœurs comprises).
       for (const p of overview) for (const r of p.suivi_par) rowsByRecruiter.set(r, (rowsByRecruiter.get(r) || 0) + 1);
+      // Une carte prospect compte pour le recruteur qui l'a créée.
+      for (const c of cartes) if (c.creePar) rowsByRecruiter.set(c.creePar, (rowsByRecruiter.get(c.creePar) || 0) + 1);
       const activityBars: { short: string; name: string; messages: number }[] = rList.map((r) => ({
         short: `${((r.first_name as string) || "")[0] || ""}. ${r.last_name || ""}`,
         name: `${r.first_name || ""} ${r.last_name || ""}`,
@@ -150,6 +175,11 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
       for (const row of overview) {
         if (row.stage !== "ENGAGE" && row.stage !== "LETTRE_SIGNEE") continue;
         const region = regionByAthlete.get(row.athlete_id) || "Inconnue";
+        regionMap.set(region, (regionMap.get(region) || 0) + 1);
+      }
+      for (const c of cartes) {
+        if (c.etape !== "ENGAGE" && c.etape !== "LETTRE_SIGNEE") continue;
+        const region = c.region || "Inconnue";
         regionMap.set(region, (regionMap.get(region) || 0) + 1);
       }
       const regionData = Array.from(regionMap.entries())

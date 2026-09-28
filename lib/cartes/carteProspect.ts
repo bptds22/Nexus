@@ -1,0 +1,351 @@
+/* ═══════════════════════════════════════════════════════════════
+   carteProspect — les CARTES PROSPECT (lot C) côté web.
+
+   Une carte = un athlète qui n'est PAS ENCORE sur Nexus, suivi par une
+   unité (cégep × sport) dans Mon processus. Elle vit dans la table
+   cartes_prospect (migration lot_c_cartes_prospect) ; la RLS n'en rend la
+   lecture qu'aux Pro de l'unité et à l'admin du cégep, l'écriture qu'aux Pro
+   de l'unité.
+
+   Pour ne pas dédoubler l'écran, une carte est convertie en
+   PipelineKanbanCard (le format d'un dossier) avec un champ `carte` qui la
+   distingue : kanban, tableau, filtres, tris, entonnoir et tuiles la lisent
+   sans rien savoir d'elle. Seules les ÉCRITURES bifurquent (ecrireCarte,
+   retirerCarte, notes) et le panneau (Infos, Historique).
+
+   Ce module ne fait que des lectures/écritures ; aucune décision d'accès :
+   c'est la base qui décide.
+═══════════════════════════════════════════════════════════════ */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
+import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
+import { isGrade, type Grade } from "@/lib/config/grades";
+
+/** Rétention (décision BP) : purge 12 mois après la dernière activité,
+ *  avis à l'écran 30 jours avant. */
+export const RETENTION_MOIS = 12;
+export const AVIS_JOURS = 30;
+
+/** Ce que porte une carte en plus du format d'un dossier. */
+export interface CarteMeta {
+  prenom: string;
+  nom: string;
+  courriel: string | null;
+  lienVideo: string | null;
+  teamId: string | null;
+  teamNom: string | null;
+  positionId: string | null;
+  numero: string | null;
+  promotion: number | null;
+  creePar: string | null;
+  creeLe: string;
+  derniereActivite: string;
+  /** Date de la purge automatique si rien ne bouge d'ici là. */
+  expireLe: string;
+}
+
+export type CarteKanban = PipelineKanbanCard & { carte: CarteMeta };
+
+export function estCarte(c: PipelineKanbanCard | null | undefined): c is CarteKanban {
+  return !!c && !!(c as Partial<CarteKanban>).carte;
+}
+
+/** Échéance de purge : dernière activité + 12 mois. */
+export function expireLe(derniereActivite: string): string {
+  const d = new Date(derniereActivite);
+  d.setMonth(d.getMonth() + RETENTION_MOIS);
+  return d.toISOString();
+}
+
+/** Jours restants avant la purge (négatif = déjà dépassé). */
+export function joursAvantPurge(expire: string, maintenant = Date.now()): number {
+  return Math.ceil((new Date(expire).getTime() - maintenant) / 86400000);
+}
+
+export function bientotPurgee(c: PipelineKanbanCard, maintenant = Date.now()): boolean {
+  return estCarte(c) && joursAvantPurge(c.carte.expireLe, maintenant) <= AVIS_JOURS;
+}
+
+interface LigneCarte {
+  id: string;
+  unite_cegep_id: string;
+  unite_sport_id: string;
+  cree_par: string | null;
+  prenom: string;
+  nom: string;
+  team_id: string | null;
+  position_id: string | null;
+  numero: string | null;
+  promotion: number | null;
+  taille_pieds: number | null;
+  taille_pouces: number | null;
+  poids_lbs: number | null;
+  lien_video: string | null;
+  courriel: string | null;
+  etape: string;
+  grade: string | null;
+  relance_le: string | null;
+  relance_note: string | null;
+  visite_le: string | null;
+  drapeau: boolean;
+  etape_le: string;
+  derniere_activite: string;
+  created_at: string;
+  teams: { name: string | null; division: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
+  positions: { abreviation: string | null } | null;
+}
+
+const SELECT_CARTE = `
+  id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
+  taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, etape, grade, relance_le, relance_note,
+  visite_le, drapeau, etape_le, derniere_activite, created_at,
+  teams!team_id(name, division, schools!school_id(name, region, type)),
+  positions!position_id(abreviation)
+`;
+
+function un<T>(v: T | T[] | null | undefined): T | null {
+  return (Array.isArray(v) ? v[0] : v) ?? null;
+}
+
+/** Lit les cartes lisibles (la RLS décide), filtrées comme le processus :
+ *  l'unité de l'appelant par défaut, un sport précis, ou tout le cégep. */
+export async function lireCartes(
+  supabase: SupabaseClient,
+  options: { cegepId: string | null; sportId: string | null; toutLeCegep?: boolean },
+): Promise<LigneCarte[]> {
+  let q = supabase.from("cartes_prospect").select(SELECT_CARTE);
+  if (options.cegepId) q = q.eq("unite_cegep_id", options.cegepId);
+  if (!options.toutLeCegep && options.sportId) q = q.eq("unite_sport_id", options.sportId);
+  const { data, error } = await q.order("etape_le", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as unknown as LigneCarte[]).map((l) => ({
+    ...l,
+    teams: un(l.teams as never) as LigneCarte["teams"],
+    positions: un(l.positions as never) as LigneCarte["positions"],
+  }));
+}
+
+/** Dernière note par carte, avec son auteur (colonne « Note de suivi »). */
+export async function lireDernieresNotesCartes(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<Record<string, { content: string; created_at: string; auteur: string | null }>> {
+  const out: Record<string, { content: string; created_at: string; auteur: string | null }> = {};
+  if (ids.length === 0) return out;
+  const { data, error } = await supabase
+    .from("cartes_prospect_notes")
+    .select("carte_id, contenu, created_at, auteur")
+    .in("carte_id", ids)
+    .order("created_at", { ascending: false });
+  if (error) { console.error("[cartes] dernières notes :", error.message); return out; }
+  for (const n of (data ?? []) as { carte_id: string; contenu: string; created_at: string; auteur: string | null }[]) {
+    if (!out[n.carte_id]) out[n.carte_id] = { content: n.contenu, created_at: n.created_at, auteur: n.auteur };
+  }
+  return out;
+}
+
+/** Une carte au format d'un dossier du kanban. */
+export function versKanban(
+  l: LigneCarte,
+  contexte: {
+    nomSport: (sportId: string) => string;
+    nomAuteur: (id: string | null) => string;
+    derniereNote?: { content: string; created_at: string; auteur: string | null } | null;
+  },
+): CarteKanban {
+  const jours = Math.floor((Date.now() - new Date(l.etape_le).getTime()) / 86400000);
+  const ecole = l.teams?.schools ?? null;
+  const expire = expireLe(l.derniere_activite);
+  return {
+    id: l.id,
+    pipeline_id: l.id,
+    full_name: `${l.prenom} ${l.nom}`.trim(),
+    identityVisible: true,
+    photo_url: "",
+    sport: contexte.nomSport(l.unite_sport_id),
+    position: l.positions?.abreviation ?? "",
+    school: ecole?.name ?? "",
+    region: ecole?.region ?? "",
+    school_type: ecole?.type ?? null,
+    division: "D1",
+    graduation_year: l.promotion ?? 0,
+    coach_rating: 0,
+    profile_completeness: 0,
+    is_verified: false,
+    has_video: !!l.lien_video,
+    jersey: l.numero ?? "",
+    recruitment_status: "OUVERT",
+    committed_school_name: "",
+    open_to_offers: null,
+    status: (l.etape || "IDENTIFIE").toLowerCase() as RecruitmentStatus,
+    days_in_status: jours,
+    notes: "",
+    last_activity: `Mis à jour il y a ${jours} jours`,
+    flagged: !!l.drapeau,
+    next_action_at: l.relance_le,
+    next_action_note: l.relance_note,
+    visit_at: l.visite_le,
+    moved_at: l.etape_le,
+    noTeam: !l.team_id,
+    grade: isGrade(l.grade ?? "") ? (l.grade as Grade) : null,
+    taille_pieds: l.taille_pieds,
+    taille_pouces: l.taille_pouces,
+    poids_lbs: l.poids_lbs,
+    derniere_note: contexte.derniereNote
+      ? { content: contexte.derniereNote.content, created_at: contexte.derniereNote.created_at, auteur: contexte.nomAuteur(contexte.derniereNote.auteur) }
+      : null,
+    suivi_par: l.cree_par ? [l.cree_par] : [],
+    suivi_par_noms: l.cree_par ? [contexte.nomAuteur(l.cree_par)] : [],
+    unite_sport_id: l.unite_sport_id,
+    division_equipe: l.teams?.division ?? null,
+    carte: {
+      prenom: l.prenom,
+      nom: l.nom,
+      courriel: l.courriel,
+      lienVideo: l.lien_video,
+      teamId: l.team_id,
+      teamNom: l.teams?.name ?? null,
+      positionId: l.position_id,
+      numero: l.numero,
+      promotion: l.promotion,
+      creePar: l.cree_par,
+      creeLe: l.created_at,
+      derniereActivite: l.derniere_activite,
+      expireLe: expire,
+    },
+  };
+}
+
+/* ── ÉCRITURES ─────────────────────────────────────────────────────
+   Les champs arrivent sous leur nom de DOSSIER (ceux qu'écrit déjà la page :
+   stage, visit_at, next_action_at, next_action_note, flagged, grade) et sont
+   traduits vers les colonnes de la carte — un seul appelant, deux tables. */
+const VERS_COLONNE: Record<string, string> = {
+  stage: "etape",
+  visit_at: "visite_le",
+  next_action_at: "relance_le",
+  next_action_note: "relance_note",
+  flagged: "drapeau",
+  grade: "grade",
+};
+
+export async function ecrireCarte(supabase: SupabaseClient, carteId: string, champs: Record<string, unknown>) {
+  const patch: Record<string, unknown> = {};
+  for (const [cle, valeur] of Object.entries(champs)) {
+    const colonne = VERS_COLONNE[cle];
+    if (colonne) patch[colonne] = valeur;
+  }
+  if (Object.keys(patch).length === 0) return null;
+  const { error } = await supabase.from("cartes_prospect").update(patch).eq("id", carteId);
+  if (error) console.error("[cartes] écriture :", error.message);
+  return error;
+}
+
+/** Retirer = SUPPRIMER (décision BP) ; la base garde une trace minimale. */
+export async function retirerCarte(supabase: SupabaseClient, carteId: string) {
+  const { error } = await supabase.from("cartes_prospect").delete().eq("id", carteId);
+  if (error) console.error("[cartes] retrait :", error.message);
+  return error;
+}
+
+export async function ajouterNoteCarte(supabase: SupabaseClient, carteId: string, contenu: string) {
+  const { error } = await supabase.from("cartes_prospect_notes").insert({ carte_id: carteId, contenu: contenu.trim() });
+  if (error) console.error("[cartes] note :", error.message);
+  return error;
+}
+
+/* ── CRÉATION ──────────────────────────────────────────────────── */
+export interface NouvelleCarte {
+  prenom: string;
+  nom: string;
+  teamId: string;
+  positionId: string | null;
+  numero: string | null;
+  promotion: number | null;
+  taillePieds: number | null;
+  taillePouces: number | null;
+  poidsLbs: number | null;
+  lienVideo: string | null;
+  courriel: string | null;
+}
+
+export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
+  const { data, error } = await supabase
+    .from("cartes_prospect")
+    .insert({
+      prenom: c.prenom.trim(),
+      nom: c.nom.trim(),
+      team_id: c.teamId,
+      position_id: c.positionId,
+      numero: c.numero?.trim() || null,
+      promotion: c.promotion,
+      taille_pieds: c.taillePieds,
+      taille_pouces: c.taillePouces,
+      poids_lbs: c.poidsLbs,
+      lien_video: c.lienVideo?.trim() || null,
+      courriel: c.courriel?.trim() || null,
+    })
+    .select("id")
+    .single();
+  return { id: (data?.id as string | undefined) ?? null, error };
+}
+
+/** Doublon dans l'unité : une carte au même nom dans la même équipe. */
+export async function carteDoublon(supabase: SupabaseClient, prenom: string, nom: string, teamId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("cartes_prospect")
+    .select("id")
+    .eq("team_id", teamId)
+    .ilike("prenom", prenom.trim())
+    .ilike("nom", nom.trim())
+    .limit(1);
+  return (data ?? []).length > 0;
+}
+
+/* ── MON CÉGEP (admin) ──────────────────────────────────────────────
+   Les cartes de TOUT le cégep que l'admin lit (la RLS le lui permet, en
+   lecture seule), restreintes aux sports des recruteurs retenus par le
+   filtre « Sport de l'unité » (`sportsRetenus` null = tous). */
+export interface CarteCegep {
+  id: string;
+  prenom: string;
+  nom: string;
+  etape: string;
+  sportId: string;
+  creePar: string | null;
+  positionAbbr: string;
+  ecole: string;
+  region: string;
+  promotion: number | null;
+  miseAJour: string;
+}
+
+export async function lireCartesCegep(
+  supabase: SupabaseClient,
+  cegepId: string,
+  sportsRetenus: Set<string> | null,
+): Promise<CarteCegep[]> {
+  let lignes: LigneCarte[] = [];
+  try {
+    lignes = await lireCartes(supabase, { cegepId, sportId: null, toutLeCegep: true });
+  } catch (e) {
+    console.error("[cartes] Mon CÉGEP :", e instanceof Error ? e.message : String(e));
+    return [];
+  }
+  return lignes
+    .filter((l) => !sportsRetenus || sportsRetenus.has(l.unite_sport_id))
+    .map((l) => ({
+      id: l.id,
+      prenom: l.prenom,
+      nom: l.nom,
+      etape: l.etape,
+      sportId: l.unite_sport_id,
+      creePar: l.cree_par,
+      positionAbbr: l.positions?.abreviation ?? "",
+      ecole: l.teams?.schools?.name ?? "",
+      region: l.teams?.schools?.region ?? "",
+      promotion: l.promotion,
+      miseAJour: l.etape_le,
+    }));
+}

@@ -6,6 +6,8 @@ import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
+import { lireCartesCegep } from "@/lib/cartes/carteProspect";
+import { MarqueurProspect } from "@/components/recruteur/cartes/PanneauCarte";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -34,6 +36,8 @@ interface RecrueCegep {
   recruiterName: string;
   stage: string;
   updatedAt: string;
+  /** Carte prospect (lot C) : pas encore sur Nexus, pas de fiche. */
+  prospect?: boolean;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -83,7 +87,7 @@ function RecrusCegepPage() {
       const { data: currentUser } = await supabase.from("users").select("school_id").eq("id", user.id).single();
       if (!currentUser?.school_id) { setLoading(false); return; }
 
-      const { data: equipe } = await supabase.from("users").select("id, first_name, last_name").eq("school_id", currentUser.school_id);
+      const { data: equipe } = await supabase.from("users").select("id, first_name, last_name, sport_id").eq("school_id", currentUser.school_id);
       const retenus = filtreSport.ids;
       const team = (equipe || []).filter((t) => !retenus || retenus.has(t.id as string));
       const teamIds = team?.map((t) => t.id) || [];
@@ -133,7 +137,36 @@ function RecrusCegepPage() {
         };
       });
 
-      setRecruits(mapped);
+      /* Cartes prospect (lot C) engagées ou signées, dans les sports des
+         recruteurs retenus par le filtre. Lecture seule pour l'admin. */
+      const sportsRetenus = retenus
+        ? new Set(team.map((t) => (t as { sport_id?: string | null }).sport_id).filter((x): x is string => !!x))
+        : null;
+      const [cartes, sportsRes] = await Promise.all([
+        lireCartesCegep(supabase, currentUser.school_id as string, sportsRetenus),
+        supabase.from("sports").select("id, nom"),
+      ]);
+      const nomSport = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
+      const recruesCartes: RecrueCegep[] = cartes
+        .filter((c) => c.etape === "ENGAGE" || c.etape === "LETTRE_SIGNEE")
+        .map((c) => ({
+          athleteId: c.id,
+          name: `${c.prenom} ${c.nom}`.trim(),
+          jerseyNumber: "",
+          verified: false,
+          sport: nomSport.get(c.sportId) ?? "",
+          position: c.positionAbbr,
+          sourceSchool: c.ecole,
+          sourceRegion: c.region,
+          coteGlobale: 0,
+          recruitmentStatus: "OUVERT",
+          recruiterName: (c.creePar && teamNameMap.get(c.creePar)) || "",
+          stage: c.etape,
+          updatedAt: c.miseAJour,
+          prospect: true,
+        }));
+
+      setRecruits([...mapped, ...recruesCartes].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")));
       setLoading(false);
     }
     load();
@@ -223,9 +256,16 @@ function RecrusCegepPage() {
                       {/* Athlète */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
+                          {r.prospect ? (
+                            <>
+                              <span className="text-[13px] font-bold text-white whitespace-nowrap">{r.name}</span>
+                              <MarqueurProspect taille="sm" />
+                            </>
+                          ) : (
                           <Link href={`/recruteur/athletes/${r.athleteId}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors whitespace-nowrap">
                             {r.name}
                           </Link>
+                          )}
                           {r.verified && (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="#3B82F6" stroke="none" className="shrink-0">
                               <circle cx="12" cy="12" r="10" />

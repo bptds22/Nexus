@@ -149,6 +149,47 @@ migration : tout repose sur B1/B2-0.
 - **§39 corrigé en base** (même migration) : la ligne de journal d'un retrait
   d'unité fait dans un autre sport va dans l'unité **visée**.
 
+**Lot C (2026-09-28) — CARTES PROSPECT : un athlète pas encore sur Nexus.**
+Migration `lot_c_cartes_prospect` (additive : quatre tables nouvelles, aucune
+existante touchée).
+- **Propriété : l'UNITÉ** (cégep × sport), posée par trigger d'après le créateur,
+  jamais modifiable. Lecture et écriture : Pro/All Star de l'unité ; admin cégep
+  en **lecture** sur tout son cégep. Rien pour coach, athlète, parent,
+  partenaire, anon. Aucune recherche ne lit ces tables : une carte n'apparaît
+  jamais hors de son cégep.
+- **Contenu** : prénom, nom, équipe RÉELLE (`teams.id`, du sport de l'unité,
+  obligatoire à la création), position, numéro, promotion, taille, poids, lien
+  vidéo, courriel facultatif (invitation du lot D). Aucune autre coordonnée.
+  Suivi : étape, grade, relance, visite, drapeau ; notes à part, signées (chacun
+  ne modifie que les siennes) ; journal propre (`cartes_prospect_journal`), pas
+  `recruiter_activity_log` (dont la contrainte, lue par l'app 1.4.3, ne bouge pas).
+- **Retirer une carte la SUPPRIME** (décision BP), avec une trace d'audit minimale
+  (`cartes_prospect_suppressions` : qui, quand, motif, unité — aucune donnée de
+  l'athlète), lisible par l'admin plateforme seulement.
+- **Rétention** : purge pg_cron quotidienne 12 mois après la dernière activité ;
+  avis à l'écran 30 jours avant (bandeau dans Mon processus, marqueur sur la
+  carte). Tout geste repousse l'échéance.
+- **Interface** : kanban, tableau, panneau (Actions / Infos / Historique), export
+  xlsx (colonnes « Sur Nexus » et « Courriel »), entonnoir, tuiles, calendrier
+  (matchs de leur équipe, visites et relances, marqués « prospect ») et Mon
+  CÉGEP. Pas de profil complet, pas de messagerie ; « Inviter » arrive au lot D.
+
+### LOI 25 — LE CÉGEP EST PROPRIÉTAIRE DES DONNÉES DES CARTES PROSPECT
+
+Une carte prospect est constituée par les recruteurs d'un cégep, sur un athlète
+qui n'a **pas** de compte Nexus et n'a donc consenti à rien auprès de Nexus. Le
+**cégep** en est le responsable et le propriétaire (il la crée, la tient à jour,
+la supprime) ; Nexus en est l'hébergeur et le sous-traitant. D'où :
+- **minimisation** : identification et mesures sportives seulement, courriel
+  facultatif, aucune autre coordonnée ;
+- **cloisonnement** : jamais visible hors de l'unité (et de l'admin de son
+  cégep), jamais dans une recherche ;
+- **durée limitée** : suppression automatique après 12 mois sans activité ;
+- **suppression réelle** au retrait, trace d'audit sans donnée personnelle ;
+- **mineurs** : une carte peut viser un mineur ; rien n'y est publié, rien n'est
+  transmis à l'athlète ni à ses parents avant l'invitation du lot D, qui devra
+  porter le consentement.
+
 La suite de ce fichier décrit l'état **du 17 septembre** : elle reste exacte
 pour le coach, le parent, l'admin plateforme et les recruteurs sans unité.
 

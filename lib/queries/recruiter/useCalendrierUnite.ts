@@ -31,7 +31,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import { nomAuteur, type AuteurUnite } from "@/lib/queries/recruiter/useProcessusUnite";
-import { construireCalendrier, type RecruitingCalendarData } from "@/lib/queries/recruiter/useRecruitingCalendar";
+import { construireCalendrier, type RecruitingCalendarData, type CalendarTarget } from "@/lib/queries/recruiter/useRecruitingCalendar";
+import { lireCartes } from "@/lib/cartes/carteProspect";
 
 /** Une visite planifiée de l'unité (recruiter_pipeline.visit_at). */
 export interface VisiteUnite {
@@ -45,6 +46,8 @@ export interface VisiteUnite {
   stage: string;
   /** Qui suit le dossier, par nom (« Suivi par »). */
   suiviPar: string[];
+  /** Carte prospect (lot C) : pas de fiche Nexus à ouvrir. */
+  prospect?: boolean;
 }
 
 /** Une relance de l'unité (recruiter_pipeline.next_action_at). */
@@ -59,6 +62,8 @@ export interface RelanceUnite {
   /** Échéance passée : la relance est en retard. */
   enRetard: boolean;
   suiviPar: string[];
+  /** Carte prospect (lot C) : pas de fiche Nexus à ouvrir. */
+  prospect?: boolean;
 }
 
 export interface CalendrierUniteData extends RecruitingCalendarData {
@@ -134,7 +139,47 @@ export function useCalendrierUnite(enabled: boolean) {
         ...membres.map((m) => m.athlete_id),
       ]));
 
-      const base = await construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete);
+      /* CARTES PROSPECT de l'unité (lot C) : les matchs de leur équipe, leurs
+         visites et leurs relances, marqués « prospect ». Une erreur de
+         lecture laisse le calendrier des athlètes Nexus intact. */
+      let cartesProspect: Awaited<ReturnType<typeof lireCartes>> = [];
+      try {
+        cartesProspect = await lireCartes(supabase, { cegepId: monCegep, sportId: monSport });
+      } catch (e) {
+        console.error("[useCalendrierUnite] cartes prospect :", e instanceof Error ? e.message : String(e));
+      }
+      const nomSportUnite = monSport && cartesProspect.length > 0
+        ? ((await supabase.from("sports").select("nom").eq("id", monSport).maybeSingle()).data?.nom as string | undefined) ?? ""
+        : "";
+      const ciblesCartes: CalendarTarget[] = cartesProspect
+        .filter((c) => !!c.team_id)
+        .map((c) => ({
+          athleteId: c.id,
+          identityVisible: true,
+          fullName: `${c.prenom} ${c.nom}`.trim(),
+          firstName: c.prenom,
+          lastName: c.nom,
+          initials: `${c.prenom.charAt(0)}${c.nom.charAt(0)}`.toUpperCase(),
+          photo: "",
+          sport: nomSportUnite.toLowerCase().replace(/ /g, "_"),
+          sportName: nomSportUnite,
+          position: c.positions?.abreviation ?? "",
+          graduationYear: c.promotion ?? 0,
+          region: c.teams?.schools?.region ?? "",
+          school: c.teams?.schools?.name ?? "",
+          verified: false,
+          hasVideo: !!c.lien_video,
+          stars: 0,
+          gpa: 0,
+          orgType: (c.teams?.schools?.type === "LIGUE_CIVILE" ? "ligue_civile" : "scolaire") as "scolaire" | "ligue_civile",
+          pipelineStage: c.etape,
+          listIds: [],
+          teamId: c.team_id!,
+          teamName: c.teams?.name ?? "",
+          prospect: true,
+        }));
+
+      const base = await construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete, ciblesCartes);
 
       /* Visites À VENIR de l'unité (à partir d'aujourd'hui, 0 h locale). */
       const debut = new Date();
@@ -178,6 +223,27 @@ export function useCalendrierUnite(enabled: boolean) {
           };
         })
         .sort((a, b) => a.jour.localeCompare(b.jour));
+
+      // Visites et relances des cartes prospect, dans les mêmes listes.
+      const nomCreateur = (id: string | null) => (id ? nomAuteur(auteurs[id]) : "Recruteur");
+      for (const c of cartesProspect) {
+        const fullName = `${c.prenom} ${c.nom}`.trim();
+        if (c.visite_le && new Date(c.visite_le) >= debut) {
+          visites.push({
+            athleteId: c.id, identityVisible: true, fullName, visitAt: c.visite_le, jour: jourLocal(c.visite_le),
+            stage: c.etape, suiviPar: [nomCreateur(c.cree_par)], prospect: true,
+          });
+        }
+        if (c.relance_le) {
+          relances.push({
+            athleteId: c.id, identityVisible: true, fullName, jour: c.relance_le.slice(0, 10),
+            note: (c.relance_note ?? "").trim(), stage: c.etape, enRetard: c.relance_le.slice(0, 10) < aujourdhui,
+            suiviPar: [nomCreateur(c.cree_par)], prospect: true,
+          });
+        }
+      }
+      visites.sort((a, b) => a.visitAt.localeCompare(b.visitAt));
+      relances.sort((a, b) => a.jour.localeCompare(b.jour));
 
       return { ...base, visites, relances };
     },

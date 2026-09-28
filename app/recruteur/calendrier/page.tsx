@@ -264,9 +264,10 @@ function VisiteCard({ v }: { v: VisiteUnite }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#22C55E]">Visite</span>
-          <Link href={`/recruteur/athletes/${v.athleteId}`} className="truncate text-[16px] font-bold text-[#EDEFF3] hover:text-[#E63946]">
+          <Link href={lienCible(v.athleteId, v.prospect)} className="truncate text-[16px] font-bold text-[#EDEFF3] hover:text-[#E63946]">
             {v.fullName}
           </Link>
+          {v.prospect && <PastilleProspect />}
         </div>
         {v.suiviPar.length > 0 && (
           <div className="mt-0.5 truncate text-[13px] text-[#8A909C]">Suivi par {v.suiviPar.join(", ")}</div>
@@ -293,9 +294,10 @@ function RelanceCard({ r }: { r: RelanceUnite }) {
               En retard
             </span>
           )}
-          <Link href={`/recruteur/athletes/${r.athleteId}`} className="truncate text-[16px] font-bold text-[#EDEFF3] hover:text-[#E63946]">
+          <Link href={lienCible(r.athleteId, r.prospect)} className="truncate text-[16px] font-bold text-[#EDEFF3] hover:text-[#E63946]">
             {r.fullName}
           </Link>
+          {r.prospect && <PastilleProspect />}
         </div>
         {r.note && <div className="mt-0.5 truncate text-[13.5px] text-[#B9BFC9]">{r.note}</div>}
         {r.suiviPar.length > 0 && (
@@ -318,6 +320,24 @@ function SectionTitre({ couleur, titre, detail }: { couleur: string; titre: stri
   );
 }
 
+/** Carte prospect (lot C) : athlète pas encore sur Nexus, suivi par l'unité. */
+function PastilleProspect() {
+  return (
+    <span
+      className="inline-flex items-center rounded-full border border-[#9CA3AF]/40 bg-white/5 px-2 py-[1px] text-[10.5px] font-bold uppercase tracking-[0.06em] text-[#D1D5DB]"
+      title="Carte prospect : pas encore sur Nexus"
+    >
+      Prospect
+    </span>
+  );
+}
+
+/** Lien du nom : la fiche Nexus, ou — pour une carte prospect — son panneau
+ *  dans Mon processus (?athlete= retrouve la carte par son id). */
+function lienCible(id: string, prospect?: boolean): string {
+  return prospect ? `/recruteur/pipeline?athlete=${id}` : `/recruteur/athletes/${id}`;
+}
+
 /** `.tgt` — une cible dans le détail déplié. */
 function TargetRow({ t }: { t: CalendarTarget }) {
   return (
@@ -329,6 +349,7 @@ function TargetRow({ t }: { t: CalendarTarget }) {
             {t.firstName} {t.lastName}
             {t.verified && <span className="text-[#3B82F6]"> ✓</span>}
           </span>
+          {t.prospect && <PastilleProspect />}
           {/* Cote coach — composant étoiles partagé de la plateforme, même
               rendu que les cartes de la Recherche. Athlète non coté : rien,
               pas de « N/A ». */}
