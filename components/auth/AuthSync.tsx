@@ -29,7 +29,6 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { purgerSacOnboarding } from "@/lib/auth/sacOnboarding";
 
 export function AuthSync() {
   const queryClient = useQueryClient();
@@ -37,17 +36,11 @@ export function AuthSync() {
   useEffect(() => {
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event) => {
         // PAS d'appel supabase.auth.* ici (deadlock GoTrue). React Query only.
         if (event === "SIGNED_OUT") {
           queryClient.removeQueries({ queryKey: ["currentUser"] });
-          purgerSacOnboarding();
           return;
-        }
-        // Le sac d'onboarding d'un AUTRE compte (même appareil) ne survit pas à
-        // la connexion — l'adresse de la session vient de l'événement lui-même.
-        if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user) {
-          purgerSacOnboarding({ email: session.user.email });
         }
         if (
           event === "INITIAL_SESSION" ||

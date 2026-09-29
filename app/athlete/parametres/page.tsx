@@ -9,8 +9,6 @@ import { isMinor } from "@/lib/utils/age";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { AthleteParametresMobile } from "@/components/shared/AthleteParametresMobile";
 import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
-import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
-import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { deconnexion } from "@/lib/auth/deconnexion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -448,29 +446,53 @@ function ParametresPageDesktop() {
 
                   {(() => {
                     if (!profile) return null;
-                    /* §50 — tout passe par la RPC set_my_partner_visibility :
-                       l'UPDATE direct est refusé par la garde de périmètre.
-                       Majeur : accorde ou retire. Mineur (ou date inconnue,
-                       traitée en mineur comme côté base) : RETIRE seulement —
-                       l'accord d'un mineur appartient à son parent. */
-                    const majeur = !!profile.dateOfBirth && !isMinor(profile.dateOfBirth);
-                    const peutAgir = profile.partnerOptIn || majeur;
-                    const toggleEnabled = peutAgir && !savingPartnerOptIn;
+                    const minor = isMinor(profile.dateOfBirth);
+                    const consentReady = !minor || profile.partnerParentalConsent;
+                    const toggleEnabled = consentReady && !savingPartnerOptIn;
 
                     return (
                       <>
-                        {peutAgir ? (
+                        {minor && (
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={profile.partnerParentalConsent}
+                              onChange={async (e) => {
+                                const supabase = createClient();
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) return;
+                                const checked = e.target.checked;
+                                // If parent unchecks while opt-in is active, also turn opt-in off.
+                                const updates: Record<string, unknown> = { partner_visibility_parental_consent: checked };
+                                if (!checked && profile.partnerOptIn) {
+                                  updates.partner_visibility_opt_in = false;
+                                  updates.partner_visibility_opted_in_at = null;
+                                }
+                                const { error } = await supabase.from("athletes").update(updates).eq("user_id", user.id);
+                                if (error) { console.error("[Partner consent]", error); showToast("Erreur lors de la sauvegarde"); return; }
+                                showToast(checked ? "Consentement parental enregistré" : "Consentement retiré");
+                                await loadProfile();
+                              }}
+                              className="sr-only"
+                            />
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${profile.partnerParentalConsent ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56] group-hover:border-[#6b7280]"}`}>
+                              {profile.partnerParentalConsent && (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                              )}
+                            </div>
+                            <span className="text-[12px] text-[#9CA3AF] leading-snug">
+                              J&apos;ai reçu le consentement parental pour permettre l&apos;utilisation de ma carte Nexus par des partenaires médias.
+                            </span>
+                          </label>
+                        )}
+
+                        {consentReady ? (
                           <div className="flex items-center justify-between py-2">
                             <div className="flex-1 pr-4">
                               <p className="text-[13px] font-semibold text-white">Permettre l&apos;utilisation de ma carte par les partenaires</p>
                               {profile.partnerOptIn && profile.partnerOptInDate && (
                                 <p className="text-[11px] text-[#22C55E] mt-1">
                                   Activé le {new Date(profile.partnerOptInDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
-                                </p>
-                              )}
-                              {profile.partnerOptIn && !majeur && (
-                                <p className="text-[11px] text-[#9CA3AF] mt-1">
-                                  Autorisé par ton parent. Tu peux le retirer ; seul ton parent peut le réactiver.
                                 </p>
                               )}
                             </div>
@@ -482,17 +504,23 @@ function ParametresPageDesktop() {
                                 if (!toggleEnabled) return;
                                 setSavingPartnerOptIn(true);
                                 const supabase = createClient();
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) { setSavingPartnerOptIn(false); return; }
                                 const next = !profile.partnerOptIn;
-                                const { data, error } = await supabase.rpc("set_my_partner_visibility", {
-                                  p_granted: next,
-                                  p_policy_version: PRIVACY_POLICY_VERSION,
-                                });
-                                const res = data as { ok?: boolean; reason?: string } | null;
-                                if (error || !res?.ok) {
-                                  console.error("[Partner opt-in]", error ? erreurLisible(error) : res?.reason);
-                                  showToast(res?.reason === "parent_required"
-                                    ? "Ton parent doit donner son accord depuis son portail."
-                                    : "Erreur lors de la sauvegarde");
+                                const updates: Record<string, unknown> = next
+                                  ? {
+                                      partner_visibility_opt_in: true,
+                                      partner_visibility_opted_in_at: new Date().toISOString(),
+                                      partner_visibility_parental_consent: minor ? true : profile.partnerParentalConsent,
+                                    }
+                                  : {
+                                      partner_visibility_opt_in: false,
+                                      partner_visibility_opted_in_at: null,
+                                    };
+                                const { error } = await supabase.from("athletes").update(updates).eq("user_id", user.id);
+                                if (error) {
+                                  console.error("[Partner opt-in]", error);
+                                  showToast("Erreur lors de la sauvegarde");
                                   setSavingPartnerOptIn(false);
                                   return;
                                 }
@@ -512,7 +540,7 @@ function ParametresPageDesktop() {
                               <path d="M7 11V7a5 5 0 0110 0v4" />
                             </svg>
                             <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
-                              Tu as moins de 18 ans : c&apos;est ton parent qui peut activer cette option, depuis son portail parent Nexus.
+                              Cochez le consentement parental ci-dessus pour activer la visibilité partenaire.
                             </p>
                           </div>
                         )}

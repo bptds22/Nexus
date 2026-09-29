@@ -33,7 +33,6 @@ import {
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { tenterAttribution } from "@/lib/ambassadeur/invitation";
 import { hapticSuccess } from "@/lib/haptics";
-import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 
 type Role = "ATHLETE" | "COACH" | "RECRUTEUR";
 type Ctx = "scolaire" | "ligue_civile" | "collegial";
@@ -99,13 +98,6 @@ export default function ConsentementsPage() {
   const [consentMarketing, setConsentMarketing] = useState(false);
   const [consentProfile, setConsentProfile] = useState(false);
   const [consentVisibility, setConsentVisibility] = useState(false);
-  /* Visibilité partenaires — ATHLÈTE seulement, optionnelle, décochée.
-     Cet écran (chemin Google/Apple) ne la proposait PAS : un mineur inscrit par
-     OAuth n'avait jamais la case sous les yeux dans l'app (l'onboarding mobile
-     ne la montre pas non plus). Deux états distincts : la case parentale d'un
-     mineur ne devient jamais le consentement d'un majeur si la date change. */
-  const [consentPartnerParental, setConsentPartnerParental] = useState(false);
-  const [consentPartnerAdult, setConsentPartnerAdult] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -197,11 +189,6 @@ export default function ConsentementsPage() {
         ...(isMinor
           ? { parentalProfile: consentProfile, parentalVisibility: consentVisibility }
           : {}),
-        ...(role === "ATHLETE"
-          ? (isMinor
-              ? { parentalPartnerVisibility: consentPartnerParental }
-              : { partnerVisibility: consentPartnerAdult })
-          : {}),
       };
       const parent: ParentPII | undefined = isMinor
         ? {
@@ -253,7 +240,7 @@ export default function ConsentementsPage() {
       setError(e instanceof Error ? e.message : "Erreur inattendue.");
       setSubmitting(false);
     }
-  }, [canSubmit, submitting, user, role, context, consentPolicy, consentData, consentMarketing, isMinor, consentProfile, consentVisibility, consentPartnerParental, consentPartnerAdult, parentFirstName, parentLastName, parentEmail, parentRelationship, birthdate, router]);
+  }, [canSubmit, submitting, user, role, context, consentPolicy, consentData, consentMarketing, isMinor, consentProfile, consentVisibility, parentFirstName, parentLastName, parentEmail, parentRelationship, birthdate, router]);
 
   /* ── Render ──────────────────────────────────────────────── */
   if (authLoading) {
@@ -373,24 +360,7 @@ export default function ConsentementsPage() {
                 Mon parent ou tuteur légal consent à ce que mes informations sportives et académiques soient visibles par les recruteurs des CÉGEP.
               </Checkbox>
             </div>
-
-            {role === "ATHLETE" && (
-              <PartnerVisibilityConsentCard
-                checked={consentPartnerParental}
-                onChange={setConsentPartnerParental}
-                audience="athlete"
-              />
-            )}
           </>
-        )}
-
-        {/* Athlète MAJEUR : sa propre case partenaires, même explication. */}
-        {role === "ATHLETE" && birthdate && !isMinor && !birthdateUnder14 && (
-          <PartnerVisibilityConsentCard
-            checked={consentPartnerAdult}
-            onChange={setConsentPartnerAdult}
-            audience="adult"
-          />
         )}
 
         {/* 5. Consentements Loi 25 */}

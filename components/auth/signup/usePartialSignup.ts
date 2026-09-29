@@ -16,7 +16,7 @@
 
 import { useState, useCallback } from "react";
 import { isAdult, isUnder14 } from "@/lib/legal/ageGate";
-import { buildConsentMetadata, type InitialConsentFlags } from "@/lib/legal/persistInitialConsents";
+import { buildConsentMetadata } from "@/lib/legal/persistInitialConsents";
 
 export type SignupRole = "athlete" | "coach_school" | "coach_civil" | "recruiter";
 
@@ -45,7 +45,7 @@ export interface SignupArgs {
    *  changement DB requis ; l'onboarding pourra la relire pour pré-remplir. */
   metadata: Record<string, unknown>;
   /** Consents bruts pour persistInitialConsents() post-signup (app-side). */
-  consents: InitialConsentFlags;
+  consents: Record<string, boolean>;
 }
 
 export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: SignupRole }) {
@@ -73,10 +73,6 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
   const [consentProfile, setConsentProfile] = useState(false);
   const [consentVisibility, setConsentVisibility] = useState(false);
   const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
-  // Athlète MAJEUR : sa propre case partenaires (écran 2), état DISTINCT de la
-  // case parentale — une case cochée par un mineur ne devient jamais le
-  // consentement d'un majeur si la date de naissance change en cours de route.
-  const [consentAdultPartnerVisibility, setConsentAdultPartnerVisibility] = useState(false);
 
   const emailValid = EMAIL_RE.test(email.trim());
   const pwdValid = password.length >= 8;
@@ -102,8 +98,6 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     (!isAthlete || athleteContext !== null);
   // Un athlète mineur passe par l'écran parental (3).
   const needsParentalScreen = isAthlete && birthdate.length > 0 && !userIsAdult;
-  // Un athlète majeur voit la case partenaires à l'écran 2 (optionnelle).
-  const showsAdultPartnerConsent = isAthlete && birthdate.length > 0 && userIsAdult;
   // Submit final.
   const canSubmit = needsParentalScreen
     ? canProceedScreen2 &&
@@ -139,16 +133,13 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     const context = isAthlete
       ? (athleteContext === "school" ? "scolaire" : athleteContext === "civil" ? "ligue_civile" : undefined)
       : rc.context;
-    const consents: InitialConsentFlags = needsParentalScreen
+    const consents = needsParentalScreen
       ? {
           policy: consentPolicy, data: consentData, marketing: consentMarketing,
           parentalProfile: consentProfile, parentalVisibility: consentVisibility,
           parentalPartnerVisibility: consentPartnerVisibility,
         }
-      : {
-          policy: consentPolicy, data: consentData, marketing: consentMarketing,
-          ...(showsAdultPartnerConsent ? { partnerVisibility: consentAdultPartnerVisibility } : {}),
-        };
+      : { policy: consentPolicy, data: consentData, marketing: consentMarketing };
     const consentMeta = needsParentalScreen
       ? buildConsentMetadata(
           {
@@ -161,10 +152,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
             email: parentEmail.trim(), relationship: parentRelationship,
           },
         )
-      : buildConsentMetadata({
-          policy: consentPolicy, data: consentData, marketing: consentMarketing,
-          ...(showsAdultPartnerConsent ? { partnerVisibility: consentAdultPartnerVisibility } : {}),
-        });
+      : buildConsentMetadata({ policy: consentPolicy, data: consentData, marketing: consentMarketing });
     return {
       role: rc.role,
       context,
@@ -177,10 +165,10 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
       consents,
     };
   }, [
-    pickedRole, needsParentalScreen, showsAdultPartnerConsent, isAthlete, athleteContext,
+    pickedRole, needsParentalScreen, isAthlete, athleteContext,
     firstName, lastName, birthdate,
     consentPolicy, consentData, consentMarketing,
-    consentProfile, consentVisibility, consentPartnerVisibility, consentAdultPartnerVisibility,
+    consentProfile, consentVisibility, consentPartnerVisibility,
     parentFirstName, parentLastName, parentEmail, parentRelationship,
   ]);
 
@@ -188,7 +176,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     // état machine
     screen, setScreen, pickedRole, pickRole, next, back,
     // dérivés
-    isAthlete, userIsAdult, isUnderMinAge, needsParentalScreen, showsAdultPartnerConsent,
+    isAthlete, userIsAdult, isUnderMinAge, needsParentalScreen,
     emailValid, pwdValid, pwdMatches, parentEmailValid,
     canProceedScreen1, canProceedScreen2, canSubmit,
     // champs compte
@@ -204,8 +192,6 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     parentEmail, setParentEmail, parentRelationship, setParentRelationship,
     consentProfile, setConsentProfile, consentVisibility, setConsentVisibility,
     consentPartnerVisibility, setConsentPartnerVisibility,
-    // majeur
-    consentAdultPartnerVisibility, setConsentAdultPartnerVisibility,
     // export pour signUp
     buildSignupArgs,
   };

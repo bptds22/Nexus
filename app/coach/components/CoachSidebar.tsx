@@ -6,7 +6,6 @@ import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { deconnexion } from "@/lib/auth/deconnexion";
-import { usePurgeSacOnboarding } from "@/lib/auth/usePurgeSacOnboarding";
 
 /* ─────────────────────────────────────────────────────────────────
    CoachSidebar — vertical nav for the coach portal.
@@ -92,8 +91,6 @@ interface CoachSidebarProps {
 }
 
 export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps) {
-  // Le sac de l'onboarding (nexus_user) part une fois l'onboarding terminé.
-  usePurgeSacOnboarding();
   const pathname = usePathname();
   const router = useRouter();
   const [userName, setUserName] = useState("");

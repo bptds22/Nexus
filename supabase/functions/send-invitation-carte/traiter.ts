@@ -15,7 +15,7 @@
 //
 // L'adresse n'est JAMAIS journalisée (console comprise) : id d'invitation seulement.
 
-import { FROM, SUPPORT, APP_URL } from "./config.ts";
+import { FROM_ADRESSE_NU, SUPPORT, APP_URL } from "./config.ts";
 import { signerJetonInvitation } from "../_shared/jetonDesabonnement.ts";
 import { buildBody, sujet } from "./email.ts";
 
@@ -36,10 +36,11 @@ export type Resultat =
   | { ok: true; statut: "RIEN_A_FAIRE" }
   | { ok: false; statut: "ECHEC"; erreur: string };
 
-/** L'expéditeur : « Nexus », depuis info@nexussports.ca — jamais au nom du
- *  recruteur (retour BP 2026-09-28), qui est nommé dans l'objet et le corps. */
-export function expediteur(): string {
-  return FROM;
+/** Nom d'affichage de l'expéditeur : « Prénom Nom via Nexus ». Les
+ *  guillemets et chevrons sont retirés — ils casseraient l'en-tête From. */
+export function expediteur(recruteur: string | null): string {
+  const nom = (recruteur ?? "").replace(/["<>\\\r\n]/g, "").trim();
+  return nom ? `"${nom} via Nexus" <${FROM_ADRESSE_NU}>` : `Nexus <${FROM_ADRESSE_NU}>`;
 }
 
 export async function traiterInvitation(deps: Dependances, invitationId: string): Promise<Resultat> {
@@ -93,7 +94,7 @@ export async function traiterInvitation(deps: Dependances, invitationId: string)
         "Idempotency-Key": `carte-invitation/${inv.id}`,
       },
       body: JSON.stringify({
-        from: expediteur(),
+        from: expediteur(recruteur),
         to: carte.courriel,
         reply_to: SUPPORT,
         subject: sujet(nomCegep),

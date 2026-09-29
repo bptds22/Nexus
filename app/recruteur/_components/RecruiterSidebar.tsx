@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import { usePurgeSacOnboarding } from "@/lib/auth/usePurgeSacOnboarding";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
@@ -189,35 +186,37 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
   // Le Provider défaute tier→"free" avant le fetch : sans ce flag, un All Star
   // voit les verrous + la carte d'upgrade une fraction de seconde au login.
   const { tier, isSchoolAdmin, loading: tierLoading } = useSubscription();
-  const portalLabel = "Portail recruteur";
+  const [userName, setUserName] = useState("Pierre Dufour");
+  const [userSub, setUserSub] = useState("Recruteur \u2014 C\u00c9GEP Garneau");
+  const [userInitials, setUserInitials] = useState("PD");
+  const [isAlsoRecruiter, setIsAlsoRecruiter] = useState(true);
+  const [portalLabel, setPortalLabel] = useState("Portail recruteur");
 
   /* Subscription/admin flags come from the DB-backed hook (single source of truth). */
   const hasProAccess = tier === "all_star" || isSchoolAdmin;
+  const isAdmin = isSchoolAdmin;
 
-  /* Nom, initiales et c\u00e9gep : le PROFIL R\u00c9EL de la session (retour BP
-     2026-09-28). Avant : une persona de d\u00e9mo (\u00ab Pierre Dufour \u2014 C\u00c9GEP
-     Garneau \u00bb) \u00e9cras\u00e9e par le sac localStorage de l'onboarding \u2014 absent, on
-     voyait la persona ; p\u00e9rim\u00e9, le compte pr\u00e9c\u00e9dent. useCurrentUser suit la
-     session (AuthSync : retir\u00e9 \u00e0 la d\u00e9connexion, relu \u00e0 la connexion). */
-  const { data: moi } = useCurrentUser();
-  const profil = moi?.profile;
-  const { data: nomCegep } = useQuery({
-    queryKey: ["barre-laterale-cegep", profil?.school_id],
-    enabled: !!profil?.school_id,
-    staleTime: 10 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await createClient().from("schools").select("name").eq("id", profil!.school_id!).maybeSingle();
-      return (data?.name as string | undefined) ?? "";
-    },
-  });
-  const prenom = profil?.first_name?.trim() ?? "";
-  const nom = profil?.last_name?.trim() ?? "";
-  const userName = `${prenom} ${nom}`.trim();
-  const userInitials = `${prenom[0] ?? ""}${nom[0] ?? ""}`.toUpperCase();
-  const userSub = profil ? `Recruteur${nomCegep ? ` \u2014 ${nomCegep}` : ""}` : "";
-
-  // Le sac de l'onboarding n'a plus rien \u00e0 faire ici une fois l'onboarding fini.
-  usePurgeSacOnboarding();
+  /* Name/initials/institution are profile-level (not subscription) and still
+     come from the onboarding localStorage bag. Safe: not a tier-gated read. */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("nexus_user");
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u.firstName && u.lastName) {
+          setUserName(`${u.firstName} ${u.lastName}`);
+          setUserInitials(`${u.firstName[0]}${u.lastName[0]}`);
+          const inst = u.institution?.name || "";
+          setUserSub(`Recruteur${inst ? ` \u2014 ${inst}` : ""}`);
+        }
+        setIsAlsoRecruiter(u.is_also_recruiter !== false);
+        if (isSchoolAdmin && u.is_also_recruiter === false) {
+          setPortalLabel("Directeur sportif \u2014 C\u00c9GEP");
+          setUserSub(`Directeur${u.institution?.name ? ` \u2014 ${u.institution.name}` : ""}`);
+        }
+      }
+    } catch { /* use defaults */ }
+  }, [isSchoolAdmin]);
 
   /* Pastilles Messages / Activités — relues à chaque geste qui les change
      (événement notifications-updated), au retour sur l'onglet et au plus tard
@@ -234,7 +233,8 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
   // déjà utilisé par CoachSidebar et /athlete/parametres.
   const handleLogout = async () => {
     const supabase = createClient();
-    await deconnexion(supabase); // purge aussi le sac de l'onboarding
+    try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
+    await deconnexion(supabase);
     router.push("/auth");
   };
 
@@ -246,10 +246,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
     });
   }
 
-  /* « Directeur sans être recruteur » ne vivait que dans le sac localStorage
-     (aucune colonne en base) : seul l'appareil de l'onboarding le voyait.
-     Le portail montre donc les outils recruteur à tous. */
-  const showRecruiterItems = true;
+  const showRecruiterItems = isAlsoRecruiter || !isAdmin;
 
   function renderNavItem(item: NavItem) {
     // Pas de verrou tant que le tier n'est pas chargé (évite le flash free).
