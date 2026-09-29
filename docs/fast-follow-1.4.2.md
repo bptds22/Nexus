@@ -1617,6 +1617,13 @@ non (cas `da26917a`). Correction de ce cas en prod :
 
 ## 51. `set_child_consent` — ACL ouverte à `anon` et `PUBLIC` en prod (relevé 2026-09-29, non corrigé)
 
+> **CORRIGÉ EN PROD le 2026-09-29** (GO BP, étape 3) — migration
+> `20260929153755_acl_set_child_consent` : `REVOKE EXECUTE … FROM public, anon`,
+> corps inchangé. ACL relevée après : `{authenticated, postgres, service_role}`
+> (liste complète). Preuves locales 4/4 (anon refusé 42501 ; le parent passe ;
+> un authentifié non-parent reçoit `not_parent`) ; simulation prod annulée :
+> anon refusé (42501). Rollback en place (rouvre l'ACL d'avant).
+
 `{anon, authenticated, postgres, PUBLIC, service_role}`. Sans conséquence
 aujourd'hui — la fonction commence par `is_parent_of()`, un anonyme reçoit
 `not_parent` — mais c'est exactement la forme que la règle des gates d'ACL
