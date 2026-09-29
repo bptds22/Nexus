@@ -7,7 +7,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { signerJetonDesabonnement, verifierJetonDesabonnement, signerJetonInvitation, verifierJetonInvitation } from "@/lib/courriel/jetonDesabonnement";
+import {
+  signerJetonDesabonnement, verifierJetonDesabonnement, signerJetonInvitation, verifierJetonInvitation,
+  signerJetonDesabonnementParent, verifierJetonDesabonnementParent,
+} from "@/lib/courriel/jetonDesabonnement";
 // @ts-ignore TS5097 — node --experimental-strip-types EXIGE l'extension .ts.
 import * as jumeauDeno from "../../../supabase/functions/_shared/jetonDesabonnement.ts";
 
@@ -86,4 +89,23 @@ test("invitation : falsifiée, autre id ou autre secret refusée", async () => {
   assert.equal(await verifierJetonInvitation(`i.11111111-2222-3333-4444-555555555555.${sig}`, SECRET), null);
   assert.equal(await verifierJetonInvitation(j, SECRET + "-autre"), null);
   assert.equal(await verifierJetonInvitation(j.slice(0, -2), SECRET), null);
+});
+
+test("jeton PARENT : se vérifie, jumeau identique, et ne se confond jamais avec un jeton de compte", async () => {
+  const j = await signerJetonDesabonnementParent(UID, SECRET);
+  assert.equal(await verifierJetonDesabonnementParent(j, SECRET), UID);
+  assert.equal(await jumeauDeno.signerJetonDesabonnementParent(UID, SECRET), j);
+  // Même uuid, même secret : le préfixe distinct rend les deux jetons étrangers.
+  assert.equal(await verifierJetonDesabonnement(j, SECRET), null);
+  assert.equal(await verifierJetonDesabonnementParent(await signerJetonDesabonnement(UID, SECRET), SECRET), null);
+  assert.equal(await verifierJetonDesabonnementParent(j, SECRET + "-autre"), null);
+});
+
+test("parent et invitation ne se confondent jamais", async () => {
+  const parent = await signerJetonDesabonnementParent(UID, SECRET);
+  const inv = await signerJetonInvitation(UID, SECRET);
+  assert.equal(await verifierJetonInvitation(parent, SECRET), null);
+  assert.equal(await verifierJetonInvitation(`i.${parent}`, SECRET), null);
+  assert.equal(await verifierJetonDesabonnementParent(inv, SECRET), null);
+  assert.equal(await verifierJetonDesabonnementParent(inv.slice(2), SECRET), null);
 });
