@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
+import { estRoleFige } from "@/lib/auth/rolesFiges";
 import {
   computeDispatchDestination,
   type DispatchProfile,
@@ -133,6 +134,13 @@ async function maybeApplySignupRole(
   // Garde 3 — onboarding déjà complété = user existant (login OAuth de retour) :
   // ne jamais toucher le role (anti-escalade via URL forgée).
   if (profile?.onboarding_complete === true) return null;
+
+  // Garde 3bis — RÔLE FIGÉ (décision BP 2026-09-29) : un PARENT, PARTNER ou
+  // ADMIN n'a pas de rôle à choisir, même onboarding non terminé. Sans cette
+  // garde, un parent passant par Google depuis l'écran d'inscription
+  // (?role=ATHLETE) voyait son rôle ÉCRASÉ ici, en service_role (cas d11e2688).
+  // Même liste que needs_signup_role() / claim_signup_role() en base.
+  if (estRoleFige(profile?.role)) return null;
 
   // Garde 4 — role param whitelisté (rejette ADMIN/PARTNER/valeurs arbitraires).
   const roleParam = searchParams.get("role");
