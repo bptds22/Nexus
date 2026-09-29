@@ -150,6 +150,19 @@ migration : tout repose sur B1/B2-0.
   d'unité fait dans un autre sport va dans l'unité **visée**.
 
 **Lot C (2026-09-28) — CARTES PROSPECT : un athlète pas encore sur Nexus.**
+> **APPLIQUÉ EN PROD le 2026-09-28 à 22 h 10** (GO BP) — migration
+> `20260929020248_lot_c_cartes_prospect`, en une transaction avec sa ligne
+> d'historique. Contre-vérifié : 7 tables sous RLS ; ACL en liste complète
+> (aucun `anon`, aucun `PUBLIC`) ; tâche `cartes-prospect-purge-quotidienne`
+> posée ; « aucune fonction hors lot C ne lit les cartes » = liste attendue,
+> 0 vue ; empreintes avant/après des objets existants IDENTIQUES (356
+> fonctions, 468 relations, 362 policies, 138 triggers, 8 vues, 5 tâches
+> cron, 5 secrets du vault) — seule relation en plus :
+> `courriel_desabonnements_adresses_pkey`. Edge function
+> `send-invitation-carte` déployée (v1, JWT non vérifié — authentifiée par
+> `x-carte-invitation-secret` ; 401 sans secret ou avec un faux).
+> `CARTE_INVITATION_SECRET` posé dans les secrets des fonctions ET le vault,
+> jamais affiché (empreintes sha256 identiques des deux côtés).
 Migration `lot_c_cartes_prospect` (additive : sept tables nouvelles, aucune
 existante touchée).
 - **Propriété : l'UNITÉ** (cégep × sport), posée par trigger d'après le créateur,

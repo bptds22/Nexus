@@ -1,4 +1,4 @@
--- 20260928190000_lot_c_cartes_prospect (renommée à la version prod après apply)
+-- 20260929020248_lot_c_cartes_prospect — APPLIQUÉE EN PROD le 2026-09-28 (GO BP)
 --
 -- LOT C — CARTES PROSPECT (GO BP 2026-09-28). Un athlète qui n'est pas encore
 -- sur Nexus peut être suivi dans « Mon processus » sous forme de carte.

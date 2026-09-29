@@ -1,4 +1,4 @@
--- Rollback de 20260928190000_lot_c_cartes_prospect (lot C, cartes prospect).
+-- Rollback de 20260929020248_lot_c_cartes_prospect (lot C, cartes prospect).
 -- ⚠️ SUPPRIME les cartes, leurs notes, leur journal et les traces de
 --    suppression. À n'exécuter en prod qu'après export si des cartes existent.
 -- Aucun objet antérieur n'a été modifié par la migration : rien à restaurer.
