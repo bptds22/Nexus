@@ -7,7 +7,7 @@
    d11e2688 : un parent passé ATHLETE en se connectant par Google).
 
    MIROIR de la base : needs_signup_role() et claim_signup_role() ouvrent sur
-   la même liste (migration 20260929145551). Toute modification se fait des
+   la même liste (migration 20260929150639). Toute modification se fait des
    deux côtés.
 ═══════════════════════════════════════════════════════════════ */
 

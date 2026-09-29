@@ -1,4 +1,4 @@
--- 20260929145551_roles_figes_parent_partner_admin (renommée à la version prod après apply)
+-- 20260929150639_roles_figes_parent_partner_admin — APPLIQUÉE EN PROD le 2026-09-29 11 h 06 (GO BP)
 --
 -- AIGUILLAGE — un compte PARENT, PARTNER ou ADMIN n'a JAMAIS de rôle à choisir.
 --

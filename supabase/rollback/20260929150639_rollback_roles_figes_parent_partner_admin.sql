@@ -1,4 +1,4 @@
--- Rollback de 20260929145551_roles_figes_parent_partner_admin : rétablit les deux
+-- Rollback de 20260929150639_roles_figes_parent_partner_admin : rétablit les deux
 -- fonctions dans leur état d'avant (logique identique à la prod du 2026-09-29,
 -- sans la liste des rôles figés). CREATE OR REPLACE : l'ACL est conservée.
 -- ⚠ Rétablit le défaut : un PARENT connecté par Google/Apple repart vers
