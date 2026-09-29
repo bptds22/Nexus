@@ -1648,3 +1648,41 @@ cohérence), appeler `deconnexion()` si une session existe — ou, côté
 d'échanger le code. À prouver sur un déploiement de prévisualisation avec
 Google et Apple (les fournisseurs ne sont pas configurés sur la pile locale).
 
+## 54. Aiguillage des rôles figés — correctif APPLIQUÉ EN PROD, et compte d11e2688 rétabli (2026-09-29)
+
+**Défaut (depuis `claim_signup_role`, 2026-07-13).** `needs_signup_role()`
+ignorait le rôle : un PARENT créé par le claim d'invitation (ni
+`role_claimed_at`, ni onboarding, ni fiche athlète) était déclaré « rôle à
+choisir ». Connexion Google/Apple sur le web → `/auth/callback` l'envoyait sur
+`/inscription/role` au lieu de `/parent` ; y choisir un rôle (RPC
+`claim_signup_role`, ou `?role=` repris en service_role par
+`maybeApplySignupRole`) ÉCRASAIT le rôle PARENT. Exposés en prod : les 44
+parents (admin et partenaires : onboarding terminé, non exposés).
+
+**Correctif.** Migration `20260929150639_roles_figes_parent_partner_admin`,
+appliquée en prod le 2026-09-29 à 11 h 06 (GO BP) : les deux fonctions ouvrent
+sur la liste explicite PARENT/PARTNER/ADMIN (règle 11). Contre-vérifié : ACL
+= `{authenticated, postgres, service_role}` (liste complète), empreintes des
+deux fonctions identiques au local, rollback en place
+(`supabase/rollback/20260929150639_…`). Simulation prod annulée : le parent
+`bptds17` → `needs_signup_role = false`, réclamer ATHLETE refusé (55000),
+rôle toujours PARENT. Garde web jumelle dans `/auth/callback`
+(`lib/auth/rolesFiges.ts`) — **active seulement après la fusion de
+`fix/aiguillage-roles-figes`** : d'ici là, un `?role=` sur une connexion OAuth
+peut encore écraser un parent côté serveur.
+
+**Correction de données — `d11e2688-9e0e-455f-92de-7039c69bb592`.** Créé
+PARENT le 2026-08-25 à 01:28 par le claim d'invitation (enfant `31871c83`,
+16 ans) ; dix minutes plus tard, identité Google ajoutée puis rôle réclamé
+ATHLETE — le défaut ci-dessus. Aucune fiche athlète à son nom, dernière
+connexion le 2026-08-25.
+- **Geste (GO BP, 2026-09-29 15:07 UTC)** : `role` ATHLETE → PARENT, en une
+  instruction avec comparaison de la ligne entière avant/après. **Seuls
+  `role` et `updated_at` (trigger automatique) ont changé** ;
+  `role_claimed_at` (2026-08-25 01:38:59) laissé tel quel, aucun autre champ.
+- **Motif** : rétablir le rôle attribué par le claim d'invitation, écrasé par
+  un défaut d'aiguillage — pas un choix de l'utilisateur éclairé par l'écran.
+- **Vérifié (simulation prod annulée)** : rôle PARENT, 1 lien,
+  `needs_signup_role = false`, voit son enfant ; la répartition envoie un
+  PARENT sur `/parent`.
+
