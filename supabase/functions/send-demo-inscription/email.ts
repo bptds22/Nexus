@@ -4,7 +4,8 @@
 // · confirmation à l'inscrit, selon son choix :
 //     DIRECT         → détails de la démo, lien Meet, .ics joint ;
 //     ENREGISTREMENT → « vous recevrez l'enregistrement après le 12 » ;
-//     UN_A_UN        → rappel du lien de réservation Google.
+//   + si la case 1:1 est cochée (cumulable, retour BP 2026-09-29), le rappel
+//     du lien de réservation s'ajoute, quel que soit le choix.
 // · avis à info@ : tout ce qu'il a répondu.
 // Toute valeur saisie est ÉCHAPPÉE avant d'entrer dans le HTML.
 
@@ -19,7 +20,7 @@ export const DEMO = {
   reservation: "https://calendar.app.google/YAiAYr4CgnMqLFDU6",
 } as const;
 
-export type Participation = "DIRECT" | "ENREGISTREMENT" | "UN_A_UN";
+export type Participation = "DIRECT" | "ENREGISTREMENT";
 
 export interface Inscription {
   id: string;
@@ -33,6 +34,7 @@ export interface Inscription {
   interet_autre: string | null;
   veut_compte: boolean;
   participation: Participation;
+  presentation_1a1: boolean;
   nb_soumissions: number;
 }
 
@@ -53,7 +55,6 @@ const INTERETS: Record<string, string> = {
 const CHOIX: Record<Participation, string> = {
   DIRECT: "Démo en direct le 12 octobre",
   ENREGISTREMENT: "Recevoir l'enregistrement",
-  UN_A_UN: "Présentation 1:1 avec Bruno-Philippe",
 };
 
 export const libelleRole = (r: string | null): string => (r ? ROLES[r] ?? r : "—");
@@ -73,9 +74,12 @@ export function sujetConfirmation(p: Participation): string {
   switch (p) {
     case "DIRECT": return "Votre place à la démo Nexus — lundi 12 octobre, 12 h";
     case "ENREGISTREMENT": return "Démo Nexus du 12 octobre — l'enregistrement vous sera envoyé";
-    case "UN_A_UN": return "Votre présentation Nexus 1:1 — choisissez votre moment";
   }
 }
+
+/** Le rappel du 1:1 (case cochée), ajouté à l'un ou l'autre choix. */
+const RAPPEL_1A1_HTML = `<p>Vous avez aussi demandé une <strong>présentation 1:1 avec Nexus</strong>. Si ce n'est pas déjà fait, choisissez votre moment : <a href="${DEMO.reservation}">${DEMO.reservation}</a></p>`;
+const RAPPEL_1A1_TEXT = `Vous avez aussi demandé une présentation 1:1 avec Nexus. Si ce n'est pas déjà fait, choisissez votre moment : ${DEMO.reservation}`;
 
 export function confirmation(i: Inscription): { sujet: string; html: string; text: string; ics: string | null } {
   const prenom = esc(i.prenom);
@@ -86,8 +90,8 @@ export function confirmation(i: Inscription): { sujet: string; html: string; tex
       corpsHtml = `<p>Bonjour ${prenom},</p>
 <p>Merci de votre inscription. On vous montre Nexus en direct le <strong>${DEMO.libelle}</strong> — les outils, le processus, la recherche — et on répond à vos questions.</p>
 <p>Lien de la rencontre : <a href="${DEMO.meet}">${DEMO.meet}</a><br>L'invitation est jointe à ce courriel (fichier .ics) pour l'ajouter à votre agenda.</p>
-<p>${OFFRE}</p>`;
-      corpsText = `Bonjour ${i.prenom},\n\nMerci de votre inscription. On vous montre Nexus en direct le ${DEMO.libelle} — les outils, le processus, la recherche — et on répond à vos questions.\n\nLien de la rencontre : ${DEMO.meet}\nL'invitation est jointe à ce courriel (fichier .ics).\n\n${OFFRE}`;
+${i.presentation_1a1 ? `${RAPPEL_1A1_HTML}\n` : ""}<p>${OFFRE}</p>`;
+      corpsText = `Bonjour ${i.prenom},\n\nMerci de votre inscription. On vous montre Nexus en direct le ${DEMO.libelle} — les outils, le processus, la recherche — et on répond à vos questions.\n\nLien de la rencontre : ${DEMO.meet}\nL'invitation est jointe à ce courriel (fichier .ics).\n\n${i.presentation_1a1 ? `${RAPPEL_1A1_TEXT}\n\n` : ""}${OFFRE}`;
       cta = "Rejoindre la démo"; url = DEMO.meet;
       break;
     case "ENREGISTREMENT":
@@ -95,18 +99,9 @@ export function confirmation(i: Inscription): { sujet: string; html: string; tex
       corpsHtml = `<p>Bonjour ${prenom},</p>
 <p>Merci de votre intérêt. Vous ne pouvez pas être là le ${DEMO.libelle} : pas de problème, <strong>vous recevrez l'enregistrement de la démo par courriel après le 12 octobre</strong>.</p>
 <p>${OFFRE.replace("Après la démo", "Après l'avoir visionné")}</p>
-<p>Vous préférez une présentation en tête-à-tête ? Choisissez un moment avec Bruno-Philippe.</p>`;
-      corpsText = `Bonjour ${i.prenom},\n\nMerci de votre intérêt. Vous recevrez l'enregistrement de la démo par courriel après le 12 octobre.\n\n${OFFRE.replace("Après la démo", "Après l'avoir visionné")}\n\nVous préférez une présentation en tête-à-tête ? ${DEMO.reservation}`;
-      cta = "Réserver une présentation 1:1"; url = DEMO.reservation;
-      break;
-    case "UN_A_UN":
-      heading = "Votre présentation 1:1";
-      corpsHtml = `<p>Bonjour ${prenom},</p>
-<p>Merci ! Bruno-Philippe vous présentera Nexus en tête-à-tête, à votre rythme, et répondra à vos questions.</p>
-<p>Si ce n'est pas déjà fait, <strong>choisissez votre moment</strong> dans son agenda : l'invitation vous arrivera aussitôt.</p>
-<p>${OFFRE.replace("Après la démo", "Après la présentation")}</p>`;
-      corpsText = `Bonjour ${i.prenom},\n\nMerci ! Bruno-Philippe vous présentera Nexus en tête-à-tête et répondra à vos questions.\n\nSi ce n'est pas déjà fait, choisissez votre moment : ${DEMO.reservation}\n\n${OFFRE.replace("Après la démo", "Après la présentation")}`;
-      cta = "Choisir un moment"; url = DEMO.reservation;
+${i.presentation_1a1 ? RAPPEL_1A1_HTML : "<p>Vous préférez une présentation en tête-à-tête ? Choisissez un moment avec Nexus.</p>"}`;
+      corpsText = `Bonjour ${i.prenom},\n\nMerci de votre intérêt. Vous recevrez l'enregistrement de la démo par courriel après le 12 octobre.\n\n${OFFRE.replace("Après la démo", "Après l'avoir visionné")}\n\n${i.presentation_1a1 ? RAPPEL_1A1_TEXT : `Vous préférez une présentation en tête-à-tête ? ${DEMO.reservation}`}`;
+      cta = i.presentation_1a1 ? "Choisir un moment" : "Réserver une présentation 1:1"; url = DEMO.reservation;
       break;
   }
   const { html, text } = renderEmail({
@@ -130,7 +125,8 @@ export function avis(i: Inscription): { sujet: string; html: string; text: strin
     ["Rôle", libelleRole(i.role)],
     ["Intérêts", libelleInterets(i)],
     ["Veut un compte", i.veut_compte ? "Oui" : "Non"],
-    ["Choix", libelleChoix(i.participation) + (i.participation === "UN_A_UN" ? " (réservation dans Google Agenda)" : "")],
+    ["Choix", libelleChoix(i.participation)],
+    ["Présentation 1:1", i.presentation_1a1 ? "Oui (réservation dans Google Agenda)" : "Non"],
   ];
   if (i.nb_soumissions > 1) lignes.push(["Note", `Soumission n° ${i.nb_soumissions} (mise à jour d'une inscription existante)`]);
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1a1d24;">
@@ -139,7 +135,7 @@ export function avis(i: Inscription): { sujet: string; html: string; text: strin
     .map(([k, v]) => `<tr><td style="color:#6b7280;vertical-align:top;">${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
 </div>`;
   const text = `Nouvelle inscription — démo du 12 octobre\n\n${lignes.map(([k, v]) => `${k} : ${v}`).join("\n")}`;
-  return { sujet: `Démo 12 oct. — ${i.prenom} ${i.nom} (${libelleChoix(i.participation)})`, html, text };
+  return { sujet: `Démo 12 oct. — ${i.prenom} ${i.nom} (${libelleChoix(i.participation)}${i.presentation_1a1 ? " + 1:1" : ""})`, html, text };
 }
 
 // ── .ics (RFC 5545) : CRLF, échappement, lignes pliées à 75 octets ──

@@ -15,8 +15,8 @@ export const DEMO_12_OCTOBRE = {
   courriel: "info@nexussports.ca",
 } as const;
 
-export type Participation = "DIRECT" | "ENREGISTREMENT" | "UN_A_UN";
-export const PARTICIPATIONS: Participation[] = ["DIRECT", "ENREGISTREMENT", "UN_A_UN"];
+export type Participation = "DIRECT" | "ENREGISTREMENT";
+export const PARTICIPATIONS: Participation[] = ["DIRECT", "ENREGISTREMENT"];
 
 export const ROLES_DEMO = [
   { valeur: "RECRUTEUR", libelle: "Recruteur" },
@@ -34,8 +34,15 @@ export const INTERETS_DEMO = [
 export const libelleParticipation: Record<Participation, string> = {
   DIRECT: "Démo en direct",
   ENREGISTREMENT: "Enregistrement",
-  UN_A_UN: "Présentation 1:1",
 };
+
+/** L'inscription recruteur, courriel pré-rempli (modifiable). */
+export function lienOuvrirCompte(courriel: string): string {
+  const q = new URLSearchParams({ role: "collegial" });
+  const c = courriel.trim();
+  if (c) q.set("email", c);
+  return `/auth/pro?${q.toString()}`;
+}
 
 export const estParticipation = (v: unknown): v is Participation =>
   typeof v === "string" && (PARTICIPATIONS as string[]).includes(v);

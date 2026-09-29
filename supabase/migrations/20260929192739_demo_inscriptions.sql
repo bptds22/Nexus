@@ -27,8 +27,13 @@ create table public.demo_inscriptions (
   role                   text check (role is null or role in ('RECRUTEUR', 'ENTRAINEUR_CHEF', 'DIRECTEUR_SPORTS', 'AUTRE')),
   interets               text[] not null default '{}' check (interets <@ array['OUTILS', 'BASSIN', 'AUTRE']),
   interet_autre          text check (interet_autre is null or char_length(interet_autre) <= 500),
+  -- Vrai quand l'inscrit a cliqué « Ouvrir mon compte Nexus » (sur la page
+  -- ou sur la page de remerciement) : l'intérêt, pas l'ouverture du compte.
   veut_compte            boolean not null default false,
-  participation          text not null check (participation in ('DIRECT', 'ENREGISTREMENT', 'UN_A_UN')),
+  participation          text not null check (participation in ('DIRECT', 'ENREGISTREMENT')),
+  -- Cumulable avec l'un ou l'autre choix (retour BP 2026-09-29) : la
+  -- réservation elle-même se fait dans l'agenda Google.
+  presentation_1a1       boolean not null default false,
   consentement_courriels boolean not null check (consentement_courriels),
   consentement_le        timestamptz not null default now(),
   nb_soumissions         integer not null default 1,
@@ -61,7 +66,7 @@ create function public.inscrire_demo(
   p_prenom text, p_nom text, p_courriel text,
   p_cegep_id uuid, p_cegep_autre text, p_sport_id uuid, p_role text,
   p_interets text[], p_interet_autre text, p_veut_compte boolean,
-  p_participation text, p_consentement boolean, p_site_web text default null
+  p_participation text, p_presentation_1a1 boolean, p_consentement boolean, p_site_web text default null
 ) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
@@ -101,7 +106,7 @@ begin
   if p_consentement is not true then
     raise exception 'NEXUS: consentement requis' using errcode = '22023';
   end if;
-  if p_participation is null or p_participation not in ('DIRECT', 'ENREGISTREMENT', 'UN_A_UN') then
+  if p_participation is null or p_participation not in ('DIRECT', 'ENREGISTREMENT') then
     raise exception 'NEXUS: choix de participation requis' using errcode = '22023';
   end if;
   if p_cegep_id is not null and not exists (select 1 from public.schools where id = p_cegep_id and type = 'CEGEP') then
@@ -116,30 +121,41 @@ begin
 
   insert into public.demo_inscriptions as d
     (prenom, nom, courriel, cegep_id, cegep_autre, sport_id, role, interets, interet_autre,
-     veut_compte, participation, consentement_courriels)
+     veut_compte, participation, presentation_1a1, consentement_courriels)
   values
     (btrim(p_prenom), btrim(p_nom), v_courriel, p_cegep_id,
      case when p_cegep_id is null then nullif(btrim(coalesce(p_cegep_autre, '')), '') end,
      p_sport_id, p_role, v_interets,
      case when 'AUTRE' = any (v_interets) then nullif(btrim(coalesce(p_interet_autre, '')), '') end,
-     coalesce(p_veut_compte, false), p_participation, true)
+     coalesce(p_veut_compte, false), p_participation, coalesce(p_presentation_1a1, false), true)
   on conflict (evenement, lower(courriel)) do update set
     prenom = excluded.prenom, nom = excluded.nom, cegep_id = excluded.cegep_id, cegep_autre = excluded.cegep_autre,
     sport_id = excluded.sport_id, role = excluded.role, interets = excluded.interets,
-    interet_autre = excluded.interet_autre, veut_compte = excluded.veut_compte,
-    participation = excluded.participation, consentement_le = now(),
+    interet_autre = excluded.interet_autre, veut_compte = d.veut_compte or excluded.veut_compte,
+    participation = excluded.participation, presentation_1a1 = excluded.presentation_1a1, consentement_le = now(),
     nb_soumissions = d.nb_soumissions + 1, modifie_le = now(),
-    -- Nouvelle confirmation seulement si le choix change : resoumettre ne
-    -- fait pas pleuvoir les courriels sur une adresse.
+    -- Nouvelle confirmation seulement si le choix change ou si le 1:1 vient
+    -- d'être demandé : resoumettre ne fait pas pleuvoir les courriels.
     confirmation_statut = case when d.participation is distinct from excluded.participation
+                                 or (excluded.presentation_1a1 and not d.presentation_1a1)
                                then 'A_ENVOYER' else d.confirmation_statut end,
     avis_statut = 'A_ENVOYER'
   returning d.id into v_id;
   return v_id;
 end $$;
 
-revoke execute on function public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, text) from public;
-grant execute on function public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, text) to anon, authenticated;
+revoke execute on function public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, boolean, text) from public;
+grant execute on function public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, boolean, text) to anon, authenticated;
+
+-- « Ouvrir mon compte Nexus » cliqué APRÈS l'inscription (page de
+-- remerciement) : pose l'intérêt sur la ligne. Ne fait que passer un booléen
+-- à vrai ; l'id vient de inscrire_demo.
+create function public.demo_clic_compte(p_id uuid)
+returns void language sql security definer set search_path = public as $$
+  update public.demo_inscriptions set veut_compte = true where id = p_id and not veut_compte
+$$;
+revoke execute on function public.demo_clic_compte(uuid) from public;
+grant execute on function public.demo_clic_compte(uuid) to anon, authenticated;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- GATES — listes complètes, jamais par inclusion.
@@ -169,9 +185,16 @@ begin
   select array_agg(t.g order by t.g) into vus
     from pg_proc pr, lateral (select coalesce(nullif(split_part(x, '=', 1), ''), 'PUBLIC') as g
                                 from unnest(pr.proacl::text[]) as x) t
-   where pr.oid = 'public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, text)'::regprocedure;
+   where pr.oid = 'public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, boolean, text)'::regprocedure;
   if vus is distinct from array['anon','authenticated','postgres','service_role'] then
     raise exception 'NEXUS: ACL de inscrire_demo = %', vus;
+  end if;
+  select array_agg(t.g order by t.g) into vus
+    from pg_proc pr, lateral (select coalesce(nullif(split_part(x, '=', 1), ''), 'PUBLIC') as g
+                                from unnest(pr.proacl::text[]) as x) t
+   where pr.oid = 'public.demo_clic_compte(uuid)'::regprocedure;
+  if vus is distinct from array['anon','authenticated','postgres','service_role'] then
+    raise exception 'NEXUS: ACL de demo_clic_compte = %', vus;
   end if;
 
   select coalesce(array_agg(polname::text order by polname::text), '{}') into vus

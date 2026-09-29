@@ -12,7 +12,7 @@ import { DEMO_12_OCTOBRE } from "@/lib/demo/demo12Octobre";
 const base = {
   id: "11111111-2222-3333-4444-555555555555", prenom: "Julie", nom: "Côté", courriel: "julie@exemple.test",
   cegep: "Cégep de Sherbrooke", sport: "Football", role: "RECRUTEUR", interets: ["OUTILS", "AUTRE"],
-  interet_autre: "Statistiques", veut_compte: true, nb_soumissions: 1,
+  interet_autre: "Statistiques", veut_compte: true, presentation_1a1: false, nb_soumissions: 1,
 };
 
 test("page et courriels : mêmes liens, même date", () => {
@@ -36,11 +36,24 @@ test("ENREGISTREMENT : l'enregistrement après le 12, pas de .ics", () => {
   assert.equal(c.ics, null);
 });
 
-test("UN_A_UN : rappel du lien de réservation, pas de .ics", () => {
-  const c = confirmation({ ...base, participation: "UN_A_UN" });
-  assert.ok(c.html.includes("https://calendar.app.google/YAiAYr4CgnMqLFDU6"));
-  assert.ok(c.html.includes("Choisir un moment"));
-  assert.equal(c.ics, null);
+test("1:1 cumulable : le rappel du lien s'ajoute au direct comme à l'enregistrement", () => {
+  const sansD = confirmation({ ...base, participation: "DIRECT" });
+  const avecD = confirmation({ ...base, participation: "DIRECT", presentation_1a1: true });
+  assert.ok(!sansD.html.includes("calendar.app.google"));
+  assert.ok(avecD.html.includes("présentation 1:1 avec Nexus") && avecD.html.includes("https://calendar.app.google/YAiAYr4CgnMqLFDU6"));
+  assert.ok(avecD.text.includes("https://calendar.app.google/YAiAYr4CgnMqLFDU6"));
+  assert.ok(avecD.ics, "le .ics reste joint au direct");
+  const avecE = confirmation({ ...base, participation: "ENREGISTREMENT", presentation_1a1: true });
+  assert.ok(avecE.html.includes("présentation 1:1 avec Nexus") && avecE.html.includes("Choisir un moment"));
+});
+
+test("jamais « Bruno-Philippe » dans les confirmations", () => {
+  for (const participation of ["DIRECT", "ENREGISTREMENT"] as const) {
+    for (const presentation_1a1 of [false, true]) {
+      const c = confirmation({ ...base, participation, presentation_1a1 });
+      assert.ok(!/Bruno/.test(c.html + c.text), `${participation}/${presentation_1a1}`);
+    }
+  }
 });
 
 test("saisie échappée dans le HTML", () => {
@@ -52,11 +65,12 @@ test("saisie échappée dans le HTML", () => {
 });
 
 test("avis à info@ : tout ce qu'il a répondu", () => {
-  const a = avis({ ...base, participation: "UN_A_UN" });
+  const a = avis({ ...base, participation: "ENREGISTREMENT", presentation_1a1: true });
   for (const attendu of ["Julie Côté", "julie@exemple.test", "Cégep de Sherbrooke", "Football", "Recruteur",
-    "Les outils de recrutement · Autre : Statistiques", "Oui", "Présentation 1:1"]) {
+    "Les outils de recrutement · Autre : Statistiques", "Recevoir l'enregistrement", "Présentation 1:1 : Oui"]) {
     assert.ok(a.text.includes(attendu), attendu);
   }
+  assert.match(a.sujet, /\+ 1:1\)$/);
 });
 
 test(".ics : RFC 5545 — CRLF, 16 h–17 h UTC (12 h–13 h HAE), lignes ≤ 75 octets, lien Meet", () => {

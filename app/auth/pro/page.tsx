@@ -100,7 +100,9 @@ function ProSignupContent() {
   // signUp() extraMetadata ; le trigger handle_new_auth_user (étendu)
   // l'écrit dans users.date_naissance via cast safe ISO YYYY-MM-DD.
   const [birthdate, setBirthdate] = useState("");
-  const [email, setEmail] = useState(lockedEmail);
+  // Hors invitation, ?email= PRÉ-REMPLIT sans verrouiller (lien « Ouvrir mon
+  // compte Nexus » de /12octobre).
+  const [email, setEmail] = useState(lockedEmail || (searchParams.get("email") ?? ""));
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);

@@ -1,18 +1,36 @@
 "use client";
 
-/* /12octobre/merci — la page de remerciement, selon le choix. */
+/* /12octobre/merci — la page de remerciement, selon le choix ; rappel du
+   1:1 s'il a été demandé ; « Ouvrir mon compte Nexus » (le clic pose
+   l'intérêt sur l'inscription, RPC demo_clic_compte). */
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { notFound, useSearchParams } from "next/navigation";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import PlaybookBackground from "../../components/PlaybookBackground";
-import { DEMO_12_OCTOBRE as D, estParticipation } from "@/lib/demo/demo12Octobre";
+import { createClient } from "@/lib/supabase/client";
+import { DEMO_12_OCTOBRE as D, estParticipation, lienOuvrirCompte } from "@/lib/demo/demo12Octobre";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function Contenu() {
-  const choix = useSearchParams().get("choix");
+  const params = useSearchParams();
+  const choix = params.get("choix");
   const c = estParticipation(choix) ? choix : null;
+  const unAUn = params.get("un_a_un") === "1";
+  const id = params.get("id") ?? "";
+  const [courriel, setCourriel] = useState("");
+  useEffect(() => {
+    try { setCourriel(sessionStorage.getItem("demo12-courriel") ?? ""); } catch { /* rien */ }
+  }, []);
+
+  const clicCompte = () => {
+    // .then() : un constructeur supabase-js ne part qu'une fois consommé.
+    if (UUID_RE.test(id)) void createClient().rpc("demo_clic_compte", { p_id: id }).then(() => undefined);
+  };
+
   return (
     <div className="max-w-2xl mx-auto nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-6 sm:p-10 font-sans text-[15px] text-[#D1D5DB] leading-relaxed space-y-4">
       <h1 className="nx-display text-3xl font-black text-white uppercase tracking-tight">Merci !</h1>
@@ -26,19 +44,21 @@ function Contenu() {
       {c === "ENREGISTREMENT" && (
         <p>C&apos;est noté : vous recevrez l&apos;enregistrement de la démo par courriel après le 12 octobre.</p>
       )}
-      {c === "UN_A_UN" && (
-        <>
-          <p>Bruno-Philippe vous présentera Nexus en tête-à-tête. Si ce n&apos;est pas déjà fait, choisissez votre moment : l&apos;invitation vous arrivera aussitôt.</p>
+      {!c && <p>Votre inscription est reçue. Un courriel de confirmation vient de partir.</p>}
+      {unAUn && (
+        <div className="space-y-3">
+          <p>Vous avez aussi demandé une présentation 1:1 avec Nexus. Si ce n&apos;est pas déjà fait, choisissez votre moment.</p>
           <a href={D.reservation} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center h-11 px-6 bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-xs uppercase tracking-widest">
             Choisir un moment
           </a>
-        </>
+        </div>
       )}
-      {!c && <p>Votre inscription est reçue. Un courriel de confirmation vient de partir.</p>}
-      <p>
-        Ensuite : un accès complet et gratuit à Nexus pendant deux semaines, pour tester avant la période intensive de recrutement.
-      </p>
+      <p>Ensuite : un accès complet et gratuit à Nexus pendant deux semaines, pour tester avant la période intensive de recrutement.</p>
+      <a href={lienOuvrirCompte(courriel)} target="_blank" rel="noopener noreferrer" onClick={clicCompte}
+        className="inline-flex items-center h-11 px-6 border border-[#1E2D4A] text-[#D1D5DB] hover:text-white hover:border-[#9AA3B2] font-head font-black text-xs uppercase tracking-widest">
+        Ouvrir mon compte Nexus
+      </a>
       <p className="text-[#9AA3B2]">
         Questions : <a href={`mailto:${D.courriel}`} className="text-white hover:text-wl-red">{D.courriel}</a>
         {" · "}<a href="tel:4384980494" className="text-white hover:text-wl-red">{D.telephone}</a>

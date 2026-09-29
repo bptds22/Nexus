@@ -55,7 +55,7 @@ async function envoyer(deps: Dependances, cle: string, corps: Record<string, unk
 export async function traiterInscription(deps: Dependances, id: string): Promise<Resultat> {
   const { supabase } = deps;
   const { data: r, error } = await supabase.from("demo_inscriptions")
-    .select("id, prenom, nom, courriel, cegep_autre, interets, interet_autre, veut_compte, role, participation, nb_soumissions, confirmation_statut, avis_statut, schools:cegep_id(name), sports:sport_id(nom)")
+    .select("id, prenom, nom, courriel, cegep_autre, interets, interet_autre, veut_compte, role, participation, presentation_1a1, nb_soumissions, confirmation_statut, avis_statut, schools:cegep_id(name), sports:sport_id(nom)")
     .eq("id", id).maybeSingle();
   if (error) return { confirmation: "ECHEC", avis: "ECHEC", erreur: error.message };
   if (!r) return { confirmation: "RIEN_A_FAIRE", avis: "RIEN_A_FAIRE" };
@@ -65,13 +65,13 @@ export async function traiterInscription(deps: Dependances, id: string): Promise
     cegep: r.schools?.name ?? (r.cegep_autre ? `Autre : ${r.cegep_autre}` : null),
     sport: r.sports?.nom ?? null,
     role: r.role, interets: r.interets ?? [], interet_autre: r.interet_autre,
-    veut_compte: r.veut_compte, participation: r.participation, nb_soumissions: r.nb_soumissions,
+    veut_compte: r.veut_compte, participation: r.participation, presentation_1a1: !!r.presentation_1a1, nb_soumissions: r.nb_soumissions,
   };
   const resultat: Resultat = { confirmation: "RIEN_A_FAIRE", avis: "RIEN_A_FAIRE" };
 
   if (await reclamer(supabase, id, "confirmation_statut")) {
     const c = confirmation(i);
-    const err = await envoyer(deps, `demo-confirmation/${id}/${i.participation}`, {
+    const err = await envoyer(deps, `demo-confirmation/${id}/${i.participation}/${i.presentation_1a1 ? "1a1" : "seul"}`, {
       from: FROM, to: i.courriel, reply_to: SUPPORT, subject: c.sujet, html: c.html, text: c.text,
       ...(c.ics ? { attachments: [{ filename: "demo-nexus-12-octobre.ics", content: encoderBase64(c.ics), content_type: "text/calendar; charset=utf-8; method=PUBLISH" }] } : {}),
       tags: [{ name: "campagne", value: "demo_12_octobre" }],
