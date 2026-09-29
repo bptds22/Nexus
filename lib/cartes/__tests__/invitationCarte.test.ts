@@ -36,8 +36,6 @@ test("une saisie contenant du HTML est échappée", () => {
   assert.ok(!html.includes("<b>X</b>") && !html.includes("<script>"));
 });
 
-test("expéditeur au nom du recruteur, sans caractère qui casse l'en-tête", () => {
-  assert.equal(expediteur("Rémi Collègue"), '"Rémi Collègue via Nexus" <info@nexussports.ca>');
-  assert.equal(expediteur('Ré"mi <x>'), '"Rémi x via Nexus" <info@nexussports.ca>');
-  assert.equal(expediteur(null), "Nexus <info@nexussports.ca>");
+test("expéditeur : « Nexus <info@nexussports.ca> », jamais au nom du recruteur", () => {
+  assert.equal(expediteur(), "Nexus <info@nexussports.ca>");
 });
