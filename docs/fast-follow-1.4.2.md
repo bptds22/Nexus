@@ -1593,3 +1593,27 @@ reste dans `privacy_preferences.consent_partner_visibility` mais la fiche reste
 à `false`. La RPC ci-dessus le réglera (la rejouer depuis la trace). Même
 mécanique, par lecture du code (non rejouée) : un mineur qui coche la case
 parentale sur une fiche réclamée encore à `false` prend un 400.
+
+**Statut §46 (2026-09-29) — RPC ÉCRITE, PROUVÉE EN LOCAL, NON APPLIQUÉE EN PROD.**
+Branche `feat/partenaires-rpc-parametres` : migration `20260929034823_set_my_partner_visibility`
++ rollback `supabase/rollback/20260929034823_rollback_…`. `/athlete/parametres`
+(web) passe par elle ; la case « J'ai reçu le consentement parental »
+(auto-attestation d'un mineur) est retirée. Un mineur non inscrit voit un
+verrou qui renvoie à son parent ; inscrit, il peut retirer. Les appels REFUSÉS
+(sans `policy_version`, mineur qui accorde, compte sans fiche) n'écrivent rien,
+journal compris ; tout appel abouti écrit une ligne, même répété.
+`AthleteParametresMobile` écrit toujours en direct → refusé : lot 1.4.4.
+
+**Onboarding web** : décocher à l'étape 1 la case parentale d'un consentement
+donné au signup (ou d'une fiche déjà inscrite) appelle la RPC en retrait puis
+efface la clé de metadata — la trace ne peut plus dire oui quand la fiche dit
+non (cas `da26917a`). Correction de ce cas en prod :
+`scripts/alignement-trace-partenaire-da26917a-prod.sql` (GO BP requis).
+
+## 47. `set_child_consent` — ACL ouverte à `anon` et `PUBLIC` en prod (relevé 2026-09-29, non corrigé)
+
+`{anon, authenticated, postgres, PUBLIC, service_role}`. Sans conséquence
+aujourd'hui — la fonction commence par `is_parent_of()`, un anonyme reçoit
+`not_parent` — mais c'est exactement la forme que la règle des gates d'ACL
+interdit. À refermer (révoquer `PUBLIC`/`anon`, gate par comparaison complète)
+dans la prochaine migration qui touche la fonction.
