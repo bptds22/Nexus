@@ -1594,9 +1594,14 @@ reste dans `privacy_preferences.consent_partner_visibility` mais la fiche reste
 mécanique, par lecture du code (non rejouée) : un mineur qui coche la case
 parentale sur une fiche réclamée encore à `false` prend un 400.
 
-**Statut §50 (2026-09-29) — RPC ÉCRITE, PROUVÉE EN LOCAL, NON APPLIQUÉE EN PROD.**
-Branche `feat/partenaires-rpc-parametres` : migration `20260929034823_set_my_partner_visibility`
-+ rollback `supabase/rollback/20260929034823_rollback_…`. `/athlete/parametres`
+**Statut §50 — RPC ✅ APPLIQUÉE EN PROD le 2026-09-29 (version `20260929130822`).**
+Contre-vérifications prod : empreinte de la fonction identique au local, ACL
+`{authenticated, postgres, service_role}`, garde de périmètre inchangée ; appels
+sans écriture (bloc annulé) : coach → `not_found`, mineur qui accorde →
+`parent_required`, sans `policy_version` → refus, `anon` → refusé, 0 ligne de
+journal ajoutée. Branche `feat/partenaires-rpc-parametres` : migration
+`20260929130822_set_my_partner_visibility` + rollback
+`supabase/rollback/20260929130822_rollback_…`. `/athlete/parametres`
 (web) passe par elle ; la case « J'ai reçu le consentement parental »
 (auto-attestation d'un mineur) est retirée. Un mineur non inscrit voit un
 verrou qui renvoie à son parent ; inscrit, il peut retirer. Les appels REFUSÉS

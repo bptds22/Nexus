@@ -1,4 +1,5 @@
--- Rollback de 20260929034823_set_my_partner_visibility.
+-- Rollback de 20260929130822_set_my_partner_visibility (version prod ; écrite
+-- sous 20260929034823, renommée après l'apply).
 -- La fonction est NOUVELLE : aucun état antérieur à restaurer, on la retire.
 -- Effet côté app : /athlete/parametres rend « Erreur lors de la sauvegarde »
 -- (RPC introuvable) — c'était déjà le comportement réel avant (UPDATE refusé
