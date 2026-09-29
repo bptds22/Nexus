@@ -1,0 +1,77 @@
+/* Démo du 12 octobre — les courriels (edge function send-demo-inscription) :
+   texte selon le choix, liens, échappement, .ics conforme. */
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+// emailLayout.ts lit Deno.env au chargement : un Deno minimal suffit ici.
+(globalThis as unknown as { Deno: unknown }).Deno ??= { env: { get: () => undefined } };
+// @ts-ignore TS5097 — node --experimental-strip-types EXIGE l'extension .ts.
+const { confirmation, avis, ics, DEMO } = await import("../../../supabase/functions/send-demo-inscription/email.ts");
+import { DEMO_12_OCTOBRE } from "@/lib/demo/demo12Octobre";
+
+const base = {
+  id: "11111111-2222-3333-4444-555555555555", prenom: "Julie", nom: "Côté", courriel: "julie@exemple.test",
+  cegep: "Cégep de Sherbrooke", sport: "Football", role: "RECRUTEUR", interets: ["OUTILS", "AUTRE"],
+  interet_autre: "Statistiques", veut_compte: true, nb_soumissions: 1,
+};
+
+test("page et courriels : mêmes liens, même date", () => {
+  assert.equal(DEMO.meet, DEMO_12_OCTOBRE.meet);
+  assert.equal(DEMO.reservation, DEMO_12_OCTOBRE.reservation);
+  assert.equal(DEMO.libelle, DEMO_12_OCTOBRE.libelle);
+});
+
+test("DIRECT : lien Meet, date, .ics joint", () => {
+  const c = confirmation({ ...base, participation: "DIRECT" });
+  assert.match(c.sujet, /lundi 12 octobre, 12 h/);
+  assert.ok(c.html.includes("https://meet.google.com/myi-efqn-kes"));
+  assert.ok(c.text.includes("lundi 12 octobre 2026, de 12 h à 13 h (heure de Montréal)"));
+  assert.ok(c.html.includes("deux semaines"));
+  assert.ok(c.ics);
+});
+
+test("ENREGISTREMENT : l'enregistrement après le 12, pas de .ics", () => {
+  const c = confirmation({ ...base, participation: "ENREGISTREMENT" });
+  assert.ok(c.text.includes("enregistrement de la démo par courriel après le 12 octobre"));
+  assert.equal(c.ics, null);
+});
+
+test("UN_A_UN : rappel du lien de réservation, pas de .ics", () => {
+  const c = confirmation({ ...base, participation: "UN_A_UN" });
+  assert.ok(c.html.includes("https://calendar.app.google/YAiAYr4CgnMqLFDU6"));
+  assert.ok(c.html.includes("Choisir un moment"));
+  assert.equal(c.ics, null);
+});
+
+test("saisie échappée dans le HTML", () => {
+  const c = confirmation({ ...base, prenom: "<script>x</script>", participation: "DIRECT" });
+  assert.ok(!c.html.includes("<script>x</script>"));
+  assert.ok(c.html.includes("&lt;script&gt;"));
+  const a = avis({ ...base, nom: "<b>", participation: "DIRECT" });
+  assert.ok(!a.html.includes("<b>"));
+});
+
+test("avis à info@ : tout ce qu'il a répondu", () => {
+  const a = avis({ ...base, participation: "UN_A_UN" });
+  for (const attendu of ["Julie Côté", "julie@exemple.test", "Cégep de Sherbrooke", "Football", "Recruteur",
+    "Les outils de recrutement · Autre : Statistiques", "Oui", "Présentation 1:1"]) {
+    assert.ok(a.text.includes(attendu), attendu);
+  }
+});
+
+test(".ics : RFC 5545 — CRLF, 16 h–17 h UTC (12 h–13 h HAE), lignes ≤ 75 octets, lien Meet", () => {
+  const s = ics(base.id, new Date("2026-09-29T20:00:00Z"));
+  assert.ok(s.endsWith("\r\n"));
+  assert.ok(!/[^\r]\n/.test(s), "que des CRLF");
+  const lignes = s.split("\r\n").filter(Boolean);
+  for (const l of lignes) assert.ok(new TextEncoder().encode(l).length <= 75, l);
+  assert.ok(lignes.includes("DTSTART:20261012T160000Z"));
+  assert.ok(lignes.includes("DTEND:20261012T170000Z"));
+  assert.ok(lignes.includes("DTSTAMP:20260929T200000Z"));
+  assert.ok(lignes.includes(`UID:demo-2026-10-12-${base.id}@nexussports.ca`));
+  const deplie = s.replace(/\r\n /g, "");
+  assert.ok(deplie.includes("LOCATION:https://meet.google.com/myi-efqn-kes"));
+  assert.ok(deplie.includes("SUMMARY:Nexus — Démo recruteurs"));
+  // 12 h à Montréal le 12 octobre 2026 = 16 h UTC.
+  assert.equal(new Date("2026-10-12T16:00:00Z").toLocaleString("fr-CA", { timeZone: "America/Montreal", hour: "2-digit", hour12: false }), "12 h");
+});

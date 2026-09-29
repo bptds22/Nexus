@@ -366,6 +366,12 @@ allow_dynamic_registration = false
 [functions.send-contact]
 verify_jwt = false
 
+# Inscription à la démo du 12 octobre (/12octobre) — même raison que send-contact.
+# Protection : l'id vient de la RPC inscrire_demo (limite de débit, pot de miel)
+# et chaque courriel est réclamé une seule fois en base.
+[functions.send-demo-inscription]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

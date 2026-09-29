@@ -91,6 +91,8 @@ export const MOBILE_EXCLUDED_PAGES = [
   '/roadmap',
   '/guide-recrutement',
   '/contact',
+  // Démo recruteurs du 12 octobre 2026 — inscription publique (+ /merci).
+  '/12octobre',
   '/communications-marketing',
 
   // Pages légales — remplacées par PDFs (lib/legal/index.ts)
