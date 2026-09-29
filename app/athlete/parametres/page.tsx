@@ -448,7 +448,7 @@ function ParametresPageDesktop() {
 
                   {(() => {
                     if (!profile) return null;
-                    /* §46 — tout passe par la RPC set_my_partner_visibility :
+                    /* §50 — tout passe par la RPC set_my_partner_visibility :
                        l'UPDATE direct est refusé par la garde de périmètre.
                        Majeur : accorde ou retire. Mineur (ou date inconnue,
                        traitée en mineur comme côté base) : RETIRE seulement —

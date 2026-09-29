@@ -1594,7 +1594,7 @@ reste dans `privacy_preferences.consent_partner_visibility` mais la fiche reste
 mécanique, par lecture du code (non rejouée) : un mineur qui coche la case
 parentale sur une fiche réclamée encore à `false` prend un 400.
 
-**Statut §46 (2026-09-29) — RPC ÉCRITE, PROUVÉE EN LOCAL, NON APPLIQUÉE EN PROD.**
+**Statut §50 (2026-09-29) — RPC ÉCRITE, PROUVÉE EN LOCAL, NON APPLIQUÉE EN PROD.**
 Branche `feat/partenaires-rpc-parametres` : migration `20260929034823_set_my_partner_visibility`
 + rollback `supabase/rollback/20260929034823_rollback_…`. `/athlete/parametres`
 (web) passe par elle ; la case « J'ai reçu le consentement parental »
@@ -1610,7 +1610,7 @@ efface la clé de metadata — la trace ne peut plus dire oui quand la fiche dit
 non (cas `da26917a`). Correction de ce cas en prod :
 `scripts/alignement-trace-partenaire-da26917a-prod.sql` (GO BP requis).
 
-## 47. `set_child_consent` — ACL ouverte à `anon` et `PUBLIC` en prod (relevé 2026-09-29, non corrigé)
+## 51. `set_child_consent` — ACL ouverte à `anon` et `PUBLIC` en prod (relevé 2026-09-29, non corrigé)
 
 `{anon, authenticated, postgres, PUBLIC, service_role}`. Sans conséquence
 aujourd'hui — la fonction commence par `is_parent_of()`, un anonyme reçoit

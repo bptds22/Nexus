@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- set_my_partner_visibility — l'athlète gère SA visibilité partenaires.
--- Décision BP 2026-09-28 (registre §44 et §46).
+-- Décision BP 2026-09-28 (registre §48 et §50).
 --
 -- ── LE TROU ──────────────────────────────────────────────────────────────
 -- Depuis 20260909191744, partner_visibility_opt_in / _opted_in_at /
@@ -125,7 +125,7 @@ end;
 $$;
 
 comment on function public.set_my_partner_visibility(boolean, text) is
-  'Athlète : accorde (majeur seulement) ou retire (tous) sa visibilité partenaires. Journalisé à chaque appel avec policy_version. Registre §46.';
+  'Athlète : accorde (majeur seulement) ou retire (tous) sa visibilité partenaires. Journalisé à chaque appel avec policy_version. Registre §50.';
 
 revoke all on function public.set_my_partner_visibility(boolean, text) from public, anon, authenticated, service_role;
 grant execute on function public.set_my_partner_visibility(boolean, text) to authenticated, service_role;
