@@ -135,12 +135,22 @@ export default function PartnerAthletesSearch({
 
   // Server-side query — server-supportable filters applied here,
   // distinctions filter applied client-side after fetch.
+  /* CHARGEMENT COMPLET, PAR PAGES (2026-09-28). La requête portait un
+     `.limit(100)` sans pagination : au 101ᵉ athlète éligible, les suivants
+     auraient disparu en silence — le compteur « N athlètes disponibles »
+     aurait plafonné à 100 et le filtre badges (côté client) n'aurait vu que
+     ces 100. On charge donc TOUT, par tranches de PAGE lignes, jusqu'à une
+     tranche incomplète. PAGE doit rester ≤ au plafond PostgREST (max-rows,
+     1000 sur Supabase) : une tranche tronquée par ce plafond serait lue
+     comme la dernière.
+     Tri départagé par `id` : sans clé unique, deux lignes à cote égale
+     peuvent changer de place entre deux tranches (doublon + trou). */
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const supabase = createClient();
+    let annule = false;
+    const PAGE = 500;
 
-      let query = supabase.from("top_athletes_view").select("*").limit(100);
+    const construire = (supabase: ReturnType<typeof createClient>) => {
+      let query = supabase.from("top_athletes_view").select("*");
 
       if (search.trim().length >= 2) {
         const q = search.trim().replace(/[%,]/g, "");
@@ -174,18 +184,36 @@ export default function PartnerAthletesSearch({
           query = query.order("last_name", { ascending: true });
           break;
       }
+      return query.order("id", { ascending: true });
+    };
 
-      const { data, error } = await query;
-      if (error) {
-        console.error("[partenaire/athletes] load:", error);
-        setAthletes([]);
-      } else {
-        setAthletes((data ?? []) as unknown as AthleteRow[]);
+    const loadData = async () => {
+      setLoading(true);
+      const supabase = createClient();
+      const tout: AthleteRow[] = [];
+
+      for (let debut = 0; ; debut += PAGE) {
+        const { data, error } = await construire(supabase).range(debut, debut + PAGE - 1);
+        if (annule) return;
+        if (error) {
+          console.error("[partenaire/athletes] load:", error);
+          setAthletes([]);
+          setLoading(false);
+          return;
+        }
+        const tranche = (data ?? []) as unknown as AthleteRow[];
+        tout.push(...tranche);
+        if (tranche.length < PAGE) break;
       }
+
+      setAthletes(tout);
       setLoading(false);
     };
 
     loadData();
+    // Un changement de filtre pendant le chargement : la boucle en cours
+    // s'arrête et n'écrase pas le résultat du nouveau filtre.
+    return () => { annule = true; };
   }, [
     search, sport, position, region, promotion, orgType,
     genre, minRating, withVideoOnly, sortBy,
