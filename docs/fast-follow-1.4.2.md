@@ -1623,7 +1623,7 @@ aujourd'hui — la fonction commence par `is_parent_of()`, un anonyme reçoit
 interdit. À refermer (révoquer `PUBLIC`/`anon`, gate par comparaison complète)
 dans la prochaine migration qui touche la fonction.
 
-## 48. Relance des parents — visibilité partenaires (construite 2026-09-29, rien envoyé, rien en prod)
+## 52. Relance des parents — visibilité partenaires (construite 2026-09-29, rien envoyé, rien en prod)
 
 Branche `feat/relance-partenaires`. Procédure complète, preuves et ordre de
 mise en prod : `docs/relance-partenaires.md`. Cibles : les inscrits

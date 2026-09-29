@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    /consentement-partenaires — le lien du courriel envoyé au PARENT
-   (relance « visibilité partenaires », 2026-09-29, registre §48).
+   (relance « visibilité partenaires », 2026-09-29, registre §52).
 
    SANS CONNEXION : un parent n'a en général pas de compte. C'est le jeton
    (aléatoire, 32 octets, usage unique, 60 jours, stocké HACHÉ en base) qui

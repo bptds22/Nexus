@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Relance des PARENTS — consentement « visibilité partenaires » par lien.
--- Décision BP 2026-09-28 (registre §44, §48). Modèle : relance inscription
+-- Décision BP 2026-09-28 (registre §48, §52). Modèle : relance inscription
 -- (20260921152458).
 --
 -- LE CONSTAT. 57 mineurs ACTIF ne sont pas visibles des partenaires ; pour

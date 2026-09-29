@@ -1,5 +1,5 @@
 // send-relance-partenaires/email.ts — le courriel au PARENT : « une
-// autorisation à vous demander » (visibilité partenaires, registre §48).
+// autorisation à vous demander » (visibilité partenaires, registre §52).
 // Séparé de index.ts pour être importable sans démarrer Deno.serve.
 //
 // LE MÊME GABARIT pour l'envoi de test et pour la campagne.

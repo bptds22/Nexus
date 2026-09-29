@@ -1,5 +1,5 @@
 // send-relance-partenaires : courriel aux PARENTS pour le consentement
-// « visibilité partenaires » (registre §48). Calqué sur send-relance-inscription.
+// « visibilité partenaires » (registre §52). Calqué sur send-relance-inscription.
 //
 // Auth appelant : header x-relance-secret == RELANCE_PARTENAIRES_SECRET
 // (secret DÉDIÉ — pas celui de la relance d'inscription).

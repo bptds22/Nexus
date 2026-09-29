@@ -1,7 +1,7 @@
 # Relance des parents — visibilité partenaires
 
 Construite le 2026-09-29 sur GO BP (construction seulement). **Aucun courriel
-n'est parti. Rien n'est en prod.** Registre : `fast-follow-1.4.2.md` §44, §46, §48.
+n'est parti. Rien n'est en prod.** Registre : `fast-follow-1.4.2.md` §48, §50, §52.
 
 ## Qui reçoit
 
