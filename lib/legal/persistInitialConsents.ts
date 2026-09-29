@@ -62,6 +62,11 @@ export interface InitialConsentFlags {
       Libellé = partnerResponsibilityText() (lib/legal/partnerMediaCopy.ts),
       responsabilité partagée Nexus/partenaire. */
   parentalPartnerVisibility?: boolean;
+  /** 2026-09-28 — visibilité partenaires consentie par l'athlète MAJEUR
+      lui-même (optionnel, décoché par défaut). Clé DISTINCTE de la clé
+      parentale : un majeur n'atteste d'aucune autorisation de parent, et la
+      clé dit qui a consenti. Jamais déduite d'un autre consentement. */
+  partnerVisibility?: boolean;
 }
 
 /** Iter 7.50-a-bis — PII parent capturée au signup mobile, stashée dans
@@ -147,6 +152,10 @@ export async function persistInitialConsents(
     next.consent_parental_partner_visibility = now;
     changed = true;
   }
+  if (consents.partnerVisibility && (existing.consent_partner_visibility == null)) {
+    next.consent_partner_visibility = now;
+    changed = true;
+  }
 
   if (!changed) {
     return { ok: true, changed: false };
@@ -201,6 +210,12 @@ export function buildConsentMetadata(
   }
   if (consents.parentalPartnerVisibility !== undefined) {
     meta.consent_parental_partner_visibility = consents.parentalPartnerVisibility ? now : null;
+  }
+  // ⚠ GoTrue SUPPRIME les clés à null de raw_user_meta_data (rejoué en local
+  // le 2026-09-28) : une case décochée ne laisse AUCUNE trace, pas une trace
+  // nulle. Absence de clé = « refusé » OU « jamais demandé », indiscernables.
+  if (consents.partnerVisibility !== undefined) {
+    meta.consent_partner_visibility = consents.partnerVisibility ? now : null;
   }
 
   // PII parent — stashée dans raw_user_meta_data pour re-lecture au

@@ -10,6 +10,10 @@
    - audience="athlete" (self-signup) → addresses the athlete with
      "tu / ta / ton / mes parents" — Quebec FR tutoiement, the
      athlete is filling in their own profile.
+   - audience="adult" (self-signup, athlète MAJEUR — 2026-09-28) → même
+     explication mot pour mot que "athlete" (même source partnerMediaCopy) ;
+     seule la case change : le majeur consent LUI-MÊME, il n'atteste pas
+     d'une autorisation parentale. Décochée par défaut, comme partout.
    - audience="coach" (coach creates a profile on behalf of an
      athlete) → addresses the COACH with "tu" but refers to the
      ATHLETE in the third person ("l'athlète / sa carte"). The
@@ -37,7 +41,7 @@ interface PartnerVisibilityConsentCardProps {
    * Whose perspective the copy addresses. Defaults to "athlete"
    * for backwards compatibility with the self-signup call site.
    */
-  audience?: "athlete" | "coach";
+  audience?: "athlete" | "adult" | "coach";
 }
 
 interface Copy {
@@ -48,7 +52,7 @@ interface Copy {
   helper: string;
 }
 
-const COPY: Record<"athlete" | "coach", Copy> = {
+const COPY: Record<"athlete" | "adult" | "coach", Copy> = {
   athlete: {
     /* Explainer fields (intro / whatAppears / bullets) are sourced from
        lib/legal/partnerMediaCopy.ts so the onboarding card + the
@@ -60,6 +64,15 @@ const COPY: Record<"athlete" | "coach", Copy> = {
     bullets: [...PARTNER_MEDIA_COPY.bullets],
     checkboxLabel:
       "Mes parents autorisent l’utilisation de ma carte Nexus par les partenaires Nexus.",
+    helper:
+      "Tu peux compléter ton inscription sans cocher cette case. Ce choix peut être ajusté plus tard dans tes paramètres.",
+  },
+  adult: {
+    intro: PARTNER_MEDIA_COPY.intro,
+    whatAppears: PARTNER_MEDIA_COPY.whatAppears,
+    bullets: [...PARTNER_MEDIA_COPY.bullets],
+    checkboxLabel:
+      "J’autorise l’utilisation de ma carte Nexus par les partenaires Nexus.",
     helper:
       "Tu peux compléter ton inscription sans cocher cette case. Ce choix peut être ajusté plus tard dans tes paramètres.",
   },

@@ -915,6 +915,12 @@ function AthleteOnboardingDesktop() {
      metadata. Mieux vaut une date approximative qu'un consentement sans date. */
   const [consentProfileISO, setConsentProfileISO] = useState<string | null>(null);
   const [partnerVisibilityISO, setPartnerVisibilityISO] = useState<string | null>(null);
+  /* Athlète MAJEUR — horodatage de SA case partenaires (metadata
+     `consent_partner_visibility`, posée par /auth écran 2 ou /consentements).
+     Même discipline que le mineur : pas d'écriture sans preuve datée, et
+     l'horodatage est celui du SIGNUP. `partner_visibility_parental_consent`
+     n'est PAS écrite : aucun parent n'a rien autorisé. */
+  const [adultPartnerISO, setAdultPartnerISO] = useState<string | null>(null);
   // Minor gate — set at init from hasParentalConsent (signup captured
   // parental consent = minor). Drives whether the parent/consent section
   // shows AND whether it is required (canProceed/submit). Adults: false.
@@ -974,6 +980,8 @@ function AthleteOnboardingDesktop() {
             setPartnerVisibilityISO(meta.consent_parental_partner_visibility);
           }
         }
+      } else if (typeof meta.consent_partner_visibility === "string") {
+        setAdultPartnerISO(meta.consent_partner_visibility);
       }
 
       // Single retried read of public.users. Right after signup the JWT
@@ -1448,6 +1456,16 @@ function AthleteOnboardingDesktop() {
           partner_visibility_opt_in: true,
           partner_visibility_opted_in_at: partnerVisibilityISO ?? new Date().toISOString(),
         } : {}),
+        // Majeur : sa propre case (jamais la parentale, jamais déduite).
+        // INSERT seulement, ou fiche déjà opt-in (l'élagage retire alors la
+        // valeur identique) : sur une fiche réclamée encore à `false`, le
+        // changement lèverait la garde de périmètre et ferait échouer toute
+        // l'étape — registre §46, en attente de la RPC.
+        ...(!isMinor && adultPartnerISO
+            && (!existingAthleteId || ficheEnBase.current?.partner_visibility_opt_in === true) ? {
+          partner_visibility_opt_in: true,
+          partner_visibility_opted_in_at: partnerVisibilityISO ?? adultPartnerISO,
+        } : {}),
         status: "ACTIF", verified: false,
       };
       /* LE SPORT PART DÈS L'ÉTAPE 1 QUAND IL Y EST CHOISI (2026-09-21).
@@ -1645,6 +1663,12 @@ function AthleteOnboardingDesktop() {
         partner_visibility_parental_consent: true,
         partner_visibility_opt_in: true,
         partner_visibility_opted_in_at: partnerVisibilityISO ?? new Date().toISOString(),
+      } : {}),
+      // Majeur : sa propre case — mêmes conditions qu'à l'étape 1 (§46).
+      ...(!isMinor && adultPartnerISO
+          && (!existingAthleteId || ficheEnBase.current?.partner_visibility_opt_in === true) ? {
+        partner_visibility_opt_in: true,
+        partner_visibility_opted_in_at: partnerVisibilityISO ?? adultPartnerISO,
       } : {}),
       status: "ACTIF",
       verified: false,
