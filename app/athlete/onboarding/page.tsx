@@ -17,6 +17,7 @@ import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
+import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 import { AthleteOnboardingMobile } from "@/components/shared/AthleteOnboardingMobile";
 import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
@@ -921,6 +922,11 @@ function AthleteOnboardingDesktop() {
      l'horodatage est celui du SIGNUP. `partner_visibility_parental_consent`
      n'est PAS écrite : aucun parent n'a rien autorisé. */
   const [adultPartnerISO, setAdultPartnerISO] = useState<string | null>(null);
+  /* Le signup a laissé une trace « oui » à la case partenaires parentale
+     (metadata + privacy_preferences). Si l'athlète DÉCOCHE la case à l'étape 1,
+     cette trace doit dire non elle aussi — sinon la fiche dit non et le journal
+     dit oui (cas da26917a, 2026-08-12). */
+  const traceSignupPartenaire = useRef(false);
   // Minor gate — set at init from hasParentalConsent (signup captured
   // parental consent = minor). Drives whether the parent/consent section
   // shows AND whether it is required (canProceed/submit). Adults: false.
@@ -975,6 +981,7 @@ function AthleteOnboardingDesktop() {
         }
         if (meta.consent_marketing) setConsentComms(true);
         if (meta.consent_parental_partner_visibility) {
+          traceSignupPartenaire.current = true;
           setConsentPartnerVisibility(true);
           if (typeof meta.consent_parental_partner_visibility === "string") {
             setPartnerVisibilityISO(meta.consent_parental_partner_visibility);
@@ -1524,6 +1531,27 @@ function AthleteOnboardingDesktop() {
           setSaving(false); return;
         }
         if (data) setExistingAthleteId(data.id);
+      }
+      /* Décochage à l'étape 1 d'un consentement donné au signup, ou d'une
+         fiche déjà inscrite : retrait par la RPC (fiche + privacy_preferences
+         + journal, policy_version), puis la clé de metadata est effacée.
+         Bloquant : un retrait qui échoue laisserait la fiche visible ou le
+         journal dire oui. */
+      if (step === 1 && isMinor && !consentPartnerVisibility
+          && (traceSignupPartenaire.current || ficheEnBase.current?.partner_visibility_opt_in === true)) {
+        const { data: retrait, error: errRetrait } = await supabase.rpc("set_my_partner_visibility", {
+          p_granted: false,
+          p_policy_version: PRIVACY_POLICY_VERSION,
+        });
+        const r = retrait as { ok?: boolean; reason?: string } | null;
+        if (errRetrait || !r?.ok) {
+          console.error(`[Onboarding retrait partenaires] ${errRetrait ? erreurLisible(errRetrait) : r?.reason}`);
+          setSaveError("Le retrait de la visibilité partenaires n'a pas pu être enregistré.");
+          setSaving(false); return;
+        }
+        await supabase.auth.updateUser({ data: { consent_parental_partner_visibility: null } });
+        traceSignupPartenaire.current = false;
+        setPartnerVisibilityISO(null);
       }
       setSaveError(null);
       setSaving(false);
