@@ -1,4 +1,4 @@
--- Rollback de 20260929035825_relance_partenaires_parents.
+-- Rollback de 20260929154405_relance_partenaires_parents.
 -- ⚠ Détruit le journal des envois, les jetons et le registre de
 -- désabonnement des parents. Les réponses des parents RESTENT dans
 -- consent_audit_trail (journal de consentement, jamais réécrit) — c'est pour

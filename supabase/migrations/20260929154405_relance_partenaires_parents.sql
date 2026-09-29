@@ -1,3 +1,4 @@
+-- 20260929154405_relance_partenaires_parents — APPLIQUÉE EN PROD le 2026-09-29 (GO BP, étape 4). Aucun envoi.
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Relance des PARENTS — consentement « visibilité partenaires » par lien.
 -- Décision BP 2026-09-28 (registre §48, §52). Modèle : relance inscription

@@ -56,7 +56,7 @@ change rien.
 
 ## Mise en prod — chaque étape sur GO de BP
 
-1. Migration `20260929035825_relance_partenaires_parents` (`apply_migration`),
+1. Migration `20260929154405_relance_partenaires_parents` — **APPLIQUÉE EN PROD le 2026-09-29** (GO BP ; version d'origine `20260929035825`),
    **après** `20260929130822_set_my_partner_visibility` (appliquée le 2026-09-29). Vérifier le NOTICE
    « ACL exactes » et `select count(*) from relance_partenaires_cibles('partenaires_parents_v1')`
    sous service_role ≈ 33.
