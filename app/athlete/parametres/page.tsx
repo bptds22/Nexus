@@ -105,6 +105,9 @@ function ParametresPageDesktop() {
     partnerOptIn: boolean;
     partnerOptInDate: string | null;
     partnerParentalConsent: boolean;
+    /** Date du dernier retrait fait par l'athlète LUI-MÊME, s'il suit le
+     *  dernier accord (my_partner_visibility_state, §55). null sinon. */
+    partnerRetireLe: string | null;
   } | null>(null);
 
   // Media partner opt-in toggle state
@@ -171,6 +174,11 @@ function ParametresPageDesktop() {
       .select("context")
       .eq("id", user.id)
       .maybeSingle();
+    // §55 — le journal n'est lisible que par les admins : la date du retrait
+    // vient d'une fonction qui ne rend que la fiche de l'appelant. En échec
+    // (fonction pas encore en prod), l'écran retombe sur l'état simple.
+    const { data: etatPartenaires } = await supabase.rpc("my_partner_visibility_state");
+    const retireLe = ((etatPartenaires as { retire_par_moi_le?: string | null } | null)?.retire_par_moi_le) ?? null;
     const schoolRel = Array.isArray(row.schools) ? row.schools[0] : row.schools;
     // Phase 6.2.h : team + parent league name now derived from
     // team_athletes → teams → schools (civil league school = parent).
@@ -198,6 +206,7 @@ function ParametresPageDesktop() {
       partnerOptIn: row.partner_visibility_opt_in === true,
       partnerOptInDate: (row.partner_visibility_opted_in_at as string | null) ?? null,
       partnerParentalConsent: row.partner_visibility_parental_consent === true,
+      partnerRetireLe: retireLe,
     });
   }, []);
 
@@ -456,10 +465,16 @@ function ParametresPageDesktop() {
                     const majeur = !!profile.dateOfBirth && !isMinor(profile.dateOfBirth);
                     const peutAgir = profile.partnerOptIn || majeur;
                     const toggleEnabled = peutAgir && !savingPartnerOptIn;
+                    /* Décision BP 2026-09-29 (§55) : un mineur qui a RETIRÉ
+                       garde l'interrupteur visible, désactivé, avec la date
+                       du retrait — seul son parent peut réactiver. */
+                    const retireParMineur = !majeur && !profile.partnerOptIn && !!profile.partnerRetireLe;
+                    const dateFr = (iso: string) =>
+                      new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
 
                     return (
                       <>
-                        {peutAgir ? (
+                        {(peutAgir || retireParMineur) ? (
                           <div className="flex items-center justify-between py-2">
                             <div className="flex-1 pr-4">
                               <p className="text-[13px] font-semibold text-white">Permettre l&apos;utilisation de ma carte par les partenaires</p>
@@ -470,7 +485,12 @@ function ParametresPageDesktop() {
                               )}
                               {profile.partnerOptIn && !majeur && (
                                 <p className="text-[11px] text-[#9CA3AF] mt-1">
-                                  Autorisé par ton parent. Tu peux le retirer ; seul ton parent peut le réactiver.
+                                  Tu peux retirer ce consentement en tout temps. Seul ton parent pourra le réactiver.
+                                </p>
+                              )}
+                              {retireParMineur && profile.partnerRetireLe && (
+                                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                                  Retiré le {dateFr(profile.partnerRetireLe)} — ton parent peut le réactiver depuis son espace
                                 </p>
                               )}
                             </div>

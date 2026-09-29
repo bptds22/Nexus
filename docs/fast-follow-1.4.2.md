@@ -1686,3 +1686,36 @@ connexion le 2026-08-25.
   `needs_signup_role = false`, voit son enfant ; la répartition envoie un
   PARENT sur `/parent`.
 
+## 55. Retrait du consentement partenaires par un MINEUR — permis, parent notifié (décision BP 2026-09-29)
+
+**Décision.** Un mineur peut retirer (déjà vrai : `set_my_partner_visibility`,
+§50) ; seul son parent peut réactiver (`set_child_consent`). L'écran le dit
+AVANT le geste : sous l'interrupteur, pour un mineur inscrit, « Tu peux retirer
+ce consentement en tout temps. Seul ton parent pourra le réactiver. » Après le
+retrait, l'interrupteur reste visible, désactivé : « Retiré le [date] — ton
+parent peut le réactiver depuis son espace ». Et le parent reçoit un courriel :
+« [Prénom] a retiré le consentement partenaires. Vous pouvez le réactiver ici. »
+
+**Réalisation (branche `feat/partenaires-retrait-mineur`, NON appliquée en prod).**
+Migration `20260929151022_retrait_partenaires_mineur_notifie` :
+`my_partner_visibility_state()` (la date du retrait, fiche de l'appelant
+seulement — le journal n'est lisible que par les admins) et le trigger
+`trg_notify_parent_retrait_partenaires` sur `consent_audit_trail` (vrai retrait
+d'un mineur seulement : `granted → withdrawn` ; un retrait répété n'envoie
+rien) → pg_net → fonction `send-parent-retrait-partenaires`, secret
+`PARENT_NOTICE_SECRET` (déjà au Vault et aux secrets des fonctions). Parent
+lié → `/parent/consentements` ; sinon courriel de la fiche → son invitation
+`/parent/claim?token=…` ; sinon l'accueil.
+
+**Deux écarts assumés, à confirmer par BP :** le courriel NOMME l'enfant
+(`send-parent-notice` ne le nomme jamais) ; il VOUVOIE le parent (le texte de
+la décision tutoyait — tous les courriels aux parents vouvoient).
+
+**Réactivation par le parent — prouvée en prod le 2026-09-29** sur le cas réel
+`d4cd6432` (retrait par l'athlète à 13:38:54), en transaction annulée : l'écran
+parent lit `opt_in = false`, `set_child_consent(true)` sous le parent lié rend
+l'athlète éligible, une ligne de journal. Rien n'a persisté.
+
+**Mobile (lot 1.4.4) :** `AthleteParametresMobile` écrit encore en direct
+(refusé depuis le 2026-09-09) — le brancher sur la RPC et y reporter ces deux
+libellés.
