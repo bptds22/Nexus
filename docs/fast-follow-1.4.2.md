@@ -1623,6 +1623,15 @@ aujourd'hui — la fonction commence par `is_parent_of()`, un anonyme reçoit
 interdit. À refermer (révoquer `PUBLIC`/`anon`, gate par comparaison complète)
 dans la prochaine migration qui touche la fonction.
 
+## 48. Relance des parents — visibilité partenaires (construite 2026-09-29, rien envoyé, rien en prod)
+
+Branche `feat/relance-partenaires`. Procédure complète, preuves et ordre de
+mise en prod : `docs/relance-partenaires.md`. Cibles : les inscrits
+Google/Apple et les cas isolés (33 au relevé), **pas** les 22 inscrits par
+courriel. Les deux réponses (accepter / refuser) sont journalisées — la
+contrainte d'action de `consent_audit_trail` gagne `REFUSED` (élargissement
+additif). **Aucun envoi sans GO séparé de BP, nombre exact recopié.**
+
 ## 53. Connexion OAuth PAR-DESSUS une session existante — atterrit sur l'ANCIEN compte (relevé 2026-09-29, amélioration)
 
 **Constat (logs prod, 2026-09-29 13:37 UTC).** Navigateur connecté en
