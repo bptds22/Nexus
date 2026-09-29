@@ -80,6 +80,9 @@ export const MOBILE_EXCLUDED_PAGES = [
   // navigateur. Masquée par HIDE_PATTERNS, gardée par notFound() en tête de
   // app/desabonnement/page.tsx.
   '/desabonnement',
+  // Relance des parents, visibilité partenaires (2026-09-29) — liens de courriel.
+  '/consentement-partenaires',
+  '/desabonnement-parent',
 
   // Pages produit/marketing
   '/tarifs',

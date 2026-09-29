@@ -70,6 +70,11 @@ const HIDE_PATTERNS = [
   // SEULEMENT : searchParams la rend dynamique (export refusé), et le lien
   // d'un courriel s'ouvre dans le navigateur, jamais dans l'application.
   'app/desabonnement/page.tsx',
+  // /consentement-partenaires et /desabonnement-parent — la relance des
+  // PARENTS (2026-09-29). WEB SEULEMENT, même raison que /desabonnement :
+  // searchParams (dynamique) et un lien de courriel s'ouvre dans le navigateur.
+  'app/consentement-partenaires/page.tsx',
+  'app/desabonnement-parent/page.tsx',
   // NOTE: app/page.tsx is NOT hidden — Capacitor needs an out/index.html
   // entry point. The page's redirect('/auth') guard fires on mobile load.
   // Centre d'aide public (chantier 5). WEB SEULEMENT pour l'instant :
@@ -110,6 +115,10 @@ const HIDE_PATTERNS = [
   // SEULEMENT : ses deux appelants sont la page /desabonnement (masquée plus
   // haut) et le bouton natif des messageries, jamais l'application.
   'app/api/desabonnement/route.ts',
+  // POST des deux pages de la relance des parents (2026-09-29) : force-dynamic,
+  // mêmes raisons que /api/desabonnement. WEB SEULEMENT.
+  'app/api/consentement-partenaires/route.ts',
+  'app/api/desabonnement-parent/route.ts',
   // GET /api/rseq/calendrier — relais du calendrier de ligue RSEQ avec le bon
   // type (2026-09-22). `force-dynamic` + searchParams : l'export le refuse.
   // WEB SEULEMENT : l'app l'appelle en URL absolue (nexussports.ca), jamais

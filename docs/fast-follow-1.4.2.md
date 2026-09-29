@@ -1630,6 +1630,25 @@ aujourd'hui — la fonction commence par `is_parent_of()`, un anonyme reçoit
 interdit. À refermer (révoquer `PUBLIC`/`anon`, gate par comparaison complète)
 dans la prochaine migration qui touche la fonction.
 
+## 52. Relance des parents — visibilité partenaires (construite 2026-09-29, rien envoyé, rien en prod)
+
+> **EN PROD le 2026-09-29, AUCUN ENVOI** (GO BP, étape 4) — migration
+> `20260929154405_relance_partenaires_parents` appliquée (contre-vérifié : 6
+> fonctions `{postgres, service_role}`, 3 tables RLS sans droit anon,
+> contrainte du journal élargie à `REFUSED`, cibles `partenaires_parents_v1` =
+> **33** — 12 Apple, 20 Google, 1 courriel) ; secret `RELANCE_PARTENAIRES_SECRET`
+> posé (empreinte vérifiée, jamais affiché) ; fonction `send-relance-partenaires`
+> déployée (v1, JWT vérifié, 401 sans secret). Reste : fusion de la branche (les
+> pages `/consentement-partenaires` et `/desabonnement-parent` en ligne AVANT
+> tout lien), aperçu, test, puis envoi sur GO séparé avec le nombre recopié.
+
+Branche `feat/relance-partenaires`. Procédure complète, preuves et ordre de
+mise en prod : `docs/relance-partenaires.md`. Cibles : les inscrits
+Google/Apple et les cas isolés (33 au relevé), **pas** les 22 inscrits par
+courriel. Les deux réponses (accepter / refuser) sont journalisées — la
+contrainte d'action de `consent_audit_trail` gagne `REFUSED` (élargissement
+additif). **Aucun envoi sans GO séparé de BP, nombre exact recopié.**
+
 ## 53. Connexion OAuth PAR-DESSUS une session existante — atterrit sur l'ANCIEN compte (relevé 2026-09-29, amélioration)
 
 **Constat (logs prod, 2026-09-29 13:37 UTC).** Navigateur connecté en

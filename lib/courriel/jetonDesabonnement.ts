@@ -106,3 +106,29 @@ export async function verifierJetonInvitation(jeton: string | null | undefined, 
   const ok = await crypto.subtle.verify("HMAC", k, sig, new TextEncoder().encode(PREFIXE_INVITATION + id));
   return ok ? id : null;
 }
+
+/* VARIANTE PARENT (2026-09-29). Un parent n'a en général pas de compte : le
+   jeton porte l'athlete_id, sous un préfixe DISTINCT. Une signature de compte
+   ne vaut jamais pour un parent, ni l'inverse — même secret, deux usages. */
+const PREFIXE_PARENT = "desabonnement-parent:v1:";
+
+/** Signe un jeton de désabonnement PARENT pour cet athlète. */
+export async function signerJetonDesabonnementParent(athleteId: string, secret: string): Promise<string> {
+  if (!UUID_RE.test(athleteId)) throw new Error("athlete_id invalide pour un jeton de désabonnement parent.");
+  const k = await cle(secret, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(PREFIXE_PARENT + athleteId.toLowerCase()));
+  return `${athleteId.toLowerCase()}.${base64url(sig)}`;
+}
+
+/** Rend l'athlete_id si le jeton PARENT est authentique, sinon null. */
+export async function verifierJetonDesabonnementParent(jeton: string | null | undefined, secret: string): Promise<string | null> {
+  if (!jeton || jeton.length > 200) return null;
+  const point = jeton.indexOf(".");
+  if (point < 0) return null;
+  const athleteId = jeton.slice(0, point).toLowerCase();
+  const sig = depuisBase64url(jeton.slice(point + 1));
+  if (!UUID_RE.test(athleteId) || !sig) return null;
+  const k = await cle(secret, ["verify"]);
+  const ok = await crypto.subtle.verify("HMAC", k, sig, new TextEncoder().encode(PREFIXE_PARENT + athleteId));
+  return ok ? athleteId : null;
+}
