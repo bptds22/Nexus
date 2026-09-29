@@ -1523,7 +1523,7 @@ vue liste du calendrier chronologique. L'invitation automatique part de la
 base (trigger) : une carte créée depuis le mobile déclenchera l'envoi sans
 rien changer au binaire.
 
-## 44. Visibilité partenaires — un consentement SÉPARÉ, opt-in, jamais déduit (décision BP 2026-09-28)
+## 48. Visibilité partenaires — un consentement SÉPARÉ, opt-in, jamais déduit (décision BP 2026-09-28)
 
 **Décision.** La visibilité auprès des partenaires média
 (`athletes.partner_visibility_opt_in`, lue par `is_partner_eligible_athlete()`)
@@ -1550,7 +1550,7 @@ en local le 2026-09-28) : une case décochée ne laisse AUCUNE trace. L'absence
 de clé ne prouve donc ni un refus ni un oubli. Seul `consent_audit_trail`
 (via une RPC) fait preuve d'un choix, avec `policy_version`.
 
-## 45. Visibilité partenaires — MOBILE (lot 1.4.4)
+## 49. Visibilité partenaires — MOBILE (lot 1.4.4)
 
 Branche web `feat/partenaires-consentement-majeurs` (2026-09-28) : la case est
 proposée aux majeurs dans `/auth` (écran 2) et dans `/consentements`, et
@@ -1566,7 +1566,7 @@ Reste au lot mobile 1.4.4 :
 3. `/consentements` est une route partagée : le correctif mineur/majeur
    n'atteint l'app qu'au prochain binaire.
 
-## 46. Paramètres athlète — l'interrupteur partenaires est REFUSÉ par la base depuis le 2026-09-09
+## 50. Paramètres athlète — l'interrupteur partenaires est REFUSÉ par la base depuis le 2026-09-09
 
 `partner_visibility_opt_in`, `…_opted_in_at` et `…_parental_consent` sont dans
 `enforce_athlete_self_edit_perimeter()` (migration `20260909191744`). Or

@@ -1460,7 +1460,7 @@ function AthleteOnboardingDesktop() {
         // INSERT seulement, ou fiche déjà opt-in (l'élagage retire alors la
         // valeur identique) : sur une fiche réclamée encore à `false`, le
         // changement lèverait la garde de périmètre et ferait échouer toute
-        // l'étape — registre §46, en attente de la RPC.
+        // l'étape — registre §50, en attente de la RPC.
         ...(!isMinor && adultPartnerISO
             && (!existingAthleteId || ficheEnBase.current?.partner_visibility_opt_in === true) ? {
           partner_visibility_opt_in: true,
@@ -1664,7 +1664,7 @@ function AthleteOnboardingDesktop() {
         partner_visibility_opt_in: true,
         partner_visibility_opted_in_at: partnerVisibilityISO ?? new Date().toISOString(),
       } : {}),
-      // Majeur : sa propre case — mêmes conditions qu'à l'étape 1 (§46).
+      // Majeur : sa propre case — mêmes conditions qu'à l'étape 1 (§50).
       ...(!isMinor && adultPartnerISO
           && (!existingAthleteId || ficheEnBase.current?.partner_visibility_opt_in === true) ? {
         partner_visibility_opt_in: true,
