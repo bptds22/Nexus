@@ -27,8 +27,9 @@ create table public.demo_inscriptions (
   role                   text check (role is null or role in ('RECRUTEUR', 'ENTRAINEUR_CHEF', 'DIRECTEUR_SPORTS', 'AUTRE')),
   interets               text[] not null default '{}' check (interets <@ array['OUTILS', 'BASSIN', 'AUTRE']),
   interet_autre          text check (interet_autre is null or char_length(interet_autre) <= 500),
-  -- Vrai quand l'inscrit a cliqué « Ouvrir mon compte Nexus » (sur la page
-  -- ou sur la page de remerciement) : l'intérêt, pas l'ouverture du compte.
+  -- « Je suis intéressé à ouvrir un compte Nexus » (case du formulaire), ou
+  -- clic sur le lien d'inscription de la page de remerciement : l'intérêt,
+  -- pas l'ouverture du compte.
   veut_compte            boolean not null default false,
   participation          text not null check (participation in ('DIRECT', 'ENREGISTREMENT')),
   -- Cumulable avec l'un ou l'autre choix (retour BP 2026-09-29) : la
@@ -147,7 +148,7 @@ end $$;
 revoke execute on function public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, boolean, text) from public;
 grant execute on function public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, boolean, text) to anon, authenticated;
 
--- « Ouvrir mon compte Nexus » cliqué APRÈS l'inscription (page de
+-- Lien « Créer mon compte Nexus » cliqué APRÈS l'inscription (page de
 -- remerciement) : pose l'intérêt sur la ligne. Ne fait que passer un booléen
 -- à vrai ; l'id vient de inscrire_demo.
 create function public.demo_clic_compte(p_id uuid)

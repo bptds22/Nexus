@@ -5,8 +5,10 @@
    sans connexion, web seulement).
 
    Ordre (retour BP 2026-09-29) : titre → points courts → FORMULAIRE →
-   vidéo en bas. Le bouton d'inscription tient à l'écran d'un ordinateur
-   sans défiler : formulaire serré en trois colonnes dès lg.
+   vidéo en bas. Texte de 17-18 px, champs de 48 px, sections aérées,
+   formulaire et vidéo sur la même largeur utile (1100 px). MOBILE D'ABORD
+   (retour BP) : une colonne à 375-390 px, champs pleine largeur en 16 px
+   (pas de zoom iOS), un seul bouton « Envoyer » pleine largeur.
 
    La base décide (RPC inscrire_demo : validation, pot de miel, limite de
    débit) ; les courriels partent ensuite par l'edge function
@@ -15,19 +17,24 @@
    /admin/demo.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import PlaybookBackground from "../components/PlaybookBackground";
 import { createClient } from "@/lib/supabase/client";
+import { trierOptions, SEUIL_RECHERCHE } from "@/lib/demo/rechercheListe";
+import ListeRecherche from "./_components/ListeRecherche";
 import {
-  DEMO_12_OCTOBRE as D, ROLES_DEMO, INTERETS_DEMO, messageErreurInscription, lienOuvrirCompte, type Participation,
+  DEMO_12_OCTOBRE as D, ROLES_DEMO, INTERETS_DEMO, messageErreurInscription, type Participation,
 } from "@/lib/demo/demo12Octobre";
 
-const label = "text-[10px] font-bold tracking-[0.2em] uppercase text-[#9AA3B2]";
-const champ = "nx-input w-full h-10 px-3 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors";
+const LARGEUR = "max-w-[1100px] mx-auto";
+const label = "text-[12px] font-bold tracking-[0.16em] uppercase text-[#B4BCC8]";
+const champ = "nx-input w-full h-12 px-4 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-base placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors";
+const caseACocher = "w-5 h-5 shrink-0 accent-[#E63946]";
+const option = "flex items-center gap-3 text-base text-white cursor-pointer";
 const AUTRE = "__autre__";
 
 interface Option { id: string; nom: string }
@@ -63,6 +70,9 @@ export default function Demo12OctobrePage() {
     void supabase.from("sports").select("id, nom").order("nom")
       .then(({ data }) => setSports((data ?? []).map((s) => ({ id: s.id as string, nom: s.nom as string }))));
   }, []);
+
+  // « Autre » ajouté ici : il n'existe pas en base, et il ouvre le champ libre.
+  const optionsCegep = useMemo(() => [...cegeps, { id: AUTRE, nom: "Autre" }], [cegeps]);
 
   const maj = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -120,62 +130,65 @@ export default function Demo12OctobrePage() {
       <PlaybookBackground />
       <MarketingNav />
 
-      <section className="relative z-10 px-4 sm:px-6 pt-6 pb-4">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-wl-red">Démo recruteurs · {D.libelle}</p>
-          <h1 className="nx-display text-3xl sm:text-4xl font-black text-white uppercase leading-[0.95] tracking-tight mt-1.5">
+      <section className="relative z-10 px-4 sm:px-6 pt-10 sm:pt-14 pb-8">
+        <div className={LARGEUR}>
+          <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.22em] uppercase text-wl-red">Démo recruteurs · {D.libelle}</p>
+          <h1 className="nx-display text-4xl sm:text-5xl lg:text-6xl font-black text-white uppercase leading-[0.95] tracking-tight mt-3">
             Démo Nexus — 12 octobre
           </h1>
-          <ul className="mt-3 grid gap-x-8 gap-y-1 sm:grid-cols-2 font-sans text-[14px] text-[#D1D5DB] leading-snug">
+          <ul className="mt-7 flex flex-col gap-3.5 font-sans text-[17px] sm:text-[18px] text-[#E5E7EB] leading-relaxed">
             {POINTS.map((p) => (
-              <li key={p} className="flex gap-2"><span className="text-wl-red" aria-hidden="true">•</span><span>{p}</span></li>
+              <li key={p} className="flex gap-3"><span className="text-wl-red font-bold" aria-hidden="true">•</span><span>{p}</span></li>
             ))}
-            <li className="flex gap-2">
-              <span className="text-wl-red" aria-hidden="true">•</span>
+            <li className="flex gap-3">
+              <span className="text-wl-red font-bold" aria-hidden="true">•</span>
               <span>
                 Plusieurs recruteurs ? Prix d&apos;équipe :{" "}
-                <a href={`mailto:${D.courriel}`} className="text-white hover:text-wl-red">{D.courriel}</a>
+                <a href={`mailto:${D.courriel}`} className="text-white font-semibold hover:text-wl-red">{D.courriel}</a>
                 {" · "}
-                <a href="tel:4384980494" className="text-white hover:text-wl-red whitespace-nowrap">{D.telephone}</a>
+                <a href="tel:4384980494" className="text-white font-semibold hover:text-wl-red whitespace-nowrap">{D.telephone}</a>
               </span>
             </li>
           </ul>
         </div>
       </section>
 
-      <section className="relative z-10 px-4 sm:px-6 pb-8">
-        <div className="max-w-5xl mx-auto nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-5 sm:p-6">
-          <form onSubmit={envoyer} className="flex flex-col gap-3.5">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="relative z-10 px-4 sm:px-6 pb-12">
+        <div className={`${LARGEUR} nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-5 sm:p-8 lg:p-10`}>
+          <h2 className="nx-display text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-7">Inscription</h2>
+          <form onSubmit={envoyer} className="flex flex-col gap-8">
+            <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <label htmlFor="prenom" className={`${label} mb-1 block`}>Prénom *</label>
+                <label htmlFor="prenom" className={`${label} mb-2 block`}>Prénom *</label>
                 <input id="prenom" name="prenom" value={f.prenom} onChange={maj} required maxLength={80} autoComplete="given-name" className={champ} />
               </div>
               <div>
-                <label htmlFor="nom" className={`${label} mb-1 block`}>Nom *</label>
+                <label htmlFor="nom" className={`${label} mb-2 block`}>Nom *</label>
                 <input id="nom" name="nom" value={f.nom} onChange={maj} required maxLength={80} autoComplete="family-name" className={champ} />
               </div>
               <div className="sm:col-span-2 lg:col-span-1">
-                <label htmlFor="courriel" className={`${label} mb-1 block`}>Courriel *</label>
+                <label htmlFor="courriel" className={`${label} mb-2 block`}>Courriel *</label>
                 <input id="courriel" name="courriel" type="email" value={f.courriel} onChange={maj} required maxLength={200} autoComplete="email" className={champ} />
               </div>
               <div>
-                <label htmlFor="cegep" className={`${label} mb-1 block`}>Cégep</label>
-                <select id="cegep" name="cegep" value={f.cegep} onChange={maj} className={champ}>
-                  <option value="">—</option>
-                  {cegeps.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
-                  <option value={AUTRE}>Autre</option>
-                </select>
+                <label htmlFor="cegep" className={`${label} mb-2 block`}>Cégep</label>
+                <ListeRecherche id="cegep" options={optionsCegep} valeur={f.cegep} className={champ}
+                  placeholder="Tapez le nom de votre cégep" onChoisir={(v) => setF((p) => ({ ...p, cegep: v }))} />
               </div>
               <div>
-                <label htmlFor="sport" className={`${label} mb-1 block`}>Sport recruté</label>
-                <select id="sport" name="sport" value={f.sport} onChange={maj} className={champ}>
-                  <option value="">—</option>
-                  {sports.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
-                </select>
+                <label htmlFor="sport" className={`${label} mb-2 block`}>Sport recruté</label>
+                {sports.length > SEUIL_RECHERCHE ? (
+                  <ListeRecherche id="sport" options={sports} valeur={f.sport} className={champ}
+                    placeholder="Tapez le sport" onChoisir={(v) => setF((p) => ({ ...p, sport: v }))} />
+                ) : (
+                  <select id="sport" name="sport" value={f.sport} onChange={maj} className={champ}>
+                    <option value="">—</option>
+                    {trierOptions(sports).map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
+                  </select>
+                )}
               </div>
               <div className="sm:col-span-2 lg:col-span-1">
-                <label htmlFor="role" className={`${label} mb-1 block`}>Rôle</label>
+                <label htmlFor="role" className={`${label} mb-2 block`}>Rôle</label>
                 <select id="role" name="role" value={f.role} onChange={maj} className={champ}>
                   <option value="">—</option>
                   {ROLES_DEMO.map((r) => <option key={r.valeur} value={r.valeur}>{r.libelle}</option>)}
@@ -183,52 +196,59 @@ export default function Demo12OctobrePage() {
               </div>
               {f.cegep === AUTRE && (
                 <div className="sm:col-span-2 lg:col-span-3">
-                  <label htmlFor="cegepAutre" className={`${label} mb-1 block`}>Votre organisation</label>
+                  <label htmlFor="cegepAutre" className={`${label} mb-2 block`}>Votre organisation</label>
                   <input id="cegepAutre" name="cegepAutre" value={f.cegepAutre} onChange={maj} maxLength={160} className={champ} />
                 </div>
               )}
             </div>
 
-            <fieldset className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
-              <legend className={`${label} mb-1.5 w-full`}>Ce qui m&apos;intéresse chez Nexus</legend>
-              {INTERETS_DEMO.map((i) => (
-                <label key={i.valeur} className="flex items-center gap-2 text-sm text-white cursor-pointer">
-                  <input type="checkbox" checked={interets.includes(i.valeur)} onChange={() => basculerInteret(i.valeur)} className="accent-[#E63946]" />
-                  {i.libelle}
-                </label>
-              ))}
+            <fieldset className="flex flex-col gap-3">
+              <legend className={`${label} mb-3`}>Ce qui m&apos;intéresse chez Nexus</legend>
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                {INTERETS_DEMO.map((i) => (
+                  <label key={i.valeur} className={option}>
+                    <input type="checkbox" checked={interets.includes(i.valeur)} onChange={() => basculerInteret(i.valeur)} className={caseACocher} />
+                    {i.libelle}
+                  </label>
+                ))}
+              </div>
               {interets.includes("AUTRE") && (
-                <input name="interetAutre" value={f.interetAutre} onChange={maj} maxLength={500} placeholder="Précisez" aria-label="Autre intérêt" className={`${champ} sm:max-w-xs`} />
+                <input name="interetAutre" value={f.interetAutre} onChange={maj} maxLength={500} placeholder="Précisez" aria-label="Autre intérêt" className={`${champ} sm:max-w-md`} />
               )}
             </fieldset>
 
             <fieldset>
-              <legend className={`${label} mb-1.5`}>Comment participer *</legend>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <legend className={`${label} mb-3`}>Comment participer *</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
                 {choix.map((c) => (
-                  <label key={c.v} className={`flex items-center gap-2.5 text-sm cursor-pointer border px-3 py-2.5 transition-colors ${participation === c.v ? "border-wl-red text-white" : "border-[#1E2D4A] text-[#D1D5DB]"}`}>
-                    <input type="radio" name="participation" value={c.v} checked={participation === c.v} onChange={() => setParticipation(c.v)} className="accent-[#E63946]" />
+                  <label key={c.v} className={`flex items-center gap-3 text-base cursor-pointer border px-4 py-4 transition-colors ${participation === c.v ? "border-wl-red bg-[#E63946]/[0.06] text-white" : "border-[#1E2D4A] text-[#D1D5DB] hover:border-[#2D3F5E]"}`}>
+                    <input type="radio" name="participation" value={c.v} checked={participation === c.v} onChange={() => setParticipation(c.v)} className={caseACocher} />
                     <span>{c.titre}</span>
                   </label>
                 ))}
               </div>
             </fieldset>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <label className="flex items-center gap-2.5 text-sm text-white cursor-pointer">
-                <input id="un_a_un" type="checkbox" checked={unAUn} onChange={(e) => setUnAUn(e.target.checked)} className="accent-[#E63946]" />
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <label className={option}>
+                <input id="un_a_un" type="checkbox" checked={unAUn} onChange={(e) => setUnAUn(e.target.checked)} className={caseACocher} />
                 Je veux aussi une présentation 1:1 avec Nexus
               </label>
               {unAUn && (
                 <a href={D.reservation} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center h-9 px-4 bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-[11px] uppercase tracking-widest">
+                  className="inline-flex items-center justify-center w-full sm:w-auto h-12 px-5 bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-xs uppercase tracking-widest">
                   Choisir un moment
                 </a>
               )}
             </div>
 
-            <label className="flex items-start gap-2.5 text-sm text-[#D1D5DB] cursor-pointer">
-              <input id="consentement" type="checkbox" checked={consentement} onChange={(e) => setConsentement(e.target.checked)} required className="accent-[#E63946] mt-0.5" />
+            <label className={option}>
+              <input id="veut_compte" type="checkbox" checked={veutCompte} onChange={(e) => setVeutCompte(e.target.checked)} className={caseACocher} />
+              Je suis intéressé à ouvrir un compte Nexus
+            </label>
+
+            <label className="flex items-start gap-3 text-base text-[#D1D5DB] cursor-pointer border-t border-[#1E2D4A] pt-7">
+              <input id="consentement" type="checkbox" checked={consentement} onChange={(e) => setConsentement(e.target.checked)} required className={`${caseACocher} mt-0.5`} />
               <span>
                 J&apos;accepte de recevoir les courriels liés à cet événement. *{" "}
                 <Link href="/confidentialite" target="_blank" className="underline text-white hover:text-wl-red">Politique de confidentialité</Link>
@@ -240,27 +260,20 @@ export default function Demo12OctobrePage() {
               <input type="text" name="nx_site" value={f.nx_site} onChange={maj} tabIndex={-1} autoComplete="off" />
             </div>
 
-            {erreur && <p role="alert" className="text-sm text-[#FCA5A5]">{erreur}</p>}
+            {erreur && <p role="alert" className="text-base text-[#FCA5A5] -mt-2">{erreur}</p>}
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button type="submit" disabled={envoi}
-                className="nx-ghost-btn h-11 flex-1 border font-head font-black text-sm uppercase tracking-widest disabled:opacity-60 disabled:cursor-not-allowed">
-                {envoi ? "Envoi en cours…" : "M'inscrire"}
-              </button>
-              {/* L'intérêt est gardé : le clic pose veut_compte, envoyé avec l'inscription. */}
-              <a href={lienOuvrirCompte(f.courriel)} target="_blank" rel="noopener noreferrer"
-                onClick={() => setVeutCompte(true)}
-                className="inline-flex items-center justify-center h-11 px-5 border border-[#1E2D4A] text-[#D1D5DB] hover:text-white hover:border-[#9AA3B2] font-head font-black text-xs uppercase tracking-widest">
-                Ouvrir mon compte Nexus
-              </a>
-            </div>
-            <p className="text-[12px] text-[#6b7280]">* obligatoire</p>
+            {/* UN seul bouton (retour BP) : pleine largeur, 56 px — facile au pouce. */}
+            <button type="submit" disabled={envoi}
+              className="h-14 w-full bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-base uppercase tracking-[0.18em] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              {envoi ? "Envoi en cours…" : "Envoyer"}
+            </button>
+            <p className="text-[13px] text-[#6b7280] -mt-4">* obligatoire</p>
           </form>
         </div>
       </section>
 
-      <section className="relative z-10 px-4 sm:px-6 pb-14">
-        <div className="max-w-3xl mx-auto">
+      <section className="relative z-10 px-4 sm:px-6 pb-16">
+        <div className={LARGEUR}>
           <div className="relative w-full aspect-video overflow-hidden border border-[#1E2D4A] bg-black">
             <iframe
               className="absolute inset-0 w-full h-full"

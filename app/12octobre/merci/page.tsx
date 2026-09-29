@@ -1,8 +1,8 @@
 "use client";
 
 /* /12octobre/merci — la page de remerciement, selon le choix ; rappel du
-   1:1 s'il a été demandé ; « Ouvrir mon compte Nexus » (le clic pose
-   l'intérêt sur l'inscription, RPC demo_clic_compte). */
+   1:1 s'il a été demandé ; un lien discret vers l'inscription Nexus (son
+   clic pose aussi l'intérêt sur l'inscription, RPC demo_clic_compte). */
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
@@ -55,10 +55,11 @@ function Contenu() {
         </div>
       )}
       <p>Ensuite : un accès complet et gratuit à Nexus pendant deux semaines, pour tester avant la période intensive de recrutement.</p>
-      <a href={lienOuvrirCompte(courriel)} target="_blank" rel="noopener noreferrer" onClick={clicCompte}
-        className="inline-flex items-center h-11 px-6 border border-[#1E2D4A] text-[#D1D5DB] hover:text-white hover:border-[#9AA3B2] font-head font-black text-xs uppercase tracking-widest">
-        Ouvrir mon compte Nexus
-      </a>
+      <p className="text-[14px] text-[#9AA3B2]">
+        Envie de commencer tout de suite ?{" "}
+        <a href={lienOuvrirCompte(courriel)} target="_blank" rel="noopener noreferrer" onClick={clicCompte}
+          className="text-white underline hover:text-wl-red">Créer mon compte Nexus</a>
+      </p>
       <p className="text-[#9AA3B2]">
         Questions : <a href={`mailto:${D.courriel}`} className="text-white hover:text-wl-red">{D.courriel}</a>
         {" · "}<a href="tel:4384980494" className="text-white hover:text-wl-red">{D.telephone}</a>

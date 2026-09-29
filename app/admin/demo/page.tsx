@@ -77,7 +77,7 @@ export default function AdminDemoPage() {
       [
         { titre: "Inscrit le", largeur: 17 }, { titre: "Prénom", largeur: 14 }, { titre: "Nom", largeur: 16 },
         { titre: "Courriel", largeur: 30 }, { titre: "Cégep", largeur: 30 }, { titre: "Sport", largeur: 14 },
-        { titre: "Rôle", largeur: 18 }, { titre: "Intérêts", largeur: 36 }, { titre: "Ouvrir mon compte (clic)", largeur: 12 },
+        { titre: "Rôle", largeur: 18 }, { titre: "Intérêts", largeur: 36 }, { titre: "Intérêt compte", largeur: 12 },
         { titre: "Choix", largeur: 18 }, { titre: "Présentation 1:1", largeur: 10 }, { titre: "Soumissions", largeur: 10 },
         { titre: "Confirmation", largeur: 12 }, { titre: "Avis info@", largeur: 12 },
       ],
@@ -106,7 +106,7 @@ export default function AdminDemoPage() {
         <div>
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Démo du 12 octobre</h1>
           <p className="text-[13px] text-[#9CA3AF] mt-1">
-            {lignes.length} inscrit{lignes.length > 1 ? "s" : ""} · {totaux.DIRECT} en direct · {totaux.ENREGISTREMENT} enregistrement · {totaux.UN_A_UN} demandent un 1:1 · {totaux.compte} ont cliqué « Ouvrir mon compte »
+            {lignes.length} inscrit{lignes.length > 1 ? "s" : ""} · {totaux.DIRECT} en direct · {totaux.ENREGISTREMENT} enregistrement · {totaux.UN_A_UN} demandent un 1:1 · {totaux.compte} intéressés par un compte
           </p>
         </div>
         <button type="button" onClick={() => void exporter()} disabled={lignes.length === 0}
