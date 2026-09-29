@@ -25,6 +25,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { clearPushToken } from "@/lib/push/registerPush";
 import { JOIN_CODE_STORAGE_KEY } from "@/lib/queries/athlete/teamAttachment";
+import { purgerSacOnboarding } from "@/lib/auth/sacOnboarding";
 
 /** Les clés de travail du wizard, stashées hors React pour survivre à un
  *  aller-retour /join → signup → onboarding. Elles ne survivent PAS à un
@@ -55,5 +56,8 @@ export async function deconnexion(supabase?: SupabaseClient): Promise<void> {
   for (const cle of STASH_WIZARD) {
     try { sessionStorage.removeItem(cle); } catch { /* privé / quota / SSR */ }
   }
+  // Le sac de l'onboarding (localStorage nexus_user) aussi : il nourrissait la
+  // barre latérale du compte SUIVANT (« Pierre Dufour », retour BP 2026-09-28).
+  purgerSacOnboarding();
   await (supabase ?? createClient()).auth.signOut();
 }

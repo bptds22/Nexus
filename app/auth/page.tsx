@@ -18,6 +18,7 @@ import { usePartialSignup, resolveRoleContext } from "@/components/auth/signup/u
 import { RolePicker } from "@/components/auth/signup/RolePicker";
 import { ConsentBlock } from "@/components/auth/signup/ConsentBlock";
 import { ParentalBlock } from "@/components/auth/signup/ParentalBlock";
+import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import { SocialButtonsAuth } from "@/components/auth/SocialButtonsAuth";
 import { deconnexion } from "@/lib/auth/deconnexion";
 
@@ -463,6 +464,17 @@ function AuthContent() {
                         consentMarketing={sf.consentMarketing} setConsentMarketing={sf.setConsentMarketing}
                         submitted={submitted}
                       />
+
+                      {/* Athlète MAJEUR : la case partenaires, même explication
+                          que celle montrée aux parents, décochée, optionnelle.
+                          Le mineur la voit à l'écran 3 (ParentalBlock). */}
+                      {sf.showsAdultPartnerConsent && (
+                        <PartnerVisibilityConsentCard
+                          checked={sf.consentAdultPartnerVisibility}
+                          onChange={sf.setConsentAdultPartnerVisibility}
+                          audience="adult"
+                        />
+                      )}
 
                       {sf.needsParentalScreen ? (
                         <button type="button" onClick={sf.next} disabled={!sf.canProceedScreen2}
