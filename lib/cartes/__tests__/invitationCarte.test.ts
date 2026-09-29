@@ -13,10 +13,10 @@ const { expediteur } = await import("../../../supabase/functions/send-invitation
 const base = { prenom: "Xavier", recruteur: "Rémi Collègue", cegep: "Cégep de Saint-Jérôme", courriel: "x@exemple.test", desabonnementUrl: "https://n/desabonnement?t=i.a" };
 
 test("objet et texte de BP, nommant le cégep et le recruteur", () => {
-  assert.equal(sujet("Cégep de Saint-Jérôme"), "Un recruteur du Cégep de Saint-Jérôme te recherche");
+  assert.equal(sujet("Cégep de Saint-Jérôme"), "Un recruteur du Cégep de Saint-Jérôme recrute sur Nexus");
   const { text } = buildBody(base);
-  assert.match(text, /Rémi Collègue, recruteur du Cégep de Saint-Jérôme, utilise Nexus pour son recrutement et te recherche\./);
-  assert.match(text, /Inscris-toi pour compléter ton profil et maximiser tes chances de te faire recruter\./);
+  assert.match(text, /Rémi Collègue, recruteur au Cégep de Saint-Jérôme, utilise Nexus comme plateforme de recrutement et suit ton parcours\./);
+  assert.match(text, /Crée ton profil pour qu'il ait accès à tes infos, tes vidéos et ton évaluation : c'est ce qui facilite et maximise ton recrutement\. C'est gratuit, et ça prend quelques minutes\./);
   assert.equal((text.match(/Créer mon profil/g) ?? []).length, 1, "un seul lien d'inscription dans le texte");
 });
 
@@ -28,7 +28,7 @@ test("lien d'inscription pré-rempli, désabonnement et adresse postale (LCAP)",
 });
 
 test("sans recruteur connu : « Un recruteur du … »", () => {
-  assert.match(buildBody({ ...base, recruteur: null }).text, /Salut Xavier,\s+Un recruteur du Cégep de Saint-Jérôme utilise Nexus/);
+  assert.match(buildBody({ ...base, recruteur: null }).text, /Salut Xavier,\s+Un recruteur du Cégep de Saint-Jérôme utilise Nexus comme plateforme/);
 });
 
 test("une saisie contenant du HTML est échappée", () => {

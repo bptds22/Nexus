@@ -2,9 +2,11 @@
 // carte prospect (lot C). Séparé de index.ts pour être importable sans
 // démarrer Deno.serve (test Node : lib/cartes/__tests__/invitationCarte.test.ts).
 //
-// Texte de BP, poli : « Un recruteur du [Cégep] utilise Nexus pour son
-// recrutement et te recherche. Inscris-toi pour compléter ton profil et
-// maximiser tes chances de te faire recruter. »
+// Texte de BP (version du 2026-09-28, mot pour mot) : objet « Un recruteur
+// du [Cégep] recrute sur Nexus » ; « [Recruteur], recruteur au [Cégep],
+// utilise Nexus comme plateforme de recrutement et suit ton parcours. » ;
+// « Crée ton profil pour qu'il ait accès à tes infos, tes vidéos et ton
+// évaluation : c'est ce qui facilite et maximise ton recrutement. »
 
 import { renderEmail, APP_URL } from "../_shared/emailLayout.ts";
 
@@ -29,7 +31,7 @@ export interface DonneesInvitation {
 }
 
 export function sujet(cegep: string): string {
-  return `Un recruteur du ${cegep} te recherche`;
+  return `Un recruteur du ${cegep} recrute sur Nexus`;
 }
 
 /** Lien d'inscription : le formulaire s'ouvre en mode inscription, l'adresse
@@ -46,27 +48,28 @@ export function buildBody(d: DonneesInvitation): { html: string; text: string } 
     `<p style="margin:0${dernier ? "" : " 0 12px"};">${s}</p>`;
 
   const quiHtml = recruteur
-    ? `<strong>${echapper(recruteur)}</strong>, recruteur du ${echapper(cegep)},`
+    ? `<strong>${echapper(recruteur)}</strong>, recruteur au ${echapper(cegep)},`
     : `Un recruteur du ${echapper(cegep)}`;
-  const quiTexte = recruteur ? `${recruteur}, recruteur du ${cegep},` : `Un recruteur du ${cegep}`;
+  const quiTexte = recruteur ? `${recruteur}, recruteur au ${cegep},` : `Un recruteur du ${cegep}`;
+  const suite = "utilise Nexus comme plateforme de recrutement et suit ton parcours.";
+  const profil = "Crée ton profil pour qu'il ait accès à tes infos, tes vidéos et ton évaluation : " +
+    "c'est ce qui facilite et maximise ton recrutement. C'est gratuit, et ça prend quelques minutes.";
 
   return renderEmail({
-    preheader: "Crée ton profil Nexus : c'est lui que les recruteurs des cégeps consultent.",
+    preheader: "Crée ton profil Nexus : c'est gratuit, et ça prend quelques minutes.",
     heading: echapper(sujet(cegep)),
     bodyHtml:
       p(prenom ? `Salut ${echapper(prenom)},` : "Salut,") +
-      p(`${quiHtml} utilise Nexus pour son recrutement et te recherche.`) +
-      p(`Inscris-toi pour compléter ton profil et maximiser tes chances de te faire recruter. ` +
-        `C'est gratuit, et ça prend quelques minutes.`, true),
+      p(`${quiHtml} ${suite}`) +
+      p(echapper(profil), true),
     ctaLabel: "Créer mon profil",
     ctaUrl: lienInscription(d.courriel),
     bodyText: [
       prenom ? `Salut ${prenom},` : "Salut,",
       "",
-      `${quiTexte} utilise Nexus pour son recrutement et te recherche.`,
+      `${quiTexte} ${suite}`,
       "",
-      "Inscris-toi pour compléter ton profil et maximiser tes chances de te faire recruter. " +
-        "C'est gratuit, et ça prend quelques minutes.",
+      profil,
     ].join("\n"),
     lcap: {
       raison: `Tu reçois ce courriel parce qu'un recruteur du ${echapper(cegep)} a indiqué ton adresse ` +
