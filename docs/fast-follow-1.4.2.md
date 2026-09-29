@@ -1622,3 +1622,29 @@ aujourd'hui — la fonction commence par `is_parent_of()`, un anonyme reçoit
 `not_parent` — mais c'est exactement la forme que la règle des gates d'ACL
 interdit. À refermer (révoquer `PUBLIC`/`anon`, gate par comparaison complète)
 dans la prochaine migration qui touche la fonction.
+
+## 53. Connexion OAuth PAR-DESSUS une session existante — atterrit sur l'ANCIEN compte (relevé 2026-09-29, amélioration)
+
+**Constat (logs prod, 2026-09-29 13:37 UTC).** Navigateur connecté en
+« Rémi Test » (`16809ad4`) ; BP lance une connexion Apple sans se déconnecter.
+L'échange du code (`/auth/callback`, côté serveur) réussit pour le compte Apple
+(`b79de13d`, token 200), mais dans la même seconde le serveur RAFRAÎCHIT la
+session précédente (`token_refreshed` de `16809ad4`), et le navigateur continue
+de charger le tableau de bord de Rémi Test. Une seconde tentative, une minute
+plus tard, atterrit bien sur le compte Apple.
+
+**Pas une régression.** Aucun commit du 2026-09-29 ne touche le chemin OAuth
+(`app/auth/callback`, middleware, clients Supabase : 0 fichier modifié entre
+`c1fa601` et `5dea3b4`). Par courriel, la connexion par-dessus une session
+BASCULE correctement sur le nouveau compte dans les deux versions (prouvé en
+local : connecté en r3, connexion r1 sans déconnexion → « Bienvenue, Robin »).
+C'est donc un comportement ancien, propre au chemin OAuth avec cookie de
+session préexistant.
+
+**Amélioration à faire.** Une nouvelle connexion doit d'abord FERMER la session
+en cours : sur `/auth`, avant `signInWithOAuth` (et `signInWithPassword` par
+cohérence), appeler `deconnexion()` si une session existe — ou, côté
+`/auth/callback`, remplacer les cookies de session existants avant
+d'échanger le code. À prouver sur un déploiement de prévisualisation avec
+Google et Apple (les fournisseurs ne sont pas configurés sur la pile locale).
+

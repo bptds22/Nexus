@@ -197,7 +197,17 @@ Read them freely; write to them only with an explicit per-change GO.
 
 **Parent** (parent portal fixture — **re-created 2026-09-04**, see the history below)
 - **`bptds17@gmail.com`** — user **`ce7c8339-b28b-49b5-8ba4-f1621a2a1dde`**,
-  role PARENT, email confirmed, password set, identity `email` only.
+  role PARENT, email confirmed, password set. **Two identities** (relevé prod
+  2026-09-29) : `email` (2026-09-04) **and `google`** (added 2026-09-07) — the
+  « `email` only » that stood here was stale.
+- ⚠️ **Google/Apple login on the web sends it to `/inscription/role`, not
+  `/parent`** — true in prod until migration `20260929145551` (branch
+  `fix/aiguillage-roles-figes`) is applied. `needs_signup_role()` ignored the
+  PARENT role, and all 44 prod parents qualified (no `role_claimed_at`, no
+  onboarding, no athlete row). Picking a role on that screen OVERWROTE the
+  PARENT role — it happened for real to `d11e2688` (2026-08-25). « This account
+  no longer exists » after a Google login meant exactly that detour: the account
+  and its link are intact. Email login lands on `/parent` normally.
 - **The previous parent fixture `d41528da-…` NO LONGER EXISTS.** History, from
   the GoTrue log, in one line: it was deleted through the admin API at
   2026-09-04 17:20:16, an admin invitation was re-issued from the athlete
@@ -206,13 +216,12 @@ Read them freely; write to them only with an explicit per-change GO.
   i.e. **the canonical parent flow, end to end**, not a hand-built row.
   Any older note naming `d41528da` is stale; resolve by email, per the rule at
   the top of this section.
-- ⚠️ **This account has NO consent of its own.** `privacy_preferences` is `{}`,
-  `onboarding_complete` is false, `first_name`/`last_name` are empty. The two
-  `consent_audit_trail` rows below were granted on 2026-09-01 by the *previous*
-  parent; they survive because consents live on the athlete and its user, not
-  on the parent. So the trail reads "granted by PARENT" for a parent that no
-  longer exists — correct as history, misleading if read as "the current parent
-  consented". Worth knowing before using this fixture to test consent.
+- ⚠️ **Its own profile carries no consent** — `privacy_preferences` is `{}`,
+  `onboarding_complete` is false, `first_name`/`last_name` are empty (still true
+  2026-09-29). But it HAS acted as a parent on the athlete's consents since : see
+  the consent trail below. The two oldest rows (2026-09-01) were granted by the
+  *previous* parent `d41528da` — correct as history, misleading if read as "the
+  current parent consented".
 - ⚠️ `athletes.parent_email` on the linked athlete still reads
   `nexus.parent@nexussports.ca`. That is **deliberate, not drift**: B3 changes
   the parent ACCOUNT, never the athlete's DECLARED field — those are two
@@ -228,10 +237,21 @@ Read them freely; write to them only with an explicit per-change GO.
   *(The 2026-09-01 pair `6d9b3e52-…` / `0ab28137-…` belonged to the deleted
   fixture. The invitation row survives, claimed; the link row went with the
   account.)*
-- Consent trail: 2 `consent_audit_trail` rows, action GRANTED,
-  `metadata.acting_role = 'PARENT'`, keys `marketing` and `image_partenaire`,
-  policy `2026-08-v1` — written by the real `set_child_consent()` RPC. The claim
-  itself writes NO consent row; the journal only ever comes from that RPC.
+- Consent trail on `d4cd6432` (relevé prod 2026-09-29) : **9 rows**, all policy
+  `2026-08-v1` —
+  · 2026-09-01 : 2 GRANTED (`marketing`, `image_partenaire`) by the *previous*
+    parent `d41528da` ;
+  · 2026-09-04 and 09-18 : 6 rows signed by **this** account (`ce7c8339`,
+    `acting_role = PARENT`) — `marketing` withdrawn then granted,
+    `image_partenaire` withdrawn/granted twice ; last state before today :
+    `image_partenaire` GRANTED (09-18) ;
+  · **2026-09-29 13:38:54 : `image_partenaire` WITHDRAWN by the ATHLETE
+    himself** (`acting_role = ATHLETE`, the 14-year-old Apple account) — the
+    partner-visibility consent this parent gave is currently withdrawn.
+  The claim itself writes NO consent row; parent rows come from
+  `set_child_consent()`, the athlete's own from the partner setting.
+- A second parent invitation to this address (`85a3d1c3-…`, athlete
+  `c252a1de-…`, emitted 2026-09-15) was **never claimed**.
 - `parent_athletes` is `unique(athlete_id)` — **one parent per athlete**. A second
   parent fixture must target a different athlete; this one is taken.
 - Side effects on the athlete fixture: `parent_email` moved from `test@parent.com`
