@@ -41,7 +41,10 @@ export default function MarketingNav() {
           <NexusLogo variant="black-red" height={28} className="nx-logo-light" priority />
         </Link>
 
-        <ul className="hidden md:flex items-center gap-8 list-none">
+        {/* Rangée de liens dès lg (1024 px) : à 768 px, liens + FR/EN + Connexion +
+            S'inscrire débordaient de 14 px (relevé 2026-09-29) ; le menu
+            hamburger couvre md. */}
+        <ul className="hidden lg:flex items-center gap-8 list-none">
           {/* Dropdown — Coaches & Recruteurs */}
           <li className="relative group">
             <span className={`${label} text-[#9AA3B2] group-hover:text-white transition-colors cursor-default flex items-center gap-1`}>
@@ -120,7 +123,7 @@ export default function MarketingNav() {
             aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            className="md:hidden flex items-center justify-center w-9 h-9 -mr-1 text-white"
+            className="lg:hidden flex items-center justify-center w-9 h-9 -mr-1 text-white"
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -130,7 +133,7 @@ export default function MarketingNav() {
 
       {/* Mobile menu — hamburger drawer; mirrors the desktop nav links */}
       {menuOpen && (
-        <div id="mobile-menu" className="md:hidden border-t border-[#1E2D4A] bg-[#111317] px-6 py-3">
+        <div id="mobile-menu" className="lg:hidden border-t border-[#1E2D4A] bg-[#111317] px-6 py-3">
           <p className="px-2 pt-2 pb-1 text-[10px] font-bold tracking-[0.25em] uppercase text-[#475569]">
             {t.nav.discover}
           </p>
