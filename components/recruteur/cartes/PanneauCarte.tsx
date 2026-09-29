@@ -16,6 +16,7 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
 import { joursAvantPurge, AVIS_JOURS, type CarteKanban } from "@/lib/cartes/carteProspect";
 import { KANBAN_COLUMNS } from "@/app/recruteur/pipeline/_data/mockKanbanData";
+import { ligneSignee } from "@/lib/historique/signature";
 
 /* MARQUEUR D'UNE CARTE (retours BP) : plus de pastille dans les listes —
    un FOND ROUGE LÉGER (#E63946 à 11 %) sur TOUTE la ligne du tableau (colonne
@@ -173,10 +174,14 @@ export function OngletHistoriqueCarte({ carteId }: { carteId: string }) {
         {gestes.map((g, i) => (
           <li key={g.id} className={`relative pl-5 pb-4 ml-1.5 ${i < gestes.length - 1 ? "border-l border-[#2D3748]" : "border-l border-transparent"}`}>
             <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-[#9CA3AF]" />
-            <p className="text-[13px] text-[#e0e0e0] leading-snug">
-              <span className="font-bold text-white">{g.acteur && g.acteur === moi ? "Toi" : nomAuteur(g.acteur ? auteurs[g.acteur] : undefined)}</span>{" "}
-              {phraseGesteCarte(g)}
-            </p>
+            {(() => {
+              const l = ligneSignee(!!g.acteur && g.acteur === moi, nomAuteur(g.acteur ? auteurs[g.acteur] : undefined), phraseGesteCarte(g));
+              return (
+                <p className="text-[13px] text-[#e0e0e0] leading-snug">
+                  <span className="font-bold text-white">{l.sujet}</span> {l.phrase}
+                </p>
+              );
+            })()}
             <p className="text-[11px] text-[#6b7280] mt-0.5">
               {new Date(g.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })} ·{" "}
               {new Date(g.created_at).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}

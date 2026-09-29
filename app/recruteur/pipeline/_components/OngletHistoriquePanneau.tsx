@@ -20,6 +20,7 @@
 import { useHistoriqueUnite, useAuteursUnite, nomAuteur, type GesteUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { KANBAN_COLUMNS } from "../_data/mockKanbanData";
+import { ligneSignee } from "@/lib/historique/signature";
 
 function libelleEtape(stage: unknown): string {
   if (typeof stage !== "string" || !stage) return "";
@@ -98,10 +99,14 @@ export default function OngletHistoriquePanneau({ athleteId }: { athleteId: stri
             className={`relative pl-5 pb-4 ml-1.5 ${i < gestes.length - 1 ? "border-l border-[#2D3748]" : "border-l border-transparent"}`}
           >
             <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-[#9CA3AF]" />
-            <p className="text-[13px] text-[#e0e0e0] leading-snug">
-              <span className="font-bold text-white">{g.recruiter_id === moi ? "Toi" : nomAuteur(auteurs[g.recruiter_id])}</span>{" "}
-              {phraseGeste(g)}
-            </p>
+            {(() => {
+              const l = ligneSignee(g.recruiter_id === moi, nomAuteur(auteurs[g.recruiter_id]), phraseGeste(g));
+              return (
+                <p className="text-[13px] text-[#e0e0e0] leading-snug">
+                  <span className="font-bold text-white">{l.sujet}</span> {l.phrase}
+                </p>
+              );
+            })()}
             <p className="text-[11px] text-[#6b7280] mt-0.5">{quand(g.created_at)}</p>
           </li>
         ))}
