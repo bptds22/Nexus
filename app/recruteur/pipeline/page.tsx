@@ -75,6 +75,7 @@ import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMo
 import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
 import { estCarte, bientotPurgee, ecrireCarte, retirerCarte } from "@/lib/cartes/carteProspect";
+import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
@@ -466,6 +467,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
           </div>
           {/* Carte prospect : avis de suppression dans les 30 derniers jours. */}
           {estCarte(card) && <div className="mt-1"><MarqueurExpiration carte={card} /></div>}
+          {estCarte(card) && <div className="mt-1"><LienRapprochementCarte carteId={card.id} /></div>}
 
           {/* School + Year (or "Ligue Civile" badge) */}
           <p className="text-[12px] text-[#6b7280] mt-1 truncate flex items-center gap-1.5">
@@ -1359,7 +1361,7 @@ function SlideOver({
               <h2 className="font-head text-[20px] font-black text-white uppercase tracking-tight">{card.full_name}</h2>
               {card.is_verified && <svg width="18" height="18" viewBox="0 0 24 24" fill={BLUE} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
             </div>
-            {carte && <div className="mt-1.5 space-y-1.5"><MentionProspect inviteeLe={carte.carte.inviteeLe} /><MarqueurExpiration carte={carte} /></div>}
+            {carte && <div className="mt-1.5 space-y-1.5"><MentionProspect inviteeLe={carte.carte.inviteeLe} /><MarqueurExpiration carte={carte} /><LienRapprochementCarte carteId={carte.id} /></div>}
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: currentCol?.phase === "commitment" ? "rgba(230,57,70,0.25)" : "rgba(107,114,128,0.25)" }}>{card.sport}</span>
               <span className="text-[13px] text-[#9CA3AF]">{card.position}</span>
@@ -2273,6 +2275,8 @@ function PipelinePageContent() {
   const dropCollegues = pendingDrop ? collegues(cards.find((c) => c.id === pendingDrop.cardId), moi) : [];
 
   return (
+    /* Lot D : les propositions de rapprochement de l'unité (Pro seulement). */
+    <FournisseurRapprochements actif={modeUnite && !isFreeDemoMode}>
     <div className={`px-4 sm:px-6 lg:px-10 py-8 mx-auto space-y-5 ${vue === "tableau" ? "max-w-none" : "max-w-[1600px]"}`}>
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -2382,6 +2386,9 @@ function PipelinePageContent() {
           </div>
         );
       })()}
+
+      {/* Lot D : « N profils semblent correspondre à tes cartes ». */}
+      <BandeauRapprochements />
 
       <FunnelSummary cards={filteredCards} totalCards={cards.length} />
 
@@ -2624,5 +2631,6 @@ function PipelinePageContent() {
         }
       `}</style>
     </div>
+    </FournisseurRapprochements>
   );
 }

@@ -237,6 +237,31 @@ existante touchée).
   « prospect » ; filtre par liste) et Mon CÉGEP. Pas de profil complet, pas de
   messagerie ; « Inviter » arrive au lot D.
 
+**Lot D (2026-09-29) — RAPPROCHEMENT d'une carte avec le vrai profil.**
+Migration `lot_d_rapprochement` (additive : trois tables, triggers et
+fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
+- **Déclencheurs** (ils n'écrivent qu'UNE ligne dans `rapprochement_file`) :
+  fin d'onboarding avec une école, arrivée dans une équipe, fiche créée (y
+  compris par un coach), identité devenue visible (consentement ; 18 ans, par
+  une tâche quotidienne), carte créée ou modifiée (courriel, équipe, nom),
+  rattrapage de tous les athlètes ACTIF à l'application. La tâche
+  `rapprochements-evaluation` (chaque minute) vide la file.
+- **Critères** : (a) courriel exact carte ↔ compte ou fiche → forte ; carte ↔
+  courriel du PARENT → forte aussi, mais seulement si le prénom est compatible
+  (un parent a souvent plusieurs enfants) ; (b) nom normalisé + prénom
+  compatible + même équipe → moyenne ; (c) même nom + même école, si l'athlète
+  joue le sport de l'unité → faible. La promotion est un indice affiché.
+- **Jamais proposé** : identité masquée (relue aussi à l'affichage), athlète
+  déjà dans le processus de l'unité, paire déjà proposée — une paire REFUSÉE
+  ne revient jamais (unicité carte × athlète).
+- **Cloisonnement** : une proposition appartient à l'unité de la carte ; seuls
+  les Pro de cette unité la lisent et la décident. Deux cégeps qui ont chacun
+  une carte pour le même jeune reçoivent deux propositions indépendantes, sans
+  jamais apprendre l'existence de l'autre.
+- **Interface** : pastille sur « Mon processus », bandeau « N profils semblent
+  correspondre à tes cartes », lien sur la carte (kanban et panneau), fenêtre
+  carte ↔ profil côte à côte avec Accepter (fusion, lot E) / Refuser.
+
 ### LOI 25 — LE CÉGEP EST PROPRIÉTAIRE DES DONNÉES DES CARTES PROSPECT
 
 Une carte prospect est constituée par les recruteurs d'un cégep, sur un athlète

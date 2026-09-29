@@ -1712,3 +1712,13 @@ connexion le 2026-08-25.
   `needs_signup_role = false`, voit son enfant ; la répartition envoie un
   PARENT sur `/parent`.
 
+## 56. Rapprochement carte ↔ profil — ce que l'app 1.4.3 ne montre pas (lot D, 2026-09-29, pour le lot mobile)
+
+Les propositions vivent dans `rapprochements` / `notifications_unite`, que
+l'app 1.4.3 ne lit pas : sur mobile, ni pastille, ni bandeau, ni fenêtre.
+**Rien ne casse** : les triggers ajoutés sur `athletes`, `users`,
+`team_athletes` et `cartes_prospect` sont SECURITY DEFINER et n'écrivent
+qu'une ligne de file — prouvé sous l'identité d'un coach qui ajoute un
+athlète à son équipe. À ajouter au lot mobile : lecture de
+`rapprochements_unite()`, pastille, fenêtre côte à côte, refus.
+
