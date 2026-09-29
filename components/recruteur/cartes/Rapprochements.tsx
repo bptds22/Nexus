@@ -8,8 +8,8 @@
    · LienRapprochementCarte : « Un profil semble correspondre → voir » sur la
      carte (kanban et panneau) ;
    · FenetreRapprochements : la carte et le profil côte à côte, Accepter /
-     Refuser. Accepter = fusion (lot E) ; tant que `onAccepter` est absent, le
-     bouton est présent mais inactif, et le dit.
+     Refuser. Accepter = fusion (lot E, `onAccepter`) : la carte disparaît,
+     le suivi passe au profil, annulable 7 jours depuis l'Historique.
 
    Le contexte évite de faire descendre les propositions à travers le kanban
    et le panneau : ils demandent seulement « cette carte a-t-elle une
@@ -38,7 +38,7 @@ export function FournisseurRapprochements({
   actif, onAccepter, children,
 }: {
   actif: boolean;
-  /** Lot E : fusionne la carte et le profil. Absent → Accepter inactif. */
+  /** Lot E : fusionne la carte et le profil ; rend un message d'erreur ou null. */
   onAccepter?: (r: Rapprochement) => Promise<string | null>;
   children: React.ReactNode;
 }) {
@@ -143,7 +143,7 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
     setEnCours(r.id);
     const err = await onAccepter(r);
     setEnCours(null);
-    setMessage(err ?? `Fusionné : « ${r.athlete_prenom} ${r.athlete_nom} » reprend le suivi de la carte.`);
+    setMessage(err ?? `Fusionné : « ${r.athlete_prenom} ${r.athlete_nom} » reprend le suivi de la carte « ${r.carte_prenom} ${r.carte_nom} ». Tu peux annuler pendant 7 jours depuis l'Historique du dossier.`);
     void invaliderTableauBlanc(queryClient);
   };
 
@@ -200,13 +200,12 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
                 ]} />
             </div>
             <div className="flex flex-wrap items-center justify-end gap-3 mt-4">
-              {!onAccepter && <span className="text-[12px] text-[#6b7280]">La fusion arrive avec le lot E.</span>}
               <button type="button" onClick={() => void refuser(r)} disabled={enCours === r.id}
                 className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] border border-[#2D3748] rounded-lg hover:text-white hover:border-[#4a4d56] disabled:opacity-40">
                 Refuser
               </button>
               <button type="button" onClick={() => void accepter(r)} disabled={!onAccepter || enCours === r.id}
-                title={onAccepter ? undefined : "La fusion arrive avec le lot E"}
+                title="Fusionner : le suivi de la carte passe à ce profil, la carte disparaît"
                 className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 disabled:cursor-not-allowed text-white text-[13px] font-bold rounded-lg">
                 Accepter
               </button>

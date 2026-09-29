@@ -77,6 +77,7 @@ import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
 import { estCarte, bientotPurgee, ecrireCarte, retirerCarte } from "@/lib/cartes/carteProspect";
 import { formaterTelephone } from "@/lib/cartes/saisie";
 import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
+import { fusionnerCarte } from "@/lib/cartes/fusions";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
@@ -2284,8 +2285,17 @@ function PipelinePageContent() {
   const dropCollegues = pendingDrop ? collegues(cards.find((c) => c.id === pendingDrop.cardId), moi) : [];
 
   return (
-    /* Lot D : les propositions de rapprochement de l'unité (Pro seulement). */
-    <FournisseurRapprochements actif={modeUnite && !isFreeDemoMode}>
+    /* Lot D : les propositions de rapprochement de l'unité (Pro seulement).
+       Lot E : Accepter = fusionner ; la carte disparaît, son panneau se ferme. */
+    <FournisseurRapprochements
+      actif={modeUnite && !isFreeDemoMode}
+      onAccepter={async (r) => {
+        const erreur = await fusionnerCarte(createClient(), r.carte_id, r.athlete_id);
+        if (!erreur && selectedCard?.id === r.carte_id) setSelectedCard(null);
+        void invaliderTableauBlanc(queryClient);
+        return erreur;
+      }}
+    >
     <div className={`px-4 sm:px-6 lg:px-10 py-8 mx-auto space-y-5 ${vue === "tableau" ? "max-w-none" : "max-w-[1600px]"}`}>
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>

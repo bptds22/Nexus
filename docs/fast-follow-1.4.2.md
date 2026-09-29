@@ -1741,3 +1741,28 @@ remplacée (63 %), mais deux lettres INVERSÉES seulement une fois sur trois
 distance d'édition (fuzzystrmatch, `levenshtein ≤ 1` sur le nom normalisé) en
 complément du seuil, dans `noms_proches()`. Pas maintenant.
 
+## 57. Fusion carte → profil — ce que l'app 1.4.3 voit et ne voit pas (lot E, 2026-09-29, pour le lot mobile)
+
+Accepter une proposition (`fusionner_carte`, web seulement) produit des objets
+**ordinaires** : une ligne `recruiter_pipeline` écrite par l'acteur (les sœurs
+de l'unité suivent par la synchronisation), une cote, des `recruiter_notes`
+(date d'origine gardée), des `recruiter_list_members`, et UNE ligne
+`recruiter_activity_log` de type **`PIPELINE_CHANGED`** — aucun type nouveau,
+la contrainte du journal n'est pas touchée. **Rien ne casse sur 1.4.3** : le
+dossier né d'une fusion s'affiche comme un dossier ajouté à la main, et le
+fil d'activité mobile lit la ligne comme « X → étape » (il ignore
+`details.fusion`).
+
+Ce que le mobile ne montre pas : la phrase « a fusionné la carte prospect… »,
+l'encadré **« Annuler la fusion »** (7 jours) et la ligne d'annulation
+(`details.fusion_annulee`, lue « Processus de X mis à jour »). À ajouter au lot
+mobile : `fusions_athlete()` + `annuler_fusion()` dans l'Historique du dossier.
+
+Deux conséquences à connaître :
+- **Lot D retouché par E** : un athlète déjà dans le processus de l'unité
+  n'est plus exclu des propositions (sinon « dossier existant, étape la plus
+  avancée » était inatteignable). E ré-enfile une fois ces athlètes.
+- **Avis au parent** : une fusion qui fait avancer le dossier d'un mineur
+  déclenche l'avis « Le dossier de votre enfant a progressé », comme tout
+  dossier. L'annulation, elle, n'avise pas (c'est une correction) et remet le
+  statut global (« Recruté à… ») d'aplomb s'il n'a pas été posé à la main.

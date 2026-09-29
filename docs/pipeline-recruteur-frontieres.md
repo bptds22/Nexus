@@ -292,6 +292,35 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   correspondre à tes cartes », lien sur la carte (kanban et panneau), fenêtre
   carte ↔ profil côte à côte avec Accepter (fusion, lot E) / Refuser.
 
+**Lot E (2026-09-29) — FUSION de la carte avec le profil.**
+Migration `lot_e_fusion` (additive : deux colonnes nullables sur
+`cartes_prospect`, une table `fusions_cartes`, une policy RESTRICTIVE, le motif
+FUSION ajouté aux traces ; quatre fonctions redéfinies).
+- **Accepter = `fusionner_carte(carte, athlète)`** : Pro de l'unité de la carte,
+  identité visible, proposition ouverte sur la paire. Le dossier de l'unité est
+  créé ou complété **par la ligne de l'acteur** ; s'il existait, l'étape la
+  plus avancée gagne, la relance et la visite existantes restent, drapeau = OU.
+  Cote : celle de l'unité si elle existe, sinon celle de la carte. Notes de la
+  carte recopiées dans `recruiter_notes`, signées par leur auteur s'il est
+  encore de l'unité (sinon par l'acteur, avec la mention de l'auteur d'origine),
+  datées de leur date d'origine. L'athlète rejoint les listes de la carte.
+  **Une** ligne de journal (`PIPELINE_CHANGED`, `details.fusion`), signée par
+  l'acteur. Les autres propositions de la carte deviennent CADUQUE.
+- **Carte masquée immédiatement** pour tous (policy RESTRICTIVE
+  `cartes_non_fusionnees` ; notes, listes et journal de la carte suivent par
+  `carte_lecture_ok` / `carte_ecriture_ok`). Les colonnes de fusion ne
+  s'écrivent que par les fonctions de fusion (trigger de garde).
+- **« Annuler la fusion »**, 7 jours, dans l'Historique du dossier
+  (`annuler_fusion`) : règle **« garder le modifié »** — ce qui n'a pas bougé
+  depuis la fusion est retiré, ce qui a été modifié reste, et l'écran dit
+  lequel. La carte revient, la paire devient REFUSEE (plus jamais proposée),
+  les propositions caduques se rouvrent.
+- **Après 7 jours** (`fusions-definitives`, chaque jour) : la carte est
+  supprimée, trace minimale du lot C avec le motif FUSION.
+- **Lot D retouché** : un athlète déjà dans le processus de l'unité n'est plus
+  exclu des propositions — c'est le doublon le plus probable (un collègue a
+  trouvé le vrai profil pendant que la carte vivait encore).
+
 ### LOI 25 — LE CÉGEP EST PROPRIÉTAIRE DES DONNÉES DES CARTES PROSPECT
 
 Une carte prospect est constituée par les recruteurs d'un cégep, sur un athlète
