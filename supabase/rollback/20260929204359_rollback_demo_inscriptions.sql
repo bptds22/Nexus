@@ -1,4 +1,4 @@
--- Rollback de 20260929192739_demo_inscriptions. ⚠ Supprime les inscriptions.
+-- Rollback de 20260929204359_demo_inscriptions. ⚠ Supprime les inscriptions.
 drop function public.demo_clic_compte(uuid);
 drop function public.inscrire_demo(text, text, text, uuid, text, uuid, text, text[], text, boolean, text, boolean, boolean, text);
 drop table public.demo_inscriptions_tentatives;
