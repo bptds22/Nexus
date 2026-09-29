@@ -71,7 +71,7 @@ export default function FilNotesSuivi({
   const [envoi, setEnvoi] = useState(false);
   const [aSupprimer, setASupprimer] = useState<string | null>(null);
 
-  const signature = (id: string | undefined) => (!id ? null : id === moi ? "Toi" : nomAuteur(auteurs[id]));
+  const signature = (id: string | undefined) => (!id ? null : id === moi ? "Moi" : nomAuteur(auteurs[id]));
 
   const poster = async () => {
     const contenu = texte.trim();
