@@ -10,13 +10,11 @@
 // Toute valeur saisie est ÉCHAPPÉE avant d'entrer dans le HTML.
 
 import { renderEmail, ADRESSE_POSTALE, SUPPORT } from "../_shared/emailLayout.ts";
+import { EVENEMENT, ics, lienGoogleAgenda, URL_ICS } from "./evenement.ts";
 
 export const DEMO = {
   libelle: "lundi 12 octobre 2026, de 12 h à 13 h (heure de Montréal)",
-  // 12 h HAE (UTC−4 : l'heure normale ne revient que le 1er novembre).
-  debutUtc: "20261012T160000Z",
-  finUtc: "20261012T170000Z",
-  meet: "https://meet.google.com/myi-efqn-kes",
+  meet: EVENEMENT.meet,
   reservation: "https://calendar.app.google/RUBKQe4k5ySpa6Be8",
 } as const;
 
@@ -81,6 +79,17 @@ export function sujetConfirmation(p: Participation): string {
 const RAPPEL_1A1_HTML = `<p>Vous avez aussi demandé une <strong>présentation 1:1 avec Nexus</strong>. Si ce n'est pas déjà fait, choisissez votre moment : <a href="${DEMO.reservation}">${DEMO.reservation}</a></p>`;
 const RAPPEL_1A1_TEXT = `Vous avez aussi demandé une présentation 1:1 avec Nexus. Si ce n'est pas déjà fait, choisissez votre moment : ${DEMO.reservation}`;
 
+/** « Ajouter à mon agenda » en un clic (confirmation « en direct »). */
+const BOUTON_AGENDA = "display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;line-height:1;color:#111317;text-decoration:none;padding:12px 18px;border:1px solid #D4D4D8;border-radius:10px;background:#FFFFFF;";
+const AGENDA_HTML = `<p style="margin:22px 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#52525B;">Ajouter à mon agenda :</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="padding:0 8px 8px 0;"><a href="${esc(lienGoogleAgenda())}" target="_blank" style="${BOUTON_AGENDA}">Google Agenda</a></td>
+<td style="padding:0 0 8px 0;"><a href="${URL_ICS}" target="_blank" style="${BOUTON_AGENDA}">Apple / Outlook</a></td>
+</tr></table>`;
+const AGENDA_TEXT = `Ajouter à mon agenda :
+· Google Agenda : ${lienGoogleAgenda()}
+· Apple / Outlook : ${URL_ICS}`;
+
 export function confirmation(i: Inscription): { sujet: string; html: string; text: string; ics: string | null } {
   const prenom = esc(i.prenom);
   let heading: string, corpsHtml: string, corpsText: string, cta: string, url: string;
@@ -111,9 +120,15 @@ ${i.presentation_1a1 ? RAPPEL_1A1_HTML : "<p>Vous préférez une présentation e
     bodyText: corpsText,
     ctaLabel: cta,
     ctaUrl: url,
+    ...(i.participation === "DIRECT" ? { extraHtml: AGENDA_HTML, extraText: AGENDA_TEXT } : {}),
     footerNote: PIED,
   });
-  return { sujet: sujetConfirmation(i.participation), html, text, ics: i.participation === "DIRECT" ? ics(i.id) : null };
+  return {
+    sujet: sujetConfirmation(i.participation), html, text,
+    ics: i.participation === "DIRECT"
+      ? ics({ uid: `demo-2026-10-12-${i.id}@nexussports.ca`, participant: { nom: `${i.prenom} ${i.nom}`, courriel: i.courriel } })
+      : null,
+  };
 }
 
 export function avis(i: Inscription): { sujet: string; html: string; text: string } {
@@ -136,46 +151,4 @@ export function avis(i: Inscription): { sujet: string; html: string; text: strin
 </div>`;
   const text = `Nouvelle inscription — démo du 12 octobre\n\n${lignes.map(([k, v]) => `${k} : ${v}`).join("\n")}`;
   return { sujet: `Démo 12 oct. — ${i.prenom} ${i.nom} (${libelleChoix(i.participation)}${i.presentation_1a1 ? " + 1:1" : ""})`, html, text };
-}
-
-// ── .ics (RFC 5545) : CRLF, échappement, lignes pliées à 75 octets ──
-const echapperIcs = (s: string): string =>
-  s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
-
-function plier(ligne: string): string {
-  const octets = new TextEncoder().encode(ligne);
-  if (octets.length <= 75) return ligne;
-  const morceaux: string[] = [];
-  let courant = "";
-  let taille = 0;
-  for (const car of ligne) {
-    const t = new TextEncoder().encode(car).length;
-    const limite = morceaux.length === 0 ? 75 : 74; // la suite commence par un espace
-    if (taille + t > limite) { morceaux.push(courant); courant = ""; taille = 0; }
-    courant += car; taille += t;
-  }
-  morceaux.push(courant);
-  return morceaux.join("\r\n ");
-}
-
-export function ics(id: string, maintenant: Date = new Date()): string {
-  const stamp = maintenant.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  return [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Nexus//Demo recruteurs 12 octobre//FR",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    `UID:demo-2026-10-12-${id}@nexussports.ca`,
-    `DTSTAMP:${stamp}`,
-    `DTSTART:${DEMO.debutUtc}`,
-    `DTEND:${DEMO.finUtc}`,
-    `SUMMARY:${echapperIcs("Nexus — Démo recruteurs")}`,
-    `DESCRIPTION:${echapperIcs(`Démo en direct de la plateforme Nexus : les outils, le processus, la recherche, et vos questions.\nLien de la rencontre : ${DEMO.meet}\nQuestions : ${SUPPORT} · 438-498-0494`)}`,
-    `LOCATION:${echapperIcs(DEMO.meet)}`,
-    `URL:${DEMO.meet}`,
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].map(plier).join("\r\n") + "\r\n";
 }

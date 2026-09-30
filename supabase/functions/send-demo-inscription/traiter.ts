@@ -73,7 +73,7 @@ export async function traiterInscription(deps: Dependances, id: string): Promise
     const c = confirmation(i);
     const err = await envoyer(deps, `demo-confirmation/${id}/${i.participation}/${i.presentation_1a1 ? "1a1" : "seul"}`, {
       from: FROM, to: i.courriel, reply_to: SUPPORT, subject: c.sujet, html: c.html, text: c.text,
-      ...(c.ics ? { attachments: [{ filename: "demo-nexus-12-octobre.ics", content: encoderBase64(c.ics), content_type: "text/calendar; charset=utf-8; method=PUBLISH" }] } : {}),
+      ...(c.ics ? { attachments: [{ filename: "demo-nexus-12-octobre.ics", content: encoderBase64(c.ics), content_type: "text/calendar; charset=utf-8; method=REQUEST" }] } : {}),
       tags: [{ name: "campagne", value: "demo_12_octobre" }],
     });
     await supabase.from("demo_inscriptions").update(err

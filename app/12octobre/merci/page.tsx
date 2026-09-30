@@ -12,6 +12,9 @@ import Footer from "@/components/marketing/Footer";
 import PlaybookBackground from "../../components/PlaybookBackground";
 import { createClient } from "@/lib/supabase/client";
 import { DEMO_12_OCTOBRE as D, estParticipation, lienOuvrirCompte } from "@/lib/demo/demo12Octobre";
+import { lienGoogleAgenda } from "@/supabase/functions/send-demo-inscription/evenement";
+
+const BOUTON_AGENDA = "inline-flex items-center justify-center h-12 px-5 border border-[#2D3F5E] text-white hover:border-[#9AA3B2] font-head font-black text-xs uppercase tracking-widest";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -39,6 +42,15 @@ function Contenu() {
           <p>Votre place est réservée pour le <strong className="text-white">{D.libelle}</strong>.</p>
           <p>Un courriel de confirmation vient de partir, avec le lien de la rencontre et l&apos;invitation à ajouter à votre agenda.</p>
           <p>Lien de la rencontre : <a href={D.meet} target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-wl-red">{D.meet}</a></p>
+          {/* « Ajouter à mon agenda » en un clic : Google (événement pré-rempli)
+              ou le .ics servi par URL (Apple Calendrier, Outlook). */}
+          <div>
+            <p className="text-[13px] font-bold tracking-[0.16em] uppercase text-[#B4BCC8] mb-2">Ajouter à mon agenda</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a href={lienGoogleAgenda()} target="_blank" rel="noopener noreferrer" className={BOUTON_AGENDA}>Google Agenda</a>
+              <a href="/12octobre/demo-nexus.ics" className={BOUTON_AGENDA}>Apple / Outlook</a>
+            </div>
+          </div>
         </>
       )}
       {c === "ENREGISTREMENT" && (
