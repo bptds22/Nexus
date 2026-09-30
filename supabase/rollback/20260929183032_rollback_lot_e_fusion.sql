@@ -49,7 +49,9 @@ language sql stable security definer set search_path = public set row_security =
            public.nom_normalise(a.last_name) as nom_n,
            nullif(lower(btrim(a.email)), '')        as courriel_fiche,
            nullif(lower(btrim(a.parent_email)), '') as courriel_parent,
-           nullif(lower(btrim(u.email)), '')        as courriel_compte
+           nullif(lower(btrim(u.email)), '')        as courriel_compte,
+           public.telephone_normalise(a.telephone)        as tel_fiche,
+           public.telephone_normalise(a.telephone_parent) as tel_parent
       from public.athletes a
       left join public.users u on u.id = a.user_id
      where a.status = 'ACTIF'::public.account_status
@@ -59,15 +61,18 @@ language sql stable security definer set search_path = public set row_security =
     select c.id, c.unite_cegep_id, c.unite_sport_id, c.team_id, c.prenom, c.promotion,
            public.nom_normalise(c.nom) as nom_n,
            nullif(lower(btrim(c.courriel)), '') as courriel,
+           c.telephone as tel,
            t.school_id as ecole
       from public.cartes_prospect c
       left join public.teams t on t.id = c.team_id
      where (p_carte is null or c.id = p_carte)
   ), paires as (
     select car.*, ath.id as ath_id, ath.first_name, ath.school_id as ath_ecole, ath.sport_id as ath_sport,
-           ath.annee_diplomation, ath.nom_n as ath_nom, ath.courriel_fiche, ath.courriel_parent, ath.courriel_compte
+           ath.annee_diplomation, ath.nom_n as ath_nom, ath.courriel_fiche, ath.courriel_parent, ath.courriel_compte,
+           ath.tel_fiche, ath.tel_parent
       from car join ath
         on (car.courriel is not null and car.courriel in (ath.courriel_compte, ath.courriel_fiche, ath.courriel_parent))
+        or (car.tel is not null and car.tel in (ath.tel_fiche, ath.tel_parent))
         or (car.nom_n <> '' and (car.nom_n = ath.nom_n or public.noms_proches(car.nom_n, ath.nom_n)))
   ), qualifiees as (
     -- Ce que chaque paire réunit ; le critère se lit ensuite, du plus fort au plus faible.
@@ -89,6 +94,8 @@ language sql stable security definer set search_path = public set row_security =
       case
         when q.courriel is not null and q.courriel in (q.courriel_compte, q.courriel_fiche) then 'COURRIEL'
         when q.courriel is not null and q.courriel = q.courriel_parent and q.prenom_ok then 'COURRIEL_PARENT'
+        when q.tel is not null and q.tel = q.tel_fiche then 'TELEPHONE'
+        when q.tel is not null and q.tel = q.tel_parent and q.prenom_ok then 'TELEPHONE_PARENT'
         when q.prenom_ok and q.meme_equipe and q.nom_exact then 'EQUIPE'
         when q.prenom_ok and q.meme_equipe then 'EQUIPE_PROCHE'
         when q.prenom_ok and q.meme_ecole_sport and q.nom_exact then 'ECOLE'
@@ -140,8 +147,9 @@ language sql stable security definer set search_path = public set row_security =
      and not exists (select 1 from public.recruiter_pipeline rp
                       where rp.athlete_id = r.athlete_id
                         and rp.unite_cegep_id = r.unite_cegep_id and rp.unite_sport_id = r.unite_sport_id)
-   order by case r.critere when 'COURRIEL' then 0 when 'COURRIEL_PARENT' then 1 when 'EQUIPE' then 2
-                           when 'EQUIPE_PROCHE' then 3 when 'ECOLE' then 4 else 5 end, r.cree_le
+   order by case r.critere when 'COURRIEL' then 0 when 'COURRIEL_PARENT' then 1 when 'TELEPHONE' then 2
+                           when 'TELEPHONE_PARENT' then 3 when 'EQUIPE' then 4 when 'EQUIPE_PROCHE' then 5
+                           when 'ECOLE' then 6 else 7 end, r.cree_le
 $$;
 
 do $$
