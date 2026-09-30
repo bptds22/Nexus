@@ -28,8 +28,13 @@ drop table public.notifications_unite;
 drop table public.rapprochements;
 drop table public.rapprochement_file;
 
+drop function public.athletes_nom_proche(text, text, uuid);
+drop function public.noms_proches(text, text);
+drop function public.seuil_nom_proche();
 drop function public.prenoms_compatibles(text, text);
 drop function public.nom_normalise(text);
+-- Installée par le lot D ; refuse de partir si un autre objet en dépend (voulu).
+drop extension pg_trgm;
 
 do $$
 begin
@@ -41,11 +46,15 @@ begin
               and proname in ('nom_normalise','prenoms_compatibles','rapprochement_candidats','rapprocher',
                               'evaluer_rapprochements','rapprochement_enfiler','rapprochement_sur_athlete',
                               'rapprochement_sur_onboarding','rapprochement_sur_equipe','rapprochement_sur_carte',
-                              'rapprochement_majorite_du_jour','rapprochements_unite','refuser_rapprochement')) then
+                              'rapprochement_majorite_du_jour','rapprochements_unite','refuser_rapprochement',
+                              'seuil_nom_proche','noms_proches','athletes_nom_proche')) then
     raise exception 'NEXUS: une fonction du lot D existe encore';
   end if;
   if exists (select 1 from pg_trigger where tgname like 'trg_rapprochement_%') then
     raise exception 'NEXUS: un trigger du lot D existe encore';
+  end if;
+  if exists (select 1 from pg_extension where extname = 'pg_trgm') then
+    raise exception 'NEXUS: pg_trgm est encore installée';
   end if;
   if exists (select 1 from cron.job where jobname in ('rapprochements-evaluation', 'rapprochements-majorite')) then
     raise exception 'NEXUS: une tâche du lot D existe encore';

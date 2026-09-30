@@ -16,7 +16,7 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 export interface Rapprochement {
   id: string;
   force: "FORTE" | "MOYENNE" | "FAIBLE";
-  critere: "COURRIEL" | "COURRIEL_PARENT" | "EQUIPE" | "ECOLE";
+  critere: "COURRIEL" | "COURRIEL_PARENT" | "EQUIPE" | "EQUIPE_PROCHE" | "ECOLE" | "ECOLE_PROCHE";
   promotion_concorde: boolean | null;
   cree_le: string;
   carte_id: string;
@@ -59,12 +59,20 @@ export function raisonRapprochement(r: Pick<Rapprochement, "critere">): string {
     case "COURRIEL": return "Même courriel";
     case "COURRIEL_PARENT": return "Même courriel de parent, prénom compatible";
     case "EQUIPE": return "Même nom, même équipe";
+    case "EQUIPE_PROCHE": return "Nom proche, prénom compatible, même équipe";
     case "ECOLE": return "Même nom, même école, même sport";
+    case "ECOLE_PROCHE": return "Nom proche, prénom compatible, même école, même sport";
   }
 }
 
 export function libelleForce(f: Rapprochement["force"]): string {
   return f === "FORTE" ? "Correspondance forte" : f === "MOYENNE" ? "Correspondance" : "Correspondance possible";
+}
+
+/** Le libellé affiché : un nom PROCHE (faute de frappe probable) se dit
+ *  « Correspondance probable », un cran sous son équivalent au nom exact. */
+export function libelleCorrespondance(r: Pick<Rapprochement, "critere" | "force">): string {
+  return r.critere === "EQUIPE_PROCHE" || r.critere === "ECOLE_PROCHE" ? "Correspondance probable" : libelleForce(r.force);
 }
 
 /** Les propositions ouvertes de l'unité. Rien pour un compte gratuit (la

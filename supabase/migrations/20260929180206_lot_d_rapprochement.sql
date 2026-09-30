@@ -25,14 +25,23 @@
 --   b. nom normalisé + prénom compatible + MÊME ÉQUIPE → MOYENNE ;
 --   c. nom normalisé + prénom compatible + même école, SI l'athlète joue le
 --      sport de l'unité (décision BP) → FAIBLE.
+--   b' et c' — TOLÉRANCE AUX FAUTES (retour BP 2026-09-30) : un nom PROCHE
+--      (similarité pg_trgm ≥ seuil_nom_proche(), 0,5), pas exact, avec
+--      prénom compatible → EQUIPE_PROCHE / ECOLE_PROCHE, « correspondance
+--      probable », chacun un cran sous son équivalent au nom exact.
+--      Seuil calibré sur les noms de la prod (lecture seule, 2026-09-30) :
+--      à 0,6, « Gangnon » ne trouvait pas « Gagnon » (0,50) ; à 0,5, seuls
+--      des noms composés (« Simard » ~ « Simard Pagé ») passent, et
+--      « Carrier » ~ « Cartier » (0,45) reste dehors.
 --   Prénom tolérant (« Bruno-Philippe » ↔ « Bruno »). La promotion est un
 --   indice affiché (promotion_concorde), jamais éliminatoire.
 -- JAMAIS proposé : identité masquée (athlete_identity_ok), athlète déjà dans
 -- le processus de l'unité, paire déjà proposée (refusée comprise).
 --
--- ADDITIF : trois tables, fonctions et triggers nouveaux, deux tâches cron.
--- Aucun objet existant n'est modifié (les triggers ajoutés sur athletes,
--- users, team_athletes et cartes_prospect ne font qu'insérer dans la file).
+-- ADDITIF : trois tables, fonctions et triggers nouveaux, deux tâches cron,
+-- l'extension pg_trgm (schéma extensions). Aucun objet existant n'est
+-- modifié (les triggers ajoutés sur athletes, users, team_athletes et
+-- cartes_prospect ne font qu'insérer dans la file).
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 1. NORMALISATION
@@ -48,6 +57,20 @@ returns boolean language sql stable set search_path = public as $$
   select coalesce(x <> '' and y <> '' and (left(x, length(y)) = y or left(y, length(x)) = x), false)
     from (select coalesce((regexp_match(public.nom_normalise(a), '[a-z0-9]+'))[1], '') as x,
                  coalesce((regexp_match(public.nom_normalise(b), '[a-z0-9]+'))[1], '') as y) s
+$$;
+
+-- Tolérance aux fautes : similarité de trigrammes (pg_trgm).
+create extension if not exists pg_trgm with schema extensions;
+
+-- LE seuil, en un seul endroit (calibrage : voir l'en-tête).
+create function public.seuil_nom_proche()
+returns real language sql immutable set search_path = public as $$ select 0.5::real $$;
+
+-- Deux noms DÉJÀ normalisés, différents mais proches (« gagno » ~ « gagnon »).
+create function public.noms_proches(a text, b text)
+returns boolean language sql stable set search_path = public as $$
+  select coalesce(a <> '' and b <> '' and a <> b
+                  and extensions.similarity(a, b) >= public.seuil_nom_proche(), false)
 $$;
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -74,7 +97,7 @@ create table public.rapprochements (
   athlete_id          uuid not null references public.athletes(id) on delete cascade,
   unite_cegep_id      uuid not null,
   unite_sport_id      uuid not null,
-  critere             text not null check (critere in ('COURRIEL','COURRIEL_PARENT','EQUIPE','ECOLE')),
+  critere             text not null check (critere in ('COURRIEL','COURRIEL_PARENT','EQUIPE','EQUIPE_PROCHE','ECOLE','ECOLE_PROCHE')),
   force               text not null check (force in ('FORTE','MOYENNE','FAIBLE')),
   promotion_concorde  boolean,
   statut              text not null default 'PROPOSEE' check (statut in ('PROPOSEE','REFUSEE','ACCEPTEE','CADUQUE')),
@@ -134,31 +157,37 @@ language sql stable security definer set search_path = public set row_security =
            ath.annee_diplomation, ath.nom_n as ath_nom, ath.courriel_fiche, ath.courriel_parent, ath.courriel_compte
       from car join ath
         on (car.courriel is not null and car.courriel in (ath.courriel_compte, ath.courriel_fiche, ath.courriel_parent))
-        or (car.nom_n <> '' and car.nom_n = ath.nom_n)
-  ), notees as (
+        or (car.nom_n <> '' and (car.nom_n = ath.nom_n or public.noms_proches(car.nom_n, ath.nom_n)))
+  ), qualifiees as (
+    -- Ce que chaque paire réunit ; le critère se lit ensuite, du plus fort au plus faible.
     select p.*,
-      case
-        when p.courriel is not null and p.courriel in (p.courriel_compte, p.courriel_fiche) then 'COURRIEL'
-        when p.courriel is not null and p.courriel = p.courriel_parent
-             and public.prenoms_compatibles(p.prenom, p.first_name) then 'COURRIEL_PARENT'
-        when p.nom_n = p.ath_nom and public.prenoms_compatibles(p.prenom, p.first_name)
-             and p.team_id is not null
-             and exists (select 1 from public.team_athletes ta where ta.athlete_id = p.ath_id and ta.team_id = p.team_id)
-             then 'EQUIPE'
-        when p.nom_n = p.ath_nom and public.prenoms_compatibles(p.prenom, p.first_name)
-             and p.ecole is not null
-             and (p.ath_ecole = p.ecole
-                  or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
-                              where ta.athlete_id = p.ath_id and t.school_id = p.ecole))
-             and (p.ath_sport = p.unite_sport_id
-                  or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
-                              where ta.athlete_id = p.ath_id and t.sport_id = p.unite_sport_id))
-             then 'ECOLE'
-      end as critere
+      p.nom_n = p.ath_nom as nom_exact,
+      public.prenoms_compatibles(p.prenom, p.first_name) as prenom_ok,
+      (p.team_id is not null
+       and exists (select 1 from public.team_athletes ta where ta.athlete_id = p.ath_id and ta.team_id = p.team_id)) as meme_equipe,
+      (p.ecole is not null
+       and (p.ath_ecole = p.ecole
+            or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
+                        where ta.athlete_id = p.ath_id and t.school_id = p.ecole))
+       and (p.ath_sport = p.unite_sport_id
+            or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
+                        where ta.athlete_id = p.ath_id and t.sport_id = p.unite_sport_id))) as meme_ecole_sport
       from paires p
+  ), notees as (
+    select q.*,
+      case
+        when q.courriel is not null and q.courriel in (q.courriel_compte, q.courriel_fiche) then 'COURRIEL'
+        when q.courriel is not null and q.courriel = q.courriel_parent and q.prenom_ok then 'COURRIEL_PARENT'
+        when q.prenom_ok and q.meme_equipe and q.nom_exact then 'EQUIPE'
+        when q.prenom_ok and q.meme_equipe then 'EQUIPE_PROCHE'
+        when q.prenom_ok and q.meme_ecole_sport and q.nom_exact then 'ECOLE'
+        when q.prenom_ok and q.meme_ecole_sport then 'ECOLE_PROCHE'
+      end as critere
+      from qualifiees q
   )
   select n.id, n.ath_id, n.unite_cegep_id, n.unite_sport_id, n.critere,
-         case n.critere when 'EQUIPE' then 'MOYENNE' when 'ECOLE' then 'FAIBLE' else 'FORTE' end,
+         case n.critere when 'EQUIPE' then 'MOYENNE' when 'EQUIPE_PROCHE' then 'FAIBLE'
+                        when 'ECOLE' then 'FAIBLE' when 'ECOLE_PROCHE' then 'FAIBLE' else 'FORTE' end,
          case when n.promotion is null or n.annee_diplomation is null then null
               else n.promotion = n.annee_diplomation end
     from notees n
@@ -317,7 +346,34 @@ language sql stable security definer set search_path = public set row_security =
      and not exists (select 1 from public.recruiter_pipeline rp
                       where rp.athlete_id = r.athlete_id
                         and rp.unite_cegep_id = r.unite_cegep_id and rp.unite_sport_id = r.unite_sport_id)
-   order by case r.force when 'FORTE' then 0 when 'MOYENNE' then 1 else 2 end, r.cree_le
+   order by case r.critere when 'COURRIEL' then 0 when 'COURRIEL_PARENT' then 1 when 'EQUIPE' then 2
+                           when 'EQUIPE_PROCHE' then 3 when 'ECOLE' then 4 else 5 end, r.cree_le
+$$;
+
+-- Lot C, avertissement de doublon à la création d'une carte (retour BP
+-- 2026-09-30) : « Un athlète au nom proche existe : Lea Gagnon — c'est
+-- lui ? ». Nom PROCHE (l'exact est déjà couvert par la recherche), prénom
+-- compatible, même établissement (école de la fiche ou d'une équipe).
+-- Recruteur Pro seulement ; jamais une identité masquée — la même règle que
+-- la recherche, donc aucun oracle nouveau.
+create function public.athletes_nom_proche(p_prenom text, p_nom text, p_ecole uuid)
+returns table (id uuid, first_name text, last_name text)
+language sql stable security definer set search_path = public set row_security = off as $$
+  select a.id, a.first_name, a.last_name
+    from public.athletes a
+   where exists (select 1 from public.users u
+                  where u.id = auth.uid() and u.role = 'RECRUTEUR'::public.user_role)
+     and public.user_has_pro()
+     and p_ecole is not null
+     and a.status = 'ACTIF'::public.account_status
+     and public.athlete_identity_ok(a.date_naissance, a.consentement_parental)
+     and public.noms_proches(public.nom_normalise(p_nom), public.nom_normalise(a.last_name))
+     and public.prenoms_compatibles(p_prenom, a.first_name)
+     and (a.school_id = p_ecole
+          or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
+                      where ta.athlete_id = a.id and t.school_id = p_ecole))
+   order by extensions.similarity(public.nom_normalise(p_nom), public.nom_normalise(a.last_name)) desc
+   limit 5
 $$;
 
 -- Refuser : la paire est marquée pour toujours, pour toute l'unité.
@@ -353,6 +409,9 @@ grant select on public.rapprochements, public.notifications_unite to authenticat
 
 revoke execute on function public.nom_normalise(text)                          from public, anon, authenticated;
 revoke execute on function public.prenoms_compatibles(text, text)              from public, anon, authenticated;
+revoke execute on function public.seuil_nom_proche()                              from public, anon, authenticated;
+revoke execute on function public.noms_proches(text, text)                     from public, anon, authenticated;
+revoke execute on function public.athletes_nom_proche(text, text, uuid)        from public, anon;
 revoke execute on function public.rapprochement_candidats(uuid, uuid)          from public, anon, authenticated;
 revoke execute on function public.rapprocher(uuid, uuid)                       from public, anon, authenticated;
 revoke execute on function public.evaluer_rapprochements(integer)              from public, anon, authenticated;
@@ -366,6 +425,7 @@ revoke execute on function public.rapprochements_unite(uuid)                   f
 revoke execute on function public.refuser_rapprochement(uuid)                  from public, anon;
 grant  execute on function public.rapprochements_unite(uuid)                   to authenticated;
 grant  execute on function public.refuser_rapprochement(uuid)                  to authenticated;
+grant  execute on function public.athletes_nom_proche(text, text, uuid)        to authenticated;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 7. TÂCHES — évaluation chaque minute ; majorité, chaque jour.
@@ -410,6 +470,9 @@ begin
     select * from (values
       ('public.nom_normalise(text)',                       array['postgres','service_role']),
       ('public.prenoms_compatibles(text, text)',           array['postgres','service_role']),
+      ('public.seuil_nom_proche()',                        array['postgres','service_role']),
+      ('public.noms_proches(text, text)',                  array['postgres','service_role']),
+      ('public.athletes_nom_proche(text, text, uuid)',     array['authenticated','postgres','service_role']),
       ('public.rapprochement_candidats(uuid, uuid)',       array['postgres','service_role']),
       ('public.rapprocher(uuid, uuid)',                    array['postgres','service_role']),
       ('public.evaluer_rapprochements(integer)',           array['postgres','service_role']),

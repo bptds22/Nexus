@@ -21,7 +21,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import {
-  useRapprochements, refuserRapprochement, raisonRapprochement, libelleForce, type Rapprochement,
+  useRapprochements, refuserRapprochement, raisonRapprochement, libelleCorrespondance, type Rapprochement,
 } from "@/lib/cartes/rapprochements";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import AthletePhoto from "@/components/shared/AthletePhoto";
@@ -167,7 +167,7 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
                 r.force === "FORTE" ? "border-[#22C55E]/40 bg-[#22C55E]/10 text-[#86EFAC]"
                 : r.force === "MOYENNE" ? "border-white/30 bg-white/5 text-white"
                 : "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#FCD34D]"}`}>
-                {libelleForce(r.force)}
+                {libelleCorrespondance(r)}
               </span>
               <span className="text-[12px] text-[#9CA3AF]">{raisonRapprochement(r)}</span>
               {r.promotion_concorde === false && <span className="text-[12px] text-[#FCD34D]">· promotion différente</span>}

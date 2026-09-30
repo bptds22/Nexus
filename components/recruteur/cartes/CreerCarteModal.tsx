@@ -197,6 +197,18 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         texte: `« ${nexus.first_name} ${nexus.last_name} », de ${etablissement.name}, est déjà sur Nexus — ajoute-le plutôt à ton processus depuis sa fiche.`,
         lien: `/recruteur/athletes/${nexus.id}`,
       });
+    } else {
+      // Tolérance aux fautes (lot D) : un nom PROCHE, prénom compatible, même
+      // établissement — « Lea Gagno » trouve « Léa Gagnon ». La base ne rend
+      // qu'une identité visible, comme la recherche.
+      const { data: proches } = await supabase.rpc("athletes_nom_proche", { p_prenom: prenom, p_nom: nom, p_ecole: etablissement.id });
+      const proche = ((proches ?? []) as { id: string; first_name: string | null; last_name: string | null }[])[0];
+      if (proche) {
+        trouves.push({
+          texte: `Un athlète au nom proche existe : ${proche.first_name} ${proche.last_name} — c'est lui ?`,
+          lien: `/recruteur/athletes/${proche.id}`,
+        });
+      }
     }
 
     // Même courriel.

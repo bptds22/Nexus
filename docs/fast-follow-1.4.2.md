@@ -1722,3 +1722,8 @@ qu'une ligne de file — prouvé sous l'identité d'un coach qui ajoute un
 athlète à son équipe. À ajouter au lot mobile : lecture de
 `rapprochements_unite()`, pastille, fenêtre côte à côte, refus.
 
+Tolérance aux fautes (2026-09-30) : les critères EQUIPE_PROCHE / ECOLE_PROCHE
+et l'avertissement « nom proche » de la création de carte (RPC
+`athletes_nom_proche`) sont web seulement, comme le reste du lot D. Le mobile
+1.4.3 ne crée pas de cartes : rien à rattraper avant le lot mobile.
+

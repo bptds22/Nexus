@@ -251,6 +251,16 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   (un parent a souvent plusieurs enfants) ; (b) nom normalisé + prénom
   compatible + même équipe → moyenne ; (c) même nom + même école, si l'athlète
   joue le sport de l'unité → faible. La promotion est un indice affiché.
+- **Tolérance aux fautes** (retour BP 2026-09-30) : un nom PROCHE — similarité
+  pg_trgm ≥ `seuil_nom_proche()` (0,5), prénom compatible — donne (b) et (c)
+  en « correspondance probable » (EQUIPE_PROCHE, ECOLE_PROCHE), chacun un cran
+  sous son équivalent au nom exact. Seuil calibré sur les noms de la prod : à
+  0,6, « Gangnon » ne trouvait pas « Gagnon » (0,50) ; à 0,5, seuls des noms
+  composés passent (« Simard » ~ « Simard Pagé ») et « Carrier » ~ « Cartier »
+  (0,45) reste dehors. Limite connue : deux lettres INVERSÉES ne sont trouvées
+  qu'une fois sur trois (« Nguyen » ~ « Ngyuen » = 0,27). La même règle sert
+  l'avertissement de doublon du lot C (`athletes_nom_proche`) : « Un athlète au
+  nom proche existe : Léa Gagnon — c'est lui ? ».
 - **Jamais proposé** : identité masquée (relue aussi à l'affichage), athlète
   déjà dans le processus de l'unité, paire déjà proposée — une paire REFUSÉE
   ne revient jamais (unicité carte × athlète).
