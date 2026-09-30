@@ -65,6 +65,8 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [tousEtablissements, setTousEtablissements] = useState<(Etablissement & { cle: string })[] | null>(null);
   const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
+  // Faux pendant le chargement : « aucune équipe » ne s'affiche qu'une fois la réponse lue.
+  const [equipesChargees, setEquipesChargees] = useState(false);
   const [equipeId, setEquipeId] = useState("");
   const [nomSport, setNomSport] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
@@ -94,19 +96,24 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     })();
   }, [sportId]);
 
-  // 1. Les établissements du genre choisi qui ont au moins une équipe du
-  //    sport de l'unité — par pages de 1000 (plafond PostgREST).
+  // 1. Les établissements du genre choisi — par pages de 1000 (plafond PostgREST).
+  //    SCOLAIRE : seulement ceux qui ont une équipe du sport de l'unité.
+  //    CIVIL : TOUS les clubs, sans filtre de sport (bug prod 2026-09-30) —
+  //    un club est agnostique du sport (CLAUDE.md, « do NOT sport-filter the
+  //    club search query ») ; en prod, AUCUN club n'avait d'équipe de
+  //    basketball : le filtre vidait la liste. La pertinence du sport se lit
+  //    à l'étape suivante (« Aucune équipe de … dans ce club »).
   useEffect(() => {
     let annule = false;
     void (async () => {
       const supabase = createClient();
       const tous: (Etablissement & { cle: string })[] = [];
       for (let debut = 0; debut < 10000; debut += 1000) {
-        const { data, error } = await supabase
-          .from("schools")
-          .select("id, name, city, teams!inner(sport_id)")
+        const base = genre === "CIVIL"
+          ? supabase.from("schools").select("id, name, city")
+          : supabase.from("schools").select("id, name, city, teams!inner(sport_id)").eq("teams.sport_id", sportId);
+        const { data, error } = await base
           .in("type", TYPES[genre])
-          .eq("teams.sport_id", sportId)
           .order("name")
           .range(debut, debut + 999);
         if (error || !data) break;
@@ -128,6 +135,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
 
   // 2. Ses équipes du sport de l'unité.
   useEffect(() => {
+    setEquipesChargees(false);
     if (!etablissement) { setEquipes([]); setEquipeId(""); return; }
     let annule = false;
     void (async () => {
@@ -147,6 +155,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
       const finales = lignes.map((e) => (vus.get(e.libelle)! > 1 ? { ...e, libelle: `${e.libelle} — ${e.name}` } : e));
       setEquipes(finales);
       setEquipeId(finales.length === 1 ? finales[0].id : "");
+      setEquipesChargees(true);
     })();
     return () => { annule = true; };
   }, [etablissement, sportId, nomSport]);
@@ -329,7 +338,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
                 )}
                 {recherche.trim().length >= 2 && tousEtablissements !== null && etablissements.length === 0 && (
                   <p className="text-[12px] text-[#6b7280] mt-1">
-                    {genre === "SCOLAIRE" ? "Aucune école" : "Aucun club"} avec une équipe de ce sport ne correspond.
+                    {genre === "SCOLAIRE" ? "Aucune école avec une équipe de ce sport ne correspond." : "Aucun club ne correspond."}
                   </p>
                 )}
               </>
@@ -343,6 +352,13 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
                 {equipes.length !== 1 && <option value="">{equipes.length === 0 ? "Aucune équipe de ce sport" : "Choisir l'équipe"}</option>}
                 {equipes.map((e) => <option key={e.id} value={e.id}>{e.libelle}</option>)}
               </select>
+              {equipesChargees && equipes.length === 0 && (
+                <p className="text-[12px] text-[#F59E0B] mt-1" data-testid="aucune-equipe-club">
+                  {genre === "CIVIL"
+                    ? `Aucune équipe${nomSport ? ` de ${nomSport.toLowerCase()}` : ""} n'est encore inscrite dans ce club. La carte demande une équipe : un entraîneur du club peut l'inscrire sur Nexus.`
+                    : `Aucune équipe${nomSport ? ` de ${nomSport.toLowerCase()}` : ""} dans cet établissement.`}
+                </p>
+              )}
             </div>
           )}
 
