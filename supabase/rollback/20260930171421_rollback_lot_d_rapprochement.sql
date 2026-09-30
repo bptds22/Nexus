@@ -1,4 +1,4 @@
--- Rollback de 20260929180206_lot_d_rapprochement (lot D).
+-- Rollback de 20260930171421_lot_d_rapprochement (lot D).
 -- ⚠ Supprime les propositions (et le souvenir des refus) et les notifications.
 -- Aucun objet antérieur n'a été modifié : les triggers ajoutés sur athletes,
 -- users, team_athletes et cartes_prospect partent, rien d'autre ne bouge.

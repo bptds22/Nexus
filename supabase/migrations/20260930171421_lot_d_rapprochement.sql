@@ -1,4 +1,4 @@
--- 20260929180206_lot_d_rapprochement (renommée à la version prod après apply)
+-- 20260930171421_lot_d_rapprochement (appliquée en prod le 2026-09-30, 17:14 UTC)
 --
 -- LOT D — RAPPROCHEMENT des cartes prospect avec les vrais profils.
 --
