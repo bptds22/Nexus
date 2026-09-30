@@ -65,16 +65,6 @@ export function raisonRapprochement(r: Pick<Rapprochement, "critere">): string {
   }
 }
 
-export function libelleForce(f: Rapprochement["force"]): string {
-  return f === "FORTE" ? "Correspondance forte" : f === "MOYENNE" ? "Correspondance" : "Correspondance possible";
-}
-
-/** Le libellé affiché : un nom PROCHE (faute de frappe probable) se dit
- *  « Correspondance probable », un cran sous son équivalent au nom exact. */
-export function libelleCorrespondance(r: Pick<Rapprochement, "critere" | "force">): string {
-  return r.critere === "EQUIPE_PROCHE" || r.critere === "ECOLE_PROCHE" ? "Correspondance probable" : libelleForce(r.force);
-}
-
 /** Les propositions ouvertes de l'unité. Rien pour un compte gratuit (la
  *  base rend zéro ligne) ; on n'interroge même pas sans utilisateur. */
 export function useRapprochements(enabled = true) {

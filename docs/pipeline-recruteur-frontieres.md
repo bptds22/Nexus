@@ -252,13 +252,13 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   compatible + même équipe → moyenne ; (c) même nom + même école, si l'athlète
   joue le sport de l'unité → faible. La promotion est un indice affiché.
 - **Tolérance aux fautes** (retour BP 2026-09-30) : un nom PROCHE — similarité
-  pg_trgm ≥ `seuil_nom_proche()` (0,5), prénom compatible — donne (b) et (c)
-  en « correspondance probable » (EQUIPE_PROCHE, ECOLE_PROCHE), chacun un cran
-  sous son équivalent au nom exact. Seuil calibré sur les noms de la prod : à
+  pg_trgm ≥ `seuil_nom_proche()` (0,5, validé par BP), prénom compatible —
+  donne (b) et (c) en EQUIPE_PROCHE / ECOLE_PROCHE, chacun un cran sous son
+  équivalent au nom exact. Seuil calibré sur les noms de la prod : à
   0,6, « Gangnon » ne trouvait pas « Gagnon » (0,50) ; à 0,5, seuls des noms
   composés passent (« Simard » ~ « Simard Pagé ») et « Carrier » ~ « Cartier »
   (0,45) reste dehors. Limite connue : deux lettres INVERSÉES ne sont trouvées
-  qu'une fois sur trois (« Nguyen » ~ « Ngyuen » = 0,27). La même règle sert
+  qu'une fois sur trois (« Nguyen » ~ « Ngyuen » = 0,27) — registre §56. La même règle sert
   l'avertissement de doublon du lot C (`athletes_nom_proche`) : « Un athlète au
   nom proche existe : Léa Gagnon — c'est lui ? ».
 - **Jamais proposé** : identité masquée (relue aussi à l'affichage), athlète
@@ -268,6 +268,13 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   les Pro de cette unité la lisent et la décident. Deux cégeps qui ont chacun
   une carte pour le même jeune reçoivent deux propositions indépendantes, sans
   jamais apprendre l'existence de l'autre.
+- **Trois niveaux affichés** (décision BP 2026-09-30) : courriel identique →
+  « Correspondance confirmée par le courriel » ; nom exact + même équipe →
+  « Correspondance : même nom, même équipe » ; nom proche, ou même école sans
+  la même équipe → « Possiblement le même athlète », avec ce qui diffère (nom,
+  équipe, promotion). Aucun libellé « probable » ou « possible » nu. Dans tous
+  les cas, la fenêtre côte à côte et « Accepter » restent obligatoires : le
+  système propose, le recruteur confirme.
 - **Interface** : pastille sur « Mon processus », bandeau « N profils semblent
   correspondre à tes cartes », lien sur la carte (kanban et panneau), fenêtre
   carte ↔ profil côte à côte avec Accepter (fusion, lot E) / Refuser.

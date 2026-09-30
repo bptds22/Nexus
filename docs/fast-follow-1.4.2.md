@@ -1727,3 +1727,10 @@ et l'avertissement « nom proche » de la création de carte (RPC
 `athletes_nom_proche`) sont web seulement, comme le reste du lot D. Le mobile
 1.4.3 ne crée pas de cartes : rien à rattraper avant le lot mobile.
 
+**Lettres inversées — reporté (décision BP 2026-09-30).** La similarité de
+trigrammes (seuil 0,5) retrouve une lettre ajoutée (100 %), oubliée (78 %) ou
+remplacée (63 %), mais deux lettres INVERSÉES seulement une fois sur trois
+(29 % sur les noms de la prod ; « Nguyen » ~ « Ngyuen » = 0,27). Piste : une
+distance d'édition (fuzzystrmatch, `levenshtein ≤ 1` sur le nom normalisé) en
+complément du seuil, dans `noms_proches()`. Pas maintenant.
+

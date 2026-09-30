@@ -21,8 +21,9 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import {
-  useRapprochements, refuserRapprochement, raisonRapprochement, libelleCorrespondance, type Rapprochement,
+  useRapprochements, refuserRapprochement, raisonRapprochement, type Rapprochement,
 } from "@/lib/cartes/rapprochements";
+import { niveauRapprochement, libelleNiveau, differences } from "@/lib/cartes/niveauRapprochement";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 
@@ -160,18 +161,26 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
 
         {propositions.length === 0 ? (
           <p className="mt-6 text-[14px] text-[#6b7280]">Aucune proposition en attente.</p>
-        ) : propositions.map((r) => (
+        ) : propositions.map((r) => {
+          const niveau = niveauRapprochement(r.critere);
+          const ecarts = niveau === "POSSIBLE" ? differences(r) : [];
+          return (
           <section key={r.id} className="mt-5 border-t border-[#2D3748] pt-5" data-testid="proposition">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
-                r.force === "FORTE" ? "border-[#22C55E]/40 bg-[#22C55E]/10 text-[#86EFAC]"
-                : r.force === "MOYENNE" ? "border-white/30 bg-white/5 text-white"
+              <span data-testid="niveau-proposition" className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                niveau === "CONFIRMEE" ? "border-[#22C55E]/40 bg-[#22C55E]/10 text-[#86EFAC]"
+                : niveau === "MEME_NOM_EQUIPE" ? "border-white/30 bg-white/5 text-white"
                 : "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#FCD34D]"}`}>
-                {libelleCorrespondance(r)}
+                {libelleNiveau(niveau)}
               </span>
               <span className="text-[12px] text-[#9CA3AF]">{raisonRapprochement(r)}</span>
-              {r.promotion_concorde === false && <span className="text-[12px] text-[#FCD34D]">· promotion différente</span>}
+              {niveau !== "POSSIBLE" && r.promotion_concorde === false && <span className="text-[12px] text-[#FCD34D]">· promotion différente</span>}
             </div>
+            {ecarts.length > 0 && (
+              <ul className="mb-3 space-y-0.5 text-[12px] text-[#FCD34D]" aria-label="Ce qui diffère">
+                {ecarts.map((e) => <li key={e}>{e}</li>)}
+              </ul>
+            )}
             <div className="flex flex-col sm:flex-row gap-3">
               <Colonne titre="Ta carte prospect" lignes={[
                 { libelle: "Nom", valeur: `${r.carte_prenom} ${r.carte_nom}` },
@@ -203,7 +212,8 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
               </button>
             </div>
           </section>
-        ))}
+          );
+        })}
         <div className="flex justify-end mt-6">
           <button type="button" onClick={onFermer} className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white">Fermer</button>
         </div>
