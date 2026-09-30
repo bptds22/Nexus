@@ -21,6 +21,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade, type Grade } from "@/lib/config/grades";
+import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
 
 /** Rétention (décision BP) : purge 12 mois après la dernière activité,
  *  avis à l'écran 30 jours avant. */
@@ -52,6 +53,8 @@ export interface CarteMeta {
   expireLe: string;
   /** Invitation automatique envoyée (acceptée par Resend) — null sinon. */
   inviteeLe: string | null;
+  /** NON_ENVOYEE : l'invitation a été écartée — la carte le dit, sans la raison. */
+  invitationEtat: InvitationEtat | null;
 }
 
 export type CarteKanban = PipelineKanbanCard & { carte: CarteMeta };
@@ -100,6 +103,7 @@ export interface LigneCarte {
   visite_le: string | null;
   drapeau: boolean;
   invitee_le: string | null;
+  invitation_etat: InvitationEtat | null;
   etape_le: string;
   derniere_activite: string;
   created_at: string;
@@ -113,7 +117,7 @@ export interface LigneCarte {
 const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, etape, grade, relance_le, relance_note,
-  visite_le, drapeau, invitee_le, etape_le, derniere_activite, created_at,
+  visite_le, drapeau, invitee_le, invitation_etat, etape_le, derniere_activite, created_at,
   school_id,
   teams!team_id(name, division, schools!school_id(name, region, type)),
   etablissement:schools!school_id(name, region, type),
@@ -271,6 +275,7 @@ export function versKanban(
       derniereActivite: l.derniere_activite,
       expireLe: expire,
       inviteeLe: l.invitee_le,
+      invitationEtat: l.invitation_etat,
     },
   };
 }

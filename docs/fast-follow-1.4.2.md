@@ -1779,3 +1779,16 @@ aucune équipe du sport de l'unité. Côté mobile, à vérifier au lot mobile :
   établissement ») est nouveau : un `switch` mobile sur `critere` sans cas par
   défaut n'affichera rien ;
 - « Préciser l'équipe » (panneau Infos web) n'a pas d'équivalent mobile.
+
+## 59. Mention neutre d'invitation écartée — l'app 1.4.3 (2026-09-30, pour le lot mobile)
+
+Web seulement. Migration `carte_invitation_etat` : `cartes_prospect.invitation_etat`
+(`ENVOYEE` / `NON_ENVOYEE`) et une ligne de journal `INVITATION_NON_ENVOYEE`,
+sans acteur. À reprendre au lot mobile :
+- la mention neutre n'existe pas sur mobile (texte : `MENTION_INVITATION_NON_ENVOYEE`,
+  `lib/cartes/invitationEtat.ts`) ;
+- un historique mobile qui signe chaque ligne par son acteur rendra celle-ci
+  avec un sujet vide : elle se rend SANS sujet (voir `OngletHistoriqueCarte`).
+- Limite connue (même patron que `carte_fusion_garde`) : la garde se lève par
+  `set_config('nexus.invitation_carte','on',true)`, inaccessible par PostgREST
+  mais pas en SQL direct.

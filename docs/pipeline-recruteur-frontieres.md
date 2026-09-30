@@ -217,8 +217,20 @@ existante touchée).
   journal trace. **Écartée sans envoi** : adresse d'un compte ou d'un athlète,
   adresse désabonnée, ou adresse **déjà invitée depuis moins de 90 jours par
   n'importe quel cégep** (règle anti-doublon d'envoi, proposée, à confirmer).
-  Le motif d'un écart n'est lisible que par l'admin plateforme ; le recruteur
-  voit « Invitation envoyée le … » ou rien. L'adresse n'est jamais stockée en
+  Le motif d'un écart n'est lisible que par l'admin plateforme. Le recruteur
+  voit « Invitation envoyée le … », ou — depuis le 2026-09-30, constat prod :
+  un écart DEJA_INVITE était silencieux alors que le formulaire promettait un
+  courriel — la mention NEUTRE « Aucune invitation envoyée depuis cette carte :
+  cette adresse a déjà reçu une invitation Nexus récemment, ou ne peut pas en
+  recevoir. » (en-tête du panneau, ligne Invitation des Infos, Historique sans
+  sujet). Jamais la raison : « compte existant » dirait qu'un compte, peut-être
+  d'un mineur, existe à cette adresse ; « déjà invité » trahirait la carte
+  d'une autre unité. Porteur : `cartes_prospect.invitation_etat`
+  (`ENVOYEE` / `NON_ENVOYEE` / NULL = pas d'adresse ou envoi en attente),
+  écrit par la base seulement (`carte_invitation_garde`, patron de
+  `carte_fusion_garde`) ; texte unique : `lib/cartes/invitationEtat.ts`.
+  Migration `carte_invitation_etat`. Le formulaire dit : « Si cette adresse
+  n'a jamais été invitée ni inscrite, l'athlète reçoit… ». L'adresse n'est jamais stockée en
   clair hors de la carte : empreinte sha256 dans les invitations et dans le
   registre `courriel_desabonnements_adresses` (le registre par compte ne couvre
   pas quelqu'un qui n'a pas de compte). L'import du lot F n'enverra rien

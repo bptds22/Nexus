@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { lireTelephone, formaterTelephone } from "@/lib/cartes/saisie";
+import { mentionInvitation, MENTION_INVITATION_NON_ENVOYEE, type InvitationEtat } from "@/lib/cartes/invitationEtat";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
@@ -49,16 +50,23 @@ export function LegendeProspect() {
   );
 }
 
-/** Mention en tête du panneau d'une carte, et l'invitation si elle est partie. */
-export function MentionProspect({ inviteeLe }: { inviteeLe?: string | null }) {
+/** Mention en tête du panneau d'une carte, et ce qu'il en est de l'invitation :
+ *  partie (avec la date), écartée (mention neutre, sans la raison), ou rien. */
+export function MentionProspect({ inviteeLe, invitationEtat }: { inviteeLe?: string | null; invitationEtat?: InvitationEtat | null }) {
+  const m = mentionInvitation(inviteeLe, invitationEtat);
   return (
     <>
       <p className="text-[13px] text-[#E5A0A6]">
         Pas encore sur Nexus — carte prospect de ton unité.
       </p>
-      {inviteeLe && (
+      {m?.type === "ENVOYEE" && (
         <p className="text-[12px] text-[#9CA3AF] mt-0.5" data-testid="invitation-envoyee">
-          Invitation envoyée le {dateInvitation(inviteeLe)}
+          Invitation envoyée le {dateInvitation(m.le)}
+        </p>
+      )}
+      {m?.type === "NON_ENVOYEE" && (
+        <p className="text-[12px] text-[#9CA3AF] mt-0.5" data-testid="invitation-non-envoyee">
+          {m.texte}
         </p>
       )}
     </>
@@ -237,6 +245,7 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
         <Ligne libelle="Courriel" valeur={c.courriel ?? <span className="text-[#6b7280]">—</span>} />
         <LigneTelephone carteId={card.id} initial={c.telephone} />
         {c.inviteeLe && <Ligne libelle="Invitation" valeur={`Envoyée le ${dateInvitation(c.inviteeLe)}`} />}
+        {!c.inviteeLe && c.invitationEtat === "NON_ENVOYEE" && <Ligne libelle="Invitation" valeur="Aucune envoyée depuis cette carte" />}
         <Ligne libelle="Carte créée" valeur={`${creeLe}${card.suivi_par_noms?.[0] ? ` · par ${card.suivi_par_noms[0]}` : ""}`} />
       </div>
       <SectionGrisee titre="Cote du coach" />
@@ -267,6 +276,7 @@ export function phraseGesteCarte(g: GesteCarte): string {
       ? `a ajouté la carte à la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`
       : `a retiré la carte de la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`;
     case "INVITATION": return "a invité l'athlète par courriel (envoi automatique à la création)";
+    case "INVITATION_NON_ENVOYEE": return MENTION_INVITATION_NON_ENVOYEE;
     default: return "a agi sur la carte";
   }
 }
@@ -293,6 +303,10 @@ export function OngletHistoriqueCarte({ carteId }: { carteId: string }) {
           <li key={g.id} className={`relative pl-5 pb-4 ml-1.5 ${i < gestes.length - 1 ? "border-l border-[#2D3748]" : "border-l border-transparent"}`}>
             <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-[#9CA3AF]" />
             {(() => {
+              // Constat système, pas un geste : la phrase seule, sans sujet.
+              if (g.action === "INVITATION_NON_ENVOYEE") {
+                return <p className="text-[13px] text-[#9CA3AF] leading-snug" data-testid="historique-invitation-non-envoyee">{phraseGesteCarte(g)}</p>;
+              }
               const l = ligneSignee(!!g.acteur && g.acteur === moi, nomAuteur(g.acteur ? auteurs[g.acteur] : undefined), phraseGesteCarte(g));
               return (
                 <p className="text-[13px] text-[#e0e0e0] leading-snug">

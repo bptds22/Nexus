@@ -403,7 +403,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
             {erreurs.courriel
               ? <p id="erreur-courriel" className="text-[12px] text-[#EF4444] mt-1">{erreurs.courriel}</p>
               : <p id="aide-courriel" className="text-[12px] text-[#6b7280] mt-1">
-                  Si cette adresse n&apos;est pas déjà sur Nexus, l&apos;athlète reçoit à la création un courriel l&apos;invitant à s&apos;inscrire, à ton nom et à celui de ton cégep. Une seule fois.
+                  Si cette adresse n&apos;a jamais été invitée ni inscrite, l&apos;athlète reçoit à la création un courriel l&apos;invitant à s&apos;inscrire, à ton nom et à celui de ton cégep. Une seule fois.
                 </p>}
           </div>
           <div className="col-span-2">
