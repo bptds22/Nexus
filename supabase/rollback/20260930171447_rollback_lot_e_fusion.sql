@@ -1,4 +1,4 @@
--- Rollback de 20260929183032_lot_e_fusion (lot E).
+-- Rollback de 20260930171447_lot_e_fusion (lot E).
 -- ⚠ Les fusions déjà faites RESTENT faites (dossiers, notes, listes) : seul
 -- le mécanisme part. Les cartes encore masquées sont supprimées avec la
 -- trace minimale du lot C (motif PURGE : le motif FUSION disparaît avec la

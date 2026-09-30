@@ -1,3 +1,4 @@
+-- 20260930171447_lot_e_fusion (appliquée en prod le 2026-09-30, 17:14 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- LOT E — Fusion d'une carte prospect avec le vrai profil (GO BP 2026-09-29).
 --
