@@ -79,7 +79,7 @@ import { formaterTelephone } from "@/lib/cartes/saisie";
 import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
 import { fusionnerCarte } from "@/lib/cartes/fusions";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
-import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
+import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, RenvoyerInvitation, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import { useAuteursUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
@@ -1371,7 +1371,7 @@ function SlideOver({
               <h2 className="font-head text-[20px] font-black text-white uppercase tracking-tight">{card.full_name}</h2>
               {card.is_verified && <svg width="18" height="18" viewBox="0 0 24 24" fill={BLUE} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
             </div>
-            {carte && <div className="mt-1.5 space-y-1.5"><MentionProspect inviteeLe={carte.carte.inviteeLe} invitationEtat={carte.carte.invitationEtat} /><MarqueurExpiration carte={carte} /><LienRapprochementCarte carteId={carte.id} /></div>}
+            {carte && <div className="mt-1.5 space-y-1.5"><MentionProspect inviteeLe={carte.carte.inviteeLe} invitationEtat={carte.carte.invitationEtat} />{!isFreeDemoMode && !lectureSeule && <RenvoyerInvitation card={carte} />}<MarqueurExpiration carte={carte} /><LienRapprochementCarte carteId={carte.id} /></div>}
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: currentCol?.phase === "commitment" ? "rgba(230,57,70,0.25)" : "rgba(107,114,128,0.25)" }}>{card.sport}</span>
               <span className="text-[13px] text-[#9CA3AF]">{card.position}</span>

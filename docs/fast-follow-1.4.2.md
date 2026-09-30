@@ -1792,3 +1792,7 @@ sans acteur. À reprendre au lot mobile :
 - Limite connue (même patron que `carte_fusion_garde`) : la garde se lève par
   `set_config('nexus.invitation_carte','on',true)`, inaccessible par PostgREST
   mais pas en SQL direct.
+- « Renvoyer l'invitation » (migration `carte_renvoi_invitation`) : web
+  seulement. Dans l'app, `navigator.share` de la WebView n'est pas la feuille
+  native — passer par `@capacitor/share` au lot mobile, et garder la règle :
+  on journalise après un partage abouti, jamais sur une feuille fermée.

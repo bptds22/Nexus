@@ -12,11 +12,12 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { lireTelephone, formaterTelephone } from "@/lib/cartes/saisie";
 import { mentionInvitation, MENTION_INVITATION_NON_ENVOYEE, type InvitationEtat } from "@/lib/cartes/invitationEtat";
+import { texteRenvoi, choisirCanal, phraseRenvoi } from "@/lib/cartes/renvoiInvitation";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
@@ -70,6 +71,96 @@ export function MentionProspect({ inviteeLe, invitationEtat }: { inviteeLe?: str
         </p>
       )}
     </>
+  );
+}
+
+/** « Renvoyer l'invitation » (décision BP 2026-09-30). Affiché TOUJOURS quand
+ *  la carte a un courriel, quel que soit l'état de l'invitation automatique —
+ *  c'est ce qui ne révèle rien. Nexus n'envoie rien : feuille de partage
+ *  (mobile) ou copie du texte (ordinateur), puis la trace au journal. */
+export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
+  const c = card.carte;
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const profil = currentUser?.profile;
+  const { data: cegep = null } = useQuery({
+    queryKey: ["ecole-nom", profil?.school_id],
+    enabled: !!profil?.school_id,
+    staleTime: Infinity,
+    queryFn: async () => {
+      const { data } = await createClient().from("schools").select("name").eq("id", profil!.school_id!).maybeSingle();
+      return (data?.name as string | undefined) ?? null;
+    },
+  });
+  const [etat, setEtat] = useState<{ type: "ok" | "erreur" | "manuel"; texte: string } | null>(null);
+  if (!c.courriel || !c.courriel.trim()) return null;
+
+  const texte = texteRenvoi({
+    prenom: c.prenom,
+    recruteur: [profil?.first_name, profil?.last_name].filter(Boolean).join(" "),
+    cegep,
+    courriel: c.courriel,
+  });
+
+  const journaliser = async (confirmation: string) => {
+    const { error } = await createClient().rpc("journaliser_renvoi_invitation", { p_carte: card.id });
+    if (error) {
+      setEtat({ type: "erreur", texte: `${confirmation} Le renvoi n'a pas pu être noté à l'historique.` });
+      return;
+    }
+    setEtat({ type: "ok", texte: confirmation });
+    void queryClient.invalidateQueries({ queryKey: ["pipeline-historique", "carte", card.id] });
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const renvoyer = async () => {
+    setEtat(null);
+    const canal = choisirCanal({
+      partageDispo: typeof navigator !== "undefined" && typeof navigator.share === "function",
+      tactile: typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches,
+    });
+    if (canal === "PARTAGE") {
+      try {
+        await navigator.share({ text: texte });
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError") return;   // feuille fermée : rien n'est parti
+        setEtat({ type: "manuel", texte });
+        return;
+      }
+      await journaliser("Invitation partagée depuis ton appareil.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(texte);
+    } catch {
+      setEtat({ type: "manuel", texte });
+      return;
+    }
+    await journaliser("Texte copié — colle-le dans ton courriel ou tes messages.");
+  };
+
+  return (
+    <div data-testid="renvoyer-invitation">
+      <button type="button" onClick={() => void renvoyer()}
+        className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#E63946] hover:text-white transition-colors">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M16 6l-4-4-4 4" /><path d="M12 2v13" />
+        </svg>
+        Renvoyer l&apos;invitation
+      </button>
+      <p className="text-[11px] text-[#6b7280] mt-0.5">Par ton propre téléphone ou courriel — Nexus n&apos;envoie rien.</p>
+      {etat?.type === "ok" && <p className="text-[12px] text-[#86EFAC] mt-1" role="status">{etat.texte}</p>}
+      {etat?.type === "erreur" && <p className="text-[12px] text-[#F59E0B] mt-1" role="status">{etat.texte}</p>}
+      {etat?.type === "manuel" && (
+        <div className="mt-1.5">
+          <p className="text-[12px] text-[#9CA3AF] mb-1">Copie ce texte à la main, puis envoie-le :</p>
+          <textarea readOnly value={etat.texte} rows={4} onFocus={(e) => e.currentTarget.select()} autoFocus
+            className="w-full p-2 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[12px] text-white" />
+          <button type="button" onClick={() => void journaliser("C'est noté.")}
+            className="mt-1 text-[12px] font-bold text-[#9CA3AF] hover:text-white">Je l&apos;ai envoyé</button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -261,7 +352,7 @@ function libelleEtape(v: unknown): string {
   return KANBAN_COLUMNS.find((c) => c.id === v.toLowerCase())?.label ?? v;
 }
 
-export function phraseGesteCarte(g: GesteCarte): string {
+export function phraseGesteCarte(g: GesteCarte, estMoi = false): string {
   const d = g.details ?? {};
   switch (g.action) {
     case "CREEE": return "a créé la carte prospect";
@@ -277,6 +368,7 @@ export function phraseGesteCarte(g: GesteCarte): string {
       : `a retiré la carte de la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`;
     case "INVITATION": return "a invité l'athlète par courriel (envoi automatique à la création)";
     case "INVITATION_NON_ENVOYEE": return MENTION_INVITATION_NON_ENVOYEE;
+    case "INVITATION_RENVOYEE": return phraseRenvoi(estMoi);
     default: return "a agi sur la carte";
   }
 }
@@ -307,7 +399,8 @@ export function OngletHistoriqueCarte({ carteId }: { carteId: string }) {
               if (g.action === "INVITATION_NON_ENVOYEE") {
                 return <p className="text-[13px] text-[#9CA3AF] leading-snug" data-testid="historique-invitation-non-envoyee">{phraseGesteCarte(g)}</p>;
               }
-              const l = ligneSignee(!!g.acteur && g.acteur === moi, nomAuteur(g.acteur ? auteurs[g.acteur] : undefined), phraseGesteCarte(g));
+              const estMoi = !!g.acteur && g.acteur === moi;
+              const l = ligneSignee(estMoi, nomAuteur(g.acteur ? auteurs[g.acteur] : undefined), phraseGesteCarte(g, estMoi));
               return (
                 <p className="text-[13px] text-[#e0e0e0] leading-snug">
                   <span className="font-bold text-white">{l.sujet}</span> {l.phrase}

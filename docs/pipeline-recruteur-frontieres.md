@@ -230,7 +230,20 @@ existante touchée).
   écrit par la base seulement (`carte_invitation_garde`, patron de
   `carte_fusion_garde`) ; texte unique : `lib/cartes/invitationEtat.ts`.
   Migration `carte_invitation_etat`. Le formulaire dit : « Si cette adresse
-  n'a jamais été invitée ni inscrite, l'athlète reçoit… ». L'adresse n'est jamais stockée en
+  n'a jamais été invitée ni inscrite, l'athlète reçoit… ».
+  **« Renvoyer l'invitation »** (BP 2026-09-30) : affiché TOUJOURS quand la
+  carte a un courriel, quel que soit l'état de l'invitation automatique — c'est
+  ce qui ne révèle rien. Pro de l'unité seulement (masqué en lecture seule et en
+  démo gratuite). Feuille de partage sur un appareil tactile, copie du texte
+  sinon (`lib/cartes/renvoiInvitation.ts`) : « Salut [prénom], je suis
+  [recruteur] du [cégep]. On utilise Nexus pour notre recrutement — crée ton
+  profil ici : [lien d'inscription pré-rempli] ». NEXUS N'ENVOIE RIEN : aucune
+  ligne d'invitation, aucun appel réseau. Seule la trace :
+  `journaliser_renvoi_invitation(carte)` (carte_ecriture_ok, courriel requis)
+  écrit INVITATION_RENVOYEE — « Tu as renvoyé l'invitation par ton propre
+  canal » — et rafraîchit la dernière activité, comme une note. Feuille fermée
+  sans partager : rien n'est noté. Migration `carte_renvoi_invitation`.
+  L'adresse n'est jamais stockée en
   clair hors de la carte : empreinte sha256 dans les invitations et dans le
   registre `courriel_desabonnements_adresses` (le registre par compte ne couvre
   pas quelqu'un qui n'a pas de compte). L'import du lot F n'enverra rien
