@@ -1,3 +1,4 @@
+-- 20260930191224_carte_etablissement (appliquée en prod le 2026-09-30, 19:12 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE PROSPECT RATTACHÉE À L'ÉTABLISSEMENT (décision BP 2026-09-30).
 --

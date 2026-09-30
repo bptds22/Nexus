@@ -305,7 +305,7 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   (cellule vide à l'export, comme toute case vide), École/Club = l'établissement.
   « Préciser l'équipe » apparaît au panneau dès qu'un entraîneur en inscrit
   une ; l'établissement ne change jamais seul, et une équipe posée ne se
-  retire plus. Rollback : `supabase/rollback/20260930183339_rollback_carte_etablissement.sql`.
+  retire plus. Rollback : `supabase/rollback/20260930191224_rollback_carte_etablissement.sql`.
 - **Interface** : pastille sur « Mon processus », bandeau « N profils semblent
   correspondre à tes cartes », lien sur la carte (kanban et panneau), fenêtre
   carte ↔ profil côte à côte avec Accepter (fusion, lot E) / Refuser.

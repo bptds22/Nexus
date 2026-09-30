@@ -1,4 +1,4 @@
--- Rollback de 20260930183339_carte_etablissement.
+-- Rollback de 20260930191224_carte_etablissement.
 -- ⚠ Une carte SANS équipe (rattachée à l'établissement seulement) reste en
 -- place, mais l'ancienne règle d'insertion l'aurait refusée ; ses
 -- propositions ETABLISSEMENT deviennent ECOLE (niveau 3), le critère d'avant.
