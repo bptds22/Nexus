@@ -503,31 +503,37 @@ language sql stable security definer set search_path = public set row_security =
            ath.annee_diplomation, ath.nom_n as ath_nom, ath.courriel_fiche, ath.courriel_parent, ath.courriel_compte
       from car join ath
         on (car.courriel is not null and car.courriel in (ath.courriel_compte, ath.courriel_fiche, ath.courriel_parent))
-        or (car.nom_n <> '' and car.nom_n = ath.nom_n)
-  ), notees as (
+        or (car.nom_n <> '' and (car.nom_n = ath.nom_n or public.noms_proches(car.nom_n, ath.nom_n)))
+  ), qualifiees as (
+    -- Ce que chaque paire réunit ; le critère se lit ensuite, du plus fort au plus faible.
     select p.*,
-      case
-        when p.courriel is not null and p.courriel in (p.courriel_compte, p.courriel_fiche) then 'COURRIEL'
-        when p.courriel is not null and p.courriel = p.courriel_parent
-             and public.prenoms_compatibles(p.prenom, p.first_name) then 'COURRIEL_PARENT'
-        when p.nom_n = p.ath_nom and public.prenoms_compatibles(p.prenom, p.first_name)
-             and p.team_id is not null
-             and exists (select 1 from public.team_athletes ta where ta.athlete_id = p.ath_id and ta.team_id = p.team_id)
-             then 'EQUIPE'
-        when p.nom_n = p.ath_nom and public.prenoms_compatibles(p.prenom, p.first_name)
-             and p.ecole is not null
-             and (p.ath_ecole = p.ecole
-                  or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
-                              where ta.athlete_id = p.ath_id and t.school_id = p.ecole))
-             and (p.ath_sport = p.unite_sport_id
-                  or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
-                              where ta.athlete_id = p.ath_id and t.sport_id = p.unite_sport_id))
-             then 'ECOLE'
-      end as critere
+      p.nom_n = p.ath_nom as nom_exact,
+      public.prenoms_compatibles(p.prenom, p.first_name) as prenom_ok,
+      (p.team_id is not null
+       and exists (select 1 from public.team_athletes ta where ta.athlete_id = p.ath_id and ta.team_id = p.team_id)) as meme_equipe,
+      (p.ecole is not null
+       and (p.ath_ecole = p.ecole
+            or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
+                        where ta.athlete_id = p.ath_id and t.school_id = p.ecole))
+       and (p.ath_sport = p.unite_sport_id
+            or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
+                        where ta.athlete_id = p.ath_id and t.sport_id = p.unite_sport_id))) as meme_ecole_sport
       from paires p
+  ), notees as (
+    select q.*,
+      case
+        when q.courriel is not null and q.courriel in (q.courriel_compte, q.courriel_fiche) then 'COURRIEL'
+        when q.courriel is not null and q.courriel = q.courriel_parent and q.prenom_ok then 'COURRIEL_PARENT'
+        when q.prenom_ok and q.meme_equipe and q.nom_exact then 'EQUIPE'
+        when q.prenom_ok and q.meme_equipe then 'EQUIPE_PROCHE'
+        when q.prenom_ok and q.meme_ecole_sport and q.nom_exact then 'ECOLE'
+        when q.prenom_ok and q.meme_ecole_sport then 'ECOLE_PROCHE'
+      end as critere
+      from qualifiees q
   )
   select n.id, n.ath_id, n.unite_cegep_id, n.unite_sport_id, n.critere,
-         case n.critere when 'EQUIPE' then 'MOYENNE' when 'ECOLE' then 'FAIBLE' else 'FORTE' end,
+         case n.critere when 'EQUIPE' then 'MOYENNE' when 'EQUIPE_PROCHE' then 'FAIBLE'
+                        when 'ECOLE' then 'FAIBLE' when 'ECOLE_PROCHE' then 'FAIBLE' else 'FORTE' end,
          case when n.promotion is null or n.annee_diplomation is null then null
               else n.promotion = n.annee_diplomation end
     from notees n
@@ -564,7 +570,8 @@ language sql stable security definer set search_path = public set row_security =
      and (p_carte is null or r.carte_id = p_carte)
      and a.status = 'ACTIF'::public.account_status
      and public.athlete_identity_ok(a.date_naissance, a.consentement_parental)
-   order by case r.force when 'FORTE' then 0 when 'MOYENNE' then 1 else 2 end, r.cree_le
+   order by case r.critere when 'COURRIEL' then 0 when 'COURRIEL_PARENT' then 1 when 'EQUIPE' then 2
+                           when 'EQUIPE_PROCHE' then 3 when 'ECOLE' then 4 else 5 end, r.cree_le
 $$;
 
 -- ════════════════════════════════════════════════════════════════════════════
