@@ -226,6 +226,8 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
   const { data: badges } = useBadgesRecruteur();
   const msgBadge = badges?.messages ?? 0;
   const actBadge = badges?.activites ?? 0;
+  // Lot D : propositions carte ↔ profil en attente, sur « Mon processus ».
+  const rapBadge = badges?.rapprochements ?? 0;
 
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
 
@@ -310,7 +312,8 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {/* ── Free section (recruiter items) ── */}
         {showRecruiterItems && RECRUITER_ITEMS.map((item) => {
-          const badgeOverride = item.href === "/recruteur/messages" ? msgBadge : item.badge;
+          const badgeOverride = item.href === "/recruteur/messages" ? msgBadge
+            : item.href === "/recruteur/pipeline" ? rapBadge : item.badge;
           return renderNavItem({ ...item, badge: badgeOverride });
         })}
 

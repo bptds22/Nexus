@@ -38,6 +38,7 @@ export const CLES_TABLEAU_BLANC = [
   "activity-feed",          // journal d'activité
   "unread-activity-count",
   "cegep-stats",            // Mon CÉGEP
+  "rapprochements",         // lot D : propositions carte ↔ profil
 ] as const;
 
 const ENSEMBLE: ReadonlySet<string> = new Set(CLES_TABLEAU_BLANC);

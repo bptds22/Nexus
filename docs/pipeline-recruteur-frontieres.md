@@ -172,7 +172,9 @@ existante touchée).
   jamais hors de son cégep.
 - **Contenu** : prénom, nom, équipe RÉELLE (`teams.id`, du sport de l'unité,
   obligatoire à la création), position, numéro, promotion, taille, poids, lien
-  vidéo, courriel facultatif (invitation du lot D). Aucune autre coordonnée.
+  vidéo, courriel facultatif (invitation du lot D), téléphone facultatif
+  (décision BP 2026-09-30 : 10 chiffres, normalisé par la base). Aucune autre
+  coordonnée.
   Suivi : étape, grade, relance, visite, drapeau ; notes à part, signées (chacun
   ne modifie que les siennes) ; journal propre (`cartes_prospect_journal`), pas
   `recruiter_activity_log` (dont la contrainte, lue par l'app 1.4.3, ne bouge pas).
@@ -237,6 +239,88 @@ existante touchée).
   « prospect » ; filtre par liste) et Mon CÉGEP. Pas de profil complet, pas de
   messagerie ; « Inviter » arrive au lot D.
 
+**Lot D (2026-09-29) — RAPPROCHEMENT d'une carte avec le vrai profil.**
+Migration `lot_d_rapprochement` (additive : trois tables, triggers et
+fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
+- **Déclencheurs** (ils n'écrivent qu'UNE ligne dans `rapprochement_file`) :
+  fin d'onboarding avec une école, arrivée dans une équipe, fiche créée (y
+  compris par un coach), identité devenue visible (consentement ; 18 ans, par
+  une tâche quotidienne), carte créée ou modifiée (courriel, équipe, nom),
+  rattrapage de tous les athlètes ACTIF à l'application. La tâche
+  `rapprochements-evaluation` (chaque minute) vide la file.
+- **Critères** : (a) courriel exact carte ↔ compte ou fiche → forte ; carte ↔
+  courriel du PARENT → forte aussi, mais seulement si le prénom est compatible
+  (un parent a souvent plusieurs enfants) ; (b) nom normalisé + prénom
+  compatible + même équipe → moyenne ; (c) même nom + même école, si l'athlète
+  joue le sport de l'unité → faible. La promotion est un indice affiché.
+- **Tolérance aux fautes** (retour BP 2026-09-30) : un nom PROCHE — similarité
+  pg_trgm ≥ `seuil_nom_proche()` (0,5, validé par BP), prénom compatible —
+  donne (b) et (c) en EQUIPE_PROCHE / ECOLE_PROCHE, chacun un cran sous son
+  équivalent au nom exact. Seuil calibré sur les noms de la prod : à
+  0,6, « Gangnon » ne trouvait pas « Gagnon » (0,50) ; à 0,5, seuls des noms
+  composés passent (« Simard » ~ « Simard Pagé ») et « Carrier » ~ « Cartier »
+  (0,45) reste dehors. Limite connue : deux lettres INVERSÉES ne sont trouvées
+  qu'une fois sur trois (« Nguyen » ~ « Ngyuen » = 0,27) — registre §56. La même règle sert
+  l'avertissement de doublon du lot C (`athletes_nom_proche`) : « Un athlète au
+  nom proche existe : Léa Gagnon — c'est lui ? ».
+- **Jamais proposé** : identité masquée (relue aussi à l'affichage), athlète
+  déjà dans le processus de l'unité, paire déjà proposée — une paire REFUSÉE
+  ne revient jamais (unicité carte × athlète).
+- **Cloisonnement** : une proposition appartient à l'unité de la carte ; seuls
+  les Pro de cette unité la lisent et la décident. Deux cégeps qui ont chacun
+  une carte pour le même jeune reçoivent deux propositions indépendantes, sans
+  jamais apprendre l'existence de l'autre.
+- **Trois niveaux affichés** (décision BP 2026-09-30) : courriel identique →
+  « Correspondance confirmée par le courriel » ; nom exact + même équipe →
+  « Correspondance : même nom, même équipe » ; nom proche, ou même école sans
+  la même équipe → « Possiblement le même athlète », avec ce qui diffère (nom,
+  équipe, promotion). Aucun libellé « probable » ou « possible » nu. Dans tous
+  les cas, la fenêtre côte à côte et « Accepter » restent obligatoires : le
+  système propose, le recruteur confirme.
+- **Téléphone** (décision BP 2026-09-30) : la carte porte un téléphone
+  facultatif (format libre à la saisie, normalisé à 10 chiffres par la base,
+  sans le 1 initial), visible des Pro de l'unité (panneau Infos, modifiable ;
+  colonne du tableau ; export). Un téléphone identique entre la carte et
+  `athletes.telephone` → TELEPHONE ; ou `athletes.telephone_parent`, prénom
+  compatible → TELEPHONE_PARENT : « Correspondance confirmée par le
+  téléphone », même niveau que le courriel. Le téléphone de l'ATHLÈTE n'est
+  jamais rendu au recruteur (rapprochements_unite ne le lit pas) : il sert au
+  rapprochement seulement. À la fusion (lot E), celui de la carte n'est PAS
+  copié sur le dossier — une fois le jeune sur Nexus, le contact passe par la
+  messagerie ; la carte masquée le garde jusqu'à sa suppression.
+- **Interface** : pastille sur « Mon processus », bandeau « N profils semblent
+  correspondre à tes cartes », lien sur la carte (kanban et panneau), fenêtre
+  carte ↔ profil côte à côte avec Accepter (fusion, lot E) / Refuser.
+
+**Lot E (2026-09-29) — FUSION de la carte avec le profil.**
+Migration `lot_e_fusion` (additive : deux colonnes nullables sur
+`cartes_prospect`, une table `fusions_cartes`, une policy RESTRICTIVE, le motif
+FUSION ajouté aux traces ; quatre fonctions redéfinies).
+- **Accepter = `fusionner_carte(carte, athlète)`** : Pro de l'unité de la carte,
+  identité visible, proposition ouverte sur la paire. Le dossier de l'unité est
+  créé ou complété **par la ligne de l'acteur** ; s'il existait, l'étape la
+  plus avancée gagne, la relance et la visite existantes restent, drapeau = OU.
+  Cote : celle de l'unité si elle existe, sinon celle de la carte. Notes de la
+  carte recopiées dans `recruiter_notes`, signées par leur auteur s'il est
+  encore de l'unité (sinon par l'acteur, avec la mention de l'auteur d'origine),
+  datées de leur date d'origine. L'athlète rejoint les listes de la carte.
+  **Une** ligne de journal (`PIPELINE_CHANGED`, `details.fusion`), signée par
+  l'acteur. Les autres propositions de la carte deviennent CADUQUE.
+- **Carte masquée immédiatement** pour tous (policy RESTRICTIVE
+  `cartes_non_fusionnees` ; notes, listes et journal de la carte suivent par
+  `carte_lecture_ok` / `carte_ecriture_ok`). Les colonnes de fusion ne
+  s'écrivent que par les fonctions de fusion (trigger de garde).
+- **« Annuler la fusion »**, 7 jours, dans l'Historique du dossier
+  (`annuler_fusion`) : règle **« garder le modifié »** — ce qui n'a pas bougé
+  depuis la fusion est retiré, ce qui a été modifié reste, et l'écran dit
+  lequel. La carte revient, la paire devient REFUSEE (plus jamais proposée),
+  les propositions caduques se rouvrent.
+- **Après 7 jours** (`fusions-definitives`, chaque jour) : la carte est
+  supprimée, trace minimale du lot C avec le motif FUSION.
+- **Lot D retouché** : un athlète déjà dans le processus de l'unité n'est plus
+  exclu des propositions — c'est le doublon le plus probable (un collègue a
+  trouvé le vrai profil pendant que la carte vivait encore).
+
 ### LOI 25 — LE CÉGEP EST PROPRIÉTAIRE DES DONNÉES DES CARTES PROSPECT
 
 Une carte prospect est constituée par les recruteurs d'un cégep, sur un athlète
@@ -244,7 +328,7 @@ qui n'a **pas** de compte Nexus et n'a donc consenti à rien auprès de Nexus. L
 **cégep** en est le responsable et le propriétaire (il la crée, la tient à jour,
 la supprime) ; Nexus en est l'hébergeur et le sous-traitant. D'où :
 - **minimisation** : identification et mesures sportives seulement, courriel
-  facultatif, aucune autre coordonnée ;
+  et téléphone facultatifs, aucune autre coordonnée ;
 - **cloisonnement** : jamais visible hors de l'unité (et de l'admin de son
   cégep), jamais dans une recherche ;
 - **durée limitée** : suppression automatique après 12 mois sans activité ;

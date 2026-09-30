@@ -43,3 +43,28 @@ test("courriel et lien : la règle de la base, lien sans schéma accepté", () =
   assert.equal(lireLien("https://hudl.com/x").ok, true);
   assert.equal(lireLien("mon film").ok, false);
 });
+
+// ── Téléphone ──
+import { lireTelephone, formaterTelephone } from "@/lib/cartes/saisie";
+const tel = (s: string) => { const r = lireTelephone(s); return r.ok ? r.valeur : "ERR"; };
+
+test("téléphone : format libre, normalisé à 10 chiffres, sans le 1 initial", () => {
+  assert.equal(tel("(438) 555-0123"), "4385550123");
+  assert.equal(tel("+1 438 555 0123"), "4385550123");
+  assert.equal(tel("1-438-555-0123"), "4385550123");
+  assert.equal(tel("438.555.0123"), "4385550123");
+  assert.equal(tel(""), null);
+  assert.equal(tel("   "), null);
+});
+
+test("téléphone : validation douce — 10 chiffres, sinon la règle", () => {
+  assert.equal(tel("555-0123"), "ERR");
+  assert.equal(tel("438 555 01234"), "ERR");
+  const r = lireTelephone("555-0123");
+  assert.ok(!r.ok && r.regle.includes("10 chiffres"));
+});
+
+test("téléphone : affiché « 438 555-0123 »", () => {
+  assert.equal(formaterTelephone("4385550123"), "438 555-0123");
+  assert.equal(formaterTelephone(null), "");
+});

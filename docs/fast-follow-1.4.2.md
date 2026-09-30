@@ -1712,3 +1712,57 @@ connexion le 2026-08-25.
   `needs_signup_role = false`, voit son enfant ; la répartition envoie un
   PARENT sur `/parent`.
 
+## 56. Rapprochement carte ↔ profil — ce que l'app 1.4.3 ne montre pas (lot D, 2026-09-29, pour le lot mobile)
+
+Les propositions vivent dans `rapprochements` / `notifications_unite`, que
+l'app 1.4.3 ne lit pas : sur mobile, ni pastille, ni bandeau, ni fenêtre.
+**Rien ne casse** : les triggers ajoutés sur `athletes`, `users`,
+`team_athletes` et `cartes_prospect` sont SECURITY DEFINER et n'écrivent
+qu'une ligne de file — prouvé sous l'identité d'un coach qui ajoute un
+athlète à son équipe. À ajouter au lot mobile : lecture de
+`rapprochements_unite()`, pastille, fenêtre côte à côte, refus.
+
+Tolérance aux fautes (2026-09-30) : les critères EQUIPE_PROCHE / ECOLE_PROCHE
+et l'avertissement « nom proche » de la création de carte (RPC
+`athletes_nom_proche`) sont web seulement, comme le reste du lot D. Le mobile
+1.4.3 ne crée pas de cartes : rien à rattraper avant le lot mobile.
+
+**Téléphone des cartes (2026-09-30)** — web seulement, comme toute la carte
+prospect : l'app 1.4.3 ne lit pas `cartes_prospect`. Limite connue : un
+athlète qui AJOUTE ou CHANGE son téléphone (ou celui de son parent) n'est pas
+ré-évalué sur-le-champ — comme pour le courriel, aucun déclencheur sur ces
+colonnes ; il le sera au prochain événement (équipe, onboarding, identité)
+ou quand la carte change.
+
+**Lettres inversées — reporté (décision BP 2026-09-30).** La similarité de
+trigrammes (seuil 0,5) retrouve une lettre ajoutée (100 %), oubliée (78 %) ou
+remplacée (63 %), mais deux lettres INVERSÉES seulement une fois sur trois
+(29 % sur les noms de la prod ; « Nguyen » ~ « Ngyuen » = 0,27). Piste : une
+distance d'édition (fuzzystrmatch, `levenshtein ≤ 1` sur le nom normalisé) en
+complément du seuil, dans `noms_proches()`. Pas maintenant.
+
+## 57. Fusion carte → profil — ce que l'app 1.4.3 voit et ne voit pas (lot E, 2026-09-29, pour le lot mobile)
+
+Accepter une proposition (`fusionner_carte`, web seulement) produit des objets
+**ordinaires** : une ligne `recruiter_pipeline` écrite par l'acteur (les sœurs
+de l'unité suivent par la synchronisation), une cote, des `recruiter_notes`
+(date d'origine gardée), des `recruiter_list_members`, et UNE ligne
+`recruiter_activity_log` de type **`PIPELINE_CHANGED`** — aucun type nouveau,
+la contrainte du journal n'est pas touchée. **Rien ne casse sur 1.4.3** : le
+dossier né d'une fusion s'affiche comme un dossier ajouté à la main, et le
+fil d'activité mobile lit la ligne comme « X → étape » (il ignore
+`details.fusion`).
+
+Ce que le mobile ne montre pas : la phrase « a fusionné la carte prospect… »,
+l'encadré **« Annuler la fusion »** (7 jours) et la ligne d'annulation
+(`details.fusion_annulee`, lue « Processus de X mis à jour »). À ajouter au lot
+mobile : `fusions_athlete()` + `annuler_fusion()` dans l'Historique du dossier.
+
+Deux conséquences à connaître :
+- **Lot D retouché par E** : un athlète déjà dans le processus de l'unité
+  n'est plus exclu des propositions (sinon « dossier existant, étape la plus
+  avancée » était inatteignable). E ré-enfile une fois ces athlètes.
+- **Avis au parent** : une fusion qui fait avancer le dossier d'un mineur
+  déclenche l'avis « Le dossier de votre enfant a progressé », comme tout
+  dossier. L'annulation, elle, n'avise pas (c'est une correction) et remet le
+  statut global (« Recruté à… ») d'aplomb s'il n'a pas été posé à la main.
