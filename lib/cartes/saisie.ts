@@ -68,3 +68,26 @@ export function lireLien(brut: string): Lecture<string | null> {
   if (!avecSchema || /\s/.test(avecSchema)) return { ok: false, regle: REGLE_LIEN };
   return { ok: true, valeur: avecSchema };
 }
+
+/* ── Téléphone (décision BP 2026-09-30) ─────────────────────────────
+   Format libre à la saisie ; on garde les chiffres, sans le 1 initial d'un
+   numéro à 11 chiffres. 10 chiffres attendus. La base normalise de même
+   (telephone_normalise) : ceci évite seulement d'y arriver avec une faute. */
+export const REGLE_TELEPHONE = "Téléphone : 10 chiffres, ex. 438 555-0123";
+
+export function normaliserTelephone(brut: string): string {
+  const d = brut.replace(/\D/g, "");
+  return d.length === 11 && d.startsWith("1") ? d.slice(1) : d;
+}
+
+export function lireTelephone(brut: string): Lecture<string | null> {
+  if (!brut.trim()) return { ok: true, valeur: null };
+  const d = normaliserTelephone(brut);
+  return d.length === 10 ? { ok: true, valeur: d } : { ok: false, regle: REGLE_TELEPHONE };
+}
+
+/** « 4385550123 » → « 438 555-0123 » ; autre chose, tel quel. */
+export function formaterTelephone(t: string | null | undefined): string {
+  if (!t) return "";
+  return /^\d{10}$/.test(t) ? `${t.slice(0, 3)} ${t.slice(3, 6)}-${t.slice(6)}` : t;
+}

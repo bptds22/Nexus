@@ -1727,6 +1727,13 @@ et l'avertissement « nom proche » de la création de carte (RPC
 `athletes_nom_proche`) sont web seulement, comme le reste du lot D. Le mobile
 1.4.3 ne crée pas de cartes : rien à rattraper avant le lot mobile.
 
+**Téléphone des cartes (2026-09-30)** — web seulement, comme toute la carte
+prospect : l'app 1.4.3 ne lit pas `cartes_prospect`. Limite connue : un
+athlète qui AJOUTE ou CHANGE son téléphone (ou celui de son parent) n'est pas
+ré-évalué sur-le-champ — comme pour le courriel, aucun déclencheur sur ces
+colonnes ; il le sera au prochain événement (équipe, onboarding, identité)
+ou quand la carte change.
+
 **Lettres inversées — reporté (décision BP 2026-09-30).** La similarité de
 trigrammes (seuil 0,5) retrouve une lettre ajoutée (100 %), oubliée (78 %) ou
 remplacée (63 %), mais deux lettres INVERSÉES seulement une fois sur trois

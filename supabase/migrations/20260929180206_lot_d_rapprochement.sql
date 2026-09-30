@@ -22,13 +22,18 @@
 --   a. courriel exact carte ↔ compte ou fiche → FORTE ;
 --      courriel exact carte ↔ PARENT → FORTE aussi, mais seulement si le
 --      prénom est compatible : un parent a souvent plusieurs enfants ;
+--   a'. TÉLÉPHONE identique (décision BP 2026-09-30) — normalisé : chiffres
+--      seulement, sans le 1 initial — carte ↔ athletes.telephone → FORTE ;
+--      carte ↔ athletes.telephone_parent → FORTE, prénom compatible exigé.
+--      Le téléphone de l'athlète n'est JAMAIS rendu au recruteur : il sert
+--      au rapprochement seulement (rapprochements_unite ne le lit pas).
 --   b. nom normalisé + prénom compatible + MÊME ÉQUIPE → MOYENNE ;
 --   c. nom normalisé + prénom compatible + même école, SI l'athlète joue le
 --      sport de l'unité (décision BP) → FAIBLE.
 --   b' et c' — TOLÉRANCE AUX FAUTES (retour BP 2026-09-30) : un nom PROCHE
 --      (similarité pg_trgm ≥ seuil_nom_proche(), 0,5), pas exact, avec
---      prénom compatible → EQUIPE_PROCHE / ECOLE_PROCHE, « correspondance
---      probable », chacun un cran sous son équivalent au nom exact.
+--      prénom compatible → EQUIPE_PROCHE / ECOLE_PROCHE, chacun un cran sous
+--      son équivalent au nom exact.
 --      Seuil calibré sur les noms de la prod (lecture seule, 2026-09-30) :
 --      à 0,6, « Gangnon » ne trouvait pas « Gagnon » (0,50) ; à 0,5, seuls
 --      des noms composés (« Simard » ~ « Simard Pagé ») passent, et
@@ -39,9 +44,10 @@
 -- le processus de l'unité, paire déjà proposée (refusée comprise).
 --
 -- ADDITIF : trois tables, fonctions et triggers nouveaux, deux tâches cron,
--- l'extension pg_trgm (schéma extensions). Aucun objet existant n'est
--- modifié (les triggers ajoutés sur athletes, users, team_athletes et
--- cartes_prospect ne font qu'insérer dans la file).
+-- l'extension pg_trgm (schéma extensions), une colonne nullable
+-- cartes_prospect.telephone. Aucun objet existant n'est modifié (les
+-- triggers ajoutés sur athletes, users, team_athletes et cartes_prospect
+-- ne font qu'insérer dans la file, normaliser le téléphone ou journaliser).
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 1. NORMALISATION
@@ -73,6 +79,57 @@ returns boolean language sql stable set search_path = public as $$
                   and extensions.similarity(a, b) >= public.seuil_nom_proche(), false)
 $$;
 
+-- Téléphone : chiffres seulement, sans le 1 initial d'un numéro à 11
+-- chiffres (« +1 (438) 555-0123 » → « 4385550123 ») ; vide → null.
+create function public.telephone_normalise(p text)
+returns text language sql immutable set search_path = public as $$
+  select case when d = '' then null
+              when length(d) = 11 and left(d, 1) = '1' then substr(d, 2)
+              else d end
+    from (select regexp_replace(coalesce(p, ''), '[^0-9]', '', 'g') as d) s
+$$;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 1 bis. LE TÉLÉPHONE SUR LA CARTE PROSPECT (décision BP 2026-09-30)
+-- ════════════════════════════════════════════════════════════════════════════
+-- Facultatif, format libre à la saisie, NORMALISÉ à l'enregistrement (par la
+-- base, quel que soit le client) : 10 chiffres. Même régime Loi 25 que le
+-- reste de la carte — le cégep en est propriétaire ; visible des Pro de
+-- l'unité (et de l'admin de son cégep, en lecture), par les policies
+-- existantes. À la fusion (lot E) il n'est PAS copié sur le dossier : la
+-- carte masquée le garde jusqu'à sa suppression.
+alter table public.cartes_prospect
+  add column telephone text check (telephone is null or telephone ~ '^[0-9]{10}$');
+
+create function public.carte_telephone_normaliser()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  new.telephone := public.telephone_normalise(new.telephone);
+  return new;
+end $$;
+create trigger trg_carte_d_telephone before insert or update of telephone on public.cartes_prospect
+  for each row execute function public.carte_telephone_normaliser();
+
+-- Le journal de la carte (lot C) ne compare pas cette colonne, qu'il ne
+-- connaissait pas : une modification du seul téléphone s'y inscrit ici,
+-- comme toute modification d'identification (« MODIFIEE »).
+create function public.carte_telephone_journaliser()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.telephone is distinct from old.telephone
+     and (new.prenom, new.nom, new.team_id, new.position_id, new.numero, new.promotion, new.taille_pieds,
+          new.taille_pouces, new.poids_lbs, new.lien_video, new.courriel)
+         is not distinct from
+         (old.prenom, old.nom, old.team_id, old.position_id, old.numero, old.promotion, old.taille_pieds,
+          old.taille_pouces, old.poids_lbs, old.lien_video, old.courriel) then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, auth.uid(), 'MODIFIEE', '{}'::jsonb);
+  end if;
+  return null;
+end $$;
+create trigger trg_carte_z_telephone after update of telephone on public.cartes_prospect
+  for each row execute function public.carte_telephone_journaliser();
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- 2. TABLES
 -- ════════════════════════════════════════════════════════════════════════════
@@ -97,7 +154,8 @@ create table public.rapprochements (
   athlete_id          uuid not null references public.athletes(id) on delete cascade,
   unite_cegep_id      uuid not null,
   unite_sport_id      uuid not null,
-  critere             text not null check (critere in ('COURRIEL','COURRIEL_PARENT','EQUIPE','EQUIPE_PROCHE','ECOLE','ECOLE_PROCHE')),
+  critere             text not null check (critere in ('COURRIEL','COURRIEL_PARENT','TELEPHONE','TELEPHONE_PARENT',
+                                                       'EQUIPE','EQUIPE_PROCHE','ECOLE','ECOLE_PROCHE')),
   force               text not null check (force in ('FORTE','MOYENNE','FAIBLE')),
   promotion_concorde  boolean,
   statut              text not null default 'PROPOSEE' check (statut in ('PROPOSEE','REFUSEE','ACCEPTEE','CADUQUE')),
@@ -138,7 +196,9 @@ language sql stable security definer set search_path = public set row_security =
            public.nom_normalise(a.last_name) as nom_n,
            nullif(lower(btrim(a.email)), '')        as courriel_fiche,
            nullif(lower(btrim(a.parent_email)), '') as courriel_parent,
-           nullif(lower(btrim(u.email)), '')        as courriel_compte
+           nullif(lower(btrim(u.email)), '')        as courriel_compte,
+           public.telephone_normalise(a.telephone)        as tel_fiche,
+           public.telephone_normalise(a.telephone_parent) as tel_parent
       from public.athletes a
       left join public.users u on u.id = a.user_id
      where a.status = 'ACTIF'::public.account_status
@@ -148,15 +208,18 @@ language sql stable security definer set search_path = public set row_security =
     select c.id, c.unite_cegep_id, c.unite_sport_id, c.team_id, c.prenom, c.promotion,
            public.nom_normalise(c.nom) as nom_n,
            nullif(lower(btrim(c.courriel)), '') as courriel,
+           c.telephone as tel,
            t.school_id as ecole
       from public.cartes_prospect c
       left join public.teams t on t.id = c.team_id
      where (p_carte is null or c.id = p_carte)
   ), paires as (
     select car.*, ath.id as ath_id, ath.first_name, ath.school_id as ath_ecole, ath.sport_id as ath_sport,
-           ath.annee_diplomation, ath.nom_n as ath_nom, ath.courriel_fiche, ath.courriel_parent, ath.courriel_compte
+           ath.annee_diplomation, ath.nom_n as ath_nom, ath.courriel_fiche, ath.courriel_parent, ath.courriel_compte,
+           ath.tel_fiche, ath.tel_parent
       from car join ath
         on (car.courriel is not null and car.courriel in (ath.courriel_compte, ath.courriel_fiche, ath.courriel_parent))
+        or (car.tel is not null and car.tel in (ath.tel_fiche, ath.tel_parent))
         or (car.nom_n <> '' and (car.nom_n = ath.nom_n or public.noms_proches(car.nom_n, ath.nom_n)))
   ), qualifiees as (
     -- Ce que chaque paire réunit ; le critère se lit ensuite, du plus fort au plus faible.
@@ -178,6 +241,8 @@ language sql stable security definer set search_path = public set row_security =
       case
         when q.courriel is not null and q.courriel in (q.courriel_compte, q.courriel_fiche) then 'COURRIEL'
         when q.courriel is not null and q.courriel = q.courriel_parent and q.prenom_ok then 'COURRIEL_PARENT'
+        when q.tel is not null and q.tel = q.tel_fiche then 'TELEPHONE'
+        when q.tel is not null and q.tel = q.tel_parent and q.prenom_ok then 'TELEPHONE_PARENT'
         when q.prenom_ok and q.meme_equipe and q.nom_exact then 'EQUIPE'
         when q.prenom_ok and q.meme_equipe then 'EQUIPE_PROCHE'
         when q.prenom_ok and q.meme_ecole_sport and q.nom_exact then 'ECOLE'
@@ -291,7 +356,7 @@ begin
 end $$;
 create trigger trg_rapprochement_carte_insert after insert on public.cartes_prospect
   for each row execute function public.rapprochement_sur_carte();
-create trigger trg_rapprochement_carte_update after update of courriel, team_id, nom, prenom on public.cartes_prospect
+create trigger trg_rapprochement_carte_update after update of courriel, telephone, team_id, nom, prenom on public.cartes_prospect
   for each row execute function public.rapprochement_sur_carte();
 
 -- 18e anniversaire : l'identité devient visible sans qu'aucune ligne ne change.
@@ -346,8 +411,9 @@ language sql stable security definer set search_path = public set row_security =
      and not exists (select 1 from public.recruiter_pipeline rp
                       where rp.athlete_id = r.athlete_id
                         and rp.unite_cegep_id = r.unite_cegep_id and rp.unite_sport_id = r.unite_sport_id)
-   order by case r.critere when 'COURRIEL' then 0 when 'COURRIEL_PARENT' then 1 when 'EQUIPE' then 2
-                           when 'EQUIPE_PROCHE' then 3 when 'ECOLE' then 4 else 5 end, r.cree_le
+   order by case r.critere when 'COURRIEL' then 0 when 'COURRIEL_PARENT' then 1 when 'TELEPHONE' then 2
+                           when 'TELEPHONE_PARENT' then 3 when 'EQUIPE' then 4 when 'EQUIPE_PROCHE' then 5
+                           when 'ECOLE' then 6 else 7 end, r.cree_le
 $$;
 
 -- Lot C, avertissement de doublon à la création d'une carte (retour BP
@@ -409,6 +475,9 @@ grant select on public.rapprochements, public.notifications_unite to authenticat
 
 revoke execute on function public.nom_normalise(text)                          from public, anon, authenticated;
 revoke execute on function public.prenoms_compatibles(text, text)              from public, anon, authenticated;
+revoke execute on function public.telephone_normalise(text)                   from public, anon, authenticated;
+revoke execute on function public.carte_telephone_normaliser()                from public, anon, authenticated;
+revoke execute on function public.carte_telephone_journaliser()               from public, anon, authenticated;
 revoke execute on function public.seuil_nom_proche()                              from public, anon, authenticated;
 revoke execute on function public.noms_proches(text, text)                     from public, anon, authenticated;
 revoke execute on function public.athletes_nom_proche(text, text, uuid)        from public, anon;
@@ -471,6 +540,9 @@ begin
       ('public.nom_normalise(text)',                       array['postgres','service_role']),
       ('public.prenoms_compatibles(text, text)',           array['postgres','service_role']),
       ('public.seuil_nom_proche()',                        array['postgres','service_role']),
+      ('public.telephone_normalise(text)',                 array['postgres','service_role']),
+      ('public.carte_telephone_normaliser()',              array['postgres','service_role']),
+      ('public.carte_telephone_journaliser()',             array['postgres','service_role']),
       ('public.noms_proches(text, text)',                  array['postgres','service_role']),
       ('public.athletes_nom_proche(text, text, uuid)',     array['authenticated','postgres','service_role']),
       ('public.rapprochement_candidats(uuid, uuid)',       array['postgres','service_role']),

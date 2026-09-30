@@ -32,6 +32,8 @@ export interface CarteMeta {
   prenom: string;
   nom: string;
   courriel: string | null;
+  /** 10 chiffres (normalisé par la base) — Pro de l'unité seulement. */
+  telephone: string | null;
   lienVideo: string | null;
   teamId: string | null;
   teamNom: string | null;
@@ -85,6 +87,7 @@ export interface LigneCarte {
   poids_lbs: number | null;
   lien_video: string | null;
   courriel: string | null;
+  telephone: string | null;
   etape: string;
   grade: string | null;
   relance_le: string | null;
@@ -101,7 +104,7 @@ export interface LigneCarte {
 
 const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
-  taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, etape, grade, relance_le, relance_note,
+  taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, etape_le, derniere_activite, created_at,
   teams!team_id(name, division, schools!school_id(name, region, type)),
   positions!position_id(abreviation)
@@ -241,6 +244,7 @@ export function versKanban(
       prenom: l.prenom,
       nom: l.nom,
       courriel: l.courriel,
+      telephone: l.telephone,
       lienVideo: l.lien_video,
       teamId: l.team_id,
       teamNom: l.teams?.name ?? null,
@@ -267,6 +271,7 @@ const VERS_COLONNE: Record<string, string> = {
   next_action_note: "relance_note",
   flagged: "drapeau",
   grade: "grade",
+  telephone: "telephone",
 };
 
 export async function ecrireCarte(supabase: SupabaseClient, carteId: string, champs: Record<string, unknown>) {
@@ -307,6 +312,7 @@ export interface NouvelleCarte {
   poidsLbs: number | null;
   lienVideo: string | null;
   courriel: string | null;
+  telephone: string | null;
 }
 
 export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
@@ -324,6 +330,7 @@ export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
       poids_lbs: c.poidsLbs,
       lien_video: c.lienVideo?.trim() || null,
       courriel: c.courriel?.trim() || null,
+      telephone: c.telephone || null,
     })
     .select("id")
     .single();

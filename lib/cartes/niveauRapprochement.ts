@@ -4,6 +4,8 @@
 
    · courriel identique (de la fiche, du compte ou du parent)
        → « Correspondance confirmée par le courriel » ;
+   · téléphone identique (de la fiche ou du parent), même niveau
+       → « Correspondance confirmée par le téléphone » ;
    · nom exact + même équipe
        → « Correspondance : même nom, même équipe » ;
    · nom proche, ou même école sans la même équipe
@@ -16,12 +18,13 @@
 
 import { normaliserNom } from "@/lib/cartes/carteProspect";
 
-export type NiveauRapprochement = "CONFIRMEE" | "MEME_NOM_EQUIPE" | "POSSIBLE";
+export type NiveauRapprochement = "CONFIRMEE" | "CONFIRMEE_TELEPHONE" | "MEME_NOM_EQUIPE" | "POSSIBLE";
 
-type Critere = "COURRIEL" | "COURRIEL_PARENT" | "EQUIPE" | "EQUIPE_PROCHE" | "ECOLE" | "ECOLE_PROCHE";
+type Critere = "COURRIEL" | "COURRIEL_PARENT" | "TELEPHONE" | "TELEPHONE_PARENT" | "EQUIPE" | "EQUIPE_PROCHE" | "ECOLE" | "ECOLE_PROCHE";
 
 export function niveauRapprochement(critere: Critere): NiveauRapprochement {
   if (critere === "COURRIEL" || critere === "COURRIEL_PARENT") return "CONFIRMEE";
+  if (critere === "TELEPHONE" || critere === "TELEPHONE_PARENT") return "CONFIRMEE_TELEPHONE";
   if (critere === "EQUIPE") return "MEME_NOM_EQUIPE";
   return "POSSIBLE";
 }
@@ -29,6 +32,7 @@ export function niveauRapprochement(critere: Critere): NiveauRapprochement {
 export function libelleNiveau(n: NiveauRapprochement): string {
   switch (n) {
     case "CONFIRMEE": return "Correspondance confirmée par le courriel";
+    case "CONFIRMEE_TELEPHONE": return "Correspondance confirmée par le téléphone";
     case "MEME_NOM_EQUIPE": return "Correspondance : même nom, même équipe";
     case "POSSIBLE": return "Possiblement le même athlète";
   }

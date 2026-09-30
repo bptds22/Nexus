@@ -11,10 +11,15 @@
    pas.
 ═══════════════════════════════════════════════════════════════ */
 
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { lireTelephone, formaterTelephone } from "@/lib/cartes/saisie";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
-import { joursAvantPurge, AVIS_JOURS, type CarteKanban } from "@/lib/cartes/carteProspect";
+import { joursAvantPurge, AVIS_JOURS, ecrireCarte, type CarteKanban } from "@/lib/cartes/carteProspect";
 import { KANBAN_COLUMNS } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { ligneSignee } from "@/lib/historique/signature";
 
@@ -88,6 +93,60 @@ function Ligne({ libelle, valeur }: { libelle: string; valeur: React.ReactNode }
   );
 }
 
+/** Le téléphone de la carte, modifiable sur place (décision BP 2026-09-30).
+ *  Format libre, normalisé ; la base a le dernier mot (10 chiffres). Le
+ *  panneau lit un instantané de la carte : la valeur enregistrée est gardée
+ *  ici, le reste du tableau blanc se relit. */
+function LigneTelephone({ carteId, initial }: { carteId: string; initial: string | null }) {
+  const queryClient = useQueryClient();
+  const [valeur, setValeur] = useState(initial);
+  const [edition, setEdition] = useState(false);
+  const [brut, setBrut] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [enCours, setEnCours] = useState(false);
+
+  const enregistrer = async () => {
+    const l = lireTelephone(brut);
+    if (!l.ok) { setErreur(l.regle); return; }
+    setEnCours(true);
+    const err = await ecrireCarte(createClient(), carteId, { telephone: l.valeur });
+    setEnCours(false);
+    if (err) { setErreur("Le téléphone n'a pas pu être enregistré. Réessaie."); return; }
+    setValeur(l.valeur);
+    setEdition(false);
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  if (edition) {
+    return (
+      <div className="py-2 border-b border-[#2D3748]/60">
+        <label htmlFor="carte-telephone-edition" className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Téléphone</label>
+        <div className="flex gap-2 mt-1.5">
+          <input id="carte-telephone-edition" type="tel" inputMode="tel" autoFocus value={brut}
+            onChange={(e) => { setBrut(e.target.value); setErreur(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter") void enregistrer(); if (e.key === "Escape") setEdition(false); }}
+            placeholder="438 555-0123 (vide pour retirer)" aria-invalid={!!erreur} aria-describedby={erreur ? "erreur-telephone-edition" : undefined}
+            className="flex-1 min-w-0 h-9 px-3 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[13px] text-white focus:border-[#E63946] outline-none" />
+          <button type="button" onClick={() => void enregistrer()} disabled={enCours}
+            className="px-3 h-9 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 text-white text-[12px] font-bold">Enregistrer</button>
+          <button type="button" onClick={() => setEdition(false)} className="px-2 h-9 text-[12px] font-bold text-[#9CA3AF] hover:text-white">Annuler</button>
+        </div>
+        {erreur && <p id="erreur-telephone-edition" className="text-[12px] text-[#EF4444] mt-1">{erreur}</p>}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-2 border-b border-[#2D3748]/60" data-testid="ligne-telephone">
+      <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Téléphone</span>
+      <span className="flex items-baseline gap-3 text-[13px] text-white text-right">
+        {valeur ? formaterTelephone(valeur) : <span className="text-[#6b7280]">—</span>}
+        <button type="button" onClick={() => { setBrut(valeur ? formaterTelephone(valeur) : ""); setErreur(null); setEdition(true); }}
+          className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Modifier</button>
+      </span>
+    </div>
+  );
+}
+
 function SectionGrisee({ titre }: { titre: string }) {
   return (
     <div className="rounded-lg border border-dashed border-[#2D3748] bg-[#13151a]/60 px-4 py-3 opacity-60" aria-disabled="true">
@@ -118,6 +177,7 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
             : <span className="text-[#6b7280]">—</span>}
         />
         <Ligne libelle="Courriel" valeur={c.courriel ?? <span className="text-[#6b7280]">—</span>} />
+        <LigneTelephone carteId={card.id} initial={c.telephone} />
         {c.inviteeLe && <Ligne libelle="Invitation" valeur={`Envoyée le ${dateInvitation(c.inviteeLe)}`} />}
         <Ligne libelle="Carte créée" valeur={`${creeLe}${card.suivi_par_noms?.[0] ? ` · par ${card.suivi_par_noms[0]}` : ""}`} />
       </div>

@@ -33,9 +33,9 @@ import {
   creerCarte, cartesDoublons, carteAuCourriel, athleteAuCourriel,
   memePersonneProbable, libelleEquipe, normaliserNom,
 } from "@/lib/cartes/carteProspect";
-import { lireTaille, lirePoids, lireCourriel, lireLien } from "@/lib/cartes/saisie";
+import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone } from "@/lib/cartes/saisie";
 
-type Champ = "taille" | "poids" | "courriel" | "video";
+type Champ = "taille" | "poids" | "courriel" | "telephone" | "video";
 
 type Genre = "SCOLAIRE" | "CIVIL";
 /** Scolaire = les écoles (secondaire, et le collégial pour un transfert) ;
@@ -76,6 +76,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [erreurs, setErreurs] = useState<Partial<Record<Champ, string>>>({});
   const [video, setVideo] = useState("");
   const [courriel, setCourriel] = useState("");
+  const [telephone, setTelephone] = useState("");
   const [avertissements, setAvertissements] = useState<{ texte: string; lien?: string }[] | null>(null);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -160,6 +161,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     taille: lireTaille(taille),
     poids: lirePoids(poids),
     courriel: lireCourriel(courriel),
+    telephone: lireTelephone(telephone),
     video: lireLien(video),
   });
   const verifierChamp = (c: Champ) => {
@@ -233,7 +235,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     setErreur(null);
     const l = lectures();
     const fautes: Partial<Record<Champ, string>> = {};
-    for (const c of ["taille", "poids", "courriel", "video"] as Champ[]) {
+    for (const c of ["taille", "poids", "courriel", "telephone", "video"] as Champ[]) {
       const r = l[c];
       if (!r.ok) fautes[c] = r.regle;
     }
@@ -258,6 +260,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         poidsLbs: l.poids.ok ? l.poids.valeur : null,
         lienVideo: l.video.ok ? l.video.valeur : null,
         courriel: l.courriel.ok ? l.courriel.valeur : null,
+        telephone: l.telephone.ok ? l.telephone.valeur : null,
       });
       if (error) {
         setErreur("La carte n'a pas pu être créée. Réessaie.");
@@ -385,6 +388,15 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
               : <p id="aide-courriel" className="text-[12px] text-[#6b7280] mt-1">
                   Si cette adresse n&apos;est pas déjà sur Nexus, l&apos;athlète reçoit à la création un courriel l&apos;invitant à s&apos;inscrire, à ton nom et à celui de ton cégep. Une seule fois.
                 </p>}
+          </div>
+          <div className="col-span-2">
+            <label className={etiquette} htmlFor="carte-telephone">Téléphone</label>
+            <input id="carte-telephone" type="tel" inputMode="tel" autoComplete="off" className={`${champ} ${erreurs.telephone ? "border-[#EF4444]" : ""}`} value={telephone}
+              onChange={(e) => { setTelephone(e.target.value); effacerErreur("telephone"); }} onBlur={() => verifierChamp("telephone")}
+              placeholder="438 555-0123 (facultatif)" aria-invalid={!!erreurs.telephone} aria-describedby={erreurs.telephone ? "erreur-telephone" : "aide-telephone"} />
+            {erreurs.telephone
+              ? <p id="erreur-telephone" className="text-[12px] text-[#EF4444] mt-1">{erreurs.telephone}</p>
+              : <p id="aide-telephone" className="text-[12px] text-[#6b7280] mt-1">Visible de ton unité seulement. Aucun message n&apos;est envoyé à ce numéro.</p>}
           </div>
           <div className="col-span-2">
             <label className={etiquette} htmlFor="carte-video">Lien vidéo</label>

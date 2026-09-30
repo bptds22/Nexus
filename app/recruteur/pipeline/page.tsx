@@ -75,6 +75,7 @@ import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMo
 import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
 import { estCarte, bientotPurgee, ecrireCarte, retirerCarte } from "@/lib/cartes/carteProspect";
+import { formaterTelephone } from "@/lib/cartes/saisie";
 import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
@@ -630,6 +631,9 @@ const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = 
   { cle: "promotion", libelle: "Promotion", bloc: "identification" },
   { cle: "ecole", libelle: "École / Club", bloc: "identification" },
   { cle: "division", libelle: "Division", bloc: "identification" },
+  /* Téléphone (décision BP 2026-09-30) : celui de la CARTE prospect ; un
+     athlète Nexus se joint par la messagerie — « — » pour lui. */
+  { cle: "telephone", libelle: "Téléphone", bloc: "identification" },
   { cle: "taille", libelle: "Taille", bloc: "evaluation" },
   { cle: "poids", libelle: "Poids", bloc: "evaluation" },
   { cle: "cote", libelle: "Cote coach", bloc: "evaluation" },
@@ -690,7 +694,7 @@ const VIDE = <span className="text-[#4a4d56]">—</span>;
    Identité masquée : `full_name` vaut déjà « Identité réservée » et le
    numéro est vide — l'export ne sort que ce que l'écran montre. */
 const LARGEUR_EXPORT: Record<string, number> = {
-  nom: 24, numero: 5, position: 10, promotion: 11, ecole: 32, division: 10, taille: 8, poids: 10, cote: 11,
+  nom: 24, numero: 5, position: 10, promotion: 11, ecole: 32, division: 10, telephone: 14, taille: 8, poids: 10, cote: 11,
   grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70,
 };
 
@@ -703,6 +707,7 @@ function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): Cel
     case "position": return texte(card.position);
     case "promotion": return card.graduation_year > 0 ? { t: "nombre", v: card.graduation_year } : null;
     case "division": return texte(card.division_equipe);
+    case "telephone": return texte(estCarte(card) ? formaterTelephone(card.carte.telephone) : null);
     case "taille": return texte(formatTaille(card));
     case "poids": return texte(formatPoids(card));
     case "cote": return aUneCote(card.coach_rating) ? { t: "nombre", v: card.coach_rating, format: "0.0" } : null;
@@ -761,6 +766,10 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
       /* Division de l'ÉQUIPE (teams.division, comme la Recherche). Pas
          d'équipe, ou équipe sans division : « — ». */
       return card.division_equipe ? <span className="text-[#e0e0e0]">{card.division_equipe}</span> : VIDE;
+    case "telephone":
+      return estCarte(card) && card.carte.telephone
+        ? <span className="text-[#e0e0e0] tabular-nums whitespace-nowrap">{formaterTelephone(card.carte.telephone)}</span>
+        : VIDE;
     case "ecole":
       return card.noTeam
         ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Ligue Civile</span>

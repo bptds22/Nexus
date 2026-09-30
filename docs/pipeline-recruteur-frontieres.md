@@ -172,7 +172,9 @@ existante touchée).
   jamais hors de son cégep.
 - **Contenu** : prénom, nom, équipe RÉELLE (`teams.id`, du sport de l'unité,
   obligatoire à la création), position, numéro, promotion, taille, poids, lien
-  vidéo, courriel facultatif (invitation du lot D). Aucune autre coordonnée.
+  vidéo, courriel facultatif (invitation du lot D), téléphone facultatif
+  (décision BP 2026-09-30 : 10 chiffres, normalisé par la base). Aucune autre
+  coordonnée.
   Suivi : étape, grade, relance, visite, drapeau ; notes à part, signées (chacun
   ne modifie que les siennes) ; journal propre (`cartes_prospect_journal`), pas
   `recruiter_activity_log` (dont la contrainte, lue par l'app 1.4.3, ne bouge pas).
@@ -275,6 +277,17 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   équipe, promotion). Aucun libellé « probable » ou « possible » nu. Dans tous
   les cas, la fenêtre côte à côte et « Accepter » restent obligatoires : le
   système propose, le recruteur confirme.
+- **Téléphone** (décision BP 2026-09-30) : la carte porte un téléphone
+  facultatif (format libre à la saisie, normalisé à 10 chiffres par la base,
+  sans le 1 initial), visible des Pro de l'unité (panneau Infos, modifiable ;
+  colonne du tableau ; export). Un téléphone identique entre la carte et
+  `athletes.telephone` → TELEPHONE ; ou `athletes.telephone_parent`, prénom
+  compatible → TELEPHONE_PARENT : « Correspondance confirmée par le
+  téléphone », même niveau que le courriel. Le téléphone de l'ATHLÈTE n'est
+  jamais rendu au recruteur (rapprochements_unite ne le lit pas) : il sert au
+  rapprochement seulement. À la fusion (lot E), celui de la carte n'est PAS
+  copié sur le dossier — une fois le jeune sur Nexus, le contact passe par la
+  messagerie ; la carte masquée le garde jusqu'à sa suppression.
 - **Interface** : pastille sur « Mon processus », bandeau « N profils semblent
   correspondre à tes cartes », lien sur la carte (kanban et panneau), fenêtre
   carte ↔ profil côte à côte avec Accepter (fusion, lot E) / Refuser.
@@ -286,7 +299,7 @@ qui n'a **pas** de compte Nexus et n'a donc consenti à rien auprès de Nexus. L
 **cégep** en est le responsable et le propriétaire (il la crée, la tient à jour,
 la supprime) ; Nexus en est l'hébergeur et le sous-traitant. D'où :
 - **minimisation** : identification et mesures sportives seulement, courriel
-  facultatif, aucune autre coordonnée ;
+  et téléphone facultatifs, aucune autre coordonnée ;
 - **cloisonnement** : jamais visible hors de l'unité (et de l'admin de son
   cégep), jamais dans une recherche ;
 - **durée limitée** : suppression automatique après 12 mois sans activité ;
