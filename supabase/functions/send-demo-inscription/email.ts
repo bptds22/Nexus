@@ -17,7 +17,7 @@ export const DEMO = {
   debutUtc: "20261012T160000Z",
   finUtc: "20261012T170000Z",
   meet: "https://meet.google.com/myi-efqn-kes",
-  reservation: "https://calendar.app.google/YAiAYr4CgnMqLFDU6",
+  reservation: "https://calendar.app.google/RUBKQe4k5ySpa6Be8",
 } as const;
 
 export type Participation = "DIRECT" | "ENREGISTREMENT";

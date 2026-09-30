@@ -40,8 +40,8 @@ test("1:1 cumulable : le rappel du lien s'ajoute au direct comme à l'enregistre
   const sansD = confirmation({ ...base, participation: "DIRECT" });
   const avecD = confirmation({ ...base, participation: "DIRECT", presentation_1a1: true });
   assert.ok(!sansD.html.includes("calendar.app.google"));
-  assert.ok(avecD.html.includes("présentation 1:1 avec Nexus") && avecD.html.includes("https://calendar.app.google/YAiAYr4CgnMqLFDU6"));
-  assert.ok(avecD.text.includes("https://calendar.app.google/YAiAYr4CgnMqLFDU6"));
+  assert.ok(avecD.html.includes("présentation 1:1 avec Nexus") && avecD.html.includes("https://calendar.app.google/RUBKQe4k5ySpa6Be8"));
+  assert.ok(avecD.text.includes("https://calendar.app.google/RUBKQe4k5ySpa6Be8"));
   assert.ok(avecD.ics, "le .ics reste joint au direct");
   const avecE = confirmation({ ...base, participation: "ENREGISTREMENT", presentation_1a1: true });
   assert.ok(avecE.html.includes("présentation 1:1 avec Nexus") && avecE.html.includes("Choisir un moment"));

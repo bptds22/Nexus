@@ -9,7 +9,7 @@ export const DEMO_12_OCTOBRE = {
   libelle: "lundi 12 octobre 2026, de 12 h à 13 h (heure de Montréal)",
   libelleCourt: "lundi 12 octobre à 12 h",
   meet: "https://meet.google.com/myi-efqn-kes",
-  reservation: "https://calendar.app.google/YAiAYr4CgnMqLFDU6",
+  reservation: "https://calendar.app.google/RUBKQe4k5ySpa6Be8",
   videoId: "bzZGBZWmq7k",
   telephone: "438-498-0494",
   courriel: "info@nexussports.ca",
