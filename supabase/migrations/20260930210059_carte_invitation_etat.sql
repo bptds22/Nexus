@@ -1,3 +1,4 @@
+-- 20260930210059_carte_invitation_etat (appliquée en prod le 2026-09-30, 21:00 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE PROSPECT — ÉTAT DE L'INVITATION (décision BP 2026-09-30).
 --
@@ -25,7 +26,7 @@
 -- ADDITIVE : une colonne nullable, une valeur de journal ajoutée, une
 -- fonction + un trigger nouveaux, UNE fonction redéfinie
 -- (cartes_prospect_inviter). Rien de retiré.
--- Rollback : supabase/rollback/20260930194013_rollback_carte_invitation_etat.sql
+-- Rollback : supabase/rollback/20260930210059_rollback_carte_invitation_etat.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- 1. La colonne.

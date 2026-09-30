@@ -1,6 +1,6 @@
--- Rollback de 20260930202342_carte_renvoi_invitation.
+-- Rollback de 20260930210110_carte_renvoi_invitation.
 -- Retire la fonction, les lignes INVITATION_RENVOYEE et la valeur du contrôle
--- (qui revient à celui de 20260930194013_carte_invitation_etat).
+-- (qui revient à celui de 20260930210059_carte_invitation_etat).
 -- La dernière activité rafraîchie par un renvoi n'est pas remise en arrière.
 
 drop function public.journaliser_renvoi_invitation(uuid);

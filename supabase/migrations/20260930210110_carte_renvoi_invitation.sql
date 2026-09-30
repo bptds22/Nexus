@@ -1,3 +1,4 @@
+-- 20260930210110_carte_renvoi_invitation (appliquée en prod le 2026-09-30, 21:01 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE PROSPECT — « RENVOYER L'INVITATION » PAR SON PROPRE CANAL (BP 2026-09-30).
 --
@@ -15,8 +16,8 @@
 --   · la dernière activité est rafraîchie, comme pour une note (lot C).
 --
 -- ADDITIVE : une valeur de journal ajoutée, une fonction nouvelle.
--- S'applique APRÈS 20260930194013_carte_invitation_etat (reprend son contrôle).
--- Rollback : supabase/rollback/20260930202342_rollback_carte_renvoi_invitation.sql
+-- S'applique APRÈS 20260930210059_carte_invitation_etat (reprend son contrôle).
+-- Rollback : supabase/rollback/20260930210110_rollback_carte_renvoi_invitation.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 alter table public.cartes_prospect_journal drop constraint cartes_prospect_journal_action_check;

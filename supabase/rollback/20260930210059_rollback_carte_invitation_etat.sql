@@ -1,4 +1,4 @@
--- Rollback de 20260930194013_carte_invitation_etat.
+-- Rollback de 20260930210059_carte_invitation_etat.
 -- Rend cartes_prospect_inviter à son corps de prod (lot C), retire la garde,
 -- les lignes INVITATION_NON_ENVOYEE du journal, la valeur du contrôle et la
 -- colonne. Les invitations elles-mêmes (cartes_prospect_invitations) ne sont
