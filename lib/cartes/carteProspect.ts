@@ -37,6 +37,11 @@ export interface CarteMeta {
   lienVideo: string | null;
   teamId: string | null;
   teamNom: string | null;
+  /** L'établissement (école ou club) : celui de l'équipe, ou celui auquel la
+   *  carte est rattachée seule quand l'établissement n'a aucune équipe du
+   *  sport de l'unité (décision BP 2026-09-30). */
+  schoolId: string | null;
+  schoolNom: string | null;
   positionId: string | null;
   numero: string | null;
   promotion: number | null;
@@ -98,7 +103,10 @@ export interface LigneCarte {
   etape_le: string;
   derniere_activite: string;
   created_at: string;
+  school_id: string | null;
   teams: { name: string | null; division: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
+  /** L'établissement de la carte (rattachement direct, sans équipe). */
+  etablissement: { name: string | null; region: string | null; type: string | null } | null;
   positions: { abreviation: string | null } | null;
 }
 
@@ -106,7 +114,9 @@ const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, etape_le, derniere_activite, created_at,
+  school_id,
   teams!team_id(name, division, schools!school_id(name, region, type)),
+  etablissement:schools!school_id(name, region, type),
   positions!position_id(abreviation)
 `;
 
@@ -154,7 +164,7 @@ export function versMembreListe(l: LigneCarte, nomSport: string) {
     jersey: l.numero ?? "",
     sport: nomSport,
     position: l.positions?.abreviation ?? "",
-    school: l.teams?.schools?.name ?? "",
+    school: l.teams?.schools?.name ?? l.etablissement?.name ?? "",
     division: "D1" as const,
     graduation_year: l.promotion ?? 0,
     coach_rating: 0,
@@ -196,7 +206,8 @@ export function versKanban(
   },
 ): CarteKanban {
   const jours = Math.floor((Date.now() - new Date(l.etape_le).getTime()) / 86400000);
-  const ecole = l.teams?.schools ?? null;
+  // Sans équipe, l'établissement de rattachement (école ou club).
+  const ecole = l.teams?.schools ?? l.etablissement ?? null;
   const expire = expireLe(l.derniere_activite);
   return {
     id: l.id,
@@ -228,7 +239,9 @@ export function versKanban(
     next_action_note: l.relance_note,
     visit_at: l.visite_le,
     moved_at: l.etape_le,
-    noTeam: !l.team_id,
+    // « Ligue civile » est pour un athlète SANS établissement ; une carte en a
+    // toujours un (son équipe ou son rattachement direct).
+    noTeam: !l.team_id && !l.school_id,
     grade: isGrade(l.grade ?? "") ? (l.grade as Grade) : null,
     taille_pieds: l.taille_pieds,
     taille_pouces: l.taille_pouces,
@@ -248,6 +261,8 @@ export function versKanban(
       lienVideo: l.lien_video,
       teamId: l.team_id,
       teamNom: l.teams?.name ?? null,
+      schoolId: l.school_id,
+      schoolNom: ecole?.name ?? null,
       positionId: l.position_id,
       numero: l.numero,
       promotion: l.promotion,
@@ -272,6 +287,7 @@ const VERS_COLONNE: Record<string, string> = {
   flagged: "drapeau",
   grade: "grade",
   telephone: "telephone",
+  teamId: "team_id",
 };
 
 export async function ecrireCarte(supabase: SupabaseClient, carteId: string, champs: Record<string, unknown>) {
@@ -303,7 +319,9 @@ export async function ajouterNoteCarte(supabase: SupabaseClient, carteId: string
 export interface NouvelleCarte {
   prenom: string;
   nom: string;
-  teamId: string;
+  /** null : l'établissement n'a aucune équipe du sport — rattachement direct. */
+  teamId: string | null;
+  schoolId: string;
   positionId: string | null;
   numero: string | null;
   promotion: number | null;
@@ -322,6 +340,7 @@ export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
       prenom: c.prenom.trim(),
       nom: c.nom.trim(),
       team_id: c.teamId,
+      school_id: c.schoolId,
       position_id: c.positionId,
       numero: c.numero?.trim() || null,
       promotion: c.promotion,
@@ -363,17 +382,18 @@ export function memePersonneProbable(p1: string, n1: string, p2: string, n2: str
   return normaliserNom(n1) !== "" && normaliserNom(n1) === normaliserNom(n2) && prenomsCompatibles(p1, p2);
 }
 
-/** Cartes de l'unité (le sport ; la RLS borne au cégep) dont l'équipe est
- *  dans le même établissement, au même nom avec un prénom compatible. */
+/** Cartes de l'unité (le sport ; la RLS borne au cégep) du même établissement
+ *  — par l'équipe OU par rattachement direct (cartes.school_id, rempli dans
+ *  tous les cas) —, au même nom avec un prénom compatible. */
 export async function cartesDoublons(
   supabase: SupabaseClient,
   c: { prenom: string; nom: string; sportId: string; schoolId: string },
 ): Promise<{ prenom: string; nom: string }[]> {
   const { data } = await supabase
     .from("cartes_prospect")
-    .select("prenom, nom, teams!team_id!inner(school_id)")
+    .select("prenom, nom")
     .eq("unite_sport_id", c.sportId)
-    .eq("teams.school_id", c.schoolId);
+    .eq("school_id", c.schoolId);
   return ((data ?? []) as unknown as { prenom: string; nom: string }[])
     .filter((l) => memePersonneProbable(c.prenom, c.nom, l.prenom, l.nom));
 }

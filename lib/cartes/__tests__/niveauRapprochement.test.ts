@@ -8,13 +8,15 @@ test("trois niveaux, décision BP 2026-09-30", () => {
   assert.equal(libelleNiveau(niveauRapprochement("TELEPHONE")), "Correspondance confirmée par le téléphone");
   assert.equal(libelleNiveau(niveauRapprochement("TELEPHONE_PARENT")), "Correspondance confirmée par le téléphone");
   assert.equal(libelleNiveau(niveauRapprochement("EQUIPE")), "Correspondance : même nom, même équipe");
+  // Carte sans équipe (établissement sans équipe du sport) : niveau 2, pas 3.
+  assert.equal(libelleNiveau(niveauRapprochement("ETABLISSEMENT")), "Correspondance : même nom, même établissement");
   for (const c of ["EQUIPE_PROCHE", "ECOLE", "ECOLE_PROCHE"] as const) {
     assert.equal(libelleNiveau(niveauRapprochement(c)), "Possiblement le même athlète", c);
   }
 });
 
 test("aucun libellé « probable » ou « possible » nu", () => {
-  for (const c of ["COURRIEL", "COURRIEL_PARENT", "TELEPHONE", "TELEPHONE_PARENT", "EQUIPE", "EQUIPE_PROCHE", "ECOLE", "ECOLE_PROCHE"] as const) {
+  for (const c of ["COURRIEL", "COURRIEL_PARENT", "TELEPHONE", "TELEPHONE_PARENT", "EQUIPE", "ETABLISSEMENT", "EQUIPE_PROCHE", "ECOLE", "ECOLE_PROCHE"] as const) {
     assert.doesNotMatch(libelleNiveau(niveauRapprochement(c)), /^Correspondance (probable|possible)$/);
   }
 });

@@ -16,7 +16,7 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 export interface Rapprochement {
   id: string;
   force: "FORTE" | "MOYENNE" | "FAIBLE";
-  critere: "COURRIEL" | "COURRIEL_PARENT" | "TELEPHONE" | "TELEPHONE_PARENT" | "EQUIPE" | "EQUIPE_PROCHE" | "ECOLE" | "ECOLE_PROCHE";
+  critere: "COURRIEL" | "COURRIEL_PARENT" | "TELEPHONE" | "TELEPHONE_PARENT" | "EQUIPE" | "ETABLISSEMENT" | "EQUIPE_PROCHE" | "ECOLE" | "ECOLE_PROCHE";
   promotion_concorde: boolean | null;
   cree_le: string;
   carte_id: string;
@@ -61,6 +61,7 @@ export function raisonRapprochement(r: Pick<Rapprochement, "critere">): string {
     case "TELEPHONE": return "Même téléphone";
     case "TELEPHONE_PARENT": return "Même téléphone de parent, prénom compatible";
     case "EQUIPE": return "Même nom, même équipe";
+    case "ETABLISSEMENT": return "Même nom, même établissement, même sport (carte sans équipe)";
     case "EQUIPE_PROCHE": return "Nom proche, prénom compatible, même équipe";
     case "ECOLE": return "Même nom, même école, même sport";
     case "ECOLE_PROCHE": return "Nom proche, prénom compatible, même école, même sport";

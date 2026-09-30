@@ -274,7 +274,11 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   « Correspondance confirmée par le courriel » ; nom exact + même équipe →
   « Correspondance : même nom, même équipe » ; nom proche, ou même école sans
   la même équipe → « Possiblement le même athlète », avec ce qui diffère (nom,
-  équipe, promotion). Aucun libellé « probable » ou « possible » nu. Dans tous
+  équipe, promotion). Carte SANS équipe (voir « Rattachement à
+  l'établissement ») + nom exact + même établissement + sport de l'unité →
+  critère ETABLISSEMENT, force moyenne : « Correspondance : même nom, même
+  établissement », au niveau de l'équipe ; le nom proche y reste
+  ECOLE_PROCHE. Aucun libellé « probable » ou « possible » nu. Dans tous
   les cas, la fenêtre côte à côte et « Accepter » restent obligatoires : le
   système propose, le recruteur confirme.
 - **Téléphone** (décision BP 2026-09-30) : la carte porte un téléphone
@@ -288,6 +292,20 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   rapprochement seulement. À la fusion (lot E), celui de la carte n'est PAS
   copié sur le dossier — une fois le jeune sur Nexus, le contact passe par la
   messagerie ; la carte masquée le garde jusqu'à sa suppression.
+- **Rattachement à l'établissement** (bug prod + décision BP 2026-09-30,
+  migration `carte_etablissement`, additive) : la carte porte
+  `cartes_prospect.school_id`, TOUJOURS rempli — déduit de l'équipe par le
+  trigger quand il y en a une (la valeur envoyée est ignorée), sinon choisi.
+  L'équipe devient FACULTATIVE quand l'établissement (école ou club) n'a
+  AUCUNE équipe du sport de l'unité ; dès qu'il en a une, elle est
+  obligatoire (refus 23502, « choisis-la »). Cause du bug : aucun club civil
+  n'avait d'équipe de basketball en prod, et la recherche de clubs filtrait
+  par sport — elle ne filtre plus (ni écoles ni clubs). Sans équipe : pas de
+  matchs au calendrier (le panneau Infos le dit), Division « — » au tableau
+  (cellule vide à l'export, comme toute case vide), École/Club = l'établissement.
+  « Préciser l'équipe » apparaît au panneau dès qu'un entraîneur en inscrit
+  une ; l'établissement ne change jamais seul, et une équipe posée ne se
+  retire plus. Rollback : `supabase/rollback/20260930183339_rollback_carte_etablissement.sql`.
 - **Interface** : pastille sur « Mon processus », bandeau « N profils semblent
   correspondre à tes cartes », lien sur la carte (kanban et panneau), fenêtre
   carte ↔ profil côte à côte avec Accepter (fusion, lot E) / Refuser.

@@ -11,7 +11,7 @@
    pas.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
@@ -147,6 +147,64 @@ function LigneTelephone({ carteId, initial }: { carteId: string; initial: string
   );
 }
 
+/** L'équipe de la carte. Sans équipe (établissement sans équipe du sport,
+ *  décision BP 2026-09-30) : rattachée à l'établissement, pas de matchs au
+ *  calendrier — et « Préciser l'équipe » dès qu'un entraîneur en inscrit une. */
+function LigneEquipe({ card }: { card: CarteKanban }) {
+  const c = card.carte;
+  const queryClient = useQueryClient();
+  const [equipe, setEquipe] = useState<{ id: string; nom: string } | null>(c.teamId ? { id: c.teamId, nom: c.teamNom ?? "" } : null);
+  const [choix, setChoix] = useState<{ id: string; name: string }[]>([]);
+  const [selection, setSelection] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [enCours, setEnCours] = useState(false);
+
+  useEffect(() => {
+    if (equipe || !c.schoolId || !card.unite_sport_id) return;
+    let annule = false;
+    void createClient().from("teams").select("id, name").eq("school_id", c.schoolId).eq("sport_id", card.unite_sport_id).order("name")
+      .then(({ data }) => { if (!annule) setChoix((data ?? []) as { id: string; name: string }[]); });
+    return () => { annule = true; };
+  }, [equipe, c.schoolId, card.unite_sport_id]);
+
+  if (equipe) return <Ligne libelle="Équipe" valeur={equipe.nom || <span className="text-[#6b7280]">Équipe retirée</span>} />;
+  if (!c.schoolId) return <Ligne libelle="Équipe" valeur={<span className="text-[#6b7280]">Équipe retirée</span>} />;
+
+  const preciser = async () => {
+    const t = choix.find((x) => x.id === selection);
+    if (!t) return;
+    setEnCours(true);
+    const err = await ecrireCarte(createClient(), card.id, { teamId: t.id });
+    setEnCours(false);
+    if (err) { setErreur("L'équipe n'a pas pu être enregistrée. Réessaie."); return; }
+    setEquipe({ id: t.id, nom: t.name });
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  return (
+    <div className="py-2 border-b border-[#2D3748]/60" data-testid="ligne-equipe-carte">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Équipe</span>
+        <span className="text-[13px] text-white text-right">Aucune — rattachée à {c.schoolNom ?? "l'établissement"}</span>
+      </div>
+      <p className="text-[12px] text-[#9CA3AF] mt-1">Pas de matchs au calendrier : la carte n&apos;est liée à aucune équipe.</p>
+      {choix.length > 0 && (
+        <div className="flex gap-2 mt-2">
+          <label htmlFor="carte-preciser-equipe" className="sr-only">Préciser l&apos;équipe</label>
+          <select id="carte-preciser-equipe" value={selection} onChange={(e) => { setSelection(e.target.value); setErreur(null); }}
+            className="flex-1 min-w-0 h-9 px-2 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[13px] text-white">
+            <option value="">Préciser l&apos;équipe…</option>
+            {choix.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <button type="button" onClick={() => void preciser()} disabled={!selection || enCours}
+            className="px-3 h-9 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 text-white text-[12px] font-bold">Enregistrer</button>
+        </div>
+      )}
+      {erreur && <p className="text-[12px] text-[#EF4444] mt-1">{erreur}</p>}
+    </div>
+  );
+}
+
 function SectionGrisee({ titre }: { titre: string }) {
   return (
     <div className="rounded-lg border border-dashed border-[#2D3748] bg-[#13151a]/60 px-4 py-3 opacity-60" aria-disabled="true">
@@ -163,7 +221,7 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#2D3748] bg-[#13151a] px-4 py-2">
-        <Ligne libelle="Équipe" valeur={c.teamNom ?? <span className="text-[#6b7280]">Équipe retirée</span>} />
+        <LigneEquipe card={card} />
         <Ligne libelle="École" valeur={card.school || <span className="text-[#6b7280]">—</span>} />
         <Ligne libelle="Position" valeur={card.position || <span className="text-[#6b7280]">—</span>} />
         <Ligne libelle="Numéro" valeur={c.numero || <span className="text-[#6b7280]">—</span>} />

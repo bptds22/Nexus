@@ -1766,3 +1766,16 @@ Deux conséquences à connaître :
   déclenche l'avis « Le dossier de votre enfant a progressé », comme tout
   dossier. L'annulation, elle, n'avise pas (c'est une correction) et remet le
   statut global (« Recruté à… ») d'aplomb s'il n'a pas été posé à la main.
+
+## 58. Carte sans équipe, rattachée à l'établissement — l'app 1.4.3 (2026-09-30, pour le lot mobile)
+
+Web seulement (protocole web-d'abord). Migration `carte_etablissement` :
+`cartes_prospect.school_id`, équipe facultative quand l'établissement n'a
+aucune équipe du sport de l'unité. Côté mobile, à vérifier au lot mobile :
+- une carte sans équipe arrive avec `team_id` NULL — toute vue mobile qui la
+  lit par `teams!team_id(...)` n'aura ni équipe ni école ; lire aussi
+  `schools!school_id(...)` (voir `SELECT_CARTE`, `lib/cartes/carteProspect.ts`) ;
+- le critère de rapprochement ETABLISSEMENT (niveau « même nom, même
+  établissement ») est nouveau : un `switch` mobile sur `critere` sans cas par
+  défaut n'affichera rien ;
+- « Préciser l'équipe » (panneau Infos web) n'a pas d'équivalent mobile.

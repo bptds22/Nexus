@@ -96,23 +96,21 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     })();
   }, [sportId]);
 
-  // 1. Les établissements du genre choisi — par pages de 1000 (plafond PostgREST).
-  //    SCOLAIRE : seulement ceux qui ont une équipe du sport de l'unité.
-  //    CIVIL : TOUS les clubs, sans filtre de sport (bug prod 2026-09-30) —
-  //    un club est agnostique du sport (CLAUDE.md, « do NOT sport-filter the
-  //    club search query ») ; en prod, AUCUN club n'avait d'équipe de
-  //    basketball : le filtre vidait la liste. La pertinence du sport se lit
-  //    à l'étape suivante (« Aucune équipe de … dans ce club »).
+  // 1. TOUS les établissements du genre choisi — par pages de 1000 (plafond
+  //    PostgREST), sans filtre de sport (bug prod 2026-09-30 : aucun club
+  //    n'avait d'équipe de basketball, la liste était vide). Un établissement
+  //    sans équipe du sport de l'unité reste choisissable : la carte s'y
+  //    rattache seule (décision BP, généralisée aux écoles). La pertinence du
+  //    sport se lit à l'étape suivante.
   useEffect(() => {
     let annule = false;
     void (async () => {
       const supabase = createClient();
       const tous: (Etablissement & { cle: string })[] = [];
       for (let debut = 0; debut < 10000; debut += 1000) {
-        const base = genre === "CIVIL"
-          ? supabase.from("schools").select("id, name, city")
-          : supabase.from("schools").select("id, name, city, teams!inner(sport_id)").eq("teams.sport_id", sportId);
-        const { data, error } = await base
+        const { data, error } = await supabase
+          .from("schools")
+          .select("id, name, city")
           .in("type", TYPES[genre])
           .order("name")
           .range(debut, debut + 999);
@@ -178,7 +176,10 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     setErreurs((e) => ({ ...e, [c]: r.ok ? undefined : r.regle }));
   };
   const effacerErreur = (c: Champ) => setErreurs((e) => (e[c] ? { ...e, [c]: undefined } : e));
-  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!equipe;
+  /* Aucune équipe du sport dans l'établissement choisi : la carte s'y rattache
+     seule (décision BP 2026-09-30). Avec des équipes, l'équipe reste obligatoire. */
+  const sansEquipe = !!etablissement && equipesChargees && equipes.length === 0;
+  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && (!!equipe || sansEquipe);
   const promotions = useMemo(() => {
     const an = new Date().getFullYear();
     return Array.from({ length: 6 }, (_, i) => an + i);
@@ -187,7 +188,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const verifierDoublons = async (): Promise<{ texte: string; lien?: string }[]> => {
     const courrielLu = lireCourriel(courriel);
     const adresse = courrielLu.ok ? courrielLu.valeur ?? "" : "";
-    if (!equipe || !etablissement) return [];
+    if (!etablissement) return [];
     const supabase = createClient();
     const trouves: { texte: string; lien?: string }[] = [];
 
@@ -240,7 +241,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   };
 
   const soumettre = async () => {
-    if (!valide || enCours || !equipe) return;
+    if (!valide || enCours || !etablissement) return;
     setErreur(null);
     const l = lectures();
     const fautes: Partial<Record<Champ, string>> = {};
@@ -260,7 +261,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         if (trouves.length > 0) { setAvertissements(trouves); return; }
       }
       const { error } = await creerCarte(createClient(), {
-        prenom, nom, teamId: equipe.id,
+        prenom, nom, teamId: equipe?.id ?? null, schoolId: etablissement.id,
         positionId: positionId || null,
         numero: numero || null,
         promotion: nombre(promotion),
@@ -338,7 +339,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
                 )}
                 {recherche.trim().length >= 2 && tousEtablissements !== null && etablissements.length === 0 && (
                   <p className="text-[12px] text-[#6b7280] mt-1">
-                    {genre === "SCOLAIRE" ? "Aucune école avec une équipe de ce sport ne correspond." : "Aucun club ne correspond."}
+                    {genre === "SCOLAIRE" ? "Aucune école ne correspond." : "Aucun club ne correspond."}
                   </p>
                 )}
               </>
@@ -347,16 +348,16 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
 
           {etablissement && (
             <div className="col-span-2">
-              <label className={etiquette} htmlFor="carte-equipe">Équipe <span className="text-[#E63946]">*</span></label>
-              <select id="carte-equipe" className={champ} value={equipeId} onChange={(e) => { setEquipeId(e.target.value); setAvertissements(null); }}>
+              <label className={etiquette} htmlFor="carte-equipe">Équipe {!sansEquipe && <span className="text-[#E63946]">*</span>}</label>
+              <select id="carte-equipe" className={champ} value={equipeId} disabled={sansEquipe} onChange={(e) => { setEquipeId(e.target.value); setAvertissements(null); }}>
                 {equipes.length !== 1 && <option value="">{equipes.length === 0 ? "Aucune équipe de ce sport" : "Choisir l'équipe"}</option>}
                 {equipes.map((e) => <option key={e.id} value={e.id}>{e.libelle}</option>)}
               </select>
-              {equipesChargees && equipes.length === 0 && (
+              {sansEquipe && (
                 <p className="text-[12px] text-[#F59E0B] mt-1" data-testid="aucune-equipe-club">
                   {genre === "CIVIL"
-                    ? `Aucune équipe${nomSport ? ` de ${nomSport.toLowerCase()}` : ""} n'est encore inscrite dans ce club. La carte demande une équipe : un entraîneur du club peut l'inscrire sur Nexus.`
-                    : `Aucune équipe${nomSport ? ` de ${nomSport.toLowerCase()}` : ""} dans cet établissement.`}
+                    ? `Aucune équipe${nomSport ? ` de ${nomSport.toLowerCase()}` : ""} inscrite pour ce club — la carte sera rattachée au club. Dès qu'un entraîneur inscrit l'équipe, tu pourras la préciser.`
+                    : `Aucune équipe${nomSport ? ` de ${nomSport.toLowerCase()}` : ""} inscrite pour cette école — la carte sera rattachée à l'école. Dès qu'un entraîneur inscrit l'équipe, tu pourras la préciser.`}
                 </p>
               )}
             </div>

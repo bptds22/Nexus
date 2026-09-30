@@ -169,7 +169,7 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span data-testid="niveau-proposition" className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
                 niveau === "CONFIRMEE" || niveau === "CONFIRMEE_TELEPHONE" ? "border-[#22C55E]/40 bg-[#22C55E]/10 text-[#86EFAC]"
-                : niveau === "MEME_NOM_EQUIPE" ? "border-white/30 bg-white/5 text-white"
+                : niveau === "MEME_NOM_EQUIPE" || niveau === "MEME_NOM_ETABLISSEMENT" ? "border-white/30 bg-white/5 text-white"
                 : "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#FCD34D]"}`}>
                 {libelleNiveau(niveau)}
               </span>
