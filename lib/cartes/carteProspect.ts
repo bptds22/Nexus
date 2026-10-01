@@ -55,6 +55,9 @@ export interface CarteMeta {
   inviteeLe: string | null;
   /** NON_ENVOYEE : l'invitation a été écartée — la carte le dit, sans la raison. */
   invitationEtat: InvitationEtat | null;
+  /** Rappels envoyés par Nexus (0..3) et date du dernier — écrits par la base. */
+  renvoisInvitation: number;
+  dernierRenvoiLe: string | null;
 }
 
 export type CarteKanban = PipelineKanbanCard & { carte: CarteMeta };
@@ -104,6 +107,8 @@ export interface LigneCarte {
   drapeau: boolean;
   invitee_le: string | null;
   invitation_etat: InvitationEtat | null;
+  renvois_invitation: number;
+  dernier_renvoi_le: string | null;
   etape_le: string;
   derniere_activite: string;
   created_at: string;
@@ -117,7 +122,7 @@ export interface LigneCarte {
 const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, etape, grade, relance_le, relance_note,
-  visite_le, drapeau, invitee_le, invitation_etat, etape_le, derniere_activite, created_at,
+  visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
   school_id,
   teams!team_id(name, division, schools!school_id(name, region, type)),
   etablissement:schools!school_id(name, region, type),
@@ -276,6 +281,8 @@ export function versKanban(
       expireLe: expire,
       inviteeLe: l.invitee_le,
       invitationEtat: l.invitation_etat,
+      renvoisInvitation: l.renvois_invitation ?? 0,
+      dernierRenvoiLe: l.dernier_renvoi_le,
     },
   };
 }

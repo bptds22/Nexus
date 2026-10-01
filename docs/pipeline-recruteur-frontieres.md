@@ -231,18 +231,33 @@ existante touchée).
   `carte_fusion_garde`) ; texte unique : `lib/cartes/invitationEtat.ts`.
   Migration `carte_invitation_etat`. Le formulaire dit : « Si cette adresse
   n'a jamais été invitée ni inscrite, l'athlète reçoit… ».
-  **« Renvoyer l'invitation »** (BP 2026-09-30) : affiché TOUJOURS quand la
-  carte a un courriel, quel que soit l'état de l'invitation automatique — c'est
-  ce qui ne révèle rien. Pro de l'unité seulement (masqué en lecture seule et en
-  démo gratuite). Feuille de partage sur un appareil tactile, copie du texte
-  sinon (`lib/cartes/renvoiInvitation.ts`) : « Salut [prénom], je suis
-  [recruteur] du [cégep]. On utilise Nexus pour notre recrutement — crée ton
-  profil ici : [lien d'inscription pré-rempli] ». NEXUS N'ENVOIE RIEN : aucune
-  ligne d'invitation, aucun appel réseau. Seule la trace :
-  `journaliser_renvoi_invitation(carte)` (carte_ecriture_ok, courriel requis)
-  écrit INVITATION_RENVOYEE — « Tu as renvoyé l'invitation par ton propre
-  canal » — et rafraîchit la dernière activité, comme une note. Feuille fermée
-  sans partager : rien n'est noté. Migration `carte_renvoi_invitation`.
+  **« Renvoyer l'invitation » — RAPPEL ENVOYÉ PAR NEXUS** (décision BP
+  2026-09-30, migration `carte_rappel_invitation`). Même edge function
+  (`send-invitation-carte`, corps `{rappel_id}`) et même gabarit que
+  l'invitation, « Rappel : » dans l'objet et le titre, désabonnement (jeton de
+  l'invitation d'origine : même adresse, même empreinte) et adresse postale ;
+  au nom du recruteur qui a cliqué. **Seulement si l'invitation automatique
+  de CETTE carte est partie**, vers la même adresse, sans compte ni
+  désabonnement depuis — sinon « Impossible d'envoyer à cette adresse », sans
+  raison (choix BP contre l'oracle : un écart DEJA_INVITE n'ouvre pas de
+  rappel, la règle des 90 jours entre unités reste entière). Au plus un envoi
+  par 7 jours, l'invitation automatique comptant comme le premier
+  (« Rappel possible le … », puis « Renvoyé le … — disponible à nouveau le … ») ;
+  au plus 3 rappels (« 3 rappels envoyés — plus de renvoi possible »).
+  `demander_rappel_invitation(carte)` décide tout en base et répond
+  ENVOI_LANCE / EN_COURS / TROP_TOT / LIMITE / IMPOSSIBLE (une seule clé pour
+  IMPOSSIBLE) ; une ligne par demande dans `cartes_prospect_rappels` (serveur
+  seul) ; `finaliser_rappel_carte`, sur un 2xx de Resend SEULEMENT : compteur
+  `renvois_invitation`, `dernier_renvoi_le`, état ENVOYEE, journal
+  INVITATION_RAPPEL — « Tu as renvoyé l'invitation ». Un échec de passerelle ne
+  compte pas et se redemande. Le pied de l'invitation ne promet plus « pas
+  d'autre courriel » : il annonce au plus 3 rappels.
+  **« Copier le texte »**, lien secondaire dessous, TOUJOURS là quand la carte
+  a un courriel (ne révèle rien) : copie « Salut [prénom], je suis [recruteur]
+  du [cégep]. On utilise Nexus pour notre recrutement — crée ton profil ici :
+  [lien] » (`lib/cartes/renvoiInvitation.ts`) ; Nexus n'envoie rien, la trace
+  seule : `journaliser_renvoi_invitation` → INVITATION_RENVOYEE, « Tu as
+  renvoyé l'invitation par ton propre canal » (migration `carte_renvoi_invitation`).
   L'adresse n'est jamais stockée en
   clair hors de la carte : empreinte sha256 dans les invitations et dans le
   registre `courriel_desabonnements_adresses` (le registre par compte ne couvre

@@ -6,12 +6,15 @@
 // depuis 90 jours. Header x-carte-invitation-secret == CARTE_INVITATION_SECRET
 // (même valeur au vault : name = 'CARTE_INVITATION_SECRET').
 //
-// Corps : { "invitation_id": "<uuid>" }. Tout le reste est relu en base.
+// Corps : { "invitation_id": "<uuid>" } — invitation à la création — OU
+// { "rappel_id": "<uuid>" } — rappel demandé par un recruteur
+// (public.envoyer_rappel_carte, décision BP 2026-09-30). Tout le reste est
+// relu en base.
 //
 // Secrets requis : CARTE_INVITATION_SECRET, RESEND_API_KEY, DESABONNEMENT_SECRET.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { traiterInvitation } from "./traiter.ts";
+import { traiterInvitation, traiterRappel } from "./traiter.ts";
 
 const SECRET = Deno.env.get("CARTE_INVITATION_SECRET") ?? "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
@@ -36,15 +39,17 @@ Deno.serve(async (req) => {
   if (!RESEND_API_KEY || DESABONNEMENT_SECRET.length < 32) {
     return json({ ok: false, erreur: "Configuration incomplète (RESEND_API_KEY ou DESABONNEMENT_SECRET)." }, 500);
   }
-  let corps: { invitation_id?: unknown };
+  let corps: { invitation_id?: unknown; rappel_id?: unknown };
   try { corps = await req.json(); } catch { return json({ ok: false, erreur: "JSON invalide" }, 400); }
-  const id = typeof corps.invitation_id === "string" ? corps.invitation_id : "";
-  if (!UUID_RE.test(id)) return json({ ok: false, erreur: "invitation_id invalide" }, 400);
+  const invitationId = typeof corps.invitation_id === "string" ? corps.invitation_id : "";
+  const rappelId = typeof corps.rappel_id === "string" ? corps.rappel_id : "";
+  // Exactement un des deux.
+  if (UUID_RE.test(invitationId) === UUID_RE.test(rappelId)) {
+    return json({ ok: false, erreur: "invitation_id ou rappel_id attendu (un seul)" }, 400);
+  }
 
-  const r = await traiterInvitation(
-    { supabase, fetch, resendApiKey: RESEND_API_KEY, desabonnementSecret: DESABONNEMENT_SECRET },
-    id,
-  );
-  if (!r.ok) console.error(`[invitation-carte] ${id} : ${r.erreur}`);
+  const deps = { supabase, fetch, resendApiKey: RESEND_API_KEY, desabonnementSecret: DESABONNEMENT_SECRET };
+  const r = rappelId ? await traiterRappel(deps, rappelId) : await traiterInvitation(deps, invitationId);
+  if (!r.ok) console.error(`[invitation-carte] ${rappelId ? `rappel ${rappelId}` : invitationId} : ${r.erreur}`);
   return json(r, r.ok ? 200 : 502);
 });

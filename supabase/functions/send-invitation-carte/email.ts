@@ -28,10 +28,16 @@ export interface DonneesInvitation {
   courriel: string;
   /** URL absolue et signée de /desabonnement. */
   desabonnementUrl: string;
+  /** Rappel demandé par un recruteur (décision BP 2026-09-30) : « Rappel : »
+   *  dans l'objet et le titre, même corps, même désabonnement. */
+  rappel?: boolean;
 }
 
-export function sujet(cegep: string): string {
-  return `Un recruteur du ${cegep} recrute sur Nexus`;
+/** Au plus trois rappels par carte (demander_rappel_invitation). */
+export const RAPPELS_MAX = 3;
+
+export function sujet(cegep: string, rappel = false): string {
+  return `${rappel ? "Rappel : " : ""}Un recruteur du ${cegep} recrute sur Nexus`;
 }
 
 /** Lien d'inscription : le formulaire s'ouvre en mode inscription, l'adresse
@@ -57,7 +63,7 @@ export function buildBody(d: DonneesInvitation): { html: string; text: string } 
 
   return renderEmail({
     preheader: "Crée ton profil Nexus : c'est gratuit, et ça prend quelques minutes.",
-    heading: echapper(sujet(cegep)),
+    heading: echapper(sujet(cegep, !!d.rappel)),
     bodyHtml:
       p(prenom ? `Salut ${echapper(prenom)},` : "Salut,") +
       p(`${quiHtml} ${suite}`) +
@@ -72,8 +78,13 @@ export function buildBody(d: DonneesInvitation): { html: string; text: string } 
       profil,
     ].join("\n"),
     lcap: {
-      raison: `Tu reçois ce courriel parce qu'un recruteur du ${echapper(cegep)} a indiqué ton adresse ` +
-        `en suivant ton parcours sportif. Tu ne recevras pas d'autre courriel automatique à ce sujet.`,
+      // Plus de « pas d'autre courriel » : un recruteur peut demander un rappel
+      // (au plus trois, sept jours d'écart) — le désabonnement les arrête tous.
+      raison: d.rappel
+        ? `Tu reçois ce rappel parce qu'un recruteur du ${echapper(cegep)} t'a invité sur Nexus ` +
+          `et a demandé à te le rappeler. Au plus ${RAPPELS_MAX} rappels ; le lien ci-dessous les arrête.`
+        : `Tu reçois ce courriel parce qu'un recruteur du ${echapper(cegep)} a indiqué ton adresse ` +
+          `en suivant ton parcours sportif. Il peut t'envoyer au plus ${RAPPELS_MAX} rappels ; le lien ci-dessous les arrête.`,
       desabonnementUrl: d.desabonnementUrl,
     },
   });

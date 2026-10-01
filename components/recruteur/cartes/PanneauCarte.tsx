@@ -17,7 +17,8 @@ import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { lireTelephone, formaterTelephone } from "@/lib/cartes/saisie";
 import { mentionInvitation, MENTION_INVITATION_NON_ENVOYEE, type InvitationEtat } from "@/lib/cartes/invitationEtat";
-import { texteRenvoi, choisirCanal, phraseRenvoi } from "@/lib/cartes/renvoiInvitation";
+import { texteRenvoi, phraseRenvoi } from "@/lib/cartes/renvoiInvitation";
+import { etatRappel, libelleRappelIndisponible, messageReponse, RAPPELS_MAX, type ReponseRappel } from "@/lib/cartes/rappelInvitation";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
@@ -74,10 +75,14 @@ export function MentionProspect({ inviteeLe, invitationEtat }: { inviteeLe?: str
   );
 }
 
-/** « Renvoyer l'invitation » (décision BP 2026-09-30). Affiché TOUJOURS quand
- *  la carte a un courriel, quel que soit l'état de l'invitation automatique —
- *  c'est ce qui ne révèle rien. Nexus n'envoie rien : feuille de partage
- *  (mobile) ou copie du texte (ordinateur), puis la trace au journal. */
+/** « Renvoyer l'invitation » (décisions BP 2026-09-30).
+ *  · Le BOUTON fait envoyer un rappel PAR NEXUS (demander_rappel_invitation) :
+ *    seulement si l'invitation automatique de cette carte est partie ; sinon
+ *    « Impossible d'envoyer à cette adresse », sans raison. 7 jours d'écart,
+ *    3 rappels au plus.
+ *  · Le LIEN « Copier le texte », dessous, est toujours là quand la carte a un
+ *    courriel : le recruteur envoie de son propre téléphone ; Nexus n'envoie
+ *    rien, la trace seule est écrite. */
 export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
   const c = card.carte;
   const queryClient = useQueryClient();
@@ -92,71 +97,92 @@ export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
       return (data?.name as string | undefined) ?? null;
     },
   });
-  const [etat, setEtat] = useState<{ type: "ok" | "erreur" | "manuel"; texte: string } | null>(null);
-  if (!c.courriel || !c.courriel.trim()) return null;
+  const [reponse, setReponse] = useState<{ ton: "ok" | "neutre" | "erreur"; texte: string } | null>(null);
+  const [enCours, setEnCours] = useState(false);
+  const [copie, setCopie] = useState<{ type: "ok" | "erreur" | "manuel"; texte: string } | null>(null);
+  const etat = etatRappel({
+    courriel: c.courriel, invitationEtat: c.invitationEtat, inviteeLe: c.inviteeLe,
+    renvoisInvitation: c.renvoisInvitation, dernierRenvoiLe: c.dernierRenvoiLe,
+  });
+  if (!etat) return null;
+
+  const rafraichir = () => {
+    void queryClient.invalidateQueries({ queryKey: ["pipeline-historique", "carte", card.id] });
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const rappeler = async () => {
+    setReponse(null);
+    setEnCours(true);
+    const { data, error } = await createClient().rpc("demander_rappel_invitation", { p_carte: card.id });
+    setEnCours(false);
+    if (error) { setReponse({ ton: "erreur", texte: "Le rappel n'a pas pu être demandé. Réessaie." }); return; }
+    setReponse(messageReponse(data as ReponseRappel));
+    if ((data as ReponseRappel).etat === "ENVOI_LANCE") {
+      // L'envoi part en arrière-plan : la carte se relit quand il a eu le temps d'aboutir.
+      window.setTimeout(rafraichir, 5000);
+    }
+  };
 
   const texte = texteRenvoi({
     prenom: c.prenom,
     recruteur: [profil?.first_name, profil?.last_name].filter(Boolean).join(" "),
     cegep,
-    courriel: c.courriel,
+    courriel: c.courriel ?? "",
   });
-
-  const journaliser = async (confirmation: string) => {
+  const journaliserCopie = async (confirmation: string) => {
     const { error } = await createClient().rpc("journaliser_renvoi_invitation", { p_carte: card.id });
-    if (error) {
-      setEtat({ type: "erreur", texte: `${confirmation} Le renvoi n'a pas pu être noté à l'historique.` });
-      return;
-    }
-    setEtat({ type: "ok", texte: confirmation });
-    void queryClient.invalidateQueries({ queryKey: ["pipeline-historique", "carte", card.id] });
-    void invaliderTableauBlanc(queryClient);
+    if (error) { setCopie({ type: "erreur", texte: `${confirmation} La copie n'a pas pu être notée à l'historique.` }); return; }
+    setCopie({ type: "ok", texte: confirmation });
+    rafraichir();
   };
-
-  const renvoyer = async () => {
-    setEtat(null);
-    const canal = choisirCanal({
-      partageDispo: typeof navigator !== "undefined" && typeof navigator.share === "function",
-      tactile: typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches,
-    });
-    if (canal === "PARTAGE") {
-      try {
-        await navigator.share({ text: texte });
-      } catch (e) {
-        if ((e as Error)?.name === "AbortError") return;   // feuille fermée : rien n'est parti
-        setEtat({ type: "manuel", texte });
-        return;
-      }
-      await journaliser("Invitation partagée depuis ton appareil.");
-      return;
-    }
+  const copier = async () => {
+    setCopie(null);
     try {
       await navigator.clipboard.writeText(texte);
     } catch {
-      setEtat({ type: "manuel", texte });
+      setCopie({ type: "manuel", texte });
       return;
     }
-    await journaliser("Texte copié — colle-le dans ton courriel ou tes messages.");
+    await journaliserCopie("Texte copié — colle-le dans ton courriel ou tes messages.");
   };
 
+  const indisponible = libelleRappelIndisponible(etat);
   return (
     <div data-testid="renvoyer-invitation">
-      <button type="button" onClick={() => void renvoyer()}
-        className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#E63946] hover:text-white transition-colors">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M16 6l-4-4-4 4" /><path d="M12 2v13" />
-        </svg>
-        Renvoyer l&apos;invitation
+      {etat.type === "DISPONIBLE" && (
+        <button type="button" onClick={() => void rappeler()} disabled={enCours || reponse?.ton === "ok"}
+          className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#E63946] hover:text-white disabled:opacity-50 transition-colors">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 4h16v16H4z" /><path d="M4 6l8 7 8-7" />
+          </svg>
+          Renvoyer l&apos;invitation
+        </button>
+      )}
+      {etat.type === "DISPONIBLE" && etat.renvois > 0 && (
+        <p className="text-[11px] text-[#6b7280] mt-0.5">Rappels envoyés : {etat.renvois} sur {RAPPELS_MAX}</p>
+      )}
+      {indisponible && (
+        <p className="text-[12px] text-[#9CA3AF]" data-testid="rappel-indisponible">{indisponible}</p>
+      )}
+      {reponse && (
+        <p className={`text-[12px] mt-1 ${reponse.ton === "ok" ? "text-[#86EFAC]" : reponse.ton === "erreur" ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`} role="status" data-testid="rappel-reponse">
+          {reponse.texte}
+        </p>
+      )}
+
+      <button type="button" onClick={() => void copier()} data-testid="copier-texte"
+        className="block mt-1 text-[11px] text-[#9CA3AF] underline underline-offset-2 hover:text-white">
+        Copier le texte
       </button>
-      <p className="text-[11px] text-[#6b7280] mt-0.5">Par ton propre téléphone ou courriel — Nexus n&apos;envoie rien.</p>
-      {etat?.type === "ok" && <p className="text-[12px] text-[#86EFAC] mt-1" role="status">{etat.texte}</p>}
-      {etat?.type === "erreur" && <p className="text-[12px] text-[#F59E0B] mt-1" role="status">{etat.texte}</p>}
-      {etat?.type === "manuel" && (
+      {copie?.type === "ok" && <p className="text-[12px] text-[#86EFAC] mt-1" role="status">{copie.texte}</p>}
+      {copie?.type === "erreur" && <p className="text-[12px] text-[#F59E0B] mt-1" role="status">{copie.texte}</p>}
+      {copie?.type === "manuel" && (
         <div className="mt-1.5">
           <p className="text-[12px] text-[#9CA3AF] mb-1">Copie ce texte à la main, puis envoie-le :</p>
-          <textarea readOnly value={etat.texte} rows={4} onFocus={(e) => e.currentTarget.select()} autoFocus
+          <textarea readOnly value={copie.texte} rows={4} onFocus={(e) => e.currentTarget.select()} autoFocus
             className="w-full p-2 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[12px] text-white" />
-          <button type="button" onClick={() => void journaliser("C'est noté.")}
+          <button type="button" onClick={() => void journaliserCopie("C'est noté.")}
             className="mt-1 text-[12px] font-bold text-[#9CA3AF] hover:text-white">Je l&apos;ai envoyé</button>
         </div>
       )}
@@ -369,6 +395,7 @@ export function phraseGesteCarte(g: GesteCarte, estMoi = false): string {
     case "INVITATION": return "a invité l'athlète par courriel (envoi automatique à la création)";
     case "INVITATION_NON_ENVOYEE": return MENTION_INVITATION_NON_ENVOYEE;
     case "INVITATION_RENVOYEE": return phraseRenvoi(estMoi);
+    case "INVITATION_RAPPEL": return "a renvoyé l'invitation";
     default: return "a agi sur la carte";
   }
 }

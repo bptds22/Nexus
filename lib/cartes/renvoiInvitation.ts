@@ -1,12 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════
-   renvoiInvitation — « Renvoyer l'invitation » par le canal du
-   recruteur (décision BP 2026-09-30), pur et testé.
+   renvoiInvitation — le lien secondaire « Copier le texte », pour le
+   recruteur qui préfère son propre téléphone (décisions BP 2026-09-30),
+   pur et testé.
 
-   Le bouton apparaît TOUJOURS quand la carte a un courriel, quel que
-   soit l'état de l'invitation automatique : c'est ce qui ne révèle
-   rien. Nexus n'envoie rien — le texte part par la feuille de partage
-   (mobile) ou le presse-papiers (ordinateur) ; seule la trace est
-   écrite (journaliser_renvoi_invitation).
+   Présent TOUJOURS quand la carte a un courriel, quel que soit l'état
+   de l'invitation automatique : c'est ce qui ne révèle rien. Ce lien-là
+   n'envoie rien — le texte part par le presse-papiers ; seule la trace
+   est écrite (journaliser_renvoi_invitation). Le rappel ENVOYÉ PAR
+   NEXUS, lui, est dans rappelInvitation.ts.
 
    Le lien d'inscription est celui du courriel automatique
    (send-invitation-carte/email.ts) : adresse pré-remplie.
@@ -36,14 +37,6 @@ export function texteRenvoi(e: ElementsRenvoi): string {
   const qui = recruteur ? `je suis ${recruteur}` : "je suis recruteur";
   const ou = cegep ? ` du ${cegep}` : "";
   return `${salut} ${qui}${ou}. On utilise Nexus pour notre recrutement — crée ton profil ici : ${lienInscription(e.courriel)}`;
-}
-
-export type CanalRenvoi = "PARTAGE" | "COPIE";
-
-/** Feuille de partage sur un appareil tactile qui la propose ; sinon copie.
- *  (Chrome sur Windows expose navigator.share : le tactile départage.) */
-export function choisirCanal(env: { partageDispo: boolean; tactile: boolean }): CanalRenvoi {
-  return env.partageDispo && env.tactile ? "PARTAGE" : "COPIE";
 }
 
 /** La phrase d'historique, conjuguée à qui la lit. */

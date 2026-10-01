@@ -39,3 +39,20 @@ test("une saisie contenant du HTML est échappée", () => {
 test("expéditeur : « Nexus <info@nexussports.ca> », jamais au nom du recruteur", () => {
   assert.equal(expediteur(), "Nexus <info@nexussports.ca>");
 });
+
+test("rappel : « Rappel : » dans l'objet et le titre, même corps, désabonnement et adresse postale", () => {
+  assert.equal(sujet("Cégep de Saint-Jérôme", true), "Rappel : Un recruteur du Cégep de Saint-Jérôme recrute sur Nexus");
+  const { html, text } = buildBody({ ...base, rappel: true });
+  assert.ok(html.includes("Rappel : Un recruteur du Cégep de Saint-Jérôme recrute sur Nexus"));
+  assert.match(text, /Rémi Collègue, recruteur au Cégep de Saint-Jérôme, utilise Nexus comme plateforme/);
+  assert.ok(html.includes("https://n/desabonnement?t=i.a"));
+  assert.ok(html.includes("Basile-Routhier"));
+  assert.match(html, /Tu reçois ce rappel parce qu'un recruteur du Cégep de Saint-Jérôme t'a invité sur Nexus/);
+});
+
+test("l'invitation ne promet plus « pas d'autre courriel » : elle annonce les rappels possibles", () => {
+  const { html } = buildBody(base);
+  assert.doesNotMatch(html, /pas d'autre courriel/);
+  assert.match(html, /au plus 3 rappels/);
+  assert.equal(sujet("Cégep X"), "Un recruteur du Cégep X recrute sur Nexus", "l'objet de l'invitation ne change pas");
+});

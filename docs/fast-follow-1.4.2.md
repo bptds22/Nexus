@@ -1792,7 +1792,14 @@ sans acteur. À reprendre au lot mobile :
 - Limite connue (même patron que `carte_fusion_garde`) : la garde se lève par
   `set_config('nexus.invitation_carte','on',true)`, inaccessible par PostgREST
   mais pas en SQL direct.
-- « Renvoyer l'invitation » (migration `carte_renvoi_invitation`) : web
-  seulement. Dans l'app, `navigator.share` de la WebView n'est pas la feuille
-  native — passer par `@capacitor/share` au lot mobile, et garder la règle :
-  on journalise après un partage abouti, jamais sur une feuille fermée.
+- « Renvoyer l'invitation » est devenu un RAPPEL ENVOYÉ PAR NEXUS
+  (migration `carte_rappel_invitation`) ; « Copier le texte » reste en lien
+  secondaire. Web seulement : au lot mobile, le bouton appelle la même RPC
+  `demander_rappel_invitation` et lit `renvois_invitation` / `dernier_renvoi_le`
+  (`etatRappel`, `lib/cartes/rappelInvitation.ts`) ; la copie passe par le
+  presse-papiers natif.
+- Mise en prod du rappel : DÉPLOYER `send-invitation-carte` AVANT la migration.
+  La nouvelle version garde le chemin `{invitation_id}` à l'identique ;
+  l'inverse (migration d'abord) laisserait des demandes à l'ancienne fonction,
+  qui répond 400 à `{rappel_id}` — la ligne resterait A_ENVOYER (sans dégât :
+  elle cesse de bloquer après 15 minutes).
