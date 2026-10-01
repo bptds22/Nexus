@@ -36,6 +36,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isMinor } from "@/lib/utils/age";
+import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
@@ -235,74 +237,35 @@ export function AthleteParametresMobile() {
 
 
 
-  /* ── Confidentialité : partner opt-in + parental consent (atomic).
-        Mirrors desktop page.tsx L571-661 — the minor-gating logic :
-          const minor = isMinor(profile.dateOfBirth);
-          const consentReady = !minor || profile.partnerParentalConsent;
-          const toggleEnabled = consentReady && !savingPartnerOptIn;
-        A minor CANNOT enable opt-in without parental consent given first. ── */
-
-  async function togglePartnerParentalConsent(checked: boolean) {
-    if (!profile) return;
-    triggerHaptic("Light");
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    /* Mirror desktop L578-582 : if parent UNCHECKS while opt-in is on,
-       also turn opt-in off (atomic — parental consent is the gate). */
-    const updates: Record<string, unknown> = { partner_visibility_parental_consent: checked };
-    if (!checked && profile.partnerOptIn) {
-      updates.partner_visibility_opt_in = false;
-      updates.partner_visibility_opted_in_at = null;
-    }
-
-    const { error } = await supabase
-      .from("athletes")
-      .update(updates)
-      .eq("user_id", user.id);
-
-    if (error) {
-      toast.error({ message: "Échec sauvegarde", detail: error.message });
-      return;
-    }
-    toast.success({ message: checked ? "Consentement parental enregistré" : "Consentement retiré" });
-    await loadProfile();
-  }
+  /* ── Confidentialité : visibilité partenaires (§50, lot 0 de la 1.4.4).
+        TOUT passe par la RPC set_my_partner_visibility, comme le web
+        (app/athlete/parametres) : l'UPDATE direct des colonnes
+        partner_visibility_* est refusé par la garde de périmètre depuis le
+        2026-09-09 — l'interrupteur de la 1.4.3 échouait à chaque fois.
+        Majeur : accorde ou retire. Mineur (ou date inconnue, traité en mineur
+        comme côté base) : RETIRE seulement — l'accord appartient au parent,
+        depuis son portail. La case « Consentement parental » que l'athlète
+        cochait lui-même est retirée. ── */
 
   async function togglePartnerOptIn(next: boolean) {
-    if (!profile) return;
-    const minor = isMinor(profile.dateOfBirth);
-    const consentReady = !minor || profile.partnerParentalConsent;
-    if (!consentReady || savingPartnerOptIn) return;  /* gating mirrors desktop L562-563 */
-
+    if (!profile || savingPartnerOptIn) return;
+    const majeur = !!profile.dateOfBirth && !isMinor(profile.dateOfBirth);
+    if (next && !majeur) return;
     triggerHaptic("Light");
     setSavingPartnerOptIn(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSavingPartnerOptIn(false); return; }
-
-    /* Mirror desktop L621-631 : atomic opt-in update.
-         ON  ⇒ set opt-in true + stamp opted_in_at + force parental consent
-               (defensive : minor opt-in requires consent which we just verified). */
-    const updates: Record<string, unknown> = next
-      ? {
-          partner_visibility_opt_in: true,
-          partner_visibility_opted_in_at: new Date().toISOString(),
-          partner_visibility_parental_consent: minor ? true : profile.partnerParentalConsent,
-        }
-      : {
-          partner_visibility_opt_in: false,
-          partner_visibility_opted_in_at: null,
-        };
-
-    const { error } = await supabase
-      .from("athletes")
-      .update(updates)
-      .eq("user_id", user.id);
-
-    if (error) {
-      toast.error({ message: "Échec sauvegarde", detail: error.message });
+    const { data, error } = await supabase.rpc("set_my_partner_visibility", {
+      p_granted: next,
+      p_policy_version: PRIVACY_POLICY_VERSION,
+    });
+    const res = data as { ok?: boolean; reason?: string } | null;
+    if (error || !res?.ok) {
+      console.error("[Partner opt-in]", error ? erreurLisible(error) : res?.reason);
+      toast.error({
+        message: res?.reason === "parent_required"
+          ? "Ton parent doit donner son accord depuis son portail."
+          : "La sauvegarde n'a pas abouti. Réessaie dans un instant.",
+      });
       setSavingPartnerOptIn(false);
       return;
     }
@@ -511,35 +474,27 @@ export function AthleteParametresMobile() {
       <SectionLabel>Confidentialité</SectionLabel>
       {(() => {
         if (!profile) return null;
-        const minor = isMinor(profile.dateOfBirth);
-        const consentReady = !minor || profile.partnerParentalConsent;
+        const majeur = !!profile.dateOfBirth && !isMinor(profile.dateOfBirth);
+        const peutAgir = profile.partnerOptIn || majeur;
         return (
           <>
             <Group>
-              {minor && (
-                <ToggleRow
-                  label="Consentement parental"
-                  sublabel="Requis avant d'activer la visibilité partenaire (mineur)."
-                  isFirst
-                  checked={profile.partnerParentalConsent}
-                  onChange={togglePartnerParentalConsent}
-                />
-              )}
-              {consentReady ? (
+              {peutAgir ? (
                 <ToggleRow
                   label="Visibilité partenaires médias"
-                  sublabel="Permet aux partenaires médias approuvés de télécharger ta carte Nexus."
-                  isFirst={!minor}
+                  sublabel={profile.partnerOptIn && !majeur
+                    ? "Autorisé par ton parent. Tu peux le retirer ; seul ton parent peut le réactiver."
+                    : "Permet aux partenaires médias approuvés de télécharger ta carte Nexus."}
+                  isFirst
                   checked={profile.partnerOptIn}
                   onChange={togglePartnerOptIn}
                 />
               ) : (
-                /* Minor without parental consent — show muted read-only row
-                   instead of a disabled toggle (clearer than an unresponsive switch). */
+                /* Mineur sans accord du parent : ligne en lecture seule. */
                 <NavRow
                   label="Visibilité partenaires médias"
-                  sublabel="Active le consentement parental ci-dessus pour autoriser cette option."
-                  isFirst={false}
+                  sublabel="Tu as moins de 18 ans : c'est ton parent qui peut activer cette option, depuis son portail parent Nexus."
+                  isFirst
                   rightChevron="none"
                 />
               )}

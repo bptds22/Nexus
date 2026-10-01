@@ -13,8 +13,8 @@
 
    Fonctions pures, sans Supabase : la page pipeline, la fiche (via
    persistPipelineStage) et le filtre « Visites à venir » les partagent.
-   ⚠ Le pipeline MOBILE (useUpdatePipelineStage) applique encore l'ancienne
-   règle jusqu'au lot mobile (protocole web-d'abord).
+   Le pipeline MOBILE (useUpdatePipelineStage) l'applique aussi depuis le
+   lot 0 de la 1.4.4.
 ═══════════════════════════════════════════════════════════════ */
 
 /** Rang des étapes, en statut UI (minuscules). `retire` et `none` : 0. */

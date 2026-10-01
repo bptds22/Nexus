@@ -8,7 +8,14 @@
    colonnes DB lisent/écrivent `users` exactement comme desktop :
 
    - first_name, last_name, photo_url, phone
-   - school_id, title, sport, division, team_name, region
+   - title, division, team_name, region
+
+   Lot 0 de la 1.4.4 (parité web, registre §61/§62) : CÉGEP et SPORT en
+   LECTURE SEULE — la base refuse au recruteur onboardé tout changement de
+   school_id / sport / sport_id (42501, recruteur_rattachement_verrou), et un
+   seul champ refusé faisait tomber TOUT l'enregistrement. Ils ne partent
+   plus dans la charge utile (payloadMonProfil). Les erreurs ne sont plus
+   affichées brutes ; celles de la photo sont vérifiées.
 
    Email = auth.users.email (readonly).
    Langue : OMISE (i18n pas prêt).
@@ -27,7 +34,7 @@ import { uploadImage } from "@/lib/upload/uploadImage";
 import { MobilePicker, useMobilePicker } from "@/components/mobile/MobilePicker";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
-import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+import { payloadMonProfil, messageErreurSauvegarde, messagePhoto, MESSAGE_CHANGEMENT_RATTACHEMENT } from "@/lib/recruteur/parametres";
 import { triggerHaptic } from "@/lib/haptics";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
@@ -40,14 +47,6 @@ const TITLES = [
 ];
 
 const DIVISIONS = ["Division 1", "Division 2", "Division 3"];
-
-const SPORTS = [
-  "Athlétisme", "Badminton", "Baseball", "Basketball", "Cheerleading",
-  "Cross-country", "Danse", "Flag football", "Escrime", "Football",
-  "Futsal", "Golf", "Gymnastique", "Hockey", "Judo", "Karaté", "Natation",
-  "Rugby", "Ski alpin", "Ski de fond", "Soccer", "Softball", "Tennis",
-  "Tennis de table", "Ultimate frisbee", "Volleyball", "Water-polo",
-];
 
 interface FormState {
   firstName: string;
@@ -68,18 +67,10 @@ const EMPTY_FORM: FormState = {
 
 /* ── CEGEP search sheet (1163 écoles → search inline) ────────── */
 
-interface CegepSearchSheetProps {
-  open: boolean;
-  onClose: () => void;
-  currentId: string;
-  onPick: (row: CegepRow) => void;
-}
-
 interface CegepRow {
   id: string;
   name: string;
   city: string | null;
-  // Iter 7.40 §2 — colonnes auto-fill (schools baseline has these all)
   region: string | null;
   team_name: string | null;
   division: string | null;
@@ -103,115 +94,6 @@ function useCegepList() {
   });
 }
 
-function CegepSearchSheet({ open, onClose, currentId, onPick }: CegepSearchSheetProps) {
-  const kbdStyle = useSheetKeyboardGeometry();
-  const [mounted, setMounted] = useState(false);
-  const [search, setSearch] = useState("");
-  const debounced = useDebouncedValue(search, 150);
-  const { data: cegeps = [] } = useCegepList();
-
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { if (!open) setSearch(""); }, [open]);
-
-  const filtered = useMemo(() => {
-    const strip = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-    const q = strip(debounced.trim());
-    if (!q) return cegeps.slice(0, 50);
-    return cegeps
-      .filter((c) => {
-        const n = strip(c.name);
-        const city = strip(c.city ?? "");
-        return n.includes(q) || city.includes(q);
-      })
-      .slice(0, 80);
-  }, [cegeps, debounced]);
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <AnimatePresenceWrap open={open}>
-      <div
-        className="fixed inset-0 z-[70] bg-black/60"
-        style={{ animation: open ? "nx-modal-fade 200ms ease-out forwards" : undefined }}
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
-        style={{
-          /* CLAVIER — la classe `bottom-0` faisait remonter ce sheet via la
-             règle globale de globals.css, mais SANS plafonner sa hauteur : il
-             sortait par le HAUT (titre + champ hors écran) au lieu d'être
-             masqué par le bas. Le hook fait les deux gestes. */
-          ...kbdStyle,
-          animation: open ? "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards" : undefined,
-        }}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Choisir un CÉGEP"
-      >
-        <div className="flex justify-center pt-3 pb-2 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-        <div className="px-4 pb-3 shrink-0">
-          <h3 className="text-[15px] font-semibold text-white mb-3 text-center">Choisir un CÉGEP</h3>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un CÉGEP…"
-            autoFocus
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-2.5 text-[16px] text-white placeholder:text-[#6b7280] focus:outline-none focus:border-[#E63946]/50"
-          />
-        </div>
-        <div className="overflow-y-auto flex-1">
-          {filtered.length === 0 ? (
-            <div className="text-center text-[13px] text-[#6b7280] py-8 px-4">
-              Aucun CÉGEP trouvé pour « {search} ».
-            </div>
-          ) : filtered.map((c) => {
-            const selected = c.id === currentId;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => { triggerHaptic("Light"); onPick(c); onClose(); }}
-                className="w-full flex items-center justify-between px-4 text-left active:bg-white/[0.04]"
-                style={{ height: 60, borderTop: "0.5px solid rgba(255,255,255,0.06)" }}
-              >
-                <span className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[14px] font-medium text-white truncate">{c.name}</span>
-                  {c.city && <span className="text-[12px] text-[#6b7280] truncate">{c.city}</span>}
-                </span>
-                {selected && (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-3 shrink-0">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </AnimatePresenceWrap>,
-    document.body,
-  );
-}
-
-/* AnimatePresence-style wrapper sans framer (déjà dans MorePanel ailleurs).
-   Reste à null quand fermé pour libérer les listeners. */
-function AnimatePresenceWrap({ children, open }: { children: ReactNode; open: boolean }) {
-  const [render, setRender] = useState(open);
-  useEffect(() => {
-    if (open) setRender(true);
-    else { const t = window.setTimeout(() => setRender(false), 260); return () => window.clearTimeout(t); }
-  }, [open]);
-  if (!render) return null;
-  return <>{children}</>;
-}
-
-/* ── Main page ───────────────────────────────────────────────── */
-
 export function RecruteurProfilMobile() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -227,10 +109,6 @@ export function RecruteurProfilMobile() {
   //   - sa valeur courante === la valeur auto-remplie par le précédent pick
   // (signal que l'utilisateur n'a pas tapé/modifié manuellement).
   // Sinon = saisie utilisateur → on ne touche pas.
-  const lastAutoFillRef = useRef<{ region: string; teamName: string; division: string }>({
-    region: "", teamName: "", division: "",
-  });
-
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [original, setOriginal] = useState<FormState>(EMPTY_FORM);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -238,13 +116,11 @@ export function RecruteurProfilMobile() {
   const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [cegepSheetOpen, setCegepSheetOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Pickers (titres, division, sport)
+  // Pickers (titre, division) — cégep et sport en lecture seule.
   const titlePicker = useMobilePicker<string | null>(null);
   const divisionPicker = useMobilePicker<string | null>(null);
-  const sportPicker = useMobilePicker<string | null>(null);
 
   // Email = auth user
   useEffect(() => {
@@ -275,27 +151,10 @@ export function RecruteurProfilMobile() {
     setOriginal(next);
     titlePicker.setValue(next.title || null);
     divisionPicker.setValue(next.division || null);
-    sportPicker.setValue(next.sport || null);
     if (profile.photo_url) setAvatarUrl(profile.photo_url);
     setInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, initialized]);
-
-  // Iter 7.41 §1 — Seed lastAutoFillRef avec les valeurs de l'école COURANTE
-  // une fois profile + cegeps chargés. Couvre le cas "j'ouvre l'app, mes
-  // valeurs sont celles de mon école actuelle → je change de CÉGEP → on
-  // remplace" sans avoir besoin d'avoir pické manuellement avant.
-  useEffect(() => {
-    if (!initialized) return;
-    const school = cegeps.find((c) => c.id === form.schoolId);
-    if (!school) return;
-    lastAutoFillRef.current = {
-      region: school.region || "",
-      teamName: school.team_name || "",
-      division: school.division || "",
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialized, cegeps.length]);
 
   // Charger phone séparément (pas dans useRecruiterProfile)
   useEffect(() => {
@@ -327,22 +186,13 @@ export function RecruteurProfilMobile() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [divisionPicker.value]);
-  useEffect(() => {
-    if (sportPicker.value !== null && sportPicker.value !== form.sport) {
-      setForm((f) => ({ ...f, sport: String(sportPicker.value) }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sportPicker.value]);
-
   const dirty = useMemo(() => {
     return (
       form.firstName !== original.firstName ||
       form.lastName !== original.lastName ||
       form.phone !== original.phone ||
-      form.schoolId !== original.schoolId ||
       form.title !== original.title ||
       form.division !== original.division ||
-      form.sport !== original.sport ||
       form.teamName !== original.teamName ||
       form.region !== original.region
     );
@@ -353,7 +203,7 @@ export function RecruteurProfilMobile() {
   }, [cegeps, form.schoolId]);
 
   const initials = (form.firstName[0] || "") + (form.lastName[0] || "");
-  const requiredOk = !!(form.firstName && form.lastName && form.schoolId);
+  const requiredOk = !!(form.firstName.trim() && form.lastName.trim());
 
   function invalidateProfileCaches() {
     queryClient.invalidateQueries({ queryKey: ["currentUser"] });
@@ -370,8 +220,9 @@ export function RecruteurProfilMobile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const res = await uploadImage(file, { pathBase: `${user.id}/avatar` });
-      if (!res.ok) { toast.error({ message: "Échec upload", detail: res.message }); return; }
-      await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+      if (!res.ok) { toast.error({ message: messagePhoto(res) }); return; }
+      const { error } = await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+      if (error) { toast.error({ message: messageErreurSauvegarde(error) }); return; }
       setAvatarUrl(res.publicUrl);
       invalidateProfileCaches();
       toast.success({ message: "Photo mise à jour" });
@@ -386,7 +237,8 @@ export function RecruteurProfilMobile() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("users").update({ photo_url: null }).eq("id", user.id);
+    const { error } = await supabase.from("users").update({ photo_url: null }).eq("id", user.id);
+    if (error) { toast.error({ message: messageErreurSauvegarde(error) }); return; }
     setAvatarUrl(null);
     invalidateProfileCaches();
     toast.success({ message: "Photo supprimée" });
@@ -400,19 +252,13 @@ export function RecruteurProfilMobile() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error({ message: "Non authentifié" }); return; }
+      // Jamais school_id ni sport : cf. en-tête (lot 0 de la 1.4.4).
       const payload = {
-        first_name: form.firstName,
-        last_name: form.lastName,
-        phone: form.phone || null,
-        school_id: form.schoolId || null,
-        title: form.title || null,
-        division: form.division || null,
-        sport: form.sport || null,
-        team_name: form.teamName || null,
-        region: form.region || null,
+        ...payloadMonProfil(form),
+        phone: form.phone.trim() || null,
       };
       const { error } = await supabase.from("users").update(payload).eq("id", user.id);
-      if (error) { toast.error({ message: "Échec de la sauvegarde", detail: error.message }); return; }
+      if (error) { toast.error({ message: messageErreurSauvegarde(error) }); return; }
       setOriginal(form);
       invalidateProfileCaches();
       toast.success({ message: "Profil sauvegardé" });
@@ -502,13 +348,7 @@ export function RecruteurProfilMobile() {
       {/* ÉTABLISSEMENT */}
       <SectionLabel>Établissement</SectionLabel>
       <Group>
-        <PickerRow
-          label="CÉGEP"
-          value={schoolName}
-          placeholder="Choisir un CÉGEP"
-          onTap={() => { triggerHaptic("Light"); setCegepSheetOpen(true); }}
-          required
-        />
+        <ReadonlyRow label="CÉGEP" value={schoolName || "—"} />
         <PickerRow
           label="Titre"
           value={form.title}
@@ -521,12 +361,7 @@ export function RecruteurProfilMobile() {
           placeholder="Choisir une division"
           onTap={divisionPicker.openPicker}
         />
-        <PickerRow
-          label="Sport"
-          value={form.sport}
-          placeholder="Choisir un sport"
-          onTap={sportPicker.openPicker}
-        />
+        <ReadonlyRow label="Sport" value={form.sport || "—"} hint={MESSAGE_CHANGEMENT_RATTACHEMENT} />
         <TextRow label="Nom d'équipe" value={form.teamName} onChange={(v) => setForm((f) => ({ ...f, teamName: v }))} placeholder="ex : Élans" />
         <TextRow label="Région" value={form.region} onChange={(v) => setForm((f) => ({ ...f, region: v }))} placeholder="ex : Capitale-Nationale" />
       </Group>
@@ -557,53 +392,6 @@ export function RecruteurProfilMobile() {
         options={DIVISIONS.map((d) => ({ value: d, label: d }))}
         value={divisionPicker.value}
         onChange={divisionPicker.setValue}
-      />
-      <MobilePicker
-        open={sportPicker.open}
-        onClose={sportPicker.closePicker}
-        title="Sport"
-        options={SPORTS.map((s) => ({ value: s, label: s }))}
-        value={sportPicker.value}
-        onChange={sportPicker.setValue}
-      />
-      <CegepSearchSheet
-        open={cegepSheetOpen}
-        onClose={() => setCegepSheetOpen(false)}
-        currentId={form.schoolId}
-        onPick={(row) => {
-          // Iter 7.41 §1 — Remplacement intelligent : un champ est replaceable
-          // s'il est vide OU si sa valeur === la valeur posée par le précédent
-          // auto-fill (= signal "auto, pas saisie utilisateur"). Sinon, on
-          // respecte la saisie utilisateur.
-          const last = lastAutoFillRef.current;
-          const newRegion = row.region || "";
-          const newTeam = row.team_name || "";
-          const newDivision = row.division || "";
-
-          setForm((f) => {
-            const replaceRegion = f.region === "" || f.region === last.region;
-            const replaceTeam = f.teamName === "" || f.teamName === last.teamName;
-            const replaceDivision = f.division === "" || f.division === last.division;
-            return {
-              ...f,
-              schoolId: row.id,
-              region: replaceRegion ? newRegion : f.region,
-              teamName: replaceTeam ? newTeam : f.teamName,
-              division: replaceDivision ? newDivision : f.division,
-            };
-          });
-          // Sync picker division uniquement si on l'a remplacée (sinon on
-          // toucherait à un choix utilisateur).
-          if (form.division === "" || form.division === last.division) {
-            divisionPicker.setValue(newDivision || null);
-          }
-          // Met à jour la mémoire d'auto-fill = ce que ce pick a posé.
-          lastAutoFillRef.current = {
-            region: newRegion,
-            teamName: newTeam,
-            division: newDivision,
-          };
-        }}
       />
       <style jsx global>{`
         @keyframes nx-modal-fade {

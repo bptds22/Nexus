@@ -34,6 +34,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { fusionnerConsentementMarketing, messageErreurSauvegarde } from "@/lib/recruteur/parametres";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -167,18 +168,19 @@ export function RecruteurParametresMobile() {
   // Iter 7.41 §2 — dirty inclut le master courriel.
   const privacyDirty = useMemo(() => {
     return privacy.show_consultations !== origPrivacy.show_consultations
-        || privacy.show_full_name !== origPrivacy.show_full_name;
+        || privacy.show_full_name !== origPrivacy.show_full_name
+        // La bascule marketing compte aussi : sans elle, la retirer seule ne
+        // proposait jamais d'enregistrer (lot 0 de la 1.4.4).
+        || !!privacy.consent_marketing !== !!origPrivacy.consent_marketing;
   }, [privacy, origPrivacy]);
 
-  /* ⚠ DETTE CONNUE, NON CORRIGÉE ICI.
-     Cette fonction RECONSTRUIT privacy_preferences à partir des seules clés
-     qu'elle connaît, au lieu de fusionner avec la valeur stockée. Toute clé
-     posée ailleurs — consentements parentaux (consent_parental_profile,
-     _visibility, _partner_visibility), ou toute clé future — serait EFFACÉE à
-     la première sauvegarde depuis cet écran. Aucun dégât aujourd'hui : un
-     recruteur n'a pas de consentement parental. Mais le motif est faux, et les
-     écrans coach et athlète, eux, fusionnent explicitement (saveMarketing).
-     À corriger dans un lot dédié. */
+  /* Loi 25 (lot 0 de la 1.4.4, parité web — registre §62). La sauvegarde
+     RELIT privacy_preferences en base et y FUSIONNE ses clés : rien d'autre
+     n'est effacé, et aucune date n'est inventée — la politique et la
+     collecte datent de l'inscription et ne se touchent pas d'ici ; le
+     marketing garde sa date tant qu'il reste accepté, en prend une au moment
+     où on l'accepte, passe à null quand on le retire
+     (fusionnerConsentementMarketing, partagée avec le web). */
   async function savePrivacy() {
     if (!privacyDirty || savingPrivacy) return;
     triggerHaptic("Medium");
@@ -187,19 +189,33 @@ export function RecruteurParametresMobile() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const payload = {
-        show_consultations: privacy.show_consultations,
-        show_full_name: privacy.show_full_name,
-        consent_privacy_policy: privacy.consent_privacy_policy || new Date().toISOString(),
-        consent_data_collection: privacy.consent_data_collection || new Date().toISOString(),
-        consent_marketing: privacy.consent_marketing || null,
-      };
+      const { data: actuel, error: errLecture } = await supabase
+        .from("users").select("privacy_preferences").eq("id", user.id).single();
+      if (errLecture) { toast.error({ message: messageErreurSauvegarde(errLecture) }); return; }
+      const payload = fusionnerConsentementMarketing(
+        {
+          ...((actuel?.privacy_preferences as Record<string, unknown> | null) ?? {}),
+          show_consultations: privacy.show_consultations,
+          show_full_name: privacy.show_full_name,
+        },
+        !!privacy.consent_marketing,
+        new Date().toISOString(),
+      );
       const { error } = await supabase
         .from("users")
         .update({ privacy_preferences: payload })
         .eq("id", user.id);
-      if (error) { toast.error({ message: "Échec sauvegarde", detail: error.message }); return; }
-      setOrigPrivacy(privacy);
+      if (error) { toast.error({ message: messageErreurSauvegarde(error) }); return; }
+      const dateMarketing = typeof payload.consent_marketing === "string" ? payload.consent_marketing : null;
+      const enregistre = { ...privacy, consent_marketing: dateMarketing };
+      setPrivacy(enregistre);
+      setOrigPrivacy(enregistre);
+      setConsentDates((c) => ({
+        ...c,
+        marketing: dateMarketing
+          ? new Date(dateMarketing).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })
+          : null,
+      }));
       toast.success({ message: "Confidentialité mise à jour" });
     } finally {
       setSavingPrivacy(false);
@@ -416,9 +432,12 @@ export function RecruteurParametresMobile() {
             : "Annonces produit et infolettre"}
           isFirst
           checked={!!privacy.consent_marketing}
+          // La date réelle est posée à l'enregistrement (et seulement si le
+          // consentement n'en avait pas déjà une) ; revenir à l'état de départ
+          // retrouve la date d'origine.
           onChange={(v) => setPrivacy((q) => ({
             ...q,
-            consent_marketing: v ? new Date().toISOString() : null,
+            consent_marketing: v ? (origPrivacy.consent_marketing ?? "en-attente") : null,
           }))}
         />
       </Group>

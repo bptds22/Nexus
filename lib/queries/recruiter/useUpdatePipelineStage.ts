@@ -12,12 +12,14 @@
    LETTRE_SIGNEE. Le statut "retire" passe par useRemoveFromPipeline
    (DELETE de la row).
 
-   visit_at (iter #2) : CHEMIN D'ÉCRITURE UNIQUE de la date de visite côté
-   kanban. Même règle que persistPipelineStage (fiche athlète) — visit_at
-   n'est porté QUE par VISITE_PLANIFIEE ; tout autre stage l'efface (NULL),
-   sinon une date fantôme survivrait à un passage vers « Engagé ». Passer
-   `visitAtIso` permet de POSER/MODIFIER la date en restant sur ce même
-   stage. Le cache TanStack optimiste patch visit_at pour cohérence immédiate.
+   visit_at : CHEMIN D'ÉCRITURE UNIQUE de la date de visite côté kanban.
+   Lot 0 de la 1.4.4 — la règle du web (lib/pipeline/regleVisite.ts, décision
+   BP 2026-09-23) remplace « portée par VISITE_PLANIFIEE seulement » : la date
+   survit à Engagé et Lettre signée, et n'est effacée que si l'étape redescend
+   SOUS Visite planifiée. Sans date saisie, la colonne n'est pas touchée.
+   `visitAtIso` : une chaîne POSE/MODIFIE la date ; `null` l'EFFACE (geste
+   explicite, l'étape ne change pas — règle 3) ; absent : non touchée. Le cache optimiste suit la même
+   règle (visiteApresChangementEtape).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,6 +27,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import type { PipelineData } from "@/lib/queries/recruiter/usePipelineCards";
 import { hapticSelect } from "@/lib/haptics";
+import { champVisitePourEtape, visiteApresChangementEtape } from "@/lib/pipeline/regleVisite";
 
 export function useUpdatePipelineStage() {
   const queryClient = useQueryClient();
@@ -33,20 +36,17 @@ export function useUpdatePipelineStage() {
   const queryKey = ["pipeline", userId];
 
   return useMutation({
-    mutationFn: async ({ cardId, newStage, visitAtIso }: { cardId: string; newStage: string; visitAtIso?: string }) => {
+    mutationFn: async ({ cardId, newStage, visitAtIso }: { cardId: string; newStage: string; visitAtIso?: string | null }) => {
       if (!userId) throw new Error("Not authenticated");
       const supabase = createClient();
       const now = new Date().toISOString();
-      const isVisit = newStage.toUpperCase() === "VISITE_PLANIFIEE";
-
       const { error } = await supabase
         .from("recruiter_pipeline")
         .update({
           stage: newStage.toUpperCase(),
           moved_at: now,
           updated_at: now,
-          // Porté par VISITE_PLANIFIEE uniquement ; effacé partout ailleurs.
-          visit_at: isVisit ? (visitAtIso ?? null) : null,
+          ...(visitAtIso === null ? { visit_at: null } : champVisitePourEtape(newStage, visitAtIso)),
         })
         .eq("athlete_id", cardId)
         .eq("recruiter_id", userId);
@@ -57,7 +57,6 @@ export function useUpdatePipelineStage() {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<PipelineData>(queryKey);
       const stageLower = newStage.toLowerCase();
-      const isVisit = stageLower === "visite_planifiee";
       const nowIso = new Date().toISOString();
       queryClient.setQueryData<PipelineData>(queryKey, (old) => {
         if (!old) return old;
@@ -71,9 +70,8 @@ export function useUpdatePipelineStage() {
                   moved_at: nowIso,
                   days_in_status: 0,
                   last_activity: "Mis à jour il y a 0 jours",
-                  // Même règle que le write : date portée par VISITE_PLANIFIEE
-                  // seulement, effacée sinon.
-                  visit_at: isVisit ? (visitAtIso ?? null) : null,
+                  // Même règle que l'écriture (regleVisite).
+                  visit_at: visitAtIso === null ? null : visiteApresChangementEtape(newStage, visitAtIso, c.visit_at ?? null),
                 }
               : c
           ),
