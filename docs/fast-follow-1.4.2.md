@@ -1852,7 +1852,7 @@ testé) et `lib/recruteur/exporterMesDonnees.ts` plutôt que recopier.
 
 ## 63. Flux d'agenda du recruteur Pro — web seulement (2026-10-01, pour le lot mobile)
 
-Web (branche `feat/flux-agenda`, migration `20261001200000_flux_agenda`) : une
+Web (branche `feat/flux-agenda`, migration `20261001205732_flux_agenda`, APPLIQUÉE en prod le 2026-10-01) : une
 adresse d'abonnement privée par recruteur Pro (`/api/agenda/<jeton>.ics`, jeton
 `nxa_…` haché en sha256, régénérable/révocable), RELANCES + VISITES de l'unité,
 pas de matchs. Paramètres › Agenda et bouton « S'abonner à mon agenda » du
