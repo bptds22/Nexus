@@ -1849,3 +1849,19 @@ testé) et `lib/recruteur/exporterMesDonnees.ts` plutôt que recopier.
 - Web seulement, sans équivalent mobile à faire : sections Recrutement et
   Notifications masquées (rien ne les lit), Transfert CÉGEP retiré, « Désactiver »
   retiré, « Exporter » branché sur l'export réel.
+
+## 63. Flux d'agenda du recruteur Pro — web seulement (2026-10-01, pour le lot mobile)
+
+Web (branche `feat/flux-agenda`, migration `20261001200000_flux_agenda`) : une
+adresse d'abonnement privée par recruteur Pro (`/api/agenda/<jeton>.ics`, jeton
+`nxa_…` haché en sha256, régénérable/révocable), RELANCES + VISITES de l'unité,
+pas de matchs. Paramètres › Agenda et bouton « S'abonner à mon agenda » du
+Calendrier. Gratuit : aucun flux ; Pro perdu ou unité changée : flux vide.
+Noms complets (décision BP), sauf identité non visible (Loi 25) → « Identité
+réservée », comme dans l'app.
+
+**Mobile** : rien à faire pour que le flux marche (il est servi par le web et lu
+par Google/Outlook). Au lot mobile : exposer le même panneau dans
+`RecruteurParametresMobile` / `RecruteurCalendrierMobile` (composant
+`AbonnementAgenda`, ouverture des liens via le navigateur système). Le
+`IS_CAPACITOR` du Calendrier sort AVANT l'en-tête : le bouton n'y est pas.
