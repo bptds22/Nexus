@@ -1,3 +1,4 @@
+-- 20261001152255_admin_operations (appliquée en prod le 2026-10-01, 15:22 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- ADMIN_OPERATIONS — le registre des opérations d'admin plateforme faites à la
 -- main en base (décision BP 2026-10-01).
@@ -13,7 +14,7 @@
 --   · `par` → users ON DELETE SET NULL : la ligne survit au départ de l'admin.
 --
 -- ADDITIVE : une table, une fonction, un trigger. Rien d'existant touché.
--- Rollback : supabase/rollback/20261001152154_rollback_admin_operations.sql
+-- Rollback : supabase/rollback/20261001152255_rollback_admin_operations.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 create table public.admin_operations (
