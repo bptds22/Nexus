@@ -1823,3 +1823,29 @@ lecture seule. **Mobile** : `RecruteurProfilMobile` écrit encore ces champs —
 recruteur qui les change dans l'app reçoit une erreur. Au lot mobile : mêmes champs
 en lecture seule, même phrase (« Pour changer de cégep ou de sport, écris à
 info@nexussports.ca »), et ne plus les renvoyer dans le payload.
+
+## 62. Mon profil et Paramètres recruteur — ce que le web a corrigé, et que l'app 1.4.3 garde (2026-10-01, pour le lot mobile)
+
+Le web (branche `fix/recruteur-profil-parametres`) a corrigé ce qui suit ; le mobile
+garde chaque défaut. Au lot mobile, réutiliser `lib/recruteur/parametres.ts` (pur,
+testé) et `lib/recruteur/exporterMesDonnees.ts` plutôt que recopier.
+
+- **Loi 25 — `RecruteurParametresMobile.tsx` l.174-199** reconstruit
+  `privacy_preferences` à partir de ses seules clés (les autres sont perdues) et
+  **pose « maintenant » comme date de politique et de collecte** quand elles
+  manquent (l.193-194). Remplacer par `fusionnerConsentementMarketing()` sur la
+  valeur relue en base juste avant. Vérifié en prod le 2026-10-01 : 0 date
+  fabriquée à ce jour (toutes les dates collent à la trace d'inscription à < 1 s),
+  2 consentements marketing perdus, comptes de test Nexus seulement.
+- **`RecruteurProfilMobile.tsx`** : cégep et sport encore modifiables et renvoyés
+  (l.407-410) → refus 42501 de TOUT l'enregistrement (cf. §61). Lecture seule +
+  `MESSAGE_CHANGEMENT_RATTACHEMENT`, payload = `payloadMonProfil()`.
+- **Photo** (`RecruteurProfilMobile` l.374 et l.389) : l'erreur de l'UPDATE est
+  ignorée ; un échec d'envoi Storage s'affiche brut → `messagePhoto()`.
+- **Erreurs** : jamais le texte PostgREST brut → `messageErreurSauvegarde()`.
+- **Cache** : `useCurrentUser` et `SubscriptionProvider` sont partagés — la relecture
+  au retour sur l'onglet (web) se déclenche aussi dans la WebView au retour au
+  premier plan ; à vérifier sur appareil au lot mobile, pas à recoder.
+- Web seulement, sans équivalent mobile à faire : sections Recrutement et
+  Notifications masquées (rien ne les lit), Transfert CÉGEP retiré, « Désactiver »
+  retiré, « Exporter » branché sur l'export réel.
