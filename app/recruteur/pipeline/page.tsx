@@ -758,6 +758,9 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
         <span className="flex flex-col items-start gap-1">
           <span className={`line-clamp-2 text-[15px] font-semibold leading-snug ${card.identityVisible === false ? "text-[#6b7280] italic" : "text-white"}`}>{card.full_name}</span>
           {estCarte(card) && <MarqueurExpiration carte={card} />}
+          {/* « Un profil semble correspondre → voir », comme sur la carte du
+              kanban et en tête du panneau (bug prod 2026-10-01 : absent ici). */}
+          {estCarte(card) && <LienRapprochementCarte carteId={card.id} />}
         </span>
       );
     case "numero":
