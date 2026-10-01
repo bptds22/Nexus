@@ -323,8 +323,10 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   système propose, le recruteur confirme.
 - **Téléphone** (décision BP 2026-09-30) : la carte porte un téléphone
   facultatif (format libre à la saisie, normalisé à 10 chiffres par la base,
-  sans le 1 initial), visible des Pro de l'unité (panneau Infos, modifiable ;
-  colonne du tableau ; export). Un téléphone identique entre la carte et
+  sans le 1 initial), visible des Pro de l'unité dans le panneau Infos
+  (modifiable) et dans l'EXPORT — retiré de la vue tableau le 2026-09-30
+  (décision BP : à l'écran, Infos seulement ; dans le fichier, oui ; l'export a
+  sa propre liste, `COLONNES_EXPORT`). Un téléphone identique entre la carte et
   `athletes.telephone` → TELEPHONE ; ou `athletes.telephone_parent`, prénom
   compatible → TELEPHONE_PARENT : « Correspondance confirmée par le
   téléphone », même niveau que le courriel. Le téléphone de l'ATHLÈTE n'est
@@ -332,6 +334,19 @@ fonctions nouveaux, deux tâches cron ; aucun objet existant modifié).
   rapprochement seulement. À la fusion (lot E), celui de la carte n'est PAS
   copié sur le dossier — une fois le jeune sur Nexus, le contact passe par la
   messagerie ; la carte masquée le garde jusqu'à sa suppression.
+- **Parent** (décision BP 2026-09-30, migration `carte_parent`, additive) :
+  « Nom du parent » et « Courriel du parent », facultatifs, saisis à la
+  création et modifiables dans Infos ; visibles des Pro de l'unité (RLS de la
+  carte), JAMAIS exportés. Courriel du parent de la CARTE égal à
+  `athletes.parent_email` de la fiche, prénom compatible (un parent a souvent
+  plusieurs enfants) → COURRIEL_PARENT_CARTE, force FORTE : « Correspondance
+  confirmée par le courriel », comme l'adresse principale ; la fenêtre ne rend
+  toujours aucun courriel. Une carte dont le courriel du parent change est
+  ré-évaluée. L'INVITATION est inchangée : elle part à l'adresse principale,
+  jamais au parent. À la fusion (lot E), le parent de la carte n'est PAS copié
+  sur le dossier (comme le téléphone). Limite connue, antérieure : une fiche
+  dont `parent_email` change APRÈS l'onboarding n'est pas ré-évaluée (seules
+  la création, l'identité et l'onboarding ré-enfilent l'athlète).
 - **Rattachement à l'établissement** (bug prod + décision BP 2026-09-30,
   migration `carte_etablissement`, additive) : la carte porte
   `cartes_prospect.school_id`, TOUJOURS rempli — déduit de l'équipe par le

@@ -1803,3 +1803,14 @@ sans acteur. À reprendre au lot mobile :
   l'inverse (migration d'abord) laisserait des demandes à l'ancienne fonction,
   qui répond 400 à `{rappel_id}` — la ligne resterait A_ENVOYER (sans dégât :
   elle cesse de bloquer après 15 minutes).
+
+## 60. Le parent sur la carte prospect — l'app 1.4.3 (2026-09-30, pour le lot mobile)
+
+Web seulement. Migration `carte_parent` : `cartes_prospect.parent_nom`,
+`.parent_courriel` ; critère de rapprochement COURRIEL_PARENT_CARTE (niveau
+« confirmée par le courriel »). À reprendre au lot mobile :
+- création et fiche de carte mobiles : les deux champs n'existent pas ;
+- un `switch` mobile sur `critere` sans cas par défaut n'affichera rien pour
+  COURRIEL_PARENT_CARTE ;
+- le tableau web n'affiche plus le Téléphone (Infos et export seulement) :
+  garder la même règle sur mobile.

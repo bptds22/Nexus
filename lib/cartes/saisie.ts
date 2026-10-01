@@ -54,6 +54,19 @@ export function lirePoids(brut: string): Lecture<number | null> {
 }
 
 /** La même règle que la contrainte de la base. */
+/** Le parent (décision BP 2026-09-30) : nom libre, 120 caractères au plus. */
+export const REGLE_NOM_PARENT = "Nom du parent : 120 caractères au plus";
+export const REGLE_COURRIEL_PARENT = "Courriel du parent : nom@exemple.com";
+export function lireNomParent(brut: string): Lecture<string | null> {
+  const s = brut.trim().replace(/\s+/g, " ");
+  if (!s) return { ok: true, valeur: null };
+  return s.length <= 120 ? { ok: true, valeur: s } : { ok: false, regle: REGLE_NOM_PARENT };
+}
+export function lireCourrielParent(brut: string): Lecture<string | null> {
+  const l = lireCourriel(brut);
+  return l.ok ? l : { ok: false, regle: REGLE_COURRIEL_PARENT };
+}
+
 export function lireCourriel(brut: string): Lecture<string | null> {
   const s = brut.trim();
   if (!s) return { ok: true, valeur: null };

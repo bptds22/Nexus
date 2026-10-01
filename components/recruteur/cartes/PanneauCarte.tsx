@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
-import { lireTelephone, formaterTelephone } from "@/lib/cartes/saisie";
+import { lireTelephone, formaterTelephone, lireNomParent, lireCourrielParent, type Lecture } from "@/lib/cartes/saisie";
 import { mentionInvitation, MENTION_INVITATION_NON_ENVOYEE, type InvitationEtat } from "@/lib/cartes/invitationEtat";
 import { texteRenvoi, phraseRenvoi } from "@/lib/cartes/renvoiInvitation";
 import { etatRappel, libelleRappelIndisponible, messageReponse, RAPPELS_MAX, type ReponseRappel } from "@/lib/cartes/rappelInvitation";
@@ -222,6 +222,62 @@ function Ligne({ libelle, valeur }: { libelle: string; valeur: React.ReactNode }
  *  Format libre, normalisé ; la base a le dernier mot (10 chiffres). Le
  *  panneau lit un instantané de la carte : la valeur enregistrée est gardée
  *  ici, le reste du tableau blanc se relit. */
+/** Une ligne de texte modifiable dans Infos (même geste que le téléphone). */
+function LigneTexteCarte({ carteId, champ, libelle, initial, lire, courriel = false }: {
+  carteId: string; champ: "parentNom" | "parentCourriel"; libelle: string; initial: string | null;
+  lire: (brut: string) => Lecture<string | null>; courriel?: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [valeur, setValeur] = useState(initial);
+  const [edition, setEdition] = useState(false);
+  const [brut, setBrut] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [enCours, setEnCours] = useState(false);
+  const id = `carte-${champ}-edition`;
+
+  const enregistrer = async () => {
+    const l = lire(brut);
+    if (!l.ok) { setErreur(l.regle); return; }
+    setEnCours(true);
+    const err = await ecrireCarte(createClient(), carteId, { [champ]: l.valeur });
+    setEnCours(false);
+    if (err) { setErreur(`${libelle} : l'enregistrement a échoué. Réessaie.`); return; }
+    setValeur(l.valeur);
+    setEdition(false);
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  if (edition) {
+    return (
+      <div className="py-2 border-b border-[#2D3748]/60">
+        <label htmlFor={id} className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">{libelle}</label>
+        <div className="flex gap-2 mt-1.5">
+          <input id={id} type="text" inputMode={courriel ? "email" : "text"} autoFocus value={brut}
+            onChange={(e) => { setBrut(e.target.value); setErreur(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter") void enregistrer(); if (e.key === "Escape") setEdition(false); }}
+            placeholder="Vide pour retirer" aria-invalid={!!erreur} aria-describedby={erreur ? `${id}-erreur` : undefined}
+            className="flex-1 min-w-0 h-9 px-3 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[13px] text-white focus:border-[#E63946] outline-none" />
+          <button type="button" onClick={() => void enregistrer()} disabled={enCours}
+            className="px-3 h-9 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 text-white text-[12px] font-bold">Enregistrer</button>
+          <button type="button" onClick={() => setEdition(false)} className="px-2 h-9 text-[12px] font-bold text-[#9CA3AF] hover:text-white">Annuler</button>
+        </div>
+        {erreur && <p id={`${id}-erreur`} className="text-[12px] text-[#EF4444] mt-1">{erreur}</p>}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-2 border-b border-[#2D3748]/60" data-testid={`ligne-${champ}`}>
+      <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">{libelle}</span>
+      <span className="flex items-baseline gap-3 text-[13px] text-white text-right min-w-0">
+        <span className="truncate">{valeur ?? <span className="text-[#6b7280]">—</span>}</span>
+        <button type="button" onClick={() => { setBrut(valeur ?? ""); setErreur(null); setEdition(true); }}
+          aria-label={`Modifier : ${libelle}`}
+          className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Modifier</button>
+      </span>
+    </div>
+  );
+}
+
 function LigneTelephone({ carteId, initial }: { carteId: string; initial: string | null }) {
   const queryClient = useQueryClient();
   const [valeur, setValeur] = useState(initial);
@@ -361,6 +417,10 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
         />
         <Ligne libelle="Courriel" valeur={c.courriel ?? <span className="text-[#6b7280]">—</span>} />
         <LigneTelephone carteId={card.id} initial={c.telephone} />
+        {/* Le parent (décision BP 2026-09-30) : jamais exporté ; son courriel ne sert
+            qu'au rapprochement — aucune invitation ne lui est envoyée. */}
+        <LigneTexteCarte carteId={card.id} champ="parentNom" libelle="Nom du parent" initial={c.parentNom} lire={lireNomParent} />
+        <LigneTexteCarte carteId={card.id} champ="parentCourriel" libelle="Courriel du parent" initial={c.parentCourriel} lire={lireCourrielParent} courriel />
         {c.inviteeLe && <Ligne libelle="Invitation" valeur={`Envoyée le ${dateInvitation(c.inviteeLe)}`} />}
         {!c.inviteeLe && c.invitationEtat === "NON_ENVOYEE" && <Ligne libelle="Invitation" valeur="Aucune envoyée depuis cette carte" />}
         <Ligne libelle="Carte créée" valeur={`${creeLe}${card.suivi_par_noms?.[0] ? ` · par ${card.suivi_par_noms[0]}` : ""}`} />

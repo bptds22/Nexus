@@ -33,9 +33,9 @@ import {
   creerCarte, cartesDoublons, carteAuCourriel, athleteAuCourriel,
   memePersonneProbable, libelleEquipe, normaliserNom,
 } from "@/lib/cartes/carteProspect";
-import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone } from "@/lib/cartes/saisie";
+import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 
-type Champ = "taille" | "poids" | "courriel" | "telephone" | "video";
+type Champ = "taille" | "poids" | "courriel" | "telephone" | "parentNom" | "parentCourriel" | "video";
 
 type Genre = "SCOLAIRE" | "CIVIL";
 /** Scolaire = les écoles (secondaire, et le collégial pour un transfert) ;
@@ -79,6 +79,8 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [video, setVideo] = useState("");
   const [courriel, setCourriel] = useState("");
   const [telephone, setTelephone] = useState("");
+  const [parentNom, setParentNom] = useState("");
+  const [parentCourriel, setParentCourriel] = useState("");
   const [avertissements, setAvertissements] = useState<{ texte: string; lien?: string }[] | null>(null);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -169,6 +171,8 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     poids: lirePoids(poids),
     courriel: lireCourriel(courriel),
     telephone: lireTelephone(telephone),
+    parentNom: lireNomParent(parentNom),
+    parentCourriel: lireCourrielParent(parentCourriel),
     video: lireLien(video),
   });
   const verifierChamp = (c: Champ) => {
@@ -245,7 +249,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     setErreur(null);
     const l = lectures();
     const fautes: Partial<Record<Champ, string>> = {};
-    for (const c of ["taille", "poids", "courriel", "telephone", "video"] as Champ[]) {
+    for (const c of ["taille", "poids", "courriel", "telephone", "parentNom", "parentCourriel", "video"] as Champ[]) {
       const r = l[c];
       if (!r.ok) fautes[c] = r.regle;
     }
@@ -271,6 +275,8 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         lienVideo: l.video.ok ? l.video.valeur : null,
         courriel: l.courriel.ok ? l.courriel.valeur : null,
         telephone: l.telephone.ok ? l.telephone.valeur : null,
+        parentNom: l.parentNom.ok ? l.parentNom.valeur : null,
+        parentCourriel: l.parentCourriel.ok ? l.parentCourriel.valeur : null,
       });
       if (error) {
         setErreur("La carte n'a pas pu être créée. Réessaie.");
@@ -415,6 +421,23 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
               ? <p id="erreur-telephone" className="text-[12px] text-[#EF4444] mt-1">{erreurs.telephone}</p>
               : <p id="aide-telephone" className="text-[12px] text-[#6b7280] mt-1">Visible de ton unité seulement. Aucun message n&apos;est envoyé à ce numéro.</p>}
           </div>
+          {/* Le parent (décision BP 2026-09-30) : facultatif, visible de l'unité dans
+              Infos, jamais exporté. Son courriel sert au rapprochement — rien n'y est envoyé. */}
+          <div>
+            <label className={etiquette} htmlFor="carte-parentNom">Nom du parent</label>
+            <input id="carte-parentNom" type="text" autoComplete="off" maxLength={120} className={`${champ} ${erreurs.parentNom ? "border-[#EF4444]" : ""}`} value={parentNom}
+              onChange={(e) => { setParentNom(e.target.value); effacerErreur("parentNom"); }} onBlur={() => verifierChamp("parentNom")}
+              placeholder="Facultatif" aria-invalid={!!erreurs.parentNom} aria-describedby={erreurs.parentNom ? "erreur-parentNom" : undefined} />
+            {erreurs.parentNom && <p id="erreur-parentNom" className="text-[12px] text-[#EF4444] mt-1">{erreurs.parentNom}</p>}
+          </div>
+          <div>
+            <label className={etiquette} htmlFor="carte-parentCourriel">Courriel du parent</label>
+            <input id="carte-parentCourriel" type="text" inputMode="email" autoComplete="off" className={`${champ} ${erreurs.parentCourriel ? "border-[#EF4444]" : ""}`} value={parentCourriel}
+              onChange={(e) => { setParentCourriel(e.target.value); effacerErreur("parentCourriel"); }} onBlur={() => verifierChamp("parentCourriel")}
+              placeholder="Facultatif" aria-invalid={!!erreurs.parentCourriel} aria-describedby={erreurs.parentCourriel ? "erreur-parentCourriel" : undefined} />
+            {erreurs.parentCourriel && <p id="erreur-parentCourriel" className="text-[12px] text-[#EF4444] mt-1">{erreurs.parentCourriel}</p>}
+          </div>
+          <p className="col-span-2 -mt-2 text-[12px] text-[#6b7280]">Le parent est visible de ton unité seulement. Aucun courriel n&apos;est envoyé au parent.</p>
           <div className="col-span-2">
             <label className={etiquette} htmlFor="carte-video">Lien vidéo</label>
             <input id="carte-video" type="text" inputMode="url" autoComplete="off" className={`${champ} ${erreurs.video ? "border-[#EF4444]" : ""}`} value={video}

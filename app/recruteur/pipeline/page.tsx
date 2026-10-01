@@ -632,9 +632,6 @@ const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = 
   { cle: "promotion", libelle: "Promotion", bloc: "identification" },
   { cle: "ecole", libelle: "École / Club", bloc: "identification" },
   { cle: "division", libelle: "Division", bloc: "identification" },
-  /* Téléphone (décision BP 2026-09-30) : celui de la CARTE prospect ; un
-     athlète Nexus se joint par la messagerie — « — » pour lui. */
-  { cle: "telephone", libelle: "Téléphone", bloc: "identification" },
   { cle: "taille", libelle: "Taille", bloc: "evaluation" },
   { cle: "poids", libelle: "Poids", bloc: "evaluation" },
   { cle: "cote", libelle: "Cote coach", bloc: "evaluation" },
@@ -694,6 +691,14 @@ const VIDE = <span className="text-[#4a4d56]">—</span>;
      natif d'Excel) — le tableau n'en montre que la dernière.
    Identité masquée : `full_name` vaut déjà « Identité réservée » et le
    numéro est vide — l'export ne sort que ce que l'écran montre. */
+/* L'EXPORT (décisions BP 2026-09-30) : les colonnes du tableau, plus le
+   Téléphone de la CARTE juste après Division — retiré de l'écran (Infos
+   seulement) mais gardé dans le fichier. Le Courriel de la carte suit en fin de
+   fichier (lot C). Le PARENT n'est jamais exporté. Un athlète Nexus se joint
+   par la messagerie : « — » pour lui. */
+const COLONNES_EXPORT: { cle: string; libelle: string }[] = COLONNES_TABLEAU.flatMap((c) =>
+  c.cle === "division" ? [c, { cle: "telephone", libelle: "Téléphone" }] : [c]);
+
 const LARGEUR_EXPORT: Record<string, number> = {
   nom: 24, numero: 5, position: 10, promotion: 11, ecole: 32, division: 10, telephone: 14, taille: 8, poids: 10, cote: 11,
   grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70,
@@ -767,10 +772,6 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
       /* Division de l'ÉQUIPE (teams.division, comme la Recherche). Pas
          d'équipe, ou équipe sans division : « — ». */
       return card.division_equipe ? <span className="text-[#e0e0e0]">{card.division_equipe}</span> : VIDE;
-    case "telephone":
-      return estCarte(card) && card.carte.telephone
-        ? <span className="text-[#e0e0e0] tabular-nums whitespace-nowrap">{formaterTelephone(card.carte.telephone)}</span>
-        : VIDE;
     case "ecole":
       return card.noTeam
         ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Ligue Civile</span>
@@ -2209,18 +2210,19 @@ function PipelinePageContent() {
 
       // Chargé À LA DEMANDE : ni lib/export/xlsx ni jszip ne pèsent sur la page.
       const { construireXlsx } = await import("@/lib/export/xlsx");
-      /* Deux colonnes de plus que le tableau (lot C) : « Profil Nexus » (Non pour
-         une carte prospect) et « Courriel » — celui des cartes, inclus par
-         décision BP ; vide pour un athlète Nexus. */
+      /* Trois colonnes de plus que le tableau : « Téléphone » (dans
+         COLONNES_EXPORT, retiré de l'écran le 2026-09-30), « Profil Nexus » (Non
+         pour une carte prospect) et « Courriel » — ceux des cartes, inclus par
+         décision BP ; vides pour un athlète Nexus. Jamais le parent. */
       const octets = await construireXlsx(
         "Mon processus",
         [
-          ...COLONNES_TABLEAU.map((c) => ({ titre: c.libelle, largeur: LARGEUR_EXPORT[c.cle] ?? 14 })),
+          ...COLONNES_EXPORT.map((c) => ({ titre: c.libelle, largeur: LARGEUR_EXPORT[c.cle] ?? 14 })),
           { titre: "Profil Nexus", largeur: 12 },
           { titre: "Courriel", largeur: 28 },
         ],
         lignesExport.map((card) => [
-          ...COLONNES_TABLEAU.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n"))),
+          ...COLONNES_EXPORT.map((c) => valeurExport(c.cle, card, (notesPar[card.id] ?? []).join("\n"))),
           { t: "texte" as const, v: estCarte(card) ? "Non" : "Oui" },
           estCarte(card) && card.carte.courriel ? { t: "texte" as const, v: card.carte.courriel } : null,
         ]),
