@@ -394,6 +394,7 @@ export function phraseGesteCarte(g: GesteCarte, estMoi = false): string {
       : `a retiré la carte de la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`;
     case "INVITATION": return "a invité l'athlète par courriel (envoi automatique à la création)";
     case "INVITATION_NON_ENVOYEE": return MENTION_INVITATION_NON_ENVOYEE;
+    case "INVITATION_REINITIALISEE": return `Invitation remise à zéro${typeof d.motif === "string" && d.motif ? ` (${d.motif})` : ""}`;
     case "INVITATION_RENVOYEE": return phraseRenvoi(estMoi);
     case "INVITATION_RAPPEL": return "a renvoyé l'invitation";
     default: return "a agi sur la carte";
@@ -423,7 +424,7 @@ export function OngletHistoriqueCarte({ carteId }: { carteId: string }) {
             <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-[#9CA3AF]" />
             {(() => {
               // Constat système, pas un geste : la phrase seule, sans sujet.
-              if (g.action === "INVITATION_NON_ENVOYEE") {
+              if (g.action === "INVITATION_NON_ENVOYEE" || g.action === "INVITATION_REINITIALISEE") {
                 return <p className="text-[13px] text-[#9CA3AF] leading-snug" data-testid="historique-invitation-non-envoyee">{phraseGesteCarte(g)}</p>;
               }
               const estMoi = !!g.acteur && g.acteur === moi;

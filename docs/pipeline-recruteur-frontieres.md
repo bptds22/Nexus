@@ -252,6 +252,15 @@ existante touchée).
   INVITATION_RAPPEL — « Tu as renvoyé l'invitation ». Un échec de passerelle ne
   compte pas et se redemande. Le pied de l'invitation ne promet plus « pas
   d'autre courriel » : il annonce au plus 3 rappels.
+  **Remise à zéro d'une adresse** (opération d'admin, GO BP) :
+  `scripts/reinitialiser-invitation-adresse.sql` — une transaction gardée
+  (une seule carte à l'adresse, nombre de lignes attendu, aucune autre
+  adresse touchée) : journal INVITATION_REINITIALISEE sans acteur, avec le
+  motif et le détail des lignes retirées (Historique : « Invitation remise à
+  zéro (motif) ») ; retrait des lignes d'invitation de l'adresse ; carte
+  remise à « jamais invitée » ; relance par `envoyer_invitation_carte` — UN
+  courriel réel. ⚠ Le lien de désabonnement d'un courriel déjà parti pointe
+  vers la ligne retirée : il cesse de fonctionner.
   **« Copier le texte »**, lien secondaire dessous, TOUJOURS là quand la carte
   a un courriel (ne révèle rien) : copie « Salut [prénom], je suis [recruteur]
   du [cégep]. On utilise Nexus pour notre recrutement — crée ton profil ici :
