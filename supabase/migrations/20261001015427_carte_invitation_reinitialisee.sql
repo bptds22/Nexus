@@ -1,3 +1,4 @@
+-- 20261001015427_carte_invitation_reinitialisee (appliquée en prod le 2026-10-01, 01:54 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- JOURNAL DE CARTE — « INVITATION REMISE À ZÉRO » (décision BP 2026-09-30).
 --
@@ -8,7 +9,7 @@
 -- L'Historique la rend sans sujet : « Invitation remise à zéro (motif) ».
 --
 -- ADDITIVE : une valeur ajoutée au contrôle d'action du journal. Rien d'autre.
--- Rollback : supabase/rollback/20261001014623_rollback_carte_invitation_reinitialisee.sql
+-- Rollback : supabase/rollback/20261001015427_rollback_carte_invitation_reinitialisee.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 alter table public.cartes_prospect_journal drop constraint cartes_prospect_journal_action_check;

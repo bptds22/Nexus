@@ -1,4 +1,4 @@
--- Rollback de 20261001014623_carte_invitation_reinitialisee.
+-- Rollback de 20261001015427_carte_invitation_reinitialisee.
 -- ⚠ Retire aussi les lignes INVITATION_REINITIALISEE du journal (sinon le
 -- contrôle ne se repose pas). Les remises à zéro elles-mêmes restent faites.
 
