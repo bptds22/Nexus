@@ -1,4 +1,4 @@
--- Rollback de 20261001015857_carte_parent.
+-- Rollback de 20261001021046_carte_parent.
 -- Rend les deux fonctions de rapprochement et le trigger à leur état de
 -- 20260930191224 ; les propositions COURRIEL_PARENT_CARTE encore ouvertes sont
 -- retirées (leur critère n'existera plus) ; puis les deux colonnes.

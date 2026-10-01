@@ -1,3 +1,4 @@
+-- 20261001021046_carte_parent (appliquée en prod le 2026-10-01, 02:10 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE PROSPECT — LE PARENT (décision BP 2026-09-30).
 --
@@ -18,7 +19,7 @@
 -- ADDITIVE : deux colonnes nullables, une valeur de critère ; deux fonctions
 -- redéfinies (corps de 20260930191224 + le parent) et un trigger recréé (une
 -- colonne de plus). Rien de retiré.
--- Rollback : supabase/rollback/20261001015857_rollback_carte_parent.sql
+-- Rollback : supabase/rollback/20261001021046_rollback_carte_parent.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 alter table public.cartes_prospect
