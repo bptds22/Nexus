@@ -44,6 +44,7 @@ import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { RecruteurCalendrierMobile } from "@/components/shared/RecruteurCalendrierMobile";
+import BoutonAbonnementAgenda from "@/components/recruteur/agenda/BoutonAbonnementAgenda";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -670,6 +671,8 @@ function CalendrierContent() {
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
+        {/* Flux d'agenda privé (relances + visites) — Pro, comme la page. */}
+        <BoutonAbonnementAgenda />
         {/* Filtre des types d'événements — ensemble ou séparément, mémorisé. */}
         <div className="flex items-center gap-2" role="group" aria-label="Types d'événements">
           {TYPES.map((t) => {

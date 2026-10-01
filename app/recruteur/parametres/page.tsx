@@ -17,6 +17,7 @@ import SaveToast from "./_components/SaveToast";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import { payloadCompte, fusionnerConsentementMarketing, marketingAccepte, messageErreurSauvegarde, messagePhoto } from "@/lib/recruteur/parametres";
 import { exporterMesDonnees } from "@/lib/recruteur/exporterMesDonnees";
+import AbonnementAgenda from "@/components/recruteur/agenda/AbonnementAgenda";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 
@@ -744,6 +745,15 @@ function RecruiterSettingsDesktop() {
               <EtablissementSection form={form} cegepNom={cegepNom} />
             )}
             {section === "abonnement" && <SubscriptionManager role="RECRUTEUR" />}
+            {section === "agenda" && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">Mon agenda</h2>
+                  <p className="text-[14px] text-[#6b7280] mt-1">Abonne ton agenda à tes relances et aux visites de ton unité.</p>
+                </div>
+                <AbonnementAgenda />
+              </div>
+            )}
             {section === "admin_cegep" && <AdminCegepSection />}
             {section === "confidentialite" && (
               <ConfidentialiteSection
