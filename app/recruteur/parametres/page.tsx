@@ -10,14 +10,13 @@ import { RecruteurParametresMobile } from "@/components/shared/RecruteurParametr
 import RecruiterSettingsNav, { type SectionKey } from "./_components/RecruiterSettingsNav";
 import CompteSection from "./_components/CompteSection";
 import EtablissementSection from "./_components/EtablissementSection";
-import RecrutementSection from "./_components/RecrutementSection";
-import NotificationsSection from "./_components/NotificationsSection";
 import ConfidentialiteSection from "./_components/ConfidentialiteSection";
-import TransfertSection from "./_components/TransfertSection";
 import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
 import { uploadImage } from "@/lib/upload/uploadImage";
+import { payloadCompte, fusionnerConsentementMarketing, marketingAccepte, messageErreurSauvegarde, messagePhoto } from "@/lib/recruteur/parametres";
+import { exporterMesDonnees } from "@/lib/recruteur/exporterMesDonnees";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 
@@ -25,7 +24,10 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Settings — /recruteur/parametres
-   Left nav (click-to-switch) + content panel, 6 sections.
+   Left nav (click-to-switch) + content panel. Sections visibles : Compte,
+   Établissement (lecture seule), Abonnement, Admin cégep, Confidentialité,
+   Zone danger (Recrutement et Notifications masquées, Transfert retiré —
+   BP 2026-10-01). Chaque section n'enregistre QUE ses champs.
 ═══════════════════════════════════════════════════════════════ */
 
 /* ── Password Change Modal ────────────────────────────────── */
@@ -500,9 +502,11 @@ function RecruiterSettingsDesktop() {
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState(false);
   const [passwordModal, setPasswordModal] = useState(false);
-  const [deactivateModal, setDeactivateModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
-  const [exportToast, setExportToast] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [erreurExport, setErreurExport] = useState<string | null>(null);
+  /* Erreur d'enregistrement lisible, sous la section (jamais d'alert brut). */
+  const [erreurSauvegarde, setErreurSauvegarde] = useState<string | null>(null);
 
   const [schoolsList, setSchoolsList] = useState<{ id: string; name: string }[]>([]);
   const [signupDate, setSignupDate] = useState("");
@@ -513,6 +517,8 @@ function RecruiterSettingsDesktop() {
   const [consentDataIso, setConsentDataIso] = useState<string | null>(null);
   const [consentMarketingIso, setConsentMarketingIso] = useState<string | null>(null);
   const [marketingConsent, setMarketingConsent] = useState(false);
+  /* Ce qui est EN BASE : la bascule n'est « modifiée » que si elle en diffère. */
+  const [marketingOriginal, setMarketingOriginal] = useState(false);
 
   /* ── Load from Supabase ────────────────────────────────────── */
   useEffect(() => {
@@ -591,10 +597,13 @@ function RecruiterSettingsDesktop() {
             emailFrequency: ((notifPrefs.email_frequency as string) || "realtime") as "realtime" | "daily" | "weekly" | "disabled",
           };
         }
-        setMarketingConsent(!!(notifPrefs.marketing_emails));
 
         // Load privacy preferences
         const privPrefs = (profile.privacy_preferences as Record<string, unknown>) || {};
+        // La DATE fait foi (comme sur mobile) : le booléen notification_preferences.marketing_emails
+        // n'est pas posé à l'inscription, et le lire effaçait des consentements donnés.
+        setMarketingConsent(marketingAccepte(privPrefs));
+        setMarketingOriginal(marketingAccepte(privPrefs));
         if (Object.keys(privPrefs).length > 0) {
           updates.visibility = {
             profileVisible: privPrefs.profile_visible !== false,
@@ -626,69 +635,46 @@ function RecruiterSettingsDesktop() {
   }, []);
 
   /* ── Helpers ────────────────────────────────────────────────── */
-  async function handleSave() {
+  /* Compte : prénom, nom, téléphone — rien d'autre. */
+  async function saveCompte() {
+    setErreurSauvegarde(null);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setErreurSauvegarde("Session expirée : reconnecte-toi puis réessaie."); return; }
+    const { error } = await supabase.from("users").update(payloadCompte(form)).eq("id", user.id);
+    if (error) { setErreurSauvegarde(messageErreurSauvegarde(error)); return; }
+    setOriginal((prev) => ({ ...prev, firstName: form.firstName, lastName: form.lastName, phone: form.phone }));
+    setToast(true);
+  }
 
-    // Map divisions back: ["D1"] → "Division 1"
-    const divisionStr = form.divisions.length > 0 ? form.divisions[0].replace("D", "Division ") : null;
+  /* Confidentialité : le consentement marketing, FUSIONNÉ dans les préférences
+     relues en base juste avant (Loi 25 : rien n'est écrasé, aucune date n'est
+     fabriquée ; la politique et la collecte ne se touchent pas d'ici). */
+  async function saveConfidentialite() {
+    setErreurSauvegarde(null);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setErreurSauvegarde("Session expirée : reconnecte-toi puis réessaie."); return; }
+    const { data: actuel, error: errLecture } = await supabase.from("users").select("privacy_preferences").eq("id", user.id).single();
+    if (errLecture) { setErreurSauvegarde(messageErreurSauvegarde(errLecture)); return; }
+    const fusion = fusionnerConsentementMarketing(actuel?.privacy_preferences as Record<string, unknown> | null, marketingConsent, new Date().toISOString());
+    const { error } = await supabase.from("users").update({ privacy_preferences: fusion }).eq("id", user.id);
+    if (error) { setErreurSauvegarde(messageErreurSauvegarde(error)); return; }
+    const date = typeof fusion.consent_marketing === "string" ? fusion.consent_marketing : null;
+    setConsentMarketingIso(date);
+    setConsentMarketingDate(date ? new Date(date).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }) : null);
+    setMarketingOriginal(marketingConsent);
+    setToast(true);
+  }
 
-    const recruitmentPrefs = {
-      regions: form.targetRegions || [],
-      graduation_years: form.targetGradYears || [],
-      positions: form.targetPositions || [],
-      min_gpa: form.minMoyenne || null,
-      min_cote: form.minCoteGlobale || null,
-      alerts_enabled: form.alertNewProfiles ?? true,
-    };
-
-    const payload = {
-      first_name: form.firstName || "",
-      last_name: form.lastName || "",
-      phone: form.phone || null,
-      /* school_id et sport ne s'écrivent plus d'ici (risque 2, BP 2026-10-01) :
-         la base les refuse au recruteur après l'onboarding ; seul l'admin
-         plateforme les change (changer_rattachement_recruteur). */
-      title: form.roleTitle || null,
-      division: divisionStr,
-      recruitment_preferences: recruitmentPrefs,
-      notification_preferences: {
-        app_new_athlete: form.notifications.newAthleteInSport.inApp,
-        app_favorite_update: form.notifications.favoriteUpdated.inApp,
-        app_coach_reply: form.notifications.coachResponse.inApp,
-        app_scouting_report: form.notifications.scoutingReport.inApp,
-        app_lettre_intention: form.notifications.letterOfIntentSigned.inApp,
-        app_profile_verified: form.notifications.profileVerified.inApp,
-        email_new_athlete: form.notifications.newAthleteInSport.email,
-        email_favorite_update: form.notifications.favoriteUpdated.email,
-        email_coach_reply: form.notifications.coachResponse.email,
-        email_scouting_report: form.notifications.scoutingReport.email,
-        email_lettre_intention: form.notifications.letterOfIntentSigned.email,
-        email_profile_verified: form.notifications.profileVerified.email,
-        email_weekly_digest: form.notifications.weeklyDigest,
-        email_frequency: form.notifications.emailFrequency,
-        marketing_emails: marketingConsent,
-      },
-      privacy_preferences: {
-        profile_visible: form.visibility.profileVisible,
-        show_consultations: form.visibility.showConsultationHistory,
-        show_full_name: form.visibility.showFullName,
-        consent_privacy_policy: consentPrivacyIso || new Date().toISOString(),
-        consent_data_collection: consentDataIso || new Date().toISOString(),
-        consent_marketing: marketingConsent ? (consentMarketingIso || new Date().toISOString()) : null,
-      },
-    };
-
-    const { data, error } = await supabase
-      .from("users")
-      .update(payload)
-      .eq("id", user.id)
-      .select();
-
-    if (!error) {
-      setOriginal(prev => ({ ...prev, firstName: form.firstName, lastName: form.lastName, phone: form.phone, roleTitle: form.roleTitle, sportIds: form.sportIds, divisions: form.divisions }));
-      setToast(true);
+  async function lancerExport() {
+    setExporting(true);
+    setErreurExport(null);
+    try {
+      const res = await exporterMesDonnees();
+      if (!res.ok) setErreurExport(res.message);
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -726,52 +712,43 @@ function RecruiterSettingsDesktop() {
                 form={form}
                 original={original}
                 onUpdate={updateField}
-                onSave={handleSave}
+                onSave={saveCompte}
                 onPasswordModal={() => setPasswordModal(true)}
                 onPhotoUpload={async (file: File) => {
                   const supabase = createClient();
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) return;
                   const res = await uploadImage(file, { pathBase: `${user.id}/avatar` });
-                  if (!res.ok) { showToast(res.message); return; }
-                  await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+                  // Un envoi raté s'affiche sous la section : il ne fait plus tomber la page
+                  // (showToast n'existait pas ici — ReferenceError).
+                  if (!res.ok) { setErreurSauvegarde(messagePhoto(res)); updateField("avatarUrl", original.avatarUrl); return; }
+                  const { error } = await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+                  if (error) { setErreurSauvegarde(messageErreurSauvegarde(error)); updateField("avatarUrl", original.avatarUrl); return; }
+                  setErreurSauvegarde(null);
                   updateField("avatarUrl", res.publicUrl);
+                  setOriginal((prev) => ({ ...prev, avatarUrl: res.publicUrl }));
+                }}
+                onPhotoRemove={async () => {
+                  const supabase = createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+                  const { error } = await supabase.from("users").update({ photo_url: null }).eq("id", user.id);
+                  if (error) { setErreurSauvegarde(messageErreurSauvegarde(error)); return; }
+                  setErreurSauvegarde(null);
+                  updateField("avatarUrl", "");
+                  setOriginal((prev) => ({ ...prev, avatarUrl: "" }));
                 }}
               />
             )}
             {section === "etablissement" && (
-              <EtablissementSection
-                form={form}
-                original={original}
-                onUpdate={updateField}
-                onSave={handleSave}
-                cegepNom={cegepNom}
-              />
-            )}
-            {section === "recrutement" && (
-              <RecrutementSection
-                form={form}
-                original={original}
-                onUpdate={updateField}
-                onSave={handleSave}
-              />
+              <EtablissementSection form={form} cegepNom={cegepNom} />
             )}
             {section === "abonnement" && <SubscriptionManager role="RECRUTEUR" />}
             {section === "admin_cegep" && <AdminCegepSection />}
-            {section === "notifications" && (
-              <NotificationsSection
-                form={form}
-                original={original}
-                onUpdateNotifications={(notifs) => setForm((prev) => ({ ...prev, notifications: notifs }))}
-                onSave={handleSave}
-              />
-            )}
             {section === "confidentialite" && (
               <ConfidentialiteSection
-                form={form}
-                original={original}
-                onUpdateVisibility={(vis) => setForm((prev) => ({ ...prev, visibility: vis }))}
-                onSave={handleSave}
+                dirty={marketingConsent !== marketingOriginal}
+                onSave={saveConfidentialite}
                 onSectionChange={(s) => setSection(s as SectionKey)}
                 signupDate={signupDate}
                 consentPrivacyDate={consentPrivacyDate}
@@ -781,21 +758,21 @@ function RecruiterSettingsDesktop() {
                 onMarketingConsentChange={setMarketingConsent}
               />
             )}
-            {section === "transfert" && (
-              <TransfertSection
-                currentSchoolId={form.cegepId}
-                currentSchoolName={schoolsList.find((s) => s.id === form.cegepId)?.name || "Non défini"}
-                schools={schoolsList}
-              />
-            )}
             {section === "danger" && (
               <DangerSection
-                onDeactivate={() => setDeactivateModal(true)}
-                onExport={() => setExportToast(true)}
+                onExport={() => void lancerExport()}
+                exporting={exporting}
+                erreurExport={erreurExport}
                 onDelete={() => setDeleteModal(true)}
               />
             )}
           </div>
+
+          {erreurSauvegarde && (
+            <p className="mt-3 text-[13px] text-[#F59E0B] bg-[#F59E0B]/[0.06] border border-[#F59E0B]/30 rounded-lg px-4 py-3" role="alert" data-testid="parametres-erreur">
+              {erreurSauvegarde}
+            </p>
+          )}
 
           {/* Demo access toggle */}
           <DemoRecruiterAccessToggle />
@@ -806,24 +783,13 @@ function RecruiterSettingsDesktop() {
       {passwordModal && <PasswordChangeModal onClose={() => setPasswordModal(false)} />}
 
       <ConfirmModal
-        open={deactivateModal}
-        onClose={() => setDeactivateModal(false)}
-        onConfirm={() => {/* mock */}}
-        title="Désactiver votre compte"
-        message="Êtes-vous sûr de vouloir désactiver votre compte ? Vous pourrez le réactiver plus tard."
-        confirmLabel="Désactiver"
-        variant="warning"
-      />
-
-      <ConfirmModal
         open={deleteModal}
         onClose={() => setDeleteModal(false)}
         onConfirm={() => {
           // Suppression DÉFINITIVE via la RPC delete_my_account (helper partagé :
-          // signOut + redirection dedans). Le "deactivate" ci-dessus reste un
-          // mock distinct (désactivation réversible — hors de ce chantier).
+          // signOut + redirection dedans). Erreur → bandeau, jamais d'alert brut.
           void deleteMyAccount({
-            onError: (m) => { window.alert("Échec de la suppression : " + m); },
+            onError: (m) => { setErreurSauvegarde("Échec de la suppression : " + m); },
           });
         }}
         title="Supprimer mon compte ?"
@@ -834,7 +800,6 @@ function RecruiterSettingsDesktop() {
 
       {/* ── Toasts ─────────────────────────────────────────────── */}
       <SaveToast show={toast} onHide={() => setToast(false)} />
-      <SaveToast show={exportToast} onHide={() => setExportToast(false)} message="Export en cours..." />
     </div>
   );
 }

@@ -60,10 +60,14 @@ const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode; danger?
   },
 ];
 
+/* Masquées (BP 2026-10-01) : Recrutement et Notifications tant qu'aucun code ne
+   lit leurs préférences ; Transfert retiré — « écris à info@ » suffit. */
+const SECTIONS_MASQUEES: SectionKey[] = ["recrutement", "notifications", "transfert"];
+
 export default function RecruiterSettingsNav({ active, onChange }: Props) {
   return (
     <nav className="flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-      {SECTIONS.map((s) => {
+      {SECTIONS.filter((s) => !SECTIONS_MASQUEES.includes(s.key)).map((s) => {
         const isActive = active === s.key;
         return (
           <button

@@ -3,12 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import SchoolSelect from "@/components/ui/SchoolSelect";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
 import { useSchoolsList } from "@/lib/queries/shared/useSchoolsList";
 import { RecruteurProfilMobile } from "@/components/shared/RecruteurProfilMobile";
-import { SPORTS_PROPOSES_ALPHA } from "@/lib/config/sportsProposes";
+import { payloadMonProfil, messageErreurSauvegarde, messagePhoto, MESSAGE_CHANGEMENT_RATTACHEMENT } from "@/lib/recruteur/parametres";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -26,10 +25,7 @@ const TITLES = [
 
 const DIVISIONS = ["Division 1", "Division 2", "Division 3"];
 
-// Liste partagée : chaque libellé existe dans public.sports (lot A). L'ancienne
-// liste locale proposait six sports absents de la base.
-const SPORTS = SPORTS_PROPOSES_ALPHA;
-
+const lectureSeuleCls = "w-full bg-[#13151a]/60 border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#9CA3AF]";
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors";
 const labelCls = "text-[12px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF] mb-1.5 block";
 
@@ -68,6 +64,8 @@ function RecruiterProfilDesktop() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  /* Erreur d'enregistrement lisible (jamais d'alert() brut, BP 2026-10-01). */
+  const [erreur, setErreur] = useState<string | null>(null);
   const [formInitialized, setFormInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -106,9 +104,10 @@ function RecruiterProfilDesktop() {
     if (!user) return;
 
     const res = await uploadImage(file, { pathBase: `${user.id}/avatar` });
-    if (!res.ok) { setToast(res.message); setTimeout(() => setToast(null), 3000); return; }
-
-    await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+    if (!res.ok) { setErreur(messagePhoto(res)); return; }
+    const { error } = await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+    if (error) { setErreur(messageErreurSauvegarde(error)); return; }
+    setErreur(null);
     setAvatarUrl(res.publicUrl);
     invalidateProfileCaches();
   }
@@ -123,7 +122,10 @@ function RecruiterProfilDesktop() {
   async function removeAvatar() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from("users").update({ photo_url: null }).eq("id", user.id);
+    if (!user) return;
+    const { error } = await supabase.from("users").update({ photo_url: null }).eq("id", user.id);
+    if (error) { setErreur(messageErreurSauvegarde(error)); return; }
+    setErreur(null);
     setAvatarUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     invalidateProfileCaches();
@@ -131,29 +133,20 @@ function RecruiterProfilDesktop() {
 
   async function handleSave() {
     setSaving(true);
+    setErreur(null);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
+    if (!user) { setSaving(false); setErreur("Session expirée : reconnecte-toi puis réessaie."); return; }
 
-    const payload = {
-      first_name: form.firstName || "",
-      last_name: form.lastName || "",
-      school_id: form.schoolId || null,
-      title: form.title || null,
-      division: form.division || null,
-      team_name: form.teamName || null,
-      sport: form.sport || null,
-      region: form.region || null,
-    };
-
+    // Ni school_id ni sport (risque 2, BP 2026-10-01) : la base les refuse
+    // après l'onboarding, et un seul champ refusé faisait tomber tout l'UPDATE.
     const { error } = await supabase
       .from("users")
-      .update(payload)
-      .eq("id", user.id)
-      .select();
+      .update(payloadMonProfil(form))
+      .eq("id", user.id);
 
     if (error) {
-      alert("Erreur: " + error.message);
+      setErreur(messageErreurSauvegarde(error));
     } else {
       setToast("Profil sauvegardé");
       setTimeout(() => setToast(null), 3000);
@@ -162,16 +155,14 @@ function RecruiterProfilDesktop() {
     setSaving(false);
   }
 
-  // Le sport est requis (lot A) : il définit l'unité du recruteur. On peut
-  // le CHANGER, jamais le vider.
-  const requiredFilled = form.firstName && form.lastName && form.schoolId && form.sport;
+  // Cégep et sport définissent l'unité du recruteur : ils se lisent ici, ils
+  // ne se changent que par l'admin plateforme (risque 2, BP 2026-10-01).
+  const requiredFilled = form.firstName && form.lastName;
   // Le bouton grisé ne disait pas POURQUOI (retour BP 2026-09-24 : un compte
   // sans prénom ni nom ne pouvait rien enregistrer, sans un mot).
   const champsManquants = [
     !form.firstName && "prénom",
     !form.lastName && "nom",
-    !form.schoolId && "CÉGEP",
-    !form.sport && "sport recruté",
   ].filter(Boolean) as string[];
   const initials = (form.firstName[0] || "") + (form.lastName[0] || "");
 
@@ -257,21 +248,15 @@ function RecruiterProfilDesktop() {
               <label className={labelCls}>Titre</label>
               <select title="Titre" value={form.title} onChange={(e) => update("title", e.target.value)} className={inputCls}>
                 <option value="">Sélectionner un titre</option>
+                {/* Un titre saisi ailleurs reste affiché tel quel (BP 2026-10-01). */}
+                {form.title && !TITLES.includes(form.title) && <option value={form.title}>{form.title}</option>}
                 {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
 
             <div>
-              <label className={labelCls}>CÉGEP / École *</label>
-              <SchoolSelect
-                value={form.schoolId || null}
-                onChange={(id) => {
-                  const name = schools.find(s => s.id === id)?.name || "";
-                  setForm(prev => ({ ...prev, schoolId: id, schoolName: name }));
-                }}
-                filterType="CEGEP"
-                placeholder="Rechercher un CÉGEP..."
-              />
+              <span className={labelCls}>CÉGEP</span>
+              <p className={lectureSeuleCls} data-testid="profil-cegep-lecture-seule">{form.schoolName || "—"}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -290,21 +275,18 @@ function RecruiterProfilDesktop() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Sport recruté *</label>
-                <select title="Sport recruté" value={form.sport} onChange={(e) => update("sport", e.target.value)} className={inputCls}>
-                  {/* « Sélectionner » n'est offert qu'à un profil encore sans sport :
-                      une fois posé, le sport se change mais ne se vide plus. Un
-                      ancien texte hors liste reste affiché tel quel. */}
-                  {!form.sport && <option value="">Sélectionner</option>}
-                  {form.sport && !SPORTS.includes(form.sport) && <option value={form.sport}>{form.sport}</option>}
-                  {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <span className={labelCls}>Sport recruté</span>
+                <p className={lectureSeuleCls} data-testid="profil-sport-lecture-seule">{form.sport || "—"}</p>
               </div>
               <div>
                 <label className={labelCls}>Région</label>
                 <input type="text" value={form.region} onChange={(e) => update("region", e.target.value)} placeholder="ex: Capitale-Nationale" className={inputCls} />
               </div>
             </div>
+
+            <p className="text-[13px] text-[#9CA3AF] bg-white/[0.03] border-l-[3px] border-[#6B7280] rounded-r-lg px-4 py-3" data-testid="profil-message-rattachement">
+              Ton cégep et ton sport définissent ton unité de recrutement. <span className="text-[#e0e0e0]">{MESSAGE_CHANGEMENT_RATTACHEMENT}</span>.
+            </p>
 
             <div className="pt-2">
               <button
@@ -315,6 +297,9 @@ function RecruiterProfilDesktop() {
               >
                 {saving ? "Sauvegarde..." : "Sauvegarder le profil"}
               </button>
+              {erreur && (
+                <p className="mt-2 text-[13px] text-[#F59E0B]" role="alert" data-testid="profil-erreur">{erreur}</p>
+              )}
               {champsManquants.length > 0 && (
                 <p className="mt-2 text-[12px] text-[#E63946]" role="status">
                   Pour enregistrer, complète : {champsManquants.join(", ")}.

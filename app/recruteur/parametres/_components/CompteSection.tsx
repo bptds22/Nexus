@@ -18,9 +18,11 @@ interface Props {
   onSave: () => void;
   onPasswordModal: () => void;
   onPhotoUpload?: (file: File) => void;
+  /** Supprime la photo EN BASE (avant : état local seulement, la photo revenait). */
+  onPhotoRemove?: () => void;
 }
 
-export default function CompteSection({ form, original, onUpdate, onSave, onPasswordModal, onPhotoUpload }: Props) {
+export default function CompteSection({ form, original, onUpdate, onSave, onPasswordModal, onPhotoUpload, onPhotoRemove }: Props) {
   const dirty = form.firstName !== original.firstName || form.lastName !== original.lastName || (form.phone ?? "") !== (original.phone ?? "");
   const [preferredLanguage, setPreferredLanguage] = useState<string>("fr");
 
@@ -64,7 +66,7 @@ export default function CompteSection({ form, original, onUpdate, onSave, onPass
           <p className="text-[14px] font-bold text-white">Photo de profil</p>
           <p className="text-[12px] text-[#4a4d56] mt-0.5">JPG ou PNG, max 2 Mo</p>
           {form.avatarUrl && (
-            <button type="button" onClick={() => onUpdate("avatarUrl", "")} className="text-[12px] text-[#E63946] mt-1 hover:underline">Supprimer</button>
+            <button type="button" onClick={() => (onPhotoRemove ? onPhotoRemove() : onUpdate("avatarUrl", ""))} className="text-[12px] text-[#E63946] mt-1 hover:underline">Supprimer</button>
           )}
         </div>
       </div>
@@ -116,9 +118,8 @@ export default function CompteSection({ form, original, onUpdate, onSave, onPass
             className={inputCls}
           >
             <option value="fr">Fran&#231;ais</option>
-            <option value="en">English</option>
+            <option value="en" disabled>English (disponible prochainement)</option>
           </select>
-          <p className="text-[11px] text-[#4a4d56] mt-1">English — disponible prochainement</p>
         </div>
       </div>
 

@@ -1,16 +1,18 @@
 "use client";
 
 /* ─────────────────────────────────────────────────────────────────
-   DangerSection — Deactivate, export, delete account
+   DangerSection — export réel (JSON) et suppression du compte.
+   « Désactiver » retiré (BP 2026-10-01) : c'était une maquette sans effet.
 ───────────────────────────────────────────────────────────────── */
 
 interface Props {
-  onDeactivate: () => void;
   onExport: () => void;
+  exporting?: boolean;
+  erreurExport?: string | null;
   onDelete: () => void;
 }
 
-export default function DangerSection({ onDeactivate, onExport, onDelete }: Props) {
+export default function DangerSection({ onExport, exporting = false, erreurExport = null, onDelete }: Props) {
   return (
     <div id="zone-danger" className="space-y-8">
       <div>
@@ -21,33 +23,20 @@ export default function DangerSection({ onDeactivate, onExport, onDelete }: Prop
       </div>
 
       <div className="space-y-5">
-        {/* Deactivate */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-[#F59E0B]/20 bg-[#F59E0B]/[0.04]">
-          <div className="flex-1">
-            <p className="text-[14px] font-bold text-[#F59E0B]">Désactiver mon compte</p>
-            <p className="text-[12px] text-[#9CA3AF] mt-1 leading-relaxed">
-              Votre profil deviendra invisible, les alertes seront stoppées, mais vos favoris et données seront conservés. Vous pourrez réactiver à tout moment.
-            </p>
-          </div>
-          <button type="button" onClick={onDeactivate}
-            className="shrink-0 px-5 py-2 rounded-lg border border-[#F59E0B] text-[#F59E0B] text-[13px] font-bold uppercase tracking-wider hover:bg-[#F59E0B]/10 transition-colors">
-            Désactiver
-          </button>
-        </div>
-
         {/* Export */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-[#2a2d36]">
           <div className="flex-1">
             <p className="text-[14px] font-bold text-[#9CA3AF]">Exporter mes données</p>
             <p className="text-[12px] text-[#6B7280] mt-1 leading-relaxed">
-              Téléchargez un fichier ZIP contenant vos favoris, messages et historique de recherche (JSON/CSV). Conformité Loi 25 — droit à la portabilité.
+              Téléchargez un fichier JSON contenant votre profil, vos favoris, votre processus, vos notes, vos listes, vos avis et vos messages. Conformité Loi 25 — droit à la portabilité.
             </p>
           </div>
-          <button type="button" onClick={onExport}
-            className="shrink-0 px-5 py-2 rounded-lg border border-[#6B7280] text-[#6B7280] text-[13px] font-bold uppercase tracking-wider hover:border-[#9CA3AF] hover:text-[#9CA3AF] transition-colors">
-            Exporter
+          <button type="button" onClick={onExport} disabled={exporting}
+            className="shrink-0 px-5 py-2 rounded-lg border border-[#6B7280] text-[#6B7280] text-[13px] font-bold uppercase tracking-wider hover:border-[#9CA3AF] hover:text-[#9CA3AF] transition-colors disabled:opacity-50">
+            {exporting ? "Export en cours..." : "Exporter"}
           </button>
         </div>
+        {erreurExport && <p className="text-[12px] text-[#F59E0B] -mt-3" role="alert">{erreurExport}</p>}
 
         {/* Delete */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-[#E63946]/30 bg-[#E63946]/[0.04]">

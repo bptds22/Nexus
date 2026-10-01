@@ -3,16 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import type { RecruiterSettings, RecruiterVisibility } from "@/lib/types/models";
+import { exporterMesDonnees } from "@/lib/recruteur/exporterMesDonnees";
 
 /* ─────────────────────────────────────────────────────────────────
    ConfidentialiteSection — Privacy, Loi 25 rights, RPRP
 ───────────────────────────────────────────────────────────────── */
 
 interface Props {
-  form: RecruiterSettings;
-  original: RecruiterSettings;
-  onUpdateVisibility: (vis: RecruiterVisibility) => void;
+  /** Vrai seulement quand la bascule marketing diffère de ce qui est en base. */
+  dirty: boolean;
   onSave: () => void;
   onSectionChange?: (section: string) => void;
   signupDate?: string;
@@ -23,10 +22,10 @@ interface Props {
   onMarketingConsentChange?: (v: boolean) => void;
 }
 
-export default function ConfidentialiteSection({ form, original, onUpdateVisibility, onSave, onSectionChange, signupDate, consentPrivacyDate, consentDataDate, consentMarketingDate, marketingConsent = false, onMarketingConsentChange }: Props) {
-  const dirty = true; // Always allow save for consent changes
+export default function ConfidentialiteSection({ dirty, onSave, onSectionChange, signupDate, consentPrivacyDate, consentDataDate, consentMarketingDate, marketingConsent = false, onMarketingConsentChange }: Props) {
   const [requestSent, setRequestSent] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [erreurExport, setErreurExport] = useState<string | null>(null);
 
   /* ── Demander (data access request → admin_notifications) ── */
   async function handleDataRequest() {
@@ -45,43 +44,13 @@ export default function ConfidentialiteSection({ form, original, onUpdateVisibil
     alert("Votre demande a été envoyée. Vous recevrez vos données par courriel dans un délai de 30 jours.");
   }
 
-  /* ── Exporter (download all user data as JSON) ── */
+  /* ── Exporter : l'export réel, partagé avec la Zone danger ── */
   async function handleExport() {
     setExporting(true);
+    setErreurExport(null);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const [profileRes, favoritesRes, pipelineRes, notesRes, listsRes, reviewsRes, messagesRes] = await Promise.all([
-        supabase.from("users").select("*").eq("id", user.id).single(),
-        supabase.from("recruiter_favorites").select("athlete_id, created_at").eq("recruiter_id", user.id),
-        supabase.from("recruiter_pipeline").select("athlete_id, stage, created_at").eq("recruiter_id", user.id),
-        supabase.from("recruiter_notes").select("athlete_id, content, created_at").eq("recruiter_id", user.id),
-        supabase.from("recruiter_lists").select("name, description, created_at").eq("recruiter_id", user.id),
-        supabase.from("coach_reviews").select("coach_id, note_globale, commentaire, created_at").eq("recruiter_id", user.id),
-        supabase.from("messages").select("content, created_at").eq("sender_id", user.id),
-      ]);
-
-      const exportData = {
-        exported_at: new Date().toISOString(),
-        user_email: user.email,
-        profile: profileRes.data,
-        favorites: favoritesRes.data || [],
-        pipeline: pipelineRes.data || [],
-        notes: notesRes.data || [],
-        lists: listsRes.data || [],
-        reviews: reviewsRes.data || [],
-        messages: messagesRes.data || [],
-      };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `nexus-export-${new Date().toISOString().split("T")[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const r = await exporterMesDonnees();
+      if (!r.ok) setErreurExport(r.message);
     } finally {
       setExporting(false);
     }
@@ -196,6 +165,7 @@ export default function ConfidentialiteSection({ form, original, onUpdateVisibil
               </div>
             </div>
             <button type="button" onClick={handleExport} disabled={exporting} className={`${btnOutline} ${exporting ? "opacity-50 cursor-not-allowed" : ""}`}>{exporting ? "Export en cours..." : "Exporter"}</button>
+            {erreurExport && <p className="text-[12px] text-[#F59E0B] mt-1" role="alert">{erreurExport}</p>}
           </div>
 
           <div className="h-px bg-[#2D3748]" />
