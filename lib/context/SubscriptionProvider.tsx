@@ -347,7 +347,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [subLoading, setSubLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
+  /* `silencieux` : relecture de fond (retour sur l'onglet, minuterie). Elle ne
+     repasse pas `loading` à vrai — les FeatureGate démonteraient leur contenu —
+     et une lecture en échec garde l'état connu au lieu de retomber à « free ». */
+  const charger = useCallback(async (silencieux: boolean) => {
     if (!userId) {
       // Not authenticated (or auth still resolving) → no subscription.
       // No auth call here; the exposed `loading` still reflects userLoading.
@@ -355,7 +358,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setSubLoading(false);
       return;
     }
-    setSubLoading(true);
+    if (!silencieux) setSubLoading(true);
     const supabase = createClient();
 
     // Two parallel queries: the user row (for role + is_school_admin) + the subscription row
@@ -367,6 +370,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         .eq("user_id", userId)
         .maybeSingle(),
     ]);
+
+    if (silencieux && (userRes.error || subRes.error)) return;
 
     const role = normalizeRole(userRes.data?.role as string | undefined);
     const isSchoolAdmin = Boolean(userRes.data?.is_school_admin);
@@ -409,11 +414,29 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     setSubLoading(false);
   }, [userId]);
 
+  const refresh = useCallback(() => charger(false), [charger]);
+
   // refresh() depends on userId, so this re-runs when userId goes from
   // undefined → defined (auth resolved) — no one-shot [] that would miss it.
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Statut admin et palier relus au retour sur l'onglet et toutes les 5 min
+  // (2026-10-01) : chargés une seule fois, ils survivaient à un retrait du
+  // statut d'admin cégep ou à un changement de palier fait ailleurs.
+  useEffect(() => {
+    if (!userId) return;
+    const relire = () => { if (document.visibilityState === "visible") void charger(true); };
+    document.addEventListener("visibilitychange", relire);
+    window.addEventListener("focus", relire);
+    const minuterie = window.setInterval(relire, 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener("visibilitychange", relire);
+      window.removeEventListener("focus", relire);
+      window.clearInterval(minuterie);
+    };
+  }, [userId, charger]);
 
   // Exposed loading stays true while auth is resolving OR the subscription
   // query is in flight — so consumers/gates never read a premature "free".

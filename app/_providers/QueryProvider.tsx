@@ -136,6 +136,9 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             // l'usager venait de lire.
             && q.queryKey?.[0] !== "badges-recruteur"
             && q.queryKey?.[0] !== "conversations"
+            // Le sport de l'unité Mon CÉGEP (2026-10-01) : réhydraté, il
+            // servait l'ancien sport après un changement de rattachement.
+            && q.queryKey?.[0] !== "cegep-sport-unite"
             && !estCleTableauBlanc(q.queryKey),
         },
       }}

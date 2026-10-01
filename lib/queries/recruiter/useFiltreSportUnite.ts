@@ -47,9 +47,12 @@ export function useFiltreSportUnite(): FiltreSportUnite {
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.profile.id;
   const schoolId = currentUser?.profile.school_id;
+  // La clé porte le sport : quand l'admin plateforme change le sport du
+  // recruteur, l'ancienne réponse (l'ancien sport de l'unité) n'est plus servie.
+  const sportId = currentUser?.profile.sport_id ?? null;
 
   const { data, isSuccess } = useQuery({
-    queryKey: ["cegep-sport-unite", userId, schoolId],
+    queryKey: ["cegep-sport-unite", userId, schoolId, sportId],
     enabled: !!userId && !!schoolId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -62,8 +65,8 @@ export function useFiltreSportUnite(): FiltreSportUnite {
       return {
         monSportId: (moi?.sport_id as string | null) ?? null,
         membres: (membres ?? []) as MembreCegep[],
-        // Données SÉRIALISABLES seulement : le cache TanStack est persisté
-        // (sessionStorage) et une Map en ressort en objet vide.
+        // Une Map ne passerait pas un éventuel retour à la persistance : la
+        // requête n'est plus persistée (QueryProvider), on garde des tableaux.
         sports: (sports ?? []) as { id: string; nom: string }[],
       };
     },

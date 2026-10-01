@@ -4,9 +4,11 @@
    par toutes les queries qui ont besoin de l'userId courant ou de
    metadata de profil (first_name, school_id, role, etc.).
 
-   staleTime/gcTime infinis : la session utilisateur ne change pas
-   au cours d'une visite. Au logout, le QueryClient est vidé
-   (geste explicite à appeler côté flow auth).
+   Relu au retour sur l'onglet et toutes les 5 min (2026-10-01) : le
+   rattachement (cégep, sport) peut changer pendant une visite — par
+   l'admin plateforme, ailleurs — et un staleTime infini gardait des
+   heures l'ancien sport à l'écran. gcTime reste infini. Au logout, le
+   QueryClient est vidé (geste explicite à appeler côté flow auth).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +22,8 @@ export interface CurrentUserProfile {
   school_id: string | null;
   division: string | null;
   sport: string | null;
+  /** users.sport_id — la clé du sport ; `sport` n'en est que le libellé. */
+  sport_id: string | null;
   /** users.onboarding_complete — nullable (DEFAULT false). Lu par PushRegistrar
       pour ne demander la permission push qu'une fois l'onboarding terminé. */
   onboarding_complete: boolean | null;
@@ -47,14 +51,18 @@ export function useCurrentUser() {
 
       const { data: profile, error: profileError } = await supabase
         .from("users")
-        .select("id, first_name, last_name, school_id, division, sport, onboarding_complete, is_platform_admin")
+        .select("id, first_name, last_name, school_id, division, sport, sport_id, onboarding_complete, is_platform_admin")
         .eq("id", user.id)
         .single();
       if (profileError) throw profileError;
 
       return { authUser: user, profile: profile as CurrentUserProfile };
     },
-    staleTime: Infinity,
+    staleTime: 2 * 60 * 1000,
     gcTime: Infinity,
+    // "always" : le retour sur l'onglet relit même un profil lu il y a moins de
+    // 2 min — c'est précisément là qu'un changement fait ailleurs se voit.
+    refetchOnWindowFocus: "always",
+    refetchInterval: 5 * 60 * 1000,
   });
 }
