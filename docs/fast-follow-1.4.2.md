@@ -1814,3 +1814,12 @@ Web seulement. Migration `carte_parent` : `cartes_prospect.parent_nom`,
   COURRIEL_PARENT_CARTE ;
 - le tableau web n'affiche plus le Téléphone (Infos et export seulement) :
   garder la même règle sur mobile.
+
+## 61. Cégep et sport d'un recruteur verrouillés après l'onboarding — l'app 1.4.3 (2026-10-01, pour le lot mobile)
+
+Migration `recruteur_rattachement_verrou` : la base refuse au recruteur onboardé
+tout changement de `school_id` / `sport` / `sport_id` (42501). Web : Paramètres en
+lecture seule. **Mobile** : `RecruteurProfilMobile` écrit encore ces champs — un
+recruteur qui les change dans l'app reçoit une erreur. Au lot mobile : mêmes champs
+en lecture seule, même phrase (« Pour changer de cégep ou de sport, écris à
+info@nexussports.ca »), et ne plus les renvoyer dans le payload.

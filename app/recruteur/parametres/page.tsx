@@ -493,12 +493,13 @@ function RecruiterSettingsDesktop() {
   };
   const [form, setForm] = useState<RecruiterSettings>(emptySettings);
   const [original, setOriginal] = useState<RecruiterSettings>(emptySettings);
+  /* Nom affiché du cégep (Mon établissement, lecture seule). */
+  const [cegepNom, setCegepNom] = useState("");
 
   /* ── UI state ───────────────────────────────────────────────── */
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState(false);
   const [passwordModal, setPasswordModal] = useState(false);
-  const [cegepModal, setCegepModal] = useState<string | null>(null);
   const [deactivateModal, setDeactivateModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [exportToast, setExportToast] = useState(false);
@@ -546,8 +547,9 @@ function RecruiterSettingsDesktop() {
         let schoolName = "";
         if (profile.school_id) {
           const { data: school } = await supabase.from("schools").select("name, region").eq("id", profile.school_id).single();
-          schoolName = school ? `${school.name} (${school.region})` : "";
+          schoolName = school ? (school.region ? `${school.name} (${school.region})` : school.name) : "";
         }
+        setCegepNom(schoolName);
 
         // Map sport to sportIds array
         const sportIds = (profile.sport as string) ? [(profile.sport as string)] : [];
@@ -631,8 +633,6 @@ function RecruiterSettingsDesktop() {
 
     // Map divisions back: ["D1"] → "Division 1"
     const divisionStr = form.divisions.length > 0 ? form.divisions[0].replace("D", "Division ") : null;
-    // Map sportIds back: ["Football"] → "Football"
-    const sportStr = form.sportIds.length > 0 ? form.sportIds[0] : null;
 
     const recruitmentPrefs = {
       regions: form.targetRegions || [],
@@ -647,9 +647,10 @@ function RecruiterSettingsDesktop() {
       first_name: form.firstName || "",
       last_name: form.lastName || "",
       phone: form.phone || null,
-      school_id: form.cegepId || null,
+      /* school_id et sport ne s'écrivent plus d'ici (risque 2, BP 2026-10-01) :
+         la base les refuse au recruteur après l'onboarding ; seul l'admin
+         plateforme les change (changer_rattachement_recruteur). */
       title: form.roleTitle || null,
-      sport: sportStr,
       division: divisionStr,
       recruitment_preferences: recruitmentPrefs,
       notification_preferences: {
@@ -744,8 +745,7 @@ function RecruiterSettingsDesktop() {
                 original={original}
                 onUpdate={updateField}
                 onSave={handleSave}
-                onCegepChange={(id) => setCegepModal(id)}
-                schools={schoolsList}
+                cegepNom={cegepNom}
               />
             )}
             {section === "recrutement" && (
@@ -804,17 +804,6 @@ function RecruiterSettingsDesktop() {
 
       {/* ── Modals ──────────────────────────────────────────────── */}
       {passwordModal && <PasswordChangeModal onClose={() => setPasswordModal(false)} />}
-
-      <ConfirmModal
-        open={!!cegepModal}
-        onClose={() => setCegepModal(null)}
-        onConfirm={() => { if (cegepModal) { updateField("cegepId", cegepModal); updateField("campusId", undefined); } setCegepModal(null); }}
-        title="Changer de CÉGEP"
-        message="Changer de CÉGEP réinitialisera certaines de vos préférences. Continuer ?"
-        confirmLabel="Confirmer"
-        cancelLabel="Annuler"
-        variant="warning"
-      />
 
       <ConfirmModal
         open={deactivateModal}

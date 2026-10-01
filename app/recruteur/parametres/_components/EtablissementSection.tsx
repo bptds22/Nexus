@@ -1,29 +1,35 @@
 "use client";
 
 import type { RecruiterSettings } from "@/lib/types/models";
-import { RSEQ_SPORTS } from "@/lib/config/recruiterReferenceData";
-import { POSITIONS } from "@/lib/sports-data";
-import SchoolSelect from "@/components/ui/SchoolSelect";
 
 /* ─────────────────────────────────────────────────────────────────
-   EtablissementSection — CÉGEP, sports, divisions
+   EtablissementSection — CÉGEP, sport, rôle, divisions
+
+   Cégep et sport en LECTURE SEULE après l'onboarding (risque 2, décision
+   BP 2026-10-01) : ils définissent l'unité (cégep × sport) et l'accès au
+   tableau blanc de l'unité. La base refuse tout changement fait par le
+   recruteur lui-même (policy `users update own` +
+   recruteur_rattachement_inchange) ; seul l'admin plateforme les change,
+   par changer_rattachement_recruteur.
 ───────────────────────────────────────────────────────────────── */
 
 const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
+const lectureSeuleCls = "w-full bg-[#13151a]/60 border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#9CA3AF]";
+
+export const MESSAGE_CHANGEMENT_RATTACHEMENT = "Pour changer de cégep ou de sport, écris à info@nexussports.ca";
 
 interface Props {
   form: RecruiterSettings;
   original: RecruiterSettings;
   onUpdate: <K extends keyof RecruiterSettings>(key: K, value: RecruiterSettings[K]) => void;
   onSave: () => void;
-  onCegepChange: (newId: string) => void;
-  schools?: { id: string; name: string }[];
+  /** Nom affiché du cégep (lecture seule). */
+  cegepNom: string;
 }
 
-export default function EtablissementSection({ form, original, onUpdate, onSave, onCegepChange, schools = [] }: Props) {
-  const dirty = form.cegepId !== original.cegepId || form.roleTitle !== original.roleTitle ||
-    JSON.stringify(form.sportIds) !== JSON.stringify(original.sportIds) ||
+export default function EtablissementSection({ form, original, onUpdate, onSave, cegepNom }: Props) {
+  const dirty = form.roleTitle !== original.roleTitle ||
     JSON.stringify(form.divisions) !== JSON.stringify(original.divisions) ||
     JSON.stringify(form.programIds) !== JSON.stringify(original.programIds);
 
@@ -35,59 +41,37 @@ export default function EtablissementSection({ form, original, onUpdate, onSave,
       </div>
 
       <div className="space-y-5 max-w-2xl">
-        {/* CÉGEP */}
+        {/* CÉGEP — lecture seule */}
         <div>
-          <label className={labelCls}>CÉGEP / École</label>
-          <SchoolSelect
-            value={form.cegepId || null}
-            onChange={(id) => { if (id !== form.cegepId) onCegepChange(id); }}
-            filterType="CEGEP"
-            placeholder="Rechercher un CÉGEP..."
-          />
+          <span className={labelCls}>CÉGEP</span>
+          <p className={lectureSeuleCls} data-testid="cegep-lecture-seule">{cegepNom || "—"}</p>
+        </div>
+
+        {/* Sport — lecture seule */}
+        <div>
+          <span className={labelCls}>Sport recruté</span>
+          <div className="flex flex-wrap gap-2" data-testid="sport-lecture-seule">
+            {form.sportIds.length > 0
+              ? form.sportIds.map((s) => (
+                  <span key={s} className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/[0.06] text-[#e0e0e0] text-[13px] font-bold border border-white/10">{s}</span>
+                ))
+              : <span className="text-[14px] text-[#6b7280]">—</span>}
+          </div>
+        </div>
+
+        <div className="bg-white/[0.03] border-l-[3px] border-[#6B7280] rounded-r-lg px-4 py-3" data-testid="message-changement-rattachement">
+          <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+            Ton cégep et ton sport définissent ton unité de recrutement.{" "}
+            <span className="text-[#e0e0e0]">{MESSAGE_CHANGEMENT_RATTACHEMENT}</span>.
+          </p>
         </div>
 
         {/* Role */}
         <div>
-          <label className={labelCls}>Rôle / Titre</label>
-          <input type="text" value={form.roleTitle} maxLength={80}
+          <label className={labelCls} htmlFor="etab-role">Rôle / Titre</label>
+          <input id="etab-role" type="text" value={form.roleTitle} maxLength={80}
             placeholder="Entraîneur-chef, Coordonnateur sportif..."
             onChange={(e) => onUpdate("roleTitle", e.target.value)} className={inputCls} />
-        </div>
-
-        {/* Sports */}
-        <div>
-          <label className={labelCls}>Sport(s) recruté(s) <span className="text-[#E63946]">*</span></label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {form.sportIds.map((s) => (
-              <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[13px] font-bold border border-[#E63946]/25">
-                {s}
-                <button type="button" onClick={() => {
-                  const next = form.sportIds.filter((x) => x !== s);
-                  onUpdate("sportIds", next);
-                  onUpdate("targetPositions", form.targetPositions.filter((p) => {
-                    const remaining = next.flatMap((sp) => (POSITIONS[sp] || []).map((pp) => pp.abbr));
-                    return remaining.includes(p);
-                  }));
-                }} className="hover:text-white transition-colors ml-0.5">&times;</button>
-              </span>
-            ))}
-          </div>
-          <select aria-label="Ajouter un sport" value=""
-            onChange={(e) => { if (e.target.value && !form.sportIds.includes(e.target.value)) onUpdate("sportIds", [...form.sportIds, e.target.value]); }}
-            className={inputCls}>
-            <option value="">Ajouter un sport...</option>
-            {RSEQ_SPORTS.filter((s) => !form.sportIds.includes(s)).map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          {form.sportIds.length === 0 && (
-            <p className="text-[12px] text-[#E63946] mt-1">Sélectionnez au moins un sport.</p>
-          )}
-          <div className="mt-3 bg-[#E63946]/[0.06] border-l-[3px] border-[#E63946] rounded-r-lg px-4 py-3">
-            <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-              Les sports sélectionnés déterminent les alertes de nouveaux athlètes et le pré-filtrage de votre recherche.
-            </p>
-          </div>
         </div>
 
         {/* Divisions */}

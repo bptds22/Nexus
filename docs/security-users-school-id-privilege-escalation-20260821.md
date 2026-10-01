@@ -2,8 +2,16 @@
 
 **Trouvé le** 2026-08-21, en marge du chantier « messagerie admin » (diagnostic du rôle
 à donner à l'identité de service).
-**Statut : DOCUMENTÉ, NON CORRIGÉ.** Le correctif dépasse le lot messagerie et exige
-son propre lot avec preuves par rôle — voir « Ce que le correctif implique ».
+**Statut : CORRIGÉ POUR LES RECRUTEURS (2026-10-01), ouvert pour les autres rôles.**
+Migration `recruteur_rattachement_verrou` : `users update own` refuse au recruteur
+ONBOARDÉ tout changement de `school_id`, `sport` ou `sport_id`
+(`recruteur_rattachement_inchange`) ; la seule porte est
+`changer_rattachement_recruteur` — admin plateforme (consigné dans
+`admin_operations`) ou soi-même PENDANT l'onboarding. Paramètres affiche cégep et
+sport en lecture seule : « Pour changer de cégep ou de sport, écris à
+info@nexussports.ca ». Les coachs (et autres rôles) gardent le comportement décrit
+ci-dessous — chantier à part.
+*(Statut d'origine : DOCUMENTÉ, NON CORRIGÉ — le correctif dépassait le lot messagerie.)*
 **Vérifié au catalogue prod** (`nrloizyemulbhujrqhgx`), pas à partir d'un fichier de
 migration ni d'un résumé.
 
