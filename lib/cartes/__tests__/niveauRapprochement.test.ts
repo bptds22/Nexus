@@ -5,6 +5,8 @@ import { niveauRapprochement, libelleNiveau, differences } from "@/lib/cartes/ni
 test("trois niveaux, décision BP 2026-09-30", () => {
   assert.equal(libelleNiveau(niveauRapprochement("COURRIEL")), "Correspondance confirmée par le courriel");
   assert.equal(libelleNiveau(niveauRapprochement("COURRIEL_PARENT")), "Correspondance confirmée par le courriel");
+  // Courriel du parent de la CARTE = celui du parent de la fiche (BP 2026-09-30).
+  assert.equal(libelleNiveau(niveauRapprochement("COURRIEL_PARENT_CARTE")), "Correspondance confirmée par le courriel");
   assert.equal(libelleNiveau(niveauRapprochement("TELEPHONE")), "Correspondance confirmée par le téléphone");
   assert.equal(libelleNiveau(niveauRapprochement("TELEPHONE_PARENT")), "Correspondance confirmée par le téléphone");
   assert.equal(libelleNiveau(niveauRapprochement("EQUIPE")), "Correspondance : même nom, même équipe");
@@ -16,7 +18,7 @@ test("trois niveaux, décision BP 2026-09-30", () => {
 });
 
 test("aucun libellé « probable » ou « possible » nu", () => {
-  for (const c of ["COURRIEL", "COURRIEL_PARENT", "TELEPHONE", "TELEPHONE_PARENT", "EQUIPE", "ETABLISSEMENT", "EQUIPE_PROCHE", "ECOLE", "ECOLE_PROCHE"] as const) {
+  for (const c of ["COURRIEL", "COURRIEL_PARENT", "COURRIEL_PARENT_CARTE", "TELEPHONE", "TELEPHONE_PARENT", "EQUIPE", "ETABLISSEMENT", "EQUIPE_PROCHE", "ECOLE", "ECOLE_PROCHE"] as const) {
     assert.doesNotMatch(libelleNiveau(niveauRapprochement(c)), /^Correspondance (probable|possible)$/);
   }
 });

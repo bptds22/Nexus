@@ -2,7 +2,9 @@
    niveauRapprochement — les TROIS niveaux affichés d'une proposition
    (décision BP 2026-09-30), pur et testé.
 
-   · courriel identique (de la fiche, du compte ou du parent)
+   · courriel identique (de la fiche, du compte ou du parent), ou courriel
+     du PARENT de la carte = courriel du parent de la fiche (prénom
+     compatible, décision BP 2026-09-30)
        → « Correspondance confirmée par le courriel » ;
    · téléphone identique (de la fiche ou du parent), même niveau
        → « Correspondance confirmée par le téléphone » ;
@@ -23,10 +25,10 @@ import { normaliserNom } from "@/lib/cartes/carteProspect";
 
 export type NiveauRapprochement = "CONFIRMEE" | "CONFIRMEE_TELEPHONE" | "MEME_NOM_EQUIPE" | "MEME_NOM_ETABLISSEMENT" | "POSSIBLE";
 
-type Critere = "COURRIEL" | "COURRIEL_PARENT" | "TELEPHONE" | "TELEPHONE_PARENT" | "EQUIPE" | "ETABLISSEMENT" | "EQUIPE_PROCHE" | "ECOLE" | "ECOLE_PROCHE";
+type Critere = "COURRIEL" | "COURRIEL_PARENT" | "COURRIEL_PARENT_CARTE" | "TELEPHONE" | "TELEPHONE_PARENT" | "EQUIPE" | "ETABLISSEMENT" | "EQUIPE_PROCHE" | "ECOLE" | "ECOLE_PROCHE";
 
 export function niveauRapprochement(critere: Critere): NiveauRapprochement {
-  if (critere === "COURRIEL" || critere === "COURRIEL_PARENT") return "CONFIRMEE";
+  if (critere === "COURRIEL" || critere === "COURRIEL_PARENT" || critere === "COURRIEL_PARENT_CARTE") return "CONFIRMEE";
   if (critere === "TELEPHONE" || critere === "TELEPHONE_PARENT") return "CONFIRMEE_TELEPHONE";
   if (critere === "EQUIPE") return "MEME_NOM_EQUIPE";
   if (critere === "ETABLISSEMENT") return "MEME_NOM_ETABLISSEMENT";

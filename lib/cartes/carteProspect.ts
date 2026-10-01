@@ -35,6 +35,10 @@ export interface CarteMeta {
   courriel: string | null;
   /** 10 chiffres (normalisé par la base) — Pro de l'unité seulement. */
   telephone: string | null;
+  /** Le parent (décision BP 2026-09-30) : facultatif, Infos seulement, jamais
+   *  exporté. Son courriel sert au rapprochement, jamais à l'envoi. */
+  parentNom: string | null;
+  parentCourriel: string | null;
   lienVideo: string | null;
   teamId: string | null;
   teamNom: string | null;
@@ -99,6 +103,8 @@ export interface LigneCarte {
   lien_video: string | null;
   courriel: string | null;
   telephone: string | null;
+  parent_nom: string | null;
+  parent_courriel: string | null;
   etape: string;
   grade: string | null;
   relance_le: string | null;
@@ -121,7 +127,7 @@ export interface LigneCarte {
 
 const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
-  taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, etape, grade, relance_le, relance_note,
+  taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, parent_nom, parent_courriel, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
   school_id,
   teams!team_id(name, division, schools!school_id(name, region, type)),
@@ -267,6 +273,8 @@ export function versKanban(
       nom: l.nom,
       courriel: l.courriel,
       telephone: l.telephone,
+      parentNom: l.parent_nom,
+      parentCourriel: l.parent_courriel,
       lienVideo: l.lien_video,
       teamId: l.team_id,
       teamNom: l.teams?.name ?? null,
@@ -300,6 +308,8 @@ const VERS_COLONNE: Record<string, string> = {
   grade: "grade",
   telephone: "telephone",
   teamId: "team_id",
+  parentNom: "parent_nom",
+  parentCourriel: "parent_courriel",
 };
 
 export async function ecrireCarte(supabase: SupabaseClient, carteId: string, champs: Record<string, unknown>) {
@@ -343,6 +353,8 @@ export interface NouvelleCarte {
   lienVideo: string | null;
   courriel: string | null;
   telephone: string | null;
+  parentNom: string | null;
+  parentCourriel: string | null;
 }
 
 export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
@@ -362,6 +374,8 @@ export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
       lien_video: c.lienVideo?.trim() || null,
       courriel: c.courriel?.trim() || null,
       telephone: c.telephone || null,
+      parent_nom: c.parentNom?.trim() || null,
+      parent_courriel: c.parentCourriel?.trim() || null,
     })
     .select("id")
     .single();
