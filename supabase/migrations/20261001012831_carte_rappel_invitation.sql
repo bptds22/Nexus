@@ -1,3 +1,4 @@
+-- 20261001012831_carte_rappel_invitation (appliquée en prod le 2026-10-01, 01:28 UTC — après le déploiement de send-invitation-carte v5)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE PROSPECT — RAPPEL D'INVITATION ENVOYÉ PAR NEXUS (décision BP 2026-09-30).
 --
@@ -29,7 +30,7 @@
 -- ADDITIVE : deux colonnes, une table, une valeur de journal, trois fonctions
 -- nouvelles ; UNE fonction redéfinie (carte_invitation_garde, même ACL).
 -- S'applique APRÈS 20260930210059 et 20260930210110.
--- Rollback : supabase/rollback/20261001005953_rollback_carte_rappel_invitation.sql
+-- Rollback : supabase/rollback/20261001012831_rollback_carte_rappel_invitation.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- 1. Le compteur et la date, sur la carte (lisibles par l'unité, sous la RLS de la carte).

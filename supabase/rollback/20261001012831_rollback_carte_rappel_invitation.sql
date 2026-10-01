@@ -1,4 +1,4 @@
--- Rollback de 20261001005953_carte_rappel_invitation.
+-- Rollback de 20261001012831_carte_rappel_invitation.
 -- Retire les rappels (la table, les fonctions, les lignes de journal
 -- INVITATION_RAPPEL), le compteur et la date, et rend carte_invitation_garde
 -- à son corps de 20260930210059. Les courriels déjà partis le restent.
