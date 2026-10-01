@@ -1,4 +1,4 @@
--- Rollback de 20261001171759_recruteur_rattachement_verrou.
+-- Rollback de 20261001173705_recruteur_rattachement_verrou.
 -- Rend `users update own` à son WITH CHECK d'avant (5 colonnes épinglées) et
 -- retire les deux fonctions. ⚠ Rouvre le risque 2.
 drop policy "users update own" on public.users;

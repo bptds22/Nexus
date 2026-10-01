@@ -1,3 +1,4 @@
+-- 20261001173705_recruteur_rattachement_verrou (appliquée en prod le 2026-10-01, 17:37 UTC)
 -- ════════════════════════════════════════════════════════════════════════════
 -- RISQUE 2 — UN RECRUTEUR NE CHANGE PLUS LUI-MÊME DE CÉGEP NI DE SPORT
 -- (GO BP 2026-10-01 ; docs/security-users-school-id-privilege-escalation-20260821.md).
@@ -19,7 +20,7 @@
 --     finish_recruiter_onboarding (SECURITY DEFINER, onboarding), les autres
 --     rôles (coach, athlète…).
 --
--- Rollback : supabase/rollback/20261001171759_rollback_recruteur_rattachement_verrou.sql
+-- Rollback : supabase/rollback/20261001173705_rollback_recruteur_rattachement_verrou.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 create function public.recruteur_rattachement_inchange(p_school_id uuid, p_sport text, p_sport_id uuid)
