@@ -1,4 +1,4 @@
--- ROLLBACK de 20261001211000_ecole_non_listee.
+-- ROLLBACK de 20261002131439_ecole_non_listee.
 -- ⚠ Supprime les textes saisis. Les exporter d'abord si la colonne a servi :
 --   select id, user_id, ecole_non_listee from public.athletes where ecole_non_listee is not null;
 -- Les lignes admin_notifications 'ECOLE_NON_LISTEE' sont laissées (historique).

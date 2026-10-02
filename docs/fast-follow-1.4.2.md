@@ -1904,7 +1904,7 @@ Relevés en passant, NON traités (hors lot 0) :
 
 ## 65. Onboarding 1.4.4 — volet 5, « Mon école n'est pas listée », sauvegarde par écran (branche `feat/onboarding-1-4-4`, 2026-10-01)
 
-Décisions BP du 2026-10-01. **Rien en prod** (« STOP avant la prod »).
+Décisions BP du 2026-10-01. **Les deux migrations sont en prod depuis le 2026-10-02** (volet 5 puis école non listée).
 
 - **Volet 5** (`20261002130635`, APPLIQUÉ en prod le 2026-10-02) : pendant l'onboarding, `school_id` et
   `coach_id` sont ouverts à l'athlète ; tout le reste du périmètre reste fermé.
@@ -1912,7 +1912,7 @@ Décisions BP du 2026-10-01. **Rien en prod** (« STOP avant la prod »).
   `docs/d6-volet5-perimetre-onboarding.sql` est PÉRIMÉ (il effaçait la règle
   `date_naissance`). Rollback testé à l'aller-retour (md5 restitué à l'octet).
   Preuves : `scripts/d6-volet5-preuves-par-role.sql`, 13/13.
-- **École non listée** (`20261001211000`) : colonne `athletes.ecole_non_listee`
+- **École non listée** (`20261002131439`, APPLIQUÉE en prod le 2026-10-02) : colonne `athletes.ecole_non_listee`
   + trigger `trg_notifier_ecole_non_listee` → `admin_notifications`. Ce qui se
   VOIT : la carte « Écoles non listées » de `/admin/dashboard`.
   Preuves : `scripts/ecole-non-listee-preuves.sql`.
@@ -1927,7 +1927,7 @@ revenir changer de contexte). La reprise le DÉDUIT de la fiche : école
 LIGUE_CIVILE → civil ; école scolaire ou école non listée → scolaire. Seul
 l'athlète **civil sans club** retombe à l'écran 0 — pré-rempli, une tape.
 
-**Ordre de déploiement (expand-then-contract)** : `20261001211000` AVANT le
+**Ordre de déploiement (expand-then-contract)** : `20261002131439` AVANT le
 web, et AVANT toute publication de la 1.4.4 — le client écrit
 `ecole_non_listee`, une colonne absente rendrait un 400 à l'écran 1.
 `20261002130635` est indépendant — appliqué en prod le 2026-10-02.
