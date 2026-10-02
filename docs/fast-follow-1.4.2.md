@@ -2049,3 +2049,32 @@ Ferme les écarts du §38. Aucune migration : tout ce qui est lu ou écrit
   lecture du dossier, note signée en lecture seule, favoris et listes de
   l'unité, retrait d'unité (0 ligne restante, celle de Rémi comprise).
   Scénario et nettoyage : `scripts/lot2-tableau-blanc-*.sql`.
+
+
+## 71. Lots 3 et 4 de la 1.4.4 — Mon processus et tableau de bord mobiles (2026-10-02)
+
+Aucune migration. Fusionnés dans `release/1.4.4` (`8be71357`, `4968ca7a`).
+
+- **Lot 3 — Mon processus (app)** : feuille du dossier en onglets
+  Actions / Infos / Historique (composants du web : `OngletInfosPanneau`,
+  `OngletHistoriquePanneau`, historique signé de l'unité) ; grade A-D SOUS la
+  cote, sur la carte et dans la feuille ; filtres rapides à l'écran, sous les
+  étapes (Avec grade, 4+ étoiles, Avec vidéo, À relancer, Visites à venir —
+  `QUICK_FILTERS`, mêmes prédicats que le web) ; directeur (admin cégep) :
+  sélecteur de sport (`FiltreSportUnite`) et `AvisLectureSeule`, dossiers
+  d'un autre sport en lecture seule (balayage, étapes, grade, relance,
+  visite, notes et retrait refusés ; registre §40).
+- **Lot 4 — Tableau de bord (app)** : « Mon activité », quatre tuiles dans
+  l'ordre décidé par BP — Nouveaux athlètes, Relances, Visites planifiées,
+  Athlètes qui te ciblent — chacune comptée avec la définition de sa
+  destination et ouvrant l'écran filtré (`?nouveau=true`,
+  `?filtre=relances`, `?filtre=visites`, `?me_ciblent=true`). Pour un Pro,
+  relances, tuiles et entonnoir lisent le processus de l'UNITÉ.
+  ⚠ « Nouveaux athlètes » = profils créés depuis **10 jours** (fenêtre du
+  filtre de recherche, côté serveur), pas une semaine civile : le chiffre de
+  la tuile est celui de l'écran d'arrivée. Le bandeau « N nouveaux talents
+  cette semaine » du haut garde son propre calcul (7 jours) — deux chiffres
+  différents à l'écran, à trancher (aligner la fenêtre du filtre, ou le
+  bandeau).
+- **Build** : Android `versionCode 15` / `1.4.4` (le 14 a pu être vu par
+  Play ; un numéro sauté ne coûte rien, un numéro réutilisé bloque l'envoi).
