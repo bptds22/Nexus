@@ -56,6 +56,7 @@ import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
+import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -1042,6 +1043,25 @@ export function AthleteOnboardingMobile() {
       parentSlice.partner_visibility_opted_in_at = partnerVisibilityISO;
     }
 
+    /* Athlète MAJEUR (lot 0 de la 1.4.4, parité web) — SA case partenaires,
+       posée au signup courriel (écran 2) ou à /consentements (Google/Apple) :
+       metadata `consent_partner_visibility` = ISO du moment où il l'a cochée.
+       Jamais la parentale, jamais déduite ; `partner_visibility_parental_consent`
+       n'est PAS écrite (aucun parent n'a rien autorisé).
+       · INSERT, ou fiche déjà opt-in : dans le record, à la date du signup ;
+       · fiche RÉCLAMÉE encore à false : le changement lèverait la garde de
+         périmètre et ferait tomber toute l'étape — on passe par la RPC
+         set_my_partner_visibility APRÈS l'enregistrement (plus bas). */
+    const adultPartnerISO = !hasParentalConsent && typeof meta.consent_partner_visibility === "string"
+      ? meta.consent_partner_visibility
+      : null;
+    const adultPartnerParRpc = adultPartnerISO !== null
+      && !!existingAthleteId && ficheEnBase.current?.partner_visibility_opt_in !== true;
+    if (adultPartnerISO !== null && !adultPartnerParRpc) {
+      parentSlice.partner_visibility_opt_in = true;
+      parentSlice.partner_visibility_opted_in_at = adultPartnerISO;
+    }
+
     // Iter signup-reorg — date de naissance capturée à l'écran 2 du signup
     // (SignupMobile.handleSubmit) et stashée dans raw_user_meta_data.date_naissance
     // (format ISO "YYYY-MM-DD"). Relue ici et écrite dans athletes.date_naissance
@@ -1105,6 +1125,19 @@ export function AthleteOnboardingMobile() {
         setSaving(false); return;
       }
       athleteIdForTeam = inserted?.id ?? null;
+    }
+
+    if (adultPartnerParRpc) {
+      /* Non bloquant : l'inscription est faite ; un refus (DOB < 18 côté base)
+         laisse la fiche à false, et l'athlète peut l'activer dans Paramètres. */
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc("set_my_partner_visibility", {
+        p_granted: true,
+        p_policy_version: PRIVACY_POLICY_VERSION,
+      });
+      const ok = (rpcRes as { ok?: boolean } | null)?.ok === true;
+      if (rpcErr || !ok) {
+        console.error(`[OnboardingMobile] visibilité partenaires (majeur): ${rpcErr ? erreurLisible(rpcErr) : JSON.stringify(rpcRes)}`);
+      }
     }
 
     // ── Rattachement d'équipe — via apply_team_attachment, plus d'INSERT ────

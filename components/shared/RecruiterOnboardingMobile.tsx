@@ -43,16 +43,14 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { triggerHaptic } from "@/lib/haptics";
+import { SPORTS_PROPOSES } from "@/lib/config/sportsProposes";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
-const SPORTS = [
-  "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
-  "Athlétisme", "Flag football", "Rugby", "Cheerleading",
-  "Natation", "Badminton", "Cross-country", "Futsal",
-  "Baseball", "Ultimate frisbee", "Autre",
-];
-const SPORT_OPTIONS: PickerOption[] = SPORTS.map((s) => ({ value: s, label: s }));
+/* La liste du web (lot A, registre §37) : chaque libellé existe dans
+   public.sports.nom, d'où le trigger déduit users.sport_id. « Autre » n'est
+   plus proposé : il laissait le recruteur sans unité (lot 0 de la 1.4.4). */
+const SPORT_OPTIONS: PickerOption[] = SPORTS_PROPOSES.map((s) => ({ value: s, label: s }));
 
 type DirectorChoice = "owner" | "interim" | "coach" | null;
 

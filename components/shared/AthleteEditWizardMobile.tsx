@@ -2364,19 +2364,15 @@ function PastilleStatut({ s, valeur, aUnCoach }: {
   /** L'athlète a-t-il un entraîneur rattaché ? Décide du PROCHAIN PAS montré. */
   aUnCoach: boolean;
 }) {
-  /* ── UN REFUS MACHINE N'EST PAS UN REFUS ────────────────────────────────
-     `system_note` est posé par le trigger de transition, jamais par un
-     humain. Tant que le volet 6 de D6 n'est pas appliqué, TOUTE proposition
-     d'évaluation est rejetée à l'insertion — annoncer « Refusée » ferait
-     croire au jeune que son entraîneur l'a recalé, alors que personne n'a
-     rien lu. On montre donc l'attente, c'est-à-dire la vérité de sa
-     situation : ça n'a pas encore été regardé.
-
-     Le rouge reste pour les VRAIS refus, ceux qu'un entraîneur prononce —
-     ils n'ont pas de note_systeme, et leur motif est un message humain, donc
-     affichable. */
-  const refusMachine = s.status === "rejected" && !!s.system_note;
-  const enAttente = s.status === "pending" || refusMachine;
+  /* ── LES REFUS S'AFFICHENT (lot 0 de la 1.4.4, parité web) ─────────────
+     Avant le volet 6 de D6, le trigger de transition rejetait TOUTE
+     proposition d'évaluation à l'insertion ; on montrait donc « en attente »
+     pour ne pas faire croire à un recalage. Le volet 6 est en prod : la
+     proposition attend désormais le coach, et un refus posé par le serveur
+     (system_note) a une vraie raison, rédigée pour l'athlète (« Ce champ ne
+     se modifie plus depuis ton profil. »). Le web l'affiche comme refusée ;
+     la 1.4.3 la laissait « en attente » pour toujours. */
+  const enAttente = s.status === "pending";
 
   /* L'état décrit SON PROCHAIN PAS, jamais l'architecture (règle 11).
      Sans entraîneur, le prochain pas n'est pas d'attendre — c'est d'aller
@@ -2405,11 +2401,10 @@ function PastilleStatut({ s, valeur, aUnCoach }: {
   );
 }
 
-/** Un vrai refus d'entraîneur — donc un motif ÉCRIT PAR UN HUMAIN, qu'on peut
- *  montrer. Le motif d'un refus machine, lui, ne s'affiche jamais : c'est de
- *  l'architecture, et l'architecture ne s'adresse pas au jeune. */
+/** Le motif d'un refus, quel qu'il soit : celui d'un entraîneur (écrit par
+ *  un humain) ou celui du serveur (rédigé pour l'athlète, comme sur le web). */
 function motifHumain(s: AthleteSuggestion): string | null {
-  if (s.status !== "rejected" || s.system_note) return null;
+  if (s.status !== "rejected") return null;
   return s.rejection_reason ?? null;
 }
 

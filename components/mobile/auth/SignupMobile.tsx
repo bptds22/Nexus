@@ -160,6 +160,10 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
   // + persistInitialConsents. Au submit onboarding, le timestamp DU SIGNUP
   // sera traduit en athletes.partner_visibility_* (cf AthleteOnboardingMobile).
   const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
+  /* Athlète MAJEUR — SA propre case partenaires (écran 2), décochée,
+     optionnelle ; parité web (usePartialSignup.showsAdultPartnerConsent,
+     2026-09-28). Lot 0 de la 1.4.4 : la 1.4.3 ne la proposait qu'au parent. */
+  const [consentAdultPartnerVisibility, setConsentAdultPartnerVisibility] = useState(false);
   const [openRelation, setOpenRelation] = useState(false);
   // Iter 7.50-a-bis (legal-2) — bottom sheet pour les 3 docs légaux.
   // null = sheet fermé. State au niveau parent → le formulaire conserve
@@ -411,6 +415,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           policy: consentPolicy,
           data: consentData,
           marketing: consentMarketing,
+          partnerVisibility: consentAdultPartnerVisibility,
         })
       : buildConsentMetadata(
           {
@@ -469,6 +474,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
             policy: consentPolicy,
             data: consentData,
             marketing: consentMarketing,
+            partnerVisibility: consentAdultPartnerVisibility,
           }
         : {
             policy: consentPolicy,
@@ -499,7 +505,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
     userType, coachContext, userIsAdult,
     parentFirstName, parentLastName, parentEmail, parentRelationship,
     consentPolicy, consentData, consentMarketing,
-    consentProfile, consentVisibility, consentPartnerVisibility,
+    consentProfile, consentVisibility, consentPartnerVisibility, consentAdultPartnerVisibility,
     router, toast,
   ]);
 
@@ -588,6 +594,9 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           onOpenLegal={(key) => setLegalSheet(key)}
           setInputFocused={setInputFocused}
           audience={userType}
+          showsAdultPartnerConsent={userType === "athlete" && birthdate.length > 0 && userIsAdult}
+          consentAdultPartnerVisibility={consentAdultPartnerVisibility}
+          setConsentAdultPartnerVisibility={setConsentAdultPartnerVisibility}
         />
       )}
       {step === 3 && (
@@ -911,6 +920,10 @@ interface Step2YouProps {
    *  "coach" / "recruiter" : subtitle générique + pas d'email re-confirm
    *  (déjà validé à l'écran 1, pas un athlète avec carte). */
   audience?: "athlete" | "coach" | "recruiter";
+  /** Athlète majeur : sa case partenaires (parité web). */
+  showsAdultPartnerConsent?: boolean;
+  consentAdultPartnerVisibility?: boolean;
+  setConsentAdultPartnerVisibility?: (v: boolean) => void;
 }
 
 function Step2You(p: Step2YouProps) {
@@ -1068,6 +1081,14 @@ function Step2You(p: Step2YouProps) {
           J&apos;accepte de recevoir des communications marketing de Nexus (max 2 courriels par mois).{" "}
           <span className="text-white/40">(optionnel)</span>
         </ConsentCheckbox>
+
+        {p.showsAdultPartnerConsent && p.setConsentAdultPartnerVisibility && (
+          <PartnerVisibilityConsentCard
+            checked={!!p.consentAdultPartnerVisibility}
+            onChange={p.setConsentAdultPartnerVisibility}
+            audience="adult"
+          />
+        )}
       </div>
     </div>
   );

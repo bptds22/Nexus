@@ -1865,3 +1865,39 @@ par Google/Outlook). Au lot mobile : exposer le même panneau dans
 `RecruteurParametresMobile` / `RecruteurCalendrierMobile` (composant
 `AbonnementAgenda`, ouverture des liens via le navigateur système). Le
 `IS_CAPACITOR` du Calendrier sort AVANT l'en-tête : le bouton n'y est pas.
+
+## 64. Lot 0 de la 1.4.4 — compatibilité et Loi 25, FAIT sur la branche `fix/mobile-lot0` (2026-10-01)
+
+Décision BP 2026-10-01 : la 1.4.4 = lot 0 seul ; lots 1 à 6 (cadrage
+`docs/cadrage-1.4.4.md`) en 1.4.5. Prouvé sur appareil simulé (Pixel 7, mode
+Capacitor, base locale), avant le build de publication.
+
+- **§61/§62 Mon profil** (`RecruteurProfilMobile`) : cégep et sport en lecture
+  seule + phrase info@, hors charge utile (`payloadMonProfil`) ; erreurs
+  lisibles ; photo : envoi raté et suppression vérifiés (`messagePhoto`).
+- **§62 Paramètres** (`RecruteurParametresMobile`) : `privacy_preferences`
+  relue puis FUSIONNÉE (`fusionnerConsentementMarketing`), aucune date inventée ;
+  la bascule marketing compte enfin dans « modifié » (la retirer seule ne
+  proposait jamais d'enregistrer).
+- **§50 Visibilité partenaires** (`AthleteParametresMobile`) : RPC
+  `set_my_partner_visibility` ; la case « Consentement parental » que le
+  mineur cochait lui-même est retirée ; mineur : retrait seulement.
+- **§49 Case partenaires du majeur** : écran 2 de `SignupMobile` (+ correctif :
+  la valeur manquait aux dépendances du `useCallback` de soumission — elle
+  partait toujours à `false`) ; `/consentements` (Google/Apple) l'avait déjà ;
+  `AthleteOnboardingMobile` la traduit : INSERT à la date du signup, fiche
+  réclamée par la RPC (journalisée).
+- **Règle de visite** (`useUpdatePipelineStage`, feuille du processus) :
+  `regleVisite` ; poser une date sur Engagé ne fait plus reculer l'étape ;
+  pastille et section visite de « Visite planifiée » à « Lettre signée ».
+- **§37 Sports** : `SPORTS_PROPOSES` à l'onboarding recruteur, sans « Autre ».
+- **Refus d'évaluation** (`AthleteEditWizardMobile`) : affichés « Refusée »
+  avec leur motif, comme le web (volet 6 en prod).
+- **Export** : « Exporter mon processus — Bientôt » retiré (décision BP).
+
+Relevés en passant, NON traités (hors lot 0) :
+- `profile_completion` : la fin d'onboarding (web ET mobile) l'écrit sous
+  l'identité de l'athlète, la garde de périmètre refuse (400 P0001), l'erreur
+  est ignorée — la valeur n'est jamais posée. Silencieux pour l'usager.
+- `RecruteurParametresMobile` garde « Désactiver mon compte » (retiré du web
+  le 2026-10-01) — à aligner ou non : décision BP.

@@ -48,6 +48,7 @@ import {
 } from "@/lib/pipeline/filterPipelineCards";
 import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useUpdatePipelineStage } from "@/lib/queries/recruiter/useUpdatePipelineStage";
+import { etapePorteVisite, etapeApresSaisieVisite } from "@/lib/pipeline/regleVisite";
 import { useTogglePipelinePriority } from "@/lib/queries/recruiter/useTogglePipelinePriority";
 import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteGrade";
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
@@ -466,7 +467,8 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
             avec overflow-hidden, deux lignes séparées la feraient déborder dès
             qu'un athlète porte les deux dates. */}
         {(() => {
-          const visitLabel = card.status === "visite_planifiee" ? formatVisitPill(card.visit_at) : null;
+          // De « Visite planifiée » à « Lettre signée » (regleVisite).
+          const visitLabel = etapePorteVisite(card.status) ? formatVisitPill(card.visit_at) : null;
           if (!visitLabel && !relance) return null;
           return (
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -948,16 +950,8 @@ function PipelineMenuSheet({
                 </button>
               </div>
 
-              {/* Sections futures (disabled). "Statistiques détaillées" retiré
-                  en iter 6.1c : le breakdown funnel est maintenant en haut du sheet. */}
-              <div className="pt-2 border-t border-white/[0.06]">
-                <div className="flex items-center justify-between px-4 py-3 opacity-40">
-                  <p className="text-[13px] text-white">Exporter mon processus</p>
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-[#6B7280] px-2 py-1 rounded bg-white/5">
-                    Bientôt
-                  </span>
-                </div>
-              </div>
+              {/* « Exporter mon processus — Bientôt » retiré (décision BP,
+                  lot 0 de la 1.4.4) : l'export se fait sur le web. */}
             </div>
           </motion.div>
 
@@ -1129,9 +1123,10 @@ function PipelineDetailSheet({
   };
 
   // Modification de la date de visite depuis le kanban — CHEMIN UNIQUE côté
-  // kanban : useUpdatePipelineStage avec le stage VISITE_PLANIFIEE + la date
-  // (cache TanStack cohérent via l'optimistic update du hook). Optimiste local,
-  // rollback si l'écriture échoue.
+  // kanban : useUpdatePipelineStage (cache TanStack cohérent via l'optimistic
+  // update du hook). Règle du web (regleVisite, lot 0 de la 1.4.4) : poser une
+  // date avance l'étape AU MOINS à « Visite planifiée » sans jamais la faire
+  // reculer (Engagé reste Engagé) ; l'effacer ne change pas l'étape.
   const handleSaveVisitDate = async (iso: string | undefined) => {
     if (!card) return;
     if (isFreeDemoMode) {
@@ -1142,7 +1137,11 @@ function PipelineDetailSheet({
     setSavingVisit(true);
     setVisitAtLocal(iso ?? null);
     try {
-      await updateStage.mutateAsync({ cardId: card.id, newStage: "VISITE_PLANIFIEE", visitAtIso: iso });
+      await updateStage.mutateAsync({
+        cardId: card.id,
+        newStage: (iso ? etapeApresSaisieVisite(card.status) : card.status).toUpperCase(),
+        visitAtIso: iso ?? null,
+      });
       toast.success({ message: iso ? "Date de visite enregistrée" : "Date de visite effacée" });
     } catch {
       setVisitAtLocal(prev);
@@ -1413,7 +1412,7 @@ function PipelineDetailSheet({
                   MÊME carte « voir la visite » (+ export agenda) que le profil
                   complet (VisitCalendarCard, gate strict : une date). Piloté
                   par visitAtLocal pour un feedback immédiat. */}
-              {card.status === "visite_planifiee" && (
+              {etapePorteVisite(card.status) && (
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-3">Visite planifiée</h3>
