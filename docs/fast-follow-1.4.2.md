@@ -1906,7 +1906,7 @@ Relevés en passant, NON traités (hors lot 0) :
 
 Décisions BP du 2026-10-01. **Rien en prod** (« STOP avant la prod »).
 
-- **Volet 5** (`20261001210000`) : pendant l'onboarding, `school_id` et
+- **Volet 5** (`20261002130635`, APPLIQUÉ en prod le 2026-10-02) : pendant l'onboarding, `school_id` et
   `coach_id` sont ouverts à l'athlète ; tout le reste du périmètre reste fermé.
   Rebasé sur le corps PROD (md5 `e92ffb4a…`) — le DDL préparé
   `docs/d6-volet5-perimetre-onboarding.sql` est PÉRIMÉ (il effaçait la règle
@@ -1930,7 +1930,7 @@ l'athlète **civil sans club** retombe à l'écran 0 — pré-rempli, une tape.
 **Ordre de déploiement (expand-then-contract)** : `20261001211000` AVANT le
 web, et AVANT toute publication de la 1.4.4 — le client écrit
 `ecole_non_listee`, une colonne absente rendrait un 400 à l'écran 1.
-`20261001210000` est indépendant (GO BP déjà donné, appliqué au signal).
+`20261002130635` est indépendant — appliqué en prod le 2026-10-02.
 
 Dérive locale corrigée en passant : `admin_notifications` avait la RLS
 **inactive** en local (lisible par anon/authenticated) ; active en prod, 0

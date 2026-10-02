@@ -558,8 +558,8 @@ consentement parental après onboarding) : registre `docs/fast-follow-1.4.2.md`
 (`users.onboarding_complete = false`), `school_id` et `coach_id` appartiennent à
 l'athlète — choisir son école EST le geste d'inscription. La garde s'applique
 pleinement **après**. Rien d'autre ne s'ouvre, à aucun moment.
-- DDL prêt, **non appliqué** : `docs/d6-volet5-perimetre-onboarding.sql`
-  (5ᵉ volet de la migration D6, registre §16).
+- **APPLIQUÉ en prod le 2026-10-02** : `supabase/migrations/20261002130635_volet5_onboarding_ecole_coach.sql`
+  (5ᵉ volet de la migration D6, registres §16 et §65). Le DDL de `docs/d6-volet5-perimetre-onboarding.sql` est PÉRIMÉ : il effaçait la règle `date_naissance`.
 - Miroir client, **livré en 1.4.1** : `lib/athlete/perimetreProtege.ts`. Tout
   écran qui écrit `athletes` sous l'identité de l'athlète doit passer son patch
   dans `elaguerProtegees()` — sinon reposer une colonne protégée **à l'identique**

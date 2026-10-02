@@ -22,7 +22,7 @@
    l'athlète change réellement d'école, la colonne part et le trigger
    refuse — APRÈS l'onboarding. Pendant (`onboarding_complete` pas vrai),
    école et coach sont le choix de l'athlète : volet 5 de la migration D6
-   (`20261001210000`), qui l'écrit EN BASE.
+   (`20261002130635`), qui l'écrit EN BASE.
 
    ── MIROIR, PAS RÉÉCRITURE ──────────────────────────────────────
    `COLONNES_PROTEGEES` recopie la liste du trigger. Si la liste change

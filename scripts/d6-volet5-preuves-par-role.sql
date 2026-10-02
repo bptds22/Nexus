@@ -1,4 +1,4 @@
--- Preuves par rôle du volet 5 (20261001210000). LOCAL seulement : tout est annulé (rollback final).
+-- Preuves par rôle du volet 5 (20261002130635). LOCAL seulement : tout est annulé (rollback final).
 -- Fixture locale d3a00000-…a001 ; adapter les \set pour un autre environnement. Attendu : 13 lignes ✅.
 \set ON_ERROR_STOP 0
 \set A '''d3a00000-0000-4000-8000-00000000a001'''

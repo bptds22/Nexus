@@ -1,4 +1,4 @@
--- ROLLBACK du volet 5 (20261001210000) : repose le corps EN PROD au 2026-10-01
+-- ROLLBACK du volet 5 (20261002130635) : repose le corps EN PROD au 2026-10-01
 -- avant le volet 5 (md5 pg_get_functiondef = e92ffb4a1d47226c22bc704e5bcb31d8),
 -- c.-à-d. school_id / coach_id refusés à l'athlète même pendant l'onboarding.
 -- CREATE OR REPLACE : ACL inchangée ; vérifiée en entier ci-dessous.
