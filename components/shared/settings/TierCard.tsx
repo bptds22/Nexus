@@ -69,16 +69,12 @@ export function TierCard({
           </li>
         ))}
       </ul>
-      {status === "upgrade" && (
+      {status === "upgrade" && !IS_CAPACITOR && (
         <div className="mt-3 pt-3 border-t border-white/[0.05]">
-          {IS_CAPACITOR ? (
-            /* iOS/natif (Apple IAP 3.1.1) : pas de CTA d'achat in-app. Texte
-               informatif PUR — pas de onClick, pas de lien cliquable. La
-               gestion d'un abo existant reste via le portail (hors TierCard). */
-            <div className="flex items-center justify-center h-9 rounded-2xl bg-white/[0.04] text-[12px] font-semibold text-[#9CA3AF] text-center px-3">
-              Gère ton abonnement sur nexussports.ca
-            </div>
-          ) : onUpgrade ? (
+          {/* iOS/natif (Apple IAP 3.1.1) : aucun pied dans l'app — la mention
+              « se gère sur la version web » est portée UNE fois par l'écran
+              appelant, en tête de section (paquet A 1.4.4). */}
+          {onUpgrade ? (
             <button
               type="button"
               onClick={() => { triggerHaptic("Light"); onUpgrade(); }}

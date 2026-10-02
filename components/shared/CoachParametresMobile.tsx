@@ -430,6 +430,9 @@ export function CoachParametresMobile() {
         />
         <NavRow
           label="Exporter mes données (Loi 25)"
+          /* Dans l'app, la ligne est en lecture seule (rightChevron "none" ne
+             se touche pas) : sans cette phrase, rien ne disait où exporter. */
+          sublabel={IS_CAPACITOR ? "Se fait sur la version web de Nexus." : undefined}
           isFirst={false}
           rightChevron={IS_CAPACITOR ? "none" : "external"}
           onTap={() => {

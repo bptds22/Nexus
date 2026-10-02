@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import CoachPicker from "@/components/coach/CoachPicker";
 import CivilCoachPicker from "@/components/coach/CivilCoachPicker";
 import { createClient } from "@/lib/supabase/client";
-import { isMinor } from "@/lib/utils/age";
+import { peutConsentirPartenaires } from "@/lib/legal/ageGate";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { AthleteParametresMobile } from "@/components/shared/AthleteParametresMobile";
 import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
@@ -450,11 +450,10 @@ function ParametresPageDesktop() {
                     if (!profile) return null;
                     /* §50 — tout passe par la RPC set_my_partner_visibility :
                        l'UPDATE direct est refusé par la garde de périmètre.
-                       Majeur : accorde ou retire. Mineur (ou date inconnue,
-                       traitée en mineur comme côté base) : RETIRE seulement —
-                       l'accord d'un mineur appartient à son parent. */
-                    const majeur = !!profile.dateOfBirth && !isMinor(profile.dateOfBirth);
-                    const peutAgir = profile.partnerOptIn || majeur;
+                       14 ans et plus (décision BP 2026-10-02) : accorde ou
+                       retire. Moins de 14 ans, ou date inconnue (comme côté
+                       base) : RETIRE seulement — l'accord passe par le parent. */
+                    const peutAgir = profile.partnerOptIn || peutConsentirPartenaires(profile.dateOfBirth);
                     const toggleEnabled = peutAgir && !savingPartnerOptIn;
 
                     return (
@@ -466,11 +465,6 @@ function ParametresPageDesktop() {
                               {profile.partnerOptIn && profile.partnerOptInDate && (
                                 <p className="text-[11px] text-[#22C55E] mt-1">
                                   Activé le {new Date(profile.partnerOptInDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
-                                </p>
-                              )}
-                              {profile.partnerOptIn && !majeur && (
-                                <p className="text-[11px] text-[#9CA3AF] mt-1">
-                                  Autorisé par ton parent. Tu peux le retirer ; seul ton parent peut le réactiver.
                                 </p>
                               )}
                             </div>
@@ -512,7 +506,7 @@ function ParametresPageDesktop() {
                               <path d="M7 11V7a5 5 0 0110 0v4" />
                             </svg>
                             <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
-                              Tu as moins de 18 ans : c&apos;est ton parent qui peut activer cette option, depuis son portail parent Nexus.
+                              Tu as moins de 14 ans : c&apos;est ton parent qui peut activer cette option, depuis son portail parent Nexus.
                             </p>
                           </div>
                         )}

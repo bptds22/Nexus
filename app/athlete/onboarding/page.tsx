@@ -14,6 +14,8 @@ import { isUnder14, MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } fro
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
+import { ressembleACegep } from "@/lib/athlete/detecterCegep";
+import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
@@ -823,6 +825,10 @@ function AthleteOnboardingDesktop() {
   const [ecoleIntrouvable, setEcoleIntrouvable] = useState(false);
   const [ecoleNonListee, setEcoleNonListee] = useState("");
   const ecoleNonListeeValide = ecoleIntrouvable && ecoleNonListee.trim().length >= 2;
+  /* Détection cégep (paquet A 1.4.4) : le texte désigne-t-il un cégep ? Ne
+     bloque rien — change seulement la phrase d'aide sous le champ. */
+  const nomsCegeps = useNomsCegeps(ecoleIntrouvable);
+  const ecoleSembleCegep = ecoleNonListeeValide && ressembleACegep(ecoleNonListee, nomsCegeps);
   // Coach (optional, school-context only)
   const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
 
@@ -921,8 +927,10 @@ function AthleteOnboardingDesktop() {
      metadata. Mieux vaut une date approximative qu'un consentement sans date. */
   const [consentProfileISO, setConsentProfileISO] = useState<string | null>(null);
   const [partnerVisibilityISO, setPartnerVisibilityISO] = useState<string | null>(null);
-  /* Athlète MAJEUR — horodatage de SA case partenaires (metadata
-     `consent_partner_visibility`, posée par /auth écran 2 ou /consentements).
+  /* Athlète de 14 ans et plus (majeur jusqu'au 2026-10-02) — horodatage de
+     SA case partenaires (metadata `consent_partner_visibility`, posée par
+     /auth écran 2 ou /consentements). Lue pour le mineur aussi : à 14 ans il
+     consent seul (migration 20261002170000).
      Même discipline que le mineur : pas d'écriture sans preuve datée, et
      l'horodatage est celui du SIGNUP. `partner_visibility_parental_consent`
      n'est PAS écrite : aucun parent n'a rien autorisé. */
@@ -992,7 +1000,8 @@ function AthleteOnboardingDesktop() {
             setPartnerVisibilityISO(meta.consent_parental_partner_visibility);
           }
         }
-      } else if (typeof meta.consent_partner_visibility === "string") {
+      }
+      if (typeof meta.consent_partner_visibility === "string") {
         setAdultPartnerISO(meta.consent_partner_visibility);
       }
 
@@ -1479,12 +1488,12 @@ function AthleteOnboardingDesktop() {
           partner_visibility_opt_in: true,
           partner_visibility_opted_in_at: partnerVisibilityISO ?? new Date().toISOString(),
         } : {}),
-        // Majeur : sa propre case (jamais la parentale, jamais déduite).
-        // INSERT seulement, ou fiche déjà opt-in (l'élagage retire alors la
-        // valeur identique) : sur une fiche réclamée encore à `false`, le
-        // changement lèverait la garde de périmètre et ferait échouer toute
-        // l'étape — registre §50, en attente de la RPC.
-        ...(!isMinor && adultPartnerISO
+        // 14 ans et plus : sa propre case (jamais la parentale, jamais
+        // déduite). INSERT seulement, ou fiche déjà opt-in (l'élagage retire
+        // alors la valeur identique) : sur une fiche réclamée encore à
+        // `false`, le changement lèverait la garde de périmètre et ferait
+        // échouer toute l'étape — c'est la RPC, à la fin, qui s'en charge.
+        ...(adultPartnerISO
             && (!existingAthleteId || ficheEnBase.current?.partner_visibility_opt_in === true) ? {
           partner_visibility_opt_in: true,
           partner_visibility_opted_in_at: partnerVisibilityISO ?? adultPartnerISO,
@@ -1553,8 +1562,11 @@ function AthleteOnboardingDesktop() {
          + journal, policy_version), puis la clé de metadata est effacée.
          Bloquant : un retrait qui échoue laisserait la fiche visible ou le
          journal dire oui. */
-      if (step === 1 && isMinor && !consentPartnerVisibility
-          && (traceSignupPartenaire.current || ficheEnBase.current?.partner_visibility_opt_in === true)) {
+      /* Seulement si la case parentale HÉRITÉE a été montrée puis décochée :
+         depuis le 2026-10-02 elle n'apparaît plus que pour une inscription
+         faite avant (trace de signup). Une fiche réclamée déjà opt-in par le
+         parent n'est plus retirée en silence par une case qu'on ne montre pas. */
+      if (step === 1 && isMinor && !consentPartnerVisibility && traceSignupPartenaire.current) {
         const { data: retrait, error: errRetrait } = await supabase.rpc("set_my_partner_visibility", {
           p_granted: false,
           p_policy_version: PRIVACY_POLICY_VERSION,
@@ -1709,8 +1721,8 @@ function AthleteOnboardingDesktop() {
         partner_visibility_opt_in: true,
         partner_visibility_opted_in_at: partnerVisibilityISO ?? new Date().toISOString(),
       } : {}),
-      // Majeur : sa propre case — mêmes conditions qu'à l'étape 1 (§50).
-      ...(!isMinor && adultPartnerISO
+      // 14 ans et plus : sa propre case — mêmes conditions qu'à l'étape 1.
+      ...(adultPartnerISO
           && (!existingAthleteId || ficheEnBase.current?.partner_visibility_opt_in === true) ? {
         partner_visibility_opt_in: true,
         partner_visibility_opted_in_at: partnerVisibilityISO ?? adultPartnerISO,
@@ -1718,6 +1730,12 @@ function AthleteOnboardingDesktop() {
       status: "ACTIF",
       verified: false,
     };
+
+    /* Fiche RÉCLAMÉE encore à false : la case du signup passe par la RPC
+       après l'enregistrement (parité AthleteOnboardingMobile) — l'écrire dans
+       le record lèverait la garde de périmètre. Relevé AVANT la sauvegarde. */
+    const partenaireParRpc = !!adultPartnerISO && !!existingAthleteId
+      && ficheEnBase.current?.partner_visibility_opt_in !== true;
 
     let athleteIdForTeam: string | null = existingAthleteId;
     if (existingAthleteId) {
@@ -1741,6 +1759,18 @@ function AthleteOnboardingDesktop() {
         setSaving(false); return;
       }
       athleteIdForTeam = (inserted?.id as string) ?? null;
+    }
+
+    if (partenaireParRpc) {
+      /* Non bloquant : l'inscription est faite ; un refus (moins de 14 ans
+         côté base) laisse la fiche à false, et Paramètres reste ouvert. */
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc("set_my_partner_visibility", {
+        p_granted: true,
+        p_policy_version: PRIVACY_POLICY_VERSION,
+      });
+      if (rpcErr || (rpcRes as { ok?: boolean } | null)?.ok !== true) {
+        console.error(`[Onboarding] visibilité partenaires : ${rpcErr ? erreurLisible(rpcErr) : JSON.stringify(rpcRes)}`);
+      }
     }
 
     // ── Rattachement d'équipe — via apply_team_attachment, plus d'INSERT ────
@@ -2209,9 +2239,15 @@ function AthleteOnboardingDesktop() {
                       placeholder="Ex. : Cégep Garneau, Québec"
                       className={inputCls}
                     />
+                    {ecoleSembleCegep ? (
+                      <p className="text-[12px] text-[#F59E0B] mt-2">
+                        On dirait un cégep. Nexus ne couvre pas encore les équipes de cégep : ton inscription continue, et l&apos;équipe Nexus voit ta réponse.
+                      </p>
+                    ) : (
                     <p className="text-[12px] text-[#6b7280] mt-2">
                       Écris-la comme tu la connais. Ton inscription continue ; l&apos;équipe Nexus l&apos;ajoutera et te rattachera.
                     </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => { setEcoleIntrouvable(false); setEcoleNonListee(""); }}
@@ -2295,7 +2331,12 @@ function AthleteOnboardingDesktop() {
               </label>
             </div>
 
-            <PartnerVisibilityConsentCard checked={consentPartnerVisibility} onChange={setConsentPartnerVisibility} />
+            {/* Case parentale HÉRITÉE : montrée seulement à une inscription
+                commencée avant le 2026-10-02 qui l'avait cochée. Les autres
+                ont choisi leur propre case au signup (14 ans et plus). */}
+            {traceSignupPartenaire.current && (
+              <PartnerVisibilityConsentCard checked={consentPartnerVisibility} onChange={setConsentPartnerVisibility} />
+            )}
             </>
             )}
           </div>

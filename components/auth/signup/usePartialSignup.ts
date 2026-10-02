@@ -15,7 +15,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useState, useCallback } from "react";
-import { isAdult, isUnder14 } from "@/lib/legal/ageGate";
+import { isAdult, isUnder14, peutConsentirPartenaires } from "@/lib/legal/ageGate";
 import { buildConsentMetadata, type InitialConsentFlags } from "@/lib/legal/persistInitialConsents";
 
 export type SignupRole = "athlete" | "coach_school" | "coach_civil" | "recruiter";
@@ -72,10 +72,10 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
   const [parentRelationship, setParentRelationship] = useState("");
   const [consentProfile, setConsentProfile] = useState(false);
   const [consentVisibility, setConsentVisibility] = useState(false);
-  const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
-  // Athlète MAJEUR : sa propre case partenaires (écran 2), état DISTINCT de la
-  // case parentale — une case cochée par un mineur ne devient jamais le
-  // consentement d'un majeur si la date de naissance change en cours de route.
+  // Visibilité partenaires : la case de l'ATHLÈTE lui-même, à l'écran 2, dès
+  // 14 ans (décision BP 2026-10-02). L'ancienne case parentale de l'écran 3
+  // (« Mes parents autorisent… ») a disparu : à 14 ans, le jeune consent seul.
+  // Le nom de l'état est historique (il ne servait qu'aux majeurs).
   const [consentAdultPartnerVisibility, setConsentAdultPartnerVisibility] = useState(false);
 
   const emailValid = EMAIL_RE.test(email.trim());
@@ -102,8 +102,9 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     (!isAthlete || athleteContext !== null);
   // Un athlète mineur passe par l'écran parental (3).
   const needsParentalScreen = isAthlete && birthdate.length > 0 && !userIsAdult;
-  // Un athlète majeur voit la case partenaires à l'écran 2 (optionnelle).
-  const showsAdultPartnerConsent = isAthlete && birthdate.length > 0 && userIsAdult;
+  // Tout athlète de 14 ans et plus voit SA case partenaires à l'écran 2
+  // (optionnelle, décochée). Sous 14 ans l'inscription est refusée.
+  const showsAdultPartnerConsent = isAthlete && peutConsentirPartenaires(birthdate);
   // Submit final.
   const canSubmit = needsParentalScreen
     ? canProceedScreen2 &&
@@ -143,7 +144,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
       ? {
           policy: consentPolicy, data: consentData, marketing: consentMarketing,
           parentalProfile: consentProfile, parentalVisibility: consentVisibility,
-          parentalPartnerVisibility: consentPartnerVisibility,
+          ...(showsAdultPartnerConsent ? { partnerVisibility: consentAdultPartnerVisibility } : {}),
         }
       : {
           policy: consentPolicy, data: consentData, marketing: consentMarketing,
@@ -154,7 +155,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
           {
             policy: consentPolicy, data: consentData, marketing: consentMarketing,
             parentalProfile: consentProfile, parentalVisibility: consentVisibility,
-            parentalPartnerVisibility: consentPartnerVisibility,
+            ...(showsAdultPartnerConsent ? { partnerVisibility: consentAdultPartnerVisibility } : {}),
           },
           {
             firstName: parentFirstName.trim(), lastName: parentLastName.trim(),
@@ -180,7 +181,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     pickedRole, needsParentalScreen, showsAdultPartnerConsent, isAthlete, athleteContext,
     firstName, lastName, birthdate,
     consentPolicy, consentData, consentMarketing,
-    consentProfile, consentVisibility, consentPartnerVisibility, consentAdultPartnerVisibility,
+    consentProfile, consentVisibility, consentAdultPartnerVisibility,
     parentFirstName, parentLastName, parentEmail, parentRelationship,
   ]);
 
@@ -203,8 +204,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     parentFirstName, setParentFirstName, parentLastName, setParentLastName,
     parentEmail, setParentEmail, parentRelationship, setParentRelationship,
     consentProfile, setConsentProfile, consentVisibility, setConsentVisibility,
-    consentPartnerVisibility, setConsentPartnerVisibility,
-    // majeur
+    // visibilité partenaires (14 ans et plus)
     consentAdultPartnerVisibility, setConsentAdultPartnerVisibility,
     // export pour signUp
     buildSignupArgs,

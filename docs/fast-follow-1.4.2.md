@@ -1953,3 +1953,39 @@ mineur dont le parent n'a pas donné le consentement de visibilité reste
 invisible des recruteurs, et aucun lien ne permet au parent de le donner
 depuis le courriel. BP : « pas maintenant, note au registre ». La relance
 parent v2 reste donc **informative**, sans lien de connexion.
+
+
+## 69. Paquet A de la 1.4.4 — branche `feat/1-4-4-paquet-a` (2026-10-02)
+
+Décision BP 2026-10-02 : tout entre dans la 1.4.4 ; paquet A d'abord.
+
+- **Visibilité partenaires dès 14 ans** — migration
+  `20261002170000_partenaires_consentement_14_ans` (**non appliquée en prod,
+  attend le GO**). Seuil 18 → 14 dans `set_my_partner_visibility`,
+  `is_partner_eligible_athlete` et `emit_five_star_on_eligibility_flip`. Sous
+  14 ans ou date inconnue : inchangé (retrait seulement, accord parental).
+  Relevé prod : aucun 14-17 opt-in sans accord parental → personne ne devient
+  visible à l'application (pré-contrôle bloquant dans la migration).
+  Inscription web / mobile / `/consentements` : la case de l'athlète
+  (« J'autorise… ») remplace la case parentale de l'écran parents. Paramètres
+  web et mobile : interrupteur ouvert dès 14 ans.
+  ⚠ **À trancher par BP** : `/confidentialite` (contenu verbatim,
+  `content/legal/confidentialite.ts`) dit pour les 14-17 « L'athlète ET le
+  parent doivent consentir ». Règle générale du tableau, pas la §7.5 — mais un
+  lecteur peut y voir une contradiction avec le consentement seul aux
+  partenaires. Non modifié.
+- **Détection cégep** — `lib/athlete/detecterCegep.ts` : phrase d'aide dédiée
+  sous « Mon école n'est pas listée » (web + mobile) et pastille « Cégep ? »
+  dans la carte admin. Ne bloque rien. `admin_notifications` inchangée (aucun
+  lecteur).
+- **Mobile, renvois au web en texte simple** (Apple 3.1.1) : Gestion CÉGEP
+  (une phrase au lieu de 5 liens), Abonnement (une mention en tête de section,
+  plus de pied par carte), Export Loi 25 (la ligne était muette dans l'app :
+  `rightChevron="none"` la rend non touchable, le toast ne partait jamais).
+- **Filtre relances du tableau de bord (mobile)** : « Tout voir » ouvrait
+  Mon processus sur l'onglet Identifié — les relances des autres étapes
+  étaient filtrées et invisibles. L'onglet se place maintenant sur la première
+  étape qui en contient. Même passe : `?athlete=` rouvrait la feuille à chaque
+  rechargement des cartes.
+- **Compte `nexus.testonboarding@nexussports.ca` supprimé** en prod (fiche,
+  2 lignes de journal, 1 avis admin, compte auth).

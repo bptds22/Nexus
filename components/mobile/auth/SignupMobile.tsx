@@ -61,7 +61,7 @@ import {
   buildConsentMetadata,
   persistInitialConsents,
 } from "@/lib/legal/persistInitialConsents";
-import { isAdult, isUnder14 } from "@/lib/legal/ageGate";
+import { isAdult, isUnder14, peutConsentirPartenaires } from "@/lib/legal/ageGate";
 import { LegalSheetMobile, type LegalDocKey } from "@/components/legal/LegalSheetMobile";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import { triggerHaptic } from "@/lib/haptics";
@@ -154,15 +154,11 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
   const [consentMarketing, setConsentMarketing] = useState(false);
   const [consentProfile, setConsentProfile] = useState(false);
   const [consentVisibility, setConsentVisibility] = useState(false);
-  // Iter signup-polish-2 — partner visibility OPTIONNEL (Loi 25, jamais
-  // bloquant). Default false. Pas dans le gate CTA. La persistance suit
-  // le slot `parentalPartnerVisibility` déjà câblé dans buildConsentMetadata
-  // + persistInitialConsents. Au submit onboarding, le timestamp DU SIGNUP
-  // sera traduit en athletes.partner_visibility_* (cf AthleteOnboardingMobile).
-  const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
-  /* Athlète MAJEUR — SA propre case partenaires (écran 2), décochée,
-     optionnelle ; parité web (usePartialSignup.showsAdultPartnerConsent,
-     2026-09-28). Lot 0 de la 1.4.4 : la 1.4.3 ne la proposait qu'au parent. */
+  /* Visibilité partenaires — la case de l'ATHLÈTE lui-même (écran 2), dès
+     14 ans, décochée, optionnelle ; parité web (usePartialSignup). Décision
+     BP 2026-10-02 : à 14 ans le jeune consent seul, la case parentale de
+     l'écran 3 a disparu. Le nom de l'état est historique (majeurs seulement
+     jusque-là). */
   const [consentAdultPartnerVisibility, setConsentAdultPartnerVisibility] = useState(false);
   const [openRelation, setOpenRelation] = useState(false);
   // Iter 7.50-a-bis (legal-2) — bottom sheet pour les 3 docs légaux.
@@ -424,7 +420,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
             marketing: consentMarketing,
             parentalProfile: consentProfile,
             parentalVisibility: consentVisibility,
-            parentalPartnerVisibility: consentPartnerVisibility,
+            partnerVisibility: consentAdultPartnerVisibility,
           },
           {
             firstName: parentFirstName.trim(),
@@ -482,7 +478,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
             marketing: consentMarketing,
             parentalProfile: consentProfile,
             parentalVisibility: consentVisibility,
-            parentalPartnerVisibility: consentPartnerVisibility,
+            partnerVisibility: consentAdultPartnerVisibility,
           });
       if (!persistResult.ok) {
         console.warn("[SignupMobile] persistInitialConsents:", persistResult.error);
@@ -505,7 +501,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
     userType, coachContext, userIsAdult,
     parentFirstName, parentLastName, parentEmail, parentRelationship,
     consentPolicy, consentData, consentMarketing,
-    consentProfile, consentVisibility, consentPartnerVisibility, consentAdultPartnerVisibility,
+    consentProfile, consentVisibility, consentAdultPartnerVisibility,
     router, toast,
   ]);
 
@@ -594,7 +590,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           onOpenLegal={(key) => setLegalSheet(key)}
           setInputFocused={setInputFocused}
           audience={userType}
-          showsAdultPartnerConsent={userType === "athlete" && birthdate.length > 0 && userIsAdult}
+          showsAdultPartnerConsent={userType === "athlete" && peutConsentirPartenaires(birthdate)}
           consentAdultPartnerVisibility={consentAdultPartnerVisibility}
           setConsentAdultPartnerVisibility={setConsentAdultPartnerVisibility}
         />
@@ -609,8 +605,6 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           onOpenRelation={() => setOpenRelation(true)}
           consentProfile={consentProfile} setConsentProfile={setConsentProfile}
           consentVisibility={consentVisibility} setConsentVisibility={setConsentVisibility}
-          consentPartnerVisibility={consentPartnerVisibility}
-          setConsentPartnerVisibility={setConsentPartnerVisibility}
           setInputFocused={setInputFocused}
         />
       )}
@@ -1110,8 +1104,6 @@ interface Step3ParentProps {
   onOpenRelation: () => void;
   consentProfile: boolean; setConsentProfile: (v: boolean) => void;
   consentVisibility: boolean; setConsentVisibility: (v: boolean) => void;
-  consentPartnerVisibility: boolean;
-  setConsentPartnerVisibility: (v: boolean) => void;
   setInputFocused: (v: boolean) => void;
 }
 
@@ -1212,14 +1204,6 @@ function Step3Parent(p: Step3ParentProps) {
           checked={p.consentVisibility}
           onChange={p.setConsentVisibility}
           label="Mon parent ou tuteur légal consent à ce que mes informations sportives et académiques soient visibles par les recruteurs des CÉGEP."
-        />
-      </div>
-
-      <div className="mt-4">
-        <PartnerVisibilityConsentCard
-          checked={p.consentPartnerVisibility}
-          onChange={p.setConsentPartnerVisibility}
-          audience="athlete"
         />
       </div>
     </div>

@@ -43,6 +43,8 @@ import {
   FACETS,
   EMPTY_FILTERS,
   QUICK_FILTERS,
+  quickDepuisFiltreUrl,
+  FILTRE_PIPELINE_URL,
   type PipelineFilters,
   type QuickKey,
 } from "@/lib/pipeline/filterPipelineCards";
@@ -1743,13 +1745,12 @@ export function RecruteurPipelineMobile() {
   const [menuOpen, setMenuOpen] = useState(false);
   /* ?filtre=relances (parité avec app/recruteur/pipeline/page.tsx) : chip
      active + tri « relance la plus proche » dès le premier rendu. */
+  const filtreUrl = searchParams.get("filtre");
   const [sortBy, setSortBy] = useState<PipelineSortMode>(() =>
-    searchParams.get("filtre") === "relances" ? "next_action_asc" : DEFAULT_PIPELINE_SORT,
+    filtreUrl === FILTRE_PIPELINE_URL.relances ? "next_action_asc" : DEFAULT_PIPELINE_SORT,
   );
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
-  const [quick, setQuick] = useState<QuickKey[]>(() =>
-    searchParams.get("filtre") === "relances" ? ["relance"] : [],
-  );
+  const [quick, setQuick] = useState<QuickKey[]>(() => quickDepuisFiltreUrl(filtreUrl));
   const [focusMode, setFocusMode] = useState(false);
 
   // Mutation pour le swipe
@@ -1810,6 +1811,35 @@ export function RecruteurPipelineMobile() {
   const handleTabTap = (lower: string) => {
     setActiveStage(lower);
   };
+
+  /* ── ?filtre= venu du tableau de bord (paquet A 1.4.4) ─────────────────
+     LE BUG : la puce « À relancer » s'activait, mais l'écran restait sur
+     l'onglet « Identifié ». Les relances dues des autres étapes étaient
+     filtrées… et invisibles : « Tout voir » ouvrait une liste vide ou
+     partielle alors que la carte du tableau de bord en annonçait N.
+     Le web n'a pas ce problème (une seule liste, toutes étapes).
+
+     1. Le filtre suit l'URL même si l'écran est déjà monté (un second
+        « Tout voir » ne remontait pas l'état initial).
+     2. Une fois les cartes chargées, l'onglet se place sur la PREMIÈRE
+        étape qui contient une carte filtrée — une seule fois par arrivée,
+        pour ne pas reprendre la main à l'usager qui change d'onglet. */
+  /* Motif « ajuster l'état pendant le rendu » (react.dev, you-might-not-
+     need-an-effect) : pas de setState dans un effet, pas de rendu en cascade. */
+  const [filtreVu, setFiltreVu] = useState<string | null>(filtreUrl);
+  if (filtreUrl !== filtreVu) {
+    setFiltreVu(filtreUrl);
+    if (filtreUrl) {
+      setQuick(quickDepuisFiltreUrl(filtreUrl));
+      if (filtreUrl === FILTRE_PIPELINE_URL.relances) setSortBy("next_action_asc");
+    }
+  }
+  const [filtrePositionne, setFiltrePositionne] = useState<string | null>(null);
+  if (filtreUrl && filtreUrl === filtreVu && !pipelineLoading && filtrePositionne !== filtreUrl && quick.length > 0) {
+    setFiltrePositionne(filtreUrl);
+    const premiere = STAGES.find((st) => (counts[st.lower] ?? 0) > 0);
+    if (premiere) setActiveStage(premiere.lower);
+  }
 
   // Scroll listener (top bar blur)
   const [scrolled, setScrolled] = useState(false);
@@ -1880,12 +1910,24 @@ export function RecruteurPipelineMobile() {
      ouvre directement sa fiche pipeline — même mécanique que le SlideOver
      web. `cards` charge de façon async, l'effet réessaie à chaque changement
      jusqu'à ce que la carte apparaisse. `card.id` est l'athlete_id. */
-  useEffect(() => {
-    const athleteId = searchParams.get("athlete");
-    if (!athleteId) return;
-    const found = cards.find((c) => c.id === athleteId);
-    if (found) handleCardTap(found);
-  }, [searchParams, cards]);
+  /* Une seule ouverture par athlète demandé : sans ce verrou, chaque
+     rechargement de `cards` (après un balayage, une note, une relance)
+     ROUVRAIT la feuille qu'on venait de fermer. L'onglet suit l'étape de la
+     carte, pour qu'on la retrouve en refermant. */
+  const athleteDemande = searchParams.get("athlete");
+  const [athleteOuvert, setAthleteOuvert] = useState<string | null>(null);
+  if (athleteDemande !== athleteOuvert) {
+    const found = athleteDemande ? cards.find((c) => c.id === athleteDemande) : null;
+    if (!athleteDemande) {
+      setAthleteOuvert(null);
+    } else if (found) {
+      setAthleteOuvert(athleteDemande);
+      const etape = (found.status || "identifie").toString().toLowerCase();
+      if (STAGE_BY_LOWER[etape]) setActiveStage(etape);
+      setSelectedCard(found);
+      setSheetOpen(true);
+    }
+  }
 
   // Fix 9 — ⋮ menu sheet
   const handleMenuTap = () => {

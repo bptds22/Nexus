@@ -342,7 +342,11 @@ export function RecruteurParametresMobile() {
             <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
           </div>
           {tier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour débloquer le processus, la messagerie et plus.</p>
+            <p className="text-[12px] text-[#6b7280] mt-2">
+              {IS_CAPACITOR
+                ? "Les forfaits se gèrent sur la version web de Nexus."
+                : "Passe à Pro pour débloquer le processus, la messagerie et plus."}
+            </p>
           )}
           {/* Payant + vrai abo Stripe → résumé (statut/cycle/renouvellement)
               + portail (in-app browser). */}
@@ -490,6 +494,9 @@ export function RecruteurParametresMobile() {
         />
         <NavRow
           label="Exporter mes données (Loi 25)"
+          /* Dans l'app, la ligne est en lecture seule (rightChevron "none" ne
+             se touche pas) : sans cette phrase, rien ne disait où exporter. */
+          sublabel={IS_CAPACITOR ? "Se fait sur la version web de Nexus." : undefined}
           isFirst={false}
           rightChevron={IS_CAPACITOR ? "none" : "external"}
           onTap={() => {
@@ -515,6 +522,14 @@ export function RecruteurParametresMobile() {
           glow + badge "Actuel" vert. Tiers inférieurs = compacts en
           sourdine (aucun CTA — l'utilisateur a déjà mieux). */}
       <SectionLabel>Abonnement</SectionLabel>
+      {/* Dans l'app : une seule mention, en tête de section, plutôt qu'un
+          pied répété sous chaque carte (iOS 3.1.1 : aucun achat in-app,
+          aucun lien). Paquet A 1.4.4. */}
+      {IS_CAPACITOR && (
+        <p className="px-4 pb-2 text-[13px] leading-snug text-[#9CA3AF]">
+          L&apos;abonnement se choisit et se gère sur la version web de Nexus.
+        </p>
+      )}
       <div className="px-4 space-y-2">
         <TierCard
           name="Gratuit"

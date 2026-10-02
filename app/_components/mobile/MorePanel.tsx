@@ -149,6 +149,8 @@ function AdminPill() {
 
 interface PanelSection {
   title?: string;
+  /** Texte simple sous le titre, sans lien ni geste (paquet A 1.4.4). */
+  note?: string;
   items: PanelItem[];
 }
 
@@ -249,15 +251,12 @@ export default function MorePanel({
         },
         {
           title: "Gestion CÉGEP",
-          // Iter 7.39 — sections CÉGEP NON portées en mobile (DIAG 7.38).
-          // Les rows ouvrent le web public via Capacitor Browser (icône ↗).
-          items: [
-            { key: "cegep", label: "Mon CÉGEP", href: `${PUBLIC_BASE}/recruteur/cegep`, icon: Icons.cegep, requiredTier: "all_star", external: true },
-            { key: "recruteurs", label: "Recruteurs", href: `${PUBLIC_BASE}/recruteur/cegep/recruteurs`, icon: Icons.recruteurs, requiredTier: "all_star", adminBypass: true, external: true },
-            { key: "stats", label: "Stats recrutement", href: `${PUBLIC_BASE}/recruteur/cegep/stats`, icon: Icons.stats, requiredTier: "all_star", external: true },
-            { key: "recrues", label: "Recrues confirmées", href: `${PUBLIC_BASE}/recruteur/cegep/recrues`, icon: Icons.trophy, requiredTier: "all_star", external: true },
-            { key: "reassign", label: "Réassignation", href: `${PUBLIC_BASE}/recruteur/cegep/reassignation`, icon: Icons.reassign, requiredTier: "all_star", adminBypass: true, external: true },
-          ],
+          /* Paquet A 1.4.4 (décision BP 2026-10-02) : la gestion du cégep se
+             fait sur le web. Avant, cinq lignes ouvraient le navigateur — ou,
+             sans All Star, la modale d'abonnement, ce qu'une app iOS ne doit
+             pas proposer (3.1.1). Une phrase, aucun lien, aucun geste. */
+          note: "Mon CÉGEP, les recruteurs, les stats, les recrues et la réassignation se gèrent sur la version web de Nexus.",
+          items: [],
         },
         {
           title: "Compte",
@@ -607,13 +606,11 @@ export default function MorePanel({
               {section.title && (
                 <div className="flex items-center gap-2 px-5 pt-4 pb-2">
                   <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">{section.title}</span>
-                  {section.title === "Gestion CÉGEP" && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[8px] font-black uppercase tracking-wider">
-                      All Star
-                    </span>
-                  )}
                   <div className="flex-1 border-t border-[#2D3748]" />
                 </div>
+              )}
+              {section.note && (
+                <p className="px-5 pb-2 text-[13px] leading-snug text-[#9CA3AF]">{section.note}</p>
               )}
               {section.items.map(renderItem)}
             </div>

@@ -465,9 +465,9 @@ function AuthContent() {
                         submitted={submitted}
                       />
 
-                      {/* Athlète MAJEUR : la case partenaires, même explication
-                          que celle montrée aux parents, décochée, optionnelle.
-                          Le mineur la voit à l'écran 3 (ParentalBlock). */}
+                      {/* Athlète de 14 ans et plus : SA case partenaires,
+                          décochée, optionnelle (décision BP 2026-10-02 — à
+                          14 ans le jeune consent seul, plus de case parentale). */}
                       {sf.showsAdultPartnerConsent && (
                         <PartnerVisibilityConsentCard
                           checked={sf.consentAdultPartnerVisibility}
@@ -502,7 +502,6 @@ function AuthContent() {
                         parentRelationship={sf.parentRelationship} setParentRelationship={sf.setParentRelationship}
                         consentProfile={sf.consentProfile} setConsentProfile={sf.setConsentProfile}
                         consentVisibility={sf.consentVisibility} setConsentVisibility={sf.setConsentVisibility}
-                        consentPartnerVisibility={sf.consentPartnerVisibility} setConsentPartnerVisibility={sf.setConsentPartnerVisibility}
                         submitted={submitted}
                       />
                       <button type="button" onClick={handleSignupSubmit} disabled={loading}

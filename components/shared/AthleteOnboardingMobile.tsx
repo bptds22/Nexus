@@ -56,6 +56,8 @@ import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { ressembleACegep } from "@/lib/athlete/detecterCegep";
+import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -193,6 +195,9 @@ export function AthleteOnboardingMobile() {
   const [ecoleIntrouvable, setEcoleIntrouvable] = useState(false);
   const [ecoleNonListee, setEcoleNonListee] = useState("");
   const ecoleNonListeeValide = ecoleIntrouvable && ecoleNonListee.trim().length >= 2;
+  /* Détection cégep (paquet A 1.4.4, parité web) — phrase d'aide seulement. */
+  const nomsCegeps = useNomsCegeps(ecoleIntrouvable);
+  const ecoleSembleCegep = ecoleNonListeeValide && ressembleACegep(ecoleNonListee, nomsCegeps);
   const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
   const [selectedCoachName, setSelectedCoachName] = useState<string>("");
   // Iter bugs-1-fix §B — flag "l'utilisateur a explicitement choisi de
@@ -1049,7 +1054,8 @@ export function AthleteOnboardingMobile() {
       parentSlice.partner_visibility_opted_in_at = partnerVisibilityISO;
     }
 
-    /* Athlète MAJEUR (lot 0 de la 1.4.4, parité web) — SA case partenaires,
+    /* Athlète de 14 ans et plus (majeur seulement jusqu'au 2026-10-02 ; à
+       14 ans le jeune consent seul, migration 20261002170000) — SA case partenaires,
        posée au signup courriel (écran 2) ou à /consentements (Google/Apple) :
        metadata `consent_partner_visibility` = ISO du moment où il l'a cochée.
        Jamais la parentale, jamais déduite ; `partner_visibility_parental_consent`
@@ -1058,7 +1064,7 @@ export function AthleteOnboardingMobile() {
        · fiche RÉCLAMÉE encore à false : le changement lèverait la garde de
          périmètre et ferait tomber toute l'étape — on passe par la RPC
          set_my_partner_visibility APRÈS l'enregistrement (plus bas). */
-    const adultPartnerISO = !hasParentalConsent && typeof meta.consent_partner_visibility === "string"
+    const adultPartnerISO = typeof meta.consent_partner_visibility === "string"
       ? meta.consent_partner_visibility
       : null;
     const adultPartnerParRpc = adultPartnerISO !== null
@@ -1144,7 +1150,7 @@ export function AthleteOnboardingMobile() {
     setExistingAthleteId(athleteId);
 
     if (final && adultPartnerParRpc) {
-      /* Non bloquant : l'inscription est faite ; un refus (DOB < 18 côté base)
+      /* Non bloquant : l'inscription est faite ; un refus (DOB < 14 côté base)
          laisse la fiche à false, et l'athlète peut l'activer dans Paramètres. */
       const { data: rpcRes, error: rpcErr } = await supabase.rpc("set_my_partner_visibility", {
         p_granted: true,
@@ -1152,7 +1158,7 @@ export function AthleteOnboardingMobile() {
       });
       const ok = (rpcRes as { ok?: boolean } | null)?.ok === true;
       if (rpcErr || !ok) {
-        console.error(`[OnboardingMobile] visibilité partenaires (majeur): ${rpcErr ? erreurLisible(rpcErr) : JSON.stringify(rpcRes)}`);
+        console.error(`[OnboardingMobile] visibilité partenaires : ${rpcErr ? erreurLisible(rpcErr) : JSON.stringify(rpcRes)}`);
       }
     }
 
@@ -1545,6 +1551,7 @@ export function AthleteOnboardingMobile() {
             schoolIdSelected={!!selectedSchoolId}
             ecoleIntrouvable={ecoleIntrouvable}
             ecoleNonListee={ecoleNonListee}
+            ecoleSembleCegep={ecoleSembleCegep}
             setEcoleNonListee={setEcoleNonListee}
             onRevenirRecherche={() => { setEcoleIntrouvable(false); setEcoleNonListee(""); }}
             // Iter team-2 — équipe scolaire + coachs inline
@@ -1979,6 +1986,7 @@ interface Step1Props {
   /** « Mon école n'est pas listée » — texte libre à la place du picker. */
   ecoleIntrouvable: boolean;
   ecoleNonListee: string;
+  ecoleSembleCegep: boolean;
   setEcoleNonListee: (v: string) => void;
   onRevenirRecherche: () => void;
   // Iter team-2 — équipe scolaire (school+sport)
@@ -2216,9 +2224,15 @@ function Step1Content(p: Step1Props) {
                 placeholder="Ex. : Cégep Garneau, Québec"
                 className="w-full h-12 rounded-xl bg-[#111317] border border-white/[0.10] px-3 text-[16px] text-white placeholder:text-white/30 focus:outline-none focus:border-[#E63946]/50"
               />
+              {p.ecoleSembleCegep ? (
+                <p className="text-[13px] text-[#F59E0B] mt-2 leading-relaxed">
+                  On dirait un cégep. Nexus ne couvre pas encore les équipes de cégep : ton inscription continue, et l&apos;équipe Nexus voit ta réponse.
+                </p>
+              ) : (
               <p className="text-[13px] text-white/55 mt-2 leading-relaxed">
                 Écris-la comme tu la connais. Ton inscription continue ; l&apos;équipe Nexus l&apos;ajoutera et te rattachera.
               </p>
+              )}
               <button
                 type="button"
                 onClick={() => { triggerHaptic("Light"); p.onRevenirRecherche(); }}

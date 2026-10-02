@@ -42,6 +42,15 @@ export function isUnder14(birthdate: string, today: Date = new Date()): boolean 
   return age !== null && age < MIN_SIGNUP_AGE;
 }
 
+/** Visibilité partenaires (décision BP 2026-10-02, migration
+ *  20261002170000) : à 14 ans révolus, l'athlète consent LUI-MÊME. Même
+ *  seuil que l'auto-inscription. Faux pour une DOB vide ou mal formée —
+ *  comme côté base, une date inconnue ne consent pas. */
+export function peutConsentirPartenaires(birthdate: string | null | undefined, today: Date = new Date()): boolean {
+  const age = computeAgeFromISO(birthdate ?? "", today);
+  return age !== null && age >= MIN_SIGNUP_AGE;
+}
+
 /** ISO "YYYY-MM-DD" de la date de naissance la PLUS RÉCENTE respectant un âge
  *  minimum (aujourd'hui − minYears). À poser en `max` d'un input date pour
  *  interdire de choisir une DOB plus jeune que minYears. */

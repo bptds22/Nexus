@@ -3,11 +3,10 @@
 /* ═══════════════════════════════════════════════════════════════
    ParentalBlock — écran 3 (athlète mineur uniquement).
    Port web de SignupMobile Step3Parent : parent PII + 2 consentements
-   parentaux obligatoires + PartnerVisibilityConsentCard (optionnel,
-   jamais bloquant — Loi 25). Contrôlé via props.
+   parentaux obligatoires. Contrôlé via props.
+   La case partenaires n'est plus ici (2026-10-02) : à 14 ans l'athlète
+   consent lui-même, à l'écran 2.
 ═══════════════════════════════════════════════════════════════ */
-
-import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 
 const inputClass =
   "w-full h-11 px-4 bg-[#111317] border border-white/10 rounded-lg text-white font-sans text-sm placeholder:text-[#6B7280] focus:border-[#E63946] focus:outline-none transition-colors";
@@ -23,7 +22,6 @@ interface ParentalBlockProps {
   parentRelationship: string; setParentRelationship: (v: string) => void;
   consentProfile: boolean; setConsentProfile: (v: boolean) => void;
   consentVisibility: boolean; setConsentVisibility: (v: boolean) => void;
-  consentPartnerVisibility: boolean; setConsentPartnerVisibility: (v: boolean) => void;
   submitted?: boolean;
 }
 
@@ -96,12 +94,6 @@ export function ParentalBlock(p: ParentalBlockProps) {
           </ParentalCheckbox>
         </div>
       </div>
-
-      <PartnerVisibilityConsentCard
-        checked={p.consentPartnerVisibility}
-        onChange={p.setConsentPartnerVisibility}
-        audience="athlete"
-      />
     </div>
   );
 }

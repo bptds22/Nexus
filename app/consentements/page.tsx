@@ -102,9 +102,9 @@ export default function ConsentementsPage() {
   /* Visibilité partenaires — ATHLÈTE seulement, optionnelle, décochée.
      Cet écran (chemin Google/Apple) ne la proposait PAS : un mineur inscrit par
      OAuth n'avait jamais la case sous les yeux dans l'app (l'onboarding mobile
-     ne la montre pas non plus). Deux états distincts : la case parentale d'un
-     mineur ne devient jamais le consentement d'un majeur si la date change. */
-  const [consentPartnerParental, setConsentPartnerParental] = useState(false);
+     ne la montre pas non plus). Depuis le 2026-10-02 (décision BP) c'est la
+     case de l'athlète LUI-MÊME dès 14 ans : plus de case parentale. Le nom de
+     l'état est historique. */
   const [consentPartnerAdult, setConsentPartnerAdult] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -198,9 +198,7 @@ export default function ConsentementsPage() {
           ? { parentalProfile: consentProfile, parentalVisibility: consentVisibility }
           : {}),
         ...(role === "ATHLETE"
-          ? (isMinor
-              ? { parentalPartnerVisibility: consentPartnerParental }
-              : { partnerVisibility: consentPartnerAdult })
+          ? { partnerVisibility: consentPartnerAdult }
           : {}),
       };
       const parent: ParentPII | undefined = isMinor
@@ -253,7 +251,7 @@ export default function ConsentementsPage() {
       setError(e instanceof Error ? e.message : "Erreur inattendue.");
       setSubmitting(false);
     }
-  }, [canSubmit, submitting, user, role, context, consentPolicy, consentData, consentMarketing, isMinor, consentProfile, consentVisibility, consentPartnerParental, consentPartnerAdult, parentFirstName, parentLastName, parentEmail, parentRelationship, birthdate, router]);
+  }, [canSubmit, submitting, user, role, context, consentPolicy, consentData, consentMarketing, isMinor, consentProfile, consentVisibility, consentPartnerAdult, parentFirstName, parentLastName, parentEmail, parentRelationship, birthdate, router]);
 
   /* ── Render ──────────────────────────────────────────────── */
   if (authLoading) {
@@ -373,19 +371,12 @@ export default function ConsentementsPage() {
                 Mon parent ou tuteur légal consent à ce que mes informations sportives et académiques soient visibles par les recruteurs des CÉGEP.
               </Checkbox>
             </div>
-
-            {role === "ATHLETE" && (
-              <PartnerVisibilityConsentCard
-                checked={consentPartnerParental}
-                onChange={setConsentPartnerParental}
-                audience="athlete"
-              />
-            )}
           </>
         )}
 
-        {/* Athlète MAJEUR : sa propre case partenaires, même explication. */}
-        {role === "ATHLETE" && birthdate && !isMinor && !birthdateUnder14 && (
+        {/* Athlète de 14 ans et plus : SA case partenaires (décision BP
+            2026-10-02 — à 14 ans, le jeune consent seul). */}
+        {role === "ATHLETE" && birthdate && !birthdateUnder14 && (
           <PartnerVisibilityConsentCard
             checked={consentPartnerAdult}
             onChange={setConsentPartnerAdult}

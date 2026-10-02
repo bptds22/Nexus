@@ -14,6 +14,9 @@
      explication mot pour mot que "athlete" (même source partnerMediaCopy) ;
      seule la case change : le majeur consent LUI-MÊME, il n'atteste pas
      d'une autorisation parentale. Décochée par défaut, comme partout.
+     Depuis le 2026-10-02 (décision BP), c'est la case de TOUT athlète de
+     14 ans et plus : à 14 ans le jeune consent seul. "athlete" (« Mes
+     parents autorisent… ») ne sert plus qu'à une inscription commencée avant.
    - audience="coach" (coach creates a profile on behalf of an
      athlete) → addresses the COACH with "tu" but refers to the
      ATHLETE in the third person ("l'athlète / sa carte"). The

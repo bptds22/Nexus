@@ -35,7 +35,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
-import { isMinor } from "@/lib/utils/age";
+import { peutConsentirPartenaires } from "@/lib/legal/ageGate";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
@@ -242,15 +242,14 @@ export function AthleteParametresMobile() {
         (app/athlete/parametres) : l'UPDATE direct des colonnes
         partner_visibility_* est refusé par la garde de périmètre depuis le
         2026-09-09 — l'interrupteur de la 1.4.3 échouait à chaque fois.
-        Majeur : accorde ou retire. Mineur (ou date inconnue, traité en mineur
-        comme côté base) : RETIRE seulement — l'accord appartient au parent,
-        depuis son portail. La case « Consentement parental » que l'athlète
+        14 ans et plus (décision BP 2026-10-02) : accorde ou retire. Moins de
+        14 ans, ou date inconnue (comme côté base) : RETIRE seulement —
+        l'accord appartient au parent, depuis son portail. La case « Consentement parental » que l'athlète
         cochait lui-même est retirée. ── */
 
   async function togglePartnerOptIn(next: boolean) {
     if (!profile || savingPartnerOptIn) return;
-    const majeur = !!profile.dateOfBirth && !isMinor(profile.dateOfBirth);
-    if (next && !majeur) return;
+    if (next && !peutConsentirPartenaires(profile.dateOfBirth)) return;
     triggerHaptic("Light");
     setSavingPartnerOptIn(true);
     const supabase = createClient();
@@ -474,26 +473,24 @@ export function AthleteParametresMobile() {
       <SectionLabel>Confidentialité</SectionLabel>
       {(() => {
         if (!profile) return null;
-        const majeur = !!profile.dateOfBirth && !isMinor(profile.dateOfBirth);
-        const peutAgir = profile.partnerOptIn || majeur;
+        const peutAgir = profile.partnerOptIn || peutConsentirPartenaires(profile.dateOfBirth);
         return (
           <>
             <Group>
               {peutAgir ? (
                 <ToggleRow
                   label="Visibilité partenaires médias"
-                  sublabel={profile.partnerOptIn && !majeur
-                    ? "Autorisé par ton parent. Tu peux le retirer ; seul ton parent peut le réactiver."
-                    : "Permet aux partenaires médias approuvés de télécharger ta carte Nexus."}
+                  sublabel="Permet aux partenaires médias approuvés de télécharger ta carte Nexus."
                   isFirst
                   checked={profile.partnerOptIn}
                   onChange={togglePartnerOptIn}
                 />
               ) : (
-                /* Mineur sans accord du parent : ligne en lecture seule. */
+                /* Moins de 14 ans (ou date inconnue) sans accord du parent :
+                   ligne en lecture seule. */
                 <NavRow
                   label="Visibilité partenaires médias"
-                  sublabel="Tu as moins de 18 ans : c'est ton parent qui peut activer cette option, depuis son portail parent Nexus."
+                  sublabel="Tu as moins de 14 ans : c'est ton parent qui peut activer cette option, depuis son portail parent Nexus."
                   isFirst
                   rightChevron="none"
                 />

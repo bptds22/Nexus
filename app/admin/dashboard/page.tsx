@@ -8,6 +8,8 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { chargerRepartitionComptesAthletes, type RepartitionComptes } from "@/lib/admin/comptesAthletes";
+import { ressembleACegep } from "@/lib/athlete/detecterCegep";
+import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 
 /* ─────────────────────────────────────────────────────────────────
    Admin Dashboard — full platform health view
@@ -644,7 +646,9 @@ void Link;
    écrit aussi une ligne admin_notifications, mais cette table n'a aucun
    lecteur : ce qui se VOIT, c'est ici, lu en direct sur la fiche. Une ligne
    disparaît quand l'athlète est rattaché à une école (school_id posé).
-   Ces textes nourriront la décision du chantier cégep. */
+   Ces textes nourriront la décision du chantier cégep. Une ligne qui
+   désigne vraisemblablement un cégep porte la pastille « Cégep ? »
+   (lib/athlete/detecterCegep.ts — paquet A 1.4.4). */
 type EcoleNonListeeRow = {
   id: string;
   first_name: string | null;
@@ -656,6 +660,7 @@ type EcoleNonListeeRow = {
 function EcolesNonListees({ supabase }: { supabase: ReturnType<typeof createClient> }) {
   const [rows, setRows] = useState<EcoleNonListeeRow[] | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const nomsCegeps = useNomsCegeps();
 
   useEffect(() => {
     let vivant = true;
@@ -678,6 +683,9 @@ function EcolesNonListees({ supabase }: { supabase: ReturnType<typeof createClie
     <section className="space-y-3">
       <h2 className={SECTION_HEADING}>
         Écoles non listées{rows && rows.length > 0 ? ` (${rows.length})` : ""}
+        {rows && rows.some((r) => ressembleACegep(r.ecole_non_listee, nomsCegeps))
+          ? ` — dont ${rows.filter((r) => ressembleACegep(r.ecole_non_listee, nomsCegeps)).length} cégep(s) ?`
+          : ""}
       </h2>
       <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl">
         {rows === null ? (
@@ -694,6 +702,11 @@ function EcolesNonListees({ supabase }: { supabase: ReturnType<typeof createClie
               <li key={r.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                 <span className="text-[14px] text-white font-semibold flex-1 min-w-0 break-words">
                   « {r.ecole_non_listee} »
+                  {ressembleACegep(r.ecole_non_listee, nomsCegeps) && (
+                    <span className="ml-2 align-middle px-1.5 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] text-[10px] font-bold uppercase tracking-wider">
+                      Cégep ?
+                    </span>
+                  )}
                 </span>
                 <Link
                   href={`/admin/athletes/${r.id}`}
