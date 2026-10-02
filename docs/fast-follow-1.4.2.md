@@ -1901,3 +1901,55 @@ Relevés en passant, NON traités (hors lot 0) :
   est ignorée — la valeur n'est jamais posée. Silencieux pour l'usager.
 - `RecruteurParametresMobile` garde « Désactiver mon compte » (retiré du web
   le 2026-10-01) — à aligner ou non : décision BP.
+
+## 65. Onboarding 1.4.4 — volet 5, « Mon école n'est pas listée », sauvegarde par écran (branche `feat/onboarding-1-4-4`, 2026-10-01)
+
+Décisions BP du 2026-10-01. **Les deux migrations sont en prod depuis le 2026-10-02** (volet 5 puis école non listée).
+
+- **Volet 5** (`20261002130635`, APPLIQUÉ en prod le 2026-10-02) : pendant l'onboarding, `school_id` et
+  `coach_id` sont ouverts à l'athlète ; tout le reste du périmètre reste fermé.
+  Rebasé sur le corps PROD (md5 `e92ffb4a…`) — le DDL préparé
+  `docs/d6-volet5-perimetre-onboarding.sql` est PÉRIMÉ (il effaçait la règle
+  `date_naissance`). Rollback testé à l'aller-retour (md5 restitué à l'octet).
+  Preuves : `scripts/d6-volet5-preuves-par-role.sql`, 13/13.
+- **École non listée** (`20261002131439`, APPLIQUÉE en prod le 2026-10-02) : colonne `athletes.ecole_non_listee`
+  + trigger `trg_notifier_ecole_non_listee` → `admin_notifications`. Ce qui se
+  VOIT : la carte « Écoles non listées » de `/admin/dashboard`.
+  Preuves : `scripts/ecole-non-listee-preuves.sql`.
+- **Mobile** : la fiche est écrite à l'écran 1 (complète, consentements
+  compris), puis à l'écran 2 ; la reprise renvoie à l'écran d'arrêt.
+- **`profile_completion`** : l'écriture client de fin d'onboarding est retirée
+  (web ET mobile) — `trg_profile_completion` la calcule déjà (cf. §64).
+
+Limite assumée, parité web : `users.context` n'est posé qu'au submit (RPC
+one-shot `set_initial_role_and_context` — la poser à l'écran 0 interdirait de
+revenir changer de contexte). La reprise le DÉDUIT de la fiche : école
+LIGUE_CIVILE → civil ; école scolaire ou école non listée → scolaire. Seul
+l'athlète **civil sans club** retombe à l'écran 0 — pré-rempli, une tape.
+
+**Ordre de déploiement (expand-then-contract)** : `20261002131439` AVANT le
+web, et AVANT toute publication de la 1.4.4 — le client écrit
+`ecole_non_listee`, une colonne absente rendrait un 400 à l'écran 1.
+`20261002130635` est indépendant — appliqué en prod le 2026-10-02.
+
+Dérive locale corrigée en passant : `admin_notifications` avait la RLS
+**inactive** en local (lisible par anon/authenticated) ; active en prod, 0
+policy. La migration l'active (sans effet en prod) et l'asserte.
+
+## 66. Demande d'accès Loi 25 du recruteur — PERDUE en silence (relevé 2026-10-01, non corrigé)
+
+`app/recruteur/parametres/_components/ConfidentialiteSection.tsx` insère la
+demande dans `admin_notifications` **depuis le client**. En prod la table a la
+RLS active et AUCUNE policy : l'insert est refusé, l'erreur n'est pas lue, et
+l'écran affiche « Votre demande a été envoyée… 30 jours ». Aucune demande
+n'arrive nulle part. C'est un droit d'accès Loi 25 : à traiter avant toute
+communication publique sur la conformité. Piste : RPC `SECURITY DEFINER` qui
+journalise + courriel à confidentialite@ (même patron que send-contact).
+
+## 67. Lien de consentement parental — visibilité recruteurs (décision BP 2026-10-01 : pas maintenant)
+
+Relevé pendant la segmentation de la relance `inscription_inachevee_v2` : un
+mineur dont le parent n'a pas donné le consentement de visibilité reste
+invisible des recruteurs, et aucun lien ne permet au parent de le donner
+depuis le courriel. BP : « pas maintenant, note au registre ». La relance
+parent v2 reste donc **informative**, sans lien de connexion.

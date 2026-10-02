@@ -38,7 +38,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
@@ -188,6 +187,12 @@ export function AthleteOnboardingMobile() {
   const [primarySport, setPrimarySport] = useState<string>("");
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
   const [selectedSchoolName, setSelectedSchoolName] = useState<string>("");
+  /* « Mon école n'est pas listée » (décision BP 2026-10-01) — parité web :
+     texte libre, l'inscription continue sans school_id, l'admin est avisé
+     par trg_notifier_ecole_non_listee. Exclusif d'une école choisie. */
+  const [ecoleIntrouvable, setEcoleIntrouvable] = useState(false);
+  const [ecoleNonListee, setEcoleNonListee] = useState("");
+  const ecoleNonListeeValide = ecoleIntrouvable && ecoleNonListee.trim().length >= 2;
   const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
   const [selectedCoachName, setSelectedCoachName] = useState<string>("");
   // Iter bugs-1-fix §B — flag "l'utilisateur a explicitement choisi de
@@ -519,9 +524,19 @@ export function AthleteOnboardingMobile() {
             setUserContext("ligue_civile");
           }
         }
+        /* Écran 1 enregistré avec « Mon école n'est pas listée » : pas de
+           school_id d'où dériver le contexte — le texte, lui, n'existe qu'en
+           scolaire. Sans ça, la reprise retombait à l'écran 0. */
+        if (!contextChosen && !existing.school_id && existing.ecole_non_listee) {
+          contextChosen = true;
+        }
         if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id as string);
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
+        }
+        if (!existing.school_id && existing.ecole_non_listee) {
+          setEcoleIntrouvable(true);
+          setEcoleNonListee(existing.ecole_non_listee as string);
         }
         if (existing.coach_id) setSelectedCoachId(existing.coach_id as string);
 
@@ -558,7 +573,9 @@ export function AthleteOnboardingMobile() {
         // Consents + parent vivent dans auth metadata depuis iter 2b, donc
         // ne participent plus au gating du resume.
         const step1OK = !!(existing.sport_id
-          && (ctx === "ligue_civile" ? (teamRel?.id || existing.school_id) : existing.school_id));
+          && (ctx === "ligue_civile"
+            ? (teamRel?.id || existing.school_id)
+            : (existing.school_id || existing.ecole_non_listee)));
 
         // Resume seulement si le contexte est posé ; sinon on reste au
         // Step-0 (défini plus haut) pour faire choisir scolaire/civil.
@@ -899,7 +916,7 @@ export function AthleteOnboardingMobile() {
   // Step 1 = équipe (sport principal + école OR équipe civile).
   const canProceedScreen1 = !!(
     primarySport &&
-    (userContext === "ligue_civile" ? true : selectedSchoolId)
+    (userContext === "ligue_civile" ? true : (selectedSchoolId || ecoleNonListeeValide))
   );
 
   // Step 2 = carte. gradYear est le seul champ obligatoire ;
@@ -928,39 +945,28 @@ export function AthleteOnboardingMobile() {
     triggerHaptic("Light");
   }, [userId, toast]);
 
-  /* ── Submit final ────────────────────────────────────────── */
+  /* ── Écriture de la fiche — après CHAQUE écran (1.4.4, décision BP) ──
+     Avant : un seul INSERT au tout dernier bouton. Un rechargement, une app
+     tuée ou un appel entrant à l'écran 2 renvoyait le jeune à l'écran 0 avec
+     RIEN d'enregistré — 24 des 34 inscriptions bloquées en a1 venaient de
+     l'app. Désormais l'écran 1 écrit la fiche complète (consentements
+     compris : jamais de ligne sans sa preuve Loi 25), l'écran 2 la complète,
+     et la reprise de l'init renvoie à l'écran où le jeune s'était arrêté.
+     Rend l'id de la fiche, ou null si l'écriture a échoué (toast déjà montré).
+     `final` : seulement au dernier écran — la RPC partenaires (majeur). */
+  const enregistrerFiche = useCallback(async (
+    supabase: ReturnType<typeof createClient>,
+    final: boolean,
+  ): Promise<string | null> => {
+    if (!userId) return null;
 
-  const handleSubmit = useCallback(async () => {
-    if (!canSubmit || !userId || saving) return;
-    setSaving(true);
-    const supabase = createClient();
-
-    // Defense in depth role check (parité desktop)
+    // Defense in depth role check (parité desktop) — la fiche naît désormais
+    // à l'écran 1, donc la garde vit ici et couvre les deux écritures.
     const { data: userRoleCheck } = await supabase
       .from("users").select("role").eq("id", userId).single();
     if (userRoleCheck?.role !== "ATHLETE") {
       toast.error({ message: "Compte non configuré comme athlète." });
-      setSaving(false);
-      return;
-    }
-
-    // ── Garde-fou de cohérence code ↔ profil ────────────────────────────────
-    // Dernier rempart, côté données et non côté UI : tant qu'un code est actif,
-    // le sport ET l'équipe DOIVENT être ceux de ce code. Les verrous visuels
-    // rendent l'écart improbable ; ceci le rend impossible — y compris si un
-    // effet, un resume d'onboarding ou un state périmé repose primarySport dans
-    // le dos de l'utilisateur.
-    if (codeLock && (primarySport !== codeLock.sportName || selectedTeamId !== codeLock.teamId)) {
-      console.error("[OnboardingMobile] incohérence code/profil " + JSON.stringify({
-        codeSport: codeLock.sportName, profilSport: primarySport,
-        codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
-      }));
-      toast.error({
-        message: "Ton code ne correspond plus",
-        detail: `Ton code pointe ${codeLock.teamName} (${codeLock.sportName}). Utilise « Changer » à la première étape pour choisir une autre équipe.`,
-      });
-      setSaving(false);
-      return;
+      return null;
     }
 
     // Re-lire raw_user_meta_data — preuve des consents parentaux capturés
@@ -1075,6 +1081,7 @@ export function AthleteOnboardingMobile() {
       user_id: userId,
       school_id: isCivil ? civilAnchorSchoolId : (selectedSchoolId || null),
       coach_id: isCivil ? null : selectedCoachId,
+      ecole_non_listee: !isCivil && !selectedSchoolId && ecoleNonListeeValide ? ecoleNonListee.trim() : null,
       league_team_id: null,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
@@ -1093,7 +1100,7 @@ export function AthleteOnboardingMobile() {
       verified: false,
     };
 
-    let athleteIdForTeam: string | null = existingAthleteId;
+    let ligne: Record<string, unknown> | null = null;
     if (existingAthleteId) {
       /* On n'envoie les colonnes du périmètre protégé que si elles ont
          RÉELLEMENT changé. `athleteRecord` repose systématiquement user_id,
@@ -1101,12 +1108,12 @@ export function AthleteOnboardingMobile() {
          reposer à l'identique suffisait à faire lever
          `trg_athlete_self_edit_perimeter` (400, « Échec de sauvegarde ») alors
          que l'athlète n'avait touché à rien d'interdit.
-         Ce n'est PAS un contournement : un vrai changement d'école part encore
-         et se fait encore refuser — tant que la décision produit « pendant
-         l'onboarding, l'école et le coach appartiennent à l'athlète » n'est pas
-         écrite en base (volet 5 de la migration D6). */
+         Ce n'est PAS un contournement : un vrai changement d'école part, et la
+         base l'accepte PENDANT l'onboarding (volet 5, `20261001210000`) —
+         pas après. */
       const patch = elaguerProtegees(athleteRecord, ficheEnBase.current);
-      const { error } = await supabase.from("athletes").update(patch).eq("id", existingAthleteId);
+      const { data, error } = await supabase
+        .from("athletes").update(patch).eq("id", existingAthleteId).select("*").single();
       if (error) {
         /* Sérialisé À LA MAIN : le pont console de Capacitor passe ses
            arguments à String(), donc un objet d'erreur atterrit dans le logcat
@@ -1114,20 +1121,29 @@ export function AthleteOnboardingMobile() {
            savoir ce qui s'est passé. */
         console.error(`[OnboardingMobile] update: ${erreurLisible(error)}`);
         toast.error({ message: "Échec de sauvegarde", detail: error.message });
-        setSaving(false); return;
+        return null;
       }
+      ligne = data as Record<string, unknown> | null;
     } else {
       const { data: inserted, error } = await supabase
-        .from("athletes").insert(athleteRecord).select("id").single();
+        .from("athletes").insert(athleteRecord).select("*").single();
       if (error) {
         console.error(`[OnboardingMobile] insert: ${erreurLisible(error)}`);
         toast.error({ message: "Échec de sauvegarde", detail: error.message });
-        setSaving(false); return;
+        return null;
       }
-      athleteIdForTeam = inserted?.id ?? null;
+      ligne = inserted as Record<string, unknown> | null;
     }
 
-    if (adultPartnerParRpc) {
+    const athleteId = (ligne?.id as string | undefined) ?? existingAthleteId;
+    if (!athleteId) return null;
+    /* La base vient de changer : l'instantané suit, sinon la sauvegarde de
+       l'écran suivant comparerait à l'état d'AVANT et renverrait des colonnes
+       protégées inchangées (garde de périmètre → 400). */
+    if (ligne) ficheEnBase.current = instantaneProtege(ligne);
+    setExistingAthleteId(athleteId);
+
+    if (final && adultPartnerParRpc) {
       /* Non bloquant : l'inscription est faite ; un refus (DOB < 18 côté base)
          laisse la fiche à false, et l'athlète peut l'activer dans Paramètres. */
       const { data: rpcRes, error: rpcErr } = await supabase.rpc("set_my_partner_visibility", {
@@ -1139,6 +1155,44 @@ export function AthleteOnboardingMobile() {
         console.error(`[OnboardingMobile] visibilité partenaires (majeur): ${rpcErr ? erreurLisible(rpcErr) : JSON.stringify(rpcRes)}`);
       }
     }
+
+    return athleteId;
+  }, [
+    userId, primarySport, primaryPosition, primaryPositionId,
+    userContext, selectedClubId, selectedSchoolId, selectedCoachId,
+    ecoleNonListee, ecoleNonListeeValide,
+    firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
+    existingAthleteId, toast,
+  ]);
+
+  /* ── Submit final ────────────────────────────────────────── */
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit || !userId || saving) return;
+    setSaving(true);
+    const supabase = createClient();
+
+    // ── Garde-fou de cohérence code ↔ profil ────────────────────────────────
+    // Dernier rempart, côté données et non côté UI : tant qu'un code est actif,
+    // le sport ET l'équipe DOIVENT être ceux de ce code. Les verrous visuels
+    // rendent l'écart improbable ; ceci le rend impossible — y compris si un
+    // effet, un resume d'onboarding ou un state périmé repose primarySport dans
+    // le dos de l'utilisateur.
+    if (codeLock && (primarySport !== codeLock.sportName || selectedTeamId !== codeLock.teamId)) {
+      console.error("[OnboardingMobile] incohérence code/profil " + JSON.stringify({
+        codeSport: codeLock.sportName, profilSport: primarySport,
+        codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
+      }));
+      toast.error({
+        message: "Ton code ne correspond plus",
+        detail: `Ton code pointe ${codeLock.teamName} (${codeLock.sportName}). Utilise « Changer » à la première étape pour choisir une autre équipe.`,
+      });
+      setSaving(false);
+      return;
+    }
+
+    const athleteIdForTeam = await enregistrerFiche(supabase, true);
+    if (!athleteIdForTeam) { setSaving(false); return; }
 
     // ── Rattachement d'équipe — via apply_team_attachment, plus d'INSERT ────
     // L'ancien code faisait `insert(team_athletes)` et avalait le 23505. Tant
@@ -1170,10 +1224,8 @@ export function AthleteOnboardingMobile() {
 
     await finishOnboarding(supabase, athleteIdForTeam);
   }, [
-    canSubmit, userId, saving, primarySport, primaryPosition, primaryPositionId,
-    userContext, selectedClubId, selectedSchoolId, selectedCoachId,
-    firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
-    existingAthleteId, selectedTeamId, joinCodeUsed, codeLock, router, toast, queryClient,
+    canSubmit, userId, saving, primarySport, enregistrerFiche,
+    selectedTeamId, joinCodeUsed, codeLock, toast,
   ]);
 
   /** Queue de fin d'onboarding, commune au chemin nominal et à la reprise
@@ -1184,13 +1236,10 @@ export function AthleteOnboardingMobile() {
   ) => {
     if (!userId) return;
 
-    // Profile completion
-    const { data: freshAthlete } = await supabase
-      .from("athletes").select("*").eq("user_id", userId).single();
-    if (freshAthlete) {
-      const completion = calculateProfileCompletion(freshAthlete);
-      await supabase.from("athletes").update({ profile_completion: completion }).eq("user_id", userId);
-    }
+    /* profile_completion : PAS écrit ici. trg_profile_completion (BEFORE
+       INSERT OR UPDATE) le calcule à chaque écriture de la fiche, et la
+       colonne est au périmètre protégé — l'UPDATE client qui vivait ici
+       prenait un 400 à chaque fin d'onboarding (8/24 h en prod), en silence. */
 
     // consent_marketing : DÉJÀ écrit au signup mobile (raw_user_meta_data +
     // users.privacy_preferences via persistInitialConsents). Aucune
@@ -1284,10 +1333,16 @@ export function AthleteOnboardingMobile() {
 
   /* ── Handlers nav ────────────────────────────────────────── */
 
-  const handleNext = useCallback(() => {
+  /* Écran 1 → 2 : la fiche est ENREGISTRÉE avant d'avancer (1.4.4). Échec =
+     on reste sur l'écran, le toast dit pourquoi ; rien n'est perdu à l'écran. */
+  const handleNext = useCallback(async () => {
+    if (step !== 1 || !canProceedScreen1 || saving) return;
     triggerHaptic("Light");
-    if (step === 1 && canProceedScreen1) setStep(2);
-  }, [step, canProceedScreen1]);
+    setSaving(true);
+    const id = await enregistrerFiche(createClient(), false);
+    setSaving(false);
+    if (id) setStep(2);
+  }, [step, canProceedScreen1, saving, enregistrerFiche]);
 
   const handleBack = useCallback(() => {
     triggerHaptic("Light");
@@ -1488,6 +1543,10 @@ export function AthleteOnboardingMobile() {
             selectedSchoolName={selectedSchoolName}
             onOpenSchool={() => setSchoolSheetOpen(true)}
             schoolIdSelected={!!selectedSchoolId}
+            ecoleIntrouvable={ecoleIntrouvable}
+            ecoleNonListee={ecoleNonListee}
+            setEcoleNonListee={setEcoleNonListee}
+            onRevenirRecherche={() => { setEcoleIntrouvable(false); setEcoleNonListee(""); }}
             // Iter team-2 — équipe scolaire + coachs inline
             selectedTeamId={userContext === "scolaire" ? selectedTeamId : null}
             selectedTeamName={userContext === "scolaire" ? selectedTeamName : ""}
@@ -1568,15 +1627,15 @@ export function AthleteOnboardingMobile() {
         {step < 2 ? (
           <button
             type="button"
-            onClick={handleNext}
-            disabled={!canProceedScreen1}
+            onClick={() => { void handleNext(); }}
+            disabled={!canProceedScreen1 || saving}
             className={`w-full h-14 rounded-2xl font-head font-black text-[14px] uppercase tracking-widest transition-all ${
-              canProceedScreen1
+              canProceedScreen1 && !saving
                 ? "bg-[#E63946] text-white active:scale-[0.97] active:bg-[#D42B22] shadow-[0_8px_24px_rgba(230,57,70,0.35)]"
                 : "bg-white/[0.06] text-[#6B7280] cursor-not-allowed"
             }`}
           >
-            Continuer
+            {saving ? "Enregistrement…" : "Continuer"}
           </button>
         ) : (
           <button
@@ -1642,7 +1701,30 @@ export function AthleteOnboardingMobile() {
         items={visibleSchools}
         loading={schoolsLoading}
         keyOf={(s) => s.id}
+        footer={
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic("Light");
+              // Ce qu'il a cherché est souvent déjà le nom : on le reprend.
+              setEcoleNonListee((v) => v || schoolSearch.trim());
+              setEcoleIntrouvable(true);
+              setSelectedSchoolId(null);
+              setSelectedSchoolName("");
+              setSelectedCoachId(null);
+              setSelectedCoachName("");
+              setSelectedTeamId(null);
+              setSelectedTeamName("");
+              setSchoolSheetOpen(false);
+            }}
+            className="w-full h-12 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"
+          >
+            Mon école n&apos;est pas listée
+          </button>
+        }
         onSelect={(s) => {
+          setEcoleIntrouvable(false);
+          setEcoleNonListee("");
           setSelectedSchoolId(s.id);
           setSelectedSchoolName(s.name);
           // Reset équipe + coach si école change (orphan team_id sinon)
@@ -1894,6 +1976,11 @@ interface Step1Props {
   selectedSchoolName: string;
   onOpenSchool: () => void;
   schoolIdSelected: boolean;
+  /** « Mon école n'est pas listée » — texte libre à la place du picker. */
+  ecoleIntrouvable: boolean;
+  ecoleNonListee: string;
+  setEcoleNonListee: (v: string) => void;
+  onRevenirRecherche: () => void;
   // Iter team-2 — équipe scolaire (school+sport)
   selectedTeamId: string | null;
   selectedTeamName: string;
@@ -2116,13 +2203,39 @@ function Step1Content(p: Step1Props) {
       ) : p.userContext === "scolaire" ? (
         <>
           <SectionTitle>Mon école</SectionTitle>
-          <PickerRow
-            label="École secondaire"
-            value={p.selectedSchoolName}
-            placeholder="Sélectionner mon école…"
-            onTap={p.onOpenSchool}
-            required
-          />
+          {p.ecoleIntrouvable ? (
+            <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-4">
+              <label className="block text-[12px] font-bold uppercase tracking-wider text-white/55 mb-2">
+                Le nom de ton école <span className="text-[#EF4444]">*</span>
+              </label>
+              <input
+                type="text"
+                value={p.ecoleNonListee}
+                onChange={(e) => p.setEcoleNonListee(e.target.value)}
+                maxLength={200}
+                placeholder="Ex. : Cégep Garneau, Québec"
+                className="w-full h-12 rounded-xl bg-[#111317] border border-white/[0.10] px-3 text-[16px] text-white placeholder:text-white/30 focus:outline-none focus:border-[#E63946]/50"
+              />
+              <p className="text-[13px] text-white/55 mt-2 leading-relaxed">
+                Écris-la comme tu la connais. Ton inscription continue ; l&apos;équipe Nexus l&apos;ajoutera et te rattachera.
+              </p>
+              <button
+                type="button"
+                onClick={() => { triggerHaptic("Light"); p.onRevenirRecherche(); }}
+                className="mt-2 text-[13px] text-white/55 underline underline-offset-2"
+              >
+                Revenir à la recherche
+              </button>
+            </div>
+          ) : (
+            <PickerRow
+              label="École secondaire"
+              value={p.selectedSchoolName}
+              placeholder="Sélectionner mon école…"
+              onTap={p.onOpenSchool}
+              required
+            />
+          )}
 
           {/* Iter team-2 — section ÉQUIPE scolaire (visible une fois
               école + sport set). 3 cas non-bloquants :
@@ -2217,7 +2330,7 @@ function Step1Content(p: Step1Props) {
             </>
           )}
 
-          {!p.schoolIdSelected && (
+          {!p.schoolIdSelected && !p.ecoleIntrouvable && (
             <p className="text-[12px] text-white/40 italic px-1 mt-3">
               Choisis d&apos;abord ton école pour voir les équipes.
             </p>
