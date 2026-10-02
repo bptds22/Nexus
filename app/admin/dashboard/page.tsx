@@ -341,6 +341,8 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      <EcolesNonListees supabase={supabase} />
+
       {/* ═══════ ROW 2 — ENGAGEMENT ═══════ */}
       <section className="space-y-3">
         <h2 className={SECTION_HEADING}>Engagement hebdomadaire</h2>
@@ -636,3 +638,77 @@ function activityLabel(type: string): string {
 
 // Keep Link import used (potential drill-in — currently not needed).
 void Link;
+
+/* ── « Mon école n'est pas listée » (décision BP 2026-10-01) ──────────────
+   L'avis admin de l'inscription. Le trigger trg_notifier_ecole_non_listee
+   écrit aussi une ligne admin_notifications, mais cette table n'a aucun
+   lecteur : ce qui se VOIT, c'est ici, lu en direct sur la fiche. Une ligne
+   disparaît quand l'athlète est rattaché à une école (school_id posé).
+   Ces textes nourriront la décision du chantier cégep. */
+type EcoleNonListeeRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  ecole_non_listee: string;
+  updated_at: string | null;
+};
+
+function EcolesNonListees({ supabase }: { supabase: ReturnType<typeof createClient> }) {
+  const [rows, setRows] = useState<EcoleNonListeeRow[] | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vivant = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("athletes")
+        .select("id, first_name, last_name, ecole_non_listee, updated_at")
+        .not("ecole_non_listee", "is", null)
+        .is("school_id", null)
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (!vivant) return;
+      if (error) { setErreur(error.message); setRows([]); return; }
+      setRows((data ?? []) as EcoleNonListeeRow[]);
+    })();
+    return () => { vivant = false; };
+  }, [supabase]);
+
+  return (
+    <section className="space-y-3">
+      <h2 className={SECTION_HEADING}>
+        Écoles non listées{rows && rows.length > 0 ? ` (${rows.length})` : ""}
+      </h2>
+      <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl">
+        {rows === null ? (
+          <p className="px-5 py-4 text-[13px] text-[#6b7280]">Chargement…</p>
+        ) : erreur ? (
+          <p className="px-5 py-4 text-[13px] text-[#F59E0B]">Liste indisponible ({erreur})</p>
+        ) : rows.length === 0 ? (
+          <p className="px-5 py-4 text-[13px] text-[#6b7280]">
+            Aucun athlète n&apos;a écrit d&apos;école non listée.
+          </p>
+        ) : (
+          <ul className="divide-y divide-white/5">
+            {rows.map((r) => (
+              <li key={r.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                <span className="text-[14px] text-white font-semibold flex-1 min-w-0 break-words">
+                  « {r.ecole_non_listee} »
+                </span>
+                <Link
+                  href={`/admin/athletes/${r.id}`}
+                  className="text-[13px] text-[#9CA3AF] underline underline-offset-2 hover:text-white"
+                >
+                  {`${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "Athlète"}
+                </Link>
+                <span className="text-[12px] text-[#6b7280] tabular-nums">
+                  {r.updated_at ? new Date(r.updated_at).toLocaleDateString("fr-CA") : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}

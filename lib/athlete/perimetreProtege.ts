@@ -20,10 +20,9 @@
    Il retire du patch les colonnes protégées dont la valeur est DÉJÀ
    celle de la base. C'est tout. Il ne contourne pas la garde : si
    l'athlète change réellement d'école, la colonne part et le trigger
-   refuse — c'est le comportement voulu tant que la décision produit
-   n'est pas écrite EN BASE (volet 5 de la migration D6 : pendant
-   l'onboarding, `onboarding_complete = false`, école et coach
-   redeviennent le choix de l'athlète).
+   refuse — APRÈS l'onboarding. Pendant (`onboarding_complete` pas vrai),
+   école et coach sont le choix de l'athlète : volet 5 de la migration D6
+   (`20261001210000`), qui l'écrit EN BASE.
 
    ── MIROIR, PAS RÉÉCRITURE ──────────────────────────────────────
    `COLONNES_PROTEGEES` recopie la liste du trigger. Si la liste change

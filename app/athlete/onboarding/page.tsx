@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { needsConsent } from "@/lib/auth/needsConsent";
 import { genderLabel } from "@/lib/config/gender";
 import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
-import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
 import { isUnder14, MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
@@ -818,6 +817,12 @@ function AthleteOnboardingDesktop() {
   // School (used when userContext === 'scolaire')
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [selectedSchoolName, setSelectedSchoolName] = useState("");
+  /* « Mon école n'est pas listée » (décision BP 2026-10-01) : texte libre,
+     l'inscription continue sans school_id, l'admin est avisé par le trigger
+     trg_notifier_ecole_non_listee. Exclusif d'une école choisie. */
+  const [ecoleIntrouvable, setEcoleIntrouvable] = useState(false);
+  const [ecoleNonListee, setEcoleNonListee] = useState("");
+  const ecoleNonListeeValide = ecoleIntrouvable && ecoleNonListee.trim().length >= 2;
   // Coach (optional, school-context only)
   const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
 
@@ -1116,9 +1121,19 @@ function AthleteOnboardingDesktop() {
             setUserContext("ligue_civile");
           }
         }
+        /* Étape 1 enregistrée avec « Mon école n'est pas listée » : pas de
+           school_id d'où dériver le contexte — le texte, lui, n'existe qu'en
+           scolaire. Sans ça, la reprise retombait à l'étape 0. Parité mobile. */
+        if (!contextChosen && !existing.school_id && existing.ecole_non_listee) {
+          contextChosen = true;
+        }
         if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id);
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
+        }
+        if (!existing.school_id && existing.ecole_non_listee) {
+          setEcoleIntrouvable(true);
+          setEcoleNonListee(existing.ecole_non_listee);
         }
         // Civil-context CLUB prefill: the anchor school_id points to a
         // LIGUE_CIVILE row = the club. Restore selectedClubId/Name so a
@@ -1194,7 +1209,7 @@ function AthleteOnboardingDesktop() {
         // committed yet in this same init run). Adults skip the consent gate.
         const step1Complete = existing.first_name
           && (hasParentalConsent ? existing.consentement_parental : true)
-          && (ctx === "ligue_civile" || existing.school_id);
+          && (ctx === "ligue_civile" || existing.school_id || existing.ecole_non_listee);
         // Reprise SEULEMENT si le contexte est posé — sinon on reste à l'étape 0
         // (setStep(0) plus haut) pour faire choisir scolaire/civil. Parité mobile.
         if (contextChosen && step1Complete) {
@@ -1371,8 +1386,8 @@ function AthleteOnboardingDesktop() {
       }
       if (userContext === "ligue_civile") {
         if (!primarySport) manque.push("ton sport");
-      } else if (!selectedSchoolId) {
-        manque.push("ton école");
+      } else if (!selectedSchoolId && !ecoleNonListeeValide) {
+        manque.push(ecoleIntrouvable ? "le nom de ton école" : "ton école");
       }
       if (dobRecoveryInvalid) {
         return "Il faut avoir au moins 14 ans pour créer un profil sur Nexus.";
@@ -1406,7 +1421,7 @@ function AthleteOnboardingDesktop() {
           : true;
         const baseValid = !!(firstName.trim() && lastName.trim() && gradYear) && parentValid && !dobRecoveryInvalid;
         if (userContext === "ligue_civile") return baseValid && !!primarySport;
-        return baseValid && !!selectedSchoolId;
+        return baseValid && (!!selectedSchoolId || ecoleNonListeeValide);
       }
       case 2: return true;
       case 3: return true;
@@ -1447,6 +1462,7 @@ function AthleteOnboardingDesktop() {
         annee_diplomation: gradYear ? parseInt(gradYear) : null,
         school_id: isCivil ? civilAnchorSchoolId : (selectedSchoolId || null),
         coach_id: isCivil ? null : selectedCoachId,
+        ecole_non_listee: !isCivil && !selectedSchoolId && ecoleNonListeeValide ? ecoleNonListee.trim() : null,
         league_team_id: null,
         nom_parent: `${parentFirstName.trim()} ${parentLastName.trim()}`.trim() || null,
         parent_first_name: parentFirstName.trim() || null, parent_last_name: parentLastName.trim() || null,
@@ -1645,6 +1661,7 @@ function AthleteOnboardingDesktop() {
       user_id: userId,
       school_id: isCivil ? civilAnchorSchoolId : (selectedSchoolId || null),
       coach_id: isCivil ? null : selectedCoachId,
+      ecole_non_listee: !isCivil && !selectedSchoolId && ecoleNonListeeValide ? ecoleNonListee.trim() : null,
       league_team_id: null,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
@@ -1771,12 +1788,10 @@ function AthleteOnboardingDesktop() {
   async function finishOnboarding(supabase: ReturnType<typeof createClient>) {
     if (!userId) return;
 
-    // Update profile_completion in DB
-    const { data: freshAthlete } = await supabase.from("athletes").select("*").eq("user_id", userId).single();
-    if (freshAthlete) {
-      const completion = calculateProfileCompletion(freshAthlete);
-      await supabase.from("athletes").update({ profile_completion: completion }).eq("user_id", userId);
-    }
+    /* profile_completion : PAS écrit ici. trg_profile_completion (BEFORE
+       INSERT OR UPDATE) le calcule à chaque écriture de la fiche, et la
+       colonne est au périmètre protégé — l'UPDATE client qui vivait ici
+       prenait un 400 à chaque fin d'onboarding, en silence. Parité mobile. */
 
     // Persiste le contexte choisi à l'étape 0 (scolaire | ligue_civile). RPC
     // one-shot : context encore NULL ici + pas encore onboardé → réussit.
@@ -2158,19 +2173,54 @@ function AthleteOnboardingDesktop() {
               <>
                 {/* School selection */}
                 <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Mon école <span className="text-[#EF4444]">*</span></div>
-                <div className="mb-3">
-                  <SchoolSelect
-                    value={selectedSchoolId || null}
-                    onChange={(id) => {
-                      setSelectedSchoolId(id);
-                      if (!id) setSelectedSchoolName("");
-                      setSelectedCoachId(null);
-                    }}
-                    filterType="SECONDAIRE"
-                    placeholder="Rechercher ton école..."
-                  />
-                </div>
-                {selectedSchoolName && <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedSchoolName}</p>}
+                {!ecoleIntrouvable ? (
+                  <>
+                    <div className="mb-3">
+                      <SchoolSelect
+                        value={selectedSchoolId || null}
+                        onChange={(id) => {
+                          setSelectedSchoolId(id);
+                          if (!id) setSelectedSchoolName("");
+                          setSelectedCoachId(null);
+                        }}
+                        filterType="SECONDAIRE"
+                        placeholder="Rechercher ton école..."
+                      />
+                    </div>
+                    {selectedSchoolName && <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedSchoolName}</p>}
+                    {!selectedSchoolId && (
+                      <button
+                        type="button"
+                        onClick={() => { setEcoleIntrouvable(true); setSelectedCoachId(null); }}
+                        className="text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-white mb-6"
+                      >
+                        Mon école n&apos;est pas listée
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="mb-6">
+                    <label className={labelCls}>Le nom de ton école <span className="text-[#EF4444]">*</span></label>
+                    <input
+                      type="text"
+                      value={ecoleNonListee}
+                      onChange={(e) => setEcoleNonListee(e.target.value)}
+                      maxLength={200}
+                      placeholder="Ex. : Cégep Garneau, Québec"
+                      className={inputCls}
+                    />
+                    <p className="text-[12px] text-[#6b7280] mt-2">
+                      Écris-la comme tu la connais. Ton inscription continue ; l&apos;équipe Nexus l&apos;ajoutera et te rattachera.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setEcoleIntrouvable(false); setEcoleNonListee(""); }}
+                      className="text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-white mt-2"
+                    >
+                      Revenir à la recherche
+                    </button>
+                  </div>
+                )}
 
                 {/* Coach picker — only after school selection */}
                 {selectedSchoolId && (
