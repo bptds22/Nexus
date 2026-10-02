@@ -28,7 +28,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import {
-  createContext, useContext, useCallback, useEffect, useState, type ReactNode,
+  createContext, useContext, useCallback, useEffect, useRef, useState, type ReactNode,
 } from "react";
 
 export type SubscriptionTier = "free" | "pro" | "all_star";
@@ -346,6 +346,25 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [subLoading, setSubLoading] = useState(true);
+  /* ── LE PALIER QUI CHANGE TOUT SEUL (correctif 1.4.4, retour BP 2026-10-02) ──
+     Prouvé dans les journaux d'API de prod (edge_logs, 24 h) : des lectures de
+     `subscriptions` partaient (a) avec l'id d'un compte PRÉCÉDENT sous la session
+     du compte courant, (b) sans aucun jeton (déconnexion, restauration de
+     session en cours). La RLS répond juste — `[]` — et le Provider en tirait
+     « free » (et « athlete »). Une réponse en retard pouvait aussi écraser la
+     bonne. Deux gardes :
+       1. une lecture n'est appliquée que si elle est la DERNIÈRE lancée et
+          concerne encore l'utilisateur courant (`demandeRef`, `userIdRef`) ;
+       2. la ligne `users` du compte est TOUJOURS lisible par lui-même : si elle
+          ne revient pas, la lecture n'a pas été faite sous sa session — on ne
+          conclut rien (on garde l'état connu, et on relit sous peu).
+     Et l'état n'est exposé que s'il appartient au compte COURANT. */
+  const demandeRef = useRef(0);
+  const userIdRef = useRef<string | undefined>(userId);
+  useEffect(() => { userIdRef.current = userId; }, [userId]);
+  const relectureRef = useRef<number | null>(null);
+  // Relance différée de la garde 2 (le callback se référence lui-même).
+  const chargerRef = useRef<((silencieux: boolean) => Promise<void>) | null>(null);
 
   /* `silencieux` : relecture de fond (retour sur l'onglet, minuterie). Elle ne
      repasse pas `loading` à vrai — les FeatureGate démonteraient leur contenu —
@@ -359,6 +378,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (!silencieux) setSubLoading(true);
+    const demande = ++demandeRef.current;
     const supabase = createClient();
 
     // Two parallel queries: the user row (for role + is_school_admin) + the subscription row
@@ -371,7 +391,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         .maybeSingle(),
     ]);
 
+    // Garde 1 : une réponse dépassée (autre compte, lecture plus récente) ne
+    // s'applique jamais.
+    if (demande !== demandeRef.current || userIdRef.current !== userId) return;
     if (silencieux && (userRes.error || subRes.error)) return;
+    // Garde 2 : sa propre ligne `users` est toujours lisible par soi. Absente,
+    // la requête n'est pas partie sous sa session : rien n'est conclu, on relit.
+    if (!userRes.data) {
+      if (relectureRef.current) window.clearTimeout(relectureRef.current);
+      relectureRef.current = window.setTimeout(() => {
+        relectureRef.current = null;
+        if (userIdRef.current === userId) void chargerRef.current?.(silencieux);
+      }, 1000);
+      return;
+    }
 
     const role = normalizeRole(userRes.data?.role as string | undefined);
     const isSchoolAdmin = Boolean(userRes.data?.is_school_admin);
@@ -414,6 +447,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     setSubLoading(false);
   }, [userId]);
 
+  useEffect(() => { chargerRef.current = charger; }, [charger]);
+
   const refresh = useCallback(() => charger(false), [charger]);
 
   // refresh() depends on userId, so this re-runs when userId goes from
@@ -440,10 +475,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   // Exposed loading stays true while auth is resolving OR the subscription
   // query is in flight — so consumers/gates never read a premature "free".
-  const loading = userLoading || subLoading;
+  const subscriptionCourante = subscription && subscription.userId === userId ? subscription : null;
+  const loading = userLoading || subLoading || (!!userId && !subscriptionCourante);
 
-  const tier: SubscriptionTier = subscription?.tier || "free";
-  const role: SubscriptionRole = subscription?.role || "athlete";
+  const tier: SubscriptionTier = subscriptionCourante?.tier || "free";
+  const role: SubscriptionRole = subscriptionCourante?.role || "athlete";
 
   const features: FeatureSet = (() => {
     switch (role) {
@@ -491,13 +527,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     return "free";
   };
 
-  const isSchoolAdmin: boolean = Boolean(subscription?.isSchoolAdmin);
-  const status: SubscriptionStatus = subscription?.status ?? "active";
-  const billing = subscription?.billing ?? null;
-  const periodEnd: string | null = subscription?.periodEnd ?? null;
-  const trialDaysRemaining: number | null = subscription?.trialDaysRemaining ?? null;
-  const cancelAtPeriodEnd: boolean = Boolean(subscription?.cancelAtPeriodEnd);
-  const isStripeManaged: boolean = Boolean(subscription?.isStripeManaged);
+  const isSchoolAdmin: boolean = Boolean(subscriptionCourante?.isSchoolAdmin);
+  const status: SubscriptionStatus = subscriptionCourante?.status ?? "active";
+  const billing = subscriptionCourante?.billing ?? null;
+  const periodEnd: string | null = subscriptionCourante?.periodEnd ?? null;
+  const trialDaysRemaining: number | null = subscriptionCourante?.trialDaysRemaining ?? null;
+  const cancelAtPeriodEnd: boolean = Boolean(subscriptionCourante?.cancelAtPeriodEnd);
+  const isStripeManaged: boolean = Boolean(subscriptionCourante?.isStripeManaged);
 
   // Recruiter search-result cap. -1 = unlimited. Non-recruiters don't
   // search athletes, so expose -1 to avoid accidentally capping them.
@@ -510,7 +546,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     role === "recruiter" ? getLimit("favorites_limit") : -1;
 
   const value: SubscriptionContextValue = {
-    subscription,
+    subscription: subscriptionCourante,
     tier,
     role,
     status,
