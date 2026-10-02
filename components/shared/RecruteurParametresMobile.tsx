@@ -17,7 +17,8 @@
    - Confidentialité (3 toggles + dates consentement + openExternal vers web)
    - Abonnement (Pro/All Star lancent le checkout Stripe via in-app browser)
    - Compte (changer mot de passe via sheet)
-   - Zone danger (désactiver via RPC + déconnexion réelle)
+   - Zone danger (supprimer + déconnexion) — « Désactiver mon compte »
+     retiré (décision BP 2026-10-01, parité web)
 
    PAS de Gestion CÉGEP ni Transfert (BP confirme — desktop only).
 
@@ -83,7 +84,6 @@ export function RecruteurParametresMobile() {
   const [loading, setLoading] = useState(true);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
-  const [deactivateSheetOpen, setDeactivateSheetOpen] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
   // Which tier is mid-checkout — drives the CTA label + blocks double-tap.
@@ -276,17 +276,6 @@ export function RecruteurParametresMobile() {
     } finally {
       setUpgradingTier(null);
     }
-  }
-
-  // Désactivation RÉVERSIBLE (conservation des données) — inchangée.
-  async function handleDeactivate() {
-    const supabase = createClient();
-    const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
-    if (error) { toast.error({ message: "Échec désactivation", detail: error.message }); return; }
-    try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await deconnexion(supabase);
-    setDeactivateSheetOpen(false);
-    router.push("/auth");
   }
 
   // Suppression DÉFINITIVE — RPC delete_my_account via le helper partagé.
@@ -582,13 +571,8 @@ export function RecruteurParametresMobile() {
       <SectionLabel>Zone danger</SectionLabel>
       <Group>
         <DangerRow
-          label="Désactiver mon compte"
-          isFirst
-          onTap={() => { triggerHaptic("Light"); setDeactivateSheetOpen(true); }}
-        />
-        <DangerRow
           label="Supprimer mon compte"
-          isFirst={false}
+          isFirst
           onTap={() => { triggerHaptic("Light"); setDeleteSheetOpen(true); }}
         />
         <DangerRow
@@ -602,15 +586,6 @@ export function RecruteurParametresMobile() {
 
       {/* Sheets */}
       <PasswordChangeSheet open={passwordSheetOpen} onClose={() => setPasswordSheetOpen(false)} />
-      <ConfirmSheet
-        open={deactivateSheetOpen}
-        onClose={() => setDeactivateSheetOpen(false)}
-        title="Désactiver le compte ?"
-        message="Votre profil deviendra invisible, alertes stoppées. Vos données seront conservées. Vous pourrez réactiver en contactant le support."
-        confirmLabel="Désactiver"
-        onConfirm={handleDeactivate}
-        variant="danger"
-      />
       <ConfirmSheet
         open={deleteSheetOpen}
         onClose={() => setDeleteSheetOpen(false)}
