@@ -327,7 +327,7 @@ export function RecruteurDashboardMobile() {
   /* ── LES 4 TUILES (lot 4 de la 1.4.4, ordre décidé par BP) ──────────
      Chacune compte avec la définition de SA destination (parité web,
      app/recruteur/tableau-de-bord/page.tsx) et l'ouvre filtrée :
-       1. Nouveaux athlètes → la recherche `?nouveau=true` (même RPC, même
+       1. Nouveaux (10 j) → la recherche `?nouveau=true` (même RPC, même
           fenêtre de 10 jours côté serveur, même clé de cache) ;
        2. Relances → Mon processus `?filtre=relances` (estRelanceAFaire) ;
        3. Visites planifiées → Mon processus `?filtre=visites` (estVisiteAVenir) ;
@@ -359,7 +359,7 @@ export function RecruteurDashboardMobile() {
     : { etat: "chiffre", n: relanceCards.filter(predicat).length };
   const tuiles: TuileMobile[] = [
     {
-      cle: "nouveaux", libelle: "Nouveaux athlètes", aide: "Profils créés depuis 10 jours",
+      cle: "nouveaux", libelle: "Nouveaux (10 j)", aide: "Profils créés depuis 10 jours",
       href: `/recruteur/recherche?${CLES_FILTRES.filterNewOnly}=true`,
       valeur: nouveaux ? { etat: "chiffre", n: nouveaux.length } : { etat: "chargement" },
     },
@@ -470,21 +470,10 @@ export function RecruteurDashboardMobile() {
     );
   }
 
-  // Hero headline — derived from the same signal hierarchy the old
-  // local hero used : newAthletesThisWeek > 0 → fallback. Two lines,
-  // second accented red (matches the new design recipe).
-  const hasNews = actionBarData.newAthletesThisWeek > 0;
-  const heroHeadline = hasNews ? (
-    <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
-      {actionBarData.newAthletesThisWeek} nouveaux talents<br />
-      <span className="text-[#E63946]">cette semaine</span>
-    </h2>
-  ) : (
-    <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
-      Explore tes<br />
-      <span className="text-[#E63946]">cibles</span>
-    </h2>
-  );
+  /* Bandeau « N nouveaux talents cette semaine » RETIRÉ (décision BP
+     2026-10-02) : il comptait 7 jours, la tuile « Nouveaux (10 j) » compte
+     la fenêtre du filtre de recherche — deux chiffres pour la même question.
+     La tuile le remplace ; la carte garde ses trois compteurs. */
 
   // Favorites cap → optional progress bar. Source : useSubscription.
   // -1 means unlimited (AllStar) ; 0 means no cap-tracking (Free, etc.)
@@ -542,8 +531,6 @@ export function RecruteurDashboardMobile() {
       {/* Floating hero card. Insets : Pipeline total / Favoris (+ progress
           when a tier cap exists) / Réponses coachs. */}
       <DashboardHero
-        eyebrow="Cette semaine"
-        headline={heroHeadline}
         pulseBadge={
           actionBarData.coachReplies > 0
             ? {
