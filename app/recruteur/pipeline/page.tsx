@@ -82,7 +82,7 @@ import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, RenvoyerInvitation, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import { useAuteursUnite } from "@/lib/queries/recruiter/useProcessusUnite";
-import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
+import { messageRetraitProcessus, MESSAGE_RETRAIT_CARTE } from "@/lib/pipeline/messagesUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -658,10 +658,6 @@ function collegues(card: PipelineKanbanCard | undefined, moi: string | null): st
   if (!card?.suivi_par || !card.suivi_par_noms) return [];
   return card.suivi_par.map((id, i) => (id === moi ? null : card.suivi_par_noms![i])).filter((n): n is string => !!n);
 }
-
-/** Retirer une carte prospect la SUPPRIME (décision BP, lot C). */
-const MESSAGE_RETRAIT_CARTE =
-  "Cette carte prospect sera supprimée pour toute l'unité, avec ses notes. Il ne restera qu'une trace de la suppression, sans les informations de l'athlète.";
 
 /** Texte de la confirmation d'un retrait (décision BP 3) — source unique
  *  web + app : lib/pipeline/messagesUnite.ts. */
@@ -1884,10 +1880,14 @@ function PipelinePageContent() {
      passe par la ligne de l'acteur, et cette ligne vit dans l'unité de
      l'acteur : déplacer le dossier Basketball depuis un compte Football en
      créerait un SECOND, en Football. Tant que l'écriture inter-unités n'existe
-     pas (étape 3, registre §40), ces dossiers se lisent sans se modifier. */
+     pas (étape 3, registre §40), ces dossiers se lisent sans se modifier.
+     SAUF un dossier que JE suis (recette 1.4.4) : ma ligne existe, l'écriture
+     la met à jour EN PLACE (unite_figer garde son unité) — aucun doublon. Un
+     recruteur dont le sport a changé n'est plus muré hors de ses dossiers. */
   const estAutreUnite = useCallback((card: PipelineKanbanCard | null | undefined) =>
-    !!card && modeUnite && !!card.unite_sport_id && !!monSportId && card.unite_sport_id !== monSportId,
-  [modeUnite, monSportId]);
+    !!card && modeUnite && !!card.unite_sport_id && !!monSportId && card.unite_sport_id !== monSportId
+    && !(!!moi && (card.suivi_par ?? []).includes(moi)),
+  [modeUnite, monSportId, moi]);
 
   /* Toute écriture passe par la ligne de l'ACTEUR (unite_ecrire_dossier,
      lot B2-0) : créée au besoin, alignée sur l'unité, et le journal est signé

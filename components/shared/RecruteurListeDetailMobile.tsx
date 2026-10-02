@@ -272,6 +272,7 @@ function AthleteNotesSheet({
                 athleteId={athlete.athleteId}
                 modeUnite={modeUnite}
                 titre="Notes de suivi"
+                replie={false}
                 onTease={() => toast.warning({ message: "Les notes sont réservées aux membres Pro" })}
                 onErreur={(m) => toast.error({ message: m })}
               />

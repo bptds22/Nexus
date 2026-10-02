@@ -14,6 +14,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { ecrireCarte } from "@/lib/cartes/carteProspect";
 import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useUpdateNextAction() {
@@ -21,7 +22,12 @@ export function useUpdateNextAction() {
 
   return useMutation({
     /** `nextActionAt` : "AAAA-MM-JJ" (colonne date) ou null pour effacer. */
-    mutationFn: async ({ cardId, nextActionAt }: { cardId: string; nextActionAt: string | null }) => {
+    mutationFn: async ({ cardId, nextActionAt, carte = false }: { cardId: string; nextActionAt: string | null; carte?: boolean }) => {
+      if (carte) {
+        const erreur = await ecrireCarte(createClient(), cardId, { next_action_at: nextActionAt });
+        if (erreur) throw erreur;
+        return;
+      }
       const { error } = await createClient().rpc("unite_ecrire_dossier", {
         p_athlete_id: cardId, p_champs: { next_action_at: nextActionAt },
       });

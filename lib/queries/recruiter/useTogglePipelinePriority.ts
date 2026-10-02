@@ -10,13 +10,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { ecrireCarte } from "@/lib/cartes/carteProspect";
 import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useTogglePipelinePriority() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ cardId, value }: { cardId: string; value: boolean }) => {
+    mutationFn: async ({ cardId, value, carte = false }: { cardId: string; value: boolean; carte?: boolean }) => {
+      if (carte) {
+        const erreur = await ecrireCarte(createClient(), cardId, { flagged: value });
+        if (erreur) throw erreur;
+        return;
+      }
       const { error } = await createClient().rpc("unite_ecrire_dossier", {
         p_athlete_id: cardId, p_champs: { flagged: value },
       });

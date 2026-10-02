@@ -29,17 +29,24 @@ import { createClient } from "@/lib/supabase/client";
 import { hapticSelect } from "@/lib/haptics";
 import { champVisitePourEtape, visiteApresChangementEtape } from "@/lib/pipeline/regleVisite";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { ecrireCarte } from "@/lib/cartes/carteProspect";
 import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useUpdatePipelineStage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ cardId, newStage, visitAtIso }: { cardId: string; newStage: string; visitAtIso?: string | null }) => {
+    /** `carte` : carte prospect (lot C) — mêmes champs, écrits sur la carte. */
+    mutationFn: async ({ cardId, newStage, visitAtIso, carte = false }: { cardId: string; newStage: string; visitAtIso?: string | null; carte?: boolean }) => {
       const champs = {
         stage: newStage.toUpperCase(),
         ...(visitAtIso === null ? { visit_at: null } : champVisitePourEtape(newStage, visitAtIso)),
       };
+      if (carte) {
+        const erreur = await ecrireCarte(createClient(), cardId, champs);
+        if (erreur) throw erreur;
+        return;
+      }
       const { error } = await createClient().rpc("unite_ecrire_dossier", { p_athlete_id: cardId, p_champs: champs });
       if (error) throw error;
     },

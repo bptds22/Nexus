@@ -18,7 +18,7 @@
    Référence design : docs/mobile-design-system.md.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,8 +30,9 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
 import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { estCarte } from "@/lib/cartes/carteProspect";
+import { OngletInfosCarte, OngletHistoriqueCarte, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
-import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
+import { messageRetraitProcessus, MESSAGE_RETRAIT_CARTE } from "@/lib/pipeline/messagesUnite";
 import OngletInfosPanneau from "@/app/recruteur/pipeline/_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "@/app/recruteur/pipeline/_components/OngletHistoriquePanneau";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
@@ -345,18 +346,19 @@ function StageTabsSticky({
 /* ── PipelineCardMobile V3 (iter 6.1b) ───────────────────────── */
 
 function getBorderLeftStyle(card: PipelineKanbanCard): React.CSSProperties {
-  // Prioritaire → border rouge full opacity (override)
+  // Prioritaire → border rouge full opacity. Le liseré coloré du statut global
+  // (vert OUVERT, jaune EN PROCESSUS…) est RETIRÉ (recette 1.4.4, BP
+  // 2026-10-02) : le web n'en a pas, et la pastille de statut le dit déjà.
   if (card.flagged) {
     return { borderLeft: "3px solid #E63946" };
   }
-  // Sinon → border selon statut global. Iter 6.1e Fix 2 : 30% → 60% alpha
-  // pour plus de présence visuelle (avant trop subtle).
-  const status = statusGlobalColor(card.recruitment_status);
-  if (!status || card.recruitment_status === "RETIRE") return {};
-  return { borderLeft: `3px solid ${status.dot}99` }; // 60% alpha (0x99 = 153/255)
+  return {};
 }
 
 function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: () => void }) {
+  // Carte prospect (lot C) : fond rouge pâle, comme au kanban web.
+  const prospect = estCarte(card);
+  const fond = prospect ? SURFACE_PROSPECT : "#1A1D24";
   const status = statusGlobalColor(card.recruitment_status);
   const [first, ...rest] = (card.full_name || "").split(/\s+/);
   const showStaleness = (card.days_in_status ?? 0) > 5;
@@ -370,8 +372,9 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
     <button
       type="button"
       onClick={() => { triggerHaptic("Light"); onTap(); }}
-      className="w-full relative rounded-2xl overflow-hidden active:opacity-80 transition-opacity text-left bg-[#1A1D24]"
-      style={{ ...getBorderLeftStyle(card), height: 120 }}
+      data-testid={prospect ? "carte-prospect" : "carte-dossier"}
+      className="w-full relative rounded-2xl overflow-hidden active:opacity-80 transition-opacity text-left"
+      style={{ ...getBorderLeftStyle(card), height: 120, backgroundColor: fond }}
     >
       {/* Iter 7.4 Section A — RÉPLIQUE du mécanisme DashboardHero (qui marche).
           Cause root du fade KO précédent : AthletePhotoFill rend <img z-[1]>
@@ -408,15 +411,42 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
       <div
         className="absolute left-0 top-0 bottom-0 w-[150px] z-[1] pointer-events-none"
         style={{
-          background: "linear-gradient(to right, transparent 0%, transparent 38%, rgba(26,29,36,0.9) 80%, #1A1D24 100%)",
+          background: prospect
+            ? `linear-gradient(to right, transparent 0%, transparent 38%, ${fond}e6 80%, ${fond} 100%)`
+            : "linear-gradient(to right, transparent 0%, transparent 38%, rgba(26,29,36,0.9) 80%, #1A1D24 100%)",
         }}
       />
 
       {/* Iter 7.3 Fix A — left-[150px] au RAS de la fin de photo (pas
           d'overlap → noms entiers) + z-10 pour stacking stable WebView. */}
+      {/* Cote du coach, et le grade A-D SOUS elle (décision BP 2026-10-02).
+          Colonne ABSOLUE en haut à droite : empilée dans la ligne du nom,
+          elle grandissait la ligne et la carte (120 px fixes, centrée,
+          overflow-hidden) rognait les étoiles par le haut (recette 1.4.4). */}
+      <div className="absolute top-2.5 right-3 z-20 flex flex-col items-end gap-1 pointer-events-none">
+        <span className="flex items-center gap-1">
+          {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence).
+              Sans elle, ni étoile ni chiffre — la carte n'affirme rien. */}
+          {aUneCote(card.coach_rating) ? (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <span className="text-[13px] font-bold text-white">{card.coach_rating.toFixed(1)}</span>
+            </>
+          ) : prospect ? (
+            <span className="text-[10px] uppercase tracking-wider font-bold text-[#E63946]">Prospect</span>
+          ) : (
+            <span className="text-[10px] text-[#6B7280]">Non évalué</span>
+          )}
+        </span>
+        <GradeChip grade={card.grade} />
+      </div>
+
       <div className="absolute inset-y-0 left-[150px] right-0 z-10 flex flex-col justify-center px-3">
         {/* Ligne 1 : nom + verified inline + cote droite */}
-        <div className="flex items-center gap-1.5 min-w-0">
+        {/* pr : la colonne cote + grade (absolue, en haut à droite). */}
+        <div className="flex items-center gap-1.5 min-w-0 pr-[60px]">
           <p className="text-white font-bold text-base truncate">{card.full_name}</p>
           {card.is_verified && (
             <span className="flex-shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#3B82F6]">
@@ -425,29 +455,10 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
               </svg>
             </span>
           )}
-          {/* Cote du coach, et le grade A-D SOUS elle (lot 3 de la 1.4.4,
-              décision BP 2026-10-02) — groupés à droite. */}
-          <span className="flex-shrink-0 ml-auto flex flex-col items-end gap-1">
-            <span className="flex items-center gap-1.5">
-              {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence).
-                  Sans elle, ni étoile ni chiffre — la carte n'affirme rien. */}
-              {aUneCote(card.coach_rating) ? (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span className="text-sm font-bold text-white">{card.coach_rating.toFixed(1)}</span>
-                </>
-              ) : (
-                <span className="text-[11px] text-[#6B7280]">Pas encore évalué</span>
-              )}
-            </span>
-            <GradeChip grade={card.grade} />
-          </span>
         </div>
 
         {/* Ligne 2 : position · numéro UNIQUEMENT (Fix 3 — école + promo retirées) */}
-        <p className="text-[15px] text-[#9CA3AF] mt-1 truncate">
+        <p className="text-[15px] text-[#9CA3AF] mt-1 truncate pr-[60px]">
           {[card.position || card.sport, card.jersey ? `#${card.jersey}` : null]
             .filter(Boolean).join(" · ") || "—"}
         </p>
@@ -1062,6 +1073,11 @@ function PipelineDetailSheet({
   const [ongletPour, setOngletPour] = useState<string | null>(card?.id ?? null);
   if ((card?.id ?? null) !== ongletPour) { setOngletPour(card?.id ?? null); setOnglet("actions"); }
   const refuserLecture = () => toast.warning({ message: "Dossier d'une autre unité : lecture seule" });
+  /* Carte prospect (lot C, recette 1.4.4) : mêmes gestes (étape, relance,
+     visite, grade, priorité, notes), écrits sur la CARTE — les hooks routent
+     vers ecrireCarte / retirerCarte. Pas de profil ni de message : l'athlète
+     n'a pas de compte. */
+  const carte = estCarte(card);
 
   const [isPriority, setIsPriority] = useState(card?.flagged ?? false);
   // Grade local — même raison que visitAtLocal/nextActionAtLocal : `card` est
@@ -1100,7 +1116,7 @@ function PipelineDetailSheet({
   // "Voir profil complet". Next router prefetch est no-op en static export
   // mais inoffensif.
   useEffect(() => {
-    if (open && card?.id) {
+    if (open && card?.id && !estCarte(card)) {
       try { router.prefetch(`/recruteur/athletes/${card.id}`); } catch { /* no-op */ }
     }
   }, [open, card?.id, router]);
@@ -1111,9 +1127,9 @@ function PipelineDetailSheet({
   useEffect(() => {
     if (!confirmRemove) return;
     // Des collègues à nommer : le temps de LIRE la phrase avant qu'elle parte.
-    const t = window.setTimeout(() => setConfirmRemove(false), collegues.length > 0 ? 8000 : 3000);
+    const t = window.setTimeout(() => setConfirmRemove(false), collegues.length > 0 || carte ? 8000 : 3000);
     return () => window.clearTimeout(t);
-  }, [confirmRemove, collegues.length]);
+  }, [confirmRemove, collegues.length, carte]);
 
   if (!mounted) return null;
 
@@ -1127,7 +1143,7 @@ function PipelineDetailSheet({
     }
     if (!card) return;
     try {
-      await updateStage.mutateAsync({ cardId: card.id, newStage });
+      await updateStage.mutateAsync({ cardId: card.id, newStage, carte });
       toast.success({ message: `Déplacé vers ${STAGE_BY_LOWER[newStage.toLowerCase()]?.label || newStage}` });
       onClose();
     } catch {
@@ -1155,6 +1171,7 @@ function PipelineDetailSheet({
         cardId: card.id,
         newStage: (iso ? etapeApresSaisieVisite(card.status) : card.status).toUpperCase(),
         visitAtIso: iso ?? null,
+        carte,
       });
       toast.success({ message: iso ? "Date de visite enregistrée" : "Date de visite effacée" });
     } catch {
@@ -1180,7 +1197,7 @@ function PipelineDetailSheet({
     setSavingNextAction(true);
     setNextActionAtLocal(dateStr);
     try {
-      await updateNextAction.mutateAsync({ cardId: card.id, nextActionAt: dateStr });
+      await updateNextAction.mutateAsync({ cardId: card.id, nextActionAt: dateStr, carte });
       toast.success({ message: dateStr ? "Date de relance enregistrée" : "Date de relance effacée" });
     } catch {
       setNextActionAtLocal(prev);
@@ -1201,7 +1218,7 @@ function PipelineDetailSheet({
     setIsPriority(newValue); // optimistic local
     triggerHaptic("Light");
     try {
-      await togglePriority.mutateAsync({ cardId: card.id, value: newValue });
+      await togglePriority.mutateAsync({ cardId: card.id, value: newValue, carte });
     } catch {
       setIsPriority(!newValue);
       toast.error({ message: "Erreur priorité" });
@@ -1221,7 +1238,7 @@ function PipelineDetailSheet({
     setGradeLocal(grade);
     triggerHaptic("Light");
     try {
-      await upsertGrade.mutateAsync({ athleteId: card.id, grade });
+      await upsertGrade.mutateAsync({ athleteId: card.id, grade, carte });
     } catch {
       setGradeLocal(prev);
       toast.error({ message: "Erreur grade" });
@@ -1239,8 +1256,8 @@ function PipelineDetailSheet({
     try {
       // Pour toute l'unité (unite_retirer_du_processus) — la confirmation a
       // nommé les collègues juste avant. Unité du dossier, comme le web.
-      await removeFromPipeline.mutateAsync({ cardId: card.id, sportId: card.unite_sport_id ?? null });
-      toast.success({ message: "Athlète retiré du processus" });
+      await removeFromPipeline.mutateAsync({ cardId: card.id, sportId: card.unite_sport_id ?? null, carte });
+      toast.success({ message: carte ? "Carte prospect supprimée" : "Athlète retiré du processus" });
       onClose();
     } catch {
       toast.error({ message: "Erreur lors du retrait" });
@@ -1360,6 +1377,9 @@ function PipelineDetailSheet({
                   {card.graduation_year > 0 && (
                     <p className="text-[12px] text-[#6B7280]">Promotion {card.graduation_year}</p>
                   )}
+                  {carte && (
+                    <p className="text-[11px] uppercase tracking-wider font-bold text-[#E63946] mt-1">Carte prospect · sans compte Nexus</p>
+                  )}
                   {/* Tableau blanc : qui d'autre suit ce dossier dans l'unité. */}
                   {modeUnite && collegues.length > 0 && (
                     <p className="text-[12px] text-[#9CA3AF] mt-1">
@@ -1387,9 +1407,9 @@ function PipelineDetailSheet({
               </div>
 
               {onglet === "infos" ? (
-                <OngletInfosPanneau athleteId={card.id} />
+                estCarte(card) ? <OngletInfosCarte card={card} /> : <OngletInfosPanneau athleteId={card.id} />
               ) : onglet === "historique" ? (
-                <OngletHistoriquePanneau athleteId={card.id} />
+                estCarte(card) ? <OngletHistoriqueCarte carteId={card.id} /> : <OngletHistoriquePanneau athleteId={card.id} />
               ) : (
               <>
               {lectureSeule && (
@@ -1404,7 +1424,8 @@ function PipelineDetailSheet({
                 const recrutedElsewhere =
                   card.recruitment_status === "RECRUTE" &&
                   ["identifie", "contacte", "en_discussion", "visite_planifiee"].includes(card.status);
-                if (!status && !recrutedElsewhere) return null;
+                // Une carte prospect n'a pas de statut global : « Ouvert » n'y dirait rien.
+                if (carte || (!status && !recrutedElsewhere)) return null;
                 return (
                   <div className="flex items-center gap-2 flex-wrap">
                     {status && (
@@ -1500,7 +1521,7 @@ function PipelineDetailSheet({
               {/* Cote — les étoiles vides restent visibles pour tenir la mise en
                   page, mais SANS chiffre : « 0,0 » affirmerait une note de zéro
                   là où il n'y a pas de note (lib/evaluations/presence). */}
-              <div className="flex items-center gap-2">
+              {!carte && <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <svg key={i} width="14" height="14" viewBox="0 0 24 24"
                     fill={aUneCote(card.coach_rating) && i <= Math.round(card.coach_rating) ? "#F59E0B" : "#4a4d56"} stroke="none">
@@ -1515,7 +1536,7 @@ function PipelineDetailSheet({
                 ) : (
                   <span className="text-[11px] text-[#6B7280] ml-1">Pas encore évalué par son entraîneur</span>
                 )}
-              </div>
+              </div>}
 
               {/* Grade — SOUS la cote (lot 3 de la 1.4.4). Cibles 44px
                   (compact={false}) : c'est du tactile, pas du curseur. */}
@@ -1524,8 +1545,8 @@ function PipelineDetailSheet({
                 <GradePicker value={gradeLocal} onSelect={handleSetGrade} compact={false} />
               </div>
 
-              {/* Progress completion */}
-              <div>
+              {/* Progress completion — sans objet pour une carte prospect. */}
+              {!carte && <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold">Profil complété</span>
                   <span className="text-[13px] text-white font-bold">{Math.round(card.profile_completeness ?? 0)}%</span>
@@ -1536,7 +1557,7 @@ function PipelineDetailSheet({
                     style={{ width: `${card.profile_completeness ?? 0}%`, backgroundColor: "#E63946" }}
                   />
                 </div>
-              </div>
+              </div>}
 
               {/* Toggle priorité — Iter 6.1e Fix 3 : icône ⭐ retirée, label seul */}
               <div className="flex items-center justify-between py-3 border-y border-white/[0.06]">
@@ -1564,6 +1585,7 @@ function PipelineDetailSheet({
                   « Poster » renvoie à l'offre Pro. */}
               <FilNotesSuiviMobile
                 athleteId={card.id}
+                carteId={carte ? card.id : null}
                 modeUnite={modeUnite}
                 lectureSeule={lectureSeule}
                 onTease={() => toast.warning({ message: "Les notes sont réservées aux membres Pro" })}
@@ -1599,6 +1621,7 @@ function PipelineDetailSheet({
 
               {/* Actions secondaires */}
               <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+                {!carte && (<>
                 <button
                   type="button"
                   onClick={() => { void triggerHaptic("Light"); handleViewProfile(); }}
@@ -1622,12 +1645,13 @@ function PipelineDetailSheet({
                   </svg>
                   Envoyer un message au coach
                 </button>
+                </>)}
                 {/* Iter 6.1e Fix 4 — État confirm = rouge plein + halo pulse.
                     Tableau blanc : la phrase dit ce que le retrait fait, et
                     NOMME les collègues (même texte que le web). */}
                 {confirmRemove && (
                   <p className="text-[12px] text-[#F59E0B] leading-snug px-1" role="alert">
-                    {messageRetraitProcessus(collegues, modeUnite)}
+                    {carte ? MESSAGE_RETRAIT_CARTE : messageRetraitProcessus(collegues, modeUnite)}
                   </p>
                 )}
                 <button
@@ -1644,12 +1668,91 @@ function PipelineDetailSheet({
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                   </svg>
-                  {confirmRemove ? "Confirmer le retrait" : "Retirer du processus"}
+                  {confirmRemove ? (carte ? "Confirmer la suppression" : "Confirmer le retrait") : (carte ? "Supprimer la carte" : "Retirer du processus")}
                 </button>
               </div>
               </>
               )}
             </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+/* ── FiltresRapidesSheet (recette 1.4.4) ─────────────────────────
+   Les 5 filtres rapides dans une feuille : une ligne par choix, cochée ou
+   non ; ils se cumulent. Aucun champ texte : pas de géométrie clavier. */
+function FiltresRapidesSheet({ open, onClose, quick, setQuick }: {
+  open: boolean;
+  onClose: () => void;
+  quick: QuickKey[];
+  setQuick: (updater: (q: QuickKey[]) => QuickKey[]) => void;
+}) {
+  // Monté côté client seulement (export statique) — sans setState dans un effet.
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  if (!mounted) return null;
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[55] bg-black/60"
+            onClick={onClose}
+          />
+          <motion.div
+            role="dialog"
+            aria-label="Filtres rapides"
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
+            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl px-4 pt-3"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)", touchAction: "pan-y" }}
+          >
+            <div className="flex justify-center pb-3"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Filtres</h2>
+              {quick.length > 0 && (
+                <button type="button" onClick={() => { triggerHaptic("Light"); setQuick(() => []); }} className="min-h-[40px] px-2 text-[12px] font-bold text-[#9CA3AF]">
+                  Tout effacer
+                </button>
+              )}
+            </div>
+            <div className="divide-y divide-white/[0.06]">
+              {QUICK_FILTERS.map((q) => {
+                const actif = quick.includes(q.key);
+                return (
+                  <button
+                    key={q.key}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={actif}
+                    data-testid={`filtre-choix-${q.key}`}
+                    onClick={() => {
+                      triggerHaptic("Light");
+                      setQuick((cur) => (cur.includes(q.key) ? cur.filter((k) => k !== q.key) : [...cur, q.key]));
+                    }}
+                    className="w-full min-h-[52px] flex items-center justify-between text-left active:bg-white/[0.03]"
+                  >
+                    <span className={`text-[15px] ${actif ? "text-white font-semibold" : "text-[#e0e0e0]"}`}>{q.label}</span>
+                    <span className={`w-6 h-6 rounded-md border flex items-center justify-center ${actif ? "bg-[#E63946] border-[#E63946]" : "border-white/20"}`}>
+                      {actif && (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Light"); onClose(); }}
+              className="mt-4 w-full min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22]"
+            >
+              Voir les résultats
+            </button>
           </motion.div>
         </>
       )}
@@ -1737,10 +1840,10 @@ export function RecruteurPipelineMobile() {
      Le filtre sport de l'admin cégep (lecture seule hors de son sport)
      arrive avec le lot 3 : ici, l'unité de l'acteur seulement.
 
-     CARTES PROSPECT (lot C) : useProcessusUnite les rend avec les dossiers,
-     mais l'app ne sait pas encore les ouvrir (lot « Cartes prospect » à
-     venir). On les écarte, et on dit combien il y en a sur le web plutôt
-     que de les faire disparaître sans un mot. */
+     CARTES PROSPECT (lot C) : useProcessusUnite les rend avec les dossiers.
+     Depuis la recette 1.4.4 (BP 2026-10-02), l'app les AFFICHE (fond rouge
+     pâle, comme le web) et les ouvre : étape, relance, visite, grade,
+     priorité, notes, Infos, Historique. Leur CRÉATION reste au web. */
   const modeUnite = !tierLoading && (tier === "pro" || tier === "all_star");
   const { data: donneesDemo, isLoading: chargementDemo } = usePipelineCards({ enabled: isFreeDemoMode });
   /* Directeur (admin cégep) — lot 3 de la 1.4.4, parité web : un sélecteur de
@@ -1760,14 +1863,17 @@ export function RecruteurPipelineMobile() {
   /* Mémoïsé : `?? []` fabriquait un tableau NEUF à chaque rendu, si bien que
      tous les useMemo qui en dépendent se recalculaient sans arrêt — le lint le
      signalait déjà avant l'ajout des compteurs filtrés. */
-  const cards = useMemo(() => (pipelineData?.cards ?? []).filter((c) => !estCarte(c)), [pipelineData]);
-  const nbCartesProspect = useMemo(() => (pipelineData?.cards ?? []).filter((c) => estCarte(c)).length, [pipelineData]);
+  const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
   const loading = tierLoading || pipelineLoading;
-  /** Dossier d'une autre unité (directeur sur un autre sport) : lecture seule. */
+  /** Dossier d'une autre unité (directeur sur un autre sport) : lecture seule.
+   *  SAUF un dossier que JE suis (recette 1.4.4) : un recruteur dont le sport
+   *  a changé gardait ses dossiers dans l'ancienne unité et ne pouvait plus
+   *  rien y écrire — relance, étape, grade tombaient en « lecture seule ». */
   const estAutreUnite = (c: PipelineKanbanCard | null | undefined) =>
-    !!c && modeUnite && !!c.unite_sport_id && !!filtreSport.monSportId && c.unite_sport_id !== filtreSport.monSportId;
+    !!c && modeUnite && !!c.unite_sport_id && !!filtreSport.monSportId && c.unite_sport_id !== filtreSport.monSportId
+    && !(!!moi && (c.suivi_par ?? []).includes(moi));
 
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
   const [activeStage, setActiveStage] = useState<string>(STAGES[0].lower);
@@ -1783,6 +1889,7 @@ export function RecruteurPipelineMobile() {
   );
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [quick, setQuick] = useState<QuickKey[]>(() => quickDepuisFiltreUrl(filtreUrl));
+  const [quickOpen, setQuickOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
 
   // Mutation pour le swipe
@@ -1867,7 +1974,11 @@ export function RecruteurPipelineMobile() {
     }
   }
   const [filtrePositionne, setFiltrePositionne] = useState<string | null>(null);
-  if (filtreUrl && filtreUrl === filtreVu && !pipelineLoading && filtrePositionne !== filtreUrl && quick.length > 0) {
+  /* Les DONNÉES doivent être là (recette 1.4.4, tuile Visites) : pour un
+     directeur, la lecture attend son filtre sport — désactivée, elle n'est
+     pas « en chargement », et le positionnement se faisait sur un processus
+     VIDE, une fois pour toutes, en restant sur « Identifié (0) ». */
+  if (filtreUrl && filtreUrl === filtreVu && !pipelineLoading && !!pipelineData && filtrePositionne !== filtreUrl && quick.length > 0) {
     setFiltrePositionne(filtreUrl);
     const premiere = STAGES.find((st) => (counts[st.lower] ?? 0) > 0);
     if (premiere) setActiveStage(premiere.lower);
@@ -1980,7 +2091,7 @@ export function RecruteurPipelineMobile() {
     const toStage = direction === "right" ? STAGES[activeStageIndex + 1] : STAGES[activeStageIndex - 1];
     if (!fromStage || !toStage) return;
     updateStage.mutate(
-      { cardId: card.id, newStage: toStage.key },
+      { cardId: card.id, newStage: toStage.key, carte: estCarte(card) },
       {
         onSuccess: () => {
           toast.success({
@@ -1990,7 +2101,7 @@ export function RecruteurPipelineMobile() {
               label: "Annuler",
               onClick: () => {
                 updateStage.mutate(
-                  { cardId: card.id, newStage: fromStage.key },
+                  { cardId: card.id, newStage: fromStage.key, carte: estCarte(card) },
                   { onSuccess: () => toast.info({ message: "Annulé" }) }
                 );
               },
@@ -2041,13 +2152,6 @@ export function RecruteurPipelineMobile() {
         nActiveFilters={activeFilterCount(filters, { quick })}
         onFilterTap={handleMenuTap}
       />
-      {nbCartesProspect > 0 && (
-        <p className="px-4 -mt-1 pb-2 text-[12px] text-[#6b7280]">
-          {nbCartesProspect === 1
-            ? "1 carte prospect de ton unité est visible sur la version web."
-            : `${nbCartesProspect} cartes prospect de ton unité sont visibles sur la version web.`}
-        </p>
-      )}
 
       {/* Free demo banner */}
       {isFreeDemoMode && !loading && cards.length > 0 && (
@@ -2076,28 +2180,36 @@ export function RecruteurPipelineMobile() {
         </div>
       )}
 
-      {/* FILTRES RAPIDES (lot 3 de la 1.4.4, parité web) — à l'écran, sous
-          les étapes, défilant de côté. Même module que le web
-          (QUICK_FILTERS) ; ils s'additionnent aux filtres de la feuille. */}
-      <div className="flex gap-2 overflow-x-auto px-4 pt-2 pb-1 [scrollbar-width:none]" style={{ touchAction: "pan-x" }}>
-        {QUICK_FILTERS.map((q) => {
-          const actif = quick.includes(q.key);
-          return (
-            <button
-              key={q.key}
-              type="button"
-              aria-pressed={actif}
-              onClick={() => {
-                triggerHaptic("Light");
-                setQuick((cur) => (cur.includes(q.key) ? cur.filter((k) => k !== q.key) : [...cur, q.key]));
-              }}
-              className={`shrink-0 min-h-[36px] inline-flex items-center border rounded-full px-3 text-[13px] whitespace-nowrap transition-colors ${actif ? "border-[#E63946]/40 text-white bg-[#E63946]/15" : "border-white/10 text-[#9CA3AF] active:bg-white/[0.03]"}`}
-            >
-              {q.label}
-            </button>
-          );
-        })}
+      {/* FILTRES RAPIDES — UN bouton « Filtres » qui ouvre une feuille des 5
+          choix (recette 1.4.4, BP 2026-10-02 : la rangée défilante de 5 chips
+          mangeait l'écran), et une pilule compacte par filtre actif, ✕ pour
+          l'ôter. Même module que le web (QUICK_FILTERS). */}
+      <div className="flex items-center gap-2 overflow-x-auto px-4 pt-2 pb-1 [scrollbar-width:none]" style={{ touchAction: "pan-x" }}>
+        <button
+          type="button"
+          data-testid="filtres-rapides"
+          aria-haspopup="dialog"
+          onClick={() => { triggerHaptic("Light"); setQuickOpen(true); }}
+          className={`shrink-0 min-h-[36px] inline-flex items-center gap-1.5 border rounded-full px-3 text-[13px] font-semibold whitespace-nowrap ${quick.length > 0 ? "border-[#E63946]/40 text-white" : "border-white/10 text-[#9CA3AF]"} active:bg-white/[0.03]`}
+        >
+          Filtres
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><polyline points="6 9 12 15 18 9" /></svg>
+        </button>
+        {QUICK_FILTERS.filter((q) => quick.includes(q.key)).map((q) => (
+          <button
+            key={q.key}
+            type="button"
+            data-testid={`filtre-actif-${q.key}`}
+            aria-label={`Retirer le filtre ${q.label}`}
+            onClick={() => { triggerHaptic("Light"); setQuick((cur) => cur.filter((k) => k !== q.key)); }}
+            className="shrink-0 min-h-[32px] inline-flex items-center gap-1.5 rounded-full pl-3 pr-2 text-[12px] font-semibold text-white bg-[#E63946]/15 border border-[#E63946]/40 whitespace-nowrap"
+          >
+            {q.label}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+          </button>
+        ))}
       </div>
+      <FiltresRapidesSheet open={quickOpen} onClose={() => setQuickOpen(false)} quick={quick} setQuick={setQuick} />
 
       {/* Content — page-par-stage (Fix 2 iter 6.1a-fix) */}
       {loading ? (

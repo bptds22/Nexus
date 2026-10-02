@@ -18,13 +18,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { retirerCarte } from "@/lib/cartes/carteProspect";
 import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useRemoveFromPipeline() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ cardId, sportId }: { cardId: string; sportId?: string | null }) => {
+    /** `carte` : retirer une carte prospect la SUPPRIME (décision BP, lot C). */
+    mutationFn: async ({ cardId, sportId, carte = false }: { cardId: string; sportId?: string | null; carte?: boolean }) => {
+      if (carte) {
+        const erreur = await retirerCarte(createClient(), cardId);
+        if (erreur) throw erreur;
+        return;
+      }
       const { error } = await createClient().rpc("unite_retirer_du_processus", {
         p_athlete_id: cardId, p_sport_id: sportId ?? null,
       });

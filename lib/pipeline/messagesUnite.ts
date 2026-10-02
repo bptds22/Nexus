@@ -9,6 +9,10 @@ export function joindreNomsUnite(noms: string[]): string {
   return `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}`;
 }
 
+/** Retirer une carte prospect la SUPPRIME (décision BP, lot C). */
+export const MESSAGE_RETRAIT_CARTE =
+  "Cette carte prospect sera supprimée pour toute l'unité, avec ses notes. Il ne restera qu'une trace de la suppression, sans les informations de l'athlète.";
+
 /** Confirmation d'un retrait du processus : nomme les collègues qui suivent
  *  aussi l'athlète, et dit que le retrait vaut pour toute l'unité. */
 export function messageRetraitProcessus(noms: string[], modeUnite: boolean): string {

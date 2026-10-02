@@ -26,7 +26,6 @@ import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCeg
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
 import { CLES_FILTRES, FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
 import { estRelanceAFaire, estVisiteAVenir, FILTRE_PIPELINE_URL } from "@/lib/pipeline/filterPipelineCards";
-import { estCarte } from "@/lib/cartes/carteProspect";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import type { TrendingAthlete } from "@/app/recruteur/_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
@@ -283,21 +282,6 @@ function DashboardSkeleton() {
    MAIN
 ═══════════════════════════════════════════════════════════════ */
 
-/** Valeur d'une tuile : un chiffre, une raison de n'en pas avoir, ou l'attente. */
-type TuileValeur =
-  | { etat: "chiffre"; n: number }
-  | { etat: "sans_objet"; motif: string }
-  | { etat: "chargement" };
-
-interface TuileMobile {
-  cle: string;
-  libelle: string;
-  aide: string;
-  href: string;
-  valeur: TuileValeur;
-  /** Rouge = un geste attendu de ta part (relancer, préparer une visite). */
-  rouge?: boolean;
-}
 
 export function RecruteurDashboardMobile() {
   const router = useRouter();
@@ -319,19 +303,20 @@ export function RecruteurDashboardMobile() {
      Free plutôt que de la faire et d'en jeter le résultat.
      Lot 4 de la 1.4.4 : le processus de l'UNITÉ, la même lecture (et la même
      clé de cache) que Mon processus, où mènent les tuiles et les relances —
-     un chiffre de tuile est, par construction, le nombre de cartes affichées
-     à l'arrivée. Les cartes prospect sont écartées comme à l'écran d'arrivée. */
+     un compteur est, par construction, le nombre de cartes affichées à
+     l'arrivée. Les cartes prospect COMPTENT depuis la recette 1.4.4 : l'app
+     les affiche désormais dans Mon processus. */
   const { data: pipelineData } = useProcessusUnite({ enabled: canUsePipeline });
-  const relanceCards = useMemo(() => (pipelineData?.cards ?? []).filter((c) => !estCarte(c)), [pipelineData]);
+  const relanceCards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
 
-  /* ── LES 4 TUILES (lot 4 de la 1.4.4, ordre décidé par BP) ──────────
-     Chacune compte avec la définition de SA destination (parité web,
-     app/recruteur/tableau-de-bord/page.tsx) et l'ouvre filtrée :
-       1. Nouveaux (10 j) → la recherche `?nouveau=true` (même RPC, même
-          fenêtre de 10 jours côté serveur, même clé de cache) ;
-       2. Relances → Mon processus `?filtre=relances` (estRelanceAFaire) ;
-       3. Visites planifiées → Mon processus `?filtre=visites` (estVisiteAVenir) ;
-       4. Te ciblent → la recherche `?me_ciblent=true` (useCiblesSurMonCegep). */
+  /* ── LA CARTE DU HAUT (recette 1.4.4, BP 2026-10-02 — retour au format
+     d'avant, les 4 tuiles du lot 4 sont RETIRÉES) ──────────────────────
+     La phrase « N nouveaux joueurs cette semaine » revient, cliquable vers
+     la recherche `?nouveau=true`. Ses trois compteurs, cliquables chacun
+     vers l'écran filtré (définition de SA destination, parité web) :
+       · Relances → Mon processus `?filtre=relances` (estRelanceAFaire) ;
+       · Visites planifiées → Mon processus `?filtre=visites` (estVisiteAVenir) ;
+       · Te ciblent → la recherche `?me_ciblent=true` (useCiblesSurMonCegep). */
   const tierEnCours = subscription.loading;
   const { data: cibles, aUnCegepRattache } = useCiblesSurMonCegep();
   const { data: nouveaux } = useAthleteSearch({
@@ -352,40 +337,24 @@ export function RecruteurDashboardMobile() {
     offertParMonCegep: false,
     tier: tier ?? "free",
   });
-  const valeurPipeline = (predicat: (c: (typeof relanceCards)[number]) => boolean): TuileValeur =>
-    tierEnCours ? { etat: "chargement" }
-    : !canUsePipeline ? { etat: "sans_objet", motif: "Forfaits payants" }
-    : !pipelineData ? { etat: "chargement" }
-    : { etat: "chiffre", n: relanceCards.filter(predicat).length };
-  const tuiles: TuileMobile[] = [
-    {
-      cle: "nouveaux", libelle: "Nouveaux (10 j)", aide: "Profils créés depuis 10 jours",
-      href: `/recruteur/recherche?${CLES_FILTRES.filterNewOnly}=true`,
-      valeur: nouveaux ? { etat: "chiffre", n: nouveaux.length } : { etat: "chargement" },
-    },
-    {
-      cle: "relances", libelle: "Relances", aide: "Dues aujourd'hui ou en retard", rouge: true,
-      href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.relances}`,
-      valeur: valeurPipeline(estRelanceAFaire),
-    },
-    {
-      cle: "visites", libelle: "Visites planifiées", aide: "À venir, dès aujourd'hui", rouge: true,
-      href: `/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.visites}`,
-      valeur: valeurPipeline(estVisiteAVenir),
-    },
-    {
-      cle: "ciblent", libelle: "Athlètes qui te ciblent", aide: "Ont ton cégep dans leurs cibles",
-      href: `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`,
-      valeur: !aUnCegepRattache
-        ? { etat: "sans_objet", motif: "Aucun cégep rattaché" }
-        : cibles ? { etat: "chiffre", n: cibles.length } : { etat: "chargement" },
-    },
-  ];
+  /** Un compteur de processus : « — » tant qu'on ne sait pas, ou pour un
+   *  compte gratuit (la carte le dit en sous-titre). */
+  const compteProcessus = (predicat: (c: (typeof relanceCards)[number]) => boolean): number | string =>
+    tierEnCours || !canUsePipeline || !pipelineData ? "—" : relanceCards.filter(predicat).length;
+  /* « Cette semaine » = 7 jours, compté sur la MÊME lecture que la recherche
+     où mène la phrase (?nouveau=true, 10 jours) : les joueurs annoncés y
+     sont tous. */
+  const [depuisSemaine] = useState(() => Date.now() - 7 * 86400000);
+  const nouveauxSemaine = useMemo(() => {
+    if (!nouveaux) return null;
+    return nouveaux.filter((a) => a.createdAt && new Date(a.createdAt).getTime() >= depuisSemaine).length;
+  }, [nouveaux, depuisSemaine]);
 
   const loading = headerLoading || kpiLoading;
   const headerName = header?.headerName ?? "";
   const headerSchool = header?.headerSchool ?? "";
   const actionBarData = kpiBundle?.actionBarData ?? { coachReplies: 0, newAthletesThisWeek: 0 };
+  const nbNouveaux = nouveauxSemaine ?? actionBarData.newAthletesThisWeek;
   /* Pro : l'entonnoir compte le processus de l'unité (comme le web) ; un
      gratuit garde celui de useDashboardKpi (ses lignes). */
   const pipelineCounts = useMemo(() => {
@@ -470,19 +439,28 @@ export function RecruteurDashboardMobile() {
     );
   }
 
-  /* Bandeau « N nouveaux talents cette semaine » RETIRÉ (décision BP
-     2026-10-02) : il comptait 7 jours, la tuile « Nouveaux (10 j) » compte
-     la fenêtre du filtre de recherche — deux chiffres pour la même question.
-     La tuile le remplace ; la carte garde ses trois compteurs. */
-
-  // Favorites cap → optional progress bar. Source : useSubscription.
-  // -1 means unlimited (AllStar) ; 0 means no cap-tracking (Free, etc.)
-  const subAny = subscription as unknown as { maxFavorites?: number };
-  const maxFavorites = typeof subAny.maxFavorites === "number" ? subAny.maxFavorites : 0;
-  const favCount = favoritesArr.length;
-  const favoritesProgress = maxFavorites > 0
-    ? { current: favCount, total: maxFavorites, color: "#E63946" }
-    : undefined;
+  /* La phrase du haut, cliquable vers la recherche des nouveaux (recette
+     1.4.4). Sans nouveau joueur, l'invitation d'avant (« Explore tes
+     cibles ») mène à la recherche sans filtre. */
+  const heroHeadline = (
+    <button
+      type="button"
+      data-testid="hero-nouveaux"
+      onClick={() => {
+        triggerHaptic("Light");
+        router.push(nbNouveaux > 0 ? `/recruteur/recherche?${CLES_FILTRES.filterNewOnly}=true` : "/recruteur/recherche");
+      }}
+      className="text-left active:opacity-80"
+    >
+      <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
+        {nbNouveaux > 0 ? (
+          <>{nbNouveaux} {nbNouveaux > 1 ? "nouveaux joueurs" : "nouveau joueur"}<br /><span className="text-[#E63946]">cette semaine</span></>
+        ) : (
+          <>Explore tes<br /><span className="text-[#E63946]">cibles</span></>
+        )}
+      </h2>
+    </button>
+  );
 
   return (
     <DashboardGradientLayout>
@@ -528,9 +506,11 @@ export function RecruteurDashboardMobile() {
         }
       />
 
-      {/* Floating hero card. Insets : Pipeline total / Favoris (+ progress
-          when a tier cap exists) / Réponses coachs. */}
+      {/* Carte du haut : la phrase des nouveaux, puis Relances / Visites
+          planifiées / Te ciblent — chacun ouvre son écran filtré. */}
       <DashboardHero
+        eyebrow="Cette semaine"
+        headline={heroHeadline}
         pulseBadge={
           actionBarData.coachReplies > 0
             ? {
@@ -541,54 +521,25 @@ export function RecruteurDashboardMobile() {
         }
         insets={[
           {
-            label: "Processus",
-            value: totalPipeline,
-            subtitle: "athlètes",
-            onTap: () => router.push("/recruteur/pipeline"),
+            label: "Relances",
+            value: compteProcessus(estRelanceAFaire),
+            subtitle: !tierEnCours && !canUsePipeline ? "forfaits payants" : "à faire",
+            onTap: () => router.push(`/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.relances}`),
           },
           {
-            label: "Favoris",
-            value: favCount,
-            subtitle: maxFavorites > 0 ? `${favCount}/${maxFavorites}` : "actifs",
-            progress: favoritesProgress,
-            onTap: () => router.push("/recruteur/favoris"),
+            label: "Visites planifiées",
+            value: compteProcessus(estVisiteAVenir),
+            subtitle: !tierEnCours && !canUsePipeline ? "forfaits payants" : "à venir",
+            onTap: () => router.push(`/recruteur/pipeline?filtre=${FILTRE_PIPELINE_URL.visites}`),
           },
           {
-            label: "Réponses",
-            value: actionBarData.coachReplies,
-            subtitle: "coachs",
-            onTap: () => router.push("/recruteur/messages"),
+            label: "Te ciblent",
+            value: !aUnCegepRattache ? "—" : cibles ? cibles.length : "—",
+            subtitle: !aUnCegepRattache ? "aucun cégep" : "athlètes",
+            onTap: () => router.push(`/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`),
           },
         ]}
       />
-
-      {/* Les 4 tuiles (lot 4 de la 1.4.4) — chacune ouvre l'écran filtré. */}
-      <SectionDivider />
-      <div className="py-6">
-        <h2 className="font-head text-[13px] font-black uppercase tracking-tight text-white/70 mb-3 px-4">Mon activité</h2>
-        <div className="grid grid-cols-2 gap-3 px-4">
-          {tuiles.map((t) => (
-            <button
-              key={t.cle}
-              type="button"
-              data-testid={`tuile-${t.cle}`}
-              onClick={() => { triggerHaptic("Light"); router.push(t.href); }}
-              className="text-left rounded-2xl bg-[#1A1D24] border border-white/[0.06] px-4 py-3.5 active:bg-white/[0.04] transition-colors min-h-[104px] flex flex-col"
-            >
-              <span className="text-[11px] uppercase tracking-[0.14em] font-bold text-[#9CA3AF] leading-snug">{t.libelle}</span>
-              <span
-                className="font-head text-[30px] font-black leading-none mt-2 tabular-nums"
-                style={{ color: t.valeur.etat === "chiffre" && t.valeur.n > 0 ? (t.rouge ? "#E63946" : "#FFFFFF") : "#4a4d56" }}
-              >
-                {t.valeur.etat === "chiffre" ? t.valeur.n : "—"}
-              </span>
-              <span className="text-[11px] text-[#6b7280] mt-auto pt-1.5 leading-snug">
-                {t.valeur.etat === "sans_objet" ? t.valeur.motif : t.aide}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {canUsePipeline && relanceCards.length > 0 && (
         <>

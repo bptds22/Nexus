@@ -13,6 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Grade } from "@/lib/config/grades";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { ecrireCarte } from "@/lib/cartes/carteProspect";
 import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useUpsertAthleteGrade() {
@@ -20,7 +21,12 @@ export function useUpsertAthleteGrade() {
 
   return useMutation({
     /** `grade: null` = retirer le grade pour l'unité. */
-    mutationFn: async ({ athleteId, grade }: { athleteId: string; grade: Grade | null }) => {
+    mutationFn: async ({ athleteId, grade, carte = false }: { athleteId: string; grade: Grade | null; carte?: boolean }) => {
+      if (carte) {
+        const erreur = await ecrireCarte(createClient(), athleteId, { grade });
+        if (erreur) throw erreur;
+        return;
+      }
       const { error } = await createClient().rpc("unite_ecrire_grade", { p_athlete_id: athleteId, p_grade: grade });
       if (error) throw error;
     },
