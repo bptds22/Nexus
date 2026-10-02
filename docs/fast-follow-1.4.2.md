@@ -1953,3 +1953,67 @@ mineur dont le parent n'a pas donné le consentement de visibilité reste
 invisible des recruteurs, et aucun lien ne permet au parent de le donner
 depuis le courriel. BP : « pas maintenant, note au registre ». La relance
 parent v2 reste donc **informative**, sans lien de connexion.
+
+## 68. Chantier cégep — l'athlète au cégep (décision BP 2026-10-02 : NON pour la 1.4.4, à cadrer plus tard)
+
+**Déclencheur du cadrage :** quand « Mon école n'est pas listée » (§65,
+`athletes.ecole_non_listee`, carte « Écoles non listées » de `/admin/dashboard`)
+aura donné des chiffres. Pas avant.
+
+**Pourquoi la question se pose.** Les 16 majeurs du segment (a) de la relance
+(comptes ATHLETE sans fiche, `/consentements` passé) ont l'âge du cégep — par
+cohorte scolaire (date limite du 30 septembre) : 6 ont fini le secondaire 5 en
+juin 2026, 7 en juin 2025, 2 en juin 2024, 1 a 31 ans. **Aucune preuve directe**
+(courriels grand public, ni sport ni contexte, aucun retour après le jour de
+l'inscription). Relevé prod du 2026-10-02.
+
+**Exigences de BP (2026-10-02) :**
+1. **Double rôle recruteur + coach.** Un recruteur peut aussi avoir un profil
+   coach — comme un coach qui serait aussi recruteur — pour **évaluer et
+   vérifier** les athlètes de son cégep.
+2. **Onboarding athlète** (web et mobile) qui permet de choisir **son cégep et
+   son équipe de cégep**.
+3. **Règles de visibilité** : ce qu'un recruteur voit des athlètes de **son
+   propre cégep** et de ceux des **cégeps rivaux**.
+4. **L'année de diplomation devient celle du DEC** pour un athlète de cégep.
+
+**Ce qui existe déjà (relevé 2026-10-02) :**
+- Prod : 71 cégeps (`schools.type = 'CEGEP'`), 66 avec équipes, 654 équipes ;
+  0 athlète rattaché, 0 ligne `team_coaches` sur une équipe de cégep.
+- Aucune contrainte ni trigger ne refuse un ancrage athlète sur un cégep.
+  `_apply_team_attachment_core` mappe déjà `CEGEP → 'scolaire'` ; le
+  rattachement par code accepte un cégep ; les fiches traitent SECONDAIRE et
+  CEGEP dans la même branche. **Pas de troisième `users.context`** nécessaire
+  (`collegial` désigne le recruteur).
+- `lib/utils/orgLabel.ts` a déjà les libellés « cégep » / « Mon cégep ».
+
+**Ce qui bloque ou deviendrait faux :**
+- Le sélecteur d'école filtre `SECONDAIRE` en dur : web
+  `app/athlete/onboarding/page.tsx` (`filterType="SECONDAIRE"`), mobile
+  `components/shared/AthleteOnboardingMobile.tsx` (`.eq("type", "SECONDAIRE")`).
+- **Vérification (exigence 1)** : le coach de la fiche vient de `team_coaches` ;
+  les recruteurs sont rattachés par `users.school_id`, jamais par
+  `team_coaches`. `claim_school_athletes` exige un COACH. La policy de lecture
+  de `team_coaches` ne couvre que SECONDAIRE et LIGUE_CIVILE
+  (`20260607150000`). Sans le double rôle, personne ne vérifie un cégépien.
+- **Visibilité (exigence 3)** : `recruiter_search_athletes` (`20260917150137`)
+  ne filtre pas sur le type — les athlètes de cégep apparaîtraient, ceux du
+  cégep du recruteur compris. Aucune règle « mon cégep / cégeps rivaux » n'existe.
+  `athletes_targeting_my_cegep` : un cégépien qui cible son propre cégep
+  apparaîtrait dans « te cible ». `lot_e_fusion` pose `committed_school_id` sans
+  le comparer à l'ancrage cégep. Toute modification de la RPC : gate d'ACL en
+  liste complète.
+- **DEC (exigence 4)** : `annee_diplomation` alimente le filtre Promotion et
+  `promotion_concorde` (rapprochement des cartes) ; libellé de
+  `lib/config/gradYears.ts`.
+- Libellés : `organisationOf` (`lib/config/team-taxonomy.ts`) n'a que deux
+  valeurs, un cégep s'affiche « Scolaire ». Une valeur « Collégial » est
+  facultative. Rien ne casse au calendrier ni aux cartes prospect.
+- Loi 25 : rien à changer, les gardes reposent sur l'âge (un cégépien de
+  17 ans passe par le consentement parental).
+
+**Chiffrage (2026-10-02) :** ouvrir le filtre seul = petit, mais crée des
+athlètes invérifiables — à ne pas faire seul. Onboarding + visibilité + DEC +
+RLS `team_coaches` = moyen (~1 semaine, web puis lot mobile). Avec le double
+rôle recruteur/coach (exigence 1) = **gros** : nouveau modèle de rôles et de
+policies.
