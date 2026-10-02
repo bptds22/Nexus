@@ -345,15 +345,9 @@ function StageTabsSticky({
 
 /* ── PipelineCardMobile V3 (iter 6.1b) ───────────────────────── */
 
-function getBorderLeftStyle(card: PipelineKanbanCard): React.CSSProperties {
-  // Prioritaire → border rouge full opacity. Le liseré coloré du statut global
-  // (vert OUVERT, jaune EN PROCESSUS…) est RETIRÉ (recette 1.4.4, BP
-  // 2026-10-02) : le web n'en a pas, et la pastille de statut le dit déjà.
-  if (card.flagged) {
-    return { borderLeft: "3px solid #E63946" };
-  }
-  return {};
-}
+/* Aucun liseré gauche sur les cartes (recette 1.4.4, BP 2026-10-02) : ni la
+   teinte du statut global, ni le rouge de « Prioritaire » — le web n'en a pas.
+   La priorité se lit dans le panneau de la carte. */
 
 function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: () => void }) {
   // Carte prospect (lot C) : fond rouge pâle, comme au kanban web.
@@ -374,7 +368,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
       onClick={() => { triggerHaptic("Light"); onTap(); }}
       data-testid={prospect ? "carte-prospect" : "carte-dossier"}
       className="w-full relative rounded-2xl overflow-hidden active:opacity-80 transition-opacity text-left"
-      style={{ ...getBorderLeftStyle(card), height: 120, backgroundColor: fond }}
+      style={{ height: 120, backgroundColor: fond }}
     >
       {/* Iter 7.4 Section A — RÉPLIQUE du mécanisme DashboardHero (qui marche).
           Cause root du fade KO précédent : AthletePhotoFill rend <img z-[1]>
@@ -467,10 +461,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
             2026-09-04). C'est l'état par défaut : l'absence de pastille
             signifie « ouvert ». EN PROCESSUS et RECRUTÉ restent, ils disent
             qu'un autre recruteur travaille l'athlète. Le statut complet reste
-            dans le bottom sheet athlète, inchangé.
-            La bordure gauche de la carte (getBorderLeftStyle) garde bien la
-            teinte verte d'OUVERT : c'est un liseré, pas une pastille — il ne
-            revendique aucune place dans la lecture. */}
+            dans le bottom sheet athlète, inchangé. */}
         {status && card.recruitment_status !== "OUVERT" && (
           <div className="flex items-center gap-1.5 mt-2">
             <span
