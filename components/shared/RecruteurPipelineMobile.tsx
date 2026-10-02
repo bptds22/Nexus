@@ -32,6 +32,12 @@ import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { estCarte } from "@/lib/cartes/carteProspect";
 import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
 import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
+import OngletInfosPanneau from "@/app/recruteur/pipeline/_components/OngletInfosPanneau";
+import OngletHistoriquePanneau from "@/app/recruteur/pipeline/_components/OngletHistoriquePanneau";
+import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
+import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
+import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
+import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import {
   sortPipelineCards,
@@ -419,22 +425,24 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
               </svg>
             </span>
           )}
-          {/* Cote du coach + mon grade, groupés à droite (retour terrain
-              2026-09-04) — même regroupement qu'au kanban web. */}
-          <span className="flex-shrink-0 ml-auto flex items-center gap-1.5">
+          {/* Cote du coach, et le grade A-D SOUS elle (lot 3 de la 1.4.4,
+              décision BP 2026-10-02) — groupés à droite. */}
+          <span className="flex-shrink-0 ml-auto flex flex-col items-end gap-1">
+            <span className="flex items-center gap-1.5">
+              {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence).
+                  Sans elle, ni étoile ni chiffre — la carte n'affirme rien. */}
+              {aUneCote(card.coach_rating) ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span className="text-sm font-bold text-white">{card.coach_rating.toFixed(1)}</span>
+                </>
+              ) : (
+                <span className="text-[11px] text-[#6B7280]">Pas encore évalué</span>
+              )}
+            </span>
             <GradeChip grade={card.grade} />
-            {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence).
-                Sans elle, ni étoile ni chiffre — la carte n'affirme rien. */}
-            {aUneCote(card.coach_rating) ? (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span className="text-sm font-bold text-white">{card.coach_rating.toFixed(1)}</span>
-              </>
-            ) : (
-              <span className="text-[11px] text-[#6B7280]">Pas encore évalué</span>
-            )}
           </span>
         </div>
 
@@ -702,8 +710,6 @@ function PipelineMenuSheet({
     [cards, filters],
   );
   const nActiveFilters = activeFilterCount(filters, { quick });
-  const relanceLabel = QUICK_FILTERS.find((q) => q.key === "relance")?.label ?? "À relancer";
-  const relanceOn = quick.includes("relance");
 
   return createPortal(
     <AnimatePresence>
@@ -853,24 +859,9 @@ function PipelineMenuSheet({
                 </div>
               </section>
 
-              {/* Chip « relance » (parité web/mobile) — section à part, PAS
-                  nichée sous `facetLists.length > 0` : cette chip doit exister
-                  même les jours où aucune facette n'offre de choix. */}
-              <section>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Relances</h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic("Light");
-                    setQuick((cur) => cur.includes("relance") ? cur.filter((k) => k !== "relance") : [...cur, "relance"]);
-                  }}
-                  aria-pressed={relanceOn}
-                  className={`inline-flex items-center gap-1.5 border rounded-full px-3 py-1.5 text-[13px] transition-colors ${relanceOn ? "border-[#E63946]/40 text-white bg-[#E63946]/15" : "border-white/10 text-[#9CA3AF] active:bg-white/[0.03]"}`}
-                >
-                  {relanceLabel}
-                </button>
-              </section>
-
+              {/* Les filtres rapides (Avec grade, 4+ étoiles, Avec vidéo, À
+                  relancer, Visites à venir) sont sur l'écran, sous les étapes
+                  (lot 3 de la 1.4.4) — plus dans cette feuille. */}
               {/* Section Filtres (Lot 2b) — CHIPS, PAS MobilePicker.
                   MobilePicker est un sélecteur à valeur UNIQUE
                   (`onChange(v: string | null)`), et il est partagé par
@@ -1038,8 +1029,10 @@ function NextActionDateEditor({
 }
 
 function PipelineDetailSheet({
-  card, open, onClose, isFreeDemoMode, modeUnite, moi,
+  card, open, onClose, isFreeDemoMode, modeUnite, moi, lectureSeule = false,
 }: {
+  /** Dossier d'une AUTRE unité, lu par un directeur (lot 3) : rien ne s'écrit. */
+  lectureSeule?: boolean;
   card: PipelineKanbanCard | null;
   open: boolean;
   onClose: () => void;
@@ -1063,6 +1056,12 @@ function PipelineDetailSheet({
   const collegues = (card?.suivi_par ?? [])
     .map((id, i) => (id === moi ? null : card?.suivi_par_noms?.[i] ?? null))
     .filter((n): n is string => !!n);
+
+  // Onglets (lot 3 de la 1.4.4, parité web) — rouvre toujours sur « Actions ».
+  const [onglet, setOnglet] = useState<"actions" | "infos" | "historique">("actions");
+  const [ongletPour, setOngletPour] = useState<string | null>(card?.id ?? null);
+  if ((card?.id ?? null) !== ongletPour) { setOngletPour(card?.id ?? null); setOnglet("actions"); }
+  const refuserLecture = () => toast.warning({ message: "Dossier d'une autre unité : lecture seule" });
 
   const [isPriority, setIsPriority] = useState(card?.flagged ?? false);
   // Grade local — même raison que visitAtLocal/nextActionAtLocal : `card` est
@@ -1121,6 +1120,7 @@ function PipelineDetailSheet({
   const closeSheet = () => { triggerHaptic("Light"); onClose(); };
 
   const handleStageChange = async (newStage: string) => {
+    if (lectureSeule) { refuserLecture(); return; }
     if (isFreeDemoMode) {
       toast.warning({ message: "Changer le stage est réservé aux membres Pro" });
       return;
@@ -1141,6 +1141,7 @@ function PipelineDetailSheet({
   // date avance l'étape AU MOINS à « Visite planifiée » sans jamais la faire
   // reculer (Engagé reste Engagé) ; l'effacer ne change pas l'étape.
   const handleSaveVisitDate = async (iso: string | undefined) => {
+    if (lectureSeule) { refuserLecture(); return; }
     if (!card) return;
     if (isFreeDemoMode) {
       toast.warning({ message: "Planifier une visite est réservé aux membres Pro" });
@@ -1169,6 +1170,7 @@ function PipelineDetailSheet({
   // L'UPDATE ne porte QUE next_action_at — jamais next_action_note, jamais
   // flagged, jamais le stage (frontière Lot 1).
   const handleSaveNextAction = async (dateStr: string | null) => {
+    if (lectureSeule) { refuserLecture(); return; }
     if (!card) return;
     if (isFreeDemoMode) {
       toast.warning({ message: "Planifier une relance est réservé aux membres Pro" });
@@ -1189,6 +1191,7 @@ function PipelineDetailSheet({
   };
 
   const handleTogglePriority = async () => {
+    if (lectureSeule) { refuserLecture(); return; }
     if (isFreeDemoMode) {
       toast.warning({ message: "Marquer prioritaire est réservé aux membres Pro" });
       return;
@@ -1208,6 +1211,7 @@ function PipelineDetailSheet({
   // `null` retire le grade — useUpsertAthleteGrade traduit ça en DELETE.
   // Optimiste local + rollback, sans spinner : la grille reste tapable.
   const handleSetGrade = async (grade: Grade | null) => {
+    if (lectureSeule) { refuserLecture(); return; }
     if (isFreeDemoMode) {
       toast.warning({ message: "Noter un athlète est réservé aux membres Pro" });
       return;
@@ -1225,6 +1229,7 @@ function PipelineDetailSheet({
   };
 
   const handleRemove = async () => {
+    if (lectureSeule) { refuserLecture(); return; }
     if (!card) return;
     if (isFreeDemoMode) {
       toast.warning({ message: "La gestion du processus est réservée aux membres Pro" });
@@ -1364,6 +1369,35 @@ function PipelineDetailSheet({
                 </div>
               </div>
 
+              {/* ONGLETS (lot 3 de la 1.4.4, parité web) — Actions / Infos /
+                  Historique. Infos et Historique sont les composants du web. */}
+              <div role="tablist" className="flex gap-1 p-1 rounded-xl bg-[#1A1D24]">
+                {([["actions", "Actions"], ["infos", "Infos"], ["historique", "Historique"]] as const).map(([cle, libelle]) => (
+                  <button
+                    key={cle}
+                    type="button"
+                    role="tab"
+                    aria-selected={onglet === cle}
+                    onClick={() => { triggerHaptic("Light"); setOnglet(cle); }}
+                    className={`flex-1 min-h-[40px] rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors ${onglet === cle ? "bg-[#E63946] text-white" : "text-[#9CA3AF] active:bg-white/[0.04]"}`}
+                  >
+                    {libelle}
+                  </button>
+                ))}
+              </div>
+
+              {onglet === "infos" ? (
+                <OngletInfosPanneau athleteId={card.id} />
+              ) : onglet === "historique" ? (
+                <OngletHistoriquePanneau athleteId={card.id} />
+              ) : (
+              <>
+              {lectureSeule && (
+                <p className="text-[12px] text-[#F59E0B] leading-snug rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/[0.06] px-3 py-2.5" role="note">
+                  Dossier d&apos;une autre unité de ton cégep : lecture seule.
+                </p>
+              )}
+
               {/* Pill statut global + recruté ailleurs warning */}
               {(() => {
                 const status = statusGlobalColor(card.recruitment_status);
@@ -1483,6 +1517,13 @@ function PipelineDetailSheet({
                 )}
               </div>
 
+              {/* Grade — SOUS la cote (lot 3 de la 1.4.4). Cibles 44px
+                  (compact={false}) : c'est du tactile, pas du curseur. */}
+              <div>
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">{modeUnite ? "Grade de l'unité" : "Mon grade"}</h3>
+                <GradePicker value={gradeLocal} onSelect={handleSetGrade} compact={false} />
+              </div>
+
               {/* Progress completion */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
@@ -1517,13 +1558,6 @@ function PipelineDetailSheet({
                 </button>
               </div>
 
-              {/* Mon grade — sous la priorité, avant les notes. Cibles 44px
-                  (compact={false}) : c'est du tactile, pas du curseur. */}
-              <div>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">{modeUnite ? "Grade de l'unité" : "Mon grade"}</h3>
-                <GradePicker value={gradeLocal} onSelect={handleSetGrade} compact={false} />
-              </div>
-
               {/* Notes de suivi — LE fil du joueur, signé (lot 2 de la 1.4.4) :
                   les notes de l'unité, les miennes supprimables, celles des
                   collègues en lecture seule. Mode démo : les miennes, et
@@ -1531,6 +1565,7 @@ function PipelineDetailSheet({
               <FilNotesSuiviMobile
                 athleteId={card.id}
                 modeUnite={modeUnite}
+                lectureSeule={lectureSeule}
                 onTease={() => toast.warning({ message: "Les notes sont réservées aux membres Pro" })}
                 onErreur={(m) => toast.error({ message: m })}
               />
@@ -1612,6 +1647,8 @@ function PipelineDetailSheet({
                   {confirmRemove ? "Confirmer le retrait" : "Retirer du processus"}
                 </button>
               </div>
+              </>
+              )}
             </div>
           </motion.div>
         </>
@@ -1660,7 +1697,7 @@ function SkeletonList() {
 
 export function RecruteurPipelineMobile() {
   const searchParams = useSearchParams();
-  const { tier, loading: tierLoading } = useSubscription();
+  const { tier, loading: tierLoading, isSchoolAdmin } = useSubscription();
   /* ── DÉCISION PRODUIT (BP, 2026-09-10) — écrite, jamais héritée ──────
      LE MODE DÉMO GRATUIT DE « MON PROCESSUS » EST ASSUMÉ.
 
@@ -1706,7 +1743,18 @@ export function RecruteurPipelineMobile() {
      que de les faire disparaître sans un mot. */
   const modeUnite = !tierLoading && (tier === "pro" || tier === "all_star");
   const { data: donneesDemo, isLoading: chargementDemo } = usePipelineCards({ enabled: isFreeDemoMode });
-  const { data: donneesUnite, isLoading: chargementUnite } = useProcessusUnite({ enabled: modeUnite });
+  /* Directeur (admin cégep) — lot 3 de la 1.4.4, parité web : un sélecteur de
+     sport (son sport, un autre sport de son cégep, ou tout le cégep). Hors de
+     son sport, les dossiers se LISENT sans se modifier (registre §40). */
+  const adminCegep = modeUnite && !!isSchoolAdmin;
+  const filtreSport = useFiltreSportUnite();
+  const choixSport = adminCegep ? filtreSport.choix : null;
+  const sportParam = choixSport && choixSport !== TOUS && choixSport !== SANS_SPORT ? choixSport : null;
+  const { data: donneesUnite, isLoading: chargementUnite } = useProcessusUnite({
+    enabled: modeUnite && (!adminCegep || filtreSport.pret),
+    sportId: sportParam,
+    toutLeCegep: choixSport === TOUS,
+  });
   const pipelineData = modeUnite ? donneesUnite : isFreeDemoMode ? donneesDemo : undefined;
   const pipelineLoading = modeUnite ? chargementUnite : isFreeDemoMode ? chargementDemo : true;
   /* Mémoïsé : `?? []` fabriquait un tableau NEUF à chaque rendu, si bien que
@@ -1717,6 +1765,9 @@ export function RecruteurPipelineMobile() {
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
   const loading = tierLoading || pipelineLoading;
+  /** Dossier d'une autre unité (directeur sur un autre sport) : lecture seule. */
+  const estAutreUnite = (c: PipelineKanbanCard | null | undefined) =>
+    !!c && modeUnite && !!c.unite_sport_id && !!filtreSport.monSportId && c.unite_sport_id !== filtreSport.monSportId;
 
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
   const [activeStage, setActiveStage] = useState<string>(STAGES[0].lower);
@@ -1921,6 +1972,10 @@ export function RecruteurPipelineMobile() {
       toast.warning({ message: "La gestion du processus est réservée aux membres Pro" });
       return;
     }
+    if (estAutreUnite(card)) {
+      toast.warning({ message: "Dossier d'une autre unité : lecture seule" });
+      return;
+    }
     const fromStage = STAGES[activeStageIndex];
     const toStage = direction === "right" ? STAGES[activeStageIndex + 1] : STAGES[activeStageIndex - 1];
     if (!fromStage || !toStage) return;
@@ -2013,6 +2068,37 @@ export function RecruteurPipelineMobile() {
         onTabTap={handleTabTap}
       />
 
+      {/* Directeur : sport de l'unité + avis de lecture seule (lot 3). */}
+      {adminCegep && (
+        <div className="px-4 pt-2 space-y-2">
+          <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport className="w-full min-h-[44px]" />
+          <AvisLectureSeule filtre={filtreSport} />
+        </div>
+      )}
+
+      {/* FILTRES RAPIDES (lot 3 de la 1.4.4, parité web) — à l'écran, sous
+          les étapes, défilant de côté. Même module que le web
+          (QUICK_FILTERS) ; ils s'additionnent aux filtres de la feuille. */}
+      <div className="flex gap-2 overflow-x-auto px-4 pt-2 pb-1 [scrollbar-width:none]" style={{ touchAction: "pan-x" }}>
+        {QUICK_FILTERS.map((q) => {
+          const actif = quick.includes(q.key);
+          return (
+            <button
+              key={q.key}
+              type="button"
+              aria-pressed={actif}
+              onClick={() => {
+                triggerHaptic("Light");
+                setQuick((cur) => (cur.includes(q.key) ? cur.filter((k) => k !== q.key) : [...cur, q.key]));
+              }}
+              className={`shrink-0 min-h-[36px] inline-flex items-center border rounded-full px-3 text-[13px] whitespace-nowrap transition-colors ${actif ? "border-[#E63946]/40 text-white bg-[#E63946]/15" : "border-white/10 text-[#9CA3AF] active:bg-white/[0.03]"}`}
+            >
+              {q.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Content — page-par-stage (Fix 2 iter 6.1a-fix) */}
       {loading ? (
         <SkeletonList />
@@ -2082,6 +2168,7 @@ export function RecruteurPipelineMobile() {
         isFreeDemoMode={isFreeDemoMode}
         modeUnite={modeUnite}
         moi={moi}
+        lectureSeule={estAutreUnite(selectedCard)}
       />
 
       {/* Fix 9 — ⋮ Menu sheet Apple Reminders style. Iter 6.1c : cards prop
