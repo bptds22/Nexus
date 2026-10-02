@@ -27,8 +27,7 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import { useFavorites } from "@/lib/queries/shared/useFavorites";
-import { definirFavori } from "@/lib/queries/shared/definirFavori";
+import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
@@ -1124,10 +1123,14 @@ export function RecruteurRechercheMobile() {
   const queryClient = useQueryClient();
   const toast = useMobileToast();
   const { data: currentUser } = useCurrentUser();
-  const { data: favoritesArr = [] } = useFavorites();
+  /* Tableau blanc (lot 2 de la 1.4.4, registre §38) : un cœur posé par un
+     collègue Pro de l'unité s'affiche ici aussi (useBasculeFavori, comme le
+     web) ; les siens seulement pour un gratuit — c'est aussi la liste que
+     lit son plafond de favoris. */
+  const { favoris: favorisUnite, basculer: basculerFavori, modale: modaleFavori } = useBasculeFavori();
+  const favorites = favorisUnite.ids;
   const { data: favCounts = {} } = useFavoriteCounts();
   const { data: regionsArr = [] } = useRegions();
-  const favorites = useMemo(() => new Set(favoritesArr), [favoritesArr]);
 
   /* ── LES 21 FILTRES VIVENT DANS L'URL ─────────────────────────
      Même hook que l'écran web (`app/recruteur/recherche/page.tsx`) : un seul
@@ -1371,9 +1374,12 @@ export function RecruteurRechercheMobile() {
       toast.warning({ message: "Limite de favoris atteinte", detail: "Favoris supplémentaires réservés aux membres Pro" });
       return;
     }
-    // Écriture partagée : erreur vérifiée, caches invalidés. Le toast de
-    // succès ne part que si la base a réellement accepté.
-    const res = await definirFavori(queryClient, id, !isFav);
+    // Écriture partagée (useBasculeFavori) : ajout = sa ligne ; retrait Pro =
+    // pour l'unité, avec confirmation nommant les collègues. `null` : la
+    // confirmation a été annulée, rien n'a été écrit.
+    const a = filtered.find((x) => x.id === id);
+    const res = await basculerFavori(id, isFav, a?.identityVisible ? `${a.firstName} ${a.lastName}`.trim() : undefined);
+    if (!res) return;
     if (!res.ok) { toast.error({ message: "Échec", detail: res.message }); return; }
     if (res.favori) toast.success({ message: "Ajouté aux favoris" });
     else toast.info({ message: "Retiré des favoris" });
@@ -1558,6 +1564,7 @@ export function RecruteurRechercheMobile() {
           />
         )}
       </AnimatePresence>
+      {modaleFavori}
     </div>
   );
 }

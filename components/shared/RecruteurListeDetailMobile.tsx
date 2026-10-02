@@ -19,14 +19,12 @@ import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceho
 import { useListAthletes, type ListAthlete, type ListMetadata } from "@/lib/queries/recruiter/useListAthletes";
 import { useRemoveListMember } from "@/lib/queries/recruiter/useRemoveListMember";
 import { useDeleteList } from "@/lib/queries/recruiter/useDeleteList";
-import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
-import { useAddPipelineNote } from "@/lib/queries/recruiter/useAddPipelineNote";
-import { useListNotes } from "@/lib/queries/recruiter/useListNotes";
-import { useAddListNote } from "@/lib/queries/recruiter/useAddListNote";
 import { getStatusConfig, type RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { AddAthleteToListSheet } from "@/components/shared/AddAthleteToListSheet";
-import { formatRelativeDate } from "@/lib/utils/formatRelativeDate";
 import { triggerHaptic } from "@/lib/haptics";
+import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 
 /* ── ListAthleteCardMobile ─────────────────────────────────────
@@ -88,10 +86,11 @@ function ListAthleteCardMobile({
           if (info.offset.x < -REMOVE_THRESHOLD) {
             triggerHaptic("Medium");
             onRemove();
-          } else {
-            // snap back
-            x.set(0);
           }
+          // La carte revient toujours en place : le retrait passe par une
+          // confirmation (lot 2 de la 1.4.4) ; s'il est confirmé, la carte
+          // sort par l'animation de la liste.
+          x.set(0);
         }}
       >
         <button
@@ -201,43 +200,24 @@ function ListAthleteCardMobile({
 /* ── formatRelativeDate promu vers lib/utils/formatRelativeDate (iter 7.30b)
    pour réutilisation par RecruteurActivitesMobile. Import en tête du fichier. */
 
-/* ── AthleteNotesSheet — notes GLOBALES par athlète (recruiter_notes) ─── */
+/* ── AthleteNotesSheet — LE fil de suivi du joueur (lot 2 de la 1.4.4) ───
+   Un seul fil par joueur (décision BP, lot C) : recruiter_notes, signées,
+   celles de l'unité pour un Pro (FilNotesSuiviMobile). Le même fil que dans
+   Mon processus. Le sheet porte un champ : useSheetKeyboardGeometry. */
 
 function AthleteNotesSheet({
-  open, onClose, athlete,
+  open, onClose, athlete, modeUnite,
 }: {
   open: boolean;
   onClose: () => void;
   athlete: ListAthlete | null;
+  modeUnite: boolean;
 }) {
   const toast = useMobileToast();
-  const athleteId = athlete?.athleteId ?? null;
-  const { data: notes = [], isLoading } = usePipelineNotes(open ? athleteId : null);
-  const addMut = useAddPipelineNote();
+  const kbdStyle = useSheetKeyboardGeometry();
   const [mounted, setMounted] = useState(false);
-  const [content, setContent] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { if (!open) { setContent(""); setError(null); } }, [open]);
-
   if (!mounted) return null;
-
-  const handleSubmit = async () => {
-    if (!athleteId || !content.trim() || addMut.isPending) return;
-    setError(null);
-    try {
-      await addMut.mutateAsync({ athleteId, content });
-      triggerHaptic("Light");
-      setContent("");
-    } catch (e) {
-      const err = e as { message?: string };
-      void triggerHaptic("Error");
-        setError(err.message || "Erreur lors de l'ajout.");
-    }
-  };
-
-  const canSubmit = !!content.trim() && !addMut.isPending;
   // Déjà résolu par le hook — vide sous masquage si on l'interpolait ici.
   const fullName = athlete?.fullName ?? "";
 
@@ -256,7 +236,7 @@ function AthleteNotesSheet({
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[75] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            style={kbdStyle}
           >
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 rounded-full bg-white/20" />
@@ -281,63 +261,20 @@ function AthleteNotesSheet({
                 {fullName}
               </p>
               <p className="text-[12px] text-white/55 mt-1 leading-relaxed">
-                Ces notes sont visibles partout (profil + toutes tes listes).
+                {modeUnite
+                  ? "Le fil de suivi du joueur — le même que dans Mon processus, partagé avec ton unité."
+                  : "Le fil de suivi du joueur — le même que dans Mon processus."}
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              {isLoading ? (
-                <>
-                  <div className="h-16 rounded-2xl nx-pulse-notes" />
-                  <div className="h-16 rounded-2xl nx-pulse-notes" />
-                </>
-              ) : notes.length === 0 ? (
-                <p className="text-[14px] text-white/55 italic text-center py-8">
-                  Aucune note sur cet athlète.
-                </p>
-              ) : (
-                notes.map((n) => (
-                  <div key={n.id} className="rounded-2xl bg-white/[0.04] px-3 py-2.5">
-                    <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-words">
-                      {n.content}
-                    </p>
-                    <p className="text-[11px] text-white/40 mt-1.5">
-                      {formatRelativeDate(n.created_at)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="px-4 pt-3 pb-4 border-t border-white/[0.06] space-y-2">
-              {error && (
-                <div className="px-3 py-2 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/30">
-                  <p className="text-[12px] text-[#EF4444] font-medium">{error}</p>
-                </div>
-              )}
-              <div className="flex items-end gap-2">
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value.slice(0, 500))}
-                  placeholder="Ajouter une note…"
-                  rows={2}
-                  className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => { void triggerHaptic("Light"); if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
-                  disabled={!canSubmit}
-                  aria-label="Ajouter"
-                  className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                    canSubmit ? "bg-[#E63946] active:bg-[#D42B22]" : "bg-white/[0.06]"
-                  }`}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={canSubmit ? "#FFFFFF" : "#4a4d56"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="19" x2="12" y2="5" />
-                    <polyline points="5 12 12 5 19 12" />
-                  </svg>
-                </button>
-              </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <FilNotesSuiviMobile
+                athleteId={athlete.athleteId}
+                modeUnite={modeUnite}
+                titre="Notes de suivi"
+                onTease={() => toast.warning({ message: "Les notes sont réservées aux membres Pro" })}
+                onErreur={(m) => toast.error({ message: m })}
+              />
             </div>
           </motion.div>
         </>
@@ -347,149 +284,10 @@ function AthleteNotesSheet({
   );
 }
 
-/* ── ListNotesPanel — feed notes de liste INLINE (iter 7.28 Section 3) ───
-   Avant : bottom sheet portal accessible uniquement via le menu ⋮ →
-   peu découvrable. Maintenant : panneau plein écran sous le segmented
-   control "Athlètes | Notes". Réutilise useListNotes + useAddListNote.
-   Pas de portal, pas de motion, pas de mounted gate (toujours rendu
-   quand view === "notes"). */
-
-function ListNotesPanel({ listId }: { listId: string }) {
-  const toast = useMobileToast();
-  const { data: notes = [], isLoading } = useListNotes(listId);
-  const addMut = useAddListNote();
-  const [content, setContent] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    if (!content.trim() || addMut.isPending) return;
-    setError(null);
-    try {
-      await addMut.mutateAsync({ listId, content });
-      triggerHaptic("Light");
-      setContent("");
-    } catch (e) {
-      const err = e as { message?: string };
-      void triggerHaptic("Error");
-        setError(err.message || "Erreur lors de l'ajout.");
-    }
-  };
-
-  const canSubmit = !!content.trim() && !addMut.isPending;
-
-  return (
-    <div className="flex flex-col">
-      {/* Feed des notes */}
-      <div className="px-4 pt-3 pb-3 space-y-3">
-        {isLoading ? (
-          <>
-            <div className="h-16 rounded-2xl nx-pulse-notes" />
-            <div className="h-16 rounded-2xl nx-pulse-notes" />
-          </>
-        ) : notes.length === 0 ? (
-          <p className="text-[14px] text-white/55 italic text-center py-12">
-            Aucune note sur cette liste.
-          </p>
-        ) : (
-          notes.map((n) => (
-            <div key={n.id} className="rounded-2xl bg-white/[0.04] px-3 py-2.5">
-              <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-words">
-                {n.content}
-              </p>
-              <p className="text-[11px] text-white/40 mt-1.5">
-                {formatRelativeDate(n.created_at)}
-              </p>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Composer sticky bottom (au-dessus de la TabBar mobile).
-          `--kbd-h` est ajouté À LA MAIN ici, alors que la règle globale de
-          globals.css suffit partout ailleurs : ce conteneur pose son `bottom`
-          en STYLE EN LIGNE, qui bat toute feuille. Sans cet ajout, la règle
-          serait écrasée et le champ de note resterait sous le clavier — c'est
-          précisément l'un des deux écrans signalés. */}
-      <div
-        className="sticky bottom-0 bg-[#111317] border-t border-white/[0.06] px-4 pt-3 space-y-2"
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
-          bottom: "calc(64px + env(safe-area-inset-bottom) + var(--kbd-h, 0px))",
-        }}
-      >
-        {error && (
-          <div className="px-3 py-2 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/30">
-            <p className="text-[12px] text-[#EF4444] font-medium">{error}</p>
-          </div>
-        )}
-        <div className="flex items-end gap-2">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value.slice(0, 500))}
-            placeholder="Note datée pour cette liste…"
-            rows={2}
-            className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
-          />
-          <button
-            type="button"
-            onClick={() => { void triggerHaptic("Light"); if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
-            disabled={!canSubmit}
-            aria-label="Ajouter"
-            className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-              canSubmit ? "bg-[#E63946] active:bg-[#D42B22]" : "bg-white/[0.06]"
-            }`}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={canSubmit ? "#FFFFFF" : "#4a4d56"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5" />
-              <polyline points="5 12 12 5 19 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── SegmentedTabs (iter 7.28 Section 3) — pill control iOS style ─── */
-
-function SegmentedTabs<T extends string>({
-  value, onChange, items,
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  items: { value: T; label: string; badge?: number }[];
-}) {
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-full p-1 w-full">
-      {items.map((it) => {
-        const active = it.value === value;
-        return (
-          <button
-            key={it.value}
-            type="button"
-            onClick={() => { triggerHaptic("Light"); onChange(it.value); }}
-            className={`nx-mobile-touch-min inline-flex items-center justify-center flex-1 px-4 rounded-full text-[13px] font-bold uppercase tracking-[0.08em] transition-all ${
-              active
-                ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]"
-                : "text-[#9CA3AF] active:text-white"
-            }`}
-          >
-            {it.label}
-            {typeof it.badge === "number" && it.badge > 0 && (
-              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] tabular-nums ${
-                active ? "bg-white/25 text-white" : "bg-white/[0.10] text-white/70"
-              }`}>
-                {it.badge}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ── ListActionSheet (menu ⋮) — iOS action sheet ──────────────── */
+/* ── Notes de LISTE (recruiter_list_notes) : RETIRÉES de l'app (lot 2 de la
+   1.4.4, registre §38). Un seul fil par joueur : celui de AthleteNotesSheet.
+   L'onglet « Notes » de la liste et son panneau (ListNotesPanel,
+   SegmentedTabs) sont partis avec. ─── */
 
 interface SheetAction {
   label: string;
@@ -564,8 +362,10 @@ function ListActionSheet({
 /* ── ConfirmDeleteListSheet (réutilisé Sprint 1 pattern) ─────── */
 
 function ConfirmDeleteListSheet({
-  open, onClose, list, athleteCount, onConfirm,
+  open, onClose, list, athleteCount, onConfirm, modeUnite = false,
 }: {
+  /** Tableau blanc : la liste est supprimée pour toute l'unité. */
+  modeUnite?: boolean;
   open: boolean;
   onClose: () => void;
   list: ListMetadata | null;
@@ -603,10 +403,11 @@ function ConfirmDeleteListSheet({
               </p>
               <p className="text-[14px] text-white/70 leading-relaxed">
                 {list?.name
-                  ? <><span className="text-white font-semibold">« {list.name} »</span> sera supprimée. </>
-                  : "Cette liste sera supprimée. "}
-                Les {athleteCount} athlète{athleteCount > 1 ? "s" : ""} ne seront pas supprimés
-                de tes favoris, juste retirés de cette liste.
+                  ? <><span className="text-white font-semibold">« {list.name} »</span> sera supprimée{modeUnite ? " pour toute l'unité — cette action est irréversible" : ""}. </>
+                  : modeUnite ? "Cette liste sera supprimée pour toute l'unité — cette action est irréversible. " : "Cette liste sera supprimée. "}
+                {modeUnite
+                  ? "Les athlètes resteront dans les favoris."
+                  : <>Les {athleteCount} athlète{athleteCount > 1 ? "s" : ""} ne seront pas supprimés de tes favoris, juste retirés de cette liste.</>}
               </p>
             </div>
             <div className="px-4 pb-5 space-y-2">
@@ -616,6 +417,76 @@ function ConfirmDeleteListSheet({
                 className="w-full py-3 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[15px] transition-colors"
               >
                 Supprimer
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-3 rounded-2xl bg-white/[0.06] active:bg-white/[0.10] text-white font-semibold text-[15px] transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+/* ── ConfirmRetraitMembreSheet — retirer un athlète de la liste (lot 2) ───
+   Même phrase que le web : en mode unité, le retrait vaut pour toute
+   l'unité ; l'athlète reste dans les favoris. */
+
+function ConfirmRetraitMembreSheet({
+  cible, nomListe, modeUnite, onClose, onConfirm,
+}: {
+  cible: ListAthlete | null;
+  nomListe: string;
+  modeUnite: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+  return createPortal(
+    <AnimatePresence>
+      {cible && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/70"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
+            className="fixed inset-x-0 bottom-0 z-[75] bg-[#111317] rounded-t-2xl flex flex-col"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
+            </div>
+            <div className="px-4 py-5 space-y-3">
+              <p className="font-head text-[18px] font-black text-white uppercase tracking-tight">
+                Retirer de la liste ?
+              </p>
+              <p className="text-[14px] text-white/70 leading-relaxed">
+                {cible.fullName ? <span className="text-white font-semibold">{cible.fullName}</span> : "Cet athlète"} sera retiré de
+                {nomListe ? <> « {nomListe} »</> : " cette liste"}
+                {modeUnite ? " pour toute l'unité" : ""}. Il restera dans les favoris.
+              </p>
+            </div>
+            <div className="px-4 pb-5 space-y-2">
+              <button
+                type="button"
+                onClick={() => { triggerHaptic("Medium"); onConfirm(); }}
+                className="w-full py-3 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[15px] transition-colors"
+              >
+                Retirer
               </button>
               <button
                 type="button"
@@ -684,12 +555,12 @@ function DetailInner({ listId }: { listId: string }) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   // Iter 7.24 Sprint 4b — état du sheet "Ajouter un athlète".
   const [addAthleteOpen, setAddAthleteOpen] = useState(false);
-  // Iter 7.28 Section 3 — segmented control : "athletes" (défaut) vs "notes".
-  // Les notes de liste sortent du menu ⋮ vers une vue inline découvrable.
-  const [view, setView] = useState<"athletes" | "notes">("athletes");
-  // Compteur de notes pour afficher sur le segment ("Notes · N"). Lu indépendamment
-  // du segment actif pour que le badge soit visible dès qu'on arrive sur le détail.
-  const { data: notesPreview = [] } = useListNotes(listId);
+  /* Tableau blanc (lot 2 de la 1.4.4) : pour un Pro, la liste est celle de
+     l'UNITÉ — retirer un athlète ou supprimer la liste vaut pour toute
+     l'unité, après confirmation (mêmes phrases que le web). */
+  const { tier, loading: tierLoading } = useSubscription();
+  const modeUnite = !tierLoading && (tier === "pro" || tier === "all_star");
+  const [retraitCible, setRetraitCible] = useState<ListAthlete | null>(null);
 
   // Iter 7.24 — Set des athleteId déjà dans la liste, calculé depuis useListAthletes.
   // Passé au sheet pour masquer ces athlètes de la liste de favoris proposés.
@@ -723,14 +594,14 @@ function DetailInner({ listId }: { listId: string }) {
         memberId: a.memberId,
       });
       toast.success({
-        message: "Retiré de la liste",
-        detail: `${a.fullName} reste dans tes favoris.`,
+        message: modeUnite ? "Retiré de la liste de l'unité" : "Retiré de la liste",
+        detail: a.fullName ? `${a.fullName} reste dans les favoris.` : "L'athlète reste dans les favoris.",
       });
     } catch (e) {
       const err = e as { message?: string };
       toast.error({ message: "Échec", detail: err.message || "Impossible de retirer l'athlète." });
     }
-  }, [listId, removeMut, toast]);
+  }, [listId, removeMut, toast, modeUnite]);
 
   const handleConfirmDelete = useCallback(async () => {
     // Iter 7.21 Section D — ne PAS fermer le sheet avant le succès. Avant :
@@ -786,9 +657,9 @@ function DetailInner({ listId }: { listId: string }) {
           {/* Iter 7.24 Sprint 4b — bouton "+ Ajouter un athlète" dans le header,
               à gauche du menu ⋮. 1 tap → ouvre AddAthleteToListSheet (sélecteur
               de favoris filtré côté client, exclut les membres déjà présents).
-              Iter 7.28 Section 3 — visible UNIQUEMENT sur le segment Athlètes
-              (sans pertinence sur la vue Notes). */}
-          {view === "athletes" && (
+              (L'ancienne condition « segment Athlètes » est tombée avec l'onglet
+              Notes, lot 2 de la 1.4.4 : il est toujours visible.) */}
+          {(
           <button
             type="button"
             aria-label="Ajouter un athlète"
@@ -813,9 +684,7 @@ function DetailInner({ listId }: { listId: string }) {
         </div>
 
         {/* Stats bar */}
-        {/* Iter 7.28 Section 3 — stats bar visible UNIQUEMENT sur le segment
-            athlètes (les notes ont leur propre vue plein écran). */}
-        {view === "athletes" && !isLoading && athletes.length > 0 && (
+        {!isLoading && athletes.length > 0 && (
           <StatsBar
             total={stats.total}
             verifiedCount={stats.verifiedCount}
@@ -823,24 +692,9 @@ function DetailInner({ listId }: { listId: string }) {
             avgRating={stats.avgRating}
           />
         )}
-
-        {/* Iter 7.28 Section 3 — segmented control Athlètes | Notes. Badge sur
-            "Notes" affiche le compteur quand > 0 pour signaler le contenu. */}
-        <div className="px-4 pt-1 pb-3">
-          <SegmentedTabs<"athletes" | "notes">
-            value={view}
-            onChange={setView}
-            items={[
-              { value: "athletes", label: "Athlètes" },
-              { value: "notes", label: "Notes", badge: notesPreview.length },
-            ]}
-          />
-        </div>
       </div>
 
-      {/* Iter 7.28 Section 3 — body conditionnel selon le segment actif. */}
-      {view === "athletes" ? (
-        <div className="px-4 pt-3">
+      <div className="px-4 pt-3">
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -864,7 +718,7 @@ function DetailInner({ listId }: { listId: string }) {
                     <ListAthleteCardMobile
                       athlete={a}
                       onTap={() => handleTapAthlete(a)}
-                      onRemove={() => handleRemove(a)}
+                      onRemove={() => setRetraitCible(a)}
                       onTapNotes={() => setAthleteNotesTarget(a)}
                     />
                   </motion.div>
@@ -873,15 +727,20 @@ function DetailInner({ listId }: { listId: string }) {
             </div>
           )}
         </div>
-      ) : (
-        <ListNotesPanel listId={listId} />
-      )}
 
       {/* Iter 7.18 Sprint 3 — sheets */}
       <AthleteNotesSheet
         open={!!athleteNotesTarget}
         onClose={() => setAthleteNotesTarget(null)}
         athlete={athleteNotesTarget}
+        modeUnite={modeUnite}
+      />
+      <ConfirmRetraitMembreSheet
+        cible={retraitCible}
+        nomListe={list?.name ?? ""}
+        modeUnite={modeUnite}
+        onClose={() => setRetraitCible(null)}
+        onConfirm={() => { const a = retraitCible; setRetraitCible(null); if (a) void handleRemove(a); }}
       />
       {/* Iter 7.28 Section 3 — ListNotesSheet retiré : les notes sont
           maintenant accessibles via le segmented control (vue inline). */}
@@ -919,6 +778,7 @@ function DetailInner({ listId }: { listId: string }) {
         list={list}
         athleteCount={stats.total}
         onConfirm={handleConfirmDelete}
+        modeUnite={modeUnite}
       />
 
       {/* Iter 7.24 Sprint 4b — sheet sélecteur d'athlètes (source = favoris). */}

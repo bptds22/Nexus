@@ -2005,3 +2005,47 @@ Décision BP 2026-10-02 : tout entre dans la 1.4.4 ; paquet A d'abord.
   `/tarifs` FR/EN, `subscriptionTiers.ts` (inutilisé).
 - **Compte `nexus.testonboarding@nexussports.ca` supprimé** en prod (fiche,
   2 lignes de journal, 1 avis admin, compte auth).
+
+
+## 70. Lot 2 de la 1.4.4 — tableau blanc mobile, branche `feat/1-4-4-lot2-tableau-blanc` (2026-10-02)
+
+Ferme les écarts du §38. Aucune migration : tout ce qui est lu ou écrit
+était déjà en prod.
+
+- **Mon processus (app)** : un Pro lit l'UNITÉ (`useProcessusUnite`, comme le
+  web), un gratuit ses lignes (démo). Les cartes prospect sont écartées (pas
+  encore ouvrables dans l'app) avec une phrase « N cartes prospect … visibles
+  sur la version web ». Fiche : « Suivi aussi par … », « Grade de l'unité »,
+  fil de notes signé (`FilNotesSuiviMobile` : les miennes supprimables, celles
+  des collègues en lecture seule), retrait avec confirmation qui nomme les
+  collègues (8 s pour lire). Sheet sous `useSheetKeyboardGeometry`.
+- **Écritures** : `useUpdatePipelineStage`, `useTogglePipelinePriority`,
+  `useUpdateNextAction` → `unite_ecrire_dossier` ; `useUpsertAthleteGrade` →
+  `unite_ecrire_grade` ; `useRemoveFromPipeline` → `unite_retirer_du_processus`.
+  Avant, un UPDATE de « ma ligne » ne touchait rien sur le dossier d'un
+  collègue. Optimiste dans tous les caches `["pipeline"]` (`cacheDossiers.ts`).
+- **Fiche athlète, web ET app** : `persistPipelineStage` passait par un upsert
+  / DELETE de « ma ligne » — « Retiré » ne retirait que ma ligne, le dossier
+  revenait. Désormais les fonctions d'unité ; lecture par `lireDossierActeur`
+  (le dossier de l'unité, sinon ma ligne). Retrait mobile : deux touchers,
+  phrase qui nomme les collègues. **Le web est donc touché aussi** (part avec
+  la prochaine fusion dans `main`).
+- **Favoris (app)** : Mes favoris, cœur de la recherche et de la fiche passent
+  par `useBasculeFavori` (favoris de l'unité, retrait pour l'unité et du
+  processus, confirmation). « Favori de … » sous la carte. Boutons de la
+  modale à 44 px sur écran tactile (web inchangé au pointeur).
+- **Listes (app)** : `useRecruiterLists` rend les listes de l'unité pour un
+  Pro, avec « Créée par … ». Suppression et retrait d'un athlète : mêmes
+  phrases que le web, confirmation avant le retrait d'un membre (le balayage
+  ne retire plus directement). **Onglet « Notes » de liste retiré** : la
+  bulle d'une carte ouvre le fil du joueur. `recruiter_list_notes` n'est plus
+  écrite par l'app 1.4.4 — contraction possible quand plus aucune 1.4.3 ne
+  circule.
+- **Reste** : filtre sport de l'admin cégep (lot 3) ; avertissement React
+  préexistant « button dans button » sur la ligne d'une liste (le « ⋮ ») ;
+  « annuler » d'un retrait de favori retiré en mode unité (il ne rendrait que
+  son propre cœur).
+- Preuves sur iPhone simulé (base locale, r1 Robin et r3 Rémi, même unité) :
+  lecture du dossier, note signée en lecture seule, favoris et listes de
+  l'unité, retrait d'unité (0 ligne restante, celle de Rémi comprise).
+  Scénario et nettoyage : `scripts/lot2-tableau-blanc-*.sql`.

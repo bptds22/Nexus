@@ -3,16 +3,19 @@
 /* ═══════════════════════════════════════════════════════════════
    RecruteurFavorisMobile — iter 7.9 Section 8
    Page Mes Favoris mobile : MÊME carte visuelle que la Recherche
-   (réutilise AthleteCardMobile exporté). Source = useFavoriteAthletes.
-   Heart = retirer des favoris (optimistic + toast undo). Search locale
+   (réutilise AthleteCardMobile exporté). Source = useFavoriteAthletesUnite
+   (favoris de l'unité pour un Pro, lot 2 de la 1.4.4). Heart = retirer
+   (useBasculeFavori, confirmation d'unité). Search locale
    par nom. Pas de filter sheet 7-critères (overkill sur favoris).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import { useFavoriteAthletes } from "@/lib/queries/recruiter/useFavoriteAthletes";
+import { useFavoriteAthletesUnite } from "@/lib/queries/recruiter/useFavoriteAthletes";
+import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
+import { definirFavori } from "@/lib/queries/shared/definirFavori";
+import { joindreNoms } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -23,20 +26,21 @@ import { triggerHaptic } from "@/lib/haptics";
 
 
 export function RecruteurFavorisMobile() {
-  const { athletes, isLoading } = useFavoriteAthletes();
+  /* TABLEAU BLANC (lot 2 de la 1.4.4, registre §38) : pour un Pro, les
+     favoris de l'UNITÉ, avec qui les a posés (useFavoriteAthletesUnite) ;
+     un gratuit garde les siens. Le retrait passe par useBasculeFavori, le
+     même chemin que le web : un Pro retire POUR L'UNITÉ (et du processus),
+     avec une confirmation qui nomme les collègues ou l'étape avancée. */
+  const { athletes, favoris, isLoading } = useFavoriteAthletesUnite();
+  const { basculer, modale } = useBasculeFavori();
   // `tierLoading` : tant que le tier n'est pas chargé, on ne rend PAS les cartes
   // (le Provider défaute tier→"free" avant le fetch, ce qui anonymiserait les
   // cartes d'un All Star une fraction de seconde au login). Skeleton jusque-là.
-  // `isFree` a disparu avec la bascule de useAthletesByIds sur la RPC :
-  // l'anonymisation n'est plus une décision de tier prise ici, elle arrive
-  // par identityVisible, ligne par ligne, depuis le serveur.
   const { loading: tierLoading } = useSubscription();
   const queryClient = useQueryClient();
   const toast = useMobileToast();
-  // Iter 7.11 Section 3.2 — userId nécessaire pour patcher la BONNE queryKey
-  // (useFavorites stocke sous ["favorites", userId], pas ["favorites"]).
   const { data: currentUser } = useCurrentUser();
-  const userId = currentUser?.authUser.id;
+  const moi = currentUser?.authUser.id ?? null;
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 200);
 
@@ -46,85 +50,46 @@ export function RecruteurFavorisMobile() {
     return athletes.filter((a) => {
       // Volontairement sur firstName/lastName, pas fullName : sous masquage
       // les deux sont vides, donc un athlète à identité réservée ne répond à
-      // AUCUNE recherche par nom. Passer par fullName le ferait remonter sur
-      // « identité », ce qui n'a pas de sens pour l'utilisateur.
+      // AUCUNE recherche par nom.
       const full = `${a.firstName} ${a.lastName}`.toLowerCase();
       return full.includes(q);
     });
   }, [athletes, debouncedSearch]);
 
-  // Iter 7.11 Section 3.2 — vraie queryKey du cache useFavorites.
-  // Avant : setQueryData(["favorites"], ...) patchait une clé fantôme et
-  // n'affectait pas le rendu (la grille lit ["favorites", userId]).
-  const favoritesKey = useMemo(() => ["favorites", userId] as const, [userId]);
-
-  const reinsertFavorite = useCallback(async (athleteId: string) => {
-    if (!userId) return;
-    const supabase = createClient();
-    // Optimistic re-add : ré-injecte l'id pour que la carte réapparaisse
-    // immédiatement avec son animation d'entrée.
-    queryClient.setQueryData<string[]>(favoritesKey, (prev) => {
-      const list = prev ?? [];
-      return list.includes(athleteId) ? list : [...list, athleteId];
-    });
-    const { error } = await supabase
-      .from("recruiter_favorites")
-      .insert({ recruiter_id: userId, athlete_id: athleteId });
-    if (error) {
-      // Revert : retire à nouveau le faux ajout optimistic.
-      queryClient.setQueryData<string[]>(favoritesKey, (prev) =>
-        (prev ?? []).filter((id) => id !== athleteId),
-      );
-      toast.error({ message: "Échec annulation", detail: error.message });
-      return;
-    }
-    queryClient.invalidateQueries({ queryKey: ["favoriteCounts"] });
-  }, [queryClient, favoritesKey, userId, toast]);
-
+  /* Retrait. Le gratuit garde l'« Annuler » (il ne retire que SON cœur, le
+     remettre est sans ambiguïté). Un Pro a confirmé un retrait d'UNITÉ :
+     l'annuler ne rendrait que son propre cœur, pas ceux des collègues ni le
+     dossier — on ne promet pas ce qu'on ne sait pas défaire. */
   const handleUnfavorite = useCallback(async (athleteId: string) => {
     triggerHaptic("Light");
-    if (!userId) return;
-    const supabase = createClient();
-
-    // Snapshot avant patch (pour revert si la DB refuse).
-    const previousIds = queryClient.getQueryData<string[]>(favoritesKey);
-
-    // Optimistic : retire l'id de la VRAIE clé (["favorites", userId]). useAthletesByIds
-    // re-derive sans cet id → la grille ne contient plus l'athlète → AnimatePresence
-    // détecte l'exit et lance l'animation. La carte disparaît IMMÉDIATEMENT.
-    queryClient.setQueryData<string[]>(favoritesKey, (prev) =>
-      (prev ?? []).filter((id) => id !== athleteId),
-    );
-
-    const { data: existing } = await supabase
-      .from("recruiter_favorites")
-      .select("id")
-      .eq("recruiter_id", userId)
-      .eq("athlete_id", athleteId)
-      .maybeSingle();
-
-    if (existing) {
-      const { error } = await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-      if (error) {
-        // Revert au snapshot pré-tap → la carte réapparaît.
-        queryClient.setQueryData<string[]>(favoritesKey, previousIds ?? []);
-        toast.error({ message: "Échec", detail: "Impossible de retirer le favori." });
-        return;
-      }
+    const a = athletes.find((x) => x.id === athleteId);
+    const res = await basculer(athleteId, true, a?.identityVisible ? `${a.firstName} ${a.lastName}`.trim() : undefined);
+    if (!res) return; // confirmation annulée : rien n'a été écrit
+    if (!res.ok) { toast.error({ message: "Échec", detail: res.message }); return; }
+    if (favoris.modeUnite) {
+      toast.success({ message: "Retiré des favoris de l'unité" });
+      return;
     }
-
-    queryClient.invalidateQueries({ queryKey: ["favoriteCounts"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
-
     toast.success({
       message: "Retiré des favoris",
       duration: 5000,
       action: {
         label: "Annuler",
-        onClick: () => { reinsertFavorite(athleteId); },
+        onClick: () => {
+          void definirFavori(queryClient, athleteId, true).then((r) => {
+            if (!r.ok) toast.error({ message: "Échec annulation", detail: r.message });
+          });
+        },
       },
     });
-  }, [queryClient, favoritesKey, userId, toast, reinsertFavorite]);
+  }, [athletes, basculer, favoris.modeUnite, queryClient, toast]);
+
+  /** « Aussi chez Marie » : les collègues qui ont mis ce cœur (moi exclu). */
+  const aussiChez = useCallback((athleteId: string): string | null => {
+    if (!favoris.modeUnite) return null;
+    const noms = (favoris.parAthlete[athleteId] ?? []).filter((id) => id !== moi).map(favoris.nom);
+    return noms.length > 0 ? joindreNoms(noms) : null;
+  }, [favoris, moi]);
 
   return (
     <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
@@ -237,12 +202,18 @@ export function RecruteurFavorisMobile() {
                     onToggleFav={handleUnfavorite}
                     lastTabKey="favoris"
                   />
+                  {aussiChez(a.id) && (
+                    <p className="mt-1 px-1 text-[11px] text-[#9CA3AF] truncate">
+                      Favori de {aussiChez(a.id)}
+                    </p>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         )}
       </div>
+      {modale}
     </div>
   );
 }

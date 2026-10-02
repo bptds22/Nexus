@@ -82,6 +82,7 @@ import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, RenvoyerInvitation, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import { useAuteursUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -662,13 +663,9 @@ function collegues(card: PipelineKanbanCard | undefined, moi: string | null): st
 const MESSAGE_RETRAIT_CARTE =
   "Cette carte prospect sera supprimée pour toute l'unité, avec ses notes. Il ne restera qu'une trace de la suppression, sans les informations de l'athlète.";
 
-/** Texte de la confirmation d'un retrait (décision BP 3). */
-function messageRetrait(noms: string[], modeUnite: boolean): string {
-  if (!modeUnite) return "Il ne sera plus dans ton suivi actif.";
-  if (noms.length === 0) return "Le dossier sera retiré du processus de ton unité.";
-  const liste = noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}`;
-  return `Suivi aussi par ${liste}. Le dossier sera retiré pour toute l'unité — pour ${noms.length === 1 ? "ce collègue" : "ces collègues"} aussi.`;
-}
+/** Texte de la confirmation d'un retrait (décision BP 3) — source unique
+ *  web + app : lib/pipeline/messagesUnite.ts. */
+const messageRetrait = messageRetraitProcessus;
 
 function formatPoids(card: PipelineKanbanCard): string | null {
   return card.poids_lbs ? `${card.poids_lbs} lbs` : null;

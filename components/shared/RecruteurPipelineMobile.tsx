@@ -28,6 +28,11 @@ import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
+import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import { estCarte } from "@/lib/cartes/carteProspect";
+import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
+import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import {
   sortPipelineCards,
   PIPELINE_SORT_OPTIONS,
@@ -48,7 +53,6 @@ import {
   type PipelineFilters,
   type QuickKey,
 } from "@/lib/pipeline/filterPipelineCards";
-import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useUpdatePipelineStage } from "@/lib/queries/recruiter/useUpdatePipelineStage";
 import { etapePorteVisite, etapeApresSaisieVisite } from "@/lib/pipeline/regleVisite";
 import { useTogglePipelinePriority } from "@/lib/queries/recruiter/useTogglePipelinePriority";
@@ -56,7 +60,6 @@ import { useUpsertAthleteGrade } from "@/lib/queries/recruiter/useUpsertAthleteG
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
 import type { Grade } from "@/lib/config/grades";
 import { useUpdateNextAction } from "@/lib/queries/recruiter/useUpdateNextAction";
-import { useAddPipelineNote } from "@/lib/queries/recruiter/useAddPipelineNote";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
@@ -1035,29 +1038,36 @@ function NextActionDateEditor({
 }
 
 function PipelineDetailSheet({
-  card, open, onClose, isFreeDemoMode,
+  card, open, onClose, isFreeDemoMode, modeUnite, moi,
 }: {
   card: PipelineKanbanCard | null;
   open: boolean;
   onClose: () => void;
   isFreeDemoMode: boolean;
+  /** Tableau blanc (lot 2 de la 1.4.4) : Pro / All Star = le dossier de l'UNITÉ. */
+  modeUnite: boolean;
+  moi: string | null;
 }) {
   const router = useRouter();
   const toast = useMobileToast();
-  const { data: notes = [], isLoading: notesLoading } = usePipelineNotes(card?.id ?? null);
   const updateStage = useUpdatePipelineStage();
   const togglePriority = useTogglePipelinePriority();
   const upsertGrade = useUpsertAthleteGrade();
   const updateNextAction = useUpdateNextAction();
-  const addNote = useAddPipelineNote();
   const removeFromPipeline = useRemoveFromPipeline();
+  // Le sheet porte un champ (notes) : remonter ET plafonner au-dessus du
+  // clavier (CLAUDE.md, « Clavier mobile »).
+  const kbdStyle = useSheetKeyboardGeometry("90dvh");
+  /* Les COLLÈGUES qui suivent l'athlète (moi exclu) — « Suivi par » et la
+     confirmation de retrait les nomment (décision BP 3, comme le web). */
+  const collegues = (card?.suivi_par ?? [])
+    .map((id, i) => (id === moi ? null : card?.suivi_par_noms?.[i] ?? null))
+    .filter((n): n is string => !!n);
 
-  const [noteText, setNoteText] = useState("");
   const [isPriority, setIsPriority] = useState(card?.flagged ?? false);
   // Grade local — même raison que visitAtLocal/nextActionAtLocal : `card` est
   // un snapshot non réactif au cache TanStack.
   const [gradeLocal, setGradeLocal] = useState<Grade | null>(card?.grade ?? null);
-  const [posting, setPosting] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   // Date de visite locale — le `card` prop est un snapshot (non réactif au
   // cache TanStack). On la garde en local pour un feedback immédiat après
@@ -1083,7 +1093,7 @@ function PipelineDetailSheet({
   useEffect(() => { setVisitAtLocal(card?.visit_at ?? null); }, [card?.id, card?.visit_at]);
   useEffect(() => { setNextActionAtLocal(card?.next_action_at ?? null); }, [card?.id, card?.next_action_at]);
   useEffect(() => {
-    if (!open) { setDragOffset(0); setIsDragging(false); setNoteText(""); setConfirmRemove(false); }
+    if (!open) { setDragOffset(0); setIsDragging(false); setConfirmRemove(false); }
   }, [open]);
 
   // Fix 5 iter 6.1b — Prefetch du profil athlète au mount du sheet pour
@@ -1101,9 +1111,10 @@ function PipelineDetailSheet({
   // sheet et revient plus tard.
   useEffect(() => {
     if (!confirmRemove) return;
-    const t = window.setTimeout(() => setConfirmRemove(false), 3000);
+    // Des collègues à nommer : le temps de LIRE la phrase avant qu'elle parte.
+    const t = window.setTimeout(() => setConfirmRemove(false), collegues.length > 0 ? 8000 : 3000);
     return () => window.clearTimeout(t);
-  }, [confirmRemove]);
+  }, [confirmRemove, collegues.length]);
 
   if (!mounted) return null;
 
@@ -1213,25 +1224,6 @@ function PipelineDetailSheet({
     }
   };
 
-  const handleAddNote = async () => {
-    if (!noteText.trim() || !card) return;
-    if (isFreeDemoMode) {
-      toast.warning({ message: "Les notes sont réservées aux membres Pro" });
-      setNoteText("");
-      return;
-    }
-    setPosting(true);
-    try {
-      await addNote.mutateAsync({ athleteId: card.id, content: noteText });
-      setNoteText("");
-      toast.success({ message: "Note ajoutée" });
-    } catch {
-      toast.error({ message: "Erreur lors de l'ajout de la note" });
-    } finally {
-      setPosting(false);
-    }
-  };
-
   const handleRemove = async () => {
     if (!card) return;
     if (isFreeDemoMode) {
@@ -1240,7 +1232,9 @@ function PipelineDetailSheet({
     }
     if (!confirmRemove) { setConfirmRemove(true); return; }
     try {
-      await removeFromPipeline.mutateAsync({ cardId: card.id });
+      // Pour toute l'unité (unite_retirer_du_processus) — la confirmation a
+      // nommé les collègues juste avant. Unité du dossier, comme le web.
+      await removeFromPipeline.mutateAsync({ cardId: card.id, sportId: card.unite_sport_id ?? null });
       toast.success({ message: "Athlète retiré du processus" });
       onClose();
     } catch {
@@ -1286,7 +1280,8 @@ function PipelineDetailSheet({
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
             // touchAction pan-y (#2) : geste vertical uniquement, pas de glisse horizontale.
-            style={{ maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom)", touchAction: "pan-y" }}
+            // kbdStyle : remonte ET plafonne au-dessus du clavier (champ de notes).
+            style={{ ...kbdStyle, touchAction: "pan-y" }}
           >
             {/* Handle iOS — drag area (swipe-down to close, Fix 5+7) */}
             <div
@@ -1359,6 +1354,12 @@ function PipelineDetailSheet({
                   <p className="text-[12px] text-[#9CA3AF] truncate">{card.noTeam ? "Ligue civile" : card.school}</p>
                   {card.graduation_year > 0 && (
                     <p className="text-[12px] text-[#6B7280]">Promotion {card.graduation_year}</p>
+                  )}
+                  {/* Tableau blanc : qui d'autre suit ce dossier dans l'unité. */}
+                  {modeUnite && collegues.length > 0 && (
+                    <p className="text-[12px] text-[#9CA3AF] mt-1">
+                      Suivi aussi par <span className="text-white">{collegues.join(", ")}</span>
+                    </p>
                   )}
                 </div>
               </div>
@@ -1519,66 +1520,20 @@ function PipelineDetailSheet({
               {/* Mon grade — sous la priorité, avant les notes. Cibles 44px
                   (compact={false}) : c'est du tactile, pas du curseur. */}
               <div>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Mon grade</h3>
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">{modeUnite ? "Grade de l'unité" : "Mon grade"}</h3>
                 <GradePicker value={gradeLocal} onSelect={handleSetGrade} compact={false} />
               </div>
 
-              {/* Notes inline */}
-              <div>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Notes de suivi</h3>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Ajouter une note…"
-                    disabled={isFreeDemoMode}
-                    className="flex-1 px-3 py-2.5 bg-[#0C0E12] rounded-2xl text-[16px] text-white placeholder:text-[#4a4d56] border border-white/[0.06] outline-none focus:border-[#E63946]/40 disabled:opacity-50"
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNote(); } }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddNote}
-                    disabled={!noteText.trim() || posting || isFreeDemoMode}
-                    className={`px-4 py-2.5 rounded-2xl text-[11px] uppercase tracking-wider font-bold transition-colors ${
-                      noteText.trim() && !posting && !isFreeDemoMode
-                        ? "bg-[#E63946] text-white active:bg-[#D42B22]"
-                        : "bg-white/[0.06] text-[#4a4d56]"
-                    }`}
-                  >
-                    {posting ? "..." : "Poster"}
-                  </button>
-                </div>
-
-                {/* Timeline notes : skeleton si loading, sinon liste (Fix 8) */}
-                <div className="mt-3">
-                  {notesLoading ? (
-                    <div className="space-y-2.5">
-                      <div className="pl-3 border-l-2 border-white/[0.06]">
-                        <div className="h-3 rounded nx-pulse-skel-pl" style={{ width: "85%" }} />
-                        <div className="h-2.5 mt-1 rounded nx-pulse-skel-pl" style={{ width: "30%" }} />
-                      </div>
-                      <div className="pl-3 border-l-2 border-white/[0.06]">
-                        <div className="h-3 rounded nx-pulse-skel-pl" style={{ width: "65%" }} />
-                        <div className="h-2.5 mt-1 rounded nx-pulse-skel-pl" style={{ width: "30%" }} />
-                      </div>
-                    </div>
-                  ) : notes.length > 0 ? (
-                    <div className="space-y-2.5 max-h-44 overflow-y-auto">
-                      {notes.slice(0, 5).map((n) => (
-                        <div key={n.id} className="pl-3 border-l-2 border-[#E63946]/40">
-                          <p className="text-[12px] text-[#e0e0e0] leading-relaxed">{n.content}</p>
-                          <p className="text-[10px] text-[#6B7280] mt-0.5">
-                            {new Date(n.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-[#4a4d56] italic">Aucune note pour cet athlète</p>
-                  )}
-                </div>
-              </div>
+              {/* Notes de suivi — LE fil du joueur, signé (lot 2 de la 1.4.4) :
+                  les notes de l'unité, les miennes supprimables, celles des
+                  collègues en lecture seule. Mode démo : les miennes, et
+                  « Poster » renvoie à l'offre Pro. */}
+              <FilNotesSuiviMobile
+                athleteId={card.id}
+                modeUnite={modeUnite}
+                onTease={() => toast.warning({ message: "Les notes sont réservées aux membres Pro" })}
+                onErreur={(m) => toast.error({ message: m })}
+              />
 
               {/* Grid Changer le statut */}
               <div>
@@ -1632,7 +1587,14 @@ function PipelineDetailSheet({
                   </svg>
                   Envoyer un message au coach
                 </button>
-                {/* Iter 6.1e Fix 4 — État confirm = rouge plein + halo pulse */}
+                {/* Iter 6.1e Fix 4 — État confirm = rouge plein + halo pulse.
+                    Tableau blanc : la phrase dit ce que le retrait fait, et
+                    NOMME les collègues (même texte que le web). */}
+                {confirmRemove && (
+                  <p className="text-[12px] text-[#F59E0B] leading-snug px-1" role="alert">
+                    {messageRetraitProcessus(collegues, modeUnite)}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => { void triggerHaptic("Medium"); handleRemove(); }}
@@ -1725,16 +1687,35 @@ export function RecruteurPipelineMobile() {
      par politesse du client. Ne retirez pas ces gardes `isFreeDemoMode`
      en croyant simplifier : elles évitent à l'usager un refus serveur sec.
      ──────────────────────────────────────────────────────────────────── */
-  const isFreeDemoMode = tier === "free";
+  const isFreeDemoMode = !tierLoading && tier === "free";
   const queryClient = useQueryClient();
   const toast = useMobileToast();
   useCurrentUser(); // warm cache pour les hooks de mutation
 
-  const { data: pipelineData, isLoading: pipelineLoading } = usePipelineCards();
+  /* ── TABLEAU BLANC DE L'UNITÉ (lot 2 de la 1.4.4, registre §38) ─────
+     Même partage que le web (app/recruteur/pipeline/page.tsx) : un Pro ou
+     All Star voit le processus de son UNITÉ (cégep × sport) — une carte par
+     athlète, qui le suit, les notes signées ; un gratuit reste sur SES
+     lignes en mode démo. Pendant le chargement du palier, rien n'est lu.
+     Le filtre sport de l'admin cégep (lecture seule hors de son sport)
+     arrive avec le lot 3 : ici, l'unité de l'acteur seulement.
+
+     CARTES PROSPECT (lot C) : useProcessusUnite les rend avec les dossiers,
+     mais l'app ne sait pas encore les ouvrir (lot « Cartes prospect » à
+     venir). On les écarte, et on dit combien il y en a sur le web plutôt
+     que de les faire disparaître sans un mot. */
+  const modeUnite = !tierLoading && (tier === "pro" || tier === "all_star");
+  const { data: donneesDemo, isLoading: chargementDemo } = usePipelineCards({ enabled: isFreeDemoMode });
+  const { data: donneesUnite, isLoading: chargementUnite } = useProcessusUnite({ enabled: modeUnite });
+  const pipelineData = modeUnite ? donneesUnite : isFreeDemoMode ? donneesDemo : undefined;
+  const pipelineLoading = modeUnite ? chargementUnite : isFreeDemoMode ? chargementDemo : true;
   /* Mémoïsé : `?? []` fabriquait un tableau NEUF à chaque rendu, si bien que
      tous les useMemo qui en dépendent se recalculaient sans arrêt — le lint le
      signalait déjà avant l'ajout des compteurs filtrés. */
-  const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
+  const cards = useMemo(() => (pipelineData?.cards ?? []).filter((c) => !estCarte(c)), [pipelineData]);
+  const nbCartesProspect = useMemo(() => (pipelineData?.cards ?? []).filter((c) => estCarte(c)).length, [pipelineData]);
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
   const loading = tierLoading || pipelineLoading;
 
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
@@ -2005,6 +1986,13 @@ export function RecruteurPipelineMobile() {
         nActiveFilters={activeFilterCount(filters, { quick })}
         onFilterTap={handleMenuTap}
       />
+      {nbCartesProspect > 0 && (
+        <p className="px-4 -mt-1 pb-2 text-[12px] text-[#6b7280]">
+          {nbCartesProspect === 1
+            ? "1 carte prospect de ton unité est visible sur la version web."
+            : `${nbCartesProspect} cartes prospect de ton unité sont visibles sur la version web.`}
+        </p>
+      )}
 
       {/* Free demo banner */}
       {isFreeDemoMode && !loading && cards.length > 0 && (
@@ -2092,6 +2080,8 @@ export function RecruteurPipelineMobile() {
         open={sheetOpen}
         onClose={handleSheetClose}
         isFreeDemoMode={isFreeDemoMode}
+        modeUnite={modeUnite}
+        moi={moi}
       />
 
       {/* Fix 9 — ⋮ Menu sheet Apple Reminders style. Iter 6.1c : cards prop

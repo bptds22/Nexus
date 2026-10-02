@@ -30,7 +30,7 @@ import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatu
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import RelanceFiche from "@/components/shared/RelanceFiche";
-import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
+import { persistPipelineStage, lireDossierActeur } from "@/lib/pipeline/persistPipelineStage";
 import { etapePorteVisite, visiteApresChangementEtape } from "@/lib/pipeline/regleVisite";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
@@ -520,15 +520,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
   useEffect(() => {
     const loadPipeline = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      const { data: pipelineData } = await supabase
-        .from("recruiter_pipeline")
-        .select("stage, visit_at")
-        .eq("recruiter_id", session.user.id)
-        .eq("athlete_id", id)
-        .maybeSingle();
+      // Tableau blanc (lot 2 de la 1.4.4) : le dossier de l'UNITÉ — l'étape
+      // commune, même posée par un collègue — sinon sa propre ligne.
+      const pipelineData = await lireDossierActeur(id);
       setMyPipelineStage(pipelineData?.stage || null);
       setVisitAt((pipelineData?.visit_at as string | null) ?? null);
       // Le dropdown est piloté par la DB, plus par le mock : `pipelineStatus`
