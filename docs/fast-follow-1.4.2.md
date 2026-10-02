@@ -1960,7 +1960,7 @@ parent v2 reste donc **informative**, sans lien de connexion.
 Décision BP 2026-10-02 : tout entre dans la 1.4.4 ; paquet A d'abord.
 
 - **Visibilité partenaires dès 14 ans** — migration
-  `20261002170000_partenaires_consentement_14_ans` (**non appliquée en prod,
+  `20261002172656_partenaires_consentement_14_ans` (**non appliquée en prod,
   attend le GO**). Seuil 18 → 14 dans `set_my_partner_visibility`,
   `is_partner_eligible_athlete` et `emit_five_star_on_eligibility_flip`. Sous
   14 ans ou date inconnue : inchangé (retrait seulement, accord parental).

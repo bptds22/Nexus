@@ -15,6 +15,7 @@
 --   Sous 14 ans, ou date de naissance inconnue : inchangé — retrait seulement,
 --   l'accord passe par le parent (set_child_consent, portail parent), et
 --   l'accord parental reste une voie d'éligibilité valable à tout âge.
+--   Date de naissance inconnue : ni majeur ni 14 ans (prudence).
 --
 -- ── EFFET SUR LES DONNÉES À L'APPLICATION ────────────────────────────────
 --   Aucun. Relevé prod 2026-10-02 : aucun 14-17 n'a opt_in = true sans
@@ -88,7 +89,6 @@ begin
   end if;
   select * into v_ath from public.athletes where user_id = v_uid;
 
-  -- DOB inconnue → ni majeur ni 14 ans (prudence).
   v_majeur   := v_ath.date_naissance is not null
                 and v_ath.date_naissance <= current_date - interval '18 years';
   v_quatorze := v_ath.date_naissance is not null

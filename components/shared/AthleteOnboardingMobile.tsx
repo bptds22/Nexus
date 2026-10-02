@@ -1055,7 +1055,7 @@ export function AthleteOnboardingMobile() {
     }
 
     /* Athlète de 14 ans et plus (majeur seulement jusqu'au 2026-10-02 ; à
-       14 ans le jeune consent seul, migration 20261002170000) — SA case partenaires,
+       14 ans le jeune consent seul, migration 20261002172656) — SA case partenaires,
        posée au signup courriel (écran 2) ou à /consentements (Google/Apple) :
        metadata `consent_partner_visibility` = ISO du moment où il l'a cochée.
        Jamais la parentale, jamais déduite ; `partner_visibility_parental_consent`

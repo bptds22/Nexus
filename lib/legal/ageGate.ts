@@ -43,7 +43,7 @@ export function isUnder14(birthdate: string, today: Date = new Date()): boolean 
 }
 
 /** Visibilité partenaires (décision BP 2026-10-02, migration
- *  20261002170000) : à 14 ans révolus, l'athlète consent LUI-MÊME. Même
+ *  20261002172656) : à 14 ans révolus, l'athlète consent LUI-MÊME. Même
  *  seuil que l'auto-inscription. Faux pour une DOB vide ou mal formée —
  *  comme côté base, une date inconnue ne consent pas. */
 export function peutConsentirPartenaires(birthdate: string | null | undefined, today: Date = new Date()): boolean {

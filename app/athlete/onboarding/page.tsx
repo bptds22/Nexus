@@ -930,7 +930,7 @@ function AthleteOnboardingDesktop() {
   /* Athlète de 14 ans et plus (majeur jusqu'au 2026-10-02) — horodatage de
      SA case partenaires (metadata `consent_partner_visibility`, posée par
      /auth écran 2 ou /consentements). Lue pour le mineur aussi : à 14 ans il
-     consent seul (migration 20261002170000).
+     consent seul (migration 20261002172656).
      Même discipline que le mineur : pas d'écriture sans preuve datée, et
      l'horodatage est celui du SIGNUP. `partner_visibility_parental_consent`
      n'est PAS écrite : aucun parent n'a rien autorisé. */

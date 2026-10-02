@@ -1,4 +1,4 @@
--- ROLLBACK de 20261002170000_partenaires_consentement_14_ans.sql
+-- ROLLBACK de 20261002172656_partenaires_consentement_14_ans.sql
 -- Remet le seuil à 18 ans dans les trois fonctions (définitions d'avant).
 -- ⚠ À lire AVANT de jouer : tout 14-17 qui a ACCORDÉ lui-même entre-temps
 --   garde opt_in = true SANS accord parental ; avec le seuil à 18, il redevient

@@ -1,4 +1,4 @@
--- Preuves — avis au parent (20261002170000 §3b). Local seulement, transaction
+-- Preuves — avis au parent (20261002172656 §3b). Local seulement, transaction
 -- annulée. Le Vault local n'a pas PARENT_NOTICE_SECRET : chaque avis s'arrête
 -- à SANS_SECRET, AUCUN appel réseau. On compte les lignes du journal.
 -- Athlète local d3a00000-…-a001 (user 842da8f6-…), 16 ans.

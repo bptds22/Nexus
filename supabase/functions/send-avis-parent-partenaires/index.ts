@@ -1,6 +1,6 @@
 // send-avis-parent-partenaires : AVIS au parent quand un athlète de 14 à 17
 // ans active LUI-MÊME sa visibilité partenaires médias (décision BP
-// 2026-10-02 ; politique 2026-10-v1, section 7.5 ; migration 20261002170000).
+// 2026-10-02 ; politique 2026-10-v1, section 7.5 ; migration 20261002172656).
 //
 // Appelée par le trigger aviser_parent_partenaires() via pg_net, avec
 // { avis_id } SEULEMENT : aucune donnée personnelle ne transite par la file
