@@ -6,6 +6,9 @@
 
    Section 7.5 « Communication à des partenaires média » ajoutée sur
    instruction BP (mise en cohérence légale — juillet 2026).
+   2026-10-v1 (décision BP 2026-10-02) : dès 14 ans, l'athlète consent seul
+   à la visibilité partenaires ; le parent est avisé et peut la retirer
+   (encadré mineurs, tableau 6.1, section 7.5).
 
    ⚠️ Contenu juridique : ne PAS modifier sans accord BP + counsel.
 ═══════════════════════════════════════════════════════════════ */
@@ -24,7 +27,7 @@ export const SECTIONS_CONFIDENTIALITE: Section[] = [
         type: "callout",
         tone: "red",
         title: "IMPORTANT — MINEURS",
-        text: "La Plateforme traite des renseignements personnels d'athlètes dont la majorité sont âgés de 14 à 17 ans. Des mesures de protection renforcées sont appliquées conformément à la Loi 25 et au Code civil du Québec. Le consentement parental est requis pour tout athlète mineur.",
+        text: "La Plateforme traite des renseignements personnels d'athlètes dont la majorité sont âgés de 14 à 17 ans. Des mesures de protection renforcées sont appliquées conformément à la Loi 25 et au Code civil du Québec. Le consentement parental est requis pour tout athlète mineur, sauf pour la communication de sa carte à des partenaires média (section 7.5) : dès 14 ans, l'athlète y consent seul, et son parent ou tuteur en est avisé.",
       },
       {
         type: "subsection",
@@ -215,7 +218,7 @@ export const SECTIONS_CONFIDENTIALITE: Section[] = [
             headers: ["Âge de l'athlète", "Exigence"],
             rows: [
               ["Moins de 14 ans", "Consentement parental OBLIGATOIRE. Inscription uniquement via le parent ou tuteur légal."],
-              ["14 à 17 ans", "Consentement parental fortement recommandé et requis par Nexus. L'athlète ET le parent doivent consentir."],
+              ["14 à 17 ans", "Consentement parental fortement recommandé et requis par Nexus. L'athlète ET le parent doivent consentir. Exception : la communication de la carte à des partenaires média (section 7.5), à laquelle l'athlète consent seul ; son parent ou tuteur en est avisé par courriel et peut la retirer en tout temps."],
               ["18 ans et plus", "Consentement de l'athlète seul."],
             ],
           },
@@ -330,7 +333,8 @@ export const SECTIONS_CONFIDENTIALITE: Section[] = [
         blocks: [
           { type: "p", text: "Sur le fondement d'un consentement explicite et facultatif, Nexus peut communiquer la carte officielle de l'athlète — soit son nom, sa position, son établissement et sa photo — à ses partenaires média approuvés (par exemple journalistes sportifs, pages de contenu sportif, balados ou camps spécialisés). Ces partenaires utilisent la carte dans leurs publications, à des fins éditoriales et promotionnelles. Aucun partenaire ne peut contacter l'athlète directement." },
           { type: "p", text: "Cette communication repose sur une responsabilité partagée : chaque partenaire média est responsable de la protection des renseignements qu'il reçoit et de l'usage qu'il en fait dans ses publications, tandis que Nexus demeure responsable de la communication elle-même et de l'obtention du consentement préalable." },
-          { type: "p", text: "Ce consentement est facultatif et peut être retiré en tout temps, soit par l'athlète depuis les paramètres de son profil, soit par son parent ou tuteur depuis l'espace parent. Le retrait met fin à toute nouvelle communication de la carte aux partenaires." },
+          { type: "p", text: "Ce consentement est facultatif. Dès 14 ans, l'athlète le donne lui-même ; pour un athlète de moins de 14 ans, seul son parent ou tuteur peut le donner. Lorsqu'un athlète de 14 à 17 ans donne ce consentement, son parent ou tuteur en est avisé par courriel, avec un lien vers l'espace parent." },
+          { type: "p", text: "Ce consentement peut être retiré en tout temps, soit par l'athlète depuis les paramètres de son profil, soit par son parent ou tuteur depuis l'espace parent. Le retrait met fin à toute nouvelle communication de la carte aux partenaires." },
         ],
       },
     ],

@@ -190,6 +190,13 @@ BEGIN
 END;
 $$;
 
+
+-- 3b. Avis au parent : trigger, fonction, journal (le journal part avec — il
+--     ne sert qu'à cet avis ; le relever avant si on veut en garder la trace).
+drop trigger if exists trg_aviser_parent_partenaires on public.athletes;
+drop function if exists public.aviser_parent_partenaires();
+drop table if exists public.avis_parent_partenaires;
+
 -- 4. Gates d'ACL — comparaison COMPLÈTE, jamais par inclusion.
 do $$
 declare

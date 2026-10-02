@@ -536,7 +536,6 @@ export function RecruteurParametresMobile() {
           price="0 $"
           period=""
           features={[
-            "10 résultats par recherche",
             "Étoiles, cote globale, vérification",
             "Stats école visibles",
           ]}
@@ -548,7 +547,6 @@ export function RecruteurParametresMobile() {
           period="/mois"
           features={[
             "Processus complet + messagerie",
-            "Filtres avancés (taille, poids, cote)",
             "Coordonnées du coach révélées",
           ]}
           status={tierStatus(tier, "pro")}

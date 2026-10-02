@@ -26,6 +26,10 @@
 --   CREATE OR REPLACE conserve l'ACL. Relevée avant, comparée en entier après
 --   (règle CLAUDE.md). is_partner_eligible_athlete et le trigger portent
 --   aujourd'hui PUBLIC/anon : HÉRITÉ, hors périmètre, conservé à l'identique.
+--
+-- ── AVIS AU PARENT (section 3b) ──────────────────────────────────────────
+--   Journal avis_parent_partenaires + trigger aviser_parent_partenaires() →
+--   fonction send-avis-parent-partenaires (à DÉPLOYER AVANT d'appliquer).
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- 0. Pré-contrôle : personne ne devient éligible par le seul effet du seuil.
@@ -231,6 +235,105 @@ BEGIN
 END;
 $$;
 
+-- 3b. L'AVIS AU PARENT (décision BP 2026-10-02, politique 2026-10-v1 §7.5).
+--     Quand un athlète de 14 à 17 ans active LUI-MÊME sa visibilité, son
+--     parent reçoit un courriel « [Prénom] a autorisé la visibilité
+--     partenaires médias », avec un lien vers l'espace parent où il peut la
+--     retirer. Fonction send-avis-parent-partenaires (LCAP : désabonnement
+--     parent, même liste que la relance partenaires).
+--
+--     Journal : une ligne par avis. RESERVE à l'écriture par le trigger, puis
+--     ENVOYE | ECHEC | ANNULE par la fonction ; SANS_SECRET si le Vault n'a
+--     pas le secret (jamais d'échec silencieux sans trace).
+--     RLS active, AUCUNE policy : ni lu ni écrit par un client.
+create table if not exists public.avis_parent_partenaires (
+  id          uuid primary key default gen_random_uuid(),
+  athlete_id  uuid not null references public.athletes(id) on delete cascade,
+  statut      text not null default 'RESERVE'
+              check (statut in ('RESERVE', 'ENVOYE', 'ECHEC', 'ANNULE', 'SANS_SECRET')),
+  resend_id   text,
+  erreur      text,
+  cree_le     timestamptz not null default now(),
+  envoye_le   timestamptz
+);
+create index if not exists avis_parent_partenaires_athlete_idx
+  on public.avis_parent_partenaires (athlete_id, cree_le desc);
+alter table public.avis_parent_partenaires enable row level security;
+revoke all on table public.avis_parent_partenaires from anon, authenticated;
+comment on table public.avis_parent_partenaires is
+  'Avis au parent quand un 14-17 ans active lui-même sa visibilité partenaires (2026-10-02). Écrit par aviser_parent_partenaires(), mis à jour par send-avis-parent-partenaires. Aucune policy.';
+
+--     Le trigger. Conditions, toutes requises :
+--       · opt_in passe à vrai (INSERT à vrai, ou UPDATE faux → vrai) ;
+--       · PAS par le parent (partner_visibility_parental_consent n'est pas
+--         vrai : set_child_consent et le lien parent le posent à vrai) ;
+--       · 14 à 17 ans révolus ;
+--       · un courriel parent, non désabonné ;
+--       · aucun avis dans les 24 dernières heures pour cette fiche (un
+--         jeune qui bascule l'interrupteur dix fois n'envoie pas dix courriels).
+--     Ne bloque JAMAIS le geste de l'athlète : toute erreur devient un warning.
+--     pg_net ne transporte que l'avis_id.
+create or replace function public.aviser_parent_partenaires()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public', 'pg_temp'
+set row_security to 'off'
+as $$
+declare
+  v_age    int;
+  v_avis   uuid;
+  v_secret text;
+  v_url    text := 'https://nrloizyemulbhujrqhgx.supabase.co/functions/v1/send-avis-parent-partenaires';
+begin
+  if not coalesce(NEW.partner_visibility_opt_in, false) then return null; end if;
+  if TG_OP = 'UPDATE' and coalesce(OLD.partner_visibility_opt_in, false) then return null; end if;
+  if coalesce(NEW.partner_visibility_parental_consent, false) then return null; end if;
+  if NEW.date_naissance is null then return null; end if;
+  v_age := extract(year from age(NEW.date_naissance))::int;
+  if v_age < 14 or v_age > 17 then return null; end if;
+  if nullif(btrim(NEW.parent_email), '') is null then return null; end if;
+
+  begin
+    if exists (select 1 from public.parent_courriel_desabonnements
+                where courriel_sha256 = public.courriel_sha256(NEW.parent_email)) then
+      return null;
+    end if;
+    if exists (select 1 from public.avis_parent_partenaires
+                where athlete_id = NEW.id and cree_le > now() - interval '24 hours') then
+      return null;
+    end if;
+
+    insert into public.avis_parent_partenaires (athlete_id) values (NEW.id) returning id into v_avis;
+
+    select decrypted_secret into v_secret
+      from vault.decrypted_secrets where name = 'PARENT_NOTICE_SECRET' limit 1;
+    if v_secret is null then
+      update public.avis_parent_partenaires set statut = 'SANS_SECRET' where id = v_avis;
+      raise warning 'aviser_parent_partenaires: PARENT_NOTICE_SECRET absent du Vault (avis %)', v_avis;
+      return null;
+    end if;
+
+    perform net.http_post(
+      url     := v_url,
+      headers := jsonb_build_object('Content-Type', 'application/json',
+                                    'x-parent-notice-secret', v_secret),
+      body    := jsonb_build_object('avis_id', v_avis)
+    );
+  exception when others then
+    raise warning 'aviser_parent_partenaires a échoué pour athlete %: %', NEW.id, SQLERRM;
+  end;
+  return null;
+end;
+$$;
+
+revoke all on function public.aviser_parent_partenaires() from public, anon, authenticated, service_role;
+
+drop trigger if exists trg_aviser_parent_partenaires on public.athletes;
+create trigger trg_aviser_parent_partenaires
+  after insert or update of partner_visibility_opt_in on public.athletes
+  for each row execute function public.aviser_parent_partenaires();
+
 -- 4. Gates d'ACL — comparaison COMPLÈTE, jamais par inclusion.
 do $$
 declare
@@ -244,7 +347,9 @@ begin
       ('public.is_partner_eligible_athlete(uuid)',
        array['PUBLIC','anon','authenticated','postgres','service_role']),
       ('public.emit_five_star_on_eligibility_flip()',
-       array['PUBLIC','anon','authenticated','postgres','service_role'])
+       array['PUBLIC','anon','authenticated','postgres','service_role']),
+      ('public.aviser_parent_partenaires()',
+       array['postgres'])
     ) as t(f, veut)
   loop
     select array_agg(t.g order by t.g) into vus
@@ -257,7 +362,7 @@ begin
       raise exception 'NEXUS: ACL de % = %, attendu %', c.f, vus, c.veut;
     end if;
   end loop;
-  raise notice 'NEXUS: ACL exactes sur les trois fonctions';
+  raise notice 'NEXUS: ACL exactes sur les quatre fonctions';
 end $$;
 
 -- 5. Sécurité inchangée : DEFINER sur les trois, search_path posé.
@@ -271,5 +376,25 @@ begin
      and prosecdef and proconfig is not null;
   if v_n <> 3 then
     raise exception 'NEXUS: attendu 3 fonctions SECURITY DEFINER avec search_path, vu %', v_n;
+  end if;
+end $$;
+
+-- 6. Le journal des avis est fermé aux clients : RLS active, zéro policy,
+--    aucun privilège pour anon / authenticated ; le trigger est en place.
+do $$
+begin
+  if not (select relrowsecurity from pg_class where oid = 'public.avis_parent_partenaires'::regclass) then
+    raise exception 'NEXUS: avis_parent_partenaires sans RLS';
+  end if;
+  if exists (select 1 from pg_policy where polrelid = 'public.avis_parent_partenaires'::regclass) then
+    raise exception 'NEXUS: avis_parent_partenaires porte une policy';
+  end if;
+  if has_table_privilege('authenticated', 'public.avis_parent_partenaires', 'SELECT')
+     or has_table_privilege('anon', 'public.avis_parent_partenaires', 'SELECT') then
+    raise exception 'NEXUS: avis_parent_partenaires lisible par anon/authenticated';
+  end if;
+  if not exists (select 1 from pg_trigger where tgname = 'trg_aviser_parent_partenaires'
+                  and tgrelid = 'public.athletes'::regclass and tgenabled = 'O') then
+    raise exception 'NEXUS: trg_aviser_parent_partenaires absent ou désactivé';
   end if;
 end $$;

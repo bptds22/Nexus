@@ -165,12 +165,10 @@ export const RECRUITER_TIERS: TierConfig[] = [
     name: "Gratuit",
     monthly: { amount: 0, display: "0 $" },
     features: [
-      "10 résultats par recherche",
       "Étoiles, cote globale, badge vérifié",
       "École, sport, promotion, moyenne",
     ],
     freeBlocked: [
-      "Filtres avancés",
       "Identité de l'athlète (nom, photo, jersey)",
       "Messagerie coach",
       "Pipeline de recrutement",
@@ -183,8 +181,6 @@ export const RECRUITER_TIERS: TierConfig[] = [
     annual: { amount: 159, display: "159 $" },
     accentDot: ACCENT_PRO,
     features: [
-      "Filtres avancés (taille, poids, cote globale)",
-      "Résultats de recherche illimités",
       "Nom, photo, numéro de jersey révélés",
       "Coordonnées du coach (email, tel)",
       "Messagerie coach (10/mois) + templates",

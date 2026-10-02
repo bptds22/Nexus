@@ -16,6 +16,7 @@ import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 const ATHLETE_SELECT = `
   id,
   user_id,
+  ecole_non_listee,
   first_name,
   last_name,
   date_naissance,
@@ -391,10 +392,18 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     //   teamName:   civil team name when present
     //   leagueName: "Ligue Civile" label when civil but no team
     //   isCivil:    discriminator the view layer branches on
-    isCivil: !raw.school_id || schoolObj?.type === "LIGUE_CIVILE",
-    schoolName: (!raw.school_id || schoolObj?.type === "LIGUE_CIVILE") ? "" : (schoolObj?.name || ""),
+    //
+    // « Mon école n'est pas listée » (1.4.4) : PAS de school_id, mais l'athlète
+    // est scolaire — il a écrit son école. Le traiter en civil affichait
+    // « LIGUE CIVILE » sur sa carte (WOW de fin d'onboarding compris). Son
+    // texte n'est pas vérifié : la carte dit « École à confirmer », jamais
+    // le texte libre lui-même.
+    isCivil: schoolObj?.type === "LIGUE_CIVILE" || (!raw.school_id && !raw.ecole_non_listee),
+    schoolName: (!raw.school_id && raw.ecole_non_listee)
+      ? "École à confirmer"
+      : (!raw.school_id || schoolObj?.type === "LIGUE_CIVILE") ? "" : (schoolObj?.name || ""),
     teamName: (() => {
-      const civil = !raw.school_id || schoolObj?.type === "LIGUE_CIVILE";
+      const civil = schoolObj?.type === "LIGUE_CIVILE" || (!raw.school_id && !raw.ecole_non_listee);
       if (!civil) return undefined;
       const taRel = (raw as Record<string, unknown>).team_athletes;
       const ta = (Array.isArray(taRel) ? taRel[0] : taRel) as { teams?: unknown } | null;
@@ -403,7 +412,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
       return team?.name;
     })(),
     leagueName: (() => {
-      const civil = !raw.school_id || schoolObj?.type === "LIGUE_CIVILE";
+      const civil = schoolObj?.type === "LIGUE_CIVILE" || (!raw.school_id && !raw.ecole_non_listee);
       if (!civil) return undefined;
       const taRel = (raw as Record<string, unknown>).team_athletes;
       const ta = (Array.isArray(taRel) ? taRel[0] : taRel) as { teams?: unknown } | null;

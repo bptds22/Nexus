@@ -2091,7 +2091,6 @@ export const dictionaries: Record<Lang, Dictionary> = {
             { kind: "item", label: "Full profiles + overall rating", included: true },
             { kind: "item", label: "Your CÉGEP page: a customizable page to showcase your program to athletes", included: true },
             { kind: "item", label: "Your team page: one page per team, visible to every athlete", included: true },
-            { kind: "item", label: "Advanced filters", included: false },
             { kind: "item", label: "Athlete identity (name, photo, number)", included: false },
             { kind: "item", label: "Videos and academic background", included: false },
             { kind: "item", label: "Messaging", included: false },
@@ -2105,8 +2104,6 @@ export const dictionaries: Record<Lang, Dictionary> = {
           ctaLabel: "Upgrade to Pro →",
           features: [
             { kind: "section", label: "Search and profiles" },
-            { kind: "item", label: "Advanced filters (height, weight, overall rating)", included: true },
-            { kind: "item", label: "Unlimited search results", included: true },
             { kind: "item", label: "Name, photo and jersey number revealed", included: true },
             { kind: "item", label: "Highlight videos", included: true },
             { kind: "item", label: "Full academic background", included: true },

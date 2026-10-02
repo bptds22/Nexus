@@ -111,7 +111,6 @@ export const TIER_COPY_FR: Record<string, TierCopy> = {
       { kind: "item", label: "Profils complets + cote globale", included: true },
       { kind: "item", label: "Votre page CÉGEP : une page personnalisable pour présenter votre programme aux athlètes", included: true },
       { kind: "item", label: "Votre page d'équipe : une page par équipe, visible de tous les athlètes", included: true },
-      { kind: "item", label: "Filtres avancés", included: false },
       { kind: "item", label: "Identité de l'athlète (nom, photo, numéro)", included: false },
       { kind: "item", label: "Vidéos et parcours académique", included: false },
       { kind: "item", label: "Messagerie", included: false },
@@ -125,8 +124,6 @@ export const TIER_COPY_FR: Record<string, TierCopy> = {
     ctaLabel: "Passer à Pro →",
     features: [
       { kind: "section", label: "Recherche et profils" },
-      { kind: "item", label: "Filtres avancés (taille, poids, cote globale)", included: true },
-      { kind: "item", label: "Résultats de recherche illimités", included: true },
       { kind: "item", label: "Nom, photo et numéro de chandail révélés", included: true },
       { kind: "item", label: "Vidéos faits saillants", included: true },
       { kind: "item", label: "Parcours académique complet", included: true },

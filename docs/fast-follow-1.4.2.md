@@ -1969,7 +1969,7 @@ Décision BP 2026-10-02 : tout entre dans la 1.4.4 ; paquet A d'abord.
   Inscription web / mobile / `/consentements` : la case de l'athlète
   (« J'autorise… ») remplace la case parentale de l'écran parents. Paramètres
   web et mobile : interrupteur ouvert dès 14 ans.
-  ⚠ **À trancher par BP** : `/confidentialite` (contenu verbatim,
+  ✅ Tranché le 2026-10-02 (politique 2026-10-v1, ci-dessous). Était : `/confidentialite` (contenu verbatim,
   `content/legal/confidentialite.ts`) dit pour les 14-17 « L'athlète ET le
   parent doivent consentir ». Règle générale du tableau, pas la §7.5 — mais un
   lecteur peut y voir une contradiction avec le consentement seul aux
@@ -1987,5 +1987,21 @@ Décision BP 2026-10-02 : tout entre dans la 1.4.4 ; paquet A d'abord.
   étaient filtrées et invisibles. L'onglet se place maintenant sur la première
   étape qui en contient. Même passe : `?athlete=` rouvrait la feuille à chaque
   rechargement des cartes.
+- **Avis au parent** (complément BP du 2026-10-02) : quand un 14-17 ans active
+  lui-même sa visibilité, le trigger `trg_aviser_parent_partenaires` (même
+  migration) écrit `avis_parent_partenaires` et appelle
+  `send-avis-parent-partenaires` (secret `PARENT_NOTICE_SECRET`, LCAP parent).
+  Courriel « [Prénom] a autorisé la visibilité partenaires médias » + lien vers
+  l'espace parent (compte lié → `/parent/consentements`, sinon `/parent/claim`).
+  Pas d'avis : accord du parent, 18+, parent désabonné, sans courriel, ou un
+  avis déjà parti dans les 24 h. Preuves `scripts/avis-parent-partenaires-preuves.sql`.
+- **Politique 2026-10-v1** : encadré mineurs, tableau 6.1 et §7.5 alignés sur la
+  règle (14+ consent seul, parent avisé, retrait possible).
+- **Carte « LIGUE CIVILE »** pour une école non listée : `mapToRecruiterView`
+  traite ce cas en scolaire, libellé « École à confirmer ».
+- **Promesses retirées** des forfaits : « 10 résultats par recherche »,
+  « Résultats de recherche illimités », « Filtres avancés » (gratuit : faux, ils
+  sont ouverts à tous ; Pro : « taille, poids, cote » n'existe pas) — mobile,
+  `/tarifs` FR/EN, `subscriptionTiers.ts` (inutilisé).
 - **Compte `nexus.testonboarding@nexussports.ca` supprimé** en prod (fiche,
   2 lignes de journal, 1 avis admin, compte auth).
