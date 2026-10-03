@@ -19,6 +19,8 @@
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import NxIcon from "@/components/ui/NxIcon";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import { plateformeDuLien, type Plateforme } from "@/lib/config/plateformesLien";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 
@@ -397,14 +399,26 @@ export function SectionDetailsAcademiques({ a, estPartenaire }: { a: AthleteProf
 }
 
 export function SectionMediasLiens({ a, verrouille, compact = false }: { a: AthleteProfileRecruiterView; compact?: boolean; verrouille: boolean }) {
-  const mediaLinks: { label: string; url?: string; iconName: string }[] = [
-    { label: "Faits saillants", url: a.highlightVideoUrl, iconName: "play" },
-    { label: "Match complet", url: a.fullGameUrl, iconName: "film" },
-    { label: "Entraînement", url: a.practiceVideoUrl, iconName: "dumbbell" },
-    { label: "Hudl", url: a.hudlUrl, iconName: "chart" },
-    { label: "YouTube", url: a.youtubeUrl, iconName: "monitor" },
-    { label: "Instagram", url: a.instagramUrl, iconName: "camera" },
-  ];
+  /* L'icône est celle de la PLATEFORME, lue sur le domaine du lien (retour
+     BP 2026-10-03) : un lien x.com montre l'icône X, facebook.com celle de
+     Facebook — comme Instagram. Les trois liens libres gardent leur titre
+     (« Faits saillants »…) ; les colonnes nommées prennent le nom de la
+     plateforme réellement visée. */
+  const mediaLinks = ([
+    { titre: "Faits saillants", url: a.highlightVideoUrl },
+    { titre: "Match complet", url: a.fullGameUrl },
+    { titre: "Entraînement", url: a.practiceVideoUrl },
+    { url: a.hudlUrl, colonne: "hudl_url" },
+    { url: a.youtubeUrl, colonne: "youtube_url" },
+    { url: a.instagramUrl, colonne: "instagram_url" },
+  ] as { titre?: string; url?: string; colonne?: string }[])
+    .map((m) => ({ ...m, p: plateformeDuLien(m.url, m.colonne) }))
+    .filter((m): m is typeof m & { url: string; p: Plateforme } => !!m.url && !!m.p)
+    .map((m) => ({
+      url: m.url, cle: m.p.cle,
+      label: m.titre ?? m.p.libelle,
+      detail: m.titre && m.p.cle !== "autre" ? m.p.libelle : null,
+    }));
   const hasMedia = mediaLinks.some((m) => m.url);
   return (
     <>
@@ -425,16 +439,19 @@ export function SectionMediasLiens({ a, verrouille, compact = false }: { a: Athl
           <h2 className={sectionLabel}>Médias & liens</h2>
           <div className={`${cardBase} p-5`}>
             <div className={compact ? "grid grid-cols-1 gap-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"}>
-              {mediaLinks.filter((m) => m.url).map((m) => (
+              {mediaLinks.map((m) => (
                 <a
-                  key={m.label}
+                  key={`${m.label}-${m.url}`}
                   href={m.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-lg border border-[#2D3748]/50 bg-white/[0.02] hover:border-[#E63946]/40 hover:bg-[#E63946]/5 transition-all group"
                 >
-                  <NxIcon name={m.iconName} size={18} className="text-[#6B7280] group-hover:text-[#E63946] transition-colors" />
-                  <span className="text-[14px] font-bold text-[#c8c8cc] group-hover:text-white transition-colors">{m.label}</span>
+                  <PlateformeIcone cle={m.cle} size={18} className="shrink-0" />
+                  <span className="min-w-0 truncate text-[14px] font-bold text-[#c8c8cc] group-hover:text-white transition-colors">
+                    {m.label}
+                    {m.detail && <span className="ml-1.5 font-normal text-[12px] text-[#6b7280]">{m.detail}</span>}
+                  </span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="ml-auto text-[#6b7280] group-hover:text-[#E63946] transition-colors">
                     <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
                   </svg>

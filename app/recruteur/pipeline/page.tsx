@@ -494,12 +494,12 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 presque chaque carte n'informe de rien et noie les deux
                 statuts qui, eux, disent quelque chose. L'absence de
                 pastille SIGNIFIE « ouvert ».
-                EN PROCESSUS et RECRUTÉ restent : ils disent qu'un AUTRE
-                recruteur travaille l'athlète — la seule information
-                concurrentielle que porte la carte.
+                EN PROCESSUS est retiré à son tour (retour BP 2026-10-03,
+                comme sur mobile) ; RECRUTÉ et RETIRÉ restent : ils disent
+                que l'athlète n'est plus disponible.
                 Le statut complet reste lisible dans le panneau athlète :
                 on allège la carte, on ne retire pas l'information. */}
-            {card.recruitment_status && card.recruitment_status !== "OUVERT" && (
+            {card.recruitment_status && card.recruitment_status !== "OUVERT" && card.recruitment_status !== "EN_PROCESSUS" && (
               <RecruitmentStatusBadge
                 status={card.recruitment_status as GlobalRecruitmentStatus}
                 committedSchoolName={card.committed_school_name || undefined}
@@ -2125,8 +2125,10 @@ function PipelinePageContent() {
   /* La PRÉSENCE d'une pilule se juge sur l'ensemble des cartes
      (isFacetOffered), son CONTENU sur le contexte courant (facetOptions).
      Mélanger les deux faisait disparaître des pilules en cours de filtrage. */
+  /* ÉCOLE — retirée de la barre web (retour BP 2026-10-03). Écartée ICI et
+     non dans FACETS : l'app lit encore FACETS pour sa feuille « Filtrer ». */
   const facetLists = useMemo(
-    () => FACETS.filter((f) => isFacetOffered(cards, f.key, filters))
+    () => FACETS.filter((f) => f.key !== "school" && isFacetOffered(cards, f.key, filters))
                 .map((f) => ({ def: f, options: facetOptions(cards, f.key, filters, extra) })),
     [cards, filters, extra],
   );

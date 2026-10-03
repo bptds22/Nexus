@@ -174,15 +174,18 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
           <p className="text-[13px] text-[#9CA3AF] mt-0.5">{a.heightWeight}</p>
         )}
 
-        {/* Recruitment Status */}
-        <div className="mt-1.5">
-          <RecruitmentStatusBadge
-            status={a.recruitmentStatus as GlobalRecruitmentStatus}
-            committedSchoolName={a.committedSchoolName ?? undefined}
-            openToOffers={a.openToOffers}
-            size="sm"
-          />
-        </div>
+        {/* Recruitment Status — sans « EN PROCESSUS » (retour BP
+            2026-10-03, comme sur mobile). */}
+        {a.recruitmentStatus !== "EN_PROCESSUS" && (
+          <div className="mt-1.5">
+            <RecruitmentStatusBadge
+              status={a.recruitmentStatus as GlobalRecruitmentStatus}
+              committedSchoolName={a.committedSchoolName ?? undefined}
+              openToOffers={a.openToOffers}
+              size="sm"
+            />
+          </div>
+        )}
 
         {/* Badges */}
         {a.badges.length > 0 && (
@@ -681,7 +684,7 @@ function RechercheContent() {
           <p className="text-[14px] text-[#9CA3AF] mt-1">Explore les profils d&apos;athlètes à travers le Québec</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[13px] font-bold text-[#6b7280]">{filtered.length} athlète{filtered.length !== 1 ? "s" : ""} trouvé{filtered.length !== 1 ? "s" : ""}</span>
+          {/* Plus de compte d'athlètes affiché (retour BP 2026-10-03). */}
           <div className="flex items-center bg-[#13151a] border border-[#2a2d36] rounded-lg overflow-hidden">
             <button
               type="button"
