@@ -179,13 +179,10 @@ function useClientNow(): number {
    existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
    NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
    qu'on ait à ouvrir quoi que ce soit. */
-function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onProspectTap }: {
+function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
   totalCount: number;
   nActiveFilters: number;
   onFilterTap: () => void;
-  /** « + Prospect » (recette 1.4.4) : absent quand la carte ne naîtrait pas
-   *  dans l'unité affichée, ou pour un compte gratuit. */
-  onProspectTap?: () => void;
 }) {
   return (
     <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
@@ -245,20 +242,6 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onProspectTap
             </span>
           )}
         </button>
-        {/* « + Prospect » : petit, contour, SOUS « Filtrer » (retour BP
-            2026-10-02 — à côté, il repoussait le titre sur deux lignes). Pas
-            de bouton flottant. */}
-        {onProspectTap && (
-          <button
-            type="button"
-            data-testid="ajouter-prospect"
-            onClick={() => { triggerHaptic("Light"); onProspectTap(); }}
-            aria-label="Ajouter un prospect"
-            className="h-9 px-3 rounded-full flex items-center justify-center border border-white/15 text-[13px] font-bold text-white active:bg-white/5"
-          >
-            + Prospect
-          </button>
-        )}
         </div>
       </div>
     </div>
@@ -1694,6 +1677,8 @@ export function RecruteurPipelineMobile() {
   const [creerProspect, setCreerProspect] = useState(false);
   const monSportId = currentUser?.profile.sport_id ?? null;
   const peutCreerProspect = modeUnite && !!monSportId && !(adminCegep && filtreSport.choix !== monSportId);
+  // Portail du « + » : document.body n'existe pas au prérendu de l'export statique.
+  const montePortail = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   // Mutation pour le swipe
   const updateStage = useUpdatePipelineStage();
@@ -1953,7 +1938,6 @@ export function RecruteurPipelineMobile() {
         totalCount={cards.length}
         nActiveFilters={activeFilterCount(filters, { quick, school: ecole })}
         onFilterTap={handleMenuTap}
-        onProspectTap={peutCreerProspect ? () => setCreerProspect(true) : undefined}
       />
 
       {/* Free demo banner */}
@@ -2056,6 +2040,28 @@ export function RecruteurPipelineMobile() {
         moi={moi}
         lectureSeule={estAutreUnite(selectedCard)}
       />
+
+      {/* « + » rond en bas à droite — LE MÊME que celui des coachs
+          (CoachAthletesMobile) : taille, rouge, ombre, hauteur au-dessus de la
+          barre d'onglets (retour BP 2026-10-03). Porté dans document.body :
+          sinon `position: fixed` est piégé par le `transform` d'AnimatedRoute.
+          Masqué quand une feuille est ouverte, pour ne pas la recouvrir. */}
+      {peutCreerProspect && montePortail && !creerProspect && !menuOpen && !sheetOpen && createPortal(
+        <button
+          type="button"
+          data-testid="ajouter-prospect"
+          aria-label="Ajouter un prospect"
+          onClick={() => { triggerHaptic("Medium"); setCreerProspect(true); }}
+          className="fixed right-4 z-50 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(230,57,70,0.4)] active:scale-95 active:bg-[#D42B22] transition-transform"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px + 16px)" }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+        </button>,
+        document.body,
+      )}
 
       {creerProspect && monSportId && (
         <CreerProspectMobile sportId={monSportId} onClose={() => setCreerProspect(false)} />

@@ -120,11 +120,13 @@ function statusPillFromStatus(status: string): StatusPill {
   switch (status) {
     case "OUVERT":
       return { label: "OUVERT", dot: "bg-[#22C55E]", text: "#22C55E", animated: false };
+    /* EN PROCESSUS ne s'affiche plus (retour BP 2026-10-03) — ni sur le
+       kanban, ni ici. */
     case "EN_PROCESSUS":
     case "VISITE_PLANIFIEE":
     case "EN_DISCUSSION":
     case "CONTACTE":
-      return { label: "EN PROCESSUS", dot: "bg-[#F59E0B]", text: "#F59E0B", animated: true };
+      return null;
     case "RECRUTE":
     case "ENGAGE":
     case "LETTRE_SIGNEE":
@@ -1435,13 +1437,13 @@ export function RecruteurRechercheMobile() {
         showViewToggle
       />
 
-      {/* Iter 2b — count seul, right-aligned. Le segmented view-toggle a
-          migré dans MobileSearchBar (bouton unique au top). */}
-      <div className="px-4 py-2 flex items-center justify-end">
-        <span className="text-[12px] font-bold text-[#6B7280]">
-          {loading ? "Chargement…" : `${filtered.length} athlète${filtered.length !== 1 ? "s" : ""}`}
-        </span>
-      </div>
+      {/* Plus de compte d'athlètes affiché (retour BP 2026-10-03) — le
+          chargement garde sa ligne. */}
+      {loading && (
+        <div className="px-4 py-2 flex items-center justify-end">
+          <span className="text-[12px] font-bold text-[#6B7280]">Chargement…</span>
+        </div>
+      )}
 
       {/* Content with crossfade between grid/list */}
       <AnimatePresence mode="wait">

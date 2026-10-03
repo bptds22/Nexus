@@ -77,6 +77,22 @@ export const PLATEFORME_PAR_COLONNE: Record<string, Plateforme> = {
   instagram_url: { cle: "instagram", libelle: "Instagram" },
 };
 
+/** La plateforme d'un lien de la fiche, PAR SON DOMAINE d'abord (retour BP
+ *  2026-10-03) : un lien x.com collé dans le champ Instagram est un lien X,
+ *  et doit en porter l'icône. La colonne ne sert que de REPLI, quand le
+ *  domaine ne dit rien (saisie qui n'est pas une URL : « nicho_hebert »
+ *  dans le champ Instagram reste Instagram). */
+export function plateformeDuLien(
+  url: string | null | undefined,
+  colonne?: keyof typeof PLATEFORME_PAR_COLONNE,
+): Plateforme | null {
+  if (!url || !url.trim()) return null;
+  const lue = plateformeDeUrl(url);
+  if (lue && lue.cle !== "autre") return lue;
+  if (colonne && PLATEFORME_PAR_COLONNE[colonne]) return PLATEFORME_PAR_COLONNE[colonne];
+  return lue ?? { cle: "autre", libelle: "Lien" };
+}
+
 /** Teinte de marque, pour l'icône uniquement. `autre` reste gris : une
  *  couleur inventée sur un domaine inconnu serait un faux signal. */
 export const TEINTE_PLATEFORME: Record<ClePlateforme, string> = {

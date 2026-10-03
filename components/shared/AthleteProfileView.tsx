@@ -29,6 +29,8 @@ import VideoEmbed from "@/components/ui/VideoEmbed";
 import { aUneCote } from "@/lib/evaluations/presence";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import { plateformeDuLien } from "@/lib/config/plateformesLien";
 
 /* ── constants ─────────────────────────────────────────────────── */
 
@@ -568,17 +570,18 @@ export default function AthleteProfileView({
               <h2 className={sectionLabel}>Médias &amp; liens</h2>
               <div className={`${cardBase} p-5`}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Icône de la plateforme lue sur le domaine (retour BP 2026-10-03). */}
                   {[
-                    { url: a.highlightVideoUrl, label: "Faits saillants", color: "#E63946" },
-                    { url: a.hudlUrl, label: "Hudl", color: "#F59E0B" },
-                    { url: a.youtubeUrl, label: "YouTube", color: "#EF4444" },
-                    { url: a.instagramUrl, label: "Instagram", color: "#E63946" },
-                    { url: a.fullGameUrl, label: "Match complet", color: "#6B7280" },
-                    { url: a.practiceVideoUrl, label: "Entraînement", color: "#6B7280" },
-                  ].filter(m => m.url).map((m) => (
-                    <a key={m.label} href={m.url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-[#111317] border border-white/5 hover:border-[#E63946]/30 transition-colors">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                      <span className="text-[13px] text-[#9CA3AF]">{m.label}</span>
+                    { url: a.highlightVideoUrl, label: "Faits saillants" },
+                    { url: a.hudlUrl, colonne: "hudl_url" },
+                    { url: a.youtubeUrl, colonne: "youtube_url" },
+                    { url: a.instagramUrl, colonne: "instagram_url" },
+                    { url: a.fullGameUrl, label: "Match complet" },
+                    { url: a.practiceVideoUrl, label: "Entraînement" },
+                  ].map((m) => ({ ...m, p: plateformeDuLien(m.url, m.colonne) })).filter((m) => m.url && m.p).map((m) => (
+                    <a key={`${m.label ?? m.p!.libelle}-${m.url}`} href={m.url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-[#111317] border border-white/5 hover:border-[#E63946]/30 transition-colors">
+                      <PlateformeIcone cle={m.p!.cle} size={16} className="shrink-0" />
+                      <span className="text-[13px] text-[#9CA3AF]">{m.label ?? m.p!.libelle}</span>
                     </a>
                   ))}
                 </div>

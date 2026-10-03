@@ -495,12 +495,12 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 presque chaque carte n'informe de rien et noie les deux
                 statuts qui, eux, disent quelque chose. L'absence de
                 pastille SIGNIFIE « ouvert ».
-                EN PROCESSUS et RECRUTÉ restent : ils disent qu'un AUTRE
-                recruteur travaille l'athlète — la seule information
-                concurrentielle que porte la carte.
+                EN PROCESSUS est retiré à son tour (retour BP 2026-10-03,
+                comme sur mobile) ; RECRUTÉ et RETIRÉ restent : ils disent
+                que l'athlète n'est plus disponible.
                 Le statut complet reste lisible dans le panneau athlète :
                 on allège la carte, on ne retire pas l'information. */}
-            {card.recruitment_status && card.recruitment_status !== "OUVERT" && (
+            {card.recruitment_status && card.recruitment_status !== "OUVERT" && card.recruitment_status !== "EN_PROCESSUS" && (
               <RecruitmentStatusBadge
                 status={card.recruitment_status as GlobalRecruitmentStatus}
                 committedSchoolName={card.committed_school_name || undefined}

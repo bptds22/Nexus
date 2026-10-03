@@ -39,6 +39,7 @@ import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
 import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
 import { chercherDoublonsCarte, type DoublonCarte } from "@/lib/cartes/doublonsCarte";
+import { MENTION_INVITATION_NON_ENVOYEE } from "@/lib/cartes/invitationEtat";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 import { texteRenvoi, lienSms } from "@/lib/cartes/renvoiInvitation";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -238,7 +239,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
         });
         if (trouves.length > 0) { setAvertissements(trouves); return; }
       }
-      const { error } = await creerCarte(supabase, {
+      const { id: carteId, error } = await creerCarte(supabase, {
         prenom, nom, teamId: sansEquipe ? null : teamId, schoolId: etablissement.id,
         positionId: positionId || null,
         numero: numero || null,
@@ -257,7 +258,20 @@ export default function CreerProspectMobile({ sportId, onClose }: {
       void invaliderTableauBlanc(queryClient);
       const quiEst = `${prenom.trim()} ${nom.trim()}`;
       if (courrielLu) {
-        toast.success({ message: `Carte créée : ${quiEst}. Nexus envoie l'invitation à ${courrielLu}.` });
+        /* Le déclencheur de la base (le même que le web) peut ÉCARTER
+           l'invitation — adresse déjà invitée dans les 90 jours, compte
+           existant, désabonnement. Il a statué dans la transaction de
+           l'insertion : on relit la carte au lieu de promettre un envoi
+           (cas réel 2026-10-03). Mention neutre, sans la raison, comme la
+           fiche (invitationEtat). */
+        const { data: etat } = carteId
+          ? await supabase.from("cartes_prospect").select("invitation_etat").eq("id", carteId).maybeSingle()
+          : { data: null };
+        if (etat?.invitation_etat === "NON_ENVOYEE") {
+          toast.info({ message: `Carte créée : ${quiEst}. ${MENTION_INVITATION_NON_ENVOYEE}`, duration: 7000 });
+        } else {
+          toast.success({ message: `Carte créée : ${quiEst}. Nexus envoie l'invitation à ${courrielLu}.` });
+        }
         onClose();
       } else if (telephoneLu) {
         const corps = texteRenvoi({

@@ -72,7 +72,6 @@ export const FACETS: readonly FacetDef[] = [
   { key: "sport", label: "Sport", allLabel: "Tous les sports" },
   { key: "position", label: "Position", allLabel: "Toutes les positions" },
   { key: "graduation_year", label: "Promotion", allLabel: "Toutes les promotions" },
-  { key: "school", label: "École / ligue", allLabel: "Toutes les écoles" },
   { key: "region", label: "Région", allLabel: "Toutes les régions" },
 ] as const;
 
@@ -81,7 +80,10 @@ export const FACETS: readonly FacetDef[] = [
    la montre pas encore. Le filtrage et les compteurs, eux, parcourent
    TOUTES les facettes — une sélection Ligue filtre donc partout où elle
    est posée, et reste inerte (liste vide) là où personne ne la pose. */
-const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "league"];
+/* ÉCOLE — retirée de la barre web (retour BP 2026-10-03) : l'app cherche
+   l'école par mots (ExtraFilters.school), le web n'a plus de pilule. La clé
+   reste filtrable pour qui la poserait. */
+const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "school", "league"];
 
 /** Les seuls champs que le filtre lit. Tout est optionnel — voir l'en-tête. */
 export interface FilterablePipelineCard {

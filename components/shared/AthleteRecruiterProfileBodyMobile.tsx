@@ -17,7 +17,7 @@ import SegmentedTabs from "@/components/shared/SegmentedTabs";
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import RelanceFiche from "@/components/shared/RelanceFiche";
 
-import { plateformeDeUrl, type ClePlateforme } from "@/lib/config/plateformesLien";
+import { plateformeDeUrl, plateformeDuLien, type ClePlateforme } from "@/lib/config/plateformesLien";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -2012,11 +2012,17 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      URL LIBRES (faits saillants, match complet, entraînement) passent, elles,
      par plateformeDeUrl — l'URL dit la marque, et un domaine inconnu garde son
      nom d'hôte en libellé plutôt qu'un « Lien » qui n'apprend rien. */
-  const mediaLinks: { label: string; url?: string; cle: ClePlateforme }[] = [
-    { label: "Hudl", url: a.hudlUrl, cle: "hudl" },
-    { label: "YouTube", url: a.youtubeUrl, cle: "youtube" },
-    { label: "Instagram", url: a.instagramUrl, cle: "instagram" },
-  ];
+  /* Colonnes nommées : la plateforme se lit AUSSI sur le domaine (retour BP
+     2026-10-03) — un lien x.com dans le champ Instagram porte l'icône X ; la
+     colonne ne sert que de repli (plateformeDuLien). */
+  const mediaLinks: { label: string; url?: string; cle: ClePlateforme }[] = ([
+    { url: a.hudlUrl, colonne: "hudl_url" },
+    { url: a.youtubeUrl, colonne: "youtube_url" },
+    { url: a.instagramUrl, colonne: "instagram_url" },
+  ] as { url?: string; colonne: string }[]).flatMap((m) => {
+    const p = plateformeDuLien(m.url, m.colonne);
+    return p && m.url ? [{ label: p.libelle, url: m.url, cle: p.cle }] : [];
+  });
   const liensVideo = ([
     { titre: "Faits saillants", url: a.highlightVideoUrl },
     { titre: "Match complet", url: a.fullGameUrl },
@@ -2713,7 +2719,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                         </a>
                       ))}
                       {mediaLinks.filter((m) => m.url).map((m) => (
-                        <a key={m.label} href={m.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
+                        <a key={`${m.label}-${m.url}`} href={m.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
                           <PlateformeIcone cle={m.cle} size={18} />
                           <span className="flex-1 text-[14px] font-bold text-[#c8c8cc]">{m.label}</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-[#6b7280]">
