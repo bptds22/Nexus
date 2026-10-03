@@ -22,6 +22,7 @@ import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanb
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade, type Grade } from "@/lib/config/grades";
 import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
+import { leagueOf } from "@/lib/config/team-taxonomy";
 
 /** Rétention (décision BP) : purge 12 mois après la dernière activité,
  *  avis à l'écran 30 jours avant. */
@@ -119,7 +120,7 @@ export interface LigneCarte {
   derniere_activite: string;
   created_at: string;
   school_id: string | null;
-  teams: { name: string | null; division: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
+  teams: { name: string | null; division: string | null; league: string | null; rseq_team_id: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
   /** L'établissement de la carte (rattachement direct, sans équipe). */
   etablissement: { name: string | null; region: string | null; type: string | null } | null;
   positions: { abreviation: string | null } | null;
@@ -130,7 +131,7 @@ const SELECT_CARTE = `
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, parent_nom, parent_courriel, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
   school_id,
-  teams!team_id(name, division, schools!school_id(name, region, type)),
+  teams!team_id(name, division, league, rseq_team_id, schools!school_id(name, region, type)),
   etablissement:schools!school_id(name, region, type),
   positions!position_id(abreviation)
 `;
@@ -268,6 +269,10 @@ export function versKanban(
     suivi_par_noms: l.cree_par ? [contexte.nomAuteur(l.cree_par)] : [],
     unite_sport_id: l.unite_sport_id,
     division_equipe: l.teams?.division ?? null,
+    // Même règle que les dossiers (leagueOf) : équipe d'école sans ligue = RSEQ.
+    ligue: l.teams
+      ? leagueOf({ context: null, schoolType: null, teamDivision: l.teams.division, teamLeague: l.teams.league, teamIsRseq: !!l.teams.rseq_team_id, hasTeam: true, teamSchoolType: l.teams.schools?.type ?? null }) ?? ""
+      : "",
     carte: {
       prenom: l.prenom,
       nom: l.nom,

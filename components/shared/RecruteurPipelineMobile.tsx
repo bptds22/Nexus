@@ -18,7 +18,7 @@
    Référence design : docs/mobile-design-system.md.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,6 +44,7 @@ import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import {
   sortPipelineCards,
   DEFAULT_PIPELINE_SORT,
+  PIPELINE_SORT_OPTIONS,
   type PipelineSortMode,
 } from "@/lib/pipeline/sortPipelineCards";
 import {
@@ -51,7 +52,6 @@ import {
   facetOptions,
   activeFilterCount,
   EMPTY_FILTERS,
-  QUICK_FILTERS,
   quickDepuisFiltreUrl,
   FILTRE_PIPELINE_URL,
   type PipelineFilters,
@@ -209,27 +209,14 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onProspectTap
             geste le plus fréquent ; l'étiquette d'accessibilité dit tout ce
             qu'on trouve derrière, pour qui ne voit pas l'écran. La pastille ne
             compte que les filtres : seule des quatre à avoir un état. */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-        {/* « + Prospect » : petit, contour, à côté de « Filtrer » — pas de
-            bouton flottant (décision BP 2026-10-02). */}
-        {onProspectTap && (
-          <button
-            type="button"
-            data-testid="ajouter-prospect"
-            onClick={() => { triggerHaptic("Light"); onProspectTap(); }}
-            aria-label="Ajouter un prospect"
-            className="h-11 px-3 rounded-full flex items-center border border-white/15 text-[13px] font-bold text-white active:bg-white/5"
-          >
-            + Prospect
-          </button>
-        )}
+        <div className="flex flex-col items-stretch gap-2 flex-shrink-0">
         <button
           type="button"
           onClick={() => { triggerHaptic("Light"); onFilterTap(); }}
           aria-label={
             nActiveFilters > 0
-              ? `Filtrer — statistiques, tri, filtres, mode focus — ${nActiveFilters} filtre${nActiveFilters > 1 ? "s" : ""} actif${nActiveFilters > 1 ? "s" : ""}`
-              : "Filtrer — statistiques, tri, filtres, mode focus"
+              ? `Filtrer et trier — ${nActiveFilters} filtre${nActiveFilters > 1 ? "s" : ""} actif${nActiveFilters > 1 ? "s" : ""}`
+              : "Filtrer et trier"
           }
           aria-haspopup="dialog"
           className="relative h-11 pl-3.5 pr-4 rounded-full flex items-center gap-1.5 bg-[#E63946] active:bg-[#D42B22] shadow-[0_0_16px_rgba(230,57,70,0.28)] flex-shrink-0"
@@ -258,6 +245,20 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onProspectTap
             </span>
           )}
         </button>
+        {/* « + Prospect » : petit, contour, SOUS « Filtrer » (retour BP
+            2026-10-02 — à côté, il repoussait le titre sur deux lignes). Pas
+            de bouton flottant. */}
+        {onProspectTap && (
+          <button
+            type="button"
+            data-testid="ajouter-prospect"
+            onClick={() => { triggerHaptic("Light"); onProspectTap(); }}
+            aria-label="Ajouter un prospect"
+            className="h-9 px-3 rounded-full flex items-center justify-center border border-white/15 text-[13px] font-bold text-white active:bg-white/5"
+          >
+            + Prospect
+          </button>
+        )}
         </div>
       </div>
     </div>
@@ -640,18 +641,28 @@ function SwipeableCard({
 
 /* ── FiltresSheet (recette 1.4.4, BP 2026-10-02) ─────────────────
    LA porte unique des filtres : le bouton rouge « Filtrer » de l'en-tête.
-   Dans l'ordre décidé par BP : Sport (directeurs seulement), les 5
-   interrupteurs rapides, Position et Promotion en listes déroulantes, École
-   en champ de recherche, « Réinitialiser » et « Voir N athlètes ». Plus
-   aucune liste de pastilles par valeur.
-   Les statistiques, le tri et le mode focus quittent la feuille ; le tri
-   « relance la plus proche » suit toujours ?filtre=relances.
-   Un champ texte : géométrie clavier obligatoire (remonter ET plafonner). */
+   Contenu décidé par BP, tout en listes déroulantes : Unité (directeur
+   seulement — le choix de sport du cégep), Sport de l'athlète, Ligue,
+   Région, Position, Promotion ; École en champ de recherche ; « Trier
+   par » ; « Réinitialiser » et « Voir N athlètes ». Pas d'interrupteurs
+   rapides sur mobile, plus aucune liste de pastilles par valeur.
+   Les chips venues d'un lien du tableau de bord (?filtre=relances) filtrent
+   toujours : la pastille du bouton les compte, Réinitialiser les retire.
+
+   CHAMP ÉCOLE ET CLAVIER (bug de recette, reproduit sur l'émulateur) : le
+   champ est en bas de la zone qui défile. Le clavier ouvert, la feuille
+   remonte et RACCOURCIT (useSheetKeyboardGeometry) — mais rien ne ramenait
+   le champ dans la partie visible : il passait sous le pied de la feuille
+   et on tapait à l'aveugle. Le navigateur ne le fait pas pour nous : sous
+   KeyboardResize.None, la WebView ignore le clavier. On ramène donc le
+   champ à vue nous-mêmes, au focus ET quand la hauteur du clavier change,
+   après la transition de 250 ms. */
 function FiltresSheet({
   open, onClose,
   filters, setFilters,
-  quick, setQuick,
+  setQuick,
   ecole, setEcole,
+  sortBy, setSortBy,
   cards, nbResultats,
   filtreSport,
 }: {
@@ -659,10 +670,11 @@ function FiltresSheet({
   onClose: () => void;
   filters: PipelineFilters;
   setFilters: (updater: (f: PipelineFilters) => PipelineFilters) => void;
-  quick: QuickKey[];
   setQuick: (updater: (q: QuickKey[]) => QuickKey[]) => void;
   ecole: string;
   setEcole: (v: string) => void;
+  sortBy: PipelineSortMode;
+  setSortBy: (v: PipelineSortMode) => void;
   cards: PipelineKanbanCard[];
   /** Athlètes que les filtres laissent passer, toutes étapes confondues. */
   nbResultats: number;
@@ -673,37 +685,62 @@ function FiltresSheet({
   const kbdStyle = useSheetKeyboardGeometry();
   // Monté côté client seulement (export statique) — sans setState dans un effet.
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const champEcole = useRef<HTMLInputElement>(null);
+  const ramenerChamp = useCallback(() => {
+    window.setTimeout(() => {
+      const el = champEcole.current;
+      if (el && document.activeElement === el) el.scrollIntoView({ block: "nearest" });
+    }, 300);
+  }, []);
+  const hauteurClavier = kbdStyle.bottom;
+  useEffect(() => { ramenerChamp(); }, [hauteurClavier, ramenerChamp]);
 
   /* Les options d'une liste se comptent sur les cartes filtrées par TOUT le
-     reste (facetOptions exclut la facette comptée) : une position proposée
+     reste (facetOptions exclut la facette comptée) : une valeur proposée
      rend au moins un athlète. */
-  const positions = useMemo(
-    () => facetOptions(cards, "position", filters, { quick, school: ecole }),
-    [cards, filters, quick, ecole],
-  );
-  const promotions = useMemo(
-    () => facetOptions(cards, "graduation_year", filters, { quick, school: ecole }),
-    [cards, filters, quick, ecole],
-  );
+  const options = useMemo(() => {
+    const extra = { school: ecole };
+    return {
+      sport: facetOptions(cards, "sport", filters, extra),
+      league: facetOptions(cards, "league", filters, extra),
+      region: facetOptions(cards, "region", filters, extra),
+      position: facetOptions(cards, "position", filters, extra),
+      graduation_year: facetOptions(cards, "graduation_year", filters, extra),
+    };
+  }, [cards, filters, ecole]);
 
   if (!mounted) return null;
 
   const sportsDirecteur = filtreSport
     ? filtreSport.options.filter((o) => o.valeur !== SANS_SPORT && o.valeur !== TOUS).length
     : 0;
-  const montrerSport = !!filtreSport && filtreSport.pret && sportsDirecteur >= 2;
-  const choisir = (cle: "position" | "graduation_year", v: string) =>
-    setFilters((f) => ({ ...f, [cle]: v ? [v] : [] }));
+  const montrerUnite = !!filtreSport && filtreSport.pret && sportsDirecteur >= 2;
   const reinitialiser = () => {
     triggerHaptic("Light");
     setFilters(() => EMPTY_FILTERS);
     setQuick(() => []);
     setEcole("");
+    setSortBy(DEFAULT_PIPELINE_SORT);
     if (filtreSport?.monSportId) filtreSport.setChoix(filtreSport.monSportId);
     toast.info({ message: "Filtres réinitialisés" });
   };
   const titre = "text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2";
   const liste = "w-full min-h-[46px] bg-[#1A1D24] border border-white/10 rounded-xl px-3 text-[15px] text-white outline-none focus:border-[#E63946] [&>option]:bg-[#13151a]";
+  const menu = (cle: "sport" | "league" | "region" | "position" | "graduation_year", libelle: string, tous: string) => (
+    <div className="min-w-0">
+      <label htmlFor={`filtre-${cle}`} className={`${titre} block`}>{libelle}</label>
+      <select
+        id={`filtre-${cle}`}
+        data-testid={`filtre-${cle}`}
+        className={liste}
+        value={filters[cle][0] ?? ""}
+        onChange={(e) => { const v = e.target.value; setFilters((f) => ({ ...f, [cle]: v ? [v] : [] })); }}
+      >
+        <option value="">{tous}</option>
+        {options[cle].map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+      </select>
+    </div>
+  );
 
   return createPortal(
     <AnimatePresence>
@@ -731,74 +768,51 @@ function FiltresSheet({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-5" style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}>
-              {montrerSport && filtreSport && (
+            <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-4" style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}>
+              {montrerUnite && filtreSport && (
                 <section>
-                  <h3 className={titre}>Sport</h3>
+                  <h3 className={titre}>Unité</h3>
                   <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport className="w-full min-h-[46px]" />
                 </section>
               )}
 
-              <section>
-                <h3 className={titre}>Filtres rapides</h3>
-                <div className="bg-[#1A1D24] rounded-2xl divide-y divide-white/[0.06]">
-                  {QUICK_FILTERS.map((q) => {
-                    const actif = quick.includes(q.key);
-                    return (
-                      <button
-                        key={q.key}
-                        type="button"
-                        role="switch"
-                        aria-checked={actif}
-                        data-testid={`filtre-choix-${q.key}`}
-                        onClick={() => {
-                          triggerHaptic("Light");
-                          setQuick((cur) => (cur.includes(q.key) ? cur.filter((k) => k !== q.key) : [...cur, q.key]));
-                        }}
-                        className="w-full min-h-[50px] px-4 flex items-center justify-between text-left active:bg-white/[0.03]"
-                      >
-                        <span className={`text-[15px] ${actif ? "text-white font-semibold" : "text-[#e0e0e0]"}`}>{q.label}</span>
-                        <span className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${actif ? "bg-[#E63946]" : "bg-white/10"}`}>
-                          <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white" style={{ left: actif ? "22px" : "2px", transition: "left 200ms ease" }} />
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
               <section className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="filtre-position" className={`${titre} block`}>Position</label>
-                  <select id="filtre-position" data-testid="filtre-position" className={liste}
-                    value={filters.position[0] ?? ""} onChange={(e) => choisir("position", e.target.value)}>
-                    <option value="">Toutes</option>
-                    {positions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="filtre-promotion" className={`${titre} block`}>Promotion</label>
-                  <select id="filtre-promotion" data-testid="filtre-promotion" className={liste}
-                    value={filters.graduation_year[0] ?? ""} onChange={(e) => choisir("graduation_year", e.target.value)}>
-                    <option value="">Toutes</option>
-                    {promotions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
-                  </select>
-                </div>
+                {menu("sport", "Sport", "Tous")}
+                {menu("league", "Ligue", "Toutes")}
+              </section>
+              <section>{menu("region", "Région", "Toutes les régions")}</section>
+              <section className="grid grid-cols-2 gap-3">
+                {menu("position", "Position", "Toutes")}
+                {menu("graduation_year", "Promotion", "Toutes")}
               </section>
 
               <section>
                 <label htmlFor="filtre-ecole" className={`${titre} block`}>École</label>
                 <input
+                  ref={champEcole}
                   id="filtre-ecole"
                   data-testid="filtre-ecole"
                   type="search"
                   value={ecole}
                   onChange={(e) => setEcole(e.target.value)}
+                  onFocus={ramenerChamp}
                   placeholder="Nom de l'école ou du club"
                   autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   enterKeyHint="search"
+                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                   className={liste}
                 />
+              </section>
+
+              <section>
+                <label htmlFor="filtre-tri" className={`${titre} block`}>Trier par</label>
+                <select id="filtre-tri" data-testid="filtre-tri" className={liste}
+                  value={sortBy} onChange={(e) => setSortBy(e.target.value as PipelineSortMode)}>
+                  {PIPELINE_SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </section>
             </div>
 
@@ -2051,8 +2065,9 @@ export function RecruteurPipelineMobile() {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         filters={filters} setFilters={setFilters}
-        quick={quick} setQuick={setQuick}
+        setQuick={setQuick}
         ecole={ecole} setEcole={setEcole}
+        sortBy={sortBy} setSortBy={setSortBy}
         cards={cards}
         nbResultats={cardsFiltrees.length}
         filtreSport={adminCegep ? filtreSport : null}

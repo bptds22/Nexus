@@ -88,6 +88,9 @@ export interface PipelineKanbanCard {
    *  `null` = pas d'équipe ou équipe sans division. Le champ `division`
    *  ci-dessus est un reliquat des fixtures (toujours « D1 ») : ne pas le lire. */
   division_equipe?: string | null;
+  /** Ligue de l'équipe (leagueOf : équipe d'école sans ligue = RSEQ).
+   *  "" = pas d'équipe ou ligue inconnue. Facette « Ligue » de l'app. */
+  ligue?: string;
 }
 
 export const KANBAN_COLUMNS: {
