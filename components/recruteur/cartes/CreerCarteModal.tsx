@@ -29,10 +29,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import {
-  creerCarte, cartesDoublons, carteAuCourriel, athleteAuCourriel,
-  memePersonneProbable, libelleEquipe, normaliserNom,
-} from "@/lib/cartes/carteProspect";
+import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
+import { chercherDoublonsCarte } from "@/lib/cartes/doublonsCarte";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 
 type Champ = "taille" | "poids" | "courriel" | "telephone" | "parentNom" | "parentCourriel" | "video";
@@ -189,59 +187,14 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     return Array.from({ length: 6 }, (_, i) => an + i);
   }, []);
 
+  // Même détection que l'app (lib/cartes/doublonsCarte, recette 1.4.4).
   const verifierDoublons = async (): Promise<{ texte: string; lien?: string }[]> => {
     const courrielLu = lireCourriel(courriel);
-    const adresse = courrielLu.ok ? courrielLu.valeur ?? "" : "";
     if (!etablissement) return [];
-    const supabase = createClient();
-    const trouves: { texte: string; lien?: string }[] = [];
-
-    // Même nom + même établissement, prénom compatible — cartes de l'unité.
-    const cartes = await cartesDoublons(supabase, { prenom, nom, sportId, schoolId: etablissement.id });
-    if (cartes.length > 0) {
-      const c = cartes[0];
-      trouves.push({ texte: `Ton unité suit déjà « ${c.prenom} ${c.nom} » (${etablissement.name}).` });
-    }
-
-    // … et athlètes Nexus : la recherche ne rend un nom que s'il est visible.
-    const { data } = await supabase.rpc("recruiter_search_athletes", { p_search: nom.trim(), p_limit: 50 });
-    const nexus = ((data ?? []) as { id: string; identity_visible: boolean; first_name: string | null; last_name: string | null; school_id: string | null }[])
-      .find((a) => a.identity_visible && a.school_id === etablissement.id
-        && memePersonneProbable(prenom, nom, a.first_name ?? "", a.last_name ?? ""));
-    if (nexus) {
-      trouves.push({
-        texte: `« ${nexus.first_name} ${nexus.last_name} », de ${etablissement.name}, est déjà sur Nexus — ajoute-le plutôt à ton processus depuis sa fiche.`,
-        lien: `/recruteur/athletes/${nexus.id}`,
-      });
-    } else {
-      // Tolérance aux fautes (lot D) : un nom PROCHE, prénom compatible, même
-      // établissement — « Lea Gagno » trouve « Léa Gagnon ». La base ne rend
-      // qu'une identité visible, comme la recherche.
-      const { data: proches } = await supabase.rpc("athletes_nom_proche", { p_prenom: prenom, p_nom: nom, p_ecole: etablissement.id });
-      const proche = ((proches ?? []) as { id: string; first_name: string | null; last_name: string | null }[])[0];
-      if (proche) {
-        trouves.push({
-          texte: `Un athlète au nom proche existe : ${proche.first_name} ${proche.last_name} — c'est lui ?`,
-          lien: `/recruteur/athletes/${proche.id}`,
-        });
-      }
-    }
-
-    // Même courriel.
-    if (adresse) {
-      const [carteC, athleteC] = await Promise.all([
-        carteAuCourriel(supabase, adresse, sportId),
-        athleteAuCourriel(supabase, adresse),
-      ]);
-      if (carteC) trouves.push({ texte: `Ce courriel est déjà celui de la carte « ${carteC.prenom} ${carteC.nom} » de ton unité.` });
-      if (athleteC && athleteC.id !== nexus?.id) {
-        trouves.push({
-          texte: `Ce courriel est celui de « ${athleteC.first_name} ${athleteC.last_name} », déjà sur Nexus.`,
-          lien: `/recruteur/athletes/${athleteC.id}`,
-        });
-      }
-    }
-    return trouves;
+    return chercherDoublonsCarte(createClient(), {
+      prenom, nom, sportId, etablissement,
+      courriel: courrielLu.ok ? courrielLu.valeur ?? "" : "",
+    });
   };
 
   const soumettre = async () => {

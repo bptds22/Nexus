@@ -189,6 +189,11 @@ const QUICK_PREDICATES: Record<QuickKey, (c: FilterablePipelineCard) => boolean>
 export interface ExtraFilters {
   search?: string;
   quick?: readonly QuickKey[];
+  /** Recherche d'école ou de club (feuille de filtres de l'app, recette
+   *  1.4.4) : chaque mot tapé doit figurer dans le nom, accents et casse
+   *  ignorés — « st-jean eudes » trouve « Saint-Jean-Eudes » si les mots y
+   *  sont. Distincte de la facette `school`, qui coche des valeurs exactes. */
+  school?: string;
 }
 
 /** Repli de casse ET d'accents : « Léveillé » se trouve en tapant
@@ -202,6 +207,11 @@ function matchesExtra(card: FilterablePipelineCard, extra?: ExtraFilters): boole
   if (!extra) return true;
   const needle = extra.search ? normalize(extra.search) : "";
   if (needle && !normalize(card.full_name ?? "").includes(needle)) return false;
+  const motsEcole = extra.school ? normalize(extra.school).split(/[\s-]+/).filter(Boolean) : [];
+  if (motsEcole.length > 0) {
+    const ecole = normalize(card.school ?? "").replace(/-/g, " ");
+    if (!motsEcole.every((m) => ecole.includes(m))) return false;
+  }
   for (const k of extra.quick ?? []) {
     if (!QUICK_PREDICATES[k](card)) return false;
   }
@@ -268,7 +278,7 @@ export function filterPipelineCards<T extends FilterablePipelineCard>(
 
 export function activeFilterCount(filters: PipelineFilters, extra?: ExtraFilters): number {
   const facets = FACETS.reduce((n, f) => n + filters[f.key].length, 0);
-  return facets + (extra?.quick?.length ?? 0) + (extra?.search?.trim() ? 1 : 0);
+  return facets + (extra?.quick?.length ?? 0) + (extra?.search?.trim() ? 1 : 0) + (extra?.school?.trim() ? 1 : 0);
 }
 
 export interface FacetOption {

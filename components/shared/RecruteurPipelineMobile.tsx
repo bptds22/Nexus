@@ -32,27 +32,24 @@ import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { estCarte } from "@/lib/cartes/carteProspect";
 import { OngletInfosCarte, OngletHistoriqueCarte, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
+import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { messageRetraitProcessus, MESSAGE_RETRAIT_CARTE } from "@/lib/pipeline/messagesUnite";
 import OngletInfosPanneau from "@/app/recruteur/pipeline/_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "@/app/recruteur/pipeline/_components/OngletHistoriquePanneau";
-import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
+import { useFiltreSportUnite, type FiltreSportUnite as FiltreSportUniteEtat } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
 import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import {
   sortPipelineCards,
-  PIPELINE_SORT_OPTIONS,
   DEFAULT_PIPELINE_SORT,
   type PipelineSortMode,
 } from "@/lib/pipeline/sortPipelineCards";
 import {
   filterPipelineCards,
   facetOptions,
-  isFacetUseful,
-  toggleFacetValue,
   activeFilterCount,
-  FACETS,
   EMPTY_FILTERS,
   QUICK_FILTERS,
   quickDepuisFiltreUrl,
@@ -118,14 +115,15 @@ function statusGlobalColor(status: string): { dot: string; label: string; animat
 
 /* ── Visite planifiée — pilule de date ───────────────────────── */
 
-/** « Visite · 12 août » à partir de l'instant ISO (recruiter_pipeline.visit_at).
+/** « 12 août » (l'icône calendrier dit « visite » — recette 1.4.4) à partir
+ *  de l'instant ISO (recruiter_pipeline.visit_at).
  *  Formaté en heure locale FR-CA (produit québécois) ; retourne null si l'ISO
  *  est invalide pour que l'appelant n'affiche rien. */
 function formatVisitPill(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return `Visite · ${d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" })}`;
+  return d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" });
 }
 
 /* ── Relance (next_action_at) — pilule de date ───────────────────
@@ -146,7 +144,7 @@ function parseDateOnly(value: string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-/** « Relance · 12 sept » + drapeau retard (date strictement avant aujourd'hui).
+/** « 12 sept » (l'icône horloge dit « relance ») + drapeau retard (date strictement avant aujourd'hui).
  *  `now` vient de useClientNow() : à 0 (premier rendu) on ne déclare AUCUN
  *  retard, même prudence que la pill visite côté web — sinon la carte vire
  *  au gold pendant l'hydratation puis se corrige. */
@@ -160,7 +158,7 @@ function formatRelancePill(value: string | null | undefined, now: number): { lab
     isLate = d.getTime() < today.getTime();
   }
   return {
-    label: `Relance · ${d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" })}`,
+    label: d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" }),
     isLate,
   };
 }
@@ -181,10 +179,13 @@ function useClientNow(): number {
    existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
    NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
    qu'on ait à ouvrir quoi que ce soit. */
-function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
+function PipelineHeader({ totalCount, nActiveFilters, onFilterTap, onProspectTap }: {
   totalCount: number;
   nActiveFilters: number;
   onFilterTap: () => void;
+  /** « + Prospect » (recette 1.4.4) : absent quand la carte ne naîtrait pas
+   *  dans l'unité affichée, ou pour un compte gratuit. */
+  onProspectTap?: () => void;
 }) {
   return (
     <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
@@ -208,6 +209,20 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
             geste le plus fréquent ; l'étiquette d'accessibilité dit tout ce
             qu'on trouve derrière, pour qui ne voit pas l'écran. La pastille ne
             compte que les filtres : seule des quatre à avoir un état. */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+        {/* « + Prospect » : petit, contour, à côté de « Filtrer » — pas de
+            bouton flottant (décision BP 2026-10-02). */}
+        {onProspectTap && (
+          <button
+            type="button"
+            data-testid="ajouter-prospect"
+            onClick={() => { triggerHaptic("Light"); onProspectTap(); }}
+            aria-label="Ajouter un prospect"
+            className="h-11 px-3 rounded-full flex items-center border border-white/15 text-[13px] font-bold text-white active:bg-white/5"
+          >
+            + Prospect
+          </button>
+        )}
         <button
           type="button"
           onClick={() => { triggerHaptic("Light"); onFilterTap(); }}
@@ -243,6 +258,7 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
             </span>
           )}
         </button>
+        </div>
       </div>
     </div>
   );
@@ -353,9 +369,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
   // Carte prospect (lot C) : fond rouge pâle, comme au kanban web.
   const prospect = estCarte(card);
   const fond = prospect ? SURFACE_PROSPECT : "#1A1D24";
-  const status = statusGlobalColor(card.recruitment_status);
   const [first, ...rest] = (card.full_name || "").split(/\s+/);
-  const showStaleness = (card.days_in_status ?? 0) > 5;
   const now = useClientNow();
   const relance = formatRelancePill(card.next_action_at, now);
   // Iter 7.1 — Card = UNE SEULE SURFACE. Photo en FOND absolute gauche,
@@ -457,25 +471,9 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
             .filter(Boolean).join(" · ") || "—"}
         </p>
 
-        {/* Ligne 3 : statut global — SAUF « OUVERT » (arbitrage BP,
-            2026-09-04). C'est l'état par défaut : l'absence de pastille
-            signifie « ouvert ». EN PROCESSUS et RECRUTÉ restent, ils disent
-            qu'un autre recruteur travaille l'athlète. Le statut complet reste
-            dans le bottom sheet athlète, inchangé. */}
-        {status && card.recruitment_status !== "OUVERT" && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{
-                backgroundColor: status.dot,
-                animation: status.animated ? "nx-breathe 1.6s ease-in-out infinite" : undefined,
-              }}
-            />
-            <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: status.dot }}>
-              {status.label}
-            </span>
-          </div>
-        )}
+        {/* Épure (recette 1.4.4, BP 2026-10-02) : plus de pastille de statut
+            global (EN PROCESSUS, OUVERT…) ni de « Aucun mouvement depuis N j »
+            sur la carte. Le statut reste dans la fiche. */}
 
         {/* Rangée de pilules — visite (VISITE_PLANIFIEE) et relance. Les deux
             partagent UNE ligne en flex-wrap : la carte est haute de 120px fixes
@@ -493,7 +491,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
                     <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
                   </svg>
-                  <span className="text-[11px] font-bold text-white">{visitLabel}</span>
+                  <span className="text-[11px] font-bold text-white" aria-label={`Visite le ${visitLabel}`}>{visitLabel}</span>
                 </span>
               )}
               {/* Relance — neutre tant qu'elle est à venir, GOLD #F59E0B une fois
@@ -507,7 +505,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={relance.isLate ? "#F59E0B" : "#FFFFFF"} strokeWidth="2.5" strokeLinecap="round" aria-hidden>
                     <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
                   </svg>
-                  <span className="text-[11px] font-bold" style={{ color: relance.isLate ? "#F59E0B" : "#FFFFFF" }}>
+                  <span className="text-[11px] font-bold" style={{ color: relance.isLate ? "#F59E0B" : "#FFFFFF" }} aria-label={`Relance le ${relance.label}`}>
                     {relance.label}
                   </span>
                 </span>
@@ -516,12 +514,6 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
           );
         })()}
 
-        {/* Ligne 4 : staleness conditionnelle (text-[12px] muted) */}
-        {showStaleness && (
-          <p className="text-[12px] text-white/60 mt-1.5">
-            Aucun mouvement depuis {card.days_in_status}j
-          </p>
-        )}
       </div>
     </button>
   );
@@ -646,72 +638,72 @@ function SwipeableCard({
    la barre de filtres web lit exactement la même liste. Un mode ajouté là-bas
    apparaît ici sans rien toucher. */
 
-// Iter 6.1d Fix 3 — palette bicolore pour le breakdown stats du ⋮ menu
-// (UNIQUEMENT dans le breakdown, pas dans les section headers du main).
-// Logique : IDENTIFIE/CONTACTE = soft (gris, pas encore engagé),
-// EN_DISCUSSION → LETTRE_SIGNEE = actif (rouge Nexus).
-const STATS_STAGE_COLOR_MAP: Record<string, string> = {
-  IDENTIFIE:        "#6B7280",
-  CONTACTE:         "#6B7280",
-  EN_DISCUSSION:    "#E63946",
-  VISITE_PLANIFIEE: "#E63946",
-  ENGAGE:           "#E63946",
-  LETTRE_SIGNEE:    "#E63946",
-};
-
-function PipelineMenuSheet({
+/* ── FiltresSheet (recette 1.4.4, BP 2026-10-02) ─────────────────
+   LA porte unique des filtres : le bouton rouge « Filtrer » de l'en-tête.
+   Dans l'ordre décidé par BP : Sport (directeurs seulement), les 5
+   interrupteurs rapides, Position et Promotion en listes déroulantes, École
+   en champ de recherche, « Réinitialiser » et « Voir N athlètes ». Plus
+   aucune liste de pastilles par valeur.
+   Les statistiques, le tri et le mode focus quittent la feuille ; le tri
+   « relance la plus proche » suit toujours ?filtre=relances.
+   Un champ texte : géométrie clavier obligatoire (remonter ET plafonner). */
+function FiltresSheet({
   open, onClose,
-  sortBy, setSortBy,
   filters, setFilters,
   quick, setQuick,
-  focusMode, setFocusMode,
-  cards,
-  cardsFiltrees,
-  visibleCount,
+  ecole, setEcole,
+  cards, nbResultats,
+  filtreSport,
 }: {
   open: boolean;
   onClose: () => void;
-  sortBy: PipelineSortMode;
-  setSortBy: (v: PipelineSortMode) => void;
   filters: PipelineFilters;
   setFilters: (updater: (f: PipelineFilters) => PipelineFilters) => void;
-  /** Chips rapides (Lot « relances », parité avec le web) — pour l'instant
-   *  la seule offerte côté mobile est « relance », pour ne pas faire
-   *  apparaître grade/étoiles/vidéo qui n'ont jamais eu de chip ici. */
   quick: QuickKey[];
   setQuick: (updater: (q: QuickKey[]) => QuickKey[]) => void;
-  focusMode: boolean;
-  setFocusMode: (v: boolean) => void;
+  ecole: string;
+  setEcole: (v: string) => void;
   cards: PipelineKanbanCard[];
-  /** Les mêmes, après filtres. La VENTILATION s'y compte ; le TOTAL, lui,
-   *  reste sur `cards` — « combien j'en suis » ne doit pas bouger parce que
-   *  je regarde un sous-ensemble. */
-  cardsFiltrees: PipelineKanbanCard[];
-  /** Cartes restantes dans le stage courant, après filtres. */
-  visibleCount: number;
+  /** Athlètes que les filtres laissent passer, toutes étapes confondues. */
+  nbResultats: number;
+  /** Directeur (admin cégep) seulement : le sport de l'unité. */
+  filtreSport: FiltreSportUniteEtat | null;
 }) {
   const toast = useMobileToast();
-  const [mounted, setMounted] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartYRef = useRef(0);
+  const kbdStyle = useSheetKeyboardGeometry();
+  // Monté côté client seulement (export statique) — sans setState dans un effet.
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { if (!open) { setDragOffset(0); setIsDragging(false); } }, [open]);
+  /* Les options d'une liste se comptent sur les cartes filtrées par TOUT le
+     reste (facetOptions exclut la facette comptée) : une position proposée
+     rend au moins un athlète. */
+  const positions = useMemo(
+    () => facetOptions(cards, "position", filters, { quick, school: ecole }),
+    [cards, filters, quick, ecole],
+  );
+  const promotions = useMemo(
+    () => facetOptions(cards, "graduation_year", filters, { quick, school: ecole }),
+    [cards, filters, quick, ecole],
+  );
 
   if (!mounted) return null;
 
-  const closeSheet = () => { triggerHaptic("Light"); onClose(); };
-
-  /* Les facettes et leurs compteurs — même module que le web. Comptés sur
-     TOUTES les cartes du pipeline, pas sur le stage affiché : un compteur
-     qui changerait à chaque onglet ne voudrait plus rien dire. */
-  const facetLists = useMemo(
-    () => FACETS.map((f) => ({ def: f, options: facetOptions(cards, f.key, filters) }))
-                .filter((x) => isFacetUseful(x.options)),
-    [cards, filters],
-  );
-  const nActiveFilters = activeFilterCount(filters, { quick });
+  const sportsDirecteur = filtreSport
+    ? filtreSport.options.filter((o) => o.valeur !== SANS_SPORT && o.valeur !== TOUS).length
+    : 0;
+  const montrerSport = !!filtreSport && filtreSport.pret && sportsDirecteur >= 2;
+  const choisir = (cle: "position" | "graduation_year", v: string) =>
+    setFilters((f) => ({ ...f, [cle]: v ? [v] : [] }));
+  const reinitialiser = () => {
+    triggerHaptic("Light");
+    setFilters(() => EMPTY_FILTERS);
+    setQuick(() => []);
+    setEcole("");
+    if (filtreSport?.monSportId) filtreSport.setChoix(filtreSport.monSportId);
+    toast.info({ message: "Filtres réinitialisés" });
+  };
+  const titre = "text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2";
+  const liste = "w-full min-h-[46px] bg-[#1A1D24] border border-white/10 rounded-xl px-3 text-[15px] text-white outline-none focus:border-[#E63946] [&>option]:bg-[#13151a]";
 
   return createPortal(
     <AnimatePresence>
@@ -720,239 +712,110 @@ function PipelineMenuSheet({
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[55] bg-black/60"
-            onClick={closeSheet}
+            onClick={onClose}
           />
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: dragOffset }}
-            exit={{ y: "100%" }}
-            transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
+            role="dialog"
+            aria-label="Filtres"
+            data-testid="feuille-filtres"
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-            // touchAction pan-y (#2) : geste vertical uniquement, pas de glisse horizontale.
-            style={{ maxHeight: "85dvh", paddingBottom: "env(safe-area-inset-bottom)", touchAction: "pan-y" }}
+            style={{ ...kbdStyle, touchAction: "pan-y" }}
           >
-            {/* Drag handle */}
-            <div
-              onTouchStart={(e) => { setIsDragging(true); dragStartYRef.current = e.touches[0].clientY; }}
-              onTouchMove={(e) => {
-                if (dragStartYRef.current === 0) return;
-                const dy = Math.max(0, e.touches[0].clientY - dragStartYRef.current);
-                setDragOffset(dy);
-              }}
-              onTouchEnd={() => {
-                if (dragOffset > 100) closeSheet();
-                else setDragOffset(0);
-                setIsDragging(false); dragStartYRef.current = 0;
-              }}
-              className="cursor-grab active:cursor-grabbing"
-            >
-              <div className="flex justify-center pt-3 pb-3">
-                <div className="w-10 h-1 rounded-full bg-white/20" />
-              </div>
+            <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
+            <div className="flex items-center justify-between px-4 mb-1">
+              <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Filtrer</h2>
+              <button type="button" onClick={onClose} aria-label="Fermer" className="w-9 h-9 -mr-2 rounded-full flex items-center justify-center active:bg-white/5">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+              </button>
             </div>
 
-            <button
-              type="button" onClick={closeSheet} aria-label="Fermer"
-              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center active:bg-white/5 z-10"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
-                <path d="M18 6L6 18" /><path d="M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-5" style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}>
+              {montrerSport && filtreSport && (
+                <section>
+                  <h3 className={titre}>Sport</h3>
+                  <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport className="w-full min-h-[46px]" />
+                </section>
+              )}
 
-            <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-5"
-              /* Verrou horizontal. `touch-action: pan-y` existe deja sur la
-                 RACINE du sheet, mais il ne protege pas ce conteneur-ci : c'est
-                 LUI qui scrolle (`overflow-y-auto`), et sans contrainte sur X un
-                 enfant plus large le rend scrollable lateralement — le contenu
-                 se tire au doigt et s'etire sous WebKit.
-                 Les trois ensemble : `hidden` interdit le scroll X, `none` coupe
-                 le rebond elastique sur X (l'axe Y garde le sien), `pan-y`
-                 declare au compositeur que seul le geste vertical compte — il
-                 cesse d'attendre pour arbitrer et le scroll vertical part plus
-                 franchement. */
-              style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}
-            >
-              {/* Iter 6.1c Fix 8 — Stats funnel (total + breakdown horizontal) */}
-              {(() => {
-                const counts: Record<string, number> = {};
-                for (const s of STAGES) counts[s.key] = 0;
-                /* Ventilation sur les cartes FILTRÉES — le total ci-dessous
-                   reste sur `cards`, brut, à dessein. */
-                for (const c of cardsFiltrees) {
-                  const k = (c.status || "").toString().toUpperCase();
-                  if (counts[k] !== undefined) counts[k]++;
-                }
-                // Iter 7.3 Section D — survival% (closing rate) au lieu du
-                // ratio adjacent qui pouvait dépasser 100%. Formule cohérente
-                // avec MonProcessusFunnel du Dashboard.
-                const N = STAGES.reduce((sum, s) => sum + (counts[s.key] ?? 0), 0);
-                return (
-                  <section>
-                    <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">
-                      Statistiques de mon processus
-                    </h3>
-                    <div className="bg-[#1A1D24] rounded-2xl p-4 mb-3">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-1">
-                        Total athlètes suivis
-                      </p>
-                      <p className="font-head text-[28px] font-black text-white leading-none">
-                        {cards.length}
-                      </p>
-                    </div>
-                    <div className="overflow-x-auto nx-no-scrollbar -mx-4 px-4">
-                      <div className="flex items-center gap-2 min-w-max pb-1">
-                        {STAGES.map((stage, idx) => {
-                          const cur = counts[stage.key] ?? 0;
-                          const reachedAtLeast = STAGES.slice(idx).reduce((sum, s) => sum + (counts[s.key] ?? 0), 0);
-                          const survival = N > 0 ? Math.round((reachedAtLeast / N) * 100) : 0;
-                          return (
-                            <div key={stage.key} className="flex items-center gap-2">
-                              <div className="bg-[#1A1D24] rounded-2xl px-3 py-2 min-w-[88px] text-center">
-                                <p
-                                  className="font-head text-[22px] font-black leading-none"
-                                  style={{ color: STATS_STAGE_COLOR_MAP[stage.key] ?? stage.color }}
-                                >
-                                  {cur}
-                                </p>
-                                <p className="text-[9px] uppercase tracking-wider text-[#6B7280] mt-1 truncate">
-                                  {stage.label}
-                                </p>
-                                <p className="text-[10px] font-bold text-white/70 mt-1 tabular-nums">
-                                  {survival}%
-                                </p>
-                              </div>
-                              {idx < STAGES.length - 1 && (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                                  <polyline points="9 18 15 12 9 6" />
-                                </svg>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </section>
-                );
-              })()}
-
-              {/* Section Trier par */}
               <section>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Trier les athlètes par</h3>
-                <div className="bg-[#1A1D24] rounded-2xl overflow-hidden">
-                  {PIPELINE_SORT_OPTIONS.map((opt) => {
-                    const active = sortBy === opt.value;
+                <h3 className={titre}>Filtres rapides</h3>
+                <div className="bg-[#1A1D24] rounded-2xl divide-y divide-white/[0.06]">
+                  {QUICK_FILTERS.map((q) => {
+                    const actif = quick.includes(q.key);
                     return (
                       <button
-                        key={opt.value}
+                        key={q.key}
                         type="button"
-                        onClick={() => { triggerHaptic("Light"); setSortBy(opt.value); }}
-                        className="flex items-center justify-between w-full px-4 py-3.5 border-b border-white/[0.06] last:border-b-0 text-left active:bg-white/[0.03] transition-colors"
+                        role="switch"
+                        aria-checked={actif}
+                        data-testid={`filtre-choix-${q.key}`}
+                        onClick={() => {
+                          triggerHaptic("Light");
+                          setQuick((cur) => (cur.includes(q.key) ? cur.filter((k) => k !== q.key) : [...cur, q.key]));
+                        }}
+                        className="w-full min-h-[50px] px-4 flex items-center justify-between text-left active:bg-white/[0.03]"
                       >
-                        <span className="text-[15px] text-white/95 font-medium">{opt.label}</span>
-                        {active && (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
+                        <span className={`text-[15px] ${actif ? "text-white font-semibold" : "text-[#e0e0e0]"}`}>{q.label}</span>
+                        <span className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${actif ? "bg-[#E63946]" : "bg-white/10"}`}>
+                          <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white" style={{ left: actif ? "22px" : "2px", transition: "left 200ms ease" }} />
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </section>
 
-              {/* Les filtres rapides (Avec grade, 4+ étoiles, Avec vidéo, À
-                  relancer, Visites à venir) sont sur l'écran, sous les étapes
-                  (lot 3 de la 1.4.4) — plus dans cette feuille. */}
-              {/* Section Filtres (Lot 2b) — CHIPS, PAS MobilePicker.
-                  MobilePicker est un sélecteur à valeur UNIQUE
-                  (`onChange(v: string | null)`), et il est partagé par
-                  d'autres écrans : le rendre multi-sélection aurait été une
-                  chirurgie sur un composant commun pour un besoin local.
-                  Des chips dans la feuille donnent le multi-choix sans
-                  toucher à rien, et alignent le mobile sur le web — même
-                  module, mêmes libellés, mêmes compteurs. */}
-              {facetLists.length > 0 && (
-                <section>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold">Filtres</h3>
-                    {nActiveFilters > 0 && (
-                      <span className="text-[11px] text-[#9CA3AF]">
-                        <span className="font-bold text-white">{visibleCount}</span> visible{visibleCount > 1 ? "s" : ""} ici
-                      </span>
-                    )}
-                  </div>
-                  <div className="bg-[#1A1D24] rounded-2xl p-3 space-y-3">
-                    {facetLists.map(({ def, options }) => (
-                      <div key={def.key}>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6B7280] mb-1.5">{def.label}</p>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {options.map((opt) => {
-                            const on = filters[def.key].includes(opt.value);
-                            return (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => { triggerHaptic("Light"); setFilters((f) => toggleFacetValue(f, def.key, opt.value)); }}
-                                aria-pressed={on}
-                                className={`inline-flex items-center gap-1.5 border rounded-full px-3 py-1.5 text-[13px] transition-colors ${on ? "border-white/40 text-white bg-white/[0.06]" : "border-white/10 text-[#9CA3AF] active:bg-white/[0.03]"}`}
-                              >
-                                {opt.label}
-                                <span className={on ? "text-white/60" : "text-[#4a4d56]"}>{opt.count}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Section Mode focus */}
-              <section>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Mode focus</h3>
-                <button
-                  type="button"
-                  onClick={() => { triggerHaptic("Light"); setFocusMode(!focusMode); }}
-                  className="flex items-start justify-between w-full px-4 py-3.5 bg-[#1A1D24] rounded-2xl text-left active:bg-white/[0.03] transition-colors"
-                >
-                  <div className="flex-1 pr-3">
-                    <p className="text-[15px] text-white/95 font-medium">Cacher recrutés ailleurs</p>
-                    <p className="text-[11px] text-[#6B7280] mt-0.5">
-                      Les athlètes signés ailleurs sont masqués
-                    </p>
-                  </div>
-                  <span
-                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${focusMode ? "bg-[#E63946]" : "bg-white/10"}`}
-                  >
-                    <span
-                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white"
-                      style={{ left: focusMode ? "22px" : "2px", transition: "left 200ms cubic-bezier(0.34, 1.56, 0.64, 1)" }}
-                    />
-                  </span>
-                </button>
+              <section className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="filtre-position" className={`${titre} block`}>Position</label>
+                  <select id="filtre-position" data-testid="filtre-position" className={liste}
+                    value={filters.position[0] ?? ""} onChange={(e) => choisir("position", e.target.value)}>
+                    <option value="">Toutes</option>
+                    {positions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="filtre-promotion" className={`${titre} block`}>Promotion</label>
+                  <select id="filtre-promotion" data-testid="filtre-promotion" className={liste}
+                    value={filters.graduation_year[0] ?? ""} onChange={(e) => choisir("graduation_year", e.target.value)}>
+                    <option value="">Toutes</option>
+                    {promotions.map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
+                  </select>
+                </div>
               </section>
 
-              {/* Réinitialiser */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSortBy(DEFAULT_PIPELINE_SORT); setFilters(() => EMPTY_FILTERS); setQuick(() => []); setFocusMode(false);
-                    toast.info({ message: "Filtres réinitialisés" });
-                  }}
-                  className="w-full px-4 py-3.5 rounded-2xl text-[14px] text-[#E63946] font-bold active:bg-[#E63946]/10 transition-colors"
-                >
-                  Réinitialiser tous les filtres
-                </button>
-              </div>
+              <section>
+                <label htmlFor="filtre-ecole" className={`${titre} block`}>École</label>
+                <input
+                  id="filtre-ecole"
+                  data-testid="filtre-ecole"
+                  type="search"
+                  value={ecole}
+                  onChange={(e) => setEcole(e.target.value)}
+                  placeholder="Nom de l'école ou du club"
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  className={liste}
+                />
+              </section>
+            </div>
 
-              {/* « Exporter mon processus — Bientôt » retiré (décision BP,
-                  lot 0 de la 1.4.4) : l'export se fait sur le web. */}
+            <div className="flex items-center gap-3 px-4 pt-2 pb-3 border-t border-white/[0.06]">
+              <button type="button" onClick={reinitialiser} className="min-h-[48px] px-3 text-[14px] font-bold text-[#9CA3AF] active:text-white">
+                Réinitialiser
+              </button>
+              <button
+                type="button"
+                data-testid="voir-resultats"
+                onClick={() => { triggerHaptic("Light"); onClose(); }}
+                className="flex-1 min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22]"
+              >
+                Voir {nbResultats} athlète{nbResultats > 1 ? "s" : ""}
+              </button>
             </div>
           </motion.div>
-
         </>
       )}
     </AnimatePresence>,
@@ -1397,8 +1260,16 @@ function PipelineDetailSheet({
                 ))}
               </div>
 
+              {/* Infos d'un dossier : monté dès l'ouverture de la fiche, CACHÉ
+                  hors de son onglet — il se charge pendant qu'on est sur
+                  Actions, et reste en mémoire pour la session (recette 1.4.4). */}
+              {!estCarte(card) && (
+                <div hidden={onglet !== "infos"}>
+                  <OngletInfosPanneau athleteId={card.id} memoire />
+                </div>
+              )}
               {onglet === "infos" ? (
-                estCarte(card) ? <OngletInfosCarte card={card} /> : <OngletInfosPanneau athleteId={card.id} />
+                estCarte(card) ? <OngletInfosCarte card={card} /> : null
               ) : onglet === "historique" ? (
                 estCarte(card) ? <OngletHistoriqueCarte carteId={card.id} /> : <OngletHistoriquePanneau athleteId={card.id} />
               ) : (
@@ -1673,85 +1544,6 @@ function PipelineDetailSheet({
   );
 }
 
-/* ── FiltresRapidesSheet (recette 1.4.4) ─────────────────────────
-   Les 5 filtres rapides dans une feuille : une ligne par choix, cochée ou
-   non ; ils se cumulent. Aucun champ texte : pas de géométrie clavier. */
-function FiltresRapidesSheet({ open, onClose, quick, setQuick }: {
-  open: boolean;
-  onClose: () => void;
-  quick: QuickKey[];
-  setQuick: (updater: (q: QuickKey[]) => QuickKey[]) => void;
-}) {
-  // Monté côté client seulement (export statique) — sans setState dans un effet.
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
-  if (!mounted) return null;
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[55] bg-black/60"
-            onClick={onClose}
-          />
-          <motion.div
-            role="dialog"
-            aria-label="Filtres rapides"
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl px-4 pt-3"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)", touchAction: "pan-y" }}
-          >
-            <div className="flex justify-center pb-3"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Filtres</h2>
-              {quick.length > 0 && (
-                <button type="button" onClick={() => { triggerHaptic("Light"); setQuick(() => []); }} className="min-h-[40px] px-2 text-[12px] font-bold text-[#9CA3AF]">
-                  Tout effacer
-                </button>
-              )}
-            </div>
-            <div className="divide-y divide-white/[0.06]">
-              {QUICK_FILTERS.map((q) => {
-                const actif = quick.includes(q.key);
-                return (
-                  <button
-                    key={q.key}
-                    type="button"
-                    role="checkbox"
-                    aria-checked={actif}
-                    data-testid={`filtre-choix-${q.key}`}
-                    onClick={() => {
-                      triggerHaptic("Light");
-                      setQuick((cur) => (cur.includes(q.key) ? cur.filter((k) => k !== q.key) : [...cur, q.key]));
-                    }}
-                    className="w-full min-h-[52px] flex items-center justify-between text-left active:bg-white/[0.03]"
-                  >
-                    <span className={`text-[15px] ${actif ? "text-white font-semibold" : "text-[#e0e0e0]"}`}>{q.label}</span>
-                    <span className={`w-6 h-6 rounded-md border flex items-center justify-center ${actif ? "bg-[#E63946] border-[#E63946]" : "border-white/20"}`}>
-                      {actif && (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={() => { triggerHaptic("Light"); onClose(); }}
-              className="mt-4 w-full min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22]"
-            >
-              Voir les résultats
-            </button>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>,
-    document.body,
-  );
-}
-
 /* ── EmptyState / Skeleton ───────────────────────────────────── */
 
 function EmptyState({ isFreeDemo }: { isFreeDemo: boolean }) {
@@ -1870,7 +1662,7 @@ export function RecruteurPipelineMobile() {
   const [activeStage, setActiveStage] = useState<string>(STAGES[0].lower);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Iter 6.1b — ⋮ menu state
+  // La feuille « Filtrer » (porte unique des filtres, recette 1.4.4).
   const [menuOpen, setMenuOpen] = useState(false);
   /* ?filtre=relances (parité avec app/recruteur/pipeline/page.tsx) : chip
      active + tri « relance la plus proche » dès le premier rendu. */
@@ -1880,8 +1672,14 @@ export function RecruteurPipelineMobile() {
   );
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [quick, setQuick] = useState<QuickKey[]>(() => quickDepuisFiltreUrl(filtreUrl));
-  const [quickOpen, setQuickOpen] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
+  /** Recherche d'école ou de club (feuille « Filtrer »). */
+  const [ecole, setEcole] = useState("");
+  /* « + Prospect » — mêmes conditions que le web : la carte naît dans
+     l'unité du recruteur, donc pas quand un directeur regarde un autre
+     sport (ou tout le cégep). */
+  const [creerProspect, setCreerProspect] = useState(false);
+  const monSportId = currentUser?.profile.sport_id ?? null;
+  const peutCreerProspect = modeUnite && !!monSportId && !(adminCegep && filtreSport.choix !== monSportId);
 
   // Mutation pour le swipe
   const updateStage = useUpdatePipelineStage();
@@ -1898,8 +1696,8 @@ export function RecruteurPipelineMobile() {
      Le TOTAL, lui, reste brut : c'est « combien d'athlètes je suis », une
      réponse qui ne doit pas bouger quand je regarde un sous-ensemble. */
   const cardsFiltrees = useMemo(
-    () => filterPipelineCards(cards, filters, { quick }),
-    [cards, filters, quick],
+    () => filterPipelineCards(cards, filters, { quick, school: ecole }),
+    [cards, filters, quick, ecole],
   );
 
   const cardsByStage = useMemo(() => {
@@ -1927,10 +1725,9 @@ export function RecruteurPipelineMobile() {
     // FILTRER PUIS TRIER — même ordre qu'au web. Les facettes viennent de
     // lib/pipeline/filterPipelineCards, le tri de sortPipelineCards : les
     // deux surfaces appellent exactement les mêmes fonctions.
-    let list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters, { quick });
-    if (focusMode) list = list.filter((c) => c.recruitment_status !== "RECRUTE");
+    const list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters, { quick, school: ecole });
     return sortPipelineCards(list, sortBy);
-  }, [cardsByStage, activeStage, filters, quick, focusMode, sortBy]);
+  }, [cardsByStage, activeStage, filters, quick, ecole, sortBy]);
 
   // Index du stage actif pour les bornes du swipe (canSwipeLeft/Right)
   const activeStageIndex = useMemo(
@@ -2140,8 +1937,9 @@ export function RecruteurPipelineMobile() {
 
       <PipelineHeader
         totalCount={cards.length}
-        nActiveFilters={activeFilterCount(filters, { quick })}
+        nActiveFilters={activeFilterCount(filters, { quick, school: ecole })}
         onFilterTap={handleMenuTap}
+        onProspectTap={peutCreerProspect ? () => setCreerProspect(true) : undefined}
       />
 
       {/* Free demo banner */}
@@ -2163,44 +1961,15 @@ export function RecruteurPipelineMobile() {
         onTabTap={handleTabTap}
       />
 
-      {/* Directeur : sport de l'unité + avis de lecture seule (lot 3). */}
+      {/* Directeur : l'avis de lecture seule reste à l'écran ; le choix du
+          sport est passé dans la feuille « Filtrer » (recette 1.4.4). Plus
+          de pastille « Filtres » : le bouton rouge de l'en-tête est la seule
+          porte. */}
       {adminCegep && (
-        <div className="px-4 pt-2 space-y-2">
-          <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport className="w-full min-h-[44px]" />
+        <div className="px-4 pt-2">
           <AvisLectureSeule filtre={filtreSport} />
         </div>
       )}
-
-      {/* FILTRES RAPIDES — UN bouton « Filtres » qui ouvre une feuille des 5
-          choix (recette 1.4.4, BP 2026-10-02 : la rangée défilante de 5 chips
-          mangeait l'écran), et une pilule compacte par filtre actif, ✕ pour
-          l'ôter. Même module que le web (QUICK_FILTERS). */}
-      <div className="flex items-center gap-2 overflow-x-auto px-4 pt-2 pb-1 [scrollbar-width:none]" style={{ touchAction: "pan-x" }}>
-        <button
-          type="button"
-          data-testid="filtres-rapides"
-          aria-haspopup="dialog"
-          onClick={() => { triggerHaptic("Light"); setQuickOpen(true); }}
-          className={`shrink-0 min-h-[36px] inline-flex items-center gap-1.5 border rounded-full px-3 text-[13px] font-semibold whitespace-nowrap ${quick.length > 0 ? "border-[#E63946]/40 text-white" : "border-white/10 text-[#9CA3AF]"} active:bg-white/[0.03]`}
-        >
-          Filtres
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><polyline points="6 9 12 15 18 9" /></svg>
-        </button>
-        {QUICK_FILTERS.filter((q) => quick.includes(q.key)).map((q) => (
-          <button
-            key={q.key}
-            type="button"
-            data-testid={`filtre-actif-${q.key}`}
-            aria-label={`Retirer le filtre ${q.label}`}
-            onClick={() => { triggerHaptic("Light"); setQuick((cur) => cur.filter((k) => k !== q.key)); }}
-            className="shrink-0 min-h-[32px] inline-flex items-center gap-1.5 rounded-full pl-3 pr-2 text-[12px] font-semibold text-white bg-[#E63946]/15 border border-[#E63946]/40 whitespace-nowrap"
-          >
-            {q.label}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-          </button>
-        ))}
-      </div>
-      <FiltresRapidesSheet open={quickOpen} onClose={() => setQuickOpen(false)} quick={quick} setQuick={setQuick} />
 
       {/* Content — page-par-stage (Fix 2 iter 6.1a-fix) */}
       {loading ? (
@@ -2274,18 +2043,19 @@ export function RecruteurPipelineMobile() {
         lectureSeule={estAutreUnite(selectedCard)}
       />
 
-      {/* Fix 9 — ⋮ Menu sheet Apple Reminders style. Iter 6.1c : cards prop
-          ajoutée pour le breakdown stats funnel en haut du sheet. */}
-      <PipelineMenuSheet
+      {creerProspect && monSportId && (
+        <CreerProspectMobile sportId={monSportId} onClose={() => setCreerProspect(false)} />
+      )}
+
+      <FiltresSheet
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        sortBy={sortBy} setSortBy={setSortBy}
         filters={filters} setFilters={setFilters}
         quick={quick} setQuick={setQuick}
-        focusMode={focusMode} setFocusMode={setFocusMode}
+        ecole={ecole} setEcole={setEcole}
         cards={cards}
-        cardsFiltrees={cardsFiltrees}
-        visibleCount={activeStageCards.length}
+        nbResultats={cardsFiltrees.length}
+        filtreSport={adminCegep ? filtreSport : null}
       />
 
       <style jsx>{`
