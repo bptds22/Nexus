@@ -20,22 +20,21 @@ import Link from "next/link";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
-import { useRecruiterLists } from "@/lib/queries/recruiter/useRecruiterLists";
-import {
-  useRecruitingCalendar,
-  todayIso,
-  type CalendarTarget,
-} from "@/lib/queries/recruiter/useRecruitingCalendar";
+import { useListesUnite } from "@/lib/queries/recruiter/useListesUnite";
+import { todayIso, type CalendarTarget } from "@/lib/queries/recruiter/useRecruitingCalendar";
+import { useCalendrierUnite, type VisiteUnite, type RelanceUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
+import { usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import {
   buildMatches,
   buildMonthGrid,
   dayNumber,
   EMPTY_FILTERS,
   filterTargets,
-  groupByWeek,
   matchesOnDay,
   monthLabel,
   shortMonthLabel,
+  weekKey,
+  weekLabel,
   type CalendarFilters,
   type CalendarSort,
   type MatchView,
@@ -130,7 +129,99 @@ const STAGE_LABEL: Record<string, string> = {
 
 const DOW = ["L", "M", "M", "J", "V", "S", "D"];
 
+/* ── Les trois types d'événements (parité web, décision BP 2026-09-28,
+   portée au mobile 2026-10-05) : rouge = matchs, vert = visites, ambre =
+   relances. Mémorisé comme le web (localStorage, clé partagée). */
+const COULEUR = { m: "#E63946", v: "#22C55E", r: "#F59E0B" } as const;
+type TypeEvenement = keyof typeof COULEUR;
+const TYPES: { cle: TypeEvenement; libelle: string }[] = [
+  { cle: "m", libelle: "Matchs" },
+  { cle: "v", libelle: "Visites" },
+  { cle: "r", libelle: "Relances" },
+];
+const COMBINAISONS = ["mvr", "mv", "mr", "vr", "m", "v", "r", "-"] as const;
+type Combinaison = (typeof COMBINAISONS)[number];
+
 /* ── Primitives ────────────────────────────────────────────── */
+
+/** Carte prospect (lot C) : athlète pas encore sur Nexus, suivi par l'unité. */
+function PastilleProspect() {
+  return (
+    <span
+      className="inline-flex items-center rounded-full border border-[#9CA3AF]/40 bg-white/5 px-1.5 py-[1px] text-[10px] font-bold uppercase tracking-[0.05em] text-[#D1D5DB]"
+      title="Carte prospect : pas encore sur Nexus"
+    >
+      Prospect
+    </span>
+  );
+}
+
+/** Lien du nom : la fiche Nexus, ou — pour une carte prospect — son panneau
+ *  dans Mon processus (?athlete= retrouve la carte par son id). */
+function lienCible(id: string, prospect?: boolean): string {
+  return prospect ? `/recruteur/pipeline?athlete=${id}` : `/recruteur/athletes/${id}`;
+}
+
+/** Visite planifiée de l'unité (lot B2) ou d'une carte prospect (lot C) —
+ *  un événement du calendrier au même titre qu'un match. */
+function VisiteCard({ v }: { v: VisiteUnite }) {
+  const d = new Date(v.visitAt);
+  const heure = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  const aHeure = !(d.getHours() === 0 && d.getMinutes() === 0);
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-[rgba(34,197,94,0.30)] bg-[#1A1D24] px-4 py-3.5">
+      <div className="w-12 shrink-0 text-center">
+        <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#22C55E]">{shortMonthLabel(v.jour)}</div>
+        <div className="text-[22px] font-extrabold leading-none text-[#EDEFF3]">{dayNumber(v.jour)}</div>
+        {aHeure && <div className="mt-0.5 text-[11px] text-[#8A909C]">{heure}</div>}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#22C55E]">Visite</span>
+          <Link href={lienCible(v.athleteId, v.prospect)} className="truncate text-[15px] font-bold text-[#EDEFF3]">
+            {v.fullName}
+          </Link>
+          {v.prospect && <PastilleProspect />}
+        </div>
+        {v.suiviPar.length > 0 && (
+          <div className="mt-0.5 truncate text-[12.5px] text-[#8A909C]">Suivi par {v.suiviPar.join(", ")}</div>
+        )}
+      </div>
+      <StagePill stage={v.stage} />
+    </div>
+  );
+}
+
+/** Relance de l'unité — à sa date d'échéance, en retard comprise. */
+function RelanceCard({ r }: { r: RelanceUnite }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-[rgba(245,158,11,0.30)] bg-[#1A1D24] px-4 py-3.5">
+      <div className="w-12 shrink-0 text-center">
+        <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#F59E0B]">{shortMonthLabel(r.jour)}</div>
+        <div className="text-[22px] font-extrabold leading-none text-[#EDEFF3]">{dayNumber(r.jour)}</div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#F59E0B]">Relance</span>
+          {r.enRetard && (
+            <span className="rounded-full border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.10)] px-1.5 py-[1px] text-[10px] font-bold uppercase tracking-[0.05em] text-[#F59E0B]">
+              En retard
+            </span>
+          )}
+          <Link href={lienCible(r.athleteId, r.prospect)} className="truncate text-[15px] font-bold text-[#EDEFF3]">
+            {r.fullName}
+          </Link>
+          {r.prospect && <PastilleProspect />}
+        </div>
+        {r.note && <div className="mt-0.5 truncate text-[13px] text-[#B9BFC9]">{r.note}</div>}
+        {r.suiviPar.length > 0 && (
+          <div className="mt-0.5 truncate text-[12.5px] text-[#8A909C]">Suivi par {r.suiviPar.join(", ")}</div>
+        )}
+      </div>
+      <StagePill stage={r.stage} />
+    </div>
+  );
+}
 
 function Avatar({ text, more = false, className = "" }: { text: string; more?: boolean; className?: string }) {
   return (
@@ -165,9 +256,12 @@ function TargetRow({ t }: { t: CalendarTarget }) {
     <div className="flex items-center gap-2.5 border-t border-[#1E2129] py-2 first:border-t-0">
       <Avatar text={t.initials} className="!border-[#171A20]" />
       <div className="min-w-0 flex-1">
-        <b className="block truncate text-[14px] font-semibold leading-tight text-[#EDEFF3]">
-          {t.firstName} {t.lastName}
-          {t.verified && <span className="text-[#3B82F6]"> ✓</span>}
+        <b className="flex flex-wrap items-center gap-x-1.5 truncate text-[14px] font-semibold leading-tight text-[#EDEFF3]">
+          <span>
+            {t.firstName} {t.lastName}
+            {t.verified && <span className="text-[#3B82F6]"> ✓</span>}
+          </span>
+          {t.prospect && <PastilleProspect />}
         </b>
         {/* Cote coach — même composant partagé que le desktop et la
             Recherche. Athlète non coté : rien, pas de « N/A ». */}
@@ -418,13 +512,27 @@ export function RecruteurCalendrierMobile() {
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = useRecruitingCalendar(!isFree && !tierLoading);
+  const { data, isLoading, isError } = useCalendrierUnite(!isFree && !tierLoading);
   const { data: regions = [] } = useRegions();
-  const { data: lists = [] } = useRecruiterLists();
+  const { data: lists = [] } = useListesUnite(!isFree && !tierLoading);
   const { data: posData } = usePositionsBySport(filters.sport || null);
 
   const targets = data?.targets ?? [];
   const games = data?.games ?? [];
+  const visites = useMemo(() => data?.visites ?? [], [data]);
+  const relances = useMemo(() => data?.relances ?? [], [data]);
+
+  /* Types affichés — parité web (même clé localStorage, même défaut). */
+  const [combinaison, setCombinaison] = usePreferenceLocale<Combinaison>("nexus:calendrier:types", "mvr", COMBINAISONS);
+  const actifs = useMemo(
+    () => ({ m: combinaison.includes("m"), v: combinaison.includes("v"), r: combinaison.includes("r") }),
+    [combinaison],
+  );
+  const basculerType = (t: TypeEvenement) => {
+    triggerHaptic("Light");
+    const suivant = TYPES.map((x) => x.cle).filter((c) => (c === t ? !actifs[c] : actifs[c])).join("");
+    setCombinaison((suivant || "-") as Combinaison);
+  };
 
   const matches = useMemo(
     () => buildMatches(games, filterTargets(targets, filters), sort, filters.minTargets),
@@ -436,7 +544,28 @@ export function RecruteurCalendrierMobile() {
     () => buildMatches(games, targets, sort).length,
     [games, targets, sort],
   );
-  const weeks = useMemo(() => groupByWeek(matches), [matches]);
+  /* VUE LISTE : matchs, visites et relances mêlés par date — même ordre que
+   * le web (relances, puis visites, puis matchs un même jour). Les pastilles
+   * du haut filtrent les types. */
+  const semaines = useMemo(() => {
+    type Ev =
+      | { type: "r"; jour: string; cle: string; r: RelanceUnite }
+      | { type: "v"; jour: string; cle: string; v: VisiteUnite }
+      | { type: "m"; jour: string; cle: string; m: (typeof matches)[number] };
+    const ordre = { r: 0, v: 1, m: 2 } as const;
+    const evs: Ev[] = [
+      ...(actifs.r ? relances.map((r): Ev => ({ type: "r", jour: r.jour, cle: `r-${r.athleteId}`, r })) : []),
+      ...(actifs.v ? visites.map((v): Ev => ({ type: "v", jour: v.jour, cle: `v-${v.athleteId}`, v })) : []),
+      ...(actifs.m ? matches.map((m): Ev => ({ type: "m", jour: m.game.gameDate, cle: `m-${m.game.id}`, m })) : []),
+    ].sort((a, b) => a.jour.localeCompare(b.jour) || ordre[a.type] - ordre[b.type]);
+    const parSemaine = new Map<string, Ev[]>();
+    for (const e of evs) {
+      const k = weekKey(e.jour);
+      parSemaine.set(k, [...(parSemaine.get(k) ?? []), e]);
+    }
+    return [...parSemaine.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([cle, evenements]) => ({ cle, label: weekLabel(cle), evenements }));
+  }, [actifs, relances, visites, matches]);
   const grid = useMemo(
     () => buildMonthGrid(cursor.year, cursor.month, matches, today),
     [cursor, matches, today],
@@ -548,6 +677,25 @@ export function RecruteurCalendrierMobile() {
             </button>
           </div>
 
+          {/* Types d'événements — parité web : matchs/visites/relances,
+              chacun filtrable, jamais tous les trois éteints ensemble. */}
+          <div className="flex gap-2 px-4 pb-2.5">
+            {TYPES.map((t) => (
+              <button
+                key={t.cle}
+                type="button"
+                onClick={() => basculerType(t.cle)}
+                className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors"
+                style={actifs[t.cle]
+                  ? { borderColor: `${COULEUR[t.cle]}4D`, backgroundColor: `${COULEUR[t.cle]}1A`, color: COULEUR[t.cle] }
+                  : { borderColor: "#262A33", color: "#5C6575" }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: actifs[t.cle] ? COULEUR[t.cle] : "#3A3F4B" }} />
+                {t.libelle}
+              </button>
+            ))}
+          </div>
+
           <div className="px-4 pb-8">
             {isLoading ? (
               <div className="py-16 text-center text-[14px] text-[#5C6575]">Chargement de votre calendrier…</div>
@@ -560,6 +708,34 @@ export function RecruteurCalendrierMobile() {
                   Les matchs n&apos;ont pas pu être chargés. Réessayez dans un moment.
                 </p>
               </div>
+            ) : view === "list" ? (
+              semaines.length === 0 ? (
+                matches.length === 0 && baseMatchCount > 0 ? (
+                  <NoMatchForFilters
+                    minTargets={filters.minTargets}
+                    onReset={() => setFilters(EMPTY_FILTERS)}
+                  />
+                ) : (
+                  <EmptyBoard />
+                )
+              ) : (
+                <div className="flex flex-col gap-7 pt-1">
+                  {semaines.map((s) => (
+                    <div key={s.cle}>
+                      <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-[#1E2129] pb-2">
+                        <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#B9BFC9]">{s.label}</h2>
+                      </div>
+                      <div className="flex flex-col gap-2.5">
+                        {s.evenements.map((e) =>
+                          e.type === "r" ? <RelanceCard key={e.cle} r={e.r} />
+                          : e.type === "v" ? <VisiteCard key={e.cle} v={e.v} />
+                          : <MatchCard key={e.cle} m={e.m} />,
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : matches.length === 0 ? (
               baseMatchCount > 0 ? (
                 <NoMatchForFilters
@@ -569,22 +745,6 @@ export function RecruteurCalendrierMobile() {
               ) : (
                 <EmptyBoard />
               )
-            ) : view === "list" ? (
-              <div className="flex flex-col gap-7 pt-1">
-                {weeks.map((w) => (
-                  <div key={w.key}>
-                    <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-[#1E2129] pb-2">
-                      <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#B9BFC9]">{w.label}</h2>
-                      <span className="text-[12px] font-medium text-[#5C6575]">
-                        {w.matchCount} match{w.matchCount > 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-2.5">
-                      {w.matches.map((m) => <MatchCard key={m.game.id} m={m} />)}
-                    </div>
-                  </div>
-                ))}
-              </div>
             ) : (
               <div className="pt-1">
                 <div className="mb-3 flex items-center justify-between">
