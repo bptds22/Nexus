@@ -80,7 +80,7 @@ export const FILTRES_DEFAUT: FiltresRecherche = Object.freeze({
   divisionFilter: "",
   minGpa: "",
   minRating: "",
-  sortBy: "rating_desc",
+  sortBy: "decouverte",
   verifiedOnly: false,
   withVideoOnly: false,
   withSportBadge: false,

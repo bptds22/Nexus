@@ -353,13 +353,16 @@ function LigneEquipe({ card }: { card: CarteKanban }) {
   const [enCours, setEnCours] = useState(false);
 
   useEffect(() => {
-    if (equipe || !c.schoolId || !card.unite_sport_id) return;
+    // Les équipes DU SPORT DE L'ATHLÈTE (décision BP 2026-10-05) — jamais
+    // celui de l'unité, qui peut différer depuis que l'athlète d'une carte
+    // n'est plus limité au sport du tableau qui la contient.
+    if (equipe || !c.schoolId || !c.sportAthleteId) return;
     let annule = false;
     void createClient().from("teams").select("id, name, division, league, age_group, gender, rseq_team_id, schools!school_id(type)")
-      .eq("school_id", c.schoolId).eq("sport_id", card.unite_sport_id).order("name")
+      .eq("school_id", c.schoolId).eq("sport_id", c.sportAthleteId).order("name")
       .then(({ data }) => { if (!annule) setChoix((data ?? []) as unknown as TeamChoix[]); });
     return () => { annule = true; };
-  }, [equipe, c.schoolId, card.unite_sport_id]);
+  }, [equipe, c.schoolId, c.sportAthleteId]);
 
   if (equipe) return <Ligne libelle="Équipe" valeur={equipe.nom || <span className="text-[#6b7280]">Équipe retirée</span>} />;
   if (!c.schoolId) return <Ligne libelle="Équipe" valeur={<span className="text-[#6b7280]">Équipe retirée</span>} />;
@@ -368,7 +371,7 @@ function LigneEquipe({ card }: { card: CarteKanban }) {
   // stockée est RSEQ par défaut — jamais teams.league brut.
   const libelleChoix = (t: TeamChoix) => {
     const ligue = leagueOf({ context: null, schoolType: null, teamDivision: t.division, teamLeague: t.league, teamIsRseq: !!t.rseq_team_id, hasTeam: true, teamSchoolType: t.schools?.type ?? null }) ?? "";
-    return libelleEquipeComplet(card.sport, t, ligue);
+    return libelleEquipeComplet(c.sportAthleteNom, t, ligue);
   };
 
   const preciser = async () => {
@@ -422,6 +425,13 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#2D3748] bg-[#13151a] px-4 py-2">
+        {/* Le sport de L'ATHLÈTE (décision BP 2026-10-05), affiché seulement
+            s'il diffère de celui de l'unité (le tableau qui contient la
+            carte) — sinon, l'info est déjà portée par le contexte de Mon
+            processus et la répéter n'apprendrait rien. */}
+        {c.sportAthleteNom && c.sportAthleteNom !== card.sport && (
+          <Ligne libelle="Sport" valeur={c.sportAthleteNom} />
+        )}
         <LigneEquipe card={card} />
         <Ligne libelle="École" valeur={card.school || <span className="text-[#6b7280]">—</span>} />
         <Ligne libelle="Position" valeur={card.position || <span className="text-[#6b7280]">—</span>} />

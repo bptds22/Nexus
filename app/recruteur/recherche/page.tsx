@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useFiltresRecherche, usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
+import { trierDecouverte } from "@/lib/recherche/triDecouverte";
 import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
@@ -558,6 +559,12 @@ function RechercheContent() {
     if (sortBy === "favorites_desc") {
       list = [...list].sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
     }
+    // Découverte (défaut) : mélange stable du jour, propre à ce recruteur —
+    // la RPC a déjà répondu en rating_desc (RPC_SORTS ne connaît pas
+    // "decouverte"), le mélange est purement client.
+    if (sortBy === "decouverte" && currentUser?.authUser.id) {
+      list = trierDecouverte(list, currentUser.authUser.id);
+    }
 
     return list.map((a) => ({
       ...a,
@@ -567,7 +574,7 @@ function RechercheContent() {
         ? `Favori de ${joindreNoms((favorisUnite.parAthlete[a.id] ?? []).map(favorisUnite.nom))}`
         : undefined,
     }));
-  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite]);
+  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite, currentUser?.authUser.id]);
 
   /* ── OPTIONS ET ETATS DES TROIS MENUS ─────────────────────────────────────
      Construites sur `athletes` — LE JEU RENVOYE PAR LA RPC, donc apres les
@@ -650,7 +657,7 @@ function RechercheContent() {
     if (res && !res.ok) setErreurFavori(res.message);
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== FILTRES_DEFAUT.sortBy;
 
   /* PÉRIMÈTRE INCHANGÉ. Ce bouton ne vide NI `search`, NI `progFilterIds`, NI
      `offertParMonCegep` — c'était déjà le cas avant la bascule vers l'URL, et
@@ -661,7 +668,7 @@ function RechercheContent() {
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", region: "", promotion: "", orgType: "",
       leagueFilter: "", divisionFilter: "",
-      minRating: "", minGpa: "", sortBy: "rating_desc",
+      minRating: "", minGpa: "", sortBy: FILTRES_DEFAUT.sortBy,
       verifiedOnly: false, withVideoOnly: false,
       withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
       filterOuvertDemenager: false, filterOuvertPrive: false, filterOuvertAnglophone: false,
@@ -802,6 +809,7 @@ function RechercheContent() {
 
           {/* Sort */}
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="nx-filter-select">
+            <option value="decouverte">Trier: Découverte</option>
             <option value="rating_desc">Trier: Meilleure cote</option>
             <option value="rating_asc">Trier: Cote croissante</option>
             <option value="favorites_desc">Trier: Plus favorisés</option>

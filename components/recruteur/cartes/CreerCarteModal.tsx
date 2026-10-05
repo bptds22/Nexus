@@ -62,6 +62,16 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
      Estacades ». Un ilike côté base ne sait pas ignorer les accents. */
   const [tousEtablissements, setTousEtablissements] = useState<(Etablissement & { cle: string })[] | null>(null);
   const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
+  // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — distinct du sport de
+  // l'unité (sportId, prop) : la carte reste dans l'unité du créateur, mais
+  // l'athlète qu'elle représente peut jouer n'importe quel sport offert par
+  // son établissement.
+  const [sportAthleteId, setSportAthleteId] = useState("");
+  const [sportsEtablissement, setSportsEtablissement] = useState<{ id: string; nom: string }[]>([]);
+  const [sportsEtablissementCharges, setSportsEtablissementCharges] = useState(false);
+  // Repli : aucune équipe nulle part dans cet établissement — choix libre
+  // parmi TOUS les sports, chargé seulement si besoin.
+  const [tousLesSports, setTousLesSports] = useState<{ id: string; nom: string }[] | null>(null);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
   // Faux pendant le chargement : « aucune équipe » ne s'affiche qu'une fois la réponse lue.
   const [equipesChargees, setEquipesChargees] = useState(false);
@@ -83,18 +93,58 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  // Positions et nom du sport de l'unité.
+  // Positions et nom DU SPORT DE L'ATHLÈTE — jamais celui de l'unité, qui
+  // peut désormais différer.
   useEffect(() => {
+    if (!sportAthleteId) { setPositions([]); setNomSport(""); return; }
     void (async () => {
       const supabase = createClient();
       const [{ data }, { data: sport }] = await Promise.all([
-        supabase.from("positions").select("id, abreviation, nom").eq("sport_id", sportId).order("nom"),
-        supabase.from("sports").select("nom").eq("id", sportId).maybeSingle(),
+        supabase.from("positions").select("id, abreviation, nom").eq("sport_id", sportAthleteId).order("nom"),
+        supabase.from("sports").select("nom").eq("id", sportAthleteId).maybeSingle(),
       ]);
       setPositions((data ?? []) as Position[]);
       setNomSport((sport?.nom as string | undefined) ?? "");
     })();
-  }, [sportId]);
+  }, [sportAthleteId]);
+
+  // Les sports offerts par l'établissement choisi (≥ 1 équipe) — repli :
+  // choix libre parmi tous les sports s'il n'en a AUCUNE.
+  useEffect(() => {
+    setSportAthleteId("");
+    setSportsEtablissement([]);
+    setSportsEtablissementCharges(false);
+    setTousLesSports(null);
+    if (!etablissement) return;
+    let annule = false;
+    void (async () => {
+      const { data } = await createClient()
+        .from("teams")
+        .select("sport_id, sports!sport_id(nom)")
+        .eq("school_id", etablissement.id);
+      if (annule) return;
+      const vus = new Map<string, string>();
+      for (const t of (data ?? []) as { sport_id: string; sports: { nom: string } | { nom: string }[] | null }[]) {
+        const s = Array.isArray(t.sports) ? t.sports[0] : t.sports;
+        if (s?.nom) vus.set(t.sport_id, s.nom);
+      }
+      const liste = [...vus.entries()].map(([id, nom]) => ({ id, nom })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+      setSportsEtablissement(liste);
+      setSportsEtablissementCharges(true);
+      // Un seul sport offert : pas de choix réel, on le pose directement.
+      if (liste.length === 1) setSportAthleteId(liste[0].id);
+    })();
+    return () => { annule = true; };
+  }, [etablissement]);
+
+  // Repli seulement : établissement sans AUCUNE équipe, chargé à la demande.
+  useEffect(() => {
+    if (!sportsEtablissementCharges || sportsEtablissement.length > 0 || tousLesSports !== null) return;
+    let annule = false;
+    void createClient().from("sports").select("id, nom").order("nom")
+      .then(({ data }) => { if (!annule) setTousLesSports((data ?? []) as { id: string; nom: string }[]); });
+    return () => { annule = true; };
+  }, [sportsEtablissementCharges, sportsEtablissement, tousLesSports]);
 
   // 1. TOUS les établissements du genre choisi — par pages de 1000 (plafond
   //    PostgREST), sans filtre de sport (bug prod 2026-09-30 : aucun club
@@ -131,17 +181,17 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     return tousEtablissements.filter((e) => mots.every((m) => e.cle.includes(m))).slice(0, 15);
   }, [recherche, etablissement, tousEtablissements]);
 
-  // 2. Ses équipes du sport de l'unité.
+  // 2. Ses équipes DU SPORT DE L'ATHLÈTE choisi (jamais celui de l'unité).
   useEffect(() => {
     setEquipesChargees(false);
-    if (!etablissement) { setEquipes([]); setEquipeId(""); return; }
+    if (!etablissement || !sportAthleteId) { setEquipes([]); setEquipeId(""); return; }
     let annule = false;
     void (async () => {
       const { data } = await createClient()
         .from("teams")
         .select("id, name, age_group, division, gender")
         .eq("school_id", etablissement.id)
-        .eq("sport_id", sportId)
+        .eq("sport_id", sportAthleteId)
         .order("age_group")
         .order("division");
       if (annule) return;
@@ -156,7 +206,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
       setEquipesChargees(true);
     })();
     return () => { annule = true; };
-  }, [etablissement, sportId, nomSport]);
+  }, [etablissement, sportAthleteId, nomSport]);
 
   const equipe = equipes.find((e) => e.id === equipeId) ?? null;
 
@@ -178,10 +228,11 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
     setErreurs((e) => ({ ...e, [c]: r.ok ? undefined : r.regle }));
   };
   const effacerErreur = (c: Champ) => setErreurs((e) => (e[c] ? { ...e, [c]: undefined } : e));
-  /* Aucune équipe du sport dans l'établissement choisi : la carte s'y rattache
-     seule (décision BP 2026-09-30). Avec des équipes, l'équipe reste obligatoire. */
+  /* Aucune équipe DU SPORT CHOISI dans l'établissement : la carte s'y
+     rattache seule (décision BP 2026-09-30, généralisée au sport de
+     l'athlète le 2026-10-05). Avec des équipes, l'équipe reste obligatoire. */
   const sansEquipe = !!etablissement && equipesChargees && equipes.length === 0;
-  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && (!!equipe || sansEquipe);
+  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!sportAthleteId && (!!equipe || sansEquipe);
   const promotions = useMemo(() => {
     const an = new Date().getFullYear();
     return Array.from({ length: 6 }, (_, i) => an + i);
@@ -219,6 +270,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
       }
       const { error } = await creerCarte(createClient(), {
         prenom, nom, teamId: equipe?.id ?? null, schoolId: etablissement.id,
+        sportAthleteId,
         positionId: positionId || null,
         numero: numero || null,
         promotion: nombre(promotion),
@@ -305,7 +357,28 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
             )}
           </div>
 
-          {etablissement && (
+          {etablissement && sportsEtablissementCharges && (
+            <div className="col-span-2">
+              <label className={etiquette} htmlFor="carte-sport">Sport <span className="text-[#E63946]">*</span></label>
+              <select id="carte-sport" className={champ} value={sportAthleteId}
+                onChange={(e) => { setSportAthleteId(e.target.value); setEquipeId(""); setAvertissements(null); }}>
+                <option value="">Choisir le sport</option>
+                {(sportsEtablissement.length > 0 ? sportsEtablissement : (tousLesSports ?? [])).map((s) => (
+                  <option key={s.id} value={s.id}>{s.nom}</option>
+                ))}
+              </select>
+              {sportsEtablissement.length === 0 && (
+                <p className="text-[12px] text-[#6b7280] mt-1">
+                  {genre === "CIVIL" ? "Ce club n'a aucune équipe enregistrée — choisis le sport de l'athlète." : "Cette école n'a aucune équipe enregistrée — choisis le sport de l'athlète."}
+                </p>
+              )}
+            </div>
+          )}
+          {etablissement && !sportsEtablissementCharges && (
+            <p className="col-span-2 text-[12px] text-[#6b7280]">Chargement des sports…</p>
+          )}
+
+          {etablissement && sportAthleteId && (
             <div className="col-span-2">
               <label className={etiquette} htmlFor="carte-equipe">Équipe {!sansEquipe && <span className="text-[#E63946]">*</span>}</label>
               <select id="carte-equipe" className={champ} value={equipeId} disabled={sansEquipe} onChange={(e) => { setEquipeId(e.target.value); setAvertissements(null); }}>

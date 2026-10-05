@@ -27,6 +27,9 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
+import { trierDecouverte } from "@/lib/recherche/triDecouverte";
+import { FilterRow, TogglePill, FilterBottomSheetShell } from "@/components/shared/filters/FilterBottomSheetShell";
 import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
@@ -76,6 +79,7 @@ const SPORTS: PickerOption[] = [
 ];
 
 const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "decouverte", label: "Découverte" },
   { value: "rating_desc", label: "Meilleure cote" },
   { value: "rating_asc", label: "Cote croissante" },
   { value: "favorites_desc", label: "Plus favorisés" },
@@ -819,55 +823,6 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
   );
 }
 
-/* ── FilterRow (Iter 6.0d — compact iOS Settings style, palette ajustée) ─ */
-
-function FilterRow({
-  label, value, onTap, disabled, disabledReason,
-}: {
-  label: string;
-  value: string;
-  onTap: () => void;
-  disabled?: boolean;
-  disabledReason?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => { if (!disabled) { triggerHaptic("Light"); onTap(); } }}
-      disabled={disabled}
-      className={`flex items-center justify-between w-full px-4 py-3.5 border-b border-white/[0.06] last:border-b-0 text-left ${disabled ? "opacity-40" : "active:bg-white/[0.03]"} transition-colors`}
-    >
-      <span className="text-[15px] text-white/95 font-medium">{label}</span>
-      <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-[14px] text-white/50 truncate max-w-[180px]">
-          {disabled && disabledReason ? disabledReason : value}
-        </span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-white/30">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </div>
-    </button>
-  );
-}
-
-/* ── TogglePill ────────────────────────────────────────────── */
-
-function TogglePill({ active, label, onTap }: { active: boolean; label: string; onTap: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => { triggerHaptic("Light"); onTap(); }}
-      className={`nx-mobile-touch-min inline-flex items-center gap-1.5 px-4 rounded-full text-[12px] font-bold transition-colors ${
-        active
-          ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
-          : "bg-[#0C0E12] text-[#9CA3AF] border border-transparent"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
 /* ── FiltersBottomSheet (7 MobilePicker) ──────────────────── */
 
 interface FiltersBottomSheetProps {
@@ -909,9 +864,6 @@ interface FiltersBottomSheetProps {
 
 function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const { open, onClose, onReset, resultCount } = props;
-  const [mounted, setMounted] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
 
   // 8 MobilePicker states (7 + genre d'équipe)
   const [openSport, setOpenSport] = useState(false);
@@ -925,14 +877,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const [openGpa, setOpenGpa] = useState(false);
   const [openSort, setOpenSort] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => {
-    if (!open) { setDragOffset(0); setIsDragging(false); }
-  }, [open]);
-
-  if (!mounted || !open) return null;
-  let handleStartY = 0;
-  const closeSheet = () => { triggerHaptic("Light"); onClose(); };
+  if (!open) return null;
 
   const sportLabel = SPORTS.find((s) => s.value === props.sport)?.label || "Tous les sports";
   const genderLabelValue = TEAM_GENDER_FILTER_OPTIONS.find((g) => g.value === props.genderFilter)?.label || "Tous";
@@ -948,114 +893,62 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const gpaLabel = GPA_OPTIONS.find((g) => g.value === props.minGpa)?.label || "Aucun minimum";
   const sortLabel = SORT_OPTIONS.find((s) => s.value === props.sortBy)?.label || "Meilleure cote";
 
-  return createPortal(
+  return (
     <>
-      <div
-        className="fixed inset-0 z-[60]"
-        style={{
-          background: `rgba(0,0,0,${Math.max(0.2, 0.6 - dragOffset / 300)})`,
-          animation: isDragging ? undefined : "nx-modal-fade 200ms ease-out forwards",
-        }}
-        onClick={closeSheet}
-      />
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[60] bg-[#1A1D24] rounded-t-2xl shadow-2xl flex flex-col"
-        style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
-          maxHeight: "90vh",
-          transform: `translateY(${dragOffset}px)`,
-          transition: isDragging ? "none" : "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-          animation: isDragging || dragOffset > 0 ? undefined : "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-        }}
-      >
-        <div
-          onTouchStart={(e) => { setIsDragging(true); handleStartY = e.touches[0].clientY; }}
-          onTouchMove={(e) => {
-            if (!isDragging && handleStartY === 0) return;
-            const dy = Math.max(0, e.touches[0].clientY - handleStartY);
-            setDragOffset(dy);
-          }}
-          onTouchEnd={() => {
-            if (dragOffset > 100) closeSheet();
-            else setDragOffset(0);
-            setIsDragging(false); handleStartY = 0;
-          }}
-        >
-          <div className="flex justify-center pt-3 pb-2">
-            <div className="w-10 h-1 rounded-full bg-white/20" />
-          </div>
-          <div className="px-5 pb-3 flex items-center justify-between border-b border-white/[0.06]">
-            <button type="button" onClick={closeSheet} className="text-[#E63946] text-[15px] font-medium">Annuler</button>
-            <span className="text-[15px] font-bold text-white">Filtres</span>
-            <button type="button" onClick={() => { triggerHaptic("Light"); onReset(); }} className="text-[#9CA3AF] text-[14px]">Réinitialiser</button>
-          </div>
+      <FilterBottomSheetShell open={open} onClose={onClose} onReset={onReset} resultCount={resultCount}>
+        {/* Iter 6.0d — 7 rows compacts dans UN container card style iOS Settings.
+            Bg #1A1D24 (canon Nexus, cohérent avec les autres cards). */}
+        <div className="mx-4 bg-[#1A1D24] rounded-2xl overflow-hidden">
+          <FilterRow label="Sport" value={sportLabel} onTap={() => setOpenSport(true)} />
+          <FilterRow label="Genre d'équipe" value={genderLabelValue} onTap={() => setOpenGender(true)} />
+          <FilterRow
+            label="Position"
+            value={positionLabel}
+            onTap={() => setOpenPosition(true)}
+            disabled={!props.sport}
+            disabledReason="Sélectionne un sport d'abord"
+          />
+          <FilterRow label="Promotion" value={promotionLabel} onTap={() => setOpenPromotion(true)} />
+          <FilterRow label="Région" value={regionLabel} onTap={() => setOpenRegion(true)} />
+          <FilterRow label="Organisation" value={orgLabel} onTap={() => setOpenOrg(true)} />
+          <FilterRow label="Ligue" value={libelleAxeRecherche(props.leagueOptionList, props.leagueFilter, "Toutes")} onTap={() => setOpenLeague(true)} />
+          <FilterRow label="Division" value={libelleAxeRecherche(props.divisionOptionList, props.divisionFilter, "Toutes")} onTap={() => setOpenDivision(true)} />
+          <FilterRow label="GPA minimum" value={gpaLabel} onTap={() => setOpenGpa(true)} />
+          <FilterRow label="Trier par" value={sortLabel} onTap={() => setOpenSort(true)} />
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-6">
-          {/* Iter 6.0d — 7 rows compacts dans UN container card style iOS Settings.
-              Bg #1A1D24 (canon Nexus, cohérent avec les autres cards). */}
-          <div className="mx-4 bg-[#1A1D24] rounded-2xl overflow-hidden">
-            <FilterRow label="Sport" value={sportLabel} onTap={() => setOpenSport(true)} />
-            <FilterRow label="Genre d'équipe" value={genderLabelValue} onTap={() => setOpenGender(true)} />
-            <FilterRow
-              label="Position"
-              value={positionLabel}
-              onTap={() => setOpenPosition(true)}
-              disabled={!props.sport}
-              disabledReason="Sélectionne un sport d'abord"
-            />
-            <FilterRow label="Promotion" value={promotionLabel} onTap={() => setOpenPromotion(true)} />
-            <FilterRow label="Région" value={regionLabel} onTap={() => setOpenRegion(true)} />
-            <FilterRow label="Organisation" value={orgLabel} onTap={() => setOpenOrg(true)} />
-            <FilterRow label="Ligue" value={libelleAxeRecherche(props.leagueOptionList, props.leagueFilter, "Toutes")} onTap={() => setOpenLeague(true)} />
-            <FilterRow label="Division" value={libelleAxeRecherche(props.divisionOptionList, props.divisionFilter, "Toutes")} onTap={() => setOpenDivision(true)} />
-            <FilterRow label="GPA minimum" value={gpaLabel} onTap={() => setOpenGpa(true)} />
-            <FilterRow label="Trier par" value={sortLabel} onTap={() => setOpenSort(true)} />
+        {/* Critères rapides */}
+        <section className="px-4">
+          <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mb-3">Critères rapides</h3>
+          <div className="flex flex-wrap gap-2">
+            <TogglePill active={props.verifiedOnly} label="Vérifié" onTap={() => props.setVerifiedOnly(!props.verifiedOnly)} />
+            <TogglePill active={props.withVideoOnly} label="Avec vidéo" onTap={() => props.setWithVideoOnly(!props.withVideoOnly)} />
+            <TogglePill active={props.minRating === "4"} label="4+ étoiles" onTap={() => props.setMinRating(props.minRating === "4" ? "" : "4")} />
+            <TogglePill active={props.withSportBadge} label="Distinction" onTap={() => props.setWithSportBadge(!props.withSportBadge)} />
+            <TogglePill active={props.withAcademicBadge} label="Mention académique" onTap={() => props.setWithAcademicBadge(!props.withAcademicBadge)} />
+            <TogglePill active={props.hideFavorites} label="Masquer favoris" onTap={() => props.setHideFavorites(!props.hideFavorites)} />
           </div>
+        </section>
 
-          {/* Critères rapides */}
-          <section className="px-4">
-            <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mb-3">Critères rapides</h3>
-            <div className="flex flex-wrap gap-2">
-              <TogglePill active={props.verifiedOnly} label="Vérifié" onTap={() => props.setVerifiedOnly(!props.verifiedOnly)} />
-              <TogglePill active={props.withVideoOnly} label="Avec vidéo" onTap={() => props.setWithVideoOnly(!props.withVideoOnly)} />
-              <TogglePill active={props.minRating === "4"} label="4+ étoiles" onTap={() => props.setMinRating(props.minRating === "4" ? "" : "4")} />
-              <TogglePill active={props.withSportBadge} label="Distinction" onTap={() => props.setWithSportBadge(!props.withSportBadge)} />
-              <TogglePill active={props.withAcademicBadge} label="Mention académique" onTap={() => props.setWithAcademicBadge(!props.withAcademicBadge)} />
-              <TogglePill active={props.hideFavorites} label="Masquer favoris" onTap={() => props.setHideFavorites(!props.hideFavorites)} />
-            </div>
-          </section>
-
-          {/* Ouvertures */}
-          <section className="px-4">
-            <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mb-3">Ouvertures</h3>
-            <div className="flex flex-wrap gap-2">
-              <TogglePill active={props.filterOuvertDemenager} label="Déménager" onTap={() => props.setFilterOuvertDemenager(!props.filterOuvertDemenager)} />
-              <TogglePill active={props.progFilterIds.length > 0}
-                label={props.progFilterIds.length > 0 ? `Programme (${props.progFilterIds.length})` : "Programme"}
-                onTap={() => props.setProgFilterOpen(true)} />
-              {/* GARDE-FOU : masqué, jamais coché-mais-inerte — sans cégep
-                  rattaché ou sans catalogue, ce filtre ne peut rien rendre. */}
-              {props.monCegepAUnCatalogue && (
-                <TogglePill active={props.offertParMonCegep} label="Offert chez nous"
-                  onTap={() => props.setOffertParMonCegep(!props.offertParMonCegep)} />
-              )}
-              <TogglePill active={props.filterOuvertPrive} label="Privé" onTap={() => props.setFilterOuvertPrive(!props.filterOuvertPrive)} />
-              <TogglePill active={props.filterOuvertAnglophone} label="Anglophone" onTap={() => props.setFilterOuvertAnglophone(!props.filterOuvertAnglophone)} />
-            </div>
-          </section>
-        </div>
-
-        <div className="border-t border-white/[0.06] p-4">
-          <button
-            type="button"
-            onClick={closeSheet}
-            className="w-full h-14 rounded-2xl bg-[#E63946] text-white text-[15px] font-bold active:bg-[#D42B22]"
-          >
-            Appliquer{resultCount > 0 ? ` (${resultCount} athlète${resultCount !== 1 ? "s" : ""})` : ""}
-          </button>
-        </div>
-      </div>
+        {/* Ouvertures */}
+        <section className="px-4">
+          <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mb-3">Ouvertures</h3>
+          <div className="flex flex-wrap gap-2">
+            <TogglePill active={props.filterOuvertDemenager} label="Déménager" onTap={() => props.setFilterOuvertDemenager(!props.filterOuvertDemenager)} />
+            <TogglePill active={props.progFilterIds.length > 0}
+              label={props.progFilterIds.length > 0 ? `Programme (${props.progFilterIds.length})` : "Programme"}
+              onTap={() => props.setProgFilterOpen(true)} />
+            {/* GARDE-FOU : masqué, jamais coché-mais-inerte — sans cégep
+                rattaché ou sans catalogue, ce filtre ne peut rien rendre. */}
+            {props.monCegepAUnCatalogue && (
+              <TogglePill active={props.offertParMonCegep} label="Offert chez nous"
+                onTap={() => props.setOffertParMonCegep(!props.offertParMonCegep)} />
+            )}
+            <TogglePill active={props.filterOuvertPrive} label="Privé" onTap={() => props.setFilterOuvertPrive(!props.filterOuvertPrive)} />
+            <TogglePill active={props.filterOuvertAnglophone} label="Anglophone" onTap={() => props.setFilterOuvertAnglophone(!props.filterOuvertAnglophone)} />
+          </div>
+        </section>
+      </FilterBottomSheetShell>
 
       {/* MobilePickers — rendus APRÈS le sheet pour stacking z-index correct */}
       <MobilePicker open={openSport} onClose={() => setOpenSport(false)} title="Sport" options={SPORTS} value={props.sport} onChange={(v) => props.setSport((v as string) ?? "")} />
@@ -1067,14 +960,8 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
       <MobilePicker open={openLeague} onClose={() => setOpenLeague(false)} title="Ligue" options={props.leagueOptionList} value={props.leagueFilter} onChange={(v) => props.setLeagueFilter((v as string) ?? "")} />
       <MobilePicker open={openDivision} onClose={() => setOpenDivision(false)} title="Division" options={props.divisionOptionList} value={props.divisionFilter} onChange={(v) => props.setDivisionFilter((v as string) ?? "")} />
       <MobilePicker open={openGpa} onClose={() => setOpenGpa(false)} title="GPA minimum" options={GPA_OPTIONS} value={props.minGpa} onChange={(v) => props.setMinGpa((v as string) ?? "")} />
-      <MobilePicker open={openSort} onClose={() => setOpenSort(false)} title="Trier par" options={SORT_OPTIONS.map((s) => ({ value: s.value, label: s.label }))} value={props.sortBy} onChange={(v) => props.setSortBy((v as string) ?? "rating_desc")} />
-
-      <style jsx>{`
-        @keyframes nx-modal-fade { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes nx-modal-slideup { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      `}</style>
-    </>,
-    document.body,
+      <MobilePicker open={openSort} onClose={() => setOpenSort(false)} title="Trier par" options={SORT_OPTIONS.map((s) => ({ value: s.value, label: s.label }))} value={props.sortBy} onChange={(v) => props.setSortBy((v as string) ?? "decouverte")} />
+    </>
   );
 }
 
@@ -1312,8 +1199,13 @@ export function RecruteurRechercheMobile() {
       // "plus_vus" → fallback sur favCounts (proxy popularité) en attendant agrégat dédié
       list = [...list].sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
     }
+    // Découverte (défaut) : mélange stable du jour, propre à ce recruteur —
+    // même logique que le web (lib/recherche/triDecouverte), purement client.
+    if (sortBy === "decouverte" && currentUser?.authUser.id) {
+      list = trierDecouverte(list, currentUser.authUser.id);
+    }
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, position, region, genderFilter, orgType, leagueFilter, divisionFilter, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+  }, [athletes, position, region, genderFilter, orgType, leagueFilter, divisionFilter, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts, currentUser?.authUser.id]);
 
   /* FACETTES DÉPENDANTES — chaque menu compte sur la population cadrée par les
      DEUX AUTRES axes, exactement comme au web et sur la recherche coach. Une
@@ -1344,7 +1236,7 @@ export function RecruteurRechercheMobile() {
     sport, genderFilter, position, promotion, region, orgType, leagueFilter, divisionFilter, minGpa,
     verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge,
     hideFavorites, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone,
-    filterNewOnly, sortBy !== "rating_desc",
+    filterNewOnly, sortBy !== FILTRES_DEFAUT.sortBy,
   ].filter(Boolean).length;
   const hasFilters = activeFiltersCount > 0 || search.length > 0;
 
@@ -1356,7 +1248,7 @@ export function RecruteurRechercheMobile() {
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", promotion: "", region: "", orgType: "", minGpa: "",
       leagueFilter: "", divisionFilter: "",
-      sortBy: "rating_desc",
+      sortBy: FILTRES_DEFAUT.sortBy,
       verifiedOnly: false, withVideoOnly: false, minRating: "",
       withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
       filterOuvertDemenager: false, filterOuvertPrive: false, filterOuvertAnglophone: false,

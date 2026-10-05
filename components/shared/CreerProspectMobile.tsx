@@ -82,6 +82,10 @@ export default function CreerProspectMobile({ sportId, onClose }: {
   const [genre, setGenre] = useState<Genre>("SCOLAIRE");
   const [recherche, setRecherche] = useState("");
   const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
+  // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — distinct du sport de
+  // l'unité (sportId, prop) : la carte naît dans l'unité du créateur, mais
+  // l'athlète peut jouer n'importe quel sport offert par son établissement.
+  const [sportAthleteId, setSportAthleteId] = useState("");
   const [equipeChoisie, setEquipeChoisie] = useState("");
   const [courriel, setCourriel] = useState("");
   const [telephone, setTelephone] = useState("");
@@ -124,17 +128,48 @@ export default function CreerProspectMobile({ sportId, onClose }: {
     },
   });
 
-  // Positions et nom du sport de l'unité (comme le web).
+  // Positions et nom DU SPORT DE L'ATHLÈTE — jamais celui de l'unité.
   const { data: sport } = useQuery({
-    queryKey: ["carte-sport", sportId],
+    queryKey: ["carte-sport", sportAthleteId],
+    enabled: !!sportAthleteId,
     staleTime: Infinity,
     queryFn: async () => {
       const supabase = createClient();
       const [{ data }, { data: s }] = await Promise.all([
-        supabase.from("positions").select("id, abreviation, nom").eq("sport_id", sportId).order("nom"),
-        supabase.from("sports").select("nom").eq("id", sportId).maybeSingle(),
+        supabase.from("positions").select("id, abreviation, nom").eq("sport_id", sportAthleteId).order("nom"),
+        supabase.from("sports").select("nom").eq("id", sportAthleteId).maybeSingle(),
       ]);
       return { positions: (data ?? []) as Position[], nom: (s?.nom as string | undefined) ?? "" };
+    },
+  });
+
+  // Les sports offerts par l'établissement choisi (≥ 1 équipe) — repli :
+  // choix libre parmi tous les sports s'il n'en a AUCUNE.
+  const { data: sportsEtablissement = null } = useQuery({
+    queryKey: ["carte-sports-etablissement", etablissement?.id],
+    enabled: !!etablissement,
+    staleTime: Infinity,
+    queryFn: async (): Promise<{ id: string; nom: string }[]> => {
+      const { data } = await createClient().from("teams").select("sport_id, sports!sport_id(nom)").eq("school_id", etablissement!.id);
+      const vus = new Map<string, string>();
+      for (const t of (data ?? []) as { sport_id: string; sports: { nom: string } | { nom: string }[] | null }[]) {
+        const s = Array.isArray(t.sports) ? t.sports[0] : t.sports;
+        if (s?.nom) vus.set(t.sport_id, s.nom);
+      }
+      return [...vus.entries()].map(([id, nom]) => ({ id, nom })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    },
+  });
+  // Un seul sport offert : pas de choix réel, on le pose directement.
+  useEffect(() => {
+    if (sportsEtablissement?.length === 1 && !sportAthleteId) setSportAthleteId(sportsEtablissement[0].id);
+  }, [sportsEtablissement, sportAthleteId]);
+  const { data: tousLesSports = null } = useQuery({
+    queryKey: ["tous-les-sports"],
+    enabled: sportsEtablissement !== null && sportsEtablissement.length === 0,
+    staleTime: Infinity,
+    queryFn: async () => {
+      const { data } = await createClient().from("sports").select("id, nom").order("nom");
+      return (data ?? []) as { id: string; nom: string }[];
     },
   });
 
@@ -167,14 +202,14 @@ export default function CreerProspectMobile({ sportId, onClose }: {
     return tous.filter((e) => mots.every((m) => e.cle.includes(m))).slice(0, 12);
   }, [recherche, etablissement, tous]);
 
-  // Les équipes du sport de l'unité dans l'établissement choisi.
+  // Les équipes DU SPORT DE L'ATHLÈTE choisi dans l'établissement.
   const nomSport = sport?.nom ?? "";
   const { data: equipes = null } = useQuery({
-    queryKey: ["carte-equipes", etablissement?.id, sportId, nomSport],
-    enabled: !!etablissement && !!sport,
+    queryKey: ["carte-equipes", etablissement?.id, sportAthleteId, nomSport],
+    enabled: !!etablissement && !!sportAthleteId && !!sport,
     queryFn: async (): Promise<Equipe[]> => {
       const { data } = await createClient().from("teams").select("id, name, age_group, division, gender")
-        .eq("school_id", etablissement!.id).eq("sport_id", sportId).order("age_group").order("division");
+        .eq("school_id", etablissement!.id).eq("sport_id", sportAthleteId).order("age_group").order("division");
       const lignes = ((data ?? []) as { id: string; name: string; age_group: string | null; division: string | null; gender: string | null }[])
         .map((e) => ({ id: e.id, name: e.name, libelle: libelleEquipe(nomSport, e) }));
       const vus = new Map<string, number>();
@@ -186,7 +221,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
   const teamId = equipes?.length === 1 ? equipes[0].id : equipeChoisie || null;
   const equipeOk = !!etablissement && equipes !== null && (sansEquipe || !!teamId);
   const aContact = courriel.trim().length > 0 || telephone.trim().length > 0;
-  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && equipeOk && aContact;
+  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!sportAthleteId && equipeOk && aContact;
 
   const promotions = useMemo(() => {
     const an = new Date().getFullYear();
@@ -241,6 +276,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
       }
       const { id: carteId, error } = await creerCarte(supabase, {
         prenom, nom, teamId: sansEquipe ? null : teamId, schoolId: etablissement.id,
+        sportAthleteId,
         positionId: positionId || null,
         numero: numero || null,
         promotion: promotion.trim() === "" ? null : Number(promotion),
@@ -371,7 +407,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
                   {etablissement.name}
                   {etablissement.city && <span className="text-[#6B7280]"> · {etablissement.city}</span>}
                 </span>
-                <button type="button" onClick={() => { setEtablissement(null); setEquipeChoisie(""); setRecherche(""); toucher(); }}
+                <button type="button" onClick={() => { setEtablissement(null); setSportAthleteId(""); setEquipeChoisie(""); setRecherche(""); toucher(); }}
                   className="min-h-[40px] text-[12px] font-bold text-[#9CA3AF] shrink-0">
                   Changer
                 </button>
@@ -416,7 +452,28 @@ export default function CreerProspectMobile({ sportId, onClose }: {
             )}
           </div>
 
-          {etablissement && equipes !== null && (
+          {etablissement && sportsEtablissement !== null && (
+            <div>
+              <label htmlFor="prospect-sport" className={etiquette}>Sport <span className="text-[#E63946]">*</span></label>
+              <select id="prospect-sport" data-testid="prospect-sport" className={champ} value={sportAthleteId}
+                onChange={(e) => { setSportAthleteId(e.target.value); setEquipeChoisie(""); toucher(); }}>
+                <option value="">Choisir le sport</option>
+                {(sportsEtablissement.length > 0 ? sportsEtablissement : (tousLesSports ?? [])).map((s) => (
+                  <option key={s.id} value={s.id}>{s.nom}</option>
+                ))}
+              </select>
+              {sportsEtablissement.length === 0 && (
+                <p className="text-[12px] text-[#6B7280] mt-1">
+                  {genre === "CIVIL" ? "Ce club n'a aucune équipe enregistrée — choisis le sport de l'athlète." : "Cette école n'a aucune équipe enregistrée — choisis le sport de l'athlète."}
+                </p>
+              )}
+            </div>
+          )}
+          {etablissement && sportsEtablissement === null && (
+            <p className="text-[12px] text-[#6B7280]">Chargement des sports…</p>
+          )}
+
+          {etablissement && sportAthleteId && equipes !== null && (
             <div>
               <label htmlFor="prospect-equipe" className={etiquette}>Équipe {!sansEquipe && <span className="text-[#E63946]">*</span>}</label>
               <select id="prospect-equipe" data-testid="prospect-equipe" className={champ} disabled={sansEquipe}

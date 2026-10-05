@@ -48,6 +48,11 @@ export interface CarteMeta {
    *  sport de l'unité (décision BP 2026-09-30). */
   schoolId: string | null;
   schoolNom: string | null;
+  /** Le sport de L'ATHLÈTE (décision BP 2026-10-05) — distinct du sport de
+   *  l'unité (`PipelineKanbanCard.sport`, le tableau qui contient la carte).
+   *  Déduit de l'équipe quand il y en a une, choisi par le recruteur sinon. */
+  sportAthleteId: string;
+  sportAthleteNom: string;
   positionId: string | null;
   numero: string | null;
   promotion: number | null;
@@ -120,6 +125,7 @@ export interface LigneCarte {
   derniere_activite: string;
   created_at: string;
   school_id: string | null;
+  sport_athlete_id: string;
   teams: { name: string | null; division: string | null; league: string | null; age_group: string | null; gender: string | null; rseq_team_id: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
   /** L'établissement de la carte (rattachement direct, sans équipe). */
   etablissement: { name: string | null; region: string | null; type: string | null } | null;
@@ -130,7 +136,7 @@ const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, parent_nom, parent_courriel, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
-  school_id,
+  school_id, sport_athlete_id,
   teams!team_id(name, division, league, age_group, gender, rseq_team_id, schools!school_id(name, region, type)),
   etablissement:schools!school_id(name, region, type),
   positions!position_id(abreviation)
@@ -226,6 +232,10 @@ export function versKanban(
   const ecole = l.teams?.schools ?? l.etablissement ?? null;
   const expire = expireLe(l.derniere_activite);
   const nomSport = contexte.nomSport(l.unite_sport_id);
+  // Le sport de L'ATHLÈTE (décision BP 2026-10-05) — peut différer de celui
+  // de l'unité (le tableau qui contient la carte ne bouge pas). C'est LUI qui
+  // définit l'équipe (teamNom plus bas), jamais le sport de l'unité.
+  const nomSportAthlete = contexte.nomSport(l.sport_athlete_id);
   // Même règle que les dossiers (leagueOf) : équipe d'école sans ligue = RSEQ.
   // Hissé ici (plutôt que recalculé deux fois) : sert au champ `ligue` ET à
   // libeller l'équipe dans Infos (teamNom), qui veut sport·catégorie·division
@@ -289,9 +299,11 @@ export function versKanban(
       parentCourriel: l.parent_courriel,
       lienVideo: l.lien_video,
       teamId: l.team_id,
-      teamNom: l.teams ? libelleEquipeComplet(nomSport, { ...l.teams, name: l.teams.name ?? "" }, ligueEquipe) : null,
+      teamNom: l.teams ? libelleEquipeComplet(nomSportAthlete, { ...l.teams, name: l.teams.name ?? "" }, ligueEquipe) : null,
       schoolId: l.school_id,
       schoolNom: ecole?.name ?? null,
+      sportAthleteId: l.sport_athlete_id,
+      sportAthleteNom: nomSportAthlete,
       positionId: l.position_id,
       numero: l.numero,
       promotion: l.promotion,
@@ -353,9 +365,13 @@ export async function ajouterNoteCarte(supabase: SupabaseClient, carteId: string
 export interface NouvelleCarte {
   prenom: string;
   nom: string;
-  /** null : l'établissement n'a aucune équipe du sport — rattachement direct. */
+  /** null : l'établissement n'a aucune équipe DE CE SPORT — rattachement direct. */
   teamId: string | null;
   schoolId: string;
+  /** Le sport de l'athlète (décision BP 2026-10-05). Ignoré par la base
+   *  quand `teamId` est posé — elle le déduit alors de l'équipe ; requis et
+   *  faisant foi seulement quand `teamId` est null. */
+  sportAthleteId: string;
   positionId: string | null;
   numero: string | null;
   promotion: number | null;
@@ -377,6 +393,7 @@ export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
       nom: c.nom.trim(),
       team_id: c.teamId,
       school_id: c.schoolId,
+      sport_athlete_id: c.sportAthleteId,
       position_id: c.positionId,
       numero: c.numero?.trim() || null,
       promotion: c.promotion,

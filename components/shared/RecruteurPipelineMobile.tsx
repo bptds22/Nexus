@@ -41,6 +41,8 @@ import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
 import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
+import { FilterRow, FilterBottomSheetShell } from "@/components/shared/filters/FilterBottomSheetShell";
+import { MobilePicker } from "@/components/mobile/MobilePicker";
 import {
   sortPipelineCards,
   DEFAULT_PIPELINE_SORT,
@@ -657,9 +659,6 @@ function FiltresSheet({
   filtreSport: FiltreSportUniteEtat | null;
 }) {
   const toast = useMobileToast();
-  const kbdStyle = useSheetKeyboardGeometry();
-  // Monté côté client seulement (export statique) — sans setState dans un effet.
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   /* Les options d'une liste se comptent sur les cartes filtrées par TOUT le
      reste (facetOptions exclut la facette comptée) : une valeur proposée
@@ -672,14 +671,21 @@ function FiltresSheet({
     graduation_year: facetOptions(cards, "graduation_year", filters),
   }), [cards, filters]);
 
-  if (!mounted) return null;
+  // Même feuille que Recherche (décision BP 2026-10-05) : FilterRow +
+  // MobilePicker pour chaque champ, plus de <select> natif. Un état d'ouverture
+  // par champ.
+  const [openSport, setOpenSport] = useState(false);
+  const [openLeague, setOpenLeague] = useState(false);
+  const [openRegion, setOpenRegion] = useState(false);
+  const [openPosition, setOpenPosition] = useState(false);
+  const [openPromotion, setOpenPromotion] = useState(false);
+  const [openSort, setOpenSort] = useState(false);
 
   const sportsDirecteur = filtreSport
     ? filtreSport.options.filter((o) => o.valeur !== SANS_SPORT && o.valeur !== TOUS).length
     : 0;
   const montrerUnite = !!filtreSport && filtreSport.pret && sportsDirecteur >= 2;
   const reinitialiser = () => {
-    triggerHaptic("Light");
     setFilters(() => EMPTY_FILTERS);
     setQuick(() => []);
     setSortBy(DEFAULT_PIPELINE_SORT);
@@ -687,94 +693,56 @@ function FiltresSheet({
     toast.info({ message: "Filtres réinitialisés" });
   };
   const titre = "text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2";
-  const liste = "w-full min-h-[46px] bg-[#1A1D24] border border-white/10 rounded-xl px-3 text-[15px] text-white outline-none focus:border-[#E63946] [&>option]:bg-[#13151a]";
-  const menu = (cle: "sport" | "league" | "region" | "position" | "graduation_year", libelle: string, tous: string) => (
-    <div className="min-w-0">
-      <label htmlFor={`filtre-${cle}`} className={`${titre} block`}>{libelle}</label>
-      <select
-        id={`filtre-${cle}`}
-        data-testid={`filtre-${cle}`}
-        className={liste}
-        value={filters[cle][0] ?? ""}
-        onChange={(e) => { const v = e.target.value; setFilters((f) => ({ ...f, [cle]: v ? [v] : [] })); }}
+
+  /** Les options d'un MobilePicker pour une facette, comptes inclus — même
+   *  info que les <option> natifs d'avant ("Libellé (12)"). */
+  const picker = (cle: "sport" | "league" | "region" | "position" | "graduation_year", tous: string) => [
+    { value: "", label: tous },
+    ...options[cle].map((o) => ({ value: o.value, label: `${o.label} (${o.count})` })),
+  ];
+  const libelleFiltre = (cle: "sport" | "league" | "region" | "position" | "graduation_year", tous: string) => {
+    const v = filters[cle][0] ?? "";
+    return v ? (options[cle].find((o) => o.value === v)?.label ?? tous) : tous;
+  };
+  const sortLabel = PIPELINE_SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "";
+
+  return (
+    <>
+      <FilterBottomSheetShell
+        open={open} onClose={onClose} onReset={reinitialiser} resultCount={nbResultats}
+        libelleApplique={(n) => `Voir ${n} athlète${n > 1 ? "s" : ""}`}
       >
-        <option value="">{tous}</option>
-        {options[cle].map((o) => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
-      </select>
-    </div>
-  );
+        {montrerUnite && filtreSport && (
+          <section className="px-4">
+            <h3 className={titre}>Unité</h3>
+            <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport className="w-full min-h-[46px]" />
+          </section>
+        )}
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[55] bg-black/60"
-            onClick={onClose}
-          />
-          <motion.div
-            role="dialog"
-            aria-label="Filtres"
-            data-testid="feuille-filtres"
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ ...kbdStyle, touchAction: "pan-y" }}
-          >
-            <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
-            <div className="flex items-center justify-between px-4 mb-1">
-              <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Filtrer</h2>
-              <button type="button" onClick={onClose} aria-label="Fermer" className="w-9 h-9 -mr-2 rounded-full flex items-center justify-center active:bg-white/5">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-              </button>
-            </div>
+        <div className="mx-4 bg-[#1A1D24] rounded-2xl overflow-hidden">
+          <FilterRow label="Sport" value={libelleFiltre("sport", "Tous")} onTap={() => setOpenSport(true)} />
+          <FilterRow label="Ligue" value={libelleFiltre("league", "Toutes")} onTap={() => setOpenLeague(true)} />
+          <FilterRow label="Région" value={libelleFiltre("region", "Toutes les régions")} onTap={() => setOpenRegion(true)} />
+          <FilterRow label="Position" value={libelleFiltre("position", "Toutes")} onTap={() => setOpenPosition(true)} />
+          <FilterRow label="Promotion" value={libelleFiltre("graduation_year", "Toutes")} onTap={() => setOpenPromotion(true)} />
+          <FilterRow label="Trier par" value={sortLabel} onTap={() => setOpenSort(true)} />
+        </div>
+      </FilterBottomSheetShell>
 
-            <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-4" style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}>
-              {montrerUnite && filtreSport && (
-                <section>
-                  <h3 className={titre}>Unité</h3>
-                  <FiltreSportUnite filtre={filtreSport} sansGroupeSansSport className="w-full min-h-[46px]" />
-                </section>
-              )}
-
-              <section className="grid grid-cols-2 gap-3">
-                {menu("sport", "Sport", "Tous")}
-                {menu("league", "Ligue", "Toutes")}
-              </section>
-              <section>{menu("region", "Région", "Toutes les régions")}</section>
-              <section className="grid grid-cols-2 gap-3">
-                {menu("position", "Position", "Toutes")}
-                {menu("graduation_year", "Promotion", "Toutes")}
-              </section>
-
-              <section>
-                <label htmlFor="filtre-tri" className={`${titre} block`}>Trier par</label>
-                <select id="filtre-tri" data-testid="filtre-tri" className={liste}
-                  value={sortBy} onChange={(e) => setSortBy(e.target.value as PipelineSortMode)}>
-                  {PIPELINE_SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </section>
-            </div>
-
-            <div className="flex items-center gap-3 px-4 pt-2 pb-3 border-t border-white/[0.06]">
-              <button type="button" onClick={reinitialiser} className="min-h-[48px] px-3 text-[14px] font-bold text-[#9CA3AF] active:text-white">
-                Réinitialiser
-              </button>
-              <button
-                type="button"
-                data-testid="voir-resultats"
-                onClick={() => { triggerHaptic("Light"); onClose(); }}
-                className="flex-1 min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22]"
-              >
-                Voir {nbResultats} athlète{nbResultats > 1 ? "s" : ""}
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>,
-    document.body,
+      <MobilePicker open={openSport} onClose={() => setOpenSport(false)} title="Sport" options={picker("sport", "Tous")}
+        value={filters.sport[0] ?? ""} onChange={(v) => setFilters((f) => ({ ...f, sport: v ? [String(v)] : [] }))} />
+      <MobilePicker open={openLeague} onClose={() => setOpenLeague(false)} title="Ligue" options={picker("league", "Toutes")}
+        value={filters.league[0] ?? ""} onChange={(v) => setFilters((f) => ({ ...f, league: v ? [String(v)] : [] }))} />
+      <MobilePicker open={openRegion} onClose={() => setOpenRegion(false)} title="Région" options={picker("region", "Toutes les régions")}
+        value={filters.region[0] ?? ""} onChange={(v) => setFilters((f) => ({ ...f, region: v ? [String(v)] : [] }))} />
+      <MobilePicker open={openPosition} onClose={() => setOpenPosition(false)} title="Position" options={picker("position", "Toutes")}
+        value={filters.position[0] ?? ""} onChange={(v) => setFilters((f) => ({ ...f, position: v ? [String(v)] : [] }))} />
+      <MobilePicker open={openPromotion} onClose={() => setOpenPromotion(false)} title="Promotion" options={picker("graduation_year", "Toutes")}
+        value={filters.graduation_year[0] ?? ""} onChange={(v) => setFilters((f) => ({ ...f, graduation_year: v ? [String(v)] : [] }))} />
+      <MobilePicker open={openSort} onClose={() => setOpenSort(false)} title="Trier par"
+        options={PIPELINE_SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        value={sortBy} onChange={(v) => setSortBy((v as PipelineSortMode) ?? DEFAULT_PIPELINE_SORT)} />
+    </>
   );
 }
 
