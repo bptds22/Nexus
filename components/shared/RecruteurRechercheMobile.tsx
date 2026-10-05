@@ -1329,6 +1329,17 @@ export function RecruteurRechercheMobile() {
         showViewToggle
       />
 
+      {/* Retour BP 2026-10-05 : accès en un tap, jamais caché dans la
+          feuille « Filtrer » — même principe que la pastille web. Fenêtre
+          réelle (recruiter_search_athletes, p_new_only) : 10 jours. */}
+      <div className="px-4 pb-2">
+        <TogglePill
+          active={filterNewOnly}
+          label="Nouveaux (10 jours)"
+          onTap={() => setFiltre("filterNewOnly", !filterNewOnly)}
+        />
+      </div>
+
       {/* Plus de compte d'athlètes affiché (retour BP 2026-10-03) — le
           chargement garde sa ligne. */}
       {loading && (
