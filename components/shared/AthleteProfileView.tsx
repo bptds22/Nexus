@@ -584,12 +584,15 @@ export default function AthleteProfileView({
                     { url: a.instagramUrl, colonne: "instagram_url" },
                     { url: a.fullGameUrl, label: "Match complet" },
                     { url: a.practiceVideoUrl, label: "Entraînement" },
-                  ].map((m) => ({ ...m, p: plateformeDuLien(m.url, m.colonne) })).filter((m) => m.url && m.p).map((m) => (
-                    <a key={`${m.label ?? m.p!.libelle}-${m.url}`} href={m.url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-[#111317] border border-white/5 hover:border-[#E63946]/30 transition-colors">
-                      <PlateformeIcone cle={m.p!.cle} size={16} className="shrink-0" />
-                      <span className="text-[13px] text-[#9CA3AF]">{m.label ?? m.p!.libelle}</span>
-                    </a>
-                  ))}
+                  ].map((m) => ({ ...m, p: plateformeDuLien(m.url, m.colonne) })).filter((m) => m.url && m.p).map((m) => {
+                    const libelle = m.label ?? `Voir sur ${m.p!.libelle}`;
+                    return (
+                      <a key={`${libelle}-${m.url}`} href={m.url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-[#111317] border border-white/5 hover:border-[#E63946]/30 transition-colors">
+                        <PlateformeIcone cle={m.p!.cle} size={16} className="shrink-0" />
+                        <span className="text-[13px] text-[#9CA3AF]">{libelle}</span>
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             </section>

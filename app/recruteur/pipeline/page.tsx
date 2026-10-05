@@ -542,8 +542,8 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 title={card.next_action_note ? `Relance : ${card.next_action_note}` : "Relance"}
                 data-testid="pastille-relance"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                  <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M5 3 2 6M19 3l3 3" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
                 {card.next_action_at ? `Relance ${formatRelanceCourt(card.next_action_at)}` : "Relance"}
               </span>

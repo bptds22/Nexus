@@ -422,7 +422,7 @@ export function SectionMediasLiens({ a, verrouille, compact = false }: { a: Athl
     .filter((m): m is typeof m & { url: string; p: Plateforme } => !!m.url && !!m.p)
     .map((m) => ({
       url: m.url, cle: m.p.cle,
-      label: m.titre ?? m.p.libelle,
+      label: m.titre ?? `Voir sur ${m.p.libelle}`,
       detail: m.titre && m.p.cle !== "autre" ? m.p.libelle : null,
     }));
   const hasMedia = mediaLinks.some((m) => m.url);

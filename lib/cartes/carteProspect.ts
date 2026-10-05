@@ -120,7 +120,7 @@ export interface LigneCarte {
   derniere_activite: string;
   created_at: string;
   school_id: string | null;
-  teams: { name: string | null; division: string | null; league: string | null; rseq_team_id: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
+  teams: { name: string | null; division: string | null; league: string | null; age_group: string | null; gender: string | null; rseq_team_id: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
   /** L'établissement de la carte (rattachement direct, sans équipe). */
   etablissement: { name: string | null; region: string | null; type: string | null } | null;
   positions: { abreviation: string | null } | null;
@@ -131,7 +131,7 @@ const SELECT_CARTE = `
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, parent_nom, parent_courriel, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
   school_id,
-  teams!team_id(name, division, league, rseq_team_id, schools!school_id(name, region, type)),
+  teams!team_id(name, division, league, age_group, gender, rseq_team_id, schools!school_id(name, region, type)),
   etablissement:schools!school_id(name, region, type),
   positions!position_id(abreviation)
 `;
@@ -225,13 +225,23 @@ export function versKanban(
   // Sans équipe, l'établissement de rattachement (école ou club).
   const ecole = l.teams?.schools ?? l.etablissement ?? null;
   const expire = expireLe(l.derniere_activite);
+  const nomSport = contexte.nomSport(l.unite_sport_id);
+  // Même règle que les dossiers (leagueOf) : équipe d'école sans ligue = RSEQ.
+  // Hissé ici (plutôt que recalculé deux fois) : sert au champ `ligue` ET à
+  // libeller l'équipe dans Infos (teamNom), qui veut sport·catégorie·division
+  // · ligue · genre — teams.name ne définit rien, il porte parfois le nom de
+  // l'école (saisie coach), jamais la ligue (déduite, jamais stockée pour une
+  // équipe RSEQ).
+  const ligueEquipe = l.teams
+    ? leagueOf({ context: null, schoolType: null, teamDivision: l.teams.division, teamLeague: l.teams.league, teamIsRseq: !!l.teams.rseq_team_id, hasTeam: true, teamSchoolType: l.teams.schools?.type ?? null }) ?? ""
+    : "";
   return {
     id: l.id,
     pipeline_id: l.id,
     full_name: `${l.prenom} ${l.nom}`.trim(),
     identityVisible: true,
     photo_url: "",
-    sport: contexte.nomSport(l.unite_sport_id),
+    sport: nomSport,
     position: l.positions?.abreviation ?? "",
     school: ecole?.name ?? "",
     region: ecole?.region ?? "",
@@ -269,10 +279,7 @@ export function versKanban(
     suivi_par_noms: l.cree_par ? [contexte.nomAuteur(l.cree_par)] : [],
     unite_sport_id: l.unite_sport_id,
     division_equipe: l.teams?.division ?? null,
-    // Même règle que les dossiers (leagueOf) : équipe d'école sans ligue = RSEQ.
-    ligue: l.teams
-      ? leagueOf({ context: null, schoolType: null, teamDivision: l.teams.division, teamLeague: l.teams.league, teamIsRseq: !!l.teams.rseq_team_id, hasTeam: true, teamSchoolType: l.teams.schools?.type ?? null }) ?? ""
-      : "",
+    ligue: ligueEquipe,
     carte: {
       prenom: l.prenom,
       nom: l.nom,
@@ -282,7 +289,7 @@ export function versKanban(
       parentCourriel: l.parent_courriel,
       lienVideo: l.lien_video,
       teamId: l.team_id,
-      teamNom: l.teams?.name ?? null,
+      teamNom: l.teams ? libelleEquipeComplet(nomSport, { ...l.teams, name: l.teams.name ?? "" }, ligueEquipe) : null,
       schoolId: l.school_id,
       schoolNom: ecole?.name ?? null,
       positionId: l.position_id,
@@ -478,6 +485,21 @@ export function libelleEquipe(sport: string, e: { name: string; age_group: strin
   const corps = [sport, e.age_group?.toLowerCase(), e.division].filter(Boolean).join(" ");
   const base = e.age_group || e.division ? corps : [sport, e.name].filter(Boolean).join(" — ");
   return e.gender ? `${base} · ${e.gender}` : base;
+}
+
+/** Libellé COMPLET d'une équipe, ligue incluse : « Football juvénile D2 ·
+ *  RSEQ · Masculin ». Ce qui définit une équipe (retour BP) — jamais
+ *  teams.name, qui ne porte ni sport ni catégorie et porte parfois le nom de
+ *  l'école (saisie coach). La ligue se passe déjà calculée (leagueOf) :
+ *  teams.league est souvent NULL pour une équipe RSEQ, déduite jamais stockée. */
+export function libelleEquipeComplet(
+  sport: string,
+  e: { name: string; age_group: string | null; division: string | null; gender: string | null },
+  ligue: string,
+): string {
+  const corps = [sport, e.age_group?.toLowerCase(), e.division].filter(Boolean).join(" ");
+  const base = e.age_group || e.division ? corps : [sport, e.name].filter(Boolean).join(" — ");
+  return [base, ligue, e.gender].filter(Boolean).join(" · ");
 }
 
 /* ── MON CÉGEP (admin) ──────────────────────────────────────────────

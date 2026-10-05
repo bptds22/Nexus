@@ -154,12 +154,14 @@ function ListAthleteCardMobile({
                   </svg>
                 </span>
               )}
-              <span className="flex-shrink-0 ml-auto flex items-center gap-1">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span className="text-[15px] font-bold text-white tabular-nums">{athlete.coachRating.toFixed(1)}</span>
-              </span>
+              {!athlete.isProspect && (
+                <span className="flex-shrink-0 ml-auto flex items-center gap-1">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span className="text-[15px] font-bold text-white tabular-nums">{athlete.coachRating.toFixed(1)}</span>
+                </span>
+              )}
             </div>
 
             <p className="text-[14px] text-[#9CA3AF] mt-1.5 truncate">
@@ -270,6 +272,7 @@ function AthleteNotesSheet({
             <div className="flex-1 overflow-y-auto px-4 py-4">
               <FilNotesSuiviMobile
                 athleteId={athlete.athleteId}
+                carteId={athlete.isProspect ? athlete.athleteId : null}
                 modeUnite={modeUnite}
                 titre="Notes de suivi"
                 replie={false}
@@ -565,8 +568,14 @@ function DetailInner({ listId }: { listId: string }) {
 
   // Iter 7.24 — Set des athleteId déjà dans la liste, calculé depuis useListAthletes.
   // Passé au sheet pour masquer ces athlètes de la liste de favoris proposés.
+  // Lot C mobile : les cartes prospect vivent dans un id-space séparé (cartes_prospect),
+  // donc un Set distinct pour ne pas les mélanger aux vrais athlètes.
   const existingIds = useMemo(
-    () => new Set(athletes.map((a) => a.athleteId)),
+    () => new Set(athletes.filter((a) => !a.isProspect).map((a) => a.athleteId)),
+    [athletes],
+  );
+  const existingCarteIds = useMemo(
+    () => new Set(athletes.filter((a) => a.isProspect).map((a) => a.athleteId)),
     [athletes],
   );
 
@@ -584,7 +593,9 @@ function DetailInner({ listId }: { listId: string }) {
     // Iter 7.18 Sprint 3 — back-nav précis : on encode l'id de la liste pour
     // que le back du profil revienne au DÉTAIL spécifique (pas l'Index).
     try { sessionStorage.setItem("lastRecruiterTab", `list-detail:${listId}`); } catch { /* no-op */ }
-    router.push(`/recruteur/athletes/${a.athleteId}`);
+    // Carte prospect (lot C) : pas de fiche /athletes/[id] — s'ouvre dans Mon
+    // processus, comme sur le web (?athlete= accepte déjà un carte_id là-bas).
+    router.push(a.isProspect ? `/recruteur/pipeline?athlete=${a.athleteId}` : `/recruteur/athletes/${a.athleteId}`);
   }, [router, listId]);
 
   const handleRemove = useCallback(async (a: ListAthlete) => {
@@ -593,6 +604,7 @@ function DetailInner({ listId }: { listId: string }) {
         listId,
         athleteId: a.athleteId,
         memberId: a.memberId,
+        isProspect: a.isProspect,
       });
       toast.success({
         message: modeUnite ? "Retiré de la liste de l'unité" : "Retiré de la liste",
@@ -789,6 +801,9 @@ function DetailInner({ listId }: { listId: string }) {
         listId={listId}
         listName={list?.name ?? null}
         existingIds={existingIds}
+        existingCarteIds={existingCarteIds}
+        uniteCegepId={list?.uniteCegepId ?? null}
+        uniteSportId={list?.uniteSportId ?? null}
       />
 
       <style jsx>{`

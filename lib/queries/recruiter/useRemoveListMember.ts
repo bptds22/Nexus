@@ -9,6 +9,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { retirerCarteDeListe } from "@/lib/cartes/carteProspect";
 import type { ListMetadata, ListAthlete } from "@/lib/queries/recruiter/useListAthletes";
 
 interface RemoveInput {
@@ -16,6 +17,9 @@ interface RemoveInput {
   athleteId: string;
   /** memberId facultatif — si fourni, DELETE par id (plus fiable). Sinon DELETE par couple. */
   memberId?: string;
+  /** Carte prospect (lot C) : athleteId porte alors l'id de la carte, et le
+   *  retrait passe par cartes_prospect_listes, jamais recruiter_list_members. */
+  isProspect?: boolean;
 }
 
 interface QueryCacheShape {
@@ -31,6 +35,11 @@ export function useRemoveListMember() {
   return useMutation({
     mutationFn: async (input: RemoveInput): Promise<void> => {
       const supabase = createClient();
+      if (input.isProspect) {
+        const error = await retirerCarteDeListe(supabase, input.listId, input.athleteId);
+        if (error) throw error;
+        return;
+      }
       if (input.memberId) {
         const { error } = await supabase
           .from("recruiter_list_members")

@@ -2023,7 +2023,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     { url: a.instagramUrl, colonne: "instagram_url" },
   ] as { url?: string; colonne: string }[]).flatMap((m) => {
     const p = plateformeDuLien(m.url, m.colonne);
-    return p && m.url ? [{ label: p.libelle, url: m.url, cle: p.cle }] : [];
+    return p && m.url ? [{ label: `Voir sur ${p.libelle}`, url: m.url, cle: p.cle }] : [];
   });
   const liensVideo = ([
     { titre: "Faits saillants", url: a.highlightVideoUrl },

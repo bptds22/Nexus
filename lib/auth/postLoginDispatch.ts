@@ -25,6 +25,7 @@ type Router = ReturnType<typeof useRouter>;
 
 export type DispatchOutcome =
   | { kind: "deactivated" }
+  | { kind: "role" }
   | { kind: "consent" }
   | { kind: "onboarding" }
   | { kind: "portal"; role: string }
@@ -49,6 +50,21 @@ export async function postLoginDispatch(
     .select("role, onboarding_complete, status, privacy_preferences")
     .eq("id", user.id)
     .single();
+
+  // 1-bis) Rôle pas encore réclamé (compte créé, écran de choix jamais
+  // terminé) → TOUJOURS /inscription/role, avant consentements/onboarding.
+  // Miroir du filet de sécurité OAuth d'app/auth/callback/route.ts : même
+  // RPC needs_signup_role(), même prédicat serveur (one-shot : role_claimed_at
+  // IS NULL + onboarding non fini + pas de fiche athlete), pour que la
+  // décision ne puisse pas diverger entre web et ce chemin (login ET reopen
+  // de l'app — postLoginDispatch est l'entonnoir des deux, cf. AuthMobileDispatcher).
+  // Sans ce check, un compte sans rôle choisi retombait sur /consentements au
+  // reboot (role='ATHLETE' du défaut trigger, jamais réellement choisi).
+  const { data: needsRole } = await supabase.rpc("needs_signup_role");
+  if (needsRole === true) {
+    router.replace("/inscription/role");
+    return { kind: "role" };
+  }
 
   // 2) Décision de routing (pure, source unique).
   const dest = computeDispatchDestination(

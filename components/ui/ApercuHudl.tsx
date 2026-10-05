@@ -10,10 +10,15 @@ import { Capacitor } from "@capacitor/core";
    ApercuHudl — un lien Hudl sur la fiche, web ET app (recette 1.4.4).
 
    Vidéo publique confirmée → le lecteur officiel `/embed/video/…` en
-   ligne, comme YouTube (Hudl déclare `frame-ancestors *` ; l'iframe ne
-   dépend pas de l'origine, elle joue aussi sous capacitor://).
-   Tout le reste → une carte « Voir sur Hudl » : logo, vignette quand Hudl
-   en publie une (photo du profil, image de la vidéo), titre.
+   ligne, SUR LE WEB SEULEMENT. Constaté en recette iOS (1.4.4, iPhone BP) :
+   case noire silencieuse sous capacitor://localhost — le player JS de Hudl
+   n'a pas le même traitement que l'iframe HTTP standard, contrairement à ce
+   que « frame-ancestors *» laissait supposer. Même stratégie que YouTube
+   (VideoEmbed.tsx) : sous Capacitor, jamais d'iframe Hudl, toujours la carte
+   « Voir sur Hudl » qui ouvre le navigateur système au tap.
+   Tout le reste (web non lisible, chargement, profil, vidéo supprimée,
+   lien inconnu) → la même carte : logo, vignette quand Hudl en publie une
+   (photo du profil, image de la vidéo), titre.
 
    Jamais un lecteur vide : tant que la fonction n'a pas confirmé la vidéo
    — chargement compris — c'est la carte qui s'affiche. Voir
@@ -32,7 +37,7 @@ export default function ApercuHudl({ url, title }: { url: string; title?: string
     return () => { vivant = false; };
   }, [url]);
 
-  if (estLisible(apercu)) {
+  if (estLisible(apercu) && !Capacitor.isNativePlatform()) {
     return (
       <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }} data-testid="hudl-lecteur">
         <iframe

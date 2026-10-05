@@ -18,7 +18,7 @@
    Référence design : docs/mobile-design-system.md.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -486,8 +486,8 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
                   style={{ backgroundColor: relance.isLate ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.1)" }}
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={relance.isLate ? "#F59E0B" : "#FFFFFF"} strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                    <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={relance.isLate ? "#F59E0B" : "#FFFFFF"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                   <span className="text-[11px] font-bold" style={{ color: relance.isLate ? "#F59E0B" : "#FFFFFF" }} aria-label={`Relance le ${relance.label}`}>
                     {relance.label}
@@ -632,19 +632,13 @@ function SwipeableCard({
    Les chips venues d'un lien du tableau de bord (?filtre=relances) filtrent
    toujours : la pastille du bouton les compte, Réinitialiser les retire.
 
-   CHAMP ÉCOLE ET CLAVIER (bug de recette, reproduit sur l'émulateur) : le
-   champ est en bas de la zone qui défile. Le clavier ouvert, la feuille
-   remonte et RACCOURCIT (useSheetKeyboardGeometry) — mais rien ne ramenait
-   le champ dans la partie visible : il passait sous le pied de la feuille
-   et on tapait à l'aveugle. Le navigateur ne le fait pas pour nous : sous
-   KeyboardResize.None, la WebView ignore le clavier. On ramène donc le
-   champ à vue nous-mêmes, au focus ET quand la hauteur du clavier change,
-   après la transition de 250 ms. */
+   Pas de champ École ici (retour BP, recette 1.4.4) : le web n'en a pas non
+   plus (ExtraFilters.school existe toujours côté lib/pipeline pour d'autres
+   appelants, mais plus pour ce sheet). */
 function FiltresSheet({
   open, onClose,
   filters, setFilters,
   setQuick,
-  ecole, setEcole,
   sortBy, setSortBy,
   cards, nbResultats,
   filtreSport,
@@ -654,8 +648,6 @@ function FiltresSheet({
   filters: PipelineFilters;
   setFilters: (updater: (f: PipelineFilters) => PipelineFilters) => void;
   setQuick: (updater: (q: QuickKey[]) => QuickKey[]) => void;
-  ecole: string;
-  setEcole: (v: string) => void;
   sortBy: PipelineSortMode;
   setSortBy: (v: PipelineSortMode) => void;
   cards: PipelineKanbanCard[];
@@ -668,29 +660,17 @@ function FiltresSheet({
   const kbdStyle = useSheetKeyboardGeometry();
   // Monté côté client seulement (export statique) — sans setState dans un effet.
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
-  const champEcole = useRef<HTMLInputElement>(null);
-  const ramenerChamp = useCallback(() => {
-    window.setTimeout(() => {
-      const el = champEcole.current;
-      if (el && document.activeElement === el) el.scrollIntoView({ block: "nearest" });
-    }, 300);
-  }, []);
-  const hauteurClavier = kbdStyle.bottom;
-  useEffect(() => { ramenerChamp(); }, [hauteurClavier, ramenerChamp]);
 
   /* Les options d'une liste se comptent sur les cartes filtrées par TOUT le
      reste (facetOptions exclut la facette comptée) : une valeur proposée
      rend au moins un athlète. */
-  const options = useMemo(() => {
-    const extra = { school: ecole };
-    return {
-      sport: facetOptions(cards, "sport", filters, extra),
-      league: facetOptions(cards, "league", filters, extra),
-      region: facetOptions(cards, "region", filters, extra),
-      position: facetOptions(cards, "position", filters, extra),
-      graduation_year: facetOptions(cards, "graduation_year", filters, extra),
-    };
-  }, [cards, filters, ecole]);
+  const options = useMemo(() => ({
+    sport: facetOptions(cards, "sport", filters),
+    league: facetOptions(cards, "league", filters),
+    region: facetOptions(cards, "region", filters),
+    position: facetOptions(cards, "position", filters),
+    graduation_year: facetOptions(cards, "graduation_year", filters),
+  }), [cards, filters]);
 
   if (!mounted) return null;
 
@@ -702,7 +682,6 @@ function FiltresSheet({
     triggerHaptic("Light");
     setFilters(() => EMPTY_FILTERS);
     setQuick(() => []);
-    setEcole("");
     setSortBy(DEFAULT_PIPELINE_SORT);
     if (filtreSport?.monSportId) filtreSport.setChoix(filtreSport.monSportId);
     toast.info({ message: "Filtres réinitialisés" });
@@ -767,27 +746,6 @@ function FiltresSheet({
               <section className="grid grid-cols-2 gap-3">
                 {menu("position", "Position", "Toutes")}
                 {menu("graduation_year", "Promotion", "Toutes")}
-              </section>
-
-              <section>
-                <label htmlFor="filtre-ecole" className={`${titre} block`}>École</label>
-                <input
-                  ref={champEcole}
-                  id="filtre-ecole"
-                  data-testid="filtre-ecole"
-                  type="search"
-                  value={ecole}
-                  onChange={(e) => setEcole(e.target.value)}
-                  onFocus={ramenerChamp}
-                  placeholder="Nom de l'école ou du club"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  enterKeyHint="search"
-                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                  className={liste}
-                />
               </section>
 
               <section>
@@ -1367,8 +1325,8 @@ function PipelineDetailSheet({
                     alerte critique. */}
                 {formatRelancePill(nextActionAtLocal, nowTs)?.isLate && (
                   <div className="flex items-center gap-1.5 mt-2.5">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
                     <span className="text-[11px] uppercase tracking-wider font-bold text-[#F59E0B]">
                       Relance en retard
@@ -1669,8 +1627,6 @@ export function RecruteurPipelineMobile() {
   );
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [quick, setQuick] = useState<QuickKey[]>(() => quickDepuisFiltreUrl(filtreUrl));
-  /** Recherche d'école ou de club (feuille « Filtrer »). */
-  const [ecole, setEcole] = useState("");
   /* « + Prospect » — mêmes conditions que le web : la carte naît dans
      l'unité du recruteur, donc pas quand un directeur regarde un autre
      sport (ou tout le cégep). */
@@ -1695,8 +1651,8 @@ export function RecruteurPipelineMobile() {
      Le TOTAL, lui, reste brut : c'est « combien d'athlètes je suis », une
      réponse qui ne doit pas bouger quand je regarde un sous-ensemble. */
   const cardsFiltrees = useMemo(
-    () => filterPipelineCards(cards, filters, { quick, school: ecole }),
-    [cards, filters, quick, ecole],
+    () => filterPipelineCards(cards, filters, { quick }),
+    [cards, filters, quick],
   );
 
   const cardsByStage = useMemo(() => {
@@ -1724,9 +1680,9 @@ export function RecruteurPipelineMobile() {
     // FILTRER PUIS TRIER — même ordre qu'au web. Les facettes viennent de
     // lib/pipeline/filterPipelineCards, le tri de sortPipelineCards : les
     // deux surfaces appellent exactement les mêmes fonctions.
-    const list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters, { quick, school: ecole });
+    const list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters, { quick });
     return sortPipelineCards(list, sortBy);
-  }, [cardsByStage, activeStage, filters, quick, ecole, sortBy]);
+  }, [cardsByStage, activeStage, filters, quick, sortBy]);
 
   // Index du stage actif pour les bornes du swipe (canSwipeLeft/Right)
   const activeStageIndex = useMemo(
@@ -1936,7 +1892,7 @@ export function RecruteurPipelineMobile() {
 
       <PipelineHeader
         totalCount={cards.length}
-        nActiveFilters={activeFilterCount(filters, { quick, school: ecole })}
+        nActiveFilters={activeFilterCount(filters, { quick })}
         onFilterTap={handleMenuTap}
       />
 
@@ -2072,7 +2028,6 @@ export function RecruteurPipelineMobile() {
         onClose={() => setMenuOpen(false)}
         filters={filters} setFilters={setFilters}
         setQuick={setQuick}
-        ecole={ecole} setEcole={setEcole}
         sortBy={sortBy} setSortBy={setSortBy}
         cards={cards}
         nbResultats={cardsFiltrees.length}
