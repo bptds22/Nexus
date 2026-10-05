@@ -570,9 +570,31 @@ export function RecruteurCalendrierMobile() {
     () => buildMonthGrid(cursor.year, cursor.month, matches, today),
     [cursor, matches, today],
   );
+  /* Par jour, pour la vue Calendrier : combien de matchs (★ si fort
+   * potentiel), de visites, de relances — même map que le web. */
+  const parJour = useMemo(() => {
+    const m = new Map<string, { matchs: number; hot: boolean; visites: number; relances: number }>();
+    const caseDuJour = (iso: string) => {
+      let c = m.get(iso);
+      if (!c) { c = { matchs: 0, hot: false, visites: 0, relances: 0 }; m.set(iso, c); }
+      return c;
+    };
+    for (const v of matches) { const c = caseDuJour(v.game.gameDate); c.matchs++; if (v.hot) c.hot = true; }
+    for (const v of visites) caseDuJour(v.jour).visites++;
+    for (const r of relances) caseDuJour(r.jour).relances++;
+    return m;
+  }, [matches, visites, relances]);
   const dayMatches = useMemo(
     () => (selectedDay ? matchesOnDay(matches, selectedDay) : []),
     [matches, selectedDay],
+  );
+  const visitesDuJour = useMemo(
+    () => (selectedDay ? visites.filter((v) => v.jour === selectedDay) : []),
+    [visites, selectedDay],
+  );
+  const relancesDuJour = useMemo(
+    () => (selectedDay ? relances.filter((r) => r.jour === selectedDay) : []),
+    [relances, selectedDay],
   );
   const set = <K extends keyof CalendarFilters>(k: K, v: CalendarFilters[K]) =>
     setFilters((f) => ({ ...f, [k]: v }));
@@ -771,6 +793,14 @@ export function RecruteurCalendrierMobile() {
                   ))}
                   {grid.map((c) => {
                     const selected = selectedDay === c.iso;
+                    const jour = parJour.get(c.iso);
+                    // Pastilles trop étroites pour du texte sur une cellule
+                    // aspect-square — un point par type actif ce jour-là,
+                    // même couleur que la liste et le web (COULEUR m/v/r).
+                    const points: TypeEvenement[] = [];
+                    if (jour && actifs.m && jour.matchs > 0) points.push("m");
+                    if (jour && actifs.v && jour.visites > 0) points.push("v");
+                    if (jour && actifs.r && jour.relances > 0) points.push("r");
                     return (
                       <button
                         key={c.iso}
@@ -787,16 +817,15 @@ export function RecruteurCalendrierMobile() {
                         }`}
                       >
                         {c.day}
-                        {/* Marqueur, pas compteur — même règle que le desktop. */}
-                        {c.hasMatch && (
-                          <span
-                            className="absolute bottom-1 left-1.5 leading-none text-[#E63946]"
-                            aria-label={c.hasHot ? "Match à fort potentiel" : "Match à surveiller"}
-                          >
-                            {c.hasHot ? (
-                              <span className="text-[11px]">★</span>
-                            ) : (
-                              <span className="block h-[6px] w-[6px] rounded-full bg-[#E63946]" />
+                        {points.length > 0 && (
+                          <span className="absolute bottom-1 left-1.5 flex items-center gap-[2px] leading-none">
+                            {points.map((p) =>
+                              p === "m" && jour?.hot ? (
+                                <span key={p} className="text-[11px]" style={{ color: COULEUR.m }} aria-label="Match à fort potentiel">★</span>
+                              ) : (
+                                <span key={p} className="block h-[6px] w-[6px] rounded-full" style={{ backgroundColor: COULEUR[p] }}
+                                  aria-label={p === "m" ? "Match" : p === "v" ? "Visite" : "Relance"} />
+                              ),
                             )}
                           </span>
                         )}
@@ -806,15 +835,17 @@ export function RecruteurCalendrierMobile() {
                 </div>
 
                 {selectedDay ? (
-                  dayMatches.length > 0 ? (
+                  (actifs.m && dayMatches.length > 0) || (actifs.v && visitesDuJour.length > 0) || (actifs.r && relancesDuJour.length > 0) ? (
                     <div className="mt-4 flex flex-col gap-2.5">
-                      {dayMatches.map((m) => <MatchCard key={m.game.id} m={m} />)}
+                      {actifs.m && dayMatches.map((m) => <MatchCard key={m.game.id} m={m} />)}
+                      {actifs.v && visitesDuJour.map((v) => <VisiteCard key={v.athleteId} v={v} />)}
+                      {actifs.r && relancesDuJour.map((r) => <RelanceCard key={r.athleteId} r={r} />)}
                     </div>
                   ) : (
-                    <div className="mt-3 text-[13px] text-[#5C6575]">Aucun match ce jour-là pour vos cibles.</div>
+                    <div className="mt-3 text-[13px] text-[#5C6575]">Rien ce jour-là pour votre unité.</div>
                   )
                 ) : (
-                  <div className="mt-3 text-[13px] text-[#5C6575]">Sélectionnez un jour pour voir ses matchs.</div>
+                  <div className="mt-3 text-[13px] text-[#5C6575]">Sélectionnez un jour pour voir le détail.</div>
                 )}
               </div>
             )}
