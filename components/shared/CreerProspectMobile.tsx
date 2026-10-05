@@ -439,9 +439,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
           })}
           {libre("telephone", "Téléphone", telephone, setTelephone, {
             placeholder: "438 555-0123", type: "tel", inputMode: "tel",
-            aide: courriel.trim()
-              ? "Visible de ton unité seulement. Le courriel sert déjà d'invitation."
-              : "Sans courriel, Messages s'ouvre avec le texto pré-écrit : tu n'as qu'à appuyer sur Envoyer.",
+            aide: "Sans courriel ? Ton app Messages s'ouvrira avec le texto déjà écrit — tu n'as qu'à l'envoyer.",
           })}
           {!aContact && <p className="-mt-2 text-[12px] text-[#9CA3AF]">Un courriel ou un téléphone pour l&apos;inviter.</p>}
 

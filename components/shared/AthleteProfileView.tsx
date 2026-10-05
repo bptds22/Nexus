@@ -26,6 +26,8 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import ApercuHudl from "@/components/ui/ApercuHudl";
+import { hudlEnPlus } from "@/lib/video/apercuHudl";
 import { aUneCote } from "@/lib/evaluations/presence";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -364,9 +366,13 @@ export default function AthleteProfileView({
       {/* FAITS SAILLANTS */}
       <section>
         <h2 className={sectionLabel}>Faits saillants</h2>
-        {a.highlightVideoUrl || a.fullGameUrl || a.practiceVideoUrl ? (
+        {a.highlightVideoUrl || a.fullGameUrl || a.practiceVideoUrl || hudlEnPlus(a.hudlUrl, a.highlightVideoUrl, a.fullGameUrl, a.practiceVideoUrl) ? (
           <div className="flex flex-col gap-4">
             {a.highlightVideoUrl && <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />}
+            {(() => {
+              const hudl = hudlEnPlus(a.hudlUrl, a.highlightVideoUrl, a.fullGameUrl, a.practiceVideoUrl);
+              return hudl ? <ApercuHudl url={hudl} title="Hudl" /> : null;
+            })()}
             {a.fullGameUrl && (
               <div>
                 <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-3">Match complet</p>

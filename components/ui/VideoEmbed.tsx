@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import { plateformeDeUrl } from "@/lib/config/plateformesLien";
+import ApercuHudl from "@/components/ui/ApercuHudl";
+import { estLienHudl } from "@/lib/video/apercuHudl";
 
 interface VideoEmbedProps {
   url: string;
@@ -86,6 +88,12 @@ export default function VideoEmbed({ url, title }: VideoEmbedProps) {
   const [isNative, setIsNative] = useState(false);
   const [thumbErr, setThumbErr] = useState(false);
   useEffect(() => { setIsNative(Capacitor.isNativePlatform()); }, []);
+
+  /* HUDL — tout lien Hudl passe par l'aperçu vérifié (recette 1.4.4) : lien
+     court résolu, vidéo supprimée détectée, profil en carte. L'iframe dérivée
+     plus bas ne voyait ni l'un ni l'autre — un lien court tombait en simple
+     lien, une vidéo supprimée donnait un lecteur « couldn't find ». */
+  if (estLienHudl(url)) return <ApercuHudl url={url} title={title} />;
 
   const ytId = getYouTubeId(url);
   const embedUrl = getEmbedUrl(url);

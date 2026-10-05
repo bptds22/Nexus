@@ -64,6 +64,8 @@ import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import ApercuHudl from "@/components/ui/ApercuHudl";
+import { hudlEnPlus } from "@/lib/video/apercuHudl";
 import { aUneCote, aDesCriteres } from "@/lib/evaluations/presence";
 import {
   calculateCompletion,
@@ -2632,14 +2634,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   </div>
                 </section>
 
-                {/* Vidéo Faits saillants — pleine largeur */}
-                {a.highlightVideoUrl && (
+                {/* Vidéo Faits saillants — pleine largeur. Le lien Hudl de
+                    l'athlète (profil ou vidéo) a son aperçu ici (1.4.4). */}
+                {(a.highlightVideoUrl || hudlEnPlus(a.hudlUrl, a.highlightVideoUrl, a.fullGameUrl, a.practiceVideoUrl)) && (
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Faits saillants</h2>
-                    <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />
+                    <div className="flex flex-col gap-3">
+                      {a.highlightVideoUrl && <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />}
+                      {(() => {
+                        const hudl = hudlEnPlus(a.hudlUrl, a.highlightVideoUrl, a.fullGameUrl, a.practiceVideoUrl);
+                        return hudl ? <ApercuHudl url={hudl} title="Hudl" /> : null;
+                      })()}
+                    </div>
                   </section>
                 )}
-                {!a.highlightVideoUrl && !a.coachReport && (
+                {!a.highlightVideoUrl && !hudlEnPlus(a.hudlUrl) && !a.coachReport && (
                   <p className="text-[13px] text-[#6b7280] italic text-center py-6">Aucun rapport ni vidéo pour le moment.</p>
                 )}
 

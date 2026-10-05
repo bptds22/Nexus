@@ -19,6 +19,8 @@
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import NxIcon from "@/components/ui/NxIcon";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import ApercuHudl from "@/components/ui/ApercuHudl";
+import { hudlEnPlus } from "@/lib/video/apercuHudl";
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import { plateformeDuLien, type Plateforme } from "@/lib/config/plateformesLien";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
@@ -65,6 +67,9 @@ function PreferencePill({ active, label: lbl }: { active?: boolean; label: strin
 }
 
 export function SectionFaitsSaillants({ a, verrouille }: { a: AthleteProfileRecruiterView; verrouille: boolean }) {
+  /* Le lien Hudl de l'athlète (profil ou vidéo) a son aperçu ici, à côté des
+     vidéos : lecteur si c'est une vidéo publique, carte sinon (1.4.4). */
+  const hudl = hudlEnPlus(a.hudlUrl, a.highlightVideoUrl, a.fullGameUrl);
   return (
     <>
       {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
@@ -72,11 +77,12 @@ export function SectionFaitsSaillants({ a, verrouille }: { a: AthleteProfileRecr
         <h2 className={sectionLabel}>Faits saillants</h2>
         {verrouille ? (
           <FreeLock />
-        ) : a.highlightVideoUrl || a.fullGameUrl ? (
+        ) : a.highlightVideoUrl || a.fullGameUrl || hudl ? (
           <div className="flex flex-col gap-4">
             {a.highlightVideoUrl && (
               <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />
             )}
+            {hudl && <ApercuHudl url={hudl} title="Hudl" />}
             {a.fullGameUrl && (
               <div>
                 <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-3">Match complet</p>
