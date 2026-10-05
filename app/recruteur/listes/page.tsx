@@ -309,12 +309,19 @@ function AddAthleteModal({
     void (async () => {
       const supabase = createClient();
       try {
-        const [lignes, { data: sport }] = await Promise.all([
-          lireCartes(supabase, { cegepId: monCegep, sportId: uniteSportId }),
-          supabase.from("sports").select("nom").eq("id", uniteSportId).maybeSingle(),
-        ]);
+        const lignes = await lireCartes(supabase, { cegepId: monCegep, sportId: uniteSportId });
         if (annule) return;
-        setCartesDispo(lignes.map((l) => versMembreListe(l, (sport?.nom as string | undefined) ?? "")).filter((c) => !existingIds.has(c.id)));
+        // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — par carte, pas
+        // celui de l'unité : deux cartes de la même unité peuvent désormais
+        // être de sports différents.
+        const sportIds = [...new Set(lignes.map((l) => l.sport_athlete_id))];
+        const nomsSports = new Map<string, string>();
+        if (sportIds.length > 0) {
+          const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
+        }
+        if (annule) return;
+        setCartesDispo(lignes.map((l) => versMembreListe(l, nomsSports.get(l.sport_athlete_id) ?? "")).filter((c) => !existingIds.has(c.id)));
       } catch (e) {
         console.error("[listes] cartes prospect :", e instanceof Error ? e.message : String(e));
       }

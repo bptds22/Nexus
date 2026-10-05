@@ -425,13 +425,11 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#2D3748] bg-[#13151a] px-4 py-2">
-        {/* Le sport de L'ATHLÈTE (décision BP 2026-10-05), affiché seulement
-            s'il diffère de celui de l'unité (le tableau qui contient la
-            carte) — sinon, l'info est déjà portée par le contexte de Mon
-            processus et la répéter n'apprendrait rien. */}
-        {c.sportAthleteNom && c.sportAthleteNom !== card.sport && (
-          <Ligne libelle="Sport" valeur={c.sportAthleteNom} />
-        )}
+        {/* Le sport de L'ATHLÈTE (décision BP 2026-10-05) — `card.sport`
+            porte désormais la même valeur (le kanban et les filtres du
+            tableau le lisent), toujours affiché ici comme les autres
+            champs de la carte. */}
+        {c.sportAthleteNom && <Ligne libelle="Sport" valeur={c.sportAthleteNom} />}
         <LigneEquipe card={card} />
         <Ligne libelle="École" valeur={card.school || <span className="text-[#6b7280]">—</span>} />
         <Ligne libelle="Position" valeur={card.position || <span className="text-[#6b7280]">—</span>} />

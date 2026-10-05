@@ -231,7 +231,6 @@ export function versKanban(
   // Sans équipe, l'établissement de rattachement (école ou club).
   const ecole = l.teams?.schools ?? l.etablissement ?? null;
   const expire = expireLe(l.derniere_activite);
-  const nomSport = contexte.nomSport(l.unite_sport_id);
   // Le sport de L'ATHLÈTE (décision BP 2026-10-05) — peut différer de celui
   // de l'unité (le tableau qui contient la carte ne bouge pas). C'est LUI qui
   // définit l'équipe (teamNom plus bas), jamais le sport de l'unité.
@@ -251,7 +250,12 @@ export function versKanban(
     full_name: `${l.prenom} ${l.nom}`.trim(),
     identityVisible: true,
     photo_url: "",
-    sport: nomSport,
+    // Le sport DE L'ATHLÈTE (décision BP 2026-10-05), pas celui de l'unité
+    // (le tableau qui contient la carte) — c'est lui que les pastilles du
+    // kanban, le filtre Sport du tableau et le calendrier doivent lire. Le
+    // retour BP du 2026-10-06 confirme : « enregistrée comme Basketball »
+    // décrivait exactement ce `sport` encore posé sur l'unité ici.
+    sport: nomSportAthlete,
     position: l.positions?.abreviation ?? "",
     school: ecole?.name ?? "",
     region: ecole?.region ?? "",

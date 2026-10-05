@@ -211,7 +211,9 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
         const lignes = (liaisons ?? []) as { carte_id: string; created_at: string }[];
         if (lignes.length > 0) {
           const cartes = await lireCartesParIds(supabase, lignes.map((l) => l.carte_id));
-          const sportIds = [...new Set(cartes.map((c) => c.unite_sport_id))];
+          // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — pas celui de
+          // l'unité, qui peut désormais différer d'une carte à l'autre.
+          const sportIds = [...new Set(cartes.map((c) => c.sport_athlete_id))];
           const nomsSports = new Map<string, string>();
           if (sportIds.length > 0) {
             const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
@@ -220,7 +222,7 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
           const parCarteId = new Map(cartes.map((c) => [c.id, c]));
           prospects = lignes
             .filter((l) => parCarteId.has(l.carte_id))
-            .map((l) => carteVersListAthlete(parCarteId.get(l.carte_id)!, nomsSports.get(parCarteId.get(l.carte_id)!.unite_sport_id) ?? "", l.created_at));
+            .map((l) => carteVersListAthlete(parCarteId.get(l.carte_id)!, nomsSports.get(parCarteId.get(l.carte_id)!.sport_athlete_id) ?? "", l.created_at));
         }
       } catch (e) {
         console.error("[useListAthletes] cartes prospect :", e instanceof Error ? e.message : String(e));

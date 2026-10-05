@@ -107,7 +107,9 @@ export function useListesUnite(enabled = true) {
           liaisons = (data ?? []) as typeof liaisons;
           const lues = await lireCartesParIds(supabase, [...new Set(liaisons.map((l) => l.carte_id))]);
           cartesProspect = new Map(lues.map((c) => [c.id, c]));
-          const sports = [...new Set(lues.map((c) => c.unite_sport_id))];
+          // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — pas celui de
+          // l'unité, qui peut désormais différer d'une carte à l'autre.
+          const sports = [...new Set(lues.map((c) => c.sport_athlete_id))];
           if (sports.length > 0) {
             const { data: s } = await supabase.from("sports").select("id, nom").in("id", sports);
             for (const x of (s ?? []) as { id: string; nom: string }[]) nomsSports.set(x.id, x.nom);
@@ -157,7 +159,7 @@ export function useListesUnite(enabled = true) {
             .map((x): ProspectListAthlete => {
               const c = cartesProspect.get(x.carte_id)!;
               return {
-                ...versMembreListe(c, nomsSports.get(c.unite_sport_id) ?? ""),
+                ...versMembreListe(c, nomsSports.get(c.sport_athlete_id) ?? ""),
                 added_at: x.created_at,
                 ajoute_par: x.ajoute_par ? nomAuteur(auteurs[x.ajoute_par]) : undefined,
               };

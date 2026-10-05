@@ -116,12 +116,19 @@ export function FilterBottomSheetShell({
           animation: isDragging || dragOffset > 0 ? undefined : "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         }}
       >
+        {/* Poignée SEULE : la zone de glissement ne doit jamais couvrir les
+            boutons de l'en-tête (Annuler/Réinitialiser) — un simple tap sur
+            l'un d'eux y déclenchait sinon isDragging=true, qui réarme
+            l'animation d'entrée (le "rebond" signalé, aucune fermeture). Pas
+            de démarrage immédiat au touchstart non plus : seul un vrai
+            déplacement vertical engage le glissement, jamais un tap. */}
         <div
-          onTouchStart={(e) => { setIsDragging(true); handleStartY = e.touches[0].clientY; }}
+          onTouchStart={(e) => { handleStartY = e.touches[0].clientY; }}
           onTouchMove={(e) => {
-            if (!isDragging && handleStartY === 0) return;
+            if (handleStartY === 0) return;
             const dy = Math.max(0, e.touches[0].clientY - handleStartY);
-            setDragOffset(dy);
+            if (!isDragging && dy > 4) setIsDragging(true);
+            if (isDragging || dy > 4) setDragOffset(dy);
           }}
           onTouchEnd={() => {
             if (dragOffset > 100) closeSheet();
@@ -132,11 +139,11 @@ export function FilterBottomSheetShell({
           <div className="flex justify-center pt-3 pb-2">
             <div className="w-10 h-1 rounded-full bg-white/20" />
           </div>
-          <div className="px-5 pb-3 flex items-center justify-between border-b border-white/[0.06]">
-            <button type="button" onClick={closeSheet} className="text-[#E63946] text-[15px] font-medium">Annuler</button>
-            <span className="text-[15px] font-bold text-white">Filtres</span>
-            <button type="button" onClick={() => { triggerHaptic("Light"); onReset(); }} className="text-[#9CA3AF] text-[14px]">Réinitialiser</button>
-          </div>
+        </div>
+        <div className="px-5 pb-3 flex items-center justify-between border-b border-white/[0.06]">
+          <button type="button" onClick={closeSheet} className="text-[#E63946] text-[15px] font-medium">Annuler</button>
+          <span className="text-[15px] font-bold text-white">Filtres</span>
+          <button type="button" onClick={() => { triggerHaptic("Light"); onReset(); }} className="text-[#9CA3AF] text-[14px]">Réinitialiser</button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 space-y-6">

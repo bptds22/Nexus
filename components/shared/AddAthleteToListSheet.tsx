@@ -88,6 +88,14 @@ export function AddAthleteToListSheet({
       try {
         const lignes = await lireCartes(supabase, { cegepId: uniteCegepId, sportId: uniteSportId });
         if (annule) return;
+        // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — par carte.
+        const sportIds = [...new Set(lignes.map((l) => l.sport_athlete_id))];
+        const nomsSports = new Map<string, string>();
+        if (sportIds.length > 0) {
+          const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
+        }
+        if (annule) return;
         setCartes(lignes.map((l): Candidate => ({
           id: l.id,
           fullName: `${l.prenom} ${l.nom}`.trim(),
@@ -97,7 +105,7 @@ export function AddAthleteToListSheet({
           jersey: l.numero ?? "",
           position: l.positions?.abreviation ?? "",
           school: l.teams?.schools?.name ?? l.etablissement?.name ?? "",
-          sportName: "",
+          sportName: nomsSports.get(l.sport_athlete_id) ?? "",
           stars: 0,
           isVerified: false,
           identityVisible: true,
