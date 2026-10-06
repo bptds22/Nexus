@@ -4,29 +4,18 @@ import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import { plateformeDeUrl } from "@/lib/config/plateformesLien";
+import { getYouTubeId } from "@/lib/video/youtube";
 
 interface VideoEmbedProps {
   url: string;
   title?: string;
 }
 
-/** ID YouTube depuis une URL watch?v= ou youtu.be/… (null si pas YouTube).
- *  EXPORTÉ : les cartes du carrousel campus (web ET mobile) ont leur propre
+/** ID YouTube (watch?v=, shorts/, live/, embed/, youtu.be) — null si pas YouTube.
+ *  La décision vit dans `lib/video/youtube.ts`, partagée avec /api/video/resolve.
+ *  RÉEXPORTÉ ici : les cartes du carrousel campus (web ET mobile) ont leur propre
  *  habillage mais doivent partager CETTE décision-ci, pas la rejouer. */
-export function getYouTubeId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
-      return u.searchParams.get("v");
-    }
-    if (u.hostname === "youtu.be") {
-      return u.pathname.replace(/^\//, "") || null;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
+export { getYouTubeId };
 
 /** URL d'intégration Hudl, dérivée d'un lien de partage (null si impossible).
  *

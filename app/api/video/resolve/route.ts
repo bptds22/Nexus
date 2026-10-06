@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getYouTubeId } from "@/lib/video/youtube";
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/video/resolve
@@ -72,19 +73,6 @@ function hostOf(url: string): string | null {
   } catch {
     return null;
   }
-}
-
-function youtubeId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
-      return u.searchParams.get("v");
-    }
-    if (u.hostname === "youtu.be") return u.pathname.replace(/^\//, "") || null;
-  } catch {
-    return null;
-  }
-  return null;
 }
 
 /* ── YouTube ────────────────────────────────────────────────────
@@ -212,7 +200,7 @@ export async function POST(req: Request) {
   }
 
   // 3. Aiguillage — allowlist stricte, aucun appel hors de ces hôtes.
-  const ytId = youtubeId(url);
+  const ytId = getYouTubeId(url);
   if (ytId) {
     return NextResponse.json(await resolveYoutube(ytId));
   }
