@@ -2005,3 +2005,99 @@ Décision BP 2026-10-02 : tout entre dans la 1.4.4 ; paquet A d'abord.
   `/tarifs` FR/EN, `subscriptionTiers.ts` (inutilisé).
 - **Compte `nexus.testonboarding@nexussports.ca` supprimé** en prod (fiche,
   2 lignes de journal, 1 avis admin, compte auth).
+
+## 70. Club civil sur deux régions — la région d'un athlète est celle de son club (relevé 2026-10-05, non corrigé)
+
+Demande BP 2026-10-05 : passer Anthony Babin (athlète `9f3796f6-…`) de
+Laurentides à Lanaudière. **Rien n'a été écrit** : la fiche n'a pas de région
+à elle.
+
+- **`athletes` n'a AUCUNE colonne de région.** `regions_cegep_preferees` et
+  `pret_changer_region` sont des préférences de cégep, pas un lieu.
+- **Toutes les surfaces recruteur/partenaire lisent `schools.region`** du
+  `school_id`, renvoyée sous le nom `school_region` par quatre RPC
+  `SECURITY DEFINER` : `recruiter_search_athletes`, `recruiter_athlete_cards`,
+  `recruiter_athlete_profile`, `partner_athlete_profile`. Le filtre Région de
+  `/recruteur/recherche` est côté client (`a.region === region`) sur cette
+  même valeur. Côté coach, `loadAthleteFromSupabase.ts` lit aussi
+  `schools!school_id(region)`.
+- **`users.region` n'est PAS une région d'athlète** : 0 des 245 comptes ATHLETE
+  la portent (COACH 11/23, RECRUTEUR 9/28). Seul `/coach/equipes/[teamId]`
+  s'en sert, en repli pour les clubs civils — il y rend donc une région
+  **vide** pour tout athlète de club civil (défaut à part, même famille).
+- **Le club `Wildcats Laurentides-Lanaudière`** (`d4b92629-…`,
+  `LIGUE_CIVILE`) porte `region = 'Laurentides'` pour ses 18 athlètes. Son
+  nom couvre deux régions ; le modèle n'en permet qu'une. Changer celle du
+  club déplacerait les 18.
+- **Doublon d'équipe Wildcats** (connu) : `Wildcats Laurentides-Lanaudière
+  Midget D1` (`090e0ce0-…`, créée 2026-05-25, **0 athlète**) et `Wildcats
+  Midget D1` (`786a82d7-…`, créée 2026-08-15, 11 athlètes dont Anthony).
+  Même club. Rien fusionné.
+- **Variante `'Lanaudière '`** (espace final) : 4 comptes RECRUTEUR dans
+  `users.region`. Non nettoyée, puisque la correction ne passe pas par cette colonne.
+
+**Plus petite correction proposée (non appliquée, attend GO BP) :**
+1. Colonne additive `athletes.region text null`, contrainte par les valeurs
+   de `schools.region` (liste fermée, pas de texte libre).
+2. Dans les 4 RPC : `coalesce(a.region, sc.region)` à la place de
+   `sc.region`. **Même nom et même type de colonne en sortie** → `CREATE OR
+   REPLACE` suffit, pas de `DROP` ; l'ACL est quand même relevée avant et
+   comparée intégralement après (règle des gates d'ACL).
+3. `loadAthleteFromSupabase.ts` (3 mappers) et `/coach/equipes/[teamId]` :
+   même ordre, athlète d'abord, club sinon.
+4. Périmètre : décider si l'athlète peut écrire `athletes.region` lui-même ou
+   seulement coach/admin (`enforce_athlete_self_edit_perimeter`). Aucune UI
+   d'édition dans ce lot : la valeur d'Anthony s'écrit à la main, avec
+   `admin_operations` `CORRECTION_REGION`.
+5. Mobile : les RPC servent aussi l'app ; le coalesce s'y applique sans
+   binaire neuf. Rien d'autre côté mobile avant le lot mobile.
+
+## 71. Shorts YouTube sans miniature — CORRIGÉ web (`124b6049`, 2026-10-05), mobile au binaire 1.4.2
+
+`getYouTubeId` ne lisait que `watch?v=` et `youtu.be/` : un lien
+`youtube.com/shorts/<id>` (celui que donne « Partager » sur un Short, donc
+le plus probable chez un athlète qui vient d'IG) s'affichait dans Faits
+saillants **sans miniature ni lecteur**. Relevé en tournant le tuto « faits
+saillants ».
+
+- Décision sortie dans `lib/video/youtube.ts` (shorts/, live/, embed/,
+  watch?v=, youtu.be ; www., m., music.), test `lib/video/__tests__/youtube.test.ts`.
+  `VideoEmbed` la réexporte (carrousel campus inchangé) ; `/api/video/resolve`
+  abandonne sa copie, qui avait le même trou.
+- **Mobile : pas de correction avant le binaire 1.4.2.** Le parseur est dans
+  le bundle statique ; les apps en circulation continuent de rendre un Short
+  sans miniature. Rien à faire au lot que reconstruire — le code est partagé.
+
+## 72. Trois défauts vus en tournant le tuto « faits saillants » (relevé 2026-10-05, non corrigés)
+
+**(a) « MOYENNE 4.5 4.5 » — la moyenne s'affiche deux fois.** Vue recruteur
+mobile, Rapport, sous les traits : `AthleteRecruiterProfileBodyMobile.tsx`
+l.2656–2657 rend `<StarRating rating={traitAvg} />` **puis** un `<span>`
+`{traitAvg.toFixed(1)}`. Or `StarRating` affiche déjà sa valeur
+(`components/ui/StarRating.tsx`, `displayValue`). Correction : retirer le
+`<span>` (ou passer l'option d'affichage de valeur à faux si elle existe).
+Vérifier la même paire ailleurs avant de corriger.
+
+**(b) La tab bar reste visible par-dessus le clavier à l'étape Médias**
+(`AthleteEditWizardMobile`, mobile). `MobileTabBar` ne se masque clavier
+ouvert que sur les routes de thread (`isThreadRoute` → `kbdOpen`, l.396) ;
+partout ailleurs elle reste affichée au-dessus du clavier et mange une
+bande de l'écran de saisie. Piste : étendre le masquage `kbdOpen` à toute
+route, ou au moins à `/athlete/profil` — à arbitrer, le masquage global
+change le comportement de chaque formulaire mobile.
+
+**(c) Ticket UX — aucun retour au collage d'un lien dans l'éditeur.** À
+l'étape Médias, coller un lien et valider l'enregistre aussitôt, mais
+l'écran ne montre que le texte de l'URL : ni ✓ « enregistré », ni logo de
+plateforme, ni miniature. Logo et miniature n'existent que dans la vue
+recruteur (`plateformeDeUrl` / `PlateformeIcone` / `VideoEmbed`). Proposé :
+à la validation, un ✓ bref + l'icône de plateforme dans la ligne, et pour
+YouTube la miniature (`getYouTubeId`, cf. §71). Le tuto a dû le dire en
+overlay (« s'enregistre tout seul ✓ ») faute de le montrer.
+
+**Note de recette — deux émulateurs, deux bases.** `Pixel_6_Play`
+(emulator-5556) porte un **APK debug construit contre la base LOCALE**
+(Docker, `adb reverse 54321`), laissé là par le tournage du 2026-10-05.
+`Pixel_6` (emulator-5554) porte le **1.4.4 prod**. Ne pas recetter la prod
+sur `Pixel_6_Play` sans y réinstaller un build prod : sans le relais de
+port, l'app y échoue à se connecter.
