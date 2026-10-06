@@ -158,12 +158,20 @@ export function useCalendrierUnite(enabled: boolean) {
           listesParCarte.set(m.carte_id, [...(listesParCarte.get(m.carte_id) ?? []), m.list_id]);
         }
       }
-      const nomSportUnite = monSport && cartesProspect.length > 0
-        ? ((await supabase.from("sports").select("nom").eq("id", monSport).maybeSingle()).data?.nom as string | undefined) ?? ""
-        : "";
+      // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — peut différer de
+      // celui de l'unité depuis que l'équipe d'une carte n'est plus limitée
+      // au sport du tableau qui la suit. Une seule requête, par carte.
+      const nomsSportsAthletes = new Map<string, string>();
+      const sportIdsCartes = [...new Set(cartesProspect.map((c) => c.sport_athlete_id))];
+      if (sportIdsCartes.length > 0) {
+        const { data: sportsRows } = await supabase.from("sports").select("id, nom").in("id", sportIdsCartes);
+        for (const s of (sportsRows ?? []) as { id: string; nom: string }[]) nomsSportsAthletes.set(s.id, s.nom);
+      }
       const ciblesCartes: CalendarTarget[] = cartesProspect
         .filter((c) => !!c.team_id)
-        .map((c) => ({
+        .map((c) => {
+          const nomSportAthlete = nomsSportsAthletes.get(c.sport_athlete_id) ?? "";
+          return {
           athleteId: c.id,
           identityVisible: true,
           fullName: `${c.prenom} ${c.nom}`.trim(),
@@ -171,8 +179,8 @@ export function useCalendrierUnite(enabled: boolean) {
           lastName: c.nom,
           initials: `${c.prenom.charAt(0)}${c.nom.charAt(0)}`.toUpperCase(),
           photo: "",
-          sport: nomSportUnite.toLowerCase().replace(/ /g, "_"),
-          sportName: nomSportUnite,
+          sport: nomSportAthlete.toLowerCase().replace(/ /g, "_"),
+          sportName: nomSportAthlete,
           position: c.positions?.abreviation ?? "",
           graduationYear: c.promotion ?? 0,
           region: c.teams?.schools?.region ?? "",
@@ -187,7 +195,8 @@ export function useCalendrierUnite(enabled: boolean) {
           teamId: c.team_id!,
           teamName: c.teams?.name ?? "",
           prospect: true,
-        }));
+          };
+        });
 
       const base = await construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete, ciblesCartes);
 

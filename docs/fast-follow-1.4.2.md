@@ -2006,7 +2006,79 @@ Décision BP 2026-10-02 : tout entre dans la 1.4.4 ; paquet A d'abord.
 - **Compte `nexus.testonboarding@nexussports.ca` supprimé** en prod (fiche,
   2 lignes de journal, 1 avis admin, compte auth).
 
-## 70. Club civil sur deux régions — la région d'un athlète est celle de son club (relevé 2026-10-05, non corrigé)
+## 70. Lot 2 de la 1.4.4 — tableau blanc mobile, branche `feat/1-4-4-lot2-tableau-blanc` (2026-10-02)
+
+Ferme les écarts du §38. Aucune migration : tout ce qui est lu ou écrit
+était déjà en prod.
+
+- **Mon processus (app)** : un Pro lit l'UNITÉ (`useProcessusUnite`, comme le
+  web), un gratuit ses lignes (démo). Les cartes prospect sont écartées (pas
+  encore ouvrables dans l'app) avec une phrase « N cartes prospect … visibles
+  sur la version web ». Fiche : « Suivi aussi par … », « Grade de l'unité »,
+  fil de notes signé (`FilNotesSuiviMobile` : les miennes supprimables, celles
+  des collègues en lecture seule), retrait avec confirmation qui nomme les
+  collègues (8 s pour lire). Sheet sous `useSheetKeyboardGeometry`.
+- **Écritures** : `useUpdatePipelineStage`, `useTogglePipelinePriority`,
+  `useUpdateNextAction` → `unite_ecrire_dossier` ; `useUpsertAthleteGrade` →
+  `unite_ecrire_grade` ; `useRemoveFromPipeline` → `unite_retirer_du_processus`.
+  Avant, un UPDATE de « ma ligne » ne touchait rien sur le dossier d'un
+  collègue. Optimiste dans tous les caches `["pipeline"]` (`cacheDossiers.ts`).
+- **Fiche athlète, web ET app** : `persistPipelineStage` passait par un upsert
+  / DELETE de « ma ligne » — « Retiré » ne retirait que ma ligne, le dossier
+  revenait. Désormais les fonctions d'unité ; lecture par `lireDossierActeur`
+  (le dossier de l'unité, sinon ma ligne). Retrait mobile : deux touchers,
+  phrase qui nomme les collègues. **Le web est donc touché aussi** (part avec
+  la prochaine fusion dans `main`).
+- **Favoris (app)** : Mes favoris, cœur de la recherche et de la fiche passent
+  par `useBasculeFavori` (favoris de l'unité, retrait pour l'unité et du
+  processus, confirmation). « Favori de … » sous la carte. Boutons de la
+  modale à 44 px sur écran tactile (web inchangé au pointeur).
+- **Listes (app)** : `useRecruiterLists` rend les listes de l'unité pour un
+  Pro, avec « Créée par … ». Suppression et retrait d'un athlète : mêmes
+  phrases que le web, confirmation avant le retrait d'un membre (le balayage
+  ne retire plus directement). **Onglet « Notes » de liste retiré** : la
+  bulle d'une carte ouvre le fil du joueur. `recruiter_list_notes` n'est plus
+  écrite par l'app 1.4.4 — contraction possible quand plus aucune 1.4.3 ne
+  circule.
+- **Reste** : filtre sport de l'admin cégep (lot 3) ; avertissement React
+  préexistant « button dans button » sur la ligne d'une liste (le « ⋮ ») ;
+  « annuler » d'un retrait de favori retiré en mode unité (il ne rendrait que
+  son propre cœur).
+- Preuves sur iPhone simulé (base locale, r1 Robin et r3 Rémi, même unité) :
+  lecture du dossier, note signée en lecture seule, favoris et listes de
+  l'unité, retrait d'unité (0 ligne restante, celle de Rémi comprise).
+  Scénario et nettoyage : `scripts/lot2-tableau-blanc-*.sql`.
+
+
+## 71. Lots 3 et 4 de la 1.4.4 — Mon processus et tableau de bord mobiles (2026-10-02)
+
+Aucune migration. Fusionnés dans `release/1.4.4` (`8be71357`, `4968ca7a`).
+
+- **Lot 3 — Mon processus (app)** : feuille du dossier en onglets
+  Actions / Infos / Historique (composants du web : `OngletInfosPanneau`,
+  `OngletHistoriquePanneau`, historique signé de l'unité) ; grade A-D SOUS la
+  cote, sur la carte et dans la feuille ; filtres rapides à l'écran, sous les
+  étapes (Avec grade, 4+ étoiles, Avec vidéo, À relancer, Visites à venir —
+  `QUICK_FILTERS`, mêmes prédicats que le web) ; directeur (admin cégep) :
+  sélecteur de sport (`FiltreSportUnite`) et `AvisLectureSeule`, dossiers
+  d'un autre sport en lecture seule (balayage, étapes, grade, relance,
+  visite, notes et retrait refusés ; registre §40).
+- **Lot 4 — Tableau de bord (app)** : « Mon activité », quatre tuiles dans
+  l'ordre décidé par BP — Nouveaux athlètes, Relances, Visites planifiées,
+  Athlètes qui te ciblent — chacune comptée avec la définition de sa
+  destination et ouvrant l'écran filtré (`?nouveau=true`,
+  `?filtre=relances`, `?filtre=visites`, `?me_ciblent=true`). Pour un Pro,
+  relances, tuiles et entonnoir lisent le processus de l'UNITÉ.
+  ⚠ « Nouveaux athlètes » = profils créés depuis **10 jours** (fenêtre du
+  filtre de recherche, côté serveur), pas une semaine civile : le chiffre de
+  la tuile est celui de l'écran d'arrivée. Le bandeau « N nouveaux talents
+  cette semaine » du haut garde son propre calcul (7 jours) — deux chiffres
+  différents à l'écran, à trancher (aligner la fenêtre du filtre, ou le
+  bandeau).
+- **Build** : Android `versionCode 15` / `1.4.4` (le 14 a pu être vu par
+  Play ; un numéro sauté ne coûte rien, un numéro réutilisé bloque l'envoi).
+
+## 72. (ex-§70 sur main, `c954df22`) Club civil sur deux régions — la région d'un athlète est celle de son club (relevé 2026-10-05, non corrigé)
 
 Demande BP 2026-10-05 : passer Anthony Babin (athlète `9f3796f6-…`) de
 Laurentides à Lanaudière. **Rien n'a été écrit** : la fiche n'a pas de région
@@ -2052,7 +2124,7 @@ Laurentides à Lanaudière. **Rien n'a été écrit** : la fiche n'a pas de rég
 5. Mobile : les RPC servent aussi l'app ; le coalesce s'y applique sans
    binaire neuf. Rien d'autre côté mobile avant le lot mobile.
 
-## 71. Shorts YouTube sans miniature — CORRIGÉ web (`124b6049`, 2026-10-05), mobile au binaire 1.4.2
+## 73. (ex-§71 sur main, `c954df22`) Shorts YouTube sans miniature — CORRIGÉ web (`124b6049`, 2026-10-05), mobile au binaire 1.4.2
 
 `getYouTubeId` ne lisait que `watch?v=` et `youtu.be/` : un lien
 `youtube.com/shorts/<id>` (celui que donne « Partager » sur un Short, donc
@@ -2068,7 +2140,7 @@ saillants ».
   le bundle statique ; les apps en circulation continuent de rendre un Short
   sans miniature. Rien à faire au lot que reconstruire — le code est partagé.
 
-## 72. Trois défauts vus en tournant le tuto « faits saillants » (relevé 2026-10-05, non corrigés)
+## 74. (ex-§72 sur main, `c954df22`) Trois défauts vus en tournant le tuto « faits saillants » (relevé 2026-10-05, non corrigés)
 
 **(a) « MOYENNE 4.5 4.5 » — la moyenne s'affiche deux fois.** Vue recruteur
 mobile, Rapport, sous les traits : `AthleteRecruiterProfileBodyMobile.tsx`
@@ -2092,7 +2164,7 @@ l'écran ne montre que le texte de l'URL : ni ✓ « enregistré », ni logo de
 plateforme, ni miniature. Logo et miniature n'existent que dans la vue
 recruteur (`plateformeDeUrl` / `PlateformeIcone` / `VideoEmbed`). Proposé :
 à la validation, un ✓ bref + l'icône de plateforme dans la ligne, et pour
-YouTube la miniature (`getYouTubeId`, cf. §71). Le tuto a dû le dire en
+YouTube la miniature (`getYouTubeId`, cf. §73). Le tuto a dû le dire en
 overlay (« s'enregistre tout seul ✓ ») faute de le montrer.
 
 **Note de recette — deux émulateurs, deux bases.** `Pixel_6_Play`

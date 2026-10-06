@@ -36,7 +36,7 @@ import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanb
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade } from "@/lib/config/grades";
 import type { PipelineData } from "@/lib/queries/recruiter/usePipelineCards";
-import { fetchDivisionsEquipe } from "@/lib/queries/recruiter/divisionsEquipe";
+import { fetchEquipesAthletes } from "@/lib/queries/recruiter/divisionsEquipe";
 import { lireCartes, lireDernieresNotesCartes, versKanban } from "@/lib/cartes/carteProspect";
 
 export interface AuteurUnite {
@@ -150,9 +150,9 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
       }
 
       const sportDuDossier = new Map(lignes.map((l) => [l.athlete_id, l.unite_sport_id]));
-      const [cardMap, divisions] = await Promise.all([
+      const [cardMap, { divisions, ligues }] = await Promise.all([
         fetchRecruiterAthleteCards(supabase, ids),
-        fetchDivisionsEquipe(supabase, ids, (id) => sportDuDossier.get(id)),
+        fetchEquipesAthletes(supabase, ids, (id) => sportDuDossier.get(id)),
       ]);
 
       const cards: PipelineKanbanCard[] = lignes.map((l) => {
@@ -204,6 +204,7 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
           suivi_par_noms: recruteurs.map((id) => nomAuteur(parAuteur[id])),
           unite_sport_id: l.unite_sport_id,
           division_equipe: divisions[l.athlete_id] ?? null,
+          ligue: ligues[l.athlete_id] ?? "",
         } as PipelineKanbanCard;
       });
 

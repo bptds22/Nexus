@@ -46,7 +46,7 @@
 
 import { etapePorteVisite } from "@/lib/pipeline/regleVisite";
 
-export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region";
+export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region" | "league";
 
 /** Sentinelle « Non renseigné ». Encadrée de doubles tirets bas : aucune
  *  valeur venue de la base (nom d'école, position, région) ne prend cette
@@ -72,9 +72,18 @@ export const FACETS: readonly FacetDef[] = [
   { key: "sport", label: "Sport", allLabel: "Tous les sports" },
   { key: "position", label: "Position", allLabel: "Toutes les positions" },
   { key: "graduation_year", label: "Promotion", allLabel: "Toutes les promotions" },
-  { key: "school", label: "École / ligue", allLabel: "Toutes les écoles" },
   { key: "region", label: "Région", allLabel: "Toutes les régions" },
 ] as const;
+
+/* LIGUE — facette de la feuille « Filtrer » de l'app (recette 1.4.4).
+   Hors de FACETS : FACETS est la liste des pilules de la barre WEB, qui ne
+   la montre pas encore. Le filtrage et les compteurs, eux, parcourent
+   TOUTES les facettes — une sélection Ligue filtre donc partout où elle
+   est posée, et reste inerte (liste vide) là où personne ne la pose. */
+/* ÉCOLE — retirée de la barre web (retour BP 2026-10-03) : l'app cherche
+   l'école par mots (ExtraFilters.school), le web n'a plus de pilule. La clé
+   reste filtrable pour qui la poserait. */
+const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "school", "league"];
 
 /** Les seuls champs que le filtre lit. Tout est optionnel — voir l'en-tête. */
 export interface FilterablePipelineCard {
@@ -83,6 +92,8 @@ export interface FilterablePipelineCard {
   graduation_year?: number;
   school?: string;
   region?: string;
+  /** Ligue de l'équipe (leagueOf : équipe d'école sans ligue = RSEQ). */
+  ligue?: string;
   /** schools.type — sert au LIBELLÉ, jamais au filtrage : il distingue une
    *  ligue civile d'une école secondaire dans une liste où les deux se
    *  côtoient sous le même nom de facette. */
@@ -189,6 +200,11 @@ const QUICK_PREDICATES: Record<QuickKey, (c: FilterablePipelineCard) => boolean>
 export interface ExtraFilters {
   search?: string;
   quick?: readonly QuickKey[];
+  /** Recherche d'école ou de club (feuille de filtres de l'app, recette
+   *  1.4.4) : chaque mot tapé doit figurer dans le nom, accents et casse
+   *  ignorés — « st-jean eudes » trouve « Saint-Jean-Eudes » si les mots y
+   *  sont. Distincte de la facette `school`, qui coche des valeurs exactes. */
+  school?: string;
 }
 
 /** Repli de casse ET d'accents : « Léveillé » se trouve en tapant
@@ -202,6 +218,11 @@ function matchesExtra(card: FilterablePipelineCard, extra?: ExtraFilters): boole
   if (!extra) return true;
   const needle = extra.search ? normalize(extra.search) : "";
   if (needle && !normalize(card.full_name ?? "").includes(needle)) return false;
+  const motsEcole = extra.school ? normalize(extra.school).split(/[\s-]+/).filter(Boolean) : [];
+  if (motsEcole.length > 0) {
+    const ecole = normalize(card.school ?? "").replace(/-/g, " ");
+    if (!motsEcole.every((m) => ecole.includes(m))) return false;
+  }
   for (const k of extra.quick ?? []) {
     if (!QUICK_PREDICATES[k](card)) return false;
   }
@@ -216,6 +237,7 @@ export const EMPTY_FILTERS: PipelineFilters = {
   graduation_year: [],
   school: [],
   region: [],
+  league: [],
 };
 
 /** Valeur de facette d'une carte. Chaîne vide, 0 et absence donnent tous
@@ -235,6 +257,8 @@ export function facetValue(card: FilterablePipelineCard, key: FacetKey): string 
       return card.school?.trim() || UNSET_VALUE;
     case "region":
       return card.region?.trim() || UNSET_VALUE;
+    case "league":
+      return card.ligue?.trim() || UNSET_VALUE;
   }
 }
 
@@ -262,13 +286,13 @@ export function filterPipelineCards<T extends FilterablePipelineCard>(
 ): T[] {
   return cards.filter(
     (card) =>
-      FACETS.every((f) => matchesFacet(card, f.key, filters[f.key])) && matchesExtra(card, extra),
+      TOUTES_FACETTES.every((k) => matchesFacet(card, k, filters[k])) && matchesExtra(card, extra),
   );
 }
 
 export function activeFilterCount(filters: PipelineFilters, extra?: ExtraFilters): number {
-  const facets = FACETS.reduce((n, f) => n + filters[f.key].length, 0);
-  return facets + (extra?.quick?.length ?? 0) + (extra?.search?.trim() ? 1 : 0);
+  const facets = TOUTES_FACETTES.reduce((n, k) => n + filters[k].length, 0);
+  return facets + (extra?.quick?.length ?? 0) + (extra?.search?.trim() ? 1 : 0) + (extra?.school?.trim() ? 1 : 0);
 }
 
 export interface FacetOption {
@@ -297,7 +321,7 @@ export function facetOptions<T extends FilterablePipelineCard>(
      ne montre pas. Seule la facette qu'on compte est exclue. */
   const base = cards.filter(
     (card) =>
-      FACETS.filter((f) => f.key !== key).every((f) => matchesFacet(card, f.key, filters[f.key])) &&
+      TOUTES_FACETTES.filter((k) => k !== key).every((k) => matchesFacet(card, k, filters[k])) &&
       matchesExtra(card, extra),
   );
 

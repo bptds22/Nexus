@@ -28,8 +28,9 @@
    confirmation a été annulée (rien n'a été écrit). L'appelant rend
    `modale` quelque part dans son arbre.
 
-   Web seulement : l'app 1.4.3 ne retire que son propre favori jusqu'à la
-   1.4.4 (registre §38).
+   Partagé web + app depuis le lot 2 de la 1.4.4 (registre §38) : Mes
+   favoris, la recherche et la fiche mobiles passent aussi par ici. Les
+   boutons de la modale passent à 44 px sur écran tactile (hover:none).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useRef, useState, type ReactNode } from "react";
@@ -152,10 +153,10 @@ export function useBasculeFavori(): {
         </h3>
         <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">{messageRetraitFavori(attente.collegues, attente.dossier)}</p>
         <div className="flex items-center justify-end gap-3 mt-5">
-          <button type="button" onClick={annuler} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">
+          <button type="button" onClick={annuler} className="px-4 py-2 [@media(hover:none)]:min-h-[44px] text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">
             Annuler
           </button>
-          <button type="button" onClick={() => void confirmer()} className="px-5 py-2 text-white text-[13px] font-bold rounded-lg bg-[#EF4444] hover:bg-[#DC2626] transition-colors">
+          <button type="button" onClick={() => void confirmer()} className="px-5 py-2 [@media(hover:none)]:min-h-[44px] text-white text-[13px] font-bold rounded-lg bg-[#EF4444] hover:bg-[#DC2626] transition-colors">
             {estEtapeAvancee(attente.dossier) ? "Retirer" : "Retirer pour l’unité"}
           </button>
         </div>

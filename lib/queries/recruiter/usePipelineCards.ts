@@ -14,7 +14,7 @@ import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/share
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade, type Grade } from "@/lib/config/grades";
-import { fetchDivisionsEquipe } from "@/lib/queries/recruiter/divisionsEquipe";
+import { fetchEquipesAthletes } from "@/lib/queries/recruiter/divisionsEquipe";
 
 const STAGE_ORDER: Record<string, number> = {
   identifie: 1, contacte: 2, en_discussion: 3,
@@ -150,11 +150,11 @@ export function usePipelineCards(options?: { enabled?: boolean }) {
          En parallèle : les deux ne dépendent que de la liste d'athlètes, les
          sérialiser ajouterait un aller-retour à l'ouverture du kanban. */
       const pipelineAthleteIds = data.map((p) => p.athlete_id as string);
-      const [cardMap, gradeMap, noteMap, divisions] = await Promise.all([
+      const [cardMap, gradeMap, noteMap, { divisions, ligues }] = await Promise.all([
         fetchRecruiterAthleteCards(supabase, pipelineAthleteIds),
         fetchGradeMap(supabase, userId, pipelineAthleteIds),
         fetchDerniereNoteMap(supabase, userId, pipelineAthleteIds),
-        fetchDivisionsEquipe(supabase, pipelineAthleteIds),
+        fetchEquipesAthletes(supabase, pipelineAthleteIds),
       ]);
 
       const mapped: PipelineKanbanCard[] = data.map((p: Record<string, unknown>) => {
@@ -215,6 +215,7 @@ export function usePipelineCards(options?: { enabled?: boolean }) {
           poids_lbs: card?.poids_lbs ?? null,
           derniere_note: noteMap[p.athlete_id as string] ?? null,
           division_equipe: divisions[p.athlete_id as string] ?? null,
+          ligue: ligues[p.athlete_id as string] ?? "",
         } as PipelineKanbanCard;
       });
 

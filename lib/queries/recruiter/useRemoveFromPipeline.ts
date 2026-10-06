@@ -1,41 +1,44 @@
 /* ═══════════════════════════════════════════════════════════════
    useRemoveFromPipeline — TanStack mutation (iter 6.1a)
-   DELETE de la row pipeline. Remplace l'UPDATE stage='RETIRE' qui
-   échouait silencieusement à cause de chk_recruiter_pipeline_stage
-   (qui exclut RETIRE de l'enum des stages valides).
+   Retire un athlète de « Mon processus ».
 
-   ⚠️ NE TOUCHE PAS à recruiter_favorites — favorites ↔ pipeline sont
-   décorrélés sur le DELETE (cf. migration 20260516120000). L'athlète
-   reste en favori si l'utilisateur veut le re-ajouter au pipeline
-   plus tard, ce sera via le re-favori (qui re-crée une row pipeline
-   à IDENTIFIE via le trigger trg_fav_insert_to_pipeline).
+   Tableau blanc (lot 2 de la 1.4.4, registre §38) : unite_retirer_du_processus
+   — le dossier part POUR TOUTE L'UNITÉ (les lignes de chaque collègue), avec
+   UNE ligne de journal signée par l'acteur. Avant, un DELETE de « ma ligne » :
+   le dossier restait dans l'unité par les lignes des collègues, et revenait
+   au rechargement. La confirmation qui NOMME les collègues est faite par
+   l'écran AVANT d'appeler ce hook (décision BP 3, même texte que le web).
+
+   `sportId` : l'unité du dossier (unite_sport_id de la carte), comme le web.
+
+   ⚠️ NE TOUCHE PAS aux favoris : retirer du processus n'est pas retirer le
+   cœur (l'inverse, retirer le cœur, retire aussi du processus — useBasculeFavori).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { retirerCarte } from "@/lib/cartes/carteProspect";
+import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useRemoveFromPipeline() {
   const queryClient = useQueryClient();
-  const { data: currentUser } = useCurrentUser();
 
   return useMutation({
-    mutationFn: async ({ cardId }: { cardId: string }) => {
-      const userId = currentUser?.profile.id;
-      if (!userId) throw new Error("Not authenticated");
-      const supabase = createClient();
-
-      const { error } = await supabase
-        .from("recruiter_pipeline")
-        .delete()
-        .eq("athlete_id", cardId)
-        .eq("recruiter_id", userId);
-
+    /** `carte` : retirer une carte prospect la SUPPRIME (décision BP, lot C). */
+    mutationFn: async ({ cardId, sportId, carte = false }: { cardId: string; sportId?: string | null; carte?: boolean }) => {
+      if (carte) {
+        const erreur = await retirerCarte(createClient(), cardId);
+        if (erreur) throw erreur;
+        return;
+      }
+      const { error } = await createClient().rpc("unite_retirer_du_processus", {
+        p_athlete_id: cardId, p_sport_id: sportId ?? null,
+      });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
-    },
+    onMutate: async ({ cardId }) => ({ instantane: await patcherDossiers(queryClient, cardId, null) }),
+    onError: (_err, _vars, context) => restaurerDossiers(queryClient, context?.instantane),
+    onSettled: () => { void invaliderTableauBlanc(queryClient); },
   });
 }

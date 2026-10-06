@@ -1,57 +1,37 @@
 /* ═══════════════════════════════════════════════════════════════
    useTogglePipelinePriority — TanStack mutation (iter 6.1a-fix)
-   Toggle de recruiter_pipeline.flagged (réutilisé comme "priorité").
+   Bascule `flagged` (réutilisé comme « priorité ») d'un dossier.
 
-   Iter 6.1a-fix : ajout de l'optimistic update via onMutate/onError/
-   onSettled. Patch immédiat du cache ["pipeline", userId] pour que
-   la card row affiche le badge ⭐ sans attendre le refetch. Revert
-   en onError, invalidation en onSettled pour resync DB.
+   Tableau blanc (lot 2 de la 1.4.4) : unite_ecrire_dossier, comme le web —
+   un UPDATE sur « ma ligne » ne touchait rien sur le dossier d'un collègue.
+   Optimiste dans tous les caches du processus (cacheDossiers).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import type { PipelineData } from "@/lib/queries/recruiter/usePipelineCards";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { ecrireCarte } from "@/lib/cartes/carteProspect";
+import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useTogglePipelinePriority() {
   const queryClient = useQueryClient();
-  const { data: currentUser } = useCurrentUser();
-  const userId = currentUser?.profile.id;
-  const queryKey = ["pipeline", userId];
 
   return useMutation({
-    mutationFn: async ({ cardId, value }: { cardId: string; value: boolean }) => {
-      if (!userId) throw new Error("Not authenticated");
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("recruiter_pipeline")
-        .update({ flagged: value })
-        .eq("athlete_id", cardId)
-        .eq("recruiter_id", userId);
+    mutationFn: async ({ cardId, value, carte = false }: { cardId: string; value: boolean; carte?: boolean }) => {
+      if (carte) {
+        const erreur = await ecrireCarte(createClient(), cardId, { flagged: value });
+        if (erreur) throw erreur;
+        return;
+      }
+      const { error } = await createClient().rpc("unite_ecrire_dossier", {
+        p_athlete_id: cardId, p_champs: { flagged: value },
+      });
       if (error) throw error;
     },
-    // Optimistic update — patch le cache avant l'aller-retour serveur
-    onMutate: async ({ cardId, value }) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<PipelineData>(queryKey);
-      queryClient.setQueryData<PipelineData>(queryKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          cards: old.cards.map((c) =>
-            c.id === cardId ? { ...c, flagged: value } : c
-          ),
-        };
-      });
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    },
+    onMutate: async ({ cardId, value }) => ({
+      instantane: await patcherDossiers(queryClient, cardId, (c) => ({ ...c, flagged: value })),
+    }),
+    onError: (_err, _vars, context) => restaurerDossiers(queryClient, context?.instantane),
+    onSettled: () => { void invaliderTableauBlanc(queryClient); },
   });
 }
