@@ -851,6 +851,7 @@ interface FiltersBottomSheetProps {
   withSportBadge: boolean; setWithSportBadge: (v: boolean) => void;
   withAcademicBadge: boolean; setWithAcademicBadge: (v: boolean) => void;
   hideFavorites: boolean; setHideFavorites: (v: boolean) => void;
+  filterNewOnly: boolean; setFilterNewOnly: (v: boolean) => void;
   filterOuvertDemenager: boolean; setFilterOuvertDemenager: (v: boolean) => void;
   filterOuvertPrive: boolean; setFilterOuvertPrive: (v: boolean) => void;
   progFilterIds: string[]; setProgFilterOpen: (v: boolean) => void;
@@ -927,6 +928,10 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
             <TogglePill active={props.withSportBadge} label="Distinction" onTap={() => props.setWithSportBadge(!props.withSportBadge)} />
             <TogglePill active={props.withAcademicBadge} label="Mention académique" onTap={() => props.setWithAcademicBadge(!props.withAcademicBadge)} />
             <TogglePill active={props.hideFavorites} label="Masquer favoris" onTap={() => props.setHideFavorites(!props.hideFavorites)} />
+            {/* Retour BP 2026-10-06 : dans la feuille, avec les autres
+                critères rapides — plus sous la barre de recherche. Fenêtre
+                réelle (recruiter_search_athletes, p_new_only) : 10 jours. */}
+            <TogglePill active={props.filterNewOnly} label="Nouveaux (10 jours)" onTap={() => props.setFilterNewOnly(!props.filterNewOnly)} />
           </div>
         </section>
 
@@ -1058,6 +1063,7 @@ export function RecruteurRechercheMobile() {
   const setWithSportBadge = useCallback((v: boolean) => setFiltre("withSportBadge", v), [setFiltre]);
   const setWithAcademicBadge = useCallback((v: boolean) => setFiltre("withAcademicBadge", v), [setFiltre]);
   const setHideFavorites = useCallback((v: boolean) => setFiltre("hideFavorites", v), [setFiltre]);
+  const setFilterNewOnly = useCallback((v: boolean) => setFiltre("filterNewOnly", v), [setFiltre]);
   const setFilterOuvertDemenager = useCallback((v: boolean) => setFiltre("filterOuvertDemenager", v), [setFiltre]);
   const setFilterOuvertPrive = useCallback((v: boolean) => setFiltre("filterOuvertPrive", v), [setFiltre]);
   const setFilterOuvertAnglophone = useCallback((v: boolean) => setFiltre("filterOuvertAnglophone", v), [setFiltre]);
@@ -1329,17 +1335,6 @@ export function RecruteurRechercheMobile() {
         showViewToggle
       />
 
-      {/* Retour BP 2026-10-05 : accès en un tap, jamais caché dans la
-          feuille « Filtrer » — même principe que la pastille web. Fenêtre
-          réelle (recruiter_search_athletes, p_new_only) : 10 jours. */}
-      <div className="px-4 pb-2">
-        <TogglePill
-          active={filterNewOnly}
-          label="Nouveaux (10 jours)"
-          onTap={() => setFiltre("filterNewOnly", !filterNewOnly)}
-        />
-      </div>
-
       {/* Plus de compte d'athlètes affiché (retour BP 2026-10-03) — le
           chargement garde sa ligne. */}
       {loading && (
@@ -1445,6 +1440,7 @@ export function RecruteurRechercheMobile() {
         withSportBadge={withSportBadge} setWithSportBadge={setWithSportBadge}
         withAcademicBadge={withAcademicBadge} setWithAcademicBadge={setWithAcademicBadge}
         hideFavorites={hideFavorites} setHideFavorites={setHideFavorites}
+        filterNewOnly={filterNewOnly} setFilterNewOnly={setFilterNewOnly}
         filterOuvertDemenager={filterOuvertDemenager} setFilterOuvertDemenager={setFilterOuvertDemenager}
         filterOuvertPrive={filterOuvertPrive} setFilterOuvertPrive={setFilterOuvertPrive}
         progFilterIds={progFilterIds} setProgFilterOpen={setProgFilterOpen}
