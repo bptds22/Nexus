@@ -19,6 +19,11 @@
 //                         collégial est couvert par games) : ?secteur=Collégial
 //                         est refusé en mode découverte. ~190 appels, ~2 min 40 s.
 //                         Portage de scripts/rseq-discover.mjs.
+//   ?provincial=1|essai   Avec ?mode=decouverte&secteur=Secondaire SEULEMENT :
+//                         sous-passe s1.rseq.ca (ligues provinciales elite —
+//                         voir BASE2 plus bas). Absent par defaut : zero effet
+//                         sur le cron existant. « essai » : liste et compte
+//                         sans ecrire (pas d'appel a rseq_decouverte_upsert).
 //
 // Les deux passes et la découverte sont des INVOCATIONS SÉPARÉES (cron
 // distincts) : ensemble elles dépasseraient le plafond de 400 s.
@@ -68,6 +73,21 @@ import {
 
 const BASE = "https://diffusion.s1.rseq.ca/";
 const API_LIGUE = BASE + "api/LeagueApi/GetLeagueDiffusion/?leagueId=";
+
+// Ligues PROVINCIALES ELITE — host FRERE, sans prefixe « diffusion. ».
+// Diagnostic 2026-10-05 : diffusion.s1.rseq.ca/GetRegionSports region=14 ne
+// rend QUE Cross-country ; les ligues scolaires D1/D2 basket/foot/volley
+// (ex. « Bruno », Football J M D2) vivent sur s1.rseq.ca, meme shape
+// GetLeagueList/GetLeagueDiffusion. GetRegionSports y repond 404 : pas
+// d'enumeration des sports par region -> liste FIXE, verifiee en lecture
+// seule. Hockey absent (scolaire hockey vit sur rseqhockey.com, hors scope).
+const BASE2 = "https://s1.rseq.ca/";
+const REGION_PROVINCIALE = 14;
+const SPORTS_PROVINCIAUX: ReadonlyArray<[string, string]> = [
+  ["1", "Basketball"],
+  ["5", "Football"],
+  ["16", "Volleyball"],
+];
 
 const DELAI_MS = 800;
 const TIMEOUT_MS = 30_000;
@@ -447,6 +467,17 @@ type BilanDecouverte = {
   alertes_levees: number;
   erreurs: { etape: string; motif: string }[];
   duree_s: number;
+  // Sous-passe provinciale (s1.rseq.ca) — absente (undefined) quand ?provincial
+  // n'est pas demande : zero effet sur le bilan actuel du cron.
+  provincial?: {
+    actif: true;
+    essai_a_blanc: boolean;
+    ligues: number;
+    equipes: number;
+    nouvelles: number;
+    modifiees: number;
+    par_sport: Record<string, number>;
+  };
 };
 
 const sansEspaces = (s: unknown) => String(s ?? "").replace(/\s+/g, "");
@@ -475,7 +506,11 @@ function versCatalogue(
   };
 }
 
-async function decouverte(declencheur: string, secteur: Secteur): Promise<BilanDecouverte> {
+async function decouverte(
+  declencheur: string,
+  secteur: Secteur,
+  provincial: { actif: boolean; essaiABlanc: boolean } = { actif: false, essaiABlanc: false },
+): Promise<BilanDecouverte> {
   const rseq = new Rseq();
   const saison = saisonCourante();
   const runId = await ouvrirJournal(declencheur, saison, secteur, "decouverte");
@@ -565,6 +600,55 @@ async function decouverte(declencheur: string, secteur: Secteur): Promise<BilanD
     }
   }
 
+  // ─── LIGUES PROVINCIALES ELITE (s1.rseq.ca) ──────────────────────────────
+  // Desactivee par defaut (provincial.actif=false) : le cron existant, qui
+  // n'envoie jamais ?provincial=, ne passe JAMAIS par ce bloc. essaiABlanc
+  // liste et compte SANS appeler rseq_decouverte_upsert — aucune ecriture.
+  if (schoolYearId && provincial.actif && secteur === "Secondaire") {
+    const prov = { ligues: 0, equipes: 0, nouvelles: 0, modifiees: 0, par_sport: {} as Record<string, number> };
+    const lotProvincial: ReturnType<typeof versCatalogue>[] = [];
+    for (const [sportCode, sportNom] of SPORTS_PROVINCIAUX) {
+      if (rseq.fusibleSaute()) break;
+      let ligues: unknown;
+      try {
+        ligues = await rseq.json(
+          BASE2 + "api/LeagueApi/GetLeagueList/?" +
+            new URLSearchParams({ schoolYearId, region: String(REGION_PROVINCIALE), sport: sportCode }),
+        );
+      } catch (e) {
+        b.appels_ko++;
+        b.erreurs.push({ etape: `provincial ${sportNom}`, motif: motifDe(e) });
+        continue;
+      }
+      for (const L of (Array.isArray(ligues) ? ligues : []) as Record<string, unknown>[]) {
+        const id = L.LeagueId as string | undefined;
+        // Deux hosts, deux espaces de GUID distincts : une collision avec
+        // `vues` (rempli par la boucle REGIONS ci-dessus) n'arrive pas en
+        // pratique, mais la garde coute rien et documente l'intention.
+        if (!id || vues.has(id)) continue;
+        vues.add(id);
+        if (L.Sector !== secteur) continue;
+        prov.ligues++;
+        prov.equipes += Number(L.TeamCount ?? 0);
+        prov.par_sport[sportNom] = (prov.par_sport[sportNom] ?? 0) + 1;
+        lotProvincial.push(versCatalogue(L, "Provincial", saison, schoolYearId, sportNom, sportCode));
+      }
+    }
+
+    if (!provincial.essaiABlanc && lotProvincial.length > 0) {
+      const { data, error } = await supabase.rpc("rseq_decouverte_upsert", { p_ligues: lotProvincial });
+      if (error) {
+        b.erreurs.push({ etape: "catalogue provincial", motif: error.message });
+      } else {
+        const r = Array.isArray(data) ? data[0] : data;
+        prov.nouvelles = Number(r?.nouvelles ?? 0);
+        prov.modifiees = Number(r?.modifiees ?? 0);
+      }
+    }
+
+    b.provincial = { actif: true, essai_a_blanc: provincial.essaiABlanc, ...prov };
+  }
+
   b.duree_s = Math.round((Date.now() - rseq.t0) / 100) / 10;
   b.appels = rseq.appels;
 
@@ -612,6 +696,7 @@ async function decouverte(declencheur: string, secteur: Secteur): Promise<BilanD
       ...(regionsNonTraitees > 0
         ? { regions_non_traitees: regionsNonTraitees, fusible_s: FUSIBLE_MS / 1000 }
         : {}),
+      ...(b.provincial ? { provincial: b.provincial } : {}),
     },
   }).eq("id", runId);
 
@@ -667,9 +752,19 @@ Deno.serve(async (req) => {
     );
   }
 
+  // ?provincial=1 : active la sous-passe s1.rseq.ca (defaut : absente, zero
+  // effet sur le cron existant qui n'envoie jamais ce parametre).
+  // ?provincial=essai : l'active en ESSAI A BLANC — liste et compte, n'ecrit
+  // rien dans le catalogue (rseq_decouverte_upsert jamais appelee).
+  const provincialBrut = q.get("provincial");
+  const provincial = {
+    actif: provincialBrut === "1" || provincialBrut === "essai",
+    essaiABlanc: provincialBrut === "essai",
+  };
+
   const travail = (declencheur: string) =>
     mode === "decouverte"
-      ? decouverte(declencheur, secteur as Secteur)
+      ? decouverte(declencheur, secteur as Secteur, provincial)
       : passe(declencheur, secteur as Secteur);
 
   if (q.get("wait") === "1") {
