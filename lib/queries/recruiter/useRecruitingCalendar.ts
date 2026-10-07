@@ -105,6 +105,18 @@ export interface CalendarGame {
    *  en bandeau global : la source diffère d'une ligne à l'autre, et la
    *  fraîcheur aussi. Voir lib/calendar/sourceMatch.ts. */
   source: SourceMatch;
+  /* ── Carte des matchs (lot A, 2026-10-07) — champs BRUTS, additifs. Le
+     Calendrier ne les lit pas : son rendu ne change pas. ── */
+  /** GPS du terrain (RSEQ). 0, hors Québec ou absent → lieu non exploitable
+   *  (lieuExploitable, lib/carteMatchs). */
+  venueLat?: number | null;
+  venueLon?: number | null;
+  /** 'Secondaire' | 'Collégial' | null — le collégial est exclu de la carte. */
+  sector?: string | null;
+  sport?: string | null;
+  category?: string | null;
+  division?: string | null;
+  leagueName?: string | null;
 }
 
 export interface RecruitingCalendarData {
@@ -157,6 +169,13 @@ function buildCompetition(g: Record<string, unknown>): string {
   const sexLabel = sex ? genderLabel(sex) : "";
   if (head && sexLabel && sexLabel !== "—") return `${head} · ${sexLabel}`;
   return head || (sexLabel !== "—" ? sexLabel : "");
+}
+
+/** numeric Postgres → nombre JS (PostgREST peut le rendre en texte). */
+function nombreOuNull(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 /* ── Hook ──────────────────────────────────────────────────── */
@@ -348,7 +367,8 @@ export async function construireCalendrier(
       home_team_id, visitor_team_id,
       home_name_raw, visitor_name_raw,
       league_name, sport, division, category, sex_type,
-      source_nom, source_url, collecte_le, rseq_league_id
+      source_nom, source_url, collecte_le, rseq_league_id,
+      venue_lat, venue_lon, sector
     `)
     .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
     .gte("game_date", todayIso())
@@ -417,6 +437,13 @@ export async function construireCalendrier(
           rseq_league_id?: string | null;
           league_name?: string | null;
         }),
+        venueLat: nombreOuNull(g.venue_lat),
+        venueLon: nombreOuNull(g.venue_lon),
+        sector: (g.sector as string | null) ?? null,
+        sport: (g.sport as string | null) ?? null,
+        category: (g.category as string | null) ?? null,
+        division: (g.division as string | null) ?? null,
+        leagueName: (g.league_name as string | null) ?? null,
       };
     });
   return { targets, games };

@@ -27,6 +27,9 @@ export interface CalendarEventInput {
 
 export interface CalendarLinks {
   googleUrl: string;
+  /** Outlook (Microsoft 365 / outlook.office.com) — ajout du 2026-10-07 pour
+   *  la carte des matchs. Les appelants d'avant l'ignorent. */
+  outlookUrl: string;
   icsBlob: Blob;
   /** Le .ics brut — exposé pour les tests et pour un download sans Blob. */
   icsContent: string;
@@ -61,6 +64,21 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
   ].join("&");
   const googleUrl = `https://calendar.google.com/calendar/render?${googleParams}`;
 
+  /* ── Outlook ──────────────────────────────────────────────────
+     Lien « composer un événement » d'Outlook sur le web. Les instants
+     partent en ISO 8601 UTC (« …Z ») : Outlook les replace dans le fuseau
+     de l'utilisateur. Chaque valeur encodée individuellement. */
+  const outlookParams = [
+    "path=%2Fcalendar%2Faction%2Fcompose",
+    "rru=addevent",
+    `subject=${encodeURIComponent(title)}`,
+    `startdt=${encodeURIComponent(startDate.toISOString())}`,
+    `enddt=${encodeURIComponent(end.toISOString())}`,
+    `body=${encodeURIComponent(description)}`,
+    `location=${encodeURIComponent(location)}`,
+  ].join("&");
+  const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?${outlookParams}`;
+
   /* ── .ics ─────────────────────────────────────────────────────
      Corps délégué au helper pur (source unique du VCALENDAR/VEVENT,
      escaping, folding et UID stable). */
@@ -74,6 +92,7 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
 
   return {
     googleUrl,
+    outlookUrl,
     icsContent,
     icsBlob: new Blob([icsContent], { type: "text/calendar;charset=utf-8" }),
   };
