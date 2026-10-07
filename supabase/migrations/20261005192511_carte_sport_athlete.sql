@@ -1,5 +1,12 @@
--- 20261005140000_carte_sport_athlete (NON appliquée en prod — préparée, testée
--- sur une branche, en attente du GO explicite de BP ; voir docs de recette).
+-- 20261005192511_carte_sport_athlete — APPLIQUÉE en prod le 2026-10-05 sous
+-- cette version (fichier préparé sous 20261005140000, renommé le 2026-10-07).
+-- Vérifié le 2026-10-07 : les trois fonctions de la prod sont identiques à ce
+-- fichier, commentaires retirés (md5 de pg_get_functiondef normalisé).
+-- ⚠️ RÉGRESSION portée par ce fichier : sa version de rapprochement_candidats
+-- part de carte_etablissement et PERD le critère COURRIEL_PARENT_CARTE
+-- (introduit par 20261001021046_carte_parent). Restauré par la migration
+-- suivante (lot 1 cartes, 2026-10-07). Ne pas « corriger » ce fichier : il
+-- doit rester le miroir de ce qui a tourné en prod.
 -- ════════════════════════════════════════════════════════════════════════════
 -- LE SPORT DE L'ATHLÈTE, DISTINCT DU SPORT DE L'UNITÉ (décision BP 2026-10-05).
 --

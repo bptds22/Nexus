@@ -13,9 +13,10 @@
    · carte SANS équipe (établissement sans équipe du sport) + nom exact
      + même établissement + sport de l'unité, même niveau
        → « Correspondance : même nom, même établissement » ;
-   · nom proche, ou même école sans la même équipe
-       → « Possiblement le même athlète », avec ce qui diffère (nom,
-         équipe, promotion).
+   · nom proche, prénom à une lettre près (BP 2026-10-07), ou même
+     école sans la même équipe
+       → « Possiblement le même athlète », avec ce qui diffère (nom ou
+         prénom, équipe, promotion).
 
    Dans tous les cas, la fenêtre côte à côte et « Accepter » restent
    obligatoires : le système propose, le recruteur confirme.
@@ -57,13 +58,17 @@ export interface ElementsComparables {
   promotion_concorde: boolean | null;
 }
 
-/** Ce qui diffère entre la carte et le profil : nom, équipe, promotion. */
+/** Ce qui diffère entre la carte et le profil : nom (ou prénom seul), équipe, promotion. */
 export function differences(r: ElementsComparables): string[] {
   const d: string[] = [];
   const nomCarte = `${r.carte_prenom} ${r.carte_nom}`.trim();
   const nomProfil = `${r.athlete_prenom} ${r.athlete_nom}`.trim();
   if (normaliserNom(r.carte_nom) !== normaliserNom(r.athlete_nom)) {
     d.push(`Nom : « ${nomCarte} » sur la carte, « ${nomProfil} » sur Nexus`);
+  } else if (normaliserNom(r.carte_prenom) !== normaliserNom(r.athlete_prenom)) {
+    // Même nom de famille, prénom à une lettre près (Mathis / Mathys, BP 2026-10-07)
+    // ou diminutif : la différence reste visible dans la fenêtre.
+    d.push(`Prénom : ${r.carte_prenom.trim()} sur la carte, ${r.athlete_prenom.trim()} sur Nexus`);
   }
   const equipes = (r.athlete_equipes ?? "").split(" · ").map(normaliserNom).filter(Boolean);
   if (r.carte_equipe && !equipes.includes(normaliserNom(r.carte_equipe))) {

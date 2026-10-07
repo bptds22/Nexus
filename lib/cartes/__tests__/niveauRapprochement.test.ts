@@ -34,6 +34,24 @@ test("ce qui diffère : le nom (accents et casse ignorés)", () => {
   assert.deepEqual(differences({ ...base, carte_nom: "GAGNON" }), []);
 });
 
+test("ce qui diffère : le prénom seul, quand le nom de famille est identique (BP 2026-10-07)", () => {
+  const prenom = { ...base, carte_nom: "Gagnon" };
+  assert.deepEqual(differences({ ...prenom, carte_prenom: "Mathis", athlete_prenom: "Mathys" }),
+    ["Prénom : Mathis sur la carte, Mathys sur Nexus"]);
+  // Accents et casse ignorés : Lea / Léa ne diffèrent pas.
+  assert.deepEqual(differences({ ...prenom, carte_prenom: "LEA" }), []);
+  // Nom de famille différent : la ligne Nom montre déjà les deux prénoms, pas de ligne Prénom en plus.
+  assert.deepEqual(differences({ ...base, carte_prenom: "Mathis", athlete_prenom: "Mathys" }),
+    ["Nom : « Mathis Gagno » sur la carte, « Mathys Gagnon » sur Nexus"]);
+  // Le prénom se combine avec l'équipe et la promotion.
+  assert.deepEqual(differences({ ...prenom, carte_prenom: "Jacob", athlete_prenom: "Jakob", athlete_equipes: null,
+                                 promotion_concorde: false, athlete_promotion: 2026 }), [
+    "Prénom : Jacob sur la carte, Jakob sur Nexus",
+    "Équipe : Demo Cyclones M18 sur la carte, aucune équipe sur Nexus",
+    "Promotion : 2027 sur la carte, 2026 sur Nexus",
+  ]);
+});
+
 test("ce qui diffère : l'équipe (école sans la même équipe) et la promotion", () => {
   const d = differences({ ...base, carte_nom: "Gagnon", athlete_equipes: null, promotion_concorde: false, athlete_promotion: 2026 });
   assert.deepEqual(d, [
