@@ -1912,9 +1912,9 @@ function PipelinePageContent() {
     useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 5 } }),
   );
 
-  const showToast = useCallback((msg: string) => {
+  const showToast = useCallback((msg: string, duree = 3000) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), duree);
   }, []);
 
   const teaseUpgrade = useCallback(() => {
@@ -2633,7 +2633,7 @@ function PipelinePageContent() {
         <CreerCarteModal
           sportId={monSportId}
           onClose={() => setCreerCarte(false)}
-          onCreee={(message) => { setCreerCarte(false); invaliderProcessus(); showToast(message); }}
+          onCreee={(message) => { setCreerCarte(false); invaliderProcessus(); showToast(message, message.length > 60 ? 7000 : 3000); }}
         />
       )}
 

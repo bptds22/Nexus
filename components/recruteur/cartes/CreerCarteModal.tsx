@@ -33,6 +33,8 @@ import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/cartePros
 import { chercherDoublonsCarte } from "@/lib/cartes/doublonsCarte";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 import { CopierTexteInvitation } from "@/components/recruteur/cartes/PanneauCarte";
+import { messageCreationCarte } from "@/lib/cartes/courrielCarte";
+import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
 
 type Champ = "taille" | "poids" | "courriel" | "telephone" | "parentNom" | "parentCourriel" | "video";
 
@@ -291,8 +293,17 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         setErreur("La carte n'a pas pu être créée. Réessaie.");
         return;
       }
-      const message = `Carte prospect créée : ${prenom.trim()} ${nom.trim()}`;
-      if (id && l.telephone.ok && l.telephone.valeur && !(l.courriel.ok && l.courriel.valeur)) {
+      const courrielCree = l.courriel.ok ? l.courriel.valeur : null;
+      /* Avec courriel : le déclencheur de la base a statué dans la transaction
+         de l'insertion (il peut ÉCARTER l'invitation) — on relit la carte au
+         lieu de promettre un envoi, comme l'app (CreerProspectMobile). */
+      let etat: InvitationEtat | null = null;
+      if (id && courrielCree) {
+        const { data } = await createClient().from("cartes_prospect").select("invitation_etat").eq("id", id).maybeSingle();
+        etat = (data?.invitation_etat as InvitationEtat | null | undefined) ?? null;
+      }
+      const message = messageCreationCarte(`${prenom.trim()} ${nom.trim()}`, courrielCree, etat);
+      if (id && l.telephone.ok && l.telephone.valeur && !courrielCree) {
         setCreeeSansCourriel({ id, prenom: prenom.trim(), message });
         return;
       }

@@ -48,3 +48,12 @@ export function messageApresAjout(adresse: string, etat: InvitationEtat | null |
   if (etat === "NON_ENVOYEE") return { ton: "neutre", texte: MENTION_INVITATION_NON_ENVOYEE };
   return { ton: "ok", texte: `Nexus envoie l'invitation à ${adresse.trim()}.` };
 }
+
+/** Le message de CRÉATION web (BP 2026-10-07, 16 h 05), aligné sur l'app :
+ *  la carte relue après l'insertion dit si l'invitation part. Sans courriel,
+ *  le message seul (l'encadré « Copier le texte » s'y ajoute si téléphone). */
+export function messageCreationCarte(quiEst: string, courriel: string | null | undefined, etat: InvitationEtat | null | undefined): string {
+  const base = `Carte prospect créée : ${quiEst.trim()}`;
+  if (!courriel?.trim()) return base;
+  return `${base}. ${messageApresAjout(courriel, etat).texte}`;
+}
