@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import SocialIcons, { type SocialLink } from "./SocialIcons";
+import { ouvrirGestionTemoins } from "@/lib/meta/consentement";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Marketing footer (shared)
@@ -18,6 +19,7 @@ import SocialIcons, { type SocialLink } from "./SocialIcons";
 ─────────────────────────────────────────────────────────────────*/
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
+const META_ACTIF = Boolean(process.env.NEXT_PUBLIC_META_PIXEL_ID) && process.env.NEXT_PUBLIC_CAPACITOR_BUILD !== "true";
 
 // Corporate social links — icon paths + hover colours live in SocialIcons.
 const SOCIAL_LINKS: SocialLink[] = [
@@ -49,10 +51,14 @@ export default function Footer() {
             </span>
           </div>
 
-          <nav className="flex items-center gap-8">
+          <nav className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
             <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.privacy}</Link>
             <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.terms}</Link>
             <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.contact}</Link>
+            {/* Rouvre le bandeau de consentement (components/meta/MetaPixel). */}
+            {META_ACTIF && (
+              <button type="button" onClick={ouvrirGestionTemoins} className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>Gérer les témoins</button>
+            )}
           </nav>
 
           <div className="flex items-center gap-5">

@@ -24,6 +24,8 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import PlaybookBackground from "../components/PlaybookBackground";
 import { createClient } from "@/lib/supabase/client";
+import { envoyerEvenementMeta } from "@/lib/meta/suivi";
+import { LEAD_DEMO } from "@/lib/meta/regles";
 import { trierOptions, SEUIL_RECHERCHE } from "@/lib/demo/rechercheListe";
 import ListeRecherche from "./_components/ListeRecherche";
 import {
@@ -106,6 +108,10 @@ export default function Demo12OctobrePage() {
       setErreur(messageErreurInscription(error?.message));
       return;
     }
+    // Meta Lead : inscription enregistrée en base (no-op sans consentement).
+    // L'id sert au serveur à VÉRIFIER l'inscription ; il ne part pas chez Meta.
+    envoyerEvenementMeta("Lead", LEAD_DEMO, { demoId: id });
+
     // Les courriels : un échec ne défait pas l'inscription (statut en base).
     try {
       await supabase.functions.invoke("send-demo-inscription", { body: { id } });

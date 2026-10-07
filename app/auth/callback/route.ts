@@ -6,6 +6,7 @@ import {
   computeDispatchDestination,
   type DispatchProfile,
 } from "@/lib/auth/computeDispatchDestination";
+import { CONSENT_COOKIE, INSCRIPTION_COOKIE, roleMeta } from "@/lib/meta/regles";
 
 /* ═══════════════════════════════════════════════════════════════
    GET /auth/callback — callback OAuth WEB (Google/Apple).
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
         // le cas DESACTIVE de computeDispatchDestination.
         const { data: profile } = await supabase
           .from("users")
-          .select("role, context, onboarding_complete, status, privacy_preferences")
+          .select("role, context, onboarding_complete, status, privacy_preferences, role_claimed_at")
           .eq("id", authUser.id)
           .maybeSingle();
 
@@ -105,7 +106,22 @@ export async function GET(request: Request) {
         );
         // Compte désactivé : signOut server-side AVANT le redirect (canonique).
         if (dest.reason === "deactivated") await supabase.auth.signOut();
-        return NextResponse.redirect(`${origin}${dest.path}`);
+        const reponse = NextResponse.redirect(`${origin}${dest.path}`);
+
+        // Meta CompleteRegistration — inscription OAuth NEUVE seulement : un
+        // rôle vient d'être posé pour la première fois (role_claimed_at était
+        // vide). Un login OAuth de retour n'y passe jamais. On ne fait que
+        // déposer le RÔLE dans un cookie court ; MetaPixel (client) le consomme
+        // et envoie navigateur + serveur avec le même event_id. Sans
+        // consentement, rien n'est déposé.
+        const roleM = applied && !profile?.role_claimed_at ? roleMeta(applied.role) : null;
+        if (roleM && request.headers.get("cookie")?.includes(`${CONSENT_COOKIE}=granted`)) {
+          reponse.cookies.set(INSCRIPTION_COOKIE, roleM, {
+            path: "/", maxAge: 600, sameSite: "lax", httpOnly: false,
+            secure: origin.startsWith("https:"),
+          });
+        }
+        return reponse;
       }
       return NextResponse.redirect(`${origin}/`);
     }

@@ -8,6 +8,8 @@ import PlaybookBackground from "@/app/components/PlaybookBackground";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import { isUnder14 } from "@/lib/legal/ageGate";
+import { envoyerEvenementMeta } from "@/lib/meta/suivi";
+import { roleMeta } from "@/lib/meta/regles";
 import {
   persistInitialConsents,
   buildConsentMetadata,
@@ -196,6 +198,12 @@ function ProSignupContent() {
       if (!persistResult.ok) {
         console.warn("[signup consents pro] persist failed:", persistResult.error);
       }
+    }
+
+    // Meta : APRÈS création réelle du compte (no-op sans consentement).
+    const roleM = roleMeta(role);
+    if (roleM && data?.user && (data.user.identities?.length ?? 1) > 0) {
+      envoyerEvenementMeta("CompleteRegistration", roleM);
     }
 
     router.push('/onboarding');

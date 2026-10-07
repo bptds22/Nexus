@@ -17,6 +17,7 @@ import { ForceUpdateGate } from "@/components/mobile/ForceUpdateGate";
 import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
 import { OAuthDeepLinkHandler } from "@/components/mobile/auth/OAuthDeepLinkHandler";
 import { AuthSync } from "@/components/auth/AuthSync";
+import MetaPixel from "@/components/meta/MetaPixel";
 
 const ORGANIZATION_JSONLD = {
   "@context": "https://schema.org",
@@ -216,6 +217,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSONLD) }}
         />
         <GrainOverlay />
+        {/* Meta Pixel — rien ne charge avant « Accepter » ; web seulement
+            (no-op Capacitor). Voir components/meta/MetaPixel.tsx. */}
+        <MetaPixel />
         <LanguageProvider>
           <QueryProvider>
             <SubscriptionProvider>

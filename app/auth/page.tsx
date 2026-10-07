@@ -21,6 +21,8 @@ import { ParentalBlock } from "@/components/auth/signup/ParentalBlock";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import { SocialButtonsAuth } from "@/components/auth/SocialButtonsAuth";
 import { deconnexion } from "@/lib/auth/deconnexion";
+import { envoyerEvenementMeta } from "@/lib/meta/suivi";
+import { roleMeta } from "@/lib/meta/regles";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -208,6 +210,11 @@ function AuthContent() {
       // avec le signUp), donc la recrue compte. Silencieux et borné — ne
       // bloque jamais l'inscription. No-op sans jeton mémorisé par /i/[jeton].
       await tenterAttribution(createClient());
+
+      // Meta : APRÈS création réelle du compte, jamais au clic. Sans
+      // consentement, no-op. Fire-and-forget — ne bloque pas la redirection.
+      const role = roleMeta(args.role);
+      if (role && (data.user.identities?.length ?? 1) > 0) envoyerEvenementMeta("CompleteRegistration", role);
     }
 
     setLoading(false);
