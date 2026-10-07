@@ -63,18 +63,33 @@ export async function chercherDoublonsCarte(supabase: SupabaseClient, d: {
   }
 
   // Même courriel.
-  if (courriel) {
-    const [carteC, athleteC] = await Promise.all([
-      carteAuCourriel(supabase, courriel, sportId),
-      athleteAuCourriel(supabase, courriel),
-    ]);
-    if (carteC) trouves.push({ texte: `Ce courriel est déjà celui de la carte « ${carteC.prenom} ${carteC.nom} » de ton unité.` });
-    if (athleteC && athleteC.id !== nexus?.id) {
-      trouves.push({
-        texte: `Ce courriel est celui de « ${athleteC.first_name} ${athleteC.last_name} », déjà sur Nexus.`,
-        lien: `/recruteur/athletes/${athleteC.id}`,
-      });
-    }
+  if (courriel) trouves.push(...await doublonsCourriel(supabase, { courriel, sportId, athleteDejaSignale: nexus?.id }));
+  return trouves;
+}
+
+/** Même COURRIEL qu'une carte de l'unité ou qu'un athlète Nexus — les mêmes
+ *  avertissements qu'à la création, réutilisés quand le courriel d'une carte
+ *  est AJOUTÉ ou CHANGÉ dans Infos (lot 2). Avertir, jamais bloquer. */
+export async function doublonsCourriel(supabase: SupabaseClient, d: {
+  /** Courriel déjà validé (lireCourriel), non vide. */
+  courriel: string;
+  sportId: string;
+  /** La carte modifiée, qui ne se signale pas elle-même. */
+  exclureCarteId?: string;
+  /** Athlète déjà signalé par le nom : pas deux fois. */
+  athleteDejaSignale?: string;
+}): Promise<DoublonCarte[]> {
+  const trouves: DoublonCarte[] = [];
+  const [carteC, athleteC] = await Promise.all([
+    carteAuCourriel(supabase, d.courriel, d.sportId, d.exclureCarteId),
+    athleteAuCourriel(supabase, d.courriel),
+  ]);
+  if (carteC) trouves.push({ texte: `Ce courriel est déjà celui de la carte « ${carteC.prenom} ${carteC.nom} » de ton unité.` });
+  if (athleteC && athleteC.id !== d.athleteDejaSignale) {
+    trouves.push({
+      texte: `Ce courriel est celui de « ${athleteC.first_name} ${athleteC.last_name} », déjà sur Nexus.`,
+      lien: `/recruteur/athletes/${athleteC.id}`,
+    });
   }
   return trouves;
 }

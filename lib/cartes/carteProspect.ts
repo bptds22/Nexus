@@ -336,6 +336,10 @@ const VERS_COLONNE: Record<string, string> = {
   grade: "grade",
   telephone: "telephone",
   teamId: "team_id",
+  // Lot 2 (BP 2026-10-07) : modifiable dans Infos. L'ajout déclenche
+  // l'invitation côté BASE (trg_carte_z_inviter_ajout) ; l'appelant valide
+  // d'abord (lireCourriel, doublonsCourriel) — voir lib/cartes/courrielCarte.
+  courriel: "courriel",
   parentNom: "parent_nom",
   parentCourriel: "parent_courriel",
 };
@@ -462,15 +466,18 @@ export async function carteAuCourriel(
   supabase: SupabaseClient,
   courriel: string,
   sportId: string,
+  /** La carte qu'on modifie (lot 2) : elle ne se signale pas elle-même. */
+  exclureCarteId?: string,
 ): Promise<{ prenom: string; nom: string } | null> {
   const q = courriel.trim();
   if (!q) return null;
-  const { data } = await supabase
+  let requete = supabase
     .from("cartes_prospect")
     .select("prenom, nom")
     .eq("unite_sport_id", sportId)
-    .ilike("courriel", q.replace(/[%_\\]/g, (m) => `\\${m}`))
-    .limit(1);
+    .ilike("courriel", q.replace(/[%_\\]/g, (m) => `\\${m}`));
+  if (exclureCarteId) requete = requete.neq("id", exclureCarteId);
+  const { data } = await requete.limit(1);
   return ((data ?? []) as { prenom: string; nom: string }[])[0] ?? null;
 }
 

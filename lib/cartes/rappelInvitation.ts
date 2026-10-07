@@ -20,6 +20,9 @@ export const TEXTE_IMPOSSIBLE = "Impossible d'envoyer à cette adresse";
 
 export interface CarteRappel {
   courriel: string | null;
+  /** Une carte TÉLÉPHONE SEULEMENT n'a ni invitation ni rappel Nexus, mais
+   *  garde « Copier le texte » (lot 2 cartes, BP 2026-10-07). */
+  telephone?: string | null;
   invitationEtat: InvitationEtat | null;
   inviteeLe: string | null;
   renvoisInvitation: number;
@@ -27,6 +30,8 @@ export interface CarteRappel {
 }
 
 export type EtatRappel =
+  /** Téléphone sans courriel : « Copier le texte » seul, jamais le bouton d'envoi. */
+  | { type: "COPIE_SEULE" }
   | { type: "IMPOSSIBLE" }
   /** Invitation automatique en attente ou en échec : pas de rappel Nexus. */
   | { type: "AUCUN" }
@@ -39,7 +44,7 @@ function plusJours(iso: string, jours: number): string {
 }
 
 export function etatRappel(c: CarteRappel, maintenant: Date = new Date()): EtatRappel | null {
-  if (!c.courriel || !c.courriel.trim()) return null;
+  if (!c.courriel || !c.courriel.trim()) return c.telephone?.trim() ? { type: "COPIE_SEULE" } : null;
   if (c.invitationEtat === "NON_ENVOYEE") return { type: "IMPOSSIBLE" };
   if (c.invitationEtat !== "ENVOYEE" || !c.inviteeLe) return { type: "AUCUN" };
   if (c.renvoisInvitation >= RAPPELS_MAX) return { type: "LIMITE", renvois: c.renvoisInvitation };
