@@ -1,5 +1,8 @@
--- 20261007210000_carte_renvoi_telephone (NON appliquée en prod — en attente du
--- GO explicite de BP ; renommer à la version prod au moment de l'apply).
+-- 20261007201544_carte_renvoi_telephone — APPLIQUÉE en prod le 2026-10-07
+-- (GO BP) sous cette version (fichier préparé sous 20261007210000).
+-- Vérifié après l'apply : pg_get_functiondef md5 7b7ca7b0… = ce fichier,
+-- ACL {authenticated,postgres,service_role} inchangée, 353 autres fonctions
+-- public inchangées.
 -- ════════════════════════════════════════════════════════════════════════════
 -- « COPIER LE TEXTE » POUR UNE CARTE TÉLÉPHONE SEULEMENT (lot 2 cartes,
 -- décisions BP 2026-10-07).
@@ -17,7 +20,7 @@
 -- trace d'un envoi fait par le recruteur, depuis son propre téléphone.
 --
 -- Additive : une fonction redéfinie, signature et ACL inchangées.
--- Rollback : supabase/rollback/20261007210000_rollback_carte_renvoi_telephone.sql
+-- Rollback : supabase/rollback/20261007201544_rollback_carte_renvoi_telephone.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 create or replace function public.journaliser_renvoi_invitation(p_carte uuid)

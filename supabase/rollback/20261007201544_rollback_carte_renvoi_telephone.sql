@@ -1,4 +1,4 @@
--- Rollback de 20261007210000_carte_renvoi_telephone.
+-- Rollback de 20261007201544_carte_renvoi_telephone.
 -- Republie journaliser_renvoi_invitation telle qu'en prod avant ce lot
 -- (20260930210110_carte_renvoi_invitation : courriel obligatoire). Les lignes
 -- INVITATION_RENVOYEE déjà écrites pour des cartes téléphone seulement restent.

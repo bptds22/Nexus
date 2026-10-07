@@ -1,7 +1,7 @@
 // Preuve — journaliser_renvoi_invitation accepte « courriel OU téléphone »
-// (migration 20261007210000), sous vrais JWT, base LOCALE.
+// (migration 20261007201544), sous vrais JWT, base LOCALE.
 //   node 1-renvoi-telephone.mjs        (SUPABASE_ANON_KEY exigé)
-// Crée 3 cartes « …preuve2 » (supprimées par 1-nettoyer.sql).
+// Crée 3 cartes « …preuve2 » (supprimées par 9-nettoyer.sql).
 import crypto from "node:crypto";
 
 const API = "http://127.0.0.1:54321/rest/v1";

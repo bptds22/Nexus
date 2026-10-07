@@ -2212,9 +2212,10 @@ Web et base seulement (protocole web-d'abord). Ce que le mobile doit reprendre :
 
 Branche `feat/cartes-lot2-web` (partie de `fix/cartes-lot1-base`). **Web seulement.**
 Dépend du trigger du lot 1 (`trg_carte_z_inviter_ajout`, en prod depuis
-`20261007193918`). Une migration : `20261007210000_carte_renvoi_telephone`
-(`journaliser_renvoi_invitation` accepte « courriel OU téléphone ») — **non
-appliquée** à la rédaction, runbook `docs/runbook-cartes-lot2.md`.
+`20261007193918`). Une migration : `20261007201544_carte_renvoi_telephone`
+(`journaliser_renvoi_invitation` accepte « courriel OU téléphone ») — ✅ **APPLIQUÉE
+en prod le 2026-10-07 sous `20261007201544`** (runbook `docs/runbook-cartes-lot2.md`).
+Web : mergé dans `main` local le 2026-10-07 — **à pousser et promouvoir par BP** (promotion manuelle de main, jamais un preview).
 
 Ce que l'app 1.4.4 ne fait pas (à reprendre au lot mobile) :
 - **Courriel modifiable** dans Infos : sur l'app, la ligne reste en lecture
@@ -2233,6 +2234,14 @@ Ce que l'app 1.4.4 ne fait pas (à reprendre au lot mobile) :
   l'ajout d'un numéro. **Sur mobile ce sera Messages** (`lienSms`, déjà utilisé
   par `CreerProspectMobile`) — et l'app devra appeler la même RPC pour laisser
   la trace (possible seulement après la migration du lot 2).
+- **Message de création aligné** (web, BP 2026-10-07 16 h 05) : la carte est
+  relue après l'insertion — « Carte prospect créée : X. Nexus envoie
+  l'invitation à … » ou la mention neutre (`messageCreationCarte`,
+  `lib/cartes/courrielCarte.ts`). L'app le fait déjà (`CreerProspectMobile`,
+  « Carte créée : … ») ; au lot mobile, appeler `messageCreationCarte` pour un
+  texte identique au web.
+- **Retirer le courriel : REFUSÉ** (décision BP finale, `REGLE_RETRAIT`) — même
+  règle à reprendre sur mobile quand le courriel y deviendra modifiable.
 - Historique (partagé) : « a invité l'athlète par courriel (envoi
   automatique) » — « à la création » retiré, l'invitation pouvant naître d'un
   ajout. Seul changement visible dans l'app, au prochain binaire.
