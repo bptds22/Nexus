@@ -1,4 +1,4 @@
--- Rollback de 20261007190000_cartes_lot1_parent_prenom_invitation.
+-- Rollback de 20261007193918_cartes_lot1_parent_prenom_invitation.
 -- Republie les définitions PROD au 2026-10-07 (avant le lot 1) :
 --   · rapprochement_candidats = 20261005192511_carte_sport_athlete (SANS le
 --     parent de la carte — c'est l'état prod, régression comprise) ;

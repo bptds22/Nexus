@@ -1,19 +1,26 @@
 # Runbook — mise en prod du lot 1 cartes (2026-10-07)
 
 Branche `fix/cartes-lot1-base`. **Rien en prod sans le GO explicite de BP.**
-Jamais un mardi ou un mercredi avant 5 h : au plus tôt **jeudi 2026-10-08, 5 h**.
+
+> **EXÉCUTÉ le 2026-10-07** (mercredi, ~19:39 UTC — BP a levé la règle
+> « pas mardi/mercredi » pour ce lot). Version enregistrée **`20261007193918`**.
+> État AVANT conforme au §0 ; APRÈS : empreintes normalisées = §3, ACL
+> `{postgres,service_role}` ×4, `trg_carte_z_inviter_ajout` présent, colonne
+> `signataire` uuid nullable + FK `set null`. `send-invitation-carte` v5 → **v6**
+> (`verify_jwt: false` inchangé ; seule `traiter.ts` modifiée). À blanc :
+> 0 candidat ; 4 invitations existantes, `signataire` NULL (nées avant).
 
 Contenu :
 - `supabase/migrations/20261005192511_carte_sport_athlete.sql` — DÉJÀ en prod
   (renommage du fichier seulement, rien à appliquer).
-- `supabase/migrations/20261007190000_cartes_lot1_parent_prenom_invitation.sql`
+- `supabase/migrations/20261007193918_cartes_lot1_parent_prenom_invitation.sql`
   — à appliquer : COURRIEL_PARENT_CARTE restauré, `prenoms_proches`,
   invitation à l'ajout d'un courriel (`trg_carte_z_inviter_ajout`), une
   invitation par carte, colonne `cartes_prospect_invitations.signataire`,
   journal INVITATION au nom du signataire.
 - `supabase/functions/send-invitation-carte/traiter.ts` — le nom du recruteur
   = `coalesce(invitation.signataire, carte.cree_par)`, lu à part.
-- Rollback : `supabase/rollback/20261007190000_rollback_cartes_lot1_parent_prenom_invitation.sql`.
+- Rollback : `supabase/rollback/20261007193918_rollback_cartes_lot1_parent_prenom_invitation.sql`.
 
 ## 0. Avant (lecture seule)
 

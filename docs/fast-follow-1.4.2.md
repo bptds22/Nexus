@@ -2176,8 +2176,9 @@ port, l'app y échoue à se connecter.
 
 ## 75. Lot 1 cartes — parent restauré, prénom à une lettre près, invitation à l'ajout du courriel (2026-10-07, pour le lot mobile)
 
-Branche `fix/cartes-lot1-base`, migration `20261007190000_cartes_lot1_parent_prenom_invitation`
-(**non appliquée** à la rédaction — runbook : `docs/runbook-cartes-lot1.md`).
+Branche `fix/cartes-lot1-base`, migration `20261007193918_cartes_lot1_parent_prenom_invitation`
+— ✅ **APPLIQUÉE en prod le 2026-10-07** (19:39 UTC, GO BP), `send-invitation-carte`
+v6 déployée juste après (runbook : `docs/runbook-cartes-lot1.md`).
 Web et base seulement (protocole web-d'abord). Ce que le mobile doit reprendre :
 
 - **`differences()`** (`lib/cartes/niveauRapprochement.ts`) rend désormais une

@@ -1,4 +1,4 @@
-# Preuves — lot 1 cartes (migration 20261007190000, base LOCALE)
+# Preuves — lot 1 cartes (migration 20261007193918, base LOCALE)
 
 Ordre (docker exec depuis l'outil **PowerShell**, `docker cp` puis `psql -f`) :
 

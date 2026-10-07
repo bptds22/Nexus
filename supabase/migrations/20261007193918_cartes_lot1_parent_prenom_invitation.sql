@@ -1,6 +1,8 @@
--- 20261007190000_cartes_lot1_parent_prenom_invitation (NON appliquée en prod —
--- en attente du GO explicite de BP ; renommer à la version prod au moment de
--- l'apply).
+-- 20261007193918_cartes_lot1_parent_prenom_invitation — APPLIQUÉE en prod le
+-- 2026-10-07 (GO BP) sous cette version (fichier préparé sous 20261007190000).
+-- Vérifié après l'apply : empreintes sans commentaires = ce fichier, ACL
+-- {postgres, service_role}, trg_carte_z_inviter_ajout présent, colonne
+-- signataire présente. send-invitation-carte v6 déployée juste après.
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTES PROSPECT — LOT 1 (décisions BP 2026-10-07).
 --
@@ -40,7 +42,7 @@
 -- fonction, un trigger, trois fonctions redéfinies. Rien de retiré.
 -- DÉPLOIEMENT : cette migration D'ABORD, puis send-invitation-carte (voir
 -- docs/runbook-cartes-lot1.md) — l'ordre inverse est lui aussi sans dégât.
--- Rollback : supabase/rollback/20261007190000_rollback_cartes_lot1_parent_prenom_invitation.sql
+-- Rollback : supabase/rollback/20261007193918_rollback_cartes_lot1_parent_prenom_invitation.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- ──────────────────────────────────────────────────────────────────────────
