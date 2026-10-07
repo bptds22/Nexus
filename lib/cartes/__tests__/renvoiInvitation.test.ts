@@ -36,3 +36,11 @@ test("lien sms : corps encodé, « & » sur iOS, « ? » sur Android", () => {
   assert.equal(lienSms("4385550123", "Salut — ici", false), "sms:4385550123?body=Salut%20%E2%80%94%20ici");
   assert.equal(lienSms("4385550123", "a&b", true), "sms:4385550123&body=a%26b");
 });
+
+test("carte téléphone seulement (lot 2) : courriel null ou blanc → /auth?mode=signup sans email", () => {
+  for (const courriel of [null, undefined, "", "   "]) {
+    const t = texteRenvoi({ prenom: "Léa", recruteur: "Rémi Collègue", cegep: "Cégep X", courriel });
+    assert.ok(t.endsWith("crée ton profil ici : https://nexussports.ca/auth?mode=signup"), String(courriel));
+    assert.doesNotMatch(t, /email=/);
+  }
+});

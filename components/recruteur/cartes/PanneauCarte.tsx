@@ -15,8 +15,13 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
-import { lireTelephone, formaterTelephone, lireNomParent, lireCourrielParent, type Lecture } from "@/lib/cartes/saisie";
+import Link from "next/link";
+import { lireTelephone, formaterTelephone, lireNomParent, lireCourrielParent, lireCourriel, type Lecture } from "@/lib/cartes/saisie";
 import { mentionInvitation, MENTION_INVITATION_NON_ENVOYEE, type InvitationEtat } from "@/lib/cartes/invitationEtat";
+import {
+  gesteCourriel, texteConfirmation, messageApresAjout, AIDE_COURRIEL_CHANGE, REGLE_RETRAIT, TITRE_CONFIRMATION,
+} from "@/lib/cartes/courrielCarte";
+import { doublonsCourriel, type DoublonCarte } from "@/lib/cartes/doublonsCarte";
 import { texteRenvoi, phraseRenvoi } from "@/lib/cartes/renvoiInvitation";
 import { etatRappel, libelleRappelIndisponible, messageReponse, RAPPELS_MAX, type ReponseRappel } from "@/lib/cartes/rappelInvitation";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
@@ -76,17 +81,8 @@ export function MentionProspect({ inviteeLe, invitationEtat }: { inviteeLe?: str
   );
 }
 
-/** « Renvoyer l'invitation » (décisions BP 2026-09-30).
- *  · Le BOUTON fait envoyer un rappel PAR NEXUS (demander_rappel_invitation) :
- *    seulement si l'invitation automatique de cette carte est partie ; sinon
- *    « Impossible d'envoyer à cette adresse », sans raison. 7 jours d'écart,
- *    3 rappels au plus.
- *  · Le LIEN « Copier le texte », dessous, est toujours là quand la carte a un
- *    courriel : le recruteur envoie de son propre téléphone ; Nexus n'envoie
- *    rien, la trace seule est écrite. */
-export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
-  const c = card.carte;
-  const queryClient = useQueryClient();
+/** Le recruteur connecté et son cégep : la signature du texte à copier. */
+function useSignatureRecruteur() {
   const { data: currentUser } = useCurrentUser();
   const profil = currentUser?.profile;
   const { data: cegep = null } = useQuery({
@@ -98,11 +94,99 @@ export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
       return (data?.name as string | undefined) ?? null;
     },
   });
+  return { recruteur: [profil?.first_name, profil?.last_name].filter(Boolean).join(" "), cegep, sportId: profil?.sport_id ?? null };
+}
+
+/** « Copier le texte » : le recruteur envoie l'invitation de son propre
+ *  téléphone ou courriel ; Nexus n'envoie RIEN, la trace seule est écrite
+ *  (journaliser_renvoi_invitation — courriel OU téléphone depuis le lot 2).
+ *  Sans courriel, le lien mène à l'inscription sans adresse pré-remplie.
+ *  `encadre` : la variante en boîte, avec son explication, montrée juste
+ *  après la création d'une carte téléphone seulement ou l'ajout d'un numéro. */
+export function CopierTexteInvitation({ carteId, prenom, courriel, encadre = false }: {
+  carteId: string; prenom: string | null; courriel: string | null; encadre?: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const { recruteur, cegep } = useSignatureRecruteur();
+  const [copie, setCopie] = useState<{ type: "ok" | "erreur" | "manuel"; texte: string } | null>(null);
+  const texte = texteRenvoi({ prenom, recruteur, cegep, courriel });
+
+  const journaliserCopie = async (confirmation: string) => {
+    const { error } = await createClient().rpc("journaliser_renvoi_invitation", { p_carte: carteId });
+    if (error) { setCopie({ type: "erreur", texte: `${confirmation} La copie n'a pas pu être notée à l'historique.` }); return; }
+    setCopie({ type: "ok", texte: confirmation });
+    void queryClient.invalidateQueries({ queryKey: ["pipeline-historique", "carte", carteId] });
+    void invaliderTableauBlanc(queryClient);
+  };
+  const copier = async () => {
+    setCopie(null);
+    try {
+      await navigator.clipboard.writeText(texte);
+    } catch {
+      setCopie({ type: "manuel", texte });
+      return;
+    }
+    await journaliserCopie("Texte copié — colle-le dans ton courriel ou tes messages.");
+  };
+
+  const retours = (
+    <>
+      {copie?.type === "ok" && <p className="text-[12px] text-[#86EFAC] mt-1" role="status">{copie.texte}</p>}
+      {copie?.type === "erreur" && <p className="text-[12px] text-[#F59E0B] mt-1" role="status">{copie.texte}</p>}
+      {copie?.type === "manuel" && (
+        <div className="mt-1.5">
+          <p className="text-[12px] text-[#9CA3AF] mb-1">Copie ce texte à la main, puis envoie-le :</p>
+          <textarea readOnly value={copie.texte} rows={4} onFocus={(e) => e.currentTarget.select()} autoFocus
+            className="w-full p-2 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[12px] text-white" />
+          <button type="button" onClick={() => void journaliserCopie("C'est noté.")}
+            className="mt-1 text-[12px] font-bold text-[#9CA3AF] hover:text-white">Je l&apos;ai envoyé</button>
+        </div>
+      )}
+    </>
+  );
+
+  if (encadre) {
+    return (
+      <div className="rounded-lg border border-[#2D3748] bg-[#13151a] px-4 py-3" data-testid="encadre-copier-texte">
+        <p className="text-[13px] text-white font-bold">Invite-le toi-même</p>
+        <p className="text-[12px] text-[#9CA3AF] mt-0.5">
+          Nexus n&apos;envoie rien à un numéro de téléphone. Copie ce texte et envoie-le de ton téléphone :
+        </p>
+        <p className="mt-2 p-2 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[12px] text-[#e0e0e0] break-words" data-testid="texte-a-copier">{texte}</p>
+        <button type="button" onClick={() => void copier()} data-testid="copier-texte"
+          className="mt-2 px-3 h-8 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold">
+          Copier le texte
+        </button>
+        {retours}
+      </div>
+    );
+  }
+  return (
+    <>
+      <button type="button" onClick={() => void copier()} data-testid="copier-texte"
+        className="block mt-1 text-[11px] text-[#9CA3AF] underline underline-offset-2 hover:text-white">
+        Copier le texte
+      </button>
+      {retours}
+    </>
+  );
+}
+
+/** « Renvoyer l'invitation » (décisions BP 2026-09-30).
+ *  · Le BOUTON fait envoyer un rappel PAR NEXUS (demander_rappel_invitation) :
+ *    seulement si l'invitation automatique de cette carte est partie ; sinon
+ *    « Impossible d'envoyer à cette adresse », sans raison. 7 jours d'écart,
+ *    3 rappels au plus.
+ *  · Le LIEN « Copier le texte », dessous, est là quand la carte a un
+ *    courriel — et, depuis le lot 2 (BP 2026-10-07), quand elle n'a qu'un
+ *    téléphone (COPIE_SEULE : le lien seul, jamais le bouton d'envoi). */
+export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
+  const c = card.carte;
+  const queryClient = useQueryClient();
   const [reponse, setReponse] = useState<{ ton: "ok" | "neutre" | "erreur"; texte: string } | null>(null);
   const [enCours, setEnCours] = useState(false);
-  const [copie, setCopie] = useState<{ type: "ok" | "erreur" | "manuel"; texte: string } | null>(null);
   const etat = etatRappel({
-    courriel: c.courriel, invitationEtat: c.invitationEtat, inviteeLe: c.inviteeLe,
+    courriel: c.courriel, telephone: c.telephone, invitationEtat: c.invitationEtat, inviteeLe: c.inviteeLe,
     renvoisInvitation: c.renvoisInvitation, dernierRenvoiLe: c.dernierRenvoiLe,
   });
   if (!etat) return null;
@@ -123,29 +207,6 @@ export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
       // L'envoi part en arrière-plan : la carte se relit quand il a eu le temps d'aboutir.
       window.setTimeout(rafraichir, 5000);
     }
-  };
-
-  const texte = texteRenvoi({
-    prenom: c.prenom,
-    recruteur: [profil?.first_name, profil?.last_name].filter(Boolean).join(" "),
-    cegep,
-    courriel: c.courriel ?? "",
-  });
-  const journaliserCopie = async (confirmation: string) => {
-    const { error } = await createClient().rpc("journaliser_renvoi_invitation", { p_carte: card.id });
-    if (error) { setCopie({ type: "erreur", texte: `${confirmation} La copie n'a pas pu être notée à l'historique.` }); return; }
-    setCopie({ type: "ok", texte: confirmation });
-    rafraichir();
-  };
-  const copier = async () => {
-    setCopie(null);
-    try {
-      await navigator.clipboard.writeText(texte);
-    } catch {
-      setCopie({ type: "manuel", texte });
-      return;
-    }
-    await journaliserCopie("Texte copié — colle-le dans ton courriel ou tes messages.");
   };
 
   const indisponible = libelleRappelIndisponible(etat);
@@ -172,21 +233,7 @@ export function RenvoyerInvitation({ card }: { card: CarteKanban }) {
         </p>
       )}
 
-      <button type="button" onClick={() => void copier()} data-testid="copier-texte"
-        className="block mt-1 text-[11px] text-[#9CA3AF] underline underline-offset-2 hover:text-white">
-        Copier le texte
-      </button>
-      {copie?.type === "ok" && <p className="text-[12px] text-[#86EFAC] mt-1" role="status">{copie.texte}</p>}
-      {copie?.type === "erreur" && <p className="text-[12px] text-[#F59E0B] mt-1" role="status">{copie.texte}</p>}
-      {copie?.type === "manuel" && (
-        <div className="mt-1.5">
-          <p className="text-[12px] text-[#9CA3AF] mb-1">Copie ce texte à la main, puis envoie-le :</p>
-          <textarea readOnly value={copie.texte} rows={4} onFocus={(e) => e.currentTarget.select()} autoFocus
-            className="w-full p-2 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[12px] text-white" />
-          <button type="button" onClick={() => void journaliserCopie("C'est noté.")}
-            className="mt-1 text-[12px] font-bold text-[#9CA3AF] hover:text-white">Je l&apos;ai envoyé</button>
-        </div>
-      )}
+      <CopierTexteInvitation carteId={card.id} prenom={c.prenom} courriel={c.courriel} />
     </div>
   );
 }
@@ -279,13 +326,145 @@ function LigneTexteCarte({ carteId, champ, libelle, initial, lire, courriel = fa
   );
 }
 
-function LigneTelephone({ carteId, initial }: { carteId: string; initial: string | null }) {
+/** Le courriel de la carte, modifiable sur place (lot 2, décisions BP
+ *  2026-10-07) — WEB seulement (l'app garde la ligne en lecture).
+ *  · AJOUT → fenêtre « Envoyer l'invitation ? » ; la base envoie (lot 1),
+ *    l'interface relit la carte et dit ce qui s'est passé. Annuler n'enregistre rien.
+ *  · CHANGEMENT → aucune invitation, une ligne d'aide sous le champ.
+ *  Mêmes validations qu'à la création : format (lireCourriel), puis les
+ *  avertissements de doublon (doublonsCourriel) — avertir, jamais bloquer. */
+function LigneCourriel({ card, valeur, onEnregistre }: {
+  card: CarteKanban; valeur: string | null; onEnregistre: (courriel: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { sportId } = useSignatureRecruteur();
+  const [edition, setEdition] = useState(false);
+  const [brut, setBrut] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [avertissements, setAvertissements] = useState<DoublonCarte[] | null>(null);
+  const [confirmer, setConfirmer] = useState<string | null>(null);
+  const [enCours, setEnCours] = useState(false);
+  const [message, setMessage] = useState<{ ton: "ok" | "neutre"; texte: string } | null>(null);
+  const changement = !!valeur?.trim();
+
+  const ouvrir = () => { setBrut(valeur ?? ""); setErreur(null); setAvertissements(null); setMessage(null); setEdition(true); };
+  const fermer = () => { setEdition(false); setConfirmer(null); setAvertissements(null); };
+
+  const ecrire = async (adresse: string, geste: "AJOUT" | "CHANGEMENT") => {
+    setEnCours(true);
+    const supabase = createClient();
+    const err = await ecrireCarte(supabase, card.id, { courriel: adresse });
+    if (err) { setEnCours(false); setErreur("Le courriel n'a pas pu être enregistré. Réessaie."); setConfirmer(null); return; }
+    if (geste === "AJOUT") {
+      // Le trigger a tranché dans la même transaction : la carte relue le dit.
+      const { data } = await supabase.from("cartes_prospect").select("invitation_etat").eq("id", card.id).maybeSingle();
+      setMessage(messageApresAjout(adresse, (data?.invitation_etat as InvitationEtat | null | undefined) ?? null));
+    }
+    setEnCours(false);
+    onEnregistre(adresse);
+    fermer();
+    void queryClient.invalidateQueries({ queryKey: ["pipeline-historique", "carte", card.id] });
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const enregistrer = async () => {
+    const l = lireCourriel(brut);
+    if (!l.ok) { setErreur(l.regle); return; }
+    const geste = gesteCourriel(valeur, l.valeur);
+    if (geste === "INCHANGE") { fermer(); return; }
+    if (geste === "RETRAIT" || !l.valeur) { setErreur(REGLE_RETRAIT); return; }
+    if (avertissements === null && sportId) {
+      setEnCours(true);
+      const trouves = await doublonsCourriel(createClient(), { courriel: l.valeur, sportId, exclureCarteId: card.id });
+      setEnCours(false);
+      if (trouves.length > 0) { setAvertissements(trouves); return; }
+    }
+    if (geste === "AJOUT") { setConfirmer(l.valeur); return; }
+    await ecrire(l.valeur, "CHANGEMENT");
+  };
+
+  if (edition) {
+    return (
+      <div className="py-2 border-b border-[#2D3748]/60">
+        <label htmlFor="carte-courriel-edition" className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Courriel</label>
+        <div className="flex gap-2 mt-1.5">
+          <input id="carte-courriel-edition" type="text" inputMode="email" autoComplete="off" autoFocus value={brut}
+            onChange={(e) => { setBrut(e.target.value); setErreur(null); setAvertissements(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter") void enregistrer(); if (e.key === "Escape") fermer(); }}
+            placeholder="nom@exemple.com" aria-invalid={!!erreur}
+            aria-describedby={erreur ? "erreur-courriel-edition" : changement ? "aide-courriel-edition" : undefined}
+            className="flex-1 min-w-0 h-9 px-3 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[13px] text-white focus:border-[#E63946] outline-none" />
+          <button type="button" onClick={() => void enregistrer()} disabled={enCours}
+            className="px-3 h-9 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 text-white text-[12px] font-bold">
+            {avertissements && avertissements.length > 0 ? "Enregistrer quand même" : "Enregistrer"}
+          </button>
+          <button type="button" onClick={fermer} className="px-2 h-9 text-[12px] font-bold text-[#9CA3AF] hover:text-white">Annuler</button>
+        </div>
+        {erreur && <p id="erreur-courriel-edition" className="text-[12px] text-[#EF4444] mt-1">{erreur}</p>}
+        {!erreur && changement && (
+          <p id="aide-courriel-edition" className="text-[12px] text-[#9CA3AF] mt-1" data-testid="aide-courriel-change">{AIDE_COURRIEL_CHANGE}</p>
+        )}
+        {avertissements && avertissements.length > 0 && (
+          <div role="alert" className="mt-2 rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3 py-2 space-y-1">
+            {avertissements.map((a, i) => (
+              <p key={i} className="text-[12px] text-[#F5D08B]">
+                {a.texte}{" "}
+                {a.lien && <Link href={a.lien} className="font-bold underline text-white">Voir sa fiche</Link>}
+              </p>
+            ))}
+          </div>
+        )}
+        {confirmer && (
+          <div className="fixed inset-0 z-[95] flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="titre-envoyer-invitation">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmer(null)} />
+            <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl" data-testid="fenetre-envoyer-invitation">
+              <h3 id="titre-envoyer-invitation" className="font-head text-[18px] font-black text-white tracking-tight">{TITRE_CONFIRMATION}</h3>
+              <p className="text-[13px] text-[#d1d5db] mt-2">{texteConfirmation(confirmer)}</p>
+              <div className="flex items-center justify-end gap-3 mt-6">
+                <button type="button" onClick={fermer} className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white">Annuler</button>
+                <button type="button" onClick={() => void ecrire(confirmer, "AJOUT")} disabled={enCours}
+                  className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 text-white text-[13px] font-bold rounded-lg">
+                  {enCours ? "…" : "Enregistrer et inviter"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="py-2 border-b border-[#2D3748]/60" data-testid="ligne-courriel">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Courriel</span>
+        <span className="flex items-baseline gap-3 text-[13px] text-white text-right min-w-0">
+          <span className="break-all">{valeur ?? <span className="text-[#6b7280]">—</span>}</span>
+          <button type="button" onClick={ouvrir} aria-label="Modifier : Courriel"
+            className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">{valeur ? "Modifier" : "Ajouter"}</button>
+        </span>
+      </div>
+      {message && (
+        <p className={`text-[12px] mt-1 ${message.ton === "ok" ? "text-[#86EFAC]" : "text-[#9CA3AF]"}`} role="status" data-testid="message-ajout-courriel">
+          {message.texte}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LigneTelephone({ carteId, initial, prenom, courriel }: {
+  carteId: string; initial: string | null;
+  /** Pour l'encadré « Copier le texte » quand un numéro est AJOUTÉ à une carte
+   *  sans courriel (lot 2, web) ; absents sur l'app : rien ne change. */
+  prenom?: string; courriel?: string | null;
+}) {
   const queryClient = useQueryClient();
   const [valeur, setValeur] = useState(initial);
   const [edition, setEdition] = useState(false);
   const [brut, setBrut] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
+  const [encadre, setEncadre] = useState(false);
 
   const enregistrer = async () => {
     const l = lireTelephone(brut);
@@ -294,6 +473,8 @@ function LigneTelephone({ carteId, initial }: { carteId: string; initial: string
     const err = await ecrireCarte(createClient(), carteId, { telephone: l.valeur });
     setEnCours(false);
     if (err) { setErreur("Le téléphone n'a pas pu être enregistré. Réessaie."); return; }
+    // Numéro AJOUTÉ (il n'y en avait pas) à une carte sans courriel : le texte à copier.
+    setEncadre(prenom !== undefined && !valeur && !!l.valeur && !courriel?.trim());
     setValeur(l.valeur);
     setEdition(false);
     void invaliderTableauBlanc(queryClient);
@@ -318,13 +499,18 @@ function LigneTelephone({ carteId, initial }: { carteId: string; initial: string
     );
   }
   return (
-    <div className="flex items-baseline justify-between gap-3 py-2 border-b border-[#2D3748]/60" data-testid="ligne-telephone">
-      <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Téléphone</span>
-      <span className="flex items-baseline gap-3 text-[13px] text-white text-right">
-        {valeur ? formaterTelephone(valeur) : <span className="text-[#6b7280]">—</span>}
-        <button type="button" onClick={() => { setBrut(valeur ? formaterTelephone(valeur) : ""); setErreur(null); setEdition(true); }}
-          className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Modifier</button>
-      </span>
+    <div className="py-2 border-b border-[#2D3748]/60" data-testid="ligne-telephone">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Téléphone</span>
+        <span className="flex items-baseline gap-3 text-[13px] text-white text-right">
+          {valeur ? formaterTelephone(valeur) : <span className="text-[#6b7280]">—</span>}
+          <button type="button" onClick={() => { setBrut(valeur ? formaterTelephone(valeur) : ""); setErreur(null); setEncadre(false); setEdition(true); }}
+            className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Modifier</button>
+        </span>
+      </div>
+      {encadre && prenom !== undefined && !courriel?.trim() && (
+        <div className="mt-2"><CopierTexteInvitation carteId={carteId} prenom={prenom} courriel={null} encadre /></div>
+      )}
     </div>
   );
 }
@@ -418,8 +604,15 @@ function SectionGrisee({ titre }: { titre: string }) {
   );
 }
 
+/** Build de l'app (Capacitor) : le panneau est partagé avec RecruteurPipelineMobile.
+ *  Le lot 2 (courriel modifiable, encadré « Copier le texte ») est WEB seulement
+ *  — protocole web-d'abord : l'app garde exactement les lignes d'avant. */
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 export function OngletInfosCarte({ card }: { card: CarteKanban }) {
   const c = card.carte;
+  // Le courriel est remonté ici : la ligne Téléphone doit savoir s'il vient d'être ajouté.
+  const [courriel, setCourriel] = useState(c.courriel);
   const taille = card.taille_pieds ? `${card.taille_pieds}'${card.taille_pouces ?? 0}"` : null;
   const creeLe = new Date(c.creeLe).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
   return (
@@ -443,8 +636,12 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
             ? <a href={c.lienVideo} target="_blank" rel="noopener noreferrer" className="font-bold text-white hover:text-[#E63946] underline">Ouvrir le lien</a>
             : <span className="text-[#6b7280]">—</span>}
         />
-        <Ligne libelle="Courriel" valeur={c.courriel ?? <span className="text-[#6b7280]">—</span>} />
-        <LigneTelephone carteId={card.id} initial={c.telephone} />
+        {IS_CAPACITOR
+          ? <Ligne libelle="Courriel" valeur={c.courriel ?? <span className="text-[#6b7280]">—</span>} />
+          : <LigneCourriel card={card} valeur={courriel} onEnregistre={setCourriel} />}
+        {IS_CAPACITOR
+          ? <LigneTelephone carteId={card.id} initial={c.telephone} />
+          : <LigneTelephone carteId={card.id} initial={c.telephone} prenom={c.prenom} courriel={courriel} />}
         {/* Le parent (décision BP 2026-09-30) : jamais exporté ; son courriel ne sert
             qu'au rapprochement — aucune invitation ne lui est envoyée. */}
         <LigneTexteCarte carteId={card.id} champ="parentNom" libelle="Nom du parent" initial={c.parentNom} lire={lireNomParent} />
@@ -480,7 +677,9 @@ export function phraseGesteCarte(g: GesteCarte, estMoi = false): string {
     case "LISTE": return d.ajout
       ? `a ajouté la carte à la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`
       : `a retiré la carte de la liste${d.liste ? ` « ${String(d.liste)} »` : ""}`;
-    case "INVITATION": return "a invité l'athlète par courriel (envoi automatique à la création)";
+    // Envoi automatique, à la création OU à l'ajout du courriel (lot 1) —
+    // signé par le signataire de l'invitation.
+    case "INVITATION": return "a invité l'athlète par courriel (envoi automatique)";
     case "INVITATION_NON_ENVOYEE": return MENTION_INVITATION_NON_ENVOYEE;
     case "INVITATION_REINITIALISEE": return `Invitation remise à zéro${typeof d.motif === "string" && d.motif ? ` (${d.motif})` : ""}`;
     case "INVITATION_RENVOYEE": return phraseRenvoi(estMoi);

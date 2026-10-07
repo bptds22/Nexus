@@ -10,6 +10,15 @@ test("sans courriel : rien", () => {
   assert.equal(etatRappel({ ...partie, courriel: "  " }), null);
 });
 
+test("téléphone sans courriel : COPIE_SEULE — « Copier le texte » sans bouton d'envoi (lot 2)", () => {
+  const e = etatRappel({ ...partie, courriel: null, invitationEtat: null, inviteeLe: null, telephone: "4385550199" })!;
+  assert.equal(e.type, "COPIE_SEULE");
+  assert.equal(libelleRappelIndisponible(e), null, "aucun libellé d'indisponibilité");
+  assert.equal(etatRappel({ ...partie, courriel: null, telephone: "  " }), null, "téléphone vide : rien");
+  // Un courriel l'emporte : le téléphone ne change rien à l'état d'une carte qui en a un.
+  assert.equal(etatRappel({ ...partie, telephone: "4385550199" }, le("2026-09-20T00:00:00Z"))!.type, "DISPONIBLE");
+});
+
 test("invitation écartée : « Impossible d'envoyer à cette adresse », sans raison", () => {
   const e = etatRappel({ ...partie, invitationEtat: "NON_ENVOYEE", inviteeLe: null })!;
   assert.equal(e.type, "IMPOSSIBLE");

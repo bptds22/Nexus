@@ -32,6 +32,9 @@ import { createClient } from "@/lib/supabase/client";
 import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
 import { chercherDoublonsCarte } from "@/lib/cartes/doublonsCarte";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
+import { CopierTexteInvitation } from "@/components/recruteur/cartes/PanneauCarte";
+import { messageCreationCarte } from "@/lib/cartes/courrielCarte";
+import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
 
 type Champ = "taille" | "poids" | "courriel" | "telephone" | "parentNom" | "parentCourriel" | "video";
 
@@ -92,6 +95,9 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [avertissements, setAvertissements] = useState<{ texte: string; lien?: string }[] | null>(null);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  /* Carte TÉLÉPHONE SEULEMENT créée (lot 2, BP 2026-10-07) : Nexus n'envoie
+     rien au numéro — la modale reste ouverte sur le texte à copier. */
+  const [creeeSansCourriel, setCreeeSansCourriel] = useState<{ id: string; prenom: string; message: string } | null>(null);
 
   // Positions et nom DU SPORT DE L'ATHLÈTE — jamais celui de l'unité, qui
   // peut désormais différer.
@@ -268,7 +274,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         const trouves = await verifierDoublons();
         if (trouves.length > 0) { setAvertissements(trouves); return; }
       }
-      const { error } = await creerCarte(createClient(), {
+      const { id, error } = await creerCarte(createClient(), {
         prenom, nom, teamId: equipe?.id ?? null, schoolId: etablissement.id,
         sportAthleteId,
         positionId: positionId || null,
@@ -287,11 +293,42 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         setErreur("La carte n'a pas pu être créée. Réessaie.");
         return;
       }
-      onCreee(`Carte prospect créée : ${prenom.trim()} ${nom.trim()}`);
+      const courrielCree = l.courriel.ok ? l.courriel.valeur : null;
+      /* Avec courriel : le déclencheur de la base a statué dans la transaction
+         de l'insertion (il peut ÉCARTER l'invitation) — on relit la carte au
+         lieu de promettre un envoi, comme l'app (CreerProspectMobile). */
+      let etat: InvitationEtat | null = null;
+      if (id && courrielCree) {
+        const { data } = await createClient().from("cartes_prospect").select("invitation_etat").eq("id", id).maybeSingle();
+        etat = (data?.invitation_etat as InvitationEtat | null | undefined) ?? null;
+      }
+      const message = messageCreationCarte(`${prenom.trim()} ${nom.trim()}`, courrielCree, etat);
+      if (id && l.telephone.ok && l.telephone.valeur && !courrielCree) {
+        setCreeeSansCourriel({ id, prenom: prenom.trim(), message });
+        return;
+      }
+      onCreee(message);
     } finally {
       setEnCours(false);
     }
   };
+
+  if (creeeSansCourriel) {
+    return (
+      <div className="fixed inset-0 z-[90] flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="titre-carte-creee">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl" data-testid="carte-creee-telephone">
+          <h3 id="titre-carte-creee" className="font-head text-[18px] font-black text-white uppercase tracking-tight">Carte créée</h3>
+          <p className="text-[13px] text-[#9CA3AF] mt-1 mb-4">{creeeSansCourriel.message}</p>
+          <CopierTexteInvitation carteId={creeeSansCourriel.id} prenom={creeeSansCourriel.prenom} courriel={null} encadre />
+          <div className="flex justify-end mt-6">
+            <button type="button" onClick={() => onCreee(creeeSansCourriel.message)}
+              className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg">Terminé</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="titre-carte">
