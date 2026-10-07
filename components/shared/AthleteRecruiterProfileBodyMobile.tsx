@@ -6,7 +6,7 @@
 // Itération 1 = squelette fonctionnel mobile-first, viewerMode "recruiter"
 // uniquement. Si viewerMode preview/partner → on délègue au desktop body.
 
-import { useDefinirFavori } from "@/lib/queries/shared/definirFavori";
+import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import { loadAthleteReferent } from "@/lib/queries/recruiter/athleteReferent";
 import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
@@ -17,7 +17,7 @@ import SegmentedTabs from "@/components/shared/SegmentedTabs";
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import RelanceFiche from "@/components/shared/RelanceFiche";
 
-import { plateformeDeUrl, type ClePlateforme } from "@/lib/config/plateformesLien";
+import { plateformeDeUrl, plateformeDuLien, type ClePlateforme } from "@/lib/config/plateformesLien";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -45,7 +45,9 @@ import type {
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import VisitDateEditor from "@/components/shared/VisitDateEditor";
-import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
+import { persistPipelineStage, lireDossierActeur } from "@/lib/pipeline/persistPipelineStage";
+import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
+import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { needsAutoMessage } from "@/lib/config/recruitmentStatuses";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
@@ -62,6 +64,8 @@ import { HeartButton } from "@/components/mobile/HeartButton";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import ApercuHudl from "@/components/ui/ApercuHudl";
+import { hudlEnPlus } from "@/lib/video/apercuHudl";
 import { aUneCote, aDesCriteres } from "@/lib/evaluations/presence";
 import {
   calculateCompletion,
@@ -539,8 +543,11 @@ const SHEET_STATUSES: { id: RecruitmentStatus; label: string; color: string }[] 
 function StatusVisitSheet({
   open, onClose, currentStatus, visitAtIso,
   athleteName, sport, schoolName,
-  onSelectStatus, onSaveVisitDate, savingVisit = false,
+  onSelectStatus, onSaveVisitDate, savingVisit = false, messageRetrait,
 }: {
+  /** Tableau blanc : la phrase de confirmation du retrait (nomme les
+   *  collègues). Le retrait demande DEUX touchers, comme Mon processus. */
+  messageRetrait: string;
   open: boolean;
   onClose: () => void;
   currentStatus: RecruitmentStatus;
@@ -556,8 +563,10 @@ function StatusVisitSheet({
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(0);
+  const [confirmRetrait, setConfirmRetrait] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { if (!open) setConfirmRetrait(false); }, [open]);
   useEffect(() => { if (!open) { setDragOffset(0); setIsDragging(false); } }, [open]);
 
   if (!mounted) return null;
@@ -676,14 +685,26 @@ function StatusVisitSheet({
                 </div>
               )}
 
-              {/* Retiré — sortie du processus (supprime la row), style muet. */}
-              <div className="pt-1 border-t border-white/[0.06]">
+              {/* Retiré — sortie du processus POUR TOUTE L'UNITÉ (lot 2 de la
+                  1.4.4). Deux touchers : le premier montre ce que le retrait
+                  fait et nomme les collègues, le second retire. */}
+              <div className="pt-1 border-t border-white/[0.06] space-y-2">
+                {confirmRetrait && (
+                  <p className="text-[12px] text-[#F59E0B] leading-snug px-1 pt-2" role="alert">{messageRetrait}</p>
+                )}
                 <button
                   type="button"
-                  onClick={() => { triggerHaptic("Light"); onSelectStatus("retire"); }}
-                  className="w-full py-3 rounded-2xl text-[12px] uppercase tracking-wider font-bold bg-[#1A1D24] text-[#9CA3AF] active:bg-white/[0.04] transition-colors"
+                  onClick={() => {
+                    triggerHaptic(confirmRetrait ? "Medium" : "Light");
+                    if (!confirmRetrait) { setConfirmRetrait(true); return; }
+                    setConfirmRetrait(false);
+                    onSelectStatus("retire");
+                  }}
+                  className={`w-full py-3 rounded-2xl text-[12px] uppercase tracking-wider font-bold transition-colors ${
+                    confirmRetrait ? "bg-[#E63946] text-white" : "bg-[#1A1D24] text-[#9CA3AF] active:bg-white/[0.04]"
+                  }`}
                 >
-                  Retirer du processus
+                  {confirmRetrait ? "Confirmer le retrait" : "Retirer du processus"}
                 </button>
               </div>
             </div>
@@ -794,6 +815,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
+  /** Les autres recruteurs de l'unité qui suivent ce dossier (ids). */
+  const [dossierCollegues, setDossierCollegues] = useState<string[]>([]);
+  /* Tableau blanc : noms des collègues qui suivent le dossier (confirmation
+     du retrait). Lus seulement pour un recruteur Pro. */
+  const { data: auteursUnite = {} } = useAuteursUnite(isRecruiter && canUsePipeline);
+  const nomsCollegues = dossierCollegues.map((rid) => nomAuteur(auteursUnite[rid]));
   const [visitAt, setVisitAt] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
@@ -1253,7 +1280,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      `mode`. Vérifié sur ce fichier aujourd'hui. */
   const isDetailed = true;
 
-  const [isFavorited, setIsFavorited] = useState(false);
+  /* Tableau blanc (lot 2 de la 1.4.4) : le cœur est celui de l'UNITÉ pour un
+     Pro (rouge si un collègue l'a posé), le sien pour un gratuit — dérivé des
+     favoris relus du serveur, jamais d'un état local qui pourrait mentir. */
+  const { favoris: favorisUnite, basculer: basculerFavori, modale: modaleFavori } = useBasculeFavori();
+  const isFavorited = !favorisUnite.isLoading && favorisUnite.ids.has(id);
   const [favCount, setFavCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
   // Ex-favBurst state retiré en iter 5.4 — animation gérée par HeartButton.
@@ -1588,17 +1619,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const favButtonDisabled = favAtCap && !isFavorited;
   const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte — favoris illimités réservés aux membres Pro.`;
 
-  /* Écriture partagée (definirFavori) : erreur vérifiée + invalidation de
-     favorites / favoriteCounts / dashboard.kpi — sans elle, « Mes favoris »
-     gardait sa liste en cache et n'affichait pas l'athlète ajouté ici.
-     Le cœur ne change d'état que si la base a accepté. */
-  const definirFavoriRecruteur = useDefinirFavori();
+  /* Écriture partagée (useBasculeFavori, comme la fiche web) : ajout = sa
+     ligne ; retrait Pro = pour l'unité (et du processus), après une
+     confirmation qui nomme les collègues. Le cœur suit les favoris relus du
+     serveur : il ne change que si la base a accepté. `null` = confirmation
+     annulée, rien n'a été écrit. */
   const toggleFav = async (): Promise<boolean> => {
     if (favButtonDisabled) return false;
     const veut = !isFavorited;
-    const res = await definirFavoriRecruteur(id, veut);
+    const nom = a && a.identityVisible !== false ? `${a.firstName} ${a.lastName}`.trim() : undefined;
+    const res = await basculerFavori(id, isFavorited, nom);
+    if (!res) return false;
     if (!res.ok) { toast.error({ message: "Échec", detail: res.message }); return false; }
-    setIsFavorited(res.favori);
     setMyFavCount((c) => (veut ? c + 1 : Math.max(0, c - 1)));
     // Haptic + scale animation gérés par HeartButton (iter 5.4) — pas de burst
     if (veut) triggerHaptic("Medium");
@@ -1654,33 +1686,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // isFavorited périmé.
   }, [openAthleteThread, toggleFav]);
 
-  useEffect(() => {
-    // Recruiter-only — recruiter_favorites RLS scopes to the row owner,
-    // so a coach query returns 0 rows silently (no error) but the
-    // resulting setIsFavorited(false) is moot for coach (heart UI is
-    // already gated behind isRecruiter). Skip to avoid wasted queries
-    // and keep the recruiter-tables call surface coach-free.
-    if (!isRecruiter) return;
-    const checkFav = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      const { data } = await supabase.from("recruiter_favorites").select("id").eq("recruiter_id", session.user.id).eq("athlete_id", id).maybeSingle();
-      setIsFavorited(!!data);
-    };
-    checkFav();
-  }, [id, isRecruiter]);
 
   useEffect(() => {
     // Recruiter-only — same rationale as checkFav above.
     if (!isRecruiter) return;
     const loadPipeline = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      const { data: pipelineData } = await supabase
-        .from("recruiter_pipeline").select("stage, visit_at")
-        .eq("recruiter_id", session.user.id).eq("athlete_id", id).maybeSingle();
+      // Tableau blanc (lot 2 de la 1.4.4) : le dossier de l'UNITÉ — l'étape
+      // commune, même posée par un collègue — sinon sa propre ligne.
+      const pipelineData = await lireDossierActeur(id);
+      setDossierCollegues(pipelineData?.collegues ?? []);
       setMyPipelineStage(pipelineData?.stage || null);
       setVisitAt((pipelineData?.visit_at as string | null) ?? null);
       // Dropdown piloté par la DB, plus par getAthleteTracking() (mock).
@@ -2000,11 +2014,17 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      URL LIBRES (faits saillants, match complet, entraînement) passent, elles,
      par plateformeDeUrl — l'URL dit la marque, et un domaine inconnu garde son
      nom d'hôte en libellé plutôt qu'un « Lien » qui n'apprend rien. */
-  const mediaLinks: { label: string; url?: string; cle: ClePlateforme }[] = [
-    { label: "Hudl", url: a.hudlUrl, cle: "hudl" },
-    { label: "YouTube", url: a.youtubeUrl, cle: "youtube" },
-    { label: "Instagram", url: a.instagramUrl, cle: "instagram" },
-  ];
+  /* Colonnes nommées : la plateforme se lit AUSSI sur le domaine (retour BP
+     2026-10-03) — un lien x.com dans le champ Instagram porte l'icône X ; la
+     colonne ne sert que de repli (plateformeDuLien). */
+  const mediaLinks: { label: string; url?: string; cle: ClePlateforme }[] = ([
+    { url: a.hudlUrl, colonne: "hudl_url" },
+    { url: a.youtubeUrl, colonne: "youtube_url" },
+    { url: a.instagramUrl, colonne: "instagram_url" },
+  ] as { url?: string; colonne: string }[]).flatMap((m) => {
+    const p = plateformeDuLien(m.url, m.colonne);
+    return p && m.url ? [{ label: `Voir sur ${p.libelle}`, url: m.url, cle: p.cle }] : [];
+  });
   const liensVideo = ([
     { titre: "Faits saillants", url: a.highlightVideoUrl },
     { titre: "Match complet", url: a.fullGameUrl },
@@ -2614,14 +2634,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   </div>
                 </section>
 
-                {/* Vidéo Faits saillants — pleine largeur */}
-                {a.highlightVideoUrl && (
+                {/* Vidéo Faits saillants — pleine largeur. Le lien Hudl de
+                    l'athlète (profil ou vidéo) a son aperçu ici (1.4.4). */}
+                {(a.highlightVideoUrl || hudlEnPlus(a.hudlUrl, a.highlightVideoUrl, a.fullGameUrl, a.practiceVideoUrl)) && (
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Faits saillants</h2>
-                    <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />
+                    <div className="flex flex-col gap-3">
+                      {a.highlightVideoUrl && <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />}
+                      {(() => {
+                        const hudl = hudlEnPlus(a.hudlUrl, a.highlightVideoUrl, a.fullGameUrl, a.practiceVideoUrl);
+                        return hudl ? <ApercuHudl url={hudl} title="Hudl" /> : null;
+                      })()}
+                    </div>
                   </section>
                 )}
-                {!a.highlightVideoUrl && !a.coachReport && (
+                {!a.highlightVideoUrl && !hudlEnPlus(a.hudlUrl) && !a.coachReport && (
                   <p className="text-[13px] text-[#6b7280] italic text-center py-6">Aucun rapport ni vidéo pour le moment.</p>
                 )}
 
@@ -2701,7 +2728,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                         </a>
                       ))}
                       {mediaLinks.filter((m) => m.url).map((m) => (
-                        <a key={m.label} href={m.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
+                        <a key={`${m.label}-${m.url}`} href={m.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-b-0 active:bg-white/[0.03]">
                           <PlateformeIcone cle={m.cle} size={18} />
                           <span className="flex-1 text-[14px] font-bold text-[#c8c8cc]">{m.label}</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-[#6b7280]">
@@ -3385,6 +3412,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <CelebrationToast show={showCelebration} onDone={() => setShowCelebration(false)} />
       )}
 
+      {/* Confirmation d'un retrait de favori pour l'unité (useBasculeFavori). */}
+      {modaleFavori}
+
       {/* Bottom sheet « Changer le statut » + section visite (remplace le
           StatusChangeDropdown). Portalé, rendu au niveau racine. */}
       {isRecruiter && canUsePipeline && a && (
@@ -3399,6 +3429,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           onSelectStatus={handleSheetSelectStatus}
           onSaveVisitDate={handleSaveVisitDate}
           savingVisit={savingVisit}
+          messageRetrait={messageRetraitProcessus(nomsCollegues, canUsePipeline)}
         />
       )}
 

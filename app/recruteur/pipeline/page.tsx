@@ -82,6 +82,7 @@ import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, RenvoyerInvitation, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import { useAuteursUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import { messageRetraitProcessus, MESSAGE_RETRAIT_CARTE } from "@/lib/pipeline/messagesUnite";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -541,8 +542,8 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 title={card.next_action_note ? `Relance : ${card.next_action_note}` : "Relance"}
                 data-testid="pastille-relance"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                  <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M5 3 2 6M19 3l3 3" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
                 {card.next_action_at ? `Relance ${formatRelanceCourt(card.next_action_at)}` : "Relance"}
               </span>
@@ -658,17 +659,9 @@ function collegues(card: PipelineKanbanCard | undefined, moi: string | null): st
   return card.suivi_par.map((id, i) => (id === moi ? null : card.suivi_par_noms![i])).filter((n): n is string => !!n);
 }
 
-/** Retirer une carte prospect la SUPPRIME (décision BP, lot C). */
-const MESSAGE_RETRAIT_CARTE =
-  "Cette carte prospect sera supprimée pour toute l'unité, avec ses notes. Il ne restera qu'une trace de la suppression, sans les informations de l'athlète.";
-
-/** Texte de la confirmation d'un retrait (décision BP 3). */
-function messageRetrait(noms: string[], modeUnite: boolean): string {
-  if (!modeUnite) return "Il ne sera plus dans ton suivi actif.";
-  if (noms.length === 0) return "Le dossier sera retiré du processus de ton unité.";
-  const liste = noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}`;
-  return `Suivi aussi par ${liste}. Le dossier sera retiré pour toute l'unité — pour ${noms.length === 1 ? "ce collègue" : "ces collègues"} aussi.`;
-}
+/** Texte de la confirmation d'un retrait (décision BP 3) — source unique
+ *  web + app : lib/pipeline/messagesUnite.ts. */
+const messageRetrait = messageRetraitProcessus;
 
 function formatPoids(card: PipelineKanbanCard): string | null {
   return card.poids_lbs ? `${card.poids_lbs} lbs` : null;
@@ -1887,10 +1880,14 @@ function PipelinePageContent() {
      passe par la ligne de l'acteur, et cette ligne vit dans l'unité de
      l'acteur : déplacer le dossier Basketball depuis un compte Football en
      créerait un SECOND, en Football. Tant que l'écriture inter-unités n'existe
-     pas (étape 3, registre §40), ces dossiers se lisent sans se modifier. */
+     pas (étape 3, registre §40), ces dossiers se lisent sans se modifier.
+     SAUF un dossier que JE suis (recette 1.4.4) : ma ligne existe, l'écriture
+     la met à jour EN PLACE (unite_figer garde son unité) — aucun doublon. Un
+     recruteur dont le sport a changé n'est plus muré hors de ses dossiers. */
   const estAutreUnite = useCallback((card: PipelineKanbanCard | null | undefined) =>
-    !!card && modeUnite && !!card.unite_sport_id && !!monSportId && card.unite_sport_id !== monSportId,
-  [modeUnite, monSportId]);
+    !!card && modeUnite && !!card.unite_sport_id && !!monSportId && card.unite_sport_id !== monSportId
+    && !(!!moi && (card.suivi_par ?? []).includes(moi)),
+  [modeUnite, monSportId, moi]);
 
   /* Toute écriture passe par la ligne de l'ACTEUR (unite_ecrire_dossier,
      lot B2-0) : créée au besoin, alignée sur l'unité, et le journal est signé

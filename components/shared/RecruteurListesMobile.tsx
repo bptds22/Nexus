@@ -187,10 +187,23 @@ function ConfirmDeleteSheet({
               <p className="font-head text-[18px] font-black text-white uppercase tracking-tight">
                 Supprimer cette liste ?
               </p>
+              {/* Tableau blanc (lot 2 de la 1.4.4) : même phrase que le web —
+                  une liste d'unité part pour toute l'unité, et on nomme son
+                  auteur si ce n'est pas moi. */}
               <p className="text-[14px] text-white/70 leading-relaxed">
-                <span className="text-white font-semibold">« {list.name} »</span> sera supprimée.
-                Les {list.athleteCount} athlète{list.athleteCount > 1 ? "s" : ""} ne seront pas supprimés
-                de tes favoris, juste retirés de cette liste.
+                {list.enUnite ? (
+                  <>
+                    {list.auteur && <>Liste créée par <span className="text-white font-semibold">{list.auteur}</span>. </>}
+                    <span className="text-white font-semibold">« {list.name} »</span> sera supprimée pour toute
+                    l&apos;unité — cette action est irréversible. Les athlètes resteront dans les favoris.
+                  </>
+                ) : (
+                  <>
+                    <span className="text-white font-semibold">« {list.name} »</span> sera supprimée.
+                    Les {list.athleteCount} athlète{list.athleteCount > 1 ? "s" : ""} ne seront pas supprimés
+                    de tes favoris, juste retirés de cette liste.
+                  </>
+                )}
               </p>
             </div>
             <div className="px-4 pb-5 space-y-2">
@@ -253,7 +266,7 @@ function ListCard({
               )}
             </div>
             <p className="text-[11px] text-white/40 mt-2">
-              Modifiée {formatRelativeDate(list.updatedAt)}
+              {list.auteur ? <>Créée par {list.auteur} · </> : null}Modifiée {formatRelativeDate(list.updatedAt)}
             </p>
           </div>
           <button

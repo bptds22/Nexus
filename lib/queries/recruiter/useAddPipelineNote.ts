@@ -1,13 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════
    useAddPipelineNote — TanStack mutation (iter 6.1a)
    Insert d'une note dans recruiter_notes (table partagée avec le
-   profil athlète). Invalidation de la query ["pipeline-notes",
-   userId, athleteId] consommée par usePipelineNotes.
+   profil athlète). La note est signée (recruiter_id = soi) et lue par
+   toute l'unité ; toute écriture relit le tableau blanc.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 
 export function useAddPipelineNote() {
   const queryClient = useQueryClient();
@@ -31,14 +32,8 @@ export function useAddPipelineNote() {
 
       if (error) throw error;
     },
-    onSuccess: (_, variables) => {
-      const userId = currentUser?.profile.id;
-      queryClient.invalidateQueries({
-        queryKey: ["pipeline-notes", userId, variables.athleteId],
-      });
-      // La vue tableau affiche la DERNIÈRE note (usePipelineCards) : sans
-      // cette invalidation elle resterait sur l'ancienne jusqu'au rechargement.
-      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    },
+    // Tableau blanc (lot 2 de la 1.4.4) : la note est lue par toute l'unité
+    // (fil signé, colonne « dernière note », historique) — tout est relu.
+    onSuccess: () => { void invaliderTableauBlanc(queryClient); },
   });
 }

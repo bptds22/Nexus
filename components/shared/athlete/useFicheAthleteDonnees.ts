@@ -676,6 +676,19 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
           }))
       : (directQuery as unknown as PromiseLike<{ data: unknown; error: unknown }>);
 
+    /* EN PARALLÈLE (recette 1.4.4, onglet Infos lent sur mobile) : l'identité
+       (RPC recruteur) et le référent ne dépendent QUE de l'id — ils partaient
+       APRÈS la lecture principale, en cascade (athlète → identité → référent
+       ×2 → programmes → coachs : ~6 allers-retours d'affilée vers
+       ca-central-1). Ils partent maintenant avec elle. Mêmes replis qu'avant :
+       identité masquée si la RPC échoue, référent vide. */
+    const carteP: Promise<RecruiterAthleteCard | null> = viewerMode === "recruiter"
+      ? fetchRecruiterAthleteCards(supabase, [id])
+          .then((m) => m.get(id) ?? null)
+          .catch((e) => { console.warn("[recruiter_athlete_cards] echec — identite masquee", e); return null; })
+      : Promise.resolve(null);
+    const referentP = loadAthleteReferent(supabase, id).catch(() => ({ name: null }));
+
     const load = Promise.resolve(source).then(async ({ data, error }) => {
         if (error || !data) { setLoadingAthlete(false); return; }
 
@@ -694,15 +707,7 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
            quel echec de cette RPC gelait la page. Desormais on degrade vers
            l'identite masquee, ce qui est le repli sur : on n'affiche jamais
            une identite qu'on n'a pas pu autoriser. */
-        let card: RecruiterAthleteCard | null = null;
-        if (viewerMode === "recruiter") {
-          try {
-            card = (await fetchRecruiterAthleteCards(supabase, [id])).get(id) ?? null;
-          } catch (e) {
-            console.warn("[recruiter_athlete_cards] echec — identite masquee", e);
-            card = null;
-          }
-        }
+        const card: RecruiterAthleteCard | null = await carteP;
         /* Hors recruteur, il n'y a pas de palier a appliquer : l'athlete voit
            son profil tel qu'un abonne le verrait (c'est l'objet de l'apercu),
            et le partenaire retrouve le comportement d'avant 794c6fd. */
@@ -727,7 +732,7 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
            Lecture séparée : les RPC recruteur ne projettent pas coach_id, et
            fn_resolve_team_referent n'existe pas encore en base (vague 2). */
         const referentName =
-          (await loadAthleteReferent(supabase, d.id as string)).name ?? "";
+          (await referentP).name ?? "";
         const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
         const sport = sportRel as { nom: string } | null;

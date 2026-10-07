@@ -1,67 +1,42 @@
 /* ═══════════════════════════════════════════════════════════════
    useUpdateNextAction — TanStack mutation (Lot 1)
-   Écrit recruiter_pipeline.next_action_at, LA DATE SEULEMENT.
+   Écrit next_action_at d'un dossier, LA DATE SEULEMENT.
 
    FRONTIÈRE VOLONTAIRE — next_action_note n'est ni lue, ni écrite, ni
-   envoyée par ce hook. La RLS de recruiter_pipeline est par LIGNE : le
-   coach de l'athlète reçoit déjà la ligne entière. La note de suivi est
-   la cuisine interne du recruteur et ne descend pas au mobile sans
-   décision explicite. Voir docs/pipeline-recruteur-frontieres.md.
+   envoyée par ce hook (docs/pipeline-recruteur-frontieres.md).
 
-   L'UPDATE ne porte QUE next_action_at : pas de flagged, pas de
-   updated_at, pas de stage. Depuis le Lot 0, trg_log_pipeline_update
-   porte un WHEN (old.stage IS DISTINCT FROM new.stage) — cette écriture
-   ne journalise donc rien, ce qui est l'effet recherché.
-
-   Calqué sur useTogglePipelinePriority : optimistic update du cache
-   ["pipeline", userId] via onMutate, revert en onError, invalidation en
-   onSettled.
+   Tableau blanc (lot 2 de la 1.4.4) : unite_ecrire_dossier avec le seul
+   champ next_action_at, comme le web. La relance est celle du DOSSIER DE
+   L'UNITÉ : la ligne de l'acteur est écrite, la synchronisation la recopie
+   sur celles des collègues. Optimiste dans tous les caches du processus.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import type { PipelineData } from "@/lib/queries/recruiter/usePipelineCards";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { ecrireCarte } from "@/lib/cartes/carteProspect";
+import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
 
 export function useUpdateNextAction() {
   const queryClient = useQueryClient();
-  const { data: currentUser } = useCurrentUser();
-  const userId = currentUser?.profile.id;
-  const queryKey = ["pipeline", userId];
 
   return useMutation({
     /** `nextActionAt` : "AAAA-MM-JJ" (colonne date) ou null pour effacer. */
-    mutationFn: async ({ cardId, nextActionAt }: { cardId: string; nextActionAt: string | null }) => {
-      if (!userId) throw new Error("Not authenticated");
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("recruiter_pipeline")
-        .update({ next_action_at: nextActionAt })
-        .eq("athlete_id", cardId)
-        .eq("recruiter_id", userId);
+    mutationFn: async ({ cardId, nextActionAt, carte = false }: { cardId: string; nextActionAt: string | null; carte?: boolean }) => {
+      if (carte) {
+        const erreur = await ecrireCarte(createClient(), cardId, { next_action_at: nextActionAt });
+        if (erreur) throw erreur;
+        return;
+      }
+      const { error } = await createClient().rpc("unite_ecrire_dossier", {
+        p_athlete_id: cardId, p_champs: { next_action_at: nextActionAt },
+      });
       if (error) throw error;
     },
-    onMutate: async ({ cardId, nextActionAt }) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<PipelineData>(queryKey);
-      queryClient.setQueryData<PipelineData>(queryKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          cards: old.cards.map((c) =>
-            c.id === cardId ? { ...c, next_action_at: nextActionAt } : c
-          ),
-        };
-      });
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    },
+    onMutate: async ({ cardId, nextActionAt }) => ({
+      instantane: await patcherDossiers(queryClient, cardId, (c) => ({ ...c, next_action_at: nextActionAt })),
+    }),
+    onError: (_err, _vars, context) => restaurerDossiers(queryClient, context?.instantane),
+    onSettled: () => { void invaliderTableauBlanc(queryClient); },
   });
 }

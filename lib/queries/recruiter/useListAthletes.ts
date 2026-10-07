@@ -11,12 +11,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import { lireCartesParIds, type LigneCarte } from "@/lib/cartes/carteProspect";
 
 export interface ListMetadata {
   id: string;
   name: string;
   color: string;
   description: string | null;
+  /** Unité (cégep × sport) de la liste — null : liste personnelle, sans cartes prospect (lot C mobile). */
+  uniteCegepId: string | null;
+  uniteSportId: string | null;
 }
 
 export interface ListAthlete {
@@ -42,6 +46,9 @@ export interface ListAthlete {
   isVerified: boolean;
   /** statut recrutement athlète (override last-write-wins) — ex IDENTIFIE, CONTACTE, ... */
   recruitmentStatus: string | null;
+  /** Carte prospect (lot C) plutôt qu'un vrai athlète — athleteId porte alors
+   *  l'id de la carte (cartes_prospect.id), pas un athlete_id réel. */
+  isProspect: boolean;
 }
 
 export interface UseListAthletesResult {
@@ -70,11 +77,37 @@ interface ListRow {
   name: string;
   color: string | null;
   description: string | null;
+  unite_cegep_id: string | null;
+  unite_sport_id: string | null;
   recruiter_list_members: Array<{
     id: string;
     added_at: string;
     athlete_id: string;
   }> | null;
+}
+
+/** Une carte prospect au format ListAthlete (lot C mobile — parité avec
+ *  versMembreListe du web, lib/cartes/carteProspect.ts). */
+function carteVersListAthlete(c: LigneCarte, nomSport: string, addedAt: string): ListAthlete {
+  return {
+    memberId: c.id,
+    athleteId: c.id,
+    addedAt,
+    identityVisible: true,
+    fullName: `${c.prenom} ${c.nom}`.trim(),
+    firstName: c.prenom,
+    lastName: c.nom,
+    photoUrl: null,
+    jersey: c.numero ?? null,
+    sportName: nomSport,
+    positionAbbr: c.positions?.abreviation ?? null,
+    schoolName: c.teams?.schools?.name ?? c.etablissement?.name ?? null,
+    graduationYear: c.promotion,
+    coachRating: 0,
+    isVerified: false,
+    recruitmentStatus: null,
+    isProspect: true,
+  };
 }
 
 function computeStats(athletes: ListAthlete[]) {
@@ -108,7 +141,7 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
       const { data, error } = await supabase
         .from("recruiter_lists")
         .select(`
-          id, name, color, description,
+          id, name, color, description, unite_cegep_id, unite_sport_id,
           recruiter_list_members(id, added_at, athlete_id)
         `)
         .eq("id", listId)
@@ -122,6 +155,8 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
         name: row.name,
         color: row.color || "#E63946",
         description: row.description,
+        uniteCegepId: row.unite_cegep_id,
+        uniteSportId: row.unite_sport_id,
       };
 
       const members = row.recruiter_list_members ?? [];
@@ -159,9 +194,42 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
             coachRating: Number(card.cote_globale ?? 0),
             isVerified: card.verified === true,
             recruitmentStatus: card.statut_recrutement_override,
+            isProspect: false,
           };
         });
-      return { list, athletes };
+
+      /* CARTES PROSPECT de la liste (lot C mobile) : liaison à part,
+         cartes_prospect_listes — jamais recruiter_list_members. Une erreur
+         de lecture laisse les athlètes (parité avec useListesUnite, web). */
+      let prospects: ListAthlete[] = [];
+      try {
+        const { data: liaisons, error: errLiaisons } = await supabase
+          .from("cartes_prospect_listes")
+          .select("carte_id, created_at")
+          .eq("list_id", listId);
+        if (errLiaisons) throw errLiaisons;
+        const lignes = (liaisons ?? []) as { carte_id: string; created_at: string }[];
+        if (lignes.length > 0) {
+          const cartes = await lireCartesParIds(supabase, lignes.map((l) => l.carte_id));
+          // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — pas celui de
+          // l'unité, qui peut désormais différer d'une carte à l'autre.
+          const sportIds = [...new Set(cartes.map((c) => c.sport_athlete_id))];
+          const nomsSports = new Map<string, string>();
+          if (sportIds.length > 0) {
+            const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+            for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
+          }
+          const parCarteId = new Map(cartes.map((c) => [c.id, c]));
+          prospects = lignes
+            .filter((l) => parCarteId.has(l.carte_id))
+            .map((l) => carteVersListAthlete(parCarteId.get(l.carte_id)!, nomsSports.get(parCarteId.get(l.carte_id)!.sport_athlete_id) ?? "", l.created_at));
+        }
+      } catch (e) {
+        console.error("[useListAthletes] cartes prospect :", e instanceof Error ? e.message : String(e));
+      }
+
+      const tous = [...athletes, ...prospects].sort((a, b) => (b.addedAt || "").localeCompare(a.addedAt || ""));
+      return { list, athletes: tous };
     },
     enabled: !!listId,
     staleTime: 30 * 1000,

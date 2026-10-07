@@ -83,9 +83,8 @@ export default function PlateformeIcone({
       );
     case "x":
       return (
-        <svg {...commun} fill="none" stroke={teinte} strokeWidth="2.2" strokeLinecap="round">
-          <line x1="5" y1="5" x2="19" y2="19" />
-          <line x1="19" y1="5" x2="5" y2="19" />
+        <svg {...commun} fill={teinte}>
+          <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
         </svg>
       );
     case "facebook":

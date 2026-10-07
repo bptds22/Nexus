@@ -130,7 +130,7 @@ export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, 
     <div className={`rounded-2xl border border-[#2D3748] bg-[#1A1D24] p-4 ${className ?? "mt-4"}`}>
       <div className="flex items-center gap-2 mb-3">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15.5 14" />
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         <h3 className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9CA3AF]">
           Prochaine relance

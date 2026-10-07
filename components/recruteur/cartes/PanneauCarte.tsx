@@ -22,7 +22,8 @@ import { etatRappel, libelleRappelIndisponible, messageReponse, RAPPELS_MAX, typ
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
-import { joursAvantPurge, AVIS_JOURS, ecrireCarte, type CarteKanban } from "@/lib/cartes/carteProspect";
+import { joursAvantPurge, AVIS_JOURS, ecrireCarte, libelleEquipeComplet, type CarteKanban } from "@/lib/cartes/carteProspect";
+import { leagueOf } from "@/lib/config/team-taxonomy";
 import { KANBAN_COLUMNS } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { ligneSignee } from "@/lib/historique/signature";
 
@@ -328,6 +329,17 @@ function LigneTelephone({ carteId, initial }: { carteId: string; initial: string
   );
 }
 
+interface TeamChoix {
+  id: string;
+  name: string;
+  division: string | null;
+  league: string | null;
+  age_group: string | null;
+  gender: string | null;
+  rseq_team_id: string | null;
+  schools: { type: string | null } | null;
+}
+
 /** L'équipe de la carte. Sans équipe (établissement sans équipe du sport,
  *  décision BP 2026-09-30) : rattachée à l'établissement, pas de matchs au
  *  calendrier — et « Préciser l'équipe » dès qu'un entraîneur en inscrit une. */
@@ -335,21 +347,32 @@ function LigneEquipe({ card }: { card: CarteKanban }) {
   const c = card.carte;
   const queryClient = useQueryClient();
   const [equipe, setEquipe] = useState<{ id: string; nom: string } | null>(c.teamId ? { id: c.teamId, nom: c.teamNom ?? "" } : null);
-  const [choix, setChoix] = useState<{ id: string; name: string }[]>([]);
+  const [choix, setChoix] = useState<TeamChoix[]>([]);
   const [selection, setSelection] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
 
   useEffect(() => {
-    if (equipe || !c.schoolId || !card.unite_sport_id) return;
+    // Les équipes DU SPORT DE L'ATHLÈTE (décision BP 2026-10-05) — jamais
+    // celui de l'unité, qui peut différer depuis que l'athlète d'une carte
+    // n'est plus limité au sport du tableau qui la contient.
+    if (equipe || !c.schoolId || !c.sportAthleteId) return;
     let annule = false;
-    void createClient().from("teams").select("id, name").eq("school_id", c.schoolId).eq("sport_id", card.unite_sport_id).order("name")
-      .then(({ data }) => { if (!annule) setChoix((data ?? []) as { id: string; name: string }[]); });
+    void createClient().from("teams").select("id, name, division, league, age_group, gender, rseq_team_id, schools!school_id(type)")
+      .eq("school_id", c.schoolId).eq("sport_id", c.sportAthleteId).order("name")
+      .then(({ data }) => { if (!annule) setChoix((data ?? []) as unknown as TeamChoix[]); });
     return () => { annule = true; };
-  }, [equipe, c.schoolId, card.unite_sport_id]);
+  }, [equipe, c.schoolId, c.sportAthleteId]);
 
   if (equipe) return <Ligne libelle="Équipe" valeur={equipe.nom || <span className="text-[#6b7280]">Équipe retirée</span>} />;
   if (!c.schoolId) return <Ligne libelle="Équipe" valeur={<span className="text-[#6b7280]">Équipe retirée</span>} />;
+
+  // Même règle que versKanban (leagueOf) : une équipe d'école sans ligue
+  // stockée est RSEQ par défaut — jamais teams.league brut.
+  const libelleChoix = (t: TeamChoix) => {
+    const ligue = leagueOf({ context: null, schoolType: null, teamDivision: t.division, teamLeague: t.league, teamIsRseq: !!t.rseq_team_id, hasTeam: true, teamSchoolType: t.schools?.type ?? null }) ?? "";
+    return libelleEquipeComplet(c.sportAthleteNom, t, ligue);
+  };
 
   const preciser = async () => {
     const t = choix.find((x) => x.id === selection);
@@ -358,7 +381,7 @@ function LigneEquipe({ card }: { card: CarteKanban }) {
     const err = await ecrireCarte(createClient(), card.id, { teamId: t.id });
     setEnCours(false);
     if (err) { setErreur("L'équipe n'a pas pu être enregistrée. Réessaie."); return; }
-    setEquipe({ id: t.id, nom: t.name });
+    setEquipe({ id: t.id, nom: libelleChoix(t) });
     void invaliderTableauBlanc(queryClient);
   };
 
@@ -375,7 +398,7 @@ function LigneEquipe({ card }: { card: CarteKanban }) {
           <select id="carte-preciser-equipe" value={selection} onChange={(e) => { setSelection(e.target.value); setErreur(null); }}
             className="flex-1 min-w-0 h-9 px-2 rounded-lg bg-[#0d0f13] border border-[#2D3748] text-[13px] text-white">
             <option value="">Préciser l&apos;équipe…</option>
-            {choix.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {choix.map((t) => <option key={t.id} value={t.id}>{libelleChoix(t)}</option>)}
           </select>
           <button type="button" onClick={() => void preciser()} disabled={!selection || enCours}
             className="px-3 h-9 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 text-white text-[12px] font-bold">Enregistrer</button>
@@ -402,6 +425,11 @@ export function OngletInfosCarte({ card }: { card: CarteKanban }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#2D3748] bg-[#13151a] px-4 py-2">
+        {/* Le sport de L'ATHLÈTE (décision BP 2026-10-05) — `card.sport`
+            porte désormais la même valeur (le kanban et les filtres du
+            tableau le lisent), toujours affiché ici comme les autres
+            champs de la carte. */}
+        {c.sportAthleteNom && <Ligne libelle="Sport" valeur={c.sportAthleteNom} />}
         <LigneEquipe card={card} />
         <Ligne libelle="École" valeur={card.school || <span className="text-[#6b7280]">—</span>} />
         <Ligne libelle="Position" valeur={card.position || <span className="text-[#6b7280]">—</span>} />

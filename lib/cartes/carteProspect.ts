@@ -22,6 +22,7 @@ import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanb
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade, type Grade } from "@/lib/config/grades";
 import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
+import { leagueOf } from "@/lib/config/team-taxonomy";
 
 /** Rétention (décision BP) : purge 12 mois après la dernière activité,
  *  avis à l'écran 30 jours avant. */
@@ -47,6 +48,11 @@ export interface CarteMeta {
    *  sport de l'unité (décision BP 2026-09-30). */
   schoolId: string | null;
   schoolNom: string | null;
+  /** Le sport de L'ATHLÈTE (décision BP 2026-10-05) — distinct du sport de
+   *  l'unité (`PipelineKanbanCard.sport`, le tableau qui contient la carte).
+   *  Déduit de l'équipe quand il y en a une, choisi par le recruteur sinon. */
+  sportAthleteId: string;
+  sportAthleteNom: string;
   positionId: string | null;
   numero: string | null;
   promotion: number | null;
@@ -119,7 +125,8 @@ export interface LigneCarte {
   derniere_activite: string;
   created_at: string;
   school_id: string | null;
-  teams: { name: string | null; division: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
+  sport_athlete_id: string;
+  teams: { name: string | null; division: string | null; league: string | null; age_group: string | null; gender: string | null; rseq_team_id: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
   /** L'établissement de la carte (rattachement direct, sans équipe). */
   etablissement: { name: string | null; region: string | null; type: string | null } | null;
   positions: { abreviation: string | null } | null;
@@ -129,8 +136,8 @@ const SELECT_CARTE = `
   id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, parent_nom, parent_courriel, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
-  school_id,
-  teams!team_id(name, division, schools!school_id(name, region, type)),
+  school_id, sport_athlete_id,
+  teams!team_id(name, division, league, age_group, gender, rseq_team_id, schools!school_id(name, region, type)),
   etablissement:schools!school_id(name, region, type),
   positions!position_id(abreviation)
 `;
@@ -224,13 +231,31 @@ export function versKanban(
   // Sans équipe, l'établissement de rattachement (école ou club).
   const ecole = l.teams?.schools ?? l.etablissement ?? null;
   const expire = expireLe(l.derniere_activite);
+  // Le sport de L'ATHLÈTE (décision BP 2026-10-05) — peut différer de celui
+  // de l'unité (le tableau qui contient la carte ne bouge pas). C'est LUI qui
+  // définit l'équipe (teamNom plus bas), jamais le sport de l'unité.
+  const nomSportAthlete = contexte.nomSport(l.sport_athlete_id);
+  // Même règle que les dossiers (leagueOf) : équipe d'école sans ligue = RSEQ.
+  // Hissé ici (plutôt que recalculé deux fois) : sert au champ `ligue` ET à
+  // libeller l'équipe dans Infos (teamNom), qui veut sport·catégorie·division
+  // · ligue · genre — teams.name ne définit rien, il porte parfois le nom de
+  // l'école (saisie coach), jamais la ligue (déduite, jamais stockée pour une
+  // équipe RSEQ).
+  const ligueEquipe = l.teams
+    ? leagueOf({ context: null, schoolType: null, teamDivision: l.teams.division, teamLeague: l.teams.league, teamIsRseq: !!l.teams.rseq_team_id, hasTeam: true, teamSchoolType: l.teams.schools?.type ?? null }) ?? ""
+    : "";
   return {
     id: l.id,
     pipeline_id: l.id,
     full_name: `${l.prenom} ${l.nom}`.trim(),
     identityVisible: true,
     photo_url: "",
-    sport: contexte.nomSport(l.unite_sport_id),
+    // Le sport DE L'ATHLÈTE (décision BP 2026-10-05), pas celui de l'unité
+    // (le tableau qui contient la carte) — c'est lui que les pastilles du
+    // kanban, le filtre Sport du tableau et le calendrier doivent lire. Le
+    // retour BP du 2026-10-06 confirme : « enregistrée comme Basketball »
+    // décrivait exactement ce `sport` encore posé sur l'unité ici.
+    sport: nomSportAthlete,
     position: l.positions?.abreviation ?? "",
     school: ecole?.name ?? "",
     region: ecole?.region ?? "",
@@ -268,6 +293,7 @@ export function versKanban(
     suivi_par_noms: l.cree_par ? [contexte.nomAuteur(l.cree_par)] : [],
     unite_sport_id: l.unite_sport_id,
     division_equipe: l.teams?.division ?? null,
+    ligue: ligueEquipe,
     carte: {
       prenom: l.prenom,
       nom: l.nom,
@@ -277,9 +303,11 @@ export function versKanban(
       parentCourriel: l.parent_courriel,
       lienVideo: l.lien_video,
       teamId: l.team_id,
-      teamNom: l.teams?.name ?? null,
+      teamNom: l.teams ? libelleEquipeComplet(nomSportAthlete, { ...l.teams, name: l.teams.name ?? "" }, ligueEquipe) : null,
       schoolId: l.school_id,
       schoolNom: ecole?.name ?? null,
+      sportAthleteId: l.sport_athlete_id,
+      sportAthleteNom: nomSportAthlete,
       positionId: l.position_id,
       numero: l.numero,
       promotion: l.promotion,
@@ -341,9 +369,13 @@ export async function ajouterNoteCarte(supabase: SupabaseClient, carteId: string
 export interface NouvelleCarte {
   prenom: string;
   nom: string;
-  /** null : l'établissement n'a aucune équipe du sport — rattachement direct. */
+  /** null : l'établissement n'a aucune équipe DE CE SPORT — rattachement direct. */
   teamId: string | null;
   schoolId: string;
+  /** Le sport de l'athlète (décision BP 2026-10-05). Ignoré par la base
+   *  quand `teamId` est posé — elle le déduit alors de l'équipe ; requis et
+   *  faisant foi seulement quand `teamId` est null. */
+  sportAthleteId: string;
   positionId: string | null;
   numero: string | null;
   promotion: number | null;
@@ -365,6 +397,7 @@ export async function creerCarte(supabase: SupabaseClient, c: NouvelleCarte) {
       nom: c.nom.trim(),
       team_id: c.teamId,
       school_id: c.schoolId,
+      sport_athlete_id: c.sportAthleteId,
       position_id: c.positionId,
       numero: c.numero?.trim() || null,
       promotion: c.promotion,
@@ -473,6 +506,21 @@ export function libelleEquipe(sport: string, e: { name: string; age_group: strin
   const corps = [sport, e.age_group?.toLowerCase(), e.division].filter(Boolean).join(" ");
   const base = e.age_group || e.division ? corps : [sport, e.name].filter(Boolean).join(" — ");
   return e.gender ? `${base} · ${e.gender}` : base;
+}
+
+/** Libellé COMPLET d'une équipe, ligue incluse : « Football juvénile D2 ·
+ *  RSEQ · Masculin ». Ce qui définit une équipe (retour BP) — jamais
+ *  teams.name, qui ne porte ni sport ni catégorie et porte parfois le nom de
+ *  l'école (saisie coach). La ligue se passe déjà calculée (leagueOf) :
+ *  teams.league est souvent NULL pour une équipe RSEQ, déduite jamais stockée. */
+export function libelleEquipeComplet(
+  sport: string,
+  e: { name: string; age_group: string | null; division: string | null; gender: string | null },
+  ligue: string,
+): string {
+  const corps = [sport, e.age_group?.toLowerCase(), e.division].filter(Boolean).join(" ");
+  const base = e.age_group || e.division ? corps : [sport, e.name].filter(Boolean).join(" — ");
+  return [base, ligue, e.gender].filter(Boolean).join(" · ");
 }
 
 /* ── MON CÉGEP (admin) ──────────────────────────────────────────────

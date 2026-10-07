@@ -12,12 +12,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useFavoriteAthletes } from "@/lib/queries/recruiter/useFavoriteAthletes";
 import { useToggleListMember } from "@/lib/queries/recruiter/useToggleListMember";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { triggerHaptic } from "@/lib/haptics";
+import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { lireCartes, ajouterCarteAListe } from "@/lib/cartes/carteProspect";
 
 
 export interface AddAthleteToListSheetProps {
@@ -27,22 +31,94 @@ export interface AddAthleteToListSheetProps {
   listName: string | null;
   /** Set des athleteId déjà membres de la liste (calculé par DetailInner). */
   existingIds: Set<string>;
+  /** Set des carte_id (cartes_prospect) déjà membres de la liste (lot C). */
+  existingCarteIds?: Set<string>;
+  /** Unité (cégep × sport) de la liste — null : liste personnelle, aucune
+   *  carte prospect proposée (une carte n'appartient qu'à une unité). */
+  uniteCegepId?: string | null;
+  uniteSportId?: string | null;
+}
+
+/** Un candidat de la sheet — favori (prospect:false) ou carte prospect de
+ *  l'unité (prospect:true), au même format d'affichage. */
+interface Candidate {
+  id: string;
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  photo: string;
+  jersey: string;
+  position: string;
+  school: string;
+  sportName: string;
+  stars: number;
+  isVerified: boolean;
+  identityVisible: boolean;
+  isProspect: boolean;
 }
 
 export function AddAthleteToListSheet({
-  open, onClose, listId, listName, existingIds,
+  open, onClose, listId, listName, existingIds, existingCarteIds, uniteCegepId, uniteSportId,
 }: AddAthleteToListSheetProps) {
   const toast = useMobileToast();
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.authUser.id;
   const { athletes: favorites = [], isLoading } = useFavoriteAthletes();
   const toggleMut = useToggleListMember();
   const [mounted, setMounted] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 200);
-  // Athlètes ajoutés pendant cette session de sheet (filtrés sans attendre
-  // que le refetch de ["list-athletes"] arrive).
+  // Athlètes/cartes ajoutés pendant cette session de sheet (filtrés sans
+  // attendre que le refetch de ["list-athletes"] arrive).
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   // In-flight pour montrer un état "Ajout..." par row.
   const [adding, setAdding] = useState<Set<string>>(new Set());
+
+  // Cartes prospect de l'unité (lot C) : une carte s'ajoute à une liste
+  // d'unité comme un athlète — parité avec AddAthleteModal (web).
+  const [cartes, setCartes] = useState<Candidate[]>([]);
+  const [cartesLoading, setCartesLoading] = useState(!!(uniteCegepId && uniteSportId));
+  useEffect(() => {
+    if (!uniteCegepId || !uniteSportId) { setCartes([]); setCartesLoading(false); return; }
+    let annule = false;
+    setCartesLoading(true);
+    void (async () => {
+      const supabase = createClient();
+      try {
+        const lignes = await lireCartes(supabase, { cegepId: uniteCegepId, sportId: uniteSportId });
+        if (annule) return;
+        // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — par carte.
+        const sportIds = [...new Set(lignes.map((l) => l.sport_athlete_id))];
+        const nomsSports = new Map<string, string>();
+        if (sportIds.length > 0) {
+          const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
+        }
+        if (annule) return;
+        setCartes(lignes.map((l): Candidate => ({
+          id: l.id,
+          fullName: `${l.prenom} ${l.nom}`.trim(),
+          firstName: l.prenom,
+          lastName: l.nom,
+          photo: "",
+          jersey: l.numero ?? "",
+          position: l.positions?.abreviation ?? "",
+          school: l.teams?.schools?.name ?? l.etablissement?.name ?? "",
+          sportName: nomsSports.get(l.sport_athlete_id) ?? "",
+          stars: 0,
+          isVerified: false,
+          identityVisible: true,
+          isProspect: true,
+        })));
+      } catch (e) {
+        console.error("[AddAthleteToListSheet] cartes prospect :", e instanceof Error ? e.message : String(e));
+      } finally {
+        if (!annule) setCartesLoading(false);
+      }
+    })();
+    return () => { annule = true; };
+  }, [uniteCegepId, uniteSportId]);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -57,28 +133,48 @@ export function AddAthleteToListSheet({
   // than during the previous render" → écran noir qui couvre tout le DetailInner
   // parce que ce sheet est rendu en sibling permanent (open=false initialement).
   // Identique au crash thread iter 7.8d, leçon canon 14.x.
+  const candidats = useMemo((): Candidate[] => [
+    ...favorites.map((a): Candidate => ({
+      id: a.id, fullName: a.fullName, firstName: a.firstName, lastName: a.lastName,
+      photo: a.photo, jersey: a.jersey, position: a.position, school: a.school,
+      sportName: a.sportName, stars: a.stars, isVerified: a.isVerified,
+      identityVisible: a.identityVisible, isProspect: false,
+    })),
+    ...cartes,
+  ], [favorites, cartes]);
+
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    return favorites.filter((a) => {
-      if (existingIds.has(a.id) || justAdded.has(a.id)) return false;
+    return candidats.filter((a) => {
+      if (a.isProspect ? (existingCarteIds?.has(a.id) ?? false) : existingIds.has(a.id)) return false;
+      if (justAdded.has(a.id)) return false;
       if (!q) return true;
       const name = `${a.firstName} ${a.lastName}`.toLowerCase();
       const sport = (a.sportName ?? "").toLowerCase();
-      return name.includes(q) || sport.includes(q);
+      const school = (a.school ?? "").toLowerCase();
+      return name.includes(q) || sport.includes(q) || school.includes(q);
     });
-  }, [favorites, existingIds, justAdded, debouncedSearch]);
+  }, [candidats, existingIds, existingCarteIds, justAdded, debouncedSearch]);
 
   if (!mounted) return null;
 
-  const handleAdd = async (athleteId: string, fullName: string) => {
+  const handleAdd = async (candidat: Candidate) => {
     if (listId.startsWith("temp-")) {
       toast.info({ message: "Liste en cours de création…", detail: "Réessaie dans un instant." });
       return;
     }
     triggerHaptic("Light");
+    const { id: athleteId, fullName } = candidat;
     setAdding((s) => { const n = new Set(s); n.add(athleteId); return n; });
     try {
-      await toggleMut.mutateAsync({ listId, athleteId, isCurrentlyMember: false });
+      if (candidat.isProspect) {
+        const error = await ajouterCarteAListe(createClient(), listId, athleteId);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ["list-athletes", listId] });
+        queryClient.invalidateQueries({ queryKey: ["recruiter-lists", userId] });
+      } else {
+        await toggleMut.mutateAsync({ listId, athleteId, isCurrentlyMember: false });
+      }
       setJustAdded((s) => { const n = new Set(s); n.add(athleteId); return n; });
       toast.success({
         message: `Ajouté à ${listName ?? "la liste"}`,
@@ -95,8 +191,9 @@ export function AddAthleteToListSheet({
     }
   };
 
-  const hasNoFavorites = !isLoading && favorites.length === 0;
-  const allAlreadyMembers = !isLoading && favorites.length > 0 && filtered.length === 0 && debouncedSearch.trim().length === 0;
+  const loadingTout = isLoading || cartesLoading;
+  const hasNoFavorites = !loadingTout && candidats.length === 0;
+  const allAlreadyMembers = !loadingTout && candidats.length > 0 && filtered.length === 0 && debouncedSearch.trim().length === 0;
 
   return createPortal(
     <AnimatePresence>
@@ -150,7 +247,7 @@ export function AddAthleteToListSheet({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Rechercher un favori…"
+                  placeholder="Rechercher un favori ou un prospect…"
                   className="w-full bg-white/[0.06] rounded-xl pl-9 pr-9 py-2.5 text-[14px] text-white placeholder:text-white/40 outline-none"
                 />
                 {search && (
@@ -169,7 +266,7 @@ export function AddAthleteToListSheet({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 pb-4">
-              {isLoading ? (
+              {loadingTout ? (
                 <div className="space-y-2 pt-2">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="h-16 rounded-xl bg-[#1A1D24] animate-pulse" />
@@ -177,15 +274,15 @@ export function AddAthleteToListSheet({
                 </div>
               ) : hasNoFavorites ? (
                 <p className="text-[14px] text-white/55 italic text-center py-12">
-                  Aucun favori pour le moment. Ajoute des athlètes à tes favoris d&apos;abord.
+                  Aucun favori ni carte prospect pour le moment.
                 </p>
               ) : allAlreadyMembers ? (
                 <p className="text-[14px] text-white/55 italic text-center py-12">
-                  Tous tes favoris sont déjà dans cette liste.
+                  Tous tes favoris et cartes prospect de l&apos;unité sont déjà dans cette liste.
                 </p>
               ) : filtered.length === 0 ? (
                 <p className="text-[14px] text-white/55 italic text-center py-12">
-                  Aucun favori ne correspond à « {debouncedSearch} ».
+                  Aucun résultat pour « {debouncedSearch} ».
                 </p>
               ) : (
                 <div className="space-y-2 pt-2">
@@ -222,19 +319,22 @@ export function AddAthleteToListSheet({
                             )}
                           </div>
                           <p className="text-[11px] text-white/55 truncate">
+                            {a.isProspect && <span className="text-[#E63946] font-bold">Prospect · </span>}
                             {a.position && <>{a.position} · </>}{a.school || a.sportName || "—"}
                           </p>
-                          <div className="flex items-center gap-0.5 mt-0.5">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                              </svg>
-                            ))}
-                          </div>
+                          {!a.isProspect && (
+                            <div className="flex items-center gap-0.5 mt-0.5">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                </svg>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleAdd(a.id, fullName)}
+                          onClick={() => handleAdd(a)}
                           disabled={isAdding}
                           className={`px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-wider flex-shrink-0 transition-colors ${
                             isAdding

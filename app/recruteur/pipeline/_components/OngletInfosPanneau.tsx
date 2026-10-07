@@ -18,13 +18,20 @@
      hors vitrine (lockContent). Faits saillants, médias et liens, parcours
      d'équipes et profil académique restent cadenassés en gratuit.
 
-   Monté SEULEMENT quand l'onglet est ouvert : le chargement n'a lieu qu'à
-   la demande, jamais à l'ouverture du panneau. Ce chargement n'écrit
+   Web : monté SEULEMENT quand l'onglet est ouvert. Ce chargement n'écrit
    aucune « vue » (recordView vit dans la fiche, pas dans le hook).
+
+   App (`memoire`, recette 1.4.4, BP 2026-10-02) : la fiche mobile monte
+   l'onglet dès son ouverture, caché pendant qu'on est sur Actions — il se
+   charge en arrière-plan — et le résultat reste en mémoire pour la session
+   de l'app. La clé porte le compte et le palier : un changement de compte
+   ou de forfait ne relit jamais les infos (masquées ou non) d'un autre.
 ═══════════════════════════════════════════════════════════════ */
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { isShowcaseAthlete } from "@/lib/showcase";
 import { useFicheAthleteDonnees } from "@/components/shared/athlete/useFicheAthleteDonnees";
 import {
@@ -33,13 +40,30 @@ import {
   SectionDetailsAcademiques, SectionInfosPersonnelles,
 } from "@/components/shared/athlete/sectionsFiche";
 
-export default function OngletInfosPanneau({ athleteId }: { athleteId: string }) {
+type Donnees = ReturnType<typeof useFicheAthleteDonnees>;
+type InfosLues = { a: NonNullable<Donnees["a"]>; teamDetails: Donnees["teamDetails"] };
+
+/** Mémoire de session de l'app : vit tant que l'app n'est pas relancée. */
+const memoireInfos = new Map<string, InfosLues>();
+
+export default function OngletInfosPanneau({ athleteId, memoire = false }: { athleteId: string; memoire?: boolean }) {
+  const { tier, loading: tierLoading } = useSubscription();
+  const { data: currentUser } = useCurrentUser();
+  const cle = `${currentUser?.authUser.id ?? ""}|${tier}|${athleteId}`;
+  const enMemoire = memoire && !tierLoading && currentUser ? memoireInfos.get(cle) : undefined;
+  if (enMemoire) return <ContenuInfos athleteId={athleteId} a={enMemoire.a} teamDetails={enMemoire.teamDetails} />;
+  return <InfosALire athleteId={athleteId} cle={memoire && currentUser ? cle : null} />;
+}
+
+function InfosALire({ athleteId, cle }: { athleteId: string; cle: string | null }) {
   const { tier, loading: tierLoading } = useSubscription();
   const isFreeRecruiter = tier === "free";
-  const verrouille = isFreeRecruiter && !isShowcaseAthlete(athleteId);
   const { a, loadingAthlete, teamDetails } = useFicheAthleteDonnees({
     id: athleteId, viewerMode: "recruiter", tierLoading, isFreeRecruiter,
   });
+  useEffect(() => {
+    if (cle && a && !loadingAthlete) memoireInfos.set(cle, { a, teamDetails });
+  }, [cle, a, loadingAthlete, teamDetails]);
 
   if (loadingAthlete) {
     return (
@@ -51,7 +75,12 @@ export default function OngletInfosPanneau({ athleteId }: { athleteId: string })
   if (!a) {
     return <p className="py-12 text-center text-[13px] text-[#6b7280]">Les informations de cet athlète sont indisponibles.</p>;
   }
+  return <ContenuInfos athleteId={athleteId} a={a} teamDetails={teamDetails} />;
+}
 
+function ContenuInfos({ athleteId, a, teamDetails }: { athleteId: string } & InfosLues) {
+  const { tier } = useSubscription();
+  const verrouille = tier === "free" && !isShowcaseAthlete(athleteId);
   return (
     <div className="space-y-6">
       {/* Ordre de BP : taille, poids, mesures, tests, équipes et parcours,

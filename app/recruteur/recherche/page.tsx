@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useFiltresRecherche, usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
+import { trierDecouverte } from "@/lib/recherche/triDecouverte";
 import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
@@ -558,6 +559,12 @@ function RechercheContent() {
     if (sortBy === "favorites_desc") {
       list = [...list].sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
     }
+    // Découverte (défaut) : mélange stable du jour, propre à ce recruteur —
+    // la RPC a déjà répondu en rating_desc (RPC_SORTS ne connaît pas
+    // "decouverte"), le mélange est purement client.
+    if (sortBy === "decouverte" && currentUser?.authUser.id) {
+      list = trierDecouverte(list, currentUser.authUser.id);
+    }
 
     return list.map((a) => ({
       ...a,
@@ -567,7 +574,7 @@ function RechercheContent() {
         ? `Favori de ${joindreNoms((favorisUnite.parAthlete[a.id] ?? []).map(favorisUnite.nom))}`
         : undefined,
     }));
-  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite]);
+  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite, currentUser?.authUser.id]);
 
   /* ── OPTIONS ET ETATS DES TROIS MENUS ─────────────────────────────────────
      Construites sur `athletes` — LE JEU RENVOYE PAR LA RPC, donc apres les
@@ -650,7 +657,7 @@ function RechercheContent() {
     if (res && !res.ok) setErreurFavori(res.message);
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== "rating_desc";
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== FILTRES_DEFAUT.sortBy;
 
   /* PÉRIMÈTRE INCHANGÉ. Ce bouton ne vide NI `search`, NI `progFilterIds`, NI
      `offertParMonCegep` — c'était déjà le cas avant la bascule vers l'URL, et
@@ -661,7 +668,7 @@ function RechercheContent() {
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", region: "", promotion: "", orgType: "",
       leagueFilter: "", divisionFilter: "",
-      minRating: "", minGpa: "", sortBy: "rating_desc",
+      minRating: "", minGpa: "", sortBy: FILTRES_DEFAUT.sortBy,
       verifiedOnly: false, withVideoOnly: false,
       withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
       filterOuvertDemenager: false, filterOuvertPrive: false, filterOuvertAnglophone: false,
@@ -802,6 +809,7 @@ function RechercheContent() {
 
           {/* Sort */}
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="nx-filter-select">
+            <option value="decouverte">Trier: Découverte</option>
             <option value="rating_desc">Trier: Meilleure cote</option>
             <option value="rating_asc">Trier: Cote croissante</option>
             <option value="favorites_desc">Trier: Plus favorisés</option>
@@ -873,6 +881,14 @@ function RechercheContent() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${hideFavorites ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill={hideFavorites ? "#E63946" : "none"} stroke={hideFavorites ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
             Masquer favoris
+          </button>
+          {/* Retour BP 2026-10-05 : un seul point d'entrée, en pastille comme les
+              autres — plus un checkbox enterré dans « Filtres avancés ». Fenêtre
+              réelle (recruiter_search_athletes, p_new_only) : 10 jours. */}
+          <button type="button" onClick={() => setFilterNewOnly(!filterNewOnly)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${filterNewOnly ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={filterNewOnly ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4l2.5 1.5" /></svg>
+            Nouveaux (10 jours)
           </button>
           {/* LOT 5 — remplace la pastille « Te cible » des cartes. Masquée sans
               cégep rattaché : on ne saurait pas qui te cible. Le compte vient
@@ -991,16 +1007,6 @@ function RechercheContent() {
               <span className={`text-[13px] font-semibold transition-colors ${filterOuvertAnglophone ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert anglophone</span>
             </label>
 
-            <div className="w-px h-6 bg-[#2D3748] mx-1" />
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#4a4d56]">Nouveautés</span>
-
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input type="checkbox" checked={filterNewOnly} onChange={(e) => setFilterNewOnly(e.target.checked)} className="sr-only" />
-              <div className={`nx-filter-checkbox${filterNewOnly ? " checked" : ""}`}>
-                {filterNewOnly && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
-              </div>
-              <span className={`text-[13px] font-semibold transition-colors ${filterNewOnly ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Nouveaux profils (10 derniers jours)</span>
-            </label>
           </div>
         )}
       </div>

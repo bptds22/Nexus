@@ -25,7 +25,8 @@ import { triggerHaptic } from "./utils";
 
 export interface DashboardHeroProps {
   eyebrow?: string;
-  headline: ReactNode;
+  /** Optionnel : le recruteur n'en a plus (tuile « Nouveaux (10 j) », 1.4.4). */
+  headline?: ReactNode;
   /** Inset stats row at the bottom of the card. Max 3. */
   insets?: Omit<KpiCardProps, "size">[];
   /** Optional pulse badge (e.g. "{N} suggestions à examiner"). */
@@ -79,6 +80,7 @@ export function DashboardHero({
           {/* Headline area — caller passes pre-styled ReactNode so it can
               accent the second line in red. The string fallback gives a
               sane default for the trivial case. */}
+          {headline && (
           <div className="max-w-[80%]">
             {typeof headline === "string" ? (
               <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
@@ -88,6 +90,7 @@ export function DashboardHero({
               headline
             )}
           </div>
+          )}
 
           {pulseBadge && (
             <button

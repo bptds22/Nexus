@@ -15,15 +15,21 @@
 
 export const URL_NEXUS = "https://nexussports.ca";
 
-export function lienInscription(courriel: string): string {
-  return `${URL_NEXUS}/auth?mode=signup&email=${encodeURIComponent(courriel.trim())}`;
+/** Sans courriel (texto de l'app, recette 1.4.4) : le formulaire
+ *  d'inscription, sans adresse pré-remplie. */
+export function lienInscription(courriel: string | null | undefined): string {
+  const c = courriel?.trim();
+  return c
+    ? `${URL_NEXUS}/auth?mode=signup&email=${encodeURIComponent(c)}`
+    : `${URL_NEXUS}/auth?mode=signup`;
 }
 
 export interface ElementsRenvoi {
   prenom: string | null | undefined;
   recruteur: string | null | undefined;
   cegep: string | null | undefined;
-  courriel: string;
+  /** Absent pour un texto envoyé au téléphone (création mobile). */
+  courriel: string | null | undefined;
 }
 
 /** « Salut [prénom], je suis [recruteur] du [cégep]. On utilise Nexus pour
@@ -37,6 +43,13 @@ export function texteRenvoi(e: ElementsRenvoi): string {
   const qui = recruteur ? `je suis ${recruteur}` : "je suis recruteur";
   const ou = cegep ? ` du ${cegep}` : "";
   return `${salut} ${qui}${ou}. On utilise Nexus pour notre recrutement — crée ton profil ici : ${lienInscription(e.courriel)}`;
+}
+
+/** Lien qui ouvre l'app Messages, numéro et texte posés : le recruteur n'a
+ *  plus qu'à appuyer sur Envoyer (création mobile, recette 1.4.4). iOS lit
+ *  le corps après « & », Android après « ? ». Nexus n'envoie RIEN au numéro. */
+export function lienSms(telephone: string, corps: string, ios: boolean): string {
+  return `sms:${telephone}${ios ? "&" : "?"}body=${encodeURIComponent(corps)}`;
 }
 
 /** La phrase d'historique, conjuguée à qui la lit. */
