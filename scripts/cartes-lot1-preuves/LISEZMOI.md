@@ -12,3 +12,14 @@ Ordre (docker exec depuis l'outil **PowerShell**, `docker cp` puis `psql -f`) :
 
 Le 5 et le 6 incluent le rollback par copie : régénérer s'il change.
 Nettoyage : supprimer les invitations, puis les cartes `nom like '%preuve' or nom = 'Prevost'`, puis les athlètes `77770000-%`.
+
+## Signataire et ordre de déploiement (7-preuve-signataire.mjs)
+
+`SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` exigés ; lancer avec
+`node --experimental-strip-types`. Resend est SIMULÉ (aucun courriel ne part).
+- `creer <suffixe> ajout|creation` puis `envoyer supabase/functions/send-invitation-carte/traiter.ts`, puis `etat`.
+- Base d'abord : `envoyer` avec l'ANCIENNE traiter.ts (`git show d8bd42ed:…/traiter.ts`,
+  copiée À CÔTÉ de traiter.ts pour ses imports relatifs, supprimée après).
+- Edge d'abord : appliquer le rollback, `creer … creation`, `reclamation-naive`
+  (variante écartée : 42703, ligne restée A_ENVOYER), puis `envoyer` (nouvelle).
+  Ré-appliquer la migration ensuite.

@@ -25,12 +25,21 @@
 --    la création (compte existant, désabonné, invité depuis 90 jours → mention
 --    neutre NON_ENVOYEE).
 --
+-- 3 bis. SIGNATAIRE (BP 2026-10-07, 15 h 23). L'invitation née d'un AJOUT de
+--    courriel est signée par celui qui l'ajoute ; à la création, par le
+--    créateur. Figé sur cartes_prospect_invitations.signataire (nouvelle
+--    colonne nullable) ; lu par send-invitation-carte et par le journal
+--    (ligne INVITATION). Les rappels, eux, restent au nom de celui qui les
+--    demande (cartes_prospect_rappels.demande_par) : inchangés.
+--
 -- 4. COURRIEL CHANGÉ APRÈS UNE INVITATION → RIEN. cartes_prospect_inviter
 --    sort tout de suite si la carte a déjà une ligne d'invitation (index
 --    unique une-par-carte) : couvre aussi le courriel effacé puis remis.
 --
--- Aucune notification nouvelle. Additive : une fonction, un trigger, deux
--- fonctions redéfinies. Rien de retiré.
+-- Aucune notification nouvelle. Additive : une colonne nullable, une
+-- fonction, un trigger, trois fonctions redéfinies. Rien de retiré.
+-- DÉPLOIEMENT : cette migration D'ABORD, puis send-invitation-carte (voir
+-- docs/runbook-cartes-lot1.md) — l'ordre inverse est lui aussi sans dégât.
 -- Rollback : supabase/rollback/20261007190000_rollback_cartes_lot1_parent_prenom_invitation.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -139,7 +148,17 @@ $$;
 
 -- ──────────────────────────────────────────────────────────────────────────
 -- 3. INVITATION — une seule par carte, à la création OU à l'ajout du courriel
+--
+--    SIGNATAIRE (décision BP 2026-10-07, 15 h 23) : à la création, le
+--    créateur ; à l'AJOUT du courriel, celui qui l'ajoute. Figé sur la ligne
+--    d'invitation au moment où elle naît — jamais relu dans
+--    cartes_prospect.modifie_par, qui change à chaque modification de la
+--    carte. Lu par send-invitation-carte (nom dans le courriel) et par le
+--    journal (acteur de la ligne INVITATION).
 -- ──────────────────────────────────────────────────────────────────────────
+alter table public.cartes_prospect_invitations
+  add column signataire uuid references public.users(id) on delete set null;
+
 create or replace function public.cartes_prospect_inviter()
 returns trigger language plpgsql security definer set search_path = public set row_security = off as $$
 declare
@@ -170,8 +189,10 @@ begin
       then 'DEJA_INVITE'
   end;
 
-  insert into public.cartes_prospect_invitations (carte_id, unite_cegep_id, empreinte, statut, motif)
-  values (new.id, new.unite_cegep_id, v_emp, case when v_motif is null then 'A_ENVOYER' else 'ECARTE' end, v_motif)
+  insert into public.cartes_prospect_invitations (carte_id, unite_cegep_id, empreinte, statut, motif, signataire)
+  values (new.id, new.unite_cegep_id, v_emp, case when v_motif is null then 'A_ENVOYER' else 'ECARTE' end, v_motif,
+          case when tg_op = 'INSERT' then new.cree_par
+               else coalesce(auth.uid(), new.modifie_par, new.cree_par) end)
   returning id into v_id;
 
   if v_motif is null then
@@ -197,12 +218,67 @@ create trigger trg_carte_z_inviter_ajout
   when (coalesce(btrim(old.courriel), '') = '' and coalesce(btrim(new.courriel), '') <> '')
   execute function public.cartes_prospect_inviter();
 
+-- Journal : la ligne INVITATION (posée quand l'edge function marque
+-- invitee_le) est signée par le signataire de l'invitation de la carte, à
+-- défaut par le créateur (invitations nées avant cette migration). Le reste
+-- du corps est celui de 20260929020248_lot_c_cartes_prospect, inchangé.
+create or replace function public.cartes_prospect_journaliser()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_acteur uuid := auth.uid();
+begin
+  if tg_op = 'INSERT' then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'CREEE', jsonb_build_object('etape', new.etape));
+    return new;
+  end if;
+  if new.etape is distinct from old.etape then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'ETAPE', jsonb_build_object('avant', old.etape, 'apres', new.etape));
+  end if;
+  if new.grade is distinct from old.grade then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'GRADE', jsonb_build_object('avant', old.grade, 'apres', new.grade));
+  end if;
+  if new.relance_le is distinct from old.relance_le or new.relance_note is distinct from old.relance_note then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'RELANCE', jsonb_build_object('le', new.relance_le));
+  end if;
+  if new.visite_le is distinct from old.visite_le then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'VISITE', jsonb_build_object('le', new.visite_le));
+  end if;
+  if new.drapeau is distinct from old.drapeau then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'DRAPEAU', jsonb_build_object('drapeau', new.drapeau));
+  end if;
+  if new.invitee_le is distinct from old.invitee_le and new.invitee_le is not null then
+    -- Envoi système : au nom du SIGNATAIRE de l'invitation (créateur, ou
+    -- collègue qui a ajouté le courriel — BP 2026-10-07), à défaut du créateur.
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id,
+            coalesce((select i.signataire from public.cartes_prospect_invitations i where i.carte_id = new.id),
+                     new.cree_par),
+            'INVITATION', jsonb_build_object('le', new.invitee_le));
+  end if;
+  if (new.prenom, new.nom, new.team_id, new.position_id, new.numero, new.promotion, new.taille_pieds,
+      new.taille_pouces, new.poids_lbs, new.lien_video, new.courriel)
+     is distinct from
+     (old.prenom, old.nom, old.team_id, old.position_id, old.numero, old.promotion, old.taille_pieds,
+      old.taille_pouces, old.poids_lbs, old.lien_video, old.courriel) then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'MODIFIEE', '{}'::jsonb);
+  end if;
+  return new;
+end $$;
+
 -- ──────────────────────────────────────────────────────────────────────────
 -- 4. DROITS — aucune de ces fonctions n'est appelable par un client.
 -- ──────────────────────────────────────────────────────────────────────────
 revoke execute on function public.prenoms_proches(text, text)            from public, anon, authenticated;
 revoke execute on function public.rapprochement_candidats(uuid, uuid)    from public, anon, authenticated;
 revoke execute on function public.cartes_prospect_inviter()              from public, anon, authenticated;
+revoke execute on function public.cartes_prospect_journaliser()          from public, anon, authenticated;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- GATES — listes complètes triées (règle 2026-09-07), jamais par inclusion.
@@ -214,7 +290,8 @@ begin
     select * from (values
       ('public.prenoms_proches(text, text)',          array['postgres','service_role']),
       ('public.rapprochement_candidats(uuid, uuid)',   array['postgres','service_role']),
-      ('public.cartes_prospect_inviter()',             array['postgres','service_role'])
+      ('public.cartes_prospect_inviter()',             array['postgres','service_role']),
+      ('public.cartes_prospect_journaliser()',         array['postgres','service_role'])
     ) as v(f, veut)
   loop
     select array_agg(t.g order by t.g) into vus
@@ -229,6 +306,15 @@ begin
      and tgfoid = 'public.cartes_prospect_inviter()'::regprocedure;
   if vus is distinct from array['trg_carte_z_inviter','trg_carte_z_inviter_ajout'] then
     raise exception 'NEXUS: triggers d''invitation = %', vus;
+  end if;
+  -- La colonne signataire existe, nullable, avec sa clé étrangère vers users.
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'cartes_prospect_invitations'
+                    and column_name = 'signataire' and is_nullable = 'YES' and data_type = 'uuid')
+     or not exists (select 1 from pg_constraint
+                     where conrelid = 'public.cartes_prospect_invitations'::regclass and contype = 'f'
+                       and confrelid = 'public.users'::regclass and confdeltype = 'n') then
+    raise exception 'NEXUS: colonne cartes_prospect_invitations.signataire absente ou mal formée';
   end if;
   -- Contrôles de sens, exécutés à l'apply.
   if not public.prenoms_proches('Mathis', 'Mathys') or not public.prenoms_proches('Thomas', 'Tomas')

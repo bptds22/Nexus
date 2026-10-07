@@ -2173,3 +2173,36 @@ overlay (« s'enregistre tout seul ✓ ») faute de le montrer.
 `Pixel_6` (emulator-5554) porte le **1.4.4 prod**. Ne pas recetter la prod
 sur `Pixel_6_Play` sans y réinstaller un build prod : sans le relais de
 port, l'app y échoue à se connecter.
+
+## 75. Lot 1 cartes — parent restauré, prénom à une lettre près, invitation à l'ajout du courriel (2026-10-07, pour le lot mobile)
+
+Branche `fix/cartes-lot1-base`, migration `20261007190000_cartes_lot1_parent_prenom_invitation`
+(**non appliquée** à la rédaction — runbook : `docs/runbook-cartes-lot1.md`).
+Web et base seulement (protocole web-d'abord). Ce que le mobile doit reprendre :
+
+- **`differences()`** (`lib/cartes/niveauRapprochement.ts`) rend désormais une
+  ligne « Prénom : Mathis sur la carte, Mathys sur Nexus » quand le nom de
+  famille est identique et le prénom normalisé diffère. Une fenêtre de
+  rapprochement mobile qui recopierait la liste des écarts au lieu d'appeler
+  `differences()` ne la montrerait pas. Décision BP : **aucun autre indice**
+  quand « Possible » vient du prénom — cette ligne suffit.
+- **`COURRIEL_PARENT_CARTE`** : critère restauré par ce lot (il avait été
+  perdu en prod le 2026-10-05 par `carte_sport_athlete`). Un `switch` mobile
+  sur `critere` sans cas par défaut n'affichera rien pour lui (déjà noté §60) ;
+  niveau « Correspondance confirmée par le courriel ».
+- **Prénom proche** : EQUIPE_PROCHE / ECOLE_PROCHE peuvent maintenant naître
+  d'un prénom à une lettre près (≥ 4 lettres, `prenoms_proches`) ; jamais
+  plus haut que « Possible », jamais par le parent (garde fratrie). Aucun
+  critère nouveau : rien à ajouter au `switch`.
+- **Signataire de l'invitation** : `cartes_prospect_invitations.signataire`
+  (nouvelle colonne). À la création : le créateur ; courriel AJOUTÉ plus tard
+  à une carte qui n'en avait pas : celui qui l'ajoute — l'invitation part
+  alors automatiquement (trigger `trg_carte_z_inviter_ajout`), une seule fois
+  par carte. Le journal INVITATION est signé par le même. **Rien à changer
+  dans le binaire** pour que l'envoi parte (la base décide), mais :
+  · un écran mobile qui permet d'ajouter un courriel à une carte déclenche
+    une vraie invitation — l'interface web prévue (fenêtre « Envoyer
+    l'invitation ? ») n'a pas d'équivalent mobile ;
+  · un historique mobile qui suppose « INVITATION = créateur » se trompe.
+- Les **rappels** restent au nom de celui qui les demande (`demande_par`),
+  inchangés.

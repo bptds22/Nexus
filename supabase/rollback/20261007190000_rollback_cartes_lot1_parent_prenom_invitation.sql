@@ -3,7 +3,14 @@
 --   · rapprochement_candidats = 20261005192511_carte_sport_athlete (SANS le
 --     parent de la carte — c'est l'état prod, régression comprise) ;
 --   · cartes_prospect_inviter = version prod (sans la garde une-par-carte) ;
--- puis retire le trigger d'ajout de courriel et prenoms_proches.
+--   · cartes_prospect_journaliser = 20260929020248_lot_c (INVITATION au nom
+--     du créateur) ;
+-- puis retire le trigger d'ajout de courriel, prenoms_proches et la colonne
+-- cartes_prospect_invitations.signataire (APRÈS les fonctions qui l'écrivent
+-- ou la lisent). La valeur du signataire des invitations déjà nées est
+-- perdue ; leur ligne de journal INVITATION, déjà écrite, reste.
+-- send-invitation-carte lit signataire de façon tolérante : la version
+-- déployée continue d'envoyer (au nom du créateur) sans la colonne.
 -- Les propositions déjà créées restent : leurs critères (COURRIEL_PARENT_CARTE,
 -- EQUIPE_PROCHE, ECOLE_PROCHE) sont valides avant comme après.
 -- Les invitations déjà parties restent aussi (une ligne par carte).
@@ -130,10 +137,58 @@ begin
   return new;
 end $$;
 
+create or replace function public.cartes_prospect_journaliser()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_acteur uuid := auth.uid();
+begin
+  if tg_op = 'INSERT' then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'CREEE', jsonb_build_object('etape', new.etape));
+    return new;
+  end if;
+  if new.etape is distinct from old.etape then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'ETAPE', jsonb_build_object('avant', old.etape, 'apres', new.etape));
+  end if;
+  if new.grade is distinct from old.grade then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'GRADE', jsonb_build_object('avant', old.grade, 'apres', new.grade));
+  end if;
+  if new.relance_le is distinct from old.relance_le or new.relance_note is distinct from old.relance_note then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'RELANCE', jsonb_build_object('le', new.relance_le));
+  end if;
+  if new.visite_le is distinct from old.visite_le then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'VISITE', jsonb_build_object('le', new.visite_le));
+  end if;
+  if new.drapeau is distinct from old.drapeau then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'DRAPEAU', jsonb_build_object('drapeau', new.drapeau));
+  end if;
+  if new.invitee_le is distinct from old.invitee_le and new.invitee_le is not null then
+    -- Envoi système : au nom du créateur de la carte, qui l'a déclenché.
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, new.cree_par, 'INVITATION', jsonb_build_object('le', new.invitee_le));
+  end if;
+  if (new.prenom, new.nom, new.team_id, new.position_id, new.numero, new.promotion, new.taille_pieds,
+      new.taille_pouces, new.poids_lbs, new.lien_video, new.courriel)
+     is distinct from
+     (old.prenom, old.nom, old.team_id, old.position_id, old.numero, old.promotion, old.taille_pieds,
+      old.taille_pouces, old.poids_lbs, old.lien_video, old.courriel) then
+    insert into public.cartes_prospect_journal (carte_id, acteur, action, details)
+    values (new.id, v_acteur, 'MODIFIEE', '{}'::jsonb);
+  end if;
+  return new;
+end $$;
+
 drop function if exists public.prenoms_proches(text, text);
+alter table public.cartes_prospect_invitations drop column if exists signataire;
 
 revoke execute on function public.rapprochement_candidats(uuid, uuid) from public, anon, authenticated;
 revoke execute on function public.cartes_prospect_inviter()           from public, anon, authenticated;
+revoke execute on function public.cartes_prospect_journaliser()       from public, anon, authenticated;
 
 do $$
 declare r record; vus text[];
@@ -141,7 +196,8 @@ begin
   for r in
     select * from (values
       ('public.rapprochement_candidats(uuid, uuid)', array['postgres','service_role']),
-      ('public.cartes_prospect_inviter()',           array['postgres','service_role'])
+      ('public.cartes_prospect_inviter()',           array['postgres','service_role']),
+      ('public.cartes_prospect_journaliser()',       array['postgres','service_role'])
     ) as v(f, veut)
   loop
     select array_agg(t.g order by t.g) into vus

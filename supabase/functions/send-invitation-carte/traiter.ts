@@ -4,7 +4,8 @@
 // locale contre la base Docker, Resend simulé).
 //
 // La base a DÉJÀ décidé (trigger cartes_prospect_inviter, à la création de la
-// carte) : ici on ne fait qu'envoyer une ligne A_ENVOYER, UNE fois.
+// carte ou à l'ajout de son courriel) : ici on ne fait qu'envoyer une ligne
+// A_ENVOYER, UNE fois, au nom de son signataire.
 //
 // UNE FOIS, EN TROIS COUCHES :
 //   1. la ligne n'existe qu'à la création (trigger AFTER INSERT), au plus une
@@ -65,9 +66,10 @@ export async function traiterInvitation(deps: Dependances, invitationId: string)
     .from("cartes_prospect").select("id, prenom, courriel, cree_par").eq("id", inv.carte_id).maybeSingle();
   if (!carte?.courriel) return echec("carte supprimée ou sans courriel avant l'envoi");
 
+  const signataireId = (await lireSignataire(supabase, inv.id)) ?? carte.cree_par ?? null;
   const [{ data: auteur }, { data: cegep }] = await Promise.all([
-    carte.cree_par
-      ? supabase.from("users").select("first_name, last_name").eq("id", carte.cree_par).maybeSingle()
+    signataireId
+      ? supabase.from("users").select("first_name, last_name").eq("id", signataireId).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("schools").select("name").eq("id", inv.unite_cegep_id).maybeSingle(),
   ]);
@@ -91,6 +93,20 @@ export async function traiterInvitation(deps: Dependances, invitationId: string)
   // Visible par l'unité : « Invitation envoyée le … », tracé au journal par trigger.
   await supabase.from("cartes_prospect").update({ invitee_le: maintenant }).eq("id", carte.id);
   return { ok: true, statut: "ENVOYE", resend_id: j.id ?? null };
+}
+
+/** Le recruteur qui SIGNE l'invitation (décision BP 2026-10-07) : figé par la
+ *  base sur la ligne — le créateur à la création, celui qui ajoute le courriel
+ *  à l'ajout. Lu À PART, jamais dans le `select` de la réclamation : sur une
+ *  base sans la colonne (fenêtre de déploiement, rollback), PostgREST rejette
+ *  la requête entière (42703) et la réclamation échouerait — la ligne
+ *  resterait A_ENVOYER. Ici une erreur rend `null` et l'appelant retombe sur
+ *  le créateur. */
+export async function lireSignataire(supabase: Client, invitationId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("cartes_prospect_invitations").select("signataire").eq("id", invitationId).maybeSingle();
+  if (error) return null;
+  return (data?.signataire as string | null | undefined) ?? null;
 }
 
 /** L'envoi lui-même, COMMUN à l'invitation et au rappel : même gabarit, même
