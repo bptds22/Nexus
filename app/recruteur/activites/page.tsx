@@ -7,6 +7,7 @@ import { RecruteurActivitesMobile } from "@/components/shared/RecruteurActivites
 import type { Activity, ActivityType } from "@/lib/types/activity";
 import { createClient } from "@/lib/supabase/client";
 import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
+import { estGesteMatch, libelleGesteMatch } from "@/lib/carteMatchs/carteMatchs";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -33,6 +34,8 @@ const ACTION_TO_TYPE: Record<string, ActivityType> = {
   LIST_NOTE_ADDED: "scouting_report",
   ATHLETE_ADDED_TO_LIST: "athlete_favorited",
   ATHLETE_REMOVED_FROM_LIST: "athlete_favorited",
+  MATCH_AJOUTE: "calendar_match",
+  MATCH_RETIRE: "calendar_match",
 };
 
 const ACTION_LABELS: Record<string, { ctaLabel: string; ctaBase: string }> = {
@@ -47,6 +50,8 @@ const ACTION_LABELS: Record<string, { ctaLabel: string; ctaBase: string }> = {
   PROFILE_UPDATED: { ctaLabel: "Voir le profil", ctaBase: "/recruteur/athletes/" },
   REVIEW_SUBMITTED: { ctaLabel: "Voir l'évaluation", ctaBase: "/recruteur/messages" },
   COACH_REPLY: { ctaLabel: "Voir la réponse", ctaBase: "/recruteur/messages" },
+  MATCH_AJOUTE: { ctaLabel: "Voir le calendrier", ctaBase: "/recruteur/calendrier" },
+  MATCH_RETIRE: { ctaLabel: "Voir le calendrier", ctaBase: "/recruteur/calendrier" },
 };
 
 export default function Page() {
@@ -161,7 +166,8 @@ function RecruteurActivitesPageContent() {
             athleteName: athleteName || undefined,
             athletePosition: athletePos || undefined,
             coachName: coachName || undefined,
-            messagePreview: actionType === "PIPELINE_CHANGED" && stageLabel ? `Processus : ${stageLabel}` : undefined,
+            messagePreview: estGesteMatch(actionType) ? libelleGesteMatch(actionType, details)
+              : actionType === "PIPELINE_CHANGED" && stageLabel ? `Processus : ${stageLabel}` : undefined,
             ctaLabel: actionType === "PIPELINE_CHANGED" && stageLabel ? `Processus : ${stageLabel}` : cfg.ctaLabel,
             ctaRoute: needsAthleteId ? `${cfg.ctaBase}${log.athlete_id || ""}` : cfg.ctaBase,
           };

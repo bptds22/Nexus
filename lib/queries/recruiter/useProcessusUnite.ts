@@ -273,6 +273,9 @@ export function useNotesUnite(athleteId: string | null, enabled = true) {
 export const GESTES_UNITE = [
   "PIPELINE_CHANGED", "FAVORITED", "UNFAVORITED", "NOTE_ADDED", "NOTE_UPDATED",
   "LIST_CREATED", "LIST_NOTE_ADDED", "ATHLETE_ADDED_TO_LIST", "ATHLETE_REMOVED_FROM_LIST",
+  // Carte des matchs (migration 4) : sans athlète, donc jamais dans l'historique
+  // d'un dossier — seulement dans le fil de l'unité.
+  "MATCH_AJOUTE", "MATCH_RETIRE",
 ] as const;
 
 export interface GesteUnite {

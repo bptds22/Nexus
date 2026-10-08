@@ -17,9 +17,8 @@
 --       l'unité, dans SON sport) ;
 --       aucune mise à jour (une ligne ne change pas : on la retire).
 --   · Doublon refusé par la base : unique (unité, match).
---   · Journal d'activité : NON branché dans cette migration — aucun type
---     existant de recruiter_activity_log ne décrit un match (question posée
---     à BP avant d'en créer un).
+--   · Journal d'activité : branché par la migration 4
+--     (20261008100300_journal_matchs_ajoutes, décision BP 2026-10-08).
 --
 -- Rollback : supabase/rollback/20261008100100_rollback_matchs_ajoutes.sql
 -- ════════════════════════════════════════════════════════════════════════════

@@ -225,6 +225,27 @@ export function titreMatch(m: { domicile: string; visiteur: string }): string {
   return `${m.domicile} vs ${m.visiteur}`;
 }
 
+/* ── Journal de l'unité : le « + » et le « ✓ » (migration 4, BP 2026-10-08) ── */
+
+/** Les deux types écrits par le trigger de matchs_ajoutes — sans athlète, le
+ *  match est dans `details`. */
+export const GESTES_MATCH = ["MATCH_AJOUTE", "MATCH_RETIRE"] as const;
+
+export function estGesteMatch(actionType: string): boolean {
+  return (GESTES_MATCH as readonly string[]).includes(actionType);
+}
+
+/** « Match ajouté au calendrier : A vs B — samedi 10 octobre, 9 h 30 ». */
+export function libelleGesteMatch(actionType: string, details: Record<string, unknown> | null | undefined): string {
+  const d = details ?? {};
+  const texte = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const verbe = actionType === "MATCH_RETIRE" ? "Match retiré du calendrier" : "Match ajouté au calendrier";
+  const domicile = texte(d.domicile), visiteur = texte(d.visiteur);
+  const jour = texte(d.jour), heure = texte(d.heure);
+  const quand = [jour ? libelleJour(jour) : null, heure ? heureQuebec(heure) : null].filter(Boolean).join(", ");
+  return `${verbe}${domicile && visiteur ? ` : ${titreMatch({ domicile, visiteur })}` : ""}${quand ? ` — ${quand}` : ""}`;
+}
+
 /* ── Profils Nexus dans ce match (lot A+, BP 2026-10-07) ───── */
 
 /** Une ligne de la RPC `matchs_profils_nexus` (forme PostgREST). La base ne

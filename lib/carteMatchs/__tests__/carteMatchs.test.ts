@@ -4,6 +4,7 @@ import {
   lieuExploitable, LIEU_NON_PRECISE, TYPES_PAR_DEFAUT, joursDansPlage, erreurPlage, optionsCatDiv, filtrerCatDiv,
   jourDecale, libelleJour, grouperParJour, terrainDe, terrainsCarte, etatCalendrier, minutesDe, heureQuebec,
   libelleDivision, lienItineraire, titreMatch, profilsParMatch, libelleProfils, libelleDontSuivis,
+  estGesteMatch, libelleGesteMatch,
   type MatchRecherche,
 } from "@/lib/carteMatchs/carteMatchs";
 
@@ -110,4 +111,16 @@ test("profilsParMatch : regroupe par match, dédoublonne, suivis d'abord puis pa
   assert.equal(libelleDontSuivis(g1), "dont 1 suivi");
   assert.equal(libelleDontSuivis({ suivis: 2 }), "dont 2 suivis");
   assert.equal(libelleDontSuivis({ suivis: 0 }), null);
+});
+
+test("journal : MATCH_AJOUTE / MATCH_RETIRE, libellé tiré de details", () => {
+  assert.equal(estGesteMatch("MATCH_AJOUTE"), true);
+  assert.equal(estGesteMatch("MATCH_RETIRE"), true);
+  assert.equal(estGesteMatch("FAVORITED"), false);
+  const d = { game_id: "g", domicile: "Collège Laval", visiteur: "Amitié", jour: "2026-10-10", heure: "09:30", terrain: "Collège Laval" };
+  assert.equal(libelleGesteMatch("MATCH_AJOUTE", d), "Match ajouté au calendrier : Collège Laval vs Amitié — samedi 10 octobre, 9 h 30");
+  assert.equal(libelleGesteMatch("MATCH_RETIRE", d), "Match retiré du calendrier : Collège Laval vs Amitié — samedi 10 octobre, 9 h 30");
+  // Match disparu (details vides) : le geste reste lisible.
+  assert.equal(libelleGesteMatch("MATCH_RETIRE", {}), "Match retiré du calendrier");
+  assert.equal(libelleGesteMatch("MATCH_AJOUTE", null), "Match ajouté au calendrier");
 });

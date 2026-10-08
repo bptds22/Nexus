@@ -18,7 +18,8 @@ export type ActivityType =
   | "favorite_profile_updated"
   | "favorite_stats_updated"
   | "coach_response"
-  | "status_changed";
+  | "status_changed"
+  | "calendar_match"; // MATCH_AJOUTE / MATCH_RETIRE (carte des matchs) — texte dans messagePreview
 
 export type ActivityPortal = "coach" | "recruiter";
 
@@ -80,6 +81,7 @@ export const ACTIVITY_TYPE_CONFIG: Record<ActivityType, ActivityTypeConfig> = {
   favorite_stats_updated:  { icon: "bar-chart-3",    borderColor: "#22C55E", label: "Statistiques" },
   coach_response:          { icon: "reply",          borderColor: "#22C55E", label: "Réponses" },
   status_changed:          { icon: "activity",       borderColor: "#F59E0B", label: "Pipeline" },
+  calendar_match:          { icon: "calendar",       borderColor: "#6B7280", label: "Calendrier" },
 };
 
 /* ── Time grouping helper ──────────────────────────────────── */
