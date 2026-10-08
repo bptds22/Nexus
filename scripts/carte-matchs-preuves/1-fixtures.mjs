@@ -44,3 +44,15 @@ const pl = await svc.from("recruiter_pipeline").insert({ recruiter_id: R3, athle
 console.log("processus :", pl.error?.message ?? "ok");
 const { data: ok } = await svc.rpc("athlete_identity_ok", { p_dob: "2011-03-01", p_consent: false });
 console.log("athlete_identity_ok(15 ans, sans consentement) =", ok);
+
+// Étape 2 : un match SANS HEURE au terrain Collège Laval (3ᵉ match ce jour-là),
+// équipe suivie « Laval Ben » → agenda en journée entière.
+const SANS_HEURE = "77770000-0000-0000-0000-0000000000d1";
+const g = await svc.from("games").insert({
+  id: SANS_HEURE, season: "2026-2027", phase: "Saison", game_date: "2026-10-10", game_time: null,
+  venue: "Collège Laval", venue_lat: 45.616319, venue_lon: -73.648184,
+  home_team_id: "2727e13d-1941-41c5-add8-6f87176d439e", visitor_team_id: "5d4bb7e9-3247-477b-911b-caa3815e4f9a",
+  home_name_raw: "Laval Benjamin", visitor_name_raw: "Adversaire Cmatchs", is_released: true,
+  sector: "Secondaire", sport: "Football", category: "Benjamin", division: "D4", league_name: "Football B U D4",
+}).select("id");
+console.log("match sans heure :", g.error?.message ?? "ok");

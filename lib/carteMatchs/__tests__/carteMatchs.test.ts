@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   lieuExploitable, matchsDuJour, terrainsDuJour, distanceKm, libelleDistance, optionsFiltres,
   lienItineraire, titreMatch, evenementMatch, minutesDe, chargeParJour, jourDecale, FILTRES_VIDES, LIEU_NON_PRECISE, nomSuivi,
+  heureQuebec, libelleDivision, matchsBulle,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { CalendarGame, CalendarTarget } from "@/lib/queries/recruiter/useRecruitingCalendar";
 
@@ -113,11 +114,11 @@ test("distanceKm : haversine (Montréal → Québec ≈ 233 km), points manquant
   assert.equal(libelleDistance(null), null);
 });
 
-test("actions : itinéraire, titre, agenda (Google, Outlook, .ics) ; sans heure → pas d'événement", () => {
+test("actions : itinéraire, titre, agenda (Google, Outlook, .ics) à heure fixe", () => {
   const g = match({ gameDate: "2026-10-10", gameTime: "18:30", homeName: "Spartiates", visitorName: "Phénix", venue: "Stade Hébert", venueLat: 45.6, venueLon: -73.5 });
   assert.equal(lienItineraire(45.6, -73.5), "https://www.google.com/maps/dir/?api=1&destination=45.6,-73.5");
   assert.equal(titreMatch(g), "Spartiates vs Phénix");
-  const e = evenementMatch(g)!;
+  const e = evenementMatch(g);
   assert.match(e.googleUrl, /^https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE&text=Spartiates%20vs%20Ph%C3%A9nix/);
   assert.match(e.googleUrl, /location=Stade%20H%C3%A9bert/);
   assert.match(e.outlookUrl, /^https:\/\/outlook\.office\.com\/calendar\/0\/deeplink\/compose\?/);
@@ -126,8 +127,38 @@ test("actions : itinéraire, titre, agenda (Google, Outlook, .ics) ; sans heure 
   assert.match(e.outlookUrl, new RegExp(`startdt=${encodeURIComponent(debut.toISOString())}`));
   assert.match(e.icsContent, /SUMMARY:Spartiates vs Phénix/);
   assert.match(e.icsContent, /LOCATION:Stade Hébert/);
-  assert.equal(evenementMatch(match({ gameTime: "" })), null);
-  assert.equal(evenementMatch(match({ gameTime: "à confirmer" })), null);
+  assert.match(e.icsContent, /DTSTART:\d{8}T\d{6}Z/);
+});
+
+test("agenda : match sans heure → journée entière, « (heure à confirmer) » dans le titre", () => {
+  for (const gameTime of ["", "à confirmer"]) {
+    const e = evenementMatch(match({ gameDate: "2026-11-07", gameTime, homeName: "Hérons", visitorName: "Ducs", venue: "" }));
+    assert.match(e.icsContent, /SUMMARY:Hérons vs Ducs \(heure à confirmer\)/);
+    assert.match(e.icsContent, /DTSTART;VALUE=DATE:20261107\r\n/);
+    assert.match(e.icsContent, /DTEND;VALUE=DATE:20261108\r\n/, "fin exclusive : le lendemain");
+    assert.match(e.googleUrl, /dates=20261107\/20261108&/);
+    assert.match(e.googleUrl, /text=H%C3%A9rons%20vs%20Ducs%20\(heure%20%C3%A0%20confirmer\)/);
+    assert.match(e.outlookUrl, /allday=true&startdt=2026-11-07&enddt=2026-11-08&/);
+  }
+});
+
+test("heureQuebec, libelleDivision, matchsBulle", () => {
+  assert.equal(heureQuebec("09:30"), "9 h 30");
+  assert.equal(heureQuebec("18:00"), "18 h");
+  assert.equal(heureQuebec("13:05"), "13 h 05");
+  assert.equal(heureQuebec("19h30"), "19 h 30");
+  assert.equal(heureQuebec(""), "Heure à confirmer");
+  assert.equal(libelleDivision("D1"), "Division 1");
+  assert.equal(libelleDivision("d 3"), "Division 3");
+  assert.equal(libelleDivision("Niveau 1"), "Niveau 1");
+  assert.equal(libelleDivision(null), "");
+  const targets = [cible("a1", "T1")];
+  const m = matchsDuJour({ targets, games: [
+    match({ id: "b1", gameTime: "09:00" }), match({ id: "b2", gameTime: "12:00" }), match({ id: "b3", gameTime: "15:00" }),
+  ] }, "2026-10-10");
+  const [t] = terrainsDuJour(m);
+  assert.deepEqual(matchsBulle(t, "b3").map((x) => x.game.id), ["b3", "b1", "b2"], "le cliqué d'abord, puis par heure");
+  assert.deepEqual(matchsBulle(t, null).map((x) => x.game.id), ["b1", "b2", "b3"]);
 });
 
 test("minutesDe, jourDecale, chargeParJour", () => {

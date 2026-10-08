@@ -11,7 +11,10 @@
    · Un terrain = coordonnées arrondies à 4 décimales (~11 m) + nom.
    · Lieu non exploitable (0,0 ; hors Québec ; absent) → liste seulement,
      « Lieu non précisé ».
-   · Distance depuis le cégep du recruteur, à vol d'oiseau (haversine).
+   · Distance (haversine) : fonction gardée et testée, mais l'écran ne
+     l'affiche plus (décision BP 2026-10-07, étape 2).
+   · Heure à la québécoise (« 9 h 30 ») ; match sans heure → agenda en
+     journée entière, « (heure à confirmer) » dans le titre.
 ═══════════════════════════════════════════════════════════════ */
 
 import { buildMatches } from "@/lib/calendar/recruitingCalendar";
@@ -202,22 +205,59 @@ export function titreMatch(g: Pick<CalendarGame, "homeName" | "visitorName">): s
   return `${g.homeName} vs ${g.visitorName}`;
 }
 
-/** L'événement d'agenda d'un match (Google, Outlook, .ics). null si le match
- *  n'a pas d'heure lisible : un événement inventé à une heure fausse serait
- *  pire que pas d'événement (la page dit pourquoi). Heure LOCALE du navigateur
- *  (games.game_time n'a pas de fuseau ; le recruteur est au Québec). */
-export function evenementMatch(g: CalendarGame): CalendarLinks | null {
+/** L'événement d'agenda d'un match (Google, Outlook, .ics). Heure LOCALE du
+ *  navigateur (games.game_time n'a pas de fuseau ; le recruteur est au
+ *  Québec). Sans heure lisible → événement « journée entière », titre
+ *  « A vs B (heure à confirmer) » (décision BP 2026-10-07) : on n'invente
+ *  jamais une heure. */
+export function evenementMatch(g: CalendarGame): CalendarLinks {
   const minutes = minutesDe(g.gameTime);
-  if (minutes === null) return null;
   const [y, mo, d] = g.gameDate.split("-").map(Number);
+  const description = g.competition ? `${g.competition} — via Nexus` : "Via Nexus";
+  if (minutes === null) {
+    return generateCalendarLinks({
+      title: `${titreMatch(g)} (heure à confirmer)`,
+      location: g.venue.trim(),
+      description,
+      startDate: new Date(y, (mo ?? 1) - 1, d ?? 1),
+      allDay: true,
+    });
+  }
   const debut = new Date(y, (mo ?? 1) - 1, d ?? 1, Math.floor(minutes / 60), minutes % 60, 0, 0);
   return generateCalendarLinks({
     title: titreMatch(g),
     location: g.venue.trim(),
-    description: g.competition ? `${g.competition} — via Nexus` : "Via Nexus",
+    description,
     startDate: debut,
     durationMinutes: 120,
   });
+}
+
+/* ── Libellés ──────────────────────────────────────────────── */
+
+/** « 09:30 » → « 9 h 30 » ; « 18:00 » → « 18 h » (usage québécois, OQLF).
+ *  Sans heure lisible → « Heure à confirmer ». */
+export function heureQuebec(heure: string | null | undefined): string {
+  const m = minutesDe(heure);
+  if (m === null) return "Heure à confirmer";
+  const h = Math.floor(m / 60), mi = m % 60;
+  return mi === 0 ? `${h} h` : `${h} h ${String(mi).padStart(2, "0")}`;
+}
+
+/** « D1 » → « Division 1 » ; toute autre forme est rendue telle quelle.
+ *  Les codes de LIGUE (« Volleyball C F D1 ») restent bruts : aucune table
+ *  de correspondance n'existe dans le dépôt (vérifié 2026-10-07). */
+export function libelleDivision(division: string | null | undefined): string {
+  const v = (division ?? "").trim();
+  const m = /^D\s*(\d+)$/i.exec(v);
+  return m ? `Division ${m[1]}` : v;
+}
+
+/** Les matchs d'un terrain pour sa bulle : celui qu'on a cliqué EN PREMIER,
+ *  puis les autres par heure. */
+export function matchsBulle(terrain: Pick<TerrainCarte, "matchs">, premierId: string | null): MatchCarte[] {
+  const premier = terrain.matchs.find((m) => m.game.id === premierId);
+  return premier ? [premier, ...terrain.matchs.filter((m) => m !== premier)] : terrain.matchs;
 }
 
 /* ── Journées ──────────────────────────────────────────────── */

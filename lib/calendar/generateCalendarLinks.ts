@@ -14,15 +14,18 @@
    Google, le Blob et la commodité de download.
 ═══════════════════════════════════════════════════════════════ */
 
-import { buildIcs, toICalUtc } from "@/lib/utils/buildIcs";
+import { buildIcs, toICalUtc, toICalDate } from "@/lib/utils/buildIcs";
 
 export interface CalendarEventInput {
   title: string;
   description?: string;
   location?: string;
   startDate: Date;
-  /** Défaut 60 minutes. */
+  /** Défaut 60 minutes. Ignoré si `allDay`. */
   durationMinutes?: number;
+  /** Journée entière (ajout 2026-10-07, carte des matchs : match sans heure).
+   *  Le jour LOCAL de `startDate` ; fin exclusive au lendemain. Absent → inchangé. */
+  allDay?: boolean;
 }
 
 export interface CalendarLinks {
@@ -44,11 +47,16 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
     location = "",
     startDate,
     durationMinutes = DEFAULT_DURATION_MIN,
+    allDay = false,
   } = input;
 
-  const end = new Date(startDate.getTime() + durationMinutes * 60_000);
-  const dtStart = toICalUtc(startDate);
-  const dtEnd = toICalUtc(end);
+  const end = allDay
+    ? new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1)
+    : new Date(startDate.getTime() + durationMinutes * 60_000);
+  // Journée entière : Google veut `YYYYMMDD/YYYYMMDD` (fin exclusive).
+  const dtStart = allDay ? toICalDate(startDate) : toICalUtc(startDate);
+  const dtEnd = allDay ? toICalDate(end) : toICalUtc(end);
+  const isoJour = (d: Date) => toICalDate(d).replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
 
   /* ── Google Agenda ────────────────────────────────────────────
      `dates` veut `start/end` collés par un slash — que l'on NE doit
@@ -72,8 +80,9 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
     "path=%2Fcalendar%2Faction%2Fcompose",
     "rru=addevent",
     `subject=${encodeURIComponent(title)}`,
-    `startdt=${encodeURIComponent(startDate.toISOString())}`,
-    `enddt=${encodeURIComponent(end.toISOString())}`,
+    ...(allDay
+      ? ["allday=true", `startdt=${isoJour(startDate)}`, `enddt=${isoJour(end)}`]
+      : [`startdt=${encodeURIComponent(startDate.toISOString())}`, `enddt=${encodeURIComponent(end.toISOString())}`]),
     `body=${encodeURIComponent(description)}`,
     `location=${encodeURIComponent(location)}`,
   ].join("&");
@@ -88,6 +97,7 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
     end,
     location,
     description,
+    allDay,
   });
 
   return {

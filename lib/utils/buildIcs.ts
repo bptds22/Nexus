@@ -22,6 +22,16 @@ export interface IcsEventInput {
   location?: string;
   /** Texte libre → DESCRIPTION. */
   description?: string;
+  /** Événement « journée entière » (ajout 2026-10-07, carte des matchs : match
+   *  sans heure). DTSTART/DTEND en VALUE=DATE, jour LOCAL de `start`, fin
+   *  exclusive = `end` (le lendemain chez l'appelant). Absent → inchangé. */
+  allDay?: boolean;
+}
+
+/** Date → `YYYYMMDD` du jour LOCAL (événement journée entière, sans fuseau). */
+export function toICalDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
 }
 
 /** Date → `YYYYMMDDTHHMMSSZ` (UTC). Le format attendu par iCal ET par Google. */
@@ -80,6 +90,7 @@ export function buildIcs({
   end,
   location = "",
   description = "",
+  allDay = false,
 }: IcsEventInput): string {
   const dtStart = toICalUtc(start);
   const dtEnd = toICalUtc(end);
@@ -100,8 +111,8 @@ export function buildIcs({
     `UID:${uid}`,
     // DTSTAMP dérivé de start (pas de new Date()) pour rester déterministe.
     `DTSTAMP:${dtStart}`,
-    `DTSTART:${dtStart}`,
-    `DTEND:${dtEnd}`,
+    allDay ? `DTSTART;VALUE=DATE:${toICalDate(start)}` : `DTSTART:${dtStart}`,
+    allDay ? `DTEND;VALUE=DATE:${toICalDate(end)}` : `DTEND:${dtEnd}`,
     foldICalLine(`SUMMARY:${escapeICalText(summary)}`),
     foldICalLine(`DESCRIPTION:${escapeICalText(description)}`),
     foldICalLine(`LOCATION:${escapeICalText(location)}`),

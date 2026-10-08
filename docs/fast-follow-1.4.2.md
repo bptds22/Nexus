@@ -2245,3 +2245,46 @@ Ce que l'app 1.4.4 ne fait pas (à reprendre au lot mobile) :
 - Historique (partagé) : « a invité l'athlète par courriel (envoi
   automatique) » — « à la création » retiré, l'invitation pouvant naître d'un
   ajout. Seul changement visible dans l'app, au prochain binaire.
+
+## 77. Carte des matchs, lot A (web) — `/recruteur/carte-matchs` (2026-10-07, pour le lot mobile)
+
+Branche `feat/carte-matchs-lot-a`. **Web seulement, aucune migration.** Pro
+(`FeatureGate` `recruiting_calendar`), entrée de menu après « Calendrier ».
+Sous Capacitor, la route renvoie vers `/recruteur/calendrier`. Mergé dans
+`main` local le 2026-10-07 — **à pousser et promouvoir par BP**.
+
+Ce que fait l'écran (décisions BP 2026-10-07) :
+- les matchs d'**une journée** où joue au moins un athlète **suivi par l'unité**
+  (cibles de `useCalendrierUnite`, appariées par `buildMatches`), collégial
+  exclu ; sport de l'unité par défaut ; catégorie, division, ligue filtrables,
+  **grisés** quand une seule valeur (jamais cachés) ;
+- **modèle visuel = « Trouve ton cégep »** (`CegepSearch.tsx`, repris à
+  l'identique : `CS_CSS`, `FiltreBtn`, `ListeCases` exportés) ; liste à gauche,
+  carte à droite ; en dessous de 1000 px, bascule liste ↔ carte (celle de
+  `RechercheMobile`) ;
+- clic sur une ligne ou un point → zoom (flyTo) + **bulle** (`MapPane`, props
+  facultatives `bulle` / `contenuBulle` / `onFermerBulle` / `onHover`) :
+  heure « 9 h 30 », équipes, catégorie et division en clair, ligue, suivis
+  (« Identité réservée » si l'identité n'est pas visible), « Itinéraire »,
+  « Ajouter à mon agenda » (Google, Outlook, .ics). Plusieurs matchs au même
+  terrain : tous, le cliqué en premier ; les lignes du terrain sont mises en
+  évidence ;
+- match **sans heure** → événement **journée entière**, « A vs B (heure à
+  confirmer) » (`allDay`, ajout facultatif à `generateCalendarLinks` et
+  `buildIcs`) ; **lieu inexploitable** → liste seulement, « Lieu non précisé » ;
+- **aucune distance** affichée (`distanceKm` gardée et testée, non rendue),
+  **aucun regroupement** de points.
+
+Laissé tel quel, faute de source dans le dépôt :
+- **libellés de ligue** : codes RSEQ bruts (« Football C M D3 ») — aucune table
+  de correspondance n'existe ; seule la division est mise en clair
+  (`libelleDivision` : « D3 » → « Division 3 »).
+
+**Lot mobile — reprendre le MÊME écran avec les MÊMES fonctions**
+(`lib/carteMatchs/carteMatchs.ts`, pur et testé) : `matchsDuJour`,
+`optionsFiltres`, `terrainsDuJour`, `terrainDuMatch`, `matchsBulle`,
+`heureQuebec`, `libelleDivision`, `lienItineraire`, `evenementMatch`,
+`nomSuivi`, `jourDecale` ; sport par défaut via `useOrigineCarte`. Côté app :
+retirer la redirection Capacitor de la page, ouvrir l'itinéraire et les liens
+d'agenda dans le navigateur in-app, et écrire le .ics par le chemin Capacitor
+(Filesystem + Share), `downloadIcs` ne marchant pas dans la WebView.

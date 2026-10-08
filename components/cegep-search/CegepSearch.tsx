@@ -62,8 +62,10 @@ const initialesDe = (nom: string) =>
    mis à jour en direct : cocher une entrée la fait apparaître aussitôt en
    haut, avec son ✕ pour la retirer sans la chercher. La liste principale, en
    dessous, reste strictement alphabétique — donc rien ne saute sous le
-   curseur pendant qu'on coche. */
-function ListeCases({
+   curseur pendant qu'on coche.
+   Exportée (avec FiltreBtn et CS_CSS) pour la carte des matchs recruteur,
+   qui reprend cet écran à l'identique (décision BP 2026-10-07). */
+export function ListeCases({
   items, labels, selection, onToggle,
 }: {
   items: string[];
@@ -109,13 +111,17 @@ function ListeCases({
   );
 }
 
-function FiltreBtn({
-  label, compteur, onClear, children,
+export function FiltreBtn({
+  label, compteur, onClear, children, desactive = false, titre,
 }: {
   label: string;
   compteur: number;
   onClear: () => void;
   children: () => React.ReactNode;
+  /** Ajout carte des matchs : grisé (classe `off` du modèle), ne s'ouvre pas.
+   *  Absent → comportement de « Trouve ton cégep », inchangé. */
+  desactive?: boolean;
+  titre?: string;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -132,8 +138,8 @@ function FiltreBtn({
   }, [open]);
 
   return (
-    <span ref={hostRef} className={"fbtn" + (compteur > 0 ? " on" : "") + (open ? " open" : "")}>
-      <span className="lbl" onClick={() => { setOpen((o) => !o); }}>
+    <span ref={hostRef} className={"fbtn" + (compteur > 0 ? " on" : "") + (open ? " open" : "") + (desactive ? " off" : "")} title={titre}>
+      <span className="lbl" onClick={() => { if (!desactive) setOpen((o) => !o); }}>
         {label}
         {compteur > 0 && <span className="n">{compteur}</span>}
         <span className="car">▾</span>
@@ -633,7 +639,7 @@ function Apercu({
 }
 
 /* ---------------------------------------- CSS scopé (préfixe .cs) --------- */
-const CS_CSS = `
+export const CS_CSS = `
 /* Design system STRICT — trois familles, aucune autre :
    Outfit (corps) · Anton (titres/KPIs) · Bebas Neue (labels/kickers).
    On passe par les variables next/font du layout racine : un littéral

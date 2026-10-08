@@ -15,7 +15,8 @@
 // rehaussé, étoile blanche dans le cercle pour « dans mes cibles ».
 
 import * as React from "react";
-import type { Map as LeafletMap, Layer, TileLayer } from "leaflet";
+import { createPortal } from "react-dom";
+import type { Map as LeafletMap, Layer, TileLayer, Popup } from "leaflet";
 
 export interface MapPoint {
   id: string;
@@ -24,6 +25,13 @@ export interface MapPoint {
   lng: number;
   riche: boolean;
   cible: boolean;
+}
+
+/** Bulle (popup Leaflet) ouverte sur un point. Un NOUVEAU `token` la rouvre,
+ *  même sur le même point. */
+export interface MapBulle {
+  id: string;
+  token: number;
 }
 
 export interface MapFocus {
@@ -91,6 +99,7 @@ export default function MapPane({
   points, selectedId, hoveredId, focus, onSelect,
   zoomControl = true, attributionCompact = false, resizeToken, className = "mapcanvas",
   interactive = true, center = null, zoom, fond = "sombre", couleurPin,
+  onHover, bulle = null, contenuBulle, onFermerBulle, ariaLabel = "Carte des cégeps",
 }: {
   points: MapPoint[];
   selectedId: string | null;
@@ -126,6 +135,18 @@ export default function MapPane({
    *  Une fiche école passe sa propre couleur : le point n'y est ni une cible
    *  ni un résultat, c'est l'école qu'on regarde. */
   couleurPin?: string;
+  /* ── props ADDITIVES (carte des matchs, 2026-10-07) — absentes = aucun
+     écouteur, aucune bulle : « Trouve ton cégep » ne les passe pas. ── */
+  /** Survol d'un point (id), puis sa sortie (null). */
+  onHover?: (id: string | null) => void;
+  /** Point sur lequel ouvrir la bulle ; null → bulle fermée. */
+  bulle?: MapBulle | null;
+  /** Contenu React de la bulle (rendu par portail dans le popup Leaflet). */
+  contenuBulle?: React.ReactNode;
+  /** La bulle a été fermée par l'utilisateur (✕ ou clic sur la carte). */
+  onFermerBulle?: () => void;
+  /** Libellé accessible du conteneur. Défaut = celui de la recherche. */
+  ariaLabel?: string;
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   // Options lues À LA CRÉATION de la carte (l'effet de montage est en deps []).
@@ -140,6 +161,15 @@ export default function MapPane({
   const couleurPinRef = React.useRef<string | undefined>(couleurPin);
   couleurPinRef.current = couleurPin;
   const [pret, setPret] = React.useState(false);
+  const onHoverRef = React.useRef(onHover);
+  onHoverRef.current = onHover;
+  const onFermerBulleRef = React.useRef(onFermerBulle);
+  onFermerBulleRef.current = onFermerBulle;
+  const popupRef = React.useRef<Popup | null>(null);
+  // Hôte DOM du contenu de la bulle : React y rend par portail, Leaflet
+  // l'affiche. Créé une fois (MapPane n'est jamais rendu côté serveur).
+  const [hoteBulle] = React.useState<HTMLDivElement | null>(() =>
+    typeof document === "undefined" ? null : document.createElement("div"));
 
   React.useEffect(() => {
     if (document.querySelector(`link[href="${LEAFLET_CSS}"]`)) return;
@@ -249,6 +279,10 @@ export default function MapPane({
         layer.addTo(map);
         layer.bindTooltip(p.nom, { direction: "right", offset: [10, 0], opacity: 0.95 });
         layer.on("click", () => onSelect(p.id));
+        if (onHoverRef.current) {
+          layer.on("mouseover", () => onHoverRef.current?.(p.id));
+          layer.on("mouseout", () => onHoverRef.current?.(null));
+        }
         layersRef.current.set(p.id, layer);
       }
     })();
@@ -298,6 +332,59 @@ export default function MapPane({
     return () => { annule = true; };
   }, [focus, pret]);
 
+  // Bulle : popup Leaflet sur le point demandé. Ouverte sans autoPan (le
+  // flyTo du focus est peut-être en cours) ; une fois la carte posée, on la
+  // ramène dans le cadre si elle en dépasse.
+  React.useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !pret) return;
+    const fermer = () => {
+      const p = popupRef.current;
+      popupRef.current = null;
+      if (p) map.closePopup(p);
+    };
+    const point = bulle ? pointsRef.current.find((p) => p.id === bulle.id) : null;
+    if (!point || !hoteBulle) { fermer(); return; }
+    let annule = false;
+    let minuterie: number | undefined;
+    (async () => {
+      const L = await import("leaflet");
+      if (annule) return;
+      fermer();
+      const popup = L.popup({
+        className: "cs-bulle", maxWidth: 360, minWidth: 280, autoPan: false,
+        offset: [0, -8], closeButton: true,
+      }).setLatLng([point.lat, point.lng]).setContent(hoteBulle);
+      popup.on("remove", () => {
+        if (popupRef.current !== popup) return;   // fermeture voulue par nous
+        popupRef.current = null;
+        onFermerBulleRef.current?.();
+      });
+      popupRef.current = popup;
+      popup.openOn(map);
+      const recadrer = () => {
+        if (annule || popupRef.current !== popup) return;
+        const el = popup.getElement()?.getBoundingClientRect();
+        const cadre = map.getContainer().getBoundingClientRect();
+        if (!el) return;
+        const marge = 12;
+        const dy = Math.min(0, el.top - cadre.top - marge);
+        const dx = el.left - cadre.left < marge ? el.left - cadre.left - marge
+          : el.right > cadre.right - marge ? el.right - cadre.right + marge : 0;
+        if (dx || dy) map.panBy([dx, dy], { animate: true });
+      };
+      map.once("moveend", recadrer);
+      minuterie = window.setTimeout(recadrer, 950);
+    })();
+    return () => { annule = true; if (minuterie) window.clearTimeout(minuterie); };
+  }, [bulle, pret, points, hoteBulle]);
+
+  // Le contenu a changé de taille → Leaflet repositionne la bulle.
+  React.useEffect(() => { popupRef.current?.update(); }, [contenuBulle]);
+
+  // Démontage : la bulle part avec la carte, sans prévenir l'appelant.
+  React.useEffect(() => () => { popupRef.current = null; }, []);
+
   // Re-mesure après un changement de taille du conteneur (bascule liste↔carte,
   // sheet qui monte). Sans ça la carte reste sur ses dimensions de montage.
   React.useEffect(() => {
@@ -308,5 +395,10 @@ export default function MapPane({
     return () => window.clearTimeout(t);
   }, [resizeToken, pret]);
 
-  return <div className={className} ref={hostRef} aria-label="Carte des cégeps" />;
+  return (
+    <>
+      <div className={className} ref={hostRef} aria-label={ariaLabel} />
+      {bulle && hoteBulle ? createPortal(contenuBulle, hoteBulle) : null}
+    </>
+  );
 }
