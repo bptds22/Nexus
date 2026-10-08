@@ -2,13 +2,21 @@
 
 Branche `feat/carte-matchs-profils` (depuis `main` local `b3f1407d`, lot A).
 **Rien en prod sans le GO explicite de BP.** Une migration additive :
-`supabase/migrations/20261008021500_matchs_profils_nexus.sql` (version LOCALE, à
-renommer à la version enregistrée par `apply_migration`, rollback compris).
+`supabase/migrations/20261008020241_matchs_profils_nexus.sql` (ex-`20261008021500`
+en local).
+
+> **BASE EXÉCUTÉE le 2026-10-08** (02:02 UTC, GO BP) — version enregistrée
+> **`20261008020241`**. AVANT : fonction absente, 17/17 colonnes lues présentes,
+> 354 fonctions `public`, 384 policies. APRÈS : empreinte `b94ab615…` (= fichier),
+> ACL `{authenticated,postgres,service_role}`, SECURITY DEFINER, STABLE,
+> `{search_path=public,row_security=off}` ; 355 fonctions ; empreinte des AUTRES
+> fonctions (définition + ACL) `1a35c7af…` et des 384 policies `249548f9…`
+> identiques avant/après. Appel anonyme (clé anon et clé publishable) : HTTP 401,
+> 42501. **Web : à pousser et promouvoir par BP.**
 
 ## Ordre
 1. **Base d'abord** : `apply_migration` de
-   `20261008021500_matchs_profils_nexus.sql`, puis renommer le fichier et son
-   rollback à la version enregistrée.
+   `20261008020241_matchs_profils_nexus.sql` (fait).
 2. **Web ensuite** : merge, push et promotion Vercel par BP. Le lot A, déjà
    en `main`, n'appelle pas la fonction. Si le web part AVANT la base, l'appel
    échoue (404 PostgREST) et la page se tait : aucune pastille, aucun message
@@ -58,6 +66,6 @@ select md5(string_agg(md5(pg_get_functiondef(p.oid)), '' order by p.oid::regproc
 4. Compte gratuit : le mur Pro, aucun appel.
 
 ## Rollback
-`supabase/rollback/20261008021500_rollback_matchs_profils_nexus.sql` — `DROP` de
+`supabase/rollback/20261008020241_rollback_matchs_profils_nexus.sql` — `DROP` de
 la fonction (testé en local : absente, puis ré-appliquée avec la même ACL).
 Aucune dépendance en base ; le web se tait (aucune pastille).

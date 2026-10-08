@@ -1,4 +1,4 @@
--- Rollback de 20261008021500_matchs_profils_nexus (carte des matchs, lot A+).
+-- Rollback de 20261008020241_matchs_profils_nexus (carte des matchs, lot A+).
 -- La fonction n'a aucune dépendance en base : seul l'écran web l'appelle, et
 -- il se tait (aucune pastille) si l'appel échoue.
 drop function if exists public.matchs_profils_nexus(uuid[]);

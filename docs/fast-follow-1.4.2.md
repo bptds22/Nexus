@@ -2295,8 +2295,9 @@ Nexus, suivis ou non : pastille « N profils Nexus » (+ « dont X suivi(s) »),
 rien si 0 ; dans la bulle, sous chaque match, prénom nom (lien vers la fiche),
 position, promotion, équipe, suivis d'abord avec la pastille « Suivi ».
 - **RPC `matchs_profils_nexus(p_games uuid[])`** (SECURITY DEFINER, STABLE,
-  `search_path` épinglé) — migration `20261008021500` (version LOCALE ;
-  **en attente du GO de BP**, runbook `docs/runbook-carte-matchs-profils.md`).
+  `search_path` épinglé) — ✅ **APPLIQUÉE en prod le 2026-10-08 sous
+  `20261008020241`** (GO BP ; runbook `docs/runbook-carte-matchs-profils.md`).
+  Web : mergé dans `main` local — **à pousser et promouvoir par BP**.
   Seulement `status = 'ACTIF'` ET `athlete_identity_ok()` (vérifiés ou non :
   un mineur sans consentement n'apparaît ni dans le compte ni dans la liste).
   Recruteur Pro seulement (même test que les écritures de Mon processus : rôle

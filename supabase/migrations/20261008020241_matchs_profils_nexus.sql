@@ -1,4 +1,4 @@
--- 20261008021500_matchs_profils_nexus (LOCALE — à renommer à sa version prod au moment de l'apply)
+-- 20261008020241_matchs_profils_nexus (appliquée en prod le 2026-10-08, 02:02 UTC, GO BP ; ex-20261008021500 en local)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE DES MATCHS, LOT A+ — « PROFILS NEXUS DANS CE MATCH » (BP 2026-10-07).
 --
@@ -23,7 +23,7 @@
 --     position, promotion, côté. Ni courriel, ni téléphone, ni date de
 --     naissance, ni coordonnée.
 --
--- Rollback : supabase/rollback/20261008021500_rollback_matchs_profils_nexus.sql
+-- Rollback : supabase/rollback/20261008020241_rollback_matchs_profils_nexus.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 create function public.matchs_profils_nexus(p_games uuid[])
