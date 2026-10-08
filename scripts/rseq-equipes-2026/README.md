@@ -116,3 +116,7 @@ en premier, un lot par appel `execute_sql`.**
   - Inchangés : `notifications_unite` 3, `rapprochement_file` 0, `rapprochements` 0, `net.http_request_queue` 0, `team_athletes` 115, `team_coaches` 16, empreinte des athlètes.
   - Rollback prêt, non lancé : `lots/01-football.rollback.sql` (md5 `db3f60d5…`).
 - Lots 02 à 09 : non appliqués.
+
+- **Lots 02 à 09 — APPLIQUÉS le 2026-10-08 entre 18:59:13 et 19:00:49 UTC (GO BP)**, via `supabase db query --linked --project-ref nrloizyemulbhujrqhgx -f run/<lot>.run.sql` : BEGIN + fichier de lot tel quel + contrôle de signature + COMMIT (`combiner.mjs`, pilote `piloter-prod.mjs`, journal brut `run/journal-prod.txt`). Chaque lot : md5 du fichier vérifié, relevés AVANT/APRÈS conformes, signature de contenu OK.
+- **Total : 1 737 équipes, 15 958 côtés reliés**, `admin_operations` 14 → 23 (9 lignes `EQUIPES_RSEQ_2026_CREEES`), `teams` 8 300 → 10 037 ; empreintes et compteurs hors lots inchangés.
+- Rôle `cli_login_postgres` (créé ou prolongé par la CLI) : valide jusqu à 2026-10-08 19:05:52 UTC, expiration laissée à Supabase.
