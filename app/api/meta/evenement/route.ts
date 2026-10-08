@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
-  CONSENT_COOKIE, EVENEMENTS, LEAD_DEMO, construireCorpsCapi, eventIdValide, roleMeta,
+  CONSENT_COOKIE, EVENEMENTS, LEAD_DEMO, construireCorpsCapi, eventIdValide, leadDemoAutorise, roleMeta,
   urlSourceAssainie, type EvenementMeta, type RoleMeta,
 } from "@/lib/meta/regles";
 
@@ -15,8 +15,10 @@ import {
    - CompleteRegistration n'est accepté que pour une session Supabase
      dont le compte a moins de 15 min, et le rôle vient de la BASE
      (users.role), pas du corps de la requête ;
-   - Lead n'est accepté que si l'inscription démo existe et date de
-     moins de 15 min.
+     Un rôle athlète (ou parent, admin…) donne null : RIEN ne part, même
+     pour un appel forgé (verrou 4 de lib/meta/regles.ts) ;
+   - Lead n'est accepté que si l'inscription démo existe, date de moins
+     de 15 min et porte un rôle de personnel de cégep, lu en BASE.
    Sans ces gardes, n'importe qui pourrait empoisonner l'optimisation
    des campagnes en postant de fausses inscriptions.
 
@@ -52,12 +54,13 @@ async function roleInscriptionRecente(): Promise<RoleMeta | null> {
   return roleMeta(data?.role as string | undefined);
 }
 
-async function demoRecente(demoId: unknown): Promise<boolean> {
+async function demoRecenteDePersonnel(demoId: unknown): Promise<boolean> {
   if (typeof demoId !== "string" || !UUID.test(demoId)) return false;
   const { data } = await createServiceClient()
-    .from("demo_inscriptions").select("modifie_le").eq("id", demoId).maybeSingle();
+    .from("demo_inscriptions").select("modifie_le, role").eq("id", demoId).maybeSingle();
   // demo_inscriptions est absente des types générés : lecture typée à la main.
-  return recent((data as { modifie_le?: string } | null)?.modifie_le);
+  const d = data as { modifie_le?: string; role?: string | null } | null;
+  return recent(d?.modifie_le) && leadDemoAutorise(d?.role);
 }
 
 export async function POST(req: NextRequest) {
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
       if (!role) return rien();
       contentName = role;
     } else {
-      if (!(await demoRecente(corps.demoId))) return rien();
+      if (!(await demoRecenteDePersonnel(corps.demoId))) return rien();
       contentName = LEAD_DEMO;
     }
 

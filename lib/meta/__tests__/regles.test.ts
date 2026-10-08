@@ -5,14 +5,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  construireCorpsCapi, estRoutePublique, eventIdValide, roleMeta,
-  urlSansIdentifiant, urlSourceAssainie,
+  ROLES_META, construireCorpsCapi, estRoutePublique, eventIdValide, leadDemoAutorise,
+  pixelPermisSurPage, roleMeta, urlSansIdentifiant, urlSourceAssainie,
 } from "@/lib/meta/regles";
 
 const BASE = {
   evenement: "CompleteRegistration" as const,
   eventId: "3f1c2a4e-8b7d-4c1a-9e2f-0a1b2c3d4e5f",
-  contentName: "athlete" as const,
+  contentName: "recruiter" as const,
   eventSourceUrl: "https://nexussports.ca/auth",
   ip: "203.0.113.7",
   userAgent: "Mozilla/5.0",
@@ -37,16 +37,37 @@ test("le corps a la forme Conversions API attendue, sans test_event_code par dé
   assert.equal(e.event_time, 1_700_000_000);
   assert.equal(e.event_id, BASE.eventId);
   assert.equal(e.action_source, "website");
-  assert.deepEqual(e.custom_data, { content_name: "athlete" });
+  assert.deepEqual(e.custom_data, { content_name: "recruiter" });
   assert.equal("test_event_code" in corps, false);
   assert.equal(construireCorpsCapi({ ...BASE, testEventCode: "TEST123" }).test_event_code, "TEST123");
 });
 
-test("rôles : athlete / coach / recruiter, rien d'autre", () => {
-  assert.equal(roleMeta("ATHLETE"), "athlete");
+test("rôles : coach / recruiter seulement — aucun athlète, aucun parent", () => {
   assert.equal(roleMeta("COACH"), "coach");
   assert.equal(roleMeta("RECRUTEUR"), "recruiter");
-  for (const r of ["PARENT", "ADMIN", "PARTNER", "", null, undefined]) assert.equal(roleMeta(r), null);
+  // Verrou 4 : athlètes (majorité mineurs) et parents ne produisent RIEN.
+  for (const r of ["ATHLETE", "PARENT", "ADMIN", "PARTNER", "", null, undefined]) assert.equal(roleMeta(r), null);
+  assert.deepEqual([...ROLES_META].sort(), ["coach", "recruiter"]);
+  assert.equal((ROLES_META as readonly string[]).includes("athlete"), false);
+});
+
+test("Lead /12octobre : personnel de cégep seulement", () => {
+  for (const r of ["RECRUTEUR", "ENTRAINEUR_CHEF", "DIRECTEUR_SPORTS"]) assert.equal(leadDemoAutorise(r), true, r);
+  for (const r of ["AUTRE", "ATHLETE", "", null, undefined]) assert.equal(leadDemoAutorise(r), false, String(r));
+});
+
+test("pixel jamais chargé sur les pages pour athlètes", () => {
+  assert.equal(pixelPermisSurPage("/pour-les-etudiant-athlete"), false);
+  assert.equal(pixelPermisSurPage("/pour-les-etudiant-athlete/"), false);
+  assert.equal(pixelPermisSurPage("/claim", "?token=abc"), false);
+  assert.equal(pixelPermisSurPage("/athlete/onboarding"), false);
+  assert.equal(pixelPermisSurPage("/auth", "?screen=compte&role=athlete"), false);
+  assert.equal(pixelPermisSurPage("/auth", "?role=recruiter"), true);
+  assert.equal(pixelPermisSurPage("/auth"), true);
+  assert.equal(pixelPermisSurPage("/auth/pro"), true);
+  assert.equal(pixelPermisSurPage("/pour-les-recruteurs"), true);
+  assert.equal(pixelPermisSurPage("/"), true);
+  assert.equal(pixelPermisSurPage("/recruteur/recherche"), false);
 });
 
 test("URL navigateur : identifiants et jetons refusés", () => {
@@ -73,6 +94,8 @@ test("routes publiques : portails exclus", () => {
   assert.equal(estRoutePublique("/auth/"), true);
   assert.equal(estRoutePublique("/12octobre"), true);
   assert.equal(estRoutePublique("/12octobre/merci"), false);
+  assert.equal(estRoutePublique("/claim"), false);
+  assert.equal(estRoutePublique("/pour-les-etudiant-athlete"), false);
   assert.equal(estRoutePublique("/athlete/onboarding"), false);
   assert.equal(estRoutePublique("/recruteur/recherche"), false);
 });

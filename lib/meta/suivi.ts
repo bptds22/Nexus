@@ -10,7 +10,7 @@
 import { Capacitor } from "@capacitor/core";
 import { lireConsentement } from "./consentement";
 import {
-  META_PIXEL_ID, urlSansIdentifiant, type EvenementMeta, type RoleMeta, type LEAD_DEMO,
+  META_PIXEL_ID, ROLES_META, urlSansIdentifiant, type EvenementMeta, type RoleMeta, type LEAD_DEMO,
 } from "./regles";
 
 type Fbq = (...args: unknown[]) => void;
@@ -50,6 +50,8 @@ export function envoyerEvenementMeta(
 ): void {
   try {
     if (!mesureAutorisee()) return;
+    // Ceinture : la liste fermée des rôles fait foi aussi à l'exécution.
+    if (evenement === "CompleteRegistration" && !(ROLES_META as readonly string[]).includes(contentName)) return;
     const eventId = nouvelEventId();
 
     // Navigateur — seulement si l'URL courante ne porte aucun identifiant

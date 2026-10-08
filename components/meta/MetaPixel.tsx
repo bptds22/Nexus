@@ -15,6 +15,11 @@
      décidons, route publique par route publique).
    - Inscription OAuth : /auth/callback (serveur) dépose le rôle dans le
      cookie nx_meta_inscription ; on le consomme ici une seule fois.
+   - Pages pour athlètes (/pour-les-etudiant-athlete, /claim,
+     /auth?role=athlete) : fbevents.js n'y est JAMAIS chargé à l'arrivée
+     (pixelPermisSurPage). Si le script l'a déjà été sur une autre page du
+     même onglet, il reste en mémoire mais n'y envoie rien : pas de
+     PageView hors routes permises, autoConfig et disablePushState coupés.
    - Rien de tout ça dans le build Capacitor ni dans une WebView native.
 ═══════════════════════════════════════════════════════════════ */
 
@@ -27,7 +32,7 @@ import {
 } from "@/lib/meta/consentement";
 import { envoyerEvenementMeta, estWebNavigateur } from "@/lib/meta/suivi";
 import {
-  INSCRIPTION_COOKIE, META_PIXEL_ID, ROLES_META, estRoutePublique, urlSansIdentifiant,
+  INSCRIPTION_COOKIE, META_PIXEL_ID, ROLES_META, pixelPermisSurPage, urlSansIdentifiant,
   type ConsentValue, type RoleMeta,
 } from "@/lib/meta/regles";
 
@@ -91,7 +96,7 @@ export default function MetaPixel() {
   // par chemin (pathname change = navigation App Router).
   useEffect(() => {
     if (!accorde || !window.fbq) return;
-    if (!estRoutePublique(pathname) || !urlSansIdentifiant(location.href)) return;
+    if (!pixelPermisSurPage(pathname, location.search) || !urlSansIdentifiant(location.href)) return;
     if (window.__nxDernierPV === pathname) return;
     window.__nxDernierPV = pathname;
     // trackSingle, pas track : fbevents ignore en silence tout
@@ -120,11 +125,14 @@ export default function MetaPixel() {
     }
   };
 
-  const montrerBandeau = rouvert || (consentement === null && estRoutePublique(pathname));
+  // Lu au rendu (web seulement, donc après hydratation) : chaque navigation
+  // App Router re-rend ce composant via usePathname.
+  const pixelPermis = pixelPermisSurPage(pathname, location.search);
+  const montrerBandeau = rouvert || (consentement === null && pixelPermis);
 
   return (
     <>
-      {accorde && (
+      {accorde && pixelPermis && (
         <Script id="nx-meta-pixel" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: SNIPPET }} />
       )}
       {montrerBandeau && <BandeauTemoins onChoix={choisir} />}

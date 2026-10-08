@@ -12,6 +12,10 @@
       page (paramètre dl) avec CHAQUE événement. Une URL qui porte un UUID
       (/recruteur/athletes/<id>, /12octobre/merci?id=…) ou un jeton
       (/claim?token=…, /i/<jeton>) serait un identifiant transmis à Meta.
+   4. AUCUN ATHLÈTE (décision BP 2026-10-07) — les athlètes sont en
+      majorité mineurs : aucun événement de conversion pour le rôle
+      athlète (ni parent), et le pixel ne se charge pas du tout sur les
+      pages qui s'adressent à eux.
       D'où : PageView seulement sur des routes publiques listées, et tout
       événement navigateur refusé si l'URL n'est pas « propre ». Le serveur,
       lui, n'envoie que origine + chemin, sans requête.
@@ -30,14 +34,23 @@ export const INSCRIPTION_COOKIE = "nx_meta_inscription";
 export const EVENEMENTS = ["CompleteRegistration", "Lead"] as const;
 export type EvenementMeta = (typeof EVENEMENTS)[number];
 
-/** content_name autorisés — liste FERMÉE, jamais de texte libre vers Meta. */
-export const ROLES_META = ["athlete", "coach", "recruiter"] as const;
+/** content_name autorisés — liste FERMÉE, jamais de texte libre vers Meta.
+ *  « athlete » n'y est PAS, volontairement (verrou 4) : ne pas le rajouter. */
+export const ROLES_META = ["coach", "recruiter"] as const;
 export type RoleMeta = (typeof ROLES_META)[number];
 export const LEAD_DEMO = "demo_12_octobre";
 
+/** Rôles du formulaire /12octobre qui déclenchent un Lead : personnel de
+ *  cégep seulement. « AUTRE » ou vide (un athlète peut remplir le
+ *  formulaire) → aucun Lead. */
+export const ROLES_DEMO_LEAD = ["RECRUTEUR", "ENTRAINEUR_CHEF", "DIRECTEUR_SPORTS"] as const;
+
+export function leadDemoAutorise(role: string | null | undefined): boolean {
+  return (ROLES_DEMO_LEAD as readonly string[]).includes(role ?? "");
+}
+
 export function roleMeta(role: string | null | undefined): RoleMeta | null {
   switch (role) {
-    case "ATHLETE": return "athlete";
     case "COACH": return "coach";
     case "RECRUTEUR": return "recruiter";
     default: return null;
@@ -54,7 +67,6 @@ const ROUTES_PUBLIQUES = [
   "/",
   "/auth",
   "/auth/pro",
-  "/claim",
   "/12octobre",
   "/tarifs",
   "/comment-ca-marche",
@@ -64,7 +76,6 @@ const ROUTES_PUBLIQUES = [
   "/guide-recrutement",
   "/roadmap",
   "/pour-les-coachs",
-  "/pour-les-etudiant-athlete",
   "/pour-les-parents",
   "/pour-les-recruteurs",
   "/confidentialite",
@@ -79,6 +90,22 @@ function normaliser(pathname: string): string {
 
 export function estRoutePublique(pathname: string): boolean {
   return ROUTES_PUBLIQUES.includes(normaliser(pathname));
+}
+
+/** Pages qui s'adressent aux athlètes : le pixel n'y est JAMAIS chargé
+ *  (verrou 4). Les portails /athlete/* ne sont déjà pas publics. */
+const PAGES_ATHLETES = ["/pour-les-etudiant-athlete", "/claim"];
+
+/**
+ * Vrai si fbevents.js peut être chargé sur cette page : route publique, et
+ * pas une page pour athlètes. /auth?role=athlete (choix « athlète » du
+ * sélecteur de rôle, reflété dans l'URL) compte comme page pour athlètes.
+ */
+export function pixelPermisSurPage(pathname: string, search = ""): boolean {
+  const p = normaliser(pathname);
+  if (PAGES_ATHLETES.includes(p) || p.startsWith("/athlete")) return false;
+  if (p === "/auth" && new URLSearchParams(search).get("role") === "athlete") return false;
+  return estRoutePublique(p);
 }
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;

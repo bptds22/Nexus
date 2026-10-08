@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 import { signUp } from "@/lib/supabase/auth.actions";
 import SignupExitLinks, { SignupContactLink } from "@/components/auth/signup/SignupExitLinks";
 import { isUnder14 } from "@/lib/legal/ageGate";
-import { envoyerEvenementMeta } from "@/lib/meta/suivi";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import NexusLogo from "@/components/ui/NexusLogo";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
@@ -215,10 +214,6 @@ function ClaimContent() {
         setSubmitting(false);
         return;
       }
-
-      // Meta : compte réellement créé (no-op sans consentement). L'URL de
-      // cette page porte le jeton : seul le volet serveur partira.
-      envoyerEvenementMeta("CompleteRegistration", "athlete");
 
       // Liaison orphelin = sous-unité 3. Pour l'instant on prépare le terrain :
       // redirection vers l'onboarding athlète.
