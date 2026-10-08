@@ -301,3 +301,7 @@ Le script tient en une transaction gardée :
 - la carte d'abord, puis l'équipe ;
 - exactement 1 carte, 1 équipe et 1 ligne `admin_operations`
   `SUPPRESSION_EQUIPE_FANTOME`, sinon rien n'est écrit.
+
+> **EXÉCUTÉ en prod le 2026-10-08 à 17:26:56 UTC (GO BP)** : 1 carte, 1 équipe supprimées ; journal de carte en cascade 1 ;
+> trace `cartes_prospect_suppressions` RETRAIT ; `admin_operations` 13 → 14 (`SUPPRESSION_EQUIPE_FANTOME`, par f51384b5) ;
+> `teams` 8 301 → 8 300, `cartes_prospect` 7 → 6.

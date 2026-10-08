@@ -1,3 +1,4 @@
+-- EXÉCUTÉ en prod le 2026-10-08 17:26:56 UTC (GO BP) : 1 carte, 1 équipe, 1 ligne admin_operations.
 -- PARTIE 3 — Suppression de l'équipe fantôme Greaves + de la carte prospect de test qui la référence.
 -- NE PAS EXÉCUTER sans le GO de BP. Transaction gardée : exactement 1 carte, 1 équipe, 1 ligne
 -- admin_operations, sinon RIEN n'est écrit.
