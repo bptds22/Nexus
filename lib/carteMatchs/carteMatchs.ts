@@ -291,3 +291,82 @@ export const IDENTITE_RESERVEE = LOCKED_NAME_LABEL;
 export function nomSuivi(t: Pick<CalendarTarget, "identityVisible" | "fullName">): string {
   return t.identityVisible ? (t.fullName.trim() || IDENTITE_RESERVEE) : IDENTITE_RESERVEE;
 }
+
+/* ── Profils Nexus dans ce match (lot A+, BP 2026-10-07) ───── */
+
+/** Une ligne de la RPC `matchs_profils_nexus` (forme PostgREST). La base ne
+ *  rend que des profils ACTIF à l'identité visible (athlete_identity_ok) :
+ *  rien n'est filtré ici, rien n'est à masquer. */
+export interface LigneProfilNexus {
+  game_id: string;
+  athlete_id: string;
+  prenom: string | null;
+  nom: string | null;
+  position: string | null;
+  promotion: number | null;
+  cote: "DOMICILE" | "VISITEUR";
+}
+
+export interface ProfilNexus {
+  athleteId: string;
+  prenom: string;
+  nom: string;
+  position: string | null;
+  promotion: number | null;
+  cote: "DOMICILE" | "VISITEUR";
+  /** Suivi par l'unité du recruteur (ses cibles). */
+  suivi: boolean;
+}
+
+export interface ProfilsMatch {
+  total: number;
+  suivis: number;
+  /** Suivis d'abord, puis par nom et prénom. */
+  profils: ProfilNexus[];
+}
+
+/** Regroupe les lignes de la RPC par match. `suivis` = les athlete_id suivis
+ *  par l'unité ; vide pour un écran qui ne connaît pas l'unité (le lot B
+ *  l'appellera sur « tous les matchs » : aucun couplage au mode « suivis »).
+ *  Un athlète présent deux fois dans un match n'est compté qu'une fois. */
+export function profilsParMatch(
+  lignes: LigneProfilNexus[],
+  suivis: ReadonlySet<string> = new Set(),
+): Map<string, ProfilsMatch> {
+  const parMatch = new Map<string, Map<string, ProfilNexus>>();
+  for (const l of lignes) {
+    const m = parMatch.get(l.game_id) ?? new Map<string, ProfilNexus>();
+    if (!m.has(l.athlete_id)) {
+      m.set(l.athlete_id, {
+        athleteId: l.athlete_id,
+        prenom: (l.prenom ?? "").trim(),
+        nom: (l.nom ?? "").trim(),
+        position: l.position?.trim() || null,
+        promotion: l.promotion ?? null,
+        cote: l.cote,
+        suivi: suivis.has(l.athlete_id),
+      });
+    }
+    parMatch.set(l.game_id, m);
+  }
+  const cle = (p: ProfilNexus) => `${p.nom} ${p.prenom}`;
+  const out = new Map<string, ProfilsMatch>();
+  for (const [gameId, m] of parMatch) {
+    const profils = [...m.values()].sort((a, b) =>
+      Number(b.suivi) - Number(a.suivi) || cle(a).localeCompare(cle(b), "fr", { sensitivity: "base" }));
+    out.set(gameId, { total: profils.length, suivis: profils.filter((p) => p.suivi).length, profils });
+  }
+  return out;
+}
+
+/** « 4 profils Nexus », « 1 profil Nexus » ; null si aucun (rien à afficher). */
+export function libelleProfils(p: Pick<ProfilsMatch, "total"> | null | undefined): string | null {
+  if (!p || p.total <= 0) return null;
+  return `${p.total} profil${p.total > 1 ? "s" : ""} Nexus`;
+}
+
+/** « dont 1 suivi », « dont 2 suivis » ; null si l'unité n'en suit aucun. */
+export function libelleDontSuivis(p: Pick<ProfilsMatch, "suivis"> | null | undefined): string | null {
+  if (!p || p.suivis <= 0) return null;
+  return `dont ${p.suivis} suivi${p.suivis > 1 ? "s" : ""}`;
+}

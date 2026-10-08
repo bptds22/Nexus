@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   lieuExploitable, matchsDuJour, terrainsDuJour, distanceKm, libelleDistance, optionsFiltres,
   lienItineraire, titreMatch, evenementMatch, minutesDe, chargeParJour, jourDecale, FILTRES_VIDES, LIEU_NON_PRECISE, nomSuivi,
-  heureQuebec, libelleDivision, matchsBulle,
+  heureQuebec, libelleDivision, matchsBulle, profilsParMatch, libelleProfils, libelleDontSuivis,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { CalendarGame, CalendarTarget } from "@/lib/queries/recruiter/useRecruitingCalendar";
 
@@ -182,4 +182,32 @@ test("nomSuivi : identité masquée → « Identité réservée », jamais le no
   assert.equal(nomSuivi({ identityVisible: true, fullName: "Léa Gagnon" }), "Léa Gagnon");
   assert.equal(nomSuivi({ identityVisible: false, fullName: "Léa Gagnon" }), "Identité réservée");
   assert.equal(nomSuivi({ identityVisible: true, fullName: "  " }), "Identité réservée");
+});
+
+test("profilsParMatch : regroupe par match, dédoublonne, suivis d'abord puis par nom ; libellés", () => {
+  const l = (game_id: string, athlete_id: string, nom: string, prenom = "X", cote: "DOMICILE" | "VISITEUR" = "DOMICILE") =>
+    ({ game_id, athlete_id, prenom, nom, position: " QB ", promotion: 2027, cote });
+  const r = profilsParMatch([
+    l("g1", "a1", "Tremblay"), l("g1", "a2", "Bélanger", "Léa", "VISITEUR"), l("g1", "a3", "Gagnon"),
+    l("g1", "a3", "Gagnon", "X", "VISITEUR"),           // même athlète deux fois → une seule
+    l("g2", "a4", "Roy"),
+  ], new Set(["a3", "zz"]));
+  const g1 = r.get("g1")!;
+  assert.equal(g1.total, 3);
+  assert.equal(g1.suivis, 1);
+  assert.deepEqual(g1.profils.map((p) => p.nom), ["Gagnon", "Bélanger", "Tremblay"], "suivi d'abord, puis nom (accents ignorés)");
+  assert.equal(g1.profils[0].suivi, true);
+  assert.equal(g1.profils[1].cote, "VISITEUR");
+  assert.equal(g1.profils[1].position, "QB");
+  assert.equal(r.get("g2")!.suivis, 0);
+  assert.equal(r.has("g3"), false, "match sans profil : absent de la carte des profils");
+  assert.equal(profilsParMatch([l("g1", "a1", "Roy")]).get("g1")!.suivis, 0, "sans unité : aucun suivi (lot B)");
+
+  assert.equal(libelleProfils(g1), "3 profils Nexus");
+  assert.equal(libelleProfils({ total: 1 }), "1 profil Nexus");
+  assert.equal(libelleProfils({ total: 0 }), null);
+  assert.equal(libelleProfils(undefined), null);
+  assert.equal(libelleDontSuivis(g1), "dont 1 suivi");
+  assert.equal(libelleDontSuivis({ suivis: 2 }), "dont 2 suivis");
+  assert.equal(libelleDontSuivis({ suivis: 0 }), null);
 });
