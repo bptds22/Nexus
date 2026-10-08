@@ -43,6 +43,44 @@ Corollaire : après tout `DROP`/`CREATE` d'une fonction, **relever l'ACL AVANT**
 et la comparer intégralement APRÈS. Reposer les grants ne suffit pas ; il faut
 aussi révoquer ce que les default privileges ont ajouté.
 
+### PONT RSEQ — CE QUI PEUT S'ÉCRIRE, ET COMMENT (décision BP, 2026-10-08)
+
+Le pont RSEQ relie les données de `diffusion.s1.rseq.ca` / `s1.rseq.ca`
+(`games`, `rseq_*`) aux objets Nexus (`schools`, `teams`). Règles :
+
+- **Jamais de DELETE de matchs.** Un match que le RSEQ ne sert plus reste en
+  base ; la veille le SIGNALE (alerte `MATCH_RETIRE`), elle ne le supprime pas.
+  Relevé 2026-10-08 : 74 matchs 2026 en base ne sont plus servis par aucune
+  ligue RSEQ — c'est attendu, pas une anomalie à nettoyer.
+- **Jamais d'INSERT d'école sans GO de BP.** Une équipe RSEQ dont l'école est
+  introuvable (`InstitutionId` inconnu de `schools.rseq_institution_id`, nom
+  ambigu) attend : on ne crée pas l'école pour pouvoir créer l'équipe.
+- **Équipes : insérables, avec dédoublonnage**, dans cet ordre :
+  1. `rseq_team_id` (index unique `teams_rseq_team_id_uidx`) — déjà présent → on
+     ne crée pas ;
+  2. même école + sport + catégorie (`age_group`) + division + **sexe** (`gender`)
+     + saison — une équipe existante → doublon à faire trancher par BP, pas de
+     création. Le sexe en fait partie depuis le 2026-10-08 (décision BP) : au
+     secondaire, la catégorie (Atome, Benjamin, Cadet, Juvénile) ne porte JAMAIS
+     le sexe, et sans lui une équipe féminine passait pour le doublon de la
+     masculine (17 faux doublons sur 19 relevés au collégial). « Mixte » est un
+     sexe distinct de « Masculin » (cas Triolet, Benjamin D3, tranché par BP).
+  Création en transaction gardée (nombre exact), une ligne `admin_operations`
+  par lot, rollback écrit et testé en local avant la prod.
+- **UPDATE limité aux colonnes convenues.** Aujourd'hui : `games.home_team_id`
+  / `visitor_team_id` (liaison par `rseq_team_id`), et les colonnes que les RPC
+  `rseq_sync_*` écrivent. Aucune autre colonne d'une équipe ou d'une école
+  existante n'est réécrite par le pont.
+- **La veille détecte ; elle n'écrit dans `schools`/`teams` que sur GO.** Les
+  nouvelles équipes de la saison remontent en ALERTE (proposition), jamais en
+  création automatique.
+- **`games.region` est la région de la LIGUE**, pas de l'école. Une école qui
+  joue hors de sa région (Outaouais en Lac-Saint-Louis en 2026) « disparaît »
+  d'une recherche par `region` sans que rien ne manque.
+- **s1.rseq.ca contient tout diffusion** (relevé 2026-10-08 : 0 ligue servie
+  par diffusion seul, deux saisons). Les menus du site (`GetRegionSports`) ne
+  sont pas une source de vérité. Audit complet : `docs/rseq-audit-20261008/`.
+
 ---
 
 ## PROJECT OVERVIEW

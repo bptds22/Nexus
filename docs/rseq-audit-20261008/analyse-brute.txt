@@ -1,0 +1,116 @@
+
+== 2026 - 2027 : 2158 ligues RSEQ (grille), secteurs : {"Secondaire":1593,"Primaire":445,"Primaire et secondaire":8,"Universitaire":25,"Collégial":87}
+   hôtes : {"s1":1826,"diffusion+s1":332}
+   menu proposait le couple :  {"oui":2024,"NON":134}
+   hors Primaire, absentes de la base : 1363 (dont 67 qui portent des matchs, 3228 matchs)
+
+== 2025 - 2026 : 2865 ligues RSEQ (grille), secteurs : {"Secondaire":2115,"Primaire":621,"Primaire et secondaire":21,"Universitaire":25,"Collégial":83}
+   hôtes : {"s1":1300,"diffusion+s1":1565}
+   menu proposait le couple :  {"oui":2817,"NON":48}
+   hors Primaire, absentes de la base : 1033 (dont 154 qui portent des matchs, 9451 matchs)
+
+== 2026 : ligues avec matchs ABSENTES de la base, par secteur | région | sport
+   Collégial | Provincial | Badminton : 4 ligue(s), 215 matchs, 26 équipes
+   Collégial | Provincial | Basketball : 8 ligue(s), 469 matchs, 48 équipes
+   Collégial | Provincial | Flag football : 3 ligue(s), 107 matchs, 17 équipes
+   Collégial | Provincial | Football : 1 ligue(s), 31 matchs, 6 équipes
+   Collégial | Provincial | Rugby : 2 ligue(s), 69 matchs, 11 équipes
+   Collégial | Provincial | Soccer intérieur : 2 ligue(s), 134 matchs, 18 équipes
+   Collégial | Provincial | Soccer : 4 ligue(s), 138 matchs, 22 équipes
+   Collégial | Provincial | Volleyball : 7 ligue(s), 640 matchs, 55 équipes
+   Secondaire | Cantons-de-l'Est | Flag football : 1 ligue(s), 40 matchs, 5 équipes
+   Secondaire | Cantons-de-l'Est | Football : 2 ligue(s), 41 matchs, 7 équipes
+   Secondaire | GMAA | Hockey : 1 ligue(s), 45 matchs, 11 équipes
+   Secondaire | GMAA | Soccer : 6 ligue(s), 126 matchs, 18 équipes
+   Secondaire | Lac-Saint-Louis | Football : 2 ligue(s), 103 matchs, 14 équipes
+   Secondaire | Montréal | Futsal : 1 ligue(s), 28 matchs, 5 équipes
+   Secondaire | Outaouais | Baseball : 2 ligue(s), 5 matchs, 7 équipes
+   Secondaire | Provincial | Basketball : 5 ligue(s), 434 matchs, 31 équipes
+   Secondaire | Québec-Chaudière-Appalaches | Football : 2 ligue(s), 42 matchs, 8 équipes
+   Secondaire | Québec-Chaudière-Appalaches | Soccer : 1 ligue(s), 48 matchs, 8 équipes
+   Universitaire | Provincial | Basketball : 2 ligue(s), 86 matchs, 10 équipes
+   Universitaire | Provincial | Flag football : 2 ligue(s), 92 matchs, 8 équipes
+   Universitaire | Provincial | Football : 1 ligue(s), 27 matchs, 6 équipes
+   Universitaire | Provincial | Rugby : 2 ligue(s), 49 matchs, 14 équipes
+   Universitaire | Provincial | Soccer intérieur : 2 ligue(s), 13 matchs, 15 équipes
+   Universitaire | Provincial | Soccer : 2 ligue(s), 104 matchs, 15 équipes
+   Universitaire | Provincial | Volleyball : 2 ligue(s), 142 matchs, 13 équipes
+
+== 2026 : cause probable des absences (menu / hôte / sport hors liste fixe)
+   menu OK, hôte diffusion — autre cause : 9 ligue(s), 295 matchs
+   s1 hors liste fixe (région≠14 ou sport∉{1,5,16}) + couple caché par le menu + secteur Universitaire : 8 ligue(s), 258 matchs
+   s1 hors liste fixe (région≠14 ou sport∉{1,5,16}) + couple caché par le menu : 15 ligue(s), 663 matchs
+   s1 hors liste fixe (région≠14 ou sport∉{1,5,16}) : 9 ligue(s), 183 matchs
+   s1-liste-fixe-OK? + couple caché par le menu + secteur Universitaire : 5 ligue(s), 255 matchs
+   s1-liste-fixe-OK? + couple caché par le menu : 21 ligue(s), 1574 matchs
+
+== 2026 : écarts de nombre de matchs (ligues présentes) : 11
+   Mauricie | Flag football | Flag football C M D4 : RSEQ 49 (rég 44 + séries 5), base 85
+   Provincial | Soccer | Soccer C F D2 Nord-Est QCA-EDQ-SLSJ (A) : RSEQ 40 (rég 36 + séries 4), base 48
+   Lac-Saint-Louis | Football | Football C M D4 Section Est : RSEQ 48 (rég 42 + séries 6), base 55
+   Mauricie | Flag football | Flag football C F D4 Niveau 2 A : RSEQ 39 (rég 32 + séries 7), base 32
+   Montérégie | Football | Football J U D3 9 joueurs : RSEQ 14 (rég 12 + séries 2), base 20
+   Québec-Chaudière-Appalaches | Football | Football B U D4 à 9 Bleu : RSEQ 28 (rég 28 + séries 0), base 34
+   GMAA | Soccer | Soccer B Garçons D4 Niveau 1 B : RSEQ 7 (rég 7 + séries 0), base 12
+   Montréal | Futsal | Futsal J M D3 Ligue des champions Groupe B : RSEQ 18 (rég 15 + séries 3), base 15
+   Est-du-Québec | Football | Football B U D3 : RSEQ 14 (rég 12 + séries 2), base 15
+   GMAA | Soccer | Soccer C Garçons D3 A : RSEQ 35 (rég 35 + séries 0), base 36
+   Provincial | Soccer | Soccer C M D1 Provincial : RSEQ 51 (rég 45 + séries 6), base 52
+
+== Cas précis
+ Outaouais, football et flag, cadet/juvénile :
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football C F D3 | Cadet Féminin D3 | équipes 10 | matchs RSEQ 34 | base 34 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football C F D3 Jamboree | Cadet Féminin D3 | équipes 1 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football C F D4 | Cadet Féminin D4 | équipes 10 | matchs RSEQ 34 | base 34 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football C M D3 | Cadet Masculin D3 | équipes 7 | matchs RSEQ 23 | base 23 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football C M D4 | Cadet Masculin D4 | équipes 3 | matchs RSEQ 0 | base 0 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football J F D3 | Juvénile Féminin D3 | équipes 5 | matchs RSEQ 3 | base 3 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football J F D3 Jamboree | Juvénile Féminin D3 | équipes 2 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football J F D4 | Juvénile Féminin D4 | équipes 15 | matchs RSEQ 49 | base 49 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football J M D3 | Juvénile Masculin D3 | équipes 4 | matchs RSEQ 14 | base 14 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Flag football | Secondaire | Flag football J M D4 | Juvénile Masculin D4 | équipes 12 | matchs RSEQ 40 | base 40 | menu oui | d:11x4 s1:11x4
+   [2025 - 2026] Outaouais | Football | Secondaire | Football C U D3 12vs12 | Cadet Mixte D3 | équipes 5 | matchs RSEQ 22 | base 22 | menu oui | d:11x5 s1:11x5
+   [2025 - 2026] Outaouais | Football | Secondaire | Football J U D3 12vs12 | Juvénile Mixte D3 | équipes 5 | matchs RSEQ 22 | base 22 | menu oui | d:11x5 s1:11x5
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football C F D3 | Cadet Féminin D3 | équipes 0 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football C F D4 | Cadet Féminin D4 | équipes 1 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football C M D3 | Cadet Masculin D3 | équipes 6 | matchs RSEQ 18 | base 18 | menu oui | d:11x4 s1:11x4
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football C M D4 | Cadet Masculin D4 | équipes 0 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football J F D3 | Juvénile Féminin D3 | équipes 0 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football J F D4 | Juvénile Féminin D4 | équipes 1 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football J M D3 | Juvénile Masculin D3 | équipes 6 | matchs RSEQ 18 | base 18 | menu oui | d:11x4 s1:11x4
+   [2026 - 2027] Outaouais | Flag football | Secondaire | Flag football J M D4 7v7 | Juvénile Masculin D4 | équipes 1 | matchs RSEQ 0 | base 0 | menu oui | s1:11x4
+   [2026 - 2027] Outaouais | Football | Secondaire | Football C U D3 | Cadet Mixte D3 | équipes 0 | matchs RSEQ 0 | base 0 | menu oui | s1:11x5
+   [2026 - 2027] Outaouais | Football | Secondaire | Football J U D3 | Juvénile Mixte D3 | équipes 0 | matchs RSEQ 0 | base 0 | menu oui | s1:11x5
+ Football (code 5) Montréal / Laval / GMAA :
+ Football (code 5) — toutes les ligues 2026 dont un couple n'était PAS proposé par le menu :
+   [2026 - 2027] Provincial | Football | Secondaire | Football C M D1 | Cadet Masculin D1 | équipes 8 | matchs RSEQ 38 | base 38 | menu NON | s1:14x5*
+   [2026 - 2027] Provincial | Football | Collégial | Football C M D1 Provincial | Collégial Masculin D1 | équipes 8 | matchs RSEQ 37 | base 37 | menu NON | s1:14x5*
+   [2026 - 2027] Provincial | Football | Collégial | Football C M D2 Provincial | Collégial Masculin D2 | équipes 10 | matchs RSEQ 51 | base 51 | menu NON | s1:14x5*
+   [2026 - 2027] Provincial | Football | Collégial | Football C M D3 Provincial Nord-Est | Collégial Masculin D3 | équipes 6 | matchs RSEQ 31 | base 0 | menu NON | s1:14x5*
+   [2026 - 2027] Provincial | Football | Collégial | Football C M D3 Provincial Sud-Ouest | Collégial Masculin D3 | équipes 7 | matchs RSEQ 35 | base 35 | menu NON | s1:14x5*
+   [2026 - 2027] Provincial | Football | Secondaire | Football J M D1 | Juvénile Masculin D1 | équipes 8 | matchs RSEQ 38 | base 38 | menu NON | s1:14x5*
+   [2026 - 2027] Provincial | Football | Secondaire | Football J M D2 | Juvénile Masculin D2 | équipes 10 | matchs RSEQ 51 | base 51 | menu NON | s1:14x5*
+   [2026 - 2027] Provincial | Football | Universitaire | Football U M | Universitaire Masculin  | équipes 6 | matchs RSEQ 27 | base 0 | menu NON | s1:14x5*
+
+== Équipes 2026 sans équipe Nexus : 1972 lignes (exclues : {"series":0,"nul":1,"deja":126,"hors_perimetre":66})
+   par décision  : oui: 1916 · après confirmation BP: 33 · non (école introuvable): 16 · non (sport absent de Nexus): 5 · non (doublon à trancher): 2
+   par confiance : haute: 1901 · à confirmer BP: 33 · introuvable: 16 · confirmée BP (École secondaire Laval Junior): 9 · confirmée BP (Le Ber = École de la Montée): 5 · confirmée BP (École secondaire de Matane, pas le cégep): 3 · moyenne: 3 · confirmée BP (Séminaire de Sherbrooke secondaire, pas le cégep): 2
+   par sport     : Secondaire/Flag football: 445 · Secondaire/Basketball: 375 · Secondaire/Volleyball: 335 · Secondaire/Futsal: 332 · Secondaire/Soccer: 207 · Collégial/Volleyball: 55 · Collégial/Basketball: 48 · Secondaire/Football: 42 · Collégial/Badminton: 26 · Secondaire/Baseball: 22 · Collégial/Soccer intérieur: 18 · Collégial/Soccer: 12 · Collégial/Flag football: 11 · Secondaire/Hockey: 10 · Secondaire/Ultimate: 10 · Secondaire/Rugby: 7 · Collégial/Football: 6 · Collégial/Rugby: 6 · Secondaire/Balle molle: 5
+   par source    : base: 1664 · ligue absente: 198 · base+ligue absente: 110
+   football (création « oui ») : 37
+   lignes signalant des athlètes restés sur 2025 : 6
+
+== Écoles ciblées (2026)
+   École secondaire Paul-Le Jeune (inst 8e2d334a-4fbf-4b48-a3d1-a15fc93ec6b0) : équipes Nexus 2026 0 ; équipes RSEQ 2026 vues 2 [Paul-Le Jeune / Flag football C F D4 Niveau 1 ; Paul-Le Jeune / Flag football C M D4] ; à créer 2
+   École secondaire régionale Châteauguay Valley (inst 80109889-5814-4dc2-937b-b19ff15478a4) : équipes Nexus 2026 0 ; équipes RSEQ 2026 vues 3 [Chateauguay Valley / Rugby C F D4 ; Chateauguay Valley / Rugby J F D4 ; Chateauguay Valley 2 / Rugby C F D4] ; à créer 3
+   Polyvalente Sainte-Thérèse (inst 9766c3c2-7130-40b1-9a8b-1c5fc52bc846) : équipes Nexus 2026 0 ; équipes RSEQ 2026 vues 0 [] ; à créer 0
+
+== Athlètes ACTIFS restés sur une équipe 2025 alors qu'une équipe 2026 (existante ou à créer) existe pour la même école / sport / catégorie
+   Collège Mont-Sacré-Coeur | Football Juvénile Masculin D3 | équipe 2025 c54a3dd2 : 2 athlète(s) [c0b5aa20,f2f35218] | 2026 existante : — | 2026 à créer : Coll. Mont-Sacré-Coeur Masculin D3
+   Collège Saint-Sacrement | Flag football Cadet Féminin D3 | équipe 2025 786a4865 : 1 athlète(s) [9fa1fc6c] | 2026 existante : — | 2026 à créer : Saint-Sacrement Féminin , Saint-Sacrement 2 Féminin 
+   Académie Lafontaine | Futsal Cadet Masculin D4 | équipe 2025 82c57789 : 1 athlète(s) [7ebecace] | 2026 existante : — | 2026 à créer : Académie Lafontaine Féminin D3
+   École Monseigneur-Euclide-Théberge | Football Juvénile Masculin D3 | équipe 2025 a5fc53c9 : 1 athlète(s) [a1297864] | 2026 existante : Mgr-Euclide-Théberge Mixte D4 | 2026 à créer : —
+   École secondaire de la Ruche | Football Juvénile Masculin D3 | équipe 2025 b7230bab : 1 athlète(s) [fd34bd06] | 2026 existante : — | 2026 à créer : É.S. La Ruche Masculin D3
+   École secondaire Saint-Joseph | Football Juvénile Masculin D3 | équipe 2025 aa60ace5 : 5 athlète(s) [90412c3b,95cc0020,ea94eb42,dd0d8430,37a5a1bc] | 2026 existante : Saint-Joseph Mixte D3 | 2026 à créer : —
+   Polyvalente Hyacinthe-Delorme | Football Juvénile Masculin D4 | équipe 2025 4d447388 : 1 athlète(s) [ee6db0d2] | 2026 existante : Hyacinthe-Delorme Mixte D4 | 2026 à créer : —
+   Collège Saint-Bernard | Football Cadet Mixte D3 | équipe 2025 0166239a : 1 athlète(s) [f40a6241] | 2026 existante : — | 2026 à créer : C. St-Bernard Masculin D3

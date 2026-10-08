@@ -1,0 +1,153 @@
+﻿== 1. Empreintes AVANT
+admin_operations = 0
+cotes_null_avec_rseq = 17093
+equipes_existantes_md5 = 5bdc27ebe858eb58de8323691d6e83bd
+equipes_total = 8300
+liaisons_md5 = 87ca3921464a0d12cd3f7d6d423eca06
+matchs_hors_liaison_md5 = 763bde695aee260bedb57d3e7b853bdc
+matchs_total = 13709
+== 2. Temps de réponse AVANT
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f51384b5-a2c2-4827-9137-8aa8d29a1fe0","role":"authenticated"}
+(1 row)
+
+               ecran               |          ecole          | lignes |  ms   
+-----------------------------------+-------------------------+--------+-------
+ admin écoles (toute la table)     | —                       |   8300 | 31.11
+ inscription athlète (école+sport) | Collège Jean-Eudes      |      4 |  0.09
+ inscription athlète (école+sport) | Collège Notre-Dame      |      4 |  0.11
+ inscription athlète (école+sport) | Collège Regina Assumpta |      0 |  0.02
+ inscription athlète (école+sport) | Collège Sainte-Anne     |      3 |  0.08
+ inscription athlète (école+sport) | Collège St-Jean-Vianney |      4 |  0.09
+ page d'école (toutes)             | Collège Jean-Eudes      |     46 |  0.29
+ page d'école (toutes)             | Collège Notre-Dame      |     52 |  0.34
+ page d'école (toutes)             | Collège Regina Assumpta |     47 |  0.28
+ page d'école (toutes)             | Collège Sainte-Anne     |     55 |  0.32
+ page d'école (toutes)             | Collège St-Jean-Vianney |     49 |  0.30
+ saison en cours (école+2026)      | Collège Jean-Eudes      |      1 |  0.12
+ saison en cours (école+2026)      | Collège Notre-Dame      |      0 |  0.03
+ saison en cours (école+2026)      | Collège Regina Assumpta |      0 |  0.03
+ saison en cours (école+2026)      | Collège Sainte-Anne     |      2 |  0.09
+ saison en cours (école+2026)      | Collège St-Jean-Vianney |      2 |  0.10
+ sélecteur d'équipe (école)        | Collège Jean-Eudes      |     46 |  0.27
+ sélecteur d'équipe (école)        | Collège Notre-Dame      |     52 |  0.32
+ sélecteur d'équipe (école)        | Collège Regina Assumpta |     47 |  0.26
+ sélecteur d'équipe (école)        | Collège Sainte-Anne     |     55 |  0.31
+ sélecteur d'équipe (école)        | Collège St-Jean-Vianney |     49 |  0.29
+(21 rows)
+
+== 3. Lots, dans l'ordre (Football d'abord)
+psql:/tmp/rseq/lots/01-football.sql:109: NOTICE:  OK lot 01 Football : 38 équipe(s), 112 côté(s) domicile + 115 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/02-flag-football.sql:513: NOTICE:  OK lot 02 Flag football : 442 équipe(s), 1309 côté(s) domicile + 1318 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/03-soccer.sql:274: NOTICE:  OK lot 03 Soccer : 203 équipe(s), 691 côté(s) domicile + 663 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/04-volleyball.sql:399: NOTICE:  OK lot 04 Volleyball : 328 équipe(s), 1872 côté(s) domicile + 1891 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/05-basketball.sql:441: NOTICE:  OK lot 05 Basketball : 370 équipe(s), 2204 côté(s) domicile + 2207 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/06-futsal.sql:399: NOTICE:  OK lot 06 Futsal : 328 équipe(s), 1689 côté(s) domicile + 1689 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/07-baseball.sql:86: NOTICE:  OK lot 07 Baseball : 15 équipe(s), 45 côté(s) domicile + 45 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/08-rugby.sql:77: NOTICE:  OK lot 08 Rugby : 6 équipe(s), 26 côté(s) domicile + 22 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/09-ultimate-frisbee.sql:78: NOTICE:  OK lot 09 Ultimate frisbee : 7 équipe(s), 34 côté(s) domicile + 26 côté(s) visiteur reliés, 1 ligne admin_operations
+== 4. Empreintes APRÈS les 9 lots
+admin_operations = 9
+cotes_null_avec_rseq = 1135
+equipes_existantes_md5 = 5bdc27ebe858eb58de8323691d6e83bd
+equipes_total = 10037
+liaisons_md5 = 68e4e3c98a97bdd720555fc501f66423
+matchs_hors_liaison_md5 = 763bde695aee260bedb57d3e7b853bdc
+matchs_total = 13709
+== 5. Temps de réponse APRÈS
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f51384b5-a2c2-4827-9137-8aa8d29a1fe0","role":"authenticated"}
+(1 row)
+
+               ecran               |          ecole          | lignes |  ms   
+-----------------------------------+-------------------------+--------+-------
+ admin écoles (toute la table)     | —                       |  10037 | 38.26
+ inscription athlète (école+sport) | Collège Jean-Eudes      |      5 |  0.09
+ inscription athlète (école+sport) | Collège Notre-Dame      |      5 |  0.13
+ inscription athlète (école+sport) | Collège Regina Assumpta |      0 |  0.02
+ inscription athlète (école+sport) | Collège Sainte-Anne     |      3 |  0.10
+ inscription athlète (école+sport) | Collège St-Jean-Vianney |      4 |  0.10
+ page d'école (toutes)             | Collège Jean-Eudes      |     80 |  0.46
+ page d'école (toutes)             | Collège Notre-Dame      |     91 |  0.61
+ page d'école (toutes)             | Collège Regina Assumpta |     76 |  0.46
+ page d'école (toutes)             | Collège Sainte-Anne     |     70 |  0.40
+ page d'école (toutes)             | Collège St-Jean-Vianney |     77 |  0.49
+ saison en cours (école+2026)      | Collège Jean-Eudes      |     35 |  0.23
+ saison en cours (école+2026)      | Collège Notre-Dame      |     39 |  0.26
+ saison en cours (école+2026)      | Collège Regina Assumpta |     29 |  0.23
+ saison en cours (école+2026)      | Collège Sainte-Anne     |     17 |  0.16
+ saison en cours (école+2026)      | Collège St-Jean-Vianney |     30 |  0.22
+ sélecteur d'équipe (école)        | Collège Jean-Eudes      |     80 |  0.44
+ sélecteur d'équipe (école)        | Collège Notre-Dame      |     91 |  0.48
+ sélecteur d'équipe (école)        | Collège Regina Assumpta |     76 |  0.39
+ sélecteur d'équipe (école)        | Collège Sainte-Anne     |     70 |  0.40
+ sélecteur d'équipe (école)        | Collège St-Jean-Vianney |     77 |  0.47
+(21 rows)
+
+== 6. Gardes négatives
+-- 6a. relancer le lot Football (attendu : refus, déjà en base)
+psql:/tmp/rseq/lots/01-football.sql:109: ERROR:  NEXUS: 38 rseq_team_id du lot déjà en base — régénérer
+-- 6b. rollback Football puis un côté de match en plus (la veille a bougé) → refus attendu
+psql:/tmp/rseq/lots/01-football.rollback.sql:46: NOTICE:  OK rollback lot 01 Football : 38 équipe(s) supprimée(s), 112 + 115 côté(s) remis à NULL
+ERROR:  null value in column "phase" of relation "games" violates not-null constraint
+-- 6c. une équipe 2026 posée à la main, même école+sport+catégorie+division qu'une ligne du lot → refus attendu
+psql:/tmp/rseq/lots/01-football.sql:109: ERROR:  NEXUS: doublon école + sport + catégorie + division + saison non tranché par BP
+-- 6d. rollback refusé si une équipe du lot a reçu un coach
+psql:/tmp/rseq/lots/01-football.sql:109: NOTICE:  OK lot 01 Football : 38 équipe(s), 112 côté(s) domicile + 115 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/01-football.rollback.sql:46: ERROR:  NEXUS: une équipe du lot a reçu un dépendant — rollback refusé, à trancher par BP
+== 7. Rollback des 9 lots (ordre inverse), puis empreintes = AVANT ?
+psql:/tmp/rseq/lots/09-ultimate-frisbee.rollback.sql:46: NOTICE:  OK rollback lot 09 Ultimate frisbee : 7 équipe(s) supprimée(s), 34 + 26 côté(s) remis à NULL
+psql:/tmp/rseq/lots/08-rugby.rollback.sql:46: NOTICE:  OK rollback lot 08 Rugby : 6 équipe(s) supprimée(s), 26 + 22 côté(s) remis à NULL
+psql:/tmp/rseq/lots/07-baseball.rollback.sql:46: NOTICE:  OK rollback lot 07 Baseball : 15 équipe(s) supprimée(s), 45 + 45 côté(s) remis à NULL
+psql:/tmp/rseq/lots/06-futsal.rollback.sql:46: NOTICE:  OK rollback lot 06 Futsal : 328 équipe(s) supprimée(s), 1689 + 1689 côté(s) remis à NULL
+psql:/tmp/rseq/lots/05-basketball.rollback.sql:46: NOTICE:  OK rollback lot 05 Basketball : 370 équipe(s) supprimée(s), 2204 + 2207 côté(s) remis à NULL
+psql:/tmp/rseq/lots/04-volleyball.rollback.sql:46: NOTICE:  OK rollback lot 04 Volleyball : 328 équipe(s) supprimée(s), 1872 + 1891 côté(s) remis à NULL
+psql:/tmp/rseq/lots/03-soccer.rollback.sql:46: NOTICE:  OK rollback lot 03 Soccer : 203 équipe(s) supprimée(s), 691 + 663 côté(s) remis à NULL
+psql:/tmp/rseq/lots/02-flag-football.rollback.sql:46: NOTICE:  OK rollback lot 02 Flag football : 442 équipe(s) supprimée(s), 1309 + 1318 côté(s) remis à NULL
+psql:/tmp/rseq/lots/01-football.rollback.sql:46: NOTICE:  OK rollback lot 01 Football : 38 équipe(s) supprimée(s), 112 + 115 côté(s) remis à NULL
+admin_operations = 20
+cotes_null_avec_rseq = 17093
+equipes_existantes_md5 = 5bdc27ebe858eb58de8323691d6e83bd
+equipes_total = 8300
+liaisons_md5 = 87ca3921464a0d12cd3f7d6d423eca06
+matchs_hors_liaison_md5 = 763bde695aee260bedb57d3e7b853bdc
+matchs_total = 13709
+-- écarts AVANT / APRÈS ROLLBACK (seul admin_operations doit différer) :
+--- /tmp/rseq/avant.txt
++++ /tmp/rseq/rollback.txt
+@@ -1,4 +1,4 @@
+-admin_operations = 0
++admin_operations = 20
+ cotes_null_avec_rseq = 17093
+ equipes_existantes_md5 = 5bdc27ebe858eb58de8323691d6e83bd
+ equipes_total = 8300
+== 8. Ré-application des 9 lots ; empreintes = APRÈS ?
+psql:/tmp/rseq/lots/01-football.sql:109: NOTICE:  OK lot 01 Football : 38 équipe(s), 112 côté(s) domicile + 115 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/02-flag-football.sql:513: NOTICE:  OK lot 02 Flag football : 442 équipe(s), 1309 côté(s) domicile + 1318 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/03-soccer.sql:274: NOTICE:  OK lot 03 Soccer : 203 équipe(s), 691 côté(s) domicile + 663 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/04-volleyball.sql:399: NOTICE:  OK lot 04 Volleyball : 328 équipe(s), 1872 côté(s) domicile + 1891 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/05-basketball.sql:441: NOTICE:  OK lot 05 Basketball : 370 équipe(s), 2204 côté(s) domicile + 2207 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/06-futsal.sql:399: NOTICE:  OK lot 06 Futsal : 328 équipe(s), 1689 côté(s) domicile + 1689 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/07-baseball.sql:86: NOTICE:  OK lot 07 Baseball : 15 équipe(s), 45 côté(s) domicile + 45 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/08-rugby.sql:77: NOTICE:  OK lot 08 Rugby : 6 équipe(s), 26 côté(s) domicile + 22 côté(s) visiteur reliés, 1 ligne admin_operations
+psql:/tmp/rseq/lots/09-ultimate-frisbee.sql:78: NOTICE:  OK lot 09 Ultimate frisbee : 7 équipe(s), 34 côté(s) domicile + 26 côté(s) visiteur reliés, 1 ligne admin_operations
+-- écarts APRÈS / RÉ-APPLIQUÉ (seul admin_operations doit différer) :
+--- /tmp/rseq/apres.txt
++++ /tmp/rseq/reapplique.txt
+@@ -1,7 +1,7 @@
+-admin_operations = 9
++admin_operations = 29
+ cotes_null_avec_rseq = 1135
+ equipes_existantes_md5 = 5bdc27ebe858eb58de8323691d6e83bd
+ equipes_total = 10037
+-liaisons_md5 = 68e4e3c98a97bdd720555fc501f66423
++liaisons_md5 = 13dc12461cb62ba95c9b2da9ab5c437f
+ matchs_hors_liaison_md5 = 763bde695aee260bedb57d3e7b853bdc
+ matchs_total = 13709
+== 9. Contrôles finaux
+équipes créées (2026, rseq, depuis la copie) | 1737
+côtés de match reliés à une équipe créée | 15958
+admin_operations par opération | EQUIPES_RSEQ_2026_RETIREES ×10, EQUIPES_RSEQ_2026_CREEES ×19
+accents (octets > caractères) sur les noms créés | 973 / 973

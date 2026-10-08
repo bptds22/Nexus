@@ -1,0 +1,10 @@
+﻿-- cohérence : côtés reliés dont l'équipe porte un AUTRE rseq_team_id que le match (attendu 0)
+18
+-- liaisons exprimées en rseq_team_id (indépendantes des uuid d'équipe), md5 :
+e69133d623ceca0664ac7c069f1707c6
+-- 6b. rollback Football, puis un côté de match en plus (la veille a bougé) → refus attendu, puis ré-application
+psql:/tmp/rseq/lots/01-football.rollback.sql:46: NOTICE:  OK rollback lot 01 Football : 38 équipe(s) supprimée(s), 112 + 115 côté(s) remis à NULL
+psql:/tmp/rseq/lots/01-football.sql:109: ERROR:  NEXUS: 228 côté(s) de match à relier aujourd'hui, 227 au relevé — la veille a bougé, régénérer
+psql:/tmp/rseq/lots/01-football.sql:109: NOTICE:  OK lot 01 Football : 38 équipe(s), 112 côté(s) domicile + 115 côté(s) visiteur reliés, 1 ligne admin_operations
+-- liaisons en rseq_team_id après ce dernier cycle, md5 (doit égaler la ligne plus haut) :
+e69133d623ceca0664ac7c069f1707c6
