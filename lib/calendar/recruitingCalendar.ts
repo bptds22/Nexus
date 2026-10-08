@@ -126,8 +126,12 @@ export function buildMatches(
     const homeTargets = (game.homeTeamId && byTeam.get(game.homeTeamId)) || [];
     const visitorTargets = (game.visitorTeamId && byTeam.get(game.visitorTeamId)) || [];
     const count = homeTargets.length + visitorTargets.length;
-    if (count === 0) return;
-    if (count < Math.max(1, minTargets)) return;
+    // Un match AJOUTÉ par l'unité (carte des matchs, lot B) reste au
+    // calendrier avec 0 cible — mais seulement au seuil par défaut : « 2+
+    // cibles » l'écarte comme n'importe quel match qui n'en a pas assez.
+    if (count === 0) {
+      if (!game.ajoute || minTargets > 1) return;
+    } else if (count < Math.max(1, minTargets)) return;
     views.push({ game, homeTargets, visitorTargets, count, hot: false });
   });
 
