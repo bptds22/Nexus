@@ -372,6 +372,13 @@ verify_jwt = false
 [functions.send-demo-inscription]
 verify_jwt = false
 
+# Veille RSEQ — appelée par pg_cron (net.http_post), pas par un usager : pas de JWT.
+# La protection est l'en-tête x-rseq-secret, comparé DANS la base (rseq_verifie_secret,
+# secret au Vault). Sans cette section, un « supabase functions deploy » sans
+# --no-verify-jwt réactiverait la vérification et chaque cron recevrait un 401.
+[functions.rseq-weekly-sync]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

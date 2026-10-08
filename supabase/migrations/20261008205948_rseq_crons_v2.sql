@@ -1,0 +1,6 @@
+-- 20261008205948_rseq_crons_v2 — APPLIQUÉE en prod le 2026-10-08 (GO BP).
+-- Contenu réel : scripts/veille-rseq/prod/20261008205948_rseq_crons_v2.sql
+-- (rollback : scripts/veille-rseq/prod/20261008205948_rollback_rseq_crons_v2.sql).
+-- Vide exprès pour qu'un db reset local ne programme aucun appel à la prod :
+-- les crons font net.http_post vers la fonction PROD avec le secret du Vault.
+-- Ce fichier n'existe que pour que la version locale égale la version distante.
