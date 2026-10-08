@@ -108,3 +108,11 @@ en premier, un lot par appel `execute_sql`.**
   catégorie, même division ».
 - Si « Pionniers » est en réalité l'École secondaire des Pionniers (Trois-Rivières), c'est le
   **rattachement de cette équipe** qui est faux en base. Il n'a pas été modifié : décision à BP.
+
+## Applications en prod
+- **Lot 01 Football — APPLIQUÉ le 2026-10-08 à 18:21:44 UTC (GO BP)**, fichier tel quel (md5 `de764e3e…`).
+  - Avant : 8 300 équipes, 112 + 115 côtés NULL du lot, `equipes_existantes_md5` `5bdc27eb…`, `matchs_hors_liaison_md5` `eead097c…`, `admin_operations` 14.
+  - Après : 8 338 équipes, 112 + 115 côtés reliés (0 NULL restant), empreintes identiques, `admin_operations` 15 (`EQUIPES_RSEQ_2026_CREEES`).
+  - Inchangés : `notifications_unite` 3, `rapprochement_file` 0, `rapprochements` 0, `net.http_request_queue` 0, `team_athletes` 115, `team_coaches` 16, empreinte des athlètes.
+  - Rollback prêt, non lancé : `lots/01-football.rollback.sql` (md5 `db3f60d5…`).
+- Lots 02 à 09 : non appliqués.
