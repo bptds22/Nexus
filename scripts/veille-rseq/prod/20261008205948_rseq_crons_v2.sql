@@ -1,3 +1,4 @@
+-- APPLIQUÉE en prod le 2026-10-08 sous la version 20261008205948 (apply_migration, GO BP).
 -- RANGÉE HORS de supabase/migrations EXPRÈS : un « supabase db reset » local la rejouerait et programmerait des crons
 -- appelant la PROD. À appliquer en prod par apply_migration à l étape 4 du plan, sous sa version prod.
 -- Veille RSEQ v2 — crons (étape 4 du plan de mise en prod). NE PAS appliquer en local : les commandes visent

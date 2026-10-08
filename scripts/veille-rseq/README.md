@@ -10,10 +10,10 @@ Plan : `docs/rseq-audit-20261008/PLAN-VEILLE.md`. Décisions de BP du 2026-10-08
 ## Migrations (appliquées sur la base locale `postgres` et sur la base jetable `nexus_copie`)
 | # | Fichier | Objet |
 |---|---|---|
-| A | `20261008210000_rseq_codes_sport.sql` | table `rseq_codes_sport`, semée avec 61 codes ; ACL `{postgres,service_role}` |
-| B | `20261008210100_rseq_sync_runs_tous_tranche.sql` | `secteur = 'Tous'` (découverte seulement) ; colonne `tranche` |
-| C | `20261008210200_rseq_ligues_a_appeler_tranches.sql` | vue des ligues à appeler : sports sans match exclus, catalogue limité à `team_count > 0`, `tranche_passe` (hachage), `matchs_connus` ; `security_invoker` réaffirmé ; ACL conservée |
-| D | `20261008210300_rseq_equipes_proposees.sql` | `rseq_proposition_equipe` ; `rseq_sync_detect_teams` (corps prod + proposition) ; RPC admin `rseq_creer_equipes_proposees` |
+| A | `20261008204908_rseq_codes_sport.sql` | table `rseq_codes_sport`, semée avec 61 codes ; ACL `{postgres,service_role}` |
+| B | `20261008204931_rseq_sync_runs_tous_tranche.sql` | `secteur = 'Tous'` (découverte seulement) ; colonne `tranche` |
+| C | `20261008204958_rseq_ligues_a_appeler_tranches.sql` | vue des ligues à appeler : sports sans match exclus, catalogue limité à `team_count > 0`, `tranche_passe` (hachage), `matchs_connus` ; `security_invoker` réaffirmé ; ACL conservée |
+| D | `20261008205120_rseq_equipes_proposees.sql` | `rseq_proposition_equipe` ; `rseq_sync_detect_teams` (corps prod + proposition) ; RPC admin `rseq_creer_equipes_proposees` |
 
 - **Empreintes, hors objets du lot** (fonctions, policies, triggers, droits des tables, autres vues) :
   identiques avant et après sur les deux bases. Seules s'ajoutent les deux contraintes de `rseq_sync_runs`.
@@ -121,7 +121,7 @@ Plan : `docs/rseq-audit-20261008/PLAN-VEILLE.md`. Décisions de BP du 2026-10-08
   - il ne réaligne que `*_rseq_team_id`, en catégorie (a) ;
   - il liste sans rien écrire les catégories (b), autre équipe servie, et (c), match plus servi ;
   - transaction gardée, `admin_operations`, rollback généré avec la réparation.
-- **Crons** : `prod/20261008210500_rseq_crons_v2.sql`, rangé hors de `supabase/migrations` pour qu'un
+- **Crons** : `prod/20261008205948_rseq_crons_v2.sql`, rangé hors de `supabase/migrations` pour qu'un
   `db reset` local ne programme jamais d'appels à la prod. Prouvé dans une transaction ANNULÉE sur la base
   locale (`preuve-crons.sh`) : gate vert, puis 0 cron restant.
 

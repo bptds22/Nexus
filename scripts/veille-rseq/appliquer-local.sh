@@ -7,7 +7,7 @@ DB=$1
 P="psql -U postgres -d $DB -X -v ON_ERROR_STOP=1"
 M=/tmp/veille/migrations
 echo "== $DB : empreintes AVANT"; $P -tA -F ' = ' -f /tmp/veille/empreintes-schema.sql | tee /tmp/veille/$DB-avant.txt
-for f in 20261008210000_rseq_codes_sport 20261008210100_rseq_sync_runs_tous_tranche 20261008210200_rseq_ligues_a_appeler_tranches 20261008210300_rseq_equipes_proposees 20261008210400_rseq_apply_games_rseq_ids; do
+for f in 20261008204908_rseq_codes_sport 20261008204931_rseq_sync_runs_tous_tranche 20261008204958_rseq_ligues_a_appeler_tranches 20261008205120_rseq_equipes_proposees 20261008205208_rseq_apply_games_rseq_ids; do
   if $P -1 -q -f $M/$f.sql > /tmp/veille/$DB-$f.log 2>&1; then echo "OK   $f"; else echo "ÉCHEC $f"; cat /tmp/veille/$DB-$f.log; exit 1; fi
 done
 echo "== $DB : empreintes APRÈS"; $P -tA -F ' = ' -f /tmp/veille/empreintes-schema.sql | tee /tmp/veille/$DB-apres.txt

@@ -1,4 +1,5 @@
 -- Veille RSEQ, correctif de découverte — 4/4 : les nouvelles équipes de la saison sont PROPOSÉES en alerte,
+-- (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP — fichier renommé depuis sa version locale 2026100821x00)
 -- puis créées sur décision d'un admin. Jamais de création automatique (CLAUDE.md § « Pont RSEQ »).
 -- (LOCAL — non appliquée en prod ; plan § 5, décision BP 2026-10-08.)
 --

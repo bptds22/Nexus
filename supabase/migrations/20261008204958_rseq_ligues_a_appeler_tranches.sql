@@ -1,4 +1,5 @@
 -- Veille RSEQ, correctif de découverte — 3/4 : ce que la passe appelle (vue rseq_ligues_a_appeler).
+-- (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP — fichier renommé depuis sa version locale 2026100821x00)
 -- (LOCAL — non appliquée en prod ; plan § 3.)
 --
 -- Inchangé : union catalogue (priorité 1) + games de la saison courante (priorité 2), secteurs Collégial et

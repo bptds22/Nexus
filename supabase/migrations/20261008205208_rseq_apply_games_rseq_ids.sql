@@ -1,4 +1,5 @@
 -- Veille RSEQ — 5/5 (migration E) : rseq_sync_apply_games réécrit home/visitor_rseq_team_id.
+-- (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP — fichier renommé depuis sa version locale 2026100821x00)
 -- (LOCAL — non appliquée en prod ; décision BP du 2026-10-08 ; constat : docs/rseq-audit-20261008/PROPOSITION-APPLY-GAMES.md)
 --
 -- Défaut corrigé : quand le RSEQ change l'équipe d'un côté de match, l'upsert mettait à jour *_team_id (résolu

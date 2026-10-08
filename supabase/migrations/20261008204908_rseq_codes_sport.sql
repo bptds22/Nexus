@@ -1,4 +1,5 @@
 -- Veille RSEQ, correctif de découverte — 1/4 : liste des codes de sport interrogés par la grille.
+-- (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP — fichier renommé depuis sa version locale 2026100821x00)
 -- (LOCAL — non appliquée en prod ; plan : docs/rseq-audit-20261008/PLAN-VEILLE.md § 1.)
 --
 -- La découverte ne se fie plus aux menus du site (GetRegionSports) : elle interroge chaque région 0–14 ×

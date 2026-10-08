@@ -1,4 +1,23 @@
-# Plan de mise en prod — veille RSEQ v2 (préparé le 2026-10-08, NON exécuté)
+# Plan de mise en prod — veille RSEQ v2
+
+> ✅ **APPLIQUÉ EN PROD le 2026-10-08 (GO BP), fenêtre avancée au jour même.**
+> - Fusion locale de `fix/veille-rseq-decouverte` (avec `audit/rseq-diffusion-20261008`) dans `main` : `49f17387`.
+>   Tests : 375 sur 376 OK, 1 ignoré. Build : EXIT=0.
+> - Migrations : A `20261008204908`, B `20261008204931`, C `20261008204958`, D `20261008205120`,
+>   E `20261008205208`. Les md5 des fonctions et de la vue sont identiques au local. Empreintes hors lot
+>   inchangées à chaque étape.
+> - Réparation unique : 18 côtés en 2026-2027, tous en catégorie (a), réalignés à 20:53:32 UTC, avec 1 ligne
+>   `admin_operations` `REPARATION_RSEQ_IDS_COTES`. `team_ids_md5` inchangé (`385267af…`).
+>   Fichiers : `scripts/veille-rseq/reparation/prod-20261008/`.
+> - Fonction v12, déployée depuis `main` avec `--no-verify-jwt` ; 403 sans secret.
+>   **Essai réel, découverte tranche 3** : DONE en 251 s, 311 appels, 521 ligues (87 collégiales), 0 équipe
+>   créée. Catalogue : 347 → 697.
+> - Crons : migration `20261008205948` (`scripts/veille-rseq/prod/`). Les 2 anciens sont retirés et les 7
+>   nouveaux actifs ; `rseq-veille-hebdo` est inchangé.
+> - **Non traité** : 1 371 côtés incohérents en 2025-2026, saison passée, hors périmètre de la réparation.
+>   Décision à BP.
+> - Rollback de la fonction : v1 = `supabase/functions/rseq-weekly-sync/index.ts` au commit `4322adc7`.
+
 
 Branche `fix/veille-rseq-decouverte`. **Chaque étape attend le GO de BP.** La base passe TOUJOURS avant la
 fonction, et la fonction avant les crons.
@@ -37,11 +56,11 @@ et après.
 
 | Étape | Fichier | Compatible avec la fonction v1 encore déployée ? |
 |---|---|---|
-| A | `20261008210000_rseq_codes_sport.sql` | oui (table nouvelle, non lue par la v1) |
-| B | `20261008210100_rseq_sync_runs_tous_tranche.sql` | oui (la v1 écrit `Secondaire`/`Collégial`, `tranche` NULL) |
-| C | `20261008210200_rseq_ligues_a_appeler_tranches.sql` | oui (la v1 lit un sous-ensemble des colonnes ; filtre plus strict) |
-| D | `20261008210300_rseq_equipes_proposees.sql` | oui (même signature, payload enrichi) |
-| E | `20261008210400_rseq_apply_games_rseq_ids.sql` | oui (même signature ; l'upsert réécrit en plus les `rseq_team_id`) |
+| A | `20261008204908_rseq_codes_sport.sql` | oui (table nouvelle, non lue par la v1) |
+| B | `20261008204931_rseq_sync_runs_tous_tranche.sql` | oui (la v1 écrit `Secondaire`/`Collégial`, `tranche` NULL) |
+| C | `20261008204958_rseq_ligues_a_appeler_tranches.sql` | oui (la v1 lit un sous-ensemble des colonnes ; filtre plus strict) |
+| D | `20261008205120_rseq_equipes_proposees.sql` | oui (même signature, payload enrichi) |
+| E | `20261008205208_rseq_apply_games_rseq_ids.sql` | oui (même signature ; l'upsert réécrit en plus les `rseq_team_id`) |
 
 Chaque migration est donc sûre seule, et la v1 continue de tourner normalement entre deux étapes.
 
@@ -89,7 +108,7 @@ partout.
   des migrations C, D et E, car la v2 lit `tranche_passe` et `matchs_connus`.
 
 ## 4. Crons
-Fichier : `scripts/veille-rseq/prod/20261008210500_rseq_crons_v2.sql`, rangé hors de
+Fichier : `scripts/veille-rseq/prod/20261008205948_rseq_crons_v2.sql`, rangé hors de
 `supabase/migrations` exprès. Un seul `apply_migration`, avec gate sur la liste complète triée des crons
 RSEQ.
 
@@ -115,7 +134,7 @@ RSEQ.
 (étape 3) et l'étape 4, les deux anciens crons seraient refusés en 400. Cela reste sans effet puisque
 leur prochain passage est mardi, mais les deux étapes se font quand même à la suite.
 
-**Rollback** : `scripts/veille-rseq/prod/20261008210500_rollback_rseq_crons_v2.sql`. Il retire les 7
+**Rollback** : `scripts/veille-rseq/prod/20261008205948_rollback_rseq_crons_v2.sql`. Il retire les 7
 nouveaux crons et remet les 2 anciens avec leurs commandes relevées en prod. Gate sur la liste.
 **Toujours en premier**, avant le rollback de la fonction.
 
