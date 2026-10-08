@@ -2288,3 +2288,27 @@ Laissé tel quel, faute de source dans le dépôt :
 retirer la redirection Capacitor de la page, ouvrir l'itinéraire et les liens
 d'agenda dans le navigateur in-app, et écrire le .ics par le chemin Capacitor
 (Filesystem + Share), `downloadIcs` ne marchant pas dans la WebView.
+
+**Lot A+ — « profils Nexus dans ce match »** (branche `feat/carte-matchs-profils`,
+BP 2026-10-07). Sur chaque match, les joueurs des DEUX équipes qui ont un profil
+Nexus, suivis ou non : pastille « N profils Nexus » (+ « dont X suivi(s) »),
+rien si 0 ; dans la bulle, sous chaque match, prénom nom (lien vers la fiche),
+position, promotion, équipe, suivis d'abord avec la pastille « Suivi ».
+- **RPC `matchs_profils_nexus(p_games uuid[])`** (SECURITY DEFINER, STABLE,
+  `search_path` épinglé) — migration `20261008021500` (version LOCALE ;
+  **en attente du GO de BP**, runbook `docs/runbook-carte-matchs-profils.md`).
+  Seulement `status = 'ACTIF'` ET `athlete_identity_ok()` (vérifiés ou non :
+  un mineur sans consentement n'apparaît ni dans le compte ni dans la liste).
+  Recruteur Pro seulement (même test que les écritures de Mon processus : rôle
+  `RECRUTEUR` + `user_has_pro()`), 42501 sinon ; 500 matchs au plus par appel.
+  Rend game_id, athlete_id, prénom, nom, position, promotion, côté — rien
+  d'autre. Les policies de `team_athletes` ne sont PAS touchées.
+- **Écran web** : UN appel par journée (`useProfilsMatchs`, les game_id du jour
+  avant les filtres de catégorie / division / ligue) ; un échec rend une carte
+  vide, donc aucune pastille.
+- **Lot B** : la fonction et `profilsParMatch` ne savent rien du mode « suivis »
+  (l'ensemble des suivis est un paramètre, vide possible) ; elles serviront
+  telles quelles sur « tous les matchs ».
+- **Lot mobile — reprendre** `useProfilsMatchs` (`lib/carteMatchs/`),
+  `profilsParMatch`, `libelleProfils`, `libelleDontSuivis` ; le lien de fiche
+  vers l'écran athlète natif du recruteur.

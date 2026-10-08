@@ -25,12 +25,14 @@ import FeatureGate from "@/components/subscription/FeatureGate";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useCalendrierUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
 import { downloadIcs } from "@/lib/calendar/generateCalendarLinks";
+import Link from "next/link";
 import { useOrigineCarte } from "@/lib/carteMatchs/useOrigineCarte";
+import { useProfilsMatchs } from "@/lib/carteMatchs/useProfilsMatchs";
 import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSearch";
 import {
   matchsDuJour, terrainsDuJour, optionsFiltres, lienItineraire, evenementMatch, titreMatch, jourDecale,
-  nomSuivi, terrainDuMatch, heureQuebec, libelleDivision, matchsBulle, LIEU_NON_PRECISE, FILTRES_VIDES,
-  type FiltresCarte, type MatchCarte,
+  nomSuivi, terrainDuMatch, heureQuebec, libelleDivision, matchsBulle, libelleProfils, libelleDontSuivis,
+  LIEU_NON_PRECISE, FILTRES_VIDES, type FiltresCarte, type MatchCarte, type ProfilsMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { MapBulle, MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
 
@@ -108,6 +110,12 @@ function CarteMatchsContenu() {
 
   const calendrier = React.useMemo(() => ({ games: data?.games ?? [], targets: data?.targets ?? [] }), [data]);
   const matchs = React.useMemo(() => matchsDuJour(calendrier, date, filtres), [calendrier, date, filtres]);
+  // Profils Nexus (lot A+) : UN appel par journée, sur ses matchs AVANT les
+  // filtres de catégorie / division / ligue (un filtre ne relance rien).
+  const idsDuJour = React.useMemo(
+    () => matchsDuJour(calendrier, date, FILTRES_VIDES).map((m) => m.game.id), [calendrier, date]);
+  const suivisUnite = React.useMemo(() => new Set(calendrier.targets.map((t) => t.athleteId)), [calendrier]);
+  const { parMatch: profils } = useProfilsMatchs(idsDuJour, suivisUnite, actif);
   const terrains = React.useMemo(() => terrainsDuJour(matchs), [matchs]);
   const options = React.useMemo(() => optionsFiltres(calendrier, date, filtres.sport), [calendrier, date, filtres.sport]);
   const terrainDe = (m: MatchCarte) => terrainDuMatch(m)?.id ?? null;
@@ -259,6 +267,7 @@ function CarteMatchsContenu() {
                     <div className="m" data-testid="suivis-match">
                       Suivis : {suivis.map((t) => `${nomSuivi(t)}${t.prospect ? " (prospect)" : ""}`).join(", ")}
                     </div>
+                    <PastilleProfils p={profils.get(g.id)} />
                   </div>
                 </div>
               );
@@ -275,7 +284,7 @@ function CarteMatchsContenu() {
             onHover={setSurvol} resizeToken={resizeToken} ariaLabel="Carte des matchs"
             bulle={bulle && terrainBulle ? bulle : null}
             onFermerBulle={fermerBulle}
-            contenuBulle={terrainBulle ? <Bulle matchs={matchsBulle(terrainBulle, premierMatch)} terrain={terrainBulle.nom} /> : null}
+            contenuBulle={terrainBulle ? <Bulle matchs={matchsBulle(terrainBulle, premierMatch)} terrain={terrainBulle.nom} profils={profils} /> : null}
           />
         </div>
       </div>
@@ -291,8 +300,20 @@ function CarteMatchsContenu() {
   );
 }
 
+/** « 4 profils Nexus · dont 1 suivi » — rien si aucun profil. */
+function PastilleProfils({ p }: { p: ProfilsMatch | undefined }) {
+  const total = libelleProfils(p);
+  if (!total) return null;
+  const dont = libelleDontSuivis(p);
+  return (
+    <div className="cm-profils">
+      <span className="b" data-testid="pastille-profils">{dont ? `${total} · ${dont}` : total}</span>
+    </div>
+  );
+}
+
 /** Contenu de la bulle : tous les matchs du terrain, le cliqué en premier. */
-function Bulle({ matchs, terrain }: { matchs: MatchCarte[]; terrain: string }) {
+function Bulle({ matchs, terrain, profils }: { matchs: MatchCarte[]; terrain: string; profils: Map<string, ProfilsMatch> }) {
   return (
     <div className="cm-bulle" data-testid="bulle">
       <div className="ptag">{terrain}</div>
@@ -308,6 +329,7 @@ function Bulle({ matchs, terrain }: { matchs: MatchCarte[]; terrain: string }) {
             {niveau && <div className="m">{niveau}</div>}
             {g.leagueName && <div className="m">{g.leagueName}</div>}
             <div className="m">Suivis : {suivis.map((t) => `${nomSuivi(t)}${t.prospect ? " (prospect)" : ""}`).join(", ")}</div>
+            <ListeProfils p={profils.get(g.id)} domicile={g.homeName} visiteur={g.visitorName} />
             <div className="cm-ba" data-testid="actions-match">
               <a className="btn page" href={lienItineraire(g.venueLat!, g.venueLon!)} target="_blank" rel="noopener noreferrer">Itinéraire</a>
               <div className="ptag">AJOUTER À MON AGENDA</div>
@@ -320,6 +342,29 @@ function Bulle({ matchs, terrain }: { matchs: MatchCarte[]; terrain: string }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/** Profils Nexus d'un match (suivis d'abord) : lien vers la fiche, position,
+ *  promotion, équipe. Les suivis portent la pastille verte du modèle (.b.need). */
+function ListeProfils({ p, domicile, visiteur }: { p: ProfilsMatch | undefined; domicile: string; visiteur: string }) {
+  if (!p || p.total === 0) return null;
+  return (
+    <div className="cm-pl" data-testid="liste-profils">
+      <div className="ptag">PROFILS NEXUS ({p.total})</div>
+      {p.profils.map((a) => (
+        <div key={a.athleteId} className="trow" data-testid="profil-nexus">
+          <span className="tsport">
+            <Link href={`/recruteur/athletes/${a.athleteId}`}>{`${a.prenom} ${a.nom}`.trim()}</Link>
+            {a.suivi && <span className="b need">Suivi</span>}
+          </span>
+          <span className="tmeta">
+            <span>{[a.position, a.promotion ? `Promo ${a.promotion}` : null].filter(Boolean).join(" · ") || "—"}</span>
+            <span>{a.cote === "DOMICILE" ? domicile : visiteur}</span>
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -349,6 +394,13 @@ const CM_CSS = `
 .cs .cm-agenda{display:flex;gap:6px;flex-wrap:wrap}
 .cs .cm-agenda .b{cursor:pointer;text-decoration:none}
 .cs .cm-agenda .b:hover{border-color:var(--nexus);color:var(--txt)}
+.cs .cm-profils{margin-top:7px}
+.cs .cm-pl{display:flex;flex-direction:column;margin-top:6px}
+.cs .cm-pl .ptag{margin-bottom:2px}
+.cs .cm-pl .trow{padding:8px 0;font-size:13.5px}
+.cs .cm-pl .tsport a{color:var(--txt);text-decoration:none}
+.cs .cm-pl .tsport a:hover{color:var(--nexus)}
+.cs .cm-pl .tmeta{font-size:12px}
 .cs .vtoggle{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);height:42px;padding:0 18px;border-radius:21px;
   background:rgba(26,29,36,.94);backdrop-filter:blur(14px);border:1px solid var(--line2);
   display:flex;align-items:center;gap:8px;cursor:pointer;z-index:950;box-shadow:0 8px 26px rgba(0,0,0,.6);
