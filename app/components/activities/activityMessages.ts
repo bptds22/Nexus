@@ -159,6 +159,10 @@ export function getActivityMessage(a: Activity): ActivityMessageParts {
           : `Un coach a répondu à votre message concernant {athlete}${pos}`,
       };
 
+    case "calendar_match":
+      // Sans athlète : le libellé complet est déjà posé (libelleGesteMatch).
+      return { entities: {}, text: a.messagePreview ?? "Match au calendrier" };
+
     default:
       return { entities, text: `Activité concernant {athlete}` };
   }

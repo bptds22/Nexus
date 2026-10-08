@@ -23,7 +23,7 @@ export function getFilterPills(portal: "coach" | "recruiter"): FilterPill[] {
   const typeEntries = Object.entries(ACTIVITY_TYPE_CONFIG) as [ActivityType, { label: string }][];
 
   // Filter types relevant per portal
-  const coachExclude: ActivityType[] = ["new_athlete_in_sport", "favorite_profile_updated", "favorite_stats_updated", "coach_response"];
+  const coachExclude: ActivityType[] = ["new_athlete_in_sport", "favorite_profile_updated", "favorite_stats_updated", "coach_response", "calendar_match"];
   const recruiterExclude: ActivityType[] = ["profile_incomplete", "athlete_added"];
 
   for (const [type, config] of typeEntries) {

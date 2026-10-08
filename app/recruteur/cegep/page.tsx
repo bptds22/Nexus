@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Link from "next/link";
+import { GESTES_MATCH, libelleGesteMatch } from "@/lib/carteMatchs/carteMatchs";
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -80,6 +81,14 @@ const ACTION_TYPE_MAP: Record<string, { icon: React.ReactNode; text: (d: Record<
     ),
     text: (d) => <><span className="text-white font-medium">{(d.first_name as string) || ""} {(d.last_name as string) || ""}</span> a été vérifié</>,
   },
+  ...Object.fromEntries(GESTES_MATCH.map((t) => [t, {
+    icon: (
+      <span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[rgba(255,255,255,0.08)]">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></svg>
+      </span>
+    ),
+    text: (d: Record<string, unknown>, rName: string) => <><span className="text-white font-medium">{rName}</span> — {libelleGesteMatch(t, d)}</>,
+  }])),
 };
 
 const defaultActivityIcon = (

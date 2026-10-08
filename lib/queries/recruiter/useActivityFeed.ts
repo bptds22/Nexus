@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
 import { GESTES_UNITE, nomAuteur, type AuteurUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import { estGesteMatch, libelleGesteMatch } from "@/lib/carteMatchs/carteMatchs";
 
 interface LigneJournal {
   id: string;
@@ -32,6 +33,8 @@ const ACTION_TYPE_TO_EVENT: Record<string, { type: ActivityEvent["type"]; direct
   PROFILE_UPDATED: { type: "profile_updated_bulk", direction: "inbound", priority: 2, icon: "edit", iconColor: "#6B7280" },
   NOTE_ADDED: { type: "scouting_report_updated", direction: "outbound", priority: 3, icon: "file-text", iconColor: "#F59E0B" },
   COACH_REPLY: { type: "coach_replied", direction: "inbound", priority: 1, icon: "message-circle", iconColor: "#22C55E" },
+  MATCH_AJOUTE: { type: "profile_updated_bulk", direction: "outbound", priority: 3, icon: "calendar", iconColor: "#6B7280" },
+  MATCH_RETIRE: { type: "profile_updated_bulk", direction: "outbound", priority: 3, icon: "calendar", iconColor: "#6B7280" },
 };
 
 function getTimeGroup(iso: string): ActivityEvent["timeGroup"] {
@@ -81,11 +84,13 @@ export function versEvenement(a: LigneJournal, signataire?: string): ActivityEve
     relativeTime,
     athleteId: a.athlete_id || undefined,
     athleteName: athleteName || undefined,
-    message: `${athleteName || "Athlète"} — ${a.action_type.replace(/_/g, " ").toLowerCase()}${signataire ? ` · par ${signataire}` : ""}`,
+    message: `${estGesteMatch(a.action_type) ? libelleGesteMatch(a.action_type, details)
+      : `${athleteName || "Athlète"} — ${a.action_type.replace(/_/g, " ").toLowerCase()}`}${signataire ? ` · par ${signataire}` : ""}`,
     recruiterId: a.recruiter_id,
     recruiterName: signataire,
     actionLabel: "Voir",
-    actionUrl: a.athlete_id ? `/recruteur/athletes/${a.athlete_id}` : undefined,
+    actionUrl: a.athlete_id ? `/recruteur/athletes/${a.athlete_id}`
+      : estGesteMatch(a.action_type) ? "/recruteur/calendrier" : undefined,
   };
 }
 

@@ -306,8 +306,9 @@ function CarteMatchsContenu() {
           <MapPane points={points} selectedId={terrainChoisi} hoveredId={survol} focus={focus} onSelect={ouvrirPoint}
             resizeToken={resizeToken} ariaLabel="Carte des matchs" />
           {choisi && (
-            <Panneau m={choisi} suivis={suivisUnite} actif={actif} enCours={enCours === choisi.id}
-              onCalendrier={() => basculerMatch(choisi)} onClose={() => setSelection(null)} />
+            <Panneau m={choisi} suivis={suivisUnite} actif={actif} enCours={enCours}
+              autres={terrainChoisi ? matchs.filter((x) => x.id !== choisi.id && terrainDe(x)?.id === terrainChoisi) : []}
+              onCalendrier={basculerMatch} onOuvrir={ouvrir} onClose={() => setSelection(null)} />
           )}
         </div>
       </div>
@@ -340,9 +341,11 @@ function BoutonCalendrier({ m, enCours, onClick }: { m: MatchRecherche; enCours:
 
 /** Panneau de détails : celui de la fiche cégep du modèle (.preview). Les
  *  joueurs viennent de matchs_profils_nexus, appelée AU CLIC pour ce match. */
-function Panneau({ m, suivis, actif, enCours, onCalendrier, onClose }: {
-  m: MatchRecherche; suivis: ReadonlySet<string>; actif: boolean; enCours: boolean;
-  onCalendrier: () => void; onClose: () => void;
+function Panneau({ m, suivis, actif, enCours, autres, onCalendrier, onOuvrir, onClose }: {
+  m: MatchRecherche; suivis: ReadonlySet<string>; actif: boolean; enCours: string | null;
+  /** Les autres matchs du même terrain, dans les résultats affichés (BP 2026-10-08). */
+  autres: MatchRecherche[];
+  onCalendrier: (m: MatchRecherche) => void; onOuvrir: (m: MatchRecherche) => void; onClose: () => void;
 }) {
   const { parMatch, isLoading } = useProfilsMatchs(m.nb_profils > 0 ? [m.id] : [], suivis, actif);
   const profils: ProfilsMatch | undefined = parMatch.get(m.id);
@@ -396,7 +399,7 @@ function Panneau({ m, suivis, actif, enCours, onCalendrier, onClose }: {
       <div className="pcta">
         {t && <a className="btn page" href={lienItineraire(t.lat, t.lon)} target="_blank" rel="noopener noreferrer">Itinéraire</a>}
         <button className="btn target" data-testid="panneau-calendrier" data-etat={etat}
-          disabled={etat === "SUIVI" || enCours} onClick={onCalendrier}>
+          disabled={etat === "SUIVI" || enCours === m.id} onClick={() => onCalendrier(m)}>
           {etat === "LIBRE" ? "+ Ajouter à mon calendrier" : etat === "AJOUTE" ? "✓ Dans mon calendrier — retirer" : "✓ Au calendrier"}
         </button>
         <span className="note">
@@ -404,6 +407,21 @@ function Panneau({ m, suivis, actif, enCours, onCalendrier, onClose }: {
             : "Le calendrier est partagé avec ton unité."}
         </span>
       </div>
+
+      {autres.length > 0 && (
+        <div className="psec" data-testid="autres-matchs">
+          <div className="ptag">Autres matchs à ce terrain</div>
+          {autres.map((x) => (
+            <div key={x.id} className="lc" data-testid="autre-match" data-match={x.id} onClick={() => onOuvrir(x)}>
+              <div className="lcinfo">
+                <div className="lctitre"><b>{titreMatch(x)}</b></div>
+                <div className="m">{libelleJour(x.jour)} · {heureQuebec(x.heure)}</div>
+              </div>
+              <BoutonCalendrier m={x} enCours={enCours === x.id} onClick={() => onCalendrier(x)} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

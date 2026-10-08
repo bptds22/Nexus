@@ -2319,7 +2319,7 @@ terrains civils** (branche `feat/carte-matchs-lot-b`, BP 2026-10-07 22 h 24 ;
 **base en attente du GO de BP**, runbook `docs/runbook-carte-matchs-lot-b.md`).
 Le mode « suivis » des lots A / A+ disparaît : la carte sert à TROUVER des
 matchs, le Calendrier reste l'endroit des matchs des athlètes suivis.
-- **Base (3 migrations additives)** : `lieu_normalise` + `lieux_geocodes`
+- **Base (4 migrations additives)** : `lieu_normalise` + `lieux_geocodes`
   (terrains sans GPS dans `games`, écrits après revue de BP, jamais dans
   `games`) ; `matchs_ajoutes` (calendrier PARTAGÉ de l'unité ; unité et auteur
   posés par un trigger ; RLS des cartes prospect + `is_admin()` en lecture ;
@@ -2331,8 +2331,21 @@ matchs, le Calendrier reste l'endroit des matchs des athlètes suivis.
   SON sport, listes, cartes prospect), pas `athlete_suivi_par_mon_unite` (qui,
   pour un admin cégep, couvre tous les sports) : un match « cible » est
   exactement un match déjà au Calendrier, d'où le ✓ non retirable.
-- **Journal d'activité : NON branché** — aucun type de `recruiter_activity_log`
-  ne décrit un match ajouté ; question posée à BP avant d'en créer un.
+- **Journal d'activité (migration 4, décision BP 2026-10-08)** : deux types
+  neufs, `MATCH_AJOUTE` / `MATCH_RETIRE`, SANS athlète (le match — équipes, jour,
+  heure, terrain — est dans `details`), écrits par un trigger sur
+  `matchs_ajoutes`, signés par l'acteur, rangés dans l'unité de la ligne,
+  lisibles par l'unité (ajoutés à `unite_journal_select` et à `GESTES_UNITE`).
+  Un retrait qui n'est le geste d'aucun recruteur (cascade, service_role) ne
+  s'écrit pas. Web : fil du tableau de bord, Activités (filtre « Calendrier »,
+  exclu côté coach), Mon CÉGEP — libellé unique `libelleGesteMatch`.
+  Comme pour tous les types, un recruteur peut écrire une ligne de journal à son
+  propre nom (policy préexistante « Recruiters see their own activity », FOR ALL) ;
+  l'unité reste posée par la base.
+- **Panneau : « Autres matchs à ce terrain »** (décision BP 2026-10-08) — les
+  autres matchs du même terrain dans les résultats affichés, lignes du modèle
+  (`.lc`) avec leur « + » ; un clic ouvre ce match. Absent si le match est seul
+  à son terrain.
 - **Calendrier** : `construireCalendrier` reçoit les matchs ajoutés
   (`useCalendrierUnite`, ceux de SON unité), rendus comme les autres ;
   `buildMatches` garde un match ajouté à 0 cible au seuil par défaut seulement
@@ -2344,11 +2357,19 @@ matchs, le Calendrier reste l'endroit des matchs des athlètes suivis.
 - **Terrains civils** : `scripts/carte-matchs-lot-b/` — géocodage Nominatim
   (`geocoder-terrains.mjs`), CSV de revue annoté (`terrains-civils-revue.csv`),
   générateur du SQL gardé (`ecrire-lieux.mjs`). Même normalisation que la base
-  (32/32 libellés identiques, preuve).
+  (32/32 libellés identiques, preuve). **Revue de BP du 2026-10-08** appliquée par
+  `geocoder-corrections.mjs` → `terrains-civils-final.csv` : 21 validés tels quels
+  (dont 2 en Ontario, gardés), 9 corrigés (adresse donnée par BP géocodée, ou
+  coordonnées RSEQ reprises pour Kirkland et Dollard-des-Ormeaux), **D'Arcy McGee
+  (Gatineau) en attente** de la confirmation de BP — non écrit, « Lieu non
+  précisé » d'ici là. `ecrire-lieux.sql` généré : 30 lignes.
 - **Lot mobile — reprendre** `lib/carteMatchs/carteMatchs.ts` (plage, groupement
   par jour, terrains, `etatCalendrier`, libellés, profils) et
   `lib/carteMatchs/useMatchsRecherche.ts` (`useMatchsRecherche`,
   `useBasculerCalendrier`, `useSportsCarte`) ; le panneau de détails devient une
   feuille (sheet) comme dans `RechercheMobile` ; le Calendrier mobile devra
   passer les matchs ajoutés à `construireCalendrier` (il n'en passe pas
-  aujourd'hui : un match ajouté sur le web n'y apparaît pas).
+  aujourd'hui : un match ajouté sur le web n'y apparaît pas). Le fil
+  `RecruteurActivitesMobile` affiche ses propres `MATCH_*` par sa branche par
+  défaut (« Activité : match ajoute ») : brancher `libelleGesteMatch` et le
+  lien vers le Calendrier.
