@@ -1,32 +1,36 @@
 // rseq-weekly-sync : veille RSEQ hebdomadaire, COLLÉGIAL et SECONDAIRE.
 // ============================================================================
-// DEUX MODES, UN SECTEUR TOUJOURS EXPLICITE
+// DEUX MODES, UN SECTEUR TOUJOURS EXPLICITE, DES TRANCHES DE RÉGIONS
 //
-//   ?secteur=Collégial | ?secteur=Secondaire      OBLIGATOIRE, sans défaut.
+//   ?secteur=Collégial | Secondaire | Tous       OBLIGATOIRE, sans défaut.
 //     Décision BP 2026-09-18 : le secteur est explicite partout (?secteur=,
-//     p_secteur des RPC, colonne `mode` du journal). Un appel sans secteur est
-//     refusé (400) — un défaut « Collégial » referait en silence le défaut que
-//     le lot 1 corrige (le secteur écrit en dur).
+//     p_secteur des RPC, colonne `secteur` du journal). « Tous » n'existe que
+//     pour la découverte (décision BP 2026-10-08) : un balayage, une ligne.
+//   ?tranche=1|2|3        Tiers de régions : 1 = 0–4, 2 = 5–9, 3 = 10–14
+//                         (14 = Provincial). OBLIGATOIRE pour la découverte et
+//                         pour la passe secondaire, refusé pour la passe
+//                         collégiale (une seule passe, ~70 ligues).
 //
-//   (sans ?mode)          PASSE : GetLeagueDiffusion pour chaque ligue du
-//                         secteur (vue rseq_ligues_a_appeler filtrée), puis
-//                         matchs / classement / détections. ~38 ligues au
-//                         collégial (~35 s), ~164 au secondaire (~2 min 45 s).
-//   ?mode=decouverte      DÉCOUVERTE : GetSchoolYearList -> GetRegionSports ->
-//                         GetLeagueList pour la saison courante, ne garde que
-//                         le secteur demandé, écrit le catalogue via
-//                         rseq_decouverte_upsert. Secondaire SEULEMENT (le
-//                         collégial est couvert par games) : ?secteur=Collégial
-//                         est refusé en mode découverte. ~190 appels, ~2 min 40 s.
-//                         Portage de scripts/rseq-discover.mjs.
-//   ?provincial=1|essai   Avec ?mode=decouverte&secteur=Secondaire SEULEMENT :
-//                         sous-passe s1.rseq.ca (ligues provinciales elite —
-//                         voir BASE2 plus bas). Absent par defaut : zero effet
-//                         sur le cron existant. « essai » : liste et compte
-//                         sans ecrire (pas d'appel a rseq_decouverte_upsert).
+//   (sans ?mode)          PASSE : GetLeagueDiffusion (s1.rseq.ca) pour chaque
+//                         ligue du secteur — et de la tranche, au secondaire —
+//                         lue dans la vue rseq_ligues_a_appeler, puis matchs /
+//                         classement / détections.
+//   ?mode=decouverte      DÉCOUVERTE v2 (audit du 2026-10-08) : sur s1.rseq.ca,
+//                         GetLeagueList pour CHAQUE région de la tranche ×
+//                         CHAQUE code de rseq_codes_sport — jamais les menus du
+//                         site, qui cachent des combinaisons. Écrit Secondaire
+//                         ET Collégial au catalogue (rseq_decouverte_upsert).
+//                         GetRegionSports (diffusion) ne sert plus qu'à repérer
+//                         un code de sport NOUVEAU (ajouté + alerte
+//                         NOUVEAU_CODE_SPORT). ~311 appels par tranche, ~255 s.
+//   ?provincial=          OBSOLÈTE (sous-passe de 3 sports provinciaux) : la
+//                         région 14 fait partie de la grille. Refusé (400), pour
+//                         qu'un ancien cron oublié se voie au lieu de tourner.
 //
-// Les deux passes et la découverte sont des INVOCATIONS SÉPARÉES (cron
-// distincts) : ensemble elles dépasseraient le plafond de 400 s.
+// Les passes et les découvertes sont des INVOCATIONS SÉPARÉES (cron
+// distincts, jamais simultanés : la politesse est par invocation).
+// Crons visés (décision BP 2026-10-08) : découverte dim/lun/mar (tranches
+// 1, 2, 3), passe collégiale mer, passes secondaires mer/jeu/ven (1, 2, 3).
 //
 // POLITESSE — les deux modes : 800 ms entre deux appels au RSEQ, QUEL QU'EN
 // SOIT LE TYPE (un seul minuteur par invocation), et un User-Agent unique
@@ -57,9 +61,14 @@
 //   mode cron (202) + lecture du journal.
 //
 // CE QUE CETTE FONCTION NE FAIT PAS
-//   Elle n'écrit ni dans `schools`, ni dans `teams`. Elle ne supprime rien.
-//   Écritures : les RPC rseq_* (lots du 2026-09-02 et du 2026-09-18), le
-//   journal rseq_sync_runs, et l'alerte PASSE_PARTIELLE / DECOUVERTE_VIDE.
+//   Elle n'écrit ni dans `schools`, ni dans `teams` (CLAUDE.md § « Pont RSEQ ») :
+//   une équipe nouvelle est PROPOSÉE dans son alerte (clé « proposition »,
+//   rseq_sync_detect_teams) et créée plus tard par un admin
+//   (rseq_creer_equipes_proposees). Elle ne supprime rien.
+//   Écritures : les RPC rseq_* (lots du 2026-09-02, du 2026-09-18 et du
+//   2026-10-08), le journal rseq_sync_runs, un code NOUVEAU dans
+//   rseq_codes_sport, et les alertes PASSE_PARTIELLE / DECOUVERTE_VIDE /
+//   NOUVEAU_CODE_SPORT.
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -71,23 +80,25 @@ import {
   type MetaLigue,
 } from "../_shared/rseqWhitelist.ts";
 
-const BASE = "https://diffusion.s1.rseq.ca/";
-const API_LIGUE = BASE + "api/LeagueApi/GetLeagueDiffusion/?leagueId=";
+// Deux hôtes, même API. Audit du 2026-10-08 (docs/rseq-audit-20261008/) :
+// s1.rseq.ca sert TOUTES les ligues (2 158 en 2026-2027) ; diffusion.s1.rseq.ca
+// n'en expose que 332 — celles que le site public diffuse — et aucune ligue
+// n'est servie par diffusion seul, sur deux saisons. GetLeagueDiffusion rend les
+// mêmes données sur les deux hôtes (seuls diffèrent des libellés et champs
+// *Html que la liste blanche ne lit pas). GetRegionSports n'existe que sur
+// diffusion (404 sur s1).
+const BASE_S1 = "https://s1.rseq.ca/";
+const BASE_DIFFUSION = "https://diffusion.s1.rseq.ca/";
+const API_LIGUE = BASE_S1 + "api/LeagueApi/GetLeagueDiffusion/?leagueId=";
 
-// Ligues PROVINCIALES ELITE — host FRERE, sans prefixe « diffusion. ».
-// Diagnostic 2026-10-05 : diffusion.s1.rseq.ca/GetRegionSports region=14 ne
-// rend QUE Cross-country ; les ligues scolaires D1/D2 basket/foot/volley
-// (ex. « Bruno », Football J M D2) vivent sur s1.rseq.ca, meme shape
-// GetLeagueList/GetLeagueDiffusion. GetRegionSports y repond 404 : pas
-// d'enumeration des sports par region -> liste FIXE, verifiee en lecture
-// seule. Hockey absent (scolaire hockey vit sur rseqhockey.com, hors scope).
-const BASE2 = "https://s1.rseq.ca/";
-const REGION_PROVINCIALE = 14;
-const SPORTS_PROVINCIAUX: ReadonlyArray<[string, string]> = [
-  ["1", "Basketball"],
-  ["5", "Football"],
-  ["16", "Volleyball"],
-];
+// Tiers de régions : une découverte complète (15 régions × 61 codes ≈ 915
+// appels, ≈ 750 s) dépasse le fusible ; une tranche (≈ 311 appels) tient
+// dessous. Des moitiés (≈ 458 appels, ≈ 375 s) ne tiendraient pas.
+const TRANCHES: Record<number, ReadonlyArray<number>> = {
+  1: [0, 1, 2, 3, 4],
+  2: [5, 6, 7, 8, 9],
+  3: [10, 11, 12, 13, 14],
+};
 
 const DELAI_MS = 800;
 const TIMEOUT_MS = 30_000;
@@ -112,6 +123,7 @@ const ENTETES = {
 
 const SECTEURS = ["Collégial", "Secondaire"] as const;
 type Secteur = (typeof SECTEURS)[number];
+type SecteurJournal = Secteur | "Tous";
 type Mode = "passe" | "decouverte";
 
 // Régions RSEQ : liste STATIQUE du site (#regionSelect), 14 = Provincial.
@@ -199,11 +211,13 @@ class Rseq {
   }
 }
 
-/** Ouvre la ligne de journal. `mode` et `secteur` toujours écrits. */
-async function ouvrirJournal(declencheur: string, saison: string, secteur: Secteur, mode: Mode) {
+/** Ouvre la ligne de journal. `mode` et `secteur` toujours écrits ; `tranche` quand il y en a une. */
+async function ouvrirJournal(
+  declencheur: string, saison: string, secteur: SecteurJournal, mode: Mode, tranche: number | null,
+) {
   const { data: run, error } = await supabase
     .from("rseq_sync_runs")
-    .insert({ declencheur, saison, secteur, mode, statut: "RUNNING" })
+    .insert({ declencheur, saison, secteur, mode, tranche, statut: "RUNNING" })
     .select("id")
     .single();
   if (error || !run) throw new Error(`NEXUS: ouverture du journal impossible — ${error?.message}`);
@@ -232,12 +246,14 @@ type Bilan = {
   run_id: string;
   mode: "passe";
   secteur: Secteur;
+  tranche: number | null;
   saison: string;
   statut: string;
   ligues_visees: number;
   ligues_ok: number;
   ligues_ko: number;
   ligues_non_traitees: number;
+  ligues_en_attente: number;
   matchs_vus: number;
   matchs_inseres: number;
   matchs_maj: number;
@@ -250,21 +266,27 @@ type Bilan = {
   duree_s: number;
 };
 
-async function passe(declencheur: string, secteur: Secteur): Promise<Bilan> {
+async function passe(declencheur: string, secteur: Secteur, tranche: number | null): Promise<Bilan> {
   const rseq = new Rseq();
   const saison = saisonCourante();
-  const runId = await ouvrirJournal(declencheur, saison, secteur, "passe");
+  const runId = await ouvrirJournal(declencheur, saison, secteur, "passe", tranche);
 
-  const { data: ligues, error: eL } = await supabase
+  // La vue exclut les sports sans match et les ligues du catalogue sans équipe ;
+  // au secondaire, on ne lit que la tranche demandée.
+  let requete = supabase
     .from("rseq_ligues_a_appeler")
-    .select("rseq_league_id, saison, sector, sport, region, division, category, sex_type, league_name, family_key")
+    .select("rseq_league_id, saison, sector, sport, region, division, category, sex_type, league_name, family_key, matchs_connus")
     .eq("sector", secteur);
+  // tranche_passe : tiers ÉQUILIBRÉ par hachage de l'identifiant de ligue (vue),
+  // pas par région (243 / 448 / 265 ligues par région au 2026-10-08).
+  if (tranche !== null) requete = requete.eq("tranche_passe", tranche);
+  const { data: ligues, error: eL } = await requete;
   if (eL) throw new Error(`NEXUS: liste des ligues illisible — ${eL.message}`);
 
   const b: Bilan = {
-    run_id: runId, mode: "passe", secteur, saison, statut: "RUNNING",
+    run_id: runId, mode: "passe", secteur, tranche, saison, statut: "RUNNING",
     ligues_visees: ligues?.length ?? 0,
-    ligues_ok: 0, ligues_ko: 0, ligues_non_traitees: 0,
+    ligues_ok: 0, ligues_ko: 0, ligues_non_traitees: 0, ligues_en_attente: 0,
     matchs_vus: 0, matchs_inseres: 0, matchs_maj: 0,
     classements_vus: 0, classements_inseres: 0, classements_maj: 0,
     alertes_levees: 0, appels: 0, erreurs: [], duree_s: 0,
@@ -324,10 +346,18 @@ async function passe(declencheur: string, secteur: Secteur): Promise<Bilan> {
     // rate 22 des 334 equipes reelles de la saison — voir equipesADetecter.
     const equipes = equipesADetecter(retenu);
 
-    // Une ligue qui répond 200 mais ne porte NI match NI classement est une
-    // coquille vide : on la traite comme muette plutôt que de conclure
-    // « rien à faire » sur une source qui a peut-être changé de forme.
+    // Une ligue qui répond 200 mais ne porte NI match NI classement :
+    //  - si elle n'a JAMAIS eu de match en base, elle attend la publication de
+    //    son calendrier (ligue d'hiver inscrite au catalogue). Ni muette, ni
+    //    alerte : elle est relue la semaine suivante. (Mesuré en local le
+    //    2026-10-08 : sans cette distinction, 566 fausses LIGUE_MUETTE.)
+    //  - si elle a déjà eu des matchs, c'est une coquille vide : muette, plutôt
+    //    que de conclure « rien à faire » sur une source qui a peut-être changé.
     if (matchs.length === 0 && classement.length === 0) {
+      if (L.matchs_connus === false) {
+        b.ligues_en_attente++;
+        continue;
+      }
       await muette(leagueId, "payload sans match ni classement");
       continue;
     }
@@ -406,12 +436,12 @@ async function passe(declencheur: string, secteur: Secteur): Promise<Bilan> {
 
   if (b.ligues_non_traitees > 0) {
     b.alertes_levees += await leverAlerte(
-      runId, "PASSE_PARTIELLE", `${secteur}|passe|${saison}`,
-      `Passe ${secteur.toLowerCase()} arretee par le fusible (${FUSIBLE_MS / 1000} s) : ` +
+      runId, "PASSE_PARTIELLE", `${secteur}|passe|${tranche ?? "-"}|${saison}`,
+      `Passe ${secteur.toLowerCase()}${tranche ? ` (tranche ${tranche})` : ""} arretee par le fusible (${FUSIBLE_MS / 1000} s) : ` +
         `${b.ligues_non_traitees} ligue(s) sur ${b.ligues_visees} non traitee(s). ` +
-        `Si ca se repete, c'est le moment du lot « tranches ».`,
+        `Si ca se repete, il faut redecouper les tranches.`,
       {
-        secteur, mode: "passe", saison,
+        secteur, mode: "passe", tranche, saison,
         ligues_visees: b.ligues_visees, ligues_non_traitees: b.ligues_non_traitees,
         duree_s: b.duree_s, fusible_s: FUSIBLE_MS / 1000,
       },
@@ -421,7 +451,7 @@ async function passe(declencheur: string, secteur: Secteur): Promise<Bilan> {
   // Une ligue muette n'est pas une erreur de la passe : la passe a fait son
   // travail et l'a signalée. ERROR est réservé à un échec généralisé ;
   // PARTIAL au fusible.
-  b.statut = b.ligues_ok === 0 ? "ERROR" : b.ligues_non_traitees > 0 ? "PARTIAL" : "DONE";
+  b.statut = b.ligues_ok + b.ligues_en_attente === 0 ? "ERROR" : b.ligues_non_traitees > 0 ? "PARTIAL" : "DONE";
 
   await supabase.from("rseq_sync_runs").update({
     finished_at: new Date().toISOString(),
@@ -439,6 +469,7 @@ async function passe(declencheur: string, secteur: Secteur): Promise<Bilan> {
     erreurs: b.erreurs,
     detail: {
       appels: b.appels,
+      ligues_en_attente_calendrier: b.ligues_en_attente,
       ...(b.ligues_non_traitees > 0
         ? { ligues_non_traitees: b.ligues_non_traitees, fusible_s: FUSIBLE_MS / 1000 }
         : {}),
@@ -453,7 +484,8 @@ async function passe(declencheur: string, secteur: Secteur): Promise<Bilan> {
 type BilanDecouverte = {
   run_id: string;
   mode: "decouverte";
-  secteur: Secteur;
+  secteur: "Tous";
+  tranche: number;
   saison: string;
   statut: string;
   ligues_vues: number;
@@ -463,21 +495,13 @@ type BilanDecouverte = {
   regions_traitees: number;
   appels: number;
   appels_ko: number;
+  codes_interroges: number;
+  codes_nouveaux: number[];
+  par_secteur: Record<string, number>;
   par_sport: Record<string, number>;
   alertes_levees: number;
   erreurs: { etape: string; motif: string }[];
   duree_s: number;
-  // Sous-passe provinciale (s1.rseq.ca) — absente (undefined) quand ?provincial
-  // n'est pas demande : zero effet sur le bilan actuel du cron.
-  provincial?: {
-    actif: true;
-    essai_a_blanc: boolean;
-    ligues: number;
-    equipes: number;
-    nouvelles: number;
-    modifiees: number;
-    par_sport: Record<string, number>;
-  };
 };
 
 const sansEspaces = (s: unknown) => String(s ?? "").replace(/\s+/g, "");
@@ -485,15 +509,15 @@ const sansEspaces = (s: unknown) => String(s ?? "").replace(/\s+/g, "");
 /** Une ligne GetLeagueList -> ligne du catalogue (noms de colonnes SQL). */
 function versCatalogue(
   L: Record<string, unknown>, region: string, saison: string, schoolYearId: string,
-  sportNom: string, sportCode: string,
+  sportNom: string, sportCode: number,
 ) {
   return {
     rseq_league_id: L.LeagueId ?? null,
     saison,
     secteur: L.Sector ?? null,
-    // GetLeagueList ne porte que le code du sport ; le nom vient de GetRegionSports.
+    // GetLeagueList ne porte que le code du sport ; le nom vient de rseq_codes_sport.
     sport: (L.SportName as string | undefined) ?? sportNom,
-    sport_code: L.Sport ?? (Number(sportCode) || null),
+    sport_code: L.Sport ?? sportCode,
     region,
     region_code: L.Region ?? null,
     division: L.Division ?? null,
@@ -506,28 +530,31 @@ function versCatalogue(
   };
 }
 
-async function decouverte(
-  declencheur: string,
-  secteur: Secteur,
-  provincial: { actif: boolean; essaiABlanc: boolean } = { actif: false, essaiABlanc: false },
-): Promise<BilanDecouverte> {
+async function decouverte(declencheur: string, tranche: number): Promise<BilanDecouverte> {
   const rseq = new Rseq();
   const saison = saisonCourante();
-  const runId = await ouvrirJournal(declencheur, saison, secteur, "decouverte");
+  const runId = await ouvrirJournal(declencheur, saison, "Tous", "decouverte", tranche);
+  const regions = REGIONS.filter(([code]) => TRANCHES[tranche].includes(code));
 
   const b: BilanDecouverte = {
-    run_id: runId, mode: "decouverte", secteur, saison, statut: "RUNNING",
+    run_id: runId, mode: "decouverte", secteur: "Tous", tranche, saison, statut: "RUNNING",
     ligues_vues: 0, nouvelles: 0, modifiees: 0, hors_secteur: 0,
-    regions_traitees: 0, appels: 0, appels_ko: 0, par_sport: {},
-    alertes_levees: 0, erreurs: [], duree_s: 0,
+    regions_traitees: 0, appels: 0, appels_ko: 0, codes_interroges: 0, codes_nouveaux: [],
+    par_secteur: {}, par_sport: {}, alertes_levees: 0, erreurs: [], duree_s: 0,
   };
   let regionsNonTraitees = 0;
-  const vues = new Set<string>(); // les ligues maîtresses reviennent d'une région à l'autre
+  const vues = new Set<string>(); // une ligue peut sortir sous plusieurs régions
+
+  // Codes de sport : la table, pas les menus.
+  const { data: codesLus, error: eC } = await supabase
+    .from("rseq_codes_sport").select("code, nom").order("code");
+  if (eC || !codesLus?.length) throw new Error(`NEXUS: rseq_codes_sport illisible ou vide — ${eC?.message ?? "0 code"}`);
+  const codes = new Map<number, string>(codesLus.map((c) => [c.code as number, (c.nom as string) ?? ""]));
 
   // Voir saisonCourante() : « 2026-2027 » ; l'API écrit « 2026 - 2027 ».
   let schoolYearId: string | null = null;
   try {
-    const annees = await rseq.json(BASE + "api/SchoolYearApi/GetSchoolYearList");
+    const annees = await rseq.json(BASE_S1 + "api/SchoolYearApi/GetSchoolYearList");
     const a = (Array.isArray(annees) ? annees : []).find(
       (y: Record<string, unknown>) => sansEspaces(y.SchoolYear) === saison,
     ) as Record<string, unknown> | undefined;
@@ -539,46 +566,67 @@ async function decouverte(
   }
 
   if (schoolYearId) {
-    for (const [ri, [regionCode, regionNom]] of REGIONS.entries()) {
-      if (rseq.fusibleSaute()) { regionsNonTraitees = REGIONS.length - ri; break; }
+    for (const [ri, [regionCode, regionNom]] of regions.entries()) {
+      if (rseq.fusibleSaute()) { regionsNonTraitees = regions.length - ri; break; }
 
-      let sports: Record<string, string> = {};
+      // 1) Codes NOUVEAUX seulement : le menu de la région sur diffusion. Il ne
+      //    filtre rien (la grille interroge tous les codes connus) ; il ne sert
+      //    qu'à apprendre un code qu'on ignorait.
       try {
         const d = await rseq.json(
-          BASE + "api/HomeApi/GetRegionSports/?" +
+          BASE_DIFFUSION + "api/HomeApi/GetRegionSports/?" +
             new URLSearchParams({ schoolYearId, region: String(regionCode) }),
         ) as { Sports?: Record<string, string> } | null;
-        sports = d && typeof d.Sports === "object" && d.Sports ? d.Sports : {};
+        for (const [c, nom] of Object.entries(d?.Sports ?? {})) {
+          const code = Number(c);
+          if (!Number.isInteger(code) || code < 0 || codes.has(code)) continue;
+          const { error: eI } = await supabase.from("rseq_codes_sport")
+            .insert({ code, nom: nom ?? "", source: `GetRegionSports ${saison} région ${regionCode}` });
+          if (eI && eI.code !== "23505") {
+            b.erreurs.push({ etape: `code ${code}`, motif: eI.message });
+            continue;
+          }
+          codes.set(code, nom ?? "");
+          b.codes_nouveaux.push(code);
+          b.alertes_levees += await leverAlerte(
+            runId, "NOUVEAU_CODE_SPORT", `code|${code}`,
+            `Nouveau code de sport RSEQ ${code} (« ${nom ?? ""} ») vu dans la région ${regionNom} — ajouté à la grille`,
+            { code, nom, region: regionNom, saison },
+          );
+        }
       } catch (e) {
-        // Le script de recherche avalait cette erreur ({}) : ici elle se voit.
+        // Le menu est accessoire : son échec n'empêche pas la grille.
         b.appels_ko++;
-        b.erreurs.push({ etape: `sports ${regionNom}`, motif: motifDe(e) });
-        continue;
+        b.erreurs.push({ etape: `menu ${regionNom}`, motif: motifDe(e) });
       }
 
+      // 2) La grille : chaque code connu, menu ou pas.
       const lot: ReturnType<typeof versCatalogue>[] = [];
       let coupe = false;
-      for (const [sportCode, sportNom] of Object.entries(sports)) {
+      for (const [sportCode, sportNom] of codes) {
         if (rseq.fusibleSaute()) { coupe = true; break; }
+        b.codes_interroges++;
         let ligues: unknown;
         try {
           ligues = await rseq.json(
-            BASE + "api/LeagueApi/GetLeagueList/?" +
-              new URLSearchParams({ schoolYearId, region: String(regionCode), sport: sportCode }),
+            BASE_S1 + "api/LeagueApi/GetLeagueList/?" +
+              new URLSearchParams({ schoolYearId, region: String(regionCode), sport: String(sportCode) }),
           );
         } catch (e) {
           b.appels_ko++;
-          b.erreurs.push({ etape: `ligues ${regionNom} / ${sportNom}`, motif: motifDe(e) });
+          b.erreurs.push({ etape: `ligues ${regionNom} / ${sportCode}`, motif: motifDe(e) });
           continue;
         }
         for (const L of (Array.isArray(ligues) ? ligues : []) as Record<string, unknown>[]) {
           const id = L.LeagueId as string | undefined;
           if (!id || vues.has(id)) continue;
           vues.add(id);
-          if (L.Sector !== secteur) { b.hors_secteur++; continue; }
+          const sect = String(L.Sector ?? "");
+          if (!(SECTEURS as readonly string[]).includes(sect)) { b.hors_secteur++; continue; }
           const ligne = versCatalogue(L, regionNom, saison, schoolYearId, sportNom, sportCode);
           lot.push(ligne);
-          b.par_sport[ligne.sport] = (b.par_sport[ligne.sport] ?? 0) + 1;
+          b.par_secteur[sect] = (b.par_secteur[sect] ?? 0) + 1;
+          b.par_sport[ligne.sport as string] = (b.par_sport[ligne.sport as string] ?? 0) + 1;
         }
       }
 
@@ -595,58 +643,9 @@ async function decouverte(
           b.modifiees += Number(r?.modifiees ?? 0);
         }
       }
-      if (coupe) { regionsNonTraitees = REGIONS.length - ri; break; }
+      if (coupe) { regionsNonTraitees = regions.length - ri; break; }
       b.regions_traitees++;
     }
-  }
-
-  // ─── LIGUES PROVINCIALES ELITE (s1.rseq.ca) ──────────────────────────────
-  // Desactivee par defaut (provincial.actif=false) : le cron existant, qui
-  // n'envoie jamais ?provincial=, ne passe JAMAIS par ce bloc. essaiABlanc
-  // liste et compte SANS appeler rseq_decouverte_upsert — aucune ecriture.
-  if (schoolYearId && provincial.actif && secteur === "Secondaire") {
-    const prov = { ligues: 0, equipes: 0, nouvelles: 0, modifiees: 0, par_sport: {} as Record<string, number> };
-    const lotProvincial: ReturnType<typeof versCatalogue>[] = [];
-    for (const [sportCode, sportNom] of SPORTS_PROVINCIAUX) {
-      if (rseq.fusibleSaute()) break;
-      let ligues: unknown;
-      try {
-        ligues = await rseq.json(
-          BASE2 + "api/LeagueApi/GetLeagueList/?" +
-            new URLSearchParams({ schoolYearId, region: String(REGION_PROVINCIALE), sport: sportCode }),
-        );
-      } catch (e) {
-        b.appels_ko++;
-        b.erreurs.push({ etape: `provincial ${sportNom}`, motif: motifDe(e) });
-        continue;
-      }
-      for (const L of (Array.isArray(ligues) ? ligues : []) as Record<string, unknown>[]) {
-        const id = L.LeagueId as string | undefined;
-        // Deux hosts, deux espaces de GUID distincts : une collision avec
-        // `vues` (rempli par la boucle REGIONS ci-dessus) n'arrive pas en
-        // pratique, mais la garde coute rien et documente l'intention.
-        if (!id || vues.has(id)) continue;
-        vues.add(id);
-        if (L.Sector !== secteur) continue;
-        prov.ligues++;
-        prov.equipes += Number(L.TeamCount ?? 0);
-        prov.par_sport[sportNom] = (prov.par_sport[sportNom] ?? 0) + 1;
-        lotProvincial.push(versCatalogue(L, "Provincial", saison, schoolYearId, sportNom, sportCode));
-      }
-    }
-
-    if (!provincial.essaiABlanc && lotProvincial.length > 0) {
-      const { data, error } = await supabase.rpc("rseq_decouverte_upsert", { p_ligues: lotProvincial });
-      if (error) {
-        b.erreurs.push({ etape: "catalogue provincial", motif: error.message });
-      } else {
-        const r = Array.isArray(data) ? data[0] : data;
-        prov.nouvelles = Number(r?.nouvelles ?? 0);
-        prov.modifiees = Number(r?.modifiees ?? 0);
-      }
-    }
-
-    b.provincial = { actif: true, essai_a_blanc: provincial.essaiABlanc, ...prov };
   }
 
   b.duree_s = Math.round((Date.now() - rseq.t0) / 100) / 10;
@@ -654,33 +653,33 @@ async function decouverte(
 
   if (regionsNonTraitees > 0) {
     b.alertes_levees += await leverAlerte(
-      runId, "PASSE_PARTIELLE", `${secteur}|decouverte|${saison}`,
-      `Decouverte ${secteur.toLowerCase()} arretee par le fusible (${FUSIBLE_MS / 1000} s) : ` +
-        `${regionsNonTraitees} region(s) sur ${REGIONS.length} non parcourue(s). ` +
+      runId, "PASSE_PARTIELLE", `Tous|decouverte|${tranche}|${saison}`,
+      `Decouverte tranche ${tranche} arretee par le fusible (${FUSIBLE_MS / 1000} s) : ` +
+        `${regionsNonTraitees} region(s) sur ${regions.length} non parcourue(s). ` +
         `Le catalogue garde ce qui a ete lu ; la vue appellera quand meme les ligues deja connues.`,
       {
-        secteur, mode: "decouverte", saison,
+        secteur: "Tous", mode: "decouverte", tranche, saison,
         regions_non_traitees: regionsNonTraitees, duree_s: b.duree_s, fusible_s: FUSIBLE_MS / 1000,
       },
     );
   }
 
-  // Zéro ligue pour le secteur en pleine saison : l'API a changé de forme, ou
+  // Zéro ligue pour la tranche en pleine saison : l'API a changé de forme, ou
   // la saison n'est pas ouverte. Dans les deux cas, quelqu'un doit regarder.
   if (b.ligues_vues === 0) {
     b.alertes_levees += await leverAlerte(
-      runId, "DECOUVERTE_VIDE", `${secteur}|decouverte-vide|${saison}`,
-      `Decouverte ${secteur.toLowerCase()} ${saison} : AUCUNE ligue au catalogue ` +
+      runId, "DECOUVERTE_VIDE", `Tous|decouverte-vide|${tranche}|${saison}`,
+      `Decouverte tranche ${tranche} ${saison} : AUCUNE ligue au catalogue ` +
         `(${b.appels} appel(s), ${b.appels_ko} en echec). API modifiee, ou saison pas encore ouverte.`,
-      { secteur, saison, appels: b.appels, appels_ko: b.appels_ko, erreurs: b.erreurs.slice(0, 10) },
+      { secteur: "Tous", tranche, saison, appels: b.appels, appels_ko: b.appels_ko, erreurs: b.erreurs.slice(0, 10) },
     );
   }
 
   b.statut = b.ligues_vues === 0 ? "ERROR" : regionsNonTraitees > 0 ? "PARTIAL" : "DONE";
 
   // Les colonnes de passe sont réutilisées au sens le plus proche :
-  // ligues_visees = ligues du secteur lues, ligues_ok = écrites au catalogue,
-  // ligues_ko = appels en échec. Le reste dans `detail`.
+  // ligues_visees = ligues Secondaire + Collégial lues, ligues_ok = écrites au
+  // catalogue, ligues_ko = appels en échec. Le reste dans `detail`.
   await supabase.from("rseq_sync_runs").update({
     finished_at: new Date().toISOString(),
     ligues_visees: vues.size - b.hors_secteur,
@@ -690,13 +689,14 @@ async function decouverte(
     statut: b.statut,
     erreurs: b.erreurs,
     detail: {
-      appels: b.appels, appels_ko: b.appels_ko,
+      hote: "s1.rseq.ca", appels: b.appels, appels_ko: b.appels_ko,
       nouvelles: b.nouvelles, modifiees: b.modifiees, hors_secteur: b.hors_secteur,
-      regions_traitees: b.regions_traitees, par_sport: b.par_sport,
+      regions: regions.map(([c]) => c), regions_traitees: b.regions_traitees,
+      codes_interroges: b.codes_interroges, codes_nouveaux: b.codes_nouveaux,
+      par_secteur: b.par_secteur, par_sport: b.par_sport,
       ...(regionsNonTraitees > 0
         ? { regions_non_traitees: regionsNonTraitees, fusible_s: FUSIBLE_MS / 1000 }
         : {}),
-      ...(b.provincial ? { provincial: b.provincial } : {}),
     },
   }).eq("id", runId);
 
@@ -721,6 +721,8 @@ async function secretValide(req: Request): Promise<boolean> {
   return data === true;
 }
 
+const refus = (erreur: string) => Response.json({ erreur }, { status: 400 });
+
 Deno.serve(async (req) => {
   if (!(await secretValide(req))) {
     return new Response("forbidden", { status: 403 });
@@ -728,44 +730,40 @@ Deno.serve(async (req) => {
 
   const q = new URL(req.url).searchParams;
 
-  const secteur = q.get("secteur");
-  if (!SECTEURS.includes(secteur as Secteur)) {
-    return Response.json(
-      { erreur: `?secteur= obligatoire : ${SECTEURS.join(" | ")} (recu : ${secteur ?? "rien"})` },
-      { status: 400 },
-    );
-  }
-
   const modeBrut = q.get("mode");
   if (modeBrut !== null && modeBrut !== "decouverte") {
-    return Response.json(
-      { erreur: `?mode= inconnu : « ${modeBrut} ». Valeur admise : decouverte (sans ?mode : passe)` },
-      { status: 400 },
-    );
+    return refus(`?mode= inconnu : « ${modeBrut} ». Valeur admise : decouverte (sans ?mode : passe)`);
   }
   const mode: Mode = modeBrut === "decouverte" ? "decouverte" : "passe";
 
-  if (mode === "decouverte" && secteur !== "Secondaire") {
-    return Response.json(
-      { erreur: "?mode=decouverte n'existe que pour ?secteur=Secondaire (le collegial est couvert par games)" },
-      { status: 400 },
-    );
+  if (q.get("provincial") !== null) {
+    return refus("?provincial= est obsolete : la decouverte v2 couvre la region 14 dans la grille. Mettre le cron a jour.");
   }
 
-  // ?provincial=1 : active la sous-passe s1.rseq.ca (defaut : absente, zero
-  // effet sur le cron existant qui n'envoie jamais ce parametre).
-  // ?provincial=essai : l'active en ESSAI A BLANC — liste et compte, n'ecrit
-  // rien dans le catalogue (rseq_decouverte_upsert jamais appelee).
-  const provincialBrut = q.get("provincial");
-  const provincial = {
-    actif: provincialBrut === "1" || provincialBrut === "essai",
-    essaiABlanc: provincialBrut === "essai",
-  };
+  const secteur = q.get("secteur");
+  const trancheBrute = q.get("tranche");
+  const tranche = trancheBrute === null ? null : Number(trancheBrute);
+  if (tranche !== null && !(tranche in TRANCHES)) {
+    return refus(`?tranche= invalide : « ${trancheBrute} ». Valeurs admises : 1 | 2 | 3`);
+  }
+
+  if (mode === "decouverte") {
+    if (secteur !== "Tous") {
+      return refus(`?mode=decouverte exige ?secteur=Tous (Secondaire et Collegial en un balayage) ; recu : ${secteur ?? "rien"}`);
+    }
+    if (tranche === null) return refus("?mode=decouverte exige ?tranche=1|2|3");
+  } else {
+    if (!SECTEURS.includes(secteur as Secteur)) {
+      return refus(`?secteur= obligatoire pour une passe : ${SECTEURS.join(" | ")} (recu : ${secteur ?? "rien"})`);
+    }
+    if (secteur === "Secondaire" && tranche === null) return refus("la passe Secondaire exige ?tranche=1|2|3");
+    if (secteur === "Collégial" && tranche !== null) return refus("la passe Collegial est unique : pas de ?tranche");
+  }
 
   const travail = (declencheur: string) =>
     mode === "decouverte"
-      ? decouverte(declencheur, secteur as Secteur, provincial)
-      : passe(declencheur, secteur as Secteur);
+      ? decouverte(declencheur, tranche as number)
+      : passe(declencheur, secteur as Secteur, tranche);
 
   if (q.get("wait") === "1") {
     // Recette LOCALE : on bloque et on rend le bilan complet.
@@ -782,5 +780,5 @@ Deno.serve(async (req) => {
   EdgeRuntime.waitUntil(
     travail("cron").catch((e) => console.error(`NEXUS: ${mode} RSEQ ${secteur} echouee —`, e)),
   );
-  return Response.json({ accepte: true, mode, secteur }, { status: 202 });
+  return Response.json({ accepte: true, mode, secteur, tranche }, { status: 202 });
 });
