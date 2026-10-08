@@ -4,8 +4,10 @@
 --
 -- 1. rseq_proposition_equipe(...) : ce que les lots de l'audit calculaient, pour UNE équipe RSEQ — école par
 --    InstitutionId (type SECONDAIRE ou CEGEP selon le secteur, exactement une école), sport Nexus, catégorie,
---    division, sexe normalisé, dédoublonnage (rseq_team_id, puis école + sport + catégorie + division +
---    saison), côtés de match à relier, décision. Lecture seule.
+--    division, sexe normalisé, dédoublonnage (rseq_team_id, puis école + sport + catégorie + division + SEXE +
+--    saison — le sexe ajouté sur décision BP du 2026-10-08 : sans lui, une équipe féminine était prise pour
+--    le doublon de la masculine, 17 faux doublons sur 19 au collégial), côtés de match à relier, décision.
+--    Lecture seule.
 -- 2. rseq_sync_detect_teams : corps IDENTIQUE à la prod (md5 cf4b292d…), plus une clé « proposition » dans
 --    chaque équipe des alertes NOUVELLES_EQUIPES (secondaire) et dans le payload NOUVELLE_EQUIPE (collégial).
 --    Aucune écriture dans teams.
@@ -60,6 +62,7 @@ begin
        and coalesce(t.age_group, '') = coalesce(v_age, '')
        and regexp_replace(lower(coalesce(t.division, '')), '^division\s*', 'd')
          = regexp_replace(lower(coalesce(v_div, '')), '^division\s*', 'd')
+       and coalesce(t.gender, '') = coalesce(v_gender, '')
      order by t.created_at limit 1;
   end if;
   select (select count(*) from public.games where home_team_id is null and home_rseq_team_id = p_rseq_team_id)

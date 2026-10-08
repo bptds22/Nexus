@@ -58,8 +58,13 @@ Le pont RSEQ relie les données de `diffusion.s1.rseq.ca` / `s1.rseq.ca`
 - **Équipes : insérables, avec dédoublonnage**, dans cet ordre :
   1. `rseq_team_id` (index unique `teams_rseq_team_id_uidx`) — déjà présent → on
      ne crée pas ;
-  2. même école + sport + catégorie (`age_group`) + division + saison — une
-     équipe existante → doublon à faire trancher par BP, pas de création.
+  2. même école + sport + catégorie (`age_group`) + division + **sexe** (`gender`)
+     + saison — une équipe existante → doublon à faire trancher par BP, pas de
+     création. Le sexe en fait partie depuis le 2026-10-08 (décision BP) : au
+     secondaire, la catégorie (Atome, Benjamin, Cadet, Juvénile) ne porte JAMAIS
+     le sexe, et sans lui une équipe féminine passait pour le doublon de la
+     masculine (17 faux doublons sur 19 relevés au collégial). « Mixte » est un
+     sexe distinct de « Masculin » (cas Triolet, Benjamin D3, tranché par BP).
   Création en transaction gardée (nombre exact), une ligne `admin_operations`
   par lot, rollback écrit et testé en local avant la prod.
 - **UPDATE limité aux colonnes convenues.** Aujourd'hui : `games.home_team_id`

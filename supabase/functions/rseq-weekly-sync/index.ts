@@ -6,10 +6,12 @@
 //     Décision BP 2026-09-18 : le secteur est explicite partout (?secteur=,
 //     p_secteur des RPC, colonne `secteur` du journal). « Tous » n'existe que
 //     pour la découverte (décision BP 2026-10-08) : un balayage, une ligne.
-//   ?tranche=1|2|3        Tiers de régions : 1 = 0–4, 2 = 5–9, 3 = 10–14
-//                         (14 = Provincial). OBLIGATOIRE pour la découverte et
-//                         pour la passe secondaire, refusé pour la passe
-//                         collégiale (une seule passe, ~70 ligues).
+//   ?tranche=             Découverte : 1|2|3, tiers de RÉGIONS (1 = 0–4,
+//                         2 = 5–9, 3 = 10–14 ; 14 = Provincial). Passe
+//                         secondaire : 1|2|3|4, quarts ÉQUILIBRÉS de ligues
+//                         (tranche_passe de la vue, hachage de l'identifiant).
+//                         OBLIGATOIRE pour ces deux-là ; refusé pour la passe
+//                         collégiale (une seule passe, ~78 ligues, ~78 s).
 //
 //   (sans ?mode)          PASSE : GetLeagueDiffusion (s1.rseq.ca) pour chaque
 //                         ligue du secteur — et de la tranche, au secondaire —
@@ -30,7 +32,7 @@
 // Les passes et les découvertes sont des INVOCATIONS SÉPARÉES (cron
 // distincts, jamais simultanés : la politesse est par invocation).
 // Crons visés (décision BP 2026-10-08) : découverte dim/lun/mar (tranches
-// 1, 2, 3), passe collégiale mer, passes secondaires mer/jeu/ven (1, 2, 3).
+// 1, 2, 3), passe collégiale mer, passes secondaires mer/jeu/ven/sam (1 à 4).
 //
 // POLITESSE — les deux modes : 800 ms entre deux appels au RSEQ, QUEL QU'EN
 // SOIT LE TYPE (un seul minuteur par invocation), et un User-Agent unique
@@ -277,7 +279,7 @@ async function passe(declencheur: string, secteur: Secteur, tranche: number | nu
     .from("rseq_ligues_a_appeler")
     .select("rseq_league_id, saison, sector, sport, region, division, category, sex_type, league_name, family_key, matchs_connus")
     .eq("sector", secteur);
-  // tranche_passe : tiers ÉQUILIBRÉ par hachage de l'identifiant de ligue (vue),
+  // tranche_passe : quart ÉQUILIBRÉ par hachage de l'identifiant de ligue (vue),
   // pas par région (243 / 448 / 265 ligues par région au 2026-10-08).
   if (tranche !== null) requete = requete.eq("tranche_passe", tranche);
   const { data: ligues, error: eL } = await requete;
@@ -743,8 +745,11 @@ Deno.serve(async (req) => {
   const secteur = q.get("secteur");
   const trancheBrute = q.get("tranche");
   const tranche = trancheBrute === null ? null : Number(trancheBrute);
-  if (tranche !== null && !(tranche in TRANCHES)) {
-    return refus(`?tranche= invalide : « ${trancheBrute} ». Valeurs admises : 1 | 2 | 3`);
+  // Découverte : 3 tiers de RÉGIONS. Passe secondaire : 4 quarts ÉQUILIBRÉS de ligues
+  // (colonne tranche_passe de la vue, décision BP 2026-10-08 : mer/jeu/ven/sam).
+  const tranchesAdmises = mode === "decouverte" ? [1, 2, 3] : [1, 2, 3, 4];
+  if (tranche !== null && !tranchesAdmises.includes(tranche)) {
+    return refus(`?tranche= invalide : « ${trancheBrute} ». Valeurs admises : ${tranchesAdmises.join(" | ")}`);
   }
 
   if (mode === "decouverte") {
@@ -756,7 +761,7 @@ Deno.serve(async (req) => {
     if (!SECTEURS.includes(secteur as Secteur)) {
       return refus(`?secteur= obligatoire pour une passe : ${SECTEURS.join(" | ")} (recu : ${secteur ?? "rien"})`);
     }
-    if (secteur === "Secondaire" && tranche === null) return refus("la passe Secondaire exige ?tranche=1|2|3");
+    if (secteur === "Secondaire" && tranche === null) return refus("la passe Secondaire exige ?tranche=1|2|3|4");
     if (secteur === "Collégial" && tranche !== null) return refus("la passe Collegial est unique : pas de ?tranche");
   }
 

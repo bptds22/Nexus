@@ -93,3 +93,55 @@ Plan : `docs/rseq-audit-20261008/PLAN-VEILLE.md`. Décisions de BP du 2026-10-08
      des lots. Voir `docs/rseq-audit-20261008/PROPOSITION-APPLY-GAMES.md` (correctif proposé, non
      codé) ;
    - second passage : 0 côté changé.
+
+---
+
+## Deuxième itération — décisions BP du 2026-10-08 (4 quarts, sexe, migration E, réparation)
+
+### Lecture prod préalable : le sexe a-t-il touché les 9 lots ? Non.
+- **La catégorie ne porte jamais le sexe au secondaire.** Les valeurs de `age_group` en 2026 sont Atome,
+  Benjamin, Cadet et Juvénile.
+- **La règle n'a arrêté que 2 cas, tous deux tranchés par BP puis créés.**
+  - **Triolet**, Benjamin D3 : Masculin (lot) contre Mixte (existante). Seul le sexe différait.
+  - **Du Rocher**, Juvénile D2 : Féminin des deux côtés.
+- **Aucune équipe RSEQ 2026 n'est restée non créée** à cause du sexe.
+
+### Changements
+- **B** : `tranche` vaut 1 à 3 pour la découverte et 1 à 4 pour la passe.
+- **C** : `tranche_passe` est un hachage modulo 4, soit des quarts équilibrés.
+- **D** : le sexe entre dans le dédoublonnage. **CLAUDE.md** est mis à jour.
+- **E** (nouvelle) : `rseq_sync_apply_games` réécrit `home/visitor_rseq_team_id` quand le RSEQ change
+  l'équipe.
+  - `NULL` et l'UUID nul sont équivalents. La première version les réécrivait l'un par l'autre : 149 cases
+    de séries collégiales, aucune équipe Nexus touchée. C'est corrigé.
+  - Rollback au md5 exact de la prod (`802495b4…`).
+- **Fonction** : passe secondaire `?tranche=1..4`, découverte `?tranche=1..3`.
+- **Réparation unique** (`reparation/`) :
+  - le générateur lit la valeur servie par le RSEQ pour chaque côté incohérent ;
+  - il ne réaligne que `*_rseq_team_id`, en catégorie (a) ;
+  - il liste sans rien écrire les catégories (b), autre équipe servie, et (c), match plus servi ;
+  - transaction gardée, `admin_operations`, rollback généré avec la réparation.
+- **Crons** : `prod/20261008210500_rseq_crons_v2.sql`, rangé hors de `supabase/migrations` pour qu'un
+  `db reset` local ne programme jamais d'appels à la prod. Prouvé dans une transaction ANNULÉE sur la base
+  locale (`preuve-crons.sh`) : gate vert, puis 0 cron restant.
+
+### Preuves (deuxième itération)
+- **A → E sur les deux bases** : empreintes hors lot identiques, ACL en listes complètes triées.
+- **Cycle de rollback E → A sur `nexus_copie`** : aucun écart. La vue, `detect_teams` et `apply_games`
+  reviennent au md5 exact de la prod.
+- **Réparation sur la copie** :
+  - 115 côtés incohérents, tous en catégorie (a), 31 ligues lues ;
+  - réparation : 115 réalignés (57 domicile, 58 visiteur), puis 0 incohérent ;
+  - **`team_ids_md5` identique** du début à la fin, comme les autres colonnes ;
+  - une relance est refusée par la garde ;
+  - le rollback rétablit exactement l'état d'avant, et la ré-exécution redonne le même résultat.
+- **Passe complète en 4 quarts**, avec E (secondaire : 249 / 259 / 220 / 228 ligues) :
+  - durées : collégiale 78 s, quarts 222 / **231** / 197 / 203 s, tous DONE, 0 échec, 0 alerte ;
+  - **15 966 sur 15 966 côtés à la même équipe**, 20 sur 20 reliés de nouveau, 0 équipe créée,
+    **0 côté incohérent**.
+- **Après la correction de E** (`NULL` équivaut à l'UUID nul) :
+  - passe collégiale relancée : 0 « equipe changee » et 0 réécriture `NULL` → UUID nul ;
+  - **quart le plus chargé (2, 259 ligues) : 232,2 s, soit une marge de 98 s** sous le fusible de
+    330 s, contre 33 s avec 3 tranches.
+- **Sexe dans le dédoublonnage** : sur les 19 « doublons » collégiaux, 17 passent en `a_creer` ; les
+  2 restants sont de vrais doublons, de même sexe.

@@ -1,7 +1,7 @@
 -- Empreintes de non-régression du schéma, HORS objets du correctif de la veille.
 select 'fonctions' k, count(*)::text || ' ' || md5(string_agg(md5(pg_get_functiondef(p.oid)) || coalesce(p.proacl::text, ''), '' order by p.oid::regprocedure::text)) v
   from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prokind = 'f'
-   and p.proname not in ('rseq_proposition_equipe', 'rseq_sync_detect_teams', 'rseq_creer_equipes_proposees')
+   and p.proname not in ('rseq_proposition_equipe', 'rseq_sync_detect_teams', 'rseq_creer_equipes_proposees', 'rseq_sync_apply_games')
 union all
 select 'policies', count(*)::text || ' ' || md5(string_agg(c.relname || '.' || pol.polname || ':' || pol.polcmd::text || ':' || coalesce(pg_get_expr(pol.polqual, pol.polrelid), '')
        || ':' || coalesce(pg_get_expr(pol.polwithcheck, pol.polrelid), '') || ':' || pol.polroles::text, '|' order by c.relname, pol.polname))

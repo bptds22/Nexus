@@ -3,14 +3,15 @@
 --
 -- * La découverte v2 couvre Secondaire ET Collégial en un seul balayage : une ligne de journal, secteur « Tous ».
 --   « Tous » n'est admis QUE pour mode = 'decouverte' ; une passe garde un secteur explicite.
--- * Colonne tranche (1, 2, 3) : tiers de régions (1 = 0–4, 2 = 5–9, 3 = 10–14). NULL pour la passe collégiale
+-- * Colonne tranche : découverte 1–3 (tiers de régions : 1 = 0–4, 2 = 5–9, 3 = 10–14) ; passe secondaire 1–4
+--   (quarts équilibrés des ligues, décision BP 2026-10-08 : mer/jeu/ven/sam). NULL pour la passe collégiale
 --   et pour les lignes historiques.
 -- Additive : une colonne nullable, une contrainte posée NOT VALID puis validée sur l'existant.
 
 alter table public.rseq_sync_runs add column if not exists tranche smallint;
 alter table public.rseq_sync_runs drop constraint if exists rseq_sync_runs_tranche_chk;
 alter table public.rseq_sync_runs add constraint rseq_sync_runs_tranche_chk
-  check (tranche is null or tranche between 1 and 3);
+  check (tranche is null or (mode = 'decouverte' and tranche between 1 and 3) or (mode = 'passe' and tranche between 1 and 4));
 alter table public.rseq_sync_runs drop constraint if exists rseq_sync_runs_secteur_chk;
 alter table public.rseq_sync_runs add constraint rseq_sync_runs_secteur_chk
   check (secteur in ('Collégial', 'Secondaire') or (secteur = 'Tous' and mode = 'decouverte')) not valid;

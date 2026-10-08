@@ -8,8 +8,8 @@
 --     Improvisation, 3 matchs, sport absent de Nexus). Natation et cross-country l'étaient déjà ;
 --   * une ligne du CATALOGUE n'est appelée que si team_count > 0 (une ligue vide n'a rien à servir ; audit :
 --     aucune ligue avec matchs n'annonce 0 équipe). Une ligue déjà présente dans games reste appelée ;
---   * colonne tranche_passe (1, 2, 3) : tiers ÉQUILIBRÉ des ligues pour la passe secondaire, par hachage
---     stable de rseq_league_id (premier octet du md5, modulo 3). Un découpage par RÉGION (celui de la
+--   * colonne tranche_passe (1 à 4) : quart ÉQUILIBRÉ des ligues pour la passe secondaire (décision BP
+--     2026-10-08 : mer/jeu/ven/sam), par hachage stable de rseq_league_id (premier octet du md5, modulo 4). Un découpage par RÉGION (celui de la
 --     découverte) est trop déséquilibré pour la passe : 243 / 448 / 265 ligues au 2026-10-08, et la tranche 2
 --     (448 ligues ≈ 370 s) dépasse le fusible de 330 s — mesuré en local, passe arrêtée en PARTIAL ;
 --   * colonne matchs_connus : la ligue a-t-elle déjà au moins un match en base ? Une ligue du catalogue SANS
@@ -50,7 +50,7 @@ select distinct on (s.rseq_league_id)
        s.rseq_league_id, s.saison, s.sector, s.sport, s.region, s.division, s.category, s.sex_type, s.league_name,
        public.rseq_family_key(s.sector, s.sport, s.division) as family_key,
        s.origine,
-       (get_byte(decode(md5(s.rseq_league_id::text), 'hex'), 0) % 3 + 1)::smallint as tranche_passe,
+       (get_byte(decode(md5(s.rseq_league_id::text), 'hex'), 0) % 4 + 1)::smallint as tranche_passe,
        exists (select 1 from public.games gm where gm.rseq_league_id = s.rseq_league_id) as matchs_connus
   from sources s
  where s.sector = any (array['Collégial', 'Secondaire'])
