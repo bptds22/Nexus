@@ -14,19 +14,25 @@
    Google, le Blob et la commodité de download.
 ═══════════════════════════════════════════════════════════════ */
 
-import { buildIcs, toICalUtc } from "@/lib/utils/buildIcs";
+import { buildIcs, toICalUtc, toICalDate } from "@/lib/utils/buildIcs";
 
 export interface CalendarEventInput {
   title: string;
   description?: string;
   location?: string;
   startDate: Date;
-  /** Défaut 60 minutes. */
+  /** Défaut 60 minutes. Ignoré si `allDay`. */
   durationMinutes?: number;
+  /** Journée entière (ajout 2026-10-07, carte des matchs : match sans heure).
+   *  Le jour LOCAL de `startDate` ; fin exclusive au lendemain. Absent → inchangé. */
+  allDay?: boolean;
 }
 
 export interface CalendarLinks {
   googleUrl: string;
+  /** Outlook (Microsoft 365 / outlook.office.com) — ajout du 2026-10-07 pour
+   *  la carte des matchs. Les appelants d'avant l'ignorent. */
+  outlookUrl: string;
   icsBlob: Blob;
   /** Le .ics brut — exposé pour les tests et pour un download sans Blob. */
   icsContent: string;
@@ -41,11 +47,16 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
     location = "",
     startDate,
     durationMinutes = DEFAULT_DURATION_MIN,
+    allDay = false,
   } = input;
 
-  const end = new Date(startDate.getTime() + durationMinutes * 60_000);
-  const dtStart = toICalUtc(startDate);
-  const dtEnd = toICalUtc(end);
+  const end = allDay
+    ? new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1)
+    : new Date(startDate.getTime() + durationMinutes * 60_000);
+  // Journée entière : Google veut `YYYYMMDD/YYYYMMDD` (fin exclusive).
+  const dtStart = allDay ? toICalDate(startDate) : toICalUtc(startDate);
+  const dtEnd = allDay ? toICalDate(end) : toICalUtc(end);
+  const isoJour = (d: Date) => toICalDate(d).replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
 
   /* ── Google Agenda ────────────────────────────────────────────
      `dates` veut `start/end` collés par un slash — que l'on NE doit
@@ -61,6 +72,22 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
   ].join("&");
   const googleUrl = `https://calendar.google.com/calendar/render?${googleParams}`;
 
+  /* ── Outlook ──────────────────────────────────────────────────
+     Lien « composer un événement » d'Outlook sur le web. Les instants
+     partent en ISO 8601 UTC (« …Z ») : Outlook les replace dans le fuseau
+     de l'utilisateur. Chaque valeur encodée individuellement. */
+  const outlookParams = [
+    "path=%2Fcalendar%2Faction%2Fcompose",
+    "rru=addevent",
+    `subject=${encodeURIComponent(title)}`,
+    ...(allDay
+      ? ["allday=true", `startdt=${isoJour(startDate)}`, `enddt=${isoJour(end)}`]
+      : [`startdt=${encodeURIComponent(startDate.toISOString())}`, `enddt=${encodeURIComponent(end.toISOString())}`]),
+    `body=${encodeURIComponent(description)}`,
+    `location=${encodeURIComponent(location)}`,
+  ].join("&");
+  const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?${outlookParams}`;
+
   /* ── .ics ─────────────────────────────────────────────────────
      Corps délégué au helper pur (source unique du VCALENDAR/VEVENT,
      escaping, folding et UID stable). */
@@ -70,10 +97,12 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
     end,
     location,
     description,
+    allDay,
   });
 
   return {
     googleUrl,
+    outlookUrl,
     icsContent,
     icsBlob: new Blob([icsContent], { type: "text/calendar;charset=utf-8" }),
   };
