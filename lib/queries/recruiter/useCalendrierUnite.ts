@@ -198,7 +198,23 @@ export function useCalendrierUnite(enabled: boolean) {
           };
         });
 
-      const base = await construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete, ciblesCartes);
+      /* MATCHS AJOUTÉS depuis la carte des matchs (lot B) : ceux de SON unité
+         (son cégep, son sport — comme les listes ci-dessus ; la RLS laisse
+         l'admin cégep lire les autres sports, on ne les mêle pas). Une erreur
+         de lecture (table absente : base pas encore migrée) laisse le
+         calendrier intact. */
+      let matchsAjoutes: string[] = [];
+      if (monCegep && monSport) {
+        const { data: rowsAjoutes, error: errAjoutes } = await supabase
+          .from("matchs_ajoutes")
+          .select("game_id")
+          .eq("unite_cegep_id", monCegep)
+          .eq("unite_sport_id", monSport);
+        if (errAjoutes) console.error("[useCalendrierUnite] matchs ajoutés :", errAjoutes.message);
+        else matchsAjoutes = ((rowsAjoutes ?? []) as { game_id: string }[]).map((r) => r.game_id);
+      }
+
+      const base = await construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete, ciblesCartes, matchsAjoutes);
 
       /* Visites À VENIR de l'unité (à partir d'aujourd'hui, 0 h locale). */
       const debut = new Date();

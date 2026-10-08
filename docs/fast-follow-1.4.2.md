@@ -2313,3 +2313,42 @@ position, promotion, équipe, suivis d'abord avec la pastille « Suivi ».
 - **Lot mobile — reprendre** `useProfilsMatchs` (`lib/carteMatchs/`),
   `profilsParMatch`, `libelleProfils`, `libelleDontSuivis` ; le lien de fiche
   vers l'écran athlète natif du recruteur.
+
+**Lot B — moteur de recherche de TOUS les matchs + ajout au calendrier +
+terrains civils** (branche `feat/carte-matchs-lot-b`, BP 2026-10-07 22 h 24 ;
+**base en attente du GO de BP**, runbook `docs/runbook-carte-matchs-lot-b.md`).
+Le mode « suivis » des lots A / A+ disparaît : la carte sert à TROUVER des
+matchs, le Calendrier reste l'endroit des matchs des athlètes suivis.
+- **Base (3 migrations additives)** : `lieu_normalise` + `lieux_geocodes`
+  (terrains sans GPS dans `games`, écrits après revue de BP, jamais dans
+  `games`) ; `matchs_ajoutes` (calendrier PARTAGÉ de l'unité ; unité et auteur
+  posés par un trigger ; RLS des cartes prospect + `is_admin()` en lecture ;
+  doublon refusé) ; RPC `matchs_recherche` (plage de 7 jours au plus, sport,
+  types SECONDAIRE / COLLEGIAL / CIVIL, texte par mots sans accents ; rend
+  nb_profils selon la règle Loi 25, `cible`, `ajoute`, lat / lon de `games`
+  sinon de `lieux_geocodes`).
+- **`cible` = la définition du Calendrier** (pipeline et favoris de l'unité dans
+  SON sport, listes, cartes prospect), pas `athlete_suivi_par_mon_unite` (qui,
+  pour un admin cégep, couvre tous les sports) : un match « cible » est
+  exactement un match déjà au Calendrier, d'où le ✓ non retirable.
+- **Journal d'activité : NON branché** — aucun type de `recruiter_activity_log`
+  ne décrit un match ajouté ; question posée à BP avant d'en créer un.
+- **Calendrier** : `construireCalendrier` reçoit les matchs ajoutés
+  (`useCalendrierUnite`, ceux de SON unité), rendus comme les autres ;
+  `buildMatches` garde un match ajouté à 0 cible au seuil par défaut seulement
+  (« 2+ cibles » l'écarte). Sans match ajouté : rendu identique (md5 avant / après).
+- **Code retiré (mort)** : le mode « suivis » de `lib/carteMatchs`
+  (`matchsDuJour`, `terrainsDuJour`, `matchsBulle`, distances, `evenementMatch`…),
+  la bulle Leaflet et `onHover` de `MapPane`, `outlookUrl` et « journée entière »
+  de `generateCalendarLinks` / `buildIcs` (revenus à leur état d'avant le lot A).
+- **Terrains civils** : `scripts/carte-matchs-lot-b/` — géocodage Nominatim
+  (`geocoder-terrains.mjs`), CSV de revue annoté (`terrains-civils-revue.csv`),
+  générateur du SQL gardé (`ecrire-lieux.mjs`). Même normalisation que la base
+  (32/32 libellés identiques, preuve).
+- **Lot mobile — reprendre** `lib/carteMatchs/carteMatchs.ts` (plage, groupement
+  par jour, terrains, `etatCalendrier`, libellés, profils) et
+  `lib/carteMatchs/useMatchsRecherche.ts` (`useMatchsRecherche`,
+  `useBasculerCalendrier`, `useSportsCarte`) ; le panneau de détails devient une
+  feuille (sheet) comme dans `RechercheMobile` ; le Calendrier mobile devra
+  passer les matchs ajoutés à `construireCalendrier` (il n'en passe pas
+  aujourd'hui : un match ajouté sur le web n'y apparaît pas).

@@ -117,6 +117,9 @@ export interface CalendarGame {
   category?: string | null;
   division?: string | null;
   leagueName?: string | null;
+  /** Ajouté au calendrier de l'unité depuis la carte des matchs (lot B,
+   *  matchs_ajoutes) : affiché même sans cible (« 0 cible »). */
+  ajoute?: boolean;
 }
 
 export interface RecruitingCalendarData {
@@ -255,8 +258,12 @@ export async function construireCalendrier(
   /** Cibles déjà construites (cartes prospect, lot C) : leur équipe entre
    *  dans la recherche des matchs. Le calendrier mobile n'en passe pas. */
   ciblesSupplementaires: CalendarTarget[] = [],
+  /** Matchs AJOUTÉS au calendrier de l'unité (carte des matchs, lot B,
+   *  matchs_ajoutes) : chargés par leur id, rendus comme les autres, même
+   *  sans cible. Le calendrier mobile et useRecruitingCalendar n'en passent pas. */
+  matchsAjoutes: string[] = [],
 ): Promise<RecruitingCalendarData> {
-  if (targetIds.length === 0 && ciblesSupplementaires.length === 0) return EMPTY;
+  if (targetIds.length === 0 && ciblesSupplementaires.length === 0 && matchsAjoutes.length === 0) return EMPTY;
   /* ── 2a. Les cartes projetées (famille 1 : lot d'IDs) ──
      targetIds vient de pipeline ∪ favoris ∪ listes, donc c'est
      bien un lot d'IDs connus, pas une recherche filtrée. */
@@ -353,27 +360,47 @@ export async function construireCalendrier(
     targets.push(t);
   }
 
-  if (targets.length === 0) {
+  if (targets.length === 0 && matchsAjoutes.length === 0) {
     return { targets: [], games: [] };
   }
 
   /* ── 3. Matchs à venir — UNE requête, array de teams.id ── */
-  const ids = Array.from(teamIds);
-  const inList = `(${ids.join(",")})`;
-  const { data: gameRows, error: gameErr } = await supabase
-    .from("games")
-    .select(`
+  const COLONNES_MATCH = `
       id, game_date, game_time, venue,
       home_team_id, visitor_team_id,
       home_name_raw, visitor_name_raw,
       league_name, sport, division, category, sex_type,
       source_nom, source_url, collecte_le, rseq_league_id,
       venue_lat, venue_lon, sector
-    `)
-    .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
-    .gte("game_date", todayIso())
-    .order("game_date", { ascending: true });
+    `;
+  const ids = Array.from(teamIds);
+  const inList = `(${ids.join(",")})`;
+  const { data: gameRowsCibles, error: gameErr } = ids.length > 0
+    ? await supabase
+        .from("games")
+        .select(COLONNES_MATCH)
+        .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
+        .gte("game_date", todayIso())
+        .order("game_date", { ascending: true })
+    : { data: [], error: null };
   if (gameErr) throw gameErr;
+
+  /* ── 3b. Matchs ajoutés par l'unité (lot B) — par id, à venir seulement.
+     Un match à la fois ajouté ET joué par une cible n'apparaît qu'une fois.
+     Sans match ajouté, rien ne change (aucune requête, même ordre). */
+  const ajoutes = new Set(matchsAjoutes);
+  let gameRows = (gameRowsCibles ?? []) as Record<string, unknown>[];
+  const manquants = [...ajoutes].filter((id) => !gameRows.some((g) => g.id === id));
+  if (manquants.length > 0) {
+    const { data: rowsAjoutes, error: errAjoutes } = await supabase
+      .from("games")
+      .select(COLONNES_MATCH)
+      .in("id", manquants)
+      .gte("game_date", todayIso());
+    if (errAjoutes) throw errAjoutes;
+    gameRows = [...gameRows, ...((rowsAjoutes ?? []) as Record<string, unknown>[])]
+      .sort((a, b) => String(a.game_date).localeCompare(String(b.game_date)));
+  }
 
   /* Nom d'équipe : le nom Nexus prime des DEUX côtés, sinon le
      libellé brut du calendrier source. La policy « Recruiters see
@@ -444,6 +471,7 @@ export async function construireCalendrier(
         category: (g.category as string | null) ?? null,
         division: (g.division as string | null) ?? null,
         leagueName: (g.league_name as string | null) ?? null,
+        ...(ajoutes.has(g.id as string) ? { ajoute: true } : {}),
       };
     });
   return { targets, games };
