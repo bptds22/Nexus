@@ -1,4 +1,4 @@
--- 20261008100300_journal_matchs_ajoutes (LOCALE — à renommer à sa version prod au moment de l'apply)
+-- 20261008135031_journal_matchs_ajoutes (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP)
 -- ═══════════════════════════════════════════════════════════════════════════
 -- CARTE DES MATCHS, LOT B — 4/4 : LE « + » ET LE « ✓ » AU JOURNAL DE L'UNITÉ
 -- (BP 2026-10-08, décision 1).
@@ -22,7 +22,7 @@
 -- La contrainte CHECK et la policy sont REDÉCLARÉES avec leur liste complète
 -- (l'ancienne + les deux types) : aucun type existant ne sort.
 --
--- Rollback : supabase/rollback/20261008100300_rollback_journal_matchs_ajoutes.sql
+-- Rollback : supabase/rollback/20261008135031_rollback_journal_matchs_ajoutes.sql
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- 1. Les deux types admis par la contrainte (liste complète).

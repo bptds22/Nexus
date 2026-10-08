@@ -1,4 +1,4 @@
-// MÊME règle que public.lieu_normalise (migration 20261008100000) :
+// MÊME règle que public.lieu_normalise (migration 20261008134823) :
 // minuscules, accents retirés, « (Main) » retiré, tout ce qui n'est ni lettre
 // ni chiffre → une espace. Partagée par le géocodeur et l'écriture.
 export function lieuNormalise(nom) {

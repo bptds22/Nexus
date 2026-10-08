@@ -1,4 +1,4 @@
--- Rollback de 20261008100100_matchs_ajoutes (carte des matchs, lot B, 2/3).
+-- Rollback de 20261008134902_matchs_ajoutes (carte des matchs, lot B, 2/3).
 -- À jouer APRÈS le rollback de matchs_recherche (3/3), qui lit cette table.
 -- Les matchs ajoutés par les unités partent avec la table (relever le compte
 -- avant : select count(*) from public.matchs_ajoutes).

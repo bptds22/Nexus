@@ -3,16 +3,21 @@
 Branche `feat/carte-matchs-lot-b` (depuis `main` local `f3521708`).
 **Rien en prod sans le GO explicite de BP.** La base TOUJOURS avant le web.
 
-Quatre migrations additives (versions LOCALES, à renommer chacune à la version
-enregistrée par `apply_migration`, rollback compris). La 4ᵉ et les terrains
-définitifs ont été ajoutés le 2026-10-08, sur décisions de BP :
+> ✅ **BASE APPLIQUÉE EN PROD le 2026-10-08 (GO BP)** : les 4 migrations sous les
+> versions ci-dessous, puis les 31 terrains (`ecrire-lieux.sql`, 1 ligne
+> `admin_operations` `LIEUX_GEOCODES_ECRITS`). Vérifié : samedi 10 octobre,
+> 229 matchs, 229 avec un point, 17 civils sur 17 ; 134 civils à venir sur 134
+> avec un point. **Reste : le web (push de `main` + promotion Vercel, par BP).**
+
+Quatre migrations additives, renommées à leur version prod (rollbacks compris).
+La 4ᵉ et les terrains définitifs ont été ajoutés le 2026-10-08, sur décisions de BP :
 
 | # | Fichier | Objet |
 |---|---|---|
-| 1 | `20261008100000_lieux_geocodes.sql` | `lieu_normalise(text)` + table `lieux_geocodes` (lecture authenticated, aucune écriture client) |
-| 2 | `20261008100100_matchs_ajoutes.sql` | table `matchs_ajoutes` + trigger qui pose l'unité et l'auteur ; RLS `acces_carte_lecture` / `acces_carte_ecriture` (+ `is_admin()` en lecture) |
-| 3 | `20261008100200_matchs_recherche.sql` | RPC `matchs_recherche(p_debut, p_fin, p_sport, p_types, p_texte)` — lit 1 et 2 |
-| 4 | `20261008100300_journal_matchs_ajoutes.sql` | types `MATCH_AJOUTE` / `MATCH_RETIRE` au journal (`recruiter_activity_log`, sans athlète, match dans `details`), écrits par trigger sur `matchs_ajoutes`, lisibles par l'unité (`unite_journal_select`) |
+| 1 | `20261008134823_lieux_geocodes.sql` | `lieu_normalise(text)` + table `lieux_geocodes` (lecture authenticated, aucune écriture client) |
+| 2 | `20261008134902_matchs_ajoutes.sql` | table `matchs_ajoutes` + trigger qui pose l'unité et l'auteur ; RLS `acces_carte_lecture` / `acces_carte_ecriture` (+ `is_admin()` en lecture) |
+| 3 | `20261008134939_matchs_recherche.sql` | RPC `matchs_recherche(p_debut, p_fin, p_sport, p_types, p_texte)` — lit 1 et 2 |
+| 4 | `20261008135031_journal_matchs_ajoutes.sql` | types `MATCH_AJOUTE` / `MATCH_RETIRE` au journal (`recruiter_activity_log`, sans athlète, match dans `details`), écrits par trigger sur `matchs_ajoutes`, lisibles par l'unité (`unite_journal_select`) |
 
 ## Ordre
 1. **Migrations 1, 2, 3, 4**, dans cet ordre, chacune par un `apply_migration` séparé.
@@ -22,8 +27,8 @@ définitifs ont été ajoutés le 2026-10-08, sur décisions de BP :
    géocodée, ou coordonnées RSEQ reprises ; `en_attente` / `non_confirme` = NON
    écrit, le terrain reste « Lieu non précisé ». Le CSV final est produit par
    `geocoder-corrections.mjs` depuis le CSV de revue et les décisions de BP du
-   2026-10-08 : 30 terrains écrits, D'Arcy McGee en attente. Le SQL est déjà
-   généré (30 lignes) ; le régénérer si BP confirme D'Arcy McGee :
+   2026-10-08 : 31 terrains (D'Arcy McGee confirmé ; points RSEQ pour Stade
+   Hébert, Claude-Robillard et Gerry-Dattilio). Le SQL est généré (31 lignes) :
    `node scripts/carte-matchs-lot-b/ecrire-lieux.mjs` → `ecrire-lieux.sql`
    (transaction gardée : exactement N lignes `lieux_geocodes` + 1 ligne
    `admin_operations`, sinon rien n'est écrit), puis l'exécuter (`execute_sql`).
@@ -93,13 +98,13 @@ les jointures sur `lieux_geocodes` et `matchs_ajoutes`, vides, omises) :
    « Calendrier ») ; après « ✓ » : « Match retiré du calendrier : … ».
 
 ## Rollback (ordre inverse : 4, 3, 2, 1)
-- `supabase/rollback/20261008100300_rollback_journal_matchs_ajoutes.sql` — trigger et
+- `supabase/rollback/20261008135031_rollback_journal_matchs_ajoutes.sql` — trigger et
   fonction retirés, lignes `MATCH_*` du journal supprimées (relever le compte
   avant), contrainte et policy remises à l'identique (md5 vérifiés contre la prod).
-- `supabase/rollback/20261008100200_rollback_matchs_recherche.sql` — `DROP` de la RPC.
-- `supabase/rollback/20261008100100_rollback_matchs_ajoutes.sql` — `DROP` de la
+- `supabase/rollback/20261008134939_rollback_matchs_recherche.sql` — `DROP` de la RPC.
+- `supabase/rollback/20261008134902_rollback_matchs_ajoutes.sql` — `DROP` de la
   table (les matchs ajoutés par les unités partent avec : relever le compte avant).
-- `supabase/rollback/20261008100000_rollback_lieux_geocodes.sql` — `DROP` de la
+- `supabase/rollback/20261008134823_rollback_lieux_geocodes.sql` — `DROP` de la
   table et de la fonction (le CSV revu permet de réécrire les terrains).
 Testés en local : tout absent après rollback, puis ré-appliqué avec les mêmes ACL.
 Rollback 4 testé seul le 2026-10-08 : contrainte et policy identiques au md5 près à

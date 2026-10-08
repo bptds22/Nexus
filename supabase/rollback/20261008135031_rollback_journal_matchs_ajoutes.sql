@@ -1,4 +1,4 @@
--- Rollback de 20261008100300_journal_matchs_ajoutes (carte des matchs, lot B, 4/4).
+-- Rollback de 20261008135031_journal_matchs_ajoutes (carte des matchs, lot B, 4/4).
 -- À jouer AVANT le rollback de matchs_ajoutes (2/4), qui porte le trigger.
 -- Les lignes MATCH_AJOUTE / MATCH_RETIRE du journal partent (l'ancienne
 -- contrainte les refuserait) : relever le compte avant :

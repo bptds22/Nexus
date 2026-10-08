@@ -9,7 +9,9 @@
 //   · les 19 « Semble juste » + les 2 de l'Ontario → valide_par_bp = oui (source nominatim) ;
 //   · les corrections → valide_par_bp = manuel (source manuel), adresse donnée par BP géocodée ;
 //   · Parc des Bénévoles et Glenn F. McHugh → les coordonnées que le RSEQ a déjà en base ;
-//   · D'Arcy McGee (Gatineau) → géocodé, MONTRÉ, NON inclus (valide_par_bp = en_attente)
+//   · D'Arcy McGee (Gatineau) → CONFIRMÉ par BP (2026-10-08 bis), géocodé ; Stade Hébert,
+//     Claude-Robillard, Gerry-Dattilio → POINT RSEQ (décision BP 2026-10-08 bis) ;
+//   · (historique) D'Arcy McGee était d'abord géocodé, MONTRÉ, NON inclus (valide_par_bp = en_attente)
 //     tant que BP ne l'a pas confirmé.
 // Règle : un terrain non confirmé reste « Lieu non précisé » ; jamais un point deviné.
 // Chaque point géocodé est comparé au point que le RSEQ a déjà pour le même lieu
@@ -37,18 +39,18 @@ const RSEQ = {
 /** Décisions de BP, par clé. `requetes` : géocodées dans l'ordre, la 1re qui répond gagne.
  *  `rseqFixe` : coordonnées reprises telles quelles du RSEQ (adresse = géocodage inverse, pour info). */
 const CORRECTIONS = {
-  "stade hebert": { note: "Point à l’adresse civique ; le point RSEQ « Stade Hébert » est sur le terrain",  adresse: "7655, rue Colbert, Saint-Léonard, Montréal", requetes: ["7655 Rue Colbert, Montréal, Québec", "Stade Hébert, Saint-Léonard, Montréal"], rseq: RSEQ.stade_hebert },
-  "centre claude robillard 1": { note: "Nominatim place l’adresse sur une borne de recharge du stationnement ; le point RSEQ « Complexe sportif Claude-Robillard » est au complexe",  adresse: "1000, avenue Émile-Journault, Montréal", requetes: ["1000 Avenue Émile-Journault, Montréal, Québec", "Complexe sportif Claude-Robillard, Montréal"], rseq: RSEQ.robillard },
+  "stade hebert": { adresse: "Stade Hébert, Saint-Léonard (point RSEQ « Stade Hébert », décision BP 2026-10-08 bis)", rseqFixe: RSEQ.stade_hebert },
+  "centre claude robillard 1": { adresse: "Complexe sportif Claude-Robillard, Montréal (point RSEQ, décision BP 2026-10-08 bis)", rseqFixe: RSEQ.robillard },
   "parc pierre laporte elie saab 1": { adresse: "Parc Pierre-Laporte, Boucherville", requetes: ["Parc Pierre-Laporte, Boucherville, Québec"] },
-  "parc gerry datillio": { note: "Point à l’adresse civique (parc-école) ; le point RSEQ « Parc Gerry-Dattilio » est sur le terrain",  adresse: "Parc-école Gerry-Dattilio, 3200, boulevard du Souvenir, Chomedey, Laval", requetes: ["3200 Boulevard du Souvenir, Laval, Québec", "Parc Gerry-Dattilio, Laval"], rseq: RSEQ.dattilio },
-  "parc gerry dattillio": { note: "Point à l’adresse civique (parc-école) ; le point RSEQ « Parc Gerry-Dattilio » est sur le terrain",  adresse: "Parc-école Gerry-Dattilio, 3200, boulevard du Souvenir, Chomedey, Laval", requetes: ["3200 Boulevard du Souvenir, Laval, Québec", "Parc Gerry-Dattilio, Laval"], rseq: RSEQ.dattilio },
+  "parc gerry datillio": { adresse: "Parc-école Gerry-Dattilio, Chomedey, Laval (point RSEQ « Parc Gerry-Dattilio », décision BP 2026-10-08 bis)", rseqFixe: RSEQ.dattilio },
+  "parc gerry dattillio": { adresse: "Parc-école Gerry-Dattilio, Chomedey, Laval (point RSEQ « Parc Gerry-Dattilio », décision BP 2026-10-08 bis)", rseqFixe: RSEQ.dattilio },
   "parc ducharme": { note: "Parc Ducharme trouvé sur le boulevard Ducharme (code postal OSM J7E 5R4 ; J7E 4R6 inconnu de Nominatim), à ~520 m de l’arrêt « Cégep Lionel-Groulx »",  adresse: "Boulevard Ducharme, Sainte-Thérèse, J7E 4R6 (en face du Cégep Lionel-Groulx)", requetes: ["Parc Ducharme, Sainte-Thérèse, Québec", "Boulevard Ducharme, Sainte-Thérèse, Québec, J7E 4R6"] },
   "terrain martin charpentier": { note: "L’adresse est celle de la Polyvalente La Poudrière",  adresse: "1125, boulevard Jean-De Brébeuf, Drummondville, J2B 4T5", requetes: ["1125 Boulevard Jean-De Brébeuf, Drummondville, Québec", "1125 Boulevard Jean-De-Brébeuf, Drummondville"] },
   "parc des benevoles": { adresse: "Parc des Bénévoles, Kirkland (coordonnées RSEQ « Parc des Bénévoles Kirkland »)", rseqFixe: RSEQ.benevoles },
   "glenn f mchugh field": { adresse: "Parc Glenn-Francis-McHugh, Dollard-des-Ormeaux (coordonnées RSEQ « DDO2 Turf field »)", rseqFixe: RSEQ.mchugh },
+  "d arcy mcgee": { adresse: "925, boulevard du Plateau, Aylmer, Gatineau (confirmé par BP le 2026-10-08)", requetes: ["École secondaire D'Arcy-McGee, Gatineau, Québec", "D'Arcy McGee High School, Gatineau", "D'Arcy McGee, Gatineau, Québec"], rseq: RSEQ.darcy },
 };
 const EN_ATTENTE = {
-  "d arcy mcgee": { adresse: "École secondaire D'Arcy-McGee, Gatineau", requetes: ["École secondaire D'Arcy-McGee, Gatineau, Québec", "D'Arcy McGee High School, Gatineau", "D'Arcy McGee, Gatineau, Québec"], rseq: RSEQ.darcy },
 };
 
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));

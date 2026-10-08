@@ -1,4 +1,4 @@
--- 20261008100200_matchs_recherche (LOCALE — à renommer à sa version prod au moment de l'apply)
+-- 20261008134939_matchs_recherche (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE DES MATCHS, LOT B — 3/3 : RECHERCHE DE TOUS LES MATCHS
 -- (BP 2026-10-07, décisions 1 à 7).
@@ -28,7 +28,7 @@
 --   · Refus : non-recruteur Pro (même test que matchs_profils_nexus) → 42501 ;
 --     plage vide, inversée ou de plus de 7 jours → 22023.
 --
--- Rollback : supabase/rollback/20261008100200_rollback_matchs_recherche.sql
+-- Rollback : supabase/rollback/20261008134939_rollback_matchs_recherche.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 create function public.matchs_recherche(

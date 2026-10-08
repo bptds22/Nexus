@@ -1,4 +1,4 @@
--- Rollback de 20261008100000_lieux_geocodes (carte des matchs, lot B, 1/3).
+-- Rollback de 20261008134823_lieux_geocodes (carte des matchs, lot B, 1/3).
 -- À jouer APRÈS le rollback de matchs_recherche (3/3), qui lit cette table et
 -- appelle lieu_normalise. Les lignes géocodées partent avec la table : le
 -- CSV revu par BP (scripts/carte-matchs-lot-b/) permet de les réécrire.

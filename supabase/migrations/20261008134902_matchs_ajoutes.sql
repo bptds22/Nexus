@@ -1,4 +1,4 @@
--- 20261008100100_matchs_ajoutes (LOCALE — à renommer à sa version prod au moment de l'apply)
+-- 20261008134902_matchs_ajoutes (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE DES MATCHS, LOT B — 2/3 : MATCHS AJOUTÉS AU CALENDRIER DE L'UNITÉ
 -- (BP 2026-10-07, décision 7).
@@ -18,9 +18,9 @@
 --       aucune mise à jour (une ligne ne change pas : on la retire).
 --   · Doublon refusé par la base : unique (unité, match).
 --   · Journal d'activité : branché par la migration 4
---     (20261008100300_journal_matchs_ajoutes, décision BP 2026-10-08).
+--     (20261008135031_journal_matchs_ajoutes, décision BP 2026-10-08).
 --
--- Rollback : supabase/rollback/20261008100100_rollback_matchs_ajoutes.sql
+-- Rollback : supabase/rollback/20261008134902_rollback_matchs_ajoutes.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 create table public.matchs_ajoutes (

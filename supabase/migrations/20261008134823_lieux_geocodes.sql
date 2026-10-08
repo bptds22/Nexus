@@ -1,4 +1,4 @@
--- 20261008100000_lieux_geocodes (LOCALE — à renommer à sa version prod au moment de l'apply)
+-- 20261008134823_lieux_geocodes (APPLIQUÉE en prod le 2026-10-08 sous cette version, GO BP)
 -- ════════════════════════════════════════════════════════════════════════════
 -- CARTE DES MATCHS, LOT B — 1/3 : LIEUX GÉOCODÉS (BP 2026-10-07, décision 8).
 --
@@ -16,7 +16,7 @@
 --     et leurs coordonnées publiques), AUCUNE écriture client. Les lignes
 --     arrivent par une transaction gardée (runbook), avec admin_operations.
 --
--- Rollback : supabase/rollback/20261008100000_rollback_lieux_geocodes.sql
+-- Rollback : supabase/rollback/20261008134823_rollback_lieux_geocodes.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 create function public.lieu_normalise(p_nom text)

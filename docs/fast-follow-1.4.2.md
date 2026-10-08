@@ -2316,7 +2316,11 @@ position, promotion, équipe, suivis d'abord avec la pastille « Suivi ».
 
 **Lot B — moteur de recherche de TOUS les matchs + ajout au calendrier +
 terrains civils** (branche `feat/carte-matchs-lot-b`, BP 2026-10-07 22 h 24 ;
-**base en attente du GO de BP**, runbook `docs/runbook-carte-matchs-lot-b.md`).
+runbook `docs/runbook-carte-matchs-lot-b.md`). ✅ **Base APPLIQUÉE en prod le
+2026-10-08 (GO BP)** : `20261008134823` (lieux_geocodes), `20261008134902`
+(matchs_ajoutes), `20261008134939` (matchs_recherche), `20261008135031`
+(journal) ; 31 terrains écrits + 1 ligne `admin_operations`. Web : mergé dans
+`main` local — **à pousser et promouvoir par BP**.
 Le mode « suivis » des lots A / A+ disparaît : la carte sert à TROUVER des
 matchs, le Calendrier reste l'endroit des matchs des athlètes suivis.
 - **Base (4 migrations additives)** : `lieu_normalise` + `lieux_geocodes`
@@ -2359,10 +2363,11 @@ matchs, le Calendrier reste l'endroit des matchs des athlètes suivis.
   générateur du SQL gardé (`ecrire-lieux.mjs`). Même normalisation que la base
   (32/32 libellés identiques, preuve). **Revue de BP du 2026-10-08** appliquée par
   `geocoder-corrections.mjs` → `terrains-civils-final.csv` : 21 validés tels quels
-  (dont 2 en Ontario, gardés), 9 corrigés (adresse donnée par BP géocodée, ou
-  coordonnées RSEQ reprises pour Kirkland et Dollard-des-Ormeaux), **D'Arcy McGee
-  (Gatineau) en attente** de la confirmation de BP — non écrit, « Lieu non
-  précisé » d'ici là. `ecrire-lieux.sql` généré : 30 lignes.
+  (dont 2 en Ontario, gardés), 10 corrigés : adresse donnée par BP géocodée
+  (Pierre-Laporte à Boucherville, Ducharme à Sainte-Thérèse, Martin Charpentier
+  à Drummondville, D'Arcy McGee à Aylmer/Gatineau, confirmé), ou POINT RSEQ
+  (Kirkland, Dollard-des-Ormeaux, Stade Hébert, Claude-Robillard, Gerry-Dattilio
+  sous ses deux libellés). `ecrire-lieux.sql` : 31 lignes, écrites en prod.
 - **Lot mobile — reprendre** `lib/carteMatchs/carteMatchs.ts` (plage, groupement
   par jour, terrains, `etatCalendrier`, libellés, profils) et
   `lib/carteMatchs/useMatchsRecherche.ts` (`useMatchsRecherche`,
