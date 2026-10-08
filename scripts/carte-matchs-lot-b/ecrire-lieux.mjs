@@ -7,36 +7,16 @@
 // Colonne « valide_par_bp » du CSV :
 //   oui     → lat/lon de Nominatim gardés, source 'nominatim'
 //   manuel  → lat/lon corrigés à la main par BP dans le CSV, source 'manuel'
-//   autre / vide → ligne ignorée (non écrite)
+//   autre / vide → ligne ignorée (non écrite) — dont « en_attente » et « non_confirme »
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { lieuNormalise } from "./normalise.mjs";
+import { lireCsv } from "./csv.mjs";
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
-const ENTREE = process.argv[2] ?? path.join(ICI, "terrains-civils-revue.csv");
+const ENTREE = process.argv[2] ?? path.join(ICI, "terrains-civils-final.csv");
 const SORTIE = process.argv[3] ?? path.join(ICI, "ecrire-lieux.sql");
-
-/** CSV RFC 4180 minimal : guillemets doublés, virgules dans les champs. */
-export function lireCsv(texte) {
-  const lignes = [];
-  let champ = "", ligne = [], dedans = false;
-  const t = texte.replace(/^﻿/, "");
-  for (let i = 0; i < t.length; i++) {
-    const c = t[i];
-    if (dedans) {
-      if (c === '"' && t[i + 1] === '"') { champ += '"'; i++; }
-      else if (c === '"') dedans = false;
-      else champ += c;
-    } else if (c === '"') dedans = true;
-    else if (c === ",") { ligne.push(champ); champ = ""; }
-    else if (c === "\n") { ligne.push(champ.replace(/\r$/, "")); lignes.push(ligne); ligne = []; champ = ""; }
-    else champ += c;
-  }
-  if (champ || ligne.length) { ligne.push(champ); lignes.push(ligne); }
-  const [tete, ...corps] = lignes.filter((l) => l.some((v) => v.trim()));
-  return corps.map((l) => Object.fromEntries(tete.map((k, i) => [k.trim(), (l[i] ?? "").trim()])));
-}
 
 const sql = (v) => `'${String(v).replace(/'/g, "''")}'`;
 
