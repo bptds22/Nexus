@@ -3,7 +3,7 @@
    qu'un rendu ; le lot mobile le reprendra tel quel.
 
    Lot B (BP 2026-10-07) : la carte est un MOTEUR DE RECHERCHE de TOUS les
-   matchs d'une plage de dates (7 jours au plus), servi par la RPC
+   matchs d'une plage de dates (31 jours au plus), servi par la RPC
    matchs_recherche. Le mode « suivis » des lots A / A+ a disparu : le
    Calendrier reste l'endroit des matchs des athlètes suivis.
 
@@ -48,8 +48,10 @@ export const TYPES_MATCH: { v: TypeMatch; label: string }[] = [
 /** Collégial DÉCOCHÉ par défaut (décision BP 2). */
 export const TYPES_PAR_DEFAUT: TypeMatch[] = ["SECONDAIRE", "CIVIL"];
 
-/** Plage de 7 jours au plus (décision BP 3). */
-export const JOURS_MAX = 7;
+/** Plage de 31 jours au plus (BP 2026-10-09 ; 7 avant). Même borne que la
+ *  garde de matchs_recherche — mesure prod : 374 ms pour la période de 31 jours
+ *  à venir la plus chargée (3 804 matchs, ~418 terrains). */
+export const JOURS_MAX = 31;
 
 /** Une ligne de la RPC `matchs_recherche` (forme PostgREST). */
 export interface MatchRecherche {
@@ -80,6 +82,42 @@ export function joursDansPlage(debut: string, fin: string | null | undefined): n
   if (!d || !f) return null;
   const n = Math.round((f.getTime() - d.getTime()) / 86_400_000) + 1;
   return n >= 1 ? n : null;
+}
+
+/** La date de fin à RETENIR pour une saisie : au-delà de JOURS_MAX, la fin est
+ *  ramenée à début + JOURS_MAX − 1 et `ajustee` le dit (BP 2026-10-09). Avant,
+ *  une plage trop longue était refusée par la base et la page restait figée sur
+ *  les anciens résultats. Une fin vide reste vide ; une fin avant le début est
+ *  laissée telle quelle (erreurPlage la signale). */
+export function bornerFin(debut: string, fin: string | null | undefined): { fin: string; ajustee: boolean } {
+  const n = joursDansPlage(debut, fin);
+  if (!fin || n === null || n <= JOURS_MAX) return { fin: fin ?? "", ajustee: false };
+  const d = dateLocale(debut);
+  return d ? { fin: jourDecale(d, JOURS_MAX - 1), ajustee: true } : { fin, ajustee: false };
+}
+
+/** Plafond de lignes d'une réponse PostgREST (`max_rows`, 1 000 : config.toml
+ *  et réglage par défaut du projet). Au-delà, la réponse est COUPÉE sans erreur. */
+export const PLAFOND_LIGNES = 1000;
+
+/** Découpe [debut, fin] en fenêtres consécutives de `taille` jours au plus,
+ *  bornes comprises. La recherche est lancée par fenêtre : sur 31 jours, une
+ *  seule réponse dépasserait le plafond de PostgREST (3 804 matchs sur la
+ *  période la plus chargée, relevé prod 2026-10-09). */
+export function fenetres(debut: string, fin: string | null | undefined, taille: number): [string, string][] {
+  const d = dateLocale(debut), n = joursDansPlage(debut, fin);
+  if (!d || n === null || taille < 1) return [];
+  const out: [string, string][] = [];
+  for (let i = 0; i < n; i += taille) out.push([jourDecale(d, i), jourDecale(d, Math.min(i + taille, n) - 1)]);
+  return out;
+}
+
+/** Le message visible quand bornerFin a ramené la fin : « Période limitée à
+ *  31 jours — fin ajustée au 8 novembre 2026. » */
+export function avisFinAjustee(fin: string): string {
+  const d = dateLocale(fin);
+  const lib = d ? d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }) : fin;
+  return `Période limitée à ${JOURS_MAX} jours — fin ajustée au ${lib}.`;
 }
 
 /** null si la plage est valide, sinon le message à afficher. */
@@ -356,13 +394,25 @@ export interface LigneSource {
 /** La source de chaque match, dérivée EXACTEMENT comme au Calendrier
  *  (sourceDuMatch). Un match sans source n'est pas dans la Map : rien ne
  *  s'affiche, comme SourceMatchLigne le fait déjà pour `nom` vide. */
-export function sourcesParMatch(lignes: LigneSource[]): Map<string, SourceMatch> {
+export function sourcesParMatch(lignes: unknown): Map<string, SourceMatch> {
   const parId = new Map<string, SourceMatch>();
-  for (const l of lignes) {
+  // Le cache TanStack est réhydraté depuis sessionStorage : une charge illisible
+  // (ancienne forme, `{}`) rend une carte vide, jamais une exception.
+  if (!Array.isArray(lignes)) return parId;
+  for (const l of lignes as LigneSource[]) {
+    if (!l || typeof l.id !== "string") continue;
     const s = sourceDuMatch(l);
     if (s.nom) parId.set(l.id, s);
   }
   return parId;
+}
+
+/** Les lignes de matchs_recherche telles que la page peut les afficher : une
+ *  charge réhydratée illisible (pas un tableau, ligne sans id) est écartée
+ *  plutôt que de faire planter le rendu. */
+export function matchsLisibles(data: unknown): MatchRecherche[] {
+  if (!Array.isArray(data)) return [];
+  return (data as MatchRecherche[]).filter((m) => !!m && typeof m.id === "string" && typeof m.jour === "string");
 }
 
 /** Découpe une liste d'ids en paquets : un `in.(…)` de 1 000 uuid dépasse la

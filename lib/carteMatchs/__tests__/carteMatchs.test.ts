@@ -5,6 +5,7 @@ import {
   jourDecale, libelleJour, grouperParJour, terrainDe, terrainsCarte, etatCalendrier, minutesDe, heureQuebec,
   libelleDivision, lienItineraire, titreMatch, profilsParMatch, libelleProfils, libelleDontSuivis,
   estGesteMatch, libelleGesteMatch, dateSaisie, sourcesParMatch, paquets,
+  bornerFin, avisFinAjustee, matchsLisibles, JOURS_MAX, fenetres,
   type MatchRecherche,
 } from "@/lib/carteMatchs/carteMatchs";
 
@@ -27,13 +28,14 @@ test("lieuExploitable : 0,0, hors Québec, absent → non ; Montréal → oui", 
   assert.equal(lieuExploitable(Number.NaN, -73), false);
 });
 
-test("plage de dates : 7 jours au plus, fin facultative, fin avant début refusée", () => {
+test("plage de dates : 31 jours au plus, fin facultative, fin avant début refusée", () => {
+  assert.equal(JOURS_MAX, 31, "même borne que la garde de matchs_recherche (p_fin - p_debut > 30)");
   assert.equal(joursDansPlage("2026-10-10", null), 1, "une date seule = 1 jour");
   assert.equal(joursDansPlage("2026-10-10", "2026-10-16"), 7);
   assert.equal(joursDansPlage("2026-10-28", "2026-11-03"), 7, "à cheval sur deux mois");
   assert.equal(joursDansPlage("2026-10-10", "2026-10-09"), null);
-  assert.equal(erreurPlage("2026-10-10", "2026-10-16"), null);
-  assert.equal(erreurPlage("2026-10-10", "2026-10-17"), "7 jours au plus (8 demandés).");
+  assert.equal(erreurPlage("2026-10-10", "2026-11-09"), null, "31 jours");
+  assert.equal(erreurPlage("2026-10-10", "2026-11-10"), "31 jours au plus (32 demandés).");
   assert.equal(erreurPlage("2026-10-10", "2026-10-09"), "La date de fin précède la date de début.");
   assert.deepEqual(TYPES_PAR_DEFAUT, ["SECONDAIRE", "CIVIL"], "collégial décoché par défaut");
 });
@@ -150,4 +152,46 @@ test("source : la même dérivation que le Calendrier ; sans source, rien", () =
   assert.equal(s.get("b")?.libelle, "Calendrier de la ligue");
   assert.equal(s.has("c"), false, "aucune source : aucune ligne");
   assert.deepEqual(paquets([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
+});
+
+test("plage de BP (2026-10-09) : 9 oct. → 6 nov., 29 jours — acceptée, rien d'ajusté", () => {
+  // Avant : refusée par la base (7 jours au plus), la page restait figée sur les anciens marqueurs.
+  assert.equal(joursDansPlage("2026-10-09", "2026-11-06"), 29);
+  assert.equal(erreurPlage("2026-10-09", "2026-11-06"), null);
+  assert.deepEqual(bornerFin("2026-10-09", "2026-11-06"), { fin: "2026-11-06", ajustee: false });
+});
+
+test("bornerFin : au-delà de 31 jours, la fin est ramenée à début + 30 et on le dit", () => {
+  assert.deepEqual(bornerFin("2026-10-09", "2026-12-31"), { fin: "2026-11-08", ajustee: true });
+  assert.equal(joursDansPlage("2026-10-09", bornerFin("2026-10-09", "2026-12-31").fin), 31);
+  assert.deepEqual(bornerFin("2026-12-15", "2027-02-01"), { fin: "2027-01-14", ajustee: true }, "à cheval sur l'année");
+  assert.deepEqual(bornerFin("2026-10-09", ""), { fin: "", ajustee: false }, "fin vide = un seul jour");
+  assert.deepEqual(bornerFin("2026-10-09", "2026-10-01"), { fin: "2026-10-01", ajustee: false }, "fin avant début : laissée à erreurPlage");
+  assert.equal(avisFinAjustee("2026-11-08"), "Période limitée à 31 jours — fin ajustée au 8 novembre 2026.");
+});
+
+test("cache réhydraté illisible : jamais d'exception, valeurs vides (plantage au rechargement, BP 2026-10-09)", () => {
+  // Une Map passée par JSON (sessionStorage) revient `{}` : c'était `sources?.get is not a function`.
+  assert.equal(JSON.stringify(new Map([["a", 1]])), "{}");
+  for (const illisible of [{}, null, undefined, "x", 42, [null, { pas: "d'id" }]]) {
+    assert.equal(sourcesParMatch(illisible).size, 0);
+    assert.deepEqual(matchsLisibles(illisible), []);
+  }
+  // Ce que le hook met désormais en cache (des lignes) survit à l'aller-retour JSON.
+  const lignes = [{ id: "a", source_nom: "RSEQ", source_url: null, collecte_le: null, rseq_league_id: "a3d2c1b0-0000-4000-8000-000000000001", league_name: "L" }];
+  assert.equal(sourcesParMatch(JSON.parse(JSON.stringify(lignes))).get("a")?.ligue, "L");
+  const m = match({});
+  assert.deepEqual(matchsLisibles(JSON.parse(JSON.stringify([m]))), [m]);
+});
+
+test("fenetres : 31 jours en fenêtres de 7 (plafond PostgREST de 1 000 lignes), contiguës, sans chevauchement", () => {
+  const f = fenetres("2026-10-09", "2026-11-08", 7);
+  assert.deepEqual(f, [
+    ["2026-10-09", "2026-10-15"], ["2026-10-16", "2026-10-22"], ["2026-10-23", "2026-10-29"],
+    ["2026-10-30", "2026-11-05"], ["2026-11-06", "2026-11-08"],
+  ]);
+  assert.deepEqual(fenetres("2026-10-09", "2026-11-06", 7).length, 5, "la plage de BP : 29 jours");
+  assert.deepEqual(fenetres("2026-10-09", "", 7), [["2026-10-09", "2026-10-09"]], "une date seule");
+  assert.deepEqual(fenetres("2026-10-09", "2026-10-11", 1), [["2026-10-09", "2026-10-09"], ["2026-10-10", "2026-10-10"], ["2026-10-11", "2026-10-11"]]);
+  assert.deepEqual(fenetres("2026-10-09", "2026-10-01", 7), [], "fin avant début");
 });

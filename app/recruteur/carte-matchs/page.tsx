@@ -34,7 +34,7 @@ import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSe
 import {
   TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour, libelleJour,
   terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, jourDecale,
-  libelleProfils, libelleDontSuivis, dateSaisie, LIEU_NON_PRECISE,
+  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, LIEU_NON_PRECISE,
   type MatchRecherche, type ProfilsMatch, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
@@ -75,6 +75,8 @@ function CarteMatchsContenu() {
   const aujourdhui = React.useMemo(() => jourDecale(new Date(), 0), []);
   const [debut, setDebut] = React.useState(aujourdhui);
   const [fin, setFin] = React.useState("");
+  /** « Période limitée à 31 jours — fin ajustée au … » : visible tant que les dates ne bougent pas. */
+  const [avisPlage, setAvisPlage] = React.useState<string | null>(null);
   const [q, setQ] = React.useState("");
   const [texte, setTexte] = React.useState("");
   const [sport, setSport] = React.useState("");
@@ -92,6 +94,9 @@ function CarteMatchsContenu() {
    *  (BP 2026-10-09). En fenêtre étroite, c'est `vue` qui décide. */
   const [listePleine, setListePleine] = React.useState(false);
   const pleine = listePleine && !etroit;
+  /** La carte n'est pas à l'écran (liste pleine largeur, ou vue liste en fenêtre
+   *  étroite) : le panneau s'ouvre AU-DESSUS de la liste, sans revenir à la carte. */
+  const carteMasquee = pleine || (etroit && vue === "liste");
   const [resizeToken, setResizeToken] = React.useState(0);
 
   // Hauteur disponible = viewport moins ce qui est au-dessus (même calcul que le modèle).
@@ -116,7 +121,7 @@ function CarteMatchsContenu() {
   // Sport par défaut = celui de l'unité (décision BP), posé une fois ; modifiable.
   React.useEffect(() => {
     if (sportInitialise || !origine) return;
-    setSport(origine.sportUnite ?? "");
+    setSport(typeof origine.sportUnite === "string" ? origine.sportUnite : "");
     setSportInitialise(true);
   }, [origine, sportInitialise]);
 
@@ -131,7 +136,9 @@ function CarteMatchsContenu() {
     { debut, fin: fin || debut, sport, types, texte },
     actif && sportInitialise && !erreur,
   );
-  const tous = React.useMemo(() => data ?? [], [data]);
+  // Plage refusée ou recherche en erreur : liste ET carte vides, ensemble — jamais
+  // les marqueurs de la recherche précédente (BP 2026-10-09).
+  const tous = React.useMemo(() => (erreur || isError ? [] : matchsLisibles(data)), [data, erreur, isError]);
   const options = React.useMemo(() => optionsCatDiv(tous), [tous]);
   const matchs = React.useMemo(() => filtrerCatDiv(tous, categorie, division), [tous, categorie, division]);
   const jours = React.useMemo(() => grouperParJour(matchs), [matchs]);
@@ -159,22 +166,13 @@ function CarteMatchsContenu() {
     if (selection && !matchs.some((m) => m.id === selection)) setSelection(null);
   }, [matchs, selection]);
 
-  /** Ouvre le panneau d'un match et zoome sur son terrain (flyTo du modèle). */
+  /** Ouvre le panneau d'un match ; si la carte est à l'écran, zoome sur son
+   *  terrain (flyTo du modèle). Carte masquée : on reste sur la liste. */
   const ouvrir = React.useCallback((m: MatchRecherche) => {
     setSelection(m.id);
     const t = terrainDe(m);
-    if (!t) return;
-    // Fenêtre étroite, vue liste : la carte est masquée (0 × 0). On l'affiche,
-    // Leaflet se re-mesure, PUIS on zoome.
-    if (etroit && vue === "liste") {
-      setVue("carte"); setResizeToken((x) => x + 1);
-      window.setTimeout(() => viser("fly", [t.id]), 80);
-    } else if (pleine) {
-      // Liste pleine largeur : même geste — la carte revient, puis on zoome.
-      setListePleine(false); setResizeToken((x) => x + 1);
-      window.setTimeout(() => viser("fly", [t.id]), 80);
-    } else viser("fly", [t.id]);
-  }, [viser, etroit, vue, pleine]);
+    if (t && !carteMasquee) viser("fly", [t.id]);
+  }, [viser, carteMasquee]);
 
   // Clic sur un point : le premier match de ce terrain (même panneau).
   const ouvrirPoint = React.useCallback((terrainId: string) => {
@@ -189,22 +187,33 @@ function CarteMatchsContenu() {
       ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selection]);
 
+  /** Retour à la carte : Leaflet se re-mesure, PUIS on cadre le match ouvert
+   *  (ou tous les terrains). */
+  const revenirCarte = () => {
+    const ids = terrainChoisi ? [terrainChoisi] : terrains.map((t) => t.id);
+    if (ids.length > 0) window.setTimeout(() => viser(terrainChoisi ? "fly" : "bounds", ids), 80);
+  };
+
   const basculerVue = () => {
     const suivante = vue === "liste" ? "carte" : "liste";
     setVue(suivante);
     setResizeToken((t) => t + 1);
-    if (suivante === "carte" && !selection && terrains.length > 0) {
-      window.setTimeout(() => viser("bounds", terrains.map((t) => t.id)), 80);
-    }
+    if (suivante === "carte") revenirCarte();
   };
 
   const choisirAffichage = (liste: boolean) => {
     if (liste === listePleine) return;
     setListePleine(liste);
     setResizeToken((t) => t + 1);
-    if (!liste && !selection && terrains.length > 0) {
-      window.setTimeout(() => viser("bounds", terrains.map((t) => t.id)), 80);
-    }
+    if (!liste) revenirCarte();
+  };
+
+  /** Pose la plage ; au-delà de JOURS_MAX, la fin est ramenée et on le DIT. */
+  const poserPlage = (d: string, f: string) => {
+    const b = bornerFin(d, f);
+    setDebut(d);
+    setFin(b.fin);
+    setAvisPlage(b.ajustee ? avisFinAjustee(b.fin) : null);
   };
 
   const enCours = basculer.isPending ? basculer.variables?.gameId ?? null : null;
@@ -233,6 +242,12 @@ function CarteMatchsContenu() {
     );
   };
 
+  const panneau = choisi && (
+    <Panneau m={choisi} source={sources?.get(choisi.id)} suivis={suivisUnite} actif={actif} enCours={enCours}
+      autres={terrainChoisi ? matchs.filter((x) => x.id !== choisi.id && terrainDe(x)?.id === terrainChoisi) : []}
+      onCalendrier={basculerMatch} onOuvrir={ouvrir} onClose={() => setSelection(null)} />
+  );
+
   return (
     <div className={"cs cm vue-" + vue + (pleine ? " pleine" : "")} ref={rootRef} style={{ ["--cs-h" as string]: hauteur }} data-testid="carte-matchs">
       <style dangerouslySetInnerHTML={{ __html: CS_CSS + CM_CSS }} />
@@ -252,20 +267,20 @@ function CarteMatchsContenu() {
         <span className="fbtn on" data-testid="date-debut-zone">
           <label className="lbl">
             <input type="date" className="cm-date" value={debut} aria-label="Date"
-              onChange={(e) => { const v = dateSaisie(e.target.value); if (v) setDebut(v); }} data-testid="date-debut" />
+              onChange={(e) => { const v = dateSaisie(e.target.value); if (v) poserPlage(v, fin); }} data-testid="date-debut" />
           </label>
         </span>
         <span className={"fbtn" + (fin ? " on" : "")}>
           <label className="lbl">
             <span>au</span>
             <input type="date" className="cm-date" value={fin} min={debut} aria-label="Au (facultatif)"
-              onChange={(e) => { const v = e.target.value; if (!v) setFin(""); else { const d = dateSaisie(v); if (d) setFin(d); } }} data-testid="date-fin" />
-            {fin && <button className="clr" onClick={(e) => { e.preventDefault(); setFin(""); }} aria-label="Retirer la date de fin">✕</button>}
+              onChange={(e) => { const v = e.target.value; if (!v) poserPlage(debut, ""); else { const d = dateSaisie(v); if (d) poserPlage(debut, d); } }} data-testid="date-fin" />
+            {fin && <button className="clr" onClick={(e) => { e.preventDefault(); poserPlage(debut, ""); }} aria-label="Retirer la date de fin">✕</button>}
           </label>
         </span>
 
         <span data-testid="filtres-carte" style={{ display: "contents" }}>
-          {filtreUnique("Sport", sport, sports ?? [], setSport, { toujoursActif: true })}
+          {filtreUnique("Sport", sport, Array.isArray(sports) ? sports : [], setSport, { toujoursActif: true })}
           <FiltreBtn label="Type" compteur={types.length} onClear={() => setTypes([])}>
             {() => (
               <ListeCases items={TYPES_MATCH.map((t) => t.v)} labels={LIBELLES_TYPES} selection={types}
@@ -293,8 +308,11 @@ function CarteMatchsContenu() {
 
       <div className="main">
         <div className="list">
+          {(erreur || avisPlage) && (
+            <div className="cm-avis" role="status" data-testid="avis-plage">{erreur ?? avisPlage}</div>
+          )}
           <div className="count" data-testid="resume">
-            {erreur ? <span>{erreur}</span> : (
+            {erreur ? <span>Aucune recherche lancée.</span> : (
               <>
                 <b>{matchs.length} match{matchs.length > 1 ? "s" : ""}</b>
                 {` · ${terrains.length} terrain${terrains.length > 1 ? "s" : ""}`}
@@ -337,14 +355,11 @@ function CarteMatchsContenu() {
           </div>
         </div>
 
+        {carteMasquee && panneau}
         <div className="maparea" data-testid="carte">
           <MapPane points={points} selectedId={terrainChoisi} hoveredId={survol} focus={focus} onSelect={ouvrirPoint}
             resizeToken={resizeToken} ariaLabel="Carte des matchs" />
-          {choisi && (
-            <Panneau m={choisi} source={sources?.get(choisi.id)} suivis={suivisUnite} actif={actif} enCours={enCours}
-              autres={terrainChoisi ? matchs.filter((x) => x.id !== choisi.id && terrainDe(x)?.id === terrainChoisi) : []}
-              onCalendrier={basculerMatch} onOuvrir={ouvrir} onClose={() => setSelection(null)} />
-          )}
+          {!carteMasquee && panneau}
         </div>
       </div>
 
@@ -478,6 +493,8 @@ function Panneau({ m, source, suivis, actif, enCours, autres, onCalendrier, onOu
    « + » dans le bouton rond, bascule étroite (.vtoggle de RechercheMobile). */
 const CM_CSS = `
 .cs.cm{position:relative}
+.cs.cm .main{position:relative}
+.cs .cm-avis{margin:10px 14px 0;padding:9px 12px;border-radius:10px;border:1px solid #F59E0B66;background:#F59E0B1F;color:#FCD34D;font-size:13px;font-weight:600;line-height:1.35}
 .cs .cm-date{background:none;border:0;outline:none;color:inherit;font:inherit;color-scheme:dark;cursor:pointer}
 .cs .cm-jour{padding:10px 2px 2px}
 .cs .heart.cm-plus{font-size:18px;font-weight:700;line-height:1}
