@@ -276,7 +276,7 @@ function CarteMatchsContenu() {
         <span className={"fbtn cm-dchamp" + (fin ? " on" : "")} data-testid="date-fin-zone">
           <label className="lbl">
             <span>au</span>
-            <span className={"cm-dlib" + (fin ? "" : " vide")} data-testid="date-fin-libelle">{fin ? dateCourte(fin) : "facultatif"}</span>
+            <span className={"cm-dlib" + (fin ? "" : " cm-dlib-vide")} data-testid="date-fin-libelle">{fin ? dateCourte(fin) : "facultatif"}</span>
             <input type="date" className="cm-date" value={fin} min={debut} aria-label="Au (facultatif)" onClick={ouvrirSelecteur}
               onChange={(e) => { const v = e.target.value; if (!v) poserPlage(debut, ""); else { const d = dateSaisie(v); if (d) poserPlage(debut, d); } }} data-testid="date-fin" />
             {fin && <button className="clr" onClick={(e) => { e.preventDefault(); poserPlage(debut, ""); }} aria-label="Retirer la date de fin">✕</button>}
@@ -548,7 +548,7 @@ const CM_CSS = `
 .cs .cm-dchamp .clr{position:relative;z-index:1}
 .cs .cm-dchamp:focus-within{border-color:#8FA3C8}
 .cs .cm-dlib{white-space:nowrap}
-.cs .cm-dlib.vide{color:var(--mut);font-weight:600}
+.cs .cm-dlib.cm-dlib-vide{color:var(--mut);font-weight:600}
 .cs .heart.cm-plus{font-size:18px;font-weight:700;line-height:1}
 .cs .heart.cm-plus:disabled{opacity:1;cursor:default}
 .cs .cm-pl .tsport a{color:var(--txt);text-decoration:none}
