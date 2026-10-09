@@ -14,6 +14,8 @@
    · Lieu non exploitable → liste seulement, « Lieu non précisé ».
 ═══════════════════════════════════════════════════════════════ */
 
+import { sourceDuMatch, type SourceMatch } from "@/lib/calendar/sourceMatch";
+
 /* ── Lieu ──────────────────────────────────────────────────── */
 
 /** Boîte du Québec (décision BP) : lat 44–63, lon -80 à -57. Même règle
@@ -113,6 +115,18 @@ export function jourDecale(base: Date, jours: number): string {
   const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + jours);
   const p = (v: number) => String(v).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** La valeur d'un <input type="date"> à retenir, ou null tant que la saisie
+ *  n'est pas une vraie date. Au clavier, Chrome émet un `change` à CHAQUE
+ *  chiffre de l'année : « 2026 » passe par 0002, 0020, 0202 — autant de
+ *  recherches lancées sur des années absurdes — et une sixième frappe donne
+ *  « 202620-10-09 », que la plage lisait comme « fin avant début ». */
+export function dateSaisie(v: string | null | undefined): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v ?? "");
+  if (!m) return null;
+  const an = Number(m[1]);
+  return an >= 2000 && an <= 2100 && dateLocale(v) ? v! : null;
 }
 
 const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
@@ -323,4 +337,38 @@ export function libelleProfils(p: Pick<ProfilsMatch, "total"> | null | undefined
 export function libelleDontSuivis(p: Pick<ProfilsMatch, "suivis"> | null | undefined): string | null {
   if (!p || p.suivis <= 0) return null;
   return `dont ${p.suivis} suivi${p.suivis > 1 ? "s" : ""}`;
+}
+
+/* ── Source (BP 2026-10-09) ────────────────────────────────── */
+
+/** Les colonnes de `games` que lit la source — celles du Calendrier. */
+export const COLONNES_SOURCE = "id, source_nom, source_url, collecte_le, rseq_league_id, league_name";
+
+export interface LigneSource {
+  id: string;
+  source_nom: string | null;
+  source_url: string | null;
+  collecte_le: string | null;
+  rseq_league_id: string | null;
+  league_name: string | null;
+}
+
+/** La source de chaque match, dérivée EXACTEMENT comme au Calendrier
+ *  (sourceDuMatch). Un match sans source n'est pas dans la Map : rien ne
+ *  s'affiche, comme SourceMatchLigne le fait déjà pour `nom` vide. */
+export function sourcesParMatch(lignes: LigneSource[]): Map<string, SourceMatch> {
+  const parId = new Map<string, SourceMatch>();
+  for (const l of lignes) {
+    const s = sourceDuMatch(l);
+    if (s.nom) parId.set(l.id, s);
+  }
+  return parId;
+}
+
+/** Découpe une liste d'ids en paquets : un `in.(…)` de 1 000 uuid dépasse la
+ *  longueur d'URL d'un GET PostgREST. */
+export function paquets<T>(xs: T[], taille: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < xs.length; i += taille) out.push(xs.slice(i, i + taille));
+  return out;
 }

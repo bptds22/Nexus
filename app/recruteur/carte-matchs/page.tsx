@@ -27,12 +27,14 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useCalendrierUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
 import { useOrigineCarte } from "@/lib/carteMatchs/useOrigineCarte";
 import { useProfilsMatchs } from "@/lib/carteMatchs/useProfilsMatchs";
-import { useBasculerCalendrier, useMatchsRecherche, useSportsCarte } from "@/lib/carteMatchs/useMatchsRecherche";
+import { useBasculerCalendrier, useMatchsRecherche, useSourcesMatchs, useSportsCarte } from "@/lib/carteMatchs/useMatchsRecherche";
+import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
+import type { SourceMatch } from "@/lib/calendar/sourceMatch";
 import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSearch";
 import {
   TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour, libelleJour,
   terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, jourDecale,
-  libelleProfils, libelleDontSuivis, LIEU_NON_PRECISE,
+  libelleProfils, libelleDontSuivis, dateSaisie, LIEU_NON_PRECISE,
   type MatchRecherche, type ProfilsMatch, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
@@ -86,6 +88,10 @@ function CarteMatchsContenu() {
   const jeton = React.useRef(0);
   const [etroit, setEtroit] = React.useState(false);
   const [vue, setVue] = React.useState<"liste" | "carte">("liste");
+  /** Grand écran : « Liste » masque la carte, la liste prend toute la largeur
+   *  (BP 2026-10-09). En fenêtre étroite, c'est `vue` qui décide. */
+  const [listePleine, setListePleine] = React.useState(false);
+  const pleine = listePleine && !etroit;
   const [resizeToken, setResizeToken] = React.useState(0);
 
   // Hauteur disponible = viewport moins ce qui est au-dessus (même calcul que le modèle).
@@ -131,6 +137,7 @@ function CarteMatchsContenu() {
   const jours = React.useMemo(() => grouperParJour(matchs), [matchs]);
   const terrains = React.useMemo(() => terrainsCarte(matchs), [matchs]);
   const sansLieu = matchs.filter((m) => !terrainDe(m)).length;
+  const { data: sources } = useSourcesMatchs(matchs.map((m) => m.id), actif);
 
   const points: MapPoint[] = React.useMemo(
     () => terrains.map((t) => ({ id: t.id, nom: t.nom, lat: t.lat, lng: t.lon, riche: false, cible: t.cible })),
@@ -162,8 +169,12 @@ function CarteMatchsContenu() {
     if (etroit && vue === "liste") {
       setVue("carte"); setResizeToken((x) => x + 1);
       window.setTimeout(() => viser("fly", [t.id]), 80);
+    } else if (pleine) {
+      // Liste pleine largeur : même geste — la carte revient, puis on zoome.
+      setListePleine(false); setResizeToken((x) => x + 1);
+      window.setTimeout(() => viser("fly", [t.id]), 80);
     } else viser("fly", [t.id]);
-  }, [viser, etroit, vue]);
+  }, [viser, etroit, vue, pleine]);
 
   // Clic sur un point : le premier match de ce terrain (même panneau).
   const ouvrirPoint = React.useCallback((terrainId: string) => {
@@ -183,6 +194,15 @@ function CarteMatchsContenu() {
     setVue(suivante);
     setResizeToken((t) => t + 1);
     if (suivante === "carte" && !selection && terrains.length > 0) {
+      window.setTimeout(() => viser("bounds", terrains.map((t) => t.id)), 80);
+    }
+  };
+
+  const choisirAffichage = (liste: boolean) => {
+    if (liste === listePleine) return;
+    setListePleine(liste);
+    setResizeToken((t) => t + 1);
+    if (!liste && !selection && terrains.length > 0) {
       window.setTimeout(() => viser("bounds", terrains.map((t) => t.id)), 80);
     }
   };
@@ -214,7 +234,7 @@ function CarteMatchsContenu() {
   };
 
   return (
-    <div className={"cs cm vue-" + vue} ref={rootRef} style={{ ["--cs-h" as string]: hauteur }} data-testid="carte-matchs">
+    <div className={"cs cm vue-" + vue + (pleine ? " pleine" : "")} ref={rootRef} style={{ ["--cs-h" as string]: hauteur }} data-testid="carte-matchs">
       <style dangerouslySetInnerHTML={{ __html: CS_CSS + CM_CSS }} />
 
       <div className="topbar">
@@ -232,14 +252,14 @@ function CarteMatchsContenu() {
         <span className="fbtn on" data-testid="date-debut-zone">
           <label className="lbl">
             <input type="date" className="cm-date" value={debut} aria-label="Date"
-              onChange={(e) => e.target.value && setDebut(e.target.value)} data-testid="date-debut" />
+              onChange={(e) => { const v = dateSaisie(e.target.value); if (v) setDebut(v); }} data-testid="date-debut" />
           </label>
         </span>
         <span className={"fbtn" + (fin ? " on" : "")}>
           <label className="lbl">
             <span>au</span>
             <input type="date" className="cm-date" value={fin} min={debut} aria-label="Au (facultatif)"
-              onChange={(e) => setFin(e.target.value)} data-testid="date-fin" />
+              onChange={(e) => { const v = e.target.value; if (!v) setFin(""); else { const d = dateSaisie(v); if (d) setFin(d); } }} data-testid="date-fin" />
             {fin && <button className="clr" onClick={(e) => { e.preventDefault(); setFin(""); }} aria-label="Retirer la date de fin">✕</button>}
           </label>
         </span>
@@ -255,6 +275,20 @@ function CarteMatchsContenu() {
           {filtreUnique("Catégorie", categorie, options.categories, setCategorie)}
           {filtreUnique("Division", division, options.divisions, setDivision, { lib: libelleDivision })}
         </span>
+
+        {/* Carte | Liste — grand écran. En fenêtre étroite, la pastille du bas. */}
+        {!etroit && (
+          <span className="cm-seg" role="group" aria-label="Affichage" data-testid="bascule-affichage">
+            <button type="button" className={"fbtn" + (!pleine ? " on" : "")} aria-pressed={!pleine}
+              onClick={() => choisirAffichage(false)} data-testid="affichage-carte">
+              <span className="lbl"><MapIcon size={15} aria-hidden />Carte</span>
+            </button>
+            <button type="button" className={"fbtn" + (pleine ? " on" : "")} aria-pressed={pleine}
+              onClick={() => choisirAffichage(true)} data-testid="affichage-liste">
+              <span className="lbl"><List size={15} aria-hidden />Liste</span>
+            </button>
+          </span>
+        )}
       </div>
 
       <div className="main">
@@ -292,6 +326,7 @@ function CarteMatchsContenu() {
                       <div className="lcinfo">
                         <div className="lctitre"><b>{titreMatch(m)}</b></div>
                         <div className="m">{heureQuebec(m.heure)} · {m.terrain || LIEU_NON_PRECISE}</div>
+                        <Source source={sources?.get(m.id)} />
                       </div>
                       <BoutonCalendrier m={m} enCours={enCours === m.id} onClick={() => basculerMatch(m)} />
                     </div>
@@ -306,7 +341,7 @@ function CarteMatchsContenu() {
           <MapPane points={points} selectedId={terrainChoisi} hoveredId={survol} focus={focus} onSelect={ouvrirPoint}
             resizeToken={resizeToken} ariaLabel="Carte des matchs" />
           {choisi && (
-            <Panneau m={choisi} suivis={suivisUnite} actif={actif} enCours={enCours}
+            <Panneau m={choisi} source={sources?.get(choisi.id)} suivis={suivisUnite} actif={actif} enCours={enCours}
               autres={terrainChoisi ? matchs.filter((x) => x.id !== choisi.id && terrainDe(x)?.id === terrainChoisi) : []}
               onCalendrier={basculerMatch} onOuvrir={ouvrir} onClose={() => setSelection(null)} />
           )}
@@ -320,6 +355,17 @@ function CarteMatchsContenu() {
           <span>{vue === "liste" ? "Carte" : "Liste"}</span>
         </button>
       )}
+    </div>
+  );
+}
+
+/** La ligne « Source » du Calendrier (SourceMatchLigne), telle quelle. Le clic
+ *  sur le lien ne doit pas ouvrir le match : la ligne entière est cliquable. */
+function Source({ source }: { source: SourceMatch | undefined }) {
+  if (!source) return null;
+  return (
+    <div className="cm-src" data-testid="source-match" onClick={(e) => e.stopPropagation()}>
+      <SourceMatchLigne source={source} className="mt-[7px] pt-[7px]" />
     </div>
   );
 }
@@ -341,8 +387,8 @@ function BoutonCalendrier({ m, enCours, onClick }: { m: MatchRecherche; enCours:
 
 /** Panneau de détails : celui de la fiche cégep du modèle (.preview). Les
  *  joueurs viennent de matchs_profils_nexus, appelée AU CLIC pour ce match. */
-function Panneau({ m, suivis, actif, enCours, autres, onCalendrier, onOuvrir, onClose }: {
-  m: MatchRecherche; suivis: ReadonlySet<string>; actif: boolean; enCours: string | null;
+function Panneau({ m, source, suivis, actif, enCours, autres, onCalendrier, onOuvrir, onClose }: {
+  m: MatchRecherche; source: SourceMatch | undefined; suivis: ReadonlySet<string>; actif: boolean; enCours: string | null;
   /** Les autres matchs du même terrain, dans les résultats affichés (BP 2026-10-08). */
   autres: MatchRecherche[];
   onCalendrier: (m: MatchRecherche) => void; onOuvrir: (m: MatchRecherche) => void; onClose: () => void;
@@ -373,6 +419,7 @@ function Panneau({ m, suivis, actif, enCours, autres, onCalendrier, onOuvrir, on
         {details.filter(([, v]) => v).map(([k, v]) => (
           <div key={k} className="trow"><span className="tsport">{k}</span><span className="tmeta"><span>{v}</span></span></div>
         ))}
+        <Source source={source} />
       </div>
 
       {total > 0 && (
@@ -441,6 +488,17 @@ const CM_CSS = `
   display:flex;align-items:center;gap:8px;cursor:pointer;z-index:950;box-shadow:0 8px 26px rgba(0,0,0,.6);
   font-size:14px;font-weight:600;color:#fff;white-space:nowrap}
 .cs .vtoggle svg{stroke:#fff}
+.cs .cm-seg{display:inline-flex;gap:6px;margin-left:auto}
+.cs .cm-seg .fbtn{font-family:inherit}
+.cs .cm-seg .fbtn .lbl{gap:6px}
+.cs .cm-src{cursor:default}
+@media(min-width:1001px){
+  .cs.cm.pleine .main{grid-template-columns:1fr}
+  .cs.cm.pleine .maparea{display:none}
+  .cs.cm.pleine .list{border-right:0}
+  .cs.cm.pleine .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));align-content:start;padding:0 18px 18px}
+  .cs.cm.pleine .cm-jour{grid-column:1/-1}
+}
 @media(max-width:1000px){
   .cs.cm .main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr)}
   .cs.cm .list{max-height:none;border-bottom:0}

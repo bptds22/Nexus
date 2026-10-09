@@ -4,7 +4,7 @@ import {
   lieuExploitable, LIEU_NON_PRECISE, TYPES_PAR_DEFAUT, joursDansPlage, erreurPlage, optionsCatDiv, filtrerCatDiv,
   jourDecale, libelleJour, grouperParJour, terrainDe, terrainsCarte, etatCalendrier, minutesDe, heureQuebec,
   libelleDivision, lienItineraire, titreMatch, profilsParMatch, libelleProfils, libelleDontSuivis,
-  estGesteMatch, libelleGesteMatch,
+  estGesteMatch, libelleGesteMatch, dateSaisie, sourcesParMatch, paquets,
   type MatchRecherche,
 } from "@/lib/carteMatchs/carteMatchs";
 
@@ -123,4 +123,30 @@ test("journal : MATCH_AJOUTE / MATCH_RETIRE, libellé tiré de details", () => {
   // Match disparu (details vides) : le geste reste lisible.
   assert.equal(libelleGesteMatch("MATCH_RETIRE", {}), "Match retiré du calendrier");
   assert.equal(libelleGesteMatch("MATCH_AJOUTE", null), "Match ajouté au calendrier");
+});
+
+test("date au clavier : une année en cours de frappe ne lance pas de recherche", () => {
+  // Chrome émet un change à chaque chiffre de l'année : 0002, 0020, 0202, 2026.
+  assert.equal(dateSaisie("0002-10-09"), null);
+  assert.equal(dateSaisie("0202-10-09"), null);
+  assert.equal(dateSaisie("202620-10-09"), null, "six chiffres : lu jusqu'ici comme « fin avant début »");
+  assert.equal(dateSaisie(""), null, "date partielle : valeur vide");
+  assert.equal(dateSaisie("2026-10-10"), "2026-10-10");
+  assert.equal(dateSaisie("2027-01-02"), "2027-01-02");
+});
+
+test("source : la même dérivation que le Calendrier ; sans source, rien", () => {
+  const rseq = "11111111-2222-3333-4444-555555555555";
+  const s = sourcesParMatch([
+    { id: "a", source_nom: "RSEQ", source_url: null, collecte_le: "2026-10-08T12:00:00Z", rseq_league_id: rseq, league_name: "Football J M D1" },
+    { id: "b", source_nom: "LFMM", source_url: "https://lfmm.example/calendrier", collecte_le: null, rseq_league_id: null, league_name: null },
+    { id: "c", source_nom: null, source_url: null, collecte_le: null, rseq_league_id: null, league_name: null },
+  ]);
+  assert.equal(s.get("a")?.libelle, "Calendrier officiel RSEQ");
+  assert.ok(s.get("a")?.url?.includes(rseq));
+  assert.equal(s.get("a")?.telecharge, true);
+  assert.equal(s.get("b")?.url, "https://lfmm.example/calendrier");
+  assert.equal(s.get("b")?.libelle, "Calendrier de la ligue");
+  assert.equal(s.has("c"), false, "aucune source : aucune ligne");
+  assert.deepEqual(paquets([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
 });

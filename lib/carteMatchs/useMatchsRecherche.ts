@@ -7,6 +7,8 @@
    · useBasculerCalendrier : « + » ajoute le match au calendrier PARTAGÉ de
      l'unité (matchs_ajoutes) ; « ✓ » le retire. Le client n'envoie que
      game_id : l'unité et l'auteur sont posés par la base.
+   · useSourcesMatchs : la source de chaque match, dérivée comme au
+     Calendrier (sourceDuMatch), lue dans `games` par paquets d'ids.
    · useSportsCarte : la liste des sports (filtre « Sport »).
 
    Partageable avec le mobile.
@@ -14,7 +16,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import type { MatchRecherche, TypeMatch } from "@/lib/carteMatchs/carteMatchs";
+import {
+  COLONNES_SOURCE, paquets, sourcesParMatch,
+  type LigneSource, type MatchRecherche, type TypeMatch,
+} from "@/lib/carteMatchs/carteMatchs";
+import type { SourceMatch } from "@/lib/calendar/sourceMatch";
 
 export interface CriteresRecherche {
   debut: string;
@@ -72,6 +78,30 @@ export function useBasculerCalendrier() {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: CLE });
       void qc.invalidateQueries({ queryKey: ["recruiting-calendar", "unite"] });
+    },
+  });
+}
+
+/** La source de chaque match affiché (BP 2026-10-09) — les colonnes que le
+ *  Calendrier lit déjà dans `games` (lecture ouverte aux authentifiés), sans
+ *  toucher la RPC. Lue par paquets ; la clé suit l'ensemble des ids. */
+export function useSourcesMatchs(ids: string[], enabled: boolean) {
+  const tries = [...ids].sort();
+  return useQuery<Map<string, SourceMatch>>({
+    queryKey: ["carte-matchs", "sources", tries.join(",")],
+    enabled: enabled && tries.length > 0,
+    staleTime: 5 * 60_000,
+    placeholderData: (avant) => avant,
+    queryFn: async () => {
+      const supabase = createClient();
+      const reponses = await Promise.all(paquets(tries, 150).map((p) =>
+        supabase.from("games").select(COLONNES_SOURCE).in("id", p)));
+      const lignes: LigneSource[] = [];
+      for (const r of reponses) {
+        if (r.error) throw r.error;
+        lignes.push(...((r.data ?? []) as LigneSource[]));
+      }
+      return sourcesParMatch(lignes);
     },
   });
 }
