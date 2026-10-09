@@ -51,6 +51,12 @@ export default function SourceMatchLigne({
       <span>
         Source&nbsp;: <span className="font-semibold text-[#8A909C]">{source.nom}</span>
       </span>
+      {source.ligue && (
+        <>
+          <span aria-hidden>·</span>
+          <span data-testid="source-ligue">{source.ligue}</span>
+        </>
+      )}
       {url && source.libelle && (
         <>
           <span aria-hidden>·</span>

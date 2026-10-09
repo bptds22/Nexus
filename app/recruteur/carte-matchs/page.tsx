@@ -359,12 +359,13 @@ function CarteMatchsContenu() {
   );
 }
 
-/** La ligne « Source » du Calendrier (SourceMatchLigne), telle quelle. Le clic
- *  sur le lien ne doit pas ouvrir le match : la ligne entière est cliquable. */
+/** La ligne « Source » du Calendrier (SourceMatchLigne), telle quelle. Seul le
+ *  clic sur le LIEN reste au lien ; ailleurs sur la ligne, il ouvre le match. */
 function Source({ source }: { source: SourceMatch | undefined }) {
   if (!source) return null;
   return (
-    <div className="cm-src" data-testid="source-match" onClick={(e) => e.stopPropagation()}>
+    <div className="cm-src" data-testid="source-match"
+      onClick={(e) => { if ((e.target as HTMLElement).closest("a")) e.stopPropagation(); }}>
       <SourceMatchLigne source={source} className="mt-[7px] pt-[7px]" />
     </div>
   );
@@ -491,7 +492,6 @@ const CM_CSS = `
 .cs .cm-seg{display:inline-flex;gap:6px;margin-left:auto}
 .cs .cm-seg .fbtn{font-family:inherit}
 .cs .cm-seg .fbtn .lbl{gap:6px}
-.cs .cm-src{cursor:default}
 @media(min-width:1001px){
   .cs.cm.pleine .main{grid-template-columns:1fr}
   .cs.cm.pleine .maparea{display:none}

@@ -67,7 +67,8 @@ test("sourceDuMatch RSEQ : le lien passe par la route Nexus", () => {
   assert.equal(s.url, urlCalendrierRseq(LIGUE, NOM));
   assert.ok(!s.url!.includes("rseq.ca"), s.url!);
   assert.equal(s.telecharge, true);
-  assert.equal(s.libelle, "Calendrier officiel RSEQ");
+  assert.equal(s.libelle, "Calendrier officiel RSEQ (téléchargement)", "le clic télécharge : le libellé le dit");
+  assert.equal(s.ligue, NOM, "la ligue du fichier est nommée à côté du lien");
 });
 
 test("sourceDuMatch RSEQ sans GUID valide : source affichée, aucun lien", () => {
@@ -80,4 +81,6 @@ test("sourceDuMatch civil : inchangé, l'URL stockée en nouvel onglet", () => {
   const s = sourceDuMatch({ source_nom: "LFMM", source_url: "https://www.lfmm.ca/calendrier" });
   assert.equal(s.url, "https://www.lfmm.ca/calendrier");
   assert.equal(s.telecharge, false);
+  assert.equal(s.libelle, "Calendrier de la ligue", "civil : libellé d'avant");
+  assert.equal(s.ligue, null, "civil : aucune ligue ajoutée");
 });

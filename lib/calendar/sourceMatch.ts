@@ -21,11 +21,18 @@
    « version imprimable » du site. Vérifié en direct, saison courante ET
    saison passée : HTTP 200, `Content-Disposition: attachment`.
 
-   Le libellé dit « Calendrier officiel RSEQ », sans mention de format : le
-   clic fait exactement ce que fait l'URL collée dans un navigateur. Ce qu'il
-   ne dira JAMAIS, c'est « voir ce match » — le calendrier porte la ligue
-   entière, pas la rencontre, et promettre l'inverse ferait rouler un
-   recruteur sur une garantie qu'on n'a pas.
+   Le libellé dit « Calendrier officiel RSEQ (téléchargement) », à côté du nom
+   de la LIGUE (décision BP 2026-10-09) : le clic télécharge un fichier, et le
+   recruteur doit savoir lequel avant de cliquer. Ce qu'il ne dira JAMAIS,
+   c'est « voir ce match » — le calendrier porte la ligue entière, pas la
+   rencontre, et promettre l'inverse ferait rouler un recruteur sur une
+   garantie qu'on n'a pas.
+
+   Aucune page de ligue ni de match n'est ouvrable sur le RSEQ (revérifié le
+   2026-10-09) : diffusion.s1.rseq.ca ne lit ni paramètre ni ancre (région en
+   cookie), et le seul paramètre de s1.rseq.ca, ?action=LiveScores&gameId=,
+   ouvre l'outil de pointage en direct — vide pour un match à venir comme
+   pour un match joué.
 
    ── LE LIEN PASSE PAR NEXUS DEPUIS LE 2026-09-22 ────────────────
    Le RSEQ sert ce .xlsx en `text/html` : Chrome Android l'affichait en texte
@@ -45,6 +52,9 @@ export interface SourceMatch {
   url: string | null;
   /** Libellé du lien. Dit ce qui va se passer, pas ce qu'on aimerait. */
   libelle: string | null;
+  /** Nom de la ligue dont le calendrier est téléchargé — RSEQ seulement.
+   *  Le civil garde sa ligne d'avant (null). */
+  ligue: string | null;
   /**
    * Le clic TÉLÉCHARGE-t-il un fichier, au lieu de naviguer ?
    *
@@ -85,7 +95,8 @@ export function sourceDuMatch(row: {
     return {
       nom,
       url: urlCalendrierRseq(row.rseq_league_id, row.league_name),
-      libelle: "Calendrier officiel RSEQ",
+      libelle: "Calendrier officiel RSEQ (téléchargement)",
+      ligue: row.league_name?.trim() || null,
       telecharge: true,
       collecteLe,
     };
@@ -97,6 +108,7 @@ export function sourceDuMatch(row: {
       nom,
       url: row.source_url,
       libelle: "Calendrier de la ligue",
+      ligue: null,
       telecharge: false,
       collecteLe,
     };
@@ -104,7 +116,7 @@ export function sourceDuMatch(row: {
 
   /* Ni l'un ni l'autre : on affiche la source sans lien plutôt qu'un lien
      générique qui donnerait une garantie fausse. */
-  return { nom, url: null, libelle: null, telecharge: false, collecteLe };
+  return { nom, url: null, libelle: null, ligue: null, telecharge: false, collecteLe };
 }
 
 /** « relevé le 16 sept. » — court, pour une ligne de carte déjà chargée. */

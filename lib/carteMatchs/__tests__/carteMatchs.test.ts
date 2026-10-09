@@ -142,7 +142,8 @@ test("source : la même dérivation que le Calendrier ; sans source, rien", () =
     { id: "b", source_nom: "LFMM", source_url: "https://lfmm.example/calendrier", collecte_le: null, rseq_league_id: null, league_name: null },
     { id: "c", source_nom: null, source_url: null, collecte_le: null, rseq_league_id: null, league_name: null },
   ]);
-  assert.equal(s.get("a")?.libelle, "Calendrier officiel RSEQ");
+  assert.equal(s.get("a")?.libelle, "Calendrier officiel RSEQ (téléchargement)");
+  assert.equal(s.get("a")?.ligue, "Football J M D1");
   assert.ok(s.get("a")?.url?.includes(rseq));
   assert.equal(s.get("a")?.telecharge, true);
   assert.equal(s.get("b")?.url, "https://lfmm.example/calendrier");
