@@ -7,6 +7,7 @@ import {
   estGesteMatch, libelleGesteMatch, dateSaisie, sourcesParMatch, paquets,
   bornerFin, avisFinAjustee, matchsLisibles, JOURS_MAX, fenetres,
   dateCourte, dateCarte, enTeteJour, heureCarte, trierMatchs,
+  moities, ajouterPastille, parametresPastilles, suggestionsLisibles, JOURS_SAISON,
   type MatchRecherche,
 } from "@/lib/carteMatchs/carteMatchs";
 
@@ -239,4 +240,23 @@ test("date sous l'heure de la carte : « ven. 9 oct. », jamais numérique", () 
   assert.equal(dateCarte("2026-11-01"), "dim. 1er nov.");
   assert.equal(dateCarte("2026-12-31"), "jeu. 31 déc.");
   assert.equal(dateCarte(null), "");
+});
+
+test("moities : une fenêtre au plafond se redemande en deux moitiés contiguës", () => {
+  assert.deepEqual(moities("2026-10-09", "2026-10-15"), [["2026-10-09", "2026-10-11"], ["2026-10-12", "2026-10-15"]]);
+  assert.deepEqual(moities("2026-10-09", "2027-11-13").length, 2, "la saison entière (401 jours)");
+  assert.deepEqual(moities("2026-10-09", "2026-10-09"), [["2026-10-09", "2026-10-09"]]);
+  assert.equal(JOURS_SAISON, 401, "même borne que matchs_recherche avec pastille (p_fin - p_debut > 400)");
+});
+
+test("pastilles : sans doublon, paramètres séparés équipes / terrains, suggestions illisibles écartées", () => {
+  const eq = { genre: "EQUIPE" as const, cle: "11111111-2222-3333-4444-555555555555", libelle: "Vandoos", detail: "Vandoos de Drummondville" };
+  const te = { genre: "TERRAIN" as const, cle: "college laval", libelle: "Collège Laval", detail: "Laval" };
+  const l = ajouterPastille(ajouterPastille(ajouterPastille([], eq), te), eq);
+  assert.equal(l.length, 2, "la même équipe deux fois = une pastille");
+  assert.deepEqual(parametresPastilles(l), { equipes: [eq.cle], lieux: ["college laval"] });
+  assert.deepEqual(parametresPastilles([]), { equipes: [], lieux: [] });
+  assert.deepEqual(suggestionsLisibles([eq, { genre: "ATHLETE", cle: "x", libelle: "y" }, null, { genre: "TERRAIN" }]), [eq],
+    "un genre autre qu'ÉQUIPE / TERRAIN n'est jamais affiché (Loi 25)");
+  assert.deepEqual(suggestionsLisibles({}), []);
 });

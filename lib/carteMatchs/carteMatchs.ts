@@ -112,6 +112,55 @@ export function fenetres(debut: string, fin: string | null | undefined, taille: 
   return out;
 }
 
+/** Avec au moins une pastille Équipe / Terrain, la recherche couvre la saison
+ *  à venir entière : 401 jours, la borne de sûreté de matchs_recherche. */
+export const JOURS_SAISON = 401;
+
+/** Coupe [debut, fin] en deux moitiés (la seconde commence le lendemain de la
+ *  fin de la première). Une seule journée → elle-même. Sert à redemander une
+ *  fenêtre dont la réponse a atteint le plafond de PostgREST. */
+export function moities(debut: string, fin: string): [string, string][] {
+  const d = dateLocale(debut), n = joursDansPlage(debut, fin);
+  if (!d || n === null) return [];
+  if (n === 1) return [[debut, debut]];
+  const m = Math.floor(n / 2);
+  return [[debut, jourDecale(d, m - 1)], [jourDecale(d, m), fin]];
+}
+
+/* ── Pastilles Équipe / Terrain (BP 2026-10-09) ─────────────── */
+
+export type GenrePastille = "EQUIPE" | "TERRAIN";
+
+/** Une suggestion de matchs_suggestions, et la pastille qu'elle devient.
+ *  `cle` : l'id de l'équipe, ou la clé lieu_normalise du terrain. */
+export interface PastilleCarte {
+  genre: GenrePastille;
+  cle: string;
+  libelle: string;
+  detail: string | null;
+  nb_matchs?: number;
+}
+
+/** Les lignes de matchs_suggestions utilisables ; le reste est écarté. */
+export function suggestionsLisibles(data: unknown): PastilleCarte[] {
+  if (!Array.isArray(data)) return [];
+  return (data as PastilleCarte[]).filter((s) =>
+    !!s && (s.genre === "EQUIPE" || s.genre === "TERRAIN") && typeof s.cle === "string" && typeof s.libelle === "string");
+}
+
+/** Ajoute une pastille (sans doublon : même genre, même clé). */
+export function ajouterPastille(liste: PastilleCarte[], p: PastilleCarte): PastilleCarte[] {
+  return liste.some((x) => x.genre === p.genre && x.cle === p.cle) ? liste : [...liste, p];
+}
+
+/** Les paramètres de matchs_recherche tirés des pastilles. */
+export function parametresPastilles(liste: PastilleCarte[]): { equipes: string[]; lieux: string[] } {
+  return {
+    equipes: liste.filter((p) => p.genre === "EQUIPE").map((p) => p.cle),
+    lieux: liste.filter((p) => p.genre === "TERRAIN").map((p) => p.cle),
+  };
+}
+
 /** Le message visible quand bornerFin a ramené la fin : « Période limitée à
  *  31 jours — fin ajustée au 8 novembre 2026. » */
 export function avisFinAjustee(fin: string): string {

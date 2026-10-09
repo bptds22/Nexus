@@ -27,14 +27,15 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useCalendrierUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
 import { useOrigineCarte } from "@/lib/carteMatchs/useOrigineCarte";
 import { useProfilsMatchs } from "@/lib/carteMatchs/useProfilsMatchs";
-import { useBasculerCalendrier, useMatchsRecherche, useSourcesMatchs, useSportsCarte } from "@/lib/carteMatchs/useMatchsRecherche";
+import { useBasculerCalendrier, useMatchsRecherche, useSourcesMatchs, useSportsCarte, useSuggestionsCarte } from "@/lib/carteMatchs/useMatchsRecherche";
 import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 import type { SourceMatch } from "@/lib/calendar/sourceMatch";
 import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSearch";
 import {
   TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour, libelleJour,
   terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, jourDecale,
-  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, dateCourte, dateCarte, enTeteJour, heureCarte, trierMatchs, LIEU_NON_PRECISE,
+  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, dateCourte, dateCarte, enTeteJour, heureCarte, trierMatchs, ajouterPastille, parametresPastilles, LIEU_NON_PRECISE,
+  type PastilleCarte,
   type MatchRecherche, type ProfilsMatch, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
@@ -79,6 +80,11 @@ function CarteMatchsContenu() {
   const [avisPlage, setAvisPlage] = React.useState<string | null>(null);
   const [q, setQ] = React.useState("");
   const [texte, setTexte] = React.useState("");
+  /** Pastilles Équipe / Terrain choisies dans les suggestions (BP 2026-10-09). */
+  const [pastilles, setPastilles] = React.useState<PastilleCarte[]>([]);
+  const [suggOuvert, setSuggOuvert] = React.useState(false);
+  const [suggActif, setSuggActif] = React.useState(0);
+  const saison = pastilles.length > 0;
   const [sport, setSport] = React.useState("");
   const [sportInitialise, setSportInitialise] = React.useState(false);
   const [types, setTypes] = React.useState<TypeMatch[]>(TYPES_PAR_DEFAUT);
@@ -131,9 +137,11 @@ function CarteMatchsContenu() {
     return () => window.clearTimeout(t);
   }, [q]);
 
-  const erreur = erreurPlage(debut, fin || null);
+  // Avec une pastille : la saison à venir entière, la date de fin ne compte plus.
+  const erreur = saison ? null : erreurPlage(debut, fin || null);
+  const { equipes, lieux } = parametresPastilles(pastilles);
   const { data, isLoading, isError, isFetching } = useMatchsRecherche(
-    { debut, fin: fin || debut, sport, types, texte },
+    { debut, fin: fin || debut, sport, types, texte, equipes, lieux },
     actif && sportInitialise && !erreur,
   );
   // Plage refusée ou recherche en erreur : liste ET carte vides, ensemble — jamais
@@ -223,6 +231,18 @@ function CarteMatchsContenu() {
     basculer.mutate({ gameId: m.id, ajouter: etat === "LIBRE" });
   };
 
+  // Suggestions : sur le texte (déjà temporisé, 300 ms), dans le sport et les types choisis. Une
+  // pastille déjà posée n'est plus proposée.
+  const { suggestions, pret: suggPret } = useSuggestionsCarte(texte, sport, types, actif && types.length > 0);
+  const proposees = suggestions.filter((x) => !pastilles.some((y) => y.genre === x.genre && y.cle === x.cle));
+  const menuVisible = suggOuvert && q.trim().length >= 2 && texte.trim().length >= 2 && (proposees.length > 0 || suggPret);
+  /** Une suggestion devient une pastille ; le texte libre est vidé (sinon il
+   *  filtrerait encore la saison de l'équipe choisie). */
+  const choisirSuggestion = (x: PastilleCarte) => {
+    setPastilles((l) => ajouterPastille(l, { genre: x.genre, cle: x.cle, libelle: x.libelle, detail: x.detail }));
+    setQ(""); setTexte(""); setSuggOuvert(false); setSuggActif(0);
+  };
+
   const filtreUnique = (label: string, valeur: string, valeurs: string[], poser: (v: string) => void, opts?: { lib?: (v: string) => string; toujoursActif?: boolean }) => {
     // Une seule valeur (ou aucune) : présent mais grisé, jamais caché (décision BP).
     // Une valeur posée absente des résultats reste modifiable, pour pouvoir la retirer.
@@ -255,13 +275,64 @@ function CarteMatchsContenu() {
       <div className="topbar">
         <div className="brand"><b>Carte des matchs</b></div>
 
-        <div className="search">
+        <div className="search cm-search">
           <svg className="sico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Équipe, terrain…" data-testid="recherche-texte" />
-          {q && <button className="clr" onClick={() => setQ("")} aria-label="Effacer la recherche">✕</button>}
+          <input value={q} placeholder="Équipe, terrain…" data-testid="recherche-texte"
+            role="combobox" aria-expanded={menuVisible} aria-controls="cm-suggestions" aria-autocomplete="list"
+            onChange={(e) => { setQ(e.target.value); setSuggOuvert(true); setSuggActif(0); }}
+            onFocus={() => setSuggOuvert(true)}
+            onBlur={() => setSuggOuvert(false)}
+            onKeyDown={(e) => {
+              if (!menuVisible) return;
+              if (e.key === "ArrowDown") { e.preventDefault(); setSuggActif((i) => Math.min(i + 1, proposees.length - 1)); }
+              else if (e.key === "ArrowUp") { e.preventDefault(); setSuggActif((i) => Math.max(i - 1, 0)); }
+              else if (e.key === "Enter" && proposees[suggActif]) { e.preventDefault(); choisirSuggestion(proposees[suggActif]); }
+              else if (e.key === "Escape") setSuggOuvert(false);
+            }} />
+          {q && <button className="clr" onMouseDown={(e) => e.preventDefault()} onClick={() => { setQ(""); setTexte(""); }} aria-label="Effacer la recherche">✕</button>}
+          {menuVisible && (
+            <div className="cm-sugg" id="cm-suggestions" role="listbox" data-testid="suggestions"
+              onMouseDown={(e) => e.preventDefault() /* garde le focus : le clic choisit avant le blur */}>
+              {(["EQUIPE", "TERRAIN"] as const).map((g) => {
+                const items = proposees.filter((x) => x.genre === g);
+                if (!items.length) return null;
+                return (
+                  <div key={g} className="cm-sugg-groupe" data-testid={g === "EQUIPE" ? "suggestions-equipes" : "suggestions-terrains"}>
+                    <div className="cm-sugg-tete">{g === "EQUIPE" ? "Équipes" : "Terrains"}</div>
+                    {items.map((x) => {
+                      const i = proposees.indexOf(x);
+                      return (
+                        <button key={x.genre + x.cle} type="button" role="option" aria-selected={i === suggActif}
+                          className={"cm-sugg-item" + (i === suggActif ? " actif" : "")} data-testid="suggestion"
+                          onMouseEnter={() => setSuggActif(i)} onClick={() => choisirSuggestion(x)}>
+                          <b>{x.libelle}</b>
+                          <span>{[x.detail, x.nb_matchs ? x.nb_matchs + " match" + (x.nb_matchs > 1 ? "s" : "") + " à venir" : null].filter(Boolean).join(" · ")}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              {!proposees.length && suggPret && (
+                <div className="cm-sugg-vide">Aucune équipe ni aucun terrain avec un match à venir. Le texte filtre quand même la liste.</div>
+              )}
+            </div>
+          )}
         </div>
+
+        {pastilles.length > 0 && (
+          <span className="cm-pastilles" data-testid="pastilles">
+            {pastilles.map((x) => (
+              <button key={x.genre + x.cle} type="button" className="ddpill" data-testid="pastille" data-genre={x.genre}
+                title={x.detail ?? undefined} onClick={() => setPastilles((l) => l.filter((y) => !(y.genre === x.genre && y.cle === x.cle)))}
+                aria-label={"Retirer " + x.libelle}>
+                <span className="cm-pastille-genre">{x.genre === "EQUIPE" ? "Équipe" : "Terrain"}</span>{x.libelle}<span className="x">✕</span>
+              </button>
+            ))}
+          </span>
+        )}
 
         {/* Dates — le modèle n'en a pas : mêmes boutons .fbtn. Une date, et un « au » facultatif. */}
         {/* Le champ natif reste (sélecteur, clavier) mais invisible : le navigateur
@@ -273,15 +344,21 @@ function CarteMatchsContenu() {
               onChange={(e) => { const v = dateSaisie(e.target.value); if (v) poserPlage(v, fin); }} data-testid="date-debut" />
           </label>
         </span>
+        {saison ? (
+          <span className="fbtn on" data-testid="date-fin-zone" title="Une équipe ou un terrain est choisi : toute la saison à venir, sans limite de 31 jours.">
+            <span className="lbl"><span>au</span><span className="cm-dlib" data-testid="date-fin-libelle">fin de saison</span></span>
+          </span>
+        ) : (
         <span className={"fbtn cm-dchamp" + (fin ? " on" : "")} data-testid="date-fin-zone">
           <label className="lbl">
             <span>au</span>
-            <span className={"cm-dlib" + (fin ? "" : " vide")} data-testid="date-fin-libelle">{fin ? dateCourte(fin) : "facultatif"}</span>
+            <span className={"cm-dlib" + (fin ? "" : " cm-dlib-vide")} data-testid="date-fin-libelle">{fin ? dateCourte(fin) : "facultatif"}</span>
             <input type="date" className="cm-date" value={fin} min={debut} aria-label="Au (facultatif)" onClick={ouvrirSelecteur}
               onChange={(e) => { const v = e.target.value; if (!v) poserPlage(debut, ""); else { const d = dateSaisie(v); if (d) poserPlage(debut, d); } }} data-testid="date-fin" />
             {fin && <button className="clr" onClick={(e) => { e.preventDefault(); poserPlage(debut, ""); }} aria-label="Retirer la date de fin">✕</button>}
           </label>
         </span>
+        )}
 
         <span data-testid="filtres-carte" style={{ display: "contents" }}>
           {filtreUnique("Sport", sport, Array.isArray(sports) ? sports : [], setSport, { toujoursActif: true })}
@@ -312,7 +389,7 @@ function CarteMatchsContenu() {
 
       <div className="main">
         <div className="list">
-          {(erreur || avisPlage) && (
+          {!saison && (erreur || avisPlage) && (
             <div className="cm-avis" role="status" data-testid="avis-plage">{erreur ?? avisPlage}</div>
           )}
           <div className="count" data-testid="resume">
@@ -321,6 +398,7 @@ function CarteMatchsContenu() {
                 <b>{matchs.length} match{matchs.length > 1 ? "s" : ""}</b>
                 {` · ${terrains.length} terrain${terrains.length > 1 ? "s" : ""}`}
                 {sansLieu > 0 ? ` · ${sansLieu} au lieu non précisé` : ""}
+                {saison ? " · toute la saison à venir" : ""}
                 {isFetching && !isLoading ? " · …" : ""}
               </>
             )}
@@ -524,6 +602,18 @@ function Panneau({ m, source, suivis, actif, enCours, autres, onCalendrier, onOu
 const CM_CSS = `
 .cs.cm{position:relative}
 .cs.cm .main{position:relative}
+.cs .cm-search{position:relative}
+.cs .cm-sugg{position:absolute;top:calc(100% + 6px);left:0;width:min(460px,92vw);z-index:1000;background:#20242D;border:1px solid var(--line2);
+  border-radius:13px;padding:8px;box-shadow:0 18px 46px #000B;max-height:min(70vh,520px);overflow-y:auto}
+.cs .cm-sugg-groupe+.cm-sugg-groupe{margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.cs .cm-sugg-tete{padding:4px 8px 6px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.cs .cm-sugg-item{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;background:none;border:0;border-radius:9px;padding:8px 10px;cursor:pointer;font:inherit}
+.cs .cm-sugg-item b{font-size:14px;font-weight:700;color:var(--txt)}
+.cs .cm-sugg-item span{font-size:12px;color:var(--mut)}
+.cs .cm-sugg-item.actif{background:#2A2F3A}
+.cs .cm-sugg-vide{padding:10px;font-size:12.5px;color:var(--mut)}
+.cs .cm-pastilles{display:inline-flex;flex-wrap:wrap;gap:6px}
+.cs .cm-pastille-genre{font-size:11px;font-weight:600;color:#E9909A}
 .cs .cm-avis{margin:10px 14px 0;padding:9px 12px;border-radius:10px;border:1px solid #F59E0B66;background:#F59E0B1F;color:#FCD34D;font-size:13px;font-weight:600;line-height:1.35}
 .cs .cm-date{background:none;border:0;outline:none;color:inherit;font:inherit;color-scheme:dark;cursor:pointer}
 .cs.cm .cards{gap:0}
@@ -548,7 +638,7 @@ const CM_CSS = `
 .cs .cm-dchamp .clr{position:relative;z-index:1}
 .cs .cm-dchamp:focus-within{border-color:#8FA3C8}
 .cs .cm-dlib{white-space:nowrap}
-.cs .cm-dlib.vide{color:var(--mut);font-weight:600}
+.cs .cm-dlib.cm-dlib-vide{color:var(--mut);font-weight:600}
 .cs .heart.cm-plus{font-size:18px;font-weight:700;line-height:1}
 .cs .heart.cm-plus:disabled{opacity:1;cursor:default}
 .cs .cm-pl .tsport a{color:var(--txt);text-decoration:none}
