@@ -259,6 +259,8 @@ test("pastilles : sans doublon, paramètres séparés équipes / terrains, sugge
   assert.deepEqual(suggestionsLisibles([eq, { genre: "ATHLETE", cle: "x", libelle: "y" }, null, { genre: "TERRAIN" }]), [eq],
     "un genre autre qu'ÉQUIPE / TERRAIN n'est jamais affiché (Loi 25)");
   assert.deepEqual(suggestionsLisibles({}), []);
+});
+
 test("heures civiles AM/PM (BP 2026-10-09) : « 6:30 PM » = 18 h 30, jamais 6 h 30 du matin", () => {
   // Les deux matchs QMFL signalés (ven. 9 oct.), tels qu'en base et sur la source.
   assert.equal(heureCarte("6:30 PM"), "18 h 30", "Myers Riders @ Bel Air Norsemen");
