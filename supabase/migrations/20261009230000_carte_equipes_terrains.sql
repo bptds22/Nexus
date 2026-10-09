@@ -2,12 +2,14 @@
 --
 -- 1. matchs_recherche gagne p_equipes uuid[] et p_lieux text[] (clés lieu_normalise(venue)).
 --    Un match passe s'il touche au moins une pastille (équipe à domicile OU au visiteur, ou
---    terrain). Avec au moins une pastille, la limite de 31 jours ne s'applique plus (borne de
---    sûreté : 401 jours). Sans pastille : définition et résultats de 20261009171716.
+--    terrain). LA PASTILLE GAGNE (décision BP) : avec au moins une pastille, ni la limite de
+--    31 jours (borne de sûreté : 401 jours), ni Sport, ni Type, ni le texte libre ne
+--    s'appliquent — tous les matchs à venir de la pastille. Seule la date de début compte.
+--    Sans pastille : résultats de 20261009171716, inchangés.
 --    Nouvelle signature → DROP + CREATE (une surcharge rendrait l'appel PostgREST ambigu).
 --    Les appels existants (5 paramètres nommés) restent valides : les deux ajouts ont un défaut.
--- 2. matchs_suggestions(p_texte, p_sport, p_types) : équipes et terrains à venir, dans le sport
---    et les types demandés. Loi 25 : aucun athlète.
+-- 2. matchs_suggestions(p_texte) : toutes les équipes et tous les terrains qui ont un match à
+--    venir, type (Secondaire / Collégial / Civil) dans le détail. Loi 25 : aucun athlète.
 --
 -- DROP + CREATE emporte l'ACL et Supabase accorde EXECUTE à anon par défaut : révoqué, puis
 -- vérifié en liste complète. Rollback : supabase/rollback/20261009230000_rollback_carte_equipes_terrains.sql
@@ -87,7 +89,10 @@ begin
      where gm.game_date between p_debut and p_fin
        -- ALIAS (BP 2026-10-09) : le RSEQ publie « Ultimate » (secondaire) et « Ultimate frisbee »
        -- (collégial 2026-2027) pour le même sport ; même repli que rseq_family_key().
-       and (public.lieu_normalise(p_sport) is null
+       -- LA PASTILLE GAGNE (BP 2026-10-09) : avec une pastille, Sport, Type et texte libre ne
+       -- s'appliquent plus (Catégorie et Division sont filtrées côté page, qui les ignore aussi).
+       and (v_pastilles
+            or public.lieu_normalise(p_sport) is null
             or (case when public.lieu_normalise(gm.sport) like 'ultimate%' then 'ultimate'
                      else public.lieu_normalise(gm.sport) end)
              = (case when public.lieu_normalise(p_sport) like 'ultimate%' then 'ultimate'
@@ -107,11 +112,11 @@ begin
       from g
       left join public.teams th on th.id = g.home_team_id
       left join public.teams tv on tv.id = g.visitor_team_id
-     where p_types is null or g.le_type = any (p_types)
+     where v_pastilles or p_types is null or g.le_type = any (p_types)
   ),
   f as (
     select n.* from n
-     where cardinality(v_mots) = 0
+     where v_pastilles or cardinality(v_mots) = 0
         or (select bool_and(strpos(coalesce(public.lieu_normalise(n.nom_dom || ' ' || n.nom_vis || ' ' || coalesce(n.venue, '')), ''), m) > 0)
               from unnest(v_mots) m)
   )
@@ -172,7 +177,7 @@ begin
   end if;
 end $$;
 
-CREATE FUNCTION public.matchs_suggestions(p_texte text, p_sport text DEFAULT NULL::text, p_types text[] DEFAULT NULL::text[])
+CREATE FUNCTION public.matchs_suggestions(p_texte text)
  RETURNS TABLE(genre text, cle text, libelle text, detail text, nb_matchs integer)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
@@ -181,20 +186,16 @@ CREATE FUNCTION public.matchs_suggestions(p_texte text, p_sport text DEFAULT NUL
 AS $function$
 -- Suggestions du champ « Équipe, terrain… » de la carte des matchs (BP 2026-10-09).
 -- Loi 25 : ÉQUIPES et TERRAINS seulement — aucune table d'athlètes n'est lue.
--- Seulement ce qui a au moins un match à venir dans le sport et les types demandés (mêmes
--- règles que matchs_recherche, alias Ultimate compris) : une suggestion mène toujours à
--- des résultats avec les filtres en place. Accents et ponctuation
--- ignorés (lieu_normalise) ; chaque mot tapé doit figurer. 8 équipes, 8 terrains au plus.
+-- LA PASTILLE GAGNE (décision BP) : toutes les équipes et tous les terrains qui ont un match
+-- à venir, SANS tenir compte des filtres Sport et Type de la page ; le type (Secondaire /
+-- Collégial / Civil, même règle que matchs_recherche) est écrit dans le détail.
+-- Accents et ponctuation ignorés (lieu_normalise) ; chaque mot tapé doit figurer.
+-- 8 équipes, 8 terrains au plus.
 #variable_conflict use_column
 declare
   v_mots text[];
-  v_sport text := case when public.lieu_normalise(p_sport) like 'ultimate%' then 'ultimate'
-                       else public.lieu_normalise(p_sport) end;
-  -- Les libellés BRUTS de games.sport qui correspondent au sport demandé (une vingtaine de
-  -- valeurs distinctes) : on normalise ces valeurs, pas chaque match.
-  v_libelles text[];
-  -- Les secteurs BRUTS (games.sector) lus comme collégial / secondaire : même règle que
-  -- le_type de matchs_recherche, évaluée sur les quelques valeurs distinctes.
+  -- Les secteurs BRUTS (games.sector) lus comme collégial / secondaire : la règle de le_type
+  -- de matchs_recherche, évaluée sur les quelques valeurs distinctes, pas sur chaque match.
   v_coll text[];
   v_sec text[];
 begin
@@ -209,36 +210,25 @@ begin
     return;
   end if;
 
-  if v_sport is not null then
-    select array_agg(x.sport) into v_libelles
-      from (select distinct gm.sport from public.games gm where gm.game_date >= current_date) x
-     where (case when public.lieu_normalise(x.sport) like 'ultimate%' then 'ultimate'
-                 else public.lieu_normalise(x.sport) end) = v_sport;
-  end if;
-
-  if p_types is not null then
-    select array_agg(x.sector) filter (where public.lieu_normalise(x.sector) = 'collegial'),
-           array_agg(x.sector) filter (where public.lieu_normalise(x.sector) = 'secondaire')
-      into v_coll, v_sec
-      from (select distinct gm.sector from public.games gm where gm.game_date >= current_date and gm.sector is not null) x;
-  end if;
+  select array_agg(x.sector) filter (where public.lieu_normalise(x.sector) = 'collegial'),
+         array_agg(x.sector) filter (where public.lieu_normalise(x.sector) = 'secondaire')
+    into v_coll, v_sec
+    from (select distinct gm.sector from public.games gm where gm.game_date >= current_date and gm.sector is not null) x;
 
   return query
   with futurs as (
-    select gm.home_team_id, gm.visitor_team_id, gm.venue
+    select gm.home_team_id, gm.visitor_team_id, gm.venue,
+           case
+             when gm.source_nom in ('LFMM', 'QBFL', 'QMFL', 'QMJFL')
+                  or (gm.sector is null and gm.source_nom is distinct from 'RSEQ') then 'Civil'
+             when gm.sector = any (coalesce(v_coll, '{}')) then 'Collégial'
+             when gm.sector = any (coalesce(v_sec, '{}')) then 'Secondaire'
+           end as le_type
       from public.games gm
      where gm.game_date >= current_date
-       and (v_sport is null or gm.sport = any (coalesce(v_libelles, '{}')))
-       and (p_types is null
-            or (case
-                  when gm.source_nom in ('LFMM', 'QBFL', 'QMFL', 'QMJFL')
-                       or (gm.sector is null and gm.source_nom is distinct from 'RSEQ') then 'CIVIL'
-                  when gm.sector = any (coalesce(v_coll, '{}')) then 'COLLEGIAL'
-                  when gm.sector = any (coalesce(v_sec, '{}')) then 'SECONDAIRE'
-                end) = any (p_types))
   ),
   par_equipe as (
-    select x.team_id, count(*)::int as n
+    select x.team_id, count(*)::int as n, mode() within group (order by f.le_type) as le_type
       from futurs f, lateral (values (f.home_team_id), (f.visitor_team_id)) x(team_id)
      where x.team_id is not null
      group by x.team_id
@@ -246,7 +236,7 @@ begin
   -- Équipes : le libellé « équipe + école » est normalisé UNE fois par équipe, dans une
   -- étape matérialisée — sinon le planificateur le recalcule pour le filtre ET pour le tri.
   eq as materialized (
-    select pe.team_id, pe.n, t.name, t.sport_id, t.age_group, t.gender, t.division, s.name as ecole,
+    select pe.team_id, pe.n, pe.le_type, t.name, t.sport_id, t.age_group, t.gender, t.division, s.name as ecole,
            coalesce(public.lieu_normalise(t.name || ' ' || coalesce(s.name, '')), '') as norm
       from par_equipe pe
       join public.teams t on t.id = pe.team_id
@@ -254,7 +244,7 @@ begin
   ),
   equipes as (
     select 'EQUIPE'::text as genre, eq.team_id::text as cle, btrim(eq.name) as libelle,
-           concat_ws(' · ', nullif(btrim(eq.ecole), ''),
+           concat_ws(' · ', eq.le_type, nullif(btrim(eq.ecole), ''),
                      nullif(concat_ws(' ', sp.nom, nullif(btrim(eq.age_group), ''), nullif(btrim(eq.gender), '')), ''),
                      nullif(btrim(eq.division), '')) as detail,
            eq.n as nb_matchs,
@@ -266,10 +256,10 @@ begin
   -- Terrains : on normalise chaque NOM distinct une fois (quelques centaines), pas chaque
   -- match (~10 000 en prod) — lieu_normalise (unaccent + regex) est le coût dominant.
   brut as (
-    select btrim(f.venue) as v, f.home_team_id, count(*)::int as n
+    select btrim(f.venue) as v, f.home_team_id, f.le_type, count(*)::int as n
       from futurs f
      where nullif(btrim(f.venue), '') is not null
-     group by 1, 2
+     group by 1, 2, 3
   ),
   noms as materialized (
     select x.v, public.lieu_normalise(x.v) as cle from (select distinct v from brut) x
@@ -278,6 +268,7 @@ begin
     select nm.cle,
            (array_agg(b.v order by b.n desc, b.v))[1] as libelle,
            mode() within group (order by nullif(btrim(s.city), '')) as ville,
+           array_to_string(array_agg(distinct b.le_type) filter (where b.le_type is not null), ' / ') as types,
            sum(b.n)::int as n
       from brut b
       join noms nm on nm.v = b.v
@@ -287,7 +278,8 @@ begin
      group by nm.cle
   ),
   terrains as (
-    select 'TERRAIN'::text as genre, pl.cle, pl.libelle, pl.ville as detail, pl.n as nb_matchs, pl.cle as norm_nom
+    select 'TERRAIN'::text as genre, pl.cle, pl.libelle, concat_ws(' · ', pl.ville, nullif(pl.types, '')) as detail,
+           pl.n as nb_matchs, pl.cle as norm_nom, pl.ville
       from par_lieu pl
      where (select bool_and(strpos(pl.cle || ' ' || coalesce(public.lieu_normalise(pl.ville), ''), m) > 0)
               from unnest(v_mots) m)
@@ -299,8 +291,8 @@ begin
     order by (l.norm_nom like v_mots[1] || '%') desc, l.nb_matchs desc, l.libelle limit 8);
 end $function$;
 
-revoke all on function public.matchs_suggestions(text, text, text[]) from public, anon;
-grant execute on function public.matchs_suggestions(text, text, text[]) to authenticated, service_role;
+revoke all on function public.matchs_suggestions(text) from public, anon;
+grant execute on function public.matchs_suggestions(text) to authenticated, service_role;
 
 -- ACL — liste COMPLÈTE triée, jamais par inclusion (CLAUDE.md, 2026-09-07). Un DROP + CREATE
 -- reçoit de Supabase EXECUTE pour anon : révoqué ci-dessus, et vérifié ici.
@@ -311,7 +303,7 @@ begin
     from pg_proc pr,
          lateral (select coalesce(nullif(split_part(x, '=', 1), ''), 'PUBLIC') as g
                     from unnest(pr.proacl::text[]) as x) t
-   where pr.oid = 'public.matchs_suggestions(text, text, text[])'::regprocedure;
+   where pr.oid = 'public.matchs_suggestions(text)'::regprocedure;
   if vus is distinct from array['authenticated', 'postgres', 'service_role'] then
     raise exception 'NEXUS: ACL de matchs_suggestions = %, attendu {authenticated,postgres,service_role}', vus;
   end if;

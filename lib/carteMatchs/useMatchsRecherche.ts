@@ -141,20 +141,20 @@ export function useSourcesMatchs(ids: string[], enabled: boolean) {
   return { data: sources };
 }
 
-/** Suggestions du champ « Équipe, terrain… » (RPC matchs_suggestions) : équipes
- *  et terrains ayant un match à venir, dans le sport et les types choisis — une
- *  suggestion mène toujours à des résultats avec les filtres en place. À partir de 2
+/** Suggestions du champ « Équipe, terrain… » (RPC matchs_suggestions) : TOUTES
+ *  les équipes et tous les terrains ayant un match à venir, sans tenir compte des
+ *  filtres Sport et Type — la pastille gagne (décision BP 2026-10-09) ; le type
+ *  est écrit dans le détail. À partir de 2
  *  caractères. Loi 25 : la RPC ne lit aucune table d'athlètes. */
-export function useSuggestionsCarte(texte: string, sport: string, types: TypeMatch[], enabled: boolean) {
+export function useSuggestionsCarte(texte: string, enabled: boolean) {
   const t = texte.trim();
-  const tries = [...types].sort();
   const requete = useQuery<PastilleCarte[]>({
-    queryKey: ["carte-matchs", "suggestions", t.toLowerCase(), sport, tries.join(",")],
+    queryKey: ["carte-matchs", "suggestions", t.toLowerCase()],
     enabled: enabled && t.length >= 2,
     staleTime: 60_000,
     placeholderData: (avant) => avant,
     queryFn: async () => {
-      const { data, error } = await createClient().rpc("matchs_suggestions", { p_texte: t, p_sport: sport || null, p_types: tries });
+      const { data, error } = await createClient().rpc("matchs_suggestions", { p_texte: t });
       if (error) throw error;
       return (data ?? []) as PastilleCarte[];
     },
