@@ -34,7 +34,7 @@ import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSe
 import {
   TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour, libelleJour,
   terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, jourDecale,
-  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, LIEU_NON_PRECISE,
+  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, dateCourte, enTeteJour, heureCarte, trierMatchs, LIEU_NON_PRECISE,
   type MatchRecherche, type ProfilsMatch, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
@@ -140,7 +140,7 @@ function CarteMatchsContenu() {
   // les marqueurs de la recherche précédente (BP 2026-10-09).
   const tous = React.useMemo(() => (erreur || isError ? [] : matchsLisibles(data)), [data, erreur, isError]);
   const options = React.useMemo(() => optionsCatDiv(tous), [tous]);
-  const matchs = React.useMemo(() => filtrerCatDiv(tous, categorie, division), [tous, categorie, division]);
+  const matchs = React.useMemo(() => trierMatchs(filtrerCatDiv(tous, categorie, division)), [tous, categorie, division]);
   const jours = React.useMemo(() => grouperParJour(matchs), [matchs]);
   const terrains = React.useMemo(() => terrainsCarte(matchs), [matchs]);
   const sansLieu = matchs.filter((m) => !terrainDe(m)).length;
@@ -264,16 +264,20 @@ function CarteMatchsContenu() {
         </div>
 
         {/* Dates — le modèle n'en a pas : mêmes boutons .fbtn. Une date, et un « au » facultatif. */}
-        <span className="fbtn on" data-testid="date-debut-zone">
+        {/* Le champ natif reste (sélecteur, clavier) mais invisible : le navigateur
+            l'écrirait selon SA locale (« 10/09/2026 », ambigu). On affiche « 9 oct. 2026 ». */}
+        <span className="fbtn on cm-dchamp" data-testid="date-debut-zone">
           <label className="lbl">
-            <input type="date" className="cm-date" value={debut} aria-label="Date"
+            <span className="cm-dlib" data-testid="date-debut-libelle">{dateCourte(debut)}</span>
+            <input type="date" className="cm-date" value={debut} aria-label="Date" onClick={ouvrirSelecteur}
               onChange={(e) => { const v = dateSaisie(e.target.value); if (v) poserPlage(v, fin); }} data-testid="date-debut" />
           </label>
         </span>
-        <span className={"fbtn" + (fin ? " on" : "")}>
+        <span className={"fbtn cm-dchamp" + (fin ? " on" : "")} data-testid="date-fin-zone">
           <label className="lbl">
             <span>au</span>
-            <input type="date" className="cm-date" value={fin} min={debut} aria-label="Au (facultatif)"
+            <span className={"cm-dlib" + (fin ? "" : " vide")} data-testid="date-fin-libelle">{fin ? dateCourte(fin) : "facultatif"}</span>
+            <input type="date" className="cm-date" value={fin} min={debut} aria-label="Au (facultatif)" onClick={ouvrirSelecteur}
               onChange={(e) => { const v = e.target.value; if (!v) poserPlage(debut, ""); else { const d = dateSaisie(v); if (d) poserPlage(debut, d); } }} data-testid="date-fin" />
             {fin && <button className="clr" onClick={(e) => { e.preventDefault(); poserPlage(debut, ""); }} aria-label="Retirer la date de fin">✕</button>}
           </label>
@@ -328,30 +332,45 @@ function CarteMatchsContenu() {
             {!erreur && !isLoading && !isError && types.length > 0 && matchs.length === 0 && (
               <div className="vide" data-testid="aucun-match">Aucun match pour ces critères. Change de date ou retire un filtre.</div>
             )}
-            {!erreur && jours.map((j) => (
-              <React.Fragment key={j.jour}>
-                <div className="ptag cm-jour" data-testid="jour">{libelleJour(j.jour)}</div>
-                {j.matchs.map((m) => {
-                  const t = terrainDe(m);
-                  return (
-                    <div
-                      key={m.id} data-testid="ligne-match" data-match={m.id} data-terrain={t?.id}
-                      className={"lc" + (m.id === selection ? " sel" : "")}
-                      onClick={() => ouvrir(m)}
-                      onMouseEnter={() => setSurvol(t?.id ?? null)}
-                      onMouseLeave={() => setSurvol(null)}
-                    >
-                      <div className="lcinfo">
-                        <div className="lctitre"><b>{titreMatch(m)}</b></div>
-                        <div className="m">{heureQuebec(m.heure)} · {m.terrain || LIEU_NON_PRECISE}</div>
-                        <Source source={sources?.get(m.id)} />
-                      </div>
-                      <BoutonCalendrier m={m} enCours={enCours === m.id} onClick={() => basculerMatch(m)} />
-                    </div>
-                  );
-                })}
-              </React.Fragment>
-            ))}
+            {/* Un bloc par jour : l'en-tête colle en haut tant que son jour défile,
+                puis le jour suivant le repousse. Cartes dessous — une colonne en
+                mode Carte, une grille en mode Liste (même rendu, BP 2026-10-09). */}
+            {!erreur && jours.map((j) => {
+              const tete = enTeteJour(j.jour, aujourdhui, j.matchs.length);
+              return (
+                <section key={j.jour} className="cm-bloc" data-testid="bloc-jour" data-jour={j.jour}>
+                  <h3 className="cm-jour" data-testid="jour">
+                    <span className="cm-jour-nom">{tete.jour}</span>
+                    <span className="cm-jour-n">{tete.compte}</span>
+                  </h3>
+                  <div className="cm-grille">
+                    {j.matchs.map((m) => {
+                      const t = terrainDe(m);
+                      const heure = heureCarte(m.heure);
+                      return (
+                        <div
+                          key={m.id} data-testid="ligne-match" data-match={m.id} data-terrain={t?.id}
+                          className={"lc cm-lc" + (m.id === selection ? " sel" : "")}
+                          onClick={() => ouvrir(m)}
+                          onMouseEnter={() => setSurvol(t?.id ?? null)}
+                          onMouseLeave={() => setSurvol(null)}
+                        >
+                          <div className={"cm-heure" + (minutesConnues(m) ? "" : " tbc")} data-testid="heure-match">{heure}</div>
+                          <div className="lcinfo">
+                            <div className="lctitre"><b>{titreMatch(m)}</b></div>
+                            <div className="m">{m.terrain || LIEU_NON_PRECISE}</div>
+                          </div>
+                          <BoutonCalendrier m={m} enCours={enCours === m.id} onClick={() => basculerMatch(m)} />
+                          {/* Pleine largeur sous l'heure et les équipes : dans la colonne
+                              étroite du mode Carte, elle s'enroulait sur 4-5 lignes. */}
+                          <div className="cm-lc-src"><Source source={sources?.get(m.id)} /></div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </div>
 
@@ -373,6 +392,14 @@ function CarteMatchsContenu() {
     </div>
   );
 }
+
+/** Le sélecteur natif s'ouvre au clic n'importe où sur le champ (le champ est
+ *  invisible : seule l'icône l'aurait ouvert). */
+function ouvrirSelecteur(e: React.MouseEvent<HTMLInputElement>) {
+  try { e.currentTarget.showPicker?.(); } catch { /* déjà ouvert, ou navigateur sans showPicker */ }
+}
+
+const minutesConnues = (m: MatchRecherche) => heureCarte(m.heure) !== "Heure à confirmer";
 
 /** La ligne « Source » du Calendrier (SourceMatchLigne), telle quelle. Seul le
  *  clic sur le LIEN reste au lien ; ailleurs sur la ligne, il ouvre le match. */
@@ -496,7 +523,25 @@ const CM_CSS = `
 .cs.cm .main{position:relative}
 .cs .cm-avis{margin:10px 14px 0;padding:9px 12px;border-radius:10px;border:1px solid #F59E0B66;background:#F59E0B1F;color:#FCD34D;font-size:13px;font-weight:600;line-height:1.35}
 .cs .cm-date{background:none;border:0;outline:none;color:inherit;font:inherit;color-scheme:dark;cursor:pointer}
-.cs .cm-jour{padding:10px 2px 2px}
+.cs.cm .cards{gap:0}
+.cs .cm-bloc{display:flex;flex-direction:column;padding-bottom:14px}
+.cs .cm-jour{position:sticky;top:0;z-index:6;margin:0 -12px 8px;padding:11px 16px 9px;background:#141925;
+  border-bottom:1px solid #26314A;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  font-size:14.5px;font-weight:700;color:var(--txt);letter-spacing:0;text-transform:none}
+.cs .cm-jour-n{font-size:12.5px;font-weight:600;color:var(--mut);white-space:nowrap}
+.cs .cm-grille{display:flex;flex-direction:column;gap:8px}
+.cs .cm-lc{display:grid;grid-template-columns:62px minmax(0,1fr) auto;column-gap:12px;align-items:start;scroll-margin-top:52px}
+.cs .cm-lc .heart{align-self:center}
+.cs .cm-lc-src{grid-column:1/-1}
+.cs .cm-lc-src:empty{display:none}
+.cs .cm-heure{flex:0 0 62px;padding-top:1px;font-size:15px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cs .cm-heure.tbc{white-space:normal;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--mut)}
+.cs .cm-dchamp .lbl{position:relative}
+.cs .cm-dchamp .cm-date{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.cs .cm-dchamp .clr{position:relative;z-index:1}
+.cs .cm-dchamp:focus-within{border-color:#8FA3C8}
+.cs .cm-dlib{white-space:nowrap}
+.cs .cm-dlib.vide{color:var(--mut);font-weight:600}
 .cs .heart.cm-plus{font-size:18px;font-weight:700;line-height:1}
 .cs .heart.cm-plus:disabled{opacity:1;cursor:default}
 .cs .cm-pl .tsport a{color:var(--txt);text-decoration:none}
@@ -513,8 +558,9 @@ const CM_CSS = `
   .cs.cm.pleine .main{grid-template-columns:1fr}
   .cs.cm.pleine .maparea{display:none}
   .cs.cm.pleine .list{border-right:0}
-  .cs.cm.pleine .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));align-content:start;padding:0 18px 18px}
-  .cs.cm.pleine .cm-jour{grid-column:1/-1}
+  .cs.cm.pleine .cards{padding:0 18px 18px}
+  .cs.cm.pleine .cm-jour{margin:0 -18px 10px;padding:12px 22px 10px}
+  .cs.cm.pleine .cm-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:8px}
 }
 @media(max-width:1000px){
   .cs.cm .main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr)}

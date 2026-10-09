@@ -176,7 +176,47 @@ export function libelleJour(iso: string): string {
   return d ? `${JOURS[d.getDay()]} ${d.getDate()}${d.getDate() === 1 ? "er" : ""} ${MOIS[d.getMonth()]}` : iso;
 }
 
-/** Groupé par jour, dans l'ordre reçu (la base trie par jour puis heure). */
+const MOIS_COURTS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+
+/** « 9 oct. 2026 » — le libellé des champs de date (BP 2026-10-09) : jamais
+ *  « 10/09/2026 », que le navigateur affiche selon SA locale et qui se lit
+ *  9 octobre ou 10 septembre selon le lecteur. Vide si la date est illisible. */
+export function dateCourte(iso: string | null | undefined): string {
+  const d = dateLocale(iso);
+  if (!d) return "";
+  return `${d.getDate()}${d.getDate() === 1 ? "er" : ""} ${MOIS_COURTS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/** L'en-tête collant d'un jour : « Samedi 10 octobre » / « 42 matchs ».
+ *  Aujourd'hui et demain le disent, sans perdre la date ; l'année n'apparaît
+ *  que si elle n'est pas celle d'aujourd'hui (plage à cheval sur janvier). */
+export function enTeteJour(iso: string, aujourdhui: string, nb: number): { jour: string; compte: string } {
+  const d = dateLocale(iso), a = dateLocale(aujourdhui);
+  const compte = `${nb} match${nb > 1 ? "s" : ""}`;
+  if (!d) return { jour: iso, compte };
+  const date = libelleJour(iso) + (a && a.getFullYear() !== d.getFullYear() ? ` ${d.getFullYear()}` : "");
+  const prefixe = iso === aujourdhui ? "Aujourd'hui" : a && iso === jourDecale(a, 1) ? "Demain" : null;
+  return { jour: prefixe ? `${prefixe} · ${date}` : date.charAt(0).toUpperCase() + date.slice(1), compte };
+}
+
+/** L'heure en tête de carte : « 13 h 00 », « 9 h 30 » (BP 2026-10-09 : minutes
+ *  toujours écrites, la colonne s'aligne), sinon « Heure à confirmer ». */
+export function heureCarte(heure: string | null | undefined): string {
+  const m = minutesDe(heure);
+  if (m === null) return "Heure à confirmer";
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`;
+}
+
+/** Par date, puis par heure (heure inconnue en fin de journée), puis par
+ *  équipe à domicile. La base trie déjà ainsi ; la page ne s'y fie plus, les
+ *  résultats arrivant par fenêtres de 7 jours. Tri stable, sans muter. */
+export function trierMatchs<T extends Pick<MatchRecherche, "jour" | "heure" | "domicile">>(matchs: T[]): T[] {
+  const cle = (m: T) => minutesDe(m.heure) ?? 24 * 60;
+  return [...matchs].sort((x, y) =>
+    x.jour < y.jour ? -1 : x.jour > y.jour ? 1 : cle(x) - cle(y) || (x.domicile ?? "").localeCompare(y.domicile ?? "", "fr"));
+}
+
+/** Groupé par jour, dans l'ordre reçu (passer par trierMatchs avant). */
 export function grouperParJour<T extends Pick<MatchRecherche, "jour">>(matchs: T[]): { jour: string; matchs: T[] }[] {
   const groupes: { jour: string; matchs: T[] }[] = [];
   for (const m of matchs) {

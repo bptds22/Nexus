@@ -6,6 +6,7 @@ import {
   libelleDivision, lienItineraire, titreMatch, profilsParMatch, libelleProfils, libelleDontSuivis,
   estGesteMatch, libelleGesteMatch, dateSaisie, sourcesParMatch, paquets,
   bornerFin, avisFinAjustee, matchsLisibles, JOURS_MAX, fenetres,
+  dateCourte, enTeteJour, heureCarte, trierMatchs,
   type MatchRecherche,
 } from "@/lib/carteMatchs/carteMatchs";
 
@@ -194,4 +195,41 @@ test("fenetres : 31 jours en fenêtres de 7 (plafond PostgREST de 1 000 lignes),
   assert.deepEqual(fenetres("2026-10-09", "", 7), [["2026-10-09", "2026-10-09"]], "une date seule");
   assert.deepEqual(fenetres("2026-10-09", "2026-10-11", 1), [["2026-10-09", "2026-10-09"], ["2026-10-10", "2026-10-10"], ["2026-10-11", "2026-10-11"]]);
   assert.deepEqual(fenetres("2026-10-09", "2026-10-01", 7), [], "fin avant début");
+});
+
+test("dates claires (BP 2026-10-09) : champs « 9 oct. 2026 », jamais « 10/09/2026 »", () => {
+  assert.equal(dateCourte("2026-10-09"), "9 oct. 2026");
+  assert.equal(dateCourte("2026-11-01"), "1er nov. 2026");
+  assert.equal(dateCourte("2027-02-14"), "14 févr. 2027");
+  assert.equal(dateCourte(""), "");
+  assert.equal(dateCourte("10/09/2026"), "", "une forme ambiguë n'est jamais relayée");
+});
+
+test("en-tête de jour : Aujourd'hui / Demain gardent la date ; compte au singulier ; année seulement si elle change", () => {
+  const auj = "2026-10-09";
+  assert.deepEqual(enTeteJour("2026-10-09", auj, 74), { jour: "Aujourd'hui · vendredi 9 octobre", compte: "74 matchs" });
+  assert.deepEqual(enTeteJour("2026-10-10", auj, 1), { jour: "Demain · samedi 10 octobre", compte: "1 match" });
+  assert.deepEqual(enTeteJour("2026-10-11", auj, 42), { jour: "Dimanche 11 octobre", compte: "42 matchs" });
+  assert.deepEqual(enTeteJour("2027-01-01", "2026-12-15", 3), { jour: "Vendredi 1er janvier 2027", compte: "3 matchs" });
+  assert.equal(enTeteJour("2026-11-01", "2026-10-31", 2).jour, "Demain · dimanche 1er novembre", "demain, à cheval sur deux mois");
+});
+
+test("heure de la carte : « 13 h 00 », « 9 h 30 », sinon « Heure à confirmer »", () => {
+  assert.equal(heureCarte("13:00"), "13 h 00");
+  assert.equal(heureCarte("9:30"), "9 h 30");
+  assert.equal(heureCarte("18h15"), "18 h 15");
+  assert.equal(heureCarte(null), "Heure à confirmer");
+  assert.equal(heureCarte("À déterminer"), "Heure à confirmer");
+});
+
+test("trierMatchs : date, puis heure (inconnue en fin de jour), puis domicile — fenêtres recollées dans le désordre", () => {
+  const a = match({ jour: "2026-10-10", heure: "18:00", domicile: "B" });
+  const b = match({ jour: "2026-10-10", heure: null, domicile: "A" });
+  const c = match({ jour: "2026-10-09", heure: "20:00", domicile: "Z" });
+  const d = match({ jour: "2026-10-10", heure: "9:30", domicile: "C" });
+  const e = match({ jour: "2026-10-10", heure: "18:00", domicile: "A" });
+  const entree = [a, b, c, d, e];
+  assert.deepEqual(trierMatchs(entree).map((m) => m.id), [c, d, e, a, b].map((m) => m.id));
+  assert.deepEqual(entree, [a, b, c, d, e], "l'entrée n'est pas modifiée");
+  assert.deepEqual(grouperParJour(trierMatchs(entree)).map((g) => [g.jour, g.matchs.length]), [["2026-10-09", 1], ["2026-10-10", 4]]);
 });
