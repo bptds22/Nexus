@@ -532,12 +532,12 @@ const CM_CSS = `
 .cs .cm-bloc{display:flex;flex-direction:column;padding-bottom:14px}
 .cs .cm-jour{position:sticky;top:0;z-index:6;margin:0 -12px 8px;padding:10px 16px 9px;background:var(--bg);
   display:flex;letter-spacing:0;text-transform:none}
-/* Encadré rouge Nexus, texte blanc (BP 2026-10-09). Contraste : blanc / #E63946 = 4,17:1,
-   compte en blanc 90 % = 3,62:1 — AA « grand texte » (3:1), sous l'AA texte courant (4,5:1). */
+/* Encadré rouge, texte blanc (BP 2026-10-09). #DC3441 plutôt que #E63946 : blanc / #DC3441 =
+   4,55:1 (AA texte courant ≥ 4,5:1) ; #E63946 n'atteignait que 4,17:1. */
 .cs .cm-jour-boite{flex:1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
-  background:var(--nexus);border-radius:10px;padding:8px 12px;font-size:14.5px;font-weight:700}
+  background:#DC3441;border-radius:10px;padding:8px 12px;font-size:14.5px;font-weight:700}
 .cs .cm-jour-nom{color:#fff}
-.cs .cm-jour-n{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap}
+.cs .cm-jour-n{font-size:12.5px;font-weight:500;color:#fff;white-space:nowrap}
 .cs .cm-grille{display:flex;flex-direction:column;gap:8px}
 .cs .cm-lc{display:grid;grid-template-columns:62px minmax(0,1fr) auto;column-gap:12px;align-items:start;scroll-margin-top:52px}
 .cs .cm-lc .heart{align-self:center}

@@ -15,6 +15,11 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { sourceDuMatch, type SourceMatch } from "@/lib/calendar/sourceMatch";
+import { heureCarte, heureQuebec, minutesDe } from "@/lib/calendar/heureMatch";
+
+/** La lecture de l'heure est PARTAGÉE (lib/calendar/heureMatch) : réexportée ici
+ *  pour les appelants de la carte, jamais redéfinie. */
+export { heureCarte, heureQuebec, minutesDe };
 
 /* ── Lieu ──────────────────────────────────────────────────── */
 
@@ -209,13 +214,6 @@ export function enTeteJour(iso: string, aujourdhui: string, nb: number): { jour:
   return { jour: prefixe ? `${prefixe} · ${date}` : date.charAt(0).toUpperCase() + date.slice(1), compte };
 }
 
-/** L'heure en tête de carte : « 13 h 00 », « 9 h 30 » (BP 2026-10-09 : minutes
- *  toujours écrites, la colonne s'aligne), sinon « Heure à confirmer ». */
-export function heureCarte(heure: string | null | undefined): string {
-  const m = minutesDe(heure);
-  if (m === null) return "Heure à confirmer";
-  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`;
-}
 
 /** Par date, puis par heure (heure inconnue en fin de journée), puis par
  *  équipe à domicile. La base trie déjà ainsi ; la page ne s'y fie plus, les
@@ -290,34 +288,6 @@ export function etatCalendrier(m: Pick<MatchRecherche, "cible" | "ajoute">): Eta
 
 /* ── Libellés et actions ───────────────────────────────────── */
 
-/** Heure de `games.game_time` → minutes depuis minuit ; null si absente ou
- *  illisible. Deux formes en base (relevé prod 2026-10-09) :
- *    · RSEQ : « 18:30 », 24 h ;
- *    · ligues civiles (LFMM, QBFL, QMFL, QMJFL) : « 6:30 PM », « 8:00 pm » —
- *      l'heure BRUTE de la source, exacte en base (446/446 conformes).
- *  L'ancienne lecture ignorait AM/PM : « 6:30 PM » s'affichait 6 h 30 (BP
- *  2026-10-09). 12:xx PM = midi, 12:xx AM = minuit. */
-export function minutesDe(heure: string | null | undefined): number | null {
-  const m = /^\s*(\d{1,2})\s*(?:[:h]\s*(\d{2}))?\s*(?:([ap])\.?\s*m\b\.?)?/i.exec(heure ?? "");
-  if (!m || (m[2] === undefined && !m[3])) return null;
-  let h = Number(m[1]);
-  const mi = Number(m[2] ?? 0);
-  if (mi > 59) return null;
-  if (m[3]) {
-    if (h < 1 || h > 12) return null;
-    h = (h % 12) + (m[3].toLowerCase() === "p" ? 12 : 0);
-  } else if (h > 23) return null;
-  return h * 60 + mi;
-}
-
-/** « 09:30 » → « 9 h 30 » ; « 18:00 » → « 18 h » (usage québécois, OQLF).
- *  Sans heure lisible → « Heure à confirmer ». */
-export function heureQuebec(heure: string | null | undefined): string {
-  const m = minutesDe(heure);
-  if (m === null) return "Heure à confirmer";
-  const h = Math.floor(m / 60), mi = m % 60;
-  return mi === 0 ? `${h} h` : `${h} h ${String(mi).padStart(2, "0")}`;
-}
 
 /** « D1 » → « Division 1 » ; toute autre forme est rendue telle quelle.
  *  Les codes de LIGUE (« Volleyball C F D1 ») restent bruts : aucune table

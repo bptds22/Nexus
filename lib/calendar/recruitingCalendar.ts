@@ -13,6 +13,7 @@
 
 import type { CalendarGame, CalendarTarget } from "@/lib/queries/recruiter/useRecruitingCalendar";
 import { parseGameDate } from "@/lib/queries/recruiter/useRecruitingCalendar";
+import { minutesDe } from "@/lib/calendar/heureMatch";
 
 /* ── Filtres ───────────────────────────────────────────────── */
 
@@ -140,7 +141,8 @@ export function buildMatches(
   return views;
 }
 
-/** Tri par défaut : date ASC, densité DESC en second critère.
+/** Tri par défaut : date ASC, puis heure (lue par minutesDe, AM/PM compris ;
+ *  sans heure en fin de journée), puis densité DESC.
  *  Tri « densité » : densité DESC, puis date ASC. */
 function sortMatches(views: MatchView[], sort: CalendarSort): void {
   views.sort((a, b) => {
@@ -151,6 +153,8 @@ function sortMatches(views: MatchView[], sort: CalendarSort): void {
     if (a.game.gameDate !== b.game.gameDate) {
       return a.game.gameDate.localeCompare(b.game.gameDate);
     }
+    const ha = minutesDe(a.game.gameTime) ?? 24 * 60, hb = minutesDe(b.game.gameTime) ?? 24 * 60;
+    if (ha !== hb) return ha - hb;
     return b.count - a.count;
   });
 }

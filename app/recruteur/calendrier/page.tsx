@@ -41,6 +41,7 @@ import {
 } from "@/lib/calendar/recruitingCalendar";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
+import { heureCarte } from "@/lib/calendar/heureMatch";
 import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { RecruteurCalendrierMobile } from "@/components/shared/RecruteurCalendrierMobile";
@@ -418,7 +419,9 @@ function MatchCard({ m }: { m: MatchView }) {
             {m.game.visitorName}
           </div>
           <div className="mt-1 flex flex-wrap gap-x-[14px] gap-y-1.5 text-[14.5px] font-medium text-[#8A909C]">
-            {m.game.gameTime && <span>{m.game.gameTime}</span>}
+            {/* Même lecture et même format que la carte des matchs : « 18 h 30 »,
+                jamais le texte brut de la source (« 6:30 PM »). */}
+            {m.game.gameTime && <span data-testid="heure-match">{heureCarte(m.game.gameTime)}</span>}
             {m.game.venue && <span>{m.game.venue}</span>}
             {m.game.competition && <span className="text-[#5C6575]">{m.game.competition}</span>}
           </div>
