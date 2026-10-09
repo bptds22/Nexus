@@ -340,8 +340,10 @@ function CarteMatchsContenu() {
               return (
                 <section key={j.jour} className="cm-bloc" data-testid="bloc-jour" data-jour={j.jour}>
                   <h3 className="cm-jour" data-testid="jour">
-                    <span className="cm-jour-nom">{tete.jour}</span>
-                    <span className="cm-jour-n">{tete.compte}</span>
+                    <span className="cm-jour-boite">
+                      <span className="cm-jour-nom">{tete.jour}</span>
+                      <span className="cm-jour-n">{tete.compte}</span>
+                    </span>
                   </h3>
                   <div className="cm-grille">
                     {j.matchs.map((m) => {
@@ -528,12 +530,14 @@ const CM_CSS = `
 .cs .cm-date{background:none;border:0;outline:none;color:inherit;font:inherit;color-scheme:dark;cursor:pointer}
 .cs.cm .cards{gap:0}
 .cs .cm-bloc{display:flex;flex-direction:column;padding-bottom:14px}
-.cs .cm-jour{position:sticky;top:0;z-index:6;margin:0 -12px 8px;padding:11px 16px 9px;background:#0C1018;
-  border-bottom:1px solid #26314A;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
-  font-size:14.5px;font-weight:700;letter-spacing:0;text-transform:none}
-/* Rouge Nexus sur marine #0C1018 : 4,57:1 (AA). Le compte en gris : 7,49:1. */
-.cs .cm-jour-nom{color:var(--nexus)}
-.cs .cm-jour-n{font-size:12.5px;font-weight:600;color:var(--mut);white-space:nowrap}
+.cs .cm-jour{position:sticky;top:0;z-index:6;margin:0 -12px 8px;padding:10px 16px 9px;background:var(--bg);
+  display:flex;letter-spacing:0;text-transform:none}
+/* Encadré rouge Nexus, texte blanc (BP 2026-10-09). Contraste : blanc / #E63946 = 4,17:1,
+   compte en blanc 90 % = 3,62:1 — AA « grand texte » (3:1), sous l'AA texte courant (4,5:1). */
+.cs .cm-jour-boite{flex:1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  background:var(--nexus);border-radius:10px;padding:8px 12px;font-size:14.5px;font-weight:700}
+.cs .cm-jour-nom{color:#fff}
+.cs .cm-jour-n{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap}
 .cs .cm-grille{display:flex;flex-direction:column;gap:8px}
 .cs .cm-lc{display:grid;grid-template-columns:62px minmax(0,1fr) auto;column-gap:12px;align-items:start;scroll-margin-top:52px}
 .cs .cm-lc .heart{align-self:center}

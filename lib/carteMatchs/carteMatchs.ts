@@ -290,12 +290,23 @@ export function etatCalendrier(m: Pick<MatchRecherche, "cible" | "ajoute">): Eta
 
 /* ── Libellés et actions ───────────────────────────────────── */
 
-/** "HH:MM" → minutes depuis minuit ; null si absente ou illisible. */
+/** Heure de `games.game_time` → minutes depuis minuit ; null si absente ou
+ *  illisible. Deux formes en base (relevé prod 2026-10-09) :
+ *    · RSEQ : « 18:30 », 24 h ;
+ *    · ligues civiles (LFMM, QBFL, QMFL, QMJFL) : « 6:30 PM », « 8:00 pm » —
+ *      l'heure BRUTE de la source, exacte en base (446/446 conformes).
+ *  L'ancienne lecture ignorait AM/PM : « 6:30 PM » s'affichait 6 h 30 (BP
+ *  2026-10-09). 12:xx PM = midi, 12:xx AM = minuit. */
 export function minutesDe(heure: string | null | undefined): number | null {
-  const m = /^\s*(\d{1,2})[:h](\d{2})/.exec(heure ?? "");
-  if (!m) return null;
-  const h = Number(m[1]), mi = Number(m[2]);
-  if (h > 23 || mi > 59) return null;
+  const m = /^\s*(\d{1,2})\s*(?:[:h]\s*(\d{2}))?\s*(?:([ap])\.?\s*m\b\.?)?/i.exec(heure ?? "");
+  if (!m || (m[2] === undefined && !m[3])) return null;
+  let h = Number(m[1]);
+  const mi = Number(m[2] ?? 0);
+  if (mi > 59) return null;
+  if (m[3]) {
+    if (h < 1 || h > 12) return null;
+    h = (h % 12) + (m[3].toLowerCase() === "p" ? 12 : 0);
+  } else if (h > 23) return null;
   return h * 60 + mi;
 }
 

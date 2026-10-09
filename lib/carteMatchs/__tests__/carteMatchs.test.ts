@@ -240,3 +240,21 @@ test("date sous l'heure de la carte : « ven. 9 oct. », jamais numérique", () 
   assert.equal(dateCarte("2026-12-31"), "jeu. 31 déc.");
   assert.equal(dateCarte(null), "");
 });
+
+test("heures civiles AM/PM (BP 2026-10-09) : « 6:30 PM » = 18 h 30, jamais 6 h 30 du matin", () => {
+  // Les deux matchs QMFL signalés (ven. 9 oct.), tels qu'en base et sur la source.
+  assert.equal(heureCarte("6:30 PM"), "18 h 30", "Myers Riders @ Bel Air Norsemen");
+  assert.equal(heureCarte("8:00 PM"), "20 h 00", "Sun Youth Hornets @ St. Leonard Cougars");
+  assert.equal(heureCarte("8:30 pm"), "20 h 30", "LFMM écrit en minuscules");
+  assert.equal(heureCarte("10:00 am"), "10 h 00");
+  assert.equal(heureCarte("12:30 pm"), "12 h 30", "midi reste midi");
+  assert.equal(heureCarte("12:15 AM"), "0 h 15", "minuit");
+  assert.equal(heureQuebec("7:00 PM"), "19 h");
+  assert.equal(minutesDe("13:00 PM"), null, "pas d'heure 13 en AM/PM");
+  assert.equal(minutesDe("18"), null, "un nombre seul n'est pas une heure");
+  assert.equal(heureCarte("18:30"), "18 h 30", "RSEQ, 24 h : inchangé");
+  // Le tri suit l'heure réelle : 1:00 PM après 10:00 AM, 8:00 PM après 18:30.
+  const a = match({ heure: "1:00 PM", domicile: "A" }), b = match({ heure: "10:00 am", domicile: "B" });
+  const c = match({ heure: "8:00 PM", domicile: "C" }), d = match({ heure: "18:30", domicile: "D" });
+  assert.deepEqual(trierMatchs([a, b, c, d]).map((m) => m.domicile), ["B", "A", "D", "C"]);
+});
