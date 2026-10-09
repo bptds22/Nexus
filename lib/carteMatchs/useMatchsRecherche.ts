@@ -19,7 +19,8 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import {
-  COLONNES_SOURCE, PLAFOND_LIGNES, fenetres, paquets, sourcesParMatch,
+  COLONNES_SOURCE, JOURS_SAISON, PLAFOND_LIGNES, fenetres, jourDecale, moities, paquets, sourcesParMatch, suggestionsLisibles,
+  type PastilleCarte,
   type LigneSource, type MatchRecherche, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { SourceMatch } from "@/lib/calendar/sourceMatch";
@@ -30,6 +31,10 @@ export interface CriteresRecherche {
   sport: string;
   types: TypeMatch[];
   texte: string;
+  /** Pastilles Équipe / Terrain (ids d'équipe, clés de terrain). Au moins une →
+   *  la saison à venir entière, `fin` ignorée. */
+  equipes?: string[];
+  lieux?: string[];
 }
 
 const CLE = ["carte-matchs", "recherche"] as const;
@@ -37,8 +42,11 @@ const CLE = ["carte-matchs", "recherche"] as const;
 export function useMatchsRecherche(c: CriteresRecherche, enabled: boolean) {
   const types = [...c.types].sort();
   const texte = c.texte.trim();
+  const equipes = [...(c.equipes ?? [])].sort();
+  const lieux = [...(c.lieux ?? [])].sort();
+  const saison = equipes.length + lieux.length > 0;
   return useQuery<MatchRecherche[]>({
-    queryKey: [...CLE, c.debut, c.fin, c.sport, types.join(","), texte],
+    queryKey: [...CLE, c.debut, saison ? "saison" : c.fin, c.sport, types.join(","), texte, equipes.join(","), lieux.join(",")],
     enabled: enabled && types.length > 0,
     staleTime: 60_000,
     placeholderData: (avant) => avant,
@@ -51,18 +59,25 @@ export function useMatchsRecherche(c: CriteresRecherche, enabled: boolean) {
           p_sport: c.sport || null,
           p_types: types,
           p_texte: texte || null,
+          // Seulement s'il y en a : l'appel reste celui d'avant pour la recherche sans pastille.
+          ...(equipes.length ? { p_equipes: equipes } : {}),
+          ...(lieux.length ? { p_lieux: lieux } : {}),
         });
         if (error) throw error;
         const lignes = (data ?? []) as MatchRecherche[];
-        // Réponse au plafond : peut-être coupée. On redemande jour par jour.
+        // Réponse au plafond : peut-être coupée. On redemande en deux moitiés.
         if (lignes.length >= PLAFOND_LIGNES && debut !== fin) {
-          return (await Promise.all(fenetres(debut, fin, 1).map(([d, f]) => appeler(d, f)))).flat();
+          return (await Promise.all(moities(debut, fin).map(([d, f]) => appeler(d, f)))).flat();
         }
         return lignes;
       };
-      // Une fenêtre de 7 jours par appel : sur 31 jours, une seule réponse
-      // dépasserait le plafond de PostgREST (1 000 lignes, coupure SILENCIEUSE).
-      const parFenetre = await Promise.all(fenetres(c.debut, c.fin, 7).map(([d, f]) => appeler(d, f)));
+      // Sans pastille : une fenêtre de 7 jours par appel — sur 31 jours, une seule
+      // réponse dépasserait le plafond de PostgREST (1 000 lignes, coupure SILENCIEUSE).
+      // Avec pastille : la saison entière d'un coup (une équipe, quelques dizaines de matchs).
+      const plages = saison
+        ? [[c.debut, jourDecale(new Date(`${c.debut}T12:00:00`), JOURS_SAISON - 1)] as [string, string]]
+        : fenetres(c.debut, c.fin, 7);
+      const parFenetre = await Promise.all(plages.map(([d, f]) => appeler(d, f)));
       return parFenetre.flat().map((m) => ({
         ...m,
         lat: m.lat === null ? null : Number(m.lat),
@@ -124,6 +139,28 @@ export function useSourcesMatchs(ids: string[], enabled: boolean) {
   });
   const sources: Map<string, SourceMatch> = useMemo(() => sourcesParMatch(requete.data), [requete.data]);
   return { data: sources };
+}
+
+/** Suggestions du champ « Équipe, terrain… » (RPC matchs_suggestions) : TOUTES
+ *  les équipes et tous les terrains ayant un match à venir, sans tenir compte des
+ *  filtres Sport et Type — la pastille gagne (décision BP 2026-10-09) ; le type
+ *  est écrit dans le détail. À partir de 2
+ *  caractères. Loi 25 : la RPC ne lit aucune table d'athlètes. */
+export function useSuggestionsCarte(texte: string, enabled: boolean) {
+  const t = texte.trim();
+  const requete = useQuery<PastilleCarte[]>({
+    queryKey: ["carte-matchs", "suggestions", t.toLowerCase()],
+    enabled: enabled && t.length >= 2,
+    staleTime: 60_000,
+    placeholderData: (avant) => avant,
+    queryFn: async () => {
+      const { data, error } = await createClient().rpc("matchs_suggestions", { p_texte: t });
+      if (error) throw error;
+      return (data ?? []) as PastilleCarte[];
+    },
+  });
+  const suggestions = useMemo(() => suggestionsLisibles(requete.data), [requete.data]);
+  return { suggestions, isFetching: requete.isFetching, isError: requete.isError, pret: requete.isSuccess };
 }
 
 export function useSportsCarte(enabled: boolean) {
