@@ -1,4 +1,4 @@
--- Rollback de 20261009230000_carte_equipes_terrains.sql : retire matchs_suggestions et redonne à
+-- Rollback de 20261009192442_carte_equipes_terrains.sql : retire matchs_suggestions et redonne à
 -- matchs_recherche sa signature et sa définition de 20261009171716 (5 paramètres, 31 jours).
 
 DROP FUNCTION public.matchs_suggestions(text);

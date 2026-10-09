@@ -1,4 +1,4 @@
--- Carte des matchs : filtre Équipe / Terrain (BP 2026-10-09). LOCAL — prod sur GO de BP.
+-- Carte des matchs : filtre Équipe / Terrain (BP 2026-10-09). Appliquée en prod le 2026-10-09 sur GO de BP.
 --
 -- 1. matchs_recherche gagne p_equipes uuid[] et p_lieux text[] (clés lieu_normalise(venue)).
 --    Un match passe s'il touche au moins une pastille (équipe à domicile OU au visiteur, ou
@@ -12,7 +12,7 @@
 --    venir, type (Secondaire / Collégial / Civil) dans le détail. Loi 25 : aucun athlète.
 --
 -- DROP + CREATE emporte l'ACL et Supabase accorde EXECUTE à anon par défaut : révoqué, puis
--- vérifié en liste complète. Rollback : supabase/rollback/20261009230000_rollback_carte_equipes_terrains.sql
+-- vérifié en liste complète. Rollback : supabase/rollback/20261009192442_rollback_carte_equipes_terrains.sql
 
 DROP FUNCTION public.matchs_recherche(date, date, text, text[], text);
 
