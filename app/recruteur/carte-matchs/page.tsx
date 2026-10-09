@@ -34,7 +34,7 @@ import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSe
 import {
   TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour, libelleJour,
   terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, jourDecale,
-  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, dateCourte, enTeteJour, heureCarte, trierMatchs, LIEU_NON_PRECISE,
+  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, dateCourte, dateCarte, enTeteJour, heureCarte, trierMatchs, LIEU_NON_PRECISE,
   type MatchRecherche, type ProfilsMatch, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
@@ -355,7 +355,10 @@ function CarteMatchsContenu() {
                           onMouseEnter={() => setSurvol(t?.id ?? null)}
                           onMouseLeave={() => setSurvol(null)}
                         >
-                          <div className={"cm-heure" + (minutesConnues(m) ? "" : " tbc")} data-testid="heure-match">{heure}</div>
+                          <div className="cm-quand">
+                            <div className={"cm-heure" + (minutesConnues(m) ? "" : " tbc")} data-testid="heure-match">{heure}</div>
+                            <div className="cm-date-carte" data-testid="date-match">{dateCarte(m.jour)}</div>
+                          </div>
                           <div className="lcinfo">
                             <div className="lctitre"><b>{titreMatch(m)}</b></div>
                             <div className="m">{m.terrain || LIEU_NON_PRECISE}</div>
@@ -525,16 +528,20 @@ const CM_CSS = `
 .cs .cm-date{background:none;border:0;outline:none;color:inherit;font:inherit;color-scheme:dark;cursor:pointer}
 .cs.cm .cards{gap:0}
 .cs .cm-bloc{display:flex;flex-direction:column;padding-bottom:14px}
-.cs .cm-jour{position:sticky;top:0;z-index:6;margin:0 -12px 8px;padding:11px 16px 9px;background:#141925;
+.cs .cm-jour{position:sticky;top:0;z-index:6;margin:0 -12px 8px;padding:11px 16px 9px;background:#0C1018;
   border-bottom:1px solid #26314A;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
-  font-size:14.5px;font-weight:700;color:var(--txt);letter-spacing:0;text-transform:none}
+  font-size:14.5px;font-weight:700;letter-spacing:0;text-transform:none}
+/* Rouge Nexus sur marine #0C1018 : 4,57:1 (AA). Le compte en gris : 7,49:1. */
+.cs .cm-jour-nom{color:var(--nexus)}
 .cs .cm-jour-n{font-size:12.5px;font-weight:600;color:var(--mut);white-space:nowrap}
 .cs .cm-grille{display:flex;flex-direction:column;gap:8px}
 .cs .cm-lc{display:grid;grid-template-columns:62px minmax(0,1fr) auto;column-gap:12px;align-items:start;scroll-margin-top:52px}
 .cs .cm-lc .heart{align-self:center}
 .cs .cm-lc-src{grid-column:1/-1}
 .cs .cm-lc-src:empty{display:none}
-.cs .cm-heure{flex:0 0 62px;padding-top:1px;font-size:15px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cs .cm-quand{min-width:0}
+.cs .cm-date-carte{margin-top:3px;font-size:11.5px;font-weight:600;color:var(--mut);white-space:nowrap}
+.cs .cm-heure{padding-top:1px;font-size:15px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
 .cs .cm-heure.tbc{white-space:normal;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--mut)}
 .cs .cm-dchamp .lbl{position:relative}
 .cs .cm-dchamp .cm-date{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}

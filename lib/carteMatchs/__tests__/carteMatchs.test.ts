@@ -6,7 +6,7 @@ import {
   libelleDivision, lienItineraire, titreMatch, profilsParMatch, libelleProfils, libelleDontSuivis,
   estGesteMatch, libelleGesteMatch, dateSaisie, sourcesParMatch, paquets,
   bornerFin, avisFinAjustee, matchsLisibles, JOURS_MAX, fenetres,
-  dateCourte, enTeteJour, heureCarte, trierMatchs,
+  dateCourte, dateCarte, enTeteJour, heureCarte, trierMatchs,
   type MatchRecherche,
 } from "@/lib/carteMatchs/carteMatchs";
 
@@ -232,4 +232,11 @@ test("trierMatchs : date, puis heure (inconnue en fin de jour), puis domicile �
   assert.deepEqual(trierMatchs(entree).map((m) => m.id), [c, d, e, a, b].map((m) => m.id));
   assert.deepEqual(entree, [a, b, c, d, e], "l'entrée n'est pas modifiée");
   assert.deepEqual(grouperParJour(trierMatchs(entree)).map((g) => [g.jour, g.matchs.length]), [["2026-10-09", 1], ["2026-10-10", 4]]);
+});
+
+test("date sous l'heure de la carte : « ven. 9 oct. », jamais numérique", () => {
+  assert.equal(dateCarte("2026-10-09"), "ven. 9 oct.");
+  assert.equal(dateCarte("2026-11-01"), "dim. 1er nov.");
+  assert.equal(dateCarte("2026-12-31"), "jeu. 31 déc.");
+  assert.equal(dateCarte(null), "");
 });

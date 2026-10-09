@@ -1,8 +1,9 @@
 "use client";
 
 /* ── Provenance d'un match ─────────────────────────────────────
-   Décision BP du 2026-09-17 : d'où vient l'information, et quand elle a été
-   relevée — par match, parce que les deux varient d'une ligne à l'autre.
+   Décision BP du 2026-09-17 : d'où vient l'information, par match. La date
+   de relevé (« relevé le … ») est retirée de la ligne le 2026-10-09 (BP) :
+   `collecteLe` reste dans SourceMatch, il n'est plus affiché.
 
    LE LIBELLÉ NE PROMET PAS PLUS QUE CE QU'IL TIENT. Côté RSEQ le lien
    télécharge le calendrier Excel de la LIGUE : il n'existe aucune page par
@@ -20,7 +21,7 @@
    fiable. Le téléchargement RSEQ se fait alors dans le navigateur intégré. */
 
 import type { MouseEvent } from "react";
-import { formatCollecte, type SourceMatch } from "@/lib/calendar/sourceMatch";
+import type { SourceMatch } from "@/lib/calendar/sourceMatch";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -43,7 +44,6 @@ export default function SourceMatchLigne({
   className?: string;
 }) {
   if (!source.nom) return null;
-  const releve = formatCollecte(source.collecteLe);
   const url = source.url;
 
   return (
@@ -74,12 +74,6 @@ export default function SourceMatchLigne({
           >
             {source.libelle}
           </a>
-        </>
-      )}
-      {releve && (
-        <>
-          <span aria-hidden>·</span>
-          <span>relevé le {releve}</span>
         </>
       )}
     </div>

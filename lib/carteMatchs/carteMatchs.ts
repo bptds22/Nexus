@@ -187,6 +187,16 @@ export function dateCourte(iso: string | null | undefined): string {
   return `${d.getDate()}${d.getDate() === 1 ? "er" : ""} ${MOIS_COURTS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+const JOURS_COURTS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+
+/** « ven. 9 oct. » — la date en petit sous l'heure de chaque carte (BP
+ *  2026-10-09). Jamais numérique. Vide si la date est illisible. */
+export function dateCarte(iso: string | null | undefined): string {
+  const d = dateLocale(iso);
+  if (!d) return "";
+  return `${JOURS_COURTS[d.getDay()]} ${d.getDate()}${d.getDate() === 1 ? "er" : ""} ${MOIS_COURTS[d.getMonth()]}`;
+}
+
 /** L'en-tête collant d'un jour : « Samedi 10 octobre » / « 42 matchs ».
  *  Aujourd'hui et demain le disent, sans perdre la date ; l'année n'apparaît
  *  que si elle n'est pas celle d'aujourd'hui (plage à cheval sur janvier). */
