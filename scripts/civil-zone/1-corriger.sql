@@ -1,6 +1,6 @@
 -- Correction catégorie / division / zone des données CIVILES (BP 2026-10-09, règle révisée).
 -- Exception à la règle du 2026-09-05 (« la normalisation est en lecture »), LIMITÉE aux
--- données civiles par décision BP. Prérequis : migration 20261010120000_civil_zone.
+-- données civiles par décision BP. Prérequis : migration 20261010022425_civil_zone.
 --
 -- Règle : catégorie = le nom que la LIGUE donne à son groupe, calibre compris (« Pee-Wee AAA »,
 -- « Bantam AAA », « Midget AAA » — la LFMM les nomme ainsi —, « Junior Majeur », « M18 AAA »,
@@ -58,7 +58,7 @@ begin
   if admin is null then raise exception 'NEXUS: compte admin introuvable'; end if;
   if not exists (select 1 from information_schema.columns
                   where table_schema = 'public' and table_name = 'teams' and column_name = 'zone') then
-    raise exception 'NEXUS: migration 20261010120000_civil_zone absente';
+    raise exception 'NEXUS: migration 20261010022425_civil_zone absente';
   end if;
 
   -- La table de correspondance : (ligue, catégorie AVANT, division AVANT) → (catégorie, division, zone).
@@ -119,22 +119,29 @@ begin
                 and t.id not in (select id from _eq)) then
     raise exception 'NEXUS: une équipe civile de ligue échappe à la table de correspondance';
   end if;
-  -- GARDE 3 : la nouvelle identité ne collisionne avec rien.
+  -- GARDE 3 : la nouvelle identité ne collisionne avec rien — avec la RÈGLE DE LA CONTRAINTE :
+  -- un UNIQUE Postgres tient deux NULL pour distincts, donc un groupe dont une colonne de clé
+  -- est NULL ne collisionne jamais ; et seul compte un groupe qui touche une ligne corrigée.
+  -- (Version précédente : GROUP BY sur tout teams → refus en prod le 2026-10-09 sur 82
+  -- groupes RSEQ à league NULL déjà présents, hors correction ; rien n'avait été écrit.)
   if exists (
     select 1 from (
       select t.school_id, t.sport_id, t.name, coalesce(e.age, t.age_group) a, coalesce(e.division, t.division) d,
-             t.gender, t.season, t.league, coalesce(e.zone, t.zone) z
+             t.gender, t.season, t.league, coalesce(e.zone, t.zone) z, e.id is not null as visee
         from public.teams t left join _eq e on e.id = t.id) k
-     group by school_id, sport_id, name, a, d, gender, season, league, z having count(*) > 1) then
+     where a is not null and d is not null and gender is not null and season is not null and league is not null
+     group by school_id, sport_id, name, a, d, gender, season, league, z having count(*) > 1 and bool_or(visee)) then
     raise exception 'NEXUS: la correction créerait un doublon d''équipe (teams_identity_unique)';
   end if;
   if exists (
     select 1 from (
       select g.league_name, g.season, coalesce(m.age, g.category) c, coalesce(m.division, g.division) d,
              coalesce(m.zone, g.zone) z, g.game_date,
-             least(g.home_name_raw, g.visitor_name_raw) a, greatest(g.home_name_raw, g.visitor_name_raw) b
+             least(g.home_name_raw, g.visitor_name_raw) a, greatest(g.home_name_raw, g.visitor_name_raw) b,
+             m.id is not null as visee
         from public.games g left join _m m on m.id = g.id where g.rseq_game_id is null) k
-     group by league_name, season, c, d, z, game_date, a, b having count(*) > 1) then
+     where league_name is not null and season is not null and c is not null and d is not null and a is not null and b is not null
+     group by league_name, season, c, d, z, game_date, a, b having count(*) > 1 and bool_or(visee)) then
     raise exception 'NEXUS: la correction créerait un doublon de match (games_identite_civile)';
   end if;
   select count(*) into d_avant from (

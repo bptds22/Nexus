@@ -1,10 +1,11 @@
--- CATÉGORIE / DIVISION / ZONE des groupes CIVILS (BP 2026-10-09). LOCAL — prod sur GO de BP.
+-- CATÉGORIE / DIVISION / ZONE des groupes CIVILS (BP 2026-10-09). Appliquée en prod sur GO de BP.
 --
--- Constat : les ligues civiles fusionnent l'âge, le niveau et la zone dans `division`
--- (« Pee-Wee AAA — Division 1 Sud ») ; le filtre Division de la carte proposait n'importe
--- quoi. Règle de BP : catégorie = âge, division = niveau (D1…, AAA, Majeur ; vide sans
--- niveau), ZONE (Nord, Sud…) à part — ni catégorie ni division, mais PARTIE DE L'IDENTITÉ
--- du groupe : deux équipes de même nom dans des zones différentes ne sont jamais confondues.
+-- Constat : les ligues civiles fusionnent l'âge, le calibre, la division et la zone dans
+-- `division` (« Pee-Wee AAA — Division 1 Sud ») ; le filtre Division de la carte proposait
+-- n'importe quoi. Règle de BP : catégorie = le nom que la ligue donne au groupe, calibre
+-- compris (« Pee-Wee AAA », « Bantam AAA », « Junior Majeur ») ; division = D1…D4 ou vide ;
+-- ZONE (Nord, Sud…) à part — ni catégorie ni division, mais PARTIE DE L'IDENTITÉ du groupe :
+-- deux équipes de même nom dans des zones différentes ne sont jamais confondues.
 --
 -- Migration ADDITIVE : elle n'écrit AUCUNE ligne existante. La correction des données
 -- civiles est un script à part, gardé, avec rollback (scripts/civil-zone/).
@@ -14,11 +15,11 @@
 --      ÉLARGIT une clé unique d'une colonne : aucune ligne existante ne peut la violer.
 --      Aucune fonction ne cible ces index par leurs colonnes (relevé prod 2026-10-09).
 --   3. La carte et l'agenda rendent la zone : matchs_recherche (+ zone → DROP + CREATE),
---      matchs_suggestions (détail « AAA Sud »), agenda_matchs_partenaire / _unite
+--      matchs_suggestions (détail « D1 · Sud »), agenda_matchs_partenaire / _unite
 --      (+ categorie, division, zone → DROP + CREATE). Le reste des corps est INCHANGÉ
 --      (recopié de 20261010010238).
 -- ACL : liste COMPLÈTE triée pour chaque fonction recréée ; anon jamais.
--- Rollback : supabase/rollback/20261010120000_rollback_civil_zone.sql
+-- Rollback : supabase/rollback/20261010022425_rollback_civil_zone.sql
 
 -- ── 1. La colonne ───────────────────────────────────────────────────────────
 alter table public.teams add column zone text not null default '';

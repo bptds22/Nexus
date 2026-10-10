@@ -2,7 +2,7 @@
 -- gardé dans la DERNIÈRE opération CIVIL_ZONE_CORRIGEE non encore annulée.
 -- Gardé : chaque ligne doit être encore dans l'état que la correction lui a donné, sinon
 -- exception (quelqu'un l'a modifiée depuis : on ne l'écrase pas à l'aveugle).
--- À jouer AVANT tout rollback de la migration 20261010120000 (la colonne zone doit exister).
+-- À jouer AVANT tout rollback de la migration 20261010022425 (la colonne zone doit exister).
 begin;
 
 do $$

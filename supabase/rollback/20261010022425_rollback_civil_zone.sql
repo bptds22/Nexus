@@ -1,4 +1,4 @@
--- ROLLBACK de 20261010120000_civil_zone. Repose les 4 fonctions de 20261010010238 À
+-- ROLLBACK de 20261010022425_civil_zone. Repose les 4 fonctions de 20261010010238 À
 -- L'IDENTIQUE, l'identité sans zone, et retire les deux colonnes.
 -- PRÉREQUIS : la correction des données (scripts/civil-zone/1-corriger.sql) doit avoir été
 -- annulée d'abord (2-rollback.sql). Sinon ce rollback REFUSE : retirer la colonne zone
