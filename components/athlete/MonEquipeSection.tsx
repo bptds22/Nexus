@@ -58,6 +58,8 @@ interface TeamOption {
   // Le GATE proposé au rapport supprime cet écart.
   age_group?: string | null;
   division?: string | null;
+  /** teams.zone — « Atome Nord » (BP 2026-10-09), lue par teamDetails. */
+  zone?: string | null;
   gender?: string | null;
   league?: string | null;
   /** Coach-chef (team_coaches.role = 'head_coach'). OPTIONNEL pour la même
@@ -125,7 +127,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
 
     const { data } = await supabase
       .from("athletes")
-      .select("id, team_athletes(team_id, teams!team_id(name, season, age_group, division, gender, league, sports!sport_id(nom), schools!school_id(name)))")
+      .select("id, team_athletes(team_id, teams!team_id(name, season, age_group, division, zone, gender, league, sports!sport_id(nom), schools!school_id(name)))")
       .eq("user_id", auth.user.id)
       .maybeSingle();
 
@@ -147,6 +149,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
               sport: one<{ nom?: string }>(team.sports)?.nom ?? null,
               age_group: (team.age_group as string) ?? null,
               division: (team.division as string) ?? null,
+              zone: (team.zone as string) ?? null,
               gender: (team.gender as string) ?? null,
               season: (team.season as string) ?? null,
               league: (team.league as string) ?? null,
@@ -167,7 +170,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
       setTeamsLoading(true);
       const { data } = await createClient()
         .from("teams")
-        .select("id, name, season, age_group, division, gender, league, sports!sport_id(nom), team_coaches(role, users!coach_id(first_name, last_name))")
+        .select("id, name, season, age_group, division, zone, gender, league, sports!sport_id(nom), team_coaches(role, users!coach_id(first_name, last_name))")
         .eq("school_id", schoolId)
         .eq("is_active", true)
         .order("season", { ascending: false })
@@ -183,6 +186,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
             sport: ((sp as { nom?: string } | null)?.nom) || "",
             age_group: (t.age_group as string) ?? null,
             division: (t.division as string) ?? null,
+            zone: (t.zone as string) ?? null,
             gender: (t.gender as string) ?? null,
             league: (t.league as string) ?? null,
             headCoachName: headCoachName(t.team_coaches as Parameters<typeof headCoachName>[0]),

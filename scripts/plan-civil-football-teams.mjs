@@ -15,12 +15,26 @@
 //   homonymes au nom complet : Packers de Greenfield / Packers de South Shore
 //   ignorés : les 67 flag, Ottawa JR Riders, Test 1, Test 2
 //
-// Run:  node scripts/plan-civil-football-teams.mjs
+// CATÉGORIE / DIVISION / ZONE (BP 2026-10-09) : lib/civil/classementCivil.ts,
+//   le même classeur que le générateur de matchs et la correction des
+//   données. « PEE-WEE AAA - DIVISION 1 SUD » → Pee-Wee / AAA / Sud.
+//   Division '' (jamais NULL) pour Atome Nord/Sud ; zone '' sans zone.
+//
+// RÉ-IMPORT SANS DOUBLON. Rejouer le fichier ne crée rien de ce qui existe :
+//   · club : INSERT seulement s'il n'existe pas déjà (nom + LIGUE_CIVILE) ;
+//   · équipe : ON CONFLICT ON CONSTRAINT teams_identity_unique (qui porte la
+//     zone) DO NOTHING, ET on saute l'équipe que son coach a RENOMMÉE après
+//     l'import — retrouvée dans son groupe par le lien qu'un match posé
+//     sous le nom source lui a donné. Sans ce second garde, « Wildcats »
+//     renommée « Wildcats Bantam D1 » reviendrait en double.
+//
+// Run:  node --experimental-strip-types scripts/plan-civil-football-teams.mjs
 // ============================================================================
 
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { classerGroupeCivil } from "../lib/civil/classementCivil.ts";
 
 const DATA = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "data", "import");
 const J = async (f) => JSON.parse(await readFile(path.join(DATA, f), "utf8"));
@@ -79,25 +93,11 @@ const CLUBS = {
   "QMJFL|Wildcats ARFLL":         { id: "d4b92629-fd48-44be-b2d6-faa56aea0e49", nom: "Wildcats Laurentides-Lanaudière" },
 };
 
-// catégorie source -> age_group en base (valeurs déjà présentes quand possible)
-const AGE = {
-  "ATOME": "Atome", "MOUSTIQUE": "Moustique", "PEE-WEE": "Pee-Wee",
-  "BANTAM AAA": "Bantam", "MIDGET AAA": "Midget",
-  "Bantam AAA": "Bantam", "Midget AAA": "Midget", "Junior Major": "Junior",
+// Catégorie, division et zone : classementCivil (voir l'en-tête).
+const groupe = (ligue, categorie, division) => {
+  const g = classerGroupeCivil(ligue, categorie, division);
+  return { age_group: g.categorie, division: g.division, zone: g.zone };
 };
-
-// division source -> division en base. JAMAIS NULL : un NULL désarmerait la
-// contrainte à 8 colonnes exactement comme un gender NULL.
-// Attention : seul le tiret SÉPARATEUR (entouré d'espaces) devient un cadratin.
-// Un `\s*-\s*` global couperait « PEE-WEE » en « Pee — Wee ».
-const titre = (s) =>
-  s.toLowerCase()
-    .replace(/\s+-\s+/g, " — ")
-    .replace(/(^|[\s—-])([a-zà-ÿ])/g, (_, p, c) => p + c.toUpperCase())
-    .replace(/\bAaa\b/g, "AAA")
-    .replace(/\s+/g, " ")
-    .trim();
-const DIV_LS = { QBFL: "AAA", QMFL: "AAA", QMJFL: "Majeur" };
 
 const q = (v) => (v == null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`);
 
@@ -108,7 +108,7 @@ async function main() {
   for (const t of lfmm.equipes.filter((e) => !/^FLAG/i.test(e.categorie ?? ""))) {
     rows.push({
       ligue: "LFMM", club_source: t.club, nom: t.equipe_nom,
-      age_group: AGE[t.categorie] ?? null, division: titre(t.division),
+      ...groupe("LFMM", t.categorie, t.division),
       categorie_source: t.categorie, division_source: t.division, ref: `node ${t.node_id}`,
     });
   }
@@ -121,7 +121,7 @@ async function main() {
       if (e.saison !== label || IGNORER.has(e.equipe_nom) || e.setup_division_id == null) continue;
       rows.push({
         ligue: l.ligue, club_source: e.equipe_nom, nom: e.equipe_nom,
-        age_group: AGE[e.categorie] ?? null, division: DIV_LS[l.ligue],
+        ...groupe(l.ligue, e.categorie, e.division),
         categorie_source: e.categorie, division_source: e.division,
         ref: `team_id ${e.team_id} · setup_team ${e.setup_team_id}`,
       });
@@ -131,12 +131,12 @@ async function main() {
   // --------------------------------------------------------------- contrôles
   const sansAge = rows.filter((r) => !r.age_group);
   const sansClub = rows.filter((r) => !CLUBS[`${r.ligue}|${r.club_source}`]);
-  const sansDiv = rows.filter((r) => !r.division);
+  const sansDiv = rows.filter((r) => typeof r.division !== "string");
   if (sansAge.length || sansClub.length || sansDiv.length) {
     console.error("PLAN INCOMPLET :");
     for (const r of sansAge) console.error(`  age_group manquant : ${r.ligue} ${r.nom} (${r.categorie_source})`);
     for (const r of sansClub) console.error(`  club non mappé    : ${r.ligue} | ${r.club_source}`);
-    for (const r of sansDiv) console.error(`  division vide     : ${r.ligue} ${r.nom}`);
+    for (const r of sansDiv) console.error(`  division absente  : ${r.ligue} ${r.nom}`);
     process.exit(1);
   }
 
@@ -145,7 +145,7 @@ async function main() {
   for (const r of rows) {
     const c = CLUBS[`${r.ligue}|${r.club_source}`];
     const clubKey = c.id ?? `NOUVEAU:${c.creer.nom}`;
-    const k = [clubKey, SPORT_FOOTBALL, r.nom, r.age_group, r.division, GENRE, SAISON, r.ligue].join("␟");
+    const k = [clubKey, SPORT_FOOTBALL, r.nom, r.age_group, r.division, GENRE, SAISON, r.ligue, r.zone].join("␟");
     if (!cles.has(k)) cles.set(k, []);
     cles.get(k).push(r);
   }
@@ -169,7 +169,7 @@ async function main() {
   for (const c of aCreer.values()) console.log(`   ${c.nom}  [${c.region}]  ${c.site}`);
   console.log(`\nCLUBS À RENOMMER : ${aRenommer.size}`);
   for (const [id, n] of aRenommer) console.log(`   ${id} -> « ${n} »`);
-  console.log(`\nCOLLISIONS sur la clé à 8 colonnes : ${collisions.length}`);
+  console.log(`\nCOLLISIONS sur la clé à 9 colonnes (zone comprise) : ${collisions.length}`);
   for (const [k, v] of collisions) console.log(`   ✗ ${k}\n     ${v.map((x) => x.nom).join(" / ")}`);
   const ages = [...new Set(rows.map((r) => r.age_group))].sort();
   console.log(`\nage_group utilisés : ${ages.join(", ")}`);
@@ -197,24 +197,39 @@ async function main() {
   L.push("-- 2. les clubs absents de la base -------------------------------------------");
   for (const c of aCreer.values()) {
     L.push(`INSERT INTO public.schools (name, type, region, website)`);
-    L.push(`VALUES (${q(c.nom)}, 'LIGUE_CIVILE', ${q(c.region)}, ${q(c.site)});`);
+    L.push(`SELECT ${q(c.nom)}, 'LIGUE_CIVILE', ${q(c.region)}, ${q(c.site)}`);
+    L.push(`WHERE NOT EXISTS (SELECT 1 FROM public.schools WHERE name = ${q(c.nom)} AND type = 'LIGUE_CIVILE');`);
   }
   L.push("");
   L.push(`-- 3. les ${rows.length} équipes ------------------------------------------------------`);
-  L.push("INSERT INTO public.teams (school_id, sport_id, name, age_group, division, gender, season, league, is_active)");
+  L.push("WITH v(school_id, sport_id, name, age_group, division, gender, season, league, zone) AS (");
   L.push("VALUES");
   // La virgule se pose AVANT le commentaire de fin de ligne : la mettre après
   // la commenterait, et la liste VALUES perdrait ses séparateurs.
   const vals = rows.map((r, i) => {
     const c = CLUBS[`${r.ligue}|${r.club_source}`];
     const club = c.id
-      ? `'${c.id}'`
+      ? `'${c.id}'::uuid`
       : `(SELECT id FROM public.schools WHERE name = ${q(c.creer.nom)} AND type = 'LIGUE_CIVILE')`;
-    const tuple = `  (${club}, '${SPORT_FOOTBALL}', ${q(r.nom)}, ${q(r.age_group)}, ${q(r.division)}, ${q(GENRE)}, ${q(SAISON)}, ${q(r.ligue)}, true)`;
-    const fin = i === rows.length - 1 ? ";" : ",";
+    const tuple = `  (${club}, '${SPORT_FOOTBALL}'::uuid, ${q(r.nom)}, ${q(r.age_group)}, ${q(r.division)}, ${q(GENRE)}, ${q(SAISON)}, ${q(r.ligue)}, ${q(r.zone)})`;
+    const fin = i === rows.length - 1 ? "" : ",";
     return `${tuple}${fin}  -- ${r.ligue} · ${r.categorie_source} · ${r.division_source} · ${r.ref}`;
   });
   L.push(vals.join("\n"));
+  L.push(")");
+  L.push("INSERT INTO public.teams (school_id, sport_id, name, age_group, division, gender, season, league, zone, is_active)");
+  L.push("SELECT v.school_id, v.sport_id, v.name, v.age_group, v.division, v.gender, v.season, v.league, v.zone, true");
+  L.push("FROM v");
+  L.push("-- l'équipe RENOMMÉE par son coach : déjà liée, dans son groupe, à un match sous le nom source");
+  L.push("WHERE NOT EXISTS (");
+  L.push("  SELECT 1 FROM public.teams t JOIN public.games g ON t.id IN (g.home_team_id, g.visitor_team_id)");
+  L.push("   WHERE t.school_id = v.school_id AND t.sport_id = v.sport_id AND t.season = v.season AND t.league = v.league");
+  L.push("     AND t.age_group = v.age_group AND t.division = v.division AND t.zone = v.zone");
+  L.push("     AND g.rseq_game_id IS NULL AND g.league_name = v.league AND g.season = v.season");
+  L.push("     AND g.category = v.age_group AND g.division = v.division AND g.zone = v.zone");
+  L.push("     AND ((g.home_team_id = t.id AND g.home_name_raw = v.name) OR (g.visitor_team_id = t.id AND g.visitor_name_raw = v.name))");
+  L.push(")");
+  L.push("ON CONFLICT ON CONSTRAINT teams_identity_unique DO NOTHING;");
   L.push("");
   L.push("COMMIT;");
   L.push("");

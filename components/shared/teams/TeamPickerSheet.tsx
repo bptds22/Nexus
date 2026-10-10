@@ -41,6 +41,8 @@ export interface TeamPickerItem {
   sport: string | null;
   ageGroup: string | null;
   division: string | null;
+  /** teams.zone — « Atome Nord », « AAA Sud » (BP 2026-10-09). */
+  zone?: string | null;
   gender: string | null;
   /** Athlete count for the team (read from team_athletes). */
   athleteCount: number;
@@ -128,7 +130,7 @@ export function TeamPickerSheet({
       });
       let q = supabase
         .from("teams")
-        .select("id, name, age_group, division, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id, role, users!coach_id(first_name, last_name))")
+        .select("id, name, age_group, division, zone, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id, role, users!coach_id(first_name, last_name))")
         .eq("school_id", schoolId)
         .eq("is_active", true)
         .order("name", { ascending: true });
@@ -150,6 +152,7 @@ export function TeamPickerSheet({
             sport: ((sportRel as { nom?: string } | null)?.nom as string | null) ?? null,
             ageGroup: (r.age_group as string | null) ?? null,
             division: (r.division as string | null) ?? null,
+            zone: (r.zone as string | null) ?? null,
             gender: (r.gender as string | null) ?? null,
             athleteCount: ((r.team_athletes as unknown[]) || []).length,
             coachCount: ((r.team_coaches as unknown[]) || []).length,
@@ -171,6 +174,7 @@ export function TeamPickerSheet({
       || (t.sport ?? "").toLowerCase().includes(q)
       || (t.ageGroup ?? "").toLowerCase().includes(q)
       || (t.division ?? "").toLowerCase().includes(q)
+      || (t.zone ?? "").toLowerCase().includes(q)
       || (t.gender ?? "").toLowerCase().includes(q),
     );
   }, [teams, search]);
@@ -293,7 +297,7 @@ export function TeamPickerSheet({
                     <div className="flex-1 min-w-0">
                       <p className="text-[15px] font-semibold text-white truncate">{t.name}</p>
                       <p className="text-[12px] text-white/55 truncate">
-                        {formatTeamLabel(t.sport, t.ageGroup, t.division, t.gender, t.name)}
+                        {formatTeamLabel(t.sport, t.ageGroup, t.division, t.gender, t.name, t.zone)}
                         {t.athleteCount > 0 ? ` · ${t.athleteCount} athlète${t.athleteCount > 1 ? "s" : ""}` : ""}
                       </p>
                       {/* Coach-chef, RENDU CONDITIONNEL : aucune ligne n'est produite quand

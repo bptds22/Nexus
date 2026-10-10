@@ -10,6 +10,8 @@ import {
   TeamCreateFormBlock, type TeamFormValues, resolveTeamFinalValues,
 } from "@/components/shared/teams/TeamCreateFormBlock";
 import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
+import { AUCUNE_DIVISION } from "@/lib/config/civilVocab";
+import { avecZone } from "@/lib/config/teamLabel";
 import { createTeam, joinTeam } from "@/lib/queries/coach/createTeam";
 import { loadTeamClaimPreview, claimPreviewMessage, type TeamClaimPreview } from "@/lib/queries/coach/teamClaimPreview";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
@@ -26,6 +28,8 @@ interface Team {
   name: string;
   ageGroup: string;
   division: string;
+  /** teams.zone — « Atome Nord », « AAA Sud » (BP 2026-10-09). */
+  zone: string;
   league: string;
   season: string;
   sportName: string;
@@ -137,7 +141,7 @@ function EquipesPageDesktop() {
     // entière ; coach → ses équipes.
     let teamsQuery = supabase
       .from("teams")
-      .select("id, name, age_group, division, league, season, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)")
+      .select("id, name, age_group, division, zone, league, season, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)")
       .eq("is_active", true)
       .order("created_at", { ascending: false });
     teamsQuery = directorSchoolId
@@ -176,6 +180,7 @@ function EquipesPageDesktop() {
           name: t.name,
           ageGroup: t.age_group || "",
           division: t.division || "",
+          zone: t.zone || "",
           league: t.league || "",
           season: t.season || getCurrentSeason(),
           sportName: sport?.nom || "",
@@ -363,7 +368,7 @@ function EquipesPageDesktop() {
                     <span className="text-[11px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#2D3748] text-[#9CA3AF]">{t.season}</span>
                   </div>
                   <p className="text-[13px] text-[#6b7280] mt-1">
-                    {t.sportName}{t.ageGroup ? ` · ${t.ageGroup}` : ""}{t.division ? ` · ${t.division}` : ""}{t.league ? ` · ${t.league}` : ""}
+                    {[t.sportName, ...avecZone(t.ageGroup, t.division, t.zone), t.league].filter(Boolean).join(" · ")}
                   </p>
                   {t.coaches.length > 0 && (
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -414,7 +419,7 @@ function EquipesPageDesktop() {
                       <span className="text-[11px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#2D3748] text-[#9CA3AF]">{t.season}</span>
                     </div>
                     <p className="text-[13px] text-[#6b7280] mt-1">
-                      {t.sportName}{t.ageGroup ? ` · ${t.ageGroup}` : ""}{t.division ? ` · ${t.division}` : ""}{t.league ? ` · ${t.league}` : ""}
+                      {[t.sportName, ...avecZone(t.ageGroup, t.division, t.zone), t.league].filter(Boolean).join(" · ")}
                     </p>
                     <p className="text-[12px] text-[#6b7280] mt-1.5">
                       {headCoach ? <>Entraîneur-chef : <span className="text-[#9CA3AF] font-semibold">{headCoach}</span></> : <span className="text-[#4a4d56] italic">Aucun entraîneur-chef</span>}
@@ -524,7 +529,8 @@ function EquipesPageDesktop() {
                   sportId={formValues.sportId}
                   ageGroup={resolveTeamFinalValues(formValues).finalAge}
                   gender={formValues.gender}
-                  division={resolveTeamFinalValues(formValues).finalDivision}
+                  division={formValues.division === AUCUNE_DIVISION ? AUCUNE_DIVISION : resolveTeamFinalValues(formValues).finalDivision}
+                  name={formValues.name}
                   adopting={saving}
                   onAdopt={async (t) => {
                     setShowCreate(false);

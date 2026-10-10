@@ -11,9 +11,21 @@
    Detection is a LIGHT SELECT scoped by school_id + sport_id (never a
    global fetch) : a school+sport has ≤ ~15 teams, matched in JS on the
    normalized tuple (lower(age_group), lower(gender), Division N ≡ DN).
+
+   PLUSIEURS CANDIDATES (BP 2026-10-09). Un club civil aligne souvent
+   plusieurs équipes dans le même groupe — Diablos Blanc et Diablos Noir en
+   Atome Sud, Wildcats Est / Nord / Ouest. Rendre la PREMIÈRE faisait adopter
+   l'une pour l'autre. detectExistingTeams les rend TOUTES, avec leur zone,
+   pour que le coach choisisse la sienne ; l'ordre met en tête celle qui
+   porte le nom saisi.
+
+   « AUCUNE DIVISION » (AUCUNE_DIVISION) : un choix explicite, distinct de
+   « pas encore choisi ». Il cherche les équipes de division vide (Atome
+   Nord / Sud) — '' et NULL, comme _team_norm_division().
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { AUCUNE_DIVISION } from "@/lib/config/civilVocab";
 
 /** lower+trim ; '' when absent. Mirrors lower(btrim(coalesce(x,''))). */
 export function normalizeKey(s?: string | null): string {
@@ -35,6 +47,8 @@ export interface DetectedTeam {
   ageGroup: string | null;
   gender: string | null;
   division: string | null;
+  /** teams.zone — '' / null sans zone. */
+  zone?: string | null;
 }
 
 export interface DetectParams {
@@ -42,47 +56,77 @@ export interface DetectParams {
   sportId?: string | null;
   ageGroup?: string;
   gender?: string;
+  /** Division FINALE, ou AUCUNE_DIVISION pour « pas de niveau ». */
   division?: string;
+  /** Nom saisi : l'équipe qui le porte passe en tête. */
+  name?: string;
+}
+
+/** La division recherchée, ou null tant qu'elle n'est pas choisie. */
+function divisionVoulue(division?: string): string | null {
+  if (division === AUCUNE_DIVISION) return "";
+  const d = normalizeDivision(division);
+  return d ? d : null;
+}
+
+/** Une ligne `teams` correspond-elle à l'identité normalisée demandée ? Pure. */
+export function correspond(
+  c: { age_group?: string | null; gender?: string | null; division?: string | null },
+  p: Pick<DetectParams, "ageGroup" | "gender" | "division">,
+): boolean {
+  const div = divisionVoulue(p.division);
+  return div !== null
+    && normalizeKey(c.age_group) === normalizeKey(p.ageGroup)
+    && normalizeKey(c.gender) === normalizeKey(p.gender)
+    && normalizeDivision(c.division) === div;
+}
+
+/** Ordre des candidates : le nom saisi d'abord, puis l'ordre reçu. Pure. */
+export function trierCandidates<T extends { name?: string | null }>(rows: T[], nom?: string): T[] {
+  const n = normalizeKey(nom);
+  if (!n) return rows;
+  return [...rows.filter((r) => normalizeKey(r.name) === n), ...rows.filter((r) => normalizeKey(r.name) !== n)];
 }
 
 /**
- * Returns the first existing team whose NORMALIZED identity
- * (school_id, sport_id, lower(age_group), gender, normalized division)
- * matches the given attributes — or null. No-op (null) until the five
- * identity fields are present, so callers can call it eagerly.
+ * TOUTES les équipes existantes dont l'identité NORMALISÉE (school_id,
+ * sport_id, lower(age_group), gender, division normalisée) correspond — [] si
+ * aucune, ou tant que les cinq champs ne sont pas posés.
  */
-export async function detectExistingTeam(
+export async function detectExistingTeams(
   supabase: SupabaseClient,
-  { schoolId, sportId, ageGroup, gender, division }: DetectParams,
-): Promise<DetectedTeam | null> {
-  if (!schoolId || !sportId) return null;
-  if (!normalizeKey(ageGroup) || !normalizeKey(gender) || !normalizeDivision(division)) return null;
+  { schoolId, sportId, ageGroup, gender, division, name }: DetectParams,
+): Promise<DetectedTeam[]> {
+  if (!schoolId || !sportId) return [];
+  if (!normalizeKey(ageGroup) || !normalizeKey(gender) || divisionVoulue(division) === null) return [];
 
   const { data, error } = await supabase
     .from("teams")
-    .select("id, name, age_group, gender, division")
+    .select("id, name, age_group, gender, division, zone, season, created_at")
     .eq("school_id", schoolId)
     .eq("sport_id", sportId)
-    .eq("is_active", true);
-  if (error || !data) return null;
+    .eq("is_active", true)
+    .order("season", { ascending: false })
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
 
-  const wantAge = normalizeKey(ageGroup);
-  const wantGen = normalizeKey(gender);
-  const wantDiv = normalizeDivision(division);
+  return trierCandidates(
+    data.filter((c) => correspond(c as never, { ageGroup, gender, division })),
+    name,
+  ).map((m) => ({
+    id: m.id as string,
+    name: m.name as string,
+    ageGroup: (m.age_group as string) ?? null,
+    gender: (m.gender as string) ?? null,
+    division: (m.division as string) ?? null,
+    zone: (m.zone as string) ?? null,
+  }));
+}
 
-  const m = data.find(
-    (c) =>
-      normalizeKey(c.age_group as string) === wantAge &&
-      normalizeKey(c.gender as string) === wantGen &&
-      normalizeDivision(c.division as string) === wantDiv,
-  );
-  return m
-    ? {
-        id: m.id as string,
-        name: m.name as string,
-        ageGroup: (m.age_group as string) ?? null,
-        gender: (m.gender as string) ?? null,
-        division: (m.division as string) ?? null,
-      }
-    : null;
+/** La première candidate, ou null (forme historique, gardée pour ses appelants). */
+export async function detectExistingTeam(
+  supabase: SupabaseClient,
+  params: DetectParams,
+): Promise<DetectedTeam | null> {
+  return (await detectExistingTeams(supabase, params))[0] ?? null;
 }

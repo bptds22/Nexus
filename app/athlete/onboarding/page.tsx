@@ -27,7 +27,7 @@ import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY } from 
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import { type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
-import { teamDetails } from "@/lib/config/teamLabel";
+import { teamDetails, avecZone } from "@/lib/config/teamLabel";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -230,6 +230,8 @@ type CivilTeamRow = {
   name: string;
   age_group: string | null;
   division: string | null;
+  /** teams.zone — « Atome Nord » (BP 2026-10-09). */
+  zone?: string | null;
   school_id: string;
   school_name: string;
 };
@@ -280,7 +282,7 @@ function CivilTeamPicker({
       // the previous client-side type filter is no longer needed.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division")
+        .select("id, name, age_group, division, zone")
         .eq("school_id", clubId)
         .eq("sport_id", sportRow.id)
         .eq("is_active", true)
@@ -292,6 +294,7 @@ function CivilTeamPicker({
         name: raw.name as string,
         age_group: (raw.age_group as string) ?? null,
         division: (raw.division as string) ?? null,
+        zone: (raw.zone as string) ?? null,
         school_id: clubId,
         school_name: clubName,
       }));
@@ -350,7 +353,8 @@ function CivilTeamPicker({
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {visible.map((t) => {
           const isSelected = selectedTeamId === t.id;
-          const meta = [t.age_group, t.division].filter(Boolean).join(" · ");
+          // Zone comprise : « Atome Nord », « Pee-Wee · AAA Sud » (BP 2026-10-09).
+          const meta = avecZone(t.age_group ?? "", t.division ?? "", t.zone ?? "").filter(Boolean).join(" · ");
           return (
             <button
               key={t.id}
@@ -414,6 +418,7 @@ type SchoolTeamRow = {
   name: string;
   age_group: string | null;
   division: string | null;
+  zone?: string | null;
   gender: string | null;
   /** Saison de l'équipe — sert au tri du picker (FIX 3), pas à l'affichage. */
   season?: string;
@@ -468,7 +473,7 @@ function SchoolTeamPicker({
       // rattaché à une équipe sans rseq_team_id, donc sans calendrier.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division, gender, season")
+        .select("id, name, age_group, division, zone, gender, season")
         .eq("school_id", schoolId)
         .eq("sport_id", sportRow.id)
         .eq("is_active", true)
@@ -491,6 +496,7 @@ function SchoolTeamPicker({
           name: r.name as string,
           age_group: (r.age_group as string) ?? null,
           division: (r.division as string) ?? null,
+          zone: (r.zone as string) ?? null,
           gender: (r.gender as string) ?? null,
           season: (r.season as string) ?? "",
         }));
@@ -559,7 +565,7 @@ function SchoolTeamPicker({
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {visible.map((t) => {
           const isSelected = selectedTeamId === t.id;
-          const meta = [t.age_group, t.division, t.gender ? genderLabel(t.gender) : null].filter(Boolean).join(" · ");
+          const meta = [...avecZone(t.age_group ?? "", t.division ?? "", t.zone ?? ""), t.gender ? genderLabel(t.gender) : null].filter(Boolean).join(" · ");
           return (
             <button
               key={t.id}

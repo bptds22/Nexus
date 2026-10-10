@@ -30,7 +30,7 @@
 
 import type { TeamRole } from "@/lib/coach/teamRoles";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import { normalizeKey, normalizeDivision } from "./detectExistingTeam";
+import { normalizeKey, normalizeDivision, trierCandidates } from "./detectExistingTeam";
 
 export interface CreateTeamParams {
   /** auth.uid() of the coach creating the team — becomes head_coach. */
@@ -133,7 +133,7 @@ export async function createTeam(
      functions the pre-submit banner uses, mirroring the SQL guard. */
   let candidatesQuery = supabase
     .from("teams")
-    .select("id, age_group, gender, division")
+    .select("id, name, age_group, gender, division")
     .eq("school_id", schoolId)
     .eq("sport_id", sportId)
     .eq("is_active", true);
@@ -146,7 +146,10 @@ export async function createTeam(
   const { data: candidates } = await candidatesQuery
     .order("season", { ascending: false })
     .order("created_at", { ascending: true });
-  const existing = (candidates ?? []).find(
+  /* PLUSIEURS CANDIDATES (BP 2026-10-09) : un club civil aligne souvent
+     plusieurs équipes dans le même groupe (Diablos Blanc / Noir). Celle qui
+     porte le nom saisi passe en tête ; sinon l'ordre de la RPC (inchangé). */
+  const existing = trierCandidates(candidates ?? [], nameTrim).find(
     (c) =>
       normalizeKey(c.age_group as string) === normalizeKey(params.ageGroup) &&
       normalizeKey(c.gender as string) === normalizeKey(params.gender) &&

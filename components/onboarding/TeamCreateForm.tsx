@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentSeason } from "@/lib/utils/season";
-import { AGE_OPTIONS, AUTRE_VALUE, DIVISION_OPTIONS } from "@/lib/config/civilVocab";
+import { AGE_OPTIONS, AUTRE_VALUE, AUCUNE_DIVISION, DIVISION_OPTIONS_AVEC_AUCUNE, divisionChoisie } from "@/lib/config/civilVocab";
 
 /* ═══════════════════════════════════════════════════════════════
    TeamCreateForm — pure-presentation form for creating a civil
@@ -87,7 +87,10 @@ export interface TeamCreateFormProps {
     sportId: string;
     ageGroup: string;
     gender: string;
+    /** Division finale, ou AUCUNE_DIVISION pour « pas de niveau ». */
     division: string;
+    /** Nom saisi : la bannière met en tête l'équipe qui le porte. */
+    name: string;
   }) => ReactNode;
 }
 
@@ -232,8 +235,8 @@ export default function TeamCreateForm({
   const divisionOtherTrimmed = divisionOther.trim();
   const ageValueForSubmit =
     ageGroup === AUTRE_VALUE ? ageOtherTrimmed : ageGroup;
-  const divisionValueForSubmit =
-    division === AUTRE_VALUE ? divisionOtherTrimmed : division;
+  // « Aucune (pas de niveau) » → '' (Atome Nord / Sud, BP 2026-10-09).
+  const divisionValueForSubmit = divisionChoisie(division, divisionOther);
   const ageValid = ageGroup !== "" && (ageGroup !== AUTRE_VALUE || ageOtherTrimmed.length > 0);
   const divisionValid = division !== "" && (division !== AUTRE_VALUE || divisionOtherTrimmed.length > 0);
 
@@ -325,7 +328,7 @@ export default function TeamCreateForm({
           className={`${inputCls} appearance-none cursor-pointer`}
         >
           <option value="">Sélectionner...</option>
-          {DIVISION_OPTIONS.map((opt) => (
+          {DIVISION_OPTIONS_AVEC_AUCUNE.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -441,7 +444,8 @@ export default function TeamCreateForm({
         sportId,
         ageGroup: ageValueForSubmit,
         gender,
-        division: divisionValueForSubmit,
+        division: division === AUCUNE_DIVISION ? AUCUNE_DIVISION : divisionValueForSubmit,
+        name: teamName.trim(),
       })}
 
       <div className="flex items-center gap-3 pt-2">

@@ -32,6 +32,8 @@ export interface TeamLike {
   gender?: string | null;
   season?: string | null;
   league?: string | null;
+  /** teams.zone (Nord, Sud…) — partie de l'identité d'un groupe civil. */
+  zone?: string | null;
 }
 
 const clean = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
@@ -50,14 +52,27 @@ const clean = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
  */
 export function teamDetails(t: TeamLike): string {
   const genre = clean(t.gender) ? genderLabel(clean(t.gender)) : "";
+  const [age, division] = avecZone(clean(t.age_group), clean(t.division), clean(t.zone));
   return [
     clean(t.sport),
-    clean(t.age_group),
-    clean(t.division),
+    age,
+    division,
     genre === "—" ? "" : genre,
     clean(t.season),
     clean(t.league),
   ].filter(Boolean).join(" · ");
+}
+
+/**
+ * LA ZONE (BP 2026-10-09) se colle au dernier élément du groupe : « Pee-Wee ·
+ * AAA Sud », « Atome Nord » (Atome n'a pas de division). Ni catégorie ni
+ * division, mais partie de l'identité : deux équipes de même nom dans des
+ * zones différentes ne doivent jamais se lire pareil.
+ */
+export function avecZone(age: string, division: string, zone: string): [string, string] {
+  if (!zone) return [age, division];
+  if (division) return [age, `${division} ${zone}`];
+  return [age ? `${age} ${zone}` : zone, division];
 }
 
 /** Une seule chaîne, nom compris — pour les contextes sans place pour deux
