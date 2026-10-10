@@ -2,8 +2,11 @@
 -- Exception à la règle du 2026-09-05 (« la normalisation est en lecture »), LIMITÉE aux
 -- données civiles par décision BP. Prérequis : migration 20261010120000_civil_zone.
 --
--- Règle : catégorie = âge + calibre (« Pee-Wee AAA », « Bantam AAA », « Junior Majeur »,
--- « M18 AAA », ou l'âge seul) ; division = D1…D4 ou vide ; zone (Nord/Sud) à part.
+-- Règle : catégorie = le nom que la LIGUE donne à son groupe, calibre compris (« Pee-Wee AAA »,
+-- « Bantam AAA », « Midget AAA » — la LFMM les nomme ainsi —, « Junior Majeur », « M18 AAA »,
+-- « Atome ») ; division = D1…D4 ou vide ; zone (Nord/Sud) à part.
+-- L'équipe de club SANS ligue (« ∅ », Midget « Division 1 », saison 2025-2026) n'a pas de
+-- nom de ligue à suivre : elle garde « Midget ».
 --
 -- Ce qui est réécrit, et rien d'autre :
 --   · teams.age_group / division / zone des équipes civiles :
@@ -63,11 +66,11 @@ begin
   insert into _carte values
     ('LFMM', 'Atome', 'Atome Nord', 'Atome', '', 'Nord'),
     ('LFMM', 'Atome', 'Atome Sud', 'Atome', '', 'Sud'),
-    ('LFMM', 'Bantam', 'Bantam — Division 1', 'Bantam', 'D1', ''),
-    ('LFMM', 'Bantam', 'Bantam — Division 2', 'Bantam', 'D2', ''),
-    ('LFMM', 'Midget', 'Midget — Division 1', 'Midget', 'D1', ''),
-    ('LFMM', 'Midget', 'Midget — Division 2', 'Midget', 'D2', ''),
-    ('LFMM', 'Midget', 'Division 2', 'Midget', 'D2', ''),
+    ('LFMM', 'Bantam', 'Bantam — Division 1', 'Bantam AAA', 'D1', ''),
+    ('LFMM', 'Bantam', 'Bantam — Division 2', 'Bantam AAA', 'D2', ''),
+    ('LFMM', 'Midget', 'Midget — Division 1', 'Midget AAA', 'D1', ''),
+    ('LFMM', 'Midget', 'Midget — Division 2', 'Midget AAA', 'D2', ''),
+    ('LFMM', 'Midget', 'Division 2', 'Midget AAA', 'D2', ''),
     ('LFMM', 'Moustique', 'Moustique AAA — Division 1 Nord', 'Moustique AAA', 'D1', 'Nord'),
     ('LFMM', 'Moustique', 'Moustique AAA — Division 1 Sud', 'Moustique AAA', 'D1', 'Sud'),
     ('LFMM', 'Pee-Wee', 'Pee-Wee AAA — Division 1 Nord', 'Pee-Wee AAA', 'D1', 'Nord'),

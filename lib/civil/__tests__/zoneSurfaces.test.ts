@@ -13,8 +13,16 @@ test("la table SQL de correction = le classeur des scrapers (un seul classement)
   const sql = readFileSync("scripts/civil-zone/1-corriger.sql", "utf8");
   const lignes = [...sql.matchAll(/^\s*\('(LFMM|QBFL|QMFL|QMJFL)', '([^']+)', '([^']+)', '([^']+)', '([^']*)', '([^']*)'\),?$/gm)];
   assert.equal(lignes.length, 14);
+  // L'import du 2026-08-15 a PERDU le calibre de la catégorie LFMM (« BANTAM AAA » est
+  // entré « Bantam ») : on rejoue la catégorie SOURCE de la LFMM, relevée dans son
+  // site (data/import/civil_football_lfmm.json : ATOME, MOUSTIQUE, PEE-WEE,
+  // BANTAM AAA, MIDGET AAA).
+  const SOURCE_LFMM: Record<string, string> = {
+    Atome: "ATOME", Moustique: "MOUSTIQUE", "Pee-Wee": "PEE-WEE", Bantam: "BANTAM AAA", Midget: "MIDGET AAA",
+  };
   for (const [, ligue, ageAvant, divAvant, categorie, division, zone] of lignes) {
-    assert.deepEqual(classerGroupeCivil(ligue, ageAvant, divAvant), { categorie, division, zone }, `${ligue} ${divAvant}`);
+    const source = ligue === "LFMM" ? SOURCE_LFMM[ageAvant] : ageAvant;
+    assert.deepEqual(classerGroupeCivil(ligue, source, divAvant), { categorie, division, zone }, `${ligue} ${divAvant}`);
   }
 });
 

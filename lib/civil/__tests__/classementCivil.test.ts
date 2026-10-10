@@ -1,13 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classerGroupeCivil, ageCivil, nomGroupe } from "@/lib/civil/classementCivil";
+import { classerGroupeCivil, categorieSource, nomGroupe } from "@/lib/civil/classementCivil";
 
 const c = (l: string, cat: string, div: string | null) => classerGroupeCivil(l, cat, div);
+
+test("on suit le nom que la ligue donne à son groupe : la LFMM dit BANTAM AAA et MIDGET AAA", () => {
+  assert.deepEqual(c("LFMM", "BANTAM AAA", "BANTAM - DIVISION 1"), { categorie: "Bantam AAA", division: "D1", zone: "" });
+  assert.deepEqual(c("LFMM", "BANTAM AAA", "BANTAM - DIVISION 2"), { categorie: "Bantam AAA", division: "D2", zone: "" });
+  assert.deepEqual(c("LFMM", "MIDGET AAA", "MIDGET - DIVISION 1"), { categorie: "Midget AAA", division: "D1", zone: "" });
+  assert.deepEqual(c("LFMM", "MIDGET AAA", "MIDGET - DIVISION 2"), { categorie: "Midget AAA", division: "D2", zone: "" });
+  // le calibre n'est jamais doublé
+  assert.equal(c("LFMM", "PEE-WEE", "PEE-WEE AAA - DIVISION 1 SUD").categorie, "Pee-Wee AAA");
+  assert.equal(c("QBFL", "Bantam AAA", "QBFL").categorie, "Bantam AAA");
+  assert.equal(c("QMJFL", "Junior Major", "QMJFL").categorie, "Junior Majeur");
+});
 
 test("les exemples de BP (2026-10-09), mot pour mot", () => {
   assert.deepEqual(c("LFMM", "Pee-Wee", "Pee-Wee AAA — Division 1 Sud"), { categorie: "Pee-Wee AAA", division: "D1", zone: "Sud" });
   assert.deepEqual(c("LFMM", "Moustique", "Moustique AAA — Division 1 Nord"), { categorie: "Moustique AAA", division: "D1", zone: "Nord" });
-  assert.deepEqual(c("LFMM", "Midget", "Midget — Division 2"), { categorie: "Midget", division: "D2", zone: "" });
+  assert.deepEqual(c("LFMM", "MIDGET AAA", "Midget — Division 2"), { categorie: "Midget AAA", division: "D2", zone: "" });
   assert.deepEqual(c("LFMM", "Atome", "Atome Nord"), { categorie: "Atome", division: "", zone: "Nord" });
   assert.deepEqual(c("QBFL", "Bantam", "AAA"), { categorie: "Bantam AAA", division: "", zone: "" });
   assert.deepEqual(c("QMFL", "Midget", "AAA"), { categorie: "Midget AAA", division: "", zone: "" });
@@ -16,12 +27,10 @@ test("les exemples de BP (2026-10-09), mot pour mot", () => {
 
 test("LFMM : les libellés SOURCE donnent les mêmes groupes que les libellés importés", () => {
   assert.deepEqual(c("LFMM", "ATOME", "ATOME SUD"), { categorie: "Atome", division: "", zone: "Sud" });
-  assert.deepEqual(c("LFMM", "BANTAM AAA", "BANTAM - DIVISION 1"), { categorie: "Bantam", division: "D1", zone: "" });
-  assert.deepEqual(c("LFMM", "BANTAM AAA", "BANTAM - DIVISION 2"), c("LFMM", "Bantam", "Bantam — Division 2"));
-  assert.deepEqual(c("LFMM", "MIDGET AAA", "MIDGET - DIVISION 1"), { categorie: "Midget", division: "D1", zone: "" });
+  assert.deepEqual(c("LFMM", "BANTAM AAA", "BANTAM - DIVISION 2"), c("LFMM", "Bantam AAA", "Bantam — Division 2"));
   assert.deepEqual(c("LFMM", "MOUSTIQUE", "MOUSTIQUE AAA - DIVISION 1 SUD"), { categorie: "Moustique AAA", division: "D1", zone: "Sud" });
   assert.deepEqual(c("LFMM", "PEE-WEE", "PEE-WEE AAA - DIVISION 1 NORD"), { categorie: "Pee-Wee AAA", division: "D1", zone: "Nord" });
-  assert.deepEqual(c("LFMM", "Midget", "Division 2"), { categorie: "Midget", division: "D2", zone: "" }); // saisie coach
+  assert.deepEqual(c("LFMM", "MIDGET AAA", "Division 2"), { categorie: "Midget AAA", division: "D2", zone: "" }); // saisie coach
 });
 
 test("LeagueSuite : le calibre de la ligue entre dans la catégorie (libellés source)", () => {
@@ -44,7 +53,7 @@ test("un libellé inconnu ARRÊTE le générateur au lieu de deviner", () => {
   assert.throws(() => c("LFMM", "ATOME", "ATOME CONFÉRENCE ROUGE"), /division illisible/);
   assert.throws(() => c("LFMM", "BANTAM", "BANTAM - DIVISION 5"), /division illisible/);
   assert.throws(() => c("LFQ9", "MIDGET", "AAA"), /ligue inconnue/);
-  assert.throws(() => ageCivil("Juvénile"), /catégorie inconnue/); // RSEQ : jamais par ce classeur
+  assert.throws(() => categorieSource("Juvénile"), /catégorie inconnue/); // RSEQ : jamais par ce classeur
 });
 
 test("nomGroupe : la zone suit la division, ou la catégorie sans division", () => {
