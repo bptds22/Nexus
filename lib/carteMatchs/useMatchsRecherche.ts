@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import {
   COLONNES_SOURCE, JOURS_SAISON, PLAFOND_LIGNES, fenetres, jourDecale, moities, paquets, sourcesParMatch, suggestionsLisibles,
+  profilsPartenaireLisibles,
   type PastilleCarte,
   type LigneSource, type MatchRecherche, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
@@ -35,21 +36,32 @@ export interface CriteresRecherche {
    *  la saison à venir entière, `fin` ignorée. */
   equipes?: string[];
   lieux?: string[];
+  /** « Mes matchs » (partenaire) : seulement les matchs ajoutés, sur la saison à venir. */
+  mesMatchs?: boolean;
 }
+
+/** Qui regarde la carte (BP 2026-10-09) : la base décide de ce qui revient ; le
+ *  mode entre aussi dans les clés de cache, pour qu'un compte n'hérite jamais des
+ *  résultats (étoile, « + ») d'un autre rôle dans le même onglet. */
+export type ModeCarte = "recruteur" | "partenaire";
 
 const CLE = ["carte-matchs", "recherche"] as const;
 
-export function useMatchsRecherche(c: CriteresRecherche, enabled: boolean) {
+export function useMatchsRecherche(c: CriteresRecherche, enabled: boolean, mode: ModeCarte = "recruteur") {
   const types = [...c.types].sort();
   const texte = c.texte.trim();
   const equipes = [...(c.equipes ?? [])].sort();
   const lieux = [...(c.lieux ?? [])].sort();
-  const saison = equipes.length + lieux.length > 0;
+  const mesMatchs = !!c.mesMatchs;
+  const saison = equipes.length + lieux.length > 0 || mesMatchs;
   return useQuery<MatchRecherche[]>({
-    queryKey: [...CLE, c.debut, saison ? "saison" : c.fin, c.sport, types.join(","), texte, equipes.join(","), lieux.join(",")],
+    queryKey: [...CLE, mode, c.debut, saison ? "saison" : c.fin, c.sport, types.join(","), texte, equipes.join(","), lieux.join(","), mesMatchs],
     enabled: enabled && types.length > 0,
     staleTime: 60_000,
     placeholderData: (avant) => avant,
+    // Un refus de la base (42501 : non Pro, partenaire non approuvé) ne se réessaie pas :
+    // la page l'affiche tout de suite au lieu d'attendre deux relances.
+    retry: (n, e) => (e as { code?: string })?.code !== "42501" && n < 2,
     queryFn: async () => {
       const supabase = createClient();
       const appeler = async (debut: string, fin: string): Promise<MatchRecherche[]> => {
@@ -62,6 +74,7 @@ export function useMatchsRecherche(c: CriteresRecherche, enabled: boolean) {
           // Seulement s'il y en a : l'appel reste celui d'avant pour la recherche sans pastille.
           ...(equipes.length ? { p_equipes: equipes } : {}),
           ...(lieux.length ? { p_lieux: lieux } : {}),
+          ...(mesMatchs ? { p_mes_matchs: true } : {}),
         });
         if (error) throw error;
         const lignes = (data ?? []) as MatchRecherche[];
@@ -87,13 +100,24 @@ export function useMatchsRecherche(c: CriteresRecherche, enabled: boolean) {
   });
 }
 
-/** + / ✓ : ajoute ou retire un match du calendrier de l'unité. Rafraîchit la
- *  recherche ET le Calendrier (le match y apparaît ou en sort). */
-export function useBasculerCalendrier() {
+/** + / ✓ : ajoute ou retire un match — du calendrier de l'UNITÉ (recruteur), ou
+ *  de l'agenda du PARTENAIRE (matchs_ajoutes_partenaire, ses lignes seulement).
+ *  Rafraîchit la recherche ET le Calendrier (le match y apparaît ou en sort). */
+export function useBasculerCalendrier(mode: ModeCarte = "recruteur") {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ gameId, ajouter }: { gameId: string; ajouter: boolean }) => {
       const supabase = createClient();
+      if (mode === "partenaire") {
+        if (ajouter) {
+          const { error } = await supabase.from("matchs_ajoutes_partenaire").insert({ game_id: gameId });
+          if (error && error.code !== "23505") throw error;
+        } else {
+          const { error } = await supabase.from("matchs_ajoutes_partenaire").delete().eq("game_id", gameId);
+          if (error) throw error;
+        }
+        return;
+      }
       if (ajouter) {
         const { error } = await supabase.from("matchs_ajoutes").insert({ game_id: gameId });
         // Déjà ajouté (par un collègue, ou double clic) : l'état voulu est atteint.
@@ -176,6 +200,24 @@ export function useSuggestionsCarte(texte: string, f: FiltresSuggestions, enable
   });
   const suggestions = useMemo(() => suggestionsLisibles(requete.data), [requete.data]);
   return { suggestions, isFetching: requete.isFetching, isError: requete.isError, pret: requete.isSuccess };
+}
+
+/** Joueurs Nexus d'un match, côté PARTENAIRE (RPC matchs_profils_partenaire) :
+ *  le nombre de tous les athlètes actifs, les noms des seuls athlètes qui ont
+ *  coché la visibilité partenaire (validation : profilsPartenaireLisibles). */
+export function useProfilsPartenaire(gameId: string | null, enabled: boolean) {
+  const requete = useQuery<unknown>({
+    queryKey: ["carte-matchs", "profils-partenaire", gameId],
+    enabled: enabled && !!gameId,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await createClient().rpc("matchs_profils_partenaire", { p_game: gameId });
+      if (error) throw error;
+      return data;
+    },
+  });
+  const lu = useMemo(() => profilsPartenaireLisibles(requete.data), [requete.data]);
+  return { ...lu, isLoading: requete.isLoading, isError: requete.isError };
 }
 
 export function useSportsCarte(enabled: boolean) {

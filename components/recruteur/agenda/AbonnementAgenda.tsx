@@ -3,8 +3,10 @@
 /* ═══════════════════════════════════════════════════════════════
    AbonnementAgenda — « S'abonner à mon agenda » (décision BP 2026-10-01).
 
-   Une adresse PRIVÉE par recruteur Pro : ses relances et les visites de son
-   unité, dans Google Agenda, Outlook ou toute app qui lit le webcal://.
+   Une adresse PRIVÉE par recruteur Pro : ses relances, les visites et les
+   matchs ajoutés par son unité, dans Google Agenda, Outlook ou toute app qui lit
+   le webcal://. Mode « partenaire » (BP 2026-10-09) : les matchs que le
+   partenaire APPROVED a ajoutés avec « + » sur la carte des matchs (jeton nxp_).
 
    Le jeton n'est stocké que HACHÉ : l'adresse s'affiche UNE fois, au moment
    où on la crée. Ensuite on ne peut que la remplacer (l'ancienne cesse de
@@ -19,6 +21,15 @@ import { adresseFlux, adresseWebcal, lienGoogle, lienOutlook, lienOutlookPerso }
 
 interface Etat { actif: boolean; cree_le: string | null; unite_a_jour: boolean; pro: boolean }
 
+/** Recruteur (relances, visites, matchs de l'unité) ou partenaire (ses matchs). */
+export type ModeAgenda = "recruteur" | "partenaire";
+
+/** Les RPC de chaque mode : même forme d'appel, tables et règles distinctes. */
+const RPC = {
+  recruteur: { etat: "agenda_jeton_etat", creer: "agenda_jeton_creer", revoquer: "agenda_jeton_revoquer" },
+  partenaire: { etat: "agenda_jeton_partenaire_etat", creer: "agenda_jeton_partenaire_creer", revoquer: "agenda_jeton_partenaire_revoquer" },
+} as const;
+
 const btnPlein = "inline-flex items-center justify-center gap-2 rounded-lg bg-[#E63946] px-4 py-2.5 text-[13px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#D42B22] disabled:opacity-50";
 const btnContour = "inline-flex items-center justify-center gap-2 rounded-lg border border-[#2D3748] px-4 py-2.5 text-[13px] font-semibold text-[#e0e0e0] transition-colors hover:border-[#6B7280] disabled:opacity-50";
 
@@ -26,9 +37,11 @@ function dateFr(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }) : "";
 }
 
-export default function AbonnementAgenda() {
+export default function AbonnementAgenda({ mode = "recruteur" }: { mode?: ModeAgenda }) {
+  const partenaire = mode === "partenaire";
   const { tier, loading: tierLoading } = useSubscription();
-  const estPro = tier === "pro" || tier === "all_star";
+  // Partenaire : gratuit ; la base n'admet que les APPROVED (refus affiché par l'erreur).
+  const estPro = partenaire || tier === "pro" || tier === "all_star";
   const [etat, setEtat] = useState<Etat | null>(null);
   const [jeton, setJeton] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
@@ -37,11 +50,17 @@ export default function AbonnementAgenda() {
   const [copie, setCopie] = useState(false);
 
   const relire = useCallback(async () => {
-    const { data, error } = await createClient().rpc("agenda_jeton_etat");
+    const { data, error } = await createClient().rpc(RPC[mode].etat);
     if (error) { setErreur("Impossible de lire l'état de ton abonnement. Réessaie dans un instant."); return; }
-    const ligne = (Array.isArray(data) ? data[0] : data) as Etat | undefined;
-    setEtat(ligne ?? { actif: false, cree_le: null, unite_a_jour: false, pro: false });
-  }, []);
+    const ligne = (Array.isArray(data) ? data[0] : data) as (Partial<Etat> & { admis?: boolean }) | undefined;
+    setEtat({
+      actif: !!ligne?.actif,
+      cree_le: ligne?.cree_le ?? null,
+      // Partenaire : pas d'unité — l'adresse vaut tant que le compte est approuvé.
+      unite_a_jour: partenaire ? ligne?.admis !== false : !!ligne?.unite_a_jour,
+      pro: partenaire ? ligne?.admis !== false : !!ligne?.pro,
+    });
+  }, [mode, partenaire]);
 
   // Lecture au montage, hors du rendu synchrone de l'effet.
   useEffect(() => {
@@ -52,11 +71,13 @@ export default function AbonnementAgenda() {
 
   async function creer() {
     setOccupe(true); setErreur(null); setConfirmer(null);
-    const { data, error } = await createClient().rpc("agenda_jeton_creer");
+    const { data, error } = await createClient().rpc(RPC[mode].creer);
     setOccupe(false);
     if (error) {
       setErreur(error.code === "22023"
         ? "Ton compte n'a pas encore de cégep et de sport : l'agenda de l'unité n'existe pas."
+        : error.code === "42501" && partenaire
+        ? "L'agenda est réservé aux partenaires approuvés."
         : "L'adresse n'a pas pu être créée. Réessaie dans un instant.");
       return;
     }
@@ -66,7 +87,7 @@ export default function AbonnementAgenda() {
 
   async function revoquer() {
     setOccupe(true); setErreur(null); setConfirmer(null);
-    const { error } = await createClient().rpc("agenda_jeton_revoquer");
+    const { error } = await createClient().rpc(RPC[mode].revoquer);
     setOccupe(false);
     if (error) { setErreur("La révocation n'a pas abouti. Réessaie dans un instant."); return; }
     setJeton(null);
@@ -91,10 +112,17 @@ export default function AbonnementAgenda() {
 
   return (
     <div className="space-y-4" data-testid="abonnement-agenda">
-      <p className="text-[14px] text-[#9CA3AF] max-w-xl">
-        Tes <span className="text-[#e0e0e0]">relances</span> et les <span className="text-[#e0e0e0]">visites</span> de ton unité,
-        dans ton agenda, mis à jour automatiquement. Les matchs n&apos;y sont pas.
-      </p>
+      {partenaire ? (
+        <p className="text-[14px] text-[#9CA3AF] max-w-xl">
+          Les <span className="text-[#e0e0e0]">matchs</span> que tu ajoutes avec « + » sur la carte des matchs, dans ton agenda,
+          à l&apos;heure de Montréal et mis à jour automatiquement. Un match sans heure y figure sur la journée entière.
+        </p>
+      ) : (
+        <p className="text-[14px] text-[#9CA3AF] max-w-xl">
+          Tes <span className="text-[#e0e0e0]">relances</span>, les <span className="text-[#e0e0e0]">visites</span> et
+          les <span className="text-[#e0e0e0]">matchs ajoutés</span> par ton unité, dans ton agenda, mis à jour automatiquement.
+        </p>
+      )}
 
       {url ? (
         <div className="space-y-3 rounded-xl border border-[#2D3748] bg-[#13151a] p-4" data-testid="agenda-adresse-nouvelle">
@@ -114,14 +142,14 @@ export default function AbonnementAgenda() {
             </div>
           </div>
           <p className="text-[12.5px] text-[#F59E0B]">
-            Garde cette adresse pour toi : quiconque l&apos;a voit tes relances et tes visites. Elle ne sera plus affichée —
+            Garde cette adresse pour toi : quiconque l&apos;a voit {partenaire ? "tes matchs" : "tes relances et tes visites"}. Elle ne sera plus affichée —
             pour la retrouver, tu en créeras une nouvelle.
           </p>
         </div>
       ) : etat?.actif ? (
         <div className="space-y-1 rounded-xl border border-[#2D3748] bg-[#13151a] p-4" data-testid="agenda-actif">
           <p className="text-[14px] text-[#e0e0e0]">Abonnement actif depuis le {dateFr(etat.cree_le)}.</p>
-          {!etat.unite_a_jour && (
+          {!etat.unite_a_jour && !partenaire && (
             <p className="text-[13px] text-[#F59E0B]" data-testid="agenda-unite-changee">
               Ton cégep ou ton sport a changé depuis : cette adresse ne montre plus rien. Crée une nouvelle adresse.
             </p>
