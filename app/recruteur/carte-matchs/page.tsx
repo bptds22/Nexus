@@ -47,8 +47,7 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const ETROIT = "(max-width: 1000px)";
 const LIBELLES_TYPES = Object.fromEntries(TYPES_MATCH.map((t) => [t.v, t.label]));
 const TOUS_LES_TYPES: TypeMatch[] = TYPES_MATCH.map((t) => t.v);
-/** La mention des filtres grisés quand une pastille est posée (décision BP 2026-10-09). */
-const IGNORES = "Ignorés tant qu'une équipe ou un terrain est choisi";
+
 
 export default function CarteMatchsPage() {
   const router = useRouter();
@@ -144,10 +143,10 @@ function CarteMatchsContenu() {
   const erreur = saison ? null : erreurPlage(debut, fin || null);
   const { equipes, lieux } = parametresPastilles(pastilles);
   const { data, isLoading, isError, isFetching } = useMatchsRecherche(
-    // LA PASTILLE GAGNE (BP 2026-10-09) : avec une pastille, Sport, Type et texte ne
-    // s'appliquent plus (la base les ignore aussi) ; seule la date de début compte.
+    // Les filtres s'appliquent PARTOUT, pastille ou non (BP 2026-10-09). Avec une pastille,
+    // la saison à venir entière, et le texte ne sert qu'à chercher la pastille suivante.
     saison
-      ? { debut, fin: debut, sport: "", types: TOUS_LES_TYPES, texte: "", equipes, lieux }
+      ? { debut, fin: debut, sport, types, texte: "", equipes, lieux }
       : { debut, fin: fin || debut, sport, types, texte, equipes, lieux },
     actif && sportInitialise && !erreur,
   );
@@ -156,8 +155,8 @@ function CarteMatchsContenu() {
   const tous = React.useMemo(() => (erreur || isError ? [] : matchsLisibles(data)), [data, erreur, isError]);
   const options = React.useMemo(() => optionsCatDiv(tous), [tous]);
   const matchs = React.useMemo(
-    () => trierMatchs(saison ? tous : filtrerCatDiv(tous, categorie, division)),
-    [tous, categorie, division, saison],
+    () => trierMatchs(filtrerCatDiv(tous, categorie, division)),
+    [tous, categorie, division],
   );
   const jours = React.useMemo(() => grouperParJour(matchs), [matchs]);
   const terrains = React.useMemo(() => terrainsCarte(matchs), [matchs]);
@@ -241,9 +240,12 @@ function CarteMatchsContenu() {
     basculer.mutate({ gameId: m.id, ajouter: etat === "LIBRE" });
   };
 
-  // Suggestions : sur le texte (déjà temporisé, 300 ms), sans les filtres Sport et Type — la
-  // pastille gagne. Une pastille déjà posée n'est plus proposée.
-  const { suggestions, pret: suggPret } = useSuggestionsCarte(texte, actif);
+  // Suggestions : sur le texte (déjà temporisé, 300 ms), avec les filtres en place. Une
+  // pastille déjà posée n'est plus proposée.
+  const { suggestions, pret: suggPret } = useSuggestionsCarte(texte, { sport, types, categorie, division }, actif && types.length > 0);
+  const filtresPoses = !!sport || !!categorie || !!division || types.length < TOUS_LES_TYPES.length;
+  /** « Retirer les filtres » : tous les sports, tous les types, toutes catégories et divisions. */
+  const retirerFiltres = () => { setSport(""); setTypes(TOUS_LES_TYPES); setCategorie(""); setDivision(""); };
   const proposees = suggestions.filter((x) => !pastilles.some((y) => y.genre === x.genre && y.cle === x.cle));
   const menuVisible = suggOuvert && q.trim().length >= 2 && texte.trim().length >= 2 && (proposees.length > 0 || suggPret);
   /** Une suggestion devient une pastille ; le texte libre est vidé (sinon il
@@ -256,14 +258,6 @@ function CarteMatchsContenu() {
   const filtreUnique = (label: string, valeur: string, valeurs: string[], poser: (v: string) => void, opts?: { lib?: (v: string) => string; toujoursActif?: boolean }) => {
     // Une seule valeur (ou aucune) : présent mais grisé, jamais caché (décision BP).
     // Une valeur posée absente des résultats reste modifiable, pour pouvoir la retirer.
-    // Pastille posée : grisé aussi, la pastille gagne.
-    if (saison) {
-      return (
-        <FiltreBtn label={label} compteur={valeur ? 1 : 0} onClear={() => poser("")} desactive titre={IGNORES}>
-          {() => null}
-        </FiltreBtn>
-      );
-    }
     const desactive = !opts?.toujoursActif && valeurs.length <= 1 && (!valeur || valeurs.includes(valeur));
     return (
       <FiltreBtn label={label} compteur={valeur ? 1 : 0} onClear={() => poser("")}
@@ -333,9 +327,14 @@ function CarteMatchsContenu() {
                   </div>
                 );
               })}
-              {!proposees.length && suggPret && (
-                <div className="cm-sugg-vide">Aucune équipe ni aucun terrain avec un match à venir. Le texte filtre quand même la liste.</div>
-              )}
+              {!proposees.length && suggPret && (filtresPoses ? (
+                <div className="cm-sugg-vide" data-testid="suggestions-vide">
+                  Aucune équipe ni terrain avec ces filtres.{" "}
+                  <button type="button" className="cm-sugg-lien" data-testid="retirer-filtres" onClick={retirerFiltres}>Retirer les filtres</button>
+                </div>
+              ) : (
+                <div className="cm-sugg-vide" data-testid="suggestions-vide">Aucune équipe ni aucun terrain avec un match à venir.</div>
+              ))}
             </div>
           )}
         </div>
@@ -380,7 +379,7 @@ function CarteMatchsContenu() {
 
         <span data-testid="filtres-carte" style={{ display: "contents" }}>
           {filtreUnique("Sport", sport, Array.isArray(sports) ? sports : [], setSport, { toujoursActif: true })}
-          <FiltreBtn label="Type" compteur={types.length} onClear={() => setTypes([])} desactive={saison} titre={saison ? IGNORES : undefined}>
+          <FiltreBtn label="Type" compteur={types.length} onClear={() => setTypes([])}>
             {() => (
               <ListeCases items={TYPES_MATCH.map((t) => t.v)} labels={LIBELLES_TYPES} selection={types}
                 onToggle={(v) => setTypes((x) => (x.includes(v as TypeMatch) ? x.filter((y) => y !== v) : [...x, v as TypeMatch]))} />
@@ -388,7 +387,6 @@ function CarteMatchsContenu() {
           </FiltreBtn>
           {filtreUnique("Catégorie", categorie, options.categories, setCategorie)}
           {filtreUnique("Division", division, options.divisions, setDivision, { lib: libelleDivision })}
-          {saison && <span className="cm-ignores" data-testid="filtres-ignores">{IGNORES}</span>}
         </span>
 
         {/* Carte | Liste — grand écran. En fenêtre étroite, la pastille du bas. */}
@@ -423,7 +421,7 @@ function CarteMatchsContenu() {
             )}
           </div>
           <div className="cards" ref={listRef} data-testid="liste-matchs">
-            {!erreur && !saison && types.length === 0 && <div className="vide">Choisis au moins un type.</div>}
+            {!erreur && types.length === 0 && <div className="vide">Choisis au moins un type.</div>}
             {!erreur && isError && <div className="vide">Les matchs n&apos;ont pas pu être chargés.</div>}
             {!erreur && isLoading && types.length > 0 && <div className="vide">Chargement des matchs…</div>}
             {!erreur && !isLoading && !isError && types.length > 0 && matchs.length === 0 && (
@@ -633,7 +631,8 @@ const CM_CSS = `
 .cs .cm-sugg-item span{font-size:12px;color:var(--mut)}
 .cs .cm-sugg-item.actif{background:#2A2F3A}
 .cs .cm-sugg-vide{padding:10px;font-size:12.5px;color:var(--mut)}
-.cs .cm-ignores{align-self:center;font-size:12px;font-weight:600;color:var(--mut);max-width:220px;line-height:1.3}
+.cs .cm-sugg-lien{background:none;border:0;padding:0;font:inherit;font-weight:700;color:#fff;text-decoration:underline;cursor:pointer}
+.cs .cm-sugg-lien:hover{color:var(--nexus)}
 .cs .cm-pastilles{display:inline-flex;flex-wrap:wrap;gap:6px}
 .cs .cm-pastille-genre{font-size:11px;font-weight:600;color:#E9909A}
 .cs .cm-avis{margin:10px 14px 0;padding:9px 12px;border-radius:10px;border:1px solid #F59E0B66;background:#F59E0B1F;color:#FCD34D;font-size:13px;font-weight:600;line-height:1.35}

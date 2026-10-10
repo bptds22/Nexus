@@ -141,20 +141,35 @@ export function useSourcesMatchs(ids: string[], enabled: boolean) {
   return { data: sources };
 }
 
-/** Suggestions du champ « Équipe, terrain… » (RPC matchs_suggestions) : TOUTES
- *  les équipes et tous les terrains ayant un match à venir, sans tenir compte des
- *  filtres Sport et Type — la pastille gagne (décision BP 2026-10-09) ; le type
- *  est écrit dans le détail. À partir de 2
+/** Suggestions du champ « Équipe, terrain… » (RPC matchs_suggestions) : les
+ *  équipes et terrains qui ont un match à venir PASSANT LES FILTRES en place —
+ *  Sport, Type, Catégorie, Division (BP 2026-10-09, retour sur « la pastille
+ *  gagne »). Le type est écrit dans le détail ; « saint » = « st ». À partir de 2
  *  caractères. Loi 25 : la RPC ne lit aucune table d'athlètes. */
-export function useSuggestionsCarte(texte: string, enabled: boolean) {
+/** Les filtres en place, que les suggestions respectent (BP 2026-10-09). */
+export interface FiltresSuggestions {
+  sport: string;
+  types: TypeMatch[];
+  categorie: string;
+  division: string;
+}
+
+export function useSuggestionsCarte(texte: string, f: FiltresSuggestions, enabled: boolean) {
   const t = texte.trim();
+  const types = [...f.types].sort();
   const requete = useQuery<PastilleCarte[]>({
-    queryKey: ["carte-matchs", "suggestions", t.toLowerCase()],
+    queryKey: ["carte-matchs", "suggestions", t.toLowerCase(), f.sport, types.join(","), f.categorie, f.division],
     enabled: enabled && t.length >= 2,
     staleTime: 60_000,
     placeholderData: (avant) => avant,
     queryFn: async () => {
-      const { data, error } = await createClient().rpc("matchs_suggestions", { p_texte: t });
+      const { data, error } = await createClient().rpc("matchs_suggestions", {
+        p_texte: t,
+        p_sport: f.sport || null,
+        p_types: types,
+        p_categorie: f.categorie || null,
+        p_division: f.division || null,
+      });
       if (error) throw error;
       return (data ?? []) as PastilleCarte[];
     },
