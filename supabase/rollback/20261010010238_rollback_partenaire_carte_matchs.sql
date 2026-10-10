@@ -1,4 +1,4 @@
--- Rollback de 20261010120000_partenaire_carte_matchs.sql : retire tout l'ajout partenaire et redonne à
+-- Rollback de 20261010010238_partenaire_carte_matchs.sql : retire tout l'ajout partenaire et redonne à
 -- matchs_recherche et matchs_suggestions leurs définitions de 20261010003908.
 
 DROP FUNCTION public.matchs_recherche(date, date, text, text[], text, uuid[], text[], boolean);

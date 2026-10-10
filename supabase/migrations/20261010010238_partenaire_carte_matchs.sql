@@ -1,4 +1,4 @@
--- Carte des matchs pour les PARTENAIRES (BP 2026-10-09). LOCAL — prod sur GO de BP.
+-- Carte des matchs pour les PARTENAIRES (BP 2026-10-09). Appliquée en prod le 2026-10-09 sur GO de BP.
 --
 -- Décisions BP : tous les partenaires APPROVED (rôle PARTNER + media_partners APPROVED ;
 -- SUSPENDED / REVOKED refusés partout, jeton .ics compris) ont le moteur des recruteurs.
@@ -15,7 +15,7 @@
 -- Branche recruteur : résultats identiques (preuve par empreinte avant / après).
 -- matchs_suggestions : même fonction, porte ouverte au partenaire (aucune donnée personnelle).
 -- ACL : liste COMPLÈTE triée pour chaque fonction. Rollback :
--- supabase/rollback/20261010120000_rollback_partenaire_carte_matchs.sql
+-- supabase/rollback/20261010010238_rollback_partenaire_carte_matchs.sql
 
 -- ── Qui est un partenaire admis ─────────────────────────────────────────────
 -- Rôle PARTNER ET fiche media_partners APPROVED (décision BP 2026-10-09 : les
