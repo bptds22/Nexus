@@ -15,6 +15,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { instantMatch } from "@/lib/calendar/heureMatch";
+import { nomGroupe } from "@/lib/civil/classementCivil";
 
 export interface EvenementAgenda {
   type: "RELANCE" | "VISITE";
@@ -41,6 +42,11 @@ export interface MatchAgenda {
   visiteur: string;
   terrain: string | null;
   ligue: string | null;
+  /** Le groupe du match (BP 2026-10-09) : « Atome Nord », « Pee-Wee AAA Sud ».
+   *  La zone en fait partie — deux groupes ne se confondent jamais. */
+  categorie?: string | null;
+  division?: string | null;
+  zone?: string | null;
 }
 
 /** Durée d'un match dans l'agenda : la source ne la donne pas. */
@@ -180,8 +186,9 @@ export function genererIcs(evenements: EvenementAgenda[], origine: string, maint
   return l.map(plier).join("\r\n") + "\r\n";
 }
 
-export function titreMatchAgenda(m: Pick<MatchAgenda, "domicile" | "visiteur">): string {
-  return `Match — ${m.domicile} vs ${m.visiteur}`;
+export function titreMatchAgenda(m: Pick<MatchAgenda, "domicile" | "visiteur" | "categorie" | "division" | "zone">): string {
+  const groupe = nomGroupe(m);
+  return `Match — ${m.domicile} vs ${m.visiteur}${groupe ? ` · ${groupe}` : ""}`;
 }
 
 /** DTSTART / DTEND d'un match : l'instant de Montréal (instantMatch), 2 h ; sans

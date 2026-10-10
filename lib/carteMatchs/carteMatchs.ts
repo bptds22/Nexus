@@ -16,6 +16,7 @@
 
 import { sourceDuMatch, type SourceMatch } from "@/lib/calendar/sourceMatch";
 import { heureCarte, heureQuebec, minutesDe } from "@/lib/calendar/heureMatch";
+import { nomGroupe } from "@/lib/civil/classementCivil";
 
 /** La lecture de l'heure est PARTAGÉE (lib/calendar/heureMatch) : réexportée ici
  *  pour les appelants de la carte, jamais redéfinie. */
@@ -69,6 +70,9 @@ export interface MatchRecherche {
   sport: string | null;
   categorie: string | null;
   division: string | null;
+  /** Zone du groupe civil (Nord, Sud…) — jamais dans le filtre Division,
+   *  toujours dans le nom du groupe (BP 2026-10-09). */
+  zone?: string | null;
   ligue: string | null;
   type: TypeMatch | null;
   lat: number | null;
@@ -350,6 +354,12 @@ export function libelleDivision(division: string | null | undefined): string {
 /** Itinéraire Google Maps jusqu'au terrain (nouvel onglet côté page). */
 export function lienItineraire(lat: number, lon: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+}
+
+/** Le groupe d'un match, zone comprise : « Atome Nord », « Pee-Wee AAA Sud »,
+ *  « Benjamin D4 ». '' quand la source n'en dit rien. */
+export function groupeMatch(m: Pick<MatchRecherche, "categorie" | "division" | "zone">): string {
+  return nomGroupe(m);
 }
 
 /** « Équipe A vs Équipe B ». */

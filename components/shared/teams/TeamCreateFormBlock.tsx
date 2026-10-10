@@ -34,7 +34,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { triggerHaptic } from "@/lib/haptics";
 import {
-  AGE_OPTIONS, DIVISION_OPTIONS, GENDER_OPTIONS, SEASON_OPTIONS, AUTRE_VALUE,
+  AGE_OPTIONS, DIVISION_OPTIONS_AVEC_AUCUNE, GENDER_OPTIONS, SEASON_OPTIONS, AUTRE_VALUE,
+  AUCUNE_DIVISION, divisionChoisie,
 } from "@/lib/config/civilVocab";
 
 export interface SportOption {
@@ -79,7 +80,8 @@ export interface TeamCreateFormBlockProps {
 }
 
 const AGE_PICKER_OPTIONS: PickerOption[] = AGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }));
-const DIVISION_PICKER_OPTIONS: PickerOption[] = DIVISION_OPTIONS.map((o) => ({ value: o.value, label: o.label }));
+// « Aucune (pas de niveau) » en tête (BP 2026-10-09) : résolue en '' ici même.
+const DIVISION_PICKER_OPTIONS: PickerOption[] = DIVISION_OPTIONS_AVEC_AUCUNE.map((o) => ({ value: o.value, label: o.label }));
 
 function defaultSeason(): string {
   /* getCurrentSeason() lives in lib/utils ; we hard-code the rolling
@@ -103,7 +105,8 @@ export function resolveTeamFinalValues(v: TeamFormValues): {
   finalDivision: string;
 } {
   const finalAge = v.ageGroup === AUTRE_VALUE ? v.ageOther.trim() : v.ageGroup;
-  const finalDivision = v.division === AUTRE_VALUE ? v.divisionOther.trim() : v.division;
+  // « Aucune (pas de niveau) » → '' : Atome Nord / Sud (BP 2026-10-09).
+  const finalDivision = divisionChoisie(v.division, v.divisionOther);
   return { finalAge, finalDivision };
 }
 
@@ -119,7 +122,7 @@ function computeValid(v: TeamFormValues, opts?: {
      dedup ; the civil onboarding required all three. We mirror that
      gate here so every surface produces consistent rows. */
   if (!finalAge) return false;
-  if (!finalDivision) return false;
+  if (!finalDivision && v.division !== AUCUNE_DIVISION) return false;
   if (!v.gender) return false;
   return true;
 }
@@ -305,7 +308,7 @@ export function TeamCreateFormBlock({
             className={`${inputCls} appearance-none`}
           >
             <option value="">Sélectionner…</option>
-            {DIVISION_OPTIONS.map((o) => (
+            {DIVISION_OPTIONS_AVEC_AUCUNE.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>

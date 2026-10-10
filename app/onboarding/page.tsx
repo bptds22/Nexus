@@ -2549,6 +2549,7 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
               ageGroup={a.ageGroup}
               gender={a.gender}
               division={a.division}
+              name={a.name}
               onAdopt={(t) => {
                 // Sélection locale (même flux que handlePick) — le
                 // rattachement réel se fait au finish (RPC, branche LINK).
@@ -4047,6 +4048,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
               ageGroup={a.ageGroup}
               gender={a.gender}
               division={a.division}
+              name={a.name}
               onAdopt={(t) => {
                 handleJoinExistingTeam({
                   id: t.id, name: t.name,
@@ -4156,7 +4158,7 @@ function UmbrellaStep({
       // regardless of sport. Coach flows always pass a real sport_id.
       let query = supabase
         .from("teams")
-        .select("id, name, age_group, gender, division, league, school_id, sports!sport_id(nom), team_coaches(coach_id)")
+        .select("id, name, age_group, gender, division, zone, league, school_id, sports!sport_id(nom), team_coaches(coach_id)")
         .eq("school_id", schoolId);
       if (sportId) {
         query = query.eq("sport_id", sportId);
@@ -4169,19 +4171,21 @@ function UmbrellaStep({
         setLoading(false);
         return;
       }
-      // Dedup by (name, age_group, division, gender) — same team
+      // Dedup by (name, age_group, division, ZONE, gender) — same team
       // across multiple seasons collapses to one card. Keep the
-      // first occurrence (alphabetical from ORDER BY).
+      // first occurrence (alphabetical from ORDER BY). La ZONE en fait
+      // partie (BP 2026-10-09) : deux équipes de même nom dans des zones
+      // différentes ne sont JAMAIS fusionnées en une carte.
       const seen = new Set<string>();
       const deduped: TeamSearchRow[] = [];
       for (const r of (data ?? []) as Array<{
         id: string; name: string; age_group: string | null; gender: string | null;
-        division: string | null; league: string | null; school_id: string;
+        division: string | null; zone: string | null; league: string | null; school_id: string;
         sports: { nom: string } | null;
         team_coaches: { coach_id: string }[] | null;
       }>) {
         const sportName = r.sports?.nom ?? null;
-        const key = `${sportName ?? ""}${r.name}${r.age_group ?? ""}${r.division ?? ""}${r.gender ?? ""}`;
+        const key = [sportName ?? "", r.name, r.age_group ?? "", r.division ?? "", r.zone ?? "", r.gender ?? ""].join("␟");
         if (seen.has(key)) continue;
         seen.add(key);
         deduped.push({
@@ -4190,6 +4194,7 @@ function UmbrellaStep({
           age_group: r.age_group,
           gender: r.gender,
           division: r.division,
+          zone: r.zone,
           league: r.league,
           school_id: r.school_id,
           school_name: schoolName,
@@ -4260,6 +4265,11 @@ function UmbrellaStep({
                   {team.age_group && (
                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                       {team.age_group}
+                    </span>
+                  )}
+                  {team.zone && (
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10" data-testid="pastille-zone">
+                      {team.zone}
                     </span>
                   )}
                   {genderText && (

@@ -39,6 +39,8 @@ export interface TeamSearchRow {
   age_group: string | null;
   gender: string | null;
   division: string | null;
+  /** teams.zone — « Nord », « Sud » : partie du nom du groupe (BP 2026-10-09). */
+  zone?: string | null;
   league: string | null;
   school_id: string;
   school_name: string;
@@ -90,6 +92,8 @@ interface RawRow {
   age_group: string | null;
   gender: string | null;
   division: string | null;
+  /** teams.zone — « Nord », « Sud » : partie du nom du groupe (BP 2026-10-09). */
+  zone?: string | null;
   league: string | null;
   school_id: string;
   schools: { id: string; name: string; type: string | null } | { id: string; name: string; type: string | null }[] | null;
@@ -202,7 +206,7 @@ export default function TeamSearchOrCreate({
         // import (thousands of teams) fills the alphabetical window and
         // pushes civil teams out before the client-side civil filter runs.
         .select(
-          "id, name, age_group, gender, division, league, school_id, schools!school_id!inner(id, name, type), team_coaches(coach_id)"
+          "id, name, age_group, gender, division, zone, league, school_id, schools!school_id!inner(id, name, type), team_coaches(coach_id)"
         )
         .eq("sport_id", sportId)
         .eq("schools.type", "LIGUE_CIVILE")
@@ -249,7 +253,7 @@ export default function TeamSearchOrCreate({
       const teamMatches = civilTeams.filter((row) => {
         if (normTokens.length === 0) return true;
         const r = row as unknown as RawRow;
-        const haystack = [r.name, r.age_group, r.division, r.league, r.gender]
+        const haystack = [r.name, r.age_group, r.division, r.zone, r.league, r.gender]
           .map(normalize)
           .join(" ");
         return normTokens.every((t) => haystack.includes(t));
@@ -271,6 +275,7 @@ export default function TeamSearchOrCreate({
           age_group: r.age_group,
           gender: r.gender,
           division: r.division,
+          zone: r.zone ?? null,
           league: r.league,
           school_id: r.school_id,
           school_name: school?.name ?? "",
@@ -350,6 +355,11 @@ export default function TeamSearchOrCreate({
               {selectedTeam.age_group && (
                 <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                   {selectedTeam.age_group}
+                </span>
+              )}
+              {selectedTeam.zone && (
+                <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10" data-testid="pastille-zone">
+                  {selectedTeam.zone}
                 </span>
               )}
               {genderText && (
@@ -470,6 +480,11 @@ export default function TeamSearchOrCreate({
                           {team.age_group && (
                             <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                               {team.age_group}
+                            </span>
+                          )}
+                          {team.zone && (
+                            <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10" data-testid="pastille-zone">
+                              {team.zone}
                             </span>
                           )}
                           {genderText && (

@@ -45,7 +45,7 @@ import type { SourceMatch } from "@/lib/calendar/sourceMatch";
 import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSearch";
 import {
   TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour, libelleJour,
-  terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, jourDecale,
+  terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, groupeMatch, jourDecale,
   libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, dateCourte, dateCarte, enTeteJour, heureCarte, trierMatchs, ajouterPastille, parametresPastilles, LIEU_NON_PRECISE,
   type PastilleCarte,
   type MatchRecherche, type ProfilsMatch, type TypeMatch,
@@ -495,7 +495,11 @@ export default function CarteMatchs({ mode }: { mode: ModeCarte }) {
                           </div>
                           <div className="lcinfo">
                             <div className="lctitre"><b>{titreMatch(m)}</b></div>
-                            <div className="m">{m.terrain || LIEU_NON_PRECISE}</div>
+                            {/* Le groupe, zone comprise (BP 2026-10-09) : « Atome Nord ». */}
+                            <div className="m">
+                              {groupeMatch(m) && <span className="cm-groupe" data-testid="groupe-match">{groupeMatch(m)} · </span>}
+                              {m.terrain || LIEU_NON_PRECISE}
+                            </div>
                           </div>
                           <BoutonCalendrier mode={mode} m={m} enCours={enCours === m.id} onClick={() => basculerMatch(m)} />
                           {/* Pleine largeur sous l'heure et les équipes : dans la colonne
@@ -590,6 +594,7 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
     ["Terrain", m.terrain || LIEU_NON_PRECISE],
     ["Catégorie", m.categorie],
     ["Division", libelleDivision(m.division) || null],
+    ["Zone", m.zone?.trim() || null],
     ["Ligue", m.ligue],
     ["Type", m.type ? LIBELLES_TYPES[m.type] : null],
   ];
@@ -599,6 +604,7 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
       <div className="ph">
         <div>
           <b>{titreMatch(m)}</b>
+          {groupeMatch(m) && <div className="m" data-testid="panneau-groupe">{groupeMatch(m)}</div>}
           <div className="m">{libelleJour(m.jour)} · {heureQuebec(m.heure)}</div>
         </div>
       </div>
@@ -677,7 +683,7 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
             <div key={x.id} className="lc" data-testid="autre-match" data-match={x.id} onClick={() => onOuvrir(x)}>
               <div className="lcinfo">
                 <div className="lctitre"><b>{titreMatch(x)}</b></div>
-                <div className="m">{libelleJour(x.jour)} · {heureQuebec(x.heure)}</div>
+                <div className="m">{groupeMatch(x) ? `${groupeMatch(x)} · ` : ""}{libelleJour(x.jour)} · {heureQuebec(x.heure)}</div>
               </div>
               <BoutonCalendrier mode={mode} m={x} enCours={enCours === x.id} onClick={() => onCalendrier(x)} />
             </div>

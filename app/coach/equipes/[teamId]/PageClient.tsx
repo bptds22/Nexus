@@ -18,6 +18,7 @@ import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import CoachRoleLine from "@/components/shared/coach/CoachRoleLine";
 import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
 import { isReferentRole, type TeamRole } from "@/lib/coach/teamRoles";
+import { nomGroupe } from "@/lib/civil/classementCivil";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ═══════════════════════════════════════════════════════════════
@@ -87,6 +88,8 @@ interface TeamState {
   name: string;
   ageGroup: string;
   division: string;
+  /** teams.zone — partie du nom du groupe civil (BP 2026-10-09). */
+  zone: string;
   league: string;
   season: string;
   sportName: string;
@@ -186,7 +189,7 @@ function TeamDetailPageDesktop() {
     const { data: t } = await supabase
       .from("teams")
       .select(`
-        name, age_group, division, league, season, gender, is_active,
+        name, age_group, division, zone, league, season, gender, is_active,
         school_id, sport_id,
         sports!sport_id(nom),
         schools!school_id(name, type)
@@ -270,6 +273,7 @@ function TeamDetailPageDesktop() {
       name: (tRec.name as string) || "",
       ageGroup: (tRec.age_group as string) || "",
       division: (tRec.division as string) || "",
+      zone: (tRec.zone as string) || "",
       league: (tRec.league as string) || "",
       season: (tRec.season as string) || "",
       sportName: sport?.nom || "",
@@ -670,10 +674,13 @@ function TeamDetailPageDesktop() {
   // Header subtitle pills — civil teams show league/sport/age/
   // gender/season/role; école/cégep show sport/age/division/
   // league/season. Both filter empty values cleanly.
+  // Le GROUPE civil se lit en une pastille, zone comprise : « Pee-Wee AAA
+  // Sud », « Atome Nord » (BP 2026-10-09) — deux équipes de même nom dans
+  // des zones différentes ne se lisent jamais pareil.
   const headerPills: string[] = isCivil
     ? [
         team.sportName,
-        team.ageGroup,
+        nomGroupe({ categorie: team.ageGroup, division: team.division, zone: team.zone }),
         team.gender,
         team.schoolName,
         team.season,
@@ -682,7 +689,7 @@ function TeamDetailPageDesktop() {
     : [
         team.sportName,
         team.ageGroup,
-        team.division,
+        [team.division, team.zone].filter(Boolean).join(" "),
         team.league,
         team.season,
       ].filter(Boolean);

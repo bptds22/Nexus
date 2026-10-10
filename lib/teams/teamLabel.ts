@@ -11,14 +11,18 @@
    both source the same fields, so the two surfaces never diverge.
 ═══════════════════════════════════════════════════════════════ */
 
+import { avecZone } from "@/lib/config/teamLabel";
+
 export function formatTeamLabel(
   sport: string | null | undefined,
   ageGroup: string | null | undefined,
   division: string | null | undefined,
   gender: string | null | undefined,
   fallbackName?: string | null,
+  /** teams.zone — « Atome Nord », « AAA Sud » (BP 2026-10-09). */
+  zone?: string | null,
 ): string {
-  const parts = [sport, ageGroup, division, gender]
+  const parts = [sport, ...avecZone((ageGroup ?? "").trim(), (division ?? "").trim(), (zone ?? "").trim()), gender]
     .map((v) => (v ?? "").trim())
     .filter((v) => v.length > 0);
   return parts.length > 0 ? parts.join(" · ") : (fallbackName ?? "").trim();

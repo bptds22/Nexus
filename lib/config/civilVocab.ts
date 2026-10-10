@@ -50,6 +50,16 @@ export const AGE_OPTIONS: VocabOption[] = [
   { value: "Midget",    label: "Midget" },
   { value: "Junior",    label: "Junior" },
   { value: "Senior",    label: "Senior" },
+  // Catégorie = âge + CALIBRE (BP 2026-10-09) : les groupes civils importés
+  // sont rangés ainsi (lib/civil/classementCivil.ts). Sans ces valeurs, un coach
+  // de « Pee-Wee AAA » ne pouvait pas retrouver son équipe existante — la
+  // détection compare la catégorie exacte — et en créait une seconde.
+  { value: "Moustique AAA", label: "Moustique AAA" },
+  { value: "Pee-Wee AAA",   label: "Pee-Wee AAA" },
+  { value: "Bantam AAA",    label: "Bantam AAA" },
+  { value: "Midget AAA",    label: "Midget AAA" },
+  { value: "M18 AAA",       label: "M18 AAA" },
+  { value: "Junior Majeur", label: "Junior Majeur" },
   { value: AUTRE_VALUE, label: "Autre" },
 ];
 
@@ -67,6 +77,34 @@ export const DIVISION_OPTIONS: VocabOption[] = [
   { value: "Division 4",  label: "Division 4" },
   { value: AUTRE_VALUE,   label: "Autre" },
 ];
+
+/**
+ * « Aucune division » (BP 2026-10-09). Certains groupes civils n'ont PAS de
+ * niveau : Atome Nord / Atome Sud (LFMM) sont rangés avec division '' en base.
+ * Sans ce choix, un coach de ces groupes devait inventer une division pour
+ * passer le formulaire (division obligatoire) — l'équipe existante ne
+ * correspondait plus et il en créait une DEUXIÈME.
+ *
+ * Sentinelle, comme AUTRE_VALUE : jamais écrite en base, toujours résolue en
+ * '' par divisionChoisie(). Liste À PART (DIVISION_OPTIONS reste inchangée) :
+ * l'inscription mobile civile lit DIVISION_OPTIONS avec sa propre résolution,
+ * qui ne connaît pas cette sentinelle — elle l'écrirait telle quelle. Seules
+ * les surfaces qui résolvent par divisionChoisie() prennent cette liste.
+ */
+export const AUCUNE_DIVISION = "__AUCUNE_DIVISION__";
+
+export const DIVISION_OPTIONS_AVEC_AUCUNE: VocabOption[] = [
+  { value: AUCUNE_DIVISION, label: "Aucune (pas de niveau)" },
+  ...DIVISION_OPTIONS,
+];
+
+/** Valeur ENREGISTRÉE d'un choix de division : « Autre » → texte saisi,
+ *  « Aucune » → '' ; sinon le choix tel quel. */
+export function divisionChoisie(choix: string, autre: string): string {
+  if (choix === AUCUNE_DIVISION) return "";
+  if (choix === AUTRE_VALUE) return autre.trim();
+  return choix;
+}
 
 /**
  * Genre — extracted from the inline GENDER_OPTIONS in

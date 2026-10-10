@@ -162,9 +162,11 @@ function initialsOf(first: string, last: string): string {
 }
 
 /** "Football juvénile D2 · Masculin" — sport + catégorie + division,
- *  puis le genre s'il est déclaré. */
+ *  puis le genre s'il est déclaré. La ZONE suit la division (« Football
+ *  Pee-Wee AAA Sud », « Football Atome Nord ») : elle fait partie du nom du
+ *  groupe (BP 2026-10-09). */
 function buildCompetition(g: Record<string, unknown>): string {
-  const head = [g.sport, g.category, g.division]
+  const head = [g.sport, g.category, g.division, g.zone]
     .map((v) => (typeof v === "string" ? v.trim() : ""))
     .filter(Boolean)
     .join(" ");
@@ -369,7 +371,7 @@ export async function construireCalendrier(
       id, game_date, game_time, venue,
       home_team_id, visitor_team_id,
       home_name_raw, visitor_name_raw,
-      league_name, sport, division, category, sex_type,
+      league_name, sport, division, category, zone, sex_type,
       source_nom, source_url, collecte_le, rseq_league_id,
       venue_lat, venue_lon, sector
     `;
