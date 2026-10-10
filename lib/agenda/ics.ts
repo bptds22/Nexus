@@ -1,13 +1,20 @@
 /* ═══════════════════════════════════════════════════════════════
    Flux d'agenda du recruteur Pro — le format iCalendar (RFC 5545), pur.
 
-   Décision BP 2026-10-01 : RELANCES et VISITES de l'unité, pas de matchs.
+   Décision BP 2026-10-01 : RELANCES et VISITES de l'unité.
      · Relance — journée entière à l'échéance, la note en description ;
      · Visite  — à l'heure prévue, 1 h par défaut (la durée n'est pas saisie) ;
      · chaque événement porte le lien vers le dossier dans Mon processus.
+   Décision BP 2026-10-09 : les MATCHS ajoutés aussi — par l'unité (flux
+   recruteur, nxa_) ou par le partenaire (flux partenaire, nxp_).
+     · Match — heure de la source lue par instantMatch (lib/calendar/heureMatch,
+       la SEULE lecture d'heure : « 6:30 PM » = 18 h 30 à Montréal), 2 h par
+       défaut ; sans heure lisible, journée entière — jamais une heure inventée.
    Les noms arrivent déjà filtrés par la base (agenda_flux : « Identité
    réservée » pour un mineur non consentant) ; ce module ne les recalcule pas.
 ═══════════════════════════════════════════════════════════════ */
+
+import { instantMatch } from "@/lib/calendar/heureMatch";
 
 export interface EvenementAgenda {
   type: "RELANCE" | "VISITE";
@@ -21,7 +28,32 @@ export interface EvenementAgenda {
   note: string | null;
 }
 
-export const NOM_CALENDRIER = "Nexus — relances et visites";
+export const NOM_CALENDRIER = "Nexus — relances, visites et matchs";
+export const NOM_CALENDRIER_PARTENAIRE = "Nexus — mes matchs";
+
+/** Un match d'un flux d'agenda (agenda_matchs_unite / agenda_matchs_partenaire) :
+ *  l'heure arrive BRUTE (« 6:30 PM », « 18:30 », ou null). */
+export interface MatchAgenda {
+  game_id: string;
+  jour: string;
+  heure: string | null;
+  domicile: string;
+  visiteur: string;
+  terrain: string | null;
+  ligue: string | null;
+}
+
+/** Durée d'un match dans l'agenda : la source ne la donne pas. */
+const DUREE_MATCH_MS = 2 * 3600_000;
+
+export interface OptionsIcs {
+  /** Les matchs à ajouter au flux. */
+  matchs?: MatchAgenda[];
+  /** Nom du calendrier affiché par l'agenda (défaut : celui du recruteur). */
+  nom?: string;
+  /** Lien d'un match (la carte des matchs du rôle) ; aucun lien si absent. */
+  lienMatch?: (m: MatchAgenda) => string;
+}
 
 /** Échappement TEXT de la RFC 5545 (§3.3.11). */
 export function echapper(v: string): string {
@@ -82,7 +114,7 @@ export function titreEvenement(e: Pick<EvenementAgenda, "type" | "nom">): string
 }
 
 /** Le calendrier complet. Un tableau vide donne un calendrier VALIDE, vide. */
-export function genererIcs(evenements: EvenementAgenda[], origine: string, maintenant = new Date()): string {
+export function genererIcs(evenements: EvenementAgenda[], origine: string, maintenant = new Date(), options: OptionsIcs = {}): string {
   const stamp = horodatageUtc(maintenant);
   const l: string[] = [
     "BEGIN:VCALENDAR",
@@ -90,7 +122,7 @@ export function genererIcs(evenements: EvenementAgenda[], origine: string, maint
     "PRODID:-//Nexus//Agenda recruteur//FR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    `X-WR-CALNAME:${echapper(NOM_CALENDRIER)}`,
+    `X-WR-CALNAME:${echapper(options.nom ?? NOM_CALENDRIER)}`,
     "X-WR-TIMEZONE:America/Toronto",
     "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
     "X-PUBLISHED-TTL:PT1H",
@@ -121,8 +153,44 @@ export function genererIcs(evenements: EvenementAgenda[], origine: string, maint
       "END:VEVENT",
     );
   }
+  for (const m of options.matchs ?? []) {
+    const debutFin = debutFinMatch(m);
+    if (!debutFin) continue;
+    const lien = options.lienMatch?.(m);
+    const description = [
+      m.ligue?.trim() || null,
+      m.heure && !instantMatch(m.jour, m.heure) ? `Heure publiée : ${m.heure}` : null,
+      debutFin[0].includes("VALUE=DATE") ? "Heure à confirmer à la source." : null,
+      lien ? `Carte des matchs : ${lien}` : null,
+    ].filter(Boolean).join("\n\n");
+    l.push(
+      "BEGIN:VEVENT",
+      `UID:match-${m.game_id}@nexussports.ca`,
+      `DTSTAMP:${stamp}`,
+      ...debutFin,
+      `SUMMARY:${echapper(titreMatchAgenda(m))}`,
+      ...(m.terrain ? [`LOCATION:${echapper(m.terrain)}`] : []),
+      ...(description ? [`DESCRIPTION:${echapper(description)}`] : []),
+      ...(lien ? [`URL:${lien}`] : []),
+      "TRANSP:TRANSPARENT",
+      "END:VEVENT",
+    );
+  }
   l.push("END:VCALENDAR");
   return l.map(plier).join("\r\n") + "\r\n";
+}
+
+export function titreMatchAgenda(m: Pick<MatchAgenda, "domicile" | "visiteur">): string {
+  return `Match — ${m.domicile} vs ${m.visiteur}`;
+}
+
+/** DTSTART / DTEND d'un match : l'instant de Montréal (instantMatch), 2 h ; sans
+ *  heure lisible, la journée entière. null si le jour est illisible. */
+export function debutFinMatch(m: Pick<MatchAgenda, "jour" | "heure">): [string, string] | null {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(m.jour ?? "")) return null;
+  const debut = instantMatch(m.jour.slice(0, 10), m.heure);
+  if (debut) return [`DTSTART:${horodatageUtc(debut)}`, `DTEND:${horodatageUtc(new Date(debut.getTime() + DUREE_MATCH_MS))}`];
+  return [`DTSTART;VALUE=DATE:${dateIcs(m.jour)}`, `DTEND;VALUE=DATE:${lendemain(m.jour)}`];
 }
 
 /* ── Les adresses d'abonnement ─────────────────────────────── */
@@ -151,4 +219,6 @@ export function lienOutlookPerso(httpsUrl: string): string {
 }
 
 /** Le jeton tel que l'émet agenda_jeton_creer() — tout autre segment est rejeté avant la base. */
-export const FORME_JETON = /^nxa_[0-9a-f]{64}$/;
+/** nxa_ : recruteur (agenda_jetons) ; nxp_ : partenaire (agenda_jetons_partenaire). */
+export const FORME_JETON = /^nx[ap]_[0-9a-f]{64}$/;
+export const estJetonPartenaire = (jeton: string) => jeton.startsWith("nxp_");

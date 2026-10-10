@@ -502,3 +502,29 @@ export function paquets<T>(xs: T[], taille: number): T[][] {
   for (let i = 0; i < xs.length; i += taille) out.push(xs.slice(i, i + taille));
   return out;
 }
+
+/* ── Partenaire (BP 2026-10-09) ──────────────────────────────── */
+
+/** Joueurs Nexus d'un match, côté PARTENAIRE (RPC matchs_profils_partenaire) :
+ *  le NOMBRE de tous les athlètes actifs des deux équipes, et les NOMS des seuls
+ *  athlètes qui ont coché la visibilité partenaire. Rien d'autre ne revient. */
+export interface ProfilPartenaire {
+  athlete_id: string;
+  prenom: string;
+  nom: string;
+  position: string | null;
+  promotion: number | null;
+  cote: "DOMICILE" | "VISITEUR";
+}
+
+/** Une réponse illisible donne 0 et aucun nom, jamais une exception. */
+export function profilsPartenaireLisibles(data: unknown): { total: number; profils: ProfilPartenaire[] } {
+  const d = (data && typeof data === "object" ? data : {}) as { total?: unknown; profils?: unknown };
+  const total = typeof d.total === "number" && d.total >= 0 ? d.total : 0;
+  const profils = Array.isArray(d.profils)
+    ? (d.profils as ProfilPartenaire[]).filter((x) => !!x && typeof x.athlete_id === "string")
+    : [];
+  return { total, profils };
+}
+
+

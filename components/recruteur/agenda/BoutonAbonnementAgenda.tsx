@@ -1,12 +1,13 @@
 "use client";
 
-/* Le bouton « S'abonner à mon agenda » du Calendrier : ouvre AbonnementAgenda
-   dans une modale (le même composant que Paramètres › Agenda). */
+/* Le bouton « S'abonner à mon agenda » du Calendrier (recruteur) et de la carte
+   des matchs partenaire : ouvre AbonnementAgenda dans une modale (le même
+   composant que Paramètres › Agenda), dans le mode de la page. */
 
 import { useEffect, useState } from "react";
-import AbonnementAgenda from "./AbonnementAgenda";
+import AbonnementAgenda, { type ModeAgenda } from "./AbonnementAgenda";
 
-export default function BoutonAbonnementAgenda() {
+export default function BoutonAbonnementAgenda({ mode = "recruteur" }: { mode?: ModeAgenda }) {
   const [ouvert, setOuvert] = useState(false);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function BoutonAbonnementAgenda() {
               <h2 id="titre-abonnement-agenda" className="font-head text-xl font-black uppercase tracking-tight text-white">S&apos;abonner à mon agenda</h2>
               <button type="button" onClick={() => setOuvert(false)} aria-label="Fermer" className="text-[#9CA3AF] hover:text-white">✕</button>
             </div>
-            <AbonnementAgenda />
+            <AbonnementAgenda mode={mode} />
           </div>
         </div>
       )}
