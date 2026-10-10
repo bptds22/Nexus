@@ -52,11 +52,9 @@ const clean = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
  */
 export function teamDetails(t: TeamLike): string {
   const genre = clean(t.gender) ? genderLabel(clean(t.gender)) : "";
-  const [age, division] = avecZone(clean(t.age_group), clean(t.division), clean(t.zone));
   return [
     clean(t.sport),
-    age,
-    division,
+    ...avecZone(clean(t.age_group), clean(t.division), clean(t.zone)),
     genre === "—" ? "" : genre,
     clean(t.season),
     clean(t.league),
@@ -64,15 +62,14 @@ export function teamDetails(t: TeamLike): string {
 }
 
 /**
- * LA ZONE (BP 2026-10-09) se colle au dernier élément du groupe : « Pee-Wee ·
- * AAA Sud », « Atome Nord » (Atome n'a pas de division). Ni catégorie ni
- * division, mais partie de l'identité : deux équipes de même nom dans des
- * zones différentes ne doivent jamais se lire pareil.
+ * LA ZONE (BP 2026-10-09) suit la division (« Pee-Wee AAA · D1 · Sud ») ou,
+ * sans division, la catégorie (« Atome Nord »). Ni catégorie ni division,
+ * mais partie de l'identité : deux équipes de même nom dans des zones
+ * différentes ne doivent jamais se lire pareil. Rend les morceaux non vides.
  */
-export function avecZone(age: string, division: string, zone: string): [string, string] {
-  if (!zone) return [age, division];
-  if (division) return [age, `${division} ${zone}`];
-  return [age ? `${age} ${zone}` : zone, division];
+export function avecZone(age: string, division: string, zone: string): string[] {
+  if (division) return [age, division, zone].filter(Boolean);
+  return [[age, zone].filter(Boolean).join(" ")].filter(Boolean);
 }
 
 /** Une seule chaîne, nom compris — pour les contextes sans place pour deux

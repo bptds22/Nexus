@@ -313,8 +313,8 @@ begin
                      case eq.le_type when 'CIVIL' then 'Civil' when 'COLLEGIAL' then 'Collégial' when 'SECONDAIRE' then 'Secondaire' end,
                      nullif(btrim(eq.ecole), ''),
                      nullif(concat_ws(' ', sp.nom, nullif(btrim(eq.age_group), ''), nullif(btrim(eq.gender), '')), ''),
-                     -- la zone fait partie du nom du groupe (BP 2026-10-09) : « AAA Sud », « Nord »
-                     nullif(concat_ws(' ', nullif(btrim(eq.division), ''), nullif(btrim(eq.zone), '')), '')) as detail,
+                     -- la zone suit la division (BP 2026-10-09) : « D1 · Sud », ou seule : « Nord »
+                     nullif(concat_ws(' · ', nullif(btrim(eq.division), ''), nullif(btrim(eq.zone), '')), '')) as detail,
            eq.n as nb_matchs,
            eq.norm as norm_nom
       from eq

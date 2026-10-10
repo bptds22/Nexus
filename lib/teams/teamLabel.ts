@@ -22,8 +22,7 @@ export function formatTeamLabel(
   /** teams.zone — « Atome Nord », « AAA Sud » (BP 2026-10-09). */
   zone?: string | null,
 ): string {
-  const [age, div] = avecZone((ageGroup ?? "").trim(), (division ?? "").trim(), (zone ?? "").trim());
-  const parts = [sport, age, div, gender]
+  const parts = [sport, ...avecZone((ageGroup ?? "").trim(), (division ?? "").trim(), (zone ?? "").trim()), gender]
     .map((v) => (v ?? "").trim())
     .filter((v) => v.length > 0);
   return parts.length > 0 ? parts.join(" · ") : (fallbackName ?? "").trim();

@@ -1,4 +1,4 @@
--- Rollback de 1-corriger.sql : repose division et zone À L'IDENTIQUE, depuis l'état AVANT
+-- Rollback de 1-corriger.sql : repose catégorie, division et zone À L'IDENTIQUE, depuis l'état AVANT
 -- gardé dans la DERNIÈRE opération CIVIL_ZONE_CORRIGEE non encore annulée.
 -- Gardé : chaque ligne doit être encore dans l'état que la correction lui a donné, sinon
 -- exception (quelqu'un l'a modifiée depuis : on ne l'écrase pas à l'aveugle).
@@ -22,10 +22,10 @@ begin
   if op.id is null then raise exception 'NEXUS: aucune correction CIVIL_ZONE_CORRIGEE à annuler'; end if;
 
   create temp table _eq on commit drop as
-  select (x->>'id')::uuid as id, x->>'division' as division, x->>'zone' as zone
+  select (x->>'id')::uuid as id, x->>'age_group' as age_group, x->>'division' as division, x->>'zone' as zone
     from jsonb_array_elements(op.details->'avant_equipes') x;
   create temp table _m on commit drop as
-  select (x->>'id')::uuid as id, x->>'division' as division, x->>'zone' as zone
+  select (x->>'id')::uuid as id, x->>'category' as category, x->>'division' as division, x->>'zone' as zone
     from jsonb_array_elements(op.details->'avant_matchs') x;
   attendu_eq := (op.details->>'equipes')::int;
   attendu_m := (op.details->>'matchs')::int;
@@ -33,20 +33,20 @@ begin
     raise exception 'NEXUS: état AVANT incomplet dans l''opération %', op.id;
   end if;
 
-  -- GARDE : aucune ligne ne doit avoir quitté le format corrigé (division sans libellé
-  -- fusionné, zone dans la liste fermée) ni disparu.
+  -- GARDE : aucune ligne ne doit avoir quitté le format corrigé (division D1…D4 ou vide)
+  -- ni disparu.
   if (select count(*) from public.teams t join _eq e on e.id = t.id) <> attendu_eq
      or (select count(*) from public.games g join _m m on m.id = g.id) <> attendu_m then
     raise exception 'NEXUS: des lignes corrigées ont disparu depuis la correction';
   end if;
-  if exists (select 1 from public.teams t join _eq e on e.id = t.id where t.division ~* 'division|nord|sud|élite')
-     or exists (select 1 from public.games g join _m m on m.id = g.id where g.division ~* 'division|nord|sud') then
+  if exists (select 1 from public.teams t join _eq e on e.id = t.id where t.division not in ('', 'D1', 'D2', 'D3', 'D4'))
+     or exists (select 1 from public.games g join _m m on m.id = g.id where g.division not in ('', 'D1', 'D2', 'D3', 'D4')) then
     raise exception 'NEXUS: des lignes ont été modifiées depuis la correction — rollback refusé';
   end if;
 
-  update public.teams t set division = e.division, zone = e.zone from _eq e where t.id = e.id;
+  update public.teams t set age_group = e.age_group, division = e.division, zone = e.zone from _eq e where t.id = e.id;
   get diagnostics n_eq = row_count;
-  update public.games g set division = m.division, zone = m.zone from _m m where g.id = m.id;
+  update public.games g set category = m.category, division = m.division, zone = m.zone from _m m where g.id = m.id;
   get diagnostics n_m = row_count;
   if n_eq <> attendu_eq or n_m <> attendu_m then
     raise exception 'NEXUS: rollback % équipes / % matchs, attendu % / %', n_eq, n_m, attendu_eq, attendu_m;

@@ -50,6 +50,16 @@ export const AGE_OPTIONS: VocabOption[] = [
   { value: "Midget",    label: "Midget" },
   { value: "Junior",    label: "Junior" },
   { value: "Senior",    label: "Senior" },
+  // Catégorie = âge + CALIBRE (BP 2026-10-09) : les groupes civils importés
+  // sont rangés ainsi (lib/civil/classementCivil.ts). Sans ces valeurs, un coach
+  // de « Pee-Wee AAA » ne pouvait pas retrouver son équipe existante — la
+  // détection compare la catégorie exacte — et en créait une seconde.
+  { value: "Moustique AAA", label: "Moustique AAA" },
+  { value: "Pee-Wee AAA",   label: "Pee-Wee AAA" },
+  { value: "Bantam AAA",    label: "Bantam AAA" },
+  { value: "Midget AAA",    label: "Midget AAA" },
+  { value: "M18 AAA",       label: "M18 AAA" },
+  { value: "Junior Majeur", label: "Junior Majeur" },
   { value: AUTRE_VALUE, label: "Autre" },
 ];
 
