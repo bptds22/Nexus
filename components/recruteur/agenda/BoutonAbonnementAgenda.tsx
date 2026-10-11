@@ -2,9 +2,14 @@
 
 /* Le bouton « S'abonner à mon agenda » du Calendrier (recruteur) et de la carte
    des matchs partenaire : ouvre AbonnementAgenda dans une modale (le même
-   composant que Paramètres › Agenda), dans le mode de la page. */
+   composant que Paramètres › Agenda), dans le mode de la page.
+
+   La modale est rendue dans <body> (portail) : sur la carte des matchs, la
+   page vit sous `.cs`, dont la remise à zéro `.cs *{margin:0;padding:0}`
+   écrasait toutes les marges de la boîte (constaté BP 2026-10-11). */
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import AbonnementAgenda, { type ModeAgenda } from "./AbonnementAgenda";
 
 export default function BoutonAbonnementAgenda({ mode = "recruteur" }: { mode?: ModeAgenda }) {
@@ -30,22 +35,19 @@ export default function BoutonAbonnementAgenda({ mode = "recruteur" }: { mode?: 
         </svg>
         S&apos;abonner à mon agenda
       </button>
-      {ouvert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setOuvert(false)}>
+      {ouvert && createPortal(
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center" onClick={() => setOuvert(false)}>
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="titre-abonnement-agenda"
-            className="w-full max-w-[560px] rounded-2xl border border-[#2D3748] bg-[#1A1D24] p-6"
+            className="my-auto w-full max-w-[820px] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <h2 id="titre-abonnement-agenda" className="font-head text-xl font-black uppercase tracking-tight text-white">S&apos;abonner à mon agenda</h2>
-              <button type="button" onClick={() => setOuvert(false)} aria-label="Fermer" className="text-[#9CA3AF] hover:text-white">✕</button>
-            </div>
-            <AbonnementAgenda mode={mode} />
+            <AbonnementAgenda mode={mode} onFermer={() => setOuvert(false)} />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

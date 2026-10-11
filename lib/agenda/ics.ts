@@ -216,14 +216,23 @@ export function lienGoogle(httpsUrl: string): string {
 }
 
 /** Outlook (Microsoft 365, comptes de cégep). */
-export function lienOutlook(httpsUrl: string): string {
-  return `https://outlook.office.com/calendar/0/addfromweb?url=${encodeURIComponent(httpsUrl)}&name=${encodeURIComponent(NOM_CALENDRIER)}`;
+export function lienOutlook(httpsUrl: string, nom: string = NOM_CALENDRIER): string {
+  return `https://outlook.office.com/calendar/0/addfromweb?url=${encodeURIComponent(httpsUrl)}&name=${encodeURIComponent(nom)}`;
 }
 
 /** Outlook.com (compte personnel). */
-export function lienOutlookPerso(httpsUrl: string): string {
-  return `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(httpsUrl)}&name=${encodeURIComponent(NOM_CALENDRIER)}`;
+export function lienOutlookPerso(httpsUrl: string, nom: string = NOM_CALENDRIER): string {
+  return `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(httpsUrl)}&name=${encodeURIComponent(nom)}`;
 }
+
+/** « Comment faire ? » — pages d'aide OFFICIELLES, en français (vérifiées 2026-10-11).
+ *  Apple : une seule page couvre l'iPhone et le Mac. Microsoft redirige vers
+ *  /fr-fr/outlook/… ; l'adresse ci-dessous reste valide. */
+export const AIDE_AGENDA = {
+  google: "https://support.google.com/calendar/answer/37100?hl=fr",
+  outlook: "https://support.microsoft.com/fr-fr/office/import-or-subscribe-to-a-calendar-in-outlook-com-or-outlook-on-the-web-cff1429c-5af6-41ec-a5b4-74f2c278e98c",
+  apple: "https://support.apple.com/fr-ca/102301",
+} as const;
 
 /** Le jeton tel que l'émet agenda_jeton_creer() — tout autre segment est rejeté avant la base. */
 /** nxa_ : recruteur (agenda_jetons) ; nxp_ : partenaire (agenda_jetons_partenaire). */

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   genererIcs, echapper, plier, titreEvenement, adresseFlux, adresseWebcal, lienGoogle, lienOutlook, FORME_JETON,
+  AIDE_AGENDA, NOM_CALENDRIER_PARTENAIRE,
   type EvenementAgenda,
 } from "@/lib/agenda/ics";
 
@@ -61,4 +62,18 @@ test("adresses d'abonnement", () => {
   assert.equal(adresseWebcal(url), `webcal://nexussports.ca/api/agenda/${j}.ics`);
   assert.equal(lienGoogle(url), `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(`webcal://nexussports.ca/api/agenda/${j}.ics`)}`);
   assert.match(lienOutlook(url), /^https:\/\/outlook\.office\.com\/calendar\/0\/addfromweb\?url=https%3A%2F%2Fnexussports\.ca/);
+
+  // Partenaire : Outlook nomme le calendrier « mes matchs », pas « relances, visites ».
+  assert.ok(lienOutlook(url, NOM_CALENDRIER_PARTENAIRE).endsWith(`&name=${encodeURIComponent(NOM_CALENDRIER_PARTENAIRE)}`));
+});
+
+test("« Comment faire ? » : pages d'aide officielles, en français", () => {
+  assert.deepEqual(Object.keys(AIDE_AGENDA).sort(), ["apple", "google", "outlook"]);
+  const hotes = { google: "support.google.com", outlook: "support.microsoft.com", apple: "support.apple.com" } as const;
+  for (const [cle, hote] of Object.entries(hotes)) {
+    const u = new URL(AIDE_AGENDA[cle as keyof typeof AIDE_AGENDA]);
+    assert.equal(u.protocol, "https:");
+    assert.equal(u.hostname, hote);
+    assert.match(u.href, /hl=fr|\/fr-fr\/|\/fr-ca\//);
+  }
 });
