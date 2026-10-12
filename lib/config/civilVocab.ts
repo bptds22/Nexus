@@ -75,6 +75,10 @@ export const DIVISION_OPTIONS: VocabOption[] = [
   { value: "Division 2",  label: "Division 2" },
   { value: "Division 3",  label: "Division 3" },
   { value: "Division 4",  label: "Division 4" },
+  // Divisions nommées par la ligue (NLS, BP 2026-10-11) : écrites telles
+  // quelles, comme l'import — sinon le coach ne retrouve pas son équipe.
+  { value: "Diamond",     label: "Diamond" },
+  { value: "Gold",        label: "Gold" },
   { value: AUTRE_VALUE,   label: "Autre" },
 ];
 

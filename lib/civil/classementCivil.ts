@@ -8,7 +8,9 @@
    Nord », « AAA »… Règle de BP (révisée le 2026-10-09) :
      · catégorie = l'âge ET le calibre : « Pee-Wee AAA », « Bantam AAA »,
        « Junior Majeur », « M18 AAA », ou l'âge seul (« Atome », « Midget ») ;
-     · division  = SEULEMENT D1…D4, ou vide — jamais un calibre ;
+     · division  = D1…D4, OU un nom de division donné par la ligue et
+       inscrit dans la liste fermée ci-dessous (NLS : Diamond, Gold — BP
+       2026-10-11), OU vide — jamais un calibre ;
      · zone      = Nord, Sud… — ni catégorie ni division, mais PARTIE DE
        L'IDENTITÉ du groupe : affichée à côté de la division (« Division 1 ·
        Sud ») ou de la catégorie sans division (« Atome Nord »), jamais dans
@@ -29,14 +31,21 @@
    égale par test. Un libellé inconnu LÈVE UNE ERREUR : un générateur qui
    devine laisse revenir le désordre à la saison suivante.
 
+   NO LIMITS SHOWCASES (NLS Premier League, basketball, BP 2026-10-11) : la
+   ligue nomme ses divisions « Diamond » et « Gold » ; catégorie = Benjamin,
+   Cadet ou Juvénile ; zone vide. Un groupe à division unique (Benjamin F,
+   Cadet F) a la division '' — jamais NULL, jamais « N/A ». Le nom de la
+   ligue (teams.league, games.league_name) est la constante LIGUE_NLS.
+
    Aucune dépendance : importable depuis un script Node (strip-types).
 ═══════════════════════════════════════════════════════════════ */
 
 export interface GroupeCivil {
   /** teams.age_group / games.category — âge et calibre. */
   categorie: string;
-  /** teams.division / games.division — D1…D4, ou '' (jamais NULL : un NULL
-   *  désarme les index d'identité). */
+  /** teams.division / games.division — D1…D4, une division nommée par la
+   *  ligue (DIVISIONS_NLS), ou '' (jamais NULL : un NULL désarme les index
+   *  d'identité). */
   division: string;
   /** teams.zone / games.zone — '' sans zone. */
   zone: string;
@@ -63,6 +72,14 @@ const ageDe = (nom: string) => nom.split(" ")[0];
 
 /** Ligues LeagueSuite : un seul calibre par ligue, ni division ni zone. */
 const CALIBRE_LIGUE: Record<string, string> = { QBFL: "AAA", QMFL: "AAA", QMJFL: "Majeur" };
+
+/** teams.league / games.league_name de la NLS — orthographe exacte, partout
+ *  (équipes, import des matchs, classeur). Ne jamais la réécrire à la main. */
+export const LIGUE_NLS = "No Limits Showcases";
+
+/** NLS : listes FERMÉES. Toute autre valeur arrête le générateur. */
+const CATEGORIES_NLS: Record<string, string> = { "BENJAMIN": "Benjamin", "CADET": "Cadet", "JUVÉNILE": "Juvénile" };
+const DIVISIONS_NLS: Record<string, string> = { "DIAMOND": "Diamond", "GOLD": "Gold", "": "", "-": "" };
 
 const ZONES: Record<string, string> = {
   NORD: "Nord", SUD: "Sud", EST: "Est", OUEST: "Ouest", CENTRE: "Centre",
@@ -93,6 +110,7 @@ const avecCalibre = (nom: string, calibre: string) =>
  *                 calibre, le numéro de division et la zone)
  */
 export function classerGroupeCivil(ligue: string, categorie: string, division: string | null | undefined): GroupeCivil {
+  if (ligue === LIGUE_NLS) return classerGroupeNls(categorie, division);
   const nom = categorieSource(categorie);
   const sigle = majuscules(ligue);
   if (CALIBRE_LIGUE[sigle] !== undefined) return { categorie: avecCalibre(nom, CALIBRE_LIGUE[sigle]), division: "", zone: "" };
@@ -116,6 +134,16 @@ export function classerGroupeCivil(ligue: string, categorie: string, division: s
   if (d) { numero = `D${d[1]}`; reste = ""; }
   if (reste !== "") throw new Error(`classementCivil : division illisible « ${division} » (reste « ${reste} »)`);
   return { categorie: avecCalibre(nom, calibre), division: numero, zone };
+}
+
+/** NLS : catégorie et division dans leurs listes fermées ; « — » ou vide →
+ *  division ''. Zone toujours ''. */
+function classerGroupeNls(categorie: string, division: string | null | undefined): GroupeCivil {
+  const cat = CATEGORIES_NLS[majuscules(categorie)];
+  if (!cat) throw new Error(`classementCivil : catégorie NLS inconnue « ${categorie} »`);
+  const div = DIVISIONS_NLS[majuscules(division ?? "")];
+  if (div === undefined) throw new Error(`classementCivil : division NLS inconnue « ${division} »`);
+  return { categorie: cat, division: div, zone: "" };
 }
 
 /** « D1 » → « Division 1 » ; toute autre forme telle quelle. */
