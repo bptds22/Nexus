@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classerGroupeCivil, categorieSource, nomGroupe } from "@/lib/civil/classementCivil";
+import { classerGroupeCivil, categorieSource, nomGroupe, LIGUE_NLS } from "@/lib/civil/classementCivil";
 
 const c = (l: string, cat: string, div: string | null) => classerGroupeCivil(l, cat, div);
 
@@ -39,7 +39,7 @@ test("LeagueSuite : le calibre de la ligue entre dans la catégorie (libellés s
   assert.deepEqual(c("QMJFL", "Junior Major", "QMJFL"), { categorie: "Junior Majeur", division: "", zone: "" });
 });
 
-test("division : D1…D4 seulement, jamais un calibre", () => {
+test("football (LFMM, LeagueSuite) : division D1…D4 seulement, jamais un calibre", () => {
   for (const [l, cat, div] of [
     ["LFMM", "ATOME", "ATOME NORD"], ["LFMM", "PEE-WEE", "PEE-WEE AAA - DIVISION 1 SUD"],
     ["QBFL", "Bantam AAA", "QBFL"], ["QMJFL", "Junior Major", "QMJFL"], ["LFMM", "MIDGET AAA", "MIDGET - DIVISION 2"],
@@ -54,6 +54,29 @@ test("un libellé inconnu ARRÊTE le générateur au lieu de deviner", () => {
   assert.throws(() => c("LFMM", "BANTAM", "BANTAM - DIVISION 5"), /division illisible/);
   assert.throws(() => c("LFQ9", "MIDGET", "AAA"), /ligue inconnue/);
   assert.throws(() => categorieSource("Juvénile"), /catégorie inconnue/); // RSEQ : jamais par ce classeur
+});
+
+test("NLS (BP 2026-10-11) : Diamond / Gold sont des DIVISIONS, la catégorie est l'âge, zone vide", () => {
+  assert.equal(LIGUE_NLS, "No Limits Showcases");
+  assert.deepEqual(c(LIGUE_NLS, "Benjamin", "Diamond"), { categorie: "Benjamin", division: "Diamond", zone: "" });
+  assert.deepEqual(c(LIGUE_NLS, "Cadet", "Gold"), { categorie: "Cadet", division: "Gold", zone: "" });
+  assert.deepEqual(c(LIGUE_NLS, "JUVÉNILE", "DIAMOND"), { categorie: "Juvénile", division: "Diamond", zone: "" });
+  // groupe à division unique : '' — jamais NULL, jamais « N/A »
+  for (const vide of ["", null, "—"]) assert.deepEqual(c(LIGUE_NLS, "Benjamin", vide), { categorie: "Benjamin", division: "", zone: "" });
+  assert.equal(nomGroupe(c(LIGUE_NLS, "Cadet", "Diamond")), "Cadet · Diamond");
+  assert.equal(nomGroupe(c(LIGUE_NLS, "Cadet", "")), "Cadet");
+});
+
+test("NLS : tout libellé hors liste fermée ARRÊTE le générateur", () => {
+  assert.throws(() => c(LIGUE_NLS, "Midget", "Gold"), /catégorie NLS inconnue/);
+  assert.throws(() => c(LIGUE_NLS, "Cadet", "Silver"), /division NLS inconnue/);
+  assert.throws(() => c(LIGUE_NLS, "Cadet", "D1"), /division NLS inconnue/);
+  assert.throws(() => c(LIGUE_NLS, "Cadet", "N/A"), /division NLS inconnue/);
+  // la constante, mot pour mot : un sigle ou une autre graphie n'est pas la NLS
+  assert.throws(() => c("NLS", "Cadet", "Gold"), /catégorie inconnue/);
+  assert.throws(() => c("No Limit Showcases", "Cadet", "Gold"), /catégorie inconnue/);
+  // Diamond / Gold restent refusés hors NLS
+  assert.throws(() => c("LFMM", "BANTAM", "DIAMOND"), /division illisible/);
 });
 
 test("nomGroupe : la zone suit la division, ou la catégorie sans division", () => {

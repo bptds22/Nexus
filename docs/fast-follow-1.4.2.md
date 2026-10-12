@@ -2378,3 +2378,29 @@ matchs, le Calendrier reste l'endroit des matchs des athlètes suivis.
   `RecruteurActivitesMobile` affiche ses propres `MATCH_*` par sa branche par
   défaut (« Activité : match ajoute ») : brancher `libelleGesteMatch` et le
   lien vers le Calendrier.
+
+---
+
+## 78. Divisions civiles : liste fermée, CHECK en base différé — et Diamond / Gold au mobile (2026-10-11, pour le lot mobile)
+
+**Règle élargie (BP 2026-10-11)** : `teams.division` d'un groupe civil vaut
+D1…D4, OU un nom de division donné par la ligue et inscrit dans une liste
+fermée (NLS : `Diamond`, `Gold`), OU `''` — jamais NULL (un NULL désarme
+`teams_identity_unique`), jamais « N/A ». Le classeur
+`lib/civil/classementCivil.ts` l'applique aux imports ; tout autre libellé
+arrête le générateur. La ligue NLS s'écrit `LIGUE_NLS` = « No Limits
+Showcases », une seule constante.
+
+- **CHECK en base : DIFFÉRÉ.** Aucune contrainte ne borne `teams.division`. Le
+  mobile publié envoie encore « Division 1 »…« Division 4 » et les calibres
+  (« AAA »…) de `DIVISION_OPTIONS` : un CHECK les refuserait (400 à
+  l'inscription coach). À reprendre APRÈS le lot mobile, avec la liste
+  fermée complète. Trois lignes civiles hors règle en prod à trancher avant
+  (relevé 2026-10-11) : « AAA » (équipe *Nexus*), « Division 4 » (Coyotes),
+  « Division 3 » (Champlain Cavaliers).
+- **Diamond / Gold ajoutés à `DIVISION_OPTIONS`** (`lib/config/civilVocab.ts`)
+  pour le web. `CoachOnboardingMobileCivil.tsx` lit la même liste : le
+  prochain binaire les proposera sans autre changement. Au lot mobile,
+  vérifier que `detectExistingTeam` retrouve une équipe NLS « Diamond » et
+  qu'un groupe à division unique (Benjamin F, Cadet F) passe par
+  « Aucune division » — la liste mobile n'a pas la sentinelle `AUCUNE_DIVISION`.
