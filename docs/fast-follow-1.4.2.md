@@ -2404,3 +2404,31 @@ Showcases », une seule constante.
   vérifier que `detectExistingTeam` retrouve une équipe NLS « Diamond » et
   qu'un groupe à division unique (Benjamin F, Cadet F) passe par
   « Aucune division » — la liste mobile n'a pas la sentinelle `AUCUNE_DIVISION`.
+
+## 79. Garde anti-doublon des clubs importés : ÉCARTÉE par BP (2026-10-11)
+
+**Le défaut** : un coach civil qui CRÉE son équipe au lieu de la choisir dans
+la liste, dans un club dont les équipes sont importées (NLS, LFMM, QMFL,
+M18 AAA…), obtient un doublon silencieux — l'équipe créée n'a pas de ligue
+(`league` NULL), donc `teams_identity_unique` ne la voit pas. Le mobile publié
+y pousse : ni Diamond / Gold, ni « aucune division » (Benjamin F, Cadet F →
+doublon à coup sûr). Le web y arrive aussi : sa création civile est un INSERT
+direct (`app/onboarding/page.tsx`), le bandeau « cette équipe existe déjà »
+s'ignore.
+
+**La garde proposée** — refus dans `finish_coach_civil_onboarding` quand le
+club a déjà, dans ce sport, une équipe à `league` non vide — a été écartée
+par BP. Rien en prod. Elle est **conservée** sur la branche locale
+`fix/civil-equipe-importee` (`9b0fe8c1`, non poussée, non mergée) :
+migration, preuves locales 8/8, rollback testé. Limites connues si on y
+revient : elle ne couvre pas l'INSERT direct du web ni « Mes équipes »
+(mobile, `createTeam`) — il faudrait un trigger sur `teams` ; et elle
+bloquerait aussi les autres catégories des 15 clubs de hockey dont seule la
+M18 AAA est importée.
+
+- **Au lot mobile** : afficher le message `[TEAM_ALREADY_IMPORTED]` dans
+  `CoachOnboardingMobileCivil.tsx` n'est pertinent QUE si la garde revient.
+  Sans elle, le code n'est jamais renvoyé.
+- **Surveillance** : `scripts/nls-basketball/3-doublons-coachs.sql` (lecture
+  seule) liste les équipes créées par des coachs dans un club « NLS – … » qui
+  ressemblent à une équipe importée.
