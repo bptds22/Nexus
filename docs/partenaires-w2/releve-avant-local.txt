@@ -1,0 +1,9 @@
+﻿recruiter_search_athletes.md5 | 30b055c99102c77d5e48a34bf732c6ef
+recruiter_search_athletes.acl | {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+recruiter_search_athletes.retour | TABLE(id uuid, identity_visible boolean, first_name text, last_name text, photo_url text, numero_jersey text, age integer, annee_diplomation integer, verified boolean, last_profile_validation timestamp with time zone, cote_globale numeric, profile_completion integer, taille_pieds integer, taille_pouces integer, poids_lbs numeric, moyenne_generale numeric, mentions_academiques jsonb, recruitment_status text, statut_recrutement_override text, open_to_offers boolean, a_une_video boolean, context text, created_at timestamp with time zone, sport_nom text, position_nom text, position_abbr text, school_id uuid, school_name text, school_region text, school_type text, committed_school_name text, evaluations jsonb, team_gender text, programmes jsonb, team_division text, team_league text, team_is_rseq boolean, team_school_type text)
+partner_evaluations | absente
+evaluations.lignes+md5 | 34 e55b87c21e8a884bf35eb67c716125d1
+athletes.cote_globale_entraineur.md5 | 2cee069f5eeeb89f2d20ce5ee99b199a
+calc_cote_globale.md5 | 48b9ec8b4fa8b972dddd1247f9f72fbc
+triggers_evaluations | trg_coach_activity_badge,trg_coach_activity_badge_insert,trg_cote_globale,trg_evaluations_updated_at,trg_notify_evaluation_updated,trg_zz_preserve_updated_at
+triggers_athletes | 17

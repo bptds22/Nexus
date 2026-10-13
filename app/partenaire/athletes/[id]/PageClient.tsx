@@ -17,6 +17,13 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import AthleteRecruiterProfileBody from "@/components/shared/AthleteRecruiterProfileBody";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
+import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
+import {
+  chargerContexteEvaluation,
+  chargerEvaluationsPartenaires,
+  type ContexteEvaluation,
+  type EvaluationPartenaire,
+} from "@/lib/evaluations/partenaire";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/athletes/[id]
@@ -194,6 +201,12 @@ export default function PartnerAthleteProfilePage() {
   const [activeFormat, setActiveFormat] = useState<CardFormat>("publication");
   const [downloading, setDownloading] = useState<CardFormat | null>(null);
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  /* W2 — « Évaluer ». Le bouton n'existe que si le SERVEUR dit oui
+     (partenaire_evaluation_contexte : permission, sport permis, athlète
+     éligible et actif). L'écriture refait les mêmes gardes. */
+  const [contexteEval, setContexteEval] = useState<ContexteEvaluation | null>(null);
+  const [maEvaluation, setMaEvaluation] = useState<EvaluationPartenaire | null>(null);
+  const [evalOuverte, setEvalOuverte] = useState(false);
 
   const captureRefPub = useRef<HTMLDivElement | null>(null);
   const captureRefStory = useRef<HTMLDivElement | null>(null);
@@ -235,6 +248,14 @@ export default function PartnerAthleteProfilePage() {
       }
       setAthlete(mapPartnerRpcToRecruiterView(row as PartnerAthleteRow));
       setLoading(false);
+
+      // W2 — contexte d'évaluation + sa propre évaluation (pré-remplissage).
+      chargerContexteEvaluation(supabase, id)
+        .then(setContexteEval)
+        .catch((e) => console.warn("[partenaire] contexte d'évaluation :", e?.message ?? e));
+      chargerEvaluationsPartenaires(supabase, id)
+        .then((r) => setMaEvaluation(r.find((e) => e.estLaMienne) ?? null))
+        .catch((e) => console.warn("[partenaire] évaluation :", e?.message ?? e));
 
       // Fire-and-forget profile-view audit log. Failures are
       // swallowed — auditing shouldn't block the page from
@@ -367,7 +388,33 @@ export default function PartnerAthleteProfilePage() {
           {downloading === activeFormat ? "Génération…" : "Télécharger la carte"}
         </button>
         <span className="text-[12px] text-[#6b7280]">PNG haute résolution · enregistrement automatique</span>
+        {contexteEval?.peutEvaluer && (
+          <button
+            type="button"
+            onClick={() => setEvalOuverte(true)}
+            className="ml-auto px-5 py-2.5 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors"
+          >
+            {maEvaluation ? "Modifier mon évaluation" : "Évaluer"}
+          </button>
+        )}
       </div>
+
+      {evalOuverte && contexteEval && (
+        <EvaluerAthleteModal
+          athleteId={id}
+          athleteNom={`${athlete.firstName} ${athlete.lastName}`.trim()}
+          grilleId={contexteEval.grilleId}
+          existante={maEvaluation}
+          onClose={() => setEvalOuverte(false)}
+          onSaved={() => {
+            setEvalOuverte(false);
+            showToast("success", "Évaluation enregistrée.");
+            chargerEvaluationsPartenaires(createClient(), id)
+              .then((r) => setMaEvaluation(r.find((e) => e.estLaMienne) ?? null))
+              .catch(() => {});
+          }}
+        />
+      )}
 
       {/* Off-screen full-size renderings for capture (one per format, both kept ready) */}
       <div aria-hidden="true" className="nx-capture-clean" style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}>

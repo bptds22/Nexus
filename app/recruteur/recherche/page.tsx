@@ -14,7 +14,7 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
-import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
+import { useAthleteSearch, coteAffichee } from "@/lib/queries/recruiter/useAthleteSearch";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
@@ -34,7 +34,7 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    n'a rien à recalculer, seulement à rendre le placeholder verrouillé.
    ouvert{Demenager,Prive,Anglophone} retirés : la RPC ne les projette pas
    (ce sont des filtres, pas des colonnes) et rien ne les lisait. */
-type ExtendedAthlete = SearchAthlete & { identityVisible: boolean; academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null; favoriPar?: string };
+type ExtendedAthlete = SearchAthlete & { identityVisible: boolean; academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null; favoriPar?: string; starsPartenaire: number | null; starsPartenaireOrg: string | null };
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
@@ -86,6 +86,8 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
   favDisabled: boolean;
   favDisabledReason: string;
 }) {
+  // W2 — cote du coach, sinon celle du partenaire AVEC son nom (jamais seule).
+  const cote = coteAffichee(a);
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
@@ -130,13 +132,23 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
           </div>
         </div>
 
-        {/* Top right — star rating always visible */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5">
-          {Array.from({ length: 5 }, (_, i) => (
-            <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : a.stars >= i + 0.5 ? "#F59E0B" : "#4a4d56"} stroke="none">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-          ))}
+        {/* Top right — star rating always visible. Note d'un PARTENAIRE :
+            son nom s'affiche dessous, pour qu'on ne la prenne jamais pour
+            une note de coach. */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1">
+          <div className="flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5"
+            title={cote.organisation ? `Évaluation de ${cote.organisation} — pas une note d'entraîneur` : undefined}>
+            {Array.from({ length: 5 }, (_, i) => (
+              <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={cote.valeur >= i + 1 ? "#F59E0B" : cote.valeur >= i + 0.5 ? "#F59E0B" : "#4a4d56"} stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            ))}
+          </div>
+          {cote.organisation && (
+            <span className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85 max-w-[150px] truncate">
+              {cote.organisation}
+            </span>
+          )}
         </div>
 
       </Link>
@@ -236,6 +248,7 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
   favDisabled: boolean;
   favDisabledReason: string;
 }) {
+  const cote = coteAffichee(a);
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
 
@@ -286,13 +299,19 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
           <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>
         )}
         <div className="flex items-center gap-2 mt-0.5">
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5"
+            title={cote.organisation ? `Évaluation de ${cote.organisation} — pas une note d'entraîneur` : undefined}>
             {Array.from({ length: 5 }, (_, i) => (
-              <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+              <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={cote.valeur >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
             ))}
-            <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
+            <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{cote.valeur.toFixed(1)}</span>
+            {cote.organisation && (
+              <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] truncate max-w-[110px]">
+                · {cote.organisation}
+              </span>
+            )}
           </div>
         </div>
       </div>

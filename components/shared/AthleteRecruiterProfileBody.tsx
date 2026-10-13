@@ -35,6 +35,7 @@ import { etapePorteVisite, visiteApresChangementEtape } from "@/lib/pipeline/reg
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import { traitGroups, resolvePositionId, type GrilleRef } from "@/lib/evaluations/grilles";
+import EvaluationPartenaireSection from "@/components/shared/athlete/EvaluationPartenaireSection";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -1144,6 +1145,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             </div>
           </section>
         ) : null}
+
+        {/* W2 — l'évaluation PARTENAIRE, à part, sous celle du coach. Même
+            verrou que le rapport de l'entraîneur pour un recruteur gratuit. */}
+        <EvaluationPartenaireSection athleteId={id} verrouille={lockContent} />
 
         <SectionFaitsSaillants a={a} verrouille={lockContent} />
 

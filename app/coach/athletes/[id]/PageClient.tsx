@@ -30,6 +30,7 @@ import SuggestionsAlert from "@/components/coach/profile/SuggestionsAlert";
 // CoachAthleteProfileBodyMobile (paraphrase copy) supprimé.
 import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecruiterProfileBodyMobile";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import EvaluationPartenaireSection from "@/components/shared/athlete/EvaluationPartenaireSection";
 import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
@@ -869,6 +870,9 @@ export default function CoachAthleteProfilePage() {
           </div>
         </section>
       )}
+
+      {/* W2 — évaluation PARTENAIRE, à part, sous le rapport de l'entraîneur. */}
+      <EvaluationPartenaireSection athleteId={id} />
 
       {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
       <section>
