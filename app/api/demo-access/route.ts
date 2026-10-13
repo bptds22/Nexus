@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { estUuid, messageErreurAcces } from "@/lib/demo/demoAcces";
+import { estUuid, messageErreurAcces, reponseDemande } from "@/lib/demo/demoAcces";
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/demo-access — demande d'accès à l'enregistrement (/12octobre).
@@ -10,10 +10,11 @@ import { estUuid, messageErreurAcces } from "@/lib/demo/demoAcces";
    d'IP) ; puis l'edge function send-demo-access envoie TOUT DE SUITE le
    courriel A (lien personnel) et l'avis à info@.
 
-   La réponse ne rend JAMAIS le jeton ni l'id : le lien n'existe que dans
-   le courriel. Sinon, soumettre l'adresse de quelqu'un d'autre suffirait à
-   obtenir son lien. Pour la même raison, un accès révoqué reçoit la même
-   réponse « ok » qu'un autre — sans courriel.
+   Le jeton ne revient au navigateur QUE pour la première demande d'un
+   courriel (ligne créée) : /merci affiche alors le lien (décision BP
+   2026-10-13). Courriel déjà connu, approuvé ou révoqué → « ok » seul, le
+   lien part par courriel : sinon, soumettre l'adresse de quelqu'un d'autre
+   suffirait à obtenir SON lien. Règle : reponseDemande(), testée.
 ═══════════════════════════════════════════════════════════════ */
 
 const texte = (v: unknown, max: number): string | null =>
@@ -52,5 +53,8 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("[demo-access] envoi :", ligne.id, e instanceof Error ? e.message : String(e));
   }
-  return NextResponse.json({ ok: true });
+  // nb_demandes = 1 ⇔ la RPC vient de créer la ligne (un conflit l'incrémente).
+  const { data: etat } = await supabase.from("demo_access")
+    .select("nb_demandes, status, token").eq("id", ligne.id).maybeSingle();
+  return NextResponse.json(reponseDemande(etat as { nb_demandes: number; status: string; token: string } | null));
 }

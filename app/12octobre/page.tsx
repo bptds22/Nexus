@@ -28,7 +28,7 @@ import { createClient } from "@/lib/supabase/client";
 import { trierOptions, SEUIL_RECHERCHE } from "@/lib/demo/rechercheListe";
 import ListeRecherche from "./_components/ListeRecherche";
 import { DEMO_12_OCTOBRE as D, ROLES_DEMO } from "@/lib/demo/demo12Octobre";
-import { DUREE_MINUTES, messageErreurAcces } from "@/lib/demo/demoAcces";
+import { CLE_JETON_MERCI, DUREE_MINUTES, messageErreurAcces } from "@/lib/demo/demoAcces";
 
 const LARGEUR = "max-w-[1100px] mx-auto";
 const label = "text-[12px] font-bold tracking-[0.16em] uppercase text-[#B4BCC8]";
@@ -98,9 +98,17 @@ export default function Demo12OctobrePage() {
           nx_site: f.nx_site,
         }),
       });
-      const r = (await res.json().catch(() => ({}))) as { ok?: boolean; erreur?: string };
+      const r = (await res.json().catch(() => ({}))) as { ok?: boolean; erreur?: string; jeton?: string };
       ok = res.ok && r.ok === true;
       message = r.erreur;
+      // Le jeton (première demande seulement) passe à /merci par la session,
+      // jamais par l'URL ; une demande sans jeton efface celui d'avant.
+      if (ok) {
+        try {
+          if (r.jeton) sessionStorage.setItem(CLE_JETON_MERCI, r.jeton);
+          else sessionStorage.removeItem(CLE_JETON_MERCI);
+        } catch { /* navigation privée stricte : /merci retombe sur « parti par courriel » */ }
+      }
     } catch { /* réseau : message générique */ }
     if (!ok) {
       setEnvoi(false);

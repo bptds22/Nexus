@@ -55,6 +55,23 @@ export function urlLecteur(idVideo: string, debut = 0, auto = false): string {
   return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(idVideo)}?${q.toString()}`;
 }
 
+/** Le lien personnel, relatif (page /merci). */
+export const cheminVideo = (jeton: string): string => `/12octobre/video?t=${encodeURIComponent(jeton)}`;
+
+/** Clé sessionStorage : /12octobre → /12octobre/merci (jamais l'URL). */
+export const CLE_JETON_MERCI = "demo-acces-jeton";
+
+/** Ce que la route rend au navigateur (décision BP 2026-10-13) :
+ *  · PREMIÈRE demande pour ce courriel (ligne créée, nb_demandes = 1,
+ *    approuvée) → le jeton, pour afficher le lien sur /merci ;
+ *  · courriel déjà connu (approuvé ou révoqué) → rien : le lien part par
+ *    courriel seulement. Sinon, soumettre l'adresse de quelqu'un d'autre
+ *    suffirait à obtenir SON lien. */
+export function reponseDemande(ligne: { nb_demandes: number; status: string; token: string } | null): { ok: true; jeton?: string } {
+  if (ligne && ligne.nb_demandes === 1 && ligne.status === "approved") return { ok: true, jeton: ligne.token };
+  return { ok: true };
+}
+
 /** Message lisible pour une erreur de la RPC demo_access_demander. */
 export function messageErreurAcces(message: string | undefined): string {
   const m = message ?? "";

@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 const { courrielAcces, avisAcces, lienVideo, RESERVATION_1A1 } = await import("../../../supabase/functions/send-demo-access/email.ts");
 // @ts-ignore TS5097
 const { traiterDemande } = await import("../../../supabase/functions/send-demo-access/traiter.ts");
-import { CHAPITRES, enSecondes, urlLecteur, estUuid, messageErreurAcces, POINTS_DEMO } from "@/lib/demo/demoAcces";
+import { CHAPITRES, enSecondes, urlLecteur, estUuid, messageErreurAcces, POINTS_DEMO, reponseDemande, cheminVideo } from "@/lib/demo/demoAcces";
 import { DEMO_12_OCTOBRE } from "@/lib/demo/demo12Octobre";
 
 const JETON = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
@@ -152,4 +152,19 @@ test("envoi : un refus de Resend marque ECHEC", async () => {
   assert.equal(r.courriel, "ECHEC");
   assert.equal(etat.courriel_statut, "ECHEC");
   assert.match(String(etat.envoi_erreur), /Resend 422/);
+});
+
+/* ── /merci : lien affiché seulement à la première demande ─────────── */
+
+test("première demande d'un courriel (ligne créée) : le jeton revient, /merci affiche le lien", () => {
+  const r = reponseDemande({ nb_demandes: 1, status: "approved", token: JETON });
+  assert.deepEqual(r, { ok: true, jeton: JETON });
+  assert.equal(cheminVideo(JETON), `/12octobre/video?t=${JETON}`);
+});
+
+test("courriel déjà connu, approuvé ou révoqué : aucun jeton, le lien part par courriel seulement", () => {
+  assert.deepEqual(reponseDemande({ nb_demandes: 2, status: "approved", token: JETON }), { ok: true });
+  assert.deepEqual(reponseDemande({ nb_demandes: 3, status: "revoked", token: JETON }), { ok: true });
+  assert.deepEqual(reponseDemande({ nb_demandes: 1, status: "revoked", token: JETON }), { ok: true });
+  assert.deepEqual(reponseDemande(null), { ok: true });
 });
