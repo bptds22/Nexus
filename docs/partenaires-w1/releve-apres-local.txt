@@ -1,0 +1,22 @@
+﻿objet | valeur | detail
+media_partners.colonnes | 31 | id,user_id,organization_name,contact_name,contact_email,logo_url,website_url,instagram_handle,facebook_url,tiktok_handle,description,audience_size,status,approved_at,approved_by,show_on_homepage,homepage_order,created_at,updated_at,terms_accepted_at,terms_version,password_reset_completed_at,x_url,youtube_url,linkedin_url,about_text,welcome_email_sent_at,tier,category,card_image_url,peut_evaluer
+objet | valeur
+media_partners.peut_evaluer | boolean null=NO def=false
+objet | id | detail
+media_partners.partenaires | 082fdf2b-bb33-43a8-b5ca-9a37f67f4c1a | Média Preuve APPROVED
+media_partners.partenaires | 5d719dfb-6cab-4988-bec7-250284a899c5 | Preuve suspendue SUSPENDED
+media_partners.partenaires | 9c91d3fd-1134-4520-a77c-4380beac6ea0 | Preuve révoquée REVOKED
+objet | valeur
+garde_w0.md5 | 199fcf220a8fcf89485b8654182d85d4
+objet | valeur
+media_partners.policies | Admins read all partners:SELECT:{authenticated}
+media_partners.policies | Anon read approved partners:SELECT:{anon}
+media_partners.policies | Partners read own profile:SELECT:{public}
+media_partners.policies | Admins update all partners:UPDATE:{authenticated}
+media_partners.policies | Partners update own profile:UPDATE:{public}
+objet | valeur
+partenaire_sports_permis | partenaire_sports_permis
+objet | valeur
+partenaire_peut_evaluer | {postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}
+objet | valeur
+partenaire_admis.md5 | 20e86f078a01fd4d4388cf3a26c8695d

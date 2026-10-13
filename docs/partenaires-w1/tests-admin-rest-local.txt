@@ -1,0 +1,10 @@
+PASS|admin charge partenaire_sports_permis|0 ligne(s)
+PASS|p1 : bascule désactivée par défaut|false
+PASS|admin active « Peut évaluer »|1 ligne
+PASS|admin coche Football|1 ligne
+PASS|p1 : partenaire_peut_evaluer(Football) par RPC|true
+PASS|p1 modifie peut_evaluer par REST → refusé|42501 NEXUS: colonnes réservées à l'admin : peut_evaluer
+PASS|p1 décoche ses sports par REST → 0 ligne|0 ligne
+PASS|p1 lit ses sports par REST|1 ligne
+PASS|admin décoche Football|1 ligne
+PASS|admin désactive « Peut évaluer » (état initial)|ok
