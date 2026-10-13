@@ -1,0 +1,2 @@
+PASS|REST anon : chaîne du carrousel sur partenaires_vitrine|1 ligne(s), clés : id,organization_name,logo_url,card_image_url,tier,category,homepage_order
+PASS|REST anon : contact_email demandé à la vitrine|column pgrst_call.contact_email does not exist

@@ -26,7 +26,7 @@ select p.oid::regprocedure as fonction,
                   from unnest(p.proacl::text[]) x) t) as acl
   from pg_proc p
  where p.pronamespace = 'public'::regnamespace
-   and p.proname in ('is_partner_eligible_athlete','partner_athlete_profile','media_partners_garde_colonnes')
+   and p.proname in ('is_partner_eligible_athlete','partner_athlete_profile','media_partners_garde_colonnes','partenaires_vitrine')
  order by 1;
 
 \echo '== 6. partner_athlete_profile filtre-t-il ACTIF ?'
