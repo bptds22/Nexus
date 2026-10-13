@@ -69,7 +69,8 @@ export async function signIn(email: string, password: string) {
 // ── SIGN OUT ─────────────────────────────────────────────────
 export async function signOut() {
   const supabase = createClient()
-  const { error } = await supabase.auth.signOut()
+  // Locale : ne révoque pas les sessions des autres appareils (lot W0).
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
   return { error }
 }
 

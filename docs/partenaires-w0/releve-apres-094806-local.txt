@@ -1,0 +1,43 @@
+﻿== 1. Triggers sur media_partners
+              tgname               | tgenabled 
+-----------------------------------+-----------
+ set_media_partners_updated_at     | O
+ trg_media_partners_garde_colonnes | O
+
+== 2. Policies media_partners
+         policyname          |  cmd   |      roles      |            qual             |                                        with_check                                        
+-----------------------------+--------+-----------------+-----------------------------+------------------------------------------------------------------------------------------
+ Admins read all partners    | SELECT | {authenticated} | is_admin()                  | 
+ Admins update all partners  | UPDATE | {authenticated} | is_admin()                  | is_admin()
+ Anon read approved partners | SELECT | {anon}          | (status = 'APPROVED'::text) | 
+ Partners read own profile   | SELECT | {public}        | (user_id = auth.uid())      | 
+ Partners update own profile | UPDATE | {public}        | (user_id = auth.uid())      | ((user_id = auth.uid()) AND partner_privileged_cols_unchanged(status, show_on_homepage))
+
+== 3. anon : SELECT de table sur media_partners ?
+ select_table_anon 
+-------------------
+                 0
+
+== 4. anon : colonnes lisibles de media_partners
+                                                                                                   colonnes_anon                                                                                                   
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {about_text,card_image_url,category,description,facebook_url,homepage_order,id,instagram_handle,linkedin_url,logo_url,organization_name,show_on_homepage,status,tier,tiktok_handle,website_url,x_url,youtube_url}
+
+== 5. ACL (liste complète triée)
+             fonction              |                    acl                     
+-----------------------------------+--------------------------------------------
+ is_partner_eligible_athlete(uuid) | {authenticated,postgres,service_role}
+ partner_athlete_profile(uuid)     | {authenticated,postgres,service_role}
+ media_partners_garde_colonnes()   | {postgres,service_role}
+ partenaires_vitrine()             | {anon,authenticated,postgres,service_role}
+
+== 6. partner_athlete_profile filtre-t-il ACTIF ?
+ filtre_actif 
+--------------
+ t
+
+== 7. Athlètes éligibles partenaire NON actifs (ceux que W0.5 retire de la RPC)
+ status | count 
+--------+-------
+ ACTIF  |     2
+

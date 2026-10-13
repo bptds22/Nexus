@@ -210,8 +210,10 @@ export default function PartnerCarousel() {
   useEffect(() => {
     (async () => {
       const supabase = createClient();
+      // Par la RPC, pas la table : ce client porte la session de l'usager, et
+      // un connecté ne lit plus que SA ligne de media_partners (lot W0, 094806).
       const { data } = await supabase
-        .from("media_partners")
+        .rpc("partenaires_vitrine")
         .select("id, organization_name, logo_url, card_image_url, tier, category, homepage_order")
         .eq("status", "APPROVED")
         .eq("show_on_homepage", true);

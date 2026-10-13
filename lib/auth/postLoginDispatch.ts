@@ -74,7 +74,7 @@ export async function postLoginDispatch(
 
   // 3) Compte désactivé : signOut AVANT le redirect (canonique). router.replace.
   if (dest.reason === "deactivated") {
-    await deconnexion(supabase);
+    await deconnexion(supabase, { partout: true });
     router.replace(dest.path);
     return { kind: "deactivated" };
   }

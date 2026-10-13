@@ -35,11 +35,27 @@ const STASH_WIZARD = [JOIN_CODE_STORAGE_KEY];
 /**
  * Termine la session sur CET appareil : retrait du jeton push, puis signOut.
  *
+ * PORTÉE. Par défaut `signOut()` d'auth-js est GLOBAL : il révoque les refresh
+ * tokens de TOUS les appareils du compte (`GoTrueClient.signOut`, défaut
+ * `{ scope: 'global' }`). Une déconnexion ordinaire sur un téléphone faisait
+ * donc tomber, dans l'heure, toute autre session du même compte — bloquant
+ * pour un compte partagé (partenaire, lot W0). La sortie ordinaire est donc
+ * LOCALE.
+ *
+ * Exception assumée : un compte DÉSACTIVÉ sort PARTOUT (`partout: true`).
+ * `deactivate_my_account` ne touche pas aux sessions ; c'est ce signOut global
+ * qui fermait les autres appareils. Les appelants « compte désactivé » le
+ * demandent explicitement.
+ *
  * @param supabase client déjà en main (optionnel). Le client navigateur est un
  *   singleton — l'omettre donne strictement la même instance ; le paramètre
  *   n'existe que pour ne rien changer aux appelants qui en tiennent déjà un.
+ * @param opts.partout révoque les sessions de tous les appareils du compte.
  */
-export async function deconnexion(supabase?: SupabaseClient): Promise<void> {
+export async function deconnexion(
+  supabase?: SupabaseClient,
+  opts?: { partout?: boolean },
+): Promise<void> {
   // Jamais bloquer la sortie. Un jeton qu'on n'a pas pu retirer est un défaut
   // à corriger ; un usager coincé sur un écran parce que Firebase a hoqueté
   // est un défaut PIRE. La garde native/web est dans clearPushToken.
@@ -59,5 +75,7 @@ export async function deconnexion(supabase?: SupabaseClient): Promise<void> {
   // Le sac de l'onboarding (localStorage nexus_user) aussi : il nourrissait la
   // barre latérale du compte SUIVANT (« Pierre Dufour », retour BP 2026-09-28).
   purgerSacOnboarding();
-  await (supabase ?? createClient()).auth.signOut();
+  await (supabase ?? createClient()).auth.signOut({
+    scope: opts?.partout ? "global" : "local",
+  });
 }

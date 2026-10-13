@@ -1,0 +1,24 @@
+﻿
+PASS|T5 athlete lit contact_email des partenaires approuvés|0 ligne(s) visibles
+PASS|T5 athlete : carrousel d'accueil (partenaires_vitrine)|1 ligne(s)
+PASS|T5 partenaires_vitrine n'expose pas contact_*|colonnes de retour
+PASS|T5 coach lit contact_email des partenaires approuvés|0 ligne(s) visibles
+PASS|T5 coach : carrousel d'accueil (partenaires_vitrine)|1 ligne(s)
+PASS|T5 partenaires_vitrine n'expose pas contact_*|colonnes de retour
+PASS|T5 recruteur lit contact_email des partenaires approuvés|0 ligne(s) visibles
+PASS|T5 recruteur : carrousel d'accueil (partenaires_vitrine)|1 ligne(s)
+PASS|T5 partenaires_vitrine n'expose pas contact_*|colonnes de retour
+PASS|T5 partenaire lit contact_email des partenaires approuvés|0 ligne(s) visibles
+PASS|T5 partenaire lit SON contact_email|p1.partenaire@preuve.local
+PASS|T5 partenaire : carrousel d'accueil (partenaires_vitrine)|1 ligne(s)
+PASS|T5 partenaires_vitrine n'expose pas contact_*|colonnes de retour
+PASS|T5 admin lit les contacts des autres partenaires|2 ligne(s)
+PASS|T5 admin lit toutes les lignes (tous statuts)|3 ligne(s)
+PASS|T5 admin : carrousel d'accueil (partenaires_vitrine)|1 ligne(s)
+PASS|T5 partenaires_vitrine n'expose pas contact_*|colonnes de retour
+PASS|T5 anon : requête de /partenaires/[id]|1 ligne(s)
+PASS|T5 anon : carrousel d'accueil (partenaires_vitrine)|1 ligne(s)
+PASS|T5 anon lit contact_email (094802 toujours en place)|permission denied for table media_partners
+0|20
+
+

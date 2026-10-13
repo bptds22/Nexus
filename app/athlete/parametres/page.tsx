@@ -130,7 +130,7 @@ function ParametresPageDesktop() {
     const supabase = createClient();
     const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: true });
     if (error) { setActionPending(false); showToast("Erreur : " + error.message); return; }
-    await deconnexion(supabase);
+    await deconnexion(supabase, { partout: true });
     router.replace("/compte-desactive");
   }
 
