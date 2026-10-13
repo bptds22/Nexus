@@ -1,4 +1,4 @@
--- Rollback de 20261013094806_w0_media_partners_lecture_connectes.sql : rend la policy relevée
+-- Rollback de 20261013173942_w0_media_partners_lecture_connectes.sql (ancien n° 094806) : rend la policy relevée
 -- avant (« Public read approved partners », TO public, status = 'APPROVED').
 
 drop policy if exists "Anon read approved partners" on public.media_partners;

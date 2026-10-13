@@ -1,7 +1,7 @@
 # Lot W0 — application PROD, étape 1 (GO BP 2026-10-13)
 
 Projet `nrloizyemulbhujrqhgx`. Une migration à la fois (`apply_migration`, transaction
-unique : une gate qui lève annule toute la migration). **094806 NON appliquée.**
+unique : une gate qui lève annule toute la migration). 094806 appliquée à l'étape 3 (plus bas).
 
 Les fichiers ont été renommés à la version enregistrée par la prod (convention des lots
 précédents). Contenu des fichiers = SQL appliqué, à l'octet.
@@ -23,8 +23,22 @@ Aucune gate n'a échoué ; aucun rollback.
 - `rpc/partenaires_vitrine` → 4 partenaires, tous `APPROVED`, 3 à l'accueil ; 18 clés, aucune `contact_*`.
 - Carrousel actuel (lecture directe anon, avant déploiement du nouveau code) → 3 lignes : fonctionne.
 
-## Reste à faire
+## Étape 3 — 094806 (GO BP 2026-10-13, après déploiement du carrousel `8cb7a152`)
 
-1. Déployer le carrousel qui lit par `partenaires_vitrine()` (`app/components/PartnerCarousel.tsx`).
-2. Puis, sur GO : `20261013094806_w0_media_partners_lecture_connectes.sql` (fichier à renommer à sa
-   version prod une fois appliqué).
+Deux premières tentatives refusées par le connecteur MCP (`Invalid or expired requestState`) :
+rien n'a été appliqué (policies et `schema_migrations` relevées inchangées). Appliquée après
+reconnexion.
+
+| Fichier (ancien n°) | Version prod | Relevé avant | Relevé après | `admin_operations` |
+|---|---|---|---|---|
+| `…173942_w0_media_partners_lecture_connectes` (094806) | 20261013173942 | SELECT : Admins `{authenticated}`, Partners own `{public}`, **Public read approved `{public}`** | SELECT : Admins `{authenticated}`, **Anon read approved `{anon}`**, Partners own `{public}` ; UPDATE inchangées | `62f78353-1d0e-4158-a4b0-456356a32a66` |
+
+Vérification prod, lecture seule (`begin read only`, rôle et JWT simulés) :
+
+| Qui | lignes `media_partners` | lignes avec contact | `partenaires_vitrine()` |
+|---|---|---|---|
+| coach non partenaire (`nexus.coachs@`) | 0 | 0 | 4 |
+| admin (`bptds22@`) | 4 | 4 | 4 |
+| anon | 4 (18 colonnes) | — | 4, tous `APPROVED` |
+
+Aucune gate n'a échoué ; aucun rollback. **Lot W0 entièrement appliqué en prod.**
