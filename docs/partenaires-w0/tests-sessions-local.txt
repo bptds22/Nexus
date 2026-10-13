@@ -1,0 +1,4 @@
+PASS|S1 signOut local sur A → B rafraîchit sa session|ok
+PASS|S1 B est toujours authentifié (getUser)|ok
+PASS|S2 témoin : signOut() par défaut sur C → B ne peut plus rafraîchir|Invalid Refresh Token: Refresh Token Not Found
+PASS|nettoyage : compte jetable supprimé|ok

@@ -104,7 +104,8 @@ export async function GET(request: Request) {
           authUser.user_metadata as Record<string, unknown> | undefined,
         );
         // Compte désactivé : signOut server-side AVANT le redirect (canonique).
-        if (dest.reason === "deactivated") await supabase.auth.signOut();
+        // Global assumé : un compte désactivé sort de tous les appareils.
+        if (dest.reason === "deactivated") await supabase.auth.signOut({ scope: "global" });
         return NextResponse.redirect(`${origin}${dest.path}`);
       }
       return NextResponse.redirect(`${origin}/`);

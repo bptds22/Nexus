@@ -1,0 +1,22 @@
+﻿
+PASS|T1 partenaire modifie tier|NEXUS: colonnes réservées à l'admin : tier
+PASS|T1 partenaire modifie approved_at|NEXUS: colonnes réservées à l'admin : approved_at
+PASS|T1 partenaire modifie approved_by|NEXUS: colonnes réservées à l'admin : approved_by
+PASS|T1 partenaire modifie category|NEXUS: colonnes réservées à l'admin : category
+PASS|T1 partenaire modifie homepage_order|NEXUS: colonnes réservées à l'admin : homepage_order
+PASS|T1 partenaire modifie contact_email (non nommée → bloquée par défaut)|NEXUS: colonnes réservées à l'admin : 
+contact_email
+PASS|T1 partenaire réécrit user_id à l'identique (doit passer)|accepté, 1 ligne(s)
+PASS|T1 partenaire modifie son profil (permis)|1 ligne(s)
+PASS|T1b admin modifie tier/category/approved_at|1 ligne(s), is_admin=true
+PASS|T2 anon lit contact_email|permission denied for table media_partners
+PASS|T2 anon lit contact_name|permission denied for table media_partners
+PASS|T2 anon : requête du carrousel d'accueil|1 ligne(s)
+PASS|T2 anon : requête de /partenaires/[id]|1 ligne(s) (APPROVED seulement)
+PASS|T3 anon appelle is_partner_eligible_athlete|permission denied for function is_partner_eligible_athlete
+PASS|T3b partenaire appelle is_partner_eligible_athlete|rend true
+PASS|T4 athlète ACTIF visible dans partner_athlete_profile|1 ligne(s)
+PASS|T4 athlète DESACTIVE absent de partner_athlete_profile|0 ligne(s)
+0|17
+
+

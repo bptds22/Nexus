@@ -38,7 +38,7 @@ export default function DeactivationGuard() {
       if (cancelled) return;
 
       if (profile?.status === "DESACTIVE" && profile?.role !== "SUPER_ADMIN") {
-        await deconnexion(supabase);
+        await deconnexion(supabase, { partout: true });
         router.replace("/compte-desactive");
         return;
       }
