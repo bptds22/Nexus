@@ -372,6 +372,11 @@ verify_jwt = false
 [functions.send-demo-inscription]
 verify_jwt = false
 
+# Appelée par la route serveur /api/demo-access (service_role) ; réclamation
+# en base : un id rejoué n'envoie rien.
+[functions.send-demo-access]
+verify_jwt = false
+
 # Veille RSEQ — appelée par pg_cron (net.http_post), pas par un usager : pas de JWT.
 # La protection est l'en-tête x-rseq-secret, comparé DANS la base (rseq_verifie_secret,
 # secret au Vault). Sans cette section, un « supabase functions deploy » sans

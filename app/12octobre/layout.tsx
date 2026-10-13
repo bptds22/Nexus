@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: { absolute: "Nexus — Démo recruteurs, 12 octobre" },
+  title: { absolute: "Nexus — La démo recruteurs, en 35 minutes" },
   description:
-    "Le lundi 12 octobre à midi, on vous montre Nexus en direct : les outils, le processus, la recherche. Inscrivez-vous, recevez l'enregistrement ou réservez une présentation 1:1.",
+    "L'enregistrement de la démo recruteurs Nexus du 12 octobre : Mon processus, le calendrier des matchs, le profil complet, les listes et la messagerie encadrée. Recevez votre lien.",
   alternates: { canonical: "https://nexussports.ca/12octobre" },
 };
 

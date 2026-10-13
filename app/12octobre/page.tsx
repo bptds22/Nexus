@@ -1,20 +1,21 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   /12octobre — inscription à la démo recruteurs du 12 octobre (public,
-   sans connexion, web seulement).
+   /12octobre — la démo recruteurs du 12 octobre est passée : la page
+   donne accès à son ENREGISTREMENT, par lien personnel (décision BP
+   2026-10-13). Public, sans connexion, web seulement.
 
-   Ordre (retour BP 2026-09-29) : titre → points courts → FORMULAIRE →
-   vidéo en bas. Texte de 17-18 px, champs de 48 px, sections aérées,
-   formulaire et vidéo sur la même largeur utile (1100 px). MOBILE D'ABORD
-   (retour BP) : une colonne à 375-390 px, champs pleine largeur en 16 px
-   (pas de zoom iOS), un seul bouton « Envoyer » pleine largeur.
+   Ordre (BP) : en-tête → « Ce que vous allez voir » → offre → formulaire
+   « Recevoir l'enregistrement » → aperçu de 30 s en bas. La démo complète
+   n'est NULLE PART sur cette page : elle ne vit que sur /12octobre/video,
+   derrière un jeton.
 
-   La base décide (RPC inscrire_demo : validation, pot de miel, limite de
-   débit) ; les courriels partent ensuite par l'edge function
-   send-demo-inscription, avec l'id rendu par la RPC. Un échec d'envoi ne
-   bloque pas l'inscription : elle est en base, statut visible sur
-   /admin/demo.
+   Soumission : POST /api/demo-access (route serveur, service_role) — la
+   RPC demo_access_demander décide (validation, limite de débit), puis
+   l'edge function send-demo-access envoie tout de suite le courriel A
+   (le lien) et l'avis à info@. Le jeton ne revient jamais au navigateur.
+   MOBILE D'ABORD : une colonne à 375-390 px, champs pleine largeur en
+   16 px (pas de zoom iOS), un seul bouton pleine largeur.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useState } from "react";
@@ -26,9 +27,8 @@ import PlaybookBackground from "../components/PlaybookBackground";
 import { createClient } from "@/lib/supabase/client";
 import { trierOptions, SEUIL_RECHERCHE } from "@/lib/demo/rechercheListe";
 import ListeRecherche from "./_components/ListeRecherche";
-import {
-  DEMO_12_OCTOBRE as D, ROLES_DEMO, INTERETS_DEMO, messageErreurInscription, type Participation,
-} from "@/lib/demo/demo12Octobre";
+import { DEMO_12_OCTOBRE as D, ROLES_DEMO } from "@/lib/demo/demo12Octobre";
+import { DUREE_MINUTES, messageErreurAcces } from "@/lib/demo/demoAcces";
 
 const LARGEUR = "max-w-[1100px] mx-auto";
 const label = "text-[12px] font-bold tracking-[0.16em] uppercase text-[#B4BCC8]";
@@ -40,9 +40,11 @@ const AUTRE = "__autre__";
 interface Option { id: string; nom: string }
 
 const POINTS = [
-  "Le 12 octobre à midi : la plateforme en direct, les outils, vos questions.",
-  "Vous manquez la démo ? On vous envoie l'enregistrement.",
-  "Après : accès complet gratuit deux semaines, avant la période intensive.",
+  "Mon processus : votre pipeline de recrutement, de « identifié » à « engagé », avec vos notes et votre cote personnelle. Il remplace votre fichier Excel.",
+  "Le calendrier des matchs : les parties de vos cibles, quand le calendrier de leur ligue est publié.",
+  "Le profil complet : mesures, stats, highlights, infos scolaires, cégeps ciblés — et l'évaluation validée par le coach.",
+  "Les listes et la messagerie encadrée : vos listes partagées à votre staff, les contacts tracés, le coach dans la boucle.",
+  "Votre page de programme, gratuite.",
 ];
 
 export default function Demo12OctobrePage() {
@@ -52,12 +54,8 @@ export default function Demo12OctobrePage() {
   const [cegeps, setCegeps] = useState<Option[]>([]);
   const [sports, setSports] = useState<Option[]>([]);
   const [f, setF] = useState({
-    prenom: "", nom: "", courriel: "", cegep: "", cegepAutre: "", sport: "", role: "",
-    interetAutre: "", nx_site: "",
+    prenom: "", nom: "", courriel: "", cegep: "", cegepAutre: "", sport: "", role: "", nx_site: "",
   });
-  const [interets, setInterets] = useState<string[]>([]);
-  const [veutCompte, setVeutCompte] = useState(false);
-  const [participation, setParticipation] = useState<Participation | null>(null);
   const [unAUn, setUnAUn] = useState(false);
   const [consentement, setConsentement] = useState(false);
   const [envoi, setEnvoi] = useState(false);
@@ -74,56 +72,43 @@ export default function Demo12OctobrePage() {
   // « Autre » ajouté ici : il n'existe pas en base, et il ouvre le champ libre.
   const optionsCegep = useMemo(() => [...cegeps, { id: AUTRE, nom: "Autre" }], [cegeps]);
 
-  const maj = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+  const maj = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setF((p) => ({ ...p, [e.target.name]: e.target.value }));
-  const basculerInteret = (v: string) =>
-    setInterets((a) => (a.includes(v) ? a.filter((x) => x !== v) : [...a, v]));
 
   const envoyer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (envoi) return;
-    if (!participation) { setErreur("Choisissez : la démo en direct ou l'enregistrement."); return; }
-    if (!consentement) { setErreur(messageErreurInscription("consentement")); return; }
+    if (!consentement) { setErreur(messageErreurAcces("consentement")); return; }
     setErreur(null);
     setEnvoi(true);
-    const supabase = createClient();
-    const { data: id, error } = await supabase.rpc("inscrire_demo", {
-      p_prenom: f.prenom, p_nom: f.nom, p_courriel: f.courriel,
-      p_cegep_id: f.cegep && f.cegep !== AUTRE ? f.cegep : null,
-      p_cegep_autre: f.cegep === AUTRE ? f.cegepAutre : null,
-      p_sport_id: f.sport || null,
-      p_role: f.role || null,
-      p_interets: interets,
-      p_interet_autre: interets.includes("AUTRE") ? f.interetAutre : null,
-      p_veut_compte: veutCompte,
-      p_participation: participation,
-      p_presentation_1a1: unAUn,
-      p_consentement: consentement,
-      p_site_web: f.nx_site,
-    });
-    if (error || typeof id !== "string") {
+    let ok = false;
+    let message: string | undefined;
+    try {
+      const res = await fetch("/api/demo-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prenom: f.prenom, nom: f.nom, courriel: f.courriel,
+          cegep_id: f.cegep && f.cegep !== AUTRE ? f.cegep : null,
+          cegep_autre: f.cegep === AUTRE ? f.cegepAutre : null,
+          sport_id: f.sport || null,
+          role: f.role || null,
+          wants_1on1: unAUn,
+          consentement,
+          nx_site: f.nx_site,
+        }),
+      });
+      const r = (await res.json().catch(() => ({}))) as { ok?: boolean; erreur?: string };
+      ok = res.ok && r.ok === true;
+      message = r.erreur;
+    } catch { /* réseau : message générique */ }
+    if (!ok) {
       setEnvoi(false);
-      setErreur(messageErreurInscription(error?.message));
+      setErreur(message ?? messageErreurAcces(undefined));
       return;
     }
-    // Les courriels : un échec ne défait pas l'inscription (statut en base).
-    try {
-      await supabase.functions.invoke("send-demo-inscription", { body: { id } });
-    } catch {
-      /* statut A_ENVOYER / ECHEC visible sur /admin/demo */
-    }
-    // Le courriel ne passe pas par l'URL (journaux, historique) : il sert au
-    // bouton « Ouvrir mon compte Nexus » de la page suivante.
-    try { sessionStorage.setItem("demo12-courriel", f.courriel.trim()); } catch { /* navigation privée stricte */ }
-    const q = new URLSearchParams({ choix: participation, id });
-    if (unAUn) q.set("un_a_un", "1");
-    router.push(`/12octobre/merci?${q.toString()}`);
+    router.push(unAUn ? "/12octobre/merci?un_a_un=1" : "/12octobre/merci");
   };
-
-  const choix: { v: Participation; titre: string }[] = [
-    { v: "DIRECT", titre: `Je participe à la démo en direct le ${D.libelleCourt}` },
-    { v: "ENREGISTREMENT", titre: "Envoyez-moi l'enregistrement" },
-  ];
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
@@ -132,30 +117,34 @@ export default function Demo12OctobrePage() {
 
       <section className="relative z-10 px-4 sm:px-6 pt-10 sm:pt-14 pb-8">
         <div className={LARGEUR}>
-          <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.22em] uppercase text-wl-red">Démo recruteurs · {D.libelle}</p>
+          <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.22em] uppercase text-wl-red">Démo recruteurs · Enregistrement disponible</p>
           <h1 className="nx-display text-4xl sm:text-5xl lg:text-6xl font-black text-white uppercase leading-[0.95] tracking-tight mt-3">
-            Démo Nexus — 12 octobre
+            La démo Nexus, en {DUREE_MINUTES} minutes.
           </h1>
-          <ul className="mt-7 flex flex-col gap-3.5 font-sans text-[17px] sm:text-[18px] text-[#E5E7EB] leading-relaxed">
+
+          <h2 className={`${label} mt-9 mb-4`}>Ce que vous allez voir</h2>
+          <ul className="flex flex-col gap-3.5 font-sans text-[17px] sm:text-[18px] text-[#E5E7EB] leading-relaxed">
             {POINTS.map((p) => (
               <li key={p} className="flex gap-3"><span className="text-wl-red font-bold" aria-hidden="true">•</span><span>{p}</span></li>
             ))}
-            <li className="flex gap-3">
-              <span className="text-wl-red font-bold" aria-hidden="true">•</span>
-              <span>
-                Plusieurs recruteurs ? Prix d&apos;équipe :{" "}
-                <a href={`mailto:${D.courriel}`} className="text-white font-semibold hover:text-wl-red">{D.courriel}</a>
-                {" · "}
-                <a href="tel:4384980494" className="text-white font-semibold hover:text-wl-red whitespace-nowrap">{D.telephone}</a>
-              </span>
-            </li>
           </ul>
+
+          <div className="mt-9 nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-5 sm:p-6 font-sans text-[17px] sm:text-[18px] text-[#E5E7EB] leading-relaxed flex flex-col gap-1.5">
+            <p className="text-white font-semibold">Accès complet gratuit jusqu&apos;au 31 octobre.</p>
+            <p>On migre votre fichier de suivi pour vous.</p>
+            <p>
+              Plusieurs recruteurs ? Prix d&apos;équipe :{" "}
+              <a href={`mailto:${D.courriel}`} className="text-white font-semibold hover:text-wl-red">{D.courriel}</a>
+              {" · "}
+              <a href="tel:4384980494" className="text-white font-semibold hover:text-wl-red whitespace-nowrap">{D.telephone}</a>
+            </p>
+          </div>
         </div>
       </section>
 
       <section className="relative z-10 px-4 sm:px-6 pb-12">
         <div className={`${LARGEUR} nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-5 sm:p-8 lg:p-10`}>
-          <h2 className="nx-display text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-7">Inscription</h2>
+          <h2 className="nx-display text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-7">Recevoir l&apos;enregistrement</h2>
           <form onSubmit={envoyer} className="flex flex-col gap-8">
             <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
               <div>
@@ -202,55 +191,15 @@ export default function Demo12OctobrePage() {
               )}
             </div>
 
-            <fieldset className="flex flex-col gap-3">
-              <legend className={`${label} mb-3`}>Ce qui m&apos;intéresse chez Nexus</legend>
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-                {INTERETS_DEMO.map((i) => (
-                  <label key={i.valeur} className={option}>
-                    <input type="checkbox" checked={interets.includes(i.valeur)} onChange={() => basculerInteret(i.valeur)} className={caseACocher} />
-                    {i.libelle}
-                  </label>
-                ))}
-              </div>
-              {interets.includes("AUTRE") && (
-                <input name="interetAutre" value={f.interetAutre} onChange={maj} maxLength={500} placeholder="Précisez" aria-label="Autre intérêt" className={`${champ} sm:max-w-md`} />
-              )}
-            </fieldset>
-
-            <fieldset>
-              <legend className={`${label} mb-3`}>Comment participer *</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {choix.map((c) => (
-                  <label key={c.v} className={`flex items-center gap-3 text-base cursor-pointer border px-4 py-4 transition-colors ${participation === c.v ? "border-wl-red bg-[#E63946]/[0.06] text-white" : "border-[#1E2D4A] text-[#D1D5DB] hover:border-[#2D3F5E]"}`}>
-                    <input type="radio" name="participation" value={c.v} checked={participation === c.v} onChange={() => setParticipation(c.v)} className={caseACocher} />
-                    <span>{c.titre}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <label className={option}>
-                <input id="un_a_un" type="checkbox" checked={unAUn} onChange={(e) => setUnAUn(e.target.checked)} className={caseACocher} />
-                Je veux aussi une présentation 1:1 avec Nexus
-              </label>
-              {unAUn && (
-                <a href={D.reservation} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full sm:w-auto h-12 px-5 bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-xs uppercase tracking-widest">
-                  Choisir un moment
-                </a>
-              )}
-            </div>
-
             <label className={option}>
-              <input id="veut_compte" type="checkbox" checked={veutCompte} onChange={(e) => setVeutCompte(e.target.checked)} className={caseACocher} />
-              Je suis intéressé à ouvrir un compte Nexus
+              <input id="un_a_un" type="checkbox" checked={unAUn} onChange={(e) => setUnAUn(e.target.checked)} className={caseACocher} />
+              Je veux aussi une présentation 1:1 avec Nexus
             </label>
 
             <label className="flex items-start gap-3 text-base text-[#D1D5DB] cursor-pointer border-t border-[#1E2D4A] pt-7">
               <input id="consentement" type="checkbox" checked={consentement} onChange={(e) => setConsentement(e.target.checked)} required className={`${caseACocher} mt-0.5`} />
               <span>
-                J&apos;accepte de recevoir les courriels liés à cet événement. *{" "}
+                J&apos;accepte de recevoir par courriel le lien vers l&apos;enregistrement. *{" "}
                 <Link href="/confidentialite" target="_blank" className="underline text-white hover:text-wl-red">Politique de confidentialité</Link>
               </span>
             </label>
@@ -262,13 +211,22 @@ export default function Demo12OctobrePage() {
 
             {erreur && <p role="alert" className="text-base text-[#FCA5A5] -mt-2">{erreur}</p>}
 
-            {/* UN seul bouton (retour BP) : pleine largeur, 56 px — facile au pouce. */}
             <button type="submit" disabled={envoi}
               className="h-14 w-full bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-base uppercase tracking-[0.18em] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-              {envoi ? "Envoi en cours…" : "Envoyer"}
+              {envoi ? "Envoi en cours…" : "Recevoir le lien"}
             </button>
             <p className="text-[13px] text-[#6b7280] -mt-4">* obligatoire</p>
           </form>
+        </div>
+      </section>
+
+      {/* Aperçu de 30 s : fichier local (public/media), jamais la démo complète. */}
+      <section className="relative z-10 px-4 sm:px-6 pb-16">
+        <div className={LARGEUR}>
+          <h2 className="nx-display text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-5">Un aperçu en 30 secondes</h2>
+          <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] overflow-hidden">
+            <video src="/media/apercu-demo.mp4" controls playsInline preload="metadata" className="block w-full aspect-video bg-black" />
+          </div>
         </div>
       </section>
 
