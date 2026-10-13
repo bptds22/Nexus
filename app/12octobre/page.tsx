@@ -6,9 +6,9 @@
    2026-10-13). Public, sans connexion, web seulement.
 
    Ordre (BP) : en-tête → « Ce que vous allez voir » → offre → formulaire
-   « Recevoir l'enregistrement » → aperçu de 30 s en bas. La démo complète
-   n'est NULLE PART sur cette page : elle ne vit que sur /12octobre/video,
-   derrière un jeton.
+   « Recevoir l'enregistrement », qui termine la page (aperçu vidéo
+   abandonné, BP 2026-10-13). Aucune vidéo sur cette page : la démo ne vit
+   que sur /12octobre/video, derrière un jeton.
 
    Soumission : POST /api/demo-access (route serveur, service_role) — la
    RPC demo_access_demander décide (validation, limite de débit), puis
@@ -217,16 +217,6 @@ export default function Demo12OctobrePage() {
             </button>
             <p className="text-[13px] text-[#6b7280] -mt-4">* obligatoire</p>
           </form>
-        </div>
-      </section>
-
-      {/* Aperçu de 30 s : fichier local (public/media), jamais la démo complète. */}
-      <section className="relative z-10 px-4 sm:px-6 pb-16">
-        <div className={LARGEUR}>
-          <h2 className="nx-display text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-5">Un aperçu en 30 secondes</h2>
-          <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] overflow-hidden">
-            <video src="/media/apercu-demo.mp4" controls playsInline preload="metadata" className="block w-full aspect-video bg-black" />
-          </div>
         </div>
       </section>
 
