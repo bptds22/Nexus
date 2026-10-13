@@ -272,22 +272,6 @@ export default function Demo12OctobrePage() {
         </div>
       </section>
 
-      <section className="relative z-10 px-4 sm:px-6 pb-16">
-        <div className={LARGEUR}>
-          <div className="relative w-full aspect-video overflow-hidden border border-[#1E2D4A] bg-black">
-            <iframe
-              className="absolute inset-0 w-full h-full"
-              src={`https://www.youtube-nocookie.com/embed/${D.videoId}?rel=0`}
-              title="Nexus — présentation"
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );

@@ -10,7 +10,6 @@ export const DEMO_12_OCTOBRE = {
   libelleCourt: "lundi 12 octobre à 12 h",
   meet: "https://meet.google.com/myi-efqn-kes",
   reservation: "https://calendar.app.google/RUBKQe4k5ySpa6Be8",
-  videoId: "bzZGBZWmq7k",
   telephone: "438-498-0494",
   courriel: "info@nexussports.ca",
 } as const;
