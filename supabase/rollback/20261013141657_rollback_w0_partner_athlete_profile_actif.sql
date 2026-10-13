@@ -1,4 +1,4 @@
--- Rollback de 20261013094804_w0_partner_athlete_profile_actif.sql : rend la définition live
+-- Rollback de 20261013141657_w0_partner_athlete_profile_actif.sql : rend la définition live
 -- relevée avant (sans filtre de statut). CREATE OR REPLACE : ACL conservée.
 
 CREATE OR REPLACE FUNCTION public.partner_athlete_profile(p_athlete_id uuid)

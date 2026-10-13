@@ -1,4 +1,4 @@
--- Relevé W0 (lecture seule). Lancer avant ET après les migrations 20261013094801–094804.
+-- Relevé W0 (lecture seule). Lancer avant ET après les migrations W0 (20261013141550–141717, puis 094806).
 \pset footer off
 \echo '== 1. Triggers sur media_partners'
 select tgname, tgenabled from pg_trigger

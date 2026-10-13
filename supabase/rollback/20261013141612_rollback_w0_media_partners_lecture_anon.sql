@@ -1,4 +1,4 @@
--- Rollback de 20261013094802_w0_media_partners_lecture_anon.sql : rend à anon le SELECT de
+-- Rollback de 20261013141612_w0_media_partners_lecture_anon.sql : rend à anon le SELECT de
 -- table (état relevé avant, accordé par les default privileges Supabase) et retire les
 -- privilèges de colonne devenus redondants.
 
