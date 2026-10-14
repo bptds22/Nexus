@@ -2462,3 +2462,58 @@ version prod, et ne marquer `reverted` que les versions réellement sans
 équivalent — relevé avant, GO BP, ligne `admin_operations`. Critère de fin :
 `supabase db push --dry-run` liste exactement les migrations locales non
 appliquées, rien d'autre.
+
+## 81. Page d'équipe : les matchs d'un même jour ne sont pas triés par heure — toutes sources (relevé 2026-10-14, NON corrigé, décision BP)
+
+**Le constat** (import NLS, local) : sur la page d'équipe
+(`/college/[schoolId]/[teamId]`), DALBÉ-VIAU BF joue deux fois le 2027-01-31 —
+19:20 puis 10:00, dans cet ordre-là. Le match du soir passe avant celui du
+matin.
+
+**La cause** : le chargeur trie par JOUR seulement —
+`lib/queries/teamPage/loadForRender.ts` (`.order("game_date")`, deux
+requêtes), puis `buildEvents` dans `lib/queries/teamPage/dbToTeamPage.ts`
+(`a.date.localeCompare(b.date)`). Le jumeau mobile `TeamPageMobile.tsx` fait
+de même. Dans une même journée, l'ordre est celui que rend la base.
+
+**Portée** : toutes les sources (RSEQ, football civil, NLS), dès qu'une équipe
+a deux matchs le même jour. Le défaut ne se VOIT que là — rare au RSEQ,
+courant à la NLS (tournois du samedi).
+
+**La correction, quand elle sera décidée** : clé secondaire par
+`minutesDe(game_time)` (`lib/calendar/heureMatch.ts`, LA lecture de l'heure),
+heure absente en dernier — comme `trierMatchs` de la carte des matchs. Ne pas
+trier sur le texte brut : « 6:30 PM » et « 10:00 » se trieraient faux.
+
+## 82. Carte des matchs : les SUGGESTIONS de recherche nomment les équipes NLS par le club (2026-10-14, hors lot, décision BP)
+
+La liste de la carte affiche, depuis `20261014164451_nls_carte_noms_exposure`,
+le nom d'équipe tel que la NLS l'écrit (« CB ELITE (2) CM », lu dans
+`games.home_name_raw` / `visitor_name_raw`). Les **suggestions** du champ
+« Équipe, terrain… » (RPC `matchs_suggestions`) lisent encore `teams.name` :
+taper « CB ELITE » propose six fois « NLS – CB ELITE ». Seule la ligne de
+détail (catégorie, genre, division) les distingue. Dans un même groupe, deux
+équipes d'un club ne se confondent pas (« NLS – DALBÉ-VIAU (1) » / « (2) »),
+donc rien n'est faux : c'est seulement illisible.
+
+Aussi : la recherche texte ignore la ponctuation (`lieu_normalise`), si bien
+que « (2) » ne filtre rien.
+
+**Quand ce sera repris** : même règle que `matchs_recherche` (le nom NLS brut
+avant `teams.name` pour une équipe de la ligue `No Limits Showcases`), en
+recopiant à l'identique la version en place et en vérifiant l'ACL.
+
+## 83. Page d'équipe NLS : « SÉRIES RSEQ » et catégorie absente (2026-10-14, relevé à la recette locale, non corrigé)
+
+Sur `/college/[club]/[équipe]` d'une équipe NLS (page dégradée, jamais
+configurée), par exemple NLS – DALBÉ-VIAU (1), Benjamin F :
+- l'en-tête affiche l'onglet **« SÉRIES RSEQ »**, alors que la NLS n'est pas
+  au RSEQ ;
+- le titre dit « Basketball Féminin » **sans la catégorie** (Benjamin). Les
+  équipes d'un même club et d'un même genre (Benjamin F (1) et (2), Cadet F,
+  Juvénile F) se ressemblent donc toutes ;
+- le sur-titre répète « NLS – DALBÉ-VIAU · NLS – DALBÉ-VIAU ».
+
+Touche probablement toutes les équipes civiles dont la page n'est pas
+configurée. À instruire avec la page d'équipe (`lib/queries/teamPage/`,
+`components/team-page/`).

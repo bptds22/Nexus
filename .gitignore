@@ -86,6 +86,9 @@ android/keystore.properties
 # Data dumps temporaires (one-shot scripts)
 *.sql.bak
 basketball_pdfs/
+# PDF « Schedule » Exposure enregistrés chaque mercredi par BP (NLS) : hors git.
+# Le JSON lu (data/nls/matchs-AAAA-MM-JJ.json) et les scripts sont versionnés.
+data/nls/pdf/
 basketball_quebec_clubs.csv
 basketball_quebec_clubs.json
 brand_assets/
