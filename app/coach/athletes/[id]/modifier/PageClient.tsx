@@ -23,6 +23,8 @@ import BadgePicker from "@/components/shared/BadgePicker";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
 import { chargerBadgesAthlete } from "@/lib/queries/shared/athleteBadges";
+import { messageErreurNexus } from "@/lib/erreurs/messageErreurNexus";
+import ErreurSauvegarde, { MESSAGE_ERREUR_GENERIQUE } from "@/components/shared/ErreurSauvegarde";
 import StepIndicator from "../../../components/StepIndicator";
 import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import TagInput from "../../../components/TagInput";
@@ -161,6 +163,8 @@ function ModifierContent({ id }: { id: string }) {
   const [showErrors, setShowErrors] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  /* Refus d'enregistrement, affiché dans la page (plus d'alert() natif). */
+  const [erreurSauvegarde, setErreurSauvegarde] = useState<string | null>(null);
 
   // ── Recruitment status fields ──
   const [recruitmentStatus, setRecruitmentStatus] = useState<string>("OUVERT");
@@ -515,7 +519,7 @@ function ModifierContent({ id }: { id: string }) {
        refuse l'enregistrement ENTIER plutôt que de perdre en silence des badges
        qu'on n'a pas su lire. */
     if (badgesIllisibles) {
-      alert("Les badges de cet athlète n'ont pas pu être lus. Recharge la page avant d'enregistrer — sans cette lecture, l'enregistrement les retirerait.");
+      setErreurSauvegarde("Les badges de cet athlète n'ont pas pu être lus. Recharge la page avant d'enregistrer — sans cette lecture, l'enregistrement les retirerait.");
       return;
     }
     if (!validateStep(7)) { setShowErrors(true); return; }
@@ -541,6 +545,7 @@ function ModifierContent({ id }: { id: string }) {
       return false;
     }
     coteConfirmedRef.current = false; // reset for next save
+    setErreurSauvegarde(null);
 
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -558,7 +563,9 @@ function ModifierContent({ id }: { id: string }) {
     });
     if (result.error) {
       console.error("Save failed:", result.error.message);
-      alert("Erreur lors de la sauvegarde: " + result.error.message);
+      /* Refus métier de la base (« NEXUS: … ») → la phrase, mise en forme.
+         Toute autre erreur → message générique ; le détail reste en console. */
+      setErreurSauvegarde(messageErreurNexus(result.error.message) ?? MESSAGE_ERREUR_GENERIQUE);
       return false;
     }
     return true;
@@ -1288,6 +1295,8 @@ function ModifierContent({ id }: { id: string }) {
           <p className="text-[14px] text-[#E63946] font-medium">Veuillez remplir tous les champs obligatoires (<span className="font-bold">*</span>) avant de continuer.</p>
         </div>
       )}
+
+      <ErreurSauvegarde message={erreurSauvegarde} onFermer={() => setErreurSauvegarde(null)} />
 
       <div className="flex items-center justify-between mt-8 gap-4">
         <button type="button" onClick={goPrev} disabled={currentStep === 1}

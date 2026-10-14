@@ -16,6 +16,17 @@ explicitement le chantier web **TERMINÉ**. Le mobile se traite ensuite, en un
 **lot dédié**, sur **GO explicite de BP**. Le tronc partagé (`lib/`) est
 permis ; son branchement mobile attend le lot mobile.
 
+### CAPTURES — JAMAIS L'ÉCRAN NI LE BUREAU DE BP (décision BP, 2026-10-14)
+
+**Jamais de capture de l'écran ou du bureau de BP. Seulement des captures d'un
+navigateur sans interface (headless).** Pas de `CopyFromScreen`, pas d'outil de
+capture d'écran du système, pas de navigateur visible photographié « par sa
+fenêtre ». Origine : le 2026-10-14, une photo de la zone d'une fenêtre de
+navigateur a saisi une autre fenêtre privée ouverte par-dessus (supprimée
+aussitôt, jamais commitée). Une boîte native (`alert()`, `confirm()`) ne se
+capture pas en headless : intercepter `window.alert` et montrer le texte exact
+dans un encadré ÉTIQUETÉ « reproduction ».
+
 ### GATES D'ACL — COMPARAISON COMPLÈTE, JAMAIS PAR INCLUSION (2026-09-07)
 
 **Tout gate d'ACL compare la liste complète triée, jamais par inclusion.**

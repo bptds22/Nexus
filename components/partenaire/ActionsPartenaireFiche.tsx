@@ -12,6 +12,10 @@
    - « Attribuer un badge » : seulement si le serveur dit que le partenaire
      peut évaluer cet athlète (même garde que W2) ET qu'il a un catalogue.
      Les badges déjà posés (vivants) ne sont pas reproposés.
+   - « Attribuer un badge Nexus » (W3b) : les badges du catalogue que le
+     serveur juge admissibles pour CET athlète (universels, et ceux de SON
+     sport ; jamais les honneurs). Un badge déjà porté reste listé, grisé,
+     avec qui le porte — le serveur refuse de toute façon le doublon.
    Le retrait d'un badge se fait depuis la rangée « Distinctions » de la
    fiche (BadgePartenaireVignette, actions="partenaire").
 ═══════════════════════════════════════════════════════════════ */
@@ -25,10 +29,15 @@ import {
 } from "@/lib/evaluations/partenaire";
 import {
   attribuerBadgePartenaire,
+  attribuerBadgeNexus,
+  chargerBadgesNexusAdmissibles,
   chargerMesBadgesPartenaire,
   signalerBadgesPartenaire,
+  EVENEMENT_BADGE_PARTENAIRE,
   type BadgeCatalogue,
+  type BadgeNexusAdmissible,
 } from "@/lib/badges/partenaire";
+import { badgeSvgPath } from "@/lib/config/badges";
 import { useBadgesPartenaires } from "@/components/shared/athlete/BadgesPartenaire";
 
 function messageErreur(e: unknown): string {
@@ -52,7 +61,27 @@ export default function ActionsPartenaireFiche({
   const [occupe, setOccupe] = useState(false);
   const [catalogue, setCatalogue] = useState<BadgeCatalogue[]>([]);
   const [choixOuvert, setChoixOuvert] = useState(false);
+  const [nexus, setNexus] = useState<BadgeNexusAdmissible[]>([]);
+  const [choixNexusOuvert, setChoixNexusOuvert] = useState(false);
   const poses = useBadgesPartenaires(athleteId);
+
+  useEffect(() => {
+    if (!peutEvaluer) return;
+    let vivant = true;
+    const charger = () => {
+      chargerBadgesNexusAdmissibles(createClient(), athleteId)
+        .then((r) => { if (vivant) setNexus(r); })
+        .catch((e) => console.warn("[partenaire] badges Nexus admissibles :", e?.message ?? e));
+    };
+    charger();
+    // Une pose ou un retrait change « déjà porté » : on relit.
+    const surChangement = (e: Event) => {
+      if ((e as CustomEvent<{ athleteId?: string }>).detail?.athleteId === athleteId) charger();
+    };
+    window.addEventListener(EVENEMENT_BADGE_PARTENAIRE, surChangement);
+    return () => { vivant = false; window.removeEventListener(EVENEMENT_BADGE_PARTENAIRE, surChangement); };
+  }, [peutEvaluer, athleteId]);
+  const nexusLibres = nexus.filter((b) => !b.dejaPar);
 
   useEffect(() => {
     if (!peutEvaluer) return;
@@ -94,7 +123,21 @@ export default function ActionsPartenaireFiche({
     }
   };
 
-  if (!maEvaluation && !(peutEvaluer && catalogue.length > 0)) return null;
+  const attribuerNexus = async (badge: BadgeNexusAdmissible) => {
+    setOccupe(true);
+    try {
+      await attribuerBadgeNexus(createClient(), athleteId, badge.id);
+      signalerBadgesPartenaire(athleteId);
+      setChoixNexusOuvert(false);
+      notifier("success", `Badge « ${badge.libelle} » attribué.`);
+    } catch (e) {
+      notifier("error", messageErreur(e));
+    } finally {
+      setOccupe(false);
+    }
+  };
+
+  if (!maEvaluation && !(peutEvaluer && (catalogue.length > 0 || nexus.length > 0))) return null;
 
   return (
     <div className="flex items-center gap-3 flex-wrap" data-actions-partenaire>
@@ -162,6 +205,50 @@ export default function ActionsPartenaireFiche({
                   <span className="text-[13px] font-semibold text-white">{b.libelle}</span>
                 </button>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {peutEvaluer && nexus.length > 0 && (
+        <div className="relative">
+          <button
+            type="button"
+            disabled={occupe || nexusLibres.length === 0}
+            onClick={() => setChoixNexusOuvert((v) => !v)}
+            className="px-4 py-2 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={nexusLibres.length === 0 ? "Cet athlète porte déjà tous les badges Nexus que tu peux attribuer" : undefined}
+            data-attribuer-badge-nexus
+          >
+            Attribuer un badge Nexus
+          </button>
+          {choixNexusOuvert && (
+            <div className="absolute z-20 mt-2 right-0 w-[300px] max-h-[360px] overflow-y-auto bg-[#1A1D24] border border-[#2D3748] rounded-xl p-2 shadow-xl">
+              {nexus.map((b) => {
+                const svg = badgeSvgPath(b.code);
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    disabled={occupe || !!b.dejaPar}
+                    onClick={() => attribuerNexus(b)}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 text-left disabled:opacity-45 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                  >
+                    {svg ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={svg} alt="" className="w-9 h-9 object-contain shrink-0" />
+                    ) : (
+                      <span className="w-9 h-9 shrink-0" />
+                    )}
+                    <span className="flex flex-col min-w-0">
+                      <span className="text-[13px] font-semibold text-white">{b.libelle}</span>
+                      <span className="text-[11px] text-[#6B7280]">
+                        {b.dejaPar ? `Déjà porté — ${b.dejaPar}` : b.famille === "sport" ? "Badge de sport" : "Badge universel"}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
