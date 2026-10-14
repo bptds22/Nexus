@@ -30,7 +30,8 @@ import SuggestionsAlert from "@/components/coach/profile/SuggestionsAlert";
 // CoachAthleteProfileBodyMobile (paraphrase copy) supprimé.
 import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecruiterProfileBodyMobile";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
-import EvaluationPartenaireSection from "@/components/shared/athlete/EvaluationPartenaireSection";
+import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
+import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
 import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
@@ -470,6 +471,9 @@ export default function CoachAthleteProfilePage() {
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
+  /* W3 — badges partenaire, à la FIN de la rangée « Distinctions ». Le coach
+     peut les masquer (jamais les retirer : c'est le partenaire ou l'admin). */
+  const badgesPartenaire = useBadgesPartenaires(id);
   const [currentCoachId, setCurrentCoachId] = useState<string | null>(null);
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
@@ -759,10 +763,13 @@ export default function CoachAthleteProfilePage() {
               )}
             </div>
 
-            {dbDistinctions.length > 0 && (
+            {(dbDistinctions.length > 0 || badgesPartenaire.length > 0) && (
               <div className="flex items-start gap-9 flex-wrap">
                 {dbDistinctions.map((d, i) => (
                   <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                ))}
+                {badgesPartenaire.map((b) => (
+                  <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" />
                 ))}
               </div>
             )}
@@ -799,6 +806,8 @@ export default function CoachAthleteProfilePage() {
                   {evaluatedByOther && (
                     <p className="text-[12px] text-[#9CA3AF] mt-1.5">Évalué par <span className="font-bold text-white">{a.evaluatorName}</span></p>
                   )}
+                  {/* W2b — le coach a évalué : le partenaire tient en UNE ligne. */}
+                  {aUneCote(coteGlobale) && <EvaluationPartenaireLigne athleteId={id} />}
                 </div>
               )}
 
@@ -851,7 +860,11 @@ export default function CoachAthleteProfilePage() {
                     })}
                   </div>
 
-                  {dbDistinctions.length > 0 && (
+                  {/* W2b — sous les critères du coach : la ligne du partenaire
+                      (étoiles + cote globale, JAMAIS ses critères). */}
+                  <EvaluationPartenaireLigne athleteId={id} />
+
+                  {(dbDistinctions.length > 0 || badgesPartenaire.length > 0) && (
                     <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                       {/* `lg` comme le bloc Profil athlete : c'est le MEME badge,
@@ -860,6 +873,9 @@ export default function CoachAthleteProfilePage() {
                       <div className="flex flex-wrap gap-3">
                         {dbDistinctions.map((d, i) => (
                           <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                        ))}
+                        {badgesPartenaire.map((b) => (
+                          <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" />
                         ))}
                       </div>
                     </div>
@@ -872,7 +888,8 @@ export default function CoachAthleteProfilePage() {
       )}
 
       {/* W2 — évaluation PARTENAIRE, à part, sous le rapport de l'entraîneur. */}
-      <EvaluationPartenaireSection athleteId={id} />
+      {/* W2b — section complète SEULEMENT si le coach n'a pas évalué. */}
+      <EvaluationPartenaireSection athleteId={id} coachAEvalue={aUneCote(coteGlobale)} />
 
       {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
       <section>

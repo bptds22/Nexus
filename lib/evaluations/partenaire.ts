@@ -99,6 +99,17 @@ export async function enregistrerEvaluationPartenaire(
   if (error) throw error;
 }
 
+/** W3 — retrait par le partenaire auteur (ou l'admin). La ligne est
+ *  supprimée côté serveur (une copie part dans la trace des retraits) :
+ *  elle sort des fiches ET du filtre « 4+ étoiles ». */
+export async function retirerEvaluationPartenaire(
+  supabase: SupabaseClient,
+  evaluationId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("retirer_evaluation_partenaire", { p_evaluation_id: evaluationId });
+  if (error) throw error;
+}
+
 /** Moyenne des critères notés, arrondie au dixième — miroir du serveur. */
 export function moyenneCriteres(criteres: Partial<Record<CritereColonne, number>>): number | null {
   const v = Object.values(criteres).filter((n): n is number => typeof n === "number" && n > 0);

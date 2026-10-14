@@ -8,8 +8,15 @@
    - l'évaluation du coach reste la principale ; celle-ci est à part ;
    - titre = nom de l'ORGANISATION, jamais d'une personne ;
    - JAMAIS de check bleu (#3B82F6) ici — ce bleu dit « vérifié par le
-     coach », et cette note ne vient pas d'un coach ;
-   - elle reste visible après l'évaluation du coach.
+     coach », et cette note ne vient pas d'un coach.
+
+   W2b (décision BP 2026-10-14) — deux formes selon le coach :
+   - le coach a ÉVALUÉ → pas de section : UNE ligne dans son bloc, sous
+     « Moyenne des traits » : « Évaluation <organisation> », les étoiles
+     et la cote globale. JAMAIS les critères, même si le partenaire a fait
+     une évaluation détaillée → `EvaluationPartenaireLigne`, posée par
+     l'hôte dans le bloc du coach, et `coachAEvalue` ici ;
+   - le coach n'a PAS évalué → la section complète ci-dessous.
 
    Rien à afficher (aucune évaluation, ou lecture refusée) → rien du tout :
    pas de titre vide, pas de « 0,0/5 ».
@@ -27,15 +34,8 @@ import {
 } from "@/lib/evaluations/partenaire";
 import { sectionLabel, cardBase, FreeLock } from "@/components/shared/athlete/sectionsFiche";
 
-export default function EvaluationPartenaireSection({
-  athleteId,
-  verrouille = false,
-}: {
-  athleteId: string | null | undefined;
-  /** Recruteur gratuit : même verrou que le rapport de l'entraîneur. */
-  verrouille?: boolean;
-}) {
-  const grilleSet = useGrilles();
+/** Lecture + rechargement après un enregistrement ou un retrait. */
+export function useEvaluationsPartenaires(athleteId: string | null | undefined): EvaluationPartenaire[] {
   const [evals, setEvals] = useState<EvaluationPartenaire[]>([]);
 
   useEffect(() => {
@@ -54,7 +54,56 @@ export default function EvaluationPartenaireSection({
     return () => { vivant = false; window.removeEventListener(EVENEMENT_EVALUATION_PARTENAIRE, surEnregistrement); };
   }, [athleteId]);
 
+  return evals;
+}
+
+/** La forme compacte : une ligne par partenaire, dans le bloc du coach. */
+export function EvaluationPartenaireLigne({
+  athleteId,
+  className = "",
+}: {
+  athleteId: string | null | undefined;
+  className?: string;
+}) {
+  const evals = useEvaluationsPartenaires(athleteId);
   if (evals.length === 0) return null;
+  return (
+    <>
+      {evals.map((ev) => (
+        <div
+          key={ev.id}
+          data-evaluation-partenaire-ligne
+          className={`mt-4 pt-4 border-t border-[#2D3748]/50 flex items-center justify-between gap-3 flex-wrap ${className}`}
+        >
+          <span className="text-[13px] font-bold text-[#9CA3AF] uppercase tracking-wider">Évaluation {ev.organisation}</span>
+          <div className="flex items-center gap-2">
+            <StarRating rating={ev.coteGlobale} size="md" showNumber={false} />
+            <span className="text-[16px] font-head font-black text-white">
+              {ev.coteGlobale.toFixed(1)}<span className="text-[13px] text-[#6B7280] font-normal">/5</span>
+            </span>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export default function EvaluationPartenaireSection({
+  athleteId,
+  verrouille = false,
+  coachAEvalue = false,
+}: {
+  athleteId: string | null | undefined;
+  /** Recruteur gratuit : même verrou que le rapport de l'entraîneur. */
+  verrouille?: boolean;
+  /** Le coach a évalué : la ligne compacte (dans son bloc) remplace la section. */
+  coachAEvalue?: boolean;
+}) {
+  // Le hook est TOUJOURS appelé ; c'est le rendu qui s'efface.
+  const grilleSet = useGrilles();
+  const evals = useEvaluationsPartenaires(coachAEvalue ? null : athleteId);
+
+  if (coachAEvalue || evals.length === 0) return null;
 
   return (
     <>
