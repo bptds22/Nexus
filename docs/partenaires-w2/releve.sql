@@ -1,4 +1,4 @@
--- Relevé W2 (lecture seule). Lancer avant ET après 20261013200000.
+-- Relevé W2 (lecture seule). Lancer avant ET après 20261014020100.
 \pset footer off
 -- Par NOM, pas par signature : W2 ajoute un 16e paramètre (p_inclure_partenaires).
 -- Avant W2 : 15 paramètres ; après : 16. Une seule ligne attendue dans les deux cas.

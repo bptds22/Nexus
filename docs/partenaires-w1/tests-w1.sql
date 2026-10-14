@@ -1,4 +1,4 @@
-﻿-- Tests W1 (20261013181000), base LOCALE. Une transaction annulée à la fin : rien ne survit.
+﻿-- Tests W1 (20261014020000), base LOCALE. Une transaction annulée à la fin : rien ne survit.
 -- Comptes de preuve locaux, résolus par courriel. Chaque essai tourne sous le VRAI rôle
 -- (authenticated / anon) avec un JWT simulé — RLS, garde W0 et ACL s'appliquent.
 \set ON_ERROR_STOP 1

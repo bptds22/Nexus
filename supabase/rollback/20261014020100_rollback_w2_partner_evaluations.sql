@@ -1,4 +1,4 @@
--- Rollback de 20261013200000_w2_partner_evaluations.sql.
+-- Rollback de 20261014020100_w2_partner_evaluations.sql.
 -- ⚠ Les évaluations partenaires sont PERDUES (table supprimée) : relever avant.
 -- Rend recruiter_search_athletes dans sa forme d'avant W2 (corps relevé en local,
 -- identique), ACL reposée et vérifiée par liste complète.
