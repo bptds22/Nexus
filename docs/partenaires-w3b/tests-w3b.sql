@@ -27,6 +27,8 @@ select set_config('w3.b_radar',   (select id::text from public.badges where code
 select set_config('w3.b_3pts',    (select id::text from public.badges where code = '3-points'), true);  -- sport : basketball
 select set_config('w3.b_clutch',  (select id::text from public.badges where code = 'clutch'), true);    -- universel (le coach l'a posé)
 select set_config('w3.b_mvp',     (select id::text from public.badges where code = 'mvp'), true);       -- honneur
+select set_config('w3.b_mains',   (select id::text from public.badges where code = 'mains-sures'), true); -- sport : football, jamais posé par un partenaire ici
+select set_config('w3.b_dispo',   (select id::text from public.badges where code = 'disponibilite'), true);
 
 -- Préparation (postgres), annulée à la fin :
 --  · Félix éligible (opt-in) ;
@@ -154,6 +156,35 @@ select pg_temp.essai('P6 aucune ligne athlete_badges touchée par W3b', current_
 select pg_temp.essai('P7 la liste dit maintenant « Vitesse — Média Preuve »', current_setting('w3.p2'),
   format(current_setting('w3.q_adm') || ' where code = ''vitesse''', 'deja_par', current_setting('w3.felix')), 'Média Preuve');
 
+-- ── Le COACH bloqué par un badge déjà attribué par un partenaire ───────────
+-- p1 porte « Vitesse » sur Félix (P2). Le coach libère d'abord une place sous
+-- le plafond, pour que le refus prouvé soit bien celui du doublon.
+select pg_temp.essai('C0 le coach retire « Disponibilité » (une place sous le plafond)', current_setting('w3.coach'),
+  format($q$with u as (update public.athlete_badges set retire_le = now(), retire_par = %L
+                       where athlete_id = %L and badge_id = %L and retire_le is null returning 1)
+            select count(*)::text from u$q$, current_setting('w3.coach'), current_setting('w3.felix'), current_setting('w3.b_dispo')), '1');
+select pg_temp.essai_msg('C1 le coach pose « Vitesse » déjà attribué par un partenaire → refusé, message exact', current_setting('w3.coach'),
+  format($q$with i as (insert into public.athlete_badges (athlete_id, badge_id, attribue_par) values (%L, %L, %L) returning 1)
+            select count(*)::text from i$q$, current_setting('w3.felix'), current_setting('w3.b_vitesse'), current_setting('w3.coach')),
+  '23505', 'NEXUS: cet athlète a déjà le badge « Vitesse » (attribué par Média Preuve)');
+select pg_temp.essai_msg('C2 même refus par le vrai chemin du coach (appliquer_badges_saisie)', current_setting('w3.coach'),
+  format($q$select public.appliquer_badges_saisie(%L,
+              (select jsonb_agg(jsonb_build_object('code', b.code, 'contexte', ab.contexte))
+                 from public.athlete_badges ab join public.badges b on b.id = ab.badge_id
+                where ab.athlete_id = %L and ab.retire_le is null)
+              || '[{"code":"vitesse","contexte":null}]'::jsonb)::text$q$,
+         current_setting('w3.felix'), current_setting('w3.felix')),
+  '23505', 'NEXUS: cet athlète a déjà le badge « Vitesse » (attribué par Média Preuve)');
+select pg_temp.essai('C3 le coach pose un AUTRE badge (« Mains sûres ») : passe', current_setting('w3.coach'),
+  format($q$with i as (insert into public.athlete_badges (athlete_id, badge_id, attribue_par) values (%L, %L, %L) returning 1)
+            select count(*)::text from i$q$, current_setting('w3.felix'), current_setting('w3.b_mains'), current_setting('w3.coach')), '1');
+select pg_temp.essai('C4 rien de changé côté partenaire : « Vitesse » toujours à p1, vivant', current_setting('w3.p1'),
+  format('select organisation || '' / '' || est_le_mien from public.badges_partenaires_athlete(%L) where badge_code = ''vitesse''', current_setting('w3.felix')),
+  'Média Preuve / true');
+select pg_temp.essai_msg('C5 côté partenaire, le doublon avec le coach reste refusé (« Mains sûres »)', current_setting('w3.p1'),
+  format(current_setting('w3.q_pose'), current_setting('w3.felix'), current_setting('w3.b_mains')),
+  '23505', 'NEXUS: cet athlète a déjà le badge « Mains sûres » (attribué par son coach)');
+
 -- ── Lecture ────────────────────────────────────────────────────────────────
 select set_config('w3.q_lire', 'select %s from public.badges_partenaires_athlete(%L)', true);
 select pg_temp.essai('L1 le recruteur lit le badge Nexus : code, libellé, organisation', current_setting('w3.rec'),
@@ -188,6 +219,10 @@ select pg_temp.essai('M4 masqué : le recruteur ne voit plus que le badge propre
   format(current_setting('w3.q_lire'), 'string_agg(libelle, '','')', current_setting('w3.felix')), 'Esprit sportif');
 select pg_temp.essai('M5 masqué : le coach le voit, marqué masqué', current_setting('w3.coach'),
   format(current_setting('w3.q_lire'), 'string_agg(libelle || ''='' || est_masque, '','' order by libelle)', current_setting('w3.felix')), 'Esprit sportif=false,Vitesse=true');
+select pg_temp.essai_msg('M5b masqué, il bloque toujours le coach (masquer n''est pas retirer)', current_setting('w3.coach'),
+  format($q$with i as (insert into public.athlete_badges (athlete_id, badge_id, attribue_par) values (%L, %L, %L) returning 1)
+            select count(*)::text from i$q$, current_setting('w3.felix'), current_setting('w3.b_vitesse'), current_setting('w3.coach')),
+  '23505', 'NEXUS: cet athlète a déjà le badge « Vitesse » (attribué par Média Preuve)');
 select pg_temp.essai('M6 le coach réaffiche', current_setting('w3.coach'), format(current_setting('w3.q_masque'), 'false'), '');
 
 -- ── Retrait ────────────────────────────────────────────────────────────────
@@ -208,6 +243,13 @@ select pg_temp.essai('X7 retiré, il peut être reposé — ici par p2', current
             insert into _ids select 'pose_p2', id from p returning (id is not null)::text$q$,
          current_setting('w3.felix'), current_setting('w3.b_vitesse')), 'true');
 select pg_temp.essai('X8 l''admin retire le badge de p2', current_setting('w3.admin'), format(current_setting('w3.q_retire'), 'pose_p2'), '');
+select pg_temp.essai('X9 plus aucun partenaire ne porte « Vitesse » : le coach peut le poser', current_setting('w3.coach'),
+  format($q$with r as (update public.athlete_badges set retire_le = now(), retire_par = %L
+                        where athlete_id = %L and badge_id = %L and retire_le is null returning 1),
+              i as (insert into public.athlete_badges (athlete_id, badge_id, attribue_par) values (%L, %L, %L) returning 1)
+            select ((select count(*) from r) + (select count(*) from i))::text$q$,
+         current_setting('w3.coach'), current_setting('w3.felix'), current_setting('w3.b_mains'),
+         current_setting('w3.felix'), current_setting('w3.b_vitesse'), current_setting('w3.coach')), '2');
 
 -- ── L'admin pour le compte d'un partenaire ─────────────────────────────────
 select pg_temp.essai('Z1 l''admin attribue « Vision du jeu » pour le compte de p1', current_setting('w3.admin'),
@@ -232,6 +274,10 @@ select pg_temp.essai('D1 ACL des 6 fonctions = {authenticated, postgres, service
                                    'partenaire_attribuer_badge', 'retirer_badge_partenaire',
                                    'coach_masquer_badge_partenaire', 'badges_partenaires_athlete')
               group by pr.oid) s$q$, '{authenticated,postgres,service_role}');
+select pg_temp.essai('D1b fonction de trigger : ni anon ni authenticated', null,
+  $q$select array_agg(t.g order by t.g)::text from pg_proc pr,
+       lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g from unnest(pr.proacl::text[]) as x) t
+     where pr.oid = 'public.badge_refuser_doublon_partenaire()'::regprocedure$q$, '{postgres,service_role}');
 select pg_temp.essai('D2 badge_plafond et M10 inchangés (md5)', null,
   $q$select md5(pg_get_functiondef('public.badge_plafond()'::regprocedure)) || ' ' || md5(pg_get_functiondef('public.ambassadeur_recalculer_paliers()'::regprocedure))$q$,
   '171a82c74237a5a6d9c5f50c74f44d5e 481cf443a2db040fd840a1e229b325f2');

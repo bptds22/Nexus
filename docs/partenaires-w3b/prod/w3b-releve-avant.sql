@@ -19,8 +19,12 @@ begin
     raise exception 'NEXUS: colonnes W3b déjà présentes';
   end if;
   if exists (select 1 from pg_proc where pronamespace = 'public'::regnamespace
-              and proname in ('partenaire_attribuer_badge_nexus', 'partenaire_badges_nexus_admissibles')) then
+              and proname in ('partenaire_attribuer_badge_nexus', 'partenaire_badges_nexus_admissibles',
+                              'badge_refuser_doublon_partenaire')) then
     raise exception 'NEXUS: fonctions W3b déjà présentes';
+  end if;
+  if exists (select 1 from pg_trigger where tgrelid = 'public.athlete_badges'::regclass and tgname = 'trg_badge_deja_partenaire') then
+    raise exception 'NEXUS: trigger trg_badge_deja_partenaire déjà présent';
   end if;
   -- Les fonctions que W3b remplace ou garde : celles de W3, relevées le 2026-10-14.
   for f, attendu in values
@@ -31,7 +35,8 @@ begin
     ('public.badge_plafond()', '171a82c74237a5a6d9c5f50c74f44d5e'),
     ('public.ambassadeur_recalculer_paliers()', '481cf443a2db040fd840a1e229b325f2')
   loop
-    select md5(pg_get_functiondef(f::regprocedure)) into vu;
+    -- sans les retours chariot (CR) : un corps recréé depuis un fichier CRLF en porterait
+    select md5(replace(pg_get_functiondef(f::regprocedure), E'\r', '')) into vu;
     if vu is distinct from attendu then
       raise exception 'NEXUS: % n''est pas la version relevée (md5 %, attendu %)', f, vu, attendu;
     end if;

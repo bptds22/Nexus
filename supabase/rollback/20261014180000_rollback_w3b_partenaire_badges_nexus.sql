@@ -5,6 +5,9 @@
 -- des traces, seraient perdues. Les supprimer est une décision de BP, pas
 -- un effet de bord d'un rollback.
 --
+-- À passer avec psql -1 : sans transaction unique, une garde qui échoue
+-- laisse en place ce qui a déjà été exécuté (vécu en local le 2026-10-14).
+-- md5 comparés sans les retours chariot (CR) (fichier extrait en CRLF sous Windows).
 -- Les trois fonctions W3 sont recopiées OCTET POUR OCTET depuis
 -- 20261014142700_w3_partenaire_badges_retrait.sql ; la gate finale compare
 -- leur md5 à celui relevé avant W3b.
@@ -17,6 +20,8 @@ begin
   end if;
 end $$;
 
+drop trigger trg_badge_deja_partenaire on public.athlete_badges;
+drop function public.badge_refuser_doublon_partenaire();
 drop function public.partenaire_attribuer_badge_nexus(uuid, uuid, uuid);
 drop function public.partenaire_badges_nexus_admissibles(uuid);
 drop function public.badges_partenaires_athlete(uuid);
@@ -175,7 +180,7 @@ begin
     ('public.badges_partenaires_athlete(uuid)', '7cd05f7cc8a9a04913aada360fb75bc2'),
     ('public.coach_masquer_badge_partenaire(uuid, boolean)', '8a61d292cfac6db385c4e825dfc549f3')
   loop
-    select md5(pg_get_functiondef(f::regprocedure)) into vu;
+    select md5(replace(pg_get_functiondef(f::regprocedure), E'\r', '')) into vu;
     if vu is distinct from attendu then
       raise exception 'NEXUS: % pas revenue à W3 (md5 %, attendu %)', f, vu, attendu;
     end if;
@@ -187,7 +192,13 @@ begin
       raise exception 'NEXUS: ACL % = %, attendu %', f, vus, veut;
     end if;
   end loop;
-  if exists (select 1 from pg_proc where proname in ('partenaire_attribuer_badge_nexus', 'partenaire_badges_nexus_admissibles')) then
+  select string_agg(tgname, ',' order by tgname) into vu
+    from pg_trigger where tgrelid = 'public.athlete_badges'::regclass and not tgisinternal;
+  if vu is distinct from 'trg_athlete_badges_miroir,trg_badge_contexte_requis,trg_badge_plafond' then
+    raise exception 'NEXUS: triggers d''athlete_badges = %, attendu les trois de W3', vu;
+  end if;
+  if exists (select 1 from pg_proc where proname in ('partenaire_attribuer_badge_nexus', 'partenaire_badges_nexus_admissibles',
+                                                     'badge_refuser_doublon_partenaire')) then
     raise exception 'NEXUS: fonction W3b encore présente';
   end if;
   if exists (select 1 from information_schema.columns where table_name = 'partner_athlete_badges' and column_name in ('partner_id', 'badge_id')) then

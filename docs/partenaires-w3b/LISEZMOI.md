@@ -14,6 +14,7 @@ rollback `supabase/rollback/20261014180000_rollback_w3b_partenaire_badges_nexus.
 | 4 | Rangés avec les badges partenaire (`partner_athlete_badges.badge_id`) : hors plafond de 5, hors M10 | schéma ; `badge_plafond` et M10 vérifiés par md5 |
 | 5 | Affichés dans les Distinctions, icône du badge Nexus, « par <organisation> » dessous | `BadgePartenaireVignette` → `DistinctionBadge` |
 | 6 | Déjà porté (coach ou partenaire) : refusé, message qui dit par qui | « … (attribué par son coach / par vous / par <organisation>) » |
+| 6b | **Dans l'autre sens** (suite W3b) : le coach qui pose un badge déjà attribué par un partenaire est refusé, même message « (attribué par <partenaire>) ». Un badge masqué bloque aussi (masquer n'est pas retirer). Le masquage reste possible | trigger `trg_badge_deja_partenaire` (BEFORE INSERT OR UPDATE sur `athlete_badges`, fonction `badge_refuser_doublon_partenaire`) : couvre tous les chemins — RPC du coach, admin, suggestion approuvée |
 | 7 | Retrait : le partenaire auteur ou l'admin ; masquage : le coach ; l'athlète non. L'admin attribue pour le compte d'un partenaire (`p_partner_id`) | `retirer_badge_partenaire` (propriétaire lu sur `partner_id`), `coach_masquer_badge_partenaire` inchangée |
 | 8 | Reflet : badge Nexus par `DistinctionBadge` ; icône partenaire dans `.nx-badge is-metal`, l'icône en `--nx-mask` | voir « CORS » ci-dessous |
 
@@ -34,9 +35,29 @@ calculé du `::after` : masque = URL du stockage, animation `nxRefletCycle`).
 icône détourée (PNG à fond transparent) reflète sa silhouette ; une icône à fond
 opaque reflète tout son carré. À dire à l'admin qui dépose les icônes.
 
+## Fins de ligne : ce que le lot a appris (2026-10-14)
+
+Un checkout Windows extrait les `.sql` en **CRLF**. Passés à psql, ils créent
+des fonctions dont le corps porte des retours chariot : le md5 brut change.
+Conséquences prises en compte, et prouvées en rejouant tout depuis des copies
+CRLF :
+- toutes les gardes comparent `md5(replace(pg_get_functiondef(…), E'\r', ''))` ;
+- le contenu embarqué dans `w3b-gardes-et-enregistrement.sql` est normalisé
+  (`replace(…, E'\r', '')`) avant son md5 et son enregistrement — sans cela,
+  la garde aurait REFUSÉ une mise en prod lancée depuis Windows ;
+- un rollback passé en CRLF restaure les fonctions W3 à l'identique au
+  contenu près, avec des retours chariot : sa garde le vérifie sans eux.
+- Toujours **`psql -1`** : sans transaction unique, une garde qui échoue
+  laisse en place ce qui a déjà tourné (vécu en local, réparé).
+
 ## Preuves (local)
 
-- `tests-w3b.sql` → **51/51** (`tests-w3b-resultats-local.txt`) : badge de sport
+- `tests-w3b.sql` → **60/60** (`tests-w3b-resultats-local.txt`). Ajouts : le
+  coach bloqué par un badge d'un partenaire, message exact, par l'insertion
+  directe ET par la RPC `appliquer_badges_saisie` ; un autre badge passe ;
+  masqué, il bloque toujours ; une fois retiré par tous les partenaires, le
+  coach peut le poser ; rien de changé côté partenaire ; droits de la
+  fonction de trigger `{postgres, service_role}`. Et toujours : badge de sport
   refusé pour un autre sport, doublon coach / soi-même / autre partenaire refusé
   avec son message, honneur refusé, limite de 5 intacte (6e badge du coach
   toujours refusé, `athlete_badges` inchangée), retrait, masquage par le coach,
@@ -50,8 +71,14 @@ opaque reflète tout son carré. À dire à l'admin qui dépose les icônes.
   01 rangée Distinctions (badge propre + « Vitesse — par L'Esprit Sportif ») ;
   02 reflet figé à mi-balayage ; 03 différence ×6 : la bande reste dans la
   silhouette, 0 pixel changé dans les coins transparents ; 04 choix « Attribuer
-  un badge Nexus » côté partenaire. « L'Esprit Sportif » = le partenaire local
-  de test renommé le temps des captures, puis remis tel quel.
+  un badge Nexus » côté partenaire ; 05 refus côté coach dans l'assistant
+  « Modifier » (étape Évaluation, « Enregistrer »). L'app affiche ce refus par
+  `window.alert()` : la boîte native n'apparaît dans aucune capture de
+  navigateur, l'encadré de 05 REPRODUIT donc le texte exact passé à l'alerte
+  (« Erreur lors de la sauvegarde: NEXUS: cet athlète a déjà le badge
+  « Vitesse » (attribué par Média Preuve) ») et le dit dans son en-tête.
+  « L'Esprit Sportif » (01–04) = le partenaire local de test renommé le temps
+  des captures, puis remis tel quel.
 
 ## Mise en prod (sur GO, jamais le mardi ni le mercredi avant 5 h)
 
@@ -70,11 +97,17 @@ psql "<chaîne session pooler, comme W2/W3>" -v ON_ERROR_STOP=1 -1 `
 Puis, en lecture seule : `docs/partenaires-w3b/prod/w3b-verif-apres.sql`.
 `w3b-gardes-et-enregistrement.sql` est GÉNÉRÉ (`generer-gardes.mjs`) : il
 embarque la migration octet pour octet (LF) et vérifie son md5
-(`78db26be73a1964ceccbb5d60a0cfe42`). Si la migration change, régénérer.
+(`3ef008c5cf636f6095e99755425935cd`, blob git en LF). Si la migration change,
+régénérer. Version inchangée : `20261014180000` (prod au 2026-10-14 :
+`20261014164451`).
 
 Ensuite seulement : push du code d'affichage (la base avant l'app).
 
 ## Lot mobile (non fait — protocole web d'abord)
+
+Le refus du coach vient de la base : il s'applique aussi au mobile publié,
+qui recevra l'erreur telle quelle. Au lot mobile, vérifier qu'elle s'affiche
+lisiblement dans l'assistant coach mobile.
 
 `BadgePartenaireVignette` et `ActionsPartenaireFiche` sont des composants web.
 Au lot mobile : rendre les badges Nexus partenaire (`est_nexus`, `badge_code`)
@@ -82,8 +115,9 @@ dans les Distinctions mobiles, avec la même signature « par <organisation> ».
 
 ## Questions ouvertes
 
-1. **Le coach pose un badge que le partenaire a déjà donné** : rien ne l'en
-   empêche (W3b ne touche pas `athlete_badges`), et le badge s'afficherait deux
-   fois. Faut-il bloquer le coach, masquer le doublon partenaire, ou laisser ?
-2. Les icônes propres d'un partenaire à fond opaque : faut-il exiger un PNG
-   détouré à l'upload (contrôle d'alpha côté admin) ?
+1. ~~Le coach pose un badge déjà donné par un partenaire~~ : **tranché** — refusé
+   (6b).
+2. ~~Icônes opaques~~ : **tranché** — aucun contrôle ; BP dépose des PNG détourés.
+3. Le message du refus arrive au coach préfixé « Erreur lors de la sauvegarde:
+   NEXUS: » dans une boîte native : lisible, mais brut. À reprendre avec
+   l'affichage des erreurs de l'assistant, si BP le souhaite.

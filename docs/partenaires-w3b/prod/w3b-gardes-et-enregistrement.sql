@@ -26,14 +26,22 @@ begin
   if (select count(*) from public.partner_badges) <> a.partner_badges then
     raise exception 'NEXUS: partner_badges a bougé';
   end if;
+  -- Triggers d'athlete_badges : ceux d'avant, plus EXACTEMENT trg_badge_deja_partenaire.
   select string_agg(tgname || ':' || tgfoid::regproc::text || ':' || tgenabled::text, ',' order by tgname) into v
-    from pg_trigger where tgrelid = 'public.athlete_badges'::regclass and not tgisinternal;
+    from pg_trigger where tgrelid = 'public.athlete_badges'::regclass and not tgisinternal
+     and tgname <> 'trg_badge_deja_partenaire';
   if v is distinct from a.triggers_athlete_badges or v not like '%trg_badge_plafond:badge_plafond:O%' then
-    raise exception 'NEXUS: triggers d''athlete_badges changés : %', v;
+    raise exception 'NEXUS: triggers d''athlete_badges d''avant changés : %', v;
+  end if;
+  if not exists (select 1 from pg_trigger where tgrelid = 'public.athlete_badges'::regclass
+                  and tgname = 'trg_badge_deja_partenaire' and tgenabled = 'O'
+                  and tgfoid = 'public.badge_refuser_doublon_partenaire()'::regprocedure
+                  and (tgtype & 2) = 2) then  -- BEFORE
+    raise exception 'NEXUS: trg_badge_deja_partenaire absent, désactivé ou pas BEFORE';
   end if;
   select string_agg(p.oid::regprocedure::text || '=' || md5(pg_get_functiondef(p.oid)), ',' order by p.oid::regprocedure::text) into v
     from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'ambassadeur%';
-  if v is distinct from a.fonctions_ambassadeur then
+  if v is distinct from a.fonctions_ambassadeur then  -- même transaction, même texte : comparaison brute
     raise exception 'NEXUS: fonctions ambassadeur (M10) changées';
   end if;
   select string_agg(c.relname || '.' || t.tgname || ':' || t.tgfoid::regproc::text || ':' || t.tgenabled::text, ',' order by c.relname, t.tgname) into v
@@ -42,7 +50,7 @@ begin
   if v is distinct from a.triggers_ambassadeur then
     raise exception 'NEXUS: triggers ambassadeur (M10) changés : %', v;
   end if;
-  if md5(pg_get_functiondef('public.badge_plafond()'::regprocedure)) <> '171a82c74237a5a6d9c5f50c74f44d5e' then
+  if md5(replace(pg_get_functiondef('public.badge_plafond()'::regprocedure), E'\r', '')) <> '171a82c74237a5a6d9c5f50c74f44d5e' then
     raise exception 'NEXUS: badge_plafond a changé';
   end if;
   if (select count(*) from public.badges where actif and famille in ('universel', 'sport') and not requiert_contexte) <> a.badges_admissibles
@@ -77,6 +85,13 @@ begin
     end if;
   end loop;
 
+  -- La fonction de trigger : personne ne l'appelle directement.
+  select string_agg(a.grantee::regrole::text || ':' || a.privilege_type, ',' order by a.grantee::regrole::text)
+    into v from pg_proc p, lateral aclexplode(p.proacl) a where p.oid = 'public.badge_refuser_doublon_partenaire()'::regprocedure;
+  if v is distinct from 'postgres:EXECUTE,service_role:EXECUTE' then
+    raise exception 'NEXUS: droits badge_refuser_doublon_partenaire = %', v;
+  end if;
+
   -- La table : RLS, aucune policy, aucun privilège direct, aucun trigger.
   if not (select relrowsecurity from pg_class where oid = 'public.partner_athlete_badges'::regclass) then
     raise exception 'NEXUS: RLS inactive sur partner_athlete_badges';
@@ -106,7 +121,9 @@ end $$;
 -- ── 3. Enregistrement ──────────────────────────────────────────────────────
 create temp table _w3b on commit drop as
 select '20261014180000'::text as version,
-$w3b$-- ═══════════════════════════════════════════════════════════════════════════
+-- replace : un checkout Windows extrait ce fichier en CRLF ; le contenu
+-- enregistré et son md5 sont ceux du blob git (LF).
+replace($w3b$-- ═══════════════════════════════════════════════════════════════════════════
 -- W3b — Badges NEXUS attribués par un partenaire.
 --
 -- LOCAL SEULEMENT (2026-10-14). Prod sur GO de BP, par psql -1 avec
@@ -124,7 +141,11 @@ $w3b$-- ════════════════════════
 --   4. Rangés AVEC les badges partenaire (partner_athlete_badges) : hors
 --      athlete_badges, donc hors plafond de 5 (badge_plafond) et hors M10.
 --   6. Déjà porté (posé par le coach, ou par un partenaire) : refusé, avec un
---      message qui dit par qui.
+--      message qui dit par qui. ET DANS L'AUTRE SENS (BP, suite W3b) : le coach
+--      qui pose un badge déjà attribué par un partenaire est refusé, avec le
+--      même message « (attribué par <partenaire>) » — trigger BEFORE sur
+--      athlete_badges, qui couvre tous les chemins d'écriture (RPC du coach,
+--      admin, suggestion approuvée). Le masquage par le coach reste possible.
 --   7. Retrait : le partenaire qui l'a posé, ou l'admin. Masquage : le coach.
 --      L'admin peut attribuer pour le compte d'un partenaire (p_partner_id).
 --
@@ -145,6 +166,11 @@ $w3b$-- ════════════════════════
 --     FIN (badge_code, est_nexus). Le DROP emporte l'ACL et les default
 --     privileges en reposent une à anon : on révoque tout et on compare la
 --     liste COMPLÈTE après (règle du 2026-09-07).
+--   nouvelle fonction de trigger : badge_refuser_doublon_partenaire, sur
+--     athlete_badges (trg_badge_deja_partenaire, BEFORE INSERT OR UPDATE) ;
+--     badge_plafond (AFTER) n'est pas touché.
+--   md5 comparés SANS les retours chariot (CR) : un fichier extrait en CRLF sous Windows et
+--     passé à psql porterait des retours chariot (CR) dans le corps des fonctions.
 --   inchangées et vérifiées par md5 : badge_plafond, ambassadeur_recalculer_paliers,
 --     coach_masquer_badge_partenaire.
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -162,7 +188,7 @@ begin
     ('public.badge_plafond()', '171a82c74237a5a6d9c5f50c74f44d5e'),
     ('public.ambassadeur_recalculer_paliers()', '481cf443a2db040fd840a1e229b325f2')
   loop
-    select md5(pg_get_functiondef(f::regprocedure)) into vu;
+    select md5(replace(pg_get_functiondef(f::regprocedure), E'\r', '')) into vu;
     if vu is distinct from attendu then
       raise exception 'NEXUS: % a changé depuis le relevé du 2026-10-14 (md5 %, attendu %)', f, vu, attendu;
     end if;
@@ -488,13 +514,54 @@ as $$
    order by x.created_at
 $$;
 
--- ── 7. Droits d'exécution ──────────────────────────────────────────────────
+-- ── 7. Le coach ne pose pas un badge déjà attribué par un partenaire ───────
+-- BEFORE INSERT OR UPDATE sur athlete_badges : refuse une pose VIVANTE (ou une
+-- réactivation, ou un changement de badge) quand un partenaire porte déjà ce
+-- badge vivant sur cet athlète — masqué ou non : masquer n'est pas retirer.
+-- Même message que dans l'autre sens. Le plafond (AFTER) et M10 ne bougent pas.
+create function public.badge_refuser_doublon_partenaire()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+set row_security to 'off'
+as $$
+declare
+  v_org text;
+  v_lib text;
+begin
+  if new.retire_le is not null then
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and old.retire_le is null
+     and old.badge_id = new.badge_id and old.athlete_id = new.athlete_id then
+    return new;
+  end if;
+  select coalesce(mp.organization_name, 'un partenaire') into v_org
+    from public.partner_athlete_badges x
+    join public.media_partners mp on mp.id = x.partner_id
+   where x.athlete_id = new.athlete_id and x.badge_id = new.badge_id and x.retire_le is null
+   limit 1;
+  if v_org is null then
+    return new;
+  end if;
+  select b.libelle into v_lib from public.badges b where b.id = new.badge_id;
+  raise exception 'NEXUS: cet athlète a déjà le badge « % » (attribué par %)', v_lib, v_org using errcode = '23505';
+end $$;
+
+create trigger trg_badge_deja_partenaire
+  before insert or update on public.athlete_badges
+  for each row execute function public.badge_refuser_doublon_partenaire();
+
+-- ── 8. Droits d'exécution ──────────────────────────────────────────────────
 revoke all on function public.partenaire_badges_nexus_admissibles(uuid) from public, anon, authenticated;
 revoke all on function public.partenaire_attribuer_badge_nexus(uuid, uuid, uuid) from public, anon, authenticated;
 revoke all on function public.badges_partenaires_athlete(uuid) from public, anon, authenticated;
 grant execute on function public.partenaire_badges_nexus_admissibles(uuid) to authenticated, service_role;
 grant execute on function public.partenaire_attribuer_badge_nexus(uuid, uuid, uuid) to authenticated, service_role;
 grant execute on function public.badges_partenaires_athlete(uuid) to authenticated, service_role;
+-- Fonction de trigger : personne ne l'appelle directement.
+revoke all on function public.badge_refuser_doublon_partenaire() from public, anon, authenticated;
 
 -- ── Gates (comparaison complète, jamais par inclusion) ─────────────────────
 do $$
@@ -546,13 +613,30 @@ begin
    where b.partner_id <> x.partner_id;
   if n <> 0 then raise exception 'NEXUS: % pose(s) W3 dont partner_id contredit le badge', n; end if;
 
+  -- La fonction de trigger : ni anon ni authenticated.
+  select array_agg(x.g order by x.g) into vus
+    from pg_proc pr,
+         lateral (select coalesce(nullif(split_part(a,'=',1),''),'PUBLIC') as g
+                    from unnest(pr.proacl::text[]) as a) x
+   where pr.oid = 'public.badge_refuser_doublon_partenaire()'::regprocedure;
+  if vus is distinct from array['postgres', 'service_role'] then
+    raise exception 'NEXUS: ACL badge_refuser_doublon_partenaire = %, attendu {postgres,service_role}', vus;
+  end if;
+  -- Les triggers d'athlete_badges : les trois d'avant, plus le nouveau. Liste complète.
+  select string_agg(tgname || ':' || tgfoid::regproc::text || ':' || tgenabled::text, ',' order by tgname) into nom
+    from pg_trigger where tgrelid = 'public.athlete_badges'::regclass and not tgisinternal;
+  if nom is distinct from 'trg_athlete_badges_miroir:trg_badges_vers_distinctions:O,trg_badge_contexte_requis:badge_contexte_requis:O,'
+                       || 'trg_badge_deja_partenaire:badge_refuser_doublon_partenaire:O,trg_badge_plafond:badge_plafond:O' then
+    raise exception 'NEXUS: triggers d''athlete_badges inattendus : %', nom;
+  end if;
+
   -- Ce que W3b ne doit JAMAIS toucher : le plafond, M10, le masquage.
   for nom, attendu in values
     ('public.badge_plafond()', '171a82c74237a5a6d9c5f50c74f44d5e'),
     ('public.ambassadeur_recalculer_paliers()', '481cf443a2db040fd840a1e229b325f2'),
     ('public.coach_masquer_badge_partenaire(uuid, boolean)', '8a61d292cfac6db385c4e825dfc549f3')
   loop
-    if md5(pg_get_functiondef(nom::regprocedure)) is distinct from attendu then
+    if md5(replace(pg_get_functiondef(nom::regprocedure), E'\r', '')) is distinct from attendu then
       raise exception 'NEXUS: % a changé', nom;
     end if;
   end loop;
@@ -566,11 +650,11 @@ begin
 
   raise notice 'NEXUS W3b : badges Nexus par partenaire — ACL, RLS, plafond et M10 conformes';
 end $$;
-$w3b$::text as contenu;
+$w3b$, E'\r', '')::text as contenu;
 
 do $$
 begin
-  if (select md5(contenu) from _w3b) <> '78db26be73a1964ceccbb5d60a0cfe42' then
+  if (select md5(contenu) from _w3b) <> '3ef008c5cf636f6095e99755425935cd' then
     raise exception 'NEXUS: contenu W3b embarqué altéré (md5 %)', (select md5(contenu) from _w3b);
   end if;
 end $$;
@@ -580,17 +664,18 @@ select version, 'w3b_partenaire_badges_nexus', array[contenu], 'bptds22@gmail.co
 
 insert into public.admin_operations (operation, motif, details, par)
 select 'MIGRATION_W3B_PARTENAIRE_BADGES_NEXUS',
-       'W3b Partenaire : badges du catalogue Nexus attribués par un partenaire (hors plafond de 5), refus du doublon et du mauvais sport (GO BP)',
+       'W3b Partenaire : badges du catalogue Nexus attribués par un partenaire (hors plafond de 5), refus du doublon dans les deux sens et du mauvais sport (GO BP)',
        jsonb_build_object(
          'nom', 'w3b_partenaire_badges_nexus',
          'version', version,
          'fichier', 'supabase/migrations/' || version || '_w3b_partenaire_badges_nexus.sql',
          'rollback', 'supabase/rollback/' || version || '_rollback_w3b_partenaire_badges_nexus.sql',
          'voie', 'psql -1 (session pooler) : relevé avant + migration + gardes dans une seule transaction',
-         'md5_fichier', '78db26be73a1964ceccbb5d60a0cfe42',
+         'md5_fichier', '3ef008c5cf636f6095e99755425935cd',
          'acl_fonctions', 'authenticated,postgres,service_role (x6)',
          'poses_w3_rattachees', (select count(*) from public.partner_athlete_badges),
-         'badge_plafond_et_m10', 'inchangés (md5 et triggers comparés au relevé avant)'),
+         'badge_plafond_et_m10', 'inchangés (md5 et triggers comparés au relevé avant)',
+         'coach_bloque', 'trg_badge_deja_partenaire (BEFORE) : le coach ne pose pas un badge déjà attribué par un partenaire'),
        (select id from public.users where email = 'bptds22@gmail.com')
   from _w3b;
 
