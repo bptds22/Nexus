@@ -1,4 +1,4 @@
--- Tests W3 (20261014150000), base LOCALE. Une transaction annulée à la fin : rien ne survit.
+-- Tests W3 (20261014142700), base LOCALE. Une transaction annulée à la fin : rien ne survit.
 -- Badges partenaire + retrait (évaluation et badge) par le partenaire / l'admin.
 -- Comptes résolus par courriel ; chaque essai tourne sous le VRAI rôle avec un JWT simulé.
 -- Athlète cible : Félix Gauthier (football, ACTIF, sans cote du coach).

@@ -1,4 +1,4 @@
--- Rollback de 20261014150000_w3_partenaire_badges_retrait.sql.
+-- Rollback de 20261014142700_w3_partenaire_badges_retrait.sql.
 -- ⚠ PERDUS (relever avant) : le catalogue des badges partenaire, les badges
 -- posés (y compris retirés / masqués) et la trace des évaluations retirées.
 -- Les évaluations partenaire ENCORE EN PLACE ne sont pas touchées (table W2).
