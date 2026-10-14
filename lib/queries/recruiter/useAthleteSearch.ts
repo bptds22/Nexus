@@ -113,6 +113,12 @@ export interface AthleteSearchFilters {
    *  — 8 recruteurs sur 24 n'ont pas de school_id, et 9 cégeps n'ont
    *  aucun programme. Voir useMonCegepOffreDesProgrammes(). */
   offertParMonCegep: boolean;
+  /** W2 — le filtre « 4+ » et le tri par cote retombent sur la note du
+   *  partenaire quand le coach n'a pas noté. À n'activer QUE sur un écran qui
+   *  affiche le libellé de l'organisation (coteAffichee) : le web recherche
+   *  aujourd'hui ; le mobile au lot mobile. Absent = false = cote du coach
+   *  seule, comme les binaires déjà publiés. */
+  inclurePartenaires?: boolean;
   /**
    * Tier courant — N'EST PAS ENVOYÉ AU SERVEUR et ne décide de rien.
    *
@@ -348,6 +354,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
         p_limit: null,
         p_programme_ids: filters.programmeIds.length > 0 ? filters.programmeIds : null,
         p_offert_par_mon_cegep: filters.offertParMonCegep,
+        p_inclure_partenaires: filters.inclurePartenaires ?? false,
       });
 
       if (error) throw error;

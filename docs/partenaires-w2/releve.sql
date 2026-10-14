@@ -1,10 +1,15 @@
 -- Relevé W2 (lecture seule). Lancer avant ET après 20261013200000.
 \pset footer off
-select 'recruiter_search_athletes.md5' as objet,
-       md5(pg_get_functiondef('public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean)'::regprocedure)) as valeur;
+-- Par NOM, pas par signature : W2 ajoute un 16e paramètre (p_inclure_partenaires).
+-- Avant W2 : 15 paramètres ; après : 16. Une seule ligne attendue dans les deux cas.
+select 'recruiter_search_athletes.signature' as objet, p.oid::regprocedure::text as valeur
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'recruiter_search_athletes';
+select 'recruiter_search_athletes.md5' as objet, md5(pg_get_functiondef(p.oid)) as valeur
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'recruiter_search_athletes';
 select 'recruiter_search_athletes.acl' as objet, p.proacl::text as valeur
-  from pg_proc p where p.oid = 'public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean)'::regprocedure;
-select 'recruiter_search_athletes.retour' as objet, pg_get_function_result('public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean)'::regprocedure) as valeur;
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'recruiter_search_athletes';
+select 'recruiter_search_athletes.retour' as objet, pg_get_function_result(p.oid) as valeur
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'recruiter_search_athletes';
 select 'partner_evaluations' as objet, coalesce(to_regclass('public.partner_evaluations')::text, 'absente') as valeur;
 select 'fonctions_w2' as objet, p.oid::regprocedure::text || ' ' || coalesce(p.proacl::text, '') as valeur
   from pg_proc p where p.pronamespace = 'public'::regnamespace

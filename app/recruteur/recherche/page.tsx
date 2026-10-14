@@ -528,6 +528,8 @@ function RechercheContent() {
     programmeIds: progFilterProgramIds,
     // Jamais true quand le bouton est masqué : la RPC lèverait.
     offertParMonCegep: offertParMonCegep && monCegepAUnCatalogue,
+    // W2 — cette page affiche le libellé du partenaire (coteAffichee).
+    inclurePartenaires: true,
     tier,
   });
   const loading = tierLoading || athletesLoading || (filtreMeCiblentActif && ciblesEnAttente);

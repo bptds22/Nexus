@@ -17,9 +17,12 @@
 --     de l'athlète, l'athlète lui-même, admin ; le partenaire lit LA SIENNE.
 --     Seul le NOM DE L'ORGANISATION sort — jamais la personne (evalue_par).
 --   · recherche recruteur : filtre « 4+ » et tri par cote = coach, sinon
---     partenaire. `cote_globale` garde son sens (coach seul) : les binaires
---     mobiles déjà publiés le lisent sans libellé. Le partenaire sort dans deux
---     colonnes à part (cote_partenaire, cote_partenaire_organisation).
+--     partenaire — SEULEMENT si l'appelant envoie p_inclure_partenaires = true
+--     (le web). Défaut false : les binaires mobiles déjà publiés, qui ne
+--     l'envoient pas, gardent exactement le filtre et le tri d'avant W2 (cote
+--     du coach seule). `cote_globale` garde son sens (coach seul). Le
+--     partenaire sort dans deux colonnes à part (cote_partenaire,
+--     cote_partenaire_organisation), ignorées par les vieux binaires.
 --
 -- Seuls les partenaires APPROVED sont lus : une organisation suspendue ou
 -- révoquée cesse d'apparaître (ses lignes restent, rien n'est supprimé).
@@ -278,12 +281,15 @@ revoke all on function public.evaluations_partenaires_athlete(uuid) from public,
 grant execute on function public.evaluations_partenaires_athlete(uuid) to authenticated, service_role;
 
 -- ── 5. Recherche recruteur : DROP + CREATE (le RETURNS TABLE change) ───────
--- Corps relevé en local, IDENTIQUE à celui en place (sauf les 5 ajouts W2
+-- Corps relevé en local, IDENTIQUE à celui en place (sauf les ajouts W2
 -- marqués « W2 »). L'ACL est reposée puis vérifiée par liste complète :
 -- le CREATE réaccorde EXECUTE à anon via les default privileges.
+-- Un 16e paramètre, p_inclure_partenaires DEFAULT false, en DERNIER : un appel
+-- par noms qui ne l'envoie pas (binaires publiés) résout cette fonction, et
+-- on supprime l'ancienne signature pour qu'aucune surcharge ne reste ambiguë.
 drop function public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean);
 
-CREATE FUNCTION public.recruiter_search_athletes(p_search text DEFAULT NULL::text, p_sport_id uuid DEFAULT NULL::uuid, p_promotion integer DEFAULT NULL::integer, p_verified_only boolean DEFAULT false, p_with_video_only boolean DEFAULT false, p_min_gpa numeric DEFAULT NULL::numeric, p_min_rating numeric DEFAULT NULL::numeric, p_ouvert_demenager boolean DEFAULT false, p_ouvert_prive boolean DEFAULT false, p_ouvert_anglophone boolean DEFAULT false, p_new_only boolean DEFAULT false, p_sort_by text DEFAULT 'rating_desc'::text, p_limit integer DEFAULT NULL::integer, p_programme_ids uuid[] DEFAULT NULL::uuid[], p_offert_par_mon_cegep boolean DEFAULT false)
+CREATE FUNCTION public.recruiter_search_athletes(p_search text DEFAULT NULL::text, p_sport_id uuid DEFAULT NULL::uuid, p_promotion integer DEFAULT NULL::integer, p_verified_only boolean DEFAULT false, p_with_video_only boolean DEFAULT false, p_min_gpa numeric DEFAULT NULL::numeric, p_min_rating numeric DEFAULT NULL::numeric, p_ouvert_demenager boolean DEFAULT false, p_ouvert_prive boolean DEFAULT false, p_ouvert_anglophone boolean DEFAULT false, p_new_only boolean DEFAULT false, p_sort_by text DEFAULT 'rating_desc'::text, p_limit integer DEFAULT NULL::integer, p_programme_ids uuid[] DEFAULT NULL::uuid[], p_offert_par_mon_cegep boolean DEFAULT false, p_inclure_partenaires boolean DEFAULT false)
  RETURNS TABLE(id uuid, identity_visible boolean, first_name text, last_name text, photo_url text, numero_jersey text, age integer, annee_diplomation integer, verified boolean, last_profile_validation timestamp with time zone, cote_globale numeric, profile_completion integer, taille_pieds integer, taille_pouces integer, poids_lbs numeric, moyenne_generale numeric, mentions_academiques jsonb, recruitment_status text, statut_recrutement_override text, open_to_offers boolean, a_une_video boolean, context text, created_at timestamp with time zone, sport_nom text, position_nom text, position_abbr text, school_id uuid, school_name text, school_region text, school_type text, committed_school_name text, evaluations jsonb, team_gender text, programmes jsonb, team_division text, team_league text, team_is_rseq boolean, team_school_type text, cote_partenaire numeric, cote_partenaire_organisation text)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
@@ -437,8 +443,12 @@ BEGIN
               NULLIF(btrim(a.youtube_url), ''), NULLIF(btrim(a.video_match_complet_url), ''),
               NULLIF(btrim(a.video_entrainement_url), '')) IS NOT NULL))
     AND (p_min_gpa    IS NULL OR a.moyenne_generale >= p_min_gpa)
-    -- W2 — cote du coach si elle existe, sinon celle du partenaire (décision BP).
-    AND (p_min_rating IS NULL OR COALESCE(a.cote_globale_entraineur, pe.cote_globale) >= p_min_rating)
+    -- W2 — cote du coach si elle existe, sinon celle du partenaire (décision BP),
+    -- seulement si l'appelant le demande (web). Sinon : cote du coach seule,
+    -- comme avant W2 (binaires mobiles publiés).
+    AND (p_min_rating IS NULL OR
+         CASE WHEN p_inclure_partenaires THEN COALESCE(a.cote_globale_entraineur, pe.cote_globale)
+              ELSE a.cote_globale_entraineur END >= p_min_rating)
     AND (NOT p_ouvert_demenager  OR a.pret_changer_region = true)
     AND (NOT p_ouvert_prive      OR a.ouvert_cegep_prive = true)
     AND (NOT p_ouvert_anglophone OR a.ouvert_cegep_anglophone = true)
@@ -456,8 +466,12 @@ BEGIN
              AND spx.school_id = v_school
              AND spx.is_displayed))
   ORDER BY
-    CASE WHEN v_sort = 'rating_desc' THEN COALESCE(a.cote_globale_entraineur, pe.cote_globale) END DESC NULLS LAST,
-    CASE WHEN v_sort = 'rating_asc'  THEN COALESCE(a.cote_globale_entraineur, pe.cote_globale) END ASC  NULLS LAST,
+    CASE WHEN v_sort = 'rating_desc' THEN
+      CASE WHEN p_inclure_partenaires THEN COALESCE(a.cote_globale_entraineur, pe.cote_globale)
+           ELSE a.cote_globale_entraineur END END DESC NULLS LAST,
+    CASE WHEN v_sort = 'rating_asc'  THEN
+      CASE WHEN p_inclure_partenaires THEN COALESCE(a.cote_globale_entraineur, pe.cote_globale)
+           ELSE a.cote_globale_entraineur END END ASC  NULLS LAST,
     CASE WHEN v_sort = 'grad_asc'    THEN a.annee_diplomation END ASC,
     CASE WHEN v_sort = 'grad_desc'   THEN a.annee_diplomation END DESC,
     CASE WHEN v_sort = 'name_asc'    THEN a.last_name END ASC,
@@ -466,11 +480,11 @@ BEGIN
 END;
 $function$;
 
-comment on function public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean) is
-  'Recherche recruteur. cote_globale = coach seul ; cote_partenaire(_organisation) = évaluation partenaire à part (W2). Filtre et tri par cote : coach, sinon partenaire.';
+comment on function public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean, boolean) is
+  'Recherche recruteur. cote_globale = coach seul ; cote_partenaire(_organisation) = évaluation partenaire à part (W2). Filtre et tri par cote : coach seul par défaut ; coach, sinon partenaire, si p_inclure_partenaires (web).';
 
-revoke all on function public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean) from public, anon, authenticated;
-grant execute on function public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean) to authenticated, service_role;
+revoke all on function public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean, boolean) from public, anon, authenticated;
+grant execute on function public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean, boolean) to authenticated, service_role;
 
 -- ── Gates (comparaison complète, jamais par inclusion) ─────────────────────
 do $$
@@ -484,7 +498,7 @@ begin
     'public.partenaire_evaluer_athlete(uuid, numeric, jsonb)'::regprocedure,
     'public.partenaire_evaluation_contexte(uuid)'::regprocedure,
     'public.evaluations_partenaires_athlete(uuid)'::regprocedure,
-    'public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean)'::regprocedure]
+    'public.recruiter_search_athletes(text, uuid, integer, boolean, boolean, numeric, numeric, boolean, boolean, boolean, boolean, text, integer, uuid[], boolean, boolean)'::regprocedure]
   loop
     select array_agg(t.g order by t.g) into vus
       from pg_proc pr,
@@ -495,6 +509,12 @@ begin
       raise exception 'NEXUS: ACL % = %, attendu %', f, vus, veut;
     end if;
   end loop;
+
+  -- a'. Une seule recruiter_search_athletes : pas de surcharge ambiguë.
+  if (select count(*) from pg_proc where proname = 'recruiter_search_athletes'
+         and pronamespace = 'public'::regnamespace) <> 1 then
+    raise exception 'NEXUS: plusieurs recruiter_search_athletes';
+  end if;
 
   -- b. partner_evaluations : RLS active, aucune policy, aucun privilège direct.
   if not (select relrowsecurity from pg_class where oid = 'public.partner_evaluations'::regclass) then

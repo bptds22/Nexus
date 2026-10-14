@@ -58,8 +58,14 @@ const id = async (email) => (await svc.from('users').select('id').eq('email', em
         `section lue par ${nom}`, x.error?.message ?? `${x.data.length} ligne, ${x.data[0]?.organisation} ${x.data[0]?.cote_globale}`);
     }
 
-    // Recherche (useAthleteSearch) : « 4+ étoiles ».
+    // Recherche, appel d'un binaire mobile publié (sans p_inclure_partenaires) :
+    // la note partenaire ne fait pas entrer Félix dans « 4+ étoiles ».
     x = await r.rpc('recruiter_search_athletes', { p_min_rating: 4, p_limit: null, p_sort_by: 'rating_desc' });
+    out(!x.error && !(x.data ?? []).some((l) => l.id === felix.id),
+      '« 4+ étoiles » sans le paramètre (binaire publié) : Félix absent', x.error?.message ?? `${x.data.length} lignes`);
+
+    // Recherche web (useAthleteSearch, page recherche) : « 4+ étoiles ».
+    x = await r.rpc('recruiter_search_athletes', { p_min_rating: 4, p_limit: null, p_sort_by: 'rating_desc', p_inclure_partenaires: true });
     const ligne = (x.data ?? []).find((l) => l.id === felix.id);
     out(!x.error && !!ligne && ligne.cote_globale === null && ligne.cote_partenaire === 4 && ligne.cote_partenaire_organisation === 'Média Preuve',
       '« 4+ étoiles » : Félix présent, libellé partenaire', x.error?.message ?? JSON.stringify(ligne && { c: ligne.cote_globale, p: ligne.cote_partenaire, o: ligne.cote_partenaire_organisation }));

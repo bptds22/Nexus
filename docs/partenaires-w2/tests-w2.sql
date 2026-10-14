@@ -148,13 +148,25 @@ select pg_temp.essai('L9 opt-in retiré : le partenaire ne peut plus la modifier
   format(current_setting('w2.q_eval'), current_setting('w2.felix'), '3', '{}'), 'ERR:42501');
 
 -- ── Recherche recruteur (filtre « 4+ » et tri) ─────────────────────────────
-select pg_temp.essai('S1 « 4+ étoiles » : Félix (partenaire seul) présent', current_setting('w2.rec'),
-  format('select count(*)::text from public.recruiter_search_athletes(p_min_rating => 4) where id = %L', current_setting('w2.felix')), '1');
-select pg_temp.essai('S2 … avec cote_globale (coach) NULL et le libellé du partenaire', current_setting('w2.rec'),
-  format('select coalesce(cote_globale::text, ''NULL'') || '' / '' || cote_partenaire::text || '' / '' || cote_partenaire_organisation from public.recruiter_search_athletes(p_min_rating => 4) where id = %L', current_setting('w2.felix')), 'NULL / 4.50 / Média Preuve');
-select pg_temp.essai('S3 tri par cote : 4.5 (partenaire) entre les 5.0 et les 4.0 des coachs', current_setting('w2.rec'),
-  format($q$with r as (select id, coalesce(cote_globale, cote_partenaire) c, row_number() over () rn
+-- Web : p_inclure_partenaires => true (règle W2). Sans le paramètre (binaires
+-- mobiles publiés) : cote du coach seule, comme avant W2.
+select pg_temp.essai('S0 SANS le paramètre : « 4+ étoiles » ignore la note partenaire (Félix absent)', current_setting('w2.rec'),
+  format('select count(*)::text from public.recruiter_search_athletes(p_min_rating => 4) where id = %L', current_setting('w2.felix')), '0');
+select pg_temp.essai('S0b SANS le paramètre : tri par cote, Félix (coach NULL) en queue', current_setting('w2.rec'),
+  format($q$with r as (select id, cote_globale, row_number() over () rn
                          from public.recruiter_search_athletes(p_sort_by => 'rating_desc'))
+            select ((select rn from r where id = %L) > (select max(rn) from r where cote_globale is not null))::text$q$,
+         current_setting('w2.felix')), 'true');
+select pg_temp.essai('S0c p_inclure_partenaires => false explicite = SANS le paramètre', current_setting('w2.rec'),
+  $q$select ((select md5(string_agg(id::text, ',' order by rn)) from (select id, row_number() over () rn from public.recruiter_search_athletes(p_min_rating => 1)) a)
+          = (select md5(string_agg(id::text, ',' order by rn)) from (select id, row_number() over () rn from public.recruiter_search_athletes(p_min_rating => 1, p_inclure_partenaires => false)) b))::text$q$, 'true');
+select pg_temp.essai('S1 « 4+ étoiles » (web) : Félix (partenaire seul) présent', current_setting('w2.rec'),
+  format('select count(*)::text from public.recruiter_search_athletes(p_min_rating => 4, p_inclure_partenaires => true) where id = %L', current_setting('w2.felix')), '1');
+select pg_temp.essai('S2 … avec cote_globale (coach) NULL et le libellé du partenaire', current_setting('w2.rec'),
+  format('select coalesce(cote_globale::text, ''NULL'') || '' / '' || cote_partenaire::text || '' / '' || cote_partenaire_organisation from public.recruiter_search_athletes(p_min_rating => 4, p_inclure_partenaires => true) where id = %L', current_setting('w2.felix')), 'NULL / 4.50 / Média Preuve');
+select pg_temp.essai('S3 tri par cote (web) : 4.5 (partenaire) entre les 5.0 et les 4.0 des coachs', current_setting('w2.rec'),
+  format($q$with r as (select id, coalesce(cote_globale, cote_partenaire) c, row_number() over () rn
+                         from public.recruiter_search_athletes(p_sort_by => 'rating_desc', p_inclure_partenaires => true))
             select ((select max(rn) from r where c = 5) < (select rn from r where id = %L)
                 and (select rn from r where id = %L) < (select min(rn) from r where c = 4))::text$q$,
          current_setting('w2.felix'), current_setting('w2.felix')), 'true');
@@ -165,13 +177,13 @@ select pg_temp.essai('K1 le coach évalue Félix (2.0, simple)', current_setting
          current_setting('w2.coach'), current_setting('w2.felix')), '1');
 select pg_temp.essai('K2 cote_globale_entraineur = 2 (écrite par le coach, pas par W2)', current_setting('w2.admin'),
   format('select cote_globale_entraineur::text from public.athletes where id = %L', current_setting('w2.felix')), '2.00');
-select pg_temp.essai('K3 « 4+ étoiles » : Félix sort (la cote du coach prime)', current_setting('w2.rec'),
-  format('select count(*)::text from public.recruiter_search_athletes(p_min_rating => 4) where id = %L', current_setting('w2.felix')), '0');
+select pg_temp.essai('K3 « 4+ étoiles » (web) : Félix sort (la cote du coach prime)', current_setting('w2.rec'),
+  format('select count(*)::text from public.recruiter_search_athletes(p_min_rating => 4, p_inclure_partenaires => true) where id = %L', current_setting('w2.felix')), '0');
 select pg_temp.essai('K4 recherche : cote coach 2 affichée, partenaire 4.5 toujours à part', current_setting('w2.rec'),
   format('select cote_globale::text || '' / '' || cote_partenaire::text from public.recruiter_search_athletes() where id = %L', current_setting('w2.felix')), '2.00 / 4.50');
-select pg_temp.essai('K5 tri : Félix rangé sur 2.0 (après tous les 3.0)', current_setting('w2.rec'),
+select pg_temp.essai('K5 tri (web) : Félix rangé sur 2.0 (après tous les 3.0)', current_setting('w2.rec'),
   format($q$with r as (select id, coalesce(cote_globale, cote_partenaire) c, row_number() over () rn
-                         from public.recruiter_search_athletes(p_sort_by => 'rating_desc'))
+                         from public.recruiter_search_athletes(p_sort_by => 'rating_desc', p_inclure_partenaires => true))
             select ((select max(rn) from r where c = 3) < (select rn from r where id = %L))::text$q$, current_setting('w2.felix')), 'true');
 select pg_temp.essai('K6 la section partenaire reste (recruteur)', current_setting('w2.rec'),
   format('select count(*)::text from public.evaluations_partenaires_athlete(%L)', current_setting('w2.felix')), '1');
@@ -187,7 +199,20 @@ select pg_temp.essai('A2 anon : écriture → refusé', null,
   format(current_setting('w2.q_eval'), current_setting('w2.felix'), '4', '{}'), 'ERR:42501');
 select pg_temp.essai('A3 anon : recherche → refusé', null,
   'select count(*)::text from public.recruiter_search_athletes()', 'ERR:42501');
+select pg_temp.essai('A4 anon : recherche avec le paramètre → refusé', null,
+  'select count(*)::text from public.recruiter_search_athletes(p_inclure_partenaires => true)', 'ERR:42501');
 reset role;
+
+-- ── Droits d'exécution : liste complète (jamais par inclusion) ─────────────
+select pg_temp.essai('D1 ACL recruiter_search_athletes = {authenticated, postgres, service_role}', null,
+  $q$select array_agg(t.g order by t.g)::text
+       from pg_proc pr,
+            lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g
+                       from unnest(pr.proacl::text[]) as x) t
+      where pr.proname = 'recruiter_search_athletes' and pr.pronamespace = 'public'::regnamespace$q$,
+  '{authenticated,postgres,service_role}');
+select pg_temp.essai('D2 une seule recruiter_search_athletes (16 paramètres)', null,
+  $q$select string_agg(pronargs::text, ',') from pg_proc where proname = 'recruiter_search_athletes' and pronamespace = 'public'::regnamespace$q$, '16');
 
 select n, case when ok then 'OK' else 'ÉCHEC' end as res, test, detail from _res order by n;
 select count(*) filter (where ok) as ok, count(*) filter (where not ok) as echecs from _res;

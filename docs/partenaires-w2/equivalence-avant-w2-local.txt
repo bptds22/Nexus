@@ -1,0 +1,47 @@
+﻿BEGIN
+CREATE TABLE
+GRANT
+SELECT 2
+GRANT
+CREATE FUNCTION
+SET
+ empreinte 
+-----------
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+RESET
+         recruteur          |                    appel                     | lignes |            empreinte             
+----------------------------+----------------------------------------------+--------+----------------------------------
+ julie.lambert@exemple.test |                                              |     35 | 00186058b4a50cd48c583ee6430e80f2
+ julie.lambert@exemple.test | p_min_rating => 1                            |     33 | 224b5b88280cb6dc708f9f008576ee67
+ julie.lambert@exemple.test | p_min_rating => 3, p_sort_by => 'rating_asc' |     24 | e431bcd36bb0e45042018ed1510a33ae
+ julie.lambert@exemple.test | p_min_rating => 4                            |     10 | f61d35237040c664b09fa1ffb6ec4ec9
+ julie.lambert@exemple.test | p_sort_by => 'grad_desc'                     |     35 | d907b2fb5e2fbf1504ddd598e28c76f8
+ julie.lambert@exemple.test | p_sort_by => 'name_asc'                      |     35 | fe6061692f78fea577e7359a4735d32e
+ julie.lambert@exemple.test | p_sort_by => 'rating_desc'                   |     35 | 00186058b4a50cd48c583ee6430e80f2
+ julie.lambert@exemple.test | p_verified_only => true, p_min_rating => 4   |     10 | f61d35237040c664b09fa1ffb6ec4ec9
+ r6.gratuit@preuve.local    |                                              |     35 | 78bb09c99beffc9b58d4220d8d44a73f
+ r6.gratuit@preuve.local    | p_min_rating => 1                            |     33 | 8600fd544f77d17ed7f9f289010c3dda
+ r6.gratuit@preuve.local    | p_min_rating => 3, p_sort_by => 'rating_asc' |     24 | a4e60b89ba2521f797dc94a4e30efa36
+ r6.gratuit@preuve.local    | p_min_rating => 4                            |     10 | 1873e23daee6b5f5f85844eb21271308
+ r6.gratuit@preuve.local    | p_sort_by => 'grad_desc'                     |     35 | 7ec2fad9500822b55b42812abe9e84d0
+ r6.gratuit@preuve.local    | p_sort_by => 'name_asc'                      |     35 | 78bb09c99beffc9b58d4220d8d44a73f
+ r6.gratuit@preuve.local    | p_sort_by => 'rating_desc'                   |     35 | 78bb09c99beffc9b58d4220d8d44a73f
+ r6.gratuit@preuve.local    | p_verified_only => true, p_min_rating => 4   |     10 | 1873e23daee6b5f5f85844eb21271308
+
+ROLLBACK
