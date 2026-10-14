@@ -37,6 +37,8 @@ import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
+import { messageErreurNexus } from "@/lib/erreurs/messageErreurNexus";
+import ErreurSauvegarde, { MESSAGE_ERREUR_GENERIQUE } from "@/components/shared/ErreurSauvegarde";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -259,6 +261,8 @@ export default function CreateAthletePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showErrors, setShowErrors] = useState(false);
+  /* Refus d'enregistrement, affiché dans la page (plus d'alert() natif). */
+  const [erreurSauvegarde, setErreurSauvegarde] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   // #48 — id de l'athlète créé (pour générer son lien de claim depuis l'écran
   // de confirmation) + état du lien token-based.
@@ -725,11 +729,12 @@ export default function CreateAthletePage() {
       return;
     }
     coteConfirmedRef.current = false;
+    setErreurSauvegarde(null);
 
     const supabase = createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
-      alert("Session expirée. Veuillez vous reconnecter.");
+      setErreurSauvegarde("Session expirée. Veuillez vous reconnecter.");
       return;
     }
 
@@ -750,7 +755,7 @@ export default function CreateAthletePage() {
     });
     if (result.error) {
       console.error("Error creating athlete:", result.error);
-      alert("Erreur lors de la création du profil: " + result.error.message);
+      setErreurSauvegarde(messageErreurNexus(result.error.message) ?? MESSAGE_ERREUR_GENERIQUE);
       return;
     }
 
@@ -1961,6 +1966,8 @@ export default function CreateAthletePage() {
           <p className="text-[14px] text-[#E63946] font-medium">Veuillez remplir tous les champs obligatoires (<span className="font-bold">*</span>) avant de continuer.</p>
         </div>
       )}
+
+      <ErreurSauvegarde message={erreurSauvegarde} onFermer={() => setErreurSauvegarde(null)} />
 
       <div className="flex items-center justify-between mt-8 gap-4">
         <button type="button" onClick={goPrev} disabled={currentStep === 1}

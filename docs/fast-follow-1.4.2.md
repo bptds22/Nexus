@@ -2517,3 +2517,19 @@ configurée), par exemple NLS – DALBÉ-VIAU (1), Benjamin F :
 Touche probablement toutes les équipes civiles dont la page n'est pas
 configurée. À instruire avec la page d'équipe (`lib/queries/teamPage/`,
 `components/team-page/`).
+
+## 84. Assistant coach mobile : refus d'enregistrement en message clair (2026-10-14, lot mobile, web fait)
+
+Le web (`/coach/athletes/create` et `/coach/athletes/[id]/modifier`) n'affiche
+plus `alert("Erreur lors de la sauvegarde: " + message)` : un encadré dans la
+page (`components/shared/ErreurSauvegarde.tsx`) montre la phrase mise en forme
+par `lib/erreurs/messageErreurNexus.ts` — préfixe « NEXUS: » retiré, majuscule,
+point final ; « Cet athlète a déjà le badge Vitesse, attribué par L'Esprit
+Sportif. » pour le refus W3b ; message générique pour une erreur non NEXUS.
+
+**À faire au lot mobile** : `components/shared/AthleteWizardMobile.tsx` doit
+passer ses erreurs d'enregistrement par la même fonction (`lib/`, déjà
+partagée) et les afficher dans l'interface, pas en boîte native ni en texte
+brut. Vérifier le refus « badge déjà attribué par un partenaire » à l'écran.
+Les autres `alert()` de `create/page.tsx` (invitation envoyée, erreur d'envoi
+d'invitation) n'ont pas été touchés.
