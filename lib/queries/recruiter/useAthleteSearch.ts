@@ -113,6 +113,12 @@ export interface AthleteSearchFilters {
    *  — 8 recruteurs sur 24 n'ont pas de school_id, et 9 cégeps n'ont
    *  aucun programme. Voir useMonCegepOffreDesProgrammes(). */
   offertParMonCegep: boolean;
+  /** W2 — le filtre « 4+ » et le tri par cote retombent sur la note du
+   *  partenaire quand le coach n'a pas noté. À n'activer QUE sur un écran qui
+   *  affiche le libellé de l'organisation (coteAffichee) : le web recherche
+   *  aujourd'hui ; le mobile au lot mobile. Absent = false = cote du coach
+   *  seule, comme les binaires déjà publiés. */
+  inclurePartenaires?: boolean;
   /**
    * Tier courant — N'EST PAS ENVOYÉ AU SERVEUR et ne décide de rien.
    *
@@ -192,6 +198,12 @@ interface RpcSearchRow {
   team_league: string | null;
   team_is_rseq: boolean | null;
   team_school_type: string | null;
+  /* W2 (20261014133428) — l'évaluation PARTENAIRE, à part. `cote_globale`
+     reste la note du COACH seule : les binaires mobiles publiés la lisent
+     sans libellé. Le filtre « 4+ » et le tri serveur utilisent
+     COALESCE(coach, partenaire). */
+  cote_partenaire: number | null;
+  cote_partenaire_organisation: string | null;
 }
 
 export interface SearchAthleteRow {
@@ -221,7 +233,13 @@ export interface SearchAthleteRow {
   badges: { badgeId: string; label: string; icon?: string }[];
   favorites: number;        // placeholder, overridé en page
   views: number;
+  /** Cote du COACH seule (0 = aucune). Lue telle quelle par le mobile. */
   stars: number;
+  /** W2 — cote du partenaire évaluateur, à part. Ne s'affiche à la place
+   *  de `stars` que si le coach n'a pas évalué, ET avec le libellé
+   *  `starsPartenaireOrg` à côté — jamais seule. Voir coteAffichee(). */
+  starsPartenaire: number | null;
+  starsPartenaireOrg: string | null;
   heightWeight: string;
   gpa: number;
   academicBadges: string[];
@@ -289,6 +307,21 @@ const RPC_SORTS = new Set(["rating_desc", "rating_asc", "grad_asc", "grad_desc",
  *  En dessous, l'ILIKE '%x%' balaie la table pour rien. Repris du legacy. */
 const MIN_SEARCH_LEN = 3;
 
+/** La cote à AFFICHER sur une carte de recherche — même règle que le filtre
+ *  et le tri serveur : celle du coach si elle existe, sinon celle du
+ *  partenaire. `organisation` non nul = la note vient du partenaire : la
+ *  carte DOIT alors afficher ce nom à côté des étoiles. */
+export function coteAffichee(a: Pick<SearchAthleteRow, "stars" | "starsPartenaire" | "starsPartenaireOrg">): {
+  valeur: number;
+  organisation: string | null;
+} {
+  if (a.stars > 0) return { valeur: a.stars, organisation: null };
+  if (a.starsPartenaire && a.starsPartenaire > 0) {
+    return { valeur: a.starsPartenaire, organisation: a.starsPartenaireOrg ?? "Partenaire" };
+  }
+  return { valeur: 0, organisation: null };
+}
+
 export function useAthleteSearch(filters: AthleteSearchFilters) {
   return useQuery<SearchAthleteRow[]>({
     queryKey: ["athletes", filters],
@@ -321,6 +354,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
         p_limit: null,
         p_programme_ids: filters.programmeIds.length > 0 ? filters.programmeIds : null,
         p_offert_par_mon_cegep: filters.offertParMonCegep,
+        p_inclure_partenaires: filters.inclurePartenaires ?? false,
       });
 
       if (error) throw error;
@@ -358,6 +392,8 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           favorites: 0, // composé en page
           views: 0,
           stars: a.cote_globale ?? 0,
+          starsPartenaire: a.cote_partenaire ?? null,
+          starsPartenaireOrg: a.cote_partenaire_organisation ?? null,
           heightWeight: (() => {
             const parts: string[] = [];
             if (a.taille_pieds) parts.push(`${a.taille_pieds}'${a.taille_pouces || 0}"`);

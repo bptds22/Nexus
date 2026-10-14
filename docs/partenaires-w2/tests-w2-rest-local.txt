@@ -1,0 +1,11 @@
+﻿PASS|bouton « Évaluer » absent sans permission|[{"peut_evaluer":false,"grille_id":"79cb45a6-33e5-4265-83a6-143fdb76ec6a"}]
+PASS|bouton « Évaluer » présent + grille|[{"peut_evaluer":true,"grille_id":"79cb45a6-33e5-4265-83a6-143fdb76ec6a"}]
+PASS|partenaire enregistre 4/5 (simple)|ok
+PASS|cote_globale_entraineur inchangée|null
+PASS|section lue par recruteur|1 ligne, Média Preuve 4
+PASS|section lue par coach|1 ligne, Média Preuve 4
+PASS|section lue par athlète|1 ligne, Média Preuve 4
+PASS|section lue par partenaire|1 ligne, Média Preuve 4
+PASS|« 4+ étoiles » sans le paramètre (binaire publié) : Félix absent|10 lignes
+PASS|« 4+ étoiles » : Félix présent, libellé partenaire|{"c":null,"p":4,"o":"Média Preuve"}
+PASS|nettoyage : aucune évaluation partenaire restante|0

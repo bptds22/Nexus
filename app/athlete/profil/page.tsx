@@ -26,6 +26,7 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
 import { CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
+import EvaluationPartenaireSection from "@/components/shared/athlete/EvaluationPartenaireSection";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -1964,6 +1965,10 @@ function AthleteProfilPageDesktop() {
               />
             )}
           </div>
+
+          {/* W2 — évaluation PARTENAIRE, à part, sous le rapport de l'entraîneur.
+              Lecture seule : l'athlète ne la propose ni ne la conteste. */}
+          <EvaluationPartenaireSection athleteId={athleteId} />
 
           {/* Media — GREEN (editable) */}
           <div id={SECTION_IDS.media} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">

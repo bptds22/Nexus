@@ -90,6 +90,14 @@ export default function AdminPartenairesPage() {
   );
   const [panelBusy, setPanelBusy] = useState(false);
 
+  /* Partenaire évaluateur (W1). La permission et les sports ne s'écrivent
+     qu'ici (admin) : la garde W0 refuse peut_evaluer au partenaire, et la RLS
+     de partenaire_sports_permis ne lui laisse que la lecture. La garde des
+     écritures d'évaluation est partenaire_peut_evaluer(), côté serveur. */
+  const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
+  const [sportsPermis, setSportsPermis] = useState<Record<string, string[]>>({});
+  const [evalBusy, setEvalBusy] = useState<string | null>(null);
+
   // Create form state
   const [form, setForm] = useState({
     email: "",
@@ -124,6 +132,17 @@ export default function AdminPartenairesPage() {
     } else {
       setPartners((data || []) as MediaPartner[]);
     }
+    const [{ data: listeSports }, { data: permis, error: errPermis }] = await Promise.all([
+      supabase.from("sports").select("id, nom").order("nom"),
+      supabase.from("partenaire_sports_permis").select("partner_id, sport_id"),
+    ]);
+    if (errPermis) console.error("[admin/partenaires] sports permis:", errPermis);
+    setSports((listeSports || []) as { id: string; nom: string }[]);
+    const parPartenaire: Record<string, string[]> = {};
+    for (const r of (permis || []) as { partner_id: string; sport_id: string }[]) {
+      (parPartenaire[r.partner_id] ??= []).push(r.sport_id);
+    }
+    setSportsPermis(parPartenaire);
     setLoading(false);
   }, []);
 
@@ -425,6 +444,55 @@ export default function AdminPartenairesPage() {
     }
   }
 
+  async function basculerEvaluation(p: MediaPartner) {
+    setEvalBusy(p.id);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("media_partners")
+        .update({ peut_evaluer: !p.peut_evaluer })
+        .eq("id", p.id)
+        .select();
+      if (error) { showToast("error", error.message); return; }
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusée — vérifie tes permissions.");
+        return;
+      }
+      setPartners((prev) => prev.map((x) => (x.id === p.id ? (data[0] as MediaPartner) : x)));
+      showToast("success", !p.peut_evaluer ? "Évaluation activée" : "Évaluation désactivée");
+    } finally {
+      setEvalBusy(null);
+    }
+  }
+
+  async function basculerSport(partnerId: string, sportId: string) {
+    setEvalBusy(partnerId);
+    try {
+      const supabase = createClient();
+      const coche = (sportsPermis[partnerId] ?? []).includes(sportId);
+      /* .select() dans les deux sens : 0 ligne sans erreur = RLS a filtré. */
+      const { data, error } = coche
+        ? await supabase.from("partenaire_sports_permis").delete()
+            .eq("partner_id", partnerId).eq("sport_id", sportId).select()
+        : await supabase.from("partenaire_sports_permis")
+            .insert({ partner_id: partnerId, sport_id: sportId }).select();
+      if (error) { showToast("error", error.message); return; }
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusée — vérifie tes permissions.");
+        return;
+      }
+      setSportsPermis((prev) => {
+        const actuels = prev[partnerId] ?? [];
+        return {
+          ...prev,
+          [partnerId]: coche ? actuels.filter((s) => s !== sportId) : [...actuels, sportId],
+        };
+      });
+    } finally {
+      setEvalBusy(null);
+    }
+  }
+
   async function toggleHomepage(partnerId: string, current: boolean) {
     const supabase = createClient();
     const { data, error } = await supabase
@@ -548,6 +616,11 @@ export default function AdminPartenairesPage() {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${act.bg} ${act.text}`}>
                         {act.label}
                       </span>
+                      {p.peut_evaluer && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/10 text-[#e0e0e0]">
+                          Évaluateur · {(sportsPermis[p.id] ?? []).length} sport{(sportsPermis[p.id] ?? []).length > 1 ? "s" : ""}
+                        </span>
+                      )}
                       {p.show_on_homepage && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3B82F6]/15 text-[#3B82F6]">
                           Page d&apos;accueil
@@ -780,6 +853,45 @@ export default function AdminPartenairesPage() {
                           </p>
                         </div>
                       )}
+
+                      {/* ÉVALUATION — enregistrée à chaque clic, indépendamment du
+                          bouton « Enregistrer » (qui ne porte que la présentation).
+                          Les trois conditions de la garde serveur sont rappelées :
+                          sans elles, la bascule seule ne donne rien. */}
+                      <div className="sm:col-span-3 rounded-lg border-l-2 border-[#22C55E]/40 bg-[#22C55E]/[0.03] pl-4 py-3 space-y-3">
+                        <label className="flex items-center gap-3 cursor-pointer w-fit">
+                          <input
+                            type="checkbox"
+                            checked={!!p.peut_evaluer}
+                            disabled={evalBusy === p.id}
+                            onChange={() => void basculerEvaluation(p)}
+                            className="nx-filter-checkbox"
+                          />
+                          <span className="text-[13px] font-bold text-white">Peut évaluer des athlètes</span>
+                        </label>
+                        <div>
+                          <p className={labelCls}>Sports permis</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-2">
+                            {sports.map((s) => (
+                              <label key={s.id} className="flex items-center gap-2 cursor-pointer text-[13px] text-[#e0e0e0]">
+                                <input
+                                  type="checkbox"
+                                  checked={(sportsPermis[p.id] ?? []).includes(s.id)}
+                                  disabled={evalBusy === p.id}
+                                  onChange={() => void basculerSport(p.id, s.id)}
+                                  className="nx-filter-checkbox"
+                                />
+                                {s.nom}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-[#6B7280]">
+                          Le partenaire n&apos;évalue que si les trois conditions sont réunies : statut
+                          Approuvé, cette case cochée, et le sport de l&apos;athlète coché ci-dessus.
+                          Enregistré à chaque clic.
+                        </p>
+                      </div>
 
                       <div className="sm:col-span-3 flex justify-end">
                         <button

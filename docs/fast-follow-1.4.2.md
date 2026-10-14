@@ -2432,3 +2432,33 @@ M18 AAA est importée.
 - **Surveillance** : `scripts/nls-basketball/3-doublons-coachs.sql` (lecture
   seule) liste les équipes créées par des coachs dans un club « NLS – … » qui
   ressemblent à une équipe importée.
+
+## 80. 104 versions en prod sans fichier local — `supabase db push` bloqué (2026-10-14, à traiter séparément)
+
+**Le constat** (lot W2, 2026-10-14) : `supabase db push --dry-run`, CLI 2.109.0
+lié à `nrloizyemulbhujrqhgx`, refuse de calculer quoi que ce soit :
+« Remote migration versions not found in local migrations directory ».
+L'historique de la prod (`supabase_migrations.schema_migrations`) porte
+**104 versions** sans fichier du même numéro dans `supabase/migrations/`, de
+`20260706202347` à `20260923022857` — surtout des applications par le
+connecteur MCP de juillet à septembre, dont la version enregistrée n'a pas
+toujours été reportée sur le fichier local. Le CLI compare numéro par numéro :
+une seule version distante inconnue suffit à le bloquer.
+
+**Conséquence** : la voie CLI (`db push`) est inutilisable pour la prod. Les
+lots passent par le connecteur MCP (`apply_migration`) ou par `psql -1`
+(précédent : W2, `docs/partenaires-w2/prod/`), avec enregistrement manuel dans
+`schema_migrations` et `admin_operations`.
+
+**Ce qu'il ne faut PAS faire à chaud** : `supabase migration repair --status
+reverted <104 versions>` (proposé par le CLI) réécrit l'historique de la prod —
+et le push suivant voudrait réappliquer les fichiers locaux déjà en place sous
+un autre numéro. `supabase db pull` génère des fichiers depuis la prod et
+mélange le dépôt.
+
+**Le chantier, à part** : apparier chaque version distante à son fichier local
+(nom de migration, contenu de `statements`), renommer les fichiers à la
+version prod, et ne marquer `reverted` que les versions réellement sans
+équivalent — relevé avant, GO BP, ligne `admin_operations`. Critère de fin :
+`supabase db push --dry-run` liste exactement les migrations locales non
+appliquées, rien d'autre.

@@ -1016,6 +1016,10 @@ export interface MediaPartner {
   updated_at: string;
   terms_accepted_at: string | null;
   password_reset_completed_at: string | null;
+  /** Partenaire évaluateur (W1). Posé par l'admin seulement. Optionnel ici :
+   *  partenaires_vitrine() ne le renvoie pas. La garde serveur est
+   *  partenaire_peut_evaluer() — ne jamais brancher une écriture sur ce champ. */
+  peut_evaluer?: boolean;
 }
 
 export interface PartnerCardDownload {
