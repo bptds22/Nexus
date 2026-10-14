@@ -26,7 +26,10 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
 import { CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
-import EvaluationPartenaireSection from "@/components/shared/athlete/EvaluationPartenaireSection";
+import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
+import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
+import type { BadgePartenaire } from "@/lib/badges/partenaire";
+import { aUneCote } from "@/lib/evaluations/presence";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -730,7 +733,7 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
 
 /* ── Distinctions suggestion (unified pattern) ────────────── */
 
-function DistinctionsSuggest({ athleteId, sportId, sportNom, currentDistinctions, pending, onSubmit }: {
+function DistinctionsSuggest({ athleteId, sportId, sportNom, currentDistinctions, badgesPartenaire = [], pending, onSubmit }: {
   /* string | null : la page ne connaît l'athlète qu'après chargement. Sans
      identifiant on n'ouvre pas la sélection — plutôt que d'ouvrir sur une
      liste vide qui proposerait de tout retirer. */
@@ -738,6 +741,9 @@ function DistinctionsSuggest({ athleteId, sportId, sportNom, currentDistinctions
   sportId: string | null;
   sportNom: string | null;
   currentDistinctions: DistinctionEntry[];
+  /** W3 — badges partenaire, À LA FIN de la rangée. Lecture seule : l'athlète
+   *  ne les propose pas, ne les masque pas, ne les retire pas. */
+  badgesPartenaire?: BadgePartenaire[];
   pending?: { proposed_value: string };
   onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
 }) {
@@ -793,14 +799,17 @@ function DistinctionsSuggest({ athleteId, sportId, sportNom, currentDistinctions
       </div>
       {!editing && <p className={SECTION_SUBTITLE_CLS}>Modifications soumises à ton entraîneur pour approbation</p>}
 
-      {!editing && currentDistinctions.length > 0 && (
+      {!editing && (currentDistinctions.length > 0 || badgesPartenaire.length > 0) && (
         <div className="flex flex-wrap gap-4 mt-3">
           {currentDistinctions.map((e, i) => (
             <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} libelle={e.libelle} count={currentDistinctions.length} index={i} />
           ))}
+          {athleteId && badgesPartenaire.map((b) => (
+            <BadgePartenaireVignette key={b.id} badge={b} athleteId={athleteId} />
+          ))}
         </div>
       )}
-      {!editing && currentDistinctions.length === 0 && (
+      {!editing && currentDistinctions.length === 0 && badgesPartenaire.length === 0 && (
         <p className="text-[13px] text-[#6b7280] mt-3">—</p>
       )}
       {!editing && hasPending && (
@@ -1144,6 +1153,8 @@ function AthleteProfilPageDesktop() {
   const traitLabelByCamel: Record<string, string> =
     Object.fromEntries(athleteTraits.map((t) => [t.camel, t.label]));
   const [athleteId, setAthleteId] = useState<string | null>(null);
+  /* W3 — badges partenaire, à la fin de « Distinctions » (lecture seule). */
+  const badgesPartenaire = useBadgesPartenaires(athleteId);
   const recruiterView = false;
   const [showPreview, setShowPreview] = useState(false);
   const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
@@ -1953,6 +1964,10 @@ function AthleteProfilPageDesktop() {
               />
             )}
 
+            {/* W2b — le coach a évalué : le partenaire tient en UNE ligne
+                (étoiles + cote globale, jamais ses critères). */}
+            {aUneCote(traitAvg) && <EvaluationPartenaireLigne athleteId={athleteId} />}
+
             {/* Distinctions — suggestible */}
             {!recruiterView && (
               <DistinctionsSuggest
@@ -1960,6 +1975,7 @@ function AthleteProfilPageDesktop() {
                 sportId={grilleSet.sportIdByNom.get(a.primarySport || "") ?? null}
                 sportNom={a.primarySport || null}
                 currentDistinctions={((a as unknown) as { coachDistinctions?: DistinctionEntry[] }).coachDistinctions || []}
+                badgesPartenaire={badgesPartenaire}
                 pending={getPending("Distinctions")}
                 onSubmit={submitSuggestion}
               />
@@ -1968,7 +1984,7 @@ function AthleteProfilPageDesktop() {
 
           {/* W2 — évaluation PARTENAIRE, à part, sous le rapport de l'entraîneur.
               Lecture seule : l'athlète ne la propose ni ne la conteste. */}
-          <EvaluationPartenaireSection athleteId={athleteId} />
+          <EvaluationPartenaireSection athleteId={athleteId} coachAEvalue={aUneCote(traitAvg)} />
 
           {/* Media — GREEN (editable) */}
           <div id={SECTION_IDS.media} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">

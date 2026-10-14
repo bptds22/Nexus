@@ -1,0 +1,450 @@
+﻿BEGIN
+CREATE TABLE
+GRANT
+GRANT
+              set_config              
+--------------------------------------
+ 66666666-0000-0000-0000-00000000000a
+
+              set_config              
+--------------------------------------
+ 455bd55d-0416-4411-88fa-775354975e85
+
+              set_config              
+--------------------------------------
+ eeeeeeee-0000-0000-0000-0000000000aa
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c9001
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7001
+
+              set_config              
+--------------------------------------
+ 22222222-0000-0000-0000-00000000000c
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7008
+
+              set_config              
+--------------------------------------
+ 082fdf2b-bb33-43a8-b5ca-9a37f67f4c1a
+
+              set_config              
+--------------------------------------
+ 5d719dfb-6cab-4988-bec7-250284a899c5
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c2012
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c2003
+
+UPDATE 1
+UPDATE 2
+INSERT 0 2
+INSERT 0 5
+CREATE FUNCTION
+SELECT 1
+GRANT
+CREATE TABLE
+GRANT
+SET
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+                                           set_config                                           
+------------------------------------------------------------------------------------------------
+ select public.partenaire_attribuer_badge(%L, (select id from _ids where cle = %L)) is not null
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+                            set_config                            
+------------------------------------------------------------------
+ select count(*)::text from public.badges_partenaires_athlete(%L)
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+                                            set_config                                             
+---------------------------------------------------------------------------------------------------
+ select public.coach_masquer_badge_partenaire((select id from _ids where cle = 'pose1'), %s)::text
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+                                     set_config                                     
+------------------------------------------------------------------------------------
+ select public.retirer_badge_partenaire((select id from _ids where cle = %L))::text
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+RESET
+ essai 
+-------
+ 
+
+SET
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+                                                       set_config                                                       
+------------------------------------------------------------------------------------------------------------------------
+ select public.retirer_evaluation_partenaire((select id from public.evaluations_partenaires_athlete(%L) limit 1))::text
+
+RESET
+INSERT 0 1
+SET
+                                         set_config                                          
+---------------------------------------------------------------------------------------------
+ select public.retirer_evaluation_partenaire((select id from _ids where cle = 'eval'))::text
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+RESET
+ essai 
+-------
+ 
+
+SET
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+RESET
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+SET
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+RESET
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ n  | res |                                 test                                 |                                        detail                                         
+----+-----+----------------------------------------------------------------------+---------------------------------------------------------------------------------------
+  1 | OK  | K1 admin crée un badge pour p1                                       | true (attendu true)
+  2 | OK  | K2 admin crée un badge pour p2 (suspendu)                            | true (attendu true)
+  3 | OK  | K3 p1 ne crée PAS de badge lui-même                                  | ERR:42501 (attendu ERR:42501)
+  4 | OK  | K4 icône hors du dossier du partenaire → refusée                     | ERR:22023 (attendu ERR:22023)
+  5 | OK  | K5 p1 voit SON catalogue (1 badge)                                   | 1 (attendu 1)
+  6 | OK  | K6 un coach n'a aucun catalogue partenaire                           | 0 (attendu 0)
+  7 | OK  | K7 p1 lit le catalogue admin → refusé                                | ERR:42501 (attendu ERR:42501)
+  8 | OK  | R1 p1 pose sur un athlète NON éligible → refusé                      | ERR:42501 (attendu ERR:42501)
+  9 | OK  | R2 p1 pose le badge de p2 → refusé                                   | ERR:42501 (attendu ERR:42501)
+ 10 | OK  | R3 p2 (suspendu) pose son propre badge → refusé                      | ERR:42501 (attendu ERR:42501)
+ 11 | OK  | R4 le coach pose un badge partenaire → refusé                        | ERR:42501 (attendu ERR:42501)
+ 12 | OK  | R5 l'athlète pose un badge partenaire → refusé                       | ERR:42501 (attendu ERR:42501)
+ 13 | OK  | R6 p1 écrit partner_athlete_badges en direct → refusé                | ERR:42501 (attendu ERR:42501)
+ 14 | OK  | R7 p1 lit partner_athlete_badges en direct → refusé                  | ERR:42501 (attendu ERR:42501)
+ 15 | OK  | P1 Félix a déjà 5 badges coach (plafond atteint)                     | 5 (attendu 5)
+ 16 | OK  | P2 p1 pose son badge sur Félix malgré le plafond                     | true (attendu true)
+ 17 | OK  | P3 le même badge une 2e fois → refusé (doublon)                      | ERR:23505 (attendu ERR:23505)
+ 18 | OK  | P4 le plafond tient toujours pour le coach (6e badge coach → refusé) | ERR:P0001 (attendu ERR:P0001)
+ 19 | OK  | P5 aucune ligne athlete_badges touchée par W3                        | true (attendu true)
+ 20 | OK  | L1 recruteur lit le badge, signé par l'organisation                  | Média Preuve / Esprit sportif (attendu Média Preuve / Esprit sportif)
+ 21 | OK  | L2 l'athlète lit son badge                                           | 1 (attendu 1)
+ 22 | OK  | L3 le coach lit, et peut masquer                                     | true (attendu true)
+ 23 | OK  | L4 l'athlète ne peut PAS masquer                                     | false (attendu false)
+ 24 | OK  | L5 un autre coach ne lit rien                                        | 0 (attendu 0)
+ 25 | OK  | L6 p2 (autre partenaire) ne lit rien                                 | 0 (attendu 0)
+ 26 | OK  | L7 p1 lit le sien (est_le_mien)                                      | true (attendu true)
+ 27 | OK  | L8 la projection ne porte AUCUNE colonne de personne                 | true (attendu true)
+ 28 | OK  | M1 l'athlète masque → refusé                                         | ERR:42501 (attendu ERR:42501)
+ 29 | OK  | M2 le recruteur masque → refusé                                      | ERR:42501 (attendu ERR:42501)
+ 30 | OK  | M3 p1 masque → refusé (c'est au coach)                               | ERR:42501 (attendu ERR:42501)
+ 31 | OK  | M4 un autre coach masque → refusé                                    | ERR:42501 (attendu ERR:42501)
+ 32 | OK  | M5 le coach masque                                                   |  (attendu )
+ 33 | OK  | M6 masqué : le recruteur ne le voit plus                             | 0 (attendu 0)
+ 34 | OK  | M7 masqué : l'athlète ne le voit plus                                | 0 (attendu 0)
+ 35 | OK  | M8 masqué : le coach le voit, marqué masqué                          | true (attendu true)
+ 36 | OK  | M9 masqué : p1 le voit, marqué masqué                                | true (attendu true)
+ 37 | OK  | M10 masqué, pas supprimé : la pose est toujours vivante              | true (attendu true)
+ 38 | OK  | M11 le coach réaffiche                                               |  (attendu )
+ 39 | OK  | M12 réaffiché : le recruteur le revoit                               | 1 (attendu 1)
+ 40 | OK  | X1 p2 retire le badge de p1 → refusé                                 | ERR:42501 (attendu ERR:42501)
+ 41 | OK  | X2 le coach retire le badge → refusé (il peut seulement masquer)     | ERR:42501 (attendu ERR:42501)
+ 42 | OK  | X3 l'athlète retire le badge → refusé                                | ERR:42501 (attendu ERR:42501)
+ 43 | OK  | X4 p1 retire son badge                                               |  (attendu )
+ 44 | OK  | X5 retiré : disparaît pour le recruteur                              | 0 (attendu 0)
+ 45 | OK  | X6 retiré : disparaît aussi pour le coach et p1                      | 0 (attendu 0)
+ 46 | OK  | X7 un 2e retrait → refusé                                            | ERR:22023 (attendu ERR:22023)
+ 47 | OK  | X8 trace gardée : qui (p1) et quand                                  | true (attendu true)
+ 48 | OK  | X9 l'admin repose le badge au nom de p1                              | true (attendu true)
+ 49 | OK  | X10 l'admin le retire                                                |  (attendu )
+ 50 | OK  | X11 aucun badge vivant                                               | 0 (attendu 0)
+ 51 | OK  | E1 p1 évalue Félix (4.5, aucune cote coach)                          | true (attendu true)
+ 52 | OK  | E2 « 4+ étoiles » (web) : Félix y sort grâce à la note partenaire    | 1 (attendu 1)
+ 53 | OK  | E3b p2 retire l'évaluation de p1 → refusé                            | ERR:42501 (attendu ERR:42501)
+ 54 | OK  | E4 le coach retire l'évaluation partenaire → refusé                  | ERR:42501 (attendu ERR:42501)
+ 55 | OK  | E5 le recruteur retire → refusé                                      | ERR:42501 (attendu ERR:42501)
+ 56 | OK  | E6 p1 retire son évaluation                                          |  (attendu )
+ 57 | OK  | E7 retirée : la section disparaît (recruteur)                        | 0 (attendu 0)
+ 58 | OK  | E8 retirée : Félix ne sort PLUS dans « 4+ étoiles » (web)            | 0 (attendu 0)
+ 59 | OK  | E9 retirée : plus de cote partenaire dans la recherche               | NULL (attendu NULL)
+ 60 | OK  | E10 p1 lit la trace des retraits en direct → refusé                  | ERR:42501 (attendu ERR:42501)
+ 61 | OK  | E11 trace gardée : qui (p1), quand, cote 4.5                         | true 4.50 (attendu true 4.50)
+ 62 | OK  | E12 p1 réévalue, l'admin retire                                      | true (attendu true)
+ 63 | OK  | E13 l'admin retire l'évaluation de p1                                |  (attendu )
+ 64 | OK  | E14 deux retraits tracés (p1 puis admin)                             | p1,admin (attendu p1,admin)
+ 65 | OK  | E15 aucune écriture côté coach (evaluations, cotes)                  | true (attendu true)
+ 66 | OK  | A1 anon : lecture des badges → refusé                                | ERR:42501 (attendu ERR:42501)
+ 67 | OK  | A2 anon : pose → refusé                                              | ERR:42501 (attendu ERR:42501)
+ 68 | OK  | A3 anon : retrait d'évaluation → refusé                              | ERR:42501 (attendu ERR:42501)
+ 69 | OK  | D1 ACL des 8 fonctions W3 = {authenticated, postgres, service_role}  | {authenticated,postgres,service_role} (attendu {authenticated,postgres,service_role})
+ 70 | OK  | D2 recruiter_search_athletes inchangée par W3 (md5 W2)               | c15481a07a3b98e3ae72f8917763a45a (attendu c15481a07a3b98e3ae72f8917763a45a)
+
+ ok | echecs 
+----+--------
+ 70 |      0
+
+ROLLBACK

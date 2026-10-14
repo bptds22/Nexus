@@ -18,6 +18,7 @@ import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import AthleteRecruiterProfileBody from "@/components/shared/AthleteRecruiterProfileBody";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
+import ActionsPartenaireFiche from "@/components/partenaire/ActionsPartenaireFiche";
 import {
   chargerContexteEvaluation,
   chargerEvaluationsPartenaires,
@@ -398,6 +399,15 @@ export default function PartnerAthleteProfilePage() {
           </button>
         )}
       </div>
+
+      {/* W3 / C — retirer son évaluation, attribuer un badge. */}
+      <ActionsPartenaireFiche
+        athleteId={id}
+        peutEvaluer={!!contexteEval?.peutEvaluer}
+        maEvaluation={maEvaluation}
+        onEvaluationRetiree={() => setMaEvaluation(null)}
+        notifier={showToast}
+      />
 
       {evalOuverte && contexteEval && (
         <EvaluerAthleteModal

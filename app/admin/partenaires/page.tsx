@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { MediaPartner, PartnerStatus, PartnerTier } from "@/lib/types/models";
 import { uploadImage, cheminStorageDepuisUrl } from "@/lib/upload/uploadImage";
+import BadgesPartenaireAdmin from "@/components/admin/BadgesPartenaireAdmin";
 
 /* ═══════════════════════════════════════════════════════════════
    /admin/partenaires — Phase 1 closed-beta admin panel
@@ -892,6 +893,9 @@ export default function AdminPartenairesPage() {
                           Enregistré à chaque clic.
                         </p>
                       </div>
+
+                      {/* W3 — badges propres à ce partenaire (catalogue géré ici). */}
+                      <BadgesPartenaireAdmin partnerId={p.id} notifier={showToast} />
 
                       <div className="sm:col-span-3 flex justify-end">
                         <button

@@ -35,7 +35,8 @@ import { etapePorteVisite, visiteApresChangementEtape } from "@/lib/pipeline/reg
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import { traitGroups, resolvePositionId, type GrilleRef } from "@/lib/evaluations/grilles";
-import EvaluationPartenaireSection from "@/components/shared/athlete/EvaluationPartenaireSection";
+import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
+import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -363,6 +364,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     a, setA, loadingAthlete, grilleSrc, recruitmentStatus, committedSchoolName,
     openToOffers, coachId, affiliation, teamDetails, athleteUserId,
   } = useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecruiter });
+  /* W3 — badges partenaire, à la FIN de la rangée « Distinctions ». Sur le
+     portail partenaire, l'auteur peut retirer les siens depuis la rangée. */
+  const badgesPartenaire = useBadgesPartenaires(id);
+  const actionsBadgePartenaire = isPartner ? "partenaire" as const : null;
   /* Règle de lecture des grilles : grille_id de l'éval affichée d'abord, sinon
      la position. Le partenaire n'a NI l'un NI l'autre — partner_athlete_profile
      ne projette ni grille_id ni position_id — d'où sportNom/positionNom, résolus
@@ -979,10 +984,13 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 )}
               </div>
 
-              {a.distinctions.length > 0 && (
+              {(a.distinctions.length > 0 || badgesPartenaire.length > 0) && (
                 <div className="flex items-start gap-9 flex-wrap">
                   {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
                     <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                  ))}
+                  {id && badgesPartenaire.map((b) => (
+                    <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} />
                   ))}
                 </div>
               )}
@@ -1062,6 +1070,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                     <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
                   </div>
                 )}
+                {/* W2b — le coach a évalué : le partenaire tient en UNE ligne. */}
+                {!isDetailed && aUneCote(coteGlobale) && <EvaluationPartenaireLigne athleteId={id} className="ml-5" />}
 
                 {/* Detailed: Cote Globale + full 8-trait grid + distinctions */}
                 {isDetailed && (
@@ -1124,7 +1134,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                       </div>
                     )}
 
-                    {a.distinctions.length > 0 && (
+                    {/* W2b — sous « Moyenne des traits » : la ligne du partenaire
+                        (étoiles + cote globale, JAMAIS ses critères). */}
+                    {aUneCote(coteGlobale) && <EvaluationPartenaireLigne athleteId={id} />}
+
+                    {(a.distinctions.length > 0 || badgesPartenaire.length > 0) && (
                       <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
                         <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                         {/* `lg`, comme le bloc Profil athlete : c'est le MEME badge dans le
@@ -1134,6 +1148,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                         <div className="flex flex-wrap gap-3">
                           {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
                             <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                          ))}
+                          {id && badgesPartenaire.map((b) => (
+                            <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} />
                           ))}
                         </div>
                       </div>
@@ -1148,7 +1165,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
         {/* W2 — l'évaluation PARTENAIRE, à part, sous celle du coach. Même
             verrou que le rapport de l'entraîneur pour un recruteur gratuit. */}
-        <EvaluationPartenaireSection athleteId={id} verrouille={lockContent} />
+        {/* W2b — section complète SEULEMENT si le coach n'a pas évalué ; sinon
+            la ligne compacte est déjà dans son bloc. Verrouillé (recruteur
+            gratuit) avec une cote du coach : le verrou du rapport couvre tout. */}
+        <EvaluationPartenaireSection athleteId={id} verrouille={lockContent} coachAEvalue={aUneCote(coteGlobale)} />
 
         <SectionFaitsSaillants a={a} verrouille={lockContent} />
 
