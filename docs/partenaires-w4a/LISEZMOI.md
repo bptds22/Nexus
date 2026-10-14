@@ -71,10 +71,56 @@ mobile (registre).
 - Rollback : retour EXACT à l'état sans W4a (`releve-etat.sql`, 8 aspects : fonctions + ACL,
   triggers, contraintes, tables + ACL + RLS, politiques, cron, notifications, évaluations).
 
-## Mise en prod
+## Mise en prod (sur GO de BP seulement)
 
-Pas encore préparée : après la relecture de BP (migration et rapport). Comme W3b : relevé avant,
-migration et gardes dans une seule transaction `psql -1`, md5 sans retours chariot, ligne
-`admin_operations`, version `20261014200739`. Puis seulement le code (base avant app) — y
-compris l'export `/admin/loi25`, qui appelle une fonction absente de la prod tant que la
-migration n'y est pas.
+Même voie que W3b : une seule transaction `psql -1`, relevé avant + migration + gardes et
+enregistrement (version FIXE `20261014200739` dans `schema_migrations`, une ligne
+`admin_operations` `MIGRATION_W4A_PROSPECTS_PARTENAIRE`). Fichiers dans `prod/`.
+
+- `w4a-releve-avant.sql` : refuse si W4a est déjà là (tables, fonctions, trigger, tâche cron,
+  version) ; vérifie les 14 fonctions dont W4a dépend (W2/W3/W3b, rapprochement du lot D), les
+  17 triggers d'`athletes`, la contrainte des notifications et `pgcrypto` dans `extensions`,
+  aux valeurs relevées **en prod** le 2026-10-14 (identiques en local) ; pose les témoins.
+- `w4a-gardes-et-enregistrement.sql` (GÉNÉRÉ par `generer-gardes.mjs`, ne pas éditer) :
+  rien d'autre n'a bougé (fonctions, triggers, tâches cron, notifications, évaluations et
+  badges partenaire, athlètes, `admin_operations`) ; nouvel état exact (29 fonctions et leurs
+  ACL complètes, SECURITY DEFINER, 4 tables RLS sans politique ni droit et vides, texte exact
+  du trigger et de la contrainte, purge 08:50) ; puis l'enregistrement, migration embarquée
+  octet pour octet (md5 `4463e764392febebcffe4c53c1ee23fd`, LF).
+- `w4a-verif-apres.sql` : lecture seule, après le commit.
+
+Prouvé en local le 2026-10-14, à partir de copies en fins de ligne CRLF, dans des
+transactions annulées : rollback W4a → chaîne complète → vérif toute conforme ; refus si W4a
+est déjà là ; refus et annulation totale si une donnée bouge entre la migration et les gardes.
+
+Depuis la racine du dépôt (`C:\Users\bptds\Documents\Nexus`), branche `feat/partenaires-w4a`,
+en PowerShell :
+
+```powershell
+# 1. Les fichiers sont-ils ceux qui ont été testés ?
+Get-FileHash -Algorithm MD5 docs\partenaires-w4a\prod\w4a-releve-avant.sql, supabase\migrations\20261014200739_w4a_prospects_partenaire.sql, docs\partenaires-w4a\prod\w4a-gardes-et-enregistrement.sql, docs\partenaires-w4a\prod\w4a-verif-apres.sql
+#   w4a-releve-avant.sql                          F372B7126EF5D94FFACFD73D38E3B823
+#   20261014200739_w4a_prospects_partenaire.sql   4463E764392FEBEBCFFE4C53C1EE23FD
+#   w4a-gardes-et-enregistrement.sql              033EC7CD2D2F54FBF1342325BC19A5D6
+#   w4a-verif-apres.sql                           61692259BA2ABF1FED0D3B45248BBA43
+# (fichiers en LF, tels qu'écrits. Après un nouveau checkout Windows, ils seraient en CRLF et
+#  ces empreintes changeraient ; les gardes, elles, acceptent les deux.)
+
+# 2. Une seule transaction (-1) : une garde qui échoue annule TOUT.
+#    Pas de mot de passe dans la commande : psql le demande.
+$env:PGCLIENTENCODING = "UTF8"
+& "C:\Users\bptds\scoop\apps\postgresql\18.6-5\bin\psql.exe" "host=aws-1-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.nrloizyemulbhujrqhgx sslmode=require" -v ON_ERROR_STOP=1 -1 `
+  -f docs/partenaires-w4a/prod/w4a-releve-avant.sql `
+  -f supabase/migrations/20261014200739_w4a_prospects_partenaire.sql `
+  -f docs/partenaires-w4a/prod/w4a-gardes-et-enregistrement.sql
+
+# 3. Lecture seule, après le commit :
+& "C:\Users\bptds\scoop\apps\postgresql\18.6-5\bin\psql.exe" "host=aws-1-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.nrloizyemulbhujrqhgx sslmode=require" `
+  -f docs/partenaires-w4a/prod/w4a-verif-apres.sql
+```
+
+Prod au 2026-10-14 : dernière version `20261014180000` (W3b). Si la migration change :
+`node docs/partenaires-w4a/prod/generer-gardes.mjs`, puis recalculer les empreintes.
+
+**Ensuite seulement** : merge de `feat/partenaires-w4a` dans `main` et push. `/admin/loi25`
+appelle `admin_loi25_prospects_partenaires`, absente de la prod tant que la migration n'y est pas.
