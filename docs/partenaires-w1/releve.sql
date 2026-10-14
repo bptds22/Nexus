@@ -1,4 +1,4 @@
--- Relevé W1 (lecture seule). Lancer avant ET après 20261014020000.
+-- Relevé W1 (lecture seule). Lancer avant ET après 20261014021124.
 \pset footer off
 select 'media_partners.colonnes' as objet, count(*)::text as valeur,
        string_agg(column_name, ',' order by ordinal_position) as detail
