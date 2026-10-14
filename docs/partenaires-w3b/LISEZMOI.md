@@ -77,7 +77,11 @@ CRLF :
   navigateur, l'encadré de 05 REPRODUIT donc le texte exact passé à l'alerte
   (« Erreur lors de la sauvegarde: NEXUS: cet athlète a déjà le badge
   « Vitesse » (attribué par Média Preuve) ») et le dit dans son en-tête.
-  « L'Esprit Sportif » (01–04) = le partenaire local de test renommé le temps
+  06 (même jour, après correction) : le même refus dans un encadré de la
+  page, « Cet athlète a déjà le badge Vitesse, attribué par L'Esprit
+  Sportif. » ; `alert()` jamais appelé (le script échoue sinon). Outil :
+  `outils/capture-refus-coach-encadre.cjs`, navigateur sans interface.
+  « L'Esprit Sportif » (01–04, 06) = le partenaire local de test renommé le temps
   des captures, puis remis tel quel.
 
 ## Mise en prod (sur GO, jamais le mardi ni le mercredi avant 5 h)
@@ -86,13 +90,28 @@ Même voie que W3 : une seule transaction, relevé avant + migration + gardes et
 enregistrement (version FIXE `20261014180000` dans `schema_migrations`, une
 ligne `admin_operations`).
 
+Depuis la racine du dépôt (`C:\Users\bptds\Documents\Nexus`), en PowerShell :
+
 ```powershell
+# 1. Les fichiers sont-ils ceux qui ont été testés ? (empreintes du checkout
+#    Windows, fins de ligne CRLF : elles diffèrent du blob git en LF)
+Get-FileHash -Algorithm MD5 docs\partenaires-w3b\prod\w3b-releve-avant.sql, supabase\migrations\20261014180000_w3b_partenaire_badges_nexus.sql, docs\partenaires-w3b\prod\w3b-gardes-et-enregistrement.sql, docs\partenaires-w3b\prod\w3b-verif-apres.sql
+#   w3b-releve-avant.sql                            7C99B3EBA27EDDAFB2E049BF166D9F17
+#   20261014180000_w3b_partenaire_badges_nexus.sql  1F4791949B4D56311C7D14AEC9CB1D60
+#   w3b-gardes-et-enregistrement.sql                103FD96C4E464338079E0C6C70A3BA84
+#   w3b-verif-apres.sql                             F42D405E3C97B0B25E7FC4C473E67963
+
+# 2. Une seule transaction (-1) : une garde qui échoue annule TOUT.
+#    Pas de mot de passe dans la commande : psql le demande.
 $env:PGCLIENTENCODING = "UTF8"
-psql "<chaîne session pooler, comme W2/W3>" -v ON_ERROR_STOP=1 -1 `
+& "C:\Users\bptds\scoop\apps\postgresql\18.6-5\bin\psql.exe" "host=aws-1-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.nrloizyemulbhujrqhgx sslmode=require" -v ON_ERROR_STOP=1 -1 `
   -f docs/partenaires-w3b/prod/w3b-releve-avant.sql `
   -f supabase/migrations/20261014180000_w3b_partenaire_badges_nexus.sql `
   -f docs/partenaires-w3b/prod/w3b-gardes-et-enregistrement.sql
 ```
+
+Hôte vérifié le 2026-10-14, sans mot de passe : `aws-1-ca-central-1` connaît
+le projet, `aws-0-ca-central-1` répond « tenant not found ».
 
 Puis, en lecture seule : `docs/partenaires-w3b/prod/w3b-verif-apres.sql`.
 `w3b-gardes-et-enregistrement.sql` est GÉNÉRÉ (`generer-gardes.mjs`) : il
@@ -106,8 +125,9 @@ Ensuite seulement : push du code d'affichage (la base avant l'app).
 ## Lot mobile (non fait — protocole web d'abord)
 
 Le refus du coach vient de la base : il s'applique aussi au mobile publié,
-qui recevra l'erreur telle quelle. Au lot mobile, vérifier qu'elle s'affiche
-lisiblement dans l'assistant coach mobile.
+qui recevra l'erreur telle quelle. Au lot mobile : passer les erreurs de
+`AthleteWizardMobile` par `lib/erreurs/messageErreurNexus.ts` et les afficher
+dans l'interface (registre `docs/fast-follow-1.4.2.md` §84).
 
 `BadgePartenaireVignette` et `ActionsPartenaireFiche` sont des composants web.
 Au lot mobile : rendre les badges Nexus partenaire (`est_nexus`, `badge_code`)
@@ -118,6 +138,7 @@ dans les Distinctions mobiles, avec la même signature « par <organisation> ».
 1. ~~Le coach pose un badge déjà donné par un partenaire~~ : **tranché** — refusé
    (6b).
 2. ~~Icônes opaques~~ : **tranché** — aucun contrôle ; BP dépose des PNG détourés.
-3. Le message du refus arrive au coach préfixé « Erreur lors de la sauvegarde:
-   NEXUS: » dans une boîte native : lisible, mais brut. À reprendre avec
-   l'affichage des erreurs de l'assistant, si BP le souhaite.
+3. ~~Message brut « Erreur lors de la sauvegarde: NEXUS: » en boîte native~~ :
+   **fait (web)** — encadré dans la page, phrase mise en forme
+   (`lib/erreurs/messageErreurNexus.ts`, `components/shared/ErreurSauvegarde.tsx`),
+   sur « Créer un profil » et « Modifier ». Mobile : §84.
