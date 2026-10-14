@@ -98,6 +98,7 @@
       "PowerShell(git add lib/config/gender.ts \"app/admin/schools/[id]/page.tsx\" \"app/athlete/onboarding/page.tsx\")",
       "PowerShell(git add \"app/coach/ecole/stats/page.tsx\" \"app/coach/reputation/page.tsx\" \"app/coach/ecole/placements/page.tsx\" \"app/coach/ecole/page.tsx\" \"app/coach/athletes/[id]/page.tsx\" \"app/coach/ecole/analytics/page.tsx\" \"app/admin/recruteurs/page.tsx\")",
       "PowerShell(git push origin main)",
+      "Bash(git push origin main)",
       "PowerShell(git add \"app/coach/suggestions/page.tsx\" \"app/coach/suggestions/_data/mockSuggestions.ts\")",
       "PowerShell(python -c \"import pdfplumber; print\\('pdfplumber', pdfplumber.__version__\\)\")",
       "PowerShell(pip install pdfplumber --quiet)",
