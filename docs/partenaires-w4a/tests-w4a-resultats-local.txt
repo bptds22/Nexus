@@ -1,0 +1,741 @@
+﻿              set_config              
+--------------------------------------
+ 66666666-0000-0000-0000-00000000000a
+
+              set_config              
+--------------------------------------
+ 455bd55d-0416-4411-88fa-775354975e85
+
+              set_config              
+--------------------------------------
+ eeeeeeee-0000-0000-0000-0000000000aa
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c9001
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7001
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7008
+
+              set_config              
+--------------------------------------
+ 842da8f6-41bf-4b75-bc72-83afc68bfe1c
+
+              set_config              
+--------------------------------------
+ 082fdf2b-bb33-43a8-b5ca-9a37f67f4c1a
+
+              set_config              
+--------------------------------------
+ 5d719dfb-6cab-4988-bec7-250284a899c5
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c2012
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-00000000a001
+
+              set_config              
+--------------------------------------
+ 4b859bf1-5832-4258-897c-e094062926af
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c1001
+
+              set_config              
+--------------------------------------
+ ff88ed38-aabc-45d9-b472-7baae131d016
+
+              set_config              
+--------------------------------------
+ a3cd5133-f09d-4c47-9923-b5cb479d0f73
+
+              set_config              
+--------------------------------------
+ d713f052-d3f8-47f9-932f-5acf89af032c
+
+              set_config              
+--------------------------------------
+ 99df6e1a-d74e-4b0d-865a-1284261d87b5
+
+            set_config            
+----------------------------------
+ 4fc94502a18e9a1d5fc0fd89829879ec
+
+ set_config 
+------------
+ 18
+
+                                                                                                      set_config                                                                                                       
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ with c as (select public.partenaire_prospect_enregistrer(null, %L, %L, %L::uuid, null, null, %L::uuid, 2027, true, %s, %L::jsonb, %L::uuid[], %L::uuid[]) as id) insert into _ids select %L, id from c returning 'ok'
+
+                                                           set_config                                                           
+--------------------------------------------------------------------------------------------------------------------------------
+ with j as (select public.partenaire_prospect_lien(%L) as t) insert into _jet select %L, t from j returning length(jeton)::text
+
+                                set_config                                 
+---------------------------------------------------------------------------
+ select statut from public.partenaire_prospects_mes_cartes() where id = %L
+
+ essai_msg 
+-----------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ set_config 
+------------
+ 0
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ set_config 
+------------
+ 3
+
+ set_config 
+------------
+ 33
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+              set_config              
+--------------------------------------
+ fd7a1f6c-baab-4fa9-b82b-0009504fe5b6
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai_msg 
+-----------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+  n  | res |                                              test                                              |                                                                    detail                                                                     
+-----+-----+------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------
+   1 | OK  | A1 le recruteur ne crée pas de carte                                                           | 42501 NEXUS: réservé aux partenaires
+   2 | OK  | A2 le coach ne crée pas de carte                                                               | 42501 NEXUS: réservé aux partenaires
+   3 | OK  | A3 p2 (sans sport permis) refusé                                                               | 42501 NEXUS: cartes prospects non permises (permission, sport ou statut du partenaire)
+   4 | OK  | A4 attestation « 14 ans ou plus » obligatoire                                                  | 22023 NEXUS: confirme que ce jeune a 14 ans ou plus
+   5 | OK  | A5 critère inconnu refusé (règles W2)                                                          | 22023 NEXUS: critère inconnu : charisme
+   6 | OK  | A6 badge de sport d'un autre sport refusé (W3b)                                                | 22023 NEXUS: le badge « 3 points » ne s'applique pas au sport de cette carte
+   7 | OK  | A7 badge honneur refusé (W3b)                                                                  | 42501 NEXUS: le badge « MVP » ne peut pas être attribué par un partenaire
+   8 | OK  | A8 p1 crée la carte c1 (évaluation détaillée + 2 badges)                                       | ok (attendu ok)
+   9 | OK  | A9 cote calculée comme en W2 (moyenne des critères)                                            | 4.50 (attendu 4.50)
+  10 | OK  | A10 table illisible en direct, même pour le partenaire                                         | ERR:42501 (attendu ERR:42501)
+  11 | OK  | A11 table illisible en direct, même pour l'admin                                               | ERR:42501 (attendu ERR:42501)
+  12 | OK  | A12 p1 voit sa carte                                                                           | 1 (attendu 1)
+  13 | OK  | A13 p2 ne voit aucune carte de p1                                                              | 0 (attendu 0)
+  14 | OK  | A14 le recruteur ne voit aucune carte                                                          | 0 (attendu 0)
+  15 | OK  | A15 p2 ne supprime pas la carte de p1                                                          | ERR:P0002 (attendu ERR:P0002)
+  16 | OK  | B1 lien : jeton de 64 caractères hexadécimaux                                                  | 64 (attendu 64)
+  17 | OK  | B2 p1 voit « ENVOYEE »                                                                         | ENVOYEE (attendu ENVOYEE)
+  18 | OK  | B3 seule l'empreinte sha256 est stockée, jamais le jeton                                       | 1/0 (attendu 1/0)
+  19 | OK  | B4 sans connexion (rôle anon) : nom du partenaire SEULEMENT                                    | true|Média Preuve (attendu true|Média Preuve)
+  20 | OK  | B5 jeton inconnu : même réponse qu'invalide                                                    | false| (attendu false|)
+  21 | OK  | B6 anon ne peut pas ouvrir la carte                                                            | ERR:42501 (attendu ERR:42501)
+  22 | OK  | B7 nouveau lien : l'ancien ne vaut plus rien                                                   | 64 (attendu 64)
+  23 | OK  | B8 ancien jeton refusé                                                                         | false (attendu false)
+  24 | OK  | B9 révocation                                                                                  |  (attendu )
+  25 | OK  | B10 jeton révoqué refusé, carte « A_ENVOYER »                                                  | false|A_ENVOYER (attendu false|A_ENVOYER)
+  26 | OK  | B11 lien régénéré                                                                              | 64 (attendu 64)
+  27 | OK  | B12 un compte coach ne peut pas ouvrir le lien                                                 | 42501 NEXUS: ce lien s'adresse à un athlète inscrit
+  28 | OK  | B13 Félix ouvre le lien : il voit la carte                                                     | Zoé (attendu Zoé)
+  29 | OK  | B14 Félix peut rouvrir                                                                         | RESERVEE (attendu RESERVEE)
+  30 | OK  | B15 réservé : Mathis ne peut plus l'ouvrir                                                     | P0002 NEXUS: ce lien n'est plus valide
+  31 | OK  | B16 réservé : la page sans connexion ne dit plus rien                                          | false (attendu false)
+  32 | OK  | B17 p1 voit toujours « ENVOYEE » (statut masqué)                                               | ENVOYEE (attendu ENVOYEE)
+  33 | OK  | B18 carte réservée : modification refusée, message neutre                                      | 42501 NEXUS: cette carte ne peut pas être modifiée pour l'instant
+  34 | OK  | C1 Félix confirme sans opt-in → attente                                                        | attente_optin (attendu attente_optin)
+  35 | OK  | C2 rappel : la carte en attente figure dans ses cartes                                         | CONFIRMEE_ATTENTE_OPTIN|false (attendu CONFIRMEE_ATTENTE_OPTIN|false)
+  36 | OK  | C3 p1 voit toujours « ENVOYEE »                                                                | ENVOYEE (attendu ENVOYEE)
+  37 | OK  | C4 rien n'est transféré tant que l'opt-in est inactif                                          | 0 (attendu 0)
+  38 | OK  | C5 Félix active l'opt-in (RPC réelle, aussi celle du mobile)                                   | true (attendu true)
+  39 | OK  | C6 transfert automatique : carte supprimée, évaluation 4,50, 2 badges                          | 0|4.50|2 (attendu 0|4.50|2)
+  40 | OK  | C7 issue RÉCLAMÉE avec l'athlète, annulable 7 jours                                            | RECLAMEE|true|true (attendu RECLAMEE|true|true)
+  41 | OK  | C8 le trigger a été appelé une fois                                                            | 1 (attendu 1)
+  42 | OK  | C9 p1 voit l'issue « RECLAMEE » et l'athlète                                                   | RECLAMEE|true (attendu RECLAMEE|true)
+  43 | OK  | C10 plus rien en attente pour Félix                                                            | 0 (attendu 0)
+  44 | OK  | D1 p1 crée c2 (cote 2, clutch + vitesse)                                                       | ok (attendu ok)
+  45 | OK  | D2 lien c2                                                                                     | 64 (attendu 64)
+  46 | OK  | D3 Félix ouvre c2                                                                              | Léa (attendu Léa)
+  47 | OK  | D4 confirmation : évaluation existante gardée, badges sautés avec leur raison                  | transferee|deja_evalue|deja_porte_coach,deja_porte_partenaire (attendu transferee|deja_evalue|deja_porte_coach,deja_porte_partenaire)
+  48 | OK  | D5 l'évaluation de p1 reste 4,50                                                               | 4.50 (attendu 4.50)
+  49 | OK  | E1 p1 crée c3                                                                                  | ok (attendu ok)
+  50 | OK  | E2 lien c3                                                                                     | 64 (attendu 64)
+  51 | OK  | E3 Mathis ouvre c3                                                                             | Jade (attendu Jade)
+  52 | OK  | E4 Mathis : « ce n'est pas moi »                                                               |  (attendu )
+  53 | OK  | E5 carte supprimée ; issue REFUSEE sans athlète ni nom ; journal sans athlète                  | 0|REFUSEE:∅:∅|∅ (attendu 0|REFUSEE:∅:∅|∅)
+  54 | OK  | E6 une seconde réponse est refusée                                                             | ERR:P0002 (attendu ERR:P0002)
+  55 | OK  | F1 p1 crée c4 « Félix Gauthier » dans l'équipe de Félix                                        | ok (attendu ok)
+  56 | OK  | F2 p1 voit « CORRESPONDANCE_POSSIBLE » (jeune déjà visible de lui)                             | CORRESPONDANCE_POSSIBLE (attendu CORRESPONDANCE_POSSIBLE)
+  57 | OK  | F3 p1 ne lit pas les rapprochements (table)                                                    | ERR:42501 (attendu ERR:42501)
+  58 | OK  | F4 p1 ne lit pas les rapprochements (fonction admin)                                           | ERR:42501 (attendu ERR:42501)
+  59 | OK  | F5 Félix voit la proposition                                                                   | true (attendu true)
+  60 | OK  | F6 notification au jeune + paire AUTO PROPOSE, décidée par le système                          | 1|AUTO:PROPOSE:système:EQUIPE (attendu 1|AUTO:PROPOSE:système:EQUIPE)
+  61 | OK  | F7 Félix infirme la proposition                                                                |  (attendu )
+  62 | OK  | F8 la carte revient à son état d'avant (décision A)                                            | A_ENVOYER (attendu A_ENVOYER)
+  63 | OK  | F9 réenregistrée, la carte n'est pas reproposée (paire INFIRME)                                | 8f1fe991-7040-41ec-b3fb-402cda29d615A_ENVOYER (attendu 8f1fe991-7040-41ec-b3fb-402cda29d615A_ENVOYER)
+  64 | OK  | F10 c5 « Félix Gauthier » (sans évaluation) → proposée automatiquement                         | ok (attendu ok)
+  65 | OK  | F11 p1 : « CORRESPONDANCE_POSSIBLE »                                                           | CORRESPONDANCE_POSSIBLE (attendu CORRESPONDANCE_POSSIBLE)
+  66 | OK  | F12 Félix retire son opt-in                                                                    | true (attendu true)
+  67 | OK  | F13 p1 ne voit plus de correspondance (jeune plus visible)                                     | A_ENVOYER (attendu A_ENVOYER)
+  68 | OK  | F14 Félix confirme c5 sans opt-in → attente                                                    | attente_optin (attendu attente_optin)
+  69 | OK  | F15 Félix réactive l'opt-in → c5 transférée (rien à transférer)                                | true (attendu true)
+  70 | OK  | F16 c5 réclamée, évaluation « aucune »                                                         | RECLAMEE|aucune (attendu RECLAMEE|aucune)
+  71 | OK  | F17 c6 « Mathis Lavoie » : pas de proposition automatique                                      | ok (attendu ok)
+  72 | OK  | F18 p1 voit « A_ENVOYER »                                                                      | A_ENVOYER (attendu A_ENVOYER)
+  73 | OK  | F19 l'admin voit le candidat MOYENNE, non visible du partenaire                                | EQUIPE|MOYENNE|false|CANDIDAT (attendu EQUIPE|MOYENNE|false|CANDIDAT)
+  74 | OK  | F20 p1 ne peut pas proposer                                                                    | ERR:42501 (attendu ERR:42501)
+  75 | OK  | F21 l'admin propose c6 à Mathis                                                                |  (attendu )
+  76 | OK  | F22 p1 voit toujours « A_ENVOYER » (proposition de l'admin masquée)                            | A_ENVOYER (attendu A_ENVOYER)
+  77 | OK  | F23 Mathis confirme sans opt-in → attente ; p1 voit « A_ENVOYER »                              | attente_optin (attendu attente_optin)
+  78 | OK  | F24 p1 voit toujours « A_ENVOYER »                                                             | A_ENVOYER (attendu A_ENVOYER)
+  79 | OK  | F25 Mathis active l'opt-in → transfert                                                         | true (attendu true)
+  80 | OK  | F26 c6 transférée : évaluation 3 pour Mathis ; paire CONFIRME supprimée avec la carte          | 3.00|RECLAMEE (attendu 3.00|RECLAMEE)
+  81 | OK  | F27 deux homonymes MOYENNE : pas d'automatique                                                 | ok (attendu ok)
+  82 | OK  | F28 c7 reste « A_ENVOYER » ; l'admin voit 2 candidats                                          | A_ENVOYER|2 (attendu A_ENVOYER|2)
+  83 | OK  | F29 nom proche (FAIBLE) : pas d'automatique                                                    | ok (attendu ok)
+  84 | OK  | F30 c8 : candidat FAIBLE, carte libre                                                          | A_ENVOYER|FAIBLE:EQUIPE_PROCHE (attendu A_ENVOYER|FAIBLE:EQUIPE_PROCHE)
+  85 | OK  | F31 l'admin écarte c8 × Félix                                                                  |  (attendu )
+  86 | OK  | F32 écartée : plus de candidat pour cette paire                                                | 0 (attendu 0)
+  87 | OK  | F33 l'admin change d'avis et propose c8 à Félix                                                |  (attendu )
+  88 | OK  | F34 l'admin annule la réservation                                                              | RESERVATION_ANNULEE (attendu RESERVATION_ANNULEE)
+  89 | OK  | F34b carte libre, paire CADUC                                                                  | A_ENVOYER|CADUC (attendu A_ENVOYER|CADUC)
+  90 | OK  | F35 aucune fonction ne fait réclamer à la place du jeune (l'admin ne peut pas confirmer)       | ERR:P0002 (attendu ERR:P0002)
+  91 | OK  | G1 le coach modifie la fiche de Félix (poids) : écriture OK                                    | ok (attendu ok)
+  92 | OK  | G2 Félix modifie sa bio (comme le web ou le mobile) : écriture OK                              | ok (attendu ok)
+  93 | OK  | G3 Félix retire son opt-in : écriture OK                                                       | true (attendu true)
+  94 | OK  | G4 aucune de ces trois écritures n'a appelé le trigger (WHEN)                                  | 0 (attendu 0)
+  95 | OK  | G5 opt-in SANS carte en attente : écriture OK                                                  | true (attendu true)
+  96 | OK  | G6 appelé une fois, sorti sans rien écrire                                                     | 1|0 (attendu 1|0)
+  97 | OK  | H1 p1 ne peut pas annuler                                                                      | ERR:42501 (attendu ERR:42501)
+  98 | OK  | H2 l'admin annule la réclamation de c1 (moins de 7 jours)                                      | RECLAMATION_ANNULEE (attendu RECLAMATION_ANNULEE)
+  99 | OK  | H3 transfert défait : évaluation retirée (tracée), 2 badges retirés, carte restaurée sans lien | 0|1|2|A_ENVOYER:∅:∅ (attendu 0|1|2|A_ENVOYER:∅:∅)
+ 100 | OK  | H4 une seconde annulation est refusée                                                          | ERR:22023 (attendu ERR:22023)
+ 101 | OK  | H5 après 7 jours : annulation refusée                                                          | ERR:22023 (attendu ERR:22023)
+ 102 | OK  | H6 l'admin supprime c1                                                                         |  (attendu )
+ 103 | OK  | H7 issue SUPPRIMEE_ADMIN                                                                       | RECLAMATION_ANNULEE,SUPPRIMEE_ADMIN (attendu RECLAMATION_ANNULEE,SUPPRIMEE_ADMIN)
+ 104 | OK  | I1 p1 complète jusqu'à 50 cartes                                                               | ok (attendu ok)
+ 105 | OK  | I1b p1 a 50 cartes actives                                                                     | 50 (attendu 50)
+ 106 | OK  | I2 la 51e est refusée                                                                          | 54000 NEXUS: limite de 50 cartes prospects actives atteinte
+ 107 | OK  | J1 lien c4                                                                                     | 64 (attendu 64)
+ 108 | OK  | J2 carte expirée : lien refusé                                                                 | ERR:P0002 (attendu ERR:P0002)
+ 109 | OK  | J3 purge : une carte expirée                                                                   | 1 (attendu 1)
+ 110 | OK  | J4 issue EXPIREE ; instantané de plus de 7 jours effacé                                        | 0|EXPIREE|∅ (attendu 0|EXPIREE|∅)
+ 111 | OK  | K1 export du partenaire : aucun rapprochement, aucun athlète, aucun détail                     | 0|0|0|true (attendu 0|0|0|true)
+ 112 | OK  | K2 export du partenaire : cartes actives sans jeton ni réservation                             | 0 (attendu 0)
+ 113 | OK  | K3 export de Félix : sa réclamation et les propositions qui le visent                          | true|true (attendu true|true)
+ 114 | OK  | K4 export réservé à l'admin                                                                    | ERR:42501 (attendu ERR:42501)
+ 115 | OK  | L1 badge_plafond et M10 inchangés (md5)                                                        | 171a82c74237a5a6d9c5f50c74f44d5e 481cf443a2db040fd840a1e229b325f2 (attendu 171a82c74237a5a6d9c5f50c74f44d5e 481cf443a2db040fd840a1e229b325f2)
+ 116 | OK  | L2 fonctions W2/W3/W3b intactes (md5 sans CR)                                                  | 4fc94502a18e9a1d5fc0fd89829879ec (attendu 4fc94502a18e9a1d5fc0fd89829879ec)
+ 117 | OK  | L3 triggers de athletes : ceux d'avant + le seul trigger d'opt-in                              | 18|trg_prospect_partenaire_sur_optin (attendu 18|trg_prospect_partenaire_sur_optin)
+ 118 | OK  | L4 ACL complètes : page du lien (anon autorisé)                                                | {anon,authenticated,postgres,service_role} (attendu {anon,authenticated,postgres,service_role})
+ 119 | OK  | L5 ACL complètes : transfert et trigger serveur seulement                                      | {postgres,service_role} (attendu {postgres,service_role})
+ 120 | OK  | L6 anon (rôle réel) n'appelle aucune fonction partenaire ni admin                              | ERR:42501 (attendu ERR:42501)
+ 121 | OK  | M1 Félix retire son opt-in                                                                     | true (attendu true)
+ 122 | OK  | M2 c9 : lien, ouverture, confirmation → attente                                                | ok (attendu ok)
+ 123 | OK  | M3 lien c9                                                                                     | 64 (attendu 64)
+ 124 | OK  | M4 Félix ouvre et confirme c9                                                                  | Noé|attente_optin (attendu Noé|attente_optin)
+ 125 | OK  | M5 transfert en panne : l'opt-in est QUAND MÊME enregistré                                     | true (attendu true)
+ 126 | OK  | M6 opt-in actif, carte toujours en attente, échec journalisé                                   | true|CONFIRMEE_ATTENTE_OPTIN|1 (attendu true|CONFIRMEE_ATTENTE_OPTIN|1)
+
+ ok  | echecs 
+-----+--------
+ 126 |      0
+

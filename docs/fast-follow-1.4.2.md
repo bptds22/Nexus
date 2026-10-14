@@ -2533,3 +2533,13 @@ partagée) et les afficher dans l'interface, pas en boîte native ni en texte
 brut. Vérifier le refus « badge déjà attribué par un partenaire » à l'écran.
 Les autres `alert()` de `create/page.tsx` (invitation envoyée, erreur d'envoi
 d'invitation) n'ont pas été touchés.
+
+## 85. Cartes prospects partenaire (W4) côté mobile (2026-10-14, lot mobile)
+
+W4a ajoute la notification `PARTENAIRE_EVALUATION` (« <partenaire> t'a évalué. C'est toi ? »).
+L'appli publiée l'affiche (titre, compteur du tableau de bord) mais sans icône dans la liste
+(`TYPE_ICON` ne la connaît pas) et **sans écran pour répondre** : le texte renvoie à
+nexussports.ca. Au lot mobile : icône + onglet de la liste des notifications, écran « c'est moi /
+ce n'est pas moi » (`prospect_partenaire_mes_cartes`, `_confirmer`, `_infirmer`), rappel
+« active la visibilité partenaire » pour une carte `CONFIRMEE_ATTENTE_OPTIN`. L'appli n'a pas de
+liens profonds : le lien `/p/[jeton]` reste web.
