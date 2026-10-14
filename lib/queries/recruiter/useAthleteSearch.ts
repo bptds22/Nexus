@@ -198,7 +198,7 @@ interface RpcSearchRow {
   team_league: string | null;
   team_is_rseq: boolean | null;
   team_school_type: string | null;
-  /* W2 (20261014020100) — l'évaluation PARTENAIRE, à part. `cote_globale`
+  /* W2 (20261014133428) — l'évaluation PARTENAIRE, à part. `cote_globale`
      reste la note du COACH seule : les binaires mobiles publiés la lisent
      sans libellé. Le filtre « 4+ » et le tri serveur utilisent
      COALESCE(coach, partenaire). */

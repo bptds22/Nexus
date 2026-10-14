@@ -1,4 +1,4 @@
--- Tests W2 (20261014020100), base LOCALE. Une transaction annulée à la fin : rien ne survit.
+-- Tests W2 (20261014133428), base LOCALE. Une transaction annulée à la fin : rien ne survit.
 -- Comptes résolus par courriel ; chaque essai tourne sous le VRAI rôle avec un JWT simulé.
 -- Athlète cible : Félix Gauthier (football, 17 ans, compte athlète, coach, JAMAIS évalué).
 \set ON_ERROR_STOP 1
