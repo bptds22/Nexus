@@ -1,0 +1,124 @@
+              set_config              
+--------------------------------------
+ 66666666-0000-0000-0000-00000000000a
+              set_config              
+--------------------------------------
+ 455bd55d-0416-4411-88fa-775354975e85
+              set_config              
+--------------------------------------
+ eeeeeeee-0000-0000-0000-0000000000aa
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c9001
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7001
+              set_config              
+--------------------------------------
+ 22222222-0000-0000-0000-00000000000c
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7008
+              set_config              
+--------------------------------------
+ 082fdf2b-bb33-43a8-b5ca-9a37f67f4c1a
+              set_config              
+--------------------------------------
+ 5d719dfb-6cab-4988-bec7-250284a899c5
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c2012
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c2003
+              set_config              
+--------------------------------------
+ ff88ed38-aabc-45d9-b472-7baae131d016
+              set_config              
+--------------------------------------
+ 5d392f96-2a91-456c-a2bc-12eff19e8ce0
+              set_config              
+--------------------------------------
+ d713f052-d3f8-47f9-932f-5acf89af032c
+              set_config              
+--------------------------------------
+ a3cd5133-f09d-4c47-9923-b5cb479d0f73
+              set_config              
+--------------------------------------
+ 99df6e1a-d74e-4b0d-865a-1284261d87b5
+                          set_config                           
+---------------------------------------------------------------
+ select %s from public.partenaire_badges_nexus_admissibles(%L)
+                                 set_config                                 
+----------------------------------------------------------------------------
+ select (public.partenaire_attribuer_badge_nexus(%L, %L) is not null)::text
+-----------
+-----------
+-----------
+-----------
+-----------
+                      set_config                      
+------------------------------------------------------
+ select %s from public.badges_partenaires_athlete(%L)
+                                                set_config                                                
+----------------------------------------------------------------------------------------------------------
+ select public.coach_masquer_badge_partenaire((select id from _ids where cle = 'pose_vitesse'), %s)::text
+                                     set_config                                     
+------------------------------------------------------------------------------------
+ select public.retirer_badge_partenaire((select id from _ids where cle = %L))::text
+ n  | res |                                         test                                          |                                                                    detail                                                                     
+----+-----+---------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------
+  1 | OK  | A1 p1 voit 15 badges pour Félix (5 universels + 10 de football)                       | 15 (attendu 15)
+  2 | OK  | A2 aucun badge honneur proposé                                                        | 0 (attendu 0)
+  3 | OK  | A3 « 3 points » (basketball) n'est pas proposé à un joueur de football                | 0 (attendu 0)
+  4 | OK  | A4 les 5 universels sont marqués « déjà porté — son coach »                           | 5 (attendu 5)
+  5 | OK  | A5 le coach ne lit pas la liste                                                       | ERR:42501 (attendu ERR:42501)
+  6 | OK  | A6 le recruteur ne lit pas la liste                                                   | ERR:42501 (attendu ERR:42501)
+  7 | OK  | A7 l'athlète ne lit pas la liste                                                      | ERR:42501 (attendu ERR:42501)
+  8 | OK  | R1 badge de SPORT pour un autre sport : « 3 points » à un joueur de football → refusé | 22023 NEXUS: le badge « 3 points » ne s'applique pas au sport de cet athlète (Football)
+  9 | OK  | R2 DOUBLON avec le coach : « Clutch » déjà posé par le coach → refusé                 | 23505 NEXUS: cet athlète a déjà le badge « Clutch » (attribué par son coach)
+ 10 | OK  | R3 badge HONNEUR (MVP) → refusé                                                       | 42501 NEXUS: le badge « MVP » ne peut pas être attribué par un partenaire
+ 11 | OK  | R4 athlète NON éligible → refusé                                                      | ERR:42501 (attendu ERR:42501)
+ 12 | OK  | R5 le coach pose un badge Nexus « partenaire » → refusé                               | ERR:42501 (attendu ERR:42501)
+ 13 | OK  | R6 l'athlète se pose un badge → refusé                                                | ERR:42501 (attendu ERR:42501)
+ 14 | OK  | R7 p1 pose au nom de p2 → refusé                                                      | ERR:42501 (attendu ERR:42501)
+ 15 | OK  | R8 l'admin sans nommer de partenaire → refusé                                         | ERR:22023 (attendu ERR:22023)
+ 16 | OK  | R9 l'admin non plus ne pose « 3 points » à un joueur de football                      | ERR:22023 (attendu ERR:22023)
+ 17 | OK  | R10 écriture directe dans partner_athlete_badges → refusée                            | ERR:42501 (attendu ERR:42501)
+ 18 | OK  | P1 Félix a 5 badges coach (plafond atteint)                                           | 5 (attendu 5)
+ 19 | OK  | P2 p1 pose « Vitesse » (football) malgré le plafond                                   | true (attendu true)
+ 20 | OK  | P3 DOUBLON avec soi-même → refusé                                                     | 23505 NEXUS: cet athlète a déjà le badge « Vitesse » (attribué par vous)
+ 21 | OK  | P4 DOUBLON avec un autre partenaire → refusé                                          | 23505 NEXUS: cet athlète a déjà le badge « Vitesse » (attribué par Média Preuve)
+ 22 | OK  | P5 LIMITE DE 5 INTACTE : un 6e badge coach est toujours refusé                        | ERR:P0001 (attendu ERR:P0001)
+ 23 | OK  | P6 aucune ligne athlete_badges touchée par W3b                                        | true (attendu true)
+ 24 | OK  | P7 la liste dit maintenant « Vitesse — Média Preuve »                                 | Média Preuve (attendu Média Preuve)
+ 25 | OK  | L1 le recruteur lit le badge Nexus : code, libellé, organisation                      | vitesse / Vitesse / Média Preuve / true (attendu vitesse / Vitesse / Média Preuve / true)
+ 26 | OK  | L2 l'athlète le lit, sans pouvoir le masquer                                          | false (attendu false)
+ 27 | OK  | L3 un autre coach ne lit rien                                                         | 0 (attendu 0)
+ 28 | OK  | L4 W3 inchangé : p1 pose aussi son badge propre                                       | true (attendu true)
+ 29 | OK  | L5 pose du badge propre par p1                                                        | true (attendu true)
+ 30 | OK  | L6 le recruteur lit les deux (badge Nexus et badge propre)                            | Esprit sportif=false,Vitesse=true (attendu Esprit sportif=false,Vitesse=true)
+ 31 | OK  | L7 la pose W3 porte son partenaire (partner_id posé par la nouvelle version)          | true (attendu true)
+ 32 | OK  | M1 l'athlète masque → refusé                                                          | ERR:42501 (attendu ERR:42501)
+ 33 | OK  | M2 p1 masque → refusé (c'est au coach)                                                | ERR:42501 (attendu ERR:42501)
+ 34 | OK  | M3 le coach masque le badge Nexus                                                     |  (attendu )
+ 35 | OK  | M4 masqué : le recruteur ne voit plus que le badge propre                             | Esprit sportif (attendu Esprit sportif)
+ 36 | OK  | M5 masqué : le coach le voit, marqué masqué                                           | Esprit sportif=false,Vitesse=true (attendu Esprit sportif=false,Vitesse=true)
+ 37 | OK  | M6 le coach réaffiche                                                                 |  (attendu )
+ 38 | OK  | X1 p2 retire le badge Nexus posé par p1 → refusé                                      | ERR:42501 (attendu ERR:42501)
+ 39 | OK  | X2 le coach retire → refusé (il peut seulement masquer)                               | ERR:42501 (attendu ERR:42501)
+ 40 | OK  | X3 l'athlète retire → refusé                                                          | ERR:42501 (attendu ERR:42501)
+ 41 | OK  | X4 p1 retire son badge Nexus                                                          |  (attendu )
+ 42 | OK  | X5 retiré : il disparaît pour le recruteur                                            | Esprit sportif (attendu Esprit sportif)
+ 43 | OK  | X6 trace gardée : qui (p1) et quand                                                   | true (attendu true)
+ 44 | OK  | X7 retiré, il peut être reposé — ici par p2                                           | true (attendu true)
+ 45 | OK  | X8 l'admin retire le badge de p2                                                      |  (attendu )
+ 46 | OK  | Z1 l'admin attribue « Vision du jeu » pour le compte de p1                            | true (attendu true)
+ 47 | OK  | Z2 signé par p1 (Média Preuve), et p1 peut le retirer                                 | Média Preuve / true (attendu Média Preuve / true)
+ 48 | OK  | Z3 l'admin ne pose pas pour un partenaire non approuvé                                | ERR:42501 (attendu ERR:42501)
+ 49 | OK  | D1 ACL des 6 fonctions = {authenticated, postgres, service_role}                      | {authenticated,postgres,service_role} (attendu {authenticated,postgres,service_role})
+ 50 | OK  | D2 badge_plafond et M10 inchangés (md5)                                               | 171a82c74237a5a6d9c5f50c74f44d5e 481cf443a2db040fd840a1e229b325f2 (attendu 171a82c74237a5a6d9c5f50c74f44d5e 481cf443a2db040fd840a1e229b325f2)
+ 51 | OK  | D3 anon n'exécute rien (rôle anon réel)                                               | ERR:42501 (attendu ERR:42501)
+ ok | echecs 
+----+--------
+ 51 |      0
