@@ -69,11 +69,12 @@ try {
   await svc.from("users").update({ onboarding_complete: true }).eq("id", idB);
   const { data: fB, error: eB } = await svc.from("athletes").insert({
     user_id: idB, first_name: "", last_name: "", date_naissance: "2008-04-04", status: "ACTIF", verified: false, annee_diplomation: 2026,
+    school_id: coach.school_id, // athlète de l'école sans coach : section « à réclamer »
   }).select("id").single();
   if (eB) throw eB;
   temp.athletes.push(fB.id);
 
-  // ── Coach : la fiche à confirmer est retirée de sa liste ──────────────────
+  // ── Coach : SA fiche reste, étiquetée ; la fiche sans nom de l'école est masquée ──
   const sC = await session(COACH);
   {
     const c = await nav.newContext(DESKTOP);
@@ -82,9 +83,12 @@ try {
     p.on("pageerror", (e) => erreurs.push("coach : " + e.message));
     await p.goto(`${APP}/coach/athletes`, { waitUntil: "networkidle" });
     await p.waitForSelector("[data-noms-en-attente]", { timeout: 30000 });
-    note("coach : ligne :", JSON.stringify(await p.locator("[data-noms-en-attente]").innerText()),
-      "| « Banc-Essai » dans la liste :", await p.locator("text=Banc-Essai").count());
-    await p.screenshot({ path: path.join(OUT, "01-coach-fiche-masquee.png") });
+    note("coach : sa fiche « Banc-Essai » dans la liste :", await p.locator("text=Banc-Essai").count(),
+      "| étiquette :", JSON.stringify(await p.locator("[data-nom-a-confirmer]").first().innerText().catch(() => "(aucune)")),
+      "| étiquettes :", await p.locator("[data-nom-a-confirmer]").count());
+    note("coach : fiche sans nom de l'école (à réclamer) :", JSON.stringify(await p.locator("[data-noms-en-attente]").innerText()));
+    await p.locator("[data-nom-a-confirmer]").first().scrollIntoViewIfNeeded();
+    await p.screenshot({ path: path.join(OUT, "01-coach-etiquette-nom-a-confirmer.png") });
     await c.close();
   }
 
@@ -128,7 +132,7 @@ try {
     const p = await c.newPage();
     await p.goto(`${APP}/coach/athletes`, { waitUntil: "networkidle" });
     await p.waitForTimeout(3000);
-    note("coach après confirmation : ligne « masquée » :", await p.locator("[data-noms-en-attente]").count(),
+    note("coach après « Oui » : étiquettes :", await p.locator("[data-nom-a-confirmer]").count(),
       "| « Banc-Essai » dans la liste :", await p.locator("text=Banc-Essai").count());
     await c.close();
   }

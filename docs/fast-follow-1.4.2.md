@@ -2600,8 +2600,9 @@ modification du prénom ou du nom par l'athlète (Profil → Prénom / Nom) conf
 - **`AthleteOnboardingMobile`** : afficher Prénom et Nom (obligatoires) quand l'un manque ou est à
   confirmer, pré-remplis depuis `users` (ou `mon_nom_a_confirmer()`), puis `confirmer_mon_nom()` au
   premier enregistrement — même règle que l'étape 1 du web.
-- **`CoachAthletesMobile`** : retirer de la liste les fiches sans nom ou `nom_a_confirmer`, avec la
-  ligne « N fiche(s) masquée(s) » (même règle que `app/coach/athletes/page.tsx`).
+- **`CoachAthletesMobile`** : garder SES athlètes avec l'étiquette « Nom à confirmer par l'athlète » ;
+  retirer des sections hors de sa liste les fiches sans nom ou `nom_a_confirmer` (même règle que
+  `app/coach/athletes/page.tsx`).
 - **Bandeau « Est-ce bien toi ? »** dans l'appli (aujourd'hui web seulement :
   `components/athlete/BandeauNomAConfirmer.tsx`).
 - **Notifications `PROFILE_TIP`** : un lien générique (ex. `metadata.route`) ; aujourd'hui seule la

@@ -1,9 +1,10 @@
 fiche « à confirmer » créée — drapeau posé par le trigger : true
-coach : ligne : "1 fiche masquée : l'athlète doit confirmer son prénom et son nom." | « Banc-Essai » dans la liste : 0
+coach : sa fiche « Banc-Essai » dans la liste : 1 | étiquette : "Nom à confirmer par l'athlète" | étiquettes : 1
+coach : fiche sans nom de l'école (à réclamer) : "1 fiche de l'école masquée : l'athlète doit confirmer son prénom et son nom."
 athlète (bureau) : "Est-ce bien toi : Gabrielle Banc-Essai ? Ton profil n'apparaît pas aux recruteurs tant que ton nom n'est pas confirmé. Oui Corriger"
 athlète (mobile) : "Est-ce bien toi : Gabrielle Banc-Essai ? Ton profil n'apparaît pas aux recruteurs tant que ton nom n'est pas confirmé. Oui Corriger"
 « Oui » : bandeau encore là : 0 | drapeau de la fiche : false
-coach après confirmation : ligne « masquée » : 0 | « Banc-Essai » dans la liste : 1
+coach après « Oui » : étiquettes : 0 | « Banc-Essai » dans la liste : 1
 sans nom : prénom / nom proposés : Neuf / Sansnom
 sans nom : après « Enregistrer » : {"first_name":"Neuf","last_name":"Sansnom-Corrigé","nom_a_confirmer":false}
 remise en état : fiche jetable retirée : oui

@@ -14,7 +14,7 @@ appliquée en **local** ; rien en prod (attend le GO de BP). Décisions BP du 20
 | Base | `mon_nom_a_confirmer()` / `confirmer_mon_nom(prénom, nom)` : le bandeau. La proposition vient du compte, sinon du nom complet Google **du compte connecté**. |
 | Web, espace athlète | Bandeau « Est-ce bien toi : X Y ? » (Oui / Corriger) ; fiche sans nom → champs pré-remplis + Enregistrer. « Ton profil n'apparaît pas aux recruteurs tant que ton nom n'est pas confirmé. » |
 | Web, inscription athlète | L'étape 1 (prénom et nom visibles et obligatoires) **confirme** le nom au « Suivant » — sinon le bandeau redemanderait aussitôt. |
-| Web, `/coach/athletes` | Fiches sans nom ou à confirmer retirées des listes (mes athlètes, à réclamer, école) ; ligne « N fiche(s) masquée(s) : l'athlète doit confirmer son prénom et son nom. » |
+| Web, `/coach/athletes` | **Ses** athlètes restent dans sa liste, avec l'étiquette « Nom à confirmer par l'athlète » (ajustement BP 2026-10-15). Hors de sa propre liste (« à réclamer », athlètes de l'école), une fiche sans nom ou à confirmer est retirée, avec la ligne « N fiche(s) de l'école masquée(s) : … ». |
 | Registre §90 | Mobile : prénom/nom dans l'inscription de l'appli, liste coach mobile, bandeau, lien des notifications. |
 
 ## Effet en prod à l'application
@@ -33,13 +33,20 @@ appliquée en **local** ; rien en prod (attend le GO de BP). Décisions BP du 20
   visible ; même nom → non ; drapeau levé à la main par l'athlète, un coach ou un admin → sans effet) ;
   bandeau (états, proposition tirée du compte de l'appelant) ; « Oui » / « Corriger » ; anon refusé.
 - Tests D1 rejoués avec D1b en place : 33/33.
-- `outils/captures-d1b.mjs` → `captures/` + `captures-resultats.txt` : coach (fiche masquée puis de
-  retour après « Oui »), bandeau bureau et mobile, « Corriger », fiche sans nom (champs pré-remplis
+- `outils/captures-d1b.mjs` → `captures/` + `captures-resultats.txt` : coach (sa fiche étiquetée « Nom à confirmer par l'athlète », l'étiquette disparaît après « Oui » ; fiche sans nom de l'école masquée), bandeau bureau et mobile, « Corriger », fiche sans nom (champs pré-remplis
   « Neuf / Sansnom »). Comptes jetables retirés ; aucune erreur JavaScript.
 - `npm test` 453/453 (1 sauté, préexistant) ; `tsc` 176 avant comme après, aucune dans le lot ;
   `next build --webpack` OK.
 
-## Textes à approuver (rien n'est envoyé sans l'OK de BP)
+## Application en prod — même méthode que D1, preuve locale faite
+
+`prod/construire-lot.mjs` → `prod/lot-prod.sql` ; `prod/preuve-locale.txt` : garde finale fausse → tout
+annulé ; envoi séparé → arrêt avant écriture ; lot réel → empreinte identique (`245230c9…`, 10 éléments),
+md5 enregistré = fichier ; 2e envoi refusé ; tests 29/29 sur la base issue du lot. Gardes propres à
+D1b : aucun nom de fiche ni de compte ne change, aucune fiche ni aucun compte marqués. Retrait :
+`rollback-d1b.sql` (remet la recherche recruteur d'avant, md5 `c03ca63e…`).
+
+## Textes (approuvés par BP le 2026-10-15)
 
 À envoyer **après** l'application de D1b en prod (sinon « caché aux recruteurs » serait faux).
 
