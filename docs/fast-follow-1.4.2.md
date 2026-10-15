@@ -2781,3 +2781,15 @@ club dans le menu Équipe, sous cette école.
 
 **Accepté tel quel par BP le 2026-10-15.** À revoir seulement si un recruteur s'en plaint : il faudrait
 alors lier le filtre à l'école de l'ÉQUIPE plutôt qu'à celle de la fiche.
+
+## 100. « Prise en charge par un coach » : le push doit passer par la file (heures calmes) (2026-10-15, à faire)
+
+Push A4a (`20261016010000_push_a4a_file`, appliquée en prod le 2026-10-15) : badges, évaluations et
+cartes partenaires passent par la file `push_file` (heures calmes 21 h – 8 h, regroupement 10 min,
+préférences par type, journal `push_envois`). Le push de **prise en charge** (`claim_school_athletes`)
+reste **direct** (`push_to_user`) : il part à toute heure, ignore les préférences et n'est pas journalisé.
+Le nom du coach, lui, passe déjà par `coach_nommable`.
+
+À faire : un genre `PRISE_EN_CHARGE` dans `push_file` (CHECK élargi, texte dans `push_textes`), une
+catégorie (`RAPPELS` ou une nouvelle), `claim_school_athletes` qui met en file au lieu d'envoyer. Mêmes
+gardes et même méthode de lot que A4a.

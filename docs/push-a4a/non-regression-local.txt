@@ -1,0 +1,8 @@
+== partenaires-w2/tests-w2 : 53|0  ERROR: 0
+== partenaires-w3/tests-w3 : 70|0  ERROR: 0
+== partenaires-w3b/tests-w3b : 60|0  ERROR: 0
+== partenaires-w4a/tests-w4a : 205|0  ERROR: 0
+== doublons-d1/tests-d1 : 33|0  ERROR: 0
+== partenaires-w4d/tests-w4d : 52|0  ERROR: 0
+== invitations-coach-nomme/tests-coach-nomme : 32|0  ERROR: 0
+== noms-d1b/tests-d1b : 29|0  ERROR: 0

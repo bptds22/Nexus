@@ -1,0 +1,26 @@
+PREUVE LOCALE — lot push A4a — 2026-10-15T17:05:43
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 441c3e0e3e29b9efc046bd0a4d1f61ad
+  md5 lot-prod.sql      : 0c40221bad5b9a2f79a7f5da251743ce
+  état de départ (migration retirée) : 0bf261096a750fd407495fcbacf165ed|13  (prod avant = 0bf261096a750fd407495fcbacf165ed|13) version=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte 5055df76bf335dd6d8e31c67b463ff2f / 57 éléments) — tout est annulé 
+  état après : 0bf261096a750fd407495fcbacf165ed|13  (prod avant = 0bf261096a750fd407495fcbacf165ed|13) version=0
+
+== 2. Instructions envoyées SÉPARÉMENT (pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:33: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : 0bf261096a750fd407495fcbacf165ed|13  (prod avant = 0bf261096a750fd407495fcbacf165ed|13) version=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"100|34|34|0|0|1|0|48","a_reecrire":0,"nouveaux_avant":0,"operations":39,"version_deja":0,"derniere_version":"20261015130353","pg":"17.6"}, "apres" : {"donnees" : "100|34|34|0|0|1|0|48", "version" : "20261016010000", "md5_enregistre" : "441c3e0e3e29b9efc046bd0a4d1f61ad", "admin_operation" : "8106b358-3a9c-4088-9dc0-023070a0417c", "cron" : "*/10 * * * *", "meme_transaction" : true}} 
+  état après : 0a16b31cb27fbaa7c59b3ffb314f1742|37  (prod avant = 0bf261096a750fd407495fcbacf165ed|13) version=1
+  empreinte des objets en base : 5055df76bf335dd6d8e31c67b463ff2f|57
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: migration push A4a déjà présente — rien n'est appliqué 
+  état après : 0a16b31cb27fbaa7c59b3ffb314f1742|37  (prod avant = 0bf261096a750fd407495fcbacf165ed|13) version=1
+
+== 5. Banc push A4a sur la base issue du lot ==
+  69|0   (ok | échecs)
