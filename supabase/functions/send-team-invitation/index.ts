@@ -1,9 +1,8 @@
-// send-team-invitation : courriel coach→athlète pour un TRANSFERT d'équipe.
-// Envoie UN courriel via Resend.
+// send-team-invitation : courriel d'invitation à rejoindre une équipe (TRANSFERT d'équipe).
+// Envoie UN courriel via Resend. Aucun nom de coach (décision BP du 2026-10-15).
 //
 // Corps attendu :
-//   { email, coach_name, team_name, school_name, sport, age_group, division,
-//     gender, transfer_token }
+//   { email, team_name, school_name, sport, age_group, division, gender, transfer_token }
 // email + transfer_token strictement requis ; le reste = repli gracieux.
 //
 // À NE PAS CONFONDRE avec send-invitation, qui est la RÉCLAMATION d'un profil
@@ -14,12 +13,12 @@
 // le corps propre à ce courriel vit dans ./email.ts (buildBody).
 
 import { FROM, APP_URL } from "../_shared/emailLayout.ts";
-import { buildBody } from "./email.ts";
+import { buildBody, SUJET } from "./email.ts";
 
 const NOTICE_SECRET = Deno.env.get("TEAM_INVITE_NOTICE_SECRET")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 
-const SUBJECT = "Un coach t'invite dans son équipe";
+const SUBJECT = SUJET;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -39,7 +38,7 @@ Deno.serve(async (req) => {
   if (!email) return new Response("email requis", { status: 400 });
   if (!transfer_token) return new Response("transfer_token requis", { status: 400 });
 
-  const coachName = texte("coach_name") || "Un entraîneur";
+  // 2026-10-15 (décision BP) : coach_name n'est plus lu, même s'il arrive encore.
   const teamName = texte("team_name") || "une équipe";
   const schoolName = texte("school_name");
 
@@ -72,7 +71,6 @@ Deno.serve(async (req) => {
     `${APP_URL}/athlete/transfert?t=${encodeURIComponent(transfer_token)}`;
 
   const { html, text } = buildBody(
-    coachName,
     teamName,
     schoolName,
     {

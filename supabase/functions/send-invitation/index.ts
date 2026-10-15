@@ -6,19 +6,20 @@
 // (secret DÉDIÉ, distinct de PARENT_NOTICE_SECRET / PUSH_DISPATCH_SECRET).
 //
 // Clone structurel de send-parent-notice. Body attendu :
-//   { email, coach_name, school_name, claim_token }
-// email + claim_token strictement requis ; coach_name/school_name = repli gracieux.
+//   { email, nb_recruteurs, claim_token }
+// email + claim_token strictement requis ; nb_recruteurs absent = phrase sans chiffre.
+// (coach_name / school_name, s'ils arrivent encore, sont ignorés — décision BP 2026-10-15.)
 //
 // Gabarit : mutualisé dans ../_shared/emailLayout.ts (renderEmail). Le corps
 // spécifique à ce courriel vit dans ./email.ts (buildBody).
 
 import { FROM, APP_URL } from "../_shared/emailLayout.ts";
-import { buildBody } from "./email.ts";
+import { buildBody, SUJET } from "./email.ts";
 
 const NOTICE_SECRET = Deno.env.get("INVITE_NOTICE_SECRET")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 
-const SUBJECT = "Invitation à rejoindre Nexus";
+const SUBJECT = SUJET;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -36,14 +37,11 @@ Deno.serve(async (req) => {
   if (!email) return new Response("email requis", { status: 400 });
   if (!claim_token) return new Response("claim_token requis", { status: 400 });
 
-  // Repli gracieux : noms optionnels (le courriel part même sans).
-  const coach_name = typeof payload?.coach_name === "string" ? payload.coach_name.trim() : "";
-  const school_name = typeof payload?.school_name === "string" ? payload.school_name.trim() : "";
-  const coachName = coach_name || "Ton coach";
-  const schoolName = school_name || "ton école";
-
+  // 2026-10-15 (décision BP) : le nom du coach et de l'école ne sont PLUS lus, même si un ancien
+  // trigger les envoie encore. Seul le nombre réel de recruteurs compte ; absent → la phrase
+  // « profil prêt », jamais un chiffre inventé.
   const claimUrl = `${APP_URL}/claim?token=${encodeURIComponent(claim_token)}`;
-  const { html, text } = buildBody(coachName, schoolName, claimUrl);
+  const { html, text } = buildBody(payload?.nb_recruteurs, claimUrl);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

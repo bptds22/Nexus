@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { phraseRecruteurs } from "@/lib/invitations/messageRecruteurs";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -85,6 +86,7 @@ function ClaimContent() {
   const token = searchParams.get("token");
 
   const [state, setState] = useState<ResolveState>({ kind: "loading" });
+  const [nbRecruteurs, setNbRecruteurs] = useState<number | null>(null);
 
   // ── Form state ──────────────────────────────────────────────
   const [birthDate, setBirthDate] = useState("");
@@ -127,6 +129,12 @@ function ClaimContent() {
       // DOB de l'orphelin = source de vérité : pré-remplie (et verrouillée au
       // rendu si présente). Propagée à la metadata au submit (date_naissance).
       if (row.date_naissance) setBirthDate(row.date_naissance);
+      // Le nombre RÉEL de recruteurs qui suivent ce profil (jamais qui). Une erreur
+      // n'invente rien : la phrase « profil prêt », sans chiffre.
+      const { data: nb, error: errNb } = await supabase.rpc("invitation_recruteurs_suivent", { p_token: token });
+      if (cancelled) return;
+      if (errNb) console.error("[claim] invitation_recruteurs_suivent:", errNb);
+      setNbRecruteurs(errNb ? null : (nb as number | null));
       setState({ kind: "valid", row });
     })();
     return () => { cancelled = true; };
@@ -268,8 +276,10 @@ function ClaimContent() {
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">
             Bienvenue{row.first_name ? ` ${row.first_name}` : ""} 👋
           </h1>
-          <p className="text-sm text-[#9CA3AF] mt-1">
-            Ton entraîneur a préparé ton profil. Crée ton compte pour le compléter.
+          {/* 2026-10-15 (décision BP) : aucune mention du coach ; le nombre réel de
+              recruteurs qui suivent ce profil, ou la phrase « profil prêt ». */}
+          <p className="text-sm text-[#9CA3AF] mt-1" data-phrase-recruteurs>
+            {phraseRecruteurs(nbRecruteurs)}
           </p>
         </div>
 

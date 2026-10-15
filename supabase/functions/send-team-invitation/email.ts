@@ -1,4 +1,4 @@
-// send-team-invitation/email.ts — courriel « un coach t'invite dans son équipe ».
+// send-team-invitation/email.ts — courriel « invitation à rejoindre une équipe » (sans coach).
 //
 // À NE PAS CONFONDRE avec send-invitation/email.ts, qui est le courriel de
 // RÉCLAMATION : celui-là s'adresse à un athlète SANS compte et le mène à /claim
@@ -21,8 +21,10 @@ function detailsEquipe(
     .join(" · ");
 }
 
+/** 2026-10-15 (décision BP) : aucun nom de coach, ni « un coach » / « ton entraîneur ». */
+export const SUJET = "Invitation à rejoindre une équipe sur Nexus";
+
 export function buildBody(
-  coachName: string,
   teamName: string,
   schoolName: string,
   details: { sport: string; ageGroup: string; division: string; gender: string },
@@ -44,22 +46,26 @@ export function buildBody(
      compte, il se connecte sur le web, et le transfert s'y termine.
      ─────────────────────────────────────────────────────────────────────── */
 
+  const equipe = `${teamName}${schoolName ? ` — ${schoolName}` : ""}`;
   return renderEmail({
-    preheader: `${coachName} t'invite dans ${teamName}`,
-    heading: "Un coach t'invite dans son équipe",
+    preheader: `Invitation à rejoindre ${teamName}`,
+    heading: "Tu es invité à rejoindre une équipe",
     bodyHtml:
-      `<p style="margin:0 0 14px;font-size:17px;"><strong>${coachName}</strong>${schoolName ? ` — ${schoolName}` : ""}</p>` +
-      `<p style="margin:0 0 12px;">t'invite à rejoindre <strong>${teamName}</strong>${ligneDetails ? ` — ${ligneDetails}` : ""}.</p>` +
+      `<p style="margin:0 0 14px;font-size:17px;"><strong>${equipe}</strong></p>` +
+      `<p style="margin:0 0 12px;">Tu es invité à rejoindre cette équipe sur Nexus${ligneDetails ? ` (${ligneDetails})` : ""}.</p>` +
       // On DIT que ça remplace l'équipe actuelle. L'écran le redira, mais un
       // athlète qui décide dans sa boîte de réception doit déjà le savoir.
       `<p style="margin:0 0 12px;">Si tu acceptes, cette équipe remplacera ton équipe actuelle. Ton ancienne équipe restera dans ton parcours — tu ne perds rien.</p>` +
       `<p style="margin:0 0 12px;">C'est toi qui décides : tant que tu n'as pas confirmé, rien ne change.</p>`,
     ctaLabel: "Voir l'invitation",
     ctaUrl: transferUrl,
+    footerNote:
+      "Tu reçois ce courriel parce qu'une équipe t'a invité sur Nexus. Le bouton mène à nexussports.ca. " +
+      "Si tu ne connais pas cette équipe, ignore simplement ce courriel.",
     bodyText: [
-      `${coachName}${schoolName ? ` — ${schoolName}` : ""}`,
+      equipe,
       "",
-      `t'invite à rejoindre ${teamName}${ligneDetails ? ` — ${ligneDetails}` : ""}.`,
+      `Tu es invité à rejoindre cette équipe sur Nexus${ligneDetails ? ` (${ligneDetails})` : ""}.`,
       "",
       "Si tu acceptes, cette équipe remplacera ton équipe actuelle.",
       "Ton ancienne équipe restera dans ton parcours — tu ne perds rien.",

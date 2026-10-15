@@ -1,0 +1,5 @@
+courriels rendus : courriel-reclamation-0-recruteur, courriel-reclamation-1-recruteur, courriel-reclamation-4-recruteurs, courriel-equipe
+/claim (0-recruteur) : "Ton profil d'athlète est prêt sur Nexus, là où les recruteurs de cégep cherchent leurs prochains joueurs. Réclame-le gratuitement." | « entraîneur » ou « coach » dans la page : false
+/claim (2-recruteurs) : "2 recruteurs de cégep suivent déjà ton profil sur Nexus. Réclame-le pour qu'ils voient tout ce que tu as à montrer." | « entraîneur » ou « coach » dans la page : false
+remise en état : fiche jetable retirée : oui
+erreurs JavaScript : aucune
