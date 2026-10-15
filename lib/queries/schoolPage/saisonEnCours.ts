@@ -31,6 +31,7 @@
 // -999 ne peut donc pas ressortir en 0.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { attributsEquipe, comparerEquipes, nomEstCeluiDuClub } from "@/lib/teams/teamLabel";
 
 /** Saison scolaire courante. L'année RSEQ bascule en juillet. */
 export function saisonCourante(d = new Date()): string {
@@ -54,6 +55,13 @@ export type EquipeSaison = {
   sport: string;
   genre: string | null;
   division: string | null;
+  /** Équipe NOMMÉE (teams.name ≠ nom du club, ex. « PHEBUS JM » au club NLS) :
+   *  son nom et « Catégorie · Division · Genre » (règle commune
+   *  lib/teams/teamLabel). Absents pour une équipe nommée comme son école. */
+  nom?: string;
+  detail?: string;
+  /** Pour départager les ex æquo par la règle commune. */
+  ageGroup?: string | null;
   /** null tant qu'aucun match n'est joué — voir la règle ci-dessus. */
   fiche: { v: number; d: number; n: number } | null;
   matchsJoues: number;
@@ -66,7 +74,7 @@ export type EquipeSaison = {
 };
 
 type LigneTeam = {
-  id: string; division: string | null; gender: string | null;
+  id: string; name: string | null; age_group: string | null; division: string | null; gender: string | null;
   sports: { nom: string } | null;
 };
 type LigneStanding = {
@@ -94,11 +102,18 @@ const MAX_A_VENIR = 3;
 export async function loadSaisonEnCours(
   supabase: SupabaseClient, schoolId: string, saison = saisonCourante(),
 ): Promise<EquipeSaison[]> {
-  const { data: tRows } = await supabase
-    .from("teams")
-    .select("id, division, gender, sports:sport_id(nom)")
-    .eq("school_id", schoolId)
-    .eq("season", saison);
+  const [{ data: tRows }, { data: club }] = await Promise.all([
+    supabase
+      .from("teams")
+      .select("id, name, age_group, division, gender, sports:sport_id(nom)")
+      .eq("school_id", schoolId)
+      .eq("season", saison),
+    supabase.from("schools").select("name, type").eq("id", schoolId).maybeSingle(),
+  ]);
+  // Noms d'équipe seulement pour un CLUB civil (les équipes RSEQ portent une
+  // abréviation de leur école : la page d'une école reste inchangée).
+  const c = club as { name?: string; type?: string } | null;
+  const nomClub = c?.type === "LIGUE_CIVILE" ? (c.name ?? null) : null;
 
   const teams = (tRows ?? []) as unknown as LigneTeam[];
   if (!teams.length) return [];
@@ -178,6 +193,10 @@ export async function loadSaisonEnCours(
       sport: t.sports?.nom ?? "",
       genre: t.gender,
       division: t.division && t.division.trim() ? t.division : null,
+      ...(nomClub !== null && !nomEstCeluiDuClub(t.name, nomClub)
+        ? { nom: (t.name ?? "").trim(), detail: attributsEquipe(t) }
+        : {}),
+      ageGroup: t.age_group,
       fiche: aJoue && st
         ? { v: st.wins ?? 0, d: st.losses ?? 0, n: st.draws ?? 0 }
         : null,
@@ -198,7 +217,10 @@ export async function loadSaisonEnCours(
     b.nbMatchs - a.nbMatchs ||
     a.sport.localeCompare(b.sport, "fr") ||
     (a.division ?? "").localeCompare(b.division ?? "", "fr") ||
-    (a.genre ?? "").localeCompare(b.genre ?? "", "fr"),
+    (a.genre ?? "").localeCompare(b.genre ?? "", "fr") ||
+    comparerEquipes(
+      { name: a.nom, age_group: a.ageGroup, division: a.division, gender: a.genre },
+      { name: b.nom, age_group: b.ageGroup, division: b.division, gender: b.genre }),
   );
 
   return sortie;

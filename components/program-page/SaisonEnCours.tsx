@@ -116,12 +116,12 @@ export default function SaisonEnCours({ equipes }: { equipes?: EquipeSaison[] })
 
         <div className="sn-list">
           {equipes.map((e) => {
-            const meta = [e.genre, e.division].filter(Boolean).join(" · ");
+            const meta = e.detail ?? [e.genre, e.division].filter(Boolean).join(" · ");
             return (
               <details className="sn-row rv" key={e.teamId}>
                 <summary className="sn-head">
                   <span className="sn-ident">
-                    <span className="sn-sport">{e.sport}</span>
+                    <span className="sn-sport">{e.nom ?? e.sport}</span>
                     {meta && <span className="sn-meta">{meta}</span>}
                   </span>
 

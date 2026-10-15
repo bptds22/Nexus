@@ -39,7 +39,7 @@ import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
-import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { formatTeamLabel, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
 import { triggerHaptic } from "@/lib/haptics";
@@ -80,17 +80,17 @@ function normalize(s: string): string {
   return stripAccents(s).toLowerCase().trim();
 }
 
-/** Libellé d'une équipe scolaire : "Sport · Catégorie · Division · Genre"
- *  (sport en premier — le picker montre désormais tous les sports). Délègue
- *  au helper partagé pour rester aligné avec le web. */
+/** Libellé d'une équipe : règle commune (lib/teams/teamLabel, BP 2026-10-14)
+ *  — « NOM — Sport · Catégorie · Division · Genre », le nom seulement s'il
+ *  diffère de l'école (sport en tête : le picker montre tous les sports). */
 function scolaireTeamLabel(t: {
   name: string;
   division: string | null;
   age_group: string | null;
   gender: string | null;
   sport: string | null;
-}): string {
-  return formatTeamLabel(t.sport, t.age_group, t.division, t.gender, t.name);
+}, nomEcole: string): string {
+  return formatTeamLabel(t.sport, t.age_group, t.division, t.gender, t.name, null, nomEcole);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -309,13 +309,14 @@ export function CoachOnboardingMobileSchool() {
         sport: ((r.sports as { nom?: string } | null)?.nom) ?? null,
       }));
       // Sort: the coach's declared sport first (so it stands out), then
-      // other sports alphabetically, then team name — same sport contiguous.
+      // other sports alphabetically, then the common order (lib/teams/teamLabel:
+      // name, category, division, gender) — same sport contiguous.
       mapped.sort((a, b) => {
         const aMine = a.sport === sport ? 0 : 1;
         const bMine = b.sport === sport ? 0 : 1;
         if (aMine !== bMine) return aMine - bMine;
         const s = (a.sport ?? "").localeCompare(b.sport ?? "");
-        return s !== 0 ? s : a.name.localeCompare(b.name);
+        return s !== 0 ? s : comparerEquipes(a, b);
       });
       setScolaireTeams(mapped);
       setScolaireTeamsLoaded(true);
@@ -370,16 +371,11 @@ export function CoachOnboardingMobileSchool() {
     }
   }, [mustBeResponsable, directorChoice]);
 
-  const visibleScolaireTeams = useMemo(() => {
-    const q = normalize(teamSearch);
-    if (!q) return scolaireTeams;
-    return scolaireTeams.filter((t) =>
-      normalize(t.name).includes(q) ||
-      (t.sport ? normalize(t.sport).includes(q) : false) ||
-      (t.division ? normalize(t.division).includes(q) : false) ||
-      (t.age_group ? normalize(t.age_group).includes(q) : false)
-    );
-  }, [scolaireTeams, teamSearch]);
+  // Recherche commune : nom + sport + catégorie + division + genre.
+  const visibleScolaireTeams = useMemo(
+    () => scolaireTeams.filter((t) => equipeCorrespond(t, teamSearch, { sport: t.sport })),
+    [scolaireTeams, teamSearch],
+  );
 
   /* ── Photo upload (bucket avatars, owner-scoped RLS) ──────── */
   const handlePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -748,7 +744,7 @@ export function CoachOnboardingMobileSchool() {
         keyOf={(t) => t.id}
         onSelect={(t) => {
           setSelectedTeamId(t.id);
-          setSelectedTeamName(scolaireTeamLabel(t));
+          setSelectedTeamName(scolaireTeamLabel(t, selectedSchoolName));
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
@@ -761,7 +757,7 @@ export function CoachOnboardingMobileSchool() {
             onClick={onTap}
             className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
           >
-            <p className="text-[16px] font-semibold text-white truncate">{scolaireTeamLabel(t)}</p>
+            <p className="text-[16px] font-semibold text-white break-words">{scolaireTeamLabel(t, selectedSchoolName)}</p>
           </button>
         )}
         footer={
@@ -826,7 +822,7 @@ export function CoachOnboardingMobileSchool() {
                     setPendingCreateTeam(null);
                     setSelectedTeamId(t.id);
                     setSelectedTeamName(
-                      formatTeamLabel(sport, t.ageGroup ?? "", t.division ?? "", t.gender ?? "", t.name),
+                      formatTeamLabel(sport, t.ageGroup ?? "", t.division ?? "", t.gender ?? "", t.name, null, selectedSchoolName),
                     );
                     setCreateTeamOpen(false);
                   }}
@@ -842,7 +838,7 @@ export function CoachOnboardingMobileSchool() {
                 });
                 setSelectedTeamId(null);
                 setSelectedTeamName(
-                  formatTeamLabel(sport, data.age_group, data.division, data.gender, data.team_name),
+                  formatTeamLabel(sport, data.age_group, data.division, data.gender, data.team_name, null, selectedSchoolName),
                 );
                 setCreateTeamOpen(false);
               }}

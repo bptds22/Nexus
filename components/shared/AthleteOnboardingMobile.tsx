@@ -58,6 +58,7 @@ import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlet
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
+import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -81,6 +82,7 @@ type CivilTeamRow = {
   name: string;
   age_group: string | null;
   division: string | null;
+  gender: string | null;
   school_id: string;
   school_name: string;
 };
@@ -91,6 +93,8 @@ type ScolaireTeamRow = {
   division: string | null;
   age_group: string | null;
   gender: string | null;
+  /** Tri seulement : saison la plus récente d'abord (FIX 3). */
+  season?: string;
 };
 type TeamCoachRow = {
   /** team_coaches.id */
@@ -110,22 +114,17 @@ function flatten<T>(rel: T | T[] | null | undefined): T | null {
   return Array.isArray(rel) ? (rel[0] ?? null) : rel;
 }
 
-/** Iter team-3 — libellé d'une équipe scolaire. Toutes les teams d'une
- *  école/sport partagent souvent le même name (= nom de l'école), donc
- *  on affiche les attributs distinctifs (age_group · division · gender)
- *  et on retombe sur le name si absolument aucun attribut. Les chaînes
- *  vides "" sont traitées comme null (la colonne division stocke parfois
- *  "" plutôt que NULL pour les seeds civils). */
+/** Libellé d'une équipe : règle commune (lib/teams/teamLabel, BP
+ *  2026-10-14) — « NOM — Catégorie · Division · Genre », le nom seulement
+ *  s'il diffère de l'école / du club (`nomOrg`). Les équipes RSEQ d'une
+ *  école portent son nom : elles restent « Juvénile · D1 · Masculin ». */
 function scolaireTeamLabel(t: {
   name: string;
   division: string | null;
   age_group: string | null;
   gender: string | null;
-}): string {
-  const parts = [t.age_group, t.division, t.gender]
-    .map((v) => (v ?? "").trim())
-    .filter((v) => v.length > 0);
-  return parts.length > 0 ? parts.join(" · ") : t.name;
+}, nomOrg: string | null | undefined): string {
+  return libelleEquipe(t, nomOrg);
 }
 
 function stripAccents(s: string): string {
@@ -561,7 +560,7 @@ export function AthleteOnboardingMobile() {
               division: teamRel.division ?? null,
               age_group: teamRel.age_group ?? null,
               gender: teamRel.gender ?? null,
-            }));
+            }, schoolRel?.name));
           }
         }
 
@@ -734,15 +733,13 @@ export function AthleteOnboardingMobile() {
       // FIX 3 (parité web) — saison la plus récente d'abord. En septembre les
       // équipes 2025-2026 et 2026-2027 coexistent ; sans ce tri l'athlète peut
       // choisir celle de l'an dernier, qui ne porte aucun match de la saison
-      // en cours. Tri serveur : aucun filtre, rien n'est masqué.
+      // en cours. Tri client (ci-dessous) : aucun filtre, rien n'est masqué.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, division, age_group, gender")
+        .select("id, name, division, age_group, gender, season")
         .eq("school_id", selectedSchoolId)
         .eq("sport_id", sportRow.id)
-        .eq("is_active", true)
-        .order("season", { ascending: false })
-        .order("name");
+        .eq("is_active", true);
       if (cancelled) return;
       const mapped: ScolaireTeamRow[] = ((rows as Record<string, unknown>[]) || []).map((r) => ({
         id: r.id as string,
@@ -750,7 +747,10 @@ export function AthleteOnboardingMobile() {
         division: (r.division as string) ?? null,
         age_group: (r.age_group as string) ?? null,
         gender: (r.gender as string) ?? null,
+        season: (r.season as string) ?? "",
       }));
+      // Saison la plus récente d'abord, puis le tri commun (lib/teams/teamLabel).
+      mapped.sort((a, b) => (b.season ?? "").localeCompare(a.season ?? "") || comparerEquipes(a, b));
       setScolaireTeams(mapped);
       setScolaireTeamsLoaded(true);
       setScolaireTeamsLoading(false);
@@ -758,15 +758,11 @@ export function AthleteOnboardingMobile() {
     return () => { cancelled = true; };
   }, [userContext, selectedSchoolId, primarySport]);
 
-  const visibleScolaireTeams = useMemo(() => {
-    const q = normalize(scolaireTeamSearch);
-    if (!q) return scolaireTeams;
-    return scolaireTeams.filter((t) =>
-      normalize(t.name).includes(q) ||
-      (t.division ? normalize(t.division).includes(q) : false) ||
-      (t.age_group ? normalize(t.age_group).includes(q) : false)
-    );
-  }, [scolaireTeams, scolaireTeamSearch]);
+  // Recherche commune : nom + catégorie + division + genre.
+  const visibleScolaireTeams = useMemo(
+    () => scolaireTeams.filter((t) => equipeCorrespond(t, scolaireTeamSearch)),
+    [scolaireTeams, scolaireTeamSearch],
+  );
 
   // Iter team-2 — coachs attachés à l'équipe scolaire choisie via
   // team_coaches (RLS additive même migration). Joint sur users
@@ -868,31 +864,31 @@ export function AthleteOnboardingMobile() {
       if (!sportRow?.id) { setCivilTeams([]); setCivilTeamsLoading(false); return; }
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division")
+        .select("id, name, age_group, division, gender")
         .eq("school_id", selectedClubId)
         .eq("sport_id", sportRow.id)
-        .eq("is_active", true)
-        .order("name");
+        .eq("is_active", true);
       if (cancelled) return;
       const mapped: CivilTeamRow[] = ((rows as Record<string, unknown>[]) || []).map((r) => ({
         id: r.id as string,
         name: r.name as string,
         age_group: (r.age_group as string) ?? null,
         division: (r.division as string) ?? null,
+        gender: (r.gender as string) ?? null,
         school_id: selectedClubId,
         school_name: selectedClubName,
       }));
-      setCivilTeams(mapped);
+      setCivilTeams(trierEquipes(mapped));
       setCivilTeamsLoading(false);
     })();
     return () => { cancelled = true; };
   }, [teamSheetOpen, selectedClubId, selectedClubName, primarySport]);
 
-  const visibleCivilTeams = useMemo(() => {
-    const q = normalize(teamSearch);
-    if (!q) return civilTeams;
-    return civilTeams.filter((t) => normalize(t.name).includes(q));
-  }, [civilTeams, teamSearch]);
+  // Recherche commune : nom + catégorie + division + genre.
+  const visibleCivilTeams = useMemo(
+    () => civilTeams.filter((t) => equipeCorrespond(t, teamSearch)),
+    [civilTeams, teamSearch],
+  );
 
   /* ── Positions (dépend du sport, depuis sports.id → positions) ── */
 
@@ -1771,7 +1767,7 @@ export function AthleteOnboardingMobile() {
           // Iter team-3 — stocker les attributs distinctifs comme libellé
           // affiché (le name est ≈ identique d'une équipe à l'autre dans
           // la même école/sport, donc inutile à montrer).
-          setSelectedTeamName(scolaireTeamLabel(t));
+          setSelectedTeamName(scolaireTeamLabel(t, selectedSchoolName));
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
@@ -1784,7 +1780,7 @@ export function AthleteOnboardingMobile() {
             onClick={onTap}
             className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
           >
-            <p className="text-[16px] font-semibold text-white truncate">{scolaireTeamLabel(t)}</p>
+            <p className="text-[16px] font-semibold text-white break-words">{scolaireTeamLabel(t, selectedSchoolName)}</p>
           </button>
         )}
         footer={
@@ -1867,26 +1863,22 @@ export function AthleteOnboardingMobile() {
         keyOf={(t) => t.id}
         onSelect={(t) => {
           setSelectedTeamId(t.id);
-          setSelectedTeamName(t.name);
+          setSelectedTeamName(libelleEquipe(t, selectedClubName));
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
             Aucune équipe pour {primarySport || "ton sport"} dans ce club. Tu peux rester rattaché au club seul.
           </p>
         }
-        renderItem={(t, onTap) => {
-          const meta = [t.age_group, t.division].filter(Boolean).join(" · ");
-          return (
-            <button
-              type="button"
-              onClick={onTap}
-              className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
-            >
-              <p className="text-[16px] font-semibold text-white truncate">{t.name}</p>
-              {meta && <p className="text-[13px] text-white/55 truncate">{meta}</p>}
-            </button>
-          );
-        }}
+        renderItem={(t, onTap) => (
+          <button
+            type="button"
+            onClick={onTap}
+            className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
+          >
+            <p className="text-[16px] font-semibold text-white break-words">{libelleEquipe(t, selectedClubName)}</p>
+          </button>
+        )}
         footer={
           <button
             type="button"

@@ -14,6 +14,10 @@ export interface SportTeam {
   genre: string;
   /** route page équipe — placeholder "#" pour l'instant (câblage Bloc 2). */
   url: string;
+  /** Équipe NOMMÉE (nom ≠ celui du club, ex. « PHEBUS JM » au club NLS) :
+   *  « Catégorie · Division · Genre » sous le nom, à la place de la ligne
+   *  division · genre (règle commune lib/teams/teamLabel). Absent → inchangé. */
+  detail?: string;
 }
 export interface Sport {
   nom: string;

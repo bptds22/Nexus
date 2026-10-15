@@ -43,6 +43,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { triggerHaptic } from "@/lib/haptics";
+import { libelleEquipe, trierEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 import { SPORTS_PROPOSES } from "@/lib/config/sportsProposes";
 
 /* ── Constantes ──────────────────────────────────────────────── */
@@ -75,9 +76,10 @@ function normalize(s: string): string {
   return stripAccents(s).replace(/[-\s]+/g, " ").toLowerCase().trim();
 }
 
-function programLabel(t: { name: string; division: string | null; age_group: string | null; gender: string | null }): string {
-  const parts = [t.age_group, t.division, t.gender].map((v) => (v ?? "").trim()).filter((v) => v.length > 0);
-  return parts.length > 0 ? parts.join(" · ") : t.name;
+/* Libellé d'un programme (équipe du cégep) : règle commune (lib/teams/teamLabel,
+   BP 2026-10-14) — le nom seulement s'il diffère de celui du cégep. */
+function programLabel(t: { name: string; division: string | null; age_group: string | null; gender: string | null }, nomCegep: string | null | undefined): string {
+  return libelleEquipe(t, nomCegep);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -205,7 +207,7 @@ export function RecruiterOnboardingMobile() {
       if (profile.primary_team_id) {
         const { data: tm } = await supabase
           .from("teams")
-          .select("id, name, division, age_group, gender")
+          .select("id, name, division, age_group, gender, schools!school_id(name)")
           .eq("id", profile.primary_team_id)
           .maybeSingle();
         if (!cancelled && tm) {
@@ -215,7 +217,7 @@ export function RecruiterOnboardingMobile() {
             division: (tm.division as string) ?? null,
             age_group: (tm.age_group as string) ?? null,
             gender: (tm.gender as string) ?? null,
-          }));
+          }, (Array.isArray(tm.schools) ? tm.schools[0] : tm.schools as { name?: string } | null)?.name));
         }
       }
 
@@ -274,8 +276,7 @@ export function RecruiterOnboardingMobile() {
         .select("id, name, division, age_group, gender")
         .eq("school_id", selectedCegepId)
         .eq("sport_id", sportRow.id)
-        .eq("is_active", true)
-        .order("name");
+        .eq("is_active", true);
       if (cancelled) return;
       const mapped: ProgramRow[] = ((rows as Record<string, unknown>[]) || []).map((r) => ({
         id: r.id as string,
@@ -284,22 +285,18 @@ export function RecruiterOnboardingMobile() {
         age_group: (r.age_group as string) ?? null,
         gender: (r.gender as string) ?? null,
       }));
-      setPrograms(mapped);
+      setPrograms(trierEquipes(mapped));
       setProgramsLoaded(true);
       setProgramsLoading(false);
     })();
     return () => { cancelled = true; };
   }, [selectedCegepId, sport]);
 
-  const visiblePrograms = useMemo(() => {
-    const q = normalize(programSearch);
-    if (!q) return programs;
-    return programs.filter((t) =>
-      normalize(t.name).includes(q) ||
-      (t.division ? normalize(t.division).includes(q) : false) ||
-      (t.age_group ? normalize(t.age_group).includes(q) : false)
-    );
-  }, [programs, programSearch]);
+  // Recherche commune : nom + catégorie + division + genre.
+  const visiblePrograms = useMemo(
+    () => programs.filter((t) => equipeCorrespond(t, programSearch)),
+    [programs, programSearch],
+  );
 
   // school_has_responsable — query quand CÉGEP sélectionné.
   useEffect(() => {
@@ -673,7 +670,7 @@ export function RecruiterOnboardingMobile() {
         keyOf={(t) => t.id}
         onSelect={(t) => {
           setSelectedProgramId(t.id);
-          setSelectedProgramName(programLabel(t));
+          setSelectedProgramName(programLabel(t, selectedCegepName));
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
@@ -686,7 +683,7 @@ export function RecruiterOnboardingMobile() {
             onClick={onTap}
             className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
           >
-            <p className="text-[16px] font-semibold text-white truncate">{programLabel(t)}</p>
+            <p className="text-[16px] font-semibold text-white break-words">{programLabel(t, selectedCegepName)}</p>
           </button>
         )}
         footer={
