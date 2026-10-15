@@ -19,16 +19,38 @@ import type { createClient } from "@/lib/supabase/client";
 import { leagueOf } from "@/lib/config/team-taxonomy";
 
 type EquipeLue = {
+  id: string | null;
+  name: string | null;
+  age_group: string | null;
   division: string | null;
+  gender: string | null;
+  zone: string | null;
+  season: string | null;
   sport_id: string | null;
   league: string | null;
   rseq_team_id: string | null;
-  schools: { type: string | null } | { type: string | null }[] | null;
+  schools: { name: string | null; type: string | null } | { name: string | null; type: string | null }[] | null;
 };
+
+/** L'équipe retenue d'un athlète, avec ce qu'il faut pour la libeller
+ *  (lib/teams/teamLabel) — filtre « Équipe » de Mon processus (web, BP
+ *  2026-10-15). Même équipe que la colonne Division : même règle de choix. */
+export interface EquipeCarte {
+  id: string;
+  name: string | null;
+  age_group: string | null;
+  division: string | null;
+  gender: string | null;
+  zone: string | null;
+  season: string | null;
+  school_name: string | null;
+}
 
 export interface EquipesAthletes {
   divisions: Record<string, string>;
   ligues: Record<string, string>;
+  /** Ajout du 2026-10-15 (filtre Équipe, web) : additif, divisions et ligues inchangées. */
+  equipes: Record<string, EquipeCarte>;
 }
 
 export async function fetchEquipesAthletes(
@@ -36,11 +58,11 @@ export async function fetchEquipesAthletes(
   athleteIds: string[],
   sportPrefere: (athleteId: string) => string | null | undefined = () => null,
 ): Promise<EquipesAthletes> {
-  const out: EquipesAthletes = { divisions: {}, ligues: {} };
+  const out: EquipesAthletes = { divisions: {}, ligues: {}, equipes: {} };
   if (athleteIds.length === 0) return out;
   const { data, error } = await supabase
     .from("team_athletes")
-    .select("athlete_id, teams(division, sport_id, league, rseq_team_id, schools!school_id(type))")
+    .select("athlete_id, teams(id, name, age_group, division, gender, zone, season, sport_id, league, rseq_team_id, schools!school_id(name, type))")
     .in("athlete_id", athleteIds);
   if (error) {
     console.error("[divisionsEquipe] :", error.message);
@@ -65,6 +87,12 @@ export async function fetchEquipesAthletes(
       teamSchoolType: ecole?.type ?? null,
     });
     if (ligue) out.ligues[id] = ligue;
+    if (eq.id) {
+      out.equipes[id] = {
+        id: eq.id, name: eq.name, age_group: eq.age_group, division: eq.division, gender: eq.gender,
+        zone: eq.zone, season: eq.season, school_name: ecole?.name ?? null,
+      };
+    }
   }
   return out;
 }

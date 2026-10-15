@@ -150,7 +150,7 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
       }
 
       const sportDuDossier = new Map(lignes.map((l) => [l.athlete_id, l.unite_sport_id]));
-      const [cardMap, { divisions, ligues }] = await Promise.all([
+      const [cardMap, { divisions, ligues, equipes }] = await Promise.all([
         fetchRecruiterAthleteCards(supabase, ids),
         fetchEquipesAthletes(supabase, ids, (id) => sportDuDossier.get(id)),
       ]);
@@ -205,6 +205,7 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
           unite_sport_id: l.unite_sport_id,
           division_equipe: divisions[l.athlete_id] ?? null,
           ligue: ligues[l.athlete_id] ?? "",
+          equipe: equipes[l.athlete_id] ?? null,
         } as PipelineKanbanCard;
       });
 

@@ -127,7 +127,7 @@ export interface LigneCarte {
   created_at: string;
   school_id: string | null;
   sport_athlete_id: string;
-  teams: { name: string | null; division: string | null; league: string | null; age_group: string | null; gender: string | null; rseq_team_id: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
+  teams: { name: string | null; division: string | null; league: string | null; age_group: string | null; gender: string | null; zone?: string | null; season?: string | null; rseq_team_id: string | null; schools: { name: string | null; region: string | null; type: string | null } | null } | null;
   /** L'établissement de la carte (rattachement direct, sans équipe). */
   etablissement: { name: string | null; region: string | null; type: string | null } | null;
   positions: { abreviation: string | null } | null;
@@ -138,7 +138,7 @@ const SELECT_CARTE = `
   taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, parent_nom, parent_courriel, etape, grade, relance_le, relance_note,
   visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
   school_id, sport_athlete_id,
-  teams!team_id(name, division, league, age_group, gender, rseq_team_id, schools!school_id(name, region, type)),
+  teams!team_id(name, division, league, age_group, gender, zone, season, rseq_team_id, schools!school_id(name, region, type)),
   etablissement:schools!school_id(name, region, type),
   positions!position_id(abreviation)
 `;
@@ -295,6 +295,11 @@ export function versKanban(
     unite_sport_id: l.unite_sport_id,
     division_equipe: l.teams?.division ?? null,
     ligue: ligueEquipe,
+    // Filtre « Équipe » du web (BP 2026-10-15) : l'équipe de la carte et de quoi la libeller.
+    equipe: l.team_id && l.teams
+      ? { id: l.team_id, name: l.teams.name, age_group: l.teams.age_group, division: l.teams.division, gender: l.teams.gender,
+          zone: l.teams.zone ?? null, season: l.teams.season ?? null, school_name: l.teams.schools?.name ?? null }
+      : null,
     carte: {
       prenom: l.prenom,
       nom: l.nom,

@@ -2769,3 +2769,15 @@ CLAUDE.md § Filter UI). Les deux règles coexistent donc aujourd'hui, parfois s
 À faire plus tard, dans un lot dédié (décision BP : ne pas changer les autres pilules dans le chantier
 Lauréats) : choisir une seule règle et l'appliquer aux deux surfaces (Mon processus + Recherche), web
 puis mobile.
+
+## 99. Filtre « Équipe » : l'école de la fiche n'est pas toujours le club de l'équipe (2026-10-15, accepté)
+
+Le filtre « Équipe » de Mon processus (web, BP 2026-10-15) se lie à « École / Club » par les compteurs :
+une école cochée ne liste que les équipes des cartes de cette école. Pour une **carte prospect**, l'école
+est celle de son équipe : les deux coïncident toujours. Pour un **vrai athlète**, « École / Club » est
+l'école de **sa fiche** (`athletes.school_id`), alors que son équipe (`team_athletes`, la même que la
+colonne Division) peut appartenir à un **club civil**. Cocher son école fait donc apparaître l'équipe du
+club dans le menu Équipe, sous cette école.
+
+**Accepté tel quel par BP le 2026-10-15.** À revoir seulement si un recruteur s'en plaint : il faudrait
+alors lier le filtre à l'école de l'ÉQUIPE plutôt qu'à celle de la fiche.
