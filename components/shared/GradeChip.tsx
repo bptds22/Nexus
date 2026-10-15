@@ -27,13 +27,14 @@
    est explicite.
 
    LA GRADATION D'INTENSITÉ EST LE LANGAGE (arbitrage BP, 2026-09-04).
-   Les 7 valeurs ne partagent plus une teinte unique : l'OPACITÉ du violet
-   descend de A+ (opaque) à D (/15). La puce ne dit plus seulement « il y a
+   Les 9 valeurs ne partagent plus une teinte unique : l'OPACITÉ du violet
+   descend de A+ (opaque) à E (/10). (7 crans à l'origine ; D+ et E ajoutés
+   le 2026-10-15, dans la même famille violette.) La puce ne dit plus seulement « il y a
    un grade », elle dit LEQUEL, avant même qu'on lise la lettre. Détail de
    l'échelle et de la règle de bordure : voir GRADE_STYLES plus bas.
 
-   UNE SEULE TEINTE, SEPT INTENSITÉS — jamais sept teintes. Pas de
-   graduation chromatique (vert A+ → rouge D) : elle emprunterait le
+   UNE SEULE TEINTE, NEUF INTENSITÉS — jamais neuf teintes. Pas de
+   graduation chromatique (vert A+ → rouge E) : elle emprunterait le
    vocabulaire des statuts (vert = finalisé, rouge = plateforme) pour dire
    autre chose. L'opacité était la seule variable libre, elle porte tout.
 
@@ -65,14 +66,19 @@ import { GRADES, type Grade } from "@/lib/config/grades";
 
 /* ── L'ÉCHELLE — LE LANGAGE VISUEL DU GRADE ─────────────────────────────
    Un seul map, consommé par la puce ET par le picker. L'intensité du fond
-   DIT la force du grade : opaque en A+, presque effacé en D.
+   DIT la force du grade : opaque en A+, presque effacé en E.
 
    LA BORDURE MONTE QUAND LE FOND DESCEND, et c'est délibérément l'inverse
    de la première intuition. Un fond fort n'a pas besoin d'être cerné ; un
    fond faible, si — sinon la puce D disparaît dans la carte. Mesuré sur
    le fond de carte #1A1D24 : une puce D (fond /15) ne détache que 1,17:1
    du fond, contre 1,66:1 avec sa bordure. C'est la bordure qui la rend
-   repérable, pas son fond.
+   repérable, pas son fond. E (fond /10) pousse la règle au bout : son fond
+   ne se voit presque plus, sa bordure (/45) le porte seule.
+
+   L'ÉCHELLE À 9 CRANS (2026-10-15) garde les bornes et les 7 anciennes
+   valeurs à leur place relative : A+ inchangé, A inchangé, puis des pas
+   resserrés jusqu'à D+ (/20) et D (/15, inchangé), et E en dessous.
 
    EFFET DE BORD RECHERCHÉ : A+ est le SEUL cran dont la bordure a la même
    opacité que le fond — donc le seul qui se lit comme un bloc plein, sans
@@ -81,8 +87,9 @@ import { GRADES, type Grade } from "@/lib/config/grades";
    la discrimination A+ / A que deux crans d'opacité voisins rendraient
    fragile.
 
-   Le texte reste blanc plein sur les 7 crans. Vérifié : même au cran le
-   plus faible (D), le blanc tient 14,3:1 contre le fond composité — la
+   Le texte reste blanc plein sur les 9 crans. Vérifié : même au cran D,
+   le blanc tient 14,3:1 contre le fond composité (E, plus effacé encore,
+   ne peut que s'en rapprocher : son fond est plus proche du #1A1D24) — la
    lisibilité de la lettre n'est jamais le facteur limitant. */
 const GRADE_STYLES: Record<Grade, string> = {
   "A+": "bg-[#8B5CF6]     border-[#8B5CF6]",
@@ -91,7 +98,9 @@ const GRADE_STYLES: Record<Grade, string> = {
   "B":  "bg-[#8B5CF6]/45  border-[#8B5CF6]/65",
   "C+": "bg-[#8B5CF6]/35  border-[#8B5CF6]/60",
   "C":  "bg-[#8B5CF6]/25  border-[#8B5CF6]/55",
+  "D+": "bg-[#8B5CF6]/20  border-[#8B5CF6]/52",
   "D":  "bg-[#8B5CF6]/15  border-[#8B5CF6]/50",
+  "E":  "bg-[#8B5CF6]/10  border-[#8B5CF6]/45",
 };
 
 /** La puce sur une carte. Rend `null` sans grade : une carte non gradée ne
@@ -109,7 +118,7 @@ export function GradeChip({ grade, className = "" }: { grade?: Grade | null; cla
 }
 
 /* ── LE PICKER ──────────────────────────────────────────────────────────
-   Grille de 7 + un geste « retirer le grade ». Retirer appelle onSelect(null),
+   Grille de 9 + un geste « retirer le grade ». Retirer appelle onSelect(null),
    que useUpsertAthleteGrade traduit en DELETE : « pas de grade » se dit par
    l'absence de ligne, pas par un NULL.
 
@@ -120,7 +129,7 @@ export function GradeChip({ grade, className = "" }: { grade?: Grade | null; cla
 
    `compact={false}` (mobile) monte les cibles à 44px — le minimum tactile.
 
-   LES 7 BOUTONS PORTENT LEUR PROPRE INTENSITÉ — le même GRADE_STYLES que la
+   LES 9 BOUTONS PORTENT LEUR PROPRE INTENSITÉ — le même GRADE_STYLES que la
    puce. La grille devient auto-explicative : on voit l'échelle en même temps
    qu'on choisit dedans, et le bouton qu'on presse a exactement l'apparence
    de la puce qu'il produira sur la carte.
@@ -139,7 +148,7 @@ export function GradePicker({
   const cell = compact ? "h-8 text-[12px]" : "h-11 text-[14px]";
   return (
     <div>
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-9 gap-1.5">
         {GRADES.map((g) => {
           const active = value === g;
           return (

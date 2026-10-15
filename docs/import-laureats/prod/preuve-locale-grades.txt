@@ -1,0 +1,18 @@
+﻿PREUVE LOCALE — lot grades D+/E — 2026-10-15T13:13:47
+  (7 valeurs = e1fbc0e8 · 9 valeurs = 91f209e8)
+== 0. Retour à l'état d'origine (rollback)
+  état de départ : checks=e1fbc0e8 version=0 cartes=2 grades=18
+== 1. Garde finale fausse : tout est annulé
+  réponse : ERROR:  NEXUS LOT: CHECK de recruiter_athlete_grades différent de celui testé en local — tout est annulé
+  état après : checks=e1fbc0e8 version=0 cartes=2 grades=18
+== 2. Instructions envoyées séparément (pas une transaction) : arrêt avant toute écriture
+  réponse : psql:/tmp/lot.sql:23: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : checks=e1fbc0e8 version=0 cartes=2 grades=18
+== 3. Le lot réel, en UN message
+  réponse : {"avant" : {"cartes":2,"grades_recruteurs":18,"version_deja":0,"derniere_version":"20261015125824"}, "apres" : {"cartes" : 2, "grades_recruteurs" : 18, "version" : "20261015130353", "md5_enregistre" : "3d96deb849e1ad160e68ee807c20450c", "meme_transaction" : true}}
+  état après : checks=91f209e8 version=1 cartes=2 grades=18
+== 4. Le même lot une 2e fois : refusé
+  réponse : ERROR:  NEXUS LOT: grades D+/E déjà présents — rien n'est appliqué
+  état après : checks=91f209e8 version=1 cartes=2 grades=18
+== 5. Tests au banc sur la base issue du lot
+  29|0   (ok|échecs)

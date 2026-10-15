@@ -2693,3 +2693,18 @@ partagé. Web fait sur `feat/invitations-sans-coach`. Reste au mobile :
   vit en base (`coach_nommable`). Pour le mobile : afficher « Invité par {coach} » seulement via
   `invitation_equipe_coach(invitation)` (null = aucun nom) ; ne jamais lire le nom du coach directement.
   `ClaimProfileModal` n'affiche toujours pas le coach (chemin inatteignable sur le web, CLAUDE.md).
+
+## 94. Grades D+ et E côté mobile (2026-10-15, lot mobile, web fait)
+
+Décision BP du 2026-10-15 (chantier import Lauréats) : l'échelle du grade recruteur passe à 9 crans,
+A+, A, B+, B, C+, C, D+, D, E. Base : migration `20261015130353_grades_d_plus_e.sql` (les deux CHECK,
+`cartes_prospect.grade` et `recruiter_athlete_grades.grade`). Web : `lib/config/grades.ts` et
+`components/shared/GradeChip.tsx`, branche `feat/import-laureats`.
+
+- **L'appli publiée affiche D+ et E comme « sans grade »** jusqu'au lot mobile : son `isGrade` ne connaît
+  que 7 valeurs et rejette les deux nouvelles (pas de plantage, la puce disparaît). Elle ne peut pas écrire
+  ces valeurs. Les cartes importées des Lauréats en D+/E apparaîtront donc non gradées sur mobile.
+- `GradeChip` / `GradePicker` sont partagés : le prochain build mobile embarquera la grille à 9 colonnes.
+  En `compact={false}` (cibles de 44 px), 9 colonnes ne tiennent pas en 44 px sur un écran de 390 px :
+  les cellules rétrécissent (~32 px de large). À vérifier au lot mobile (deux rangées, ou une grille 5 + 4).
+- Le tri « grade » mobile passe par `gradeRank()` (tronc partagé) : rien à faire.

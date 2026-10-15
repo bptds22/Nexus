@@ -54,7 +54,7 @@ export interface PipelineKanbanCard {
   identityVisible?: boolean;
   /**
    * recruiter_athlete_grades.grade — le grade PRIVÉ du recruteur courant sur
-   * cet athlète (A+ … D). Jamais celui d'un autre recruteur : la table est
+   * cet athlète (A+ … E). Jamais celui d'un autre recruteur : la table est
    * propriétaire seul, la requête ne rapporte que les lignes de l'appelant.
    *
    * `undefined` (fixtures mock) et `null` (aucun grade posé) se lisent tous

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   GRADE RECRUTEUR — source unique des 7 valeurs (Lot 2)
+   GRADE RECRUTEUR — source unique des 9 valeurs (Lot 2, élargi le 2026-10-15)
 
    Le grade est le jugement PRIVÉ du recruteur sur un athlète. Ce n'est ni
    l'évaluation du coach (`evaluations`), ni le stage de pipeline
@@ -8,10 +8,15 @@
    les quatre verbes.
 
    ⚠ CONTRAT AVEC LA BASE — CE FICHIER ET LE CHECK SQL SONT LE MÊME ENSEMBLE.
-   Le CHECK vit dans
-   supabase/migrations/20260904022136_recruiter_athlete_grades.sql :
+   Les DEUX CHECK — public.recruiter_athlete_grades.grade ET
+   public.cartes_prospect.grade — portent la même liste depuis
+   supabase/migrations/20261015130353_grades_d_plus_e.sql :
 
-       check (grade in ('A+','A','B+','B','C+','C','D'))
+       check (grade in ('A+','A','B+','B','C+','C','D+','D','E'))
+
+   (D+ et E ajoutés le 2026-10-15 pour l'import des listes de dépistage.
+   L'appli mobile publiée ne connaît que 7 valeurs : isGrade y refuse D+ et
+   E, qu'elle affiche donc « sans grade » jusqu'au lot mobile.)
 
    Ajouter ou retirer une valeur ICI sans toucher au CHECK produit un picker
    qui propose un grade que la base refuse : l'erreur tombe à l'écriture, sur
@@ -21,22 +26,22 @@
 
    L'ORDRE EST LE TRI. GRADES est déclaré du meilleur au moins bon, et
    GRADE_RANK en dérive plutôt que de le recopier : une seule liste à tenir.
-   Un rang PLUS PETIT = un MEILLEUR grade (A+ = 0, D = 6).
+   Un rang PLUS PETIT = un MEILLEUR grade (A+ = 0, E = 8).
 ═══════════════════════════════════════════════════════════════ */
 
-/** Les 7 valeurs, du meilleur au moins bon. L'ordre EST la règle de tri. */
-export const GRADES = ["A+", "A", "B+", "B", "C+", "C", "D"] as const;
+/** Les 9 valeurs, du meilleur au moins bon. L'ordre EST la règle de tri. */
+export const GRADES = ["A+", "A", "B+", "B", "C+", "C", "D+", "D", "E"] as const;
 
 export type Grade = (typeof GRADES)[number];
 
-/** Rang de tri dérivé de l'ordre de GRADES. A+ = 0 … D = 6. */
+/** Rang de tri dérivé de l'ordre de GRADES. A+ = 0 … E = 8. */
 export const GRADE_RANK: Record<Grade, number> = Object.fromEntries(
   GRADES.map((grade, index) => [grade, index]),
 ) as Record<Grade, number>;
 
 /** Rang des cartes SANS grade : après toutes les cartes gradées.
  *  « Pas encore jugé » n'est pas « jugé mauvais » — un athlète non gradé ne
- *  descend pas sous les D, il se range à la suite. */
+ *  descend pas sous les E, il se range à la suite. */
 export const UNGRADED_RANK = GRADES.length;
 
 /** Rang triable d'un grade éventuellement absent. Le tri du Lot 3 passe par
