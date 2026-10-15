@@ -33,6 +33,11 @@ const NAV_ITEMS = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>,
   },
   {
+    /* W4d : cartes prospects de tous les partenaires, issues, rapprochements. */
+    label: "Prospects partenaires", href: "/admin/prospects-partenaires",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="11" r="2.5" /><path d="M5.5 17a3.5 3.5 0 017 0" /><path d="M15 9h3M15 13h3" /></svg>,
+  },
+  {
     label: "Démo 12 octobre", href: "/admin/demo",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="15" height="14" rx="2" /><path d="M17 10l5-3v10l-5-3" /></svg>,
   },
@@ -107,6 +112,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
   const [newRecruiters, setNewRecruiters] = useState<number>(0);
   const [pendingClaims, setPendingClaims] = useState<number>(0);
   const [pendingAmbassadeurs, setPendingAmbassadeurs] = useState<number>(0);
+  const [candidatsProspects, setCandidatsProspects] = useState<number>(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -159,6 +165,14 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
       } else {
         if (!cancelled) setPendingAmbassadeurs(ambCount ?? 0);
       }
+
+      // W4d : rapprochements de cartes prospects partenaire à décider.
+      const { data: nbCandidats, error: candErr } = await supabase.rpc("admin_prospects_candidats_en_attente");
+      if (candErr) {
+        console.error("[AdminSidebar] candidats prospects count error:", candErr.message);
+      } else {
+        if (!cancelled) setCandidatsProspects((nbCandidats as number | null) ?? 0);
+      }
     })();
     return () => { cancelled = true; };
     // Re-count on every navigation — was a mount-only snapshot that went
@@ -170,6 +184,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
     "/admin/recruteurs": newRecruiters,
     "/admin/approvals": pendingClaims,
     "/admin/ambassadeurs": pendingAmbassadeurs,
+    "/admin/prospects-partenaires": candidatsProspects,
   };
 
   const nav = (

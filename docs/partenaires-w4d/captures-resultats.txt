@@ -1,0 +1,14 @@
+préparation : p1 évaluateur (football, 1 badge), 2 athlètes adultes jetables
+c1 réclamée par Alex (visible) : transferee | évaluation : transferee
+c2 refusée par Sam
+c3 : rapprochement avec Sam (non visible) ; c4 : à envoyer
+admin : candidat Sam affiché : true | « Non visible du partenaire » : true | « Annuler la réclamation » : true
+p1 Terminées : Alex nommé : true | Sam (refus, non visible) jamais nommé dans Terminées : true
+p1 Mes athlètes : Alex : true | Sam absent : true
+après retrait : « Réclamée — profil non visible » : true | Alex encore nommé : false
+après retrait : Mes athlètes vide : true
+après retrait : évaluation toujours en base (rien d'effacé) : 1
+remise en état : compte jetable supprimé : 200
+remise en état : compte jetable supprimé : 200
+remise en état : p1 {"id":"082fdf2b-bb33-43a8-b5ca-9a37f67f4c1a","peut_evaluer":false,"status":"APPROVED"} | cartes 0 | issues 0
+erreurs JavaScript des pages : aucune

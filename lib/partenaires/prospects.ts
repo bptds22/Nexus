@@ -8,7 +8,8 @@
      serveur (A_ENVOYER, ENVOYEE, CORRESPONDANCE_POSSIBLE) — l'écran affiche
      ce que le serveur rend, sans rien déduire ;
    - partenaire_prospect_enregistrer / _lien / _revoquer_lien / _supprimer ;
-   - partenaire_prospects_mes_issues : les cartes terminées, SANS nom.
+   - partenaire_prospects_terminees (W4d) : les cartes terminées ; une réclamation est nommée
+     (avec le résumé du transfert) seulement si le jeune est encore visible du partenaire.
 
    Jeune :
    - prospect_partenaire_resoudre (anon) : le nom du partenaire, rien d'autre ;
@@ -146,14 +147,52 @@ export async function supprimerCarte(supabase: SupabaseClient, carteId: string):
 
 export type IssueCarte = "RECLAMEE" | "REFUSEE" | "EXPIREE" | "RETIREE" | "SUPPRIMEE_ADMIN";
 
+/** Un badge du transfert d'une carte réclamée (W4d). */
+export interface BadgeTransfert {
+  libelle: string | null;
+  nexus: boolean;
+  transfere: boolean;
+  /** Pourquoi il a été sauté (null s'il est passé). */
+  raison: string | null;
+}
+
 export interface CarteTerminee {
   carteId: string;
   issue: IssueCarte;
-  /** Seulement pour une carte réclamée (le jeune a activé la visibilité partenaire). */
-  athleteId: string | null;
   creeLe: string;
   termineeLe: string;
+  /** W4d : vrai seulement pour une réclamation non annulée dont le jeune lui est ENCORE visible.
+   *  Sinon tout ce qui suit est null : ni nom, ni identifiant. */
+  profilVisible: boolean;
+  athleteId: string | null;
+  prenom: string | null;
+  nom: string | null;
+  sport: string | null;
+  poste: string | null;
+  ecole: string | null;
+  /** transferee | deja_evalue | aucune | autre_sport | non_permise */
+  evaluation: string | null;
+  badges: BadgeTransfert[];
 }
+
+/** Raisons des badges sautés au transfert (prospect_partenaire_transferer, W4a). */
+export const LIBELLE_RAISON_BADGE: Record<string, string> = {
+  autre_sport: "autre sport que celui du jeune",
+  non_permise: "plus permis à ton organisation",
+  retire_du_catalogue: "retiré de ton catalogue",
+  deja_porte: "il le portait déjà",
+  non_admissible: "non admissible",
+  deja_porte_coach: "déjà posé par son coach",
+  deja_porte_partenaire: "déjà posé par un partenaire",
+};
+
+export const LIBELLE_EVALUATION_TRANSFERT: Record<string, string> = {
+  transferee: "Évaluation transférée",
+  deja_evalue: "Évaluation non transférée — tu l'avais déjà évalué",
+  aucune: "Pas d'évaluation sur la carte",
+  autre_sport: "Évaluation non transférée — autre sport",
+  non_permise: "Évaluation non transférée — sport plus permis",
+};
 
 export const LIBELLE_ISSUE: Record<IssueCarte, string> = {
   RECLAMEE: "Réclamée par le jeune",
@@ -163,11 +202,26 @@ export const LIBELLE_ISSUE: Record<IssueCarte, string> = {
   SUPPRIMEE_ADMIN: "Retirée par Nexus",
 };
 
+/** W4d : partenaire_prospects_terminees — le nom d'une réclamation seulement si le jeune lui est
+ *  encore visible ; les autres issues restent sans nom. */
 export async function chargerCartesTerminees(supabase: SupabaseClient): Promise<CarteTerminee[]> {
-  const { data, error } = await supabase.rpc("partenaire_prospects_mes_issues");
+  const { data, error } = await supabase.rpc("partenaire_prospects_terminees");
   if (error) throw error;
-  return ((data ?? []) as { carte_id: string; issue: IssueCarte; athlete_id: string | null; carte_creee_le: string; terminee_le: string }[])
-    .map((r) => ({ carteId: r.carte_id, issue: r.issue, athleteId: r.athlete_id, creeLe: r.carte_creee_le, termineeLe: r.terminee_le }));
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    carteId: r.carte_id as string,
+    issue: r.issue as IssueCarte,
+    creeLe: r.carte_creee_le as string,
+    termineeLe: r.terminee_le as string,
+    profilVisible: r.profil_visible === true,
+    athleteId: (r.athlete_id as string | null) ?? null,
+    prenom: (r.prenom as string | null) ?? null,
+    nom: (r.nom as string | null) ?? null,
+    sport: (r.sport as string | null) ?? null,
+    poste: (r.poste as string | null) ?? null,
+    ecole: (r.ecole as string | null) ?? null,
+    evaluation: (r.evaluation as string | null) ?? null,
+    badges: ((r.badges as BadgeTransfert[] | null) ?? []),
+  }));
 }
 
 /** Adresse du lien, sur le domaine où le partenaire travaille. */

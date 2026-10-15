@@ -237,9 +237,11 @@ select pg_temp.essai('D1 ACL des 8 fonctions W3 = {authenticated, postgres, serv
                                    'partenaire_attribuer_badge', 'retirer_badge_partenaire', 'coach_masquer_badge_partenaire',
                                    'badges_partenaires_athlete', 'retirer_evaluation_partenaire')
               group by pr.oid) s$q$, '{authenticated,postgres,service_role}');
-select pg_temp.essai('D2 recruiter_search_athletes inchangée par W3 (md5 W2)', null,
+-- Attendu mis à jour le 2026-10-15 : D1b (20261015103315) a ajouté à la recherche le filtre
+-- « sans nom ou nom à confirmer ». W3 ne la touche toujours pas (version W2 : c15481a0…).
+select pg_temp.essai('D2 recruiter_search_athletes inchangée par W3 (md5 W2 + filtre D1b)', null,
   $q$select md5(pg_get_functiondef(p.oid)) from pg_proc p where p.proname = 'recruiter_search_athletes' and p.pronamespace = 'public'::regnamespace$q$,
-  'c15481a07a3b98e3ae72f8917763a45a');
+  '27650ed7a2109f83d870d85d724c660a');
 
 select n, case when ok then 'OK' else 'ÉCHEC' end as res, test, detail from _res order by n;
 select count(*) filter (where ok) as ok, count(*) filter (where not ok) as echecs from _res;
