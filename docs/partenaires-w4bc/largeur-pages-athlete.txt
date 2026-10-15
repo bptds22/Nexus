@@ -1,0 +1,12 @@
+avant /athlete/notifications : 624 px pour 390 px  ← DÉBORDE
+avant /athlete/dashboard : 390 px pour 390 px
+avant /athlete/profil : 390 px pour 390 px
+avant /athlete/parametres : 566 px pour 390 px  ← DÉBORDE
+avant /athlete/cartes-partenaires : 390 px pour 390 px
+avant /athlete/ambassadeur : 390 px pour 390 px
+apres /athlete/notifications : 390 px pour 390 px
+apres /athlete/dashboard : 390 px pour 390 px
+apres /athlete/profil : 390 px pour 390 px
+apres /athlete/parametres : 390 px pour 390 px
+apres /athlete/cartes-partenaires : 390 px pour 390 px
+apres /athlete/ambassadeur : 390 px pour 390 px
