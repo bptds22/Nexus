@@ -170,6 +170,7 @@ const ATHLETE_ROSTER_SELECT = `
           photo_url,
           first_name,
           last_name,
+          nom_a_confirmer,
           verified,
           profile_completion,
           last_profile_validation,
@@ -478,6 +479,7 @@ function MesAthletesContent() {
           photo: (a.photo_url as string) || "",
           firstName: (a.first_name as string) || "",
           lastName: (a.last_name as string) || "",
+          nomAConfirmer: a.nom_a_confirmer === true,
           position,
           gradYear,
           teamId: sportObj?.nom || "real",
@@ -681,8 +683,20 @@ function MesAthletesContent() {
   // ROSTER « mes athlètes » — borné au PÉRIMÈTRE CANONIQUE (get_coach_athletes),
   // jamais à l'école. C'est ce qui rend visibles les athlètes de ligue civile
   // (school_id NULL) du coach, que la requête école ne peut pas ramener.
+  /* D1b (2026-10-15, décision BP) : une fiche sans prénom, sans nom, ou au nom
+     recopié de Google et pas encore confirmé par l'athlète, sort des listes du
+     coach — comme de la recherche recruteur — jusqu'à ce que l'athlète confirme.
+     Le compte des fiches retirées est affiché, pour que le coach sache pourquoi. */
+  const nomPresentable = (a: RosterAthlete) =>
+    !!a.firstName.trim() && !!a.lastName.trim() && !a.nomAConfirmer;
+  const nbNomsEnAttente = useMemo(
+    () => realAthletes.filter((a) => !nomPresentable(a)
+      && ((a.coach_id === currentUserId && rosterScopeIds.has(a.id)) || schoolRowIds.has(a.id))).length,
+    [realAthletes, currentUserId, rosterScopeIds, schoolRowIds]
+  );
+
   const myRoster = useMemo(
-    () => realAthletes.filter((a) => a.coach_id === currentUserId && rosterScopeIds.has(a.id)),
+    () => realAthletes.filter((a) => a.coach_id === currentUserId && rosterScopeIds.has(a.id) && nomPresentable(a)),
     [realAthletes, currentUserId, rosterScopeIds]
   );
 
@@ -691,7 +705,7 @@ function MesAthletesContent() {
   // d'école où être réclamé ; il n'a rien à faire ici, même s'il est entré
   // dans le jeu de lignes par le périmètre canonique.
   const unclaimedAthletes = useMemo(
-    () => realAthletes.filter((a) => a.coach_id == null && schoolRowIds.has(a.id)),
+    () => realAthletes.filter((a) => a.coach_id == null && schoolRowIds.has(a.id) && nomPresentable(a)),
     [realAthletes, schoolRowIds]
   );
 
@@ -704,7 +718,7 @@ function MesAthletesContent() {
   const schoolAthletes = useMemo(
     () => realAthletes.filter(
       (a) => a.coach_id != null && a.coach_id !== currentUserId
-        && directorScopeIds.has(a.id) && schoolRowIds.has(a.id)
+        && directorScopeIds.has(a.id) && schoolRowIds.has(a.id) && nomPresentable(a)
     ),
     [realAthletes, currentUserId, directorScopeIds, schoolRowIds]
   );
@@ -1027,6 +1041,13 @@ function MesAthletesContent() {
           <p className="text-[14px] text-[#9CA3AF] mt-1">
             Roster — Saison {getCurrentSeason()}
           </p>
+          {nbNomsEnAttente > 0 && (
+            <p data-noms-en-attente className="text-[12px] text-[#F59E0B] mt-1">
+              {nbNomsEnAttente === 1
+                ? "1 fiche masquée : l'athlète doit confirmer son prénom et son nom."
+                : `${nbNomsEnAttente} fiches masquées : les athlètes doivent confirmer leur prénom et leur nom.`}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-3 self-start">
           {(() => {

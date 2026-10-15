@@ -1,0 +1,68 @@
+﻿                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "d1b00000-0000-4000-8000-000000000001", "role" : "authenticated"}
+(1 row)
+
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "d1b00000-0000-4000-8000-000000000002", "role" : "authenticated"}
+(1 row)
+
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "d1b00000-0000-4000-8000-000000000002", "role" : "authenticated"}
+(1 row)
+
+ confirmer_mon_nom 
+-------------------
+ t
+(1 row)
+
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "d1b00000-0000-4000-8000-000000000009", "role" : "authenticated"}
+(1 row)
+
+ confirmer_mon_nom 
+-------------------
+ t
+(1 row)
+
+ n  | verdict |                                          test                                           |           attendu            |            obtenu            
+----+---------+-----------------------------------------------------------------------------------------+------------------------------+------------------------------
+  1 | OK      | Google « Jean Tremblay » → prénom/nom coupés, à confirmer                               | Jean|Tremblay|true           | Jean|Tremblay|true
+  2 | OK      | Google à 3 mots (espaces doubles) → premier mot / le reste                              | Marie|Ève Gagnon|true        | Marie|Ève Gagnon|true
+  3 | OK      | Google à 1 mot → prénom seul, nom vide                                                  | Madonna|(vide)|true          | Madonna|(vide)|true
+  4 | OK      | Google avec un nom déjà présent → JAMAIS écrasé                                         | Paul|Roy|false               | Paul|Roy|false
+  5 | OK      | inscription par courriel → inchangée                                                    | Éloi|Courriel|false          | Éloi|Courriel|false
+  6 | OK      | Apple (nom complet seul) → inchangé (l'appli persiste le nom Apple)                     | (vide)|(vide)|false          | (vide)|(vide)|false
+  7 | OK      | fiche créée avec le nom Google du compte → à confirmer                                  | true                         | true
+  8 | OK      | fiche d'un compte au nom saisi → pas à confirmer                                        | false                        | false
+  9 | OK      | recherche : nom à confirmer → cachée                                                    | cachée                       | cachée
+ 10 | OK      | recherche : nom saisi → visible                                                         | visible                      | visible
+ 11 | OK      | recherche : prénom seul (nom vide) → cachée                                             | cachée                       | cachée
+ 12 | OK      | recherche : sans prénom ni nom (cas des 9) → cachée                                     | cachée                       | cachée
+ 13 | OK      | recherche : Google au nom déjà présent → visible                                        | visible                      | visible
+ 14 | OK      | appli : l'athlète modifie son nom → confirmé (fiche + compte)                           | false|false                  | false|false
+ 15 | OK      | appli : après confirmation → visible dans la recherche                                  | visible                      | visible
+ 16 | OK      | appli : réenregistrer le même nom → toujours à confirmer                                | true                         | true
+ 17 | OK      | athlète qui lève le drapeau à la main → sans effet                                      | true                         | true
+ 18 | OK      | autre que l'athlète (coach/admin) : nom changé ou drapeau levé → toujours à confirmer   | true                         | true
+ 19 | OK      | bandeau : nom à confirmer → « Est-ce bien toi : Marie Ève Gagnon ? »                    | A_CONFIRMER|Marie|Ève Gagnon | A_CONFIRMER|Marie|Ève Gagnon
+ 20 | OK      | bandeau : cas des 9 (compte et fiche vides) → proposition tirée du nom Google DU compte | MANQUANT|Neuf|Sansnom        | MANQUANT|Neuf|Sansnom
+ 21 | OK      | bandeau : nom à 1 mot → nom manquant, prénom proposé                                    | MANQUANT|Madonna|(vide)      | MANQUANT|Madonna|(vide)
+ 22 | OK      | bandeau : nom confirmé → rien                                                           | rien                         | rien
+ 23 | OK      | bandeau : nom saisi → rien                                                              | rien                         | rien
+ 24 | OK      | confirmer avec un prénom vide → refusé                                                  | refusé                       | refusé
+ 25 | OK      | « Oui » → confirmé, même nom                                                            | Marie|Ève Gagnon|false       | Marie|Ève Gagnon|false
+ 26 | OK      | « Corriger » sur une fiche sans nom → nom écrit (espaces retirés), visible              | Neuf|Sansnom-Corrigé|visible | Neuf|Sansnom-Corrigé|visible
+ 27 | OK      | confirmer ne touche QUE la fiche de l'appelant                                          | Jean|Tremblay-Roy            | Jean|Tremblay-Roy
+ 28 | OK      | anon : mon_nom_a_confirmer                                                              | refusé                       | refusé
+ 29 | OK      | anon : confirmer_mon_nom                                                                | refusé                       | refusé
+(29 rows)
+
+ ok | echecs 
+----+--------
+ 29 |      0
+(1 row)
+
