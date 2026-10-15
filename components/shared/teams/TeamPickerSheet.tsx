@@ -25,7 +25,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
-import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { libelleEquipe, trierEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 import { headCoachName } from "@/lib/queries/shared/embeds";
 import { triggerHaptic } from "@/lib/haptics";
 import { orgNounCe, type SchoolType } from "@/lib/utils/orgLabel";
@@ -85,11 +85,11 @@ export interface TeamPickerSheetProps {
   hint?: string;
 }
 
-/* Label = formatTeamLabel partagé (lib/teams/teamLabel) : "Sport ·
-   Catégorie · Division · Genre", champs vides retirés, repli sur le nom.
-   MÊME source que les pickers d'onboarding (école/civil/Programme) — la
-   sheet affichait auparavant son propre libellé SANS le sport, ce qui
-   rendait indiscernables les 5 équipes scrapées d'une même école. */
+/* Libellé = règle commune (lib/teams/teamLabel, BP 2026-10-14) :
+   « NOM — Sport · Catégorie · Division · Genre », le nom seulement s'il
+   diffère de celui du club / de l'école (les 5 équipes scrapées d'une école
+   portent son nom ; les 107 du club NLS ont chacune le leur). Tri et
+   recherche communs aussi. */
 
 export function TeamPickerSheet({
   open, onClose, schoolId, sportId, season, excludeTeamIds,
@@ -108,6 +108,8 @@ export function TeamPickerSheet({
   const kbdStyle = useSheetKeyboardGeometry();
   // Type de l'org ciblée (école / club / cégep) → vocabulaire type-aware.
   const [orgType, setOrgType] = useState<SchoolType | null>(null);
+  // Nom de l'org : le nom d'une équipe n'est affiché que s'il en diffère.
+  const [orgName, setOrgName] = useState<string | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setSearch(""); setDragOffset(0); } }, [open]);
@@ -125,8 +127,10 @@ export function TeamPickerSheet({
     (async () => {
       const supabase = createClient();
       // Type de l'org ciblée pour le vocabulaire (école vs club vs cégep).
-      supabase.from("schools").select("type").eq("id", schoolId).maybeSingle().then(({ data: s }) => {
-        if (!cancelled) setOrgType((s as { type?: SchoolType } | null)?.type ?? null);
+      supabase.from("schools").select("type, name").eq("id", schoolId).maybeSingle().then(({ data: s }) => {
+        if (cancelled) return;
+        setOrgType((s as { type?: SchoolType } | null)?.type ?? null);
+        setOrgName((s as { name?: string } | null)?.name ?? null);
       });
       let q = supabase
         .from("teams")
@@ -160,24 +164,16 @@ export function TeamPickerSheet({
             isMine: exclude.has(r.id as string),
           };
         });
-      setTeams(mapped);
+      setTeams(trierEquipes(mapped.map((t) => ({ ...t, age_group: t.ageGroup }))));
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [open, schoolId, sportId, season, excludeKey]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return teams;
-    return teams.filter((t) =>
-      t.name.toLowerCase().includes(q)
-      || (t.sport ?? "").toLowerCase().includes(q)
-      || (t.ageGroup ?? "").toLowerCase().includes(q)
-      || (t.division ?? "").toLowerCase().includes(q)
-      || (t.zone ?? "").toLowerCase().includes(q)
-      || (t.gender ?? "").toLowerCase().includes(q),
-    );
-  }, [teams, search]);
+  const filtered = useMemo(
+    () => teams.filter((t) => equipeCorrespond({ ...t, age_group: t.ageGroup }, search, { sport: t.sport })),
+    [teams, search],
+  );
 
   if (!mounted || !open) return null;
 
@@ -295,11 +291,14 @@ export function TeamPickerSheet({
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[15px] font-semibold text-white truncate">{t.name}</p>
-                      <p className="text-[12px] text-white/55 truncate">
-                        {formatTeamLabel(t.sport, t.ageGroup, t.division, t.gender, t.name, t.zone)}
-                        {t.athleteCount > 0 ? ` · ${t.athleteCount} athlète${t.athleteCount > 1 ? "s" : ""}` : ""}
+                      <p className="text-[15px] font-semibold text-white break-words">
+                        {libelleEquipe({ ...t, age_group: t.ageGroup }, orgName, { sport: t.sport })}
                       </p>
+                      {t.athleteCount > 0 && (
+                        <p className="text-[12px] text-white/55 truncate">
+                          {t.athleteCount} athlète{t.athleteCount > 1 ? "s" : ""}
+                        </p>
+                      )}
                       {/* Coach-chef, RENDU CONDITIONNEL : aucune ligne n'est produite quand
                           aucun head_coach n'est déclaré (headCoachName renvoie null) — pas
                           de « Coach : » vide. La table team_coaches est très peu remplie,

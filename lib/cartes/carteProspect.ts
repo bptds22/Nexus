@@ -23,6 +23,7 @@ import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade, type Grade } from "@/lib/config/grades";
 import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
 import { leagueOf } from "@/lib/config/team-taxonomy";
+import { libelleEquipe as libelleEquipeCommun } from "@/lib/teams/teamLabel";
 
 /** Rétention (décision BP) : purge 12 mois après la dernière activité,
  *  avis à l'écran 30 jours avant. */
@@ -303,7 +304,7 @@ export function versKanban(
       parentCourriel: l.parent_courriel,
       lienVideo: l.lien_video,
       teamId: l.team_id,
-      teamNom: l.teams ? libelleEquipeComplet(nomSportAthlete, { ...l.teams, name: l.teams.name ?? "" }, ligueEquipe) : null,
+      teamNom: l.teams ? libelleEquipeComplet(nomSportAthlete, { ...l.teams, name: l.teams.name ?? "" }, ligueEquipe, ecole?.name ?? null) : null,
       schoolId: l.school_id,
       schoolNom: ecole?.name ?? null,
       sportAthleteId: l.sport_athlete_id,
@@ -508,26 +509,29 @@ export async function retirerCarteDeListe(supabase: SupabaseClient, listId: stri
   return error;
 }
 
-/** Libellé d'une équipe : « Football juvénile D1 · Masculin ». */
-export function libelleEquipe(sport: string, e: { name: string; age_group: string | null; division: string | null; gender: string | null }): string {
-  const corps = [sport, e.age_group?.toLowerCase(), e.division].filter(Boolean).join(" ");
-  const base = e.age_group || e.division ? corps : [sport, e.name].filter(Boolean).join(" — ");
-  return e.gender ? `${base} · ${e.gender}` : base;
+/** Libellé d'une équipe — règle commune (lib/teams/teamLabel, BP 2026-10-14) :
+ *  « PHEBUS JM — Basketball · Juvénile · Gold · Masculin », le nom seulement
+ *  s'il diffère de celui de l'établissement (`nomClub`). */
+export function libelleEquipe(
+  sport: string,
+  e: { name: string; age_group: string | null; division: string | null; gender: string | null },
+  nomClub: string | null,
+): string {
+  return libelleEquipeCommun(e, nomClub, { sport });
 }
 
-/** Libellé COMPLET d'une équipe, ligue incluse : « Football juvénile D2 ·
- *  RSEQ · Masculin ». Ce qui définit une équipe (retour BP) — jamais
- *  teams.name, qui ne porte ni sport ni catégorie et porte parfois le nom de
- *  l'école (saisie coach). La ligue se passe déjà calculée (leagueOf) :
- *  teams.league est souvent NULL pour une équipe RSEQ, déduite jamais stockée. */
+/** Libellé COMPLET d'une équipe, ligue incluse : « Football · Juvénile · D2 ·
+ *  Masculin · RSEQ ». Règle commune : teams.name n'apparaît que s'il diffère
+ *  du nom de l'établissement (il porte souvent celui de l'école ; pour les 107
+ *  équipes du club NLS, c'est lui qui les distingue). La ligue se passe déjà
+ *  calculée (leagueOf) : teams.league est souvent NULL pour une équipe RSEQ. */
 export function libelleEquipeComplet(
   sport: string,
   e: { name: string; age_group: string | null; division: string | null; gender: string | null },
   ligue: string,
+  nomClub: string | null,
 ): string {
-  const corps = [sport, e.age_group?.toLowerCase(), e.division].filter(Boolean).join(" ");
-  const base = e.age_group || e.division ? corps : [sport, e.name].filter(Boolean).join(" — ");
-  return [base, ligue, e.gender].filter(Boolean).join(" · ");
+  return libelleEquipeCommun(e, nomClub, { sport, ligue });
 }
 
 /* ── MON CÉGEP (admin) ──────────────────────────────────────────────

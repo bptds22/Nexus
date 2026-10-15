@@ -516,7 +516,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         // lui-même créé ne voyait aucune suggestion.
         //
         // ⚠ CETTE DÉTECTION EST CONTOURNABLE SUR MOBILE (le web est corrigé, D1
-        // 2026-10-15 ; mobile au registre §88). Elle ne se déclenche que si le
+        // 2026-10-15 ; mobile au registre §89). Elle ne se déclenche que si le
         // coach CLIQUE une suggestion. Taper le courriel en entier sans cliquer
         // mène à la création. L'index unique athletes_email_lower_btrim_uniq
         // (2026-08-12) la refuse si une FICHE porte ce courriel ; il ne voit pas

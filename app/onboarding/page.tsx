@@ -15,6 +15,7 @@ import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { genderLabel } from "@/lib/config/gender";
+import { attributsEquipe, comparerEquipes, nomEstCeluiDuClub } from "@/lib/teams/teamLabel";
 import { CoachOnboardingMobileSchool } from "@/components/shared/CoachOnboardingMobileSchool";
 import { CoachOnboardingMobileCivil } from "@/components/shared/CoachOnboardingMobileCivil";
 import { RecruiterOnboardingMobile } from "@/components/shared/RecruiterOnboardingMobile";
@@ -4209,7 +4210,8 @@ function UmbrellaStep({
         const bMine = prioritySport && b.sport === prioritySport ? 0 : 1;
         if (aMine !== bMine) return aMine - bMine;
         const s = (a.sport ?? "").localeCompare(b.sport ?? "");
-        return s !== 0 ? s : a.name.localeCompare(b.name);
+        // puis le tri commun (lib/teams/teamLabel) : nom, catégorie, division, genre.
+        return s !== 0 ? s : comparerEquipes(a, b);
       });
       setTeams(deduped);
       setLoading(false);
@@ -4250,7 +4252,11 @@ function UmbrellaStep({
                     : "border-white/10 hover:border-[#E63946]/40"
                 }`}
               >
-                <p className="font-bold text-white text-sm truncate">{team.name}</p>
+                {/* Règle commune : le nom s'il diffère du club / de l'école,
+                    sinon « Catégorie · Division · Genre » ; pastilles dessous. */}
+                <p className="font-bold text-white text-sm truncate">
+                  {nomEstCeluiDuClub(team.name, schoolName) ? (attributsEquipe(team) || team.name) : team.name}
+                </p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-2">
                   {team.sport && (
                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/30">

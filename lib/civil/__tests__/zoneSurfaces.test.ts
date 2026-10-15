@@ -40,9 +40,9 @@ test("teamDetails / formatTeamLabel nomment la zone ; deux zones ne se lisent ja
   assert.equal(teamDetails(nord), "Football · Pee-Wee AAA · D1 · Nord · Masculin");
   assert.notEqual(teamDetails(nord), teamDetails(sud));
   assert.equal(teamDetails({ sport: "Football", age_group: "Atome", division: "", zone: "Nord" }), "Football · Atome Nord");
-  assert.equal(formatTeamLabel("Football", "Atome", "", "Masculin", "Patriotes", "Nord"), "Football · Atome Nord · Masculin");
+  assert.equal(formatTeamLabel("Football", "Atome", "", "Masculin", "Patriotes", "Nord", "Patriotes"), "Football · Atome Nord · Masculin");
   // sans zone : inchangé (RSEQ)
-  assert.equal(formatTeamLabel("Basketball", "Cadet", "D1", "Féminin", "X"), "Basketball · Cadet · D1 · Féminin");
+  assert.equal(formatTeamLabel("Basketball", "Cadet", "D1", "Féminin", "X", null, "X"), "Basketball · Cadet · D1 · Féminin");
   assert.equal(teamDetails({ sport: "Basketball", age_group: "Cadet", division: "D1" }), "Basketball · Cadet · D1");
 });
 

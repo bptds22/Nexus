@@ -48,6 +48,7 @@ import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner
 import type { DetectedTeam } from "@/lib/queries/coach/detectExistingTeam";
 import { TeamCreateFormBlock, type TeamFormValues } from "@/components/shared/teams/TeamCreateFormBlock";
 import { triggerHaptic } from "@/lib/haptics";
+import { libelleEquipe, trierEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -94,10 +95,10 @@ function normalize(s: string): string {
   return stripAccents(s).toLowerCase().trim();
 }
 
-function civilTeamLabel(t: { name: string; division: string | null; age_group: string | null; gender: string | null }): string {
-  const parts = [t.age_group, t.division, t.gender].map((v) => (v ?? "").trim()).filter((v) => v.length > 0);
-  return parts.length > 0 ? parts.join(" · ") : t.name;
-}
+/* Libellé d'une équipe : règle commune (lib/teams/teamLabel, bug NLS
+   BP 2026-10-14) — « PHEBUS JM — Juvénile · Gold · Masculin ». L'ancien
+   libellé (catégorie · division · genre, SANS le nom) rendait les 107
+   équipes du club « No Limits Showcases » indiscernables. */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -325,22 +326,18 @@ export function CoachOnboardingMobileCivil() {
         age_group: (r.age_group as string) ?? null,
         gender: (r.gender as string) ?? null,
       }));
-      setCivilTeams(mapped);
+      setCivilTeams(trierEquipes(mapped));
       setCivilTeamsLoaded(true);
       setCivilTeamsLoading(false);
     })();
     return () => { cancelled = true; };
   }, [selectedClubId, sport, clubMode]);
 
-  const visibleCivilTeams = useMemo(() => {
-    const q = normalize(teamSearch);
-    if (!q) return civilTeams;
-    return civilTeams.filter((t) =>
-      normalize(t.name).includes(q) ||
-      (t.division ? normalize(t.division).includes(q) : false) ||
-      (t.age_group ? normalize(t.age_group).includes(q) : false)
-    );
-  }, [civilTeams, teamSearch]);
+  // Recherche commune : nom + catégorie + division + genre.
+  const visibleCivilTeams = useMemo(
+    () => civilTeams.filter((t) => equipeCorrespond(t, teamSearch)),
+    [civilTeams, teamSearch],
+  );
 
   // school_has_responsable — query uniquement si club EXISTANT choisi.
   // Si club CRÉÉ : pas de query (par construction hasResponsable=false).
@@ -837,7 +834,7 @@ export function CoachOnboardingMobileCivil() {
         onSelect={(t) => {
           setTeamMode("pick");
           setSelectedTeamId(t.id);
-          setSelectedTeamName(civilTeamLabel(t));
+          setSelectedTeamName(libelleEquipe(t, selectedClubName));
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
@@ -850,7 +847,7 @@ export function CoachOnboardingMobileCivil() {
             onClick={onTap}
             className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
           >
-            <p className="text-[16px] font-semibold text-white truncate">{civilTeamLabel(t)}</p>
+            <p className="text-[16px] font-semibold text-white break-words">{libelleEquipe(t, selectedClubName)}</p>
           </button>
         )}
         footer={

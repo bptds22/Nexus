@@ -29,6 +29,7 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
 import { joursAvantPurge, AVIS_JOURS, ecrireCarte, libelleEquipeComplet, type CarteKanban } from "@/lib/cartes/carteProspect";
 import { leagueOf } from "@/lib/config/team-taxonomy";
+import { trierEquipes } from "@/lib/teams/teamLabel";
 import { KANBAN_COLUMNS } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { ligneSignee } from "@/lib/historique/signature";
 
@@ -545,8 +546,8 @@ function LigneEquipe({ card }: { card: CarteKanban }) {
     if (equipe || !c.schoolId || !c.sportAthleteId) return;
     let annule = false;
     void createClient().from("teams").select("id, name, division, league, age_group, gender, rseq_team_id, schools!school_id(type)")
-      .eq("school_id", c.schoolId).eq("sport_id", c.sportAthleteId).order("name")
-      .then(({ data }) => { if (!annule) setChoix((data ?? []) as unknown as TeamChoix[]); });
+      .eq("school_id", c.schoolId).eq("sport_id", c.sportAthleteId)
+      .then(({ data }) => { if (!annule) setChoix(trierEquipes((data ?? []) as unknown as TeamChoix[])); });
     return () => { annule = true; };
   }, [equipe, c.schoolId, c.sportAthleteId]);
 
@@ -557,7 +558,7 @@ function LigneEquipe({ card }: { card: CarteKanban }) {
   // stockée est RSEQ par défaut — jamais teams.league brut.
   const libelleChoix = (t: TeamChoix) => {
     const ligue = leagueOf({ context: null, schoolType: null, teamDivision: t.division, teamLeague: t.league, teamIsRseq: !!t.rseq_team_id, hasTeam: true, teamSchoolType: t.schools?.type ?? null }) ?? "";
-    return libelleEquipeComplet(c.sportAthleteNom, t, ligue);
+    return libelleEquipeComplet(c.sportAthleteNom, t, ligue, c.schoolNom);
   };
 
   const preciser = async () => {

@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { needsConsent } from "@/lib/auth/needsConsent";
-import { genderLabel } from "@/lib/config/gender";
 import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
@@ -28,7 +27,8 @@ import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY } from 
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import { type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
-import { teamDetails, avecZone } from "@/lib/config/teamLabel";
+import { teamDetails } from "@/lib/config/teamLabel";
+import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -244,6 +244,7 @@ type CivilTeamRow = {
   division: string | null;
   /** teams.zone — « Atome Nord » (BP 2026-10-09). */
   zone?: string | null;
+  gender?: string | null;
   school_id: string;
   school_name: string;
 };
@@ -294,11 +295,10 @@ function CivilTeamPicker({
       // the previous client-side type filter is no longer needed.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division, zone")
+        .select("id, name, age_group, division, zone, gender")
         .eq("school_id", clubId)
         .eq("sport_id", sportRow.id)
-        .eq("is_active", true)
-        .order("name");
+        .eq("is_active", true);
       if (!rows) { if (!cancelled) { setTeams([]); setLoading(false); } return; }
 
       const mapped: CivilTeamRow[] = (rows as Record<string, unknown>[]).map((raw) => ({
@@ -307,23 +307,21 @@ function CivilTeamPicker({
         age_group: (raw.age_group as string) ?? null,
         division: (raw.division as string) ?? null,
         zone: (raw.zone as string) ?? null,
+        gender: (raw.gender as string) ?? null,
         school_id: clubId,
         school_name: clubName,
       }));
 
-      if (!cancelled) { setTeams(mapped); setLoading(false); }
+      // Tri commun (lib/teams/teamLabel) : nom, catégorie, division, genre.
+      if (!cancelled) { setTeams(trierEquipes(mapped)); setLoading(false); }
     }
     if (clubId && sportName) loadTeams();
     else { setTeams([]); setLoading(false); }
     return () => { cancelled = true; };
   }, [clubId, clubName, sportName]);
 
-  const visible = search.trim().length > 0
-    ? teams.filter((t) =>
-        t.name.toLowerCase().includes(search.toLowerCase().trim())
-        || t.school_name.toLowerCase().includes(search.toLowerCase().trim()),
-      )
-    : teams;
+  // Recherche commune : nom + catégorie + division + genre (+ zone).
+  const visible = teams.filter((t) => equipeCorrespond(t, search));
 
   if (skipped) {
     return (
@@ -365,8 +363,9 @@ function CivilTeamPicker({
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {visible.map((t) => {
           const isSelected = selectedTeamId === t.id;
-          // Zone comprise : « Atome Nord », « Pee-Wee · AAA Sud » (BP 2026-10-09).
-          const meta = avecZone(t.age_group ?? "", t.division ?? "", t.zone ?? "").filter(Boolean).join(" · ");
+          // Règle commune : « NOM — Catégorie · Division · Genre », le nom
+          // seulement s'il diffère du club (zone comprise, BP 2026-10-09).
+          const libelle = libelleEquipe(t, t.school_name);
           return (
             <button
               key={t.id}
@@ -380,10 +379,8 @@ function CivilTeamPicker({
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[14px] font-bold text-white truncate">{t.name}</p>
-                  <p className="text-[11px] text-[#6b7280] truncate">
-                    {t.school_name}{meta ? ` — ${meta}` : ""}
-                  </p>
+                  <p className="text-[14px] font-bold text-white break-words">{libelle}</p>
+                  <p className="text-[11px] text-[#6b7280] truncate">{t.school_name}</p>
                 </div>
                 {isSelected && (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
@@ -455,12 +452,16 @@ function SchoolTeamPicker({
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [skipped, setSkipped] = useState(false);
+  // Nom de l'école : le nom d'une équipe n'est affiché que s'il en diffère.
+  const [schoolName, setSchoolName] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function loadTeams() {
       setLoading(true);
       const supabase = createClient();
+      void supabase.from("schools").select("name").eq("id", schoolId).maybeSingle()
+        .then(({ data }) => { if (!cancelled) setSchoolName((data as { name?: string } | null)?.name ?? null); });
 
       // Resolve sport_id from name — fail-soft to empty list (the
       // skip path still works) if the sport doesn't exist.
@@ -514,7 +515,8 @@ function SchoolTeamPicker({
         }));
         // 1) équipes du coach d'abord, 2) saison la plus récente d'abord
         // (en septembre les deux saisons coexistent — l'athlète doit tomber
-        // sur celle qui porte le calendrier), 3) nom.
+        // sur celle qui porte le calendrier), 3) tri commun (nom, catégorie,
+        // division, genre — lib/teams/teamLabel).
         mapped.sort((a, b) => {
           const aMine = coachTeamIds.has(a.id) ? 0 : 1;
           const bMine = coachTeamIds.has(b.id) ? 0 : 1;
@@ -522,7 +524,7 @@ function SchoolTeamPicker({
           const aS = a.season ?? "";
           const bS = b.season ?? "";
           if (aS !== bS) return bS.localeCompare(aS);
-          return a.name.localeCompare(b.name);
+          return comparerEquipes(a, b);
         });
         setTeams(mapped);
         setLoading(false);
@@ -533,9 +535,7 @@ function SchoolTeamPicker({
     return () => { cancelled = true; };
   }, [schoolId, sportName, selectedCoachId]);
 
-  const visible = search.trim().length > 0
-    ? teams.filter((t) => t.name.toLowerCase().includes(search.toLowerCase().trim()))
-    : teams;
+  const visible = teams.filter((t) => equipeCorrespond(t, search));
 
   if (skipped) {
     return (
@@ -577,7 +577,7 @@ function SchoolTeamPicker({
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {visible.map((t) => {
           const isSelected = selectedTeamId === t.id;
-          const meta = [...avecZone(t.age_group ?? "", t.division ?? "", t.zone ?? ""), t.gender ? genderLabel(t.gender) : null].filter(Boolean).join(" · ");
+          const libelle = libelleEquipe(t, schoolName);
           return (
             <button
               key={t.id}
@@ -591,8 +591,7 @@ function SchoolTeamPicker({
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[14px] font-bold text-white truncate">{t.name}</p>
-                  {meta && <p className="text-[11px] text-[#6b7280] truncate">{meta}</p>}
+                  <p className="text-[14px] font-bold text-white break-words">{libelle}</p>
                 </div>
                 {isSelected && (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
