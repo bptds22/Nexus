@@ -28,14 +28,18 @@ import {
   toggleFacetValue,
   activeFilterCount,
   FACETS,
+  FACET_ECOLE,
   EMPTY_FILTERS,
   QUICK_FILTERS,
+  TYPES_CARTE,
   FILTRE_PIPELINE_URL,
   quickDepuisFiltreUrl,
+  filtrerOptionsFacette,
   type FacetDef,
   type FacetOption,
   type PipelineFilters,
   type QuickKey,
+  type TypeCarte,
 } from "@/lib/pipeline/filterPipelineCards";
 import { usePreferenceLocale } from "@/lib/recherche/useFiltresRecherche";
 import type { CelluleXlsx } from "@/lib/export/xlsx";
@@ -1688,15 +1692,21 @@ function SlideOver({
    elle est dense, gatée Pro et couplée à `useFiltresRecherche` + l'URL.
    L'extraction se fera au 3e consommateur — consigné en P3. */
 function FacetDropdown({
-  def, options, selected, onToggle,
+  def, options, selected, onToggle, searchable = false, disabled = false,
 }: {
   def: FacetDef;
   options: FacetOption[];
   selected: string[];
   onToggle: (value: string) => void;
+  /** Champ de recherche en tête du menu (École / Club : ~51 valeurs). */
+  searchable?: boolean;
+  /** Grisée, jamais cachée (règle BP) : une seule valeur possible, rien à choisir. */
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [requete, setRequete] = useState("");
   const n = selected.length;
+  const visibles = searchable ? filtrerOptionsFacette(options, requete, selected) : options;
   // 0 coché → « Toutes les positions ». 1 → sa valeur. 2+ → « Position (3) ».
   const label = n === 0
     ? def.allLabel
@@ -1708,17 +1718,35 @@ function FacetDropdown({
     <div className="relative">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { if (!disabled) setOpen((o) => !o); }}
         aria-expanded={open}
-        className={`nx-filter-select text-left${n > 0 ? " nx-filter-active" : ""}`}
+        disabled={disabled}
+        title={disabled ? "Une seule valeur possible pour l'instant" : undefined}
+        className={`nx-filter-select text-left${n > 0 ? " nx-filter-active" : ""}${disabled ? " opacity-50 cursor-not-allowed" : ""}`}
       >
         {label}
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
-          <div className="absolute z-[61] mt-1 min-w-[220px] max-h-[320px] overflow-y-auto rounded-xl border border-[#2a2d36] bg-[#1A1D24] p-1.5 shadow-2xl">
-            {options.map((opt) => {
+          <div className="fixed inset-0 z-[60]" onClick={() => { setOpen(false); setRequete(""); }} />
+          <div className="absolute z-[61] mt-1 min-w-[260px] max-h-[360px] overflow-y-auto rounded-xl border border-[#2a2d36] bg-[#1A1D24] p-1.5 shadow-2xl">
+            {searchable && (
+              <div className="sticky -top-1.5 z-[1] -mx-1.5 -mt-1.5 mb-1 bg-[#1A1D24] p-1.5">
+                <input
+                  type="text"
+                  autoFocus
+                  value={requete}
+                  onChange={(e) => setRequete(e.target.value)}
+                  placeholder={`Chercher : ${def.label.toLowerCase()}…`}
+                  aria-label={`Chercher dans ${def.label}`}
+                  className="w-full rounded-lg border border-[#2a2d36] bg-[#13151a] px-2.5 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#6b7280] outline-none focus:border-[#4a4d56]"
+                />
+              </div>
+            )}
+            {searchable && visibles.length === 0 && (
+              <p className="px-2.5 py-2 text-[12px] text-[#6b7280]">Aucun résultat</p>
+            )}
+            {visibles.map((opt) => {
               const on = selected.includes(opt.value);
               return (
                 <button
@@ -1780,6 +1808,8 @@ function PipelinePageContent() {
   const [retireReason, setRetireReason] = useState("");
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
+  // Pastille « Type » : null = tout ; « prospects » ou « nexus », exclusifs.
+  const [typeCarte, setTypeCarte] = useState<TypeCarte | null>(null);
   /* ?filtre=relances | visites (tuiles du tableau de bord) : chip ACTIVE dès
      le premier rendu — pas un useEffect qui l'activerait un tick après
      affichage du kanban entier. Relances : triées la plus proche d'abord.
@@ -2109,7 +2139,7 @@ function PipelinePageContent() {
   /* LES FACETTES (Lot 2b) — le sélecteur « sport » a disparu : le sport est
      devenu une facette parmi cinq, dans le même système. Deux mécaniques de
      filtrage dans la même barre en faisaient une de trop. */
-  const extra = useMemo(() => ({ search, quick }), [search, quick]);
+  const extra = useMemo(() => ({ search, quick, type: typeCarte }), [search, quick, typeCarte]);
 
   const filteredCards = useMemo(
     () => filterPipelineCards(cards, filters, extra),
@@ -2122,13 +2152,22 @@ function PipelinePageContent() {
   /* La PRÉSENCE d'une pilule se juge sur l'ensemble des cartes
      (isFacetOffered), son CONTENU sur le contexte courant (facetOptions).
      Mélanger les deux faisait disparaître des pilules en cours de filtrage. */
-  /* ÉCOLE — retirée de la barre web (retour BP 2026-10-03). Écartée ICI et
-     non dans FACETS : l'app lit encore FACETS pour sa feuille « Filtrer ». */
+  /* ÉCOLE / CLUB — retirée le 2026-10-03, REMISE le 2026-10-15 (décision BP,
+     ~950 cartes prospect dans une unité). Elle vient de FACET_ECOLE, pas de
+     FACETS, qui reste tel quel. Règle BP pour elle : TOUJOURS affichée, grisée
+     (jamais cachée) quand il n'y a qu'une valeur possible. Les autres facettes
+     gardent leur règle (isFacetOffered). */
   const facetLists = useMemo(
-    () => FACETS.filter((f) => f.key !== "school" && isFacetOffered(cards, f.key, filters))
+    () => FACETS.filter((f) => isFacetOffered(cards, f.key, filters))
                 .map((f) => ({ def: f, options: facetOptions(cards, f.key, filters, extra) })),
     [cards, filters, extra],
   );
+  const facetEcole = useMemo(
+    () => ({ options: facetOptions(cards, "school", filters, extra), offerte: isFacetOffered(cards, "school", filters) }),
+    [cards, filters, extra],
+  );
+  // La pastille Type ne choisit rien si toutes les cartes sont du même type : grisée.
+  const typesPresents = useMemo(() => new Set(cards.map((c) => estCarte(c))).size, [cards]);
 
   const nActiveFilters = activeFilterCount(filters, extra);
   // Tri d'en-tête sans mode équivalent dans le menu : tableau seulement.
@@ -2462,8 +2501,16 @@ function PipelinePageContent() {
               onToggle={(v) => setFilters((f) => toggleFacetValue(f, def.key, v))}
             />
           ))}
+          <FacetDropdown
+            def={FACET_ECOLE}
+            options={facetEcole.options}
+            selected={filters.school}
+            onToggle={(v) => setFilters((f) => toggleFacetValue(f, "school", v))}
+            searchable
+            disabled={!facetEcole.offerte}
+          />
 
-          {facetLists.length > 0 && <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />}
+          <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
 
           <select
             value={triColonneSeule ? "__colonne" : sortBy}
@@ -2486,7 +2533,7 @@ function PipelinePageContent() {
           {(nActiveFilters > 0 || sortBy !== DEFAULT_PIPELINE_SORT || !!triTab) && (
             <button
               type="button"
-              onClick={() => { setFilters(EMPTY_FILTERS); setSearch(""); setQuick([]); setSortBy(DEFAULT_PIPELINE_SORT); setTriTab(null); }}
+              onClick={() => { setFilters(EMPTY_FILTERS); setSearch(""); setQuick([]); setTypeCarte(null); setSortBy(DEFAULT_PIPELINE_SORT); setTriTab(null); }}
               className="nx-filter-reset flex items-center gap-1.5 text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors ml-1"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -2518,6 +2565,29 @@ function PipelinePageContent() {
               </button>
             );
           })}
+
+          {/* Pastille « Type » — deux valeurs EXCLUSIVES, un second clic sur la
+              valeur active la retire (= tout). Grisée, jamais cachée, quand
+              toutes les cartes sont du même type et que rien n'est choisi. */}
+          <div className="w-px h-5 bg-[#2D3748] mx-1 hidden sm:block" />
+          <div role="group" aria-label="Type" className="flex items-center gap-2">
+            {TYPES_CARTE.map((t) => {
+              const on = typeCarte === t.key;
+              const grise = typesPresents < 2 && typeCarte === null;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  disabled={grise}
+                  onClick={() => setTypeCarte((cur) => (cur === t.key ? null : t.key))}
+                  aria-pressed={on}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${on ? "bg-white/[0.06] text-white border border-white/40" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}${grise ? " opacity-50 cursor-not-allowed hover:text-[#6b7280] hover:border-[#2D3748]" : ""}`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Conditionnel : « 15 sur 15 » en permanence serait du bruit. Il
               n'apparaît que quand un filtre retire réellement des cartes —

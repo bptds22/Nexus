@@ -1,0 +1,11 @@
+cartes jetables créées : 6 (2 par équipe : Collège de Lévis, Saint-Jean-Eudes, Grizzlis [club civil])
+cartes « Jetable » visibles au kanban, sans filtre : 6
+menu École / Club, sans recherche : Académie les Estacades1 | Collège de Lévis2 | Grizzlis de Boucherville · ligue2 | Saint-Jean-Eudes2 | Non renseigné4
+menu, recherche « levis » : Collège de Lévis2
+menu, recherche « GRIZZ » : Grizzlis de Boucherville · ligue2
+filtre Grizzlis appliqué — kanban : 2 carte(s) « Jetable » visibles ; bandeau : 2 sur 11
+même filtre — vue tableau : 2 ligne(s)
+pastille Prospects — tableau : 7 ligne(s) sur 11 ; bandeau : 7 sur 11
+pastille Sur Nexus — kanban : 0 carte(s) « Jetable » visibles ; bandeau : 4 sur 11
+erreurs de page : aucune
+cartes jetables retirées : 6
