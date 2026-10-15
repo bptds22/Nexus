@@ -1,0 +1,8 @@
+cartes jetables créées : 9 (A+ A B+ B C+ C D+ D E), équipe S. de Sherbrooke
+grade « F » refusé par la base : oui — new row for relation "cartes_prospect" violates check constraint "cartes_prospec
+puces de grade rendues sur le pipeline : E D D+ C C+ B B+ A A+ A
+gros plan carte D+ : ok (278×181)
+gros plan carte E : ok (278×181)
+picker : A+ A B+ B C+ C D+ D E*   (* = sélectionné)
+erreurs de page : aucune
+cartes jetables retirées : 9

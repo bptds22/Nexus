@@ -96,8 +96,8 @@ function compareByMode(
   switch (mode) {
     // `grade_desc` = MEILLEUR grade d'abord, comme `rating_desc` rend la
     // meilleure cote d'abord. Le comparateur est croissant SUR LE RANG parce
-    // que A+ vaut 0 et D vaut 6 : « meilleur » et « plus petit » coïncident.
-    // gradeRank() range les non-gradés APRÈS les D — « pas encore jugé »
+    // que A+ vaut 0 et E vaut 8 : « meilleur » et « plus petit » coïncident.
+    // gradeRank() range les non-gradés APRÈS les E — « pas encore jugé »
     // n'est pas « jugé mauvais ». Et il départage à grade égal, sinon une
     // colonne de dix B+ retomberait dans l'ordre arbitraire du tableau.
     case "grade_desc": {

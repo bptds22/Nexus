@@ -935,7 +935,7 @@ function arreterToucheCellule(e: React.KeyboardEvent<HTMLTableCellElement>) {
    s'éclaire et prend un fin liseré (CLASSE_CELLULE_EDITABLE). */
 
 /** MON GRADE éditable dans la cellule (décision BP 2026-09-23). Un clic pose
- *  un menu A+ … D (et « Aucun ») DANS la case ; choisir enregistre aussitôt.
+ *  un menu A+ … E (et « Aucun ») DANS la case ; choisir enregistre aussitôt.
  *  Même écriture que le panneau (handleSetGrade, optimiste, garde démo). */
 function CelluleGrade({ card, isFreeDemoMode, onTease, onSave }: {
   card: PipelineKanbanCard;

@@ -13,7 +13,8 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { transferConfirmationText, type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
-import { teamDetails } from "@/lib/config/teamLabel";
+import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
+import LignesEquipe from "@/components/athlete/LignesEquipe";
 
 interface Props {
   confirmation: TransferConfirmation;
@@ -33,22 +34,18 @@ export default function TransferConfirmDialog({
   // « Juvénile · D2 · Féminin » lui dit exactement ce qui change.
   const fromName = confirmation.previous_team_name || "Ton équipe actuelle";
   const toName = confirmation.target_team_name || "La nouvelle équipe";
-  const fromDetails = [
-    confirmation.previous_school_name,
-    teamDetails({
-      sport: confirmation.previous_sport, age_group: confirmation.previous_age_group,
-      division: confirmation.previous_division, gender: confirmation.previous_gender,
-      season: confirmation.previous_season, league: confirmation.previous_league,
-    }),
-  ].filter(Boolean).join(" · ");
-  const toDetails = [
-    confirmation.target_school_name,
-    teamDetails({
-      sport: confirmation.target_sport, age_group: confirmation.target_age_group,
-      division: confirmation.target_division, gender: confirmation.target_gender,
-      season: confirmation.target_season, league: confirmation.target_league,
-    }),
-  ].filter(Boolean).join(" · ");
+  // Règle commune (lib/teams/teamLabel, BP 2026-10-15) : catégorie · division ·
+  // genre en évidence, puis club · sport · saison (ligue seulement si ≠ club).
+  const fromDetails = lignesEquipeResolue({
+    sport: confirmation.previous_sport, age_group: confirmation.previous_age_group,
+    division: confirmation.previous_division, gender: confirmation.previous_gender,
+    season: confirmation.previous_season, league: confirmation.previous_league,
+  }, confirmation.previous_school_name);
+  const toDetails = lignesEquipeResolue({
+    sport: confirmation.target_sport, age_group: confirmation.target_age_group,
+    division: confirmation.target_division, gender: confirmation.target_gender,
+    season: confirmation.target_season, league: confirmation.target_league,
+  }, confirmation.target_school_name);
 
   return (
     <div
@@ -103,7 +100,7 @@ export default function TransferConfirmDialog({
 }
 
 function Row({ label, name, details, tone }: {
-  label: string; name: string; details: string; tone: "leave" | "join";
+  label: string; name: string; details: { essentiel: string; contexte: string }; tone: "leave" | "join";
 }) {
   return (
     <div className="rounded-xl border border-white/5 bg-[#111317] px-4 py-3">
@@ -111,7 +108,7 @@ function Row({ label, name, details, tone }: {
       <div className={`mt-0.5 text-[14px] font-semibold ${tone === "join" ? "text-white" : "text-[#9CA3AF]"}`}>
         {name}
       </div>
-      {details ? <div className="mt-0.5 text-[12px] text-[#6b7280]">{details}</div> : null}
+      <LignesEquipe {...details} className="mt-0.5" />
     </div>
   );
 }
