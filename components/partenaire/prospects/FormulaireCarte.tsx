@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
+import { trierEquipes } from "@/lib/teams/teamLabel";
 import EditeurEvaluationPartenaire, {
   coteFinale,
   parametresEvaluation,
@@ -159,11 +160,10 @@ export default function FormulaireCarte({
       ]);
       if (annule) return;
       const nomSport = (sport?.nom as string | undefined) ?? "";
-      const lignes = ((data ?? []) as { id: string; name: string; age_group: string | null; division: string | null; gender: string | null }[])
-        .map((e) => ({ id: e.id, name: e.name, libelle: libelleEquipe(nomSport, e) }));
-      const vus = new Map<string, number>();
-      for (const e of lignes) vus.set(e.libelle, (vus.get(e.libelle) ?? 0) + 1);
-      setEquipes(lignes.map((e) => ({ id: e.id, libelle: vus.get(e.libelle)! > 1 ? `${e.libelle} — ${e.name}` : e.libelle })));
+      // Règle commune (lib/teams/teamLabel) : nom d'équipe dès qu'il diffère de
+      // l'établissement, tri nom → catégorie → division → genre.
+      setEquipes(trierEquipes((data ?? []) as { id: string; name: string; age_group: string | null; division: string | null; gender: string | null }[])
+        .map((e) => ({ id: e.id, libelle: libelleEquipe(nomSport, e, etablissement.name) })));
     })();
     return () => { annule = true; };
   }, [etablissement, sportId]);

@@ -38,6 +38,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
 import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
+import { trierEquipes } from "@/lib/teams/teamLabel";
 import { chercherDoublonsCarte, type DoublonCarte } from "@/lib/cartes/doublonsCarte";
 import { MENTION_INVITATION_NON_ENVOYEE } from "@/lib/cartes/invitationEtat";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
@@ -209,12 +210,11 @@ export default function CreerProspectMobile({ sportId, onClose }: {
     enabled: !!etablissement && !!sportAthleteId && !!sport,
     queryFn: async (): Promise<Equipe[]> => {
       const { data } = await createClient().from("teams").select("id, name, age_group, division, gender")
-        .eq("school_id", etablissement!.id).eq("sport_id", sportAthleteId).order("age_group").order("division");
-      const lignes = ((data ?? []) as { id: string; name: string; age_group: string | null; division: string | null; gender: string | null }[])
-        .map((e) => ({ id: e.id, name: e.name, libelle: libelleEquipe(nomSport, e) }));
-      const vus = new Map<string, number>();
-      for (const e of lignes) vus.set(e.libelle, (vus.get(e.libelle) ?? 0) + 1);
-      return lignes.map((e) => ({ id: e.id, libelle: vus.get(e.libelle)! > 1 ? `${e.libelle} — ${e.name}` : e.libelle }));
+        .eq("school_id", etablissement!.id).eq("sport_id", sportAthleteId);
+      // Règle commune (lib/teams/teamLabel) : nom d'équipe dès qu'il diffère de
+      // l'établissement, tri nom → catégorie → division → genre.
+      return trierEquipes((data ?? []) as { id: string; name: string; age_group: string | null; division: string | null; gender: string | null }[])
+        .map((e) => ({ id: e.id, libelle: libelleEquipe(nomSport, e, etablissement!.name) }));
     },
   });
   const sansEquipe = !!etablissement && equipes !== null && equipes.length === 0;

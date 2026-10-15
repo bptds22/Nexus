@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { genderLabel } from "@/lib/config/gender";
+import { attributsEquipe, nomEstCeluiDuClub, trierEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
+
+/** Titre d'une carte d'équipe (règle commune) : son nom s'il diffère du club,
+ *  sinon « Catégorie · Division · Genre » — les pastilles restent dessous. */
+function titreEquipe(t: { name: string; age_group: string | null; division: string | null; gender: string | null; zone?: string | null; school_name: string }): string {
+  return nomEstCeluiDuClub(t.name, t.school_name) ? (attributsEquipe(t) || t.name) : t.name;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    TeamSearchOrCreate — civil-coach team search.
@@ -221,7 +228,16 @@ export default function TeamSearchOrCreate({
         .limit(500);
 
       if (tokens.length > 0) {
-        teamsQuery = teamsQuery.ilike("name", `%${tokens[0]}%`);
+        // Recherche commune (BP 2026-10-14) : le 1er mot peut viser le nom OU
+        // un attribut (« juvénile phebus »). Côté serveur, voyelles et « c »
+        // deviennent « _ » (un caractère quelconque) : « juvenile » trouve
+        // « Juvénile » ; le filtre client, insensible aux accents, tranche.
+        const motif = tokens[0].replace(/[,()*%\\]/g, "").replace(/[aeiouycÀ-ɏ]/gi, "_");
+        if (motif) {
+          teamsQuery = teamsQuery.or(
+            ["name", "age_group", "division", "gender", "zone"].map((c) => `${c}.ilike.*${motif}*`).join(","),
+          );
+        }
         clubsQuery = clubsQuery.ilike("name", `%${tokens[0]}%`);
       }
 
@@ -251,12 +267,8 @@ export default function TeamSearchOrCreate({
       const normTokens = tokens.map(normalize);
 
       const teamMatches = civilTeams.filter((row) => {
-        if (normTokens.length === 0) return true;
         const r = row as unknown as RawRow;
-        const haystack = [r.name, r.age_group, r.division, r.zone, r.league, r.gender]
-          .map(normalize)
-          .join(" ");
-        return normTokens.every((t) => haystack.includes(t));
+        return equipeCorrespond(r, trimmed, { ligue: r.league });
       });
 
       const clubMatches = (clubsRes.data ?? []).filter((row) => {
@@ -266,7 +278,7 @@ export default function TeamSearchOrCreate({
         return normTokens.every((t) => haystack.includes(t));
       });
 
-      const teamRows: TeamSearchRow[] = teamMatches.map((row) => {
+      const teamRows: TeamSearchRow[] = trierEquipes(teamMatches.map((row) => {
         const r = row as unknown as RawRow;
         const school = Array.isArray(r.schools) ? r.schools[0] : r.schools;
         return {
@@ -281,7 +293,7 @@ export default function TeamSearchOrCreate({
           school_name: school?.name ?? "",
           coach_count: r.team_coaches?.length ?? 0,
         };
-      });
+      }));
 
       const clubRows: ClubSearchRow[] = (clubMatches as RawClubRow[]).map((r) => ({
         id: r.id,
@@ -346,7 +358,7 @@ export default function TeamSearchOrCreate({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-head font-black text-lg text-white">{selectedTeam.name}</h3>
+              <h3 className="font-head font-black text-lg text-white">{titreEquipe(selectedTeam)}</h3>
               {selectedTeam.division && (
                 <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                   {selectedTeam.division}
@@ -470,7 +482,7 @@ export default function TeamSearchOrCreate({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-white text-sm truncate">{team.name}</p>
+                        <p className="font-bold text-white text-sm truncate">{titreEquipe(team)}</p>
                         <div className="flex items-center gap-1.5 flex-wrap mt-2">
                           {team.division && (
                             <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">

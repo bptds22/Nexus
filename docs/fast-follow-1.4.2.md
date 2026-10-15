@@ -2558,3 +2558,14 @@ base62, ~22 caractères pour 128 bits ou ~43 pour 256 bits. **Petite migration**
 `prospect_partenaire_ouvrir`) et accepter les DEUX formats le temps que les liens déjà envoyés
 expirent (60 jours). Côté web : `jetonCartePlausible` et `JETON_RE` (lib/partenaires/prospects.ts)
 à élargir de même. Rien à faire côté jeune ni partenaire.
+
+## 88. Libellé d'équipe : `FormulaireCarte` (partenaire W4) branché sur la règle commune (2026-10-15, FAIT à la fusion de fix/libelle-equipe)
+
+`fix/libelle-equipe` (bug NLS) a changé la signature de `libelleEquipe` (lib/cartes/carteProspect.ts) :
+3e argument `nomClub`, le nom de l'établissement. Tout appelant DOIT le passer, sinon `tsc` échoue ;
+et le nom d'équipe s'afficherait même quand c'est celui de l'école.
+W4bc était déjà dans `main` au moment de la fusion : `components/partenaire/prospects/FormulaireCarte.tsx`
+a donc été corrigé DANS le commit de fusion. Il passe `etablissement.name` et trie avec `trierEquipes`.
+L'ajout « — nom » sur les doublons est retiré : la règle commune l'affiche déjà.
+Toute nouvelle liste de choix d'équipes passe par lib/teams/teamLabel.ts (`libelleEquipe`, `trierEquipes`,
+`equipeCorrespond`) en passant le nom du club ou de l'école.

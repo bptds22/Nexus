@@ -154,6 +154,8 @@ export default function PendingInvitations({
                 (t as { division?: string }).division ?? null,
                 (t as { gender?: string }).gender ?? null,
                 (t as { name?: string }).name ?? null,
+                null,
+                sch?.name ?? null,
               ),
               schoolName: sch?.name ?? null,
             });
@@ -233,7 +235,7 @@ export default function PendingInvitations({
         {invitations.map((inv) => {
           const isBusy = busy === inv.id;
           const coachName = `${inv.coachFirstName} ${inv.coachLastName}`.trim();
-          const cible = formatTeamLabel(inv.sportName, inv.ageGroup, inv.division, inv.gender, inv.teamName);
+          const cible = formatTeamLabel(inv.sportName, inv.ageGroup, inv.division, inv.gender, inv.teamName, null, inv.schoolName);
           const erreur = erreurs[inv.id];
           return (
             <div

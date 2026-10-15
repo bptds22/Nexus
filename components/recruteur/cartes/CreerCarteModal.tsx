@@ -30,6 +30,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
+import { trierEquipes } from "@/lib/teams/teamLabel";
 import { chercherDoublonsCarte } from "@/lib/cartes/doublonsCarte";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 import { CopierTexteInvitation } from "@/components/recruteur/cartes/PanneauCarte";
@@ -197,16 +198,12 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         .from("teams")
         .select("id, name, age_group, division, gender")
         .eq("school_id", etablissement.id)
-        .eq("sport_id", sportAthleteId)
-        .order("age_group")
-        .order("division");
+        .eq("sport_id", sportAthleteId);
       if (annule) return;
-      const lignes = ((data ?? []) as Omit<Equipe, "libelle">[])
-        .map((e) => ({ ...e, libelle: libelleEquipe(nomSport, e) }));
-      // Deux équipes au même libellé (fréquent chez les clubs) : on ajoute le nom.
-      const vus = new Map<string, number>();
-      for (const e of lignes) vus.set(e.libelle, (vus.get(e.libelle) ?? 0) + 1);
-      const finales = lignes.map((e) => (vus.get(e.libelle)! > 1 ? { ...e, libelle: `${e.libelle} — ${e.name}` } : e));
+      // Règle commune (lib/teams/teamLabel) : le nom d'équipe s'affiche dès
+      // qu'il diffère de l'établissement — plus besoin de l'ajouter aux doublons.
+      const finales = trierEquipes((data ?? []) as Omit<Equipe, "libelle">[])
+        .map((e) => ({ ...e, libelle: libelleEquipe(nomSport, e, etablissement.name) }));
       setEquipes(finales);
       setEquipeId(finales.length === 1 ? finales[0].id : "");
       setEquipesChargees(true);

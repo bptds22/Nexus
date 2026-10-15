@@ -193,7 +193,9 @@ function divisionsOf(equipes: SportTeam[]): string[] {
   const set = new Set(equipes.map((t) => t.division).filter(Boolean) as string[]);
   return [...set].sort((a, b) => {
     const ia = DIV_ORDER.indexOf(a), ib = DIV_ORDER.indexOf(b);
-    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    // Divisions hors D1-D3 (Diamond, Gold de la NLS) : ordre alphabétique,
+    // indépendant de l'ordre des équipes.
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, "fr");
   });
 }
 function genreAgg(equipes: SportTeam[]): string {
@@ -729,7 +731,7 @@ function SportsMobile({ sports, router, school }: { sports: Sport[]; router: Ret
                       className="tchip"
                       onClick={(e) => { void triggerHaptic("Light"); e.stopPropagation(); goTeam(t.url); }}
                     >
-                      {t.nom}<small>{[t.division, t.genre].filter(Boolean).join(" · ")}</small>
+                      {t.nom}<small>{t.detail ?? [t.division, t.genre].filter(Boolean).join(" · ")}</small>
                       <span className="ar"><ArrowRight size={15} aria-hidden /></span>
                     </div>
                   ))}

@@ -41,7 +41,8 @@ test("doublons : prénom composé ou abrégé, nom normalisé", () => {
   assert.equal(memePersonneProbable("Bruno", "Simard", "Bruno", "Simardi"), false);
 });
 
-test("libellé d'équipe : sport, âge, division · genre", () => {
-  assert.equal(libelleEquipe("Football", { name: "X", age_group: "Juvénile", division: "D1", gender: "Masculin" }), "Football juvénile D1 · Masculin");
-  assert.equal(libelleEquipe("Football", { name: "Wildcats", age_group: null, division: null, gender: null }), "Football — Wildcats");
+test("libellé d'équipe : règle commune — nom seulement s'il diffère de l'établissement", () => {
+  assert.equal(libelleEquipe("Football", { name: "Collège X", age_group: "Juvénile", division: "D1", gender: "Masculin" }, "Collège X"), "Football · Juvénile · D1 · Masculin");
+  assert.equal(libelleEquipe("Basketball", { name: "PHEBUS JM", age_group: "Juvénile", division: "Gold", gender: "Masculin" }, "No Limits Showcases"), "PHEBUS JM — Basketball · Juvénile · Gold · Masculin");
+  assert.equal(libelleEquipe("Football", { name: "Wildcats", age_group: null, division: null, gender: null }, "Club Y"), "Wildcats — Football");
 });
