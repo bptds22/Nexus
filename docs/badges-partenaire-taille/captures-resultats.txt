@@ -1,0 +1,32 @@
+avant recruteur bureau : page 1440/1440 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve","COUP DE CŒUR Média Preuve","VITESSE par Média Preuve"]
+avant recruteur tablette : page 820/820 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve","COUP DE CŒUR Média Preuve","VITESSE par Média Preuve"]
+avant recruteur mobile : page 390/390 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve","COUP DE CŒUR Média Preuve","VITESSE par Média Preuve"]
+avant coach bureau : page 1440/1440 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve Masquer","COUP DE CŒUR Média Preuve Masquer","VITESSE par Média Preuve Masquer"]
+avant coach tablette : page 820/820 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve Masquer","COUP DE CŒUR Média Preuve Masquer","VITESSE par Média Preuve Masquer"]
+avant coach mobile : page 492/390 ← DÉBORDE | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve Masquer","COUP DE CŒUR Média Preuve Masquer","VITESSE par Média Preuve Masquer"]
+avant partenaire bureau : page 1440/1440 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve Retirer le badge","COUP DE CŒUR Média Preuve Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+avant partenaire tablette : page 820/820 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve Retirer le badge","COUP DE CŒUR Média Preuve Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+avant partenaire mobile : page 481/390 ← DÉBORDE | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve Retirer le badge","COUP DE CŒUR Média Preuve Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+avant athlete-profil bureau : page 1440/1440 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve","COUP DE CŒUR Média Preuve","VITESSE par Média Preuve"]
+avant athlete-profil tablette : page 820/820 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve","COUP DE CŒUR Média Preuve","VITESSE par Média Preuve"]
+avant athlete-profil mobile : page 390/390 | boîtes 96×96, 96×96, 96×96 | textes ["ESPRIT SPORTIF Média Preuve","COUP DE CŒUR Média Preuve","VITESSE par Média Preuve"]
+avant athlete-apercu bureau : AUCUN badge partenaire visible
+avant athlete-apercu tablette : AUCUN badge partenaire visible
+avant athlete-apercu mobile : AUCUN badge partenaire visible
+avant remise en état : 3 poses, 2 badges, 2 icônes retirés ; opt-in remis à false
+apres recruteur bureau : page 1440/1440 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+apres recruteur tablette : page 820/820 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+apres recruteur mobile : page 390/390 | boîtes 120×120, 120×120, 120×120 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+apres coach bureau : page 1440/1440 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF Masquer","COUP DE CŒUR Masquer","VITESSE par Média Preuve Masquer"]
+apres coach tablette : page 820/820 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF Masquer","COUP DE CŒUR Masquer","VITESSE par Média Preuve Masquer"]
+apres coach mobile : page 492/390 ← DÉBORDE | boîtes 120×120, 120×120, 120×120 | textes ["ESPRIT SPORTIF Masquer","COUP DE CŒUR Masquer","VITESSE par Média Preuve Masquer"]
+apres partenaire bureau : page 1440/1440 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF Retirer le badge","COUP DE CŒUR Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+apres partenaire tablette : page 820/820 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF Retirer le badge","COUP DE CŒUR Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+apres partenaire mobile : page 481/390 ← DÉBORDE | boîtes 120×120, 120×120, 120×120 | textes ["ESPRIT SPORTIF Retirer le badge","COUP DE CŒUR Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+apres athlete-profil bureau : page 1440/1440 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+apres athlete-profil tablette : page 820/820 | boîtes 134×134, 134×134, 134×134 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+apres athlete-profil mobile : page 390/390 | boîtes 120×120, 120×120, 120×120 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+apres athlete-apercu bureau : AUCUN badge partenaire visible
+apres athlete-apercu tablette : AUCUN badge partenaire visible
+apres athlete-apercu mobile : AUCUN badge partenaire visible
+apres remise en état : 3 poses, 2 badges, 2 icônes retirés ; opt-in remis à false

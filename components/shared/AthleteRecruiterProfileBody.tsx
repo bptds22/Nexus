@@ -37,6 +37,7 @@ import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import { traitGroups, resolvePositionId, type GrilleRef } from "@/lib/evaluations/grilles";
 import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
 import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
+import { FICHE_RANGEE } from "@/components/shared/athlete/tailleBadgeFiche";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -985,9 +986,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </div>
 
               {(a.distinctions.length > 0 || badgesPartenaire.length > 0) && (
-                <div className="flex items-start gap-9 flex-wrap">
+                <div className={FICHE_RANGEE}>
                   {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
-                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="fiche" />
                   ))}
                   {id && badgesPartenaire.map((b) => (
                     <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} />
@@ -1145,9 +1146,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                             MEME sous-bloc Distinctions. Le `sm` venait d'un heritage, pas
                             d'une contrainte de place — conteneur en flex-wrap gap-3, donc
                             5 x 136 + 4 x 12 = 728 px tiennent. */}
-                        <div className="flex flex-wrap gap-3">
+                        <div className={FICHE_RANGEE}>
                           {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
-                            <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                            <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="fiche" />
                           ))}
                           {id && badgesPartenaire.map((b) => (
                             <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} />
