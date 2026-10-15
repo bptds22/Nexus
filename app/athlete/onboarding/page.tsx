@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { filtrerClubs } from "@/lib/clubs/clubCorrespond";
 import { needsConsent } from "@/lib/auth/needsConsent";
 import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
@@ -134,14 +135,9 @@ function ClubPicker({
     return () => { cancelled = true; };
   }, []);
 
-  const q = search.trim().toLowerCase();
-  const visible = (q.length > 0
-    ? clubs.filter((c) =>
-        c.name.toLowerCase().includes(q)
-        || (c.city ? c.city.toLowerCase().includes(q) : false),
-      )
-    : clubs
-  ).slice(0, 50);
+  // Recherche commune (lib/clubs/clubCorrespond) : nom, ville ou sigle
+  // (« nls » → « No Limits Showcases »), casse et accents ignorés.
+  const visible = filtrerClubs(clubs, search).slice(0, 50);
 
   if (skipped) {
     return (
