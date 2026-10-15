@@ -14,6 +14,7 @@ import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
 import { AnimatedRoute } from "../recruteur/_components/AnimatedRoute";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 import BandeauCartesPartenaires from "@/components/athlete/prospects/BandeauCartesPartenaires";
+import BandeauNomAConfirmer from "@/components/athlete/BandeauNomAConfirmer";
 import { lireJetonCarte } from "@/lib/partenaires/prospects";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -489,6 +490,8 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         )}
         {/* W4c — carte d'un partenaire qui attend une réponse ou l'opt-in (web seulement). */}
         {!IS_CAPACITOR && <BandeauCartesPartenaires />}
+        {/* D1b — nom recopié de Google à confirmer, ou fiche sans nom (web seulement). */}
+        {!IS_CAPACITOR && <BandeauNomAConfirmer />}
         <main
           className="relative z-10 flex-1"
           style={

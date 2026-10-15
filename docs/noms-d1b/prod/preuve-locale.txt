@@ -1,0 +1,26 @@
+﻿PREUVE LOCALE — lot D1b — 2026-10-15T10:47:31
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 08cc0fca7d0a398724fa50e8809ebf22
+  md5 lot-prod.sql      : ede56af9623286c046bb2bd1ff2942cf
+  état de départ (D1b retirée) : colonnes=0 fonctions=0 triggers=0 recherche_md5=c03ca63e version=0 athletes=48
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte 245230c93c71ef1528a314bb6ffdd5bb / 10 éléments) — tout est annulé
+  état après : colonnes=0 fonctions=0 triggers=0 recherche_md5=c03ca63e version=0 athletes=48
+
+== 2. Instructions envoyées SÉPARÉMENT (pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:26: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : colonnes=0 fonctions=0 triggers=0 recherche_md5=c03ca63e version=0 athletes=48
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"athletes":48,"fiches_sans_nom":0,"version_deja":0,"derniere_version":"20261015094834","pg":"17.6"}, "apres" : {"athletes" : 48, "version" : "20261015103315", "md5_enregistre" : "08cc0fca7d0a398724fa50e8809ebf22", "colonnes" : 2, "marques" : 0, "meme_transaction" : true}}
+  état après : colonnes=2 fonctions=5 triggers=2 recherche_md5=957289fa version=1 athletes=48
+  empreinte des objets en base : 245230c93c71ef1528a314bb6ffdd5bb|10
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: D1b déjà présente — rien n'est appliqué
+  état après : colonnes=2 fonctions=5 triggers=2 recherche_md5=957289fa version=1 athletes=48
+
+== 5. Tests au banc sur la base issue du lot ==
+  29|0   (ok|échecs)

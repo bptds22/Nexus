@@ -36,6 +36,9 @@ export interface RosterAthlete {
   photo?: string;
   firstName: string;
   lastName: string;
+  /** D1b — nom recopié de Google, pas encore confirmé par l'athlète : la fiche
+   *  est retirée des listes du coach jusqu'à confirmation. */
+  nomAConfirmer?: boolean;
   position: string;
   gradYear: number;
   teamId: string;                   // links to CoachTeam.id

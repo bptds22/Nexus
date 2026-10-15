@@ -65,6 +65,23 @@ const PROMOTIONS = ["2026", "2027", "2028"];
 
 
 /* ── Coach Athlete Card (grid view) ─────────────────────────── */
+/* D1b (décision BP 2026-10-15) : sans prénom, sans nom, ou nom recopié de Google
+   et pas encore confirmé par l'athlète. La fiche RESTE dans la liste du coach,
+   étiquetée ; elle sort seulement des recherches (recruteur, sections « à
+   réclamer » et « école »). */
+function nomPresentable(a: RosterAthlete): boolean {
+  return !!a.firstName.trim() && !!a.lastName.trim() && !a.nomAConfirmer;
+}
+
+function EtiquetteNomAConfirmer({ a }: { a: RosterAthlete }) {
+  if (nomPresentable(a)) return null;
+  return (
+    <span data-nom-a-confirmer className="inline-flex items-center px-2 py-0.5 rounded-full border border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#F59E0B] text-[11px] font-bold">
+      Nom à confirmer par l&apos;athlète
+    </span>
+  );
+}
+
 function CoachAthleteCard({ a }: { a: RosterAthlete }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
@@ -117,6 +134,7 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
           <Link href={`/coach/athletes/${a.id}`} className="text-[17px] font-bold text-white hover:text-[#E63946] transition-colors">
             {a.firstName} {a.lastName}
           </Link>
+          <EtiquetteNomAConfirmer a={a} />
           {a.position && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[12px] font-bold uppercase tracking-wider">
               {a.position}
@@ -170,6 +188,7 @@ const ATHLETE_ROSTER_SELECT = `
           photo_url,
           first_name,
           last_name,
+          nom_a_confirmer,
           verified,
           profile_completion,
           last_profile_validation,
@@ -478,6 +497,7 @@ function MesAthletesContent() {
           photo: (a.photo_url as string) || "",
           firstName: (a.first_name as string) || "",
           lastName: (a.last_name as string) || "",
+          nomAConfirmer: a.nom_a_confirmer === true,
           position,
           gradYear,
           teamId: sportObj?.nom || "real",
@@ -681,9 +701,19 @@ function MesAthletesContent() {
   // ROSTER « mes athlètes » — borné au PÉRIMÈTRE CANONIQUE (get_coach_athletes),
   // jamais à l'école. C'est ce qui rend visibles les athlètes de ligue civile
   // (school_id NULL) du coach, que la requête école ne peut pas ramener.
+  /* D1b (décision BP 2026-10-15, ajustée) : SES athlètes restent dans sa liste,
+     étiquetés « Nom à confirmer par l'athlète » (EtiquetteNomAConfirmer). Hors de
+     sa propre liste — « à réclamer », athlètes de l'école — une fiche sans nom ou
+     au nom à confirmer est retirée, comme de la recherche recruteur ; le compte
+     des fiches retirées est affiché pour que le coach sache pourquoi. */
   const myRoster = useMemo(
     () => realAthletes.filter((a) => a.coach_id === currentUserId && rosterScopeIds.has(a.id)),
     [realAthletes, currentUserId, rosterScopeIds]
+  );
+  const nbNomsEnAttente = useMemo(
+    () => realAthletes.filter((a) => !nomPresentable(a) && schoolRowIds.has(a.id)
+      && !(a.coach_id === currentUserId && rosterScopeIds.has(a.id))).length,
+    [realAthletes, currentUserId, rosterScopeIds, schoolRowIds]
   );
 
   // « À réclamer » — question d'ÉCOLE, et elle le reste : bornée aux lignes
@@ -691,7 +721,7 @@ function MesAthletesContent() {
   // d'école où être réclamé ; il n'a rien à faire ici, même s'il est entré
   // dans le jeu de lignes par le périmètre canonique.
   const unclaimedAthletes = useMemo(
-    () => realAthletes.filter((a) => a.coach_id == null && schoolRowIds.has(a.id)),
+    () => realAthletes.filter((a) => a.coach_id == null && schoolRowIds.has(a.id) && nomPresentable(a)),
     [realAthletes, schoolRowIds]
   );
 
@@ -704,7 +734,7 @@ function MesAthletesContent() {
   const schoolAthletes = useMemo(
     () => realAthletes.filter(
       (a) => a.coach_id != null && a.coach_id !== currentUserId
-        && directorScopeIds.has(a.id) && schoolRowIds.has(a.id)
+        && directorScopeIds.has(a.id) && schoolRowIds.has(a.id) && nomPresentable(a)
     ),
     [realAthletes, currentUserId, directorScopeIds, schoolRowIds]
   );
@@ -946,7 +976,7 @@ function MesAthletesContent() {
                 which drops custom free-text, so its cards render lean ;
                 coach's badge list kept everything → wall of pills
                 → inconsistent height + diverging look from recruiter). */}
-            <div className="flex-1 min-w-0" />
+            <div className="flex-1 min-w-0"><EtiquetteNomAConfirmer a={a} /></div>
             <div className="flex items-center gap-3 shrink-0">
               <div className="w-[30px] shrink-0">
                 {a.favorites > 0 ? (
@@ -1027,6 +1057,13 @@ function MesAthletesContent() {
           <p className="text-[14px] text-[#9CA3AF] mt-1">
             Roster — Saison {getCurrentSeason()}
           </p>
+          {nbNomsEnAttente > 0 && (
+            <p data-noms-en-attente className="text-[12px] text-[#F59E0B] mt-1">
+              {nbNomsEnAttente === 1
+                ? "1 fiche de l'école masquée : l'athlète doit confirmer son prénom et son nom."
+                : `${nbNomsEnAttente} fiches de l'école masquées : les athlètes doivent confirmer leur prénom et leur nom.`}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-3 self-start">
           {(() => {

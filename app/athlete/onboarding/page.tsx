@@ -1598,6 +1598,18 @@ function AthleteOnboardingDesktop() {
         }
         if (data) setExistingAthleteId(data.id);
       }
+      /* D1b : le nom vu et validé ici (champs obligatoires de l'étape 1) est
+         confirmé — il a pu être recopié de Google. Sans quoi le bandeau
+         redemanderait « Est-ce bien toi ? » juste après. Jamais bloquant. */
+      if (step === 1) {
+        const { data: nomEtat } = await supabase.rpc("mon_nom_a_confirmer");
+        if ((nomEtat as { etat?: string }[] | null)?.[0]?.etat === "A_CONFIRMER") {
+          const { error: errNom } = await supabase.rpc("confirmer_mon_nom", {
+            p_prenom: firstName.trim(), p_nom: lastName.trim(),
+          });
+          if (errNom) console.error(`[Onboarding confirmation du nom] ${erreurLisible(errNom)}`);
+        }
+      }
       /* Décochage à l'étape 1 d'un consentement donné au signup, ou d'une
          fiche déjà inscrite : retrait par la RPC (fiche + privacy_preferences
          + journal, policy_version), puis la clé de metadata est effacée.
