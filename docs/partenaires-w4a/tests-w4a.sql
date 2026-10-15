@@ -32,7 +32,7 @@ select set_config('w4.b_3pts',    (select id::text from public.badges where code
 select set_config('w4.b_mvp',     (select id::text from public.badges where code = 'mvp'), true);
 -- Valeurs relevées EN PROD le 2026-10-14 (avant W4a) : fonctions W2/W3/W3b et triggers de athletes.
 select set_config('w4.md5_w3b', '4fc94502a18e9a1d5fc0fd89829879ec', true);
-select set_config('w4.nb_trig_athletes', '18', true);   -- 17 en prod + trg_prospect_partenaire_sur_optin
+select set_config('w4.nb_trig_athletes', '20', true);   -- 17 en prod + trg_prospect_partenaire_sur_optin ; +2 le 2026-10-15 (D1 trg_doublons_probables_noter, D1b trg_athletes_nom_a_confirmer)
 
 -- Préparation (postgres), annulée à la fin :
 --  · p1 (Média Preuve) évaluateur en football, avec un badge propre ;

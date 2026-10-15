@@ -1,0 +1,26 @@
+﻿PREUVE LOCALE — lot W4d — 2026-10-15T11:18:50
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 51c4153ddaeadd43b6792c232f9130d3
+  md5 lot-prod.sql      : 6f537b7cc46ed3ba29ba264e3682a674
+  état de départ (W4d retirée) : fonctions_w4d=0 mes_issues_md5=e511cd02 version=0 issues=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte d3e74974d6f507c5cda6e2928c7bdcd4 / 5 éléments) — tout est annulé
+  état après : fonctions_w4d=0 mes_issues_md5=e511cd02 version=0 issues=0
+
+== 2. Instructions envoyées SÉPARÉMENT (pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:25: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : fonctions_w4d=0 mes_issues_md5=e511cd02 version=0 issues=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"0|0|0|0|0","version_deja":0,"derniere_version":"20261015103315","pg":"17.6"}, "apres" : {"donnees" : "0|0|0|0|0", "version" : "20261015110727", "md5_enregistre" : "51c4153ddaeadd43b6792c232f9130d3", "fonctions" : 5, "meme_transaction" : true}}
+  état après : fonctions_w4d=4 mes_issues_md5=3e9d2661 version=1 issues=0
+  empreinte des objets en base : d3e74974d6f507c5cda6e2928c7bdcd4|5
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: W4d déjà présente — rien n'est appliqué
+  état après : fonctions_w4d=4 mes_issues_md5=3e9d2661 version=1 issues=0
+
+== 5. Tests au banc sur la base issue du lot ==
+  52|0   (ok | échecs)

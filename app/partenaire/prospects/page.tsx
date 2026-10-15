@@ -11,7 +11,9 @@
      une réservation par le lien ou une proposition de Nexus ne se voient pas
      d'ici, et ne doivent pas se voir (Loi 25).
    - Le lien n'est affiché qu'une fois (EnvoyerLien).
-   - « Terminées » : les issues, sans nom (partenaire_prospects_mes_issues).
+   - « Terminées » (W4d) : une réclamation est nommée, avec le résumé du transfert,
+     seulement si le jeune lui est encore visible (partenaire_prospects_terminees) ;
+     sinon « Réclamée — profil non visible ». Les autres issues restent sans nom.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,7 +26,9 @@ import {
   chargerCartesTerminees,
   chargerMesCartes,
   genererLien,
+  LIBELLE_EVALUATION_TRANSFERT,
   LIBELLE_ISSUE,
+  LIBELLE_RAISON_BADGE,
   LIBELLE_STATUT,
   LIMITE_CARTES,
   messageErreurCarte,
@@ -323,22 +327,52 @@ export default function MesProspectsPage() {
 
           <section className="mt-10" data-section-terminees>
             <h2 className="font-head text-[18px] font-black text-white uppercase tracking-tight">Terminées</h2>
-            <p className="text-[12px] text-[#6b7280] mt-1">Sans nom : une carte terminée ne garde que son issue.</p>
+            <p className="text-[12px] text-[#6b7280] mt-1">
+              Une carte réclamée affiche le jeune tant qu&apos;il garde sa visibilité partenaire ; les autres issues restent sans nom.
+            </p>
             {terminesTries.length === 0 ? (
               <p className="text-[13px] text-[#9CA3AF] mt-3">Aucune carte terminée.</p>
             ) : (
               <ul className="mt-3 divide-y divide-[#2D3748]/60 rounded-xl border border-[#2D3748] bg-[#1A1D24]">
                 {terminesTries.map((t) => (
-                  <li key={`${t.carteId}-${t.termineeLe}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 px-4 py-3">
-                    <span className="text-[13px] text-white">
-                      {LIBELLE_ISSUE[t.issue]}
-                      {t.issue === "RECLAMEE" && t.athleteId && (
-                        <Link href={`/partenaire/athletes/${t.athleteId}`} className="ml-2 text-[#E63946] underline underline-offset-2 text-[12px]">Voir sa fiche</Link>
-                      )}
-                    </span>
-                    <span className="text-[12px] text-[#6b7280]">
-                      Carte du {dateCourte(t.creeLe)} · terminée le {dateCourte(t.termineeLe)}
-                    </span>
+                  <li key={`${t.carteId}-${t.termineeLe}`} className="flex flex-col gap-2 px-4 py-3" data-terminee={t.issue}>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                      <span className="text-[13px] text-white">
+                        {t.issue === "RECLAMEE" && !t.profilVisible ? "Réclamée — profil non visible" : LIBELLE_ISSUE[t.issue]}
+                        {t.profilVisible && t.athleteId && (
+                          <Link href={`/partenaire/athletes/${t.athleteId}`} className="ml-2 text-[#E63946] underline underline-offset-2 text-[12px]">Voir sa fiche</Link>
+                        )}
+                      </span>
+                      <span className="text-[12px] text-[#6b7280]">
+                        Carte du {dateCourte(t.creeLe)} · terminée le {dateCourte(t.termineeLe)}
+                      </span>
+                    </div>
+                    {t.profilVisible && (
+                      <div className="rounded-lg bg-[#111317] border border-[#2D3748] px-3 py-2.5" data-reclamee-visible>
+                        <p className="text-[14px] font-semibold text-white">{`${t.prenom ?? ""} ${t.nom ?? ""}`.trim()}</p>
+                        <p className="text-[12px] text-[#9CA3AF]">
+                          {[t.sport, t.poste, t.ecole].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                        <p className="text-[12px] text-[#c8c8cc] mt-1.5">
+                          {t.evaluation ? LIBELLE_EVALUATION_TRANSFERT[t.evaluation] ?? t.evaluation : "—"}
+                        </p>
+                        {t.badges.length > 0 && (
+                          <ul className="mt-1 space-y-0.5">
+                            {t.badges.map((b, i) => (
+                              <li key={i} className="text-[12px]">
+                                <span className={b.transfere ? "text-[#22C55E]" : "text-[#F59E0B]"}>
+                                  {b.transfere ? "✓ Badge transféré" : "Badge sauté"}
+                                </span>
+                                <span className="text-white"> : {b.libelle ?? "—"}</span>
+                                {!b.transfere && b.raison && (
+                                  <span className="text-[#9CA3AF]"> ({LIBELLE_RAISON_BADGE[b.raison] ?? b.raison})</span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

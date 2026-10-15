@@ -36,6 +36,12 @@ const NAV_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" /></svg>,
   },
   {
+    // W4d : les athlètes que ce partenaire a évalués ou badgés, encore visibles de lui.
+    label: "Mes athlètes",
+    href: "/partenaire/mes-athletes",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>,
+  },
+  {
     // W4b : cartes prospects. Affiché seulement à un partenaire évaluateur
     // (filtre au rendu) ; la page et la base revérifient la permission.
     label: "Mes prospects",
@@ -100,7 +106,7 @@ export default function PartnerSidebar({ mobileOpen, onClose }: { mobileOpen: bo
       </div>
 
       <nav className="flex-1 px-3 py-5 space-y-1">
-        {NAV_ITEMS.filter((item) => item.href !== "/partenaire/prospects" || partner?.peut_evaluer === true).map((item) => {
+        {NAV_ITEMS.filter((item) => (item.href !== "/partenaire/prospects" && item.href !== "/partenaire/mes-athletes") || partner?.peut_evaluer === true).map((item) => {
           const isActive = pathname === item.href || (item.href !== "/partenaire" && pathname.startsWith(item.href + "/"));
           return (
             <Link
