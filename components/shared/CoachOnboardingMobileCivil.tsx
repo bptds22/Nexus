@@ -38,6 +38,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { filtrerClubs, peutCreerClub } from "@/lib/clubs/clubCorrespond";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -84,16 +85,6 @@ type CivilTeamRow = {
   age_group: string | null;
   gender: string | null;
 };
-
-/* ── Helpers (duplicats parité école) ─────────────────────────── */
-
-
-function stripAccents(s: string): string {
-  return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
-}
-function normalize(s: string): string {
-  return stripAccents(s).toLowerCase().trim();
-}
 
 /* Libellé d'une équipe : règle commune (lib/teams/teamLabel, bug NLS
    BP 2026-10-14) — « PHEBUS JM — Juvénile · Gold · Masculin ». L'ancien
@@ -284,13 +275,8 @@ export function CoachOnboardingMobileCivil() {
     })();
   }, [clubSheetOpen, clubs.length]);
 
-  const visibleClubs = useMemo(() => {
-    const q = normalize(clubSearch);
-    if (!q) return clubs.slice(0, 50);
-    return clubs.filter((c) =>
-      normalize(c.name).includes(q) || (c.city && normalize(c.city).includes(q))
-    ).slice(0, 50);
-  }, [clubs, clubSearch]);
+  // Recherche commune (lib/clubs/clubCorrespond) : nom, ville ou sigle.
+  const visibleClubs = useMemo(() => filtrerClubs(clubs, clubSearch).slice(0, 50), [clubs, clubSearch]);
 
   // Équipes du club civil sélectionné + sport (parité école avec teams_onboarding_readable).
   useEffect(() => {
@@ -809,7 +795,9 @@ export function CoachOnboardingMobileCivil() {
             {c.city && <p className="text-[13px] text-white/55 truncate">{c.city}</p>}
           </button>
         )}
-        footer={
+        // « Créer un club » : seulement après une recherche SANS aucun club
+        // correspondant, sigle compris (peutCreerClub — même règle que le web).
+        footer={!clubsLoading && peutCreerClub(clubSearch, clubs) ? (
           <button
             type="button"
             onClick={() => { void triggerHaptic("Light"); setClubMode("create"); setClubSheetOpen(false); }}
@@ -817,7 +805,7 @@ export function CoachOnboardingMobileCivil() {
           >
             + Créer un nouveau club
           </button>
-        }
+        ) : undefined}
       />
 
       {/* SearchSheet équipe civile (mode pick) */}
@@ -1077,13 +1065,6 @@ function Slide2ClubTeam(p: Slide2Props) {
           {p.selectedClubName && p.selectedClubCity && (
             <p className="text-[12px] text-white/55 mt-1 px-1">{p.selectedClubCity}</p>
           )}
-          <button
-            type="button"
-            onClick={() => { void triggerHaptic("Light"); p.onClubModeChange("create"); }}
-            className="text-[13px] font-bold text-[#E63946] mt-2 active:opacity-70"
-          >
-            + Créer un nouveau club
-          </button>
         </>
       ) : (
         <div className="space-y-3 bg-[#1A1D24] border border-white/[0.06] rounded-2xl p-4">

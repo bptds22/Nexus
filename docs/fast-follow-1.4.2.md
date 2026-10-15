@@ -2607,3 +2607,34 @@ modification du prénom ou du nom par l'athlète (Profil → Prénom / Nom) conf
   `components/athlete/BandeauNomAConfirmer.tsx`).
 - **Notifications `PROFILE_TIP`** : un lien générique (ex. `metadata.route`) ; aujourd'hui seule la
   variante `monthly_validation_expired` mène quelque part.
+
+## 91. Migrations : `20260727140000` « held local », 28 absentes de l'historique prod, règle avant un push (2026-10-15, à décider / à auditer)
+
+Relevé à la fusion de `fix/inscription-club-d-abord` (lecture seule de `supabase_migrations.schema_migrations`
+en prod, comparée aux fichiers de `supabase/migrations` sur `main`).
+
+**(a) Décision à prendre : `20260727140000_rls_pass2_definer_hot_path.sql`.** Elle est sur `main` depuis
+juillet (commit `01664967`, « held local ») et n'a **jamais été appliquée en prod**. Les fonctions
+`user_shares_conversation` et `coach_staffs_school` sont absentes, et les règles « Users read conversation
+participants » (users) et « coaches read own athletes » (athletes) sont dans leur version d'avant.
+Le code ne dépend pas d'elle. Décision BP 2026-10-15 : ne PAS l'appliquer pour l'instant.
+À trancher : l'appliquer (après une mesure en prod) ou la retirer du dépôt.
+
+**(b) Audit à faire : 28 migrations de juillet–août absentes de l'historique prod.** Leurs noms ne sont pas
+dans `schema_migrations`, mais pour chacune, un objet créé (table, fonction, valeur d'énumération, règle
+d'accès) existe en prod. Elles semblent donc appliquées sous un autre nom. Ce n'est pas une preuve qu'elles
+le sont en entier : l'audit doit comparer chaque objet complètement. Liste : `annule_TEMPORAIRE_seuil_test_ambassadeur`,
+`assign_unclaimed_school_athletes`, `broadcast_messaging`, `broadcast_scope_and_surface`,
+`broadcast_team_full_roster`, `coach_coach_enum`, `coach_coach_model_rls`, `coach_initiate_recruteur_coach`,
+`coach_message_activity`, `evaluations_coach_prod_form`, `fix_athlete_messages_select_anon`,
+`fix_messageable_staff_team_athletes`, `guard_parent_coach_generic_insert`, `list_messageable_staff`,
+`message_immutability`, `message_retraction`, `messaging_athlete_coach_rls`, `messaging_conversation_type`,
+`open_coach_recruiter_messaging`, `p2_parent_coach_rls`, `p3_blackout_enforcement`,
+`p3_eligibility_and_blackout`, `p3_pipeline_and_notify`, `p3_recruiter_athlete_rls`,
+`parent_activity_notifications`, `parent_consents`, `rls_initplan_and_fk_indexes`,
+`teams_institutional_discoverable_prod_form`.
+Les migrations d'avril–juin et d'octobre sont toutes dans l'historique prod.
+
+**(c) Règle avant un push (précision BP 2026-10-15).** On ne bloque un push que sur les migrations
+**ajoutées par la fusion**, ou **dont le code poussé dépend**, et qui ne sont pas appliquées en prod.
+Une migration déjà sur `origin/main` dont le code ne dépend pas (comme (a)) ne bloque pas. On la signale.

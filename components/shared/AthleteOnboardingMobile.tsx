@@ -38,6 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { filtrerClubs } from "@/lib/clubs/clubCorrespond";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
@@ -843,13 +844,8 @@ export function AthleteOnboardingMobile() {
     })();
   }, [clubSheetOpen, civilClubs.length]);
 
-  const visibleCivilClubs = useMemo(() => {
-    const q = normalize(clubSearch);
-    if (!q) return civilClubs.slice(0, 50);
-    return civilClubs.filter((c) =>
-      normalize(c.name).includes(q) || (c.city ? normalize(c.city).includes(q) : false)
-    ).slice(0, 50);
-  }, [civilClubs, clubSearch]);
+  // Recherche commune (lib/clubs/clubCorrespond) : nom, ville ou sigle.
+  const visibleCivilClubs = useMemo(() => filtrerClubs(civilClubs, clubSearch).slice(0, 50), [civilClubs, clubSearch]);
 
   // Équipe civile : équipes du CLUB choisi + sport (parité coach civil).
   useEffect(() => {

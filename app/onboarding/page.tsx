@@ -15,7 +15,7 @@ import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { genderLabel } from "@/lib/config/gender";
-import { attributsEquipe, comparerEquipes, nomEstCeluiDuClub } from "@/lib/teams/teamLabel";
+import { attributsEquipe, comparerEquipes, equipeCorrespond, libelleEquipe, nomEstCeluiDuClub } from "@/lib/teams/teamLabel";
 import { CoachOnboardingMobileSchool } from "@/components/shared/CoachOnboardingMobileSchool";
 import { CoachOnboardingMobileCivil } from "@/components/shared/CoachOnboardingMobileCivil";
 import { RecruiterOnboardingMobile } from "@/components/shared/RecruiterOnboardingMobile";
@@ -3747,6 +3747,14 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         ((localUser.institution as Record<string, unknown> | null)?.name as string) ?? "",
       coach_count: 0,
     });
+    // Club d'abord, puis équipe : la reprise rouvre l'étape 2 (équipes du
+    // club), où l'équipe choisie est surlignée et peut être changée.
+    const clubId = ((profileData.school_id ?? profileData.league_id) as string) ?? "";
+    if (clubId) {
+      setLockedSchoolId(clubId);
+      setLockedSchoolName(((localUser.institution as Record<string, unknown> | null)?.name as string) ?? "");
+      setMode("umbrella");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -3956,7 +3964,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   }
 
   const heading: Record<typeof mode, { title: string; subtitle: string }> = {
-    search:    { title: "Trouve ton équipe", subtitle: "Cherche ton équipe ou ton club. Joins une équipe existante ou crée la tienne sous un club connu." },
+    search:    { title: "Trouve ton club", subtitle: "Cherche ton club par son nom, sa ville ou son sigle. Tu choisiras ensuite ton équipe parmi les siennes." },
     umbrella:  { title: "Équipes existantes", subtitle: "Voici les équipes déjà inscrites sous ce club. Si la tienne y figure, joins-la. Sinon, crée-la." },
     create:    { title: "Crée ta nouvelle équipe", subtitle: "Remplis les détails — la nouvelle équipe sera rattachée au club choisi." },
   };
@@ -3978,25 +3986,19 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         <TeamSearchOrCreate
           sportId={workingSportId || sportId}
           onSportChange={setWorkingSportId}
-          selectedTeam={selectedTeam}
-          onSelect={handleJoinExistingTeam}
           onSelectClub={(id, name) => {
-            // Club picked from the merged search results → lock and
-            // jump straight to the umbrella. Reuses the existing
-            // umbrella + locked-create path entirely.
+            // Étape 1 → étape 2 : club choisi, on verrouille et on passe
+            // aux équipes de ce club (umbrella + création verrouillée).
             setLockedSchoolId(id);
             setLockedSchoolName(name);
             setError(null);
             setMode("umbrella");
           }}
           onCreate={() => {
-            // Empty-state "Crée ta nouvelle équipe" — no team and no
-            // club matched. Lock the typed search input as the new
-            // club's name (no id yet) and skip straight to create.
-            // handleCreateTeam will findOrCreateSchool() on submit.
-            // Falls back to empty name if the search input is empty,
-            // in which case TeamCreateForm's required-field gating
-            // will catch it.
+            // « Créer » : offert seulement après une recherche de club
+            // sans aucun club correspondant (peutCreerClub, sigle compris).
+            // Pas de club verrouillé : TeamCreateForm demande le nom du
+            // club, handleCreateTeam fera findOrCreateSchool() à l'envoi.
             setLockedSchoolId(null);
             setLockedSchoolName("");
             setError(null);
@@ -4012,12 +4014,13 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           sportId={workingSportId || sportId}
           selectedTeamId={selectedTeam?.id ?? null}
           onSelect={handleJoinExistingTeam}
+          rechercheEquipe
           onCreate={() => {
             setError(null);
             setMode("create");
           }}
           onBack={() => {
-            // Back from the umbrella returns to the merged search.
+            // Back from the umbrella returns to the club search.
             // The locked club state stays around so we can still
             // route back into umbrella if the coach picks the same
             // club again — but it's not consulted by mode='search'.
@@ -4105,6 +4108,7 @@ function UmbrellaStep({
   selectedTeamId,
   prioritySport,
   createAsCard = false,
+  rechercheEquipe = false,
 }: {
   schoolId: string;
   schoolName: string;
@@ -4141,9 +4145,19 @@ function UmbrellaStep({
   // separate footer row. The école onboarding step uses this for visual
   // parity; civil/recruiter flows leave it false → unchanged footer row.
   createAsCard?: boolean;
+  // Inscription coach civil, étape 2 (club d'abord, puis équipe — BP
+  // 2026-10-15) : un champ de recherche dans les équipes du club
+  // (equipeCorrespond) et le libellé complet de la règle commune
+  // « NOM — Catégorie · Division · Genre » en titre de carte, sans les
+  // pastilles qui le répéteraient. Les autres parcours ne changent pas.
+  rechercheEquipe?: boolean;
 }) {
   const [teams, setTeams] = useState<TeamSearchRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rechercheTexte, setRechercheTexte] = useState("");
+  const teamsVisibles = rechercheEquipe
+    ? teams.filter((t) => equipeCorrespond(t, rechercheTexte, { ligue: t.league }))
+    : teams;
 
   useEffect(() => {
     if (!schoolId) {
@@ -4225,6 +4239,23 @@ function UmbrellaStep({
         {scopeLabel} : <span className="text-white font-bold">{schoolName}</span>
       </div>
 
+      {rechercheEquipe && !loading && teams.length > 0 && (
+        <div>
+          <label htmlFor="equipe-club-recherche" className="block text-[10px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-1.5">
+            Ton équipe ({teams.length})
+          </label>
+          <input
+            id="equipe-club-recherche"
+            type="text"
+            placeholder="Nom, catégorie, division ou genre (ex : PHEBUS, juvénile)"
+            value={rechercheTexte}
+            onChange={(e) => setRechercheTexte(e.target.value)}
+            className="w-full h-11 px-4 bg-[#111317] border border-white/10 rounded-lg text-white font-sans text-sm placeholder:text-[#6B7280] focus:border-[#E63946] focus:outline-none transition-colors"
+            aria-label="Rechercher une équipe du club"
+          />
+        </div>
+      )}
+
       {loading && (
         <div className="space-y-2">
           {[0, 1].map((i) => (
@@ -4236,9 +4267,9 @@ function UmbrellaStep({
         </div>
       )}
 
-      {!loading && (teams.length > 0 || (createAsCard && onCreate)) && (
+      {!loading && (teamsVisibles.length > 0 || (createAsCard && onCreate)) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {teams.map((team) => {
+          {teamsVisibles.map((team) => {
             const genderText = team.gender ? genderLabel(team.gender) : null;
             const isSelected = selectedTeamId === team.id;
             return (
@@ -4254,9 +4285,14 @@ function UmbrellaStep({
               >
                 {/* Règle commune : le nom s'il diffère du club / de l'école,
                     sinon « Catégorie · Division · Genre » ; pastilles dessous. */}
+                {rechercheEquipe ? (
+                  <p className="font-bold text-white text-sm break-words">{libelleEquipe(team, schoolName)}</p>
+                ) : (
                 <p className="font-bold text-white text-sm truncate">
                   {nomEstCeluiDuClub(team.name, schoolName) ? (attributsEquipe(team) || team.name) : team.name}
                 </p>
+                )}
+                {!rechercheEquipe && (
                 <div className="flex items-center gap-1.5 flex-wrap mt-2">
                   {team.sport && (
                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/30">
@@ -4284,7 +4320,9 @@ function UmbrellaStep({
                     </span>
                   )}
                 </div>
-                {team.league && (
+                )}
+                {/* La ligue, sauf quand elle ne fait que répéter le club (NLS). */}
+                {team.league && !(rechercheEquipe && nomEstCeluiDuClub(team.league, schoolName)) && (
                   <p className="text-[11px] text-[#9CA3AF] mt-2 truncate">{team.league}</p>
                 )}
                 <p className="text-[11px] text-[#22C55E] font-bold mt-3">
@@ -4309,6 +4347,12 @@ function UmbrellaStep({
       {!loading && teams.length === 0 && (
         <div className="bg-[#111317] border border-white/5 rounded-lg p-4 text-[12px] text-[#9CA3AF]">
           {emptyMessage ?? "Aucune équipe n'est inscrite sous ce club pour ce sport."}
+        </div>
+      )}
+
+      {!loading && teams.length > 0 && teamsVisibles.length === 0 && (
+        <div className="bg-[#111317] border border-white/5 rounded-lg p-4 text-[12px] text-[#9CA3AF]">
+          Aucune équipe de ce club ne correspond à <span className="font-bold text-white">&ldquo;{rechercheTexte.trim()}&rdquo;</span>.
         </div>
       )}
 
