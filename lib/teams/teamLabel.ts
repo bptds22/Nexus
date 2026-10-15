@@ -138,3 +138,34 @@ export function equipeCorrespond(t: EquipeLibellable, recherche: string, o: Opti
   ].map(net).filter(Boolean).join(" "));
   return mots.every((m) => botte.includes(m));
 }
+
+/* ── Équipe RÉSOLUE (code d'adhésion, transfert) — décision BP 2026-10-15 ──
+   Le bloc « Tu rejoins » affichait une seule ligne : « Club · Sport ·
+   Catégorie · Division · Genre · Saison · Ligue ». Le club y figurait deux fois
+   (en tête, puis comme ligue : « No Limits Showcases ») et l'essentiel s'y
+   noyait. Désormais, sous le nom de l'équipe :
+     - ligne 1, en évidence : Catégorie · Division · Genre (zone : règle actuelle) ;
+     - ligne 2, discrète     : Club · Sport · Saison (+ Ligue SEULEMENT si son
+       nom diffère de celui du club, casse et accents ignorés).
+   Un champ vide disparaît. */
+export interface EquipeResolue extends EquipeLibellable {
+  sport?: string | null;
+  season?: string | null;
+  league?: string | null;
+}
+
+export function lignesEquipeResolue(
+  t: EquipeResolue,
+  nomClub: string | null | undefined,
+): { essentiel: string; contexte: string } {
+  const ligue = net(t.league);
+  return {
+    essentiel: attributsEquipe(t),
+    contexte: [
+      net(nomClub),
+      net(t.sport),
+      net(t.season),
+      ligue && !nomEstCeluiDuClub(ligue, nomClub) ? ligue : "",
+    ].filter(Boolean).join(" · "),
+  };
+}
