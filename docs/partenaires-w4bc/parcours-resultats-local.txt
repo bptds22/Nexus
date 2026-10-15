@@ -1,0 +1,48 @@
+préparation : Média Preuve évaluateur en football, badge propre « Esprit sportif »
+capture 01-partenaire-mes-prospects-vide-desktop.png
+capture 02a-partenaire-formulaire-haut-desktop.png
+capture 02b-partenaire-formulaire-bas-desktop.png
+capture 03-partenaire-carte-creee-desktop.png
+capture 04-partenaire-lien-une-fois-desktop.png
+message texto : "Salut! Média Preuve t'a évalué et t'invite à voir ton évaluation sur Nexus : http://localhost:3011/p/f74980c9542e280c38d53d60f77f71f50c4410619fd4f3c103794af4716f7009\n— Média Preuve"
+statut vu par le partenaire : LIEN ENVOYÉ
+capture 05-jeune-lien-sans-connexion-desktop.png
+texte sans connexion : "INVITATION\n\nMÉDIA PREUVE T'INVITE SUR NEXUS\n\nInscris-toi ou connecte-toi pour voir ce qui t'attend. Nexus aide les athlètes du secondaire à se faire voir des recruteurs des cégeps. C'est gratuit.\n\nS'INSCRIRE\nSE CONNECTER"
+robot d'aperçu : nom du partenaire présent ? false | « Léo » présent ? false
+capture 06-jeune-lien-sans-connexion-mobile.png
+jeton mémorisé : oui
+inscription réelle : OK, arrivé sur /athlete/onboarding
+jeton toujours mémorisé après l'inscription : oui
+onboarding simulé : fiche athlète Léo Fortin (19 ans, football), onboarding_complete = vrai
+retour automatique vers le lien après l'onboarding : OK ; jeton oublié : oui
+capture 07-jeune-carte-connecte-mobile.png
+partenaire voit encore : LIEN ENVOYÉ
+capture 08-jeune-attente-optin-mobile.png
+capture 09-jeune-bandeau-rappel-mobile.png
+capture 10-jeune-transfert-fait-mobile.png
+base : opt-in true | évaluation [{"cote_globale":4}] | badges posés 2
+capture 11-jeune-profil-evaluation-partenaire-desktop.png
+profil : section évaluation partenaire : "ÉVALUATION DE MÉDIA PREUVE 4.0/5 COTE GLOBALE Évaluation d'un partenaire de Nexus, distincte de celle de l'entraîneur · 14 octobre 2026"
+profil : badges partenaire affichés : 2
+capture 12-jeune-profil-badges-desktop.png
+capture 13-jeune-pas-moi-confirmation-mobile.png
+capture 14-jeune-pas-moi-fait-mobile.png
+« pas moi » par le lien : carte supprimée ? true
+proposition de l'admin à Mathis : OK
+capture 15-jeune-notification-proposition-mobile.png
+capture 16-jeune-proposition-reponse-mobile.png
+capture 17-jeune-proposition-reponse-desktop.png
+statuts vus par le partenaire : ["À ENVOYER"]
+terminées : ["Le jeune a répondu que ce n'était pas lui Carte du 14 octobre 2026 · terminée le 14 octobre 2026","Réclamée par le jeuneVoir sa fiche Carte du 14 octobre 2026 · terminée le 14 octobre 2026"]
+capture 18-partenaire-liste-et-terminees-desktop.png
+mobile (arrivée) : {"mtp":1,"coarse":true,"ua":"Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 "} | options : {"isMobile":true,"hasTouch":true}
+capture 19-partenaire-mes-prospects-mobile.png
+mobile : pointer coarse ? true | boutons du panneau : ["Envoyer par texto","Copier le message","Copier le lien seul","J'ai envoyé le lien"]
+mobile : bouton « Envoyer par texto » : 1 | href commence par sms:?&body= : true
+capture 21-partenaire-envoyer-texto-mobile.png
+capture 20a-partenaire-formulaire-haut-mobile.png
+capture 20b-partenaire-formulaire-bas-mobile.png
+formulaire mobile : titre visible en haut ? true
+remise en état : compte Léo supprimé : 200
+remise en état : partenaire, badge, sport permis, cartes, journal, notifications
+erreurs JavaScript des pages : aucune
