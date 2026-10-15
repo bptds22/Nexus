@@ -1,0 +1,15 @@
+APPLICATION EN PROD — 2026-10-15 17:14 (heure du Québec) — connecteur Supabase (projet nrloizyemulbhujrqhgx), GO BP
+
+1. Avant (lecture seule) : état des objets touchés 0bf261096a750fd407495fcbacf165ed|13 (= relevé) ; dernière version
+   20261015130353 ; 20261016010000 absente. md5 migration 441c3e0e3e29b9efc046bd0a4d1f61ad ; md5 lot-prod.sql
+   0c40221bad5b9a2f79a7f5da251743ce (= preuve locale).
+2. lot-prod.sql en UN appel (execute_sql) :
+   avant  donnees 458|38|14|8|1|228|0|196, a_reecrire 0, nouveaux_avant 0, operations 58, dernière 20261015130353
+   après  donnees 458|38|14|8|1|228|0|196, version 20261016010000, md5_enregistre 441c3e0e3e29b9efc046bd0a4d1f61ad,
+          admin_operation ae67eed0-09e4-4f03-ab50-8e0bf0b66d95, cron */10 * * * *, meme_transaction true
+3. Lecture seule après : schema_migrations « 20261016010000 / push_a4a_file / bptds22@gmail.com » ;
+   admin_operations MIGRATION_PUSH_A4A (par = compte de BP, notifications_partenaire_reecrites 0) ;
+   empreinte des objets 5055df76bf335dd6d8e31c67b463ff2f|57 (= local) ; cron push-file-envoi */10 actif ;
+   push_file 0, push_envois 0 ; push_preferences 0 ligne → tous les types actifs par défaut.
+4. Test réel : nexus.onboarding@nexussports.ca (ATHLETE, ACTIF) n'a AUCUN appareil enregistré (0 jeton) →
+   test non fait, BP le fera sur son téléphone.
