@@ -32,6 +32,7 @@ import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecrui
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
 import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
+import { zoneImageRangee } from "@/components/shared/athlete/tailleBadgeFiche";
 import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
@@ -766,10 +767,10 @@ export default function CoachAthleteProfilePage() {
             {(dbDistinctions.length > 0 || badgesPartenaire.length > 0) && (
               <div className="flex items-start gap-9 flex-wrap">
                 {dbDistinctions.map((d, i) => (
-                  <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                  <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" zoneImage={zoneImageRangee(badgesPartenaire)} />
                 ))}
                 {badgesPartenaire.map((b) => (
-                  <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" />
+                  <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" zoneImage={zoneImageRangee(badgesPartenaire)} />
                 ))}
               </div>
             )}
@@ -872,10 +873,10 @@ export default function CoachAthleteProfilePage() {
                           Il etait en `sm` (64 px) par heritage, pas par decision. */}
                       <div className="flex flex-wrap gap-3">
                         {dbDistinctions.map((d, i) => (
-                          <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
+                          <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" zoneImage={zoneImageRangee(badgesPartenaire)} />
                         ))}
                         {badgesPartenaire.map((b) => (
-                          <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" />
+                          <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" zoneImage={zoneImageRangee(badgesPartenaire)} />
                         ))}
                       </div>
                     </div>

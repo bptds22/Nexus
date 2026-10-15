@@ -41,6 +41,12 @@ interface Props {
    */
   count?: number;
   index?: number;
+  /** Classe de HAUTEUR d'une zone d'image plus haute que le picto (ex.
+   *  `h-[120px] sm:h-[134px]`) : le picto y est centré verticalement, le
+   *  libellé reste dessous. Sert à aligner les libellés d'une rangée qui
+   *  mêle badges Nexus et badges propres d'un partenaire, plus grands
+   *  (voir zoneImageRangee, components/shared/athlete/tailleBadgeFiche.ts). */
+  zoneImage?: string;
   /** Date d'attribution ISO. Dans les 48 h, le badge respire et reflète. */
   attribueLe?: string | null;
   /** Joue la frappe de déblocage. Le décalage entre badges suit `index`. */
@@ -103,7 +109,7 @@ function getBadgeLabel(
 }
 
 export default function DistinctionBadge({
-  badge, detail, size, index, attribueLe, unlock, libelle,
+  badge, detail, size, index, attribueLe, unlock, libelle, zoneImage,
 }: Props) {
   // La fraîcheur est calculée APRÈS montage, jamais au rendu serveur : le
   // build mobile est un export statique, un `Date.now()` évalué à la
@@ -228,6 +234,7 @@ export default function DistinctionBadge({
 
   return (
     <div className={`flex flex-col items-center ${estCompact ? "" : "gap-[10px]"} cursor-pointer group shrink-0 ${outerW}`}>
+      <div className={zoneImage ? `flex items-center justify-center ${zoneImage}` : "contents"}>
       <div className="relative transition-transform duration-300 group-hover:scale-[1.18] group-hover:-translate-y-[3px]">
         {/* La lueur CSS est RETIRÉE : les SVG portent de nouveau leur halo,
             mais À L'INTÉRIEUR — il suit la forme du picto au lieu d'être un
@@ -251,6 +258,7 @@ export default function DistinctionBadge({
         {unlock && !estCompact && (
           <span className="nx-badge-wave" aria-hidden="true" style={{ "--nx-delay": decalage } as React.CSSProperties} />
         )}
+      </div>
       </div>
       {/* Libelle masque en compact : sous 44 px, `max-w-[110px]` ferait
          deborder la rangee de 5 bien avant que le texte soit lisible. */}

@@ -2724,3 +2724,30 @@ part de `/join/[code]` doit **retaper le code** dans l'app :
 À envisager au lot mobile : un lien universel `/join/[code]` vers l'app (Android App Links +
 iOS Universal Links), qui transmet le code à l'inscription. D'ici là, le texte de `/join`
 (« Retiens ton code ») reste le seul relais.
+
+## 96. Débordements horizontaux préexistants, fiche athlète en mobile web (2026-10-15)
+
+Relevé aux captures du lot taille des badges (`feat/badges-partenaire-taille`, navigateur sans interface,
+390 px, base locale). Les deux débordements existaient **avant** le lot, à l'identique ; la rangée de badges
+n'en est pas la cause (elle se replie dans son conteneur).
+
+- **Fiche coach** (`/coach/athletes/[id]`) : la page fait **492 px** de large. En cause : l'en-tête
+  (initiales « JD »), le fil d'Ariane « Nexus / Coach / Mes Athlètes / … », les boutons « Modifier »,
+  « Vérifier maintenant », « Rejeter » et le bloc « 2 suggestions en attente ». Tout le conteneur s'élargit
+  à ~452 px, et la rangée de badges avec lui.
+- **Fiche partenaire** (`/partenaire/athletes/[id]`) : la page fait **481 px**. En cause : les cartes
+  « Format publication (1080×…) » et « Profil complété ». La rangée de badges, elle, s'arrête à 390 px.
+
+Hors lot. Le web coach et le web partenaire sur téléphone restent utilisables (défilement horizontal),
+mais à corriger dans un lot mise en page dédié.
+
+## 97. Aperçu de l'athlète sans badges partenaire (2026-10-15, lot mobile)
+
+`/athlete/profil/apercu` (« Aperçu recruteur ») monte `AthleteRecruiterProfileBodyMobile`, qui n'affiche
+**aucun** badge partenaire (ni badge propre du partenaire, ni badge Nexus posé par un partenaire, lots
+W3/W3b). L'athlète y voit donc moins que ce qu'un recruteur voit sur sa fiche web. Le même corps sert
+la fiche recruteur et la fiche coach en build Capacitor : l'app n'affiche pas non plus ces badges.
+
+À faire au lot mobile : brancher `useBadgesPartenaires` dans le corps mobile, avec les règles du lot
+taille des badges (`components/shared/athlete/tailleBadgeFiche.ts` ; pas de nom sous un badge propre
+au partenaire, « par {partenaire} » sous un badge Nexus posé par un partenaire).

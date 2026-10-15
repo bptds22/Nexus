@@ -4,10 +4,17 @@
    Badges PARTENAIRE (lot W3) — ajoutés À LA FIN de la rangée
    « Distinctions », avec leur propre icône.
 
-   Même gabarit que DistinctionBadge en `lg` (cellule 110 px, picto
-   96 px, libellé 11 px en capitales) pour que la rangée reste une
-   seule rangée. Le nom de l'ORGANISATION est dit sous le libellé :
-   un badge partenaire ne doit jamais passer pour un badge du coach.
+   TAILLE (décision BP du 2026-10-15, corrigée le même jour) :
+   - badge Nexus posé par un partenaire (W3b) : gabarit des Distinctions
+     (`lg`, cellule 110 px, picto 96 px), comme tous les badges Nexus ;
+   - badge PROPRE au partenaire : ~40 % plus grand (tailleBadgeFiche.ts :
+     boîte carrée 134 px bureau, 120 px mobile, image centrée en contain).
+
+   LA LIGNE DU PARTENAIRE (décision BP du 2026-10-15) :
+   - badge Nexus posé par un partenaire (W3b) : « par <organisation> » reste
+     dessous — sans elle, on croirait que c'est le coach qui l'a donné ;
+   - badge PROPRE au partenaire (son image) : plus de nom dessous, l'image
+     le dit déjà. Le nom reste dans l'infobulle.
 
    DEUX SORTES DE BADGE, UN SEUL REFLET (W3b) :
    - badge du catalogue Nexus posé par le partenaire (`estNexus`) : c'est
@@ -33,6 +40,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { FICHE_BOITE, FICHE_CELLULE, FICHE_LIBELLE } from "@/components/shared/athlete/tailleBadgeFiche";
 import "@/components/badges/distinction-badges.css";
 import {
   chargerBadgesPartenaires,
@@ -67,10 +75,13 @@ export function BadgePartenaireVignette({
   badge,
   athleteId,
   actions = null,
+  zoneImage,
 }: {
   badge: BadgePartenaire;
   athleteId: string;
   actions?: "coach" | "partenaire" | null;
+  /** Badge Nexus : zone d'image de la rangée (zoneImageRangee), pour aligner son libellé. */
+  zoneImage?: string;
 }) {
   const [confirmer, setConfirmer] = useState(false);
   const [occupe, setOccupe] = useState(false);
@@ -95,7 +106,7 @@ export function BadgePartenaireVignette({
 
   return (
     <div
-      className="flex flex-col items-center gap-[10px] shrink-0 w-[110px]"
+      className={`flex flex-col items-center gap-[10px] shrink-0 ${badge.estNexus ? "w-[110px]" : FICHE_CELLULE}`}
       data-badge-partenaire
       title={`Badge ${badge.organisation}${badge.estMasque ? " — masqué par le coach" : ""}`}
     >
@@ -103,35 +114,39 @@ export function BadgePartenaireVignette({
         /* Badge Nexus : le composant des Distinctions, tel quel (icône,
            libellé, reflet). Seule la signature dessous dit qui l'a posé. */
         <div className={badge.estMasque ? "opacity-35 grayscale" : ""}>
-          <DistinctionBadge badge={badge.codeNexus} libelle={badge.libelle} />
+          <DistinctionBadge badge={badge.codeNexus} libelle={badge.libelle} zoneImage={zoneImage} />
         </div>
       ) : (
         <>
-          <div className={`group w-[96px] h-[96px] flex items-center justify-center ${badge.estMasque ? "opacity-35 grayscale" : ""}`}>
+          <div className={`group ${FICHE_BOITE} flex items-center justify-center ${badge.estMasque ? "opacity-35 grayscale" : ""}`}>
             {badge.iconeUrl ? (
               /* Même conteneur que DistinctionBadge : `.nx-badge is-metal`,
                  l'icône en `--nx-mask` pour confiner le reflet à sa forme. */
               <div
-                className="nx-badge w-[96px] h-[96px] is-metal"
+                className={`nx-badge ${FICHE_BOITE} is-metal`}
                 style={{ "--nx-mask": `url("${badge.iconeUrl}")` } as CSSProperties}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={badge.iconeUrl} alt="" className="nx-badge__img" draggable={false} />
               </div>
             ) : (
-              <span className="w-[72px] h-[72px] rounded-full border border-[#2D3748] bg-[#13151a] flex items-center justify-center text-[22px] font-head font-black text-[#9CA3AF]">
+              <span className="w-[90px] h-[90px] sm:w-[100px] sm:h-[100px] rounded-full border border-[#2D3748] bg-[#13151a] flex items-center justify-center text-[22px] font-head font-black text-[#9CA3AF]">
                 {badge.libelle.slice(0, 1).toUpperCase()}
               </span>
             )}
           </div>
-          <span className={`text-[11px] max-w-[110px] font-bold tracking-[0.1em] uppercase text-center leading-tight block ${badge.estMasque ? "text-[#6B7280]" : "text-[#E0E0E0]"}`}>
+          <span className={`${FICHE_LIBELLE} font-bold tracking-[0.1em] uppercase text-center leading-tight block ${badge.estMasque ? "text-[#6B7280]" : "text-[#E0E0E0]"}`}>
             {badge.libelle}
           </span>
         </>
       )}
-      <span className="text-[10px] text-[#6B7280] text-center leading-tight -mt-[6px] max-w-[110px]">
-        {badge.estMasque ? "Masqué" : badge.estNexus ? `par ${badge.organisation}` : badge.organisation}
-      </span>
+      {/* Badge Nexus posé par un partenaire : « par <organisation> » (sinon on croit au coach).
+          Badge propre au partenaire : aucune ligne — son image le dit. « Masqué » reste dit. */}
+      {(badge.estMasque || badge.estNexus) && (
+        <span className={`text-[10px] text-[#6B7280] text-center leading-tight -mt-[6px] ${badge.estNexus ? "max-w-[110px]" : "max-w-[140px] sm:max-w-[154px]"}`} data-ligne-partenaire>
+          {badge.estMasque ? "Masqué" : `par ${badge.organisation}`}
+        </span>
+      )}
 
       {peutMasquer && (
         <button
@@ -177,7 +192,7 @@ export function BadgePartenaireVignette({
           </div>
         </div>
       )}
-      {erreur && <span className="text-[10px] text-[#EF4444] text-center max-w-[110px]">{erreur}</span>}
+      {erreur && <span className="text-[10px] text-[#EF4444] text-center max-w-[140px] sm:max-w-[154px]">{erreur}</span>}
     </div>
   );
 }
