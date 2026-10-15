@@ -1,13 +1,14 @@
 // send-invitation/email.ts — courriel de RÉCLAMATION d'un profil d'athlète préparé sur Nexus.
 // Séparé de index.ts pour être importable sans démarrer Deno.serve (preview HTML local).
 //
-// 2026-10-15 (décision BP) : AUCUN nom de coach ni d'école, ni « ton entraîneur ». Le texte dit
-// ce qui est vrai — le nombre RÉEL de recruteurs de cégep qui suivent la fiche (calculé en base),
-// jamais qui. En-tête et signature Nexus clairs, lien vers nexussports.ca.
+// 2026-10-15 (décisions BP, règle RSEQ) : le nombre RÉEL de recruteurs de cégep qui suivent la
+// fiche (calculé en base), jamais qui ; aucun cégep ni recruteur. Le coach n'est nommé que si la
+// base l'a transmis (coach du secondaire ou du civil, coach_nommable) : « {Coach} ({École}) a
+// préparé ton profil sur Nexus. » Sinon, aucun nom. En-tête et signature Nexus clairs.
 
 import { renderEmail } from "../_shared/emailLayout.ts";
 // @ts-ignore TS5097 — module Deno, l'extension .ts est obligatoire.
-import { phraseRecruteurs } from "../_shared/messageRecruteurs.ts";
+import { echapperHtml, phraseCoach, phraseRecruteurs } from "../_shared/messageRecruteurs.ts";
 
 // Fiches store réelles (lib/carte/contact.ts + Play publié).
 export const APP_STORE_URL = "https://apps.apple.com/ca/app/nexus/id6785596805";
@@ -15,17 +16,24 @@ export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=ca.
 
 export const SUJET = "Ton profil d'athlète t'attend sur Nexus";
 
-export function buildBody(nbRecruteurs: unknown, claimUrl: string, desabonnementUrl: string): { html: string; text: string } {
+export function buildBody(
+  nbRecruteurs: unknown,
+  claimUrl: string,
+  desabonnementUrl: string,
+  coach?: { nom?: unknown; ecole?: unknown },
+): { html: string; text: string } {
   const phrase = phraseRecruteurs(nbRecruteurs);
+  const ligneCoach = phraseCoach(coach?.nom, coach?.ecole);
   const extraHtml =
     `<p style="margin:22px 0 8px;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#52525B;">Tu peux aussi télécharger l'application mobile :</p>` +
     `<a href="${APP_STORE_URL}" target="_blank" style="display:inline-block;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#E63946;text-decoration:none;border:1px solid #E4E4E7;border-radius:8px;padding:10px 18px;">Télécharger sur l'App Store</a>` +
     `<a href="${PLAY_STORE_URL}" target="_blank" style="display:inline-block;margin-left:8px;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#E63946;text-decoration:none;border:1px solid #E4E4E7;border-radius:8px;padding:10px 18px;">Télécharger sur Google Play</a>`;
 
   return renderEmail({
-    preheader: phrase,
+    preheader: ligneCoach ? `${ligneCoach} ${phrase}` : phrase,
     heading: SUJET,
     bodyHtml:
+      (ligneCoach ? `<p style="margin:0 0 10px;font-size:17px;"><strong>${echapperHtml(ligneCoach)}</strong></p>` : "") +
       `<p style="margin:0 0 14px;font-size:17px;">${phrase}</p>` +
       `<p style="margin:0 0 12px;">Nexus est la plateforme québécoise qui relie les athlètes du secondaire aux recruteurs de cégep. C'est gratuit pour les athlètes.</p>` +
       `<p style="margin:0 0 12px;">L'équipe Nexus</p>`,
@@ -40,6 +48,7 @@ export function buildBody(nbRecruteurs: unknown, claimUrl: string, desabonnement
       desabonnementUrl,
     },
     bodyText: [
+      ...(ligneCoach ? [ligneCoach] : []),
       phrase,
       "",
       "Nexus est la plateforme québécoise qui relie les athlètes du secondaire aux recruteurs de cégep.",

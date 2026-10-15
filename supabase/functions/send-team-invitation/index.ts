@@ -6,6 +6,7 @@
 // email + transfer_token + user_id strictement requis ; le reste = repli gracieux.
 // team_name vide = équipe NON nommable (collégiale ou inconnue : la base ne la transmet pas,
 // règle RSEQ) → texte générique. user_id = le compte, pour le lien de désabonnement signé.
+// coach_name : présent SEULEMENT pour un coach du secondaire ou du civil d'une équipe nommable.
 //
 // À NE PAS CONFONDRE avec send-invitation, qui est la RÉCLAMATION d'un profil
 // par un athlète SANS compte (lien /claim). Ici l'athlète a déjà un compte : le
@@ -59,10 +60,11 @@ Deno.serve(async (req) => {
     return new Response("user_id invalide", { status: 400 });
   }
 
-  // 2026-10-15 (décision BP, règle RSEQ) : coach_name n'est plus lu, même s'il arrive encore ;
-  // l'équipe n'est nommée que si la base l'a transmise (secondaire ou civile seulement).
+  // Règle RSEQ : l'équipe et le coach ne sont nommés que si la base les a transmis (équipe
+  // secondaire ou civile, coach du secondaire ou du civil). Sans équipe nommée, pas de coach.
   const teamName = texte("team_name");
   const schoolName = teamName ? texte("school_name") : "";
+  const coachName = teamName ? texte("coach_name") : "";
 
   // Le jeton voyage dans l'URL. Il ne CONFÈRE rien — l'acceptation reste bornée
   // par is_own_athlete côté base — mais il désigne l'invitation à préremplir.
@@ -103,6 +105,7 @@ Deno.serve(async (req) => {
     },
     transferUrl,
     `${APP_URL}/desabonnement?t=${jeton}`,
+    coachName,
   );
 
   const res = await fetch("https://api.resend.com/emails", {

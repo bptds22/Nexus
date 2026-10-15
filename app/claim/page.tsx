@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { phraseRecruteurs } from "@/lib/invitations/messageRecruteurs";
+import { phraseCoach, phraseRecruteurs } from "@/lib/invitations/messageRecruteurs";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -87,6 +87,8 @@ function ClaimContent() {
 
   const [state, setState] = useState<ResolveState>({ kind: "loading" });
   const [nbRecruteurs, setNbRecruteurs] = useState<number | null>(null);
+  // Coach nommable seulement (secondaire ou civil, décidé en base) ; null = aucun nom.
+  const [ligneCoach, setLigneCoach] = useState<string | null>(null);
 
   // ── Form state ──────────────────────────────────────────────
   const [birthDate, setBirthDate] = useState("");
@@ -135,6 +137,12 @@ function ClaimContent() {
       if (cancelled) return;
       if (errNb) console.error("[claim] invitation_recruteurs_suivent:", errNb);
       setNbRecruteurs(errNb ? null : (nb as number | null));
+      // Le coach, seulement s'il est du secondaire ou du civil (la base en décide). Erreur → aucun nom.
+      const { data: co, error: errCo } = await supabase.rpc("invitation_coach_nomme" as never, { p_token: token } as never);
+      if (cancelled) return;
+      if (errCo) console.error("[claim] invitation_coach_nomme:", errCo);
+      const c = (errCo ? null : co) as { nom?: string; ecole?: string } | null;
+      setLigneCoach(phraseCoach(c?.nom, c?.ecole));
       setState({ kind: "valid", row });
     })();
     return () => { cancelled = true; };
@@ -276,8 +284,11 @@ function ClaimContent() {
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">
             Bienvenue{row.first_name ? ` ${row.first_name}` : ""} 👋
           </h1>
-          {/* 2026-10-15 (décision BP) : aucune mention du coach ; le nombre réel de
-              recruteurs qui suivent ce profil, ou la phrase « profil prêt ». */}
+          {/* Règle RSEQ (décisions BP 2026-10-15) : le coach seulement s'il est du
+              secondaire ou du civil ; puis le nombre réel de recruteurs, jamais qui. */}
+          {ligneCoach && (
+            <p className="text-sm font-semibold text-white mt-1" data-phrase-coach>{ligneCoach}</p>
+          )}
           <p className="text-sm text-[#9CA3AF] mt-1" data-phrase-recruteurs>
             {phraseRecruteurs(nbRecruteurs)}
           </p>

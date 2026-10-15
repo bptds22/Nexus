@@ -1,0 +1,9 @@
+courriels rendus : courriel-reclamation-coach-secondaire, courriel-reclamation-coach-civil, courriel-reclamation-coach-collegial, courriel-equipe-coach-secondaire
+/claim coach-secondaire : ligne coach = "Marc Desrosiers (École secondaire des Érables) a préparé ton profil sur Nexus." | « Marc Desrosiers » dans la page : true
+/claim coach-collegial : ligne coach = "(aucune)" | « Luc Arsenault » dans la page : false
+carte : « Invité par » : ["Invité par Marc Desrosiers"]
+| Luc (collégial) nommé : false | équipe collégiale nommée : false | cégep nommé : false
+| titres : ["Invitation à rejoindre une équipe","Invitation de Acad. Saint-Louis — Académie Saint-Louis","Invitation de Acad. Saint-Louis — Académie Saint-Louis"]
+remise en état : invitations d'équipe retirées : oui
+remise en état : fiches jetables retirées : oui
+erreurs JavaScript : aucune

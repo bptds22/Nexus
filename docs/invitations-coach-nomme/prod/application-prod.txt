@@ -1,0 +1,11 @@
+APPLICATION EN PROD — 2026-10-15 — connecteur Supabase (projet nrloizyemulbhujrqhgx)
+
+1. Fonctions send-invitation et send-team-invitation déployées (CLI, --no-verify-jwt). Sonde sans secret : 401/401.
+2. Relevé avant : empreintes des 3 fonctions remplacées = garde (1a4763db…, d426a638…, 6f9b30af…) ; version absente.
+3. lot-prod.sql en UN appel :
+   avant  donnees 0|2|458|0|0, version_deja 0, dernière 20261015114923
+   après  donnees 0|2|458|0|0, version 20261015125824, md5_enregistre e1bf4215cc441627301cc15599aa2742,
+          fonctions 6, meme_transaction true
+4. Lecture seule : empreinte b40c1bbc8c3588985a81fcdbe70abe4b (= local), 3 triggers actifs,
+   version « invitations_coach_nomme / bptds22@gmail.com », jeton inconnu → null,
+   13 coachs nommables sur 30.

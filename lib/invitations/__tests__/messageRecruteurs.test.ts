@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { nombreSur, phraseRecruteurs } from "@/lib/invitations/messageRecruteurs";
+import { echapperHtml, nombreSur, phraseCoach, phraseRecruteurs } from "@/lib/invitations/messageRecruteurs";
 
 const ZERO = "Ton profil d'athlète est prêt sur Nexus, là où les recruteurs de cégep cherchent leurs prochains joueurs. Réclame-le gratuitement.";
 const INTERDITS = /coach|entra[iî]neur|Ton coach|Un coach/i;
@@ -124,14 +124,61 @@ test("règle RSEQ : les deux courriels ne nomment ni coach, ni cégep, ni recrut
   assert.equal(eq.SUJET.match(RSEQ_INTERDITS), null);
 });
 
-test("règle RSEQ : les fonctions d'envoi ne lisent ni coach_name, ni nom de recruteur", () => {
+test("règle RSEQ : les fonctions d'envoi ne lisent aucun nom de recruteur ni de cégep", () => {
   for (const f of ["send-invitation/index.ts", "send-invitation/email.ts", "send-team-invitation/index.ts", "send-team-invitation/email.ts"]) {
     const src = fs.readFileSync(path.resolve("supabase/functions", f), "utf8");
-    assert.doesNotMatch(src, /payload\??\.coach_name|texte\("coach_name"\)|recruiter_name|recruteur_nom|cegep_name/, f);
+    assert.doesNotMatch(src, /recruiter_name|recruteur_nom|cegep_name|cegep_nom/, f);
     // Désinscription réelle : en-tête List-Unsubscribe et refus d'envoyer sans secret.
     if (f.endsWith("index.ts")) {
       assert.match(src, /List-Unsubscribe/, f);
       assert.match(src, /DESABONNEMENT_SECRET\.length < 32/, f);
     }
   }
+});
+
+/* Correction BP (2026-10-15) : le coach du SECONDAIRE ou du CIVIL peut être nommé. La base ne transmet
+   son nom que dans ce cas (coach_nommable, banc SQL) ; les gabarits nomment ce qu'on leur donne, et
+   rien d'autre. Sans nom transmis (coach collégial ou indéterminé) : aucun coach. */
+test("phraseCoach : « {Coach} ({École}) a préparé ton profil sur Nexus. », rien sans nom", () => {
+  assert.equal(phraseCoach("Marc Desrosiers", "École secondaire des Érables"),
+    "Marc Desrosiers (École secondaire des Érables) a préparé ton profil sur Nexus.");
+  assert.equal(phraseCoach("Martin Bélanger", ""), "Martin Bélanger a préparé ton profil sur Nexus.");
+  for (const v of [undefined, null, "", "   ", 3]) assert.equal(phraseCoach(v, "École"), null);
+  assert.equal(echapperHtml(`<b>"A&B"</b>`), "&lt;b&gt;&quot;A&amp;B&quot;&lt;/b&gt;");
+});
+
+test("courriel de réclamation, coach secondaire ou civil transmis : nommé, puis le nombre", async () => {
+  const { buildBody } = await import(GABARIT_RECLAMATION);
+  for (const [nom, ecole] of [["Marc Desrosiers", "École secondaire des Érables"], ["Martin Bélanger", "Club de soccer Les Lions"]]) {
+    const { html, text } = buildBody(2, "https://nexussports.ca/claim?token=t", "https://nexussports.ca/desabonnement?t=a", { nom, ecole });
+    const ligne = `${nom} (${ecole}) a préparé ton profil sur Nexus.`;
+    assert.ok(text.includes(`${ligne}
+${phraseRecruteurs(2)}`), "coach puis nombre");
+    assert.ok(html.includes(echapperHtml(ligne)));
+    assert.ok(html.includes("Ne plus recevoir ces courriels"));
+    assert.doesNotMatch(text, /recruteur [A-Z]|C[ée]gep (de|du)/);
+  }
+});
+
+test("courriel de réclamation, coach collégial ou indéterminé (rien transmis) : aucun nom", async () => {
+  const { buildBody } = await import(GABARIT_RECLAMATION);
+  for (const coach of [undefined, {}, { nom: "", ecole: "Cégep du Littoral" }, { nom: null }]) {
+    const { html, text } = buildBody(1, "https://nexussports.ca/claim?token=t", "https://nexussports.ca/desabonnement?t=a", coach);
+    for (const s of [html, text]) {
+      assert.doesNotMatch(s, /a préparé ton profil|Littoral|C[ée]gep du/);
+      assert.ok(s.includes(phraseRecruteurs(1).replace("'", "'")));
+    }
+  }
+});
+
+test("courriel d'équipe : coach nommé seulement avec une équipe nommée", async () => {
+  const { buildBody } = await import(GABARIT_EQUIPE);
+  const d = { sport: "Football", ageGroup: "Juvénile", division: "D2", gender: "Masculin" };
+  const avec = buildBody("Les Dragons", "École des Érables", d, "https://x/t", "https://x/d", "Marc Desrosiers");
+  assert.ok(avec.text.includes("Marc Desrosiers t'invite à rejoindre cette équipe sur Nexus"));
+  // Équipe non nommable (collégiale : la base envoie des chaînes vides) : un nom égaré n'apparaît pas.
+  const sans = buildBody("", "", { sport: "", ageGroup: "", division: "", gender: "" }, "https://x/t", "https://x/d", "Luc Arsenault");
+  for (const s of [sans.html, sans.text]) assert.doesNotMatch(s, /Luc Arsenault|t'invite/);
+  const anonyme = buildBody("Les Dragons", "École des Érables", d, "https://x/t", "https://x/d", "");
+  assert.ok(anonyme.text.includes("Tu es invité à rejoindre cette équipe"));
 });
