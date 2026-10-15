@@ -28,7 +28,8 @@ import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY } from 
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import { type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
-import { teamDetails } from "@/lib/config/teamLabel";
+import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
+import LignesEquipe from "@/components/athlete/LignesEquipe";
 import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
@@ -740,7 +741,7 @@ function AthleteOnboardingDesktop() {
   const [codeLock, setCodeLock] = useState<{
     code: string; teamId: string; teamName: string;
     schoolId: string; schoolName: string; schoolType: string;
-    sportName: string; details: string;
+    sportName: string; details: { essentiel: string; contexte: string };
   } | null>(null);
 
   /** Adopte un code résolu : dérive l'organisation, le contexte et le sport.
@@ -763,10 +764,11 @@ function AthleteOnboardingDesktop() {
       schoolName: t.schoolName ?? "",
       schoolType: t.schoolType ?? "",
       sportName: t.sportName ?? "",
-      details: teamDetails({
+      // Règle commune (BP 2026-10-15) : essentiel puis contexte, ligue si ≠ club.
+      details: lignesEquipeResolue({
         sport: t.sportName, age_group: t.ageGroup, division: t.division,
         gender: t.gender, season: t.season, league: t.league,
-      }),
+      }, t.schoolName),
     });
     setJoinCodeUsed(v.code);
     setSelectedTeamId(t.teamId);
@@ -2055,9 +2057,7 @@ function AthleteOnboardingDesktop() {
                     <p className="mt-1 truncate text-[15px] font-semibold text-white">
                       {codeLock.teamName}
                     </p>
-                    <p className="truncate text-[12px] text-[#9CA3AF]">
-                      {[codeLock.schoolName, codeLock.details].filter(Boolean).join(" · ")}
-                    </p>
+                    <LignesEquipe {...codeLock.details} />
                     <p className="mt-2 text-[12px] leading-relaxed text-[#6b7280]">
                       Ton {codeLock.schoolType === "LIGUE_CIVILE" ? "club" : "école"} et ton
                       sport sont remplis à partir de ce code — tu n&apos;as pas à les chercher.
@@ -2539,9 +2539,7 @@ function AthleteOnboardingDesktop() {
                 <div className="flex items-start gap-3 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 p-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[15px] font-semibold text-white">{codeLock.teamName}</div>
-                    <div className="truncate text-[12px] text-[#9CA3AF]">
-                      {[codeLock.schoolName, codeLock.details].filter(Boolean).join(" · ")}
-                    </div>
+                    <LignesEquipe {...codeLock.details} />
                   </div>
                   <button
                     type="button"

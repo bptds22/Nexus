@@ -35,8 +35,8 @@ test("équipe ou école collégiale (ou inconnue) : JAMAIS nommée", () => {
   assert.equal(titreInvitation({ typeEcole: "SECONDAIRE", equipe: "  ", ecole: "École X" }), GENERIQUE);
 });
 
-/* Les écrans web de l'athlète : plus aucun « Invité par {coach} », « Créé par ton coach »,
-   « ton entraîneur », et la règle branchée là où une équipe est affichée. */
+/* Les écrans web de l'athlète : plus de « Créé par ton coach » ni « ton entraîneur » génériques ;
+   « Invité par {coach} » SEULEMENT derrière la règle (équipe nommable ET coach nommable en base). */
 const ECRANS = [
   "app/athlete/notifications/_components/PendingInvitations.tsx",
   "components/auth/ClaimProfileModal.tsx",
@@ -52,8 +52,17 @@ function sansCommentaires(src: string): string {
 test("écrans athlète (web) : aucun coach ni entraîneur dans le texte affiché", () => {
   for (const f of ECRANS) {
     const src = sansCommentaires(fs.readFileSync(path.resolve(f), "utf8"));
-    assert.doesNotMatch(src, /Invité par|Créé par ton coach|entra[iî]neur|un coach|ton coach|coach \$\{/i, f);
-    assert.doesNotMatch(src, /invited_by_coach|users:coach_id|coach_name\)/, f);
+    assert.doesNotMatch(src, /Créé par ton coach|entra[iî]neur|un coach|ton coach|coach \$\{/i, f);
+    // Aucun nom de coach lu directement côté client : seulement par la règle en base.
+    assert.doesNotMatch(src, /invited_by_coach:|users:coach_id|users!invited_by_coach_id/, f);
+    const invitePar = src.match(/Invité par/g) ?? [];
+    if (f.endsWith("PendingInvitations.tsx")) {
+      assert.equal(invitePar.length, 1, f);
+      assert.match(src, /\{nommable && inv\.coachNom && \(\s*<p[^>]*data-coach-invitation>Invité par \{inv\.coachNom\}/, f);
+      assert.match(src, /rpc\("invitation_equipe_coach"/, f);
+    } else {
+      assert.equal(invitePar.length, 0, f);
+    }
   }
 });
 

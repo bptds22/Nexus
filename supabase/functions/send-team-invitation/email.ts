@@ -9,6 +9,8 @@
 // jumeau.
 
 import { renderEmail } from "../_shared/emailLayout.ts";
+// @ts-ignore TS5097 — module Deno, l'extension .ts est obligatoire.
+import { echapperHtml } from "../_shared/messageRecruteurs.ts";
 
 /** Ligne « Sport · Catégorie · Division · Genre », vides retirés. Miroir de
  *  formatTeamLabel côté client — les deux surfaces ne doivent pas diverger. */
@@ -21,10 +23,10 @@ function detailsEquipe(
     .join(" · ");
 }
 
-/** 2026-10-15 (décision BP, règle RSEQ) : aucun nom de coach, ni « un coach » / « ton entraîneur ».
- *  L'équipe et son école ne sont nommées que si la BASE les a transmises — elle ne le fait que pour
- *  une équipe secondaire ou civile (notify_team_invitation_email). Sans nom : texte générique, rien
- *  qui permette de deviner l'équipe (ni détails, ni école). */
+/** 2026-10-15 (décisions BP, règle RSEQ) : l'équipe, son école et le coach ne sont nommés que si
+ *  la BASE les a transmis — elle ne le fait que pour une équipe secondaire ou civile, et pour un
+ *  coach du secondaire ou du civil (notify_team_invitation_email, coach_nommable). Sans nom
+ *  d'équipe : texte générique, rien qui permette de la deviner (ni détails, ni école, ni coach). */
 export const SUJET = "Invitation à rejoindre une équipe sur Nexus";
 
 export function buildBody(
@@ -33,8 +35,11 @@ export function buildBody(
   details: { sport: string; ageGroup: string; division: string; gender: string },
   transferUrl: string,
   desabonnementUrl: string,
+  coachNom = "",
 ): { html: string; text: string } {
   const nommee = teamName.trim().length > 0;
+  // Le coach seulement avec une équipe nommée (même règle que la base).
+  const coach = nommee ? coachNom.trim() : "";
   // Pas d'équipe nommable → ni détails ni école, même s'ils arrivaient.
   const ligneDetails = nommee
     ? detailsEquipe(details.sport, details.ageGroup, details.division, details.gender)
@@ -60,14 +65,14 @@ export function buildBody(
 
   const equipe = nommee ? `${teamName.trim()}${schoolName.trim() ? ` — ${schoolName.trim()}` : ""}` : "";
   const invite = nommee
-    ? `Tu es invité à rejoindre cette équipe sur Nexus${ligneDetails ? ` (${ligneDetails})` : ""}.`
+    ? `${coach ? `${coach} t'invite` : "Tu es invité"} à rejoindre cette équipe sur Nexus${ligneDetails ? ` (${ligneDetails})` : ""}.`
     : "Tu es invité à rejoindre une nouvelle équipe sur Nexus. Ouvre l'invitation pour la voir.";
   return renderEmail({
     preheader: nommee ? `Invitation à rejoindre ${teamName.trim()}` : "Invitation à rejoindre une équipe",
     heading: "Tu es invité à rejoindre une équipe",
     bodyHtml:
       (nommee ? `<p style="margin:0 0 14px;font-size:17px;"><strong>${equipe}</strong></p>` : "") +
-      `<p style="margin:0 0 12px;">${invite}</p>` +
+      `<p style="margin:0 0 12px;">${echapperHtml(invite)}</p>` +
       // On DIT que ça remplace l'équipe actuelle. L'écran le redira, mais un
       // athlète qui décide dans sa boîte de réception doit déjà le savoir.
       `<p style="margin:0 0 12px;">Si tu acceptes, cette équipe remplacera ton équipe actuelle. Ton ancienne équipe restera dans ton parcours — tu ne perds rien.</p>` +

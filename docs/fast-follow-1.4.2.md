@@ -2688,6 +2688,11 @@ partagé. Web fait sur `feat/invitations-sans-coach`. Reste au mobile :
 - Il n'existe pas d'écran mobile « Invitations en attente » (la carte web `PendingInvitations`) : à créer
   avec la même règle (`titreInvitation`) si le lot mobile l'ajoute.
 - Courriels et notification `TEAM_INVITATION` : côté serveur, rien à faire au mobile.
+- **Correction BP du 2026-10-15 (`20261015125824`)** : un coach du SECONDAIRE ou du CIVIL peut être
+  nommé ; seuls les recruteurs, les cégeps et les coachs d'équipes collégiales ne le sont jamais. La règle
+  vit en base (`coach_nommable`). Pour le mobile : afficher « Invité par {coach} » seulement via
+  `invitation_equipe_coach(invitation)` (null = aucun nom) ; ne jamais lire le nom du coach directement.
+  `ClaimProfileModal` n'affiche toujours pas le coach (chemin inatteignable sur le web, CLAUDE.md).
 
 ## 94. Grades D+ et E côté mobile (2026-10-15, lot mobile, web fait)
 
@@ -2703,3 +2708,19 @@ A+, A, B+, B, C+, C, D+, D, E. Base : migration `20261015130353_grades_d_plus_e.
   En `compact={false}` (cibles de 44 px), 9 colonnes ne tiennent pas en 44 px sur un écran de 390 px :
   les cellules rétrécissent (~32 px de large). À vérifier au lot mobile (deux rangées, ou une grille 5 + 4).
 - Le tri « grade » mobile passe par `gradeRank()` (tronc partagé) : rien à faire.
+
+## 95. Code d'adhésion de /join non transmis à l'app (2026-10-15, lot mobile)
+
+Relevé à la correction de l'affichage de `/join` (`fix/join-affichage`, lecture seule de `release/1.4.4`).
+Dans l'app 1.4.4, le champ du code existe à l'inscription athlète (`AthleteOnboardingMobile`,
+« Ton entraîneur t'a donné un code ? » et « Un code d'équipe ? (facultatif) »), mais un joueur qui
+part de `/join/[code]` doit **retaper le code** dans l'app :
+
+- `/join` retient le code dans le `sessionStorage` du **navigateur** (`readStashedJoinCode`) ; l'app est
+  une WebView séparée, qui ne voit pas ce stockage ;
+- l'app n'a **aucun lien universel** vers `/join` : le manifeste Android ne déclare que le schéma
+  `ca.nexussports.app`, l'iOS n'a pas d'`applinks`.
+
+À envisager au lot mobile : un lien universel `/join/[code]` vers l'app (Android App Links +
+iOS Universal Links), qui transmet le code à l'inscription. D'ici là, le texte de `/join`
+(« Retiens ton code ») reste le seul relais.

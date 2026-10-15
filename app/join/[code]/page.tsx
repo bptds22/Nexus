@@ -34,7 +34,7 @@ import {
   type ResolvedJoinTeam,
 } from "@/lib/queries/athlete/teamAttachment";
 import { APP_STORE_URL, PLAY_STORE_URL, detectDevice, type DeviceKind } from "@/lib/config/appStores";
-import { teamDetails } from "@/lib/config/teamLabel";
+import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
 import { equipeNommable } from "@/lib/invitations/equipeNommable";
 
 type State =
@@ -143,10 +143,13 @@ function ValidCard({ team, code, device }: { team: ResolvedJoinTeam; code: strin
   const nommable = equipeNommable(team.schoolType);
   // Détails complets depuis resolve (migration 20260805120000) : sans eux,
   // deux équipes homonymes de la même école étaient indistinguables ici.
-  const meta = [team.schoolName, teamDetails({
+  // Règle commune (BP 2026-10-15) : l'essentiel en évidence (catégorie ·
+  // division · genre), puis club · sport · saison ; la ligue seulement si
+  // elle diffère du club.
+  const { essentiel, contexte } = lignesEquipeResolue({
     sport: team.sportName, age_group: team.ageGroup, division: team.division,
     gender: team.gender, season: team.season, league: team.league,
-  })].filter(Boolean).join(" · ");
+  }, team.schoolName);
 
   return (
     <>
@@ -175,7 +178,8 @@ function ValidCard({ team, code, device }: { team: ResolvedJoinTeam; code: strin
         <h1 className="font-head mt-1 text-[24px] font-bold uppercase leading-tight tracking-tight text-white">
           {nommable ? team.teamName : "Une équipe sur Nexus"}
         </h1>
-        {nommable && meta ? <p className="mt-2 text-[14px] text-white/55">{meta}</p> : null}
+        {nommable && essentiel ? <p className="mt-2 text-[16px] font-semibold text-white/90">{essentiel}</p> : null}
+        {nommable && contexte ? <p className="mt-1 text-[13px] text-white/45">{contexte}</p> : null}
       </div>
 
       {/* ── Le code, EN GROS ───────────────────────────────── */}
