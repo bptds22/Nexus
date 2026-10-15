@@ -29,10 +29,11 @@ import { equipeNommable, titreInvitation } from "@/lib/invitations/equipeNommabl
    today the badge only counts athlete_notifications, so the event
    is a no-op refresh but ready to extend.
 
-   RÈGLE RSEQ (décision BP 2026-10-15) : l'écran ne nomme JAMAIS le coach,
-   et ne nomme l'équipe et son école que si c'est une équipe secondaire ou
-   civile (lib/invitations/equipeNommable). Collégiale ou inconnue : « Invitation
-   à rejoindre une équipe », sans nom, sans école, sans sport.
+   RÈGLE RSEQ (décisions BP 2026-10-15) : l'équipe et son école ne sont
+   nommées que si c'est une équipe secondaire ou civile (lib/invitations/
+   equipeNommable) ; le coach, seulement s'il est lui-même du secondaire ou du
+   civil (invitation_equipe_coach, en base). Collégiale ou inconnue :
+   « Invitation à rejoindre une équipe », sans nom, sans école, sans sport.
 ═══════════════════════════════════════════════════════════════ */
 
 interface PendingInvitation {
@@ -45,6 +46,8 @@ interface PendingInvitation {
   gender: string | null;
   schoolName: string | null;
   schoolType: string | null;
+  /** Nom du coach, SEULEMENT s'il est du secondaire ou du civil (décidé en base). */
+  coachNom: string | null;
   createdAt: string;
 }
 
@@ -124,9 +127,19 @@ export default function PendingInvitations({
           gender: ((team as { gender?: string }).gender) ?? null,
           schoolName: school?.name ?? null,
           schoolType: school?.type ?? null,
+          coachNom: null,
           createdAt: r.created_at as string,
         };
       });
+      /* Le coach : la base décide (invitation_equipe_coach → coach_nommable). Équipe ou coach
+         collégial, ou indéterminé → null, aucun nom. Une erreur ne nomme personne. */
+      for (const inv of mapped) {
+        if (!equipeNommable(inv.schoolType)) continue;
+        const { data: c } = await supabase.rpc("invitation_equipe_coach" as never, { p_invitation: inv.id } as never);
+        const nom = (c as { nom?: string } | null)?.nom?.trim();
+        if (nom) inv.coachNom = nom;
+      }
+      if (cancelled) return;
       setInvitations(mapped);
 
       /* L'ÉQUIPE ACTUELLE — sans elle, l'athlète accepte à l'aveugle.
@@ -264,6 +277,9 @@ export default function PendingInvitations({
                     que la page /join. */}
                 <p className="text-[14px] font-bold text-white" data-titre-invitation>{titre}</p>
                 {details && <p className="text-[12px] text-[#9CA3AF] mt-0.5">{details}</p>}
+                {nommable && inv.coachNom && (
+                  <p className="text-[12px] text-[#9CA3AF] mt-0.5" data-coach-invitation>Invité par {inv.coachNom}</p>
+                )}
                 <p className="text-[11px] text-[#4a4d56] mt-0.5">{relativeTimeFr(inv.createdAt)}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

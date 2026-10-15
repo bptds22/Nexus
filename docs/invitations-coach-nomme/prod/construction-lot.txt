@@ -1,0 +1,9 @@
+{
+ "lot": "docs\\invitations-coach-nomme\\prod\\lot-prod.sql",
+ "md5_fichier": "e1bf4215cc441627301cc15599aa2742",
+ "md5_section_executee": "e1bf4215cc441627301cc15599aa2742",
+ "md5_litteral_enregistre": "e1bf4215cc441627301cc15599aa2742",
+ "md5_lot": "5dfb09b1e2bf9e2f5f35674de2c372a6",
+ "octets_lot": 40624,
+ "empreinte_attendue": "b40c1bbc8c3588985a81fcdbe70abe4b"
+}

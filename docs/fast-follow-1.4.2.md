@@ -2688,3 +2688,8 @@ partagé. Web fait sur `feat/invitations-sans-coach`. Reste au mobile :
 - Il n'existe pas d'écran mobile « Invitations en attente » (la carte web `PendingInvitations`) : à créer
   avec la même règle (`titreInvitation`) si le lot mobile l'ajoute.
 - Courriels et notification `TEAM_INVITATION` : côté serveur, rien à faire au mobile.
+- **Correction BP du 2026-10-15 (`20261015125824`)** : un coach du SECONDAIRE ou du CIVIL peut être
+  nommé ; seuls les recruteurs, les cégeps et les coachs d'équipes collégiales ne le sont jamais. La règle
+  vit en base (`coach_nommable`). Pour le mobile : afficher « Invité par {coach} » seulement via
+  `invitation_equipe_coach(invitation)` (null = aucun nom) ; ne jamais lire le nom du coach directement.
+  `ClaimProfileModal` n'affiche toujours pas le coach (chemin inatteignable sur le web, CLAUDE.md).

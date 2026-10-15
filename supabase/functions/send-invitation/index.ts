@@ -9,7 +9,8 @@
 //   { email, nb_recruteurs, claim_token, invitation_id }
 // email + claim_token + invitation_id strictement requis ; nb_recruteurs absent = phrase sans
 // chiffre. invitation_id sert au lien « Ne plus recevoir ces courriels » (jeton signé « a. »).
-// (coach_name / school_name, s'ils arrivent encore, sont ignorés — décision BP 2026-10-15.)
+// coach_name / coach_ecole : présents SEULEMENT pour un coach du secondaire ou du civil (la base
+// en décide, coach_nommable) ; absents → aucun nom de coach dans le courriel.
 //
 // Gabarit : mutualisé dans ../_shared/emailLayout.ts (renderEmail). Le corps
 // spécifique à ce courriel vit dans ./email.ts (buildBody).
@@ -57,11 +58,11 @@ Deno.serve(async (req) => {
     return new Response("invitation_id invalide", { status: 400 });
   }
 
-  // 2026-10-15 (décision BP) : le nom du coach et de l'école ne sont PLUS lus, même si un ancien
-  // trigger les envoie encore. Seul le nombre réel de recruteurs compte ; absent → la phrase
-  // « profil prêt », jamais un chiffre inventé.
+  // Le nombre réel de recruteurs (absent → la phrase « profil prêt », jamais un chiffre inventé) ;
+  // le coach seulement si la base l'a transmis (secondaire ou civil).
   const claimUrl = `${APP_URL}/claim?token=${encodeURIComponent(claim_token)}`;
-  const { html, text } = buildBody(payload?.nb_recruteurs, claimUrl, `${APP_URL}/desabonnement?t=${jeton}`);
+  const { html, text } = buildBody(payload?.nb_recruteurs, claimUrl, `${APP_URL}/desabonnement?t=${jeton}`,
+    { nom: payload?.coach_name, ecole: payload?.coach_ecole });
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
