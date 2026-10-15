@@ -35,6 +35,7 @@ import {
 } from "@/lib/queries/athlete/teamAttachment";
 import { APP_STORE_URL, PLAY_STORE_URL, detectDevice, type DeviceKind } from "@/lib/config/appStores";
 import { teamDetails } from "@/lib/config/teamLabel";
+import { equipeNommable } from "@/lib/invitations/equipeNommable";
 
 type State =
   | { phase: "loading" }
@@ -123,7 +124,7 @@ function InvalidCard() {
         Ce code n&apos;est plus valide
       </h1>
       <p className="mt-3 text-[14px] leading-relaxed text-white/55">
-        Demande un nouveau code à ton entraîneur — il peut en générer un en
+        Demande un nouveau code à ton équipe — il s&apos;en génère un en
         quelques secondes.
       </p>
       <Link
@@ -137,6 +138,9 @@ function InvalidCard() {
 }
 
 function ValidCard({ team, code, device }: { team: ResolvedJoinTeam; code: string; device: DeviceKind }) {
+  // Règle RSEQ (décision BP 2026-10-15) : équipe collégiale ou inconnue → ni nom, ni école,
+  // ni logo, ni détails.
+  const nommable = equipeNommable(team.schoolType);
   // Détails complets depuis resolve (migration 20260805120000) : sans eux,
   // deux équipes homonymes de la même école étaient indistinguables ici.
   const meta = [team.schoolName, teamDetails({
@@ -148,7 +152,7 @@ function ValidCard({ team, code, device }: { team: ResolvedJoinTeam; code: strin
     <>
       {/* ── Équipe ─────────────────────────────────────────── */}
       <div className="rounded-2xl border border-white/[0.06] bg-[#1A1D24] p-6 text-center">
-        {team.schoolLogoUrl ? (
+        {nommable && team.schoolLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={team.schoolLogoUrl}
@@ -169,9 +173,9 @@ function ValidCard({ team, code, device }: { team: ResolvedJoinTeam; code: strin
           Tu rejoins
         </p>
         <h1 className="font-head mt-1 text-[24px] font-bold uppercase leading-tight tracking-tight text-white">
-          {team.teamName}
+          {nommable ? team.teamName : "Une équipe sur Nexus"}
         </h1>
-        {meta ? <p className="mt-2 text-[14px] text-white/55">{meta}</p> : null}
+        {nommable && meta ? <p className="mt-2 text-[14px] text-white/55">{meta}</p> : null}
       </div>
 
       {/* ── Le code, EN GROS ───────────────────────────────── */}

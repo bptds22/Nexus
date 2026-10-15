@@ -1,0 +1,26 @@
+﻿PREUVE LOCALE — lot invitations sans coach — 2026-10-15T12:21:51
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : eb158a8e90c8681e148fcb0e48b9558b
+  md5 lot-prod.sql      : 190a878daad666cdf51642e56669897f
+  état de départ (migration retirée) : nouvelles_fonctions=0 notify_invitation_email_md5=f225858c version=0 invitations=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte d579590a11118f93ad2c7c0625bafe08 / 5 éléments) — tout est annulé
+  état après : nouvelles_fonctions=0 notify_invitation_email_md5=f225858c version=0 invitations=0
+
+== 2. Instructions envoyées SÉPARÉMENT (pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:25: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : nouvelles_fonctions=0 notify_invitation_email_md5=f225858c version=0 invitations=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"0|0|100|0|0","version_deja":0,"derniere_version":"20261015110727","pg":"17.6"}, "apres" : {"donnees" : "0|0|100|0|0", "version" : "20261015114923", "md5_enregistre" : "eb158a8e90c8681e148fcb0e48b9558b", "fonctions" : 5, "meme_transaction" : true}}
+  état après : nouvelles_fonctions=2 notify_invitation_email_md5=b4137793 version=1 invitations=0
+  empreinte des objets en base : d579590a11118f93ad2c7c0625bafe08|5
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: migration invitations déjà présente — rien n'est appliqué
+  état après : nouvelles_fonctions=2 notify_invitation_email_md5=b4137793 version=1 invitations=0
+
+== 5. Tests au banc sur la base issue du lot ==
+  36|0   (ok | échecs)

@@ -1,0 +1,5 @@
+page /desabonnement accepte le jeton « a. » (bouton de confirmation présent) : true
+jeton falsifié → pas de bouton : true
+POST un clic (RFC 8058) : 200 ok
+adresse inscrite au registre : [{"source":"un_clic"}]
+remise en état : fiche, invitation et inscription retirées

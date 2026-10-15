@@ -1,0 +1,9 @@
+{
+ "lot": "docs\\invitations-sans-coach\\prod\\lot-prod.sql",
+ "md5_fichier": "eb158a8e90c8681e148fcb0e48b9558b",
+ "md5_section_executee": "eb158a8e90c8681e148fcb0e48b9558b",
+ "md5_litteral_enregistre": "eb158a8e90c8681e148fcb0e48b9558b",
+ "md5_lot": "190a878daad666cdf51642e56669897f",
+ "octets_lot": 38444,
+ "empreinte_attendue": "d579590a11118f93ad2c7c0625bafe08"
+}

@@ -16,13 +16,19 @@
    callbacks. All RLS happens via the parent wizard's UPDATE.
 ───────────────────────────────────────────────────────────────── */
 
+import { equipeNommable } from "@/lib/invitations/equipeNommable";
+
 export interface OrphanProfile {
   id: string;
   first_name: string | null;
   last_name: string | null;
   sport_name: string | null;
   school_name: string | null;
-  coach_name: string | null;
+  /** Ignoré depuis le 2026-10-15 (règle RSEQ : aucun coach nommé à l'athlète). Gardé optionnel
+   *  pour les appelants qui le passent encore (écran mobile, lot mobile). */
+  coach_name?: string | null;
+  /** Type de l'établissement : l'école n'est affichée que si SECONDAIRE ou LIGUE_CIVILE. */
+  school_type?: string | null;
 }
 
 interface Props {
@@ -35,8 +41,8 @@ export default function ClaimProfileModal({ orphan, onClaim, onSkip }: Props) {
   const fullName = `${orphan.first_name ?? ""} ${orphan.last_name ?? ""}`.trim() || "ce profil";
   const facts: string[] = [];
   if (orphan.sport_name) facts.push(orphan.sport_name);
-  if (orphan.school_name) facts.push(orphan.school_name);
-  if (orphan.coach_name) facts.push(`coach ${orphan.coach_name}`);
+  // Règle RSEQ : école seulement si secondaire ou civile ; jamais de coach.
+  if (orphan.school_name && equipeNommable(orphan.school_type)) facts.push(orphan.school_name);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -55,7 +61,7 @@ export default function ClaimProfileModal({ orphan, onClaim, onSkip }: Props) {
             <h2 className="font-head text-lg font-black text-white uppercase tracking-tight">
               On a trouvé un profil pour toi
             </h2>
-            <p className="text-[12px] text-[#6b7280] mt-1">Créé par ton coach avant ton inscription.</p>
+            <p className="text-[12px] text-[#6b7280] mt-1">Ton profil a été préparé pour toi.</p>
           </div>
         </div>
 
@@ -70,7 +76,7 @@ export default function ClaimProfileModal({ orphan, onClaim, onSkip }: Props) {
           Si tu le réclames, ton inscription part avec ces infos déjà remplies. Tu pourras tout modifier dans le wizard.
         </p>
         <p className="text-[12px] text-[#6b7280] mb-5">
-          Sinon, on crée un nouveau profil et le profil coach reste à part — tu pourras en parler avec ton coach plus tard.
+          Sinon, on crée un nouveau profil et celui-ci reste à part.
         </p>
 
         <div className="flex flex-col-reverse sm:flex-row gap-2.5">

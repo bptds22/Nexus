@@ -132,3 +132,31 @@ export async function verifierJetonDesabonnementParent(jeton: string | null | un
   const ok = await crypto.subtle.verify("HMAC", k, sig, new TextEncoder().encode(PREFIXE_PARENT + athleteId));
   return ok ? athleteId : null;
 }
+
+/* VARIANTE INVITATION D'ATHLÈTE (2026-10-15). Le courriel de réclamation part
+   vers une adresse SANS compte : le jeton porte l'id de la ligne
+   athlete_invitations, jamais l'adresse, sous un préfixe DISTINCT et la forme
+   « a.<id>.<sig> ». La route relit l'adresse sur la ligne, en calcule
+   l'empreinte et l'inscrit au registre des adresses. */
+const PREFIXE_INVITATION_ATHLETE = "desabonnement:invitation-athlete:v1:";
+
+export async function signerJetonInvitationAthlete(invitationId: string, secret: string): Promise<string> {
+  if (!UUID_RE.test(invitationId)) throw new Error("id d'invitation d'athlète invalide pour un jeton de désabonnement.");
+  const k = await cle(secret, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(PREFIXE_INVITATION_ATHLETE + invitationId.toLowerCase()));
+  return `a.${invitationId.toLowerCase()}.${base64url(sig)}`;
+}
+
+/** Rend l'id d'invitation d'athlète si le jeton est authentique, sinon null. */
+export async function verifierJetonInvitationAthlete(jeton: string | null | undefined, secret: string): Promise<string | null> {
+  if (!jeton || jeton.length > 200 || !jeton.startsWith("a.")) return null;
+  const reste = jeton.slice(2);
+  const point = reste.indexOf(".");
+  if (point < 0) return null;
+  const id = reste.slice(0, point).toLowerCase();
+  const sig = depuisBase64url(reste.slice(point + 1));
+  if (!UUID_RE.test(id) || !sig) return null;
+  const k = await cle(secret, ["verify"]);
+  const ok = await crypto.subtle.verify("HMAC", k, sig, new TextEncoder().encode(PREFIXE_INVITATION_ATHLETE + id));
+  return ok ? id : null;
+}

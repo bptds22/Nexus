@@ -1,40 +1,51 @@
-// send-invitation/email.ts — construit le courriel d'invitation coach→athlète
-// à partir du gabarit partagé. Séparé de index.ts pour être importable sans
-// démarrer Deno.serve (preview HTML local, cf. scripts/dump).
+// send-invitation/email.ts — courriel de RÉCLAMATION d'un profil d'athlète préparé sur Nexus.
+// Séparé de index.ts pour être importable sans démarrer Deno.serve (preview HTML local).
+//
+// 2026-10-15 (décision BP) : AUCUN nom de coach ni d'école, ni « ton entraîneur ». Le texte dit
+// ce qui est vrai — le nombre RÉEL de recruteurs de cégep qui suivent la fiche (calculé en base),
+// jamais qui. En-tête et signature Nexus clairs, lien vers nexussports.ca.
 
 import { renderEmail } from "../_shared/emailLayout.ts";
+// @ts-ignore TS5097 — module Deno, l'extension .ts est obligatoire.
+import { phraseRecruteurs } from "../_shared/messageRecruteurs.ts";
 
 // Fiches store réelles (lib/carte/contact.ts + Play publié).
 export const APP_STORE_URL = "https://apps.apple.com/ca/app/nexus/id6785596805";
 export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=ca.nexussports.app";
 
-export function buildBody(
-  coachName: string,
-  schoolName: string,
-  claimUrl: string,
-): { html: string; text: string } {
+export const SUJET = "Ton profil d'athlète t'attend sur Nexus";
+
+export function buildBody(nbRecruteurs: unknown, claimUrl: string, desabonnementUrl: string): { html: string; text: string } {
+  const phrase = phraseRecruteurs(nbRecruteurs);
   const extraHtml =
     `<p style="margin:22px 0 8px;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#52525B;">Tu peux aussi télécharger l'application mobile :</p>` +
     `<a href="${APP_STORE_URL}" target="_blank" style="display:inline-block;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#E63946;text-decoration:none;border:1px solid #E4E4E7;border-radius:8px;padding:10px 18px;">Télécharger sur l'App Store</a>` +
     `<a href="${PLAY_STORE_URL}" target="_blank" style="display:inline-block;margin-left:8px;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#E63946;text-decoration:none;border:1px solid #E4E4E7;border-radius:8px;padding:10px 18px;">Télécharger sur Google Play</a>`;
 
   return renderEmail({
-    preheader: `${coachName} t'a invité sur Nexus`,
-    heading: "Ton coach t'a invité sur Nexus",
+    preheader: phrase,
+    heading: SUJET,
     bodyHtml:
-      `<p style="margin:0 0 14px;font-size:17px;"><strong>${coachName}</strong> — ${schoolName}</p>` +
-      `<p style="margin:0 0 12px;">t'a invité à créer ton profil d'athlète sur Nexus.</p>` +
-      `<p style="margin:0 0 12px;">Réclame ton profil et rends-toi visible auprès des recruteurs collégiaux. C'est gratuit — et c'est le premier pas de ton recrutement.</p>`,
-    ctaLabel: "Sois le NEX",
+      `<p style="margin:0 0 14px;font-size:17px;">${phrase}</p>` +
+      `<p style="margin:0 0 12px;">Nexus est la plateforme québécoise qui relie les athlètes du secondaire aux recruteurs de cégep. C'est gratuit pour les athlètes.</p>` +
+      `<p style="margin:0 0 12px;">L'équipe Nexus</p>`,
+    ctaLabel: "Réclamer mon profil",
     ctaUrl: claimUrl,
     extraHtml,
+    footerNote:
+      "Le bouton mène à nexussports.ca et le lien reste valide 30 jours. " +
+      "Si ce profil n'est pas le tien, ignore simplement ce courriel.",
+    lcap: {
+      raison: "Tu reçois ce courriel parce qu'un profil d'athlète a été préparé pour toi sur Nexus.",
+      desabonnementUrl,
+    },
     bodyText: [
-      `${coachName} — ${schoolName}`,
+      phrase,
       "",
-      "t'a invité à créer ton profil d'athlète sur Nexus.",
+      "Nexus est la plateforme québécoise qui relie les athlètes du secondaire aux recruteurs de cégep.",
+      "C'est gratuit pour les athlètes.",
       "",
-      "Réclame ton profil et rends-toi visible auprès des recruteurs collégiaux.",
-      "C'est gratuit — et c'est le premier pas de ton recrutement.",
+      "L'équipe Nexus",
     ].join("\n"),
     extraText: [
       `Télécharger l'application mobile :`,

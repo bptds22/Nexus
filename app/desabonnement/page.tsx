@@ -22,7 +22,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
-import { verifierJetonDesabonnement, verifierJetonInvitation } from "@/lib/courriel/jetonDesabonnement";
+import { verifierJetonDesabonnement, verifierJetonInvitation, verifierJetonInvitationAthlete } from "@/lib/courriel/jetonDesabonnement";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +35,10 @@ const SUPPORT = "info@nexussports.ca";
 
 async function jetonValide(t: string | undefined): Promise<boolean> {
   try {
-    // Compte, ou invitation de carte prospect (destinataire sans compte).
+    // Compte, invitation de carte prospect, ou invitation d'athlète (destinataires sans compte).
     const secret = process.env.DESABONNEMENT_SECRET ?? "";
-    return !!(await verifierJetonDesabonnement(t, secret)) || !!(await verifierJetonInvitation(t, secret));
+    return !!(await verifierJetonDesabonnement(t, secret)) || !!(await verifierJetonInvitation(t, secret))
+      || !!(await verifierJetonInvitationAthlete(t, secret));
   } catch {
     return false;
   }
