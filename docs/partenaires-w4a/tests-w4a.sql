@@ -364,10 +364,10 @@ select pg_temp.essai('F33 l''admin change d''avis et propose c8 à Félix', curr
   format('select public.admin_prospect_proposer(%L, %L)::text', (select id from _ids where cle = 'c8'), current_setting('w4.felix')), '');
 select pg_temp.essai('F34 l''admin annule la réservation', current_setting('w4.admin'),
   format('select public.admin_prospect_annuler(%L)', (select id from _ids where cle = 'c8')), 'RESERVATION_ANNULEE');
-select pg_temp.essai('F34b carte libre, paire CADUC', current_setting('w4.admin'),
+select pg_temp.essai('F34b carte libre, paire ÉCARTÉE par l''admin (jamais reproposée automatiquement)', current_setting('w4.admin'),
   format($q$select (select statut from public.admin_prospects_partenaires() where id = %1$L) || '|' ||
                    (select statut from public.admin_prospects_rapprochements() where carte_id = %1$L and athlete_id = %2$L)$q$,
-         (select id from _ids where cle = 'c8'), current_setting('w4.felix')), 'A_ENVOYER|CADUC');
+         (select id from _ids where cle = 'c8'), current_setting('w4.felix')), 'A_ENVOYER|ECARTE');
 select pg_temp.essai('F35 aucune fonction ne fait réclamer à la place du jeune (l''admin ne peut pas confirmer)', current_setting('w4.admin'),
   format('select public.prospect_partenaire_confirmer(%L)::text', (select id from _ids where cle = 'c8')), 'ERR:P0002');
 
@@ -472,6 +472,200 @@ select pg_temp.essai('K3 export de Félix : sa réclamation et les propositions 
 select pg_temp.essai('K4 export réservé à l''admin', current_setting('w4.p1'),
   'select count(*)::text from public.admin_loi25_prospects_partenaires(null)', 'ERR:42501');
 
+-- ── N. Relecture BP, point 1 : une proposition ne change RIEN pour le partenaire ──
+-- Règle : aucune action du partenaire ne réussit, n'échoue ni ne se comporte autrement selon
+-- qu'une proposition est en cours. Modifier lève la proposition sans bruit (paire CADUC,
+-- notification caduque) ; lien et révocation s'appliquent à l'état qu'il voit.
+reset role;
+delete from public.partenaire_prospects where prenom = 'Plafond';   -- place sous le plafond
+select set_config('w4.q_modif',
+  'select public.partenaire_prospect_enregistrer(%L, ''Mathis'', ''Lavoie'', %L::uuid, null, null, %L::uuid, 2027, true, 3)::text || ''|'' || (%s)', true);
+-- Notifications d'une carte : total:caduques.
+select set_config('w4.q_notif',
+  $q$select count(*) || ':' || count(*) filter (where (metadata->>'caduque')::boolean and read)
+       from public.athlete_notifications where type = 'PARTENAIRE_EVALUATION' and metadata->>'carte_id' = %L$q$, true);
+set local role authenticated;
+select pg_temp.essai('N1 Mathis retire son opt-in (pas d''automatique)', current_setting('w4.mathis_u'),
+  'select public.set_my_partner_visibility(false, ''2026-08-v1'')->>''ok''', 'true');
+select pg_temp.essai('N2 p1 crée c10 « Mathis Lavoie »', current_setting('w4.p1'),
+  format(current_setting('w4.q_creer'), 'Mathis', 'Lavoie', current_setting('w4.foot'), current_setting('w4.equipe'), '3', '{}', '{}', '{}', 'c10'), 'ok');
+select pg_temp.essai('N3 l''admin propose c10 à Mathis', current_setting('w4.admin'),
+  format('select public.admin_prospect_proposer(%L, %L)::text', (select id from _ids where cle = 'c10'), current_setting('w4.mathis')), '');
+select pg_temp.essai('N4 p1 voit « A_ENVOYER »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c10')), 'A_ENVOYER');
+select pg_temp.essai('N5 proposition en cours : p1 crée un lien comme sur une carte libre', current_setting('w4.p1'),
+  format(current_setting('w4.q_lien'), (select id from _ids where cle = 'c10'), 'c10a'), '64');
+select pg_temp.essai('N6 p1 voit « ENVOYEE »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c10')), 'ENVOYEE');
+reset role;
+select pg_temp.essai('N7 la proposition, elle, est toujours en cours', null,
+  format('select statut || ''|'' || reservation_source || ''|'' || statut_avant from public.partenaire_prospects where id = %L', (select id from _ids where cle = 'c10')),
+  'RESERVEE|ADMIN|ENVOYEE');
+set local role authenticated;
+select pg_temp.essai('N8 p1 révoque comme sur une carte libre', current_setting('w4.p1'),
+  format('select public.partenaire_prospect_revoquer_lien(%L)::text', (select id from _ids where cle = 'c10')), '');
+select pg_temp.essai('N8b p1 voit « A_ENVOYER »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c10')), 'A_ENVOYER');
+select pg_temp.essai('N9 nouveau lien', current_setting('w4.p1'), format(current_setting('w4.q_lien'), (select id from _ids where cle = 'c10'), 'c10b'), '64');
+select pg_temp.essai('N10 p1 modifie c10 : réussit, comme sur une carte libre', current_setting('w4.p1'),
+  format(current_setting('w4.q_modif'), (select id from _ids where cle = 'c10'), current_setting('w4.foot'), current_setting('w4.equipe'),
+         format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c10'))),
+  (select id::text from _ids where cle = 'c10') || '|ENVOYEE');
+reset role;
+select pg_temp.essai('N11 proposition levée sans bruit : carte libre avec son lien, paire CADUC, notification caduque', null,
+  format($q$select (select statut || ':' || coalesce(reservee_par::text, '∅') || ':' || (jeton_empreinte is not null)::text from public.partenaire_prospects where id = %1$L) || '|'
+                || (select statut from public.partenaire_prospects_rapprochements where carte_id = %1$L) || '|' || (%2$s)$q$,
+         (select id from _ids where cle = 'c10'), format(current_setting('w4.q_notif'), (select id from _ids where cle = 'c10'))),
+  'ENVOYEE:∅:true|CADUC|1:1');
+set local role authenticated;
+select pg_temp.essai('N12 Mathis ne voit plus la carte', current_setting('w4.mathis_u'),
+  format($q$select count(*)::text from jsonb_array_elements(public.prospect_partenaire_mes_cartes()) e where e->>'carte_id' = %L$q$,
+         (select id from _ids where cle = 'c10')), '0');
+select pg_temp.essai('N13 l''admin revoit la paire comme candidate (CADUC se recalcule)', current_setting('w4.admin'),
+  format('select string_agg(statut, '','' order by statut) from public.admin_prospects_rapprochements() where carte_id = %L and athlete_id = %L',
+         (select id from _ids where cle = 'c10'), current_setting('w4.mathis')), 'CADUC,CANDIDAT');
+-- Proposition CONFIRMÉE (attente d'opt-in) : même règle.
+select pg_temp.essai('N14 p1 crée c13 « Mathis Lavoie »', current_setting('w4.p1'),
+  format(current_setting('w4.q_creer'), 'Mathis', 'Lavoie', current_setting('w4.foot'), current_setting('w4.equipe'), '3', '{}', '{}', '{}', 'c13'), 'ok');
+select pg_temp.essai('N15 l''admin propose c13, Mathis confirme sans opt-in → attente', current_setting('w4.admin'),
+  format('select public.admin_prospect_proposer(%L, %L)::text', (select id from _ids where cle = 'c13'), current_setting('w4.mathis')), '');
+select pg_temp.essai('N16 Mathis confirme → attente', current_setting('w4.mathis_u'),
+  format('select public.prospect_partenaire_confirmer(%L)->>''statut''', (select id from _ids where cle = 'c13')), 'attente_optin');
+select pg_temp.essai('N17 proposition confirmée : p1 crée un lien comme sur une carte libre', current_setting('w4.p1'),
+  format(current_setting('w4.q_lien'), (select id from _ids where cle = 'c13'), 'c13'), '64');
+select pg_temp.essai('N18 p1 voit « ENVOYEE »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c13')), 'ENVOYEE');
+-- Point 2, cas bloqué : une proposition CONFIRMÉE garde la carte, le lien est refusé.
+select pg_temp.essai_msg('O1 proposition confirmée : Félix ne peut pas ouvrir le lien', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)::text', (select jeton from _jet where cle = 'c13')),
+  'P0002', 'NEXUS: ce lien n''est plus valide');
+reset role;
+set local role anon;
+select pg_temp.essai('O2 proposition confirmée : page sans connexion « invalide »', null,
+  format('select valide::text from public.prospect_partenaire_resoudre(%L)', (select jeton from _jet where cle = 'c13')), 'false');
+reset role;
+set local role authenticated;
+select pg_temp.essai('N19 p1 modifie c13 : réussit', current_setting('w4.p1'),
+  format(current_setting('w4.q_modif'), (select id from _ids where cle = 'c13'), current_setting('w4.foot'), current_setting('w4.equipe'),
+         format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c13'))),
+  (select id::text from _ids where cle = 'c13') || '|ENVOYEE');
+reset role;
+select pg_temp.essai('N20 confirmation levée : carte libre, paire CADUC, notification caduque', null,
+  format($q$select (select statut || ':' || coalesce(reservee_par::text, '∅') from public.partenaire_prospects where id = %1$L) || '|'
+                || (select statut from public.partenaire_prospects_rapprochements where carte_id = %1$L) || '|' || (%2$s)$q$,
+         (select id from _ids where cle = 'c13'), format(current_setting('w4.q_notif'), (select id from _ids where cle = 'c13'))),
+  'ENVOYEE:∅|CADUC|1:1');
+set local role authenticated;
+select pg_temp.essai('N21 Mathis n''a plus rien en attente', current_setting('w4.mathis_u'),
+  'select jsonb_array_length(public.prospect_partenaire_mes_cartes())::text', '0');
+-- Retrait pendant une proposition.
+select pg_temp.essai('N22 p1 crée c14 « Mathis Lavoie »', current_setting('w4.p1'),
+  format(current_setting('w4.q_creer'), 'Mathis', 'Lavoie', current_setting('w4.foot'), current_setting('w4.equipe'), 'null', '{}', '{}', '{}', 'c14'), 'ok');
+select pg_temp.essai('N23 l''admin propose c14', current_setting('w4.admin'),
+  format('select public.admin_prospect_proposer(%L, %L)::text', (select id from _ids where cle = 'c14'), current_setting('w4.mathis')), '');
+select pg_temp.essai('N24 p1 retire c14 : réussit', current_setting('w4.p1'),
+  format('select public.partenaire_prospect_supprimer(%L)::text', (select id from _ids where cle = 'c14')), '');
+reset role;
+select pg_temp.essai('N25 issue RETIREE, notification caduque', null,
+  format('select (select issue from public.partenaire_prospects_issues where carte_id = %1$L) || ''|'' || (%2$s)',
+         (select id from _ids where cle = 'c14'), format(current_setting('w4.q_notif'), (select id from _ids where cle = 'c14'))),
+  'RETIREE|1:1');
+set local role authenticated;
+select pg_temp.essai('N26 export Loi 25 du partenaire : rien de ces propositions', current_setting('w4.admin'),
+  format($q$select count(*) filter (where action like 'PROPOSITION%%' or action like 'RESERVATION%%' or athlete_id is not null)::text
+              from public.admin_loi25_prospects_partenaires(%L)$q$, current_setting('w4.p1')), '0');
+
+-- ── O. Relecture BP, point 2 : le lien reste utilisable pendant une proposition ──
+select pg_temp.essai('O3 Mathis réactive l''opt-in → c10 et c13 (paires CADUC) lui sont reproposées', current_setting('w4.mathis_u'),
+  'select public.set_my_partner_visibility(true, ''2026-08-v1'')->>''ok''', 'true');
+reset role;
+select pg_temp.essai('O4 c10 proposée AUTO à Mathis ; 2 notifications dont 1 caduque', null,
+  format('select (select statut || '':'' || reservation_source from public.partenaire_prospects where id = %1$L) || ''|'' || (%2$s)',
+         (select id from _ids where cle = 'c10'), format(current_setting('w4.q_notif'), (select id from _ids where cle = 'c10'))),
+  'RESERVEE:AUTO|2:1');
+set local role anon;
+select pg_temp.essai('O5 proposition non confirmée : le lien reste valide sans connexion', null,
+  format('select valide::text || ''|'' || coalesce(partenaire, '''') from public.prospect_partenaire_resoudre(%L)', (select jeton from _jet where cle = 'c10b')),
+  'true|Média Preuve');
+reset role;
+set local role authenticated;
+select pg_temp.essai('O6 Félix ouvre le lien : il voit la carte', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)->>''prenom''', (select jeton from _jet where cle = 'c10b')), 'Mathis');
+reset role;
+select pg_temp.essai('O7 la réservation par le lien prend le dessus : paire CADUC, notifications caduques', null,
+  format($q$select (select statut || ':' || reservation_source || ':' || (reservee_par = %3$L)::text || ':' || coalesce(statut_avant, '∅')
+                      from public.partenaire_prospects where id = %1$L) || '|'
+                || (select statut from public.partenaire_prospects_rapprochements where carte_id = %1$L) || '|' || (%2$s)$q$,
+         (select id from _ids where cle = 'c10'), format(current_setting('w4.q_notif'), (select id from _ids where cle = 'c10')), current_setting('w4.felix_u')),
+  'RESERVEE:LIEN:true:∅|CADUC|2:2');
+set local role authenticated;
+select pg_temp.essai('O8 Mathis ne voit plus c10', current_setting('w4.mathis_u'),
+  format($q$select count(*)::text from jsonb_array_elements(public.prospect_partenaire_mes_cartes()) e where e->>'carte_id' = %L$q$,
+         (select id from _ids where cle = 'c10')), '0');
+select pg_temp.essai('O9 Félix la voit, comme réservée par le lien', current_setting('w4.felix_u'),
+  format($q$select e->>'proposition' from jsonb_array_elements(public.prospect_partenaire_mes_cartes()) e where e->>'carte_id' = %L$q$,
+         (select id from _ids where cle = 'c10')), 'false');
+select pg_temp.essai('O10 p1 voit « ENVOYEE »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c10')), 'ENVOYEE');
+
+-- ── P. Relecture BP, point 3 : le sport de la CARTE doit être celui de l'athlète ──
+reset role;
+select set_config('w4.basket', (select id::text from public.sports where nom = 'Basketball'), true);
+insert into public.partenaire_sports_permis (partner_id, sport_id)
+values (current_setting('w4.mp1')::uuid, current_setting('w4.basket')::uuid) on conflict do nothing;
+select pg_temp.essai('P1 sport_concorde : basketball/Félix, basketball/Mathis (avant équipe), football/Mathis', null,
+  format('select public.prospect_partenaire_sport_concorde(%1$L, %2$L)::text || ''|'' || public.prospect_partenaire_sport_concorde(%1$L, %3$L)::text || ''|'' || public.prospect_partenaire_sport_concorde(%4$L, %3$L)::text',
+         current_setting('w4.basket'), current_setting('w4.felix'), current_setting('w4.mathis'), current_setting('w4.foot')),
+  'false|false|true');
+set local role authenticated;
+select pg_temp.essai('P2 p1 crée c15 en basketball (badge propre + « 3 points »)', current_setting('w4.p1'),
+  format(current_setting('w4.q_creer'), 'Zack', 'Panier', current_setting('w4.basket'), null, '4', '{}',
+         '{' || (select id from _ids where cle = 'pb') || '}', '{' || current_setting('w4.b_3pts') || '}', 'c15'), 'ok');
+select pg_temp.essai('P3 lien c15', current_setting('w4.p1'), format(current_setting('w4.q_lien'), (select id from _ids where cle = 'c15'), 'c15'), '64');
+select pg_temp.essai('P4 Mathis (football, aucune équipe de basketball) ouvre c15', current_setting('w4.mathis_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)->>''prenom''', (select jeton from _jet where cle = 'c15')), 'Zack');
+select pg_temp.essai('P5 confirmation : rien ne passe, raison « autre_sport »', current_setting('w4.mathis_u'),
+  format($q$select r->>'statut' || '|' || (r->>'evaluation') || '|' ||
+                   (select string_agg(e->>'raison', ',' order by e->>'raison') from jsonb_array_elements(r->'badges') e)
+              from (select public.prospect_partenaire_confirmer(%L) r) s$q$, (select id from _ids where cle = 'c15')),
+  'transferee|autre_sport|autre_sport,autre_sport');
+reset role;
+select pg_temp.essai('P6 aucune écriture : évaluation de Mathis inchangée (3,00), aucun badge', null,
+  format('select (select cote_globale::text from public.partner_evaluations where partner_id = %1$L and athlete_id = %2$L) || ''|'' || (select count(*) from public.partner_athlete_badges where athlete_id = %2$L)',
+         current_setting('w4.mp1'), current_setting('w4.mathis')), '3.00|0');
+set local role authenticated;
+select set_config('w4.q_ecole',
+  $q$with c as (select public.partenaire_prospect_enregistrer(null, 'Mathis', 'Lavoie', %L::uuid, null, %L::uuid, null, 2027, true) as id)
+     insert into _ids select %L, id from c returning 'ok'$q$, true);
+select pg_temp.essai('P7 c18 « Mathis Lavoie » basketball à son école', current_setting('w4.p1'),
+  format(current_setting('w4.q_ecole'), current_setting('w4.basket'),
+         (select school_id::text from public.athletes where id = current_setting('w4.mathis')::uuid), 'c18'), 'ok');
+select pg_temp.essai('P7b c18 : pas de candidat (aucune équipe de basketball), pas d''automatique', current_setting('w4.p1'),
+  format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c18')), 'A_ENVOYER');
+reset role;
+-- Mathis passe dans une équipe de basketball de son école (une seule équipe par athlète) ;
+-- son sport principal reste le football.
+with t as (
+  insert into public.teams (school_id, sport_id, name)
+  values ((select school_id from public.athletes where id = current_setting('w4.mathis')::uuid), current_setting('w4.basket')::uuid, 'Basket W4')
+  returning id)
+update public.team_athletes ta set team_id = t.id, sport_id = current_setting('w4.basket')::uuid
+  from t where ta.athlete_id = current_setting('w4.mathis')::uuid;
+select pg_temp.essai('P8 sport_concorde basketball/Mathis vrai par son équipe ; football vrai par son sport principal', null,
+  format('select public.prospect_partenaire_sport_concorde(%L, %3$L)::text || ''|'' || public.prospect_partenaire_sport_concorde(%2$L, %3$L)::text', current_setting('w4.basket'), current_setting('w4.foot'), current_setting('w4.mathis')), 'true|true');
+set local role authenticated;
+select pg_temp.essai('P9 c16 basketball : lien, Mathis ouvre', current_setting('w4.p1'),
+  format(current_setting('w4.q_creer'), 'Yan', 'Panier', current_setting('w4.basket'), null, '5', '{}',
+         '{' || (select id from _ids where cle = 'pb') || '}', '{}', 'c16'), 'ok');
+select pg_temp.essai('P10 lien c16', current_setting('w4.p1'), format(current_setting('w4.q_lien'), (select id from _ids where cle = 'c16'), 'c16'), '64');
+select pg_temp.essai('P11 Mathis ouvre c16', current_setting('w4.mathis_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)->>''prenom''', (select jeton from _jet where cle = 'c16')), 'Yan');
+select pg_temp.essai('P11b sport d''une de ses équipes : ça passe (évaluation existante gardée, badge transféré)', current_setting('w4.mathis_u'),
+  format($q$select r->>'evaluation' || '|' ||
+                   (select string_agg(coalesce(e->>'raison', 'transfere'), ',') from jsonb_array_elements(r->'badges') e)
+              from (select public.prospect_partenaire_confirmer(%L) r) s$q$, (select id from _ids where cle = 'c16')),
+  'deja_evalue|transfere');
+select pg_temp.essai('P12 c17 « Mathis Lavoie » basketball à son école', current_setting('w4.p1'),
+  format(current_setting('w4.q_ecole'), current_setting('w4.basket'),
+         (select school_id::text from public.athletes where id = current_setting('w4.mathis')::uuid), 'c17'), 'ok');
+select pg_temp.essai('P12b sport de son équipe : c17 proposée automatiquement', current_setting('w4.p1'),
+  format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c17')), 'CORRESPONDANCE_POSSIBLE');
+
 -- ── L. Non-régression et droits ────────────────────────────────────────────
 select pg_temp.essai('L1 badge_plafond et M10 inchangés (md5)', null,
   $q$select md5(pg_get_functiondef('public.badge_plafond()'::regprocedure)) || ' ' || md5(pg_get_functiondef('public.ambassadeur_recalculer_paliers()'::regprocedure))$q$,
@@ -491,11 +685,12 @@ select pg_temp.essai('L4 ACL complètes : page du lien (anon autorisé)', null,
   $q$select array_agg(t.g order by t.g)::text from pg_proc pr,
        lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g from unnest(pr.proacl::text[]) as x) t
      where pr.oid = 'public.prospect_partenaire_resoudre(text)'::regprocedure$q$, '{anon,authenticated,postgres,service_role}');
-select pg_temp.essai('L5 ACL complètes : transfert et trigger serveur seulement', null,
+select pg_temp.essai('L5 ACL complètes : transfert, trigger et aides serveur seulement', null,
   $q$select string_agg(distinct acl, ' | ') from (select array_agg(t.g order by t.g)::text acl from pg_proc pr,
        lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g from unnest(pr.proacl::text[]) as x) t
      where pr.proname in ('prospect_partenaire_transferer', 'prospect_partenaire_sur_optin', 'prospect_partenaire_proposer',
-                          'prospect_partenaire_candidats', 'prospect_partenaire_peut_transferer') group by pr.oid) s$q$,
+                          'prospect_partenaire_candidats', 'prospect_partenaire_peut_transferer',
+                          'prospect_partenaire_sport_concorde', 'prospect_partenaire_lever_proposition') group by pr.oid) s$q$,
   '{postgres,service_role}');
 reset role;
 set local role anon;

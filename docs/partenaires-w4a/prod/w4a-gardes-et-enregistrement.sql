@@ -80,7 +80,7 @@ declare
   veut text[];
   n int := 0;
 begin
-  -- 29 fonctions, droits : liste COMPLÈTE, jamais par inclusion.
+  -- 31 fonctions, droits : liste COMPLÈTE, jamais par inclusion.
   for r in select p.oid, p.proname, p.prosecdef from pg_proc p
             where p.pronamespace = 'public'::regnamespace
               and (p.proname like 'prospect_partenaire%' or p.proname like 'partenaire_prospect%'
@@ -95,6 +95,7 @@ begin
                          'prospect_partenaire_contenu', 'prospect_partenaire_transferer',
                          'prospect_partenaire_candidats', 'prospect_partenaire_proposer',
                          'prospect_partenaire_proposer_auto', 'prospect_partenaire_sur_optin',
+                         'prospect_partenaire_sport_concorde', 'prospect_partenaire_lever_proposition',
                          'purger_prospects_partenaire') then array['postgres', 'service_role']
       else array['authenticated', 'postgres', 'service_role'] end;
     select array_agg(t.g order by t.g) into vus
@@ -109,8 +110,8 @@ begin
       raise exception 'NEXUS: SECURITY DEFINER inattendu sur %', r.proname;
     end if;
   end loop;
-  if n <> 29 then
-    raise exception 'NEXUS: 29 fonctions W4a attendues, % trouvées', n;
+  if n <> 31 then
+    raise exception 'NEXUS: 31 fonctions W4a attendues, % trouvées', n;
   end if;
 
   -- 4 tables : RLS active, aucune politique, aucun droit direct, vides.
@@ -350,6 +351,19 @@ as $$
       from public.media_partners mp where mp.id = p_partner_id), false)
 $$;
 
+-- Le sport de la CARTE doit être celui de l'athlète : son sport principal, ou celui d'une de
+-- ses équipes. Sinon rien ne passe (raison « autre_sport ») et aucune proposition automatique.
+create function public.prospect_partenaire_sport_concorde(p_sport_id uuid, p_athlete uuid)
+returns boolean
+language sql stable security definer
+set search_path = public
+set row_security = off
+as $$
+  select exists (select 1 from public.athletes a where a.id = p_athlete and a.sport_id = p_sport_id)
+      or exists (select 1 from public.team_athletes ta join public.teams t on t.id = ta.team_id
+                  where ta.athlete_id = p_athlete and t.sport_id = p_sport_id)
+$$;
+
 create function public.prospect_partenaire_journaliser(
   p_carte uuid, p_partner uuid, p_action text, p_athlete uuid default null, p_details jsonb default '{}'::jsonb)
 returns void
@@ -420,7 +434,39 @@ begin
   end if;
 end $$;
 
--- Retire une carte en laissant son issue (sans nom) et un geste au journal.
+-- Lève SANS BRUIT une proposition (ADMIN ou AUTO), en cours ou confirmée en attente d'opt-in :
+-- paire CADUC (recalculable), notification du jeune marquée caduque, carte rendue à son état
+-- d'avant. Rien n'est dit au partenaire, qui n'a jamais vu la proposition (Loi 25). Sans
+-- proposition sur la carte : ne fait rien.
+create function public.prospect_partenaire_lever_proposition(p_carte uuid, p_motif text)
+returns void
+language plpgsql security definer
+set search_path = public
+set row_security = off
+as $$
+declare v public.partenaire_prospects%rowtype;
+begin
+  select * into v from public.partenaire_prospects where id = p_carte for update;
+  if not found or coalesce(v.reservation_source, 'LIEN') = 'LIEN' then
+    return;
+  end if;
+  update public.partenaire_prospects_rapprochements
+     set statut = 'CADUC', decide_par = null, decide_le = now()
+   where carte_id = p_carte and athlete_id = v.reservee_athlete and statut in ('PROPOSE', 'CONFIRME');
+  update public.athlete_notifications
+     set read = true, metadata = metadata || jsonb_build_object('caduque', true, 'caduque_le', now())
+   where athlete_id = v.reservee_athlete and type = 'PARTENAIRE_EVALUATION'
+     and metadata->>'carte_id' = p_carte::text and not coalesce((metadata->>'caduque')::boolean, false);
+  update public.partenaire_prospects
+     set statut = v.statut_avant, statut_avant = null, reservation_source = null,
+         reservee_par = null, reservee_athlete = null, reservee_le = null, updated_at = now()
+   where id = p_carte;
+  perform public.prospect_partenaire_journaliser(p_carte, v.partner_id, 'PROPOSITION_CADUQUE', v.reservee_athlete,
+            jsonb_build_object('motif', p_motif, 'origine', v.reservation_source, 'etait', v.statut));
+end $$;
+
+-- Retire une carte en laissant son issue (sans nom) et un geste au journal. Une proposition en
+-- cours est d'abord levée : la notification du jeune devient caduque.
 create function public.prospect_partenaire_terminer(p_carte uuid, p_issue text, p_details jsonb default '{}'::jsonb)
 returns void
 language plpgsql security definer
@@ -429,6 +475,7 @@ set row_security = off
 as $$
 declare v public.partenaire_prospects%rowtype;
 begin
+  perform public.prospect_partenaire_lever_proposition(p_carte, p_issue);
   delete from public.partenaire_prospects where id = p_carte returning * into v;
   if not found then return; end if;
   insert into public.partenaire_prospects_issues (carte_id, partner_id, issue, carte_creee_le, terminee_par)
@@ -488,6 +535,7 @@ declare
   v_carte     public.partenaire_prospects%rowtype;
   v_athlete   public.athletes%rowtype;
   v_ok        boolean;
+  v_concorde  boolean;
   v_eval_id   uuid;
   v_eval      text;
   v_badges    jsonb := '[]'::jsonb;
@@ -504,12 +552,17 @@ begin
     raise exception 'NEXUS: carte introuvable' using errcode = 'P0002';
   end if;
 
-  v_ok  := public.prospect_partenaire_peut_transferer(v_carte.partner_id, v_athlete.sport_id);
+  -- Le sport de la CARTE : celui de l'athlète (principal ou d'une de ses équipes), et permis au
+  -- partenaire. Sinon rien ne passe, avec la raison « autre_sport » ou « non_permise ».
+  v_concorde := public.prospect_partenaire_sport_concorde(v_carte.sport_id, v_athlete.id);
+  v_ok  := v_concorde and public.prospect_partenaire_peut_transferer(v_carte.partner_id, v_carte.sport_id);
   v_par := case when exists (select 1 from public.users u where u.id = v_carte.cree_par) then v_carte.cree_par end;
 
   -- Évaluation (W2). Une évaluation existante du même partenaire est GARDÉE.
   if v_carte.cote_globale is null then
     v_eval := 'aucune';
+  elsif not v_concorde then
+    v_eval := 'autre_sport';
   elsif not v_ok then
     v_eval := 'non_permise';
   else
@@ -538,6 +591,7 @@ begin
   foreach v_b in array v_carte.badges_partenaire loop
     v_id := null;
     v_raison := case
+      when not v_concorde then 'autre_sport'
       when not v_ok then 'non_permise'
       when not exists (select 1 from public.partner_badges pb
                         where pb.id = v_b and pb.partner_id = v_carte.partner_id and pb.actif) then 'retire_du_catalogue'
@@ -560,6 +614,7 @@ begin
     v_bd := null;
     select * into v_bd from public.badges where id = v_b;
     v_raison := case
+      when not v_concorde then 'autre_sport'
       when not v_ok then 'non_permise'
       when v_bd.id is null or v_bd.famille not in ('universel', 'sport') or v_bd.requiert_contexte or not v_bd.actif then 'non_admissible'
       when v_bd.famille = 'sport'
@@ -602,7 +657,8 @@ end $$;
 -- Candidats au rapprochement : briques du lot D recruteur (nom_normalise, noms_proches,
 -- prenoms_compatibles, prenoms_proches), sans courriel ni téléphone (la carte n'en a pas).
 -- Tous les athlètes ACTIFS (décision B). Cartes non réservées seulement. Les paires déjà
--- décidées sont exclues.
+-- décidées sont exclues, sauf CADUC : une proposition levée sans décision (carte modifiée par
+-- le partenaire, lien ouvert par un autre jeune) se recalcule sur la carte telle qu'elle est.
 create function public.prospect_partenaire_candidats(p_carte uuid default null, p_athlete uuid default null)
 returns table (carte_id uuid, athlete_id uuid, critere text, force text, promotion_concorde boolean)
 language sql stable security definer
@@ -665,7 +721,7 @@ as $$
     from notees n
    where n.critere is not null
      and not exists (select 1 from public.partenaire_prospects_rapprochements r
-                      where r.carte_id = n.id and r.athlete_id = n.ath_id)
+                      where r.carte_id = n.id and r.athlete_id = n.ath_id and r.statut <> 'CADUC')
 $$;
 
 -- Réserve une carte pour un athlète et le lui propose (notification). Source ADMIN ou AUTO.
@@ -700,7 +756,8 @@ begin
   insert into public.partenaire_prospects_rapprochements (carte_id, athlete_id, critere, force, origine, statut, decide_par)
   values (p_carte, p_athlete, p_critere, p_force, p_origine, 'PROPOSE', case when p_origine = 'ADMIN' then auth.uid() end)
   on conflict (carte_id, athlete_id) do update
-    set statut = 'PROPOSE', origine = excluded.origine, decide_par = excluded.decide_par, decide_le = now();
+    set statut = 'PROPOSE', origine = excluded.origine, critere = excluded.critere, force = excluded.force,
+        decide_par = excluded.decide_par, decide_le = now();
   insert into public.athlete_notifications (athlete_id, type, title, message, metadata)
   values (p_athlete, 'PARTENAIRE_EVALUATION',
           coalesce(v_org, 'Un partenaire') || ' t''a évalué. C''est toi ?',
@@ -711,15 +768,16 @@ begin
 end $$;
 
 -- Proposition AUTOMATIQUE (point 3) : pour chaque carte libre, s'il existe UN SEUL candidat de
--- force MOYENNE, qu'il est déjà visible du partenaire (is_partner_eligible_athlete) et que son
--- sport est transférable, la carte lui est proposée. Sinon : l'admin décide.
+-- force MOYENNE, qu'il est déjà visible du partenaire (is_partner_eligible_athlete) et que le
+-- sport de la CARTE est le sien (principal ou d'une équipe) et permis au partenaire, la carte
+-- lui est proposée. Sinon : l'admin décide.
 create function public.prospect_partenaire_proposer_auto(p_carte uuid default null, p_athlete uuid default null)
 returns integer
 language plpgsql security definer
 set search_path = public
 set row_security = off
 as $$
-declare r record; v_carte uuid; n int := 0;
+declare r record; v_carte uuid; v_partner uuid; v_sport uuid; n int := 0;
 begin
   -- Les cartes à examiner : celle qu'on vient d'enregistrer, ou celles où CET athlète est un
   -- candidat MOYENNE (on part de l'athlète, jamais de tout le croisement cartes × athlètes).
@@ -738,9 +796,9 @@ begin
     continue when r.athlete_id is null;
     continue when p_athlete is not null and r.athlete_id <> p_athlete;
     continue when not coalesce(public.is_partner_eligible_athlete(r.athlete_id), false);
-    continue when not public.prospect_partenaire_peut_transferer(
-      (select c.partner_id from public.partenaire_prospects c where c.id = v_carte),
-      (select a.sport_id from public.athletes a where a.id = r.athlete_id));
+    select c.partner_id, c.sport_id into v_partner, v_sport from public.partenaire_prospects c where c.id = v_carte;
+    continue when not public.prospect_partenaire_sport_concorde(v_sport, r.athlete_id);
+    continue when not public.prospect_partenaire_peut_transferer(v_partner, v_sport);
     perform public.prospect_partenaire_proposer(v_carte, r.athlete_id, 'AUTO', r.critere, 'MOYENNE');
     n := n + 1;
     r := null;
@@ -905,7 +963,13 @@ begin
     if not found or v_carte.partner_id <> v_mp.id then
       raise exception 'NEXUS: carte introuvable' using errcode = 'P0002';
     end if;
-    -- Message NEUTRE : il ne doit pas révéler qu'une proposition est en cours (Loi 25).
+    -- Loi 25 : une proposition (ADMIN ou AUTO), que le partenaire ne voit pas, ne change RIEN
+    -- à ce qu'il peut faire. Le jeune n'a confirmé que la carte qu'il a vue : la proposition est
+    -- levée sans bruit (paire CADUC, notification caduque), puis la modification s'applique et
+    -- la proposition automatique est recalculée plus bas sur la carte modifiée.
+    perform public.prospect_partenaire_lever_proposition(p_carte, 'MODIFIEE');
+    select * into v_carte from public.partenaire_prospects where id = p_carte;
+    -- Reste refusé : une carte réservée par SON lien (il la voit « Lien envoyé »), ou expirée.
     if v_carte.statut not in ('A_ENVOYER', 'ENVOYEE') or v_carte.expire_le <= now() then
       raise exception 'NEXUS: cette carte ne peut pas être modifiée pour l''instant' using errcode = '42501';
     end if;
@@ -931,6 +995,10 @@ end $$;
 
 -- Génère le lien : le jeton n'est rendu qu'ICI, une seule fois ; seule son empreinte reste.
 -- Un nouveau lien remplace le précédent.
+-- Loi 25 : sur une carte en PROPOSITION (ADMIN ou AUTO, en cours ou confirmée), le lien se crée
+-- exactement comme sur une carte libre ; la proposition reste, et l'état que le partenaire
+-- voit (statut_avant) devient « ENVOYEE ». Le lien est utilisable tant que la proposition n'est
+-- pas confirmée (prospect_partenaire_ouvrir).
 create function public.partenaire_prospect_lien(p_carte uuid)
 returns text
 language plpgsql security definer
@@ -940,6 +1008,8 @@ as $$
 declare
   v_carte public.partenaire_prospects%rowtype;
   v_jeton text := encode(extensions.gen_random_bytes(32), 'hex');
+  v_prop  boolean;
+  v_vu    text;
 begin
   select c.* into v_carte from public.partenaire_prospects c
     join public.media_partners mp on mp.id = c.partner_id
@@ -951,16 +1021,19 @@ begin
   if not public.partenaire_peut_evaluer(v_carte.partner_id, v_carte.sport_id) then
     raise exception 'NEXUS: cartes prospects non permises (permission, sport ou statut du partenaire)' using errcode = '42501';
   end if;
-  if v_carte.statut not in ('A_ENVOYER', 'ENVOYEE') or v_carte.expire_le <= now() then
+  v_prop := coalesce(v_carte.reservation_source, 'LIEN') <> 'LIEN';
+  v_vu   := case when v_prop then v_carte.statut_avant else v_carte.statut end;
+  if v_vu not in ('A_ENVOYER', 'ENVOYEE') or v_carte.expire_le <= now() then
     raise exception 'NEXUS: cette carte ne peut pas recevoir de nouveau lien pour l''instant' using errcode = '42501';
   end if;
   update public.partenaire_prospects
-     set statut = 'ENVOYEE',
+     set statut       = case when v_prop then statut else 'ENVOYEE' end,
+         statut_avant = case when v_prop then 'ENVOYEE' else statut_avant end,
          jeton_empreinte = encode(extensions.digest(v_jeton, 'sha256'), 'hex'),
          jeton_cree_le = now(), updated_at = now()
    where id = p_carte;
   perform public.prospect_partenaire_journaliser(p_carte, v_carte.partner_id,
-            case when v_carte.statut = 'ENVOYEE' then 'LIEN_REMPLACE' else 'LIEN_GENERE' end);
+            case when v_vu = 'ENVOYEE' then 'LIEN_REMPLACE' else 'LIEN_GENERE' end);
   return v_jeton;
 end $$;
 
@@ -970,7 +1043,10 @@ language plpgsql security definer
 set search_path = public
 set row_security = off
 as $$
-declare v_carte public.partenaire_prospects%rowtype;
+declare
+  v_carte public.partenaire_prospects%rowtype;
+  v_prop  boolean;
+  v_vu    text;
 begin
   select c.* into v_carte from public.partenaire_prospects c
     join public.media_partners mp on mp.id = c.partner_id
@@ -979,12 +1055,18 @@ begin
   if not found then
     raise exception 'NEXUS: carte introuvable' using errcode = 'P0002';
   end if;
-  if v_carte.statut not in ('A_ENVOYER', 'ENVOYEE') then
+  -- Loi 25 : sur une carte en PROPOSITION, la révocation se comporte comme sur une carte libre ;
+  -- la proposition reste, l'état vu par le partenaire (statut_avant) devient « A_ENVOYER ».
+  v_prop := coalesce(v_carte.reservation_source, 'LIEN') <> 'LIEN';
+  v_vu   := case when v_prop then v_carte.statut_avant else v_carte.statut end;
+  if v_vu not in ('A_ENVOYER', 'ENVOYEE') then
     raise exception 'NEXUS: ce lien ne peut pas être révoqué pour l''instant' using errcode = '42501';
   end if;
-  if v_carte.statut = 'A_ENVOYER' then return; end if;
+  if v_vu = 'A_ENVOYER' then return; end if;
   update public.partenaire_prospects
-     set statut = 'A_ENVOYER', jeton_empreinte = null, jeton_cree_le = null, updated_at = now()
+     set statut       = case when v_prop then statut else 'A_ENVOYER' end,
+         statut_avant = case when v_prop then 'A_ENVOYER' else statut_avant end,
+         jeton_empreinte = null, jeton_cree_le = null, updated_at = now()
    where id = p_carte;
   perform public.prospect_partenaire_journaliser(p_carte, v_carte.partner_id, 'LIEN_REVOQUE');
 end $$;
@@ -1056,7 +1138,8 @@ $$;
 -- ── Le jeune ──────────────────────────────────────────────────────────────────
 
 -- Page du lien, AVANT connexion : le nom du partenaire, rien d'autre. Un lien invalide,
--- expiré, révoqué ou réservé à un autre compte rend la même réponse.
+-- expiré, révoqué ou réservé à un autre compte rend la même réponse. Une carte en proposition
+-- NON confirmée garde son lien valide (le lien prend le dessus à l'ouverture).
 create function public.prospect_partenaire_resoudre(p_jeton text)
 returns table (valide boolean, partenaire text)
 language sql stable security definer
@@ -1070,7 +1153,9 @@ as $$
      where coalesce(p_jeton, '') ~ '^[0-9a-f]{64}$'
        and c.jeton_empreinte = encode(extensions.digest(p_jeton, 'sha256'), 'hex')
        and c.expire_le > now()
-       and (c.statut = 'ENVOYEE' or (c.reservee_par is not null and c.reservee_par = auth.uid()))
+       and (c.statut = 'ENVOYEE'
+            or (c.statut = 'RESERVEE' and c.reservation_source in ('ADMIN', 'AUTO'))
+            or (c.reservee_par is not null and c.reservee_par = auth.uid()))
   )
   select true, organization_name from trouve
   union all
@@ -1078,7 +1163,10 @@ as $$
 $$;
 
 -- Ouverture CONNECTÉE par un compte athlète : réserve la carte à ce compte (source LIEN) et
--- rend son contenu.
+-- rend son contenu. Si la carte est PROPOSÉE (ADMIN ou AUTO) à un autre jeune et que celui-ci
+-- n'a pas encore confirmé, la réservation par le lien prend le dessus : la proposition est
+-- levée (paire CADUC, notification caduque). Une proposition confirmée (attente d'opt-in)
+-- garde la carte : le lien est alors refusé.
 create function public.prospect_partenaire_ouvrir(p_jeton text)
 returns jsonb
 language plpgsql security definer
@@ -1106,8 +1194,16 @@ begin
      and c.jeton_empreinte = encode(extensions.digest(p_jeton, 'sha256'), 'hex')
    for update of c;
   if not found or v_carte.expire_le <= now()
-     or not (v_carte.statut = 'ENVOYEE' or v_carte.reservee_par is not distinct from auth.uid()) then
+     or not (v_carte.statut = 'ENVOYEE'
+             or (v_carte.statut = 'RESERVEE' and v_carte.reservation_source in ('ADMIN', 'AUTO'))
+             or v_carte.reservee_par is not distinct from auth.uid()) then
     raise exception 'NEXUS: ce lien n''est plus valide' using errcode = 'P0002';
+  end if;
+
+  if v_carte.reservee_par is distinct from auth.uid()
+     and v_carte.statut = 'RESERVEE' and v_carte.reservation_source in ('ADMIN', 'AUTO') then
+    perform public.prospect_partenaire_lever_proposition(v_carte.id, 'LIEN_OUVERT');
+    select * into v_carte from public.partenaire_prospects where id = v_carte.id;
   end if;
 
   if v_carte.statut = 'ENVOYEE' then
@@ -1353,18 +1449,17 @@ begin
     if v_carte.statut not in ('RESERVEE', 'CONFIRMEE_ATTENTE_OPTIN') then
       raise exception 'NEXUS: rien à annuler sur cette carte' using errcode = '22023';
     end if;
-    update public.partenaire_prospects_rapprochements set statut = 'CADUC', decide_par = auth.uid(), decide_le = now()
-     where carte_id = p_id and athlete_id = v_carte.reservee_athlete;
     if v_carte.reservation_source = 'LIEN' then
       update public.partenaire_prospects
          set statut = 'A_ENVOYER', reservation_source = null, reservee_par = null, reservee_athlete = null,
              reservee_le = null, jeton_empreinte = null, jeton_cree_le = null, updated_at = now()
        where id = p_id;
     else
-      update public.partenaire_prospects
-         set statut = v_carte.statut_avant, statut_avant = null, reservation_source = null, reservee_par = null,
-             reservee_athlete = null, reservee_le = null, updated_at = now()
-       where id = p_id;
+      -- Proposition : levée (notification caduque), puis la paire est ÉCARTÉE par l'admin — une
+      -- paire CADUC redeviendrait candidate et pourrait être reproposée automatiquement.
+      perform public.prospect_partenaire_lever_proposition(p_id, 'ANNULEE_ADMIN');
+      update public.partenaire_prospects_rapprochements set statut = 'ECARTE', decide_par = auth.uid(), decide_le = now()
+       where carte_id = p_id and athlete_id = v_carte.reservee_athlete;
     end if;
     perform public.prospect_partenaire_journaliser(p_id, v_carte.partner_id, 'RESERVATION_ANNULEE', v_carte.reservee_athlete);
     return 'RESERVATION_ANNULEE';
@@ -1545,6 +1640,7 @@ begin
                          'prospect_partenaire_contenu', 'prospect_partenaire_transferer',
                          'prospect_partenaire_candidats', 'prospect_partenaire_proposer',
                          'prospect_partenaire_proposer_auto', 'prospect_partenaire_sur_optin',
+                         'prospect_partenaire_sport_concorde', 'prospect_partenaire_lever_proposition',
                          'purger_prospects_partenaire') then array['postgres', 'service_role']
       else array['authenticated', 'postgres', 'service_role'] end;
     select array_agg(t.g order by t.g) into vus
@@ -1555,8 +1651,8 @@ begin
       raise exception 'NEXUS: ACL % = %, attendu %', r.proname, vus, veut;
     end if;
   end loop;
-  if n <> 29 then
-    raise exception 'NEXUS: 29 fonctions W4a attendues, % trouvées', n;
+  if n <> 31 then
+    raise exception 'NEXUS: 31 fonctions W4a attendues, % trouvées', n;
   end if;
 
   if exists (select 1 from pg_class c
@@ -1578,13 +1674,13 @@ begin
         and tgname = 'trg_prospect_partenaire_sur_optin') <> 1 then
     raise exception 'NEXUS: trigger d''opt-in absent';
   end if;
-  raise notice 'NEXUS W4a : 4 tables (RLS, aucun droit direct), 29 fonctions, ACL exactes, trigger d''opt-in, purge planifiée — OK';
+  raise notice 'NEXUS W4a : 4 tables (RLS, aucun droit direct), 31 fonctions, ACL exactes, trigger d''opt-in, purge planifiée — OK';
 end $$;
 $w4a$, E'\r', '')::text as contenu;
 
 do $$
 begin
-  if (select md5(contenu) from _w4a) <> '4463e764392febebcffe4c53c1ee23fd' then
+  if (select md5(contenu) from _w4a) <> 'c76c69752466c132b10446ef4afee90e' then
     raise exception 'NEXUS: contenu W4a embarqué altéré (md5 %)', (select md5(contenu) from _w4a);
   end if;
 end $$;
@@ -1601,9 +1697,9 @@ select 'MIGRATION_W4A_PROSPECTS_PARTENAIRE',
          'fichier', 'supabase/migrations/' || version || '_w4a_prospects_partenaire.sql',
          'rollback', 'supabase/rollback/' || version || '_rollback_w4a_prospects_partenaire.sql',
          'voie', 'psql -1 (session pooler) : relevé avant + migration + gardes dans une seule transaction',
-         'md5_fichier', '4463e764392febebcffe4c53c1ee23fd',
+         'md5_fichier', 'c76c69752466c132b10446ef4afee90e',
          'tables', '4 (RLS, aucune politique, aucun droit direct)',
-         'fonctions', '29 — ACL complètes : 1 anon+authenticated, 17 authenticated, 11 serveur seulement',
+         'fonctions', '31 — ACL complètes : 1 anon+authenticated, 17 authenticated, 13 serveur seulement',
          'trigger', 'trg_prospect_partenaire_sur_optin (AFTER UPDATE OF opt-in, WHEN opt-in devient actif, erreurs attrapées)',
          'cron', 'prospects-partenaire-purge-quotidienne 50 8 * * *',
          'contrainte', 'athlete_notifications_type_check + PARTENAIRE_EVALUATION',

@@ -53,7 +53,15 @@ peut donc jamais être réclamée ; elle expire.
   partenaire, jamais celui du jeune.
 - **Ne pas révéler qu'un mineur est sur Nexus.** Le partenaire ne voit jamais qu'un rapprochement
   existe, sauf proposition automatique à un jeune qui lui est déjà visible. Ses statuts sont
-  masqués ; l'export d'accès qui le concerne retire tout rapprochement.
+  masqués ; l'export d'accès qui le concerne retire tout rapprochement. Aucune de ses actions
+  (modifier, lien, révocation, retrait) ne réussit, n'échoue ni ne se comporte autrement selon
+  qu'une proposition est en cours : une modification lève la proposition sans le lui dire, et
+  la notification du jeune devient caduque.
+- **Le bon jeune garde son lien.** Tant qu'une proposition faite à un homonyme n'est pas
+  confirmée, le lien envoyé par le partenaire reste utilisable ; s'il est ouvert, la
+  proposition tombe.
+- **Le bon sport.** Rien n'est transféré si le sport de la carte n'est ni le sport principal du
+  jeune ni celui de son équipe.
 - **Erreur de personne.** L'administrateur peut défaire une réclamation pendant 7 jours
   (évaluation retirée avec trace, badges retirés, carte restaurée).
 - **Traces.** Journal des gestes sans nom, conservé 12 mois ; l'instantané d'une carte réclamée
@@ -72,8 +80,9 @@ peut donc jamais être réclamée ; elle expire.
 
 1. Un homonyme dans la même école reçoit une proposition : il ne voit qu'une évaluation faite par
    un partenaire ; rien ne passe sans son clic ; annulation possible 7 jours.
-2. Le partenaire dont la carte est proposée par l'administrateur ne peut pas la modifier pendant
-   la proposition ; le message reste neutre (« pour l'instant »).
+2. Le partenaire qui modifie une carte proposée fait tomber la proposition sans le savoir ; le
+   jeune voit sa notification devenir caduque. Si le jeune reste le seul candidat sûr, la carte
+   modifiée lui est reproposée.
 3. Le lien est transmis par le partenaire hors de Nexus (texto) : Nexus n'en contrôle pas la
    diffusion ; la réservation au premier compte et l'annulation par l'admin limitent l'effet
    d'un transfert du lien.
