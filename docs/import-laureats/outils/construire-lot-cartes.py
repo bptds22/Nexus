@@ -130,7 +130,10 @@ def position(brut):
     abr = ALIAS_POSITION.get(premier, premier if premier in POSITIONS else None)
     if abr is None:
         return None, f"Position Excel : {raw}"
-    return abr, (None if raw.upper() == abr else f"Position Excel : {raw}")
+    # Option (b), décision BP 2026-10-15 : un simple synonyme bien rattaché (REC→WR, LO→OL, qb→QB…) ne laisse
+    # pas de note. La note reste pour une saisie multiple (« OL-DL », « REC / DB », « LB (OLB) ») ou un « ? ».
+    multiple = re.search(r"[-/\s(]", raw) is not None
+    return abr, (f"Position Excel : {raw}" if multiple or "?" in raw else None)
 
 
 def numero(v):
