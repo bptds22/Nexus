@@ -29,6 +29,9 @@ import {
   activeFilterCount,
   FACETS,
   FACET_ECOLE,
+  FACET_EQUIPE,
+  nettoyerEquipes,
+  basculerTout,
   EMPTY_FILTERS,
   QUICK_FILTERS,
   TYPES_CARTE,
@@ -1692,7 +1695,7 @@ function SlideOver({
    elle est dense, gatée Pro et couplée à `useFiltresRecherche` + l'URL.
    L'extraction se fera au 3e consommateur — consigné en P3. */
 function FacetDropdown({
-  def, options, selected, onToggle, searchable = false, disabled = false,
+  def, options, selected, onToggle, searchable = false, disabled = false, onBasculerTout, alignerADroite = false,
 }: {
   def: FacetDef;
   options: FacetOption[];
@@ -1702,6 +1705,11 @@ function FacetDropdown({
   searchable?: boolean;
   /** Grisée, jamais cachée (règle BP) : une seule valeur possible, rien à choisir. */
   disabled?: boolean;
+  /** « Tout cocher / Tout décocher » sur les valeurs LISTÉES (après recherche). */
+  onBasculerTout?: (listees: string[]) => void;
+  /** Menu ouvert vers la gauche (pilule en bout de barre) : sans ça, des libellés
+   *  longs le font sortir de l'écran et la page défile à l'horizontale. */
+  alignerADroite?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [requete, setRequete] = useState("");
@@ -1729,7 +1737,7 @@ function FacetDropdown({
       {open && (
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => { setOpen(false); setRequete(""); }} />
-          <div className="absolute z-[61] mt-1 min-w-[260px] max-h-[360px] overflow-y-auto rounded-xl border border-[#2a2d36] bg-[#1A1D24] p-1.5 shadow-2xl">
+          <div className={`absolute z-[61] mt-1 min-w-[260px] max-w-[min(460px,calc(100vw-2rem))] max-h-[360px] overflow-y-auto rounded-xl border border-[#2a2d36] bg-[#1A1D24] p-1.5 shadow-2xl${alignerADroite ? " right-0" : ""}`}>
             {searchable && (
               <div className="sticky -top-1.5 z-[1] -mx-1.5 -mt-1.5 mb-1 bg-[#1A1D24] p-1.5">
                 <input
@@ -1743,6 +1751,18 @@ function FacetDropdown({
                 />
               </div>
             )}
+            {onBasculerTout && visibles.length > 0 && (() => {
+              const toutes = visibles.every((o) => selected.includes(o.value));
+              return (
+                <button
+                  type="button"
+                  onClick={() => onBasculerTout(visibles.map((o) => o.value))}
+                  className="mb-1 w-full rounded-lg px-2.5 py-1.5 text-left text-[12px] font-bold text-[#9CA3AF] transition-colors hover:bg-white/[0.04] hover:text-white"
+                >
+                  {toutes ? "Tout décocher" : "Tout cocher"}
+                </button>
+              );
+            })()}
             {searchable && visibles.length === 0 && (
               <p className="px-2.5 py-2 text-[12px] text-[#6b7280]">Aucun résultat</p>
             )}
@@ -1762,7 +1782,7 @@ function FacetDropdown({
                       </svg>
                     )}
                   </span>
-                  <span className={`flex-1 truncate ${on ? "text-white" : "text-[#9CA3AF]"}`}>{opt.label}</span>
+                  <span title={opt.label} className={`flex-1 truncate ${on ? "text-white" : "text-[#9CA3AF]"}`}>{opt.label}</span>
                   <span className="text-[11px] text-[#4a4d56]">{opt.count}</span>
                 </button>
               );
@@ -2166,6 +2186,13 @@ function PipelinePageContent() {
     () => ({ options: facetOptions(cards, "school", filters, extra), offerte: isFacetOffered(cards, "school", filters) }),
     [cards, filters, extra],
   );
+  /* ÉQUIPE (BP 2026-10-15) — à droite d'École / Club, même règle « grisée,
+     jamais cachée ». Ses options se comptent sur les cartes des écoles
+     cochées : une école cochée ne montre que ses équipes. */
+  const facetEquipe = useMemo(
+    () => ({ options: facetOptions(cards, "team", filters, extra), offerte: isFacetOffered(cards, "team", filters) }),
+    [cards, filters, extra],
+  );
   // La pastille Type ne choisit rien si toutes les cartes sont du même type : grisée.
   const typesPresents = useMemo(() => new Set(cards.map((c) => estCarte(c))).size, [cards]);
 
@@ -2505,9 +2532,19 @@ function PipelinePageContent() {
             def={FACET_ECOLE}
             options={facetEcole.options}
             selected={filters.school}
-            onToggle={(v) => setFilters((f) => toggleFacetValue(f, "school", v))}
+            onToggle={(v) => setFilters((f) => nettoyerEquipes(cards, f, toggleFacetValue(f, "school", v)))}
             searchable
             disabled={!facetEcole.offerte}
+          />
+          <FacetDropdown
+            def={FACET_EQUIPE}
+            options={facetEquipe.options}
+            selected={filters.team}
+            onToggle={(v) => setFilters((f) => toggleFacetValue(f, "team", v))}
+            onBasculerTout={(listees) => setFilters((f) => basculerTout(f, "team", listees))}
+            searchable
+            alignerADroite
+            disabled={!facetEquipe.offerte}
           />
 
           <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />

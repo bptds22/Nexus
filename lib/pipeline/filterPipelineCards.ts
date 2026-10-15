@@ -47,8 +47,9 @@
 import { etapePorteVisite } from "@/lib/pipeline/regleVisite";
 import { estCarte } from "@/lib/cartes/carteProspect";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
+import { libelleEquipe } from "@/lib/teams/teamLabel";
 
-export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region" | "league";
+export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region" | "league" | "team";
 
 /** Sentinelle « Non renseigné ». Encadrée de doubles tirets bas : aucune
  *  valeur venue de la base (nom d'école, position, région) ne prend cette
@@ -89,7 +90,18 @@ export const FACETS: readonly FacetDef[] = [
    par mots (ExtraFilters.school) ; sa feuille « Filtrer » n'est pas touchée. */
 export const FACET_ECOLE: FacetDef = { key: "school", label: "École / Club", allLabel: "Toutes les écoles et clubs" };
 
-const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "school", "league"];
+/* ÉQUIPE — ajoutée le 2026-10-15 (décision BP), à droite d'École / Club, web
+   seulement et hors de FACETS comme elle. Liée à l'école PAR LES COMPTEURS :
+   le menu se compte sur les cartes que laissent passer les autres facettes,
+   école comprise — une école cochée ne laisse donc voir que ses équipes, et
+   aucune équipe cochée veut dire « toutes les équipes de ces écoles ».
+   Décocher une école retire ses équipes cochées : nettoyerEquipes(). */
+export const FACET_EQUIPE: FacetDef = { key: "team", label: "Équipe", allLabel: "Toutes les équipes" };
+
+/** Libellé de la valeur « pas d'équipe » dans le menu Équipe. */
+export const SANS_EQUIPE_LABEL = "Sans équipe";
+
+const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "school", "league", "team"];
 
 /** Les seuls champs que le filtre lit. Tout est optionnel — voir l'en-tête. */
 export interface FilterablePipelineCard {
@@ -121,6 +133,11 @@ export interface FilterablePipelineCard {
   visit_at?: string | null;
   /** Présent sur une carte prospect seulement — lu par estCarte(), jamais ici. */
   carte?: unknown;
+  /** L'équipe de la carte et de quoi la libeller (lib/teams/teamLabel). */
+  equipe?: {
+    id: string; name?: string | null; age_group?: string | null; division?: string | null;
+    gender?: string | null; zone?: string | null; season?: string | null; school_name?: string | null;
+  } | null;
 }
 
 /* ── LA PASTILLE « TYPE » ─────────────────────────────────────────────────
@@ -283,6 +300,7 @@ export const EMPTY_FILTERS: PipelineFilters = {
   school: [],
   region: [],
   league: [],
+  team: [],
 };
 
 /** Valeur de facette d'une carte. Chaîne vide, 0 et absence donnent tous
@@ -304,11 +322,18 @@ export function facetValue(card: FilterablePipelineCard, key: FacetKey): string 
       return card.region?.trim() || UNSET_VALUE;
     case "league":
       return card.ligue?.trim() || UNSET_VALUE;
+    case "team":
+      return card.equipe?.id || UNSET_VALUE;
   }
 }
 
+function libelleInconnu(key: FacetKey): string {
+  return key === "team" ? SANS_EQUIPE_LABEL : UNSET_LABEL;
+}
+
 function facetLabel(card: FilterablePipelineCard, key: FacetKey, value: string): string {
-  if (value === UNSET_VALUE) return UNSET_LABEL;
+  if (value === UNSET_VALUE) return libelleInconnu(key);
+  if (key === "team" && card.equipe) return libelleEquipe(card.equipe, card.equipe.school_name);
   // Une ligue civile et une école secondaire se ressemblent dans la liste :
   // toutes deux sont une ligne de `schools`. Le suffixe lève l'ambiguïté.
   if (key === "school" && card.school_type === "LIGUE_CIVILE") return `${value} · ligue`;
@@ -355,6 +380,60 @@ export interface FacetOption {
    compter en incluant la facette elle-même ne montrerait plus que ce qui
    est déjà coché. C'est le compromis des facettes de e-commerce, pour la
    même raison. */
+/* LIBELLÉS D'ÉQUIPE SANS DOUBLON (BP 2026-10-15). Une équipe RSEQ porte
+   souvent le nom de son école : teamLabel le retire, et deux écoles donnent
+   alors deux « Juvénile · D2 · Masculin ». Dès que les équipes LISTÉES
+   viennent de plus d'une école, chaque libellé est préfixé de son école ; s'il
+   reste un doublon exact, la saison s'ajoute. Modifie `options` en place. */
+function desambiguerEquipes(options: FacetOption[], cards: readonly FilterablePipelineCard[]): void {
+  const equipe = new Map<string, NonNullable<FilterablePipelineCard["equipe"]>>();
+  for (const c of cards) if (c.equipe?.id && !equipe.has(c.equipe.id)) equipe.set(c.equipe.id, c.equipe);
+  const reelles = options.filter((o) => o.value !== UNSET_VALUE && equipe.has(o.value));
+  const ecoles = new Set(reelles.map((o) => equipe.get(o.value)!.school_name?.trim() ?? ""));
+  if (ecoles.size > 1) {
+    for (const o of reelles) {
+      const ecole = equipe.get(o.value)!.school_name?.trim();
+      if (ecole) o.label = `${ecole} : ${o.label}`;
+    }
+  }
+  const vus = new Map<string, number>();
+  for (const o of reelles) vus.set(o.label, (vus.get(o.label) ?? 0) + 1);
+  for (const o of reelles) {
+    const saison = equipe.get(o.value)!.season?.trim();
+    if ((vus.get(o.label) ?? 0) > 1 && saison) o.label = `${o.label} (${saison})`;
+  }
+}
+
+/** Décocher une école retire de la sélection SES équipes cochées — pas de
+ *  filtre fantôme (une équipe cochée qui continuerait de filtrer après le
+ *  retrait de son école), y compris quand c'était la dernière école cochée.
+ *  Une équipe que porte aussi une carte d'une école ENCORE cochée reste.
+ *  `avant` / `apres` : les filtres avant et après le geste sur l'école. */
+export function nettoyerEquipes<T extends FilterablePipelineCard>(
+  cards: T[],
+  avant: PipelineFilters,
+  apres: PipelineFilters,
+): PipelineFilters {
+  const retirees = avant.school.filter((s) => !apres.school.includes(s));
+  if (retirees.length === 0 || apres.team.length === 0) return apres;
+  const equipesDe = (ecoles: readonly string[]) =>
+    new Set(cards.filter((c) => ecoles.includes(facetValue(c, "school"))).map((c) => facetValue(c, "team")));
+  const aRetirer = equipesDe(retirees);
+  const encorePortees = equipesDe(apres.school);
+  const team = apres.team.filter((t) => !aRetirer.has(t) || encorePortees.has(t));
+  return team.length === apres.team.length ? apres : { ...apres, team };
+}
+
+/** « Tout cocher / Tout décocher » sur les valeurs LISTÉES d'un menu : si
+ *  toutes sont déjà cochées, on les décoche toutes ; sinon on coche celles
+ *  qui manquent. Les valeurs cochées hors liste ne bougent pas. */
+export function basculerTout(filters: PipelineFilters, key: FacetKey, listees: readonly string[]): PipelineFilters {
+  const courant = filters[key];
+  const toutes = listees.length > 0 && listees.every((v) => courant.includes(v));
+  const next = toutes ? courant.filter((v) => !listees.includes(v)) : [...courant, ...listees.filter((v) => !courant.includes(v))];
+  return { ...filters, [key]: next };
+}
+
 export function facetOptions<T extends FilterablePipelineCard>(
   cards: T[],
   key: FacetKey,
@@ -385,7 +464,9 @@ export function facetOptions<T extends FilterablePipelineCard>(
   for (const v of filters[key]) {
     if (!counts.has(v)) {
       counts.set(v, 0);
-      labels.set(v, v === UNSET_VALUE ? UNSET_LABEL : v);
+      // Libellée d'après une carte qui la porte (une équipe ne se lit pas par son id).
+      const porteuse = v === UNSET_VALUE ? undefined : cards.find((c) => facetValue(c, key) === v);
+      labels.set(v, v === UNSET_VALUE ? libelleInconnu(key) : porteuse ? facetLabel(porteuse, key, v) : v);
     }
   }
 
@@ -394,6 +475,7 @@ export function facetOptions<T extends FilterablePipelineCard>(
     count,
     label: labels.get(value) ?? value,
   }));
+  if (key === "team") desambiguerEquipes(options, cards);
 
   options.sort((a, b) => {
     if (a.value === UNSET_VALUE) return 1; // « Non renseigné » toujours en fin

@@ -5,6 +5,7 @@
 
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import type { Grade } from "@/lib/config/grades";
+import type { EquipeCarte } from "@/lib/queries/recruiter/divisionsEquipe";
 
 export interface PipelineKanbanCard {
   id: string;
@@ -91,6 +92,10 @@ export interface PipelineKanbanCard {
   /** Ligue de l'équipe (leagueOf : équipe d'école sans ligue = RSEQ).
    *  "" = pas d'équipe ou ligue inconnue. Facette « Ligue » de l'app. */
   ligue?: string;
+  /** L'équipe de la carte (prospect : son team_id ; athlète : la même équipe
+   *  que division_equipe), avec de quoi la libeller — filtre « Équipe » du web
+   *  (BP 2026-10-15). `null`/absent = sans équipe. */
+  equipe?: EquipeCarte | null;
 }
 
 export const KANBAN_COLUMNS: {

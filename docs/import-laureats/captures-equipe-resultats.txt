@@ -1,0 +1,13 @@
+jetables créés : 5 cartes (Lévis Juvénile ×2, Lévis Cadet ×1, Saint-Jean-Eudes Juvénile ×1, Grizzlis ×1) + 1 vrai athlète (Saint-Jean-Eudes Juvénile, dans le processus)
+sans filtre : 6 éléments « Jetable » visibles au kanban
+01 menu Équipe, aucune école cochée : Tout cocher | Académie les Estacades : Les Estacades — Benjamin · D3 · Mixte1 | Collège de Lévis : Coll. Lévis — Cadet · D3 · Mixte1 | Collège de Lévis : Juvénile · D2 · Masculin2 | Grizzlis de Boucherville : Grizzlis — Midget AAA · D1 · Masculin1 | Saint-Jean-Eudes : Juvénile · D1 · Masculin2 | Sans équipe4
+02 Collège de Lévis coché — pilule « Toutes les équipes » : oui ; bandeau : 3 sur 11 ; Jetable visibles : 3
+02 menu Équipe, Lévis coché : Tout cocher | Coll. Lévis — Cadet · D3 · Mixte1 | Juvénile · D2 · Masculin2
+   Tout cocher → bouton devient : Tout décocher ; bandeau : 3 sur 11
+03 équipe Juvénile de Lévis cochée — kanban : 2 carte(s) « Jetable » ; bandeau : 2 sur 11
+03 même filtre — vue tableau : 2 ligne(s)
+   Lévis décoché → pilule Équipe : « Toutes les équipes » ; bandeau : (pas de bandeau)
+   équipe Saint-Jean-Eudes Juvénile cochée — tableau : 2 ligne(s) (1 carte prospect + 1 vrai athlète attendus) ; bandeau : 2 sur 11
+erreurs de page : aucune
+cartes jetables retirées : 5
+vrai athlète jetable retiré : dossier + équipe + fiche

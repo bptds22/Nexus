@@ -150,7 +150,7 @@ export function usePipelineCards(options?: { enabled?: boolean }) {
          En parallèle : les deux ne dépendent que de la liste d'athlètes, les
          sérialiser ajouterait un aller-retour à l'ouverture du kanban. */
       const pipelineAthleteIds = data.map((p) => p.athlete_id as string);
-      const [cardMap, gradeMap, noteMap, { divisions, ligues }] = await Promise.all([
+      const [cardMap, gradeMap, noteMap, { divisions, ligues, equipes }] = await Promise.all([
         fetchRecruiterAthleteCards(supabase, pipelineAthleteIds),
         fetchGradeMap(supabase, userId, pipelineAthleteIds),
         fetchDerniereNoteMap(supabase, userId, pipelineAthleteIds),
@@ -216,6 +216,7 @@ export function usePipelineCards(options?: { enabled?: boolean }) {
           derniere_note: noteMap[p.athlete_id as string] ?? null,
           division_equipe: divisions[p.athlete_id as string] ?? null,
           ligue: ligues[p.athlete_id as string] ?? "",
+          equipe: equipes[p.athlete_id as string] ?? null,
         } as PipelineKanbanCard;
       });
 
