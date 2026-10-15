@@ -86,6 +86,8 @@ CRLF :
 
 ## Mise en prod (sur GO, jamais le mardi ni le mercredi avant 5 h)
 
+> **Historique.** Depuis le 2026-10-14 (décision BP), c'est Claude Code qui applique les migrations en prod par le connecteur Supabase, après le GO de BP ; BP ne lance plus psql. Règle : `CLAUDE.md`, MIGRATION SAFETY CHECKLIST, point 9.
+
 Même voie que W3 : une seule transaction, relevé avant + migration + gardes et
 enregistrement (version FIXE `20261014180000` dans `schema_migrations`, une
 ligne `admin_operations`).

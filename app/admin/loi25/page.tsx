@@ -710,6 +710,17 @@ function AuditTab() {
         zip.file("loi25_portability_requests.csv", toCsv((pReqRows || []) as Record<string, unknown>[]));
       }
 
+      // Cartes prospects partenaire (W4) — tous rôles. La fonction admin trie elle-même :
+      // pour un PARTENAIRE, ses gestes et ses cartes actives, sans rien des rapprochements
+      // (l'export peut lui être remis) ; pour un athlète, ce qui le vise.
+      {
+        const { data: cpRows, error: cpErr } = await supabase.rpc("admin_loi25_prospects_partenaires", {
+          p_user: pickedUser.id, p_debut: dr?.startIso ?? null, p_fin: dr?.endIso ?? null,
+        });
+        if (cpErr) throw cpErr;
+        zip.file("cartes_prospects_partenaire.csv", toCsv((cpRows || []) as Record<string, unknown>[]));
+      }
+
       // Messages — full content. Find conversations the user is involved in.
       let convoFilter = "";
       if (pickedUser.role === "ATHLETE" && athleteId) convoFilter = `athlete_id.eq.${athleteId}`;
@@ -816,6 +827,18 @@ function AuditTab() {
         for (const r of (data || []) as Record<string, unknown>[]) {
           push(r.created_at as string, "athlete_suggestions", `SUGGESTION_${r.status ?? ""}`, (r.submitted_by as string) ?? null, null, (r.athlete_id as string) ?? null,
             { champ: r.champ, valeur_proposee: r.valeur_proposee, status: r.status });
+        }
+      }
+      // Cartes prospects partenaire (W4) — journal des gestes, sans nom.
+      {
+        const { data, error } = await supabase.rpc("admin_loi25_prospects_partenaires", {
+          p_user: optUser, p_debut: dr.startIso, p_fin: dr.endIso,
+        });
+        if (error) throw error;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          if (r.source !== "partenaire_prospects_journal") continue;
+          push(r.horodatage as string, "partenaire_prospects_journal", (r.action as string) || "", (r.acteur as string) ?? null, null, (r.athlete_id as string) ?? null,
+            { partner_id: r.partner_id, carte_id: r.carte_id, details: r.details });
         }
       }
       // messages — METADATA ONLY (no body content)
@@ -983,7 +1006,7 @@ function AuditTab() {
       <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-xl p-4">
         <p className="text-[12px] font-bold text-[#F59E0B] mb-2">Périmètre de l&apos;export</p>
         <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-          <span className="text-white/90">Inclus :</span> consentements (parental_consents + consent_audit_trail), vues RP (recruteurs, partenaires médias), actions recruteurs (notes, pipeline, favoris), suggestions de profil, registre d&apos;incidents, demandes de portabilité, snapshot du profil utilisateur, et — dans l&apos;export par utilisateur seulement — le contenu complet des messages où l&apos;utilisateur a participé.
+          <span className="text-white/90">Inclus :</span> consentements (parental_consents + consent_audit_trail), vues RP (recruteurs, partenaires médias), actions recruteurs (notes, pipeline, favoris), suggestions de profil, cartes prospects partenaire (journal des gestes ; cartes actives pour un partenaire), registre d&apos;incidents, demandes de portabilité, snapshot du profil utilisateur, et — dans l&apos;export par utilisateur seulement — le contenu complet des messages où l&apos;utilisateur a participé.
         </p>
         <p className="text-[12px] text-[#9CA3AF] mt-2 leading-relaxed">
           <span className="text-white/90">Non couvert :</span> événements de connexion, journal des lectures SQL, diff exhaustif de chaque modification de champ. L&apos;export ne reconstruit que ce qui a été enregistré dans les tables ci-dessus.

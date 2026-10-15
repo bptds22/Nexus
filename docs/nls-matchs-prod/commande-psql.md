@@ -1,5 +1,7 @@
 # Étape 4 — import des 622 matchs NLS en prod par psql
 
+> **Historique.** Depuis le 2026-10-14 (décision BP), c'est Claude Code qui applique les migrations en prod par le connecteur Supabase, après le GO de BP ; BP ne lance plus psql. Règle : `CLAUDE.md`, MIGRATION SAFETY CHECKLIST, point 9.
+
 Pourquoi psql : le fichier fait 123 Ko. Par le connecteur MCP, il faudrait
 recopier son texte à la main, sans pouvoir prouver qu'il est identique au
 fichier vérifié. Une erreur sur un nom arrêterait l'import ; une erreur sur
