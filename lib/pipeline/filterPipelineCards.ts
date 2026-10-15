@@ -45,6 +45,8 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { etapePorteVisite } from "@/lib/pipeline/regleVisite";
+import { estCarte } from "@/lib/cartes/carteProspect";
+import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 
 export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region" | "league";
 
@@ -80,9 +82,13 @@ export const FACETS: readonly FacetDef[] = [
    la montre pas encore. Le filtrage et les compteurs, eux, parcourent
    TOUTES les facettes — une sélection Ligue filtre donc partout où elle
    est posée, et reste inerte (liste vide) là où personne ne la pose. */
-/* ÉCOLE — retirée de la barre web (retour BP 2026-10-03) : l'app cherche
-   l'école par mots (ExtraFilters.school), le web n'a plus de pilule. La clé
-   reste filtrable pour qui la poserait. */
+/* ÉCOLE / CLUB — retirée de la barre web le 2026-10-03, REMISE le 2026-10-15
+   (décision BP : une unité qui reçoit ~950 cartes prospect ne se trie pas sans
+   filtre par école). Elle reste HORS de FACETS, qui ne change pas : la pilule
+   web lit FACET_ECOLE ci-dessous, à part. L'app, elle, cherche toujours l'école
+   par mots (ExtraFilters.school) ; sa feuille « Filtrer » n'est pas touchée. */
+export const FACET_ECOLE: FacetDef = { key: "school", label: "École / Club", allLabel: "Toutes les écoles et clubs" };
+
 const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "school", "league"];
 
 /** Les seuls champs que le filtre lit. Tout est optionnel — voir l'en-tête. */
@@ -113,6 +119,26 @@ export interface FilterablePipelineCard {
   /** `recruiter_pipeline.visit_at` (timestamptz) — posée seulement en
    *  VISITE_PLANIFIEE, remise à NULL quand la carte quitte l'étape. */
   visit_at?: string | null;
+  /** Présent sur une carte prospect seulement — lu par estCarte(), jamais ici. */
+  carte?: unknown;
+}
+
+/* ── LA PASTILLE « TYPE » ─────────────────────────────────────────────────
+   Deux valeurs EXCLUSIVES : « Prospects » (cartes prospect) ou « Sur Nexus »
+   (vrais athlètes). Aucune sélection = tout. Ce n'est pas une chip rapide de
+   plus : deux chips cumulables « prospects » ET « sur Nexus » videraient
+   l'écran, d'où une valeur unique dans ExtraFilters. Décision par estCarte(),
+   la même fonction que le reste de l'écran (légende, badges, tiroir). */
+export type TypeCarte = "prospects" | "nexus";
+
+export const TYPES_CARTE: readonly { key: TypeCarte; label: string }[] = [
+  { key: "prospects", label: "Prospects" },
+  { key: "nexus", label: "Sur Nexus" },
+] as const;
+
+export function estDuType(card: FilterablePipelineCard, type: TypeCarte): boolean {
+  const prospect = estCarte(card as unknown as PipelineKanbanCard);
+  return type === "prospects" ? prospect : !prospect;
 }
 
 /* ── LES CHIPS RAPIDES ──────────────────────────────────────────────────
@@ -205,6 +231,8 @@ export interface ExtraFilters {
    *  ignorés — « st-jean eudes » trouve « Saint-Jean-Eudes » si les mots y
    *  sont. Distincte de la facette `school`, qui coche des valeurs exactes. */
   school?: string;
+  /** Pastille « Type » (web) : absente = tout. */
+  type?: TypeCarte | null;
 }
 
 /** Repli de casse ET d'accents : « Léveillé » se trouve en tapant
@@ -226,7 +254,24 @@ function matchesExtra(card: FilterablePipelineCard, extra?: ExtraFilters): boole
   for (const k of extra.quick ?? []) {
     if (!QUICK_PREDICATES[k](card)) return false;
   }
+  if (extra.type && !estDuType(card, extra.type)) return false;
   return true;
+}
+
+/** Recherche dans le MENU d'une facette (École / Club : ~51 valeurs) — même
+ *  normalisation que la recherche par nom (accents et casse ignorés), par
+ *  mots comme la recherche d'école de l'app : « st jean » trouve
+ *  « Collège St-Jean-Vianney ». Filtre sur le LIBELLÉ affiché (« · ligue »
+ *  compris). Les valeurs cochées restent visibles quoi qu'on tape : une
+ *  sélection active ne doit jamais sortir de l'écran. Ne touche pas l'ordre. */
+export function filtrerOptionsFacette(options: FacetOption[], requete: string, selected: readonly string[] = []): FacetOption[] {
+  const mots = normalize(requete).split(/[\s-]+/).filter(Boolean);
+  if (mots.length === 0) return options;
+  return options.filter((o) => {
+    if (selected.includes(o.value)) return true;
+    const libelle = normalize(o.label).replace(/-/g, " ");
+    return mots.every((m) => libelle.includes(m));
+  });
 }
 
 export type PipelineFilters = Record<FacetKey, string[]>;
@@ -292,7 +337,8 @@ export function filterPipelineCards<T extends FilterablePipelineCard>(
 
 export function activeFilterCount(filters: PipelineFilters, extra?: ExtraFilters): number {
   const facets = TOUTES_FACETTES.reduce((n, k) => n + filters[k].length, 0);
-  return facets + (extra?.quick?.length ?? 0) + (extra?.search?.trim() ? 1 : 0) + (extra?.school?.trim() ? 1 : 0);
+  return facets + (extra?.quick?.length ?? 0) + (extra?.search?.trim() ? 1 : 0) + (extra?.school?.trim() ? 1 : 0)
+    + (extra?.type ? 1 : 0);
 }
 
 export interface FacetOption {
