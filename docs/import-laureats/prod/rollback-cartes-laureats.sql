@@ -1,6 +1,6 @@
--- ROLLBACK — import des cartes Lauréats (lot-cartes-laureats.sql). UN SEUL envoi, une seule transaction.
+-- ROLLBACK — import des cartes Lauréats (tranches IMPORT_CARTES_LAUREATS_T*). UN SEUL envoi, une seule transaction.
 -- Généré par docs/import-laureats/outils/construire-lot-cartes.py. Ne contient que des id.
--- Supprime EXACTEMENT ces 952 cartes (notes, journal, file et propositions de rapprochement partent en cascade ;
+-- Supprime EXACTEMENT celles de ces 952 cartes qui sont présentes — tout le lot ou une tranche seule (notes, journal, file et propositions de rapprochement partent en cascade ;
 -- chaque retrait est tracé dans cartes_prospect_suppressions). REFUSE si du travail s'y est accroché :
 -- liaison décidée, fusion, invitation, rappel, liste, ou étape changée. À passer AVANT le rollback des équipes.
 
@@ -961,14 +961,16 @@ insert into _rbc_ids values
 
 create temp table _rbc_releve as
 select txid_current() as txid, (select count(*) from public.cartes_prospect) as cartes,
+       (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id) as presentes,
        (select id from public.users where email = 'bptds22@gmail.com') as par;
 
 do $g$
 declare n int;
 begin
   if (select count(*) from _rbc_ids) <> 952 then raise exception 'NEXUS ROLLBACK: la liste ne compte pas 952 id'; end if;
-  if (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id) <> 952 then
-    raise exception 'NEXUS ROLLBACK: les 952 cartes ne sont pas toutes présentes — rien n''est supprimé';
+  -- Une tranche seule ou tout le lot : on retire exactement ceux de ces id qui sont PRÉSENTS.
+  if (select presentes from _rbc_releve) = 0 then
+    raise exception 'NEXUS ROLLBACK: aucune carte du lot en base — rien à retirer';
   end if;
   select (select count(*) from public.rapprochements r join _rbc_ids i on i.id = r.carte_id where r.statut <> 'PROPOSEE')
        + (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id
@@ -980,19 +982,23 @@ begin
   if n <> 0 then raise exception 'NEXUS ROLLBACK: % élément(s) de travail accroché(s) aux cartes — rien n''est supprimé', n; end if;
 end $g$;
 
-delete from public.cartes_prospect where id in (select id from _rbc_ids);
-
 insert into public.admin_operations (operation, motif, details, par)
 select 'ROLLBACK_IMPORT_CARTES_LAUREATS', 'Retrait des cartes de l''import Lauréats',
-       jsonb_build_object('nb_cartes', 952, 'carte_ids', (select jsonb_agg(id order by id) from _rbc_ids)), (select par from _rbc_releve);
+       jsonb_build_object('nb_cartes', (select presentes from _rbc_releve),
+                          'carte_ids', (select jsonb_agg(i.id order by i.id) from _rbc_ids i
+                                         where i.id in (select c.id from public.cartes_prospect c))),
+       (select par from _rbc_releve);
+
+delete from public.cartes_prospect where id in (select id from _rbc_ids);
 
 do $f$
 begin
   if (select txid from _rbc_releve) <> txid_current() then raise exception 'NEXUS ROLLBACK: transaction changée'; end if;
-  if (select count(*) from public.cartes_prospect) <> (select cartes from _rbc_releve) - 952 then
-    raise exception 'NEXUS ROLLBACK: cartes_prospect n''a pas diminué d''exactement 952 — tout est annulé';
+  if (select count(*) from public.cartes_prospect) <> (select cartes from _rbc_releve) - (select presentes from _rbc_releve) then
+    raise exception 'NEXUS ROLLBACK: cartes_prospect n''a pas diminué du nombre de cartes présentes — tout est annulé';
   end if;
 end $f$;
 
-select json_build_object('avant', (select cartes from _rbc_releve), 'apres', (select count(*) from public.cartes_prospect),
+select json_build_object('avant', (select cartes from _rbc_releve), 'retirees', (select presentes from _rbc_releve),
+                         'apres', (select count(*) from public.cartes_prospect),
                          'restantes', (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id)) as resultat_rollback_cartes;

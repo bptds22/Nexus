@@ -12,7 +12,7 @@ Sorties :
   ids-cartes-laureats.txt   — les id des cartes (servent au rollback)
 Les id sont déterministes (uuid5 sur onglet + ligne Excel) : relancer le script redonne les mêmes.
 """
-import sys, re, uuid, datetime, unicodedata, collections
+import sys, re, uuid, datetime, unicodedata, collections, json, hashlib
 import openpyxl
 
 ESPACE = uuid.UUID("5b0f7a52-9a51-4c43-8f0c-6c1d3a0e2b27")  # fixe : rend les id reproductibles
@@ -260,33 +260,75 @@ def lire(chemin):
     return cartes, doublons, ignores, sans_nom
 
 
-def ecrire_lot(cartes, chemin):
-    n = len(cartes)
-    nb_notes = sum(len(c["notes"]) for c in cartes)
-    ids = ",\n ".join(f"('{c['id']}'::uuid)" for c in cartes)
-    equipes = sorted({c["team_id"] for c in cartes})
-    lignes = ",\n ".join(
-        "(" + ", ".join([sql(c["id"]) + "::uuid", sql(c["team_id"]) + "::uuid", sql(c["prenom"]), sql(c["nom"]),
-                         sql(c["numero"]), (sql(c["position_id"]) + "::uuid") if c["position_id"] else "null::uuid",
-                         str(PROMOTION), sql(c["pieds"]), sql(c["pouces"]), sql(c["poids"]), sql(c["grade"])]) + ")"
-        for c in cartes)
-    notes = ",\n ".join(f"({sql(c['id'])}::uuid, {sql(t)})" for c in cartes for t in c["notes"])
+CIBLE_CARTES = 240        # taille visée d'une tranche (décision BP 2026-10-15, option 3)
+LIMITE_OCTETS = 18000     # plafond du JSON d'une tranche (~28 Ko de fichier) : chaque tranche part en UN appel au connecteur
+
+
+def charge_utile(groupe):
+    """JSON compact d'une tranche : équipes indexées en tête, une entrée par carte, champs nuls omis."""
+    equipes = []
+    for c in groupe:
+        if c["team_id"] not in equipes:
+            equipes.append(c["team_id"])
+    lignes = []
+    for c in groupe:
+        x = {"i": c["id"], "e": equipes.index(c["team_id"]), "p": c["prenom"], "n": c["nom"]}
+        for k, v in (("u", c["numero"]), ("o", c["position"]), ("f", c["pieds"]), ("c", c["pouces"]),
+                     ("w", c["poids"]), ("g", c["grade"])):
+            if v is not None:
+                x[k] = v
+        if c["notes"]:
+            x["t"] = c["notes"]
+        lignes.append(x)
+    j = json.dumps({"e": equipes, "c": lignes}, ensure_ascii=False, separators=(",", ":"))
+    if "$J$" in j:
+        raise SystemExit("le marqueur $J$ apparaît dans les données")
+    return j
+
+
+def decouper(cartes):
+    """Tranches d'onglets ENTIERS (jamais un onglet coupé), ~CIBLE_CARTES cartes, JSON ≤ LIMITE_OCTETS."""
+    onglets = []
+    for c in cartes:
+        if not onglets or onglets[-1][0] != c["onglet"]:
+            onglets.append((c["onglet"], []))
+        onglets[-1][1].append(c)
+    tranches, courant = [], []
+    for _, groupe in onglets:
+        essai = courant + groupe
+        if courant and (len(essai) > CIBLE_CARTES or len(charge_utile(essai).encode("utf-8")) > LIMITE_OCTETS):
+            tranches.append(courant)
+            courant = list(groupe)
+        else:
+            courant = essai
+        if len(charge_utile(courant).encode("utf-8")) > LIMITE_OCTETS:
+            raise SystemExit(f"un onglet seul dépasse la limite : {groupe[0]['onglet']}")
+    if courant:
+        tranches.append(courant)
+    return tranches
+
+
+def ecrire_tranche(k, total, groupe, chemin):
+    j = charge_utile(groupe)
+    md5j = hashlib.md5(j.encode("utf-8")).hexdigest()
+    n = len(groupe)
+    nb_notes = sum(len(c["notes"]) for c in groupe)
+    nb_equipes = len({c["team_id"] for c in groupe})
+    onglets = sorted({c["onglet"] for c in groupe})
+    op = f"IMPORT_CARTES_LAUREATS_T{k}"
+    r = f"_t{k}_releve"
     trg = ", ".join(f"'{t}'" for t in sorted(TRIGGERS))
-    with open(chemin, "w", encoding="utf-8", newline="\n") as f:
-        f.write(f"""-- LOT PROD — import des cartes prospect Lauréats (Cégep de Saint-Hyacinthe × Football). Généré par
--- docs/import-laureats/outils/construire-lot-cartes.py — CONTIENT DES RENSEIGNEMENTS PERSONNELS : jamais dans git.
--- À envoyer TEL QUEL, en UN SEUL appel : une seule transaction. Une garde qui échoue annule tout.
--- {n} cartes, {nb_notes} notes. Insertion SOUS L'IDENTITÉ du recruteur football is_school_admin de l'unité (retrouvé
--- par requête) : cartes_prospect_avant_insert fixe l'unité et valide équipe/position ; le rapprochement s'enfile seul.
--- Aucun courriel, aucun téléphone → aucune invitation. Aucune fiche athletes touchée.
--- Rollback : docs/import-laureats/prod/rollback-cartes-laureats.sql (supprime exactement ces id).
+    ids_sql = "(select (x->>'i')::uuid from jsonb_array_elements(current_setting('nexus.lot')::jsonb->'c') x)"
+    sql_txt = f"""-- TRANCHE T{k}/{total} — import des cartes prospect Lauréats (Cégep de Saint-Hyacinthe × Football).
+-- Générée par docs/import-laureats/outils/construire-lot-cartes.py — RENSEIGNEMENTS PERSONNELS : jamais dans git.
+-- UN envoi = UNE transaction. Une garde qui échoue annule toute la tranche. {n} cartes, {nb_notes} notes, {len(onglets)} onglets.
+-- Garde d'intégrité : le md5 du JSON ci-dessous doit valoir {md5j} — un seul caractère changé à la recopie annule tout.
+-- Insertion sous l'identité du recruteur football is_school_admin de l'unité (retrouvé par requête), chemin de l'app.
+-- Rollback : docs/import-laureats/prod/rollback-cartes-laureats.sql (retire aussi une tranche seule).
 
-create temp table _cp_ids (id uuid primary key);
-insert into _cp_ids values
- {ids};
+select set_config('nexus.lot', $J${j}$J$, true);
 
--- 1. Relevé avant (dans la transaction)
-create temp table _cp_releve as
+create temp table {r} as
 select txid_current() as txid,
        (select count(*) from public.cartes_prospect) as cartes,
        (select count(*) from public.cartes_prospect_notes) as notes,
@@ -294,7 +336,7 @@ select txid_current() as txid,
        (select count(*) from public.athletes) as athletes,
        (select md5(coalesce(string_agg(a::text, '|' order by a.id), '')) from public.athletes a) as empreinte_athletes,
        (select count(*) from public.teams) as teams,
-       (select count(*) from public.admin_operations where operation = 'IMPORT_CARTES_LAUREATS') as op_deja,
+       (select count(*) from public.admin_operations where operation = '{op}') as op_deja,
        (select id from public.sports where nom = 'Football') as football,
        (select count(*) from public.users u where u.school_id = '{UNITE_CEGEP}' and u.role = 'RECRUTEUR'::public.user_role
            and u.is_school_admin and u.sport_id = (select id from public.sports where nom = 'Football')) as nb_signataires,
@@ -302,112 +344,172 @@ select txid_current() as txid,
            and u.is_school_admin and u.sport_id = (select id from public.sports where nom = 'Football') limit 1) as signataire,
        (select id from public.users where email = 'bptds22@gmail.com') as par;
 
--- 2. Gardes AVANT toute écriture
 do $g$
 declare n int; t text[];
 begin
-  if (select txid from _cp_releve) <> txid_current() then
-    raise exception 'NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture';
+  if (select txid from {r}) <> txid_current() then
+    raise exception 'NEXUS T{k}: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture';
   end if;
-  if (select op_deja from _cp_releve) <> 0 then raise exception 'NEXUS LOT: import déjà appliqué (admin_operations)'; end if;
-  if (select nb_signataires from _cp_releve) <> 1 then
-    raise exception 'NEXUS LOT: % recruteur(s) football admin dans l''unité, 1 attendu', (select nb_signataires from _cp_releve);
+  if md5(current_setting('nexus.lot')) <> '{md5j}' then
+    raise exception 'NEXUS T{k}: données altérées (md5 % au lieu de {md5j}) — rien n''est écrit', md5(current_setting('nexus.lot'));
   end if;
-  if (select par from _cp_releve) is null then raise exception 'NEXUS LOT: compte admin introuvable'; end if;
-  -- La RLS d'insertion (acces_carte_ecriture) exige user_has_pro() du signataire : abonnement pro/all_star actif.
-  if not exists (select 1 from public.subscriptions s where s.user_id = (select signataire from _cp_releve)
+  if (select op_deja from {r}) <> 0 then raise exception 'NEXUS T{k}: tranche déjà appliquée ({op})'; end if;
+  if (select nb_signataires from {r}) <> 1 then
+    raise exception 'NEXUS T{k}: % recruteur(s) football admin dans l''unité, 1 attendu', (select nb_signataires from {r});
+  end if;
+  if (select par from {r}) is null then raise exception 'NEXUS T{k}: compte admin introuvable'; end if;
+  if not exists (select 1 from public.subscriptions s where s.user_id = (select signataire from {r})
                    and s.status = 'active' and s.tier in ('pro', 'all_star')) then
-    raise exception 'NEXUS LOT: le signataire n''a pas d''abonnement Pro/All Star actif — la RLS refuserait les cartes';
+    raise exception 'NEXUS T{k}: le signataire n''a pas d''abonnement Pro/All Star actif — la RLS refuserait les cartes';
   end if;
   if (select md5(pg_get_functiondef('public.cartes_prospect_avant_insert()'::regprocedure))) <> '{MD5_AVANT_INSERT}' then
-    raise exception 'NEXUS LOT: cartes_prospect_avant_insert diffère de la définition vérifiée';
+    raise exception 'NEXUS T{k}: cartes_prospect_avant_insert diffère de la définition vérifiée';
   end if;
   select array_agg(tgname::text order by tgname::text) into t from pg_trigger
    where tgrelid = 'public.cartes_prospect'::regclass and not tgisinternal;
   if t is distinct from array[{trg}]::text[] then
-    raise exception 'NEXUS LOT: triggers de cartes_prospect = %, attendu les 12 vérifiés', t;
+    raise exception 'NEXUS T{k}: triggers de cartes_prospect = %, attendu les 12 vérifiés', t;
   end if;
-  if (select count(*) from _cp_ids) <> {n} then raise exception 'NEXUS LOT: le plan ne compte pas {n} cartes'; end if;
-  if exists (select 1 from public.cartes_prospect c join _cp_ids i on i.id = c.id) then
-    raise exception 'NEXUS LOT: un des id prévus existe déjà';
+  if jsonb_array_length(current_setting('nexus.lot')::jsonb->'c') <> {n} then
+    raise exception 'NEXUS T{k}: le JSON ne compte pas {n} cartes';
+  end if;
+  if exists (select 1 from public.cartes_prospect c where c.id in {ids_sql}) then
+    raise exception 'NEXUS T{k}: une carte de la tranche existe déjà';
   end if;
   select count(*) into n from public.teams t2
-   where t2.id in ({", ".join(sql(e) + "::uuid" for e in equipes)})
-     and t2.sport_id = (select football from _cp_releve) and t2.season = '2026-2027';
-  if n <> {len(equipes)} then raise exception 'NEXUS LOT: % équipe(s) football 2026-2027 sur {len(equipes)}', n; end if;
+   where t2.id in (select e::uuid from jsonb_array_elements_text(current_setting('nexus.lot')::jsonb->'e') e)
+     and t2.sport_id = (select football from {r}) and t2.season = '2026-2027';
+  if n <> {nb_equipes} then raise exception 'NEXUS T{k}: % équipe(s) football 2026-2027 sur {nb_equipes}', n; end if;
+  select count(*) into n from jsonb_array_elements(current_setting('nexus.lot')::jsonb->'c') x
+   where x ? 'o' and (select count(*) from public.positions p where p.abreviation = x->>'o'
+                        and p.sport_id = (select football from {r})) <> 1;
+  if n <> 0 then raise exception 'NEXUS T{k}: % position(s) introuvable(s) ou ambiguë(s) au football', n; end if;
 end $g$;
 
--- 3. Insertions — sous l'identité du recruteur signataire (chemin de l'app)
 select set_config('request.jwt.claims',
-                  json_build_object('sub', (select signataire from _cp_releve), 'role', 'authenticated')::text, true);
+                  json_build_object('sub', (select signataire from {r}), 'role', 'authenticated')::text, true);
 set local role authenticated;
 
 insert into public.cartes_prospect (id, team_id, prenom, nom, numero, position_id, promotion,
-                                    taille_pieds, taille_pouces, poids_lbs, grade) values
- {lignes};
+                                    taille_pieds, taille_pouces, poids_lbs, grade)
+select x.i, (current_setting('nexus.lot')::jsonb->'e'->>x.e)::uuid, x.p, x.n, x.u,
+       (select p.id from public.positions p where p.abreviation = x.o
+           and p.sport_id = (select s.id from public.sports s where s.nom = 'Football')),
+       {PROMOTION}, x.f, x.c, x.w, x.g
+  from jsonb_to_recordset(current_setting('nexus.lot')::jsonb->'c')
+       as x(i uuid, e int, p text, n text, u text, o text, f int, c int, w int, g text);
 
-insert into public.cartes_prospect_notes (carte_id, contenu) values
- {notes};
+insert into public.cartes_prospect_notes (carte_id, contenu)
+select x.i, t.contenu
+  from jsonb_to_recordset(current_setting('nexus.lot')::jsonb->'c') as x(i uuid, t jsonb),
+       jsonb_array_elements_text(coalesce(x.t, '[]'::jsonb)) with ordinality as t(contenu, rang)
+ order by x.i, t.rang;
 
 reset role;
 select set_config('request.jwt.claims', '', true);
 
 insert into public.admin_operations (operation, motif, details, par)
-select 'IMPORT_CARTES_LAUREATS',
-       'Import de la liste de dépistage des Lauréats en cartes prospect (Cégep de Saint-Hyacinthe × Football) — GO BP',
-       jsonb_build_object('carte_ids', (select jsonb_agg(id order by id) from _cp_ids), 'nb_cartes', {n},
-                          'nb_notes', {nb_notes}, 'signataire', (select signataire from _cp_releve),
+select '{op}',
+       'Import Lauréats, tranche {k}/{total} : cartes prospect (Cégep de Saint-Hyacinthe × Football) — GO BP',
+       jsonb_build_object('tranche', {k}, 'tranches', {total}, 'nb_cartes', {n}, 'nb_notes', {nb_notes},
+                          'md5_donnees', '{md5j}', 'onglets', jsonb_build_array({", ".join(sql(o) for o in onglets)}),
+                          'carte_ids', (select jsonb_agg(z.i order by z.i) from {ids_sql} as z(i)),
+                          'signataire', (select signataire from {r}),
                           'rollback', 'docs/import-laureats/prod/rollback-cartes-laureats.sql'),
-       (select par from _cp_releve);
+       (select par from {r});
 
--- 4. Gardes finales
 do $f$
 declare n int;
 begin
-  if (select txid from _cp_releve) <> txid_current() then raise exception 'NEXUS LOT: transaction changée'; end if;
-  if (select count(*) from public.cartes_prospect) <> (select cartes from _cp_releve) + {n} then
-    raise exception 'NEXUS LOT: cartes_prospect n''a pas grandi d''exactement {n} — tout est annulé';
+  if (select txid from {r}) <> txid_current() then raise exception 'NEXUS T{k}: transaction changée'; end if;
+  if (select count(*) from public.cartes_prospect) <> (select cartes from {r}) + {n} then
+    raise exception 'NEXUS T{k}: cartes_prospect n''a pas grandi d''exactement {n} — tout est annulé';
   end if;
-  if (select count(*) from public.cartes_prospect_notes) <> (select notes from _cp_releve) + {nb_notes} then
-    raise exception 'NEXUS LOT: cartes_prospect_notes n''a pas grandi d''exactement {nb_notes} — tout est annulé';
+  if (select count(*) from public.cartes_prospect_notes) <> (select notes from {r}) + {nb_notes} then
+    raise exception 'NEXUS T{k}: cartes_prospect_notes n''a pas grandi d''exactement {nb_notes} — tout est annulé';
   end if;
-  select count(*) into n from public.cartes_prospect c join _cp_ids i on i.id = c.id
-   where c.unite_cegep_id = '{UNITE_CEGEP}' and c.unite_sport_id = (select football from _cp_releve)
-     and c.sport_athlete_id = (select football from _cp_releve) and c.cree_par = (select signataire from _cp_releve)
+  if (select count(*) from public.cartes_prospect_notes nn where nn.carte_id in {ids_sql}) <> {nb_notes} then
+    raise exception 'NEXUS T{k}: les cartes de la tranche ne portent pas exactement {nb_notes} notes — tout est annulé';
+  end if;
+  select count(*) into n from public.cartes_prospect c
+   where c.id in {ids_sql}
+     and c.unite_cegep_id = '{UNITE_CEGEP}' and c.unite_sport_id = (select football from {r})
+     and c.sport_athlete_id = (select football from {r}) and c.cree_par = (select signataire from {r})
      and c.etape = 'IDENTIFIE' and c.promotion = {PROMOTION} and c.courriel is null and c.telephone is null
-     and c.parent_courriel is null and c.invitation_etat is null and c.invitee_le is null and c.fusionnee_avec is null
-     and c.school_id = (select t.school_id from public.teams t where t.id = c.team_id);
-  if n <> {n} then raise exception 'NEXUS LOT: % carte(s) conforme(s) sur {n} — tout est annulé', n; end if;
-  if (select count(*) from public.cartes_prospect_invitations) <> (select invitations from _cp_releve) then
-    raise exception 'NEXUS LOT: une invitation a été créée — tout est annulé';
+     and c.parent_courriel is null and c.parent_nom is null and c.invitation_etat is null and c.invitee_le is null
+     and c.fusionnee_avec is null and c.school_id = (select t.school_id from public.teams t where t.id = c.team_id);
+  if n <> {n} then raise exception 'NEXUS T{k}: % carte(s) conforme(s) sur {n} — tout est annulé', n; end if;
+  if (select count(*) from public.cartes_prospect_invitations) <> (select invitations from {r}) then
+    raise exception 'NEXUS T{k}: une invitation a été créée — tout est annulé';
   end if;
-  if (select count(*) from public.athletes) <> (select athletes from _cp_releve)
+  if (select count(*) from public.athletes) <> (select athletes from {r})
      or (select md5(coalesce(string_agg(a::text, '|' order by a.id), '')) from public.athletes a)
-        <> (select empreinte_athletes from _cp_releve) then
-    raise exception 'NEXUS LOT: une fiche athletes a changé — tout est annulé';
+        <> (select empreinte_athletes from {r}) then
+    raise exception 'NEXUS T{k}: une fiche athletes a changé — tout est annulé';
   end if;
-  if (select count(*) from public.teams) <> (select teams from _cp_releve) then
-    raise exception 'NEXUS LOT: teams a changé — tout est annulé';
+  if (select count(*) from public.teams) <> (select teams from {r}) then
+    raise exception 'NEXUS T{k}: teams a changé — tout est annulé';
   end if;
-  if (select count(*) from public.admin_operations where operation = 'IMPORT_CARTES_LAUREATS') <> 1 then
-    raise exception 'NEXUS LOT: ligne admin_operations absente ou en double — tout est annulé';
+  if (select count(*) from public.admin_operations where operation = '{op}') <> 1 then
+    raise exception 'NEXUS T{k}: ligne admin_operations absente ou en double — tout est annulé';
   end if;
 end $f$;
 
--- 5. Résultat
 select json_build_object(
-  'avant', (select json_build_object('cartes', cartes, 'notes', notes, 'invitations', invitations, 'athletes', athletes) from _cp_releve),
+  'tranche', 'T{k}/{total}',
+  'avant', (select json_build_object('cartes', cartes, 'notes', notes, 'invitations', invitations, 'athletes', athletes) from {r}),
   'apres', json_build_object('cartes', (select count(*) from public.cartes_prospect),
                              'notes', (select count(*) from public.cartes_prospect_notes),
                              'invitations', (select count(*) from public.cartes_prospect_invitations),
                              'athletes', (select count(*) from public.athletes)),
-  'signataire', (select signataire from _cp_releve),
-  'file_rapprochement', (select count(*) from public.rapprochement_file f join _cp_ids i on i.id = f.carte_id),
-  'admin_operation', (select id from public.admin_operations where operation = 'IMPORT_CARTES_LAUREATS'),
-  'meme_transaction', (select txid from _cp_releve) = txid_current()
-) as resultat_lot_cartes;
+  'cartes_tranche', (select count(*) from public.cartes_prospect c where c.id in {ids_sql}),
+  'file_rapprochement', (select count(*) from public.rapprochement_file fr where fr.carte_id in {ids_sql}),
+  'admin_operation', (select id from public.admin_operations where operation = '{op}'),
+  'meme_transaction', (select txid from {r}) = txid_current()
+) as resultat_tranche;
+"""
+    with open(chemin, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(sql_txt)
+    return dict(k=k, n=n, notes=nb_notes, onglets=onglets, octets_json=len(j.encode("utf-8")),
+                octets=len(sql_txt.encode("utf-8")), md5_donnees=md5j,
+                md5_fichier=hashlib.md5(sql_txt.encode("utf-8")).hexdigest())
+
+
+def ecrire_controle(tranches, chemin):
+    """Contrôle global, LECTURE SEULE : à passer après la dernière tranche. Versionnable (aucune donnée)."""
+    total = len(tranches)
+    n = sum(len(g) for g in tranches)
+    nb_notes = sum(len(c["notes"]) for g in tranches for c in g)
+    ops = ", ".join(f"'IMPORT_CARTES_LAUREATS_T{k}'" for k in range(1, total + 1))
+    with open(chemin, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(f"""-- CONTRÔLE GLOBAL de l'import Lauréats par tranches — LECTURE SEULE.
+-- Attendu : {total} tranches dans admin_operations, {n} cartes et {nb_notes} notes du lot dans l'unité dfad9036 × Football.
+with ops as (
+  select operation, details from public.admin_operations where operation in ({ops})
+), ids as (
+  select (x)::uuid as id from ops, jsonb_array_elements_text(ops.details->'carte_ids') x
+)
+select json_build_object(
+  'tranches_presentes', (select count(*) from ops),
+  'tranches_attendues', {total},
+  'tranches_manquantes', (select coalesce(json_agg(o order by o), '[]'::json) from unnest(array[{ops}]) o
+                           where o not in (select operation from ops)),
+  'ids_dans_admin_operations', (select count(*) from ids),
+  'cartes_du_lot_en_base', (select count(*) from public.cartes_prospect c join ids on ids.id = c.id),
+  'cartes_du_lot_dans_l_unite', (select count(*) from public.cartes_prospect c join ids on ids.id = c.id
+       where c.unite_cegep_id = '{UNITE_CEGEP}' and c.unite_sport_id = (select id from public.sports where nom = 'Football')),
+  'notes_du_lot', (select count(*) from public.cartes_prospect_notes nn join ids on ids.id = nn.carte_id),
+  'courriel_tel_parent', (select count(*) from public.cartes_prospect c join ids on ids.id = c.id
+       where c.courriel is not null or c.telephone is not null or c.parent_courriel is not null or c.parent_nom is not null),
+  'invitations_du_lot', (select count(*) from public.cartes_prospect_invitations i join ids on ids.id = i.carte_id),
+  'cartes_de_l_unite', (select count(*) from public.cartes_prospect c where c.unite_cegep_id = '{UNITE_CEGEP}'
+       and c.unite_sport_id = (select id from public.sports where nom = 'Football')),
+  'attendu', json_build_object('cartes', {n}, 'notes', {nb_notes}),
+  'conforme', (select count(*) from ops) = {total}
+              and (select count(*) from public.cartes_prospect c join ids on ids.id = c.id) = {n}
+              and (select count(*) from public.cartes_prospect_notes nn join ids on ids.id = nn.carte_id) = {nb_notes}
+) as controle_global;
 """)
-    return n, nb_notes
 
 
 def ecrire_apercu(cartes, doublons, ignores, sans_nom, chemin):
@@ -455,9 +557,9 @@ def ecrire_rollback(cartes, chemin):
     n = len(cartes)
     ids = ",\n ".join(f"('{c['id']}'::uuid)" for c in sorted(cartes, key=lambda c: c["id"]))
     with open(chemin, "w", encoding="utf-8", newline="\n") as f:
-        f.write(f"""-- ROLLBACK — import des cartes Lauréats (lot-cartes-laureats.sql). UN SEUL envoi, une seule transaction.
+        f.write(f"""-- ROLLBACK — import des cartes Lauréats (tranches IMPORT_CARTES_LAUREATS_T*). UN SEUL envoi, une seule transaction.
 -- Généré par docs/import-laureats/outils/construire-lot-cartes.py. Ne contient que des id.
--- Supprime EXACTEMENT ces {n} cartes (notes, journal, file et propositions de rapprochement partent en cascade ;
+-- Supprime EXACTEMENT celles de ces {n} cartes qui sont présentes — tout le lot ou une tranche seule (notes, journal, file et propositions de rapprochement partent en cascade ;
 -- chaque retrait est tracé dans cartes_prospect_suppressions). REFUSE si du travail s'y est accroché :
 -- liaison décidée, fusion, invitation, rappel, liste, ou étape changée. À passer AVANT le rollback des équipes.
 
@@ -467,14 +569,16 @@ insert into _rbc_ids values
 
 create temp table _rbc_releve as
 select txid_current() as txid, (select count(*) from public.cartes_prospect) as cartes,
+       (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id) as presentes,
        (select id from public.users where email = 'bptds22@gmail.com') as par;
 
 do $g$
 declare n int;
 begin
   if (select count(*) from _rbc_ids) <> {n} then raise exception 'NEXUS ROLLBACK: la liste ne compte pas {n} id'; end if;
-  if (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id) <> {n} then
-    raise exception 'NEXUS ROLLBACK: les {n} cartes ne sont pas toutes présentes — rien n''est supprimé';
+  -- Une tranche seule ou tout le lot : on retire exactement ceux de ces id qui sont PRÉSENTS.
+  if (select presentes from _rbc_releve) = 0 then
+    raise exception 'NEXUS ROLLBACK: aucune carte du lot en base — rien à retirer';
   end if;
   select (select count(*) from public.rapprochements r join _rbc_ids i on i.id = r.carte_id where r.statut <> 'PROPOSEE')
        + (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id
@@ -486,21 +590,25 @@ begin
   if n <> 0 then raise exception 'NEXUS ROLLBACK: % élément(s) de travail accroché(s) aux cartes — rien n''est supprimé', n; end if;
 end $g$;
 
-delete from public.cartes_prospect where id in (select id from _rbc_ids);
-
 insert into public.admin_operations (operation, motif, details, par)
 select 'ROLLBACK_IMPORT_CARTES_LAUREATS', 'Retrait des cartes de l''import Lauréats',
-       jsonb_build_object('nb_cartes', {n}, 'carte_ids', (select jsonb_agg(id order by id) from _rbc_ids)), (select par from _rbc_releve);
+       jsonb_build_object('nb_cartes', (select presentes from _rbc_releve),
+                          'carte_ids', (select jsonb_agg(i.id order by i.id) from _rbc_ids i
+                                         where i.id in (select c.id from public.cartes_prospect c))),
+       (select par from _rbc_releve);
+
+delete from public.cartes_prospect where id in (select id from _rbc_ids);
 
 do $f$
 begin
   if (select txid from _rbc_releve) <> txid_current() then raise exception 'NEXUS ROLLBACK: transaction changée'; end if;
-  if (select count(*) from public.cartes_prospect) <> (select cartes from _rbc_releve) - {n} then
-    raise exception 'NEXUS ROLLBACK: cartes_prospect n''a pas diminué d''exactement {n} — tout est annulé';
+  if (select count(*) from public.cartes_prospect) <> (select cartes from _rbc_releve) - (select presentes from _rbc_releve) then
+    raise exception 'NEXUS ROLLBACK: cartes_prospect n''a pas diminué du nombre de cartes présentes — tout est annulé';
   end if;
 end $f$;
 
-select json_build_object('avant', (select cartes from _rbc_releve), 'apres', (select count(*) from public.cartes_prospect),
+select json_build_object('avant', (select cartes from _rbc_releve), 'retirees', (select presentes from _rbc_releve),
+                         'apres', (select count(*) from public.cartes_prospect),
                          'restantes', (select count(*) from public.cartes_prospect c join _rbc_ids i on i.id = c.id)) as resultat_rollback_cartes;
 """)
 
@@ -510,8 +618,15 @@ if __name__ == "__main__":
     sortie = sys.argv[2]
     if len(sys.argv) > 3:
         ecrire_rollback(cartes, sys.argv[3])
-    n, nb_notes = ecrire_lot(cartes, f"{sortie}/lot-cartes-laureats.sql")
+    tranches = decouper(cartes)
+    bilan = [ecrire_tranche(k, len(tranches), g, f"{sortie}/tranche-T{k}.sql") for k, g in enumerate(tranches, 1)]
+    if len(sys.argv) > 4:
+        ecrire_controle(tranches, sys.argv[4])
     ecrire_apercu(cartes, doublons, ignores, sans_nom, f"{sortie}/apercu-cartes-laureats.txt")
     with open(f"{sortie}/ids-cartes-laureats.txt", "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(sorted(x["id"] for x in cartes)) + "\n")
-    print(f"{n} cartes, {nb_notes} notes, {len(doublons)} doublons écartés, {sans_nom} lignes sans nom")
+    for b in bilan:
+        print(f"T{b['k']} : {b['n']} cartes, {b['notes']} notes, {len(b['onglets'])} onglets, "
+              f"JSON {b['octets_json']} o, fichier {b['octets']} o, md5 fichier {b['md5_fichier']}, md5 données {b['md5_donnees']}")
+    print(f"TOTAL : {sum(b['n'] for b in bilan)} cartes, {sum(b['notes'] for b in bilan)} notes, {len(bilan)} tranches ; "
+          f"{len(doublons)} doublons écartés, {sans_nom} lignes sans nom")
