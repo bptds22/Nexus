@@ -28,6 +28,7 @@ import { CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
 import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
+import { FICHE_RANGEE } from "@/components/shared/athlete/tailleBadgeFiche";
 import type { BadgePartenaire } from "@/lib/badges/partenaire";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
@@ -800,9 +801,9 @@ function DistinctionsSuggest({ athleteId, sportId, sportNom, currentDistinctions
       {!editing && <p className={SECTION_SUBTITLE_CLS}>Modifications soumises à ton entraîneur pour approbation</p>}
 
       {!editing && (currentDistinctions.length > 0 || badgesPartenaire.length > 0) && (
-        <div className="flex flex-wrap gap-4 mt-3">
+        <div className={`${FICHE_RANGEE} mt-3`}>
           {currentDistinctions.map((e, i) => (
-            <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} libelle={e.libelle} count={currentDistinctions.length} index={i} />
+            <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} libelle={e.libelle} count={currentDistinctions.length} index={i} size="fiche" />
           ))}
           {athleteId && badgesPartenaire.map((b) => (
             <BadgePartenaireVignette key={b.id} badge={b} athleteId={athleteId} />

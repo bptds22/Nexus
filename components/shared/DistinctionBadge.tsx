@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { BADGE_CONFIG, badgeSvgPath } from "@/lib/config/badges";
 import "@/components/badges/distinction-badges.css";
+import { FICHE_BOITE, FICHE_CELLULE, FICHE_LIBELLE } from "@/components/shared/athlete/tailleBadgeFiche";
 
 /* ═══════════════════════════════════════════════════════════════
    Les 7 SVG en dur (164 lignes) ont été remplacés par les 22 fichiers
@@ -26,7 +27,9 @@ interface Props {
   /** `md` (56 px) et `xl` (140 px) ajoutes pour le defile WOW : `xs` etait
    *  trop petit dans la rangee finale, `lg` trop petit au centre. Les trois
    *  tailles historiques sont inchangees. */
-  size?: "xs" | "md" | "sm" | "lg" | "xl";
+  /** `fiche` : la section Distinctions d'une fiche athlète, ~40 % plus grand
+   *  que `lg` (voir components/shared/athlete/tailleBadgeFiche.ts). */
+  size?: "xs" | "md" | "sm" | "lg" | "xl" | "fiche";
   /**
    * @deprecated N'A PLUS AUCUN EFFET.
    *
@@ -157,7 +160,7 @@ export default function DistinctionBadge({
      le décalage de la frappe de déblocage suit `index` seul.
      Une taille EXPLICITE gagne toujours : `xs` (rangée compacte 28 px) et
      `sm` restent disponibles pour les appelants qui les demandent. */
-  const effectiveSize: "xs" | "md" | "sm" | "lg" | "xl" = size ?? "lg";
+  const effectiveSize: "xs" | "md" | "sm" | "lg" | "xl" | "fiche" = size ?? "lg";
   /* `md` partage la grammaire compacte de `xs` (ni reflet, ni onde, ni
      libelle espace) : a 44 px ces effets restent illisibles. Il est juste
      PLUS GROS. `xl` partage celle de `lg`. */
@@ -187,7 +190,8 @@ export default function DistinctionBadge({
      La fiche web n'en souffre pas : sa rangée est `flex-wrap` en gap-9, et
      5 × 110 + 4 × 36 = 694 px là où elle en avait 852. */
   const outerW = effectiveSize === "xs" ? "w-[28px]" : effectiveSize === "md" ? "w-[56px]"
-    : effectiveSize === "sm" ? "w-[96px]" : effectiveSize === "xl" ? "w-[140px]" : "w-[110px]";
+    : effectiveSize === "sm" ? "w-[96px]" : effectiveSize === "xl" ? "w-[140px]"
+    : effectiveSize === "fiche" ? FICHE_CELLULE : "w-[110px]";
   /* 104 → 96. Le PICTO n'occupe que 57,7 % de la boîte : les SVG « biseau »
      dessinent le glyphe sur ~150 unités d'un viewBox de 260, le reste étant
      la marge où le halo déborde. Le glyphe visible passe donc de ~60 à
@@ -196,9 +200,11 @@ export default function DistinctionBadge({
      96 dans 110 laisse 7 px de part et d'autre : avec la gouttière de 6, les
      pictos restent à 20 px les uns des autres et ne se touchent pas. */
   const iconBox = effectiveSize === "xs" ? "w-7 h-7" : effectiveSize === "md" ? "w-14 h-14"
-    : effectiveSize === "sm" ? "w-16 h-16" : effectiveSize === "xl" ? "w-[124px] h-[124px]" : "w-[96px] h-[96px]";
+    : effectiveSize === "sm" ? "w-16 h-16" : effectiveSize === "xl" ? "w-[124px] h-[124px]"
+    : effectiveSize === "fiche" ? FICHE_BOITE : "w-[96px] h-[96px]";
   const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[96px]"
-    : effectiveSize === "xl" ? "text-[13px] max-w-[140px]" : "text-[11px] max-w-[110px]";
+    : effectiveSize === "xl" ? "text-[13px] max-w-[140px]"
+    : effectiveSize === "fiche" ? FICHE_LIBELLE : "text-[11px] max-w-[110px]";
 
   /* 80 ms. Les etoiles de la carte sont CONTIGUES : un seul reflet les
      traverse toutes, la vague est dans le mouvement. Les badges sont separes
