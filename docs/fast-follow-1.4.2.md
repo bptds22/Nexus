@@ -2558,3 +2558,24 @@ base62, ~22 caractères pour 128 bits ou ~43 pour 256 bits. **Petite migration**
 `prospect_partenaire_ouvrir`) et accepter les DEUX formats le temps que les liens déjà envoyés
 expirent (60 jours). Côté web : `jetonCartePlausible` et `JETON_RE` (lib/partenaires/prospects.ts)
 à élargir de même. Rien à faire côté jeune ni partenaire.
+
+## 88. Doublons d'athlètes (D1) côté mobile — inscription et assistant coach (2026-10-15, lot mobile)
+
+D1 (web) avertit à la création ; la base protège déjà le mobile publié, mais à moitié :
+- **Ce que la base fait SANS build** : le trigger `trg_doublons_probables_noter` note pour l'admin
+  toute fiche (inscription mobile, assistant coach mobile, appli déjà publiée) qui porte le même nom
+  normalisé et la même date de naissance qu'une fiche active (`doublons_probables`, admin seulement).
+- **Ce qui attend le build** :
+  - `AthleteOnboardingMobile` : appeler `inscription_doublon_possible` avant le premier
+    enregistrement et montrer l'avertissement (« Tu as peut-être déjà un compte… » /
+    « Ton entraîneur a peut-être déjà créé ta fiche… »), plus la phrase « Tu joues dans plusieurs
+    sports ? Ajoute une équipe à ta fiche, pas un 2e compte. » à l'écran du sport ;
+  - inscription mobile (`SignupMobile`) : `suggestionCourriel` (lib/auth, déjà partagé) avant de
+    continuer ;
+  - `AthleteWizardMobile` : courriel exact tapé sans cliquer → bascule vers l'invitation ;
+    `athletesMemeIdentite` (lib/queries/coach, déjà partagé) avant la création ;
+    `messageCourrielDejaPris` sur l'erreur d'unicité.
+- ⚠ **Les fiches sans nom de l'appli échappent au trigger** : `AthleteOnboardingMobile` ne demande
+  plus le prénom ni le nom, et une connexion Google ne les fournit pas séparément (9 fiches en prod
+  le 2026-10-15, toutes Google + appli). Sans nom, pas de comparaison possible. Correction proposée
+  dans `docs/doublons-d1/LISEZMOI.md`, non codée.

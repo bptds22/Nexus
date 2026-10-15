@@ -36,3 +36,14 @@ export function messageErreurNexus(message: string | null | undefined): string |
   const majuscule = phrase.charAt(0).toUpperCase() + phrase.slice(1);
   return /[.!?…]$/.test(majuscule) ? majuscule : `${majuscule}.`;
 }
+
+/* Création d'une fiche athlète refusée par l'unicité du courriel
+   (index athletes_email_lower_btrim_uniq, 2026-08-12). La base répond
+   « duplicate key value violates unique constraint … » : illisible pour un
+   coach, et le message générique ne disait pas quoi faire (D1, 2026-10-15).
+   Ne nomme personne : le courriel appartient peut-être à un mineur que ce
+   coach ne voit pas. */
+export function messageCourrielDejaPris(message: string | null | undefined): string | null {
+  if (!message || !message.includes("athletes_email_lower_btrim_uniq")) return null;
+  return "Une fiche athlète utilise déjà ce courriel : cet athlète a probablement déjà sa fiche. Vérifie l'adresse, puis invite-le plutôt que d'en créer une seconde.";
+}

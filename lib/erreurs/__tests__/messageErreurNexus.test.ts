@@ -11,7 +11,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { messageErreurNexus } from "@/lib/erreurs/messageErreurNexus";
+import { messageErreurNexus, messageCourrielDejaPris } from "@/lib/erreurs/messageErreurNexus";
 
 test("badge déjà attribué par un partenaire : texte clair, sans préfixe ni guillemets", () => {
   assert.equal(
@@ -61,4 +61,12 @@ test("erreur non NEXUS ou vide : null (message générique côté appelant)", ()
   assert.equal(messageErreurNexus(""), null);
   assert.equal(messageErreurNexus(null), null);
   assert.equal(messageErreurNexus(undefined), null);
+});
+
+test("courriel déjà pris par une autre fiche : message lisible, sans nommer personne (D1)", () => {
+  const r = messageCourrielDejaPris('duplicate key value violates unique constraint "athletes_email_lower_btrim_uniq"');
+  assert.ok(r && r.startsWith("Une fiche athlète utilise déjà ce courriel"), String(r));
+  assert.ok(!r.includes("duplicate") && !r.includes("athletes_email"), r);
+  assert.equal(messageCourrielDejaPris('duplicate key value violates unique constraint "autre"'), null);
+  assert.equal(messageCourrielDejaPris(null), null);
 });
