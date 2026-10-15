@@ -2751,3 +2751,21 @@ la fiche recruteur et la fiche coach en build Capacitor : l'app n'affiche pas no
 À faire au lot mobile : brancher `useBadgesPartenaires` dans le corps mobile, avec les règles du lot
 taille des badges (`components/shared/athlete/tailleBadgeFiche.ts` ; pas de nom sous un badge propre
 au partenaire, « par {partenaire} » sous un badge Nexus posé par un partenaire).
+
+## 98. Filtres « grisé, jamais caché » : harmoniser Mon processus et Recherche (2026-10-15, plus tard)
+
+Règle générale de BP (2026-10-15) : **un filtre s'affiche toujours, même avec une seule option — grisé,
+jamais caché.** Elle n'est appliquée aujourd'hui qu'aux deux filtres ajoutés ce jour-là dans Mon processus
+(web, `app/recruteur/pipeline/page.tsx`) : la pilule « École / Club » et la pastille « Type »
+(Prospects / Sur Nexus).
+
+Les autres pilules de Mon processus (Sport, Position, Promotion, Région) gardent leur règle :
+`isFacetOffered()` les **cache** quand une seule valeur est possible sur l'ensemble des cartes.
+
+**Contradiction à trancher** : la page Recherche a décidé l'inverse le 2026-09-17 — « un axe à une seule
+valeur est **masqué**, plus grisé » (`axisDisplay(...).state === "active"`, `lib/config/team-taxonomy.ts`,
+CLAUDE.md § Filter UI). Les deux règles coexistent donc aujourd'hui, parfois sur le même écran.
+
+À faire plus tard, dans un lot dédié (décision BP : ne pas changer les autres pilules dans le chantier
+Lauréats) : choisir une seule règle et l'appliquer aux deux surfaces (Mon processus + Recherche), web
+puis mobile.
