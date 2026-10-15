@@ -32,7 +32,6 @@ import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecrui
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
 import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
-import { FICHE_RANGEE } from "@/components/shared/athlete/tailleBadgeFiche";
 import AthleteTransferSheet, {
   loadAthleteTransferState, canTransferAthlete, type AthleteTransferState,
 } from "@/components/shared/coach/AthleteTransferSheet";
@@ -765,9 +764,9 @@ export default function CoachAthleteProfilePage() {
             </div>
 
             {(dbDistinctions.length > 0 || badgesPartenaire.length > 0) && (
-              <div className={FICHE_RANGEE}>
+              <div className="flex items-start gap-9 flex-wrap">
                 {dbDistinctions.map((d, i) => (
-                  <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="fiche" />
+                  <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                 ))}
                 {badgesPartenaire.map((b) => (
                   <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" />
@@ -871,9 +870,9 @@ export default function CoachAthleteProfilePage() {
                       {/* `lg` comme le bloc Profil athlete : c'est le MEME badge,
                           rien ne justifie qu'il retrecisse d'un onglet a l'autre.
                           Il etait en `sm` (64 px) par heritage, pas par decision. */}
-                      <div className={FICHE_RANGEE}>
+                      <div className="flex flex-wrap gap-3">
                         {dbDistinctions.map((d, i) => (
-                          <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="fiche" />
+                          <DistinctionBadge key={`${d.badge}-${i}`} index={i} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" />
                         ))}
                         {badgesPartenaire.map((b) => (
                           <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions="coach" />

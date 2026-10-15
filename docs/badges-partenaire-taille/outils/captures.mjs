@@ -1,5 +1,5 @@
 // Section badges de la fiche athlète — captures AVANT / APRÈS, base LOCALE, navigateur SANS INTERFACE.
-//   cd C:\tmp\nexus-w4bc ; APP=http://localhost:3011 node docs/badges-partenaire-taille/outils/captures.mjs avant|apres
+//   cd C:\tmp\nexus-w4bc ; APP=http://localhost:3011 node docs/badges-partenaire-taille/outils/captures.mjs avant|apres|corrige
 // Préparation TEMPORAIRE par service_role (refuse toute URL non locale), sur Félix Gauthier (fictif) :
 //   - deux badges PROPRES au partenaire « Média Preuve » : un LARGE (« ES », 2,3:1) et un carré ;
 //   - un badge NEXUS (« vitesse ») posé par le même partenaire (W3b) ;
@@ -19,7 +19,7 @@ if (!/^http:\/\/127\.0\.0\.1/.test(API)) throw new Error("pas local : " + API);
 const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY;
 const APP = process.env.APP ?? "http://localhost:3011";
 if (!/^http:\/\/localhost/.test(APP)) throw new Error("APP pas local");
-const ETAPE = process.argv[2] === "apres" ? "apres" : "avant";
+const ETAPE = ["apres", "corrige"].includes(process.argv[2]) ? process.argv[2] : "avant";
 const OUT = path.resolve("docs/badges-partenaire-taille/captures");
 fs.mkdirSync(OUT, { recursive: true });
 const svc = createClient(API, SERVICE, { auth: { persistSession: false } });

@@ -46,11 +46,13 @@ function Etoiles({ cote }: { cote: number }) {
 
 function IconeBadge({ b }: { b: BadgeMonAthlete }) {
   const src = b.nexus ? (b.code ? badgeSvgPath(b.code) : null) : iconeBadgeUrl(createClient(), b.iconePath);
+  // Badge PROPRE au partenaire ~40 % plus grand (28 → 40 px) ; badge Nexus inchangé (décision BP 2026-10-15).
+  const taille = b.nexus ? "w-7 h-7" : "w-10 h-10";
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" className="w-10 h-10 object-contain shrink-0" />
+    <img src={src} alt="" className={`${taille} object-contain shrink-0`} />
   ) : (
-    <span className="w-10 h-10 rounded-full border border-[#2D3748] flex items-center justify-center text-[13px] font-bold text-[#9CA3AF] shrink-0">
+    <span className={`${taille} rounded-full border border-[#2D3748] flex items-center justify-center ${b.nexus ? "text-[11px]" : "text-[13px]"} font-bold text-[#9CA3AF] shrink-0`}>
       {(b.libelle ?? "?").slice(0, 1).toUpperCase()}
     </span>
   );
