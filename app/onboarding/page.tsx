@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { equipeCivileOk, MSG_SANS_EQUIPE_RESPONSABLE } from "@/lib/onboarding/civilSansEquipe";
 import { needsConsent } from "@/lib/auth/needsConsent";
 import { MAILTO_SUPPORT } from "@/lib/config/contact";
 import { uploadImage } from "@/lib/upload/uploadImage";
@@ -87,6 +88,9 @@ interface NexusUser {
   // 'owner'/'interim'. finish() converts this into profile_data.rprp_accepted_at
   // (timestamp) so the admin RPRP tab can show the real consent date.
   rprp_consent?: boolean;
+  // Coach civil : « Je ne coache aucune équipe » (responsable du club sans
+  // équipe — lib/onboarding/civilSansEquipe, décision BP 2026-10-15).
+  civil_sans_equipe?: boolean;
   subscription?: Record<string, unknown>;
   tier?: string;
   referral_code?: string | null;
@@ -407,7 +411,7 @@ export default function OnboardingPage() {
   // (defensive guard against localStorage tampering / race conditions),
   // and the Terminer button's disabled state. Returns the user-facing
   // error message so callers don't reinvent the wording.
-  function validateInstitution(): { ok: boolean; error: string } {
+  function validateInstitution(final = false): { ok: boolean; error: string } {
     if (!user) return { ok: false, error: "Session expirée." };
     const raw = localStorage.getItem("nexus_user");
     const localUser = raw ? JSON.parse(raw) : {};
@@ -417,20 +421,22 @@ export default function OnboardingPage() {
     const inst = localUser.institution as Record<string, unknown> | null;
 
     if (isCivilCoach) {
-      // Civil coach must (a) select or create a league (as a
-      // LIGUE_CIVILE school) AND (b) have an INSERTed team.
-      // profile.team_id is the persistent signal — set in
-      // localStorage by LeagueCoachLeagueStep only after both
-      // schools + teams + school_coaches + team_coaches INSERTs
-      // succeed.
+      // Civil coach must (a) pick a club (LIGUE_CIVILE school — saved as
+      // soon as it is picked) AND (b) pick or create a team (profile.team_id),
+      // UNLESS they chose « Je ne coache aucune équipe » — then they must
+      // declare themselves responsable (owner / interim) at the next step
+      // (final = true : responsable step and finish). Règle commune :
+      // lib/onboarding/civilSansEquipe (décision BP 2026-10-15).
       if (!inst || !inst.name) {
-        return { ok: false, error: "Sélectionne une ligue pour continuer." };
+        return { ok: false, error: "Sélectionne un club pour continuer." };
       }
       const profile = localUser.profile as Record<string, unknown> | null;
-      if (!profile?.team_id) {
-        return { ok: false, error: "Sélectionne ou crée une équipe pour continuer." };
-      }
-      return { ok: true, error: "" };
+      return equipeCivileOk({
+        aUneEquipe: !!profile?.team_id,
+        sansEquipe: localUser.civil_sans_equipe === true,
+        choixResponsable: localUser.school_admin_type,
+        inviteEnCours: !!localUser.pending_director_invite,
+      }, final);
     }
     if (role === "coach") {
       if (!inst || !inst.name) {
@@ -509,6 +515,8 @@ export default function OnboardingPage() {
         const adminType = localUser.school_admin_type;
         const isActualClaim = (adminType === "owner" || adminType === "interim") && !localUser.pending_director_invite;
         if (isActualClaim && localUser.rprp_consent !== true) return false;
+        // Sans équipe : il faut se déclarer responsable pour continuer.
+        if (!validateInstitution(true).ok) return false;
       }
     }
     return true;
@@ -607,7 +615,7 @@ export default function OnboardingPage() {
     // condition, future programmatic navigation). Without this guard,
     // finish() would silently skip the L546/L566 school_id save and
     // leave users.school_id = NULL — the orphan state this fix addresses.
-    const valid = validateInstitution();
+    const valid = validateInstitution(true);
     if (!valid.ok) {
       setNavError(valid.error || "Sélection d'établissement requise.");
       return;
@@ -1204,7 +1212,7 @@ export default function OnboardingPage() {
                 {stepSaving ? "Enregistrement..." : "Suivant →"}
               </button>
             ) : (
-              <button type="button" onClick={finish} disabled={!validateInstitution().ok} className="h-11 px-6 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="button" onClick={finish} disabled={!validateInstitution(true).ok} className="h-11 px-6 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 Terminer et accéder à Nexus &rarr;
               </button>
             )}
@@ -1456,7 +1464,19 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   // créé (false). Reset choice si mustBeResponsable bascule et 'coach' était
   // sélectionné. Parité mobile civil-cards-restructure + school-cards-restructure
   // + recruteur-onboarding-mobile (cegep depuis recruteur-finish-web-rpc).
-  const mustBeResponsable = isCardsContext && hasResponsable !== true;
+  // Coach civil sans équipe (« Je ne coache aucune équipe ») : il DOIT se
+  // déclarer responsable (lib/onboarding/civilSansEquipe) — la carte
+  // « Coach » est fermée comme pour un club sans responsable. Lu dans
+  // localStorage : `user` (prop) n'est pas rafraîchi par save().
+  const civilSansEquipe = isLeague && (() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const lu = JSON.parse(localStorage.getItem("nexus_user") || "{}") as Record<string, unknown>;
+      const prof = (lu.profile ?? {}) as Record<string, unknown>;
+      return lu.civil_sans_equipe === true && !prof.team_id;
+    } catch { return false; }
+  })();
+  const mustBeResponsable = isCardsContext && (hasResponsable !== true || civilSansEquipe);
   useEffect(() => {
     if (mustBeResponsable && (choice === "coach" || choice === "invite" || choice === "coach_only")) {
       setChoice("");
@@ -1582,7 +1602,9 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
           mustBeResponsable (école/club orphan, ou en cours de vérification). */}
       {mustBeResponsable && (
         <div className="bg-[#DAB65A]/[0.08] border border-[#DAB65A]/30 rounded-lg px-4 py-3 text-[13px] text-white/85 leading-relaxed">
-          {responsableLoading ? (
+          {civilSansEquipe ? (
+            <>Tu ne coaches aucune équipe. {MSG_SANS_EQUIPE_RESPONSABLE} Ta demande sera vérifiée par l&apos;équipe Nexus avant que tu aies accès aux équipes et aux athlètes du club.</>
+          ) : responsableLoading ? (
             <>Vérification en cours… si {isCegep ? "ce CÉGEP" : isLeague ? "ce club" : "cette école"} n&apos;a pas encore de responsable sur Nexus, tu devras attester l&apos;être pour rejoindre la plateforme (Loi 25).</>
           ) : (
             <>{isCegep ? "Ce CÉGEP" : isLeague ? "Ce club" : "Cette école"} n&apos;a pas encore de responsable sur Nexus. Pour qu&apos;{isCegep ? "un CÉGEP" : isLeague ? "un club" : "une école"} rejoigne la plateforme, un {isCegep ? "recruteur" : "coach"} doit attester être responsable du programme (Loi 25). Si c&apos;est toi, choisis «&nbsp;C&apos;est moi&nbsp;» ou «&nbsp;Je serai intérimaire&nbsp;». Sinon, demande à la personne responsable de s&apos;inscrire en premier.</>
@@ -1757,7 +1779,8 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             </span>
             <span className="text-[11px] text-[#6B7280] leading-snug">
               {disableCoach
-                ? (responsableLoading ? `Vérification du responsable…` : `Indisponible — ${isCegep ? "CÉGEP" : isLeague ? "club" : "école"} sans responsable.`)
+                ? (civilSansEquipe ? "Indisponible — sans équipe, il faut être responsable du club."
+                  : responsableLoading ? `Vérification du responsable…` : `Indisponible — ${isCegep ? "CÉGEP" : isLeague ? "club" : "école"} sans responsable.`)
                 : <>Je suis {isCegep ? "recruteur" : isLeague ? "coach" : "entraîneur"} — un autre est ou sera {roleLabel}.</>}
             </span>
           </button>
@@ -2651,6 +2674,8 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
     const affiliationRows: ConfirmationRow[] = [
       inst.name ? { label: "Ligue", value: inst.name as string } : null,
       team.name ? { label: "Équipe", value: team.name as string } : null,
+      !team.name && localUser.civil_sans_equipe === true
+        ? { label: "Équipe", value: "Aucune — responsable du club" } : null,
       team.age_group ? { label: "Catégorie d'âge", value: team.age_group as string } : null,
       genreDivision ? { label: "Genre / Division", value: genreDivision } : null,
       team.season ? { label: "Saison", value: team.season as string } : null,
@@ -3689,6 +3714,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   const [lockedSchoolId, setLockedSchoolId] = useState<string | null>(null);
   const [lockedSchoolName, setLockedSchoolName] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<TeamSearchRow | null>(null);
+  // « Je ne coache aucune équipe » (responsable du club sans équipe — BP 2026-10-15).
+  const [sansEquipe, setSansEquipe] = useState<boolean>(localUser.civil_sans_equipe === true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Stable client for the pre-submit detection banner (effect keys on it).
@@ -3734,7 +3761,17 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
     // anchor is now profile.school_id (LIGUE_CIVILE schools row id).
     // Fall back to the legacy key for any in-flight sessions.
     const teamData = (profileData.team ?? profileData.league_team) as Record<string, unknown> | undefined;
-    if (!teamData?.id) return;
+    if (!teamData?.id) {
+      // Club déjà choisi sans équipe (enregistré au choix du club) : on
+      // rouvre les équipes de ce club, « sans équipe » restitué s'il l'était.
+      const inst = localUser.institution as Record<string, unknown> | null;
+      if (inst?.id && inst.type === "ligue_civile") {
+        setLockedSchoolId(inst.id as string);
+        setLockedSchoolName((inst.name as string) ?? "");
+        setMode("umbrella");
+      }
+      return;
+    }
     setSelectedTeam({
       id: teamData.id as string,
       name: (teamData.name as string) ?? "",
@@ -3770,8 +3807,25 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   // 0f25334.) On CONSERVE save(institution) + persistTeamLocally : ce sont eux
   // qui alimentent civilClubId/civilTeamId que le finish reçoit en p_club_id/
   // p_team_id.
+  // « Je ne coache aucune équipe » : aucune équipe, le club seul. Il faudra
+  // se déclarer responsable à l'étape suivante (lib/onboarding/civilSansEquipe).
+  // Re-cliquer annule.
+  function handleSansEquipe() {
+    setError(null);
+    if (sansEquipe) {
+      save({ civil_sans_equipe: false });
+      setSansEquipe(false);
+      return;
+    }
+    clearTeamLocally();
+    setSelectedTeam(null);
+    save({ civil_sans_equipe: true });
+    setSansEquipe(true);
+  }
+
   function handleJoinExistingTeam(team: TeamSearchRow) {
     setError(null);
+    setSansEquipe(false);
     // Toggle : re-cliquer l'équipe DÉJÀ sélectionnée la DÉSÉLECTIONNE (misclick).
     // Retour à "aucune équipe" → profile.team_id vidé → finish enverra
     // p_team_id = null. L'institution (club LIGUE_CIVILE) reste : le coach
@@ -3786,6 +3840,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
     // Promoted via save() so the wizard's localUserVersion ticks.
     save({
       institution: { id: team.school_id, name: team.school_name, type: "ligue_civile" },
+      civil_sans_equipe: false,
     });
     persistTeamLocally({
       teamId: team.id,
@@ -3912,7 +3967,9 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
       // the institution write internally).
       save({
         institution: { id: schoolId, name: schoolName, type: "ligue_civile" },
+        civil_sans_equipe: false,
       });
+      setSansEquipe(false);
       persistTeamLocally({
         teamId: newTeam.id,
         teamName: formData.team_name,
@@ -3989,6 +4046,17 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           onSelectClub={(id, name) => {
             // Étape 1 → étape 2 : club choisi, on verrouille et on passe
             // aux équipes de ce club (umbrella + création verrouillée).
+            // Le club est ENREGISTRÉ dès maintenant (BP 2026-10-15) : un
+            // responsable sans équipe n'a pas d'autre moment pour l'être.
+            // Changer de club efface l'équipe et le « sans équipe » d'avant.
+            if (selectedTeam && selectedTeam.school_id !== id) {
+              clearTeamLocally();
+              setSelectedTeam(null);
+            }
+            save({
+              institution: { id, name, type: "ligue_civile" },
+              civil_sans_equipe: false,
+            });
             setLockedSchoolId(id);
             setLockedSchoolName(name);
             setError(null);
@@ -4015,6 +4083,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           selectedTeamId={selectedTeam?.id ?? null}
           onSelect={handleJoinExistingTeam}
           rechercheEquipe
+          sansEquipe={sansEquipe}
+          onSansEquipe={handleSansEquipe}
           onCreate={() => {
             setError(null);
             setMode("create");
@@ -4109,6 +4179,8 @@ function UmbrellaStep({
   prioritySport,
   createAsCard = false,
   rechercheEquipe = false,
+  sansEquipe = false,
+  onSansEquipe,
 }: {
   schoolId: string;
   schoolName: string;
@@ -4151,6 +4223,10 @@ function UmbrellaStep({
   // « NOM — Catégorie · Division · Genre » en titre de carte, sans les
   // pastilles qui le répéteraient. Les autres parcours ne changent pas.
   rechercheEquipe?: boolean;
+  // Inscription coach civil : « Je ne coache aucune équipe » (responsable du
+  // club sans équipe — BP 2026-10-15). Absent → pas de bouton (autres parcours).
+  sansEquipe?: boolean;
+  onSansEquipe?: () => void;
 }) {
   const [teams, setTeams] = useState<TeamSearchRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -4354,6 +4430,26 @@ function UmbrellaStep({
         <div className="bg-[#111317] border border-white/5 rounded-lg p-4 text-[12px] text-[#9CA3AF]">
           Aucune équipe de ce club ne correspond à <span className="font-bold text-white">&ldquo;{rechercheTexte.trim()}&rdquo;</span>.
         </div>
+      )}
+
+      {onSansEquipe && !loading && (
+        <button
+          type="button"
+          onClick={onSansEquipe}
+          aria-pressed={sansEquipe}
+          data-testid="sans-equipe"
+          className={`w-full text-left bg-[#111317] border rounded-lg p-4 transition-colors ${
+            sansEquipe ? "border-[#E63946]" : "border-white/10 hover:border-[#E63946]/40"
+          }`}
+        >
+          <p className="text-[13px] text-white font-bold">
+            {sansEquipe ? "✓ Je ne coache aucune équipe" : "Je ne coache aucune équipe"}
+          </p>
+          <p className="text-[11px] text-[#9CA3AF] mt-1">
+            Pour un responsable du club (directeur ou intérimaire) : tu le confirmeras à l&apos;étape suivante.
+            Ta demande sera vérifiée par l&apos;équipe Nexus avant tout accès aux équipes et aux athlètes.
+          </p>
+        </button>
       )}
 
       {!createAsCard && onCreate && (

@@ -14,12 +14,18 @@
    4 slides (header progress dots) :
      1. Profil      — photo + bio + sport + expérience + tél  (identique école)
      2. Club+Équipe — Club LIGUE_CIVILE (existant ou créé) + équipe
-                       (existante ou créée). Équipe OBLIGATOIRE (parité
-                       wizard web civil — validateInstitution L418-420
-                       force `profile.team_id`).
-     3. Responsable — 2 cartes (C'est moi / Inviter). Pas d'intérim ni
-                       coach_only au civil — la RPC rejette (DIAG civil).
-                       Gate hasResponsable + RPRP obligatoire pour owner.
+                       (existante ou créée). Équipe obligatoire pour un
+                       simple coach ; FACULTATIVE pour un responsable du
+                       club (« Continuer sans équipe », BP 2026-10-15 —
+                       règle commune lib/onboarding/civilSansEquipe, même
+                       règle que le web). La base ne l'exige pas :
+                       finish_coach_civil_onboarding accepte p_team_id null.
+     3. Responsable — 3 cartes (Responsable du club / Intérimaire / Coach).
+                       La RPC accepte owner, interim, invite et coach_only.
+                       Gate hasResponsable + RPRP obligatoire pour owner et
+                       interim. Sans équipe : Coach fermé (il faut être
+                       responsable ; la demande reste EN ATTENTE jusqu'à
+                       l'approbation de l'admin).
      4. Confirmation— récap + Terminer.
 
    finish() → supabase.rpc("finish_coach_civil_onboarding", { 19 params })
@@ -39,6 +45,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { filtrerClubs, peutCreerClub } from "@/lib/clubs/clubCorrespond";
+import { equipeCivileOk } from "@/lib/onboarding/civilSansEquipe";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -131,6 +138,8 @@ export function CoachOnboardingMobileCivil() {
   const [newClubRegion, setNewClubRegion] = useState("");
 
   const [teamMode, setTeamMode] = useState<TeamMode>("pick");
+  // « Continuer sans équipe » : responsable du club qui ne coache aucune équipe.
+  const [sansEquipe, setSansEquipe] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>("");
 
@@ -152,6 +161,7 @@ export function CoachOnboardingMobileCivil() {
     setSelectedTeamId(t.id);
     setSelectedTeamName([t.name, t.ageGroup, t.gender, t.division].filter(Boolean).join(" · "));
     setTeamMode("pick");
+    setSansEquipe(false);
   }, []);
   // New team to create
   const [newTeamName, setNewTeamName] = useState("");
@@ -364,7 +374,11 @@ export function CoachOnboardingMobileCivil() {
   // 'create') → mustBeResponsable=true → seuls owner/interim permis.
   // Évite le bug précédent où null !== false laissait Coach actif pendant
   // le chargement/échec.
-  const mustBeResponsable = clubMode === "create" || hasResponsable !== true;
+  // Sans équipe → il faut être responsable : même fermeture de « Coach ».
+  const sansEquipeActif = sansEquipe && !(
+    (teamMode === "pick" && !!selectedTeamId) || (teamMode === "create" && newTeamName.trim().length > 0)
+  );
+  const mustBeResponsable = clubMode === "create" || hasResponsable !== true || sansEquipeActif;
 
   useEffect(() => {
     if (mustBeResponsable && directorChoice === "coach") {
@@ -415,9 +429,17 @@ export function CoachOnboardingMobileCivil() {
     && teamCreateDivFinal.length > 0
     && newTeamGender !== "";
 
-  const teamReady =
+  const aUneEquipe =
     (teamMode === "pick" && !!selectedTeamId)
     || (teamMode === "create" && teamCreateValid);
+  // Règle commune (lib/onboarding/civilSansEquipe) : l'équipe est requise,
+  // sauf « Continuer sans équipe » — alors il faudra être responsable (slide 3).
+  const etatEquipe = {
+    aUneEquipe: aUneEquipe && !sansEquipe,
+    sansEquipe,
+    choixResponsable: directorChoice,
+  };
+  const teamReady = equipeCivileOk(etatEquipe, false).ok;
 
   const canProceedSlide2 = clubReady && teamReady;
 
@@ -433,6 +455,7 @@ export function CoachOnboardingMobileCivil() {
     if (mustBeResponsable && directorChoice === "coach") return false;
     // RPRP gate dur pour owner + interim.
     if (directorChoice === "owner" || directorChoice === "interim") return rprpAttested;
+    if (sansEquipe) return false; // sans équipe : responsable obligatoire
     if (directorChoice === "coach") {
       // Coach sans email = coach_only (OK). Coach avec email partiel/invalide
       // = bloqué tant que l'email n'est pas valide ou vidé.
@@ -442,7 +465,8 @@ export function CoachOnboardingMobileCivil() {
     return false;
   })();
 
-  const canSubmit = canProceedSlide1 && canProceedSlide2 && canProceedSlide3 && !saving;
+  const canSubmit = canProceedSlide1 && canProceedSlide2 && canProceedSlide3
+    && equipeCivileOk(etatEquipe, true).ok && !saving;
 
   /* ── Handlers nav ────────────────────────────────────────── */
   const handleNext = useCallback(() => {
@@ -498,11 +522,12 @@ export function CoachOnboardingMobileCivil() {
         p_experience_years: expYears,
         p_photo_url:        photo || null,
         // Équipe : soit existante, soit création
-        p_team_id:          teamMode === "pick" ? selectedTeamId : null,
-        p_team_name:        teamMode === "create" ? newTeamName.trim() : null,
-        p_team_age_group:   teamMode === "create" ? ageFinal : null,
-        p_team_gender:      teamMode === "create" ? (newTeamGender || null) : null,
-        p_team_division:    teamMode === "create" ? divFinal : null,
+        // Sans équipe (responsable du club) : aucune équipe envoyée.
+        p_team_id:          !sansEquipe && teamMode === "pick" ? selectedTeamId : null,
+        p_team_name:        !sansEquipe && teamMode === "create" ? newTeamName.trim() : null,
+        p_team_age_group:   !sansEquipe && teamMode === "create" ? ageFinal : null,
+        p_team_gender:      !sansEquipe && teamMode === "create" ? (newTeamGender || null) : null,
+        p_team_division:    !sansEquipe && teamMode === "create" ? divFinal : null,
         // Responsable (mapping UI 3 cartes → RPC 4 choix)
         p_director_choice:  rpcChoice,
         p_rprp_accepted:    !!rprpAttested,
@@ -546,7 +571,7 @@ export function CoachOnboardingMobileCivil() {
   }, [
     canSubmit, userId, firstName, lastName, phone, photo, bio, sport, experienceYears,
     clubMode, selectedClubId, selectedClubRegion, newClubName, newClubCity, newClubRegion,
-    teamMode, selectedTeamId, newTeamName, newTeamAgeGroup, newTeamAgeOther,
+    teamMode, sansEquipe, selectedTeamId, newTeamName, newTeamAgeGroup, newTeamAgeOther,
     newTeamDivision, newTeamDivisionOther, newTeamGender,
     directorChoice, rprpAttested, inviteEmail,
     router, toast, queryClient,
@@ -642,7 +667,9 @@ export function CoachOnboardingMobileCivil() {
             newClubCity={newClubCity} setNewClubCity={setNewClubCity}
             newClubRegion={newClubRegion} setNewClubRegion={setNewClubRegion}
             teamMode={teamMode}
-            onTeamModeChange={setTeamMode}
+            onTeamModeChange={(m) => { setSansEquipe(false); setTeamMode(m); }}
+            sansEquipe={sansEquipe}
+            onSansEquipe={() => setSansEquipe((v) => !v)}
             selectedTeamName={selectedTeamName}
             onOpenTeam={() => setTeamSheetOpen(true)}
             civilTeamsLoaded={civilTeamsLoaded}
@@ -668,6 +695,7 @@ export function CoachOnboardingMobileCivil() {
             rprpAttested={rprpAttested} setRprpAttested={setRprpAttested}
             inviteEmail={inviteEmail} setInviteEmail={setInviteEmail}
             mustBeResponsable={mustBeResponsable}
+            sansEquipe={sansEquipeActif}
             responsableLoading={responsableLoading}
             inviteEmailValid={inviteEmailValid}
             inviteEmailFilled={inviteEmailFilled}
@@ -680,7 +708,8 @@ export function CoachOnboardingMobileCivil() {
             clubName={clubMode === "create" ? newClubName : selectedClubName}
             clubCity={clubMode === "create" ? newClubCity : selectedClubCity}
             teamName={
-              teamMode === "create"
+              sansEquipe ? "Aucune — responsable du club"
+              : teamMode === "create"
                 ? `${newTeamName} · ${teamCreateAgeFinal} · ${teamCreateDivFinal} · ${newTeamGender}`
                 : selectedTeamName
             }
@@ -820,6 +849,7 @@ export function CoachOnboardingMobileCivil() {
         loading={civilTeamsLoading}
         keyOf={(t) => t.id}
         onSelect={(t) => {
+          setSansEquipe(false);
           setTeamMode("pick");
           setSelectedTeamId(t.id);
           setSelectedTeamName(libelleEquipe(t, selectedClubName));
@@ -1020,6 +1050,9 @@ interface Slide2Props {
   newClubRegion: string; setNewClubRegion: (v: string) => void;
   teamMode: TeamMode;
   onTeamModeChange: (m: TeamMode) => void;
+  /** « Continuer sans équipe » (responsable du club sans équipe). */
+  sansEquipe: boolean;
+  onSansEquipe: () => void;
   selectedTeamName: string;
   onOpenTeam: () => void;
   civilTeamsLoaded: boolean;
@@ -1199,6 +1232,23 @@ function Slide2ClubTeam(p: Slide2Props) {
               )}
             </div>
           )}
+
+          {/* Responsable du club qui ne coache aucune équipe (BP 2026-10-15). */}
+          <button
+            type="button"
+            onClick={() => { void triggerHaptic("Light"); p.onSansEquipe(); }}
+            aria-pressed={p.sansEquipe}
+            className={`w-full text-left mt-4 rounded-2xl border px-4 py-3 active:opacity-80 ${
+              p.sansEquipe ? "border-[#E63946] bg-[#E63946]/10" : "border-white/[0.08] bg-[#1A1D24]"
+            }`}
+          >
+            <p className="text-[14px] font-bold text-white">
+              {p.sansEquipe ? "✓ Continuer sans équipe" : "Continuer sans équipe"}
+            </p>
+            <p className="text-[12px] text-white/55 mt-0.5">
+              Pour un responsable du club (directeur ou intérimaire) qui ne coache aucune équipe. Tu le confirmeras à l&apos;étape suivante.
+            </p>
+          </button>
         </>
       )}
 
@@ -1219,6 +1269,8 @@ interface Slide3Props {
   rprpAttested: boolean; setRprpAttested: (v: boolean) => void;
   inviteEmail: string; setInviteEmail: (v: string) => void;
   mustBeResponsable: boolean;
+  /** Pas d'équipe : il faut se déclarer responsable. */
+  sansEquipe: boolean;
   responsableLoading: boolean;
   inviteEmailValid: boolean;
   inviteEmailFilled: boolean;
@@ -1288,7 +1340,11 @@ function Slide3Responsable(p: Slide3Props) {
       {/* Bannière contextuelle Loi 25 (club créé ou existant sans responsable) */}
       {p.mustBeResponsable && (
         <div className="mt-5 rounded-2xl border border-[#DAB65A]/30 bg-[#DAB65A]/[0.08] px-4 py-3.5">
-          {newClubMode ? (
+          {p.sansEquipe ? (
+            <p className="text-[13px] text-white/85 leading-relaxed">
+              Tu ne coaches aucune équipe : pour terminer, choisis «&nbsp;Responsable du club&nbsp;» ou «&nbsp;Responsable intérimaire&nbsp;» et coche l&apos;attestation RPRP. Ta demande sera vérifiée par l&apos;équipe Nexus avant tout accès aux équipes et aux athlètes.
+            </p>
+          ) : newClubMode ? (
             <p className="text-[13px] text-white/85 leading-relaxed">
               En créant ce club sur Nexus, tu en deviens le responsable (Loi 25). Coche l&apos;attestation RPRP pour continuer.
             </p>
