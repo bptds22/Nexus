@@ -1,0 +1,23 @@
+fixtures jetables créées : 2 comptes, 2 fiches
+1 (bureau) suggestion : "Voulais-tu dire jeune.tremblay@gmail.com ? Avec une adresse mal écrite, tu ne pourrais pas récupérer ton compte. Oui, corriger Non, elle est bonne"
+1 (bureau) après « Oui, corriger » : jeune.tremblay@gmail.com | encadré : 0
+1 (mobile) suggestion : "Voulais-tu dire jeune.tremblay@gmail.com ? Avec une adresse mal écrite, tu ne pourrais pas récupérer ton compte. Oui, corriger Non, elle est bonne"
+1 (mobile) après « Oui, corriger » : jeune.tremblay@gmail.com | encadré : 0
+2 (bureau) avertissement : "Tu as peut-être déjà un compte. Connecte-toi avec ton autre adresse, ou continue. ME CONNECTER AVEC MON AUTRE ADRESSE CONTINUER"
+2 (bureau) rien de l'autre fiche dans la page : oui (courriel absent)
+2 (mobile) avertissement : "Tu as peut-être déjà un compte. Connecte-toi avec ton autre adresse, ou continue. ME CONNECTER AVEC MON AUTRE ADRESSE CONTINUER"
+2 (mobile) rien de l'autre fiche dans la page : oui (courriel absent)
+2 fiche créée pour le compte en inscription (avant « Continuer ») : 0
+2 après « Continuer » : étape 2 atteinte, fiche créée : true | file admin : [{"source":"ATHLETE","operation":"INSERT"}]
+3a (bureau) : "Cet athlète existe déjà Même nom et même date de naissance. Ouvre sa fiche plutôt que d'en créer une seconde. Émile Gagnon · École secondaire des Érables Déjà dans ton effectif Voir sa fiche Ce n'est pas lui — continuer la création"
+3a (mobile) : "Cet athlète existe déjà Même nom et même date de naissance. Ouvre sa fiche plutôt que d'en créer une seconde. Émile Gagnon · École secondaire des Érables Déjà dans ton effectif Voir sa fiche Ce n'est pas lui — continuer la création"
+3b LOI 25 (mineur caché) : encadré : 0 | école de l'autre fiche dans la page : absente | étape : ÉTAPE 2
+3c courriel exact sans clic : « Lié au compte » : 0 | carte d'invitation : oui
+3 fiches du coach avant / après les captures : 11 / 11 (aucune création attendue)
+remise en état : fiche jetable retirée : oui
+remise en état : fiche jetable retirée : oui
+remise en état : fiche jetable retirée : oui
+remise en état : compte jetable supprimé : 200
+remise en état : compte jetable supprimé : 200
+file doublons_probables après remise en état : 0
+erreurs JavaScript des pages : aucune

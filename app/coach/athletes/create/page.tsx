@@ -37,7 +37,8 @@ import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
-import { messageErreurNexus } from "@/lib/erreurs/messageErreurNexus";
+import { messageErreurNexus, messageCourrielDejaPris } from "@/lib/erreurs/messageErreurNexus";
+import { athletesMemeIdentite, cleIdentite, type AthleteMemeIdentite } from "@/lib/queries/coach/athletesMemeIdentite";
 import ErreurSauvegarde, { MESSAGE_ERREUR_GENERIQUE } from "@/components/shared/ErreurSauvegarde";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -297,6 +298,12 @@ export default function CreateAthletePage() {
   const [ancreAilleurs, setAncreAilleurs] = useState(false);
   const [equipeTransfert, setEquipeTransfert] = useState<string | null>(null);
   const [envoiAncre, setEnvoiAncre] = useState(false);
+  /* Même nom + même date de naissance (D1, 2026-10-15) : seulement des fiches que
+     ce coach voit déjà (RLS). `identiteVerifiee` = la clé déjà posée, pour que
+     « Ce n'est pas lui » laisse passer sans reposer la question. */
+  const [memeIdentite, setMemeIdentite] = useState<AthleteMemeIdentite[]>([]);
+  const identiteVerifiee = useRef<string | null>(null);
+  const [inviteMemeIdentite, setInviteMemeIdentite] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
   const [resultatAncre, setResultatAncre] = useState<{ ok: boolean; msg: string } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [otherPendingCount, setOtherPendingCount] = useState<number>(0);
@@ -653,8 +660,9 @@ export default function CreateAthletePage() {
 
   /* ── Navigation ────────────────────────────────────────────── */
 
-  function goNext() {
+  async function goNext() {
     if (!validateStep(currentStep)) { setShowErrors(true); return; }
+    if (currentStep === 1 && !(await verifierAvantCreation())) return;
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
     setShowErrors(false);
     if (currentStep < 7) {
@@ -694,14 +702,63 @@ export default function CreateAthletePage() {
     }
   }
 
+  /* Invitation d'un athlète trouvé par « même identité » : la RPC du transfert
+     (par courriel, résolu côté serveur). Seulement pour une fiche AVEC compte
+     qui n'est pas déjà à ce coach. */
+  async function inviterMemeIdentite(a: AthleteMemeIdentite) {
+    if (!a.courriel || !equipeTransfert || envoiAncre) return;
+    setEnvoiAncre(true);
+    setInviteMemeIdentite(null);
+    try {
+      const r = await inviteAnchoredAthlete(createClient(), a.courriel, equipeTransfert);
+      setInviteMemeIdentite({ id: a.athleteId, ok: r.ok, msg: r.message || "Invitation envoyée — il devra l'accepter." });
+    } finally {
+      setEnvoiAncre(false);
+    }
+  }
+
+  /* Avant de créer (D1, 2026-10-15). Rend false s'il faut s'arrêter à l'étape 1.
+     1. Courriel EXACT d'un athlète invitable tapé sans cliquer la suggestion :
+        on bascule vers l'invitation, comme le clic l'aurait fait. Avant, la
+        création partait — et le doublon se faisait en silence.
+     2. Même nom + même date de naissance qu'une fiche que ce coach VOIT : on la
+        lui montre, une fois. Ce qu'il ne voit pas ne sort jamais de la base. */
+  async function verifierAvantCreation(): Promise<boolean> {
+    if (linkedToExisting) return true;
+    const courriel = form.identity.email.trim().toLowerCase();
+    const exacte = courriel
+      ? emailAutocomplete?.suggestions.find((s) => s.email.trim().toLowerCase() === courriel)
+      : undefined;
+    if (exacte) {
+      await handleSelectSuggestion(exacte);
+      goToStep(1);
+      return false;
+    }
+
+    const { firstName, lastName, dateOfBirth } = form.identity;
+    const cle = cleIdentite(firstName, lastName, dateOfBirth);
+    if (identiteVerifiee.current === cle) return true;
+    const trouves = await athletesMemeIdentite(createClient(), firstName, lastName, dateOfBirth);
+    identiteVerifiee.current = cle;
+    setMemeIdentite(trouves);
+    setInviteMemeIdentite(null);
+    if (trouves.length > 0) {
+      goToStep(1);
+      return false;
+    }
+    return true;
+  }
+
   async function handleSubmit() {
     if (!validateStep(7)) { setShowErrors(true); return; }
 
     /* ANCRÉ AILLEURS → ON NE CRÉE RIEN.
        La fiche existe et appartient à un autre coach. Créer produirait le
-       doublon exact que la détection cherche à éviter — et rien en base ne
-       l'empêche (aucun index unique sur athletes.email). La seule action
-       légitime est l'invitation, proposée à l'étape 1. */
+       doublon exact que la détection cherche à éviter. L'index unique sur
+       athletes.email (athletes_email_lower_btrim_uniq, 2026-08-12) refuserait
+       l'INSERT si la fiche porte ce courriel — mais pas si le courriel n'est que
+       celui de son COMPTE. La seule action légitime est l'invitation, proposée
+       à l'étape 1. */
     if (ancreAilleurs) {
       setCurrentStep(1);
       setShowErrors(true);
@@ -712,6 +769,10 @@ export default function CreateAthletePage() {
     // (goToStep ne valide rien). Garantit qu'aucune row <14 n'atteint
     // saveAthleteCreate, quel que soit le chemin de navigation.
     if (isUnder14(form.identity.dateOfBirth)) { setCurrentStep(1); setShowErrors(true); return; }
+
+    // Doublon (courriel exact non cliqué, même identité visible) : goToStep ne
+    // valide rien, donc la vérification de l'étape 1 est refaite ici.
+    if (!(await verifierAvantCreation())) return;
 
     /* Cote-A intercept : originalCote is always null for a fresh create ;
        any non-null newCote represents a first-time rating (high-impact),
@@ -755,7 +816,11 @@ export default function CreateAthletePage() {
     });
     if (result.error) {
       console.error("Error creating athlete:", result.error);
-      setErreurSauvegarde(messageErreurNexus(result.error.message) ?? MESSAGE_ERREUR_GENERIQUE);
+      setErreurSauvegarde(
+        messageCourrielDejaPris(result.error.message)
+          ?? messageErreurNexus(result.error.message)
+          ?? MESSAGE_ERREUR_GENERIQUE,
+      );
       return;
     }
 
@@ -1004,6 +1069,60 @@ export default function CreateAthletePage() {
 
             <p className="text-[12px] text-[#4a4d56] mt-1.5">Tape l&apos;email — si l&apos;athlète a déjà un compte Nexus, des suggestions s&apos;afficheront. Jamais partagé aux recruteurs.</p>
           </div>
+
+          {/* MÊME IDENTITÉ (D1) — seulement des fiches que ce coach voit déjà.
+              Masquée dès que le nom ou la date change (la question n'est plus la même). */}
+          {memeIdentite.length > 0 && identiteVerifiee.current === cleIdentite(d.firstName, d.lastName, d.dateOfBirth) && (
+            <div data-meme-identite className="sm:col-span-2 rounded-lg bg-[#1A1D24] border border-[#F59E0B]/30 p-4">
+              <p className="text-[13px] font-semibold text-white">Cet athlète existe déjà</p>
+              <p className="text-[12px] text-[#9CA3AF] mt-1 leading-relaxed">
+                Même nom et même date de naissance. Ouvre sa fiche plutôt que d&apos;en créer une seconde.
+              </p>
+              <ul className="mt-3 space-y-3">
+                {memeIdentite.map((a) => (
+                  <li key={a.athleteId} className="rounded-lg border border-[#2D3748] bg-[#111317] p-3">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="text-[14px] font-semibold text-white">{a.prenom} {a.nom}</span>
+                      {a.ecole && <span className="text-[12px] text-[#9CA3AF]">· {a.ecole}</span>}
+                      <span className="text-[11px] font-semibold text-[#F59E0B]">
+                        {a.estLeMien ? "Déjà dans ton effectif" : "Pas dans ton effectif"}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                      <a href={`/coach/athletes/${a.athleteId}`}
+                        className="px-4 py-2.5 text-center rounded-lg border border-[#2D3748] text-white text-[13px] font-semibold hover:border-[#E63946]/60">
+                        Voir sa fiche
+                      </a>
+                      {!a.estLeMien && a.aUnCompte && a.courriel && coachTeam.teams.length > 0 && (
+                        <>
+                          <select value={equipeTransfert ?? ""} onChange={(e) => setEquipeTransfert(e.target.value || null)}
+                            title="Équipe d'accueil"
+                            className="flex-1 bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-[#E63946]/50">
+                            <option value="">Choisir une équipe</option>
+                            {coachTeam.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          </select>
+                          <button type="button" onClick={() => void inviterMemeIdentite(a)}
+                            disabled={!equipeTransfert || envoiAncre || (inviteMemeIdentite?.id === a.athleteId && inviteMemeIdentite.ok)}
+                            className="px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                            {envoiAncre ? "Envoi…" : "Inviter à rejoindre mon équipe"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    {inviteMemeIdentite?.id === a.athleteId && (
+                      <p className={`text-[12px] font-semibold mt-2 ${inviteMemeIdentite.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                        {inviteMemeIdentite.ok ? "✓ " : ""}{inviteMemeIdentite.msg}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <button type="button" onClick={() => { setMemeIdentite([]); void goNext(); }}
+                className="mt-3 text-[12px] font-semibold text-[#9CA3AF] hover:text-white underline underline-offset-2">
+                Ce n&apos;est pas lui — continuer la création
+              </button>
+            </div>
+          )}
         </div>
 
         {(

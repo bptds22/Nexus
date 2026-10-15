@@ -21,6 +21,7 @@ import { ParentalBlock } from "@/components/auth/signup/ParentalBlock";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import { SocialButtonsAuth } from "@/components/auth/SocialButtonsAuth";
 import { deconnexion } from "@/lib/auth/deconnexion";
+import { suggestionCourriel } from "@/lib/auth/suggestionCourriel";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -101,6 +102,17 @@ function AuthContent() {
   // + validation + buildSignupArgs() vit dans le hook. users.context athlète
   // (école/civil) est capté à l'écran 2 (D1) → athlète civil non régressé.
   const sf = usePartialSignup({ lockedEmail: searchParams.get("email") ?? "" });
+
+  /* Courriel mal écrit (gmail.con…) : suggérer AVANT de continuer (D1, 2026-10-15).
+     Le courriel n'étant pas confirmé, une faute ouvre un compte qu'on ne peut plus
+     récupérer — et le jeune se réinscrit (2 des 4 doublons de prod). Montrée en
+     quittant le champ ou au clic sur « Continuer », jamais pendant la frappe
+     (« gmail.co » n'est qu'une étape vers « gmail.com »). Non bloquante : « Non,
+     elle est bonne » laisse passer l'adresse telle quelle. */
+  const [courrielQuitte, setCourrielQuitte] = useState(false);
+  const [courrielGarde, setCourrielGarde] = useState<string | null>(null);
+  const courrielPropose = suggestionCourriel(sf.email);
+  const suggestionEnAttente = !!courrielPropose && courrielGarde !== sf.email;
 
   /* ── Sync état signup ↔ URL (?screen&role) + bouton retour navigateur ──
      Déclaré APRÈS `sf` (TDZ). Avancée d'écran → pushState ; recul/même écran →
@@ -384,8 +396,28 @@ function AuthContent() {
                         <div>
                           <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>{T.signup.form.labels.email} <span className="text-[#EF4444]">*</span></label>
                           <input type="email" placeholder={T.signup.form.placeholders.email} value={sf.email}
-                            onChange={(e) => sf.setEmail(e.target.value)} readOnly={emailLockedByInvitation}
+                            onChange={(e) => sf.setEmail(e.target.value)} onBlur={() => setCourrielQuitte(true)} readOnly={emailLockedByInvitation}
                             className={`${inputClass} ${emailLockedByInvitation ? "opacity-70 cursor-not-allowed" : ""}`} />
+                          {courrielQuitte && suggestionEnAttente && !emailLockedByInvitation && courrielPropose && (
+                            <div data-suggestion-courriel className="mt-2 rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-3">
+                              <p className="text-[13px] text-white">
+                                Voulais-tu dire <span className="font-semibold break-all">{courrielPropose}</span> ?
+                              </p>
+                              <p className="mt-1 text-[12px] text-[#9CA3AF]">
+                                Avec une adresse mal écrite, tu ne pourrais pas récupérer ton compte.
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <button type="button" onClick={() => sf.setEmail(courrielPropose)}
+                                  className="h-9 px-3 rounded-lg bg-[#E63946] text-white text-[12px] font-semibold hover:bg-[#D42B22]">
+                                  Oui, corriger
+                                </button>
+                                <button type="button" onClick={() => setCourrielGarde(sf.email)}
+                                  className="h-9 px-3 rounded-lg border border-white/15 text-[#D1D5DB] text-[12px] font-semibold hover:border-white/30">
+                                  Non, elle est bonne
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>{T.signup.form.labels.password} <span className="text-[#EF4444]">*</span></label>
@@ -404,7 +436,10 @@ function AuthContent() {
                           {sf.confirmPassword.length > 0 && !sf.pwdMatches && <p className="text-xs mt-1.5 text-[#EF4444]">{T.signup.form.passwordMismatch}</p>}
                         </div>
 
-                        <button type="button" onClick={sf.next} disabled={!sf.canProceedScreen1}
+                        <button type="button" onClick={() => {
+                            if (suggestionEnAttente && !emailLockedByInvitation) { setCourrielQuitte(true); return; }
+                            sf.next();
+                          }} disabled={!sf.canProceedScreen1}
                           className={`h-14 w-full rounded-xl font-head font-black text-[14px] uppercase tracking-widest mt-2 transition-all ${sf.canProceedScreen1 ? "bg-[#E63946] text-white hover:bg-[#D42B22] cursor-pointer" : "bg-[#E63946]/50 text-white/50 cursor-not-allowed"}`}>
                           Continuer
                         </button>

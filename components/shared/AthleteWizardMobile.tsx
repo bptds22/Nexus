@@ -515,13 +515,12 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         // propres orphelins, et un coach resaisissant un courriel qu'il avait
         // lui-même créé ne voyait aucune suggestion.
         //
-        // ⚠ CETTE DÉTECTION EST CONTOURNABLE, ET C'EST ASSUMÉ POUR L'INSTANT.
-        // Elle ne se déclenche que si le coach CLIQUE une suggestion. Taper le
-        // courriel en entier sans cliquer crée un doublon en silence : il
-        // n'existe AUCUNE contrainte d'unicité sur athletes.email — colonne
-        // `text` brut, pas de CITEXT, aucun index unique (vérifié en base). Le
-        // garde-fou serait un index unique, décidé dans un ticket séparé après
-        // comptage des doublons existants.
+        // ⚠ CETTE DÉTECTION EST CONTOURNABLE SUR MOBILE (le web est corrigé, D1
+        // 2026-10-15 ; mobile au registre §89). Elle ne se déclenche que si le
+        // coach CLIQUE une suggestion. Taper le courriel en entier sans cliquer
+        // mène à la création. L'index unique athletes_email_lower_btrim_uniq
+        // (2026-08-12) la refuse si une FICHE porte ce courriel ; il ne voit pas
+        // le courriel du seul COMPTE (athletes.email vide) — là, le doublon passe.
         // On passe par lookupInvitableByEmail — LA MÊME recherche que le
         // dialogue d'invitation du roster — au lieu de la variante du wizard.
         // Deux raisons : elle couvre une population de PLUS (les comptes sans
@@ -946,8 +945,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
 
        La fiche existe DÉJÀ ; ce que le coach demande n'est pas une création mais
        un rattachement. Créer ici produirait exactement le doublon que la
-       détection cherche à éviter, avec deux fiches portant le même courriel —
-       et rien en base ne l'empêcherait, faute d'index unique sur athletes.email.
+       détection cherche à éviter. L'index unique athletes_email_lower_btrim_uniq
+       refuserait deux FICHES au même courriel, mais pas une fiche dont le
+       courriel n'est que celui du compte.
 
        On réutilise l'athleteId de la SUGGESTION, jamais un nouvel id. La modale
        route ensuite sur hasAccount : compte existant → invitation d'équipe
@@ -959,8 +959,8 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     /* ANCRÉ AILLEURS → ON NE CRÉE RIEN.
        Même principe que la bascule `linkedToExisting` juste dessous, pour une
        raison plus forte encore : ici la fiche existe ET appartient à un autre
-       coach. Créer produirait un doublon que rien en base n'empêche (aucun
-       index unique sur athletes.email). La seule action légitime est
+       coach. Créer produirait un doublon (l'index unique sur athletes.email ne
+       couvre pas le courriel du seul compte). La seule action légitime est
        l'invitation, proposée dans le bloc de l'écran 1. */
     if (isCreate && ancreAilleurs) {
       setSaving(false);

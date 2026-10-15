@@ -18,6 +18,7 @@ import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { deconnexion } from "@/lib/auth/deconnexion";
 import { AthleteOnboardingMobile } from "@/components/shared/AthleteOnboardingMobile";
 import { SUBJECTS, HONORS, CEGEP_REGIONS } from "@/lib/config/academicOptions";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
@@ -52,6 +53,17 @@ const STEPS = [
   { number: 3, name: "Physique" },
   { number: 4, name: "Sport & Médias" },
 ];
+
+/* Un compte par sport faisait un doublon (cas relevé en prod le 2026-10-15) :
+   une même fiche porte plusieurs équipes, dans « Parcours d'équipes » du profil. */
+function PlusieursSports({ className = "mt-2 mb-6" }: { className?: string }) {
+  return (
+    <p data-plusieurs-sports className={`${className} text-[12px] leading-relaxed text-[#9CA3AF]`}>
+      Tu joues dans plusieurs sports ? Ajoute une équipe à ta fiche, pas un 2e compte.
+      <span className="text-[#6b7280]"> Après ton inscription : Profil → Parcours d&apos;équipes.</span>
+    </p>
+  );
+}
 
 // CEGEP_REGIONS, SUBJECTS, HONORS are imported from @/lib/config/academicOptions
 // so the athlete-onboarding pill grids stay in sync with the athlete-profile
@@ -702,6 +714,12 @@ function AthleteOnboardingDesktop() {
   /* L'échec de sauvegarde ne part plus au seul console.error : il s'affiche.
      Un onboarding qui échoue en silence se lit comme un bouton mort. */
   const [saveError, setSaveError] = useState<string | null>(null);
+  /* Doublon probable (D1, 2026-10-15) : même nom + même date de naissance qu'une
+     fiche active. La base ne rend qu'un code — rien de l'autre fiche. Avertir une
+     fois, ne jamais bloquer : le second « Suivant » enregistre normalement (et le
+     trigger note la paire pour l'admin). */
+  const [doublonPossible, setDoublonPossible] = useState<"COMPTE" | "FICHE_COACH" | null>(null);
+  const doublonVerifie = useRef(false);
 
   // ── Rattachement d'équipe (transfer portal, phase 2) ──────────────────────
   // `joinCodeUsed` est non-null quand l'athlète est arrivé par /join ou a saisi
@@ -1452,6 +1470,24 @@ function AthleteOnboardingDesktop() {
 
     const supabase = createClient();
 
+    // Doublon probable : une seule vérification par visite. Une erreur de la
+    // vérification n'arrête jamais l'inscription.
+    if (step === 1 && !doublonVerifie.current) {
+      const { data: doublon, error: errDoublon } = await supabase.rpc("inscription_doublon_possible", {
+        p_prenom: firstName.trim(),
+        p_nom: lastName.trim(),
+        p_date_naissance: dateOfBirth || null,
+      });
+      if (errDoublon) console.error(`[Onboarding doublon] ${erreurLisible(errDoublon)}`);
+      doublonVerifie.current = true;
+      if (doublon === "COMPTE" || doublon === "FICHE_COACH") {
+        setDoublonPossible(doublon);
+        setSaving(false);
+        return;
+      }
+    }
+    setDoublonPossible(null);
+
     // Build partial payload for current step
     let payload: Record<string, unknown> = { user_id: userId };
 
@@ -2117,7 +2153,7 @@ function AthleteOnboardingDesktop() {
                   <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
                   Mon sport
                 </div>
-                <div className="grid grid-cols-4 gap-2 mb-6">
+                <div className="grid grid-cols-4 gap-2">
                   {SPORTS.map((s) => (
                     <button key={s} type="button" onClick={() => {
                       setPrimarySport(s); setPrimaryPosition("");
@@ -2131,6 +2167,7 @@ function AthleteOnboardingDesktop() {
                     </button>
                   ))}
                 </div>
+                <PlusieursSports />
 
                 {/* CLUB tier — the civil anchor (athletes.school_id).
                     Sport-agnostic; always selectable. Picking a club
@@ -2467,6 +2504,7 @@ function AthleteOnboardingDesktop() {
                       </button>
                     ))}
                   </div>
+                  <PlusieursSports className="mt-2" />
                 </div>
               )}
               {primarySport && (
@@ -2543,6 +2581,40 @@ function AthleteOnboardingDesktop() {
           <div className="rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-3" role="alert">
             <p className="text-[13px] font-bold text-[#EF4444]">Échec de sauvegarde</p>
             <p className="mt-1 text-[12px] leading-relaxed text-[#9CA3AF]">{saveError}</p>
+          </div>
+        )}
+
+        {/* Doublon probable — rien de l'autre fiche n'est montré (D1). */}
+        {step === 1 && doublonPossible && (
+          <div data-avertissement-doublon={doublonPossible} className="rounded-xl border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-4 py-4" role="status">
+            {doublonPossible === "COMPTE" ? (
+              <>
+                <p className="text-[14px] font-bold text-white">Tu as peut-être déjà un compte.</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-[#D1D5DB]">
+                  Connecte-toi avec ton autre adresse, ou continue.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[14px] font-bold text-white">Ton entraîneur a peut-être déjà créé ta fiche.</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-[#D1D5DB]">
+                  Demande-lui le lien d&apos;invitation pour la récupérer, ou continue.
+                </p>
+              </>
+            )}
+            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+              {doublonPossible === "COMPTE" && (
+                <button type="button"
+                  onClick={async () => { await deconnexion(); router.push("/auth?mode=login"); }}
+                  className="flex-1 py-3 rounded-lg border border-[#F59E0B]/50 text-[#F59E0B] font-head font-bold text-[12px] uppercase tracking-widest hover:bg-[#F59E0B]/10 transition-colors">
+                  Me connecter avec mon autre adresse
+                </button>
+              )}
+              <button type="button" onClick={saveStepAndAdvance} disabled={saving}
+                className="flex-1 py-3 rounded-lg bg-[#E63946] text-white font-head font-bold text-[12px] uppercase tracking-widest hover:bg-[#D42B22] transition-colors disabled:opacity-50">
+                Continuer
+              </button>
+            </div>
           </div>
         )}
 
