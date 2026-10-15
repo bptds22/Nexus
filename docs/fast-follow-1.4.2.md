@@ -2448,7 +2448,9 @@ une seule version distante inconnue suffit à le bloquer.
 **Conséquence** : la voie CLI (`db push`) est inutilisable pour la prod. Les
 lots passent par le connecteur MCP (`apply_migration`) ou par `psql -1`
 (précédent : W2, `docs/partenaires-w2/prod/`), avec enregistrement manuel dans
-`schema_migrations` et `admin_operations`.
+`schema_migrations` et `admin_operations`. **Depuis le 2026-10-14 (décision BP)** :
+c'est Claude Code qui applique par le connecteur, après le GO de BP ; psql seulement si BP
+le demande (`CLAUDE.md`, checklist, point 9).
 
 **Ce qu'il ne faut PAS faire à chaud** : `supabase migration repair --status
 reverted <104 versions>` (proposé par le CLI) réécrit l'historique de la prod —

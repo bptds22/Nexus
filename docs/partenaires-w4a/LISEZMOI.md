@@ -2,7 +2,7 @@
 
 Migration `supabase/migrations/20261014200739_w4a_prospects_partenaire.sql`,
 rollback `supabase/rollback/20261014200739_rollback_w4a_prospects_partenaire.sql`.
-**Local seulement au 2026-10-14. Rien en prod sans le GO de BP.** Aucun écran (W4b, W4c, W4d).
+**Appliquée en prod le 2026-10-14** sur GO de BP (version `20261014200739`, vérifiée en lecture seule : `prod/w4a-verif-apres.sql`, tout conforme). Aucun écran (W4b, W4c, W4d).
 
 ## Décisions BP (2026-10-14)
 
@@ -111,7 +111,9 @@ mobile (registre).
 - Rollback : retour EXACT à l'état sans W4a (`releve-etat.sql`, 8 aspects : fonctions + ACL,
   triggers, contraintes, tables + ACL + RLS, politiques, cron, notifications, évaluations).
 
-## Mise en prod (sur GO de BP seulement)
+## Mise en prod — FAITE le 2026-10-14, par psql, lancée par BP
+
+> **Historique.** Depuis le 2026-10-14 (décision BP), c'est Claude Code qui applique les migrations en prod par le connecteur Supabase, après le GO de BP ; BP ne lance plus psql. Règle : `CLAUDE.md`, MIGRATION SAFETY CHECKLIST, point 9.
 
 Même voie que W3b : une seule transaction `psql -1`, relevé avant + migration + gardes et
 enregistrement (version FIXE `20261014200739` dans `schema_migrations`, une ligne
