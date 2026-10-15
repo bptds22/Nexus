@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { verifierJetonDesabonnement, verifierJetonInvitation } from "@/lib/courriel/jetonDesabonnement";
+import { verifierJetonDesabonnement, verifierJetonInvitation, verifierJetonInvitationAthlete } from "@/lib/courriel/jetonDesabonnement";
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/desabonnement — inscrit un compte au registre LCAP.
@@ -57,9 +57,11 @@ export async function POST(req: Request) {
   const secret = process.env.DESABONNEMENT_SECRET ?? "";
   let userId: string | null = null;
   let invitationId: string | null = null;
+  let invitationAthleteId: string | null = null;
   try {
     userId = await verifierJetonDesabonnement(jeton, secret);
     if (!userId) invitationId = await verifierJetonInvitation(jeton, secret);
+    if (!userId && !invitationId) invitationAthleteId = await verifierJetonInvitationAthlete(jeton, secret);
   } catch (e) {
     // Secret absent ou trop court : panne de configuration, pas un jeton
     // invalide. On le dit au journal, pas à l'internaute.
@@ -67,6 +69,7 @@ export async function POST(req: Request) {
     return retour("erreur");
   }
   if (invitationId) return desabonnerAdresse(invitationId, unClic ? "un_clic" : "lien", retour);
+  if (invitationAthleteId) return desabonnerAdresseInvitationAthlete(invitationAthleteId, unClic ? "un_clic" : "lien", retour);
   if (!userId) return retour("invalide");
 
   const { error } = await createServiceClient()
@@ -110,6 +113,43 @@ async function desabonnerAdresse(
     .upsert({ empreinte, source } as never, { onConflict: "empreinte", ignoreDuplicates: true });
   if (error) {
     console.error(`[desabonnement] adresse (invitation ${invitationId}) : ${error.code ?? "?"} ${error.message}`);
+    return retour("erreur");
+  }
+  return retour("ok");
+}
+
+/* Invitation d'ATHLÈTE (courriel de réclamation, 2026-10-15) : le destinataire n'a pas de compte.
+   L'adresse est relue sur la ligne athlete_invitations, son empreinte calculée par la base
+   (empreinte_courriel, la même que celle des cartes prospect) et inscrite au registre des adresses
+   — celui que le trigger d'envoi consulte avant chaque courriel. Ligne absente : plus rien ne
+   partira vers elle, l'effet voulu est atteint. */
+async function desabonnerAdresseInvitationAthlete(
+  invitationId: string,
+  source: "lien" | "un_clic",
+  retour: (etat: "ok" | "invalide" | "erreur") => NextResponse,
+) {
+  const service = createServiceClient();
+  const { data, error: errLecture } = await service
+    .from("athlete_invitations" as never)
+    .select("email")
+    .eq("id", invitationId)
+    .maybeSingle();
+  if (errLecture) {
+    console.error(`[desabonnement] invitation d'athlète ${invitationId} : ${errLecture.message}`);
+    return retour("erreur");
+  }
+  const adresse = (data as { email?: string | null } | null)?.email;
+  if (!adresse) return retour("ok");
+  const { data: empreinte, error: errEmp } = await service.rpc("empreinte_courriel" as never, { p: adresse } as never);
+  if (errEmp || typeof empreinte !== "string") {
+    console.error(`[desabonnement] empreinte (invitation d'athlète ${invitationId}) : ${errEmp?.message ?? "vide"}`);
+    return retour("erreur");
+  }
+  const { error } = await service
+    .from("courriel_desabonnements_adresses" as never)
+    .upsert({ empreinte, source } as never, { onConflict: "empreinte", ignoreDuplicates: true });
+  if (error) {
+    console.error(`[desabonnement] adresse (invitation d'athlète ${invitationId}) : ${error.code ?? "?"} ${error.message}`);
     return retour("erreur");
   }
   return retour("ok");

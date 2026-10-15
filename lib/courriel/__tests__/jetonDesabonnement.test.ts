@@ -10,6 +10,7 @@ import { join } from "node:path";
 import {
   signerJetonDesabonnement, verifierJetonDesabonnement, signerJetonInvitation, verifierJetonInvitation,
   signerJetonDesabonnementParent, verifierJetonDesabonnementParent,
+  signerJetonInvitationAthlete, verifierJetonInvitationAthlete,
 } from "@/lib/courriel/jetonDesabonnement";
 // @ts-ignore TS5097 — node --experimental-strip-types EXIGE l'extension .ts.
 import * as jumeauDeno from "../../../supabase/functions/_shared/jetonDesabonnement.ts";
@@ -108,4 +109,18 @@ test("parent et invitation ne se confondent jamais", async () => {
   assert.equal(await verifierJetonInvitation(`i.${parent}`, SECRET), null);
   assert.equal(await verifierJetonDesabonnementParent(inv, SECRET), null);
   assert.equal(await verifierJetonDesabonnementParent(inv.slice(2), SECRET), null);
+});
+
+test("invitation d'athlète (courriel de réclamation) : signé, vérifié, jumeau identique, cloisonné", async () => {
+  const ID = "0b2c6f5e-1a2b-4c3d-8e9f-0123456789ab";
+  const j = await signerJetonInvitationAthlete(ID, SECRET);
+  assert.ok(j.startsWith("a."));
+  assert.equal(await verifierJetonInvitationAthlete(j, SECRET), ID);
+  assert.equal(await jumeauDeno.signerJetonInvitationAthlete(ID, SECRET), j);
+  // Cloisonnement : un jeton d'un autre usage ne vaut pas ici, ni l'inverse.
+  assert.equal(await verifierJetonInvitationAthlete(await signerJetonInvitation(ID, SECRET), SECRET), null);
+  assert.equal(await verifierJetonInvitation(j, SECRET), null);
+  assert.equal(await verifierJetonDesabonnement(j, SECRET), null);
+  assert.equal(await verifierJetonInvitationAthlete(j, SECRET + "-autre"), null);
+  assert.equal(await verifierJetonInvitationAthlete(j.slice(0, -2), SECRET), null);
 });

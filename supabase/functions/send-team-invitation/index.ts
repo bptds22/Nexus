@@ -2,8 +2,10 @@
 // Envoie UN courriel via Resend. Aucun nom de coach (décision BP du 2026-10-15).
 //
 // Corps attendu :
-//   { email, team_name, school_name, sport, age_group, division, gender, transfer_token }
-// email + transfer_token strictement requis ; le reste = repli gracieux.
+//   { email, team_name, school_name, sport, age_group, division, gender, transfer_token, user_id }
+// email + transfer_token + user_id strictement requis ; le reste = repli gracieux.
+// team_name vide = équipe NON nommable (collégiale ou inconnue : la base ne la transmet pas,
+// règle RSEQ) → texte générique. user_id = le compte, pour le lien de désabonnement signé.
 //
 // À NE PAS CONFONDRE avec send-invitation, qui est la RÉCLAMATION d'un profil
 // par un athlète SANS compte (lien /claim). Ici l'athlète a déjà un compte : le
@@ -12,11 +14,15 @@
 // Gabarit : ossature mutualisée dans ../_shared/emailLayout.ts (renderEmail) ;
 // le corps propre à ce courriel vit dans ./email.ts (buildBody).
 
-import { FROM, APP_URL } from "../_shared/emailLayout.ts";
+import { FROM, APP_URL, SUPPORT } from "../_shared/emailLayout.ts";
 import { buildBody, SUJET } from "./email.ts";
+// @ts-ignore TS5097 — module Deno, l'extension .ts est obligatoire.
+import { signerJetonDesabonnement } from "../_shared/jetonDesabonnement.ts";
 
 const NOTICE_SECRET = Deno.env.get("TEAM_INVITE_NOTICE_SECRET")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+// @ts-ignore TS2304 — Deno, hors du typage Next.
+const DESABONNEMENT_SECRET = Deno.env.get("DESABONNEMENT_SECRET") ?? "";
 
 const SUBJECT = SUJET;
 
@@ -37,10 +43,26 @@ Deno.serve(async (req) => {
   const transfer_token = texte("transfer_token");
   if (!email) return new Response("email requis", { status: 400 });
   if (!transfer_token) return new Response("transfer_token requis", { status: 400 });
+  // Sans compte, pas de lien de désabonnement possible : on n'envoie pas (LCAP).
+  const user_id = texte("user_id");
+  if (!user_id) return new Response("user_id requis", { status: 400 });
+  // Secret absent ou trop court : panne de configuration. On refuse d'envoyer un courriel
+  // sans lien de désabonnement valide (même garde que send-invitation-carte).
+  if (DESABONNEMENT_SECRET.length < 32) {
+    console.error("send-team-invitation: DESABONNEMENT_SECRET absent ou trop court");
+    return new Response("configuration", { status: 500 });
+  }
+  let jeton: string;
+  try {
+    jeton = encodeURIComponent(await signerJetonDesabonnement(user_id, DESABONNEMENT_SECRET));
+  } catch {
+    return new Response("user_id invalide", { status: 400 });
+  }
 
-  // 2026-10-15 (décision BP) : coach_name n'est plus lu, même s'il arrive encore.
-  const teamName = texte("team_name") || "une équipe";
-  const schoolName = texte("school_name");
+  // 2026-10-15 (décision BP, règle RSEQ) : coach_name n'est plus lu, même s'il arrive encore ;
+  // l'équipe n'est nommée que si la base l'a transmise (secondaire ou civile seulement).
+  const teamName = texte("team_name");
+  const schoolName = teamName ? texte("school_name") : "";
 
   // Le jeton voyage dans l'URL. Il ne CONFÈRE rien — l'acceptation reste bornée
   // par is_own_athlete côté base — mais il désigne l'invitation à préremplir.
@@ -80,6 +102,7 @@ Deno.serve(async (req) => {
       gender: texte("gender"),
     },
     transferUrl,
+    `${APP_URL}/desabonnement?t=${jeton}`,
   );
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -94,6 +117,10 @@ Deno.serve(async (req) => {
       subject: SUBJECT,
       html,
       text,
+      headers: {
+        "List-Unsubscribe": `<${APP_URL}/api/desabonnement?t=${jeton}>, <mailto:${SUPPORT}?subject=desabonnement>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     }),
   });
 

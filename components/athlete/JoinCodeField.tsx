@@ -11,6 +11,9 @@
    Le champ ne rattache RIEN lui-même. Il remonte l'équipe résolue et le code
    normalisé au parent, qui décide quand appeler apply_team_attachment (à
    l'étape équipe de l'onboarding, c'est au submit final).
+
+   RÈGLE RSEQ (décision BP 2026-10-15) : aucun coach nommé ; l'équipe et son
+   école ne sont affichées que pour une équipe secondaire ou civile.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
@@ -22,6 +25,7 @@ import {
   type ResolvedJoinTeam,
 } from "@/lib/queries/athlete/teamAttachment";
 import { teamDetails } from "@/lib/config/teamLabel";
+import { equipeNommable } from "@/lib/invitations/equipeNommable";
 
 interface Props {
   /** Code pré-rempli (arrivée depuis /join). */
@@ -56,7 +60,7 @@ export default function JoinCodeField({ initialCode = "", onResolved }: Props) {
     // MÊME copie : le serveur masque déjà les détails d'un code révoqué ou
     // expiré, l'UI ne doit pas rétablir la distinction.
     if (!resolved || !resolved.isValid) {
-      setError("Ce code n'est pas valide. Vérifie-le auprès de ton entraîneur.");
+      setError("Ce code n'est pas valide. Vérifie-le et réessaie.");
       return;
     }
     setTeam(resolved);
@@ -90,19 +94,23 @@ export default function JoinCodeField({ initialCode = "", onResolved }: Props) {
 
       {team ? (
         <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 p-3">
-          {team.schoolLogoUrl ? (
+          {equipeNommable(team.schoolType) && team.schoolLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={team.schoolLogoUrl} alt="" className="h-10 w-10 rounded-lg object-contain" />
           ) : null}
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[15px] font-semibold text-white">{team.teamName}</div>
-            <div className="truncate text-[12px] text-[#9CA3AF]">
-              {[team.schoolName, teamDetails({
-                sport: team.sportName, age_group: team.ageGroup, division: team.division,
-                gender: team.gender, season: team.season, league: team.league,
-              })].filter(Boolean).join(" · ")}
+          {equipeNommable(team.schoolType) ? (
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[15px] font-semibold text-white">{team.teamName}</div>
+              <div className="truncate text-[12px] text-[#9CA3AF]">
+                {[team.schoolName, teamDetails({
+                  sport: team.sportName, age_group: team.ageGroup, division: team.division,
+                  gender: team.gender, season: team.season, league: team.league,
+                })].filter(Boolean).join(" · ")}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="min-w-0 flex-1 text-[15px] font-semibold text-white">Code valide</div>
+          )}
           <button
             type="button"
             onClick={clear}
@@ -135,7 +143,7 @@ export default function JoinCodeField({ initialCode = "", onResolved }: Props) {
             </button>
           </div>
           <p className="mt-2 text-[12px] text-[#6b7280]">
-            Ton entraîneur te l&apos;a donné à l&apos;oral ou par message.
+            Le code de ton équipe.
           </p>
         </>
       )}

@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { teamDetails } from "@/lib/config/teamLabel";
 import { attachmentMessageFr } from "@/lib/queries/shared/attachmentErrors";
+import { equipeNommable, titreInvitation } from "@/lib/invitations/equipeNommable";
 
 /* ═══════════════════════════════════════════════════════════════
    PendingInvitations — Flow A athlete-side panel.
@@ -26,6 +28,11 @@ import { attachmentMessageFr } from "@/lib/queries/shared/attachmentErrors";
    notifications-updated window event that respond() dispatches —
    today the badge only counts athlete_notifications, so the event
    is a no-op refresh but ready to extend.
+
+   RÈGLE RSEQ (décision BP 2026-10-15) : l'écran ne nomme JAMAIS le coach,
+   et ne nomme l'équipe et son école que si c'est une équipe secondaire ou
+   civile (lib/invitations/equipeNommable). Collégiale ou inconnue : « Invitation
+   à rejoindre une équipe », sans nom, sans école, sans sport.
 ═══════════════════════════════════════════════════════════════ */
 
 interface PendingInvitation {
@@ -37,8 +44,7 @@ interface PendingInvitation {
   division: string | null;
   gender: string | null;
   schoolName: string | null;
-  coachFirstName: string;
-  coachLastName: string;
+  schoolType: string | null;
   createdAt: string;
 }
 
@@ -46,6 +52,8 @@ interface PendingInvitation {
 interface EquipeActuelle {
   label: string;
   schoolName: string | null;
+  /** Faux = équipe collégiale ou inconnue : on n'en affiche aucun nom. */
+  nommable: boolean;
 }
 
 function sportEmoji(sport: string): string {
@@ -88,11 +96,7 @@ export default function PendingInvitations({
           teams!team_id(
             name, age_group, division, gender,
             sports!sport_id(nom),
-            schools!school_id(name)
-          ),
-          invited_by_coach:users!invited_by_coach_id(
-            first_name,
-            last_name
+            schools!school_id(name, type)
           )
         `)
         .eq("athlete_id", athleteId)
@@ -107,10 +111,7 @@ export default function PendingInvitations({
         const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) ?? {};
         const sportRel = (team as Record<string, unknown>).sports as { nom?: string } | { nom?: string }[] | null;
         const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
-        const coachRel = r.invited_by_coach as Record<string, unknown> | Record<string, unknown>[] | null;
-        const coach = (Array.isArray(coachRel) ? coachRel[0] : coachRel) ?? {};
-
-        const schoolRel = (team as Record<string, unknown>).schools as { name?: string } | { name?: string }[] | null;
+        const schoolRel = (team as Record<string, unknown>).schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null;
         const school = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
 
         return {
@@ -122,8 +123,7 @@ export default function PendingInvitations({
           division: ((team as { division?: string }).division) ?? null,
           gender: ((team as { gender?: string }).gender) ?? null,
           schoolName: school?.name ?? null,
-          coachFirstName: ((coach as { first_name?: string }).first_name) || "",
-          coachLastName: ((coach as { last_name?: string }).last_name) || "",
+          schoolType: school?.type ?? null,
           createdAt: r.created_at as string,
         };
       });
@@ -136,7 +136,7 @@ export default function PendingInvitations({
       if (mapped.length > 0) {
         const { data: ta } = await supabase
           .from("team_athletes")
-          .select("teams!team_id(name, age_group, division, gender, sports!sport_id(nom), schools!school_id(name))")
+          .select("teams!team_id(name, age_group, division, gender, sports!sport_id(nom), schools!school_id(name, type))")
           .eq("athlete_id", athleteId)
           .maybeSingle();
         if (!cancelled && ta) {
@@ -144,7 +144,7 @@ export default function PendingInvitations({
           const t = (Array.isArray(rel) ? rel[0] : rel) ?? null;
           if (t) {
             const sp = (t as Record<string, unknown>).sports as { nom?: string } | { nom?: string }[] | null;
-            const sc = (t as Record<string, unknown>).schools as { name?: string } | { name?: string }[] | null;
+            const sc = (t as Record<string, unknown>).schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null;
             const spo = Array.isArray(sp) ? sp[0] : sp;
             const sch = Array.isArray(sc) ? sc[0] : sc;
             setActuelle({
@@ -158,6 +158,7 @@ export default function PendingInvitations({
                 sch?.name ?? null,
               ),
               schoolName: sch?.name ?? null,
+              nommable: equipeNommable(sch?.type),
             });
           }
         }
@@ -197,7 +198,8 @@ export default function PendingInvitations({
 
     setInvitations((prev) => prev.filter((i) => i.id !== invitationId));
     if (status === "ACCEPTED") {
-      showToast(target?.teamName ? `Tu as rejoint ${target.teamName}!` : "Invitation acceptée");
+      // Le nom seulement pour une équipe secondaire ou civile (règle RSEQ).
+      showToast(target?.teamName && equipeNommable(target.schoolType) ? `Tu as rejoint ${target.teamName}!` : "Invitation acceptée");
     } else {
       showToast("Invitation refusée");
     }
@@ -213,19 +215,22 @@ export default function PendingInvitations({
       </h2>
       {/* AVERTISSEMENT DE DÉPART — le point le plus important de l'écran.
           Accepter n'ajoute pas une équipe : ça REMPLACE la sienne, et ça change
-          aussi son école et son entraîneur. L'écran ne le disait pas. */}
+          aussi son école. L'écran ne le disait pas. Équipe collégiale ou inconnue :
+          aucun nom (règle RSEQ). */}
       {actuelle && (
         <div className="rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/[0.06] p-4">
           <p className="text-[12px] font-bold text-[#F59E0B] uppercase tracking-wider">
             Tu fais déjà partie d&apos;une équipe
           </p>
-          <p className="text-[14px] font-bold text-white mt-2">{actuelle.label}</p>
-          {actuelle.schoolName && (
+          {actuelle.nommable && (
+            <p className="text-[14px] font-bold text-white mt-2">{actuelle.label}</p>
+          )}
+          {actuelle.nommable && actuelle.schoolName && (
             <p className="text-[12px] text-[#9CA3AF]">{actuelle.schoolName}</p>
           )}
           <p className="text-[13px] text-[#FCD34D] mt-3 leading-relaxed">
             Accepter une invitation ci-dessous te fera <strong>quitter cette équipe</strong>.
-            Ton école et ton entraîneur changeront aussi. Ton passage sera conservé
+            Ton école changera aussi. Ton passage sera conservé
             dans ton parcours.
           </p>
         </div>
@@ -234,8 +239,16 @@ export default function PendingInvitations({
       <div className="space-y-2">
         {invitations.map((inv) => {
           const isBusy = busy === inv.id;
-          const coachName = `${inv.coachFirstName} ${inv.coachLastName}`.trim();
-          const cible = formatTeamLabel(inv.sportName, inv.ageGroup, inv.division, inv.gender, inv.teamName, null, inv.schoolName);
+          const nommable = equipeNommable(inv.schoolType);
+          const titre = titreInvitation({
+            typeEcole: inv.schoolType,
+            equipe: inv.teamName,
+            ecole: inv.schoolName,
+          });
+          // Détails (sport · catégorie · division · genre) : seulement si l'équipe est nommable.
+          const details = nommable
+            ? teamDetails({ sport: inv.sportName, age_group: inv.ageGroup, division: inv.division, gender: inv.gender })
+            : "";
           const erreur = erreurs[inv.id];
           return (
             <div
@@ -243,19 +256,14 @@ export default function PendingInvitations({
               className="bg-[#1A1D24] rounded-lg border border-[#E63946]/30 p-4 flex flex-wrap items-center gap-4"
             >
               <div className="w-10 h-10 rounded-full bg-[#E63946]/15 flex items-center justify-center text-xl shrink-0">
-                {sportEmoji(inv.sportName)}
+                {nommable ? sportEmoji(inv.sportName) : "🏆"}
               </div>
               <div className="flex-1 min-w-0">
-                {/* Libellé complet via formatTeamLabel — même source que les
-                    sélecteurs d'onboarding, donc les deux surfaces ne peuvent
-                    pas diverger. */}
-                <p className="text-[14px] font-bold text-white truncate">{cible || "Équipe"}</p>
-                {inv.schoolName && (
-                  <p className="text-[12px] text-[#9CA3AF] truncate">{inv.schoolName}</p>
-                )}
-                <p className="text-[12px] text-[#9CA3AF] mt-0.5 truncate">
-                  Invité par {coachName || "un coach"}
-                </p>
+                {/* « Invitation de {Équipe} — {École} » seulement pour une équipe
+                    secondaire ou civile ; détails via teamDetails, même source
+                    que la page /join. */}
+                <p className="text-[14px] font-bold text-white" data-titre-invitation>{titre}</p>
+                {details && <p className="text-[12px] text-[#9CA3AF] mt-0.5">{details}</p>}
                 <p className="text-[11px] text-[#4a4d56] mt-0.5">{relativeTimeFr(inv.createdAt)}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

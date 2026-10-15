@@ -1254,7 +1254,7 @@ function AthleteOnboardingDesktop() {
         // a malicious signup can't query for someone else's profile.
         const { data: orphan } = await supabase
           .from("athletes")
-          .select("id, first_name, last_name, sports:sport_id(nom), schools:school_id(name), users:coach_id(first_name, last_name)")
+          .select("id, first_name, last_name, sports:sport_id(nom), schools:school_id(name, type)")
           .ilike("email", user.email)
           .is("user_id", null)
           .order("created_at", { ascending: false })
@@ -1264,18 +1264,14 @@ function AthleteOnboardingDesktop() {
         if (orphan) {
           const sportRel = Array.isArray(orphan.sports) ? orphan.sports[0] : orphan.sports;
           const schoolRel = Array.isArray(orphan.schools) ? orphan.schools[0] : orphan.schools;
-          const coachRel = Array.isArray(orphan.users) ? orphan.users[0] : orphan.users;
-          const coachObj = coachRel as { first_name?: string; last_name?: string } | null;
-          const coachName = coachObj
-            ? `${coachObj.first_name ?? ""} ${coachObj.last_name ?? ""}`.trim() || null
-            : null;
           setOrphanMatch({
             id: orphan.id as string,
             first_name: (orphan.first_name as string) ?? null,
             last_name: (orphan.last_name as string) ?? null,
             sport_name: ((sportRel as { nom?: string } | null)?.nom) ?? null,
             school_name: ((schoolRel as { name?: string } | null)?.name) ?? null,
-            coach_name: coachName,
+            // Règle RSEQ (2026-10-15) : plus de coach ; le type décide si l'école s'affiche.
+            school_type: ((schoolRel as { type?: string } | null)?.type) ?? null,
           });
           setShowClaimModal(true);
         }

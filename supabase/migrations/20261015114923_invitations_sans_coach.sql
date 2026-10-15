@@ -9,7 +9,10 @@
 --    d'invitation valide (même règle que resolve_athlete_invitation) ; sinon null.
 --  · notify_invitation_email : le courriel de réclamation reçoit le NOMBRE, plus le nom du coach
 --    ni de son école.
---  · notify_team_invitation_email : le courriel d'invitation d'équipe ne reçoit plus le nom du coach.
+--  · notify_team_invitation_email : le courriel d'invitation d'équipe ne reçoit plus le nom du coach,
+--    et l'équipe n'est nommée que si elle est SECONDAIRE ou LIGUE_CIVILE (règle RSEQ).
+--  · Les deux courriels respectent la désinscription (registre des adresses et des comptes) et
+--    transmettent de quoi signer le lien « Ne plus recevoir ces courriels ».
 --  · notify_team_invitation : la notification in-app ne dit plus « Un coach t'invite ».
 -- Les trois fonctions de trigger sont redéfinies par CREATE OR REPLACE (droits et triggers
 -- conservés), après une garde sur la version remplacée.
@@ -137,8 +140,17 @@ begin
       return NEW;  -- pas de stamp → réessai possible
     end if;
 
-    -- 2026-10-15 (décision BP) : AUCUN nom de coach ni d'école dans le courriel. Le seul fait
-    -- transmis est le nombre RÉEL de recruteurs qui suivent la fiche (jamais qui).
+    -- Désinscription (LCAP) : l'adresse inscrite au registre, ou le compte qui la porte, ne
+    -- reçoit plus rien. Pas de stamp : rien n'est parti.
+    if exists (select 1 from public.courriel_desabonnements_adresses d
+                where d.empreinte = public.empreinte_courriel(NEW.email))
+       or exists (select 1 from public.courriel_desabonnements d join public.users u on u.id = d.user_id
+                   where lower(btrim(u.email)) = lower(btrim(NEW.email))) then
+      return NEW;
+    end if;
+
+    -- 2026-10-15 (décision BP, règle RSEQ) : AUCUN nom de coach, d'école, de cégep ni de recruteur.
+    -- Le seul fait transmis est le nombre RÉEL de recruteurs qui suivent la fiche (jamais qui).
     v_recruteurs := public.recruteurs_suivant_athlete(NEW.athlete_id);
 
     perform net.http_post(
@@ -150,7 +162,9 @@ begin
       body := jsonb_build_object(
         'email', NEW.email,
         'nb_recruteurs', coalesce(v_recruteurs, 0),
-        'claim_token', NEW.token
+        'claim_token', NEW.token,
+        -- Pour le lien « Ne plus recevoir ces courriels » (jeton signé par la fonction d'envoi).
+        'invitation_id', NEW.id
       )
     );
 
@@ -178,7 +192,9 @@ as $function$
 declare
   v_secret     text;
   v_email      text;
+  v_user       uuid;
   v_team       record;
+  v_nommable   boolean;
   v_url text := 'https://nrloizyemulbhujrqhgx.supabase.co/functions/v1/send-team-invitation';
 begin
   -- Garde d'idempotence + périmètre. N'ENVOIE QUE SI transfer_token EST POSÉ.
@@ -190,14 +206,27 @@ begin
 
   begin
     -- Destinataire : adresse de la FICHE, sinon celle du COMPTE.
-    select nullif(btrim(coalesce(a.email, u.email, '')), '')
-      into v_email
+    select nullif(btrim(coalesce(a.email, u.email, '')), ''), a.user_id
+      into v_email, v_user
     from public.athletes a
     left join public.users u on u.id = a.user_id
     where a.id = NEW.athlete_id;
 
     if v_email is null then
       return NEW;  -- rien à envoyer ; la pastille in-app reste
+    end if;
+
+    -- Sans compte, pas de lien de désabonnement possible (jeton de compte) — et le lien de
+    -- transfert exige de se connecter. Rien ne part ; la pastille in-app reste.
+    if v_user is null then
+      return NEW;
+    end if;
+
+    -- Désinscription (LCAP) : compte au registre, ou adresse au registre → rien ne part.
+    if exists (select 1 from public.courriel_desabonnements d where d.user_id = v_user)
+       or exists (select 1 from public.courriel_desabonnements_adresses d
+                   where d.empreinte = public.empreinte_courriel(v_email)) then
+      return NEW;
     end if;
 
     select decrypted_secret into v_secret
@@ -210,7 +239,7 @@ begin
       return NEW;  -- pas de stamp → réessai possible
     end if;
 
-    select t.name, s.name as school_name, sp.nom as sport_name,
+    select t.name, s.name as school_name, s.type as school_type, sp.nom as sport_name,
            t.age_group, t.division, t.gender
       into v_team
     from public.teams t
@@ -218,7 +247,11 @@ begin
     left join public.sports  sp on sp.id = t.sport_id
     where t.id = NEW.team_id;
 
-    -- 2026-10-15 (décision BP) : plus de nom de coach dans le courriel.
+    -- 2026-10-15 (décision BP, règle RSEQ) : aucun nom de coach. L'équipe et son école ne sont
+    -- nommées QUE si c'est une équipe secondaire ou civile ; une équipe ou une école collégiale
+    -- (ou de type inconnu) n'est jamais nommée, ni rien qui permette de la deviner.
+    v_nommable := coalesce(v_team.school_type in ('SECONDAIRE', 'LIGUE_CIVILE'), false);
+
     perform net.http_post(
       url := v_url,
       headers := jsonb_build_object(
@@ -227,13 +260,15 @@ begin
       ),
       body := jsonb_build_object(
         'email',          v_email,
-        'team_name',      coalesce(v_team.name, ''),
-        'school_name',    coalesce(v_team.school_name, ''),
-        'sport',          coalesce(v_team.sport_name, ''),
-        'age_group',      coalesce(v_team.age_group, ''),
-        'division',       coalesce(v_team.division, ''),
-        'gender',         coalesce(v_team.gender, ''),
-        'transfer_token', NEW.transfer_token
+        'team_name',      case when v_nommable then coalesce(v_team.name, '') else '' end,
+        'school_name',    case when v_nommable then coalesce(v_team.school_name, '') else '' end,
+        'sport',          case when v_nommable then coalesce(v_team.sport_name, '') else '' end,
+        'age_group',      case when v_nommable then coalesce(v_team.age_group, '') else '' end,
+        'division',       case when v_nommable then coalesce(v_team.division, '') else '' end,
+        'gender',         case when v_nommable then coalesce(v_team.gender, '') else '' end,
+        'transfer_token', NEW.transfer_token,
+        -- Pour le lien « Ne plus recevoir ces courriels » (jeton de compte, signé par la fonction).
+        'user_id',        v_user
       )
     );
 
@@ -312,6 +347,18 @@ begin
                and proname in ('notify_invitation_email', 'notify_team_invitation_email', 'notify_team_invitation')
                and (position('coach_name' in prosrc) > 0 or position('Un coach' in prosrc) > 0)) then
     raise exception 'NEXUS: un trigger d''invitation transmet encore le coach';
+  end if;
+  -- Désinscription respectée et équipe collégiale jamais nommée (règle RSEQ).
+  if (select count(*) from pg_proc where pronamespace = 'public'::regnamespace
+        and proname in ('notify_invitation_email', 'notify_team_invitation_email')
+        and position('courriel_desabonnements_adresses' in prosrc) > 0
+        and position('courriel_desabonnements d' in prosrc) > 0) <> 2 then
+    raise exception 'NEXUS: un courriel d''invitation ignore la désinscription';
+  end if;
+  if not exists (select 1 from pg_proc where pronamespace = 'public'::regnamespace
+                   and proname = 'notify_team_invitation_email'
+                   and position('''SECONDAIRE'', ''LIGUE_CIVILE''' in prosrc) > 0) then
+    raise exception 'NEXUS: le courriel d''équipe pourrait nommer une équipe collégiale';
   end if;
   if (select count(*) from pg_trigger where tgname in ('trg_notify_invitation_email', 'trg_notify_team_invitation_email', 'trg_notify_team_invitation')) <> 3 then
     raise exception 'NEXUS: triggers d''invitation absents';

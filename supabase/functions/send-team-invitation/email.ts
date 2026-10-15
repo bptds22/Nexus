@@ -21,7 +21,10 @@ function detailsEquipe(
     .join(" · ");
 }
 
-/** 2026-10-15 (décision BP) : aucun nom de coach, ni « un coach » / « ton entraîneur ». */
+/** 2026-10-15 (décision BP, règle RSEQ) : aucun nom de coach, ni « un coach » / « ton entraîneur ».
+ *  L'équipe et son école ne sont nommées que si la BASE les a transmises — elle ne le fait que pour
+ *  une équipe secondaire ou civile (notify_team_invitation_email). Sans nom : texte générique, rien
+ *  qui permette de deviner l'équipe (ni détails, ni école). */
 export const SUJET = "Invitation à rejoindre une équipe sur Nexus";
 
 export function buildBody(
@@ -29,8 +32,17 @@ export function buildBody(
   schoolName: string,
   details: { sport: string; ageGroup: string; division: string; gender: string },
   transferUrl: string,
+  desabonnementUrl: string,
 ): { html: string; text: string } {
-  const ligneDetails = detailsEquipe(details.sport, details.ageGroup, details.division, details.gender);
+  const nommee = teamName.trim().length > 0;
+  // Pas d'équipe nommable → ni détails ni école, même s'ils arrivaient.
+  const ligneDetails = nommee
+    ? detailsEquipe(details.sport, details.ageGroup, details.division, details.gender)
+    : "";
+  const lcap = {
+    raison: "Tu reçois ce courriel parce que tu as un compte d'athlète sur Nexus et qu'une équipe t'y a invité.",
+    desabonnementUrl,
+  };
 
   /* ── UN SEUL OBJECTIF, UNE SEULE PORTE ────────────────────────────────────
      Pas de boutons App Store / Google Play ici, contrairement au courriel de
@@ -46,13 +58,16 @@ export function buildBody(
      compte, il se connecte sur le web, et le transfert s'y termine.
      ─────────────────────────────────────────────────────────────────────── */
 
-  const equipe = `${teamName}${schoolName ? ` — ${schoolName}` : ""}`;
+  const equipe = nommee ? `${teamName.trim()}${schoolName.trim() ? ` — ${schoolName.trim()}` : ""}` : "";
+  const invite = nommee
+    ? `Tu es invité à rejoindre cette équipe sur Nexus${ligneDetails ? ` (${ligneDetails})` : ""}.`
+    : "Tu es invité à rejoindre une nouvelle équipe sur Nexus. Ouvre l'invitation pour la voir.";
   return renderEmail({
-    preheader: `Invitation à rejoindre ${teamName}`,
+    preheader: nommee ? `Invitation à rejoindre ${teamName.trim()}` : "Invitation à rejoindre une équipe",
     heading: "Tu es invité à rejoindre une équipe",
     bodyHtml:
-      `<p style="margin:0 0 14px;font-size:17px;"><strong>${equipe}</strong></p>` +
-      `<p style="margin:0 0 12px;">Tu es invité à rejoindre cette équipe sur Nexus${ligneDetails ? ` (${ligneDetails})` : ""}.</p>` +
+      (nommee ? `<p style="margin:0 0 14px;font-size:17px;"><strong>${equipe}</strong></p>` : "") +
+      `<p style="margin:0 0 12px;">${invite}</p>` +
       // On DIT que ça remplace l'équipe actuelle. L'écran le redira, mais un
       // athlète qui décide dans sa boîte de réception doit déjà le savoir.
       `<p style="margin:0 0 12px;">Si tu acceptes, cette équipe remplacera ton équipe actuelle. Ton ancienne équipe restera dans ton parcours — tu ne perds rien.</p>` +
@@ -60,17 +75,16 @@ export function buildBody(
     ctaLabel: "Voir l'invitation",
     ctaUrl: transferUrl,
     footerNote:
-      "Tu reçois ce courriel parce qu'une équipe t'a invité sur Nexus. Le bouton mène à nexussports.ca. " +
-      "Si tu ne connais pas cette équipe, ignore simplement ce courriel.",
+      "Le bouton mène à nexussports.ca. Si tu ne connais pas cette équipe, ignore simplement ce courriel.",
     bodyText: [
-      equipe,
-      "",
-      `Tu es invité à rejoindre cette équipe sur Nexus${ligneDetails ? ` (${ligneDetails})` : ""}.`,
+      ...(nommee ? [equipe, ""] : []),
+      invite,
       "",
       "Si tu acceptes, cette équipe remplacera ton équipe actuelle.",
       "Ton ancienne équipe restera dans ton parcours — tu ne perds rien.",
       "",
       "C'est toi qui décides : tant que tu n'as pas confirmé, rien ne change.",
     ].join("\n"),
+    lcap,
   });
 }

@@ -2638,3 +2638,21 @@ Les migrations d'avril–juin et d'octobre sont toutes dans l'historique prod.
 **(c) Règle avant un push (précision BP 2026-10-15).** On ne bloque un push que sur les migrations
 **ajoutées par la fusion**, ou **dont le code poussé dépend**, et qui ne sont pas appliquées en prod.
 Une migration déjà sur `origin/main` dont le code ne dépend pas (comme (a)) ne bloque pas. On la signale.
+
+## 92. Invitations sans coach (règle RSEQ) côté mobile (2026-10-15, lot mobile, web fait)
+
+Décision BP du 2026-10-15 : aucun écran destiné à un athlète ne nomme un coach, un recruteur ou un
+cégep, ni ne permet de le deviner. Une équipe n'est nommée (nom, école, logo, détails) que si c'est
+l'équipe secondaire ou civile du jeune — règle `lib/invitations/equipeNommable.ts`, déjà dans le tronc
+partagé. Web fait sur `feat/invitations-sans-coach`. Reste au mobile :
+
+- `components/shared/AthleteOnboardingMobile.tsx` l.2429 « Ton entraîneur t'a donné un code ? » → « Tu as
+  un code d'équipe ? » ; l.2086 « Si ton entraîneur t'en a donné un… » → sans entraîneur ; l.~615 cesser de
+  lire `coach_name` pour `ClaimProfileModal` et passer `school_type` (sinon l'école n'est plus affichée —
+  repli prudent : sans type, rien n'est nommé) ; l'aperçu d'équipe après un code (`codeLock`) doit
+  masquer nom/école/logo si `schoolType` n'est ni `SECONDAIRE` ni `LIGUE_CIVILE`.
+- Le composant partagé `ClaimProfileModal` a déjà ses nouveaux textes (« Ton profil a été préparé pour
+  toi ») : ils partiront avec le prochain build mobile.
+- Il n'existe pas d'écran mobile « Invitations en attente » (la carte web `PendingInvitations`) : à créer
+  avec la même règle (`titreInvitation`) si le lot mobile l'ajoute.
+- Courriels et notification `TEAM_INVITATION` : côté serveur, rien à faire au mobile.

@@ -54,7 +54,7 @@ test("courriel de réclamation : 0, 1, plusieurs — phrase exacte, Nexus clair,
   const { buildBody, SUJET } = await import(GABARIT_RECLAMATION);
   assert.doesNotMatch(SUJET, INTERDITS);
   for (const n of [0, 1, 5]) {
-    const { html, text } = buildBody(n, "https://nexussports.ca/claim?token=abc");
+    const { html, text } = buildBody(n, "https://nexussports.ca/claim?token=abc", "https://nexussports.ca/desabonnement?t=a.x.y");
     for (const s of [html, text]) {
       assert.ok(s.includes(phraseRecruteurs(n).replace("'", "'")), `phrase n=${n}`);
       assert.doesNotMatch(s, INTERDITS, `n=${n}`);
@@ -62,9 +62,13 @@ test("courriel de réclamation : 0, 1, plusieurs — phrase exacte, Nexus clair,
       assert.ok(s.includes("L'équipe Nexus"));
     }
     assert.ok(html.includes('href="https://nexussports.ca/claim?token=abc"'));
+    // Pied LCAP : le lien de désabonnement réel, dans les deux versions.
+    assert.ok(html.includes('href="https://nexussports.ca/desabonnement?t=a.x.y"'));
+    assert.ok(html.includes("Ne plus recevoir ces courriels"));
+    assert.ok(text.includes("Ne plus recevoir ces courriels : https://nexussports.ca/desabonnement?t=a.x.y"));
   }
   // Un ancien trigger qui enverrait encore le coach : la fonction ne le lit pas (buildBody ne le reçoit pas).
-  const { text } = buildBody(undefined, "https://nexussports.ca/claim?token=x");
+  const { text } = buildBody(undefined, "https://nexussports.ca/claim?token=x", "https://nexussports.ca/desabonnement?t=a.x.y");
   assert.ok(text.includes(ZERO));
 });
 
@@ -73,10 +77,61 @@ test("courriel d'invitation d'équipe : aucun coach", async () => {
   assert.doesNotMatch(SUJET, INTERDITS);
   const { html, text } = buildBody("Les Dragons", "École des Érables",
     { sport: "Football", ageGroup: "Juvénile", division: "D2", gender: "Masculin" },
-    "https://nexussports.ca/athlete/transfert?t=ABC");
+    "https://nexussports.ca/athlete/transfert?t=ABC", "https://nexussports.ca/desabonnement?t=u.sig");
   for (const s of [html, text]) {
     assert.doesNotMatch(s, INTERDITS);
     assert.ok(s.includes("Les Dragons — École des Érables"));
     assert.ok(s.includes("nexussports.ca"));
+    assert.ok(s.includes("Ne plus recevoir ces courriels"));
+  }
+  assert.ok(html.includes('href="https://nexussports.ca/desabonnement?t=u.sig"'));
+});
+
+test("courriel d'équipe NON nommable (collégiale : la base transmet des chaînes vides) : texte générique", async () => {
+  const { buildBody } = await import(GABARIT_EQUIPE);
+  // Même si des détails arrivaient malgré tout, rien ne doit les afficher sans nom d'équipe.
+  const { html, text } = buildBody("", "Cégep Fictif",
+    { sport: "Football", ageGroup: "Collégial", division: "D1", gender: "Masculin" },
+    "https://nexussports.ca/athlete/transfert?t=ABC", "https://nexussports.ca/desabonnement?t=u.sig");
+  for (const s of [html, text]) {
+    assert.doesNotMatch(s, INTERDITS);
+    assert.doesNotMatch(s, /C[ée]gep Fictif|Coll[ée]gial|Football|D1/);
+    assert.ok(s.includes("Tu es invité à rejoindre une nouvelle équipe sur Nexus"));
+    assert.ok(s.includes("Ne plus recevoir ces courriels"));
+  }
+});
+
+/* RÈGLE RSEQ (décision BP du 2026-10-15) : ce que lit l'athlète ne nomme ni cégep, ni recruteur,
+   ni coach. Seul argument permis : le nombre réel de recruteurs, jamais lesquels. */
+const RSEQ_INTERDITS = /coach|entra[iî]neur|c[ée]gep (de|du|d')|coll[eè]ge [A-Z]/i;
+
+test("règle RSEQ : les deux courriels ne nomment ni coach, ni cégep, ni recruteur", async () => {
+  const rec = await import(GABARIT_RECLAMATION);
+  const eq = await import(GABARIT_EQUIPE);
+  const rendus = [
+    ...[0, 1, 9].map((n) => rec.buildBody(n, "https://nexussports.ca/claim?token=t", "https://nexussports.ca/desabonnement?t=a")),
+    eq.buildBody("", "", { sport: "", ageGroup: "", division: "", gender: "" },
+      "https://nexussports.ca/athlete/transfert?t=T", "https://nexussports.ca/desabonnement?t=u"),
+  ];
+  for (const { html, text } of rendus) {
+    for (const s of [html, text]) {
+      assert.doesNotMatch(s, RSEQ_INTERDITS);
+      // Seule adresse d'expéditeur ou de contact : celles de Nexus.
+      for (const m of s.match(/[\w.+-]+@[\w.-]+/g) ?? []) assert.match(m, /@nexussports\.ca$/, m);
+    }
+  }
+  assert.equal(rec.SUJET.match(RSEQ_INTERDITS), null);
+  assert.equal(eq.SUJET.match(RSEQ_INTERDITS), null);
+});
+
+test("règle RSEQ : les fonctions d'envoi ne lisent ni coach_name, ni nom de recruteur", () => {
+  for (const f of ["send-invitation/index.ts", "send-invitation/email.ts", "send-team-invitation/index.ts", "send-team-invitation/email.ts"]) {
+    const src = fs.readFileSync(path.resolve("supabase/functions", f), "utf8");
+    assert.doesNotMatch(src, /payload\??\.coach_name|texte\("coach_name"\)|recruiter_name|recruteur_nom|cegep_name/, f);
+    // Désinscription réelle : en-tête List-Unsubscribe et refus d'envoyer sans secret.
+    if (f.endsWith("index.ts")) {
+      assert.match(src, /List-Unsubscribe/, f);
+      assert.match(src, /DESABONNEMENT_SECRET\.length < 32/, f);
+    }
   }
 });

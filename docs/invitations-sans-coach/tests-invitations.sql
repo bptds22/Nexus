@@ -89,14 +89,42 @@ select pg_temp.verif('B1 un envoi en file, vers send-invitation',
   (select count(*)::text || '|' || bool_and(url like '%/send-invitation') from net.http_request_queue where id > current_setting('t.q_avant')::bigint), '1|true');
 select set_config('t.corps', (select convert_from(body, 'UTF8') from net.http_request_queue where id > current_setting('t.q_avant')::bigint order by id desc limit 1), true);
 select pg_temp.verif('B2 le courriel reçoit le nombre réel (3)', (current_setting('t.corps')::jsonb->>'nb_recruteurs'), '3');
-select pg_temp.verif('B3 clés transmises : email, nb_recruteurs, claim_token — rien d''autre',
-  (select string_agg(k, ',' order by k) from jsonb_object_keys(current_setting('t.corps')::jsonb) k), 'claim_token,email,nb_recruteurs');
+select pg_temp.verif('B3 clés transmises : email, nb_recruteurs, claim_token, invitation_id — rien d''autre',
+  (select string_agg(k, ',' order by k) from jsonb_object_keys(current_setting('t.corps')::jsonb) k), 'claim_token,email,invitation_id,nb_recruteurs');
+select pg_temp.verif('B3b invitation_id = la ligne d''invitation (pour le lien de désabonnement)',
+  (current_setting('t.corps')::jsonb->>'invitation_id'), (select id::text from athlete_invitations where token = 'jeton-banc-inv-1'));
 select pg_temp.verif('B4 ni le nom du coach ni son école dans ce qui part',
   (position(current_setting('t.coach_nom') in current_setting('t.corps')) = 0
    and position(current_setting('t.ecole_coach') in current_setting('t.corps')) = 0)::text, 'true');
 select pg_temp.verif('B5 aucun recruteur (identifiant ni nom) dans ce qui part',
   (select bool_and(position(u.id::text in current_setting('t.corps')) = 0 and position(u.last_name in current_setting('t.corps')) = 0)
      from users u where u.id in (current_setting('t.r1')::uuid, current_setting('t.r2')::uuid, current_setting('t.r4')::uuid))::text, 'true');
+
+-- B6–B8 : désinscription (LCAP) respectée — l'adresse au registre, ou le compte qui la porte.
+insert into athletes (id, first_name, last_name, date_naissance, coach_id, school_id, email, status, verified, annee_diplomation)
+values ('e1000000-0000-4000-8000-000000000003', 'Désa', 'Bonné', '2007-04-04', current_setting('t.coach')::uuid,
+        (select school_id from users where id = current_setting('t.coach')::uuid), 'desa.bonne.inv@exemple.test', 'ACTIF', false, 2025);
+insert into courriel_desabonnements_adresses (empreinte, source) values (public.empreinte_courriel(' Desa.Bonne.INV@exemple.test '), 'lien');
+select set_config('t.q_avant3', (select coalesce(max(id), 0)::text from net.http_request_queue), true);
+insert into athlete_invitations (token, athlete_id, created_by, email)
+values ('jeton-banc-inv-d', 'e1000000-0000-4000-8000-000000000003', current_setting('t.coach')::uuid, 'desa.bonne.inv@exemple.test');
+select pg_temp.verif('B6 adresse désabonnée (casse/espaces différents) : AUCUN courriel en file',
+  (select count(*)::text from net.http_request_queue where id > current_setting('t.q_avant3')::bigint), '0');
+delete from courriel_desabonnements_adresses where empreinte = public.empreinte_courriel('desa.bonne.inv@exemple.test');
+select set_config('t.compte_d', (select id::text from users where role = 'ATHLETE' and email is not null order by email limit 1), true);
+insert into courriel_desabonnements (user_id, source) values (current_setting('t.compte_d')::uuid, 'lien') on conflict do nothing;
+update athlete_invitations set status = 'REVOKED' where token = 'jeton-banc-inv-d';
+insert into athlete_invitations (token, athlete_id, created_by, email)
+values ('jeton-banc-inv-d2', 'e1000000-0000-4000-8000-000000000003', current_setting('t.coach')::uuid,
+        (select upper(email) from users where id = current_setting('t.compte_d')::uuid));
+select pg_temp.verif('B7 adresse d''un COMPTE désabonné : AUCUN courriel en file',
+  (select count(*)::text from net.http_request_queue where id > current_setting('t.q_avant3')::bigint), '0');
+delete from courriel_desabonnements where user_id = current_setting('t.compte_d')::uuid;
+update athlete_invitations set status = 'REVOKED' where token = 'jeton-banc-inv-d2';
+insert into athlete_invitations (token, athlete_id, created_by, email)
+values ('jeton-banc-inv-d3', 'e1000000-0000-4000-8000-000000000003', current_setting('t.coach')::uuid, 'desa.bonne.inv@exemple.test');
+select pg_temp.verif('B8 désinscription retirée : le courriel repart (témoin)',
+  (select count(*)::text from net.http_request_queue where id > current_setting('t.q_avant3')::bigint), '1');
 
 -- ── C. /claim : le nombre par le jeton, et seulement par un jeton valide ─────
 set local role anon;
@@ -137,19 +165,57 @@ select pg_temp.verif('C7 /claim, fiche jamais suivie → 0', public.invitation_r
 reset role;
 
 -- ── D. Invitation d'équipe : courriel et notification sans coach ─────────────
--- (Inès reçoit un compte jetable pour être « rattachée » : le courriel d'équipe vise un athlète avec compte)
-select set_config('t.equipe', (select t.id::text from teams t join team_coaches tc on tc.team_id = t.id where tc.coach_id = current_setting('t.coach')::uuid limit 1), true);
+-- Le courriel d'équipe vise un athlète AVEC compte : on prend une fiche locale qui en a un
+-- (tout est annulé à la fin).
+select set_config('t.b', (select a.id::text from athletes a join users u on u.id = a.user_id
+  where a.email is not null and not exists (select 1 from team_invitations ti where ti.athlete_id = a.id and ti.status = 'PENDING')
+  order by a.created_at limit 1), true);
+select set_config('t.b_user', (select user_id::text from athletes where id = current_setting('t.b')::uuid), true);
+select set_config('t.equipe', (select t.id::text from teams t join team_coaches tc on tc.team_id = t.id join schools s on s.id = t.school_id
+  where tc.coach_id = current_setting('t.coach')::uuid and s.type = 'SECONDAIRE' limit 1), true);
 select set_config('t.q_avant2', (select coalesce(max(id), 0)::text from net.http_request_queue), true);
 insert into team_invitations (team_id, athlete_id, invited_by_coach_id, status, transfer_token, expires_at)
-values (current_setting('t.equipe')::uuid, current_setting('t.a')::uuid, current_setting('t.coach')::uuid, 'PENDING', 'BANCINV1', now() + interval '14 days');
+values (current_setting('t.equipe')::uuid, current_setting('t.b')::uuid, current_setting('t.coach')::uuid, 'PENDING', 'BANCINV1', now() + interval '14 days');
 select set_config('t.corps2', (select convert_from(body, 'UTF8') from net.http_request_queue where id > current_setting('t.q_avant2')::bigint order by id desc limit 1), true);
 select pg_temp.verif('D1 courriel d''équipe : plus de clé coach_name',
   (current_setting('t.corps2')::jsonb ? 'coach_name')::text, 'false');
 select pg_temp.verif('D2 courriel d''équipe : le nom du coach n''est nulle part',
   (position(current_setting('t.coach_nom') in current_setting('t.corps2')) = 0)::text, 'true');
 select pg_temp.verif('D3 notification in-app : « Invitation à rejoindre une équipe »',
-  (select title from athlete_notifications where athlete_id = current_setting('t.a')::uuid and type = 'TEAM_INVITATION' order by created_at desc limit 1),
+  (select title from athlete_notifications where athlete_id = current_setting('t.b')::uuid and type = 'TEAM_INVITATION' order by created_at desc limit 1),
   'Invitation à rejoindre une équipe');
+select pg_temp.verif('D4 équipe SECONDAIRE : nommée (nom et école transmis)',
+  (current_setting('t.corps2')::jsonb->>'team_name' = (select name from teams where id = current_setting('t.equipe')::uuid)
+   and current_setting('t.corps2')::jsonb->>'school_name' <> '')::text, 'true');
+select pg_temp.verif('D5 user_id transmis (lien de désabonnement du compte)',
+  current_setting('t.corps2')::jsonb->>'user_id', current_setting('t.b_user'));
+-- Équipe COLLÉGIALE : rien qui la nomme ni permette de la deviner
+select set_config('t.equipe_c', (select t.id::text from teams t join schools s on s.id = t.school_id
+  where s.type = 'CEGEP' and t.name is not null order by t.name limit 1), true);
+select set_config('t.q_avant4', (select coalesce(max(id), 0)::text from net.http_request_queue), true);
+insert into team_invitations (team_id, athlete_id, invited_by_coach_id, status, transfer_token, expires_at)
+values (current_setting('t.equipe_c')::uuid, current_setting('t.b')::uuid, current_setting('t.coach')::uuid, 'PENDING', 'BANCINV2', now() + interval '14 days');
+select set_config('t.corps4', (select convert_from(body, 'UTF8') from net.http_request_queue where id > current_setting('t.q_avant4')::bigint order by id desc limit 1), true);
+select pg_temp.verif('D6 équipe CEGEP : nom, école, sport, catégorie, division, genre tous VIDES',
+  (select string_agg(coalesce(current_setting('t.corps4')::jsonb->>k, 'ABSENT'), '|' order by k)
+     from unnest(array['age_group','division','gender','school_name','sport','team_name']) k), '|||||');
+select pg_temp.verif('D7 équipe CEGEP : ni son nom ni celui du cégep nulle part dans ce qui part',
+  (position((select name from teams where id = current_setting('t.equipe_c')::uuid) in current_setting('t.corps4')) = 0
+   and position((select s.name from teams t join schools s on s.id = t.school_id where t.id = current_setting('t.equipe_c')::uuid) in current_setting('t.corps4')) = 0)::text, 'true');
+-- Compte désabonné : plus de courriel d'équipe
+insert into courriel_desabonnements (user_id, source) values (current_setting('t.b_user')::uuid, 'lien') on conflict do nothing;
+update team_invitations set status = 'CANCELLED' where transfer_token = 'BANCINV1';
+select set_config('t.q_avant5', (select coalesce(max(id), 0)::text from net.http_request_queue), true);
+insert into team_invitations (team_id, athlete_id, invited_by_coach_id, status, transfer_token, expires_at)
+values (current_setting('t.equipe')::uuid, current_setting('t.b')::uuid, current_setting('t.coach')::uuid, 'PENDING', 'BANCINV3', now() + interval '14 days');
+select pg_temp.verif('D8 compte désabonné : AUCUN courriel d''équipe en file',
+  (select count(*)::text from net.http_request_queue where id > current_setting('t.q_avant5')::bigint), '0');
+-- Fiche sans compte (Inès) : pas de courriel d'équipe (pas de lien de désabonnement possible)
+select set_config('t.q_avant6', (select coalesce(max(id), 0)::text from net.http_request_queue), true);
+insert into team_invitations (team_id, athlete_id, invited_by_coach_id, status, transfer_token, expires_at)
+values (current_setting('t.equipe')::uuid, current_setting('t.a')::uuid, current_setting('t.coach')::uuid, 'PENDING', 'BANCINV4', now() + interval '14 days');
+select pg_temp.verif('D9 fiche sans compte : aucun courriel d''équipe',
+  (select count(*)::text from net.http_request_queue where id > current_setting('t.q_avant6')::bigint), '0');
 
 -- ── E. Droits complets ───────────────────────────────────────────────────────
 select pg_temp.verif('E1 ACL',

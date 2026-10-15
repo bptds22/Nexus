@@ -6,6 +6,7 @@
 // jamais qui. En-tête et signature Nexus clairs, lien vers nexussports.ca.
 
 import { renderEmail } from "../_shared/emailLayout.ts";
+// @ts-ignore TS5097 — module Deno, l'extension .ts est obligatoire.
 import { phraseRecruteurs } from "../_shared/messageRecruteurs.ts";
 
 // Fiches store réelles (lib/carte/contact.ts + Play publié).
@@ -14,7 +15,7 @@ export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=ca.
 
 export const SUJET = "Ton profil d'athlète t'attend sur Nexus";
 
-export function buildBody(nbRecruteurs: unknown, claimUrl: string): { html: string; text: string } {
+export function buildBody(nbRecruteurs: unknown, claimUrl: string, desabonnementUrl: string): { html: string; text: string } {
   const phrase = phraseRecruteurs(nbRecruteurs);
   const extraHtml =
     `<p style="margin:22px 0 8px;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#52525B;">Tu peux aussi télécharger l'application mobile :</p>` +
@@ -32,9 +33,12 @@ export function buildBody(nbRecruteurs: unknown, claimUrl: string): { html: stri
     ctaUrl: claimUrl,
     extraHtml,
     footerNote:
-      "Tu reçois ce courriel parce qu'un profil d'athlète a été préparé pour toi sur Nexus. " +
       "Le bouton mène à nexussports.ca et le lien reste valide 30 jours. " +
       "Si ce profil n'est pas le tien, ignore simplement ce courriel.",
+    lcap: {
+      raison: "Tu reçois ce courriel parce qu'un profil d'athlète a été préparé pour toi sur Nexus.",
+      desabonnementUrl,
+    },
     bodyText: [
       phrase,
       "",
