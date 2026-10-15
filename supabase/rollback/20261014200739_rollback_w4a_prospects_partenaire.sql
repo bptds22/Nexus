@@ -1,6 +1,6 @@
 -- Retour arrière de W4a (20261014200739) — à passer avec psql -1 -v ON_ERROR_STOP=1.
 -- Supprime les cartes prospects partenaire, leurs rapprochements, issues et journal, le trigger
--- d'opt-in, les 31 fonctions et la purge ; rend sa liste d'avant à athlete_notifications_type_check.
+-- d'opt-in, les 32 fonctions et la purge ; rend sa liste d'avant à athlete_notifications_type_check.
 -- Ce qui a DÉJÀ été transféré (partner_evaluations, partner_athlete_badges) reste en place :
 -- ce sont désormais les données de l'athlète, pas celles de la carte.
 
@@ -51,6 +51,7 @@ drop function public.prospect_partenaire_journaliser(uuid, uuid, text, uuid, jso
 drop function public.prospect_partenaire_peut_transferer(uuid, uuid);
 drop function public.prospect_partenaire_sport_concorde(uuid, uuid);
 drop function public.prospect_partenaire_lever_proposition(uuid, text);
+drop function public.prospect_partenaire_lever_reservation_lien(uuid, text);
 
 drop table public.partenaire_prospects_rapprochements;
 drop table public.partenaire_prospects_issues;

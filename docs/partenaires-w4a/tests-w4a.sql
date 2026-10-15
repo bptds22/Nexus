@@ -181,10 +181,8 @@ select pg_temp.essai('B16 réservé : la page sans connexion ne dit plus rien', 
   format('select valide::text from public.prospect_partenaire_resoudre(%L)', (select jeton from _jet where cle = 'c1c')), 'false');
 select pg_temp.essai('B17 p1 voit toujours « ENVOYEE » (statut masqué)', current_setting('w4.p1'),
   format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c1')), 'ENVOYEE');
-select pg_temp.essai_msg('B18 carte réservée : modification refusée, message neutre', current_setting('w4.p1'),
-  format('select public.partenaire_prospect_enregistrer(%L, ''Zoé'', ''Tremblay'', %L::uuid, null, null, null, 2027, true)::text',
-         (select id from _ids where cle = 'c1'), current_setting('w4.foot')),
-  '42501', 'NEXUS: cette carte ne peut pas être modifiée pour l''instant');
+-- (Ancien B18 « modification refusée » : remplacé par la section Q, la carte réservée par le
+--  lien se comporte désormais comme une carte « Lien envoyé ».)
 
 -- ── C. « C'est moi » sans opt-in : attente, puis transfert automatique ─────
 select pg_temp.essai('C1 Félix confirme sans opt-in → attente', current_setting('w4.felix_u'),
@@ -666,6 +664,103 @@ select pg_temp.essai('P12 c17 « Mathis Lavoie » basketball à son école', cur
 select pg_temp.essai('P12b sport de son équipe : c17 proposée automatiquement', current_setting('w4.p1'),
   format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c17')), 'CORRESPONDANCE_POSSIBLE');
 
+-- ── Q. Relecture BP, point ouvert : carte réservée par le LIEN = carte « Lien envoyé » ──
+-- Modification : réservation levée sans bruit, même lien, le jeune rouvre et (re)confirme.
+-- Nouveau lien : l'ancien jeton meurt, réservation levée. Révocation : idem, carte A_ENVOYER.
+select set_config('w4.q_modif20',
+  'select public.partenaire_prospect_enregistrer(%L, ''Noa'', ''Bédard'', %L::uuid, null, null, null, 2027, true, %s)::text', true);
+-- État caché de c20 : statut:réservée par:jeton = celui donné | motif:état d'avant de la dernière levée.
+select set_config('w4.q_cache20',
+  $q$select (select statut || ':' || coalesce(reservee_par::text, '∅') || ':'
+                    || coalesce((jeton_empreinte = encode(extensions.digest(%2$L, 'sha256'), 'hex'))::text, '∅')
+               from public.partenaire_prospects where id = %1$L) || '|'
+          || coalesce((select details->>'motif' || ':' || (details->>'etait') from public.partenaire_prospects_journal
+                        where carte_id = %1$L and action = 'RESERVATION_LIEN_LEVEE' order by created_at desc, id desc limit 1), '∅')$q$, true);
+set local role authenticated;
+select pg_temp.essai('Q1 p1 crée c20 « Noa Bédard » (cote 4)', current_setting('w4.p1'),
+  format(current_setting('w4.q_creer'), 'Noa', 'Bédard', current_setting('w4.foot'), null, '4', '{}', '{}', '{}', 'c20'), 'ok');
+select pg_temp.essai('Q2 lien c20', current_setting('w4.p1'), format(current_setting('w4.q_lien'), (select id from _ids where cle = 'c20'), 'c20a'), '64');
+select pg_temp.essai('Q3 Félix ouvre c20 (réservée par le lien)', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)->>''prenom''', (select jeton from _jet where cle = 'c20a')), 'Noa');
+select pg_temp.essai('Q4 p1 voit « ENVOYEE »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c20')), 'ENVOYEE');
+-- Modification d'une carte RÉSERVÉE par le lien.
+select pg_temp.essai('Q5 p1 modifie c20 (cote 5) : réussit comme sur « Lien envoyé »', current_setting('w4.p1'),
+  format(current_setting('w4.q_modif20'), (select id from _ids where cle = 'c20'), current_setting('w4.foot'), '5'),
+  (select id::text from _ids where cle = 'c20'));
+reset role;
+select pg_temp.essai('Q6 réservation levée : ENVOYEE, même lien, journal RESERVATION_LIEN_LEVEE (MODIFIEE)', null,
+  format(current_setting('w4.q_cache20'), (select id from _ids where cle = 'c20'), (select jeton from _jet where cle = 'c20a')),
+  'ENVOYEE:∅:true|MODIFIEE:RESERVEE');
+set local role authenticated;
+select pg_temp.essai('Q7 Félix ne voit plus c20 dans ses cartes', current_setting('w4.felix_u'),
+  format($q$select count(*)::text from jsonb_array_elements(public.prospect_partenaire_mes_cartes()) e where e->>'carte_id' = %L$q$,
+         (select id from _ids where cle = 'c20')), '0');
+select pg_temp.essai('Q8 Félix rouvre le même lien : il voit la carte modifiée', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)->>''cote_globale''', (select jeton from _jet where cle = 'c20a')), '5.00');
+-- Modification d'une carte CONFIRMÉE par le lien (attente d'opt-in) : la confirmation tombe.
+select pg_temp.essai('Q9 Félix retire son opt-in', current_setting('w4.felix_u'),
+  'select public.set_my_partner_visibility(false, ''2026-08-v1'')->>''ok''', 'true');
+select pg_temp.essai('Q10 Félix confirme c20 → attente', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_confirmer(%L)->>''statut''', (select id from _ids where cle = 'c20')), 'attente_optin');
+select pg_temp.essai('Q11 p1 voit « ENVOYEE »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c20')), 'ENVOYEE');
+select pg_temp.essai('Q12 p1 modifie c20 (cote 3) : réussit', current_setting('w4.p1'),
+  format(current_setting('w4.q_modif20'), (select id from _ids where cle = 'c20'), current_setting('w4.foot'), '3'),
+  (select id::text from _ids where cle = 'c20'));
+reset role;
+select pg_temp.essai('Q13 confirmation annulée : ENVOYEE, même lien, journal (MODIFIEE, était CONFIRMEE_ATTENTE_OPTIN)', null,
+  format(current_setting('w4.q_cache20'), (select id from _ids where cle = 'c20'), (select jeton from _jet where cle = 'c20a')),
+  'ENVOYEE:∅:true|MODIFIEE:CONFIRMEE_ATTENTE_OPTIN');
+set local role authenticated;
+select pg_temp.essai('Q14 Félix : plus de rappel ni de carte en attente', current_setting('w4.felix_u'),
+  format($q$select count(*)::text from jsonb_array_elements(public.prospect_partenaire_mes_cartes()) e where e->>'carte_id' = %L$q$,
+         (select id from _ids where cle = 'c20')), '0');
+select pg_temp.essai('Q15 Félix rouvre le lien : carte réservée, modifiée', current_setting('w4.felix_u'),
+  format('select (public.prospect_partenaire_ouvrir(%L)->>''statut'') || ''|'' || (public.prospect_partenaire_ouvrir(%L)->>''cote_globale'')',
+         (select jeton from _jet where cle = 'c20a'), (select jeton from _jet where cle = 'c20a')), 'RESERVEE|3.00');
+select pg_temp.essai('Q16 Félix reconfirme → attente', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_confirmer(%L)->>''statut''', (select id from _ids where cle = 'c20')), 'attente_optin');
+-- Nouveau lien sur une carte confirmée par le lien.
+select pg_temp.essai('Q17 p1 génère un nouveau lien : réussit', current_setting('w4.p1'),
+  format(current_setting('w4.q_lien'), (select id from _ids where cle = 'c20'), 'c20b'), '64');
+reset role;
+select pg_temp.essai('Q18 réservation levée, nouveau jeton, journal (NOUVEAU_LIEN)', null,
+  format(current_setting('w4.q_cache20'), (select id from _ids where cle = 'c20'), (select jeton from _jet where cle = 'c20b')),
+  'ENVOYEE:∅:true|NOUVEAU_LIEN:CONFIRMEE_ATTENTE_OPTIN');
+set local role authenticated;
+select pg_temp.essai_msg('Q19 l''ancien jeton est mort', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)::text', (select jeton from _jet where cle = 'c20a')),
+  'P0002', 'NEXUS: ce lien n''est plus valide');
+select pg_temp.essai('Q20 Félix ouvre le nouveau lien', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)->>''statut''', (select jeton from _jet where cle = 'c20b')), 'RESERVEE');
+-- Révocation sur une carte réservée par le lien.
+select pg_temp.essai('Q21 p1 révoque : réussit', current_setting('w4.p1'),
+  format('select public.partenaire_prospect_revoquer_lien(%L)::text', (select id from _ids where cle = 'c20')), '');
+select pg_temp.essai('Q22 p1 voit « A_ENVOYER »', current_setting('w4.p1'), format(current_setting('w4.q_vu'), (select id from _ids where cle = 'c20')), 'A_ENVOYER');
+reset role;
+select pg_temp.essai('Q23 réservation levée, plus de jeton, journal (REVOCATION)', null,
+  format(current_setting('w4.q_cache20'), (select id from _ids where cle = 'c20'), (select jeton from _jet where cle = 'c20b')),
+  'A_ENVOYER:∅:∅|REVOCATION:RESERVEE');
+set local role authenticated;
+select pg_temp.essai_msg('Q24 le lien révoqué est mort', current_setting('w4.felix_u'),
+  format('select public.prospect_partenaire_ouvrir(%L)::text', (select jeton from _jet where cle = 'c20b')),
+  'P0002', 'NEXUS: ce lien n''est plus valide');
+select pg_temp.essai('Q25 Félix ne voit plus c20', current_setting('w4.felix_u'),
+  format($q$select count(*)::text from jsonb_array_elements(public.prospect_partenaire_mes_cartes()) e where e->>'carte_id' = %L$q$,
+         (select id from _ids where cle = 'c20')), '0');
+reset role;
+select pg_temp.essai('Q26 4 levées journalisées avec Félix ; aucune notification pour c20', null,
+  format($q$select (select count(*) from public.partenaire_prospects_journal where carte_id = %1$L and action = 'RESERVATION_LIEN_LEVEE' and athlete_id = %2$L)
+                || '|' || (%3$s)$q$,
+         (select id from _ids where cle = 'c20'), current_setting('w4.felix'), format(current_setting('w4.q_notif'), (select id from _ids where cle = 'c20'))),
+  '4|0:0');
+set local role authenticated;
+select pg_temp.essai('Q27 export Loi 25 du partenaire : aucune levée, aucun athlète', current_setting('w4.admin'),
+  format($q$select count(*) filter (where action like 'RESERVATION%%' or athlete_id is not null)::text
+              from public.admin_loi25_prospects_partenaires(%L)$q$, current_setting('w4.p1')), '0');
+select pg_temp.essai('Q28 export Loi 25 de Félix : les 4 levées qui le concernent', current_setting('w4.admin'),
+  format($q$select count(*) filter (where action = 'RESERVATION_LIEN_LEVEE' and carte_id = %L)::text
+              from public.admin_loi25_prospects_partenaires(%L)$q$, (select id from _ids where cle = 'c20'), current_setting('w4.felix_u')), '4');
+
 -- ── L. Non-régression et droits ────────────────────────────────────────────
 select pg_temp.essai('L1 badge_plafond et M10 inchangés (md5)', null,
   $q$select md5(pg_get_functiondef('public.badge_plafond()'::regprocedure)) || ' ' || md5(pg_get_functiondef('public.ambassadeur_recalculer_paliers()'::regprocedure))$q$,
@@ -690,7 +785,8 @@ select pg_temp.essai('L5 ACL complètes : transfert, trigger et aides serveur se
        lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g from unnest(pr.proacl::text[]) as x) t
      where pr.proname in ('prospect_partenaire_transferer', 'prospect_partenaire_sur_optin', 'prospect_partenaire_proposer',
                           'prospect_partenaire_candidats', 'prospect_partenaire_peut_transferer',
-                          'prospect_partenaire_sport_concorde', 'prospect_partenaire_lever_proposition') group by pr.oid) s$q$,
+                          'prospect_partenaire_sport_concorde', 'prospect_partenaire_lever_proposition',
+                          'prospect_partenaire_lever_reservation_lien') group by pr.oid) s$q$,
   '{postgres,service_role}');
 reset role;
 set local role anon;

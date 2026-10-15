@@ -28,6 +28,7 @@ Plan W4 validé avec ses 10 recommandations, puis deux changements et un ajout :
 | 16 | **Relecture 1 (Loi 25)** : aucune action du partenaire ne réussit, n'échoue ni ne se comporte autrement selon qu'une proposition est en cours | voir ci-dessous |
 | 17 | **Relecture 2** : tant qu'une proposition n'est pas confirmée, le lien reste utilisable ; ouvert, il prend le dessus (proposition CADUC). Une proposition confirmée garde la carte | `prospect_partenaire_resoudre`, `prospect_partenaire_ouvrir` |
 | 18 | **Relecture 3** : le sport de la CARTE doit être le sport principal de l'athlète ou celui de son équipe, sinon raison « autre_sport » | `prospect_partenaire_sport_concorde`, transfert et proposition automatique |
+| 19 | **Point ouvert, validé** : une carte réservée par le LIEN (RESERVEE ou CONFIRMEE_ATTENTE_OPTIN) se comporte comme une carte « Lien envoyé » | `prospect_partenaire_lever_reservation_lien` |
 
 ### Relecture BP (2026-10-14) : propositions invisibles pour le partenaire
 
@@ -43,14 +44,18 @@ Plan W4 validé avec ses 10 recommandations, puis deux changements et un ajout :
 - Une paire **CADUC** redevient candidate (elle n'a pas été tranchée) ; l'annulation d'une
   proposition par l'admin marque désormais la paire **ÉCARTÉE** (sinon elle reviendrait toute
   seule en proposition automatique).
-- **Reste refusé, comme avant** : modifier, régénérer ou révoquer le lien d'une carte réservée
-  par **son propre lien** (le partenaire la voit « Lien envoyé »). Voir « Point ouvert ».
-
-**Point ouvert (même famille, hors des 3 corrections demandées)** : ce refus-là révèle au
-partenaire que le jeune à qui il a envoyé le lien l'a ouvert, donc qu'il a un compte athlète.
-Correction proposée, non appliquée : même traitement (la modification libère la réservation
-par le lien et la carte redevient « Lien envoyé », le jeune rouvre le lien et revoit la carte
-modifiée).
+- **Carte réservée par SON lien** (RESERVEE ou CONFIRMEE_ATTENTE_OPTIN ; il la voit « Lien
+  envoyé ») — même règle, `prospect_partenaire_lever_reservation_lien`, journal
+  `RESERVATION_LIEN_LEVEE` avec le motif et l'état d'avant :
+  - **modification** : réservation levée sans rien dire au partenaire, la carte redevient
+    ENVOYEE avec le **même** lien ; une confirmation est annulée, le jeune rouvre le lien et
+    reconfirme la carte modifiée (motif `MODIFIEE`) ;
+  - **nouveau lien** : l'ancien jeton meurt, réservation levée (motif `NOUVEAU_LIEN`) ;
+  - **révocation** : réservation levée, carte A_ENVOYER (motif `REVOCATION`).
+  Une réservation par le lien n'émet aucune notification ; le rappel « active la visibilité
+  partenaire » est calculé à partir de la réservation et disparaît avec elle. Par précaution,
+  une notification de cette carte serait marquée caduque.
+- **Seul refus restant** : une carte expirée (le partenaire voit son échéance).
 
 **Moment du calcul automatique (point 3)** : à l'enregistrement d'une carte par le partenaire,
 et à l'activation de l'opt-in d'un athlète (même trigger que le transfert). Aucun cron. Un
@@ -85,7 +90,7 @@ mobile (registre).
 
 ## Preuves (local)
 
-- `tests-w4a.sql` → **178/178** (`tests-w4a-resultats-local.txt`) : droits par rôle réel (anon,
+- `tests-w4a.sql` → **205/205** (`tests-w4a-resultats-local.txt`) : droits par rôle réel (anon,
   recruteur, coach, autre partenaire, admin), jeton (empreinte seule, remplacement, révocation,
   réservation), attente puis transfert à l'opt-in, transfert immédiat avec les règles W2/W3/W3b
   (évaluation existante gardée, badges déjà portés sautés avec leur raison), refus par le lien,
@@ -97,7 +102,11 @@ mobile (registre).
   une carte libre ; proposition levée sans bruit ; export du partenaire vide de propositions),
   O1–O10 (point 2 : lien valide pendant une proposition non confirmée, il prend le dessus ;
   refusé si la proposition est confirmée), P1–P12b (point 3 : autre sport → « autre_sport »,
-  rien d'écrit ; sport de son équipe → transfert et proposition automatique).
+  rien d'écrit ; sport de son équipe → transfert et proposition automatique), Q1–Q28 (carte
+  réservée par le lien : modification, modification après confirmation, nouveau lien,
+  révocation ; jeune qui rouvre et reconfirme ; ancien jeton mort ; journal des 4 levées ;
+  export du partenaire sans levée, export du jeune avec). L'ancien B18 (« modification
+  refusée ») est retiré : ce comportement n'existe plus.
 - Non-régression avec W4a en place : W2 **53/53**, W3 **70/70**, W3b **60/60**.
 - Rollback : retour EXACT à l'état sans W4a (`releve-etat.sql`, 8 aspects : fonctions + ACL,
   triggers, contraintes, tables + ACL + RLS, politiques, cron, notifications, évaluations).
@@ -114,10 +123,10 @@ enregistrement (version FIXE `20261014200739` dans `schema_migrations`, une lign
   aux valeurs relevées **en prod** le 2026-10-14 (identiques en local) ; pose les témoins.
 - `w4a-gardes-et-enregistrement.sql` (GÉNÉRÉ par `generer-gardes.mjs`, ne pas éditer) :
   rien d'autre n'a bougé (fonctions, triggers, tâches cron, notifications, évaluations et
-  badges partenaire, athlètes, `admin_operations`) ; nouvel état exact (31 fonctions et leurs
+  badges partenaire, athlètes, `admin_operations`) ; nouvel état exact (32 fonctions et leurs
   ACL complètes, SECURITY DEFINER, 4 tables RLS sans politique ni droit et vides, texte exact
   du trigger et de la contrainte, purge 08:50) ; puis l'enregistrement, migration embarquée
-  octet pour octet (md5 `c76c69752466c132b10446ef4afee90e`, LF).
+  octet pour octet (md5 `719b7c7456c282f8ea6c907d2232d363`, LF).
 - `w4a-verif-apres.sql` : lecture seule, après le commit.
 
 Prouvé en local le 2026-10-14, à partir de copies en fins de ligne CRLF, dans des
@@ -131,9 +140,9 @@ en PowerShell :
 # 1. Les fichiers sont-ils ceux qui ont été testés ?
 Get-FileHash -Algorithm MD5 docs\partenaires-w4a\prod\w4a-releve-avant.sql, supabase\migrations\20261014200739_w4a_prospects_partenaire.sql, docs\partenaires-w4a\prod\w4a-gardes-et-enregistrement.sql, docs\partenaires-w4a\prod\w4a-verif-apres.sql
 #   w4a-releve-avant.sql                          F372B7126EF5D94FFACFD73D38E3B823
-#   20261014200739_w4a_prospects_partenaire.sql   C76C69752466C132B10446EF4AFEE90E
-#   w4a-gardes-et-enregistrement.sql              968D1137F22B548E6FE32B9AAEE09A46
-#   w4a-verif-apres.sql                           920D95D1AD0B63F2715EA4FDC0A539F6
+#   20261014200739_w4a_prospects_partenaire.sql   719B7C7456C282F8EA6C907D2232D363
+#   w4a-gardes-et-enregistrement.sql              A3E86611A9351141A5B25F9671665490
+#   w4a-verif-apres.sql                           5780D2887D9A9947D2C0DF7A0FA4D98E
 # (fichiers en LF, tels qu'écrits. Après un nouveau checkout Windows, ils seraient en CRLF et
 #  ces empreintes changeraient ; les gardes, elles, acceptent les deux.)
 

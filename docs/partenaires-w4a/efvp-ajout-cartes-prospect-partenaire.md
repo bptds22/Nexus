@@ -56,7 +56,10 @@ peut donc jamais être réclamée ; elle expire.
   masqués ; l'export d'accès qui le concerne retire tout rapprochement. Aucune de ses actions
   (modifier, lien, révocation, retrait) ne réussit, n'échoue ni ne se comporte autrement selon
   qu'une proposition est en cours : une modification lève la proposition sans le lui dire, et
-  la notification du jeune devient caduque.
+  la notification du jeune devient caduque. De même, rien ne lui révèle que le jeune a ouvert
+  son lien : une carte réservée par le lien se modifie, se relance ou se révoque comme une
+  carte « Lien envoyé » ; la réservation est levée et le jeune rouvre le lien pour revoir, et
+  reconfirmer, la carte modifiée.
 - **Le bon jeune garde son lien.** Tant qu'une proposition faite à un homonyme n'est pas
   confirmée, le lien envoyé par le partenaire reste utilisable ; s'il est ouvert, la
   proposition tombe.

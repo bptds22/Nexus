@@ -103,7 +103,7 @@ declare
   veut text[];
   n int := 0;
 begin
-  -- 31 fonctions, droits : liste COMPLÈTE, jamais par inclusion.
+  -- 32 fonctions, droits : liste COMPLÈTE, jamais par inclusion.
   for r in select p.oid, p.proname, p.prosecdef from pg_proc p
             where p.pronamespace = 'public'::regnamespace
               and (p.proname like 'prospect_partenaire%' or p.proname like 'partenaire_prospect%'
@@ -119,6 +119,7 @@ begin
                          'prospect_partenaire_candidats', 'prospect_partenaire_proposer',
                          'prospect_partenaire_proposer_auto', 'prospect_partenaire_sur_optin',
                          'prospect_partenaire_sport_concorde', 'prospect_partenaire_lever_proposition',
+                         'prospect_partenaire_lever_reservation_lien',
                          'purger_prospects_partenaire') then array['postgres', 'service_role']
       else array['authenticated', 'postgres', 'service_role'] end;
     select array_agg(t.g order by t.g) into vus
@@ -133,8 +134,8 @@ begin
       raise exception 'NEXUS: SECURITY DEFINER inattendu sur %', r.proname;
     end if;
   end loop;
-  if n <> 31 then
-    raise exception 'NEXUS: 31 fonctions W4a attendues, % trouvées', n;
+  if n <> 32 then
+    raise exception 'NEXUS: 32 fonctions W4a attendues, % trouvées', n;
   end if;
 
   -- 4 tables : RLS active, aucune politique, aucun droit direct, vides.
@@ -204,7 +205,7 @@ select 'MIGRATION_W4A_PROSPECTS_PARTENAIRE',
          'voie', 'psql -1 (session pooler) : relevé avant + migration + gardes dans une seule transaction',
          'md5_fichier', '${md5}',
          'tables', '4 (RLS, aucune politique, aucun droit direct)',
-         'fonctions', '31 — ACL complètes : 1 anon+authenticated, 17 authenticated, 13 serveur seulement',
+         'fonctions', '32 — ACL complètes : 1 anon+authenticated, 17 authenticated, 14 serveur seulement',
          'trigger', 'trg_prospect_partenaire_sur_optin (AFTER UPDATE OF opt-in, WHEN opt-in devient actif, erreurs attrapées)',
          'cron', 'prospects-partenaire-purge-quotidienne 50 8 * * *',
          'contrainte', 'athlete_notifications_type_check + PARTENAIRE_EVALUATION',

@@ -24,7 +24,7 @@ select json_build_object(
                             or p.proname like 'admin_prospect%'
                             or p.proname in ('admin_loi25_prospects_partenaires', 'purger_prospects_partenaire'))) s
                    group by acl) t),
-     'attendu', '{"anon,authenticated,postgres,service_role": 1, "authenticated,postgres,service_role": 17, "postgres,service_role": 13}'),
+     'attendu', '{"anon,authenticated,postgres,service_role": 1, "authenticated,postgres,service_role": 17, "postgres,service_role": 14}'),
   'trigger_optin', json_build_object(
      'obtenu', (select tgenabled::text || ' ' || pg_get_triggerdef(oid) from pg_trigger where tgname = 'trg_prospect_partenaire_sur_optin'),
      'attendu', 'O CREATE TRIGGER trg_prospect_partenaire_sur_optin AFTER UPDATE OF partner_visibility_opt_in, partner_visibility_parental_consent ON public.athletes … WHEN ((new.partner_visibility_opt_in AND …'),
