@@ -18,6 +18,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { lienSms, messageTexto } from "@/lib/partenaires/prospects";
 
 export default function EnvoyerLien({
@@ -54,7 +55,8 @@ export default function EnvoyerLien({
     try { await navigator.share({ text: message }); } catch { /* annulé */ }
   };
 
-  return (
+  // Rendu dans <body>, comme FormulaireCarte (barre du haut mobile).
+  return createPortal(
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="titre-lien" data-envoyer-lien>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 sm:p-6 max-w-lg w-full shadow-2xl">
@@ -98,6 +100,7 @@ export default function EnvoyerLien({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
