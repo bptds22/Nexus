@@ -4,9 +4,11 @@
    Badges PARTENAIRE (lot W3) — ajoutés À LA FIN de la rangée
    « Distinctions », avec leur propre icône.
 
-   Même gabarit que DistinctionBadge en taille `fiche` (tailleBadgeFiche.ts :
-   ~40 % plus grand que `lg`, même boîte carrée pour tous, image centrée)
-   pour que la rangée reste homogène.
+   TAILLE (décision BP du 2026-10-15, corrigée le même jour) :
+   - badge Nexus posé par un partenaire (W3b) : gabarit des Distinctions
+     (`lg`, cellule 110 px, picto 96 px), comme tous les badges Nexus ;
+   - badge PROPRE au partenaire : ~40 % plus grand (tailleBadgeFiche.ts :
+     boîte carrée 134 px bureau, 120 px mobile, image centrée en contain).
 
    LA LIGNE DU PARTENAIRE (décision BP du 2026-10-15) :
    - badge Nexus posé par un partenaire (W3b) : « par <organisation> » reste
@@ -101,7 +103,7 @@ export function BadgePartenaireVignette({
 
   return (
     <div
-      className={`flex flex-col items-center gap-[10px] shrink-0 ${FICHE_CELLULE}`}
+      className={`flex flex-col items-center gap-[10px] shrink-0 ${badge.estNexus ? "w-[110px]" : FICHE_CELLULE}`}
       data-badge-partenaire
       title={`Badge ${badge.organisation}${badge.estMasque ? " — masqué par le coach" : ""}`}
     >
@@ -109,7 +111,7 @@ export function BadgePartenaireVignette({
         /* Badge Nexus : le composant des Distinctions, tel quel (icône,
            libellé, reflet). Seule la signature dessous dit qui l'a posé. */
         <div className={badge.estMasque ? "opacity-35 grayscale" : ""}>
-          <DistinctionBadge badge={badge.codeNexus} libelle={badge.libelle} size="fiche" />
+          <DistinctionBadge badge={badge.codeNexus} libelle={badge.libelle} />
         </div>
       ) : (
         <>
@@ -138,7 +140,7 @@ export function BadgePartenaireVignette({
       {/* Badge Nexus posé par un partenaire : « par <organisation> » (sinon on croit au coach).
           Badge propre au partenaire : aucune ligne — son image le dit. « Masqué » reste dit. */}
       {(badge.estMasque || badge.estNexus) && (
-        <span className="text-[10px] sm:text-[11px] text-[#6B7280] text-center leading-tight -mt-[6px] max-w-[140px] sm:max-w-[154px]" data-ligne-partenaire>
+        <span className={`text-[10px] text-[#6B7280] text-center leading-tight -mt-[6px] ${badge.estNexus ? "max-w-[110px]" : "max-w-[140px] sm:max-w-[154px]"}`} data-ligne-partenaire>
           {badge.estMasque ? "Masqué" : `par ${badge.organisation}`}
         </span>
       )}
