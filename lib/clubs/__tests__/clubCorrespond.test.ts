@@ -54,3 +54,11 @@ test("création de club : jamais si un club correspond (sigle compris), seulemen
   assert.equal(peutCreerClub("   ", []), false);
   assert.equal(peutCreerClub("Patriotes de Boucherville", CLUBS), true);
 });
+
+test("mobile coach civil : « + Créer un nouveau club » suit la même règle que le web", () => {
+  // CoachOnboardingMobileCivil : footer du sheet = peutCreerClub(clubSearch, clubs).
+  assert.equal(peutCreerClub("", CLUBS), false, "sheet ouvert, rien tapé");
+  assert.equal(peutCreerClub("nls", CLUBS), false, "sigle d'un club connu");
+  assert.equal(peutCreerClub("laval", CLUBS), false, "ville d'un club connu");
+  assert.equal(peutCreerClub("zzz club inexistant", CLUBS), true, "recherche sans résultat");
+});

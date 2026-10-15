@@ -38,7 +38,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { filtrerClubs } from "@/lib/clubs/clubCorrespond";
+import { filtrerClubs, peutCreerClub } from "@/lib/clubs/clubCorrespond";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -795,7 +795,9 @@ export function CoachOnboardingMobileCivil() {
             {c.city && <p className="text-[13px] text-white/55 truncate">{c.city}</p>}
           </button>
         )}
-        footer={
+        // « Créer un club » : seulement après une recherche SANS aucun club
+        // correspondant, sigle compris (peutCreerClub — même règle que le web).
+        footer={!clubsLoading && peutCreerClub(clubSearch, clubs) ? (
           <button
             type="button"
             onClick={() => { void triggerHaptic("Light"); setClubMode("create"); setClubSheetOpen(false); }}
@@ -803,7 +805,7 @@ export function CoachOnboardingMobileCivil() {
           >
             + Créer un nouveau club
           </button>
-        }
+        ) : undefined}
       />
 
       {/* SearchSheet équipe civile (mode pick) */}
@@ -1063,13 +1065,6 @@ function Slide2ClubTeam(p: Slide2Props) {
           {p.selectedClubName && p.selectedClubCity && (
             <p className="text-[12px] text-white/55 mt-1 px-1">{p.selectedClubCity}</p>
           )}
-          <button
-            type="button"
-            onClick={() => { void triggerHaptic("Light"); p.onClubModeChange("create"); }}
-            className="text-[13px] font-bold text-[#E63946] mt-2 active:opacity-70"
-          >
-            + Créer un nouveau club
-          </button>
         </>
       ) : (
         <div className="space-y-3 bg-[#1A1D24] border border-white/[0.06] rounded-2xl p-4">
