@@ -222,7 +222,11 @@ export default function CarteProspectReponse({
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={src} alt="" className="w-5 h-5 object-contain" />
-                  ) : <span className="w-5 h-5" />}
+                  ) : (
+                    <span className="w-5 h-5 rounded-full border border-[#F59E0B]/50 flex items-center justify-center text-[10px] font-bold text-[#F59E0B]">
+                      {b.libelle.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
                   {b.libelle}
                 </span>
               );

@@ -207,7 +207,7 @@ export default function FormulaireCarte({
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-start sm:items-center justify-center overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="titre-carte-prospect">
+    <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="titre-carte-prospect">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !enCours && onClose()} />
       <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 sm:p-6 max-w-2xl w-full mx-4 my-6 shadow-2xl" data-formulaire-carte>
         <h3 id="titre-carte-prospect" className="font-head text-[18px] font-black text-white uppercase tracking-tight">
