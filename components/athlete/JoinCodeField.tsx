@@ -24,7 +24,8 @@ import {
   isPlausibleJoinCode,
   type ResolvedJoinTeam,
 } from "@/lib/queries/athlete/teamAttachment";
-import { teamDetails } from "@/lib/config/teamLabel";
+import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
+import LignesEquipe from "@/components/athlete/LignesEquipe";
 import { equipeNommable } from "@/lib/invitations/equipeNommable";
 
 interface Props {
@@ -101,12 +102,10 @@ export default function JoinCodeField({ initialCode = "", onResolved }: Props) {
           {equipeNommable(team.schoolType) ? (
             <div className="min-w-0 flex-1">
               <div className="truncate text-[15px] font-semibold text-white">{team.teamName}</div>
-              <div className="truncate text-[12px] text-[#9CA3AF]">
-                {[team.schoolName, teamDetails({
-                  sport: team.sportName, age_group: team.ageGroup, division: team.division,
-                  gender: team.gender, season: team.season, league: team.league,
-                })].filter(Boolean).join(" · ")}
-              </div>
+              <LignesEquipe {...lignesEquipeResolue({
+                sport: team.sportName, age_group: team.ageGroup, division: team.division,
+                gender: team.gender, season: team.season, league: team.league,
+              }, team.schoolName)} />
             </div>
           ) : (
             <div className="min-w-0 flex-1 text-[15px] font-semibold text-white">Code valide</div>

@@ -14,7 +14,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   libelleEquipe, formatTeamLabel, attributsEquipe, nomEstCeluiDuClub,
-  trierEquipes, equipeCorrespond, rangCategorie,
+  trierEquipes, equipeCorrespond, rangCategorie, lignesEquipeResolue,
 } from "@/lib/teams/teamLabel";
 
 const NLS = "No Limits Showcases";
@@ -110,4 +110,29 @@ test("recherche : nom + 4 attributs, genre compris, accents et casse ignorés", 
   assert.equal(equipeCorrespond(bf, "dalbe-viau feminin"), true);
   assert.equal(equipeCorrespond({ ...jm, gender: "m" }, "masculin"), true);
   assert.equal(equipeCorrespond(jm, "   "), true);
+});
+
+test("équipe résolue (/join, transfert) : essentiel puis contexte, ligue = club retirée", () => {
+  // 3KBM BM : la ligue « No Limits Showcases » répétait le club.
+  assert.deepEqual(
+    lignesEquipeResolue({ name: "3KBM BM", sport: "Basketball", age_group: "Benjamin", division: "Gold",
+      gender: "Masculin", season: "2026-2027", league: "No Limits Showcases" }, "No Limits Showcases"),
+    { essentiel: "Benjamin · Gold · Masculin", contexte: "No Limits Showcases · Basketball · 2026-2027" },
+  );
+  // Sans division (C.S.S. BF) : aucun séparateur orphelin.
+  assert.deepEqual(
+    lignesEquipeResolue({ name: "C.S.S. BF", sport: "Basketball", age_group: "Benjamin", division: "",
+      gender: "Féminin", season: "2026-2027", league: "no limits SHOWCASES" }, "No Limits Showcases"),
+    { essentiel: "Benjamin · Féminin", contexte: "No Limits Showcases · Basketball · 2026-2027" },
+  );
+  // RSEQ : la ligue diffère du club → affichée en fin de contexte.
+  assert.deepEqual(
+    lignesEquipeResolue({ name: "Séminaire Saint-François", sport: "Football", age_group: "Juvénile",
+      division: "D1", gender: "masculin", season: "2026-2027", league: "RSEQ Québec-Chaudière-Appalaches" },
+      "Séminaire Saint-François"),
+    { essentiel: "Juvénile · D1 · Masculin", contexte: "Séminaire Saint-François · Football · 2026-2027 · RSEQ Québec-Chaudière-Appalaches" },
+  );
+  // Accents ignorés dans la comparaison ligue / club ; champs vides retirés.
+  assert.equal(lignesEquipeResolue({ league: "Collège Notre-Dame" }, "College Notre-Dame").contexte, "College Notre-Dame");
+  assert.deepEqual(lignesEquipeResolue({}, null), { essentiel: "", contexte: "" });
 });

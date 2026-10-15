@@ -51,7 +51,8 @@ import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/l
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { triggerHaptic } from "@/lib/haptics";
 import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY, type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
-import { teamDetails } from "@/lib/config/teamLabel";
+import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
+import LignesEquipe from "@/components/athlete/LignesEquipe";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
@@ -229,7 +230,7 @@ export function AthleteOnboardingMobile() {
   const [codeLock, setCodeLock] = useState<{
     code: string; teamId: string; teamName: string;
     schoolId: string; schoolName: string; schoolType: string;
-    sportName: string; details: string;
+    sportName: string; details: { essentiel: string; contexte: string };
   } | null>(null);
 
   /** « Changer » : délie le code et déverrouille tout. On NE remet PAS l'école
@@ -276,10 +277,11 @@ export function AthleteOnboardingMobile() {
       schoolName: t.schoolName ?? "",
       schoolType: t.schoolType ?? "",
       sportName: t.sportName ?? "",
-      details: teamDetails({
+      // Règle commune (BP 2026-10-15) : essentiel puis contexte, ligue si ≠ club.
+      details: lignesEquipeResolue({
         sport: t.sportName, age_group: t.ageGroup, division: t.division,
         gender: t.gender, season: t.season, league: t.league,
-      }),
+      }, t.schoolName),
     });
     setJoinCodeUsed(v.code);
     setSelectedTeamId(t.teamId);
@@ -2009,7 +2011,7 @@ interface Step1Props {
   codeLock: {
     code: string; teamId: string; teamName: string;
     schoolId: string; schoolName: string; schoolType: string;
-    sportName: string; details: string;
+    sportName: string; details: { essentiel: string; contexte: string };
   } | null;
   onReleaseCode: () => void;
 }
@@ -2055,9 +2057,7 @@ function Step1Content(p: Step1Props) {
               <p className="mt-1 truncate text-[15px] font-semibold text-white">
                 {p.codeLock.teamName}
               </p>
-              <p className="truncate text-[12px] text-white/55">
-                {[p.codeLock.schoolName, p.codeLock.details].filter(Boolean).join(" · ")}
-              </p>
+              <LignesEquipe {...p.codeLock.details} />
               <p className="mt-2 text-[12px] leading-relaxed text-white/40">
                 Ton {p.codeLock.schoolType === "LIGUE_CIVILE" ? "club" : "école"} et ton
                 sport sont remplis à partir de ce code.
@@ -2147,7 +2147,7 @@ function Step1Content(p: Step1Props) {
               <div className="truncate text-[15px] font-semibold text-white">
                 {p.codeLock.teamName}
               </div>
-              <div className="truncate text-[12px] text-white/55">{p.codeLock.details}</div>
+              <LignesEquipe {...p.codeLock.details} />
             </div>
             <button
               type="button"
