@@ -20,7 +20,7 @@ profil, jamais lesquels. Une équipe n'est nommée que si c'est l'équipe **seco
 | Carte « Invitations en attente » (web) | « Invitation de {Équipe} — {École} » + détails si SECONDAIRE/LIGUE_CIVILE ; sinon « Invitation à rejoindre une équipe », sans nom, école ni sport. Plus de « Invité par {coach} ». « Ton école et ton entraîneur changeront » → « Ton école changera aussi ». Même garde pour l'équipe actuelle et le message de succès. |
 | « On a trouvé un profil pour toi » | « Ton profil a été préparé pour toi » ; plus de coach ; école seulement si secondaire/civile. |
 | Code d'équipe (`JoinCodeField`, `/join/[code]`) | « Le code de ton équipe » ; plus d'entraîneur ; équipe, école et logo masqués si collégiale. |
-| Mobile | Registre `docs/fast-follow-1.4.2.md` §92. |
+| Mobile | Registre `docs/fast-follow-1.4.2.md` §93. |
 
 Règle partagée : `lib/invitations/equipeNommable.ts` (miroir de la base).
 

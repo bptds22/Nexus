@@ -2639,7 +2639,39 @@ Les migrations d'avril–juin et d'octobre sont toutes dans l'historique prod.
 **ajoutées par la fusion**, ou **dont le code poussé dépend**, et qui ne sont pas appliquées en prod.
 Une migration déjà sur `origin/main` dont le code ne dépend pas (comme (a)) ne bloque pas. On la signale.
 
-## 92. Invitations sans coach (règle RSEQ) côté mobile (2026-10-15, lot mobile, web fait)
+## 92. Responsables de club ou d'école : failles d'auto-promotion (Loi 25) et option B (2026-10-15, reporté par BP)
+
+Relevé au diagnostic « directeur de club civil sans équipe ». Règles relues en prod (lecture seule) ;
+**ni exploitées, ni testées en écriture.** L'option A (responsable civil sans équipe, branche
+`feat/directeur-civil-sans-equipe`) ne change rien à ces deux points.
+
+**(a) Failles d'accès : un coach peut se donner lui-même le rôle de directeur. Reporté par BP, à boucher bientôt (Loi 25).**
+- `school_coaches`, règle « coach_update_own » (UPDATE) : `USING (coach_id = auth.uid())` sans `WITH CHECK`, et
+  le rôle n'est pas limité. Un coach peut passer sa propre ligne à `role = 'DIRECTEUR'`.
+- `school_coaches`, règle « Coaches insert school_coaches » (INSERT) : `coach_id = auth.uid()` suffit. Un coach peut
+  ajouter une ligne `DIRECTEUR` pour une autre école ou un autre club.
+- Dans les deux cas, le déclencheur `trg_sync_admin_flag` (`sync_user_admin_flag`) pose ensuite
+  `users.is_school_admin = true`. Ça donne les droits du directeur, dont `get_coach_athletes` : tous les athlètes
+  de l'école ou du club, **mineurs compris**. Il n'y a ni demande, ni approbation.
+- `admin_claims`, règle « admin_claims_user_insert_own » : seul `user_id = auth.uid()` est vérifié. Une demande
+  peut être créée directement avec `status = 'APPROVED'`. Le déclencheur d'approbation ne part qu'à l'UPDATE, donc
+  aucun droit n'est donné. Mais `school_has_responsable()` devient vrai, ce qui ouvre la carte « Coach »
+  aux inscriptions suivantes.
+- Correctif à prévoir (une migration) : en ajout ou en modification par le coach lui-même, `school_coaches.role`
+  limité à `COACH` / `PENDING`, avec un `WITH CHECK` qui empêche de changer son rôle. `DIRECTEUR` ne passe que par
+  l'approbation d'une demande ou par l'administrateur. `admin_claims` créable seulement en `PENDING`.
+  Vérifier l'ACL complète avant et après (CLAUDE.md, « Gates d'ACL »).
+
+**(b) Option B : plus tard.**
+- Vue directeur dans « Mes équipes » sur **mobile** (`CoachEquipesMobile` / `useCoachTeams`). Aujourd'hui, un
+  directeur approuvé sans équipe y voit « Aucune équipe ». Le web, lui, affiche les équipes du club
+  (`loadSchoolDirectorStatus`).
+- Avertissement à l'inscription quand le club ou l'école a déjà un responsable approuvé ou en attente. Aujourd'hui,
+  « C'est moi » et « Intérimaire » restent proposés, et seul l'administrateur trie les demandes.
+- Libellé du web (`app/coach/equipes`) : la liste du directeur s'intitule « Équipes de l'école » même pour un club civil.
+  À adapter : « Équipes du club » quand l'établissement est un club civil (`LIGUE_CIVILE`).
+
+## 93. Invitations sans coach (règle RSEQ) côté mobile (2026-10-15, lot mobile, web fait)
 
 Décision BP du 2026-10-15 : aucun écran destiné à un athlète ne nomme un coach, un recruteur ou un
 cégep, ni ne permet de le deviner. Une équipe n'est nommée (nom, école, logo, détails) que si c'est
