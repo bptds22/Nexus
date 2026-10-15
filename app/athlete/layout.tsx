@@ -13,6 +13,8 @@ import WrongRoutePage from "./_components/WrongRoutePage";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
 import { AnimatedRoute } from "../recruteur/_components/AnimatedRoute";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
+import BandeauCartesPartenaires from "@/components/athlete/prospects/BandeauCartesPartenaires";
+import { lireJetonCarte } from "@/lib/partenaires/prospects";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ─────────────────────────────────────────────────────────────────
@@ -426,6 +428,17 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         return;
       }
 
+      // W4c — lien d'une carte partenaire ouvert AVANT l'inscription ou la
+      // connexion : une fois l'onboarding fini, on y revient (web seulement).
+      // /p/[jeton] oublie le jeton dès qu'il l'a ouvert : pas de boucle.
+      if (isComplete && !IS_CAPACITOR) {
+        const jetonCarte = lireJetonCarte();
+        if (jetonCarte) {
+          router.replace(`/p/${jetonCarte}`);
+          return;
+        }
+      }
+
       setState("ok");
       } catch (err) {
         // Filet de sécurité : une lecture qui rejette (réseau, RLS) ne doit
@@ -470,6 +483,8 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
             </div>
           </div>
         )}
+        {/* W4c — carte d'un partenaire qui attend une réponse ou l'opt-in (web seulement). */}
+        {!IS_CAPACITOR && <BandeauCartesPartenaires />}
         <main
           className="relative z-10 flex-1"
           style={

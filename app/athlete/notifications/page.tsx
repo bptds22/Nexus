@@ -33,7 +33,12 @@ type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED"
      filtre d'onglet — elles s'afficheraient sans pastille ni icône et dans
      aucun onglet. La base qui accepte ne suffit pas. */
   | "AMBASSADEUR_PALIER_3"
-  | "AMBASSADEUR_PALIER_5";
+  | "AMBASSADEUR_PALIER_5"
+  /* W4 — un partenaire a peut-être évalué ce jeune (proposition de Nexus).
+     Les quatre ajouts, comme ci-dessus. Le geste se fait sur
+     /athlete/cartes-partenaires (web) ; une notification marquée caduque
+     (metadata.caduque) ne mène plus nulle part. */
+  | "PARTENAIRE_EVALUATION";
 
 interface AthleteNotif {
   id: string;
@@ -71,6 +76,8 @@ const DOT_COLOR: Record<NotifType, string> = {
   // teinte, mais ici elle dit « c'est gagné », ce que le libellé porte.
   AMBASSADEUR_PALIER_3: "#F59E0B",
   AMBASSADEUR_PALIER_5: "#F59E0B",
+  // Ambre : une réponse est attendue du jeune.
+  PARTENAIRE_EVALUATION: "#F59E0B",
 };
 
 const TYPE_ICON: Record<NotifType, React.ReactNode> = {
@@ -95,6 +102,8 @@ const TYPE_ICON: Record<NotifType, React.ReactNode> = {
   // Palier 5 — le badge. Même géométrie que COACH_DISTINCTION_ADDED : c'en
   // est un, et le dire deux fois différemment n'aiderait personne.
   AMBASSADEUR_PALIER_5: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="6" /><path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" /></svg>,
+  // Une carte avec une étoile : l'évaluation d'un partenaire.
+  PARTENAIRE_EVALUATION: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><polygon points="12 8 13.3 10.7 16.2 11.1 14.1 13.1 14.6 16 12 14.6 9.4 16 9.9 13.1 7.8 11.1 10.7 10.7 12 8" /></svg>,
 };
 
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
@@ -148,7 +157,7 @@ export default function NotificationsPage() {
          des jalons personnels, pas des gestes de coach. Les oublier ici les
          rendrait invisibles dans TOUS les onglets sauf « Tout » — le défaut
          exact de TEAM_INVITATION avant son correctif. */
-      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5"].includes(n.type));
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5", "PARTENAIRE_EVALUATION"].includes(n.type));
       case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
       case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION", "COACH_CLAIMED"].includes(n.type));
       default: return notifs;
@@ -269,7 +278,10 @@ export default function NotificationsPage() {
                  confirmValidation(). */
               const target = n.metadata?.kind === "monthly_validation_expired"
                 ? (IS_CAPACITOR ? "/athlete/dashboard" : "/athlete/profil")
-                : null;
+                // W4 : la réponse se fait sur le web seulement (lot mobile, registre §85).
+                : n.type === "PARTENAIRE_EVALUATION" && !IS_CAPACITOR && n.metadata?.caduque !== true
+                  ? "/athlete/cartes-partenaires"
+                  : null;
               return (
               <button key={n.id} type="button"
                 onClick={() => { markRead(n.id); if (target) router.push(target); }}
@@ -283,7 +295,9 @@ export default function NotificationsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-[13px] leading-relaxed ${n.read ? "text-[#9CA3AF]" : "text-white font-semibold"}`}>{n.title}</p>
-                    {n.message && <p className="text-[12px] text-[#6b7280] mt-0.5">{n.message}</p>}
+                    {n.type === "PARTENAIRE_EVALUATION" && n.metadata?.caduque === true
+                      ? <p className="text-[12px] text-[#6b7280] mt-0.5">Cette demande n&apos;est plus d&apos;actualité.</p>
+                      : n.message && <p className="text-[12px] text-[#6b7280] mt-0.5">{n.message}</p>}
                     <p className="text-[11px] text-[#4a4d56] mt-1" title={new Date(n.created_at).toLocaleString("fr-CA")}>{relativeTimeFr(n.created_at)}</p>
                   </div>
                 </div>
