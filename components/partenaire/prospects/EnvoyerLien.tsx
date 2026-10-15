@@ -10,7 +10,8 @@
    Le partenaire envoie le lien LUI-MÊME, depuis son téléphone (Nexus n'a
    aucune coordonnée du jeune) :
    - « Envoyer par texto » : sms: avec le message pré-rempli (appareil
-     tactile seulement — sur un ordinateur, sms: n'ouvre rien d'utile) ;
+     tactile seulement — sur un ordinateur sans écran tactile, sms: n'ouvre
+     rien d'utile) ;
    - « Partager » : le partage natif, s'il existe ;
    - « Copier » : toujours.
    Le message est court, signé de l'organisation, sans nom ni évaluation.
@@ -34,7 +35,10 @@ export default function EnvoyerLien({
   const [copie, setCopie] = useState<"lien" | "message" | null>(null);
 
   useEffect(() => {
-    setTactile(typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches);
+    // Téléphone ou tablette : écran tactile, ou pointeur grossier. Un portable à
+    // écran tactile verra aussi le bouton ; la copie reste offerte à tous.
+    setTactile(typeof window !== "undefined"
+      && ((navigator.maxTouchPoints ?? 0) > 0 || !!window.matchMedia?.("(pointer: coarse)").matches));
     setPartage(typeof navigator !== "undefined" && typeof navigator.share === "function");
   }, []);
 
