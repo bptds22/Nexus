@@ -1,0 +1,26 @@
+﻿PREUVE LOCALE — lot D1 — 2026-10-15T10:20:18
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 08ebd51e91cecf8aacaca825e204390c
+  md5 lot-prod.sql      : 98f894bc08790207158889437653bcf8
+  état de départ (D1 retirée) : tables=0 fonctions=0 trigger=0 purge=0 version=0 athletes=48
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte 9903dd903ab3c21af5407e6707986b89 / 35 éléments) — tout est annulé
+  état après : tables=0 fonctions=0 trigger=0 purge=0 version=0 athletes=48
+
+== 2. Instructions envoyées SÉPARÉMENT (pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:25: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : tables=0 fonctions=0 trigger=0 purge=0 version=0 athletes=48
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"athletes":48,"version_deja":0,"derniere_version":"20260919014958","tables_deja":false,"pg":"17.6"}, "apres" : {"athletes" : 48, "version" : "20261015094834", "md5_enregistre" : "08ebd51e91cecf8aacaca825e204390c", "tables" : 2, "purge" : 1, "meme_transaction" : true}}
+  état après : tables=2 fonctions=3 trigger=1 purge=1 version=1 athletes=48
+  empreinte des objets en base : 9903dd903ab3c21af5407e6707986b89|35
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: D1 déjà présente — rien n'est appliqué
+  état après : tables=2 fonctions=3 trigger=1 purge=1 version=1 athletes=48
+
+== 5. Tests au banc sur la base issue du lot ==
+  33|0   (ok|échecs)

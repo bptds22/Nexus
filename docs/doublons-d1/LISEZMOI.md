@@ -10,7 +10,8 @@ pas touchés : la file naît vide (garde de la migration).
 |---|---|
 | Base | `doublons_probables` : file de l'admin, RLS sans politique, aucun droit pour anon/authenticated. Une ligne par paire. |
 | Base | Trigger `trg_doublons_probables_noter` (AFTER INSERT/UPDATE nom, date, statut sur `athletes`) : même nom normalisé (`nexus_normaliser_nom`) + même date de naissance qu'une fiche ACTIVE → la paire est notée. **Ne bloque jamais** (erreur interne → WARNING). Couvre tous les chemins, y compris l'appli mobile déjà publiée. |
-| Base | `inscription_doublon_possible(prénom, nom, date)` → `'COMPTE'`, `'FICHE_COACH'` ou rien. Réservée à un compte ATHLETE en cours d'inscription. Ne rend **rien** de l'autre fiche. |
+| Base | `inscription_doublon_possible(prénom, nom, date)` → `'COMPTE'`, `'FICHE_COACH'` ou rien. Réservée à un compte ATHLETE en cours d'inscription. Ne rend **rien** de l'autre fiche. **Anti-énumération** (décision BP 2026-10-15) : 3 vérifications par compte, puis toujours « aucun doublon » sans même chercher ; verrou par compte contre les appels simultanés. |
+| Base | `doublons_verifications` : journal de CHAQUE appel (compte, n° d'appel, résultat : AUCUN / COMPTE / FICHE_COACH / LIMITE / HORS_INSCRIPTION, date). Ni nom ni date cherchés. Admin seulement, purge à 180 jours (pg_cron `doublons-verifications-purge`). |
 | Base | `coach_athletes_meme_identite(prénom, nom, date)` en **SECURITY INVOKER** : la RLS décide. Le coach ne reçoit que des fiches qu'il pouvait déjà ouvrir. |
 | `/auth` (inscription, tous rôles) | « Voulais-tu dire …@gmail.com ? » en quittant le champ ou au clic sur Continuer (`lib/auth/suggestionCourriel.ts`). « Non, elle est bonne » laisse passer. |
 | `/athlete/onboarding` | Au « Suivant » de l'étape 1 : « Tu as peut-être déjà un compte. Connecte-toi avec ton autre adresse, ou continue. » — ou, si l'autre fiche vient d'un coach : « Ton entraîneur a peut-être déjà créé ta fiche. Demande-lui le lien d'invitation pour la récupérer, ou continue. » Une fois par visite ; « Continuer » enregistre normalement. Sous la grille des sports : « Tu joues dans plusieurs sports ? Ajoute une équipe à ta fiche, pas un 2e compte. » |
@@ -21,7 +22,8 @@ autre adresse » à un jeune qui n'a jamais eu de compte serait faux.
 
 ## Preuves (local, 2026-10-15)
 
-- `tests-d1.sql` → `tests-d1-resultats.txt` : **23/23**, transaction annulée. Faux positifs (même date,
+- `tests-d1.sql` → `tests-d1-resultats.txt` : **33/33**, transaction annulée (dont 10 pour la limite
+  de 3 appels et le journal). Faux positifs (même date,
   noms différents ; même nom, autre date), Loi 25 (coach A ne voit pas le mineur d'une autre école ;
   il crée la fiche sans erreur ni message ; il ne lit pas la file ; la paire est notée), accents /
   trait d'union / casse, fiche désactivée, appelants refusés (anon, coach, athlète déjà inscrit).
@@ -30,6 +32,27 @@ autre adresse » à un jeune qui n'a jamais eu de compte serait faux.
   Aucune erreur JavaScript.
 - `npm test` 453/453 (1 sauté, préexistant) ; `tsc` : 176 erreurs avant comme après, aucune dans
   les fichiers du lot ; `next build --webpack` OK.
+
+## Application en prod — par le connecteur, preuve locale faite
+
+`prod/construire-lot.mjs` fabrique `prod/lot-prod.sql`, le texte EXACT envoyé en UN appel :
+relevé avant → garde « une seule transaction / D1 absente » (avant toute écriture) → le fichier
+de migration octet pour octet → enregistrement de la version → gardes finales (md5 du texte
+enregistré = fichier testé ; **empreinte des objets créés = celle mesurée en local** ; aucune fiche
+athlète changée) → un résultat JSON avant/après.
+
+`prod/preuve-locale.ps1` → `prod/preuve-locale.txt` (même texte, envoyé en un message par
+`prod/un-message.sh`) :
+1. garde finale volontairement fausse → **tout annulé** (tables, fonctions, trigger, purge, version : 0) ;
+2. instructions envoyées une à une → arrêt **avant toute écriture** ;
+3. lot réel → appliqué, empreinte identique, md5 enregistré = md5 du fichier ;
+4. second envoi → refusé, rien ne change ;
+5. tests au banc sur la base issue du lot → 33/33.
+
+Le connecteur ne joint que le projet cloud ; ce qui ne peut pas être prouvé en local (qu'il
+envoie bien un seul message) est vérifié **par le lot lui-même** en prod : sinon la garde 2 arrête
+tout avant la première écriture. Une erreur de recopie du texte est arrêtée par les gardes finales.
+Retrait d'urgence : `rollback-d1.sql`.
 
 ## Point 4 — les 9 fiches sans prénom ni nom (diagnostic prod, lecture seule)
 

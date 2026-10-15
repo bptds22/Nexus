@@ -14,15 +14,21 @@
 --    Il couvre tous les chemins — web, appli mobile déjà publiée, coach, athlète — sans build.
 --  · inscription_doublon_possible() : l'avertissement de l'inscription athlète. Ne rend
 --    qu'un code ('COMPTE' / 'FICHE_COACH' / null), jamais rien de l'autre fiche. Réservée à un
---    compte ATHLETE dont l'onboarding n'est pas terminé.
+--    compte ATHLETE dont l'onboarding n'est pas terminé. ANTI-ÉNUMÉRATION (décision BP
+--    2026-10-15) : 3 vérifications par compte, puis toujours « aucun doublon » ; chaque appel
+--    est journalisé dans doublons_verifications (admin seulement, sans le nom cherché), purgé
+--    après 180 jours.
 --  · coach_athletes_meme_identite() : le contrôle de l'assistant coach. SECURITY INVOKER : elle
 --    ne lit QUE les fiches que la RLS laisse déjà voir à ce coach. Un mineur que le coach ne
 --    voit pas ne sort pas — le trigger le note pour l'admin, et le coach n'en apprend rien.
 
 do $$
 begin
-  if to_regclass('public.doublons_probables') is not null then
-    raise exception 'NEXUS: D1 déjà appliquée (doublons_probables existe)';
+  if to_regclass('public.doublons_probables') is not null or to_regclass('public.doublons_verifications') is not null then
+    raise exception 'NEXUS: D1 déjà appliquée (doublons_probables ou doublons_verifications existe)';
+  end if;
+  if exists (select 1 from cron.job where jobname = 'doublons-verifications-purge') then
+    raise exception 'NEXUS: tâche doublons-verifications-purge déjà présente';
   end if;
   if to_regprocedure('public.nexus_normaliser_nom(text)') is null then
     raise exception 'NEXUS: nexus_normaliser_nom(text) introuvable';
@@ -107,27 +113,68 @@ create trigger trg_doublons_probables_noter
   after insert or update of first_name, last_name, date_naissance, status on public.athletes
   for each row execute function public.doublons_probables_noter();
 
+-- ── Le journal des vérifications (anti-énumération) ──────────────────────────
+-- Sans le nom ni la date cherchés : le journal dit QUI a vérifié, QUAND et ce qu'il a obtenu.
+-- Un compte qui cherche des identités en série s'y voit à son nombre d'appels.
+
+create table public.doublons_verifications (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  appel      int not null check (appel >= 1),
+  resultat   text not null check (resultat in ('AUCUN', 'COMPTE', 'FICHE_COACH', 'LIMITE', 'HORS_INSCRIPTION')),
+  created_at timestamptz not null default now()
+);
+create index doublons_verifications_user_idx on public.doublons_verifications (user_id, created_at);
+
+alter table public.doublons_verifications enable row level security;
+revoke all on public.doublons_verifications from public, anon, authenticated;
+
+comment on table public.doublons_verifications is
+  'D1 (2026-10-15) — journal des appels à inscription_doublon_possible (anti-énumération : 3 par compte). ADMIN seulement : RLS sans politique. Ni nom ni date cherchés. Purge à 180 jours.';
+
+select cron.schedule('doublons-verifications-purge', '23 4 * * *',
+  $cron$delete from public.doublons_verifications where created_at < now() - interval '180 days'$cron$);
+
 -- ── L'avertissement de l'inscription athlète ─────────────────────────────────
 
 create or replace function public.inscription_doublon_possible(p_prenom text, p_nom text, p_date_naissance date)
 returns text
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public
 as $$
 declare
+  c_max_appels constant int := 3;   -- décision BP 2026-10-15
   v_uid     uuid := auth.uid();
   v_courriel text;
   v_nom     text := public.nexus_normaliser_nom(coalesce(p_prenom, '') || ' ' || coalesce(p_nom, ''));
   v_compte  boolean;
+  v_appel   int;
+  v_res     text;
 begin
+  if v_uid is null then
+    return null;
+  end if;
+  -- Deux appels simultanés du même compte ne doivent pas passer tous deux sous la limite.
+  perform pg_advisory_xact_lock(hashtext('doublons_verifications:' || v_uid::text));
+  select count(*) + 1 into v_appel from public.doublons_verifications where user_id = v_uid;
+
   -- Seulement pendant l'inscription d'un athlète : hors de là, la fonction ne répond rien.
-  if v_uid is null or p_date_naissance is null or v_nom is null
-     or coalesce(btrim(p_prenom), '') = '' or coalesce(btrim(p_nom), '') = ''
-     or not exists (select 1 from public.users u
-                     where u.id = v_uid and u.role = 'ATHLETE'::public.user_role
-                       and u.onboarding_complete is not true) then
+  if not exists (select 1 from public.users u
+                  where u.id = v_uid and u.role = 'ATHLETE'::public.user_role
+                    and u.onboarding_complete is not true) then
+    insert into public.doublons_verifications (user_id, appel, resultat) values (v_uid, v_appel, 'HORS_INSCRIPTION');
+    return null;
+  end if;
+  -- Au-delà de la limite : toujours « aucun doublon », sans même chercher.
+  if v_appel > c_max_appels then
+    insert into public.doublons_verifications (user_id, appel, resultat) values (v_uid, v_appel, 'LIMITE');
+    return null;
+  end if;
+  if p_date_naissance is null or v_nom is null
+     or coalesce(btrim(p_prenom), '') = '' or coalesce(btrim(p_nom), '') = '' then
+    insert into public.doublons_verifications (user_id, appel, resultat) values (v_uid, v_appel, 'AUCUN');
     return null;
   end if;
   select lower(btrim(email)) into v_courriel from auth.users where id = v_uid;
@@ -142,7 +189,9 @@ begin
      and not (a.user_id is null and lower(btrim(coalesce(a.email, ''))) = coalesce(v_courriel, ''))
      and public.nexus_normaliser_nom(coalesce(a.first_name, '') || ' ' || coalesce(a.last_name, '')) = v_nom;
 
-  return case when v_compte is null then null when v_compte then 'COMPTE' else 'FICHE_COACH' end;
+  v_res := case when v_compte is null then null when v_compte then 'COMPTE' else 'FICHE_COACH' end;
+  insert into public.doublons_verifications (user_id, appel, resultat) values (v_uid, v_appel, coalesce(v_res, 'AUCUN'));
+  return v_res;
 end;
 $$;
 
@@ -207,21 +256,28 @@ begin
     raise exception 'NEXUS: coach_athletes_meme_identite doit rester SECURITY INVOKER (la RLS fait la frontière)';
   end if;
   if exists (select 1 from pg_class c
-              where c.oid = 'public.doublons_probables'::regclass
+              where c.oid in ('public.doublons_probables'::regclass, 'public.doublons_verifications'::regclass)
                 and (not c.relrowsecurity
                      or exists (select 1 from unnest(coalesce(c.relacl, '{}'::aclitem[])) a
                                  where split_part(a::text, '=', 1) in ('anon', 'authenticated', '')))) then
-    raise exception 'NEXUS: doublons_probables lisible par anon/authenticated ou sans RLS';
+    raise exception 'NEXUS: une table D1 est lisible par anon/authenticated ou sans RLS';
   end if;
-  if exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'doublons_probables') then
-    raise exception 'NEXUS: aucune politique attendue sur doublons_probables';
+  if exists (select 1 from pg_policies where schemaname = 'public'
+               and tablename in ('doublons_probables', 'doublons_verifications')) then
+    raise exception 'NEXUS: aucune politique attendue sur les tables D1';
+  end if;
+  if (select count(*) from cron.job where jobname = 'doublons-verifications-purge') <> 1 then
+    raise exception 'NEXUS: tâche de purge du journal absente ou en double';
+  end if;
+  if (select provolatile from pg_proc where oid = 'public.inscription_doublon_possible(text,text,date)'::regprocedure) <> 'v' then
+    raise exception 'NEXUS: inscription_doublon_possible doit être VOLATILE (elle journalise)';
   end if;
   if (select count(*) from pg_trigger where tgrelid = 'public.athletes'::regclass
         and tgname = 'trg_doublons_probables_noter') <> 1 then
     raise exception 'NEXUS: trigger trg_doublons_probables_noter absent';
   end if;
-  if (select count(*) from public.doublons_probables) <> 0 then
-    raise exception 'NEXUS: la file doit naître vide (aucune fiche existante n''est touchée)';
+  if (select count(*) from public.doublons_probables) <> 0 or (select count(*) from public.doublons_verifications) <> 0 then
+    raise exception 'NEXUS: les tables D1 doivent naître vides (aucune fiche existante n''est touchée)';
   end if;
-  raise notice 'NEXUS D1 : file doublons_probables (RLS, aucun droit direct), trigger, 2 fonctions, ACL exactes — OK';
+  raise notice 'NEXUS D1 : doublons_probables + doublons_verifications (RLS, aucun droit direct), trigger, 2 fonctions, ACL exactes, purge planifiée — OK';
 end $$;

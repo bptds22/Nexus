@@ -57,21 +57,44 @@ end $$;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', (select v from t_ids where k = 'inscr'), 'role', 'authenticated')::text, true);
 
-insert into t_res values
- (1,  'même nom (accents, trait d''union, casse) + même date, fiche de coach', 'FICHE_COACH',
-      coalesce(inscription_doublon_possible('emile', 'COTE ROY', '2010-05-10'), 'null')),
- (2,  'même nom + même date, fiche avec compte', 'COMPTE',
-      coalesce(inscription_doublon_possible('Léo', 'Compte', '2009-01-01'), 'null')),
- (3,  'FAUX POSITIF : même date, noms différents', 'null',
-      coalesce(inscription_doublon_possible('Félix', 'Gauthier', '2010-05-10'), 'null')),
- (4,  'même nom, autre date', 'null',
-      coalesce(inscription_doublon_possible('Émile', 'Côté-Roy', '2010-05-11'), 'null')),
- (5,  'fiche de coach à SON courriel (déjà à lui)', 'null',
-      coalesce(inscription_doublon_possible('Moi', 'Même', '2010-02-02'), 'null')),
- (6,  'fiche DÉSACTIVÉE', 'null',
-      coalesce(inscription_doublon_possible('Ancien', 'Desactive', '2010-03-03'), 'null')),
- (7,  'prénom seul (nom vide)', 'null',
-      coalesce(inscription_doublon_possible('Émile', '', '2010-05-10'), 'null'));
+-- Limite de 3 appels par compte : le journal de a1 est vidé (postgres) entre les groupes de
+-- tests de logique, pour que chaque groupe parte de 0. La limite est testée en section 1b.
+insert into t_res values (1, 'même nom (accents, trait d''union, casse) + même date, fiche de coach', 'FICHE_COACH',
+  coalesce(inscription_doublon_possible('emile', 'COTE ROY', '2010-05-10'), 'null'));
+insert into t_res values (2, 'même nom + même date, fiche avec compte', 'COMPTE',
+  coalesce(inscription_doublon_possible('Léo', 'Compte', '2009-01-01'), 'null'));
+insert into t_res values (3, 'FAUX POSITIF : même date, noms différents', 'null',
+  coalesce(inscription_doublon_possible('Félix', 'Gauthier', '2010-05-10'), 'null'));
+reset role;
+delete from doublons_verifications where user_id = (select v from t_ids where k = 'inscr');
+set local role authenticated;
+insert into t_res values (4, 'même nom, autre date', 'null',
+  coalesce(inscription_doublon_possible('Émile', 'Côté-Roy', '2010-05-11'), 'null'));
+insert into t_res values (5, 'fiche de coach à SON courriel (déjà à lui)', 'null',
+  coalesce(inscription_doublon_possible('Moi', 'Même', '2010-02-02'), 'null'));
+insert into t_res values (6, 'fiche DÉSACTIVÉE', 'null',
+  coalesce(inscription_doublon_possible('Ancien', 'Desactive', '2010-03-03'), 'null'));
+reset role;
+delete from doublons_verifications where user_id = (select v from t_ids where k = 'inscr');
+set local role authenticated;
+insert into t_res values (7, 'prénom seul (nom vide)', 'null',
+  coalesce(inscription_doublon_possible('Émile', '', '2010-05-10'), 'null'));
+
+-- ═══ 1b. Anti-énumération : 3 appels par compte, puis toujours « aucun doublon » ═══
+reset role;
+delete from doublons_verifications where user_id = (select v from t_ids where k = 'inscr');
+set local role authenticated;
+insert into t_res values (30, 'LIMITE : appel 1 (vrai doublon)', 'COMPTE', coalesce(inscription_doublon_possible('Léo', 'Compte', '2009-01-01'), 'null'));
+insert into t_res values (31, 'LIMITE : appel 2 (vrai doublon)', 'COMPTE', coalesce(inscription_doublon_possible('Léo', 'Compte', '2009-01-01'), 'null'));
+insert into t_res values (32, 'LIMITE : appel 3 (vrai doublon)', 'COMPTE', coalesce(inscription_doublon_possible('Léo', 'Compte', '2009-01-01'), 'null'));
+insert into t_res values (33, 'LIMITE : appel 4, MÊME vrai doublon → « aucun »', 'null', coalesce(inscription_doublon_possible('Léo', 'Compte', '2009-01-01'), 'null'));
+insert into t_res values (34, 'LIMITE : appel 5, autre vrai doublon → « aucun »', 'null', coalesce(inscription_doublon_possible('emile', 'cote roy', '2010-05-10'), 'null'));
+do $$ begin
+  perform 1 from doublons_verifications;
+  insert into t_res values (35, 'LOI 25 : un athlète lit le journal', 'refusé', 'LU — FUITE');
+exception when insufficient_privilege then
+  insert into t_res values (35, 'LOI 25 : un athlète lit le journal', 'refusé', 'refusé');
+end $$;
 
 -- Un athlète déjà inscrit (onboarding terminé) n'obtient jamais de réponse
 select set_config('request.jwt.claims', json_build_object('sub', (select v from t_ids where k = 'lea'), 'role', 'authenticated')::text, true);
@@ -150,6 +173,21 @@ insert into t_res values
       (select count(*)::text from doublons_probables
         where 'd1000000-0000-4000-8000-0000000000a2' in (athlete_id, athlete_existant_id))),
  (20, 'file : total des lignes', '2', (select count(*)::text from doublons_probables));
+
+-- Le journal anti-énumération (vu par l'admin)
+insert into t_res values
+ (36, 'journal : chaque appel de a1 (section 1b), dans l''ordre', '1:COMPTE 2:COMPTE 3:COMPTE 4:LIMITE 5:LIMITE',
+      (select string_agg(appel || ':' || resultat, ' ' order by appel) from doublons_verifications
+        where user_id = (select v from t_ids where k = 'inscr'))),
+ (37, 'journal : appels hors inscription (athlète inscrit, coach) notés aussi', 'HORS_INSCRIPTION HORS_INSCRIPTION',
+      (select string_agg(resultat, ' ' order by resultat) from doublons_verifications
+        where user_id in ((select v from t_ids where k = 'lea'), (select v from t_ids where k = 'coachA')))),
+ (38, 'journal : ni nom ni date cherchés (colonnes)', 'appel,created_at,id,resultat,user_id',
+      (select string_agg(column_name, ',' order by column_name) from information_schema.columns
+        where table_schema = 'public' and table_name = 'doublons_verifications')),
+ (39, 'journal : purge à 180 jours planifiée', '1',
+      (select count(*)::text from cron.job where jobname = 'doublons-verifications-purge'
+         and command like '%180 days%'));
 
 -- La fiche existante est modifiée à son tour (paire inversée) : toujours une seule ligne
 update athletes set last_name = 'Cachee' where id = 'd1000000-0000-4000-8000-000000000002';

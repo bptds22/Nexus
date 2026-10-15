@@ -28,35 +28,45 @@
  {"sub" : "22222222-0000-0000-0000-00000000000d", "role" : "authenticated"}
 (1 row)
 
- n  | verdict |                                   test                                    |             attendu             |             obtenu              
-----+---------+---------------------------------------------------------------------------+---------------------------------+---------------------------------
-  1 | OK      | même nom (accents, trait d'union, casse) + même date, fiche de coach      | FICHE_COACH                     | FICHE_COACH
-  2 | OK      | même nom + même date, fiche avec compte                                   | COMPTE                          | COMPTE
-  3 | OK      | FAUX POSITIF : même date, noms différents                                 | null                            | null
-  4 | OK      | même nom, autre date                                                      | null                            | null
-  5 | OK      | fiche de coach à SON courriel (déjà à lui)                                | null                            | null
-  6 | OK      | fiche DÉSACTIVÉE                                                          | null                            | null
-  7 | OK      | prénom seul (nom vide)                                                    | null                            | null
-  8 | OK      | appel par un athlète déjà inscrit                                         | null                            | null
-  9 | OK      | appel par un coach                                                        | null                            | null
- 10 | OK      | coach A : son propre athlète (même nom, même date)                        | 1 / à lui                       | 1 / à lui
- 11 | OK      | LOI 25 : coach A, mineur d'une autre école (invisible pour lui)           | 0                               | 0
- 12 | OK      | FAUX POSITIF : coach A, même date, nom différent                          | 0                               | 0
- 13 | OK      | coach B : le même mineur, qu'il voit déjà                                 | 1                               | 1
- 14 | OK      | LOI 25 : la création réussit, sans erreur ni message                      | créée                           | créée
- 15 | OK      | LOI 25 : coach qui lit doublons_probables                                 | refusé                          | refusé
- 16 | OK      | coach qui appelle doublons_probables_noter()                              | refusé                          | refusé
- 17 | OK      | file : paire « mineur caché » notée, source COACH                         | 1 COACH INSERT école différente | 1 COACH INSERT école différente
- 18 | OK      | file : paire « inscription » notée une seule fois, source ATHLETE         | 1 ATHLETE                       | 1 ATHLETE
- 19 | OK      | FAUX POSITIF : aucune ligne pour la création « même date, nom différent » | 0                               | 0
- 20 | OK      | file : total des lignes                                                   | 2                               | 2
- 21 | OK      | paire inversée (l'ancienne fiche change de nom) : pas de doublon de ligne | 2                               | 2
- 22 | OK      | anon : inscription_doublon_possible                                       | refusé                          | refusé
- 23 | OK      | anon : coach_athletes_meme_identite                                       | refusé                          | refusé
-(23 rows)
+ n  | verdict |                                   test                                    |                   attendu                    |                    obtenu                    
+----+---------+---------------------------------------------------------------------------+----------------------------------------------+----------------------------------------------
+  1 | OK      | même nom (accents, trait d'union, casse) + même date, fiche de coach      | FICHE_COACH                                  | FICHE_COACH
+  2 | OK      | même nom + même date, fiche avec compte                                   | COMPTE                                       | COMPTE
+  3 | OK      | FAUX POSITIF : même date, noms différents                                 | null                                         | null
+  4 | OK      | même nom, autre date                                                      | null                                         | null
+  5 | OK      | fiche de coach à SON courriel (déjà à lui)                                | null                                         | null
+  6 | OK      | fiche DÉSACTIVÉE                                                          | null                                         | null
+  7 | OK      | prénom seul (nom vide)                                                    | null                                         | null
+  8 | OK      | appel par un athlète déjà inscrit                                         | null                                         | null
+  9 | OK      | appel par un coach                                                        | null                                         | null
+ 10 | OK      | coach A : son propre athlète (même nom, même date)                        | 1 / à lui                                    | 1 / à lui
+ 11 | OK      | LOI 25 : coach A, mineur d'une autre école (invisible pour lui)           | 0                                            | 0
+ 12 | OK      | FAUX POSITIF : coach A, même date, nom différent                          | 0                                            | 0
+ 13 | OK      | coach B : le même mineur, qu'il voit déjà                                 | 1                                            | 1
+ 14 | OK      | LOI 25 : la création réussit, sans erreur ni message                      | créée                                        | créée
+ 15 | OK      | LOI 25 : coach qui lit doublons_probables                                 | refusé                                       | refusé
+ 16 | OK      | coach qui appelle doublons_probables_noter()                              | refusé                                       | refusé
+ 17 | OK      | file : paire « mineur caché » notée, source COACH                         | 1 COACH INSERT école différente              | 1 COACH INSERT école différente
+ 18 | OK      | file : paire « inscription » notée une seule fois, source ATHLETE         | 1 ATHLETE                                    | 1 ATHLETE
+ 19 | OK      | FAUX POSITIF : aucune ligne pour la création « même date, nom différent » | 0                                            | 0
+ 20 | OK      | file : total des lignes                                                   | 2                                            | 2
+ 21 | OK      | paire inversée (l'ancienne fiche change de nom) : pas de doublon de ligne | 2                                            | 2
+ 22 | OK      | anon : inscription_doublon_possible                                       | refusé                                       | refusé
+ 23 | OK      | anon : coach_athletes_meme_identite                                       | refusé                                       | refusé
+ 30 | OK      | LIMITE : appel 1 (vrai doublon)                                           | COMPTE                                       | COMPTE
+ 31 | OK      | LIMITE : appel 2 (vrai doublon)                                           | COMPTE                                       | COMPTE
+ 32 | OK      | LIMITE : appel 3 (vrai doublon)                                           | COMPTE                                       | COMPTE
+ 33 | OK      | LIMITE : appel 4, MÊME vrai doublon → « aucun »                           | null                                         | null
+ 34 | OK      | LIMITE : appel 5, autre vrai doublon → « aucun »                          | null                                         | null
+ 35 | OK      | LOI 25 : un athlète lit le journal                                        | refusé                                       | refusé
+ 36 | OK      | journal : chaque appel de a1 (section 1b), dans l'ordre                   | 1:COMPTE 2:COMPTE 3:COMPTE 4:LIMITE 5:LIMITE | 1:COMPTE 2:COMPTE 3:COMPTE 4:LIMITE 5:LIMITE
+ 37 | OK      | journal : appels hors inscription (athlète inscrit, coach) notés aussi    | HORS_INSCRIPTION HORS_INSCRIPTION            | HORS_INSCRIPTION HORS_INSCRIPTION
+ 38 | OK      | journal : ni nom ni date cherchés (colonnes)                              | appel,created_at,id,resultat,user_id         | appel,created_at,id,resultat,user_id
+ 39 | OK      | journal : purge à 180 jours planifiée                                     | 1                                            | 1
+(33 rows)
 
  ok | echecs 
 ----+--------
- 23 |      0
+ 33 |      0
 (1 row)
 

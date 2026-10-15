@@ -1,0 +1,9 @@
+﻿{
+ "lot": "docs\\doublons-d1\\prod\\lot-prod.sql",
+ "md5_fichier": "08ebd51e91cecf8aacaca825e204390c",
+ "md5_section_executee": "08ebd51e91cecf8aacaca825e204390c",
+ "md5_litteral_enregistre": "08ebd51e91cecf8aacaca825e204390c",
+ "md5_lot": "98f894bc08790207158889437653bcf8",
+ "octets_lot": 37844,
+ "empreinte_attendue": "9903dd903ab3c21af5407e6707986b89"
+}
