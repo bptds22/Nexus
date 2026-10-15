@@ -75,10 +75,13 @@ export function BadgePartenaireVignette({
   badge,
   athleteId,
   actions = null,
+  zoneImage,
 }: {
   badge: BadgePartenaire;
   athleteId: string;
   actions?: "coach" | "partenaire" | null;
+  /** Badge Nexus : zone d'image de la rangée (zoneImageRangee), pour aligner son libellé. */
+  zoneImage?: string;
 }) {
   const [confirmer, setConfirmer] = useState(false);
   const [occupe, setOccupe] = useState(false);
@@ -111,7 +114,7 @@ export function BadgePartenaireVignette({
         /* Badge Nexus : le composant des Distinctions, tel quel (icône,
            libellé, reflet). Seule la signature dessous dit qui l'a posé. */
         <div className={badge.estMasque ? "opacity-35 grayscale" : ""}>
-          <DistinctionBadge badge={badge.codeNexus} libelle={badge.libelle} />
+          <DistinctionBadge badge={badge.codeNexus} libelle={badge.libelle} zoneImage={zoneImage} />
         </div>
       ) : (
         <>

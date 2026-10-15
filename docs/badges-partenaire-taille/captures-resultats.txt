@@ -46,3 +46,20 @@ corrige athlete-apercu bureau : AUCUN badge partenaire visible
 corrige athlete-apercu tablette : AUCUN badge partenaire visible
 corrige athlete-apercu mobile : AUCUN badge partenaire visible
 corrige remise en état : 3 poses, 2 badges, 2 icônes retirés ; opt-in remis à false
+aligne recruteur bureau : page 1440/1440 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 678/678/678 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+aligne recruteur tablette : page 820/820 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 1149/1149/1149 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+aligne recruteur mobile : page 390/390 | boîtes 120×120, 120×120, 96×96 | libellés y DÉCALÉS 382/382/562 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+aligne coach bureau : page 1440/1440 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 543/543/543 | textes ["ESPRIT SPORTIF Masquer","COUP DE CŒUR Masquer","VITESSE par Média Preuve Masquer"]
+aligne coach tablette : page 820/820 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 633/633/633 | textes ["ESPRIT SPORTIF Masquer","COUP DE CŒUR Masquer","VITESSE par Média Preuve Masquer"]
+aligne coach mobile : page 492/390 ← DÉBORDE | boîtes 120×120, 120×120, 96×96 | libellés y DÉCALÉS 356/356/562 | textes ["ESPRIT SPORTIF Masquer","COUP DE CŒUR Masquer","VITESSE par Média Preuve Masquer"]
+aligne partenaire bureau : page 1440/1440 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 689/689/689 | textes ["ESPRIT SPORTIF Retirer le badge","COUP DE CŒUR Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+aligne partenaire tablette : page 820/820 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 1124/1124/1124 | textes ["ESPRIT SPORTIF Retirer le badge","COUP DE CŒUR Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+aligne partenaire mobile : page 481/390 ← DÉBORDE | boîtes 120×120, 120×120, 96×96 | libellés y DÉCALÉS 355/355/561 | textes ["ESPRIT SPORTIF Retirer le badge","COUP DE CŒUR Retirer le badge","VITESSE par Média Preuve Retirer le badge"]
+aligne athlete-profil bureau : page 1440/1440 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 557/557/557 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+aligne athlete-profil tablette : page 820/820 | boîtes 134×134, 134×134, 96×96 | libellés y ALIGNÉS 647/647/647 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+aligne athlete-profil mobile : page 390/390 | boîtes 120×120, 120×120, 96×96 | libellés y DÉCALÉS 392/392/552 | textes ["ESPRIT SPORTIF","COUP DE CŒUR","VITESSE par Média Preuve"]
+aligne athlete-apercu bureau : AUCUN badge partenaire visible
+aligne athlete-apercu tablette : AUCUN badge partenaire visible
+aligne athlete-apercu mobile : AUCUN badge partenaire visible
+aligne remise en état : 3 poses, 2 badges, 2 icônes retirés ; opt-in remis à false
+aligne — note : en mobile, « DÉCALÉS » compare des libellés de LIGNES différentes (le 3e badge passe à la ligne, ~180 px plus bas) ; sur une même ligne (ES, MP) ils sont alignés, et la zone d'image du badge Nexus reste de 120 px (capture aligne-*-mobile.png).

@@ -19,3 +19,15 @@ export const FICHE_CELLULE = "w-[140px] sm:w-[154px]";
 export const FICHE_BOITE = "w-[120px] h-[120px] sm:w-[134px] sm:h-[134px]";
 /** Libellé sous le badge. */
 export const FICHE_LIBELLE = "text-[11px] sm:text-[12px] max-w-[140px] sm:max-w-[154px]";
+
+/** Hauteur de la zone d'image = hauteur de FICHE_BOITE. Un badge Nexus (96 px)
+ *  placé dans une rangée qui contient un badge propre de partenaire reçoit
+ *  cette zone : son picto y est centré, son libellé tombe à la même ligne. */
+export const FICHE_ZONE_IMAGE = "h-[120px] sm:h-[134px]";
+
+/** Zone d'image à donner aux badges Nexus d'une rangée : FICHE_ZONE_IMAGE si
+ *  la rangée contient au moins un badge PROPRE à un partenaire (le plus grand
+ *  de la rangée), sinon rien — une rangée de badges Nexus seuls est inchangée. */
+export function zoneImageRangee(badgesPartenaire: { estNexus: boolean }[]): string | undefined {
+  return badgesPartenaire.some((b) => !b.estNexus) ? FICHE_ZONE_IMAGE : undefined;
+}
