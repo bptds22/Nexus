@@ -1,5 +1,5 @@
 // Section badges de la fiche athlète — captures AVANT / APRÈS, base LOCALE, navigateur SANS INTERFACE.
-//   cd C:\tmp\nexus-w4bc ; APP=http://localhost:3011 node docs/badges-partenaire-taille/outils/captures.mjs avant|apres|corrige
+//   cd C:\tmp\nexus-w4bc ; APP=http://localhost:3011 node docs/badges-partenaire-taille/outils/captures.mjs avant|apres|corrige|aligne
 // Préparation TEMPORAIRE par service_role (refuse toute URL non locale), sur Félix Gauthier (fictif) :
 //   - deux badges PROPRES au partenaire « Média Preuve » : un LARGE (« ES », 2,3:1) et un carré ;
 //   - un badge NEXUS (« vitesse ») posé par le même partenaire (W3b) ;
@@ -19,7 +19,7 @@ if (!/^http:\/\/127\.0\.0\.1/.test(API)) throw new Error("pas local : " + API);
 const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY;
 const APP = process.env.APP ?? "http://localhost:3011";
 if (!/^http:\/\/localhost/.test(APP)) throw new Error("APP pas local");
-const ETAPE = ["apres", "corrige"].includes(process.argv[2]) ? process.argv[2] : "avant";
+const ETAPE = ["apres", "corrige", "aligne"].includes(process.argv[2]) ? process.argv[2] : "avant";
 const OUT = path.resolve("docs/badges-partenaire-taille/captures");
 fs.mkdirSync(OUT, { recursive: true });
 const svc = createClient(API, SERVICE, { auth: { persistSession: false } });
@@ -116,10 +116,11 @@ try {
           page: document.documentElement.scrollWidth, ecran: document.documentElement.clientWidth,
           rangee: r ? Math.round(r.width) : null,
           boites: vs.map((v) => { const i = v.querySelector(".nx-badge"); const b = i?.getBoundingClientRect(); return b ? `${Math.round(b.width)}×${Math.round(b.height)}` : "?"; }),
+          libellesY: [...(vs[0]?.parentElement?.children ?? [])].map((c) => { const l = c.querySelector("span.uppercase"); return l ? Math.round(l.getBoundingClientRect().top) : null; }).filter((y) => y != null),
           lignes: vs.map((v) => v.innerText.replace(/\s+/g, " ").trim()),
         };
       });
-      note(`${ETAPE} ${nom} ${fmt} : page ${mesure.page}/${mesure.ecran}${mesure.page > mesure.ecran ? " ← DÉBORDE" : ""} | boîtes ${mesure.boites.join(", ")} | textes ${JSON.stringify(mesure.lignes)}${erreurs.length ? " | ERREURS JS " + JSON.stringify(erreurs) : ""}`);
+      note(`${ETAPE} ${nom} ${fmt} : page ${mesure.page}/${mesure.ecran}${mesure.page > mesure.ecran ? " ← DÉBORDE" : ""} | boîtes ${mesure.boites.join(", ")} | libellés y ${[...new Set(mesure.libellesY)].length === 1 ? "ALIGNÉS" : "DÉCALÉS"} ${mesure.libellesY.join("/")} | textes ${JSON.stringify(mesure.lignes)}${erreurs.length ? " | ERREURS JS " + JSON.stringify(erreurs) : ""}`);
       await rangee.screenshot({ path: path.join(OUT, `${ETAPE}-${nom}-${fmt}.png`) });
       await c.close();
     }
