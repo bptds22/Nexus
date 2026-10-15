@@ -66,6 +66,10 @@ const HIDE_PATTERNS = [
   // (décision BP : pas de liens universels) : il mène à l'inscription web, et
   // headers() le rend dynamique. Crochets échappés, voir plus haut.
   'app/i/\\[jeton\\]/page.tsx',
+  // /p/[jeton] — le lien d'une carte prospect partenaire (W4c, 2026-10-14).
+  // WEB SEULEMENT (decision BP : jamais l'App Store), dynamique par headers().
+  // Crochets echappes, voir plus haut.
+  'app/p/\\[jeton\\]/page.tsx',
   // /desabonnement — le lien LCAP des courriels de relance (2026-09-21). WEB
   // SEULEMENT : searchParams la rend dynamique (export refusé), et le lien
   // d'un courriel s'ouvre dans le navigateur, jamais dans l'application.

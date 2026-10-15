@@ -2545,3 +2545,16 @@ nexussports.ca. Au lot mobile : icône + onglet de la liste des notifications, �
 ce n'est pas moi » (`prospect_partenaire_mes_cartes`, `_confirmer`, `_infirmer`), rappel
 « active la visibilité partenaire » pour une carte `CONFIRMEE_ATTENTE_OPTIN`. L'appli n'a pas de
 liens profonds : le lien `/p/[jeton]` reste web.
+
+## 87. Lien de texto des cartes prospect partenaire trop long — jeton plus compact (2026-10-14, à évaluer plus tard)
+
+(§86 est réservé : la session NLS l'a rédigé en parallèle.)
+
+Le lien `/p/<jeton>` porte 64 caractères hexadécimaux (32 octets, W4a) : le texto pré-rempli
+fait ~170 caractères et le lien se coupe sur deux lignes dans la plupart des messageries.
+Piste (décision BP 2026-10-14 : à évaluer plus tard) : un jeton plus compact, base64url ou
+base62, ~22 caractères pour 128 bits ou ~43 pour 256 bits. **Petite migration** : générer
+(`partenaire_prospect_lien`), comparer l'empreinte (`prospect_partenaire_resoudre`,
+`prospect_partenaire_ouvrir`) et accepter les DEUX formats le temps que les liens déjà envoyés
+expirent (60 jours). Côté web : `jetonCartePlausible` et `JETON_RE` (lib/partenaires/prospects.ts)
+à élargir de même. Rien à faire côté jeune ni partenaire.

@@ -14,16 +14,16 @@
    celle que l'écriture figera, pas une déduction du client.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import StarRatingInput from "@/app/coach/components/StarRatingInput";
-import { useGrilles } from "@/lib/evaluations/useGrilles";
-import { traitGroups } from "@/lib/evaluations/grilles";
+import EditeurEvaluationPartenaire, {
+  coteFinale,
+  parametresEvaluation,
+  type ValeurEvaluation,
+} from "@/components/partenaire/EditeurEvaluationPartenaire";
 import {
   enregistrerEvaluationPartenaire,
-  moyenneCriteres,
   EVENEMENT_EVALUATION_PARTENAIRE,
-  type CritereColonne,
   type EvaluationPartenaire,
 } from "@/lib/evaluations/partenaire";
 
@@ -42,31 +42,23 @@ export default function EvaluerAthleteModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const grilleSet = useGrilles();
-  const [mode, setMode] = useState<"simple" | "detaille">(
-    existante && Object.keys(existante.criteres).length > 0 ? "detaille" : "simple",
-  );
-  const [cote, setCote] = useState<number>(existante ? Math.round(existante.coteGlobale) : 0);
-  const [criteres, setCriteres] = useState<Partial<Record<CritereColonne, number>>>(existante?.criteres ?? {});
+  const [valeur, setValeur] = useState<ValeurEvaluation>({
+    mode: existante && Object.keys(existante.criteres).length > 0 ? "detaille" : "simple",
+    cote: existante ? Math.round(existante.coteGlobale) : 0,
+    criteres: existante?.criteres ?? {},
+  });
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  const moyenne = useMemo(() => moyenneCriteres(criteres), [criteres]);
-  // Ce qui sera enregistré : en détaillé avec au moins un critère, la moyenne.
-  const coteFinale = mode === "detaille" && moyenne !== null ? moyenne : cote;
-  const valide = coteFinale >= 1 && coteFinale <= 5;
+  const valide = coteFinale(valeur) >= 1 && coteFinale(valeur) <= 5;
 
   async function enregistrer() {
     if (!valide) { setErreur("La cote globale est obligatoire."); return; }
     setEnvoi(true);
     setErreur(null);
     try {
-      await enregistrerEvaluationPartenaire(
-        createClient(),
-        athleteId,
-        mode === "simple" || moyenne === null ? cote : null,
-        mode === "detaille" ? criteres : {},
-      );
+      const { cote, criteres } = parametresEvaluation(valeur);
+      await enregistrerEvaluationPartenaire(createClient(), athleteId, cote, criteres);
       window.dispatchEvent(new CustomEvent(EVENEMENT_EVALUATION_PARTENAIRE, { detail: { athleteId } }));
       onSaved();
     } catch (e) {
@@ -89,57 +81,7 @@ export default function EvaluerAthleteModal({
           l&apos;entraîneur. Elle ne la remplace jamais.
         </p>
 
-        <div className="inline-flex items-center bg-[#13151a] border border-[#2a2d36] rounded-lg overflow-hidden mb-5">
-          {(["simple", "detaille"] as const).map((m) => (
-            <button key={m} type="button" onClick={() => setMode(m)}
-              className={`px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider transition-colors ${mode === m ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}>
-              {m === "simple" ? "Simple" : "Détaillé"}
-            </button>
-          ))}
-        </div>
-
-        {mode === "simple" ? (
-          <div className="flex items-center justify-between gap-4 py-3 border-y border-[#2D3748]/50">
-            <span className="text-[13px] font-bold text-white">Cote globale <span className="text-[#EF4444]">*</span></span>
-            <StarRatingInput value={cote} onChange={setCote} />
-          </div>
-        ) : (
-          <div>
-            {traitGroups(grilleSet, { grilleId }).map((groupe) => (
-              <div key={groupe.title} className="mb-5">
-                <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">{groupe.title}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-                  {groupe.traits.map((t) => (
-                    <StarRatingInput
-                      key={t.column}
-                      compact
-                      label={t.label}
-                      value={criteres[t.column as CritereColonne] ?? 0}
-                      onChange={(v) => setCriteres((prev) => ({
-                        ...prev,
-                        // Recliquer la même étoile retire la note : critère facultatif.
-                        [t.column]: prev[t.column as CritereColonne] === v ? undefined : v,
-                      }))}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-            <div className="flex items-center justify-between gap-4 py-3 border-t border-[#2D3748]/50">
-              <span className="text-[13px] font-bold text-white">
-                Cote globale <span className="text-[#EF4444]">*</span>
-                <span className="block text-[11px] font-normal text-[#6b7280]">
-                  {moyenne !== null ? "Moyenne des critères notés" : "Aucun critère noté : choisis la cote"}
-                </span>
-              </span>
-              {moyenne !== null ? (
-                <span className="text-[18px] font-head font-black text-white">{moyenne.toFixed(1)}<span className="text-[13px] text-[#6B7280] font-normal">/5</span></span>
-              ) : (
-                <StarRatingInput value={cote} onChange={setCote} />
-              )}
-            </div>
-          </div>
-        )}
+        <EditeurEvaluationPartenaire grilleId={grilleId} valeur={valeur} onChange={setValeur} />
 
         {erreur && <p className="text-[12px] text-[#EF4444] mt-3">{erreur}</p>}
 

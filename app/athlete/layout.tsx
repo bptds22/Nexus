@@ -13,6 +13,8 @@ import WrongRoutePage from "./_components/WrongRoutePage";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
 import { AnimatedRoute } from "../recruteur/_components/AnimatedRoute";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
+import BandeauCartesPartenaires from "@/components/athlete/prospects/BandeauCartesPartenaires";
+import { lireJetonCarte } from "@/lib/partenaires/prospects";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ─────────────────────────────────────────────────────────────────
@@ -426,6 +428,17 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         return;
       }
 
+      // W4c — lien d'une carte partenaire ouvert AVANT l'inscription ou la
+      // connexion : une fois l'onboarding fini, on y revient (web seulement).
+      // /p/[jeton] oublie le jeton dès qu'il l'a ouvert : pas de boucle.
+      if (isComplete && !IS_CAPACITOR) {
+        const jetonCarte = lireJetonCarte();
+        if (jetonCarte) {
+          router.replace(`/p/${jetonCarte}`);
+          return;
+        }
+      }
+
       setState("ok");
       } catch (err) {
         // Filet de sécurité : une lecture qui rejette (réseau, RLS) ne doit
@@ -456,7 +469,11 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
       <DeactivationGuard />
       <PlaybookBackground />
       <AthleteSidebar mobileOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* min-w-0 : sans lui, cet élément flex prend la largeur MINIMALE de son
+          contenu — une rangée d'onglets en whitespace-nowrap (Notifications,
+          Paramètres) l'élargissait à 624 px sur un écran de 390 et toute la page
+          débordait. Avec lui, la colonne tient dans l'écran et la rangée défile. */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
         <PreMaintenanceBanner />
         {/* Mobile top bar — masquée en Capacitor (la tab bar prend le relais) */}
         {!IS_CAPACITOR && (
@@ -470,6 +487,8 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
             </div>
           </div>
         )}
+        {/* W4c — carte d'un partenaire qui attend une réponse ou l'opt-in (web seulement). */}
+        {!IS_CAPACITOR && <BandeauCartesPartenaires />}
         <main
           className="relative z-10 flex-1"
           style={

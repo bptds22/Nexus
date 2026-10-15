@@ -53,6 +53,10 @@ export const MOBILE_EXCLUDED_DYNAMIC_ROUTES = [
   // décision BP (pas de liens universels) : il mène à l'inscription web.
   // Masqué par HIDE_PATTERNS, gardé par notFound() en tête de la page.
   '/i',
+  // /p/[jeton] — lien d'une carte prospect PARTENAIRE (W4c, 2026-10-14). WEB
+  // SEULEMENT (décision BP : jamais l'App Store) : il mène à l'inscription web.
+  // Masqué par HIDE_PATTERNS, gardé par notFound() en tête de la page.
+  '/p',
 ] as const;
 
 export const MOBILE_EXCLUDED_PAGES = [
