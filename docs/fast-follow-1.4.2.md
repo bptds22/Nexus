@@ -2668,4 +2668,5 @@ Relevé au diagnostic « directeur de club civil sans équipe ». Règles relues
   (`loadSchoolDirectorStatus`).
 - Avertissement à l'inscription quand le club ou l'école a déjà un responsable approuvé ou en attente. Aujourd'hui,
   « C'est moi » et « Intérimaire » restent proposés, et seul l'administrateur trie les demandes.
-- Libellé du web : la liste du directeur s'intitule « Équipes de l'école » même pour un club civil.
+- Libellé du web (`app/coach/equipes`) : la liste du directeur s'intitule « Équipes de l'école » même pour un club civil.
+  À adapter : « Équipes du club » quand l'établissement est un club civil (`LIGUE_CIVILE`).
