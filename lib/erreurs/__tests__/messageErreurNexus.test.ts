@@ -11,7 +11,9 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { messageErreurNexus, messageCourrielDejaPris } from "@/lib/erreurs/messageErreurNexus";
+import { messageErreurNexus, messageCourrielDejaPris, messageErreurSauvegarde } from "@/lib/erreurs/messageErreurNexus";
+import fs from "node:fs";
+import path from "node:path";
 
 test("badge déjà attribué par un partenaire : texte clair, sans préfixe ni guillemets", () => {
   assert.equal(
@@ -69,4 +71,25 @@ test("courriel déjà pris par une autre fiche : message lisible, sans nommer pe
   assert.ok(!r.includes("duplicate") && !r.includes("athletes_email"), r);
   assert.equal(messageCourrielDejaPris('duplicate key value violates unique constraint "autre"'), null);
   assert.equal(messageCourrielDejaPris(null), null);
+});
+/* Registre §84 — l'assistant coach mobile passe par la même fonction que le web. */
+test("messageErreurSauvegarde : courriel pris, puis NEXUS, sinon générique — jamais le brut", () => {
+  const G = "générique";
+  assert.ok(messageErreurSauvegarde('duplicate key value violates unique constraint "athletes_email_lower_btrim_uniq"', G).startsWith("Une fiche athlète"));
+  assert.equal(
+    messageErreurSauvegarde("NEXUS: cet athlète a déjà le badge « Vitesse » (attribué par L'Esprit Sportif)", G),
+    "Cet athlète a déjà le badge Vitesse, attribué par L'Esprit Sportif.");
+  assert.equal(messageErreurSauvegarde('duplicate key value violates unique constraint "autre"', G), G);
+  assert.equal(messageErreurSauvegarde(null, G), G);
+  for (const m of ["NEXUS: consentement requis", "permission denied for table athletes"]) {
+    const r = messageErreurSauvegarde(m, G);
+    assert.ok(!r.includes("NEXUS") && !r.includes("permission denied"), r);
+  }
+});
+
+test("AthleteWizardMobile : l'erreur d'enregistrement passe par messageErreurSauvegarde, plus de detail brut", () => {
+  const src = fs.readFileSync(path.join(process.cwd(), "components/shared/AthleteWizardMobile.tsx"), "utf8");
+  assert.match(src, /detail: messageErreurSauvegarde\(result\.error\.message, MESSAGE_ERREUR_GENERIQUE\)/);
+  assert.doesNotMatch(src, /detail: result\.error\.message/);
+  assert.doesNotMatch(src, /\balert\(/);
 });

@@ -35,7 +35,7 @@ const EMPTY: PipelineData = { cards: [], competitorMap: {} };
    recruiter_pipeline (les deux pointent vers athletes séparément), donc aucune
    relation à traverser. Et la RLS suffit à cadrer la lecture : propriétaire
    seul. Le .eq("recruiter_id") reste pour que la requête dise ce qu'elle lit.
-   isGrade() garde la frontière : une valeur hors des 7 est ignorée plutôt que
+   isGrade() garde la frontière : une valeur hors des 9 est ignorée plutôt que
    propagée jusqu'à la puce. */
 async function fetchGradeMap(
   supabase: ReturnType<typeof createClient>,

@@ -3,6 +3,8 @@
    collégiale. Même règle que le web (equipeNommable). */
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import { apercuCodeEquipe, orphelinPourReclamation, TITRE_CODE_NON_NOMMABLE } from "@/lib/invitations/apercuCodeEquipe";
 
 const details = { essentiel: "Basketball · Juvénile D1", contexte: "Masculin" };
@@ -51,4 +53,15 @@ test("sans école : type null, la modale ne nommera rien", () => {
   const o = orphelinPourReclamation({ id: "a2" });
   assert.equal(o.school_name, null);
   assert.equal(o.school_type, null);
+});
+
+test("onboarding mobile : plus d'entraîneur évoqué pour le code, plus de coach lu pour la réclamation", () => {
+  const src = fs.readFileSync(path.join(process.cwd(), "components/shared/AthleteOnboardingMobile.tsx"), "utf8");
+  assert.doesNotMatch(src, /entraîneur t(&apos;|')a donné un code/i);
+  assert.doesNotMatch(src, /entraîneur t(&apos;|')en a donné/i);
+  assert.doesNotMatch(src, /coach_name/);
+  assert.doesNotMatch(src, /users:coach_id/);
+  assert.match(src, /Tu as un code d&apos;équipe \?/);
+  assert.match(src, /apercuCodeEquipe\(/);
+  assert.match(src, /orphelinPourReclamation\(/);
 });

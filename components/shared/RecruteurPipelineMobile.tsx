@@ -415,7 +415,8 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
 
       {/* Iter 7.3 Fix A — left-[150px] au RAS de la fin de photo (pas
           d'overlap → noms entiers) + z-10 pour stacking stable WebView. */}
-      {/* Cote du coach, et le grade A-D SOUS elle (décision BP 2026-10-02).
+      {/* Cote du coach, et le grade A+–E SOUS elle (décision BP 2026-10-02 ;
+          échelle à 9 crans depuis le 2026-10-15, registre §94).
           Colonne ABSOLUE en haut à droite : empilée dans la ligne du nom,
           elle grandissait la ligne et la carte (120 px fixes, centrée,
           overflow-hidden) rognait les étoiles par le haut (recette 1.4.4). */}

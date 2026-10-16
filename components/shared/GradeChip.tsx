@@ -146,9 +146,14 @@ export function GradePicker({
   compact?: boolean;
 }) {
   const cell = compact ? "h-8 text-[12px]" : "h-11 text-[14px]";
+  /* Tactile (mobile, registre §94) : 9 colonnes de 44 px ne tiennent pas sur
+     un écran de 390 px — les cellules tombaient à ~32 px de large. Deux
+     rangées, 5 + 4 : chaque cellule garde plus de 44 px dans les deux sens,
+     et l'ordre de lecture reste celui de l'échelle (A+ … C, puis D+ … E). */
+  const grille = compact ? "grid-cols-9" : "grid-cols-5";
   return (
     <div>
-      <div className="grid grid-cols-9 gap-1.5">
+      <div className={`grid ${grille} gap-1.5`}>
         {GRADES.map((g) => {
           const active = value === g;
           return (

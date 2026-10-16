@@ -100,6 +100,8 @@ import {
 } from "@/app/coach/athletes/_data/saveAthlete";
 import { coteChanged } from "@/lib/utils/cote";
 import { isUnder14 } from "@/lib/legal/ageGate";
+import { messageErreurSauvegarde } from "@/lib/erreurs/messageErreurNexus";
+import { MESSAGE_ERREUR_GENERIQUE } from "@/components/shared/ErreurSauvegarde";
 import { ConfirmSheet } from "@/components/shared/settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
@@ -1013,9 +1015,13 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           committedSchoolId,
         });
     if (result.error) {
+      // Registre §84 : jamais le texte brut de la base (« NEXUS: … ») — la
+      // phrase mise en forme par la même fonction que le web. Titre inchangé :
+      // pas de « rien n'a été enregistré », un refus de badge peut suivre
+      // l'écriture réussie de l'évaluation (cf. ErreurSauvegarde).
       toast.error({
         message: isCreate ? "Erreur lors de la création" : "Erreur lors de la sauvegarde",
-        detail: result.error.message,
+        detail: messageErreurSauvegarde(result.error.message, MESSAGE_ERREUR_GENERIQUE),
       });
       setSaving(false);
       return;
