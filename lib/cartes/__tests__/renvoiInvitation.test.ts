@@ -3,11 +3,16 @@ import assert from "node:assert/strict";
 import { texteRenvoi, lienInscription, lienSms, phraseRenvoi } from "@/lib/cartes/renvoiInvitation";
 import { ligneSignee } from "@/lib/historique/signature";
 
-test("texte au nom du recruteur, avec le lien d'inscription pré-rempli", () => {
+test("texte neutre (règle RSEQ), avec le lien d'inscription pré-rempli", () => {
   assert.equal(
-    texteRenvoi({ prenom: "Léa", recruteur: "Bastien Panier", cegep: "Cégep de Sainte-Foy", courriel: "lea+test@exemple.ca" }),
-    "Salut Léa, je suis Bastien Panier du Cégep de Sainte-Foy. On utilise Nexus pour notre recrutement — crée ton profil ici : https://nexussports.ca/auth?mode=signup&email=lea%2Btest%40exemple.ca",
+    texteRenvoi({ prenom: "Léa", courriel: "lea+test@exemple.ca" }),
+    "Salut Léa, un recruteur collégial s'intéresse à ton profil. Crée ton compte Nexus pour qu'il puisse te suivre : https://nexussports.ca/auth?mode=signup&email=lea%2Btest%40exemple.ca",
   );
+});
+
+test("des noms passés par erreur ne sortent jamais (règle RSEQ)", () => {
+  const t = texteRenvoi({ prenom: "Léa", recruteur: "Bastien Panier", cegep: "Cégep de Sainte-Foy", courriel: null } as Parameters<typeof texteRenvoi>[0]);
+  assert.doesNotMatch(t, /Bastien|Panier|Sainte-Foy|je suis/);
 });
 
 test("le lien est celui du courriel automatique (adresse encodée, espaces retirés)", () => {
@@ -15,8 +20,8 @@ test("le lien est celui du courriel automatique (adresse encodée, espaces retir
 });
 
 test("morceaux absents : aucun trou, aucun crochet", () => {
-  const t = texteRenvoi({ prenom: "", recruteur: null, cegep: undefined, courriel: "a@b.ca" });
-  assert.equal(t, "Salut, je suis recruteur. On utilise Nexus pour notre recrutement — crée ton profil ici : https://nexussports.ca/auth?mode=signup&email=a%40b.ca");
+  const t = texteRenvoi({ prenom: "", courriel: "a@b.ca" });
+  assert.equal(t, "Salut, un recruteur collégial s'intéresse à ton profil. Crée ton compte Nexus pour qu'il puisse te suivre : https://nexussports.ca/auth?mode=signup&email=a%40b.ca");
   assert.doesNotMatch(t, /\[|\]|undefined|null|\s{2}/);
 });
 
@@ -28,8 +33,8 @@ test("historique : « Tu as renvoyé l'invitation par ton propre canal »", () =
 });
 
 test("texto de l'app (sans courriel) : lien d'inscription sans adresse", () => {
-  const t = texteRenvoi({ prenom: "Léa", recruteur: "Marie Roy", cegep: "Cégep de Lévis", courriel: null });
-  assert.equal(t, "Salut Léa, je suis Marie Roy du Cégep de Lévis. On utilise Nexus pour notre recrutement — crée ton profil ici : https://nexussports.ca/auth?mode=signup");
+  const t = texteRenvoi({ prenom: "Léa", courriel: null });
+  assert.equal(t, "Salut Léa, un recruteur collégial s'intéresse à ton profil. Crée ton compte Nexus pour qu'il puisse te suivre : https://nexussports.ca/auth?mode=signup");
 });
 
 test("lien sms : corps encodé, « & » sur iOS, « ? » sur Android", () => {
@@ -39,8 +44,8 @@ test("lien sms : corps encodé, « & » sur iOS, « ? » sur Android", () => {
 
 test("carte téléphone seulement (lot 2) : courriel null ou blanc → /auth?mode=signup sans email", () => {
   for (const courriel of [null, undefined, "", "   "]) {
-    const t = texteRenvoi({ prenom: "Léa", recruteur: "Rémi Collègue", cegep: "Cégep X", courriel });
-    assert.ok(t.endsWith("crée ton profil ici : https://nexussports.ca/auth?mode=signup"), String(courriel));
+    const t = texteRenvoi({ prenom: "Léa", courriel });
+    assert.ok(t.endsWith("pour qu'il puisse te suivre : https://nexussports.ca/auth?mode=signup"), String(courriel));
     assert.doesNotMatch(t, /email=/);
   }
 });

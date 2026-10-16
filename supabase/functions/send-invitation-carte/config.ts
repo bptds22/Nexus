@@ -3,5 +3,6 @@
 //
 // Expéditeur : « Nexus <info@nexussports.ca> », comme tous les courriels de
 // Nexus (retour BP 2026-09-28 : « Rémi Test via Nexus » faisait amateur).
-// Le recruteur et le cégep sont nommés dans l'objet et dans le corps.
+// Règle RSEQ (2026-10-16) : ni l'objet ni le corps ne nomment le recruteur,
+// le cégep ou un coach collégial.
 export { FROM, SUPPORT, APP_URL } from "../_shared/emailLayout.ts";

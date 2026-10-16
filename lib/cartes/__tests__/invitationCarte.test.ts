@@ -1,5 +1,7 @@
 /* Le courriel d'invitation d'une carte prospect (edge function
-   send-invitation-carte) : son texte, ses liens, son échappement. */
+   send-invitation-carte) : son texte, ses liens, son échappement.
+   Règle RSEQ (correctif BP 2026-10-16) : ni le recruteur, ni le cégep, ni un
+   coach collégial ne sont nommés — invitation comme rappels. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
@@ -10,14 +12,31 @@ const { buildBody, sujet, lienInscription } = await import("../../../supabase/fu
 // @ts-ignore TS5097
 const { expediteur } = await import("../../../supabase/functions/send-invitation-carte/traiter.ts");
 
-const base = { prenom: "Xavier", recruteur: "Rémi Collègue", cegep: "Cégep de Saint-Jérôme", courriel: "x@exemple.test", desabonnementUrl: "https://n/desabonnement?t=i.a" };
+const base = { prenom: "Xavier", courriel: "x@exemple.test", desabonnementUrl: "https://n/desabonnement?t=i.a" };
+const NEUTRE = "Un recruteur collégial s'intéresse à ton profil. Crée ton compte Nexus pour qu'il puisse te suivre.";
 
-test("objet et texte de BP, nommant le cégep et le recruteur", () => {
-  assert.equal(sujet("Cégep de Saint-Jérôme"), "Un recruteur du Cégep de Saint-Jérôme recrute sur Nexus");
-  const { text } = buildBody(base);
-  assert.match(text, /Rémi Collègue, recruteur au Cégep de Saint-Jérôme, utilise Nexus comme plateforme de recrutement et suit ton parcours\./);
-  assert.match(text, /Crée ton profil pour qu'il ait accès à tes infos, tes vidéos et ton évaluation : c'est ce qui facilite et maximise ton recrutement\. C'est gratuit, et ça prend quelques minutes\./);
+/** Rien qui nomme un établissement ou une personne de l'unité. */
+function sansNom(s: string) {
+  assert.doesNotMatch(s, /c[ée]gep (de|du|d')|Coll[èe]ge |recruteur (au|du) |coach coll[ée]gial/i);
+}
+
+test("objet et texte neutres (règle RSEQ)", () => {
+  assert.equal(sujet(), "Un recruteur collégial s'intéresse à ton profil");
+  const { text, html } = buildBody(base);
+  assert.ok(text.includes(NEUTRE));
+  assert.ok(html.includes(NEUTRE));
+  assert.match(text, /\nSalut Xavier,\n/);
+  assert.doesNotMatch(text, /&#39;|&amp;/, "la version texte n'a aucune entité HTML");
+  assert.match(text, /C'est gratuit, et ça prend quelques minutes\./);
   assert.equal((text.match(/Créer mon profil/g) ?? []).length, 1, "un seul lien d'inscription dans le texte");
+  sansNom(text); sansNom(html);
+});
+
+test("des noms passés par erreur ne sortent jamais (le gabarit ne les lit pas)", () => {
+  const { text, html } = buildBody({ ...base, recruteur: "Rémi Collègue", cegep: "Cégep de Saint-Jérôme" } as typeof base);
+  for (const s of [text, html]) {
+    assert.doesNotMatch(s, /Rémi|Collègue|Saint-Jérôme/);
+  }
 });
 
 test("lien d'inscription pré-rempli, désabonnement et adresse postale (LCAP)", () => {
@@ -25,34 +44,35 @@ test("lien d'inscription pré-rempli, désabonnement et adresse postale (LCAP)",
   const { html } = buildBody(base);
   assert.ok(html.includes("https://n/desabonnement?t=i.a"));
   assert.ok(html.includes("Basile-Routhier"));
+  assert.match(html, /Tu reçois ce courriel parce qu'un recruteur collégial a indiqué ton adresse/);
 });
 
-test("sans recruteur connu : « Un recruteur du … »", () => {
-  assert.match(buildBody({ ...base, recruteur: null }).text, /Salut Xavier,\s+Un recruteur du Cégep de Saint-Jérôme utilise Nexus comme plateforme/);
+test("sans prénom : « Salut, »", () => {
+  assert.match(buildBody({ ...base, prenom: null }).text, /\nSalut,\s+Un recruteur collégial/);
 });
 
 test("une saisie contenant du HTML est échappée", () => {
-  const { html } = buildBody({ ...base, prenom: "<b>X</b>", recruteur: "A <script>" });
-  assert.ok(!html.includes("<b>X</b>") && !html.includes("<script>"));
+  const { html } = buildBody({ ...base, prenom: "<b>X</b>" });
+  assert.ok(!html.includes("<b>X</b>"));
 });
 
 test("expéditeur : « Nexus <info@nexussports.ca> », jamais au nom du recruteur", () => {
   assert.equal(expediteur(), "Nexus <info@nexussports.ca>");
 });
 
-test("rappel : « Rappel : » dans l'objet et le titre, même corps, désabonnement et adresse postale", () => {
-  assert.equal(sujet("Cégep de Saint-Jérôme", true), "Rappel : Un recruteur du Cégep de Saint-Jérôme recrute sur Nexus");
+test("rappel : « Rappel : » dans l'objet et le titre, même corps neutre, désabonnement et adresse postale", () => {
+  assert.equal(sujet(true), "Rappel : Un recruteur collégial s'intéresse à ton profil");
   const { html, text } = buildBody({ ...base, rappel: true });
-  assert.ok(html.includes("Rappel : Un recruteur du Cégep de Saint-Jérôme recrute sur Nexus"));
-  assert.match(text, /Rémi Collègue, recruteur au Cégep de Saint-Jérôme, utilise Nexus comme plateforme/);
+  assert.ok(html.includes("Rappel : Un recruteur collégial s'intéresse à ton profil"));
+  assert.ok(text.includes(NEUTRE));
   assert.ok(html.includes("https://n/desabonnement?t=i.a"));
   assert.ok(html.includes("Basile-Routhier"));
-  assert.match(html, /Tu reçois ce rappel parce qu'un recruteur du Cégep de Saint-Jérôme t'a invité sur Nexus/);
+  assert.match(html, /Tu reçois ce rappel parce qu'un recruteur collégial t'a invité sur Nexus/);
+  sansNom(text); sansNom(html);
 });
 
 test("l'invitation ne promet plus « pas d'autre courriel » : elle annonce les rappels possibles", () => {
   const { html } = buildBody(base);
   assert.doesNotMatch(html, /pas d'autre courriel/);
   assert.match(html, /au plus 3 rappels/);
-  assert.equal(sujet("Cégep X"), "Un recruteur du Cégep X recrute sur Nexus", "l'objet de l'invitation ne change pas");
 });

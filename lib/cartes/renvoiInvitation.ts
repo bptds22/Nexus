@@ -26,23 +26,18 @@ export function lienInscription(courriel: string | null | undefined): string {
 
 export interface ElementsRenvoi {
   prenom: string | null | undefined;
-  recruteur: string | null | undefined;
-  cegep: string | null | undefined;
   /** Absent pour un texto envoyé au téléphone (création mobile). */
   courriel: string | null | undefined;
 }
 
-/** « Salut [prénom], je suis [recruteur] du [cégep]. On utilise Nexus pour
- *  notre recrutement — crée ton profil ici : [lien] ». Chaque morceau absent
- *  se retire proprement, sans laisser de trou ni de crochet. */
+/** Règle RSEQ (correctif BP 2026-10-16) : le texte ne nomme NI le recruteur,
+ *  NI le cégep, NI un coach collégial — même envoyé du téléphone du recruteur.
+ *  « Salut [prénom], un recruteur collégial s'intéresse à ton profil. Crée ton
+ *  compte Nexus pour qu'il puisse te suivre : [lien] ». */
 export function texteRenvoi(e: ElementsRenvoi): string {
   const prenom = e.prenom?.trim();
-  const recruteur = e.recruteur?.trim();
-  const cegep = e.cegep?.trim();
   const salut = prenom ? `Salut ${prenom},` : "Salut,";
-  const qui = recruteur ? `je suis ${recruteur}` : "je suis recruteur";
-  const ou = cegep ? ` du ${cegep}` : "";
-  return `${salut} ${qui}${ou}. On utilise Nexus pour notre recrutement — crée ton profil ici : ${lienInscription(e.courriel)}`;
+  return `${salut} un recruteur collégial s'intéresse à ton profil. Crée ton compte Nexus pour qu'il puisse te suivre : ${lienInscription(e.courriel)}`;
 }
 
 /** Lien qui ouvre l'app Messages, numéro et texte posés : le recruteur n'a

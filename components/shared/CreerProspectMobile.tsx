@@ -43,7 +43,6 @@ import { chercherDoublonsCarte, type DoublonCarte } from "@/lib/cartes/doublonsC
 import { MENTION_INVITATION_NON_ENVOYEE } from "@/lib/cartes/invitationEtat";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 import { texteRenvoi, lienSms } from "@/lib/cartes/renvoiInvitation";
-import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -75,8 +74,6 @@ export default function CreerProspectMobile({ sportId, onClose }: {
   const queryClient = useQueryClient();
   const kbdStyle = useSheetKeyboardGeometry("90vh");
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
-  const { data: currentUser } = useCurrentUser();
-  const profil = currentUser?.profile;
 
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
@@ -117,17 +114,6 @@ export default function CreerProspectMobile({ sportId, onClose }: {
   }, []);
   const hauteurClavier = kbdStyle.bottom;
   useEffect(() => { ramener(); }, [hauteurClavier, ramener]);
-
-  // Le nom du cégep (texto) — même clé de cache que le panneau web.
-  const { data: cegep = null } = useQuery({
-    queryKey: ["ecole-nom", profil?.school_id],
-    enabled: !!profil?.school_id,
-    staleTime: Infinity,
-    queryFn: async () => {
-      const { data } = await createClient().from("schools").select("name").eq("id", profil!.school_id!).maybeSingle();
-      return (data?.name as string | undefined) ?? null;
-    },
-  });
 
   // Positions et nom DU SPORT DE L'ATHLÈTE — jamais celui de l'unité.
   const { data: sport } = useQuery({
@@ -310,12 +296,8 @@ export default function CreerProspectMobile({ sportId, onClose }: {
         }
         onClose();
       } else if (telephoneLu) {
-        const corps = texteRenvoi({
-          prenom: prenom.trim(),
-          recruteur: [profil?.first_name, profil?.last_name].filter(Boolean).join(" "),
-          cegep,
-          courriel: null,
-        });
+        // Règle RSEQ : le texto ne nomme ni le recruteur ni le cégep.
+        const corps = texteRenvoi({ prenom: prenom.trim(), courriel: null });
         toast.success({ message: `Carte créée : ${quiEst}. Appuie sur Envoyer dans Messages.` });
         onClose();
         window.location.href = lienSms(telephoneLu, corps, Capacitor.getPlatform() === "ios");
@@ -492,7 +474,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
 
           {libre("courriel", "Courriel", courriel, setCourriel, {
             placeholder: "nom@exemple.com", type: "email", inputMode: "email",
-            aide: "Nexus lui envoie l'invitation à ton nom et à celui de ton cégep. Une seule fois par adresse.",
+            aide: "Nexus lui envoie l'invitation, sans nommer ni toi ni ton cégep. Une seule fois par adresse.",
           })}
           {libre("telephone", "Téléphone", telephone, setTelephone, {
             placeholder: "438 555-0123", type: "tel", inputMode: "tel",

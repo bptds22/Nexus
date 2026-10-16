@@ -5,7 +5,7 @@
 //
 // La base a DÉJÀ décidé (trigger cartes_prospect_inviter, à la création de la
 // carte ou à l'ajout de son courriel) : ici on ne fait qu'envoyer une ligne
-// A_ENVOYER, UNE fois, au nom de son signataire.
+// A_ENVOYER, UNE fois — texte neutre, aucun nom (règle RSEQ, 2026-10-16).
 //
 // UNE FOIS, EN TROIS COUCHES :
 //   1. la ligne n'existe qu'à la création (trigger AFTER INSERT), au plus une
@@ -38,7 +38,8 @@ export type Resultat =
   | { ok: false; statut: "ECHEC"; erreur: string };
 
 /** L'expéditeur : « Nexus », depuis info@nexussports.ca — jamais au nom du
- *  recruteur (retour BP 2026-09-28), qui est nommé dans l'objet et le corps. */
+ *  recruteur (retour BP 2026-09-28). Règle RSEQ (2026-10-16) : ni l'objet ni
+ *  le corps ne nomment le recruteur, le cégep ou un coach collégial. */
 export function expediteur(): string {
   return FROM;
 }
@@ -66,21 +67,13 @@ export async function traiterInvitation(deps: Dependances, invitationId: string)
     .from("cartes_prospect").select("id, prenom, courriel, cree_par").eq("id", inv.carte_id).maybeSingle();
   if (!carte?.courriel) return echec("carte supprimée ou sans courriel avant l'envoi");
 
-  const signataireId = (await lireSignataire(supabase, inv.id)) ?? carte.cree_par ?? null;
-  const [{ data: auteur }, { data: cegep }] = await Promise.all([
-    signataireId
-      ? supabase.from("users").select("first_name, last_name").eq("id", signataireId).maybeSingle()
-      : Promise.resolve({ data: null }),
-    supabase.from("schools").select("name").eq("id", inv.unite_cegep_id).maybeSingle(),
-  ]);
-  const recruteur = auteur ? `${auteur.first_name ?? ""} ${auteur.last_name ?? ""}`.trim() || null : null;
-  const nomCegep = (cegep?.name as string | undefined)?.trim() || "cégep";
+  // Règle RSEQ : aucun nom (ni signataire, ni cégep) n'est lu — le courriel est neutre.
 
   const envoi = await envoyerCourriel(deps, {
     jetonInvitationId: inv.id,
     idempotence: `carte-invitation/${inv.id}`,
     campagne: "invitation_carte_prospect",
-    donnees: { prenom: carte.prenom, recruteur, cegep: nomCegep, courriel: carte.courriel },
+    donnees: { prenom: carte.prenom, courriel: carte.courriel },
   });
   if (!envoi.ok) return echec(envoi.erreur);
   const j = { id: envoi.resendId ?? undefined };
@@ -96,12 +89,9 @@ export async function traiterInvitation(deps: Dependances, invitationId: string)
 }
 
 /** Le recruteur qui SIGNE l'invitation (décision BP 2026-10-07) : figé par la
- *  base sur la ligne — le créateur à la création, celui qui ajoute le courriel
- *  à l'ajout. Lu À PART, jamais dans le `select` de la réclamation : sur une
- *  base sans la colonne (fenêtre de déploiement, rollback), PostgREST rejette
- *  la requête entière (42703) et la réclamation échouerait — la ligne
- *  resterait A_ENVOYER. Ici une erreur rend `null` et l'appelant retombe sur
- *  le créateur. */
+ *  base sur la ligne. Depuis la règle RSEQ (2026-10-16), son nom n'apparaît
+ *  plus dans le courriel : l'envoi ne l'appelle plus. Gardée pour l'historique
+ *  et pour une lecture future (une erreur rend `null`). */
 export async function lireSignataire(supabase: Client, invitationId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("cartes_prospect_invitations").select("signataire").eq("id", invitationId).maybeSingle();
@@ -119,7 +109,7 @@ async function envoyerCourriel(
     idempotence: string;
     campagne: string;
     rappel?: boolean;
-    donnees: { prenom: string | null; recruteur: string | null; cegep: string; courriel: string };
+    donnees: { prenom: string | null; courriel: string };
   },
 ): Promise<{ ok: true; resendId: string | null } | { ok: false; erreur: string }> {
   const jeton = encodeURIComponent(await signerJetonInvitation(o.jetonInvitationId, deps.desabonnementSecret));
@@ -141,7 +131,7 @@ async function envoyerCourriel(
         from: expediteur(),
         to: o.donnees.courriel,
         reply_to: SUPPORT,
-        subject: sujet(o.donnees.cegep, !!o.rappel),
+        subject: sujet(!!o.rappel),
         html,
         text,
         headers: {
@@ -188,21 +178,16 @@ export async function traiterRappel(deps: Dependances, rappelId: string): Promis
     : { data: null };
   if (!carte?.courriel) return echec("carte supprimée ou sans courriel avant le rappel");
 
-  const [{ data: inv }, { data: auteur }] = await Promise.all([
-    supabase.from("cartes_prospect_invitations").select("unite_cegep_id").eq("id", rap.invitation_id).maybeSingle(),
-    supabase.from("users").select("first_name, last_name").eq("id", rap.demande_par).maybeSingle(),
-  ]);
+  const { data: inv } = await supabase
+    .from("cartes_prospect_invitations").select("id").eq("id", rap.invitation_id).maybeSingle();
   if (!inv) return echec("invitation d'origine introuvable");
-  const { data: cegep } = await supabase.from("schools").select("name").eq("id", inv.unite_cegep_id).maybeSingle();
-  const recruteur = auteur ? `${auteur.first_name ?? ""} ${auteur.last_name ?? ""}`.trim() || null : null;
-  const nomCegep = (cegep?.name as string | undefined)?.trim() || "cégep";
 
   const envoi = await envoyerCourriel(deps, {
     jetonInvitationId: rap.invitation_id,
     idempotence: `carte-rappel/${rap.id}`,
     campagne: "rappel_invitation_carte_prospect",
     rappel: true,
-    donnees: { prenom: carte.prenom, recruteur, cegep: nomCegep, courriel: carte.courriel },
+    donnees: { prenom: carte.prenom, courriel: carte.courriel },
   });
   if (!envoi.ok) return echec(envoi.erreur);
 
