@@ -90,6 +90,12 @@ const HIDE_PATTERNS = [
   // Le layout.tsx voisin reste en place — un layout sans page ne cree
   // aucune route (meme montage que /tarifs, /a-propos, etc.).
   'app/aide/page.tsx',
+  // /12octobre — la démo recruteurs (2026-10-12). WEB SEULEMENT : /video est
+  // `force-dynamic` (jeton lu au serveur, service_role), qu'output:'export'
+  // refuse — il cassait le build mobile depuis son arrivée sur main. Le
+  // segment entier est marketing (MarketingNav + Footer) : rien pour l'appli.
+  'app/12octobre/**/page.tsx',
+  'app/12octobre/**/route.ts',
   'app/tarifs/page.tsx',
   'app/a-propos/page.tsx',
   'app/comment-ca-marche/page.tsx',

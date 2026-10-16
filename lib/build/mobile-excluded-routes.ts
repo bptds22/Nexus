@@ -73,6 +73,10 @@ export const MOBILE_EXCLUDED_PAGES = [
   // sheet natif lisant le même content/aide/*, pas par une route.
   '/aide',
 
+  // Démo recruteurs du 12 octobre (/12octobre, /video, /merci, .ics) — web
+  // seulement, masquée au build par HIDE_PATTERNS (force-dynamic).
+  '/12octobre',
+
   // Lien de la bio Instagram (2026-09-18) — redirige vers le bon store selon
   // le User-Agent. WEB SEULEMENT : dynamique (headers()), et sans objet dans
   // l'application. Masquée au build par HIDE_PATTERNS, gardée par notFound()
