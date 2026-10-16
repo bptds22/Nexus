@@ -22,6 +22,7 @@ import { useTrendingAthletes } from "@/lib/queries/recruiter/useTrendingAthletes
 import { useActivityFeed } from "@/lib/queries/recruiter/useActivityFeed";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import ErreurChargement, { MESSAGES_PROCESSUS } from "@/components/shared/ErreurChargement";
 import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
 import { CLES_FILTRES, FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
@@ -306,7 +307,7 @@ export function RecruteurDashboardMobile() {
      un compteur est, par construction, le nombre de cartes affichées à
      l'arrivée. Les cartes prospect COMPTENT depuis la recette 1.4.4 : l'app
      les affiche désormais dans Mon processus. */
-  const { data: pipelineData } = useProcessusUnite({ enabled: canUsePipeline });
+  const { data: pipelineData, error: erreurProcessus, reessayer: reessayerProcessus } = useProcessusUnite({ enabled: canUsePipeline, avecNotes: false });
   const relanceCards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
 
   /* ── LA CARTE DU HAUT (recette 1.4.4, BP 2026-10-02 — retour au format
@@ -540,6 +541,14 @@ export function RecruteurDashboardMobile() {
           },
         ]}
       />
+
+      {/* Compteurs à « — » faute de processus : on dit pourquoi (correctif
+          2026-10-16, plus aucune erreur de lecture en silence). */}
+      {canUsePipeline && erreurProcessus && (
+        <div className="px-4 pt-4">
+          <ErreurChargement message={MESSAGES_PROCESSUS.cartes(!!pipelineData)} onReessayer={reessayerProcessus} />
+        </div>
+      )}
 
       {canUsePipeline && relanceCards.length > 0 && (
         <>
