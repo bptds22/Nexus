@@ -1,0 +1,238 @@
+﻿              set_config              
+--------------------------------------
+ 66666666-0000-0000-0000-00000000000a
+
+              set_config              
+--------------------------------------
+ 455bd55d-0416-4411-88fa-775354975e85
+
+              set_config              
+--------------------------------------
+ eeeeeeee-0000-0000-0000-0000000000aa
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c9001
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7001
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7008
+
+              set_config              
+--------------------------------------
+ 842da8f6-41bf-4b75-bc72-83afc68bfe1c
+
+              set_config              
+--------------------------------------
+ 082fdf2b-bb33-43a8-b5ca-9a37f67f4c1a
+
+              set_config              
+--------------------------------------
+ 5d719dfb-6cab-4988-bec7-250284a899c5
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c2012
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-00000000a001
+
+              set_config              
+--------------------------------------
+ 4b859bf1-5832-4258-897c-e094062926af
+
+              set_config              
+--------------------------------------
+ ff88ed38-aabc-45d9-b472-7baae131d016
+
+                                          set_config                                           
+-----------------------------------------------------------------------------------------------
+ array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]
+
+                                                                                                                  set_config                                                                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select (select count(*) from public.cotes_partenaires_athletes(array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]))::text || '|' ||                                                              +
+    ((select coalesce(string_agg(id::text || organisation || cote_globale::text, ',' order by id), '') from public.cotes_partenaires_athletes(array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]))+
+     = (select coalesce(string_agg(e.id::text || e.organisation || e.cote_globale::text, ',' order by e.id), '')                                                                                                                             +
+          from unnest(array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]) x cross join lateral public.evaluations_partenaires_athlete(x) e))::text
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ set_config 
+------------
+ Botteur|K
+
+ set_config 
+------------
+ Félix
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ n  | verdict |                                        test                                         |                                                                                                                             detail                                                                                                                              
+----+---------+-------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1 | OK      | A1 Félix active la visibilité partenaire                                            | true (attendu true)
+  2 | OK      | A2 p1 évalue Félix (4)                                                              | true (attendu true)
+  3 | OK      | A3 p2 évalue Félix (3)                                                              | true (attendu true)
+  4 | OK      | A4 p1 ne peut pas évaluer Mathis (pas d'opt-in)                                     | ERR:42501 (attendu ERR:42501)
+  5 | OK      | B1 recruteur : les 2 évaluations, identiques à W2                                   | 2|true (attendu 2|true)
+  6 | OK      | B2 recruteur : les deux cotes                                                       | 3.00,4.00 (attendu 3.00,4.00)
+  7 | OK      | B3 Félix lui-même : identique à W2                                                  | 2|true (attendu 2|true)
+  8 | OK      | B4 Mathis (autre athlète) : rien, identique à W2                                    | 0|true (attendu 0|true)
+  9 | OK      | B5 p1 : la sienne seulement                                                         | 1|true (attendu 1|true)
+ 10 | OK      | B6 p2 : la sienne seulement                                                         | 1|true (attendu 1|true)
+ 11 | OK      | B7 admin : tout                                                                     | 2|true (attendu 2|true)
+ 12 | OK      | B8 coach : identique à W2 (quel que soit son lien)                                  | true (attendu true)
+ 13 | OK      | B9 lot vide ou NULL : aucune ligne                                                  | 0 (attendu 0)
+ 14 | OK      | B10 doublons dans le lot : pas de lignes doublées                                   | 2 (attendu 2)
+ 15 | OK      | C1 Félix DESACTIVE : rien pour le recruteur                                         | 0|true (attendu 0|true)
+ 16 | OK      | C2 p2 suspendu : son évaluation cesse d'apparaître                                  | 1|true (attendu 1|true)
+ 17 | OK      | C3 Félix retire sa visibilité                                                       | true (attendu true)
+ 18 | OK      | C4 CONSTAT W2 : après retrait, le recruteur lit toujours les 2 (règle W2 inchangée) | 2|true (attendu 2|true)
+ 19 | OK      | C5 Félix réactive                                                                   | true (attendu true)
+ 20 | OK      | D1 p1 remet son badge propre à Félix                                                | true (attendu true)
+ 21 | OK      | D2 p1 remet le badge Nexus Vitesse à Félix                                          | true (attendu true)
+ 22 | OK      | D3 p1 : badge_ref = id du catalogue (Nexus → badges.id, propre → partner_badges.id) | false:true,true:true (attendu false:true,true:true)
+ 23 | OK      | D4 p1 : poste et poste_abr = la position de Félix                                   | Botteur|K (attendu Botteur|K)
+ 24 | OK      | D5 p1 : colonnes W4d inchangées (prénom, cote 4, 2 badges)                          | Félix|4.00|2 (attendu Félix|4.00|2)
+ 25 | OK      | D6 p2 : Félix, sa cote 3, aucun badge de p1                                         | 3.00|0 (attendu 3.00|0)
+ 26 | OK      | D7 recruteur : Mes athlètes vide                                                    | 0 (attendu 0)
+ 27 | OK      | D8 Félix retire sa visibilité                                                       | true (attendu true)
+ 28 | OK      | D9 p1 : Félix sort de « Mes athlètes »                                              | 0 (attendu 0)
+ 29 | OK      | E1 anon : lot refusé                                                                | ERR:42501 (attendu ERR:42501)
+ 30 | OK      | E2 anon : Mes athlètes refusée                                                      | ERR:42501 (attendu ERR:42501)
+ 31 | OK      | E3 ACL complètes                                                                    | cotes_partenaires_athletes=authenticated,postgres,service_role;partenaire_mes_athletes=authenticated,postgres,service_role (attendu cotes_partenaires_athletes=authenticated,postgres,service_role;partenaire_mes_athletes=authenticated,postgres,service_role)
+ 32 | OK      | E4 le lot est INVOKER, Mes athlètes DEFINER                                         | cotes_partenaires_athletes=false,partenaire_mes_athletes=true (attendu cotes_partenaires_athletes=false,partenaire_mes_athletes=true)
+
+ ok | echecs 
+----+--------
+ 32 |      0
+
