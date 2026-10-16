@@ -1,0 +1,22 @@
+1|OK|école secondaire : seul C1 (C2 coache aussi au cégep) — Cun
+2|OK|cégep : aucune liste de coachs
+3|OK|club civil : C4 — Cquatre
+4|OK|équipe secondaire : C1 seul, avec son rôle — Cun:head_coach
+5|OK|équipe collégiale : aucun coach (ni C2, ni C3, ni le recruteur)
+6|OK|équipe civile : C4 — Cquatre:head_coach
+7|OK|aperçu code secondaire : valide, équipe et coachs filtrés (C1 seul) — true|Banc T1|SECONDAIRE|[{"nom": "Banc", "role": "head_coach", "prenom": "Cun", "coach_id": "b1000000-0000-4000-8000-000000000001"}]
+8|OK|aperçu code collégial : valide, aucun coach — true|CEGEP|[]
+9|OK|aperçu code révoqué : non valide, rien de nommé — false|<null>|[]
+10|OK|aperçu code inconnu : aucune ligne — 0
+11|OK|aperçu = resolve_team_join_token colonne pour colonne (hors coachs) — true
+12|OK|anon : coachs_nommables_ecole refusé — ERREUR: permission denied for function coachs_nommables_ecole
+13|OK|anon : coachs_nommables_equipe refusé — ERREUR: permission denied for function coachs_nommables_equipe
+14|OK|anon : apercu_code_equipe refusé — ERREUR: permission denied for function apercu_code_equipe
+15|OK|anon : resolve_team_join_token toujours ouvert (/join), sans coach — true
+16|OK|authenticated sans JWT (auth.uid() nul) : listes vides — 0|0|[]
+17|OK|ACL apercu_code_equipe = {authenticated,postgres,service_role} — {postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}
+18|OK|ACL coachs_nommables_ecole = {authenticated,postgres,service_role} — {postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}
+19|OK|ACL coachs_nommables_equipe = {authenticated,postgres,service_role} — {postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}
+20|OK|trois fonctions présentes — 3
+21|OK|coach_nommable reste serveur seulement
+21|0

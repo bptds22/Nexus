@@ -1,0 +1,23 @@
+APPLICATION EN PROD — coachs nommables (20261016040000), SUR GO DE BP SEULEMENT
+
+Ordre : la migration AVANT le code web qui l'appelle (CoachPicker et JoinCodeField appellent les nouvelles
+fonctions ; sans elles, la liste « Mon coach » est vide et un code d'équipe paraît invalide pour un compte connecté).
+
+1. Relevé avant (lecture seule) : docs/coachs-nommables/prod/etat-avant.sql doit rendre 5239d7216c96df7988a30afd914bd26c|2
+   (relevé le 2026-10-16 : identique en prod et en local ; version 20261016040000 absente ; dernière version prod
+   20261016020000 ; les trois fonctions absentes).
+2. docs/coachs-nommables/prod/lot-prod.sql (md5 cdf1c3275e630205017b50c62284fc8f, 24 581 octets) EN UN SEUL APPEL
+   (connecteur execute_sql) — une transaction : relevé, gardes (une transaction, version absente, état de départ),
+   le fichier octet pour octet (md5 6d31a088090ba749066fdddfb5225322), schema_migrations, admin_operations
+   (MIGRATION_COACHS_NOMMABLES), empreinte ac391078d5689271a6d9742d63fbd48c (5 éléments), données inchangées
+   (users, team_coaches, teams, schools, team_join_tokens, athletes). Pas apply_migration (le lot enregistre lui-même
+   sa version). Vérifier le md5 du texte envoyé avant exécution.
+3. Lecture seule après : empreinte-objets.sql = ac391078d5689271a6d9742d63fbd48c|5 ;
+   etat-avant.sql = f966c3bfbfc099bdabc432c819a35435|5.
+4. Rollback si besoin : supabase/rollback/20261016040000_rollback_coachs_nommables.sql (md5 81f2f49d41c6c49765b4c30b882467fe,
+   une transaction) — APRÈS avoir ramené le code web en arrière. Prouvé en local : ramène etat-avant.sql à
+   5239d7216c96df7988a30afd914bd26c|2, l'état prod relevé.
+
+Preuve locale : docs/coachs-nommables/prod/preuve-locale.txt (garde fausse → rien ; envoi en morceaux → arrêt avant
+toute écriture ; lot réel → appliqué ; 2e envoi → refusé ; banc sur la base migrée 21|0).
+Banc : docs/coachs-nommables/tests-coachs-nommables.sql (transaction annulée, données fictives).

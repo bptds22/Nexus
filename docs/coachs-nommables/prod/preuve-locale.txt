@@ -1,0 +1,26 @@
+PREUVE LOCALE — lot coachs nommables — 2026-10-15T23:06:13
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 6d31a088090ba749066fdddfb5225322
+  md5 lot-prod.sql      : cdf1c3275e630205017b50c62284fc8f
+  état de départ : 5239d7216c96df7988a30afd914bd26c|2  (prod avant = 5239d7216c96df7988a30afd914bd26c|2) version=0 operations=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte ac391078d5689271a6d9742d63fbd48c / 5 éléments) — tout est annulé 
+  état après : 5239d7216c96df7988a30afd914bd26c|2  (prod avant = 5239d7216c96df7988a30afd914bd26c|2) version=0 operations=0
+
+== 2. Instructions envoyées SÉPARÉMENT (en morceaux, pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:48: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : 5239d7216c96df7988a30afd914bd26c|2  (prod avant = 5239d7216c96df7988a30afd914bd26c|2) version=0 operations=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"49|8|1259|1184|2|54|2fbdb78c90b6ae7d90def0264591c518","etat_objets":"5239d7216c96df7988a30afd914bd26c","operations":66,"version_deja":0,"derniere_version":"20261016020000","pg":"17.6"}, "apres" : {"donnees" : "49|8|1259|1184|2|54|2fbdb78c90b6ae7d90def0264591c518", "version" : "20261016040000", "md5_enregistre" : "6d31a088090ba749066fdddfb5225322", "admin_operation" : "50311d8f-acbb-4b1e-89af-f7810d52be9e", "fonctions" : 3, "meme_transaction" : true}} 
+  état après : f966c3bfbfc099bdabc432c819a35435|5  (prod avant = 5239d7216c96df7988a30afd914bd26c|2) version=1 operations=1
+  empreinte des objets en base : ac391078d5689271a6d9742d63fbd48c|5  (attendue ac391078d5689271a6d9742d63fbd48c|5)
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: migration coachs nommables déjà présente — rien n'est appliqué 
+  état après : f966c3bfbfc099bdabc432c819a35435|5  (prod avant = 5239d7216c96df7988a30afd914bd26c|2) version=1 operations=1
+
+== 5. Banc sur la base issue du lot ==
+  21|0   (ok | échecs)
