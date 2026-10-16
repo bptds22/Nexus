@@ -51,6 +51,17 @@ export function apercuCodeEquipe(c: CodeEquipeAdopte): ApercuCodeEquipe {
   };
 }
 
+/** Noms à poser dans l'état d'affichage (« ✓ {école} », « ✓ {équipe} ») après
+ *  l'adoption d'un code : vides si l'équipe n'est pas nommable. Les IDENTIFIANTS
+ *  restent posés par l'appelant (rattachement inchangé) ; seuls les noms
+ *  affichés tombent. Web et mobile (applyCodeLock). */
+export function nomsAffichablesCode(t: {
+  teamName?: string | null; schoolName?: string | null; schoolType?: string | null;
+}): { equipe: string; organisation: string } {
+  if (!equipeNommable(t.schoolType)) return { equipe: "", organisation: "" };
+  return { equipe: t.teamName ?? "", organisation: t.schoolName ?? "" };
+}
+
 /** Une fiche orpheline lue en base → ce que la modale de réclamation reçoit.
  *  Jamais de coach (règle RSEQ) ; le TYPE d'école voyage pour que la modale
  *  décide d'afficher l'école ou non. Sans type : rien n'est nommé. */

@@ -30,6 +30,7 @@ import JoinCodeField from "@/components/athlete/JoinCodeField";
 import { type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
 import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
 import LignesEquipe from "@/components/athlete/LignesEquipe";
+import { apercuCodeEquipe, nomsAffichablesCode } from "@/lib/invitations/apercuCodeEquipe";
 import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
@@ -654,7 +655,7 @@ function ContextPicker({
 
       <div className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
         <p className="mb-2 text-[13px] font-semibold text-white">
-          Ton entraîneur t&apos;a donné un code ?
+          Tu as un code d&apos;équipe ?
         </p>
         <p className="mb-3 text-[12px] leading-relaxed text-[#9CA3AF]">
           Entre-le : ton équipe, ton école ou ton club et ton sport se
@@ -770,20 +771,22 @@ function AthleteOnboardingDesktop() {
         gender: t.gender, season: t.season, league: t.league,
       }, t.schoolName),
     });
+    // Règle RSEQ : noms affichés seulement pour une équipe secondaire ou civile.
+    const noms = nomsAffichablesCode(t);
     setJoinCodeUsed(v.code);
     setSelectedTeamId(t.teamId);
-    setSelectedTeamName(t.teamName ?? "");
+    setSelectedTeamName(noms.equipe);
     setUserContext(isCivil ? "ligue_civile" : "scolaire");
 
     if (isCivil) {
       setSelectedClubId(t.schoolId);
-      setSelectedClubName(t.schoolName ?? "");
+      setSelectedClubName(noms.organisation);
       setSelectedSchoolId("");
       setSelectedSchoolName("");
       setSelectedCoachId(null);     // le coach est une notion scolaire ici
     } else {
       setSelectedSchoolId(t.schoolId);
-      setSelectedSchoolName(t.schoolName ?? "");
+      setSelectedSchoolName(noms.organisation);
       setSelectedClubId(null);
       setSelectedClubName("");
     }
@@ -1683,7 +1686,7 @@ function AthleteOnboardingDesktop() {
         codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
       });
       setAttachError(
-        `Ton code correspond à ${codeLock.teamName} (${codeLock.sportName}). ` +
+        `Ton code correspond à ${apercuCodeEquipe(codeLock).nommable ? codeLock.teamName : "une autre équipe"} (${codeLock.sportName}). ` +
         `Utilise « Changer » à la première étape si tu veux une autre équipe.`,
       );
       setSaving(false);
@@ -2055,11 +2058,11 @@ function AthleteOnboardingDesktop() {
                       Code {codeLock.code}
                     </p>
                     <p className="mt-1 truncate text-[15px] font-semibold text-white">
-                      {codeLock.teamName}
+                      {apercuCodeEquipe(codeLock).titre}
                     </p>
-                    <LignesEquipe {...codeLock.details} />
+                    {apercuCodeEquipe(codeLock).details && <LignesEquipe {...apercuCodeEquipe(codeLock).details!} />}
                     <p className="mt-2 text-[12px] leading-relaxed text-[#6b7280]">
-                      Ton {codeLock.schoolType === "LIGUE_CIVILE" ? "club" : "école"} et ton
+                      Ton {apercuCodeEquipe(codeLock).motOrganisation} et ton
                       sport sont remplis à partir de ce code — tu n&apos;as pas à les chercher.
                     </p>
                   </div>
@@ -2074,7 +2077,7 @@ function AthleteOnboardingDesktop() {
               ) : (
                 <>
                   <p className="mb-2 text-[13px] font-semibold text-white">
-                    Ton entraîneur t&apos;a donné un code ?
+                    Tu as un code d&apos;équipe ?
                   </p>
                   <p className="mb-3 text-[12px] leading-relaxed text-[#9CA3AF]">
                     Entre-le : ton équipe, ton école ou ton club et ton sport se
@@ -2305,21 +2308,25 @@ function AthleteOnboardingDesktop() {
                 )}
 
                 {/* Coach picker — only after school selection */}
+                {/* Règle RSEQ (décision BP 2026-10-16) : seulement les coachs
+                    nommables (coachs_nommables_ecole) ; aucune section du tout
+                    s'il n'y en a pas — un cégep n'en a jamais. */}
                 {selectedSchoolId && (
-                  <>
-                    <div className={sectionTitle}>
-                      <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
-                      Mon coach <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
-                    </div>
-                    <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton coach actuel. Tu pourras changer plus tard.</p>
-                    <div className="mb-6">
-                      <CoachPicker
-                        schoolId={selectedSchoolId}
-                        selectedCoachId={selectedCoachId}
-                        onChange={setSelectedCoachId}
-                      />
-                    </div>
-                  </>
+                  <CoachPicker
+                    schoolId={selectedSchoolId}
+                    selectedCoachId={selectedCoachId}
+                    onChange={setSelectedCoachId}
+                    className="mb-6"
+                    entete={
+                      <>
+                        <div className={sectionTitle}>
+                          <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                          Mon coach <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
+                        </div>
+                        <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton coach actuel. Tu pourras changer plus tard.</p>
+                      </>
+                    }
+                  />
                 )}
               </>
             )}
@@ -2538,8 +2545,8 @@ function AthleteOnboardingDesktop() {
                 <label className={labelCls}>Ton équipe</label>
                 <div className="flex items-start gap-3 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 p-3">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[15px] font-semibold text-white">{codeLock.teamName}</div>
-                    <LignesEquipe {...codeLock.details} />
+                    <div className="truncate text-[15px] font-semibold text-white">{apercuCodeEquipe(codeLock).titre}</div>
+                    {apercuCodeEquipe(codeLock).details && <LignesEquipe {...apercuCodeEquipe(codeLock).details!} />}
                   </div>
                   <button
                     type="button"
