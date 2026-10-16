@@ -39,6 +39,13 @@ export default function AthletePreviewPage() {
   const router = useRouter();
   const [athleteId, setAthleteId] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "no-row" | "error">("loading");
+  /* A5 — ?section=badges|evaluation, posé par le clic sur un push. Lu dans
+     window.location (export statique : useSearchParams exigerait un Suspense). */
+  const [section, setSection] = useState<"badges" | "evaluation" | undefined>(undefined);
+  useEffect(() => {
+    const s = new URLSearchParams(window.location.search).get("section");
+    if (s === "badges" || s === "evaluation") setSection(s);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,6 +154,7 @@ export default function AthletePreviewPage() {
         athleteId={athleteId!}
         viewerMode="recruiter"
         viewer="self-preview"
+        section={section}
       />
     </div>
   );

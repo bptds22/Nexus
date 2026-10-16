@@ -29,7 +29,34 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export type PushIntent =
   | { kind: "message"; conversationId: string; ts: number }
-  | { kind: "announcement"; ts: number };
+  | { kind: "announcement"; ts: number }
+  /* A5 (1.4.5) — un écran précis, toujours pris dans ROUTES_PERMISES. */
+  | { kind: "route"; route: string; ts: number }
+  /* A5 — type inconnu : la liste des notifications du rôle. */
+  | { kind: "notifications"; ts: number };
+
+/* ── A5 : la liste blanche des écrans ouverts au clic ──────────────
+   Le serveur envoie `nx_type` et `route` À CÔTÉ de `type: "announcement"`
+   (la 1.4.4 ne lit que `type` et ouvre l'accueil, comme avant). Le client
+   ne suit JAMAIS une route qu'il ne connaît pas : la route reçue n'est
+   gardée que si elle figure ici, sinon elle est déduite de `nx_type`.
+   Écrans d'athlète seulement : tous les pushs A4a visent un jeune. */
+const ROUTE_BADGES = "/athlete/profil/apercu?section=badges";
+const ROUTE_EVALUATION = "/athlete/profil/apercu?section=evaluation";
+const ROUTES_PAR_TYPE: Record<string, string> = {
+  BADGE_COACH: ROUTE_BADGES,
+  BADGE_PARTENAIRE: ROUTE_BADGES,
+  EVALUATION_COACH: ROUTE_EVALUATION,
+  EVALUATION_PARTENAIRE: ROUTE_EVALUATION,
+  CARTE_PARTENAIRE: "/athlete/cartes-partenaires",
+  TEAM_INVITATION: "/athlete/notifications?section=invitations",
+};
+const ROUTES_PERMISES = new Set(Object.values(ROUTES_PAR_TYPE));
+
+/** Écran des notifications par rôle ; les autres rôles retombent sur l'accueil. */
+const NOTIFICATIONS_BY_ROLE: Record<string, string> = {
+  ATHLETE: "/athlete/notifications",
+};
 
 /* ── Chemins par rôle ─────────────────────────────────────────────
    Les inbox sont celles que les listes utilisent déjà (Stratégie A,
@@ -55,10 +82,9 @@ const HOME_BY_ROLE: Record<string, string> = {
 /**
  * Traduit le `data` d'une notification en intention, ou null.
  *
- * Tout ce qui n'est pas reconnu retourne null — un type inconnu, un
- * data absent, un id qui n'est pas un uuid. C'est la garantie « rien
- * ne casse » : sans intention, aucun chemin nouveau ne s'active et le
- * comportement reste celui d'aujourd'hui.
+ * Retourne null pour un data absent ou sans `type`, et pour un message
+ * dont l'id n'est pas un uuid : sans intention, rien ne bouge. Un `type`
+ * inconnu, lui, ouvre les notifications (A5).
  *
  * FCM v1 impose des valeurs de data en string — d'où les typeof.
  */
@@ -72,12 +98,22 @@ export function parsePushData(data: unknown): PushIntent | null {
     if (!UUID_RE.test(id)) return null;
     return { kind: "message", conversationId: id, ts: Date.now() };
   }
+  // A5 : `nx_type` passe AVANT `type` — un push A4a porte les deux.
+  const nxType = typeof d.nx_type === "string" ? d.nx_type : "";
+  if (nxType) {
+    const recue = typeof d.route === "string" ? d.route : "";
+    const route = ROUTES_PERMISES.has(recue) ? recue : ROUTES_PAR_TYPE[nxType];
+    return route
+      ? { kind: "route", route, ts: Date.now() }
+      : { kind: "notifications", ts: Date.now() };
+  }
   if (type === "announcement") {
-    // L'annonce n'a pas de destination propre en v1 : l'accueil du
-    // portail suffit. announcement_id voyage mais n'est pas utilisé —
-    // il le sera le jour où il y aura un écran à ouvrir.
+    // Annonce sans `nx_type` (envoi admin, prise en charge par un coach) :
+    // l'accueil du portail, comme en 1.4.4.
     return { kind: "announcement", ts: Date.now() };
   }
+  // A5 : un type inconnu ouvre les notifications (avant : rien).
+  if (type) return { kind: "notifications", ts: Date.now() };
   return null;
 }
 
@@ -121,7 +157,8 @@ export async function takePendingIntent(): Promise<PushIntent | null> {
     if (!parsed || typeof parsed.ts !== "number") return null;
     if (Date.now() - parsed.ts > TTL_MS) return null;
     if (parsed.kind === "message" && !UUID_RE.test(parsed.conversationId)) return null;
-    if (parsed.kind !== "message" && parsed.kind !== "announcement") return null;
+    if (parsed.kind === "route" && !ROUTES_PERMISES.has(parsed.route)) return null;
+    if (!["message", "announcement", "route", "notifications"].includes(parsed.kind)) return null;
     return parsed;
   } catch {
     return null;
@@ -148,6 +185,10 @@ export async function resolveDestination(
 ): Promise<string | null> {
   const home = HOME_BY_ROLE[role] ?? null;
   if (intent.kind === "announcement") return home;
+  // Les écrans de la liste blanche sont ceux du jeune : un autre rôle
+  // connecté sur le téléphone (ancien jeton) retombe sur son accueil.
+  if (intent.kind === "route") return role === "ATHLETE" ? intent.route : home;
+  if (intent.kind === "notifications") return NOTIFICATIONS_BY_ROLE[role] ?? home;
 
   const inbox = INBOX_BY_ROLE[role];
   if (!inbox) return home; // ADMIN / PARTNER : pas de messagerie

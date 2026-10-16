@@ -38,7 +38,12 @@ type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED"
      Les quatre ajouts, comme ci-dessus. Le geste se fait sur
      /athlete/cartes-partenaires (web) ; une notification marquée caduque
      (metadata.caduque) ne mène plus nulle part. */
-  | "PARTENAIRE_EVALUATION";
+  | "PARTENAIRE_EVALUATION"
+  /* A5 — la cloche des pushs A4a d'un partenaire (badge reçu, évaluation
+     reçue). Les quatre ajouts, comme ci-dessus ; le badge et l'évaluation du
+     coach réutilisent COACH_DISTINCTION_ADDED et COACH_EVALUATION_UPDATED. */
+  | "PARTENAIRE_BADGE"
+  | "PARTENAIRE_EVALUATION_RECUE";
 
 interface AthleteNotif {
   id: string;
@@ -78,6 +83,9 @@ const DOT_COLOR: Record<NotifType, string> = {
   AMBASSADEUR_PALIER_5: "#F59E0B",
   // Ambre : une réponse est attendue du jeune.
   PARTENAIRE_EVALUATION: "#F59E0B",
+  // Mêmes couleurs que leurs pendants du coach : badge or, évaluation verte.
+  PARTENAIRE_BADGE: "#F59E0B",
+  PARTENAIRE_EVALUATION_RECUE: "#22C55E",
 };
 
 const TYPE_ICON: Record<NotifType, React.ReactNode> = {
@@ -104,6 +112,9 @@ const TYPE_ICON: Record<NotifType, React.ReactNode> = {
   AMBASSADEUR_PALIER_5: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="6" /><path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" /></svg>,
   // Une carte avec une étoile : l'évaluation d'un partenaire.
   PARTENAIRE_EVALUATION: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><polygon points="12 8 13.3 10.7 16.2 11.1 14.1 13.1 14.6 16 12 14.6 9.4 16 9.9 13.1 7.8 11.1 10.7 10.7 12 8" /></svg>,
+  // Mêmes icônes que COACH_DISTINCTION_ADDED et COACH_EVALUATION_UPDATED.
+  PARTENAIRE_BADGE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
+  PARTENAIRE_EVALUATION_RECUE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>,
 };
 
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
@@ -116,7 +127,8 @@ export default function NotificationsPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [athleteId, setAthleteId] = useState<string | null>(null);
 
-  // Load notifications from Supabase
+  // Load notifications from Supabase — relu sur `notifications-updated` (A5 :
+  // un push reçu ou touché pendant que la liste est ouverte).
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
@@ -143,7 +155,21 @@ export default function NotificationsPage() {
       setLoading(false);
     };
     load();
+    const onUpdated = () => { void load(); };
+    window.addEventListener("notifications-updated", onUpdated);
+    return () => window.removeEventListener("notifications-updated", onUpdated);
   }, []);
+
+  // A5 — push d'invitation : /athlete/notifications?section=invitations
+  // amène la carte des invitations à l'écran une fois la page chargée.
+  useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("section") !== "invitations") return;
+    const t = window.setTimeout(() => {
+      document.getElementById("nx-invitations")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [loading]);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
 
@@ -157,7 +183,7 @@ export default function NotificationsPage() {
          des jalons personnels, pas des gestes de coach. Les oublier ici les
          rendrait invisibles dans TOUS les onglets sauf « Tout » — le défaut
          exact de TEAM_INVITATION avant son correctif. */
-      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5", "PARTENAIRE_EVALUATION"].includes(n.type));
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5", "PARTENAIRE_EVALUATION", "PARTENAIRE_BADGE", "PARTENAIRE_EVALUATION_RECUE"].includes(n.type));
       case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
       case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION", "COACH_CLAIMED"].includes(n.type));
       default: return notifs;
@@ -221,7 +247,10 @@ export default function NotificationsPage() {
       </div>
 
       {/* Flow A invitations — 5.5e-iv-b. Self-hides when 0 PENDING. */}
-      {athleteId && <PendingInvitations athleteId={athleteId} showToast={showToast} />}
+      {/* empty:hidden : sans invitation en attente, le bloc n'ajoute aucun espace. */}
+      <div id="nx-invitations" className="empty:hidden">
+        {athleteId && <PendingInvitations athleteId={athleteId} showToast={showToast} />}
+      </div>
 
       {/* Filter tabs */}
       <div className="w-full min-w-0 flex items-center gap-2.5 py-1 overflow-x-auto nx-no-scrollbar">
@@ -278,10 +307,16 @@ export default function NotificationsPage() {
                  confirmValidation(). */
               const target = n.metadata?.kind === "monthly_validation_expired"
                 ? (IS_CAPACITOR ? "/athlete/dashboard" : "/athlete/profil")
-                // W4 : la réponse se fait sur le web seulement (lot mobile, registre §85).
-                : n.type === "PARTENAIRE_EVALUATION" && !IS_CAPACITOR && n.metadata?.caduque !== true
+                // W4 : la réponse se fait sur /athlete/cartes-partenaires — dans l'appli aussi depuis A5 (1.4.5).
+                : n.type === "PARTENAIRE_EVALUATION" && n.metadata?.caduque !== true
                   ? "/athlete/cartes-partenaires"
-                  : null;
+                  // A5 : dans l'appli, badge et évaluation mènent à la section de la fiche,
+                  // comme le push. Le web garde ses notifications informatives.
+                  : IS_CAPACITOR && (n.type === "COACH_DISTINCTION_ADDED" || n.type === "PARTENAIRE_BADGE")
+                    ? "/athlete/profil/apercu?section=badges"
+                    : IS_CAPACITOR && (n.type === "COACH_EVALUATION_UPDATED" || n.type === "PARTENAIRE_EVALUATION_RECUE")
+                      ? "/athlete/profil/apercu?section=evaluation"
+                      : null;
               return (
               <button key={n.id} type="button"
                 onClick={() => { markRead(n.id); if (target) router.push(target); }}

@@ -115,6 +115,8 @@ interface Props {
   athleteId: string;
   viewerMode: AthleteProfileViewerMode;
   viewer?: AthleteProfileViewer;
+  /** A5 (push au clic) — section amenée à l'écran une fois la fiche chargée. */
+  section?: "badges" | "evaluation";
 }
 
 const sectionLabel = "font-head text-[12px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF] mb-3";
@@ -723,7 +725,7 @@ function StatusVisitSheet({
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 
-export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMode, viewer = "recruiter" }: Props) {
+export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMode, viewer = "recruiter", section }: Props) {
   // Iter 1 : on ne gère QUE viewerMode "recruiter" en mobile dédié.
   // Pour preview/partner, le PageClient route vers le desktop body.
   /* Registre §97 — badges partenaire (lots W3/W3b), aux règles du web :
@@ -1594,6 +1596,22 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     return () => { timers.forEach((t) => window.clearTimeout(t)); };
   }, [loadingAthlete, photoReady, a?.distinctions?.length]);
 
+  /* A5 — ouverture au clic d'un push : la section demandée vient à l'écran
+     une fois la fiche chargée. L'évaluation vit dans l'onglet Rapport, les
+     badges dans le haut de fiche. Une seule fois par fiche ; sans la section
+     (aucun badge, par exemple), la fiche reste en haut. */
+  const sectionFaiteRef = useRef(false);
+  useEffect(() => {
+    if (!section || !a || sectionFaiteRef.current) return;
+    sectionFaiteRef.current = true;
+    if (section === "evaluation") setActiveTab("rapport");
+    const t = window.setTimeout(() => {
+      document.getElementById(section === "badges" ? "nx-apercu-badges" : "nx-apercu-evaluation")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [section, a]);
+
   // Fade-in du contenu de tab à chaque switch + haptic (Fix 7 iter 3.1)
   const handleTabChange = (k: TabKey) => {
     triggerHaptic("Light");
@@ -2422,7 +2440,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
         {/* Badges (size sm partout, justify-center, gap-x-6 gap-y-3) — plus bas dans la hiérarchie */}
         {a.distinctions.length > 0 && (
-          <div className="mt-6">
+          <div className="mt-6" id="nx-apercu-badges">
             <BadgesRow distinctions={a.distinctions} mounted={mounted} badgesRevealed={badgesRevealed} />
           </div>
         )}
@@ -2640,7 +2658,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                     les borderTop inline rgba(255,255,255,0.04) dessinaient la "ligne grise sous le toggle"
                     persistante après les 3 itérations précédentes. Cherché en border-t/border-b Tailwind à
                     chaque fois, donc raté — c'était un style inline. Séparation conservée via l'espace. */}
-                <section className={mobileSection}>
+                <section className={mobileSection} id="nx-apercu-evaluation">
                   <div className="flex flex-col items-center pt-6 pb-6">
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
                     <p className="text-[32px] font-head font-black text-white mt-3 leading-none">
