@@ -41,6 +41,10 @@ import OngletHistoriquePanneau from "@/app/recruteur/pipeline/_components/Onglet
 import { useFiltreSportUnite, type FiltreSportUnite as FiltreSportUniteEtat } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
+import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
+import { fusionnerCarte } from "@/lib/cartes/fusions";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { createClient } from "@/lib/supabase/client";
 import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import { FilterRow, FilterBottomSheetShell } from "@/components/shared/filters/FilterBottomSheetShell";
@@ -1219,6 +1223,8 @@ function PipelineDetailSheet({
                   {carte && (
                     <p className="text-[11px] uppercase tracking-wider font-bold text-[#E63946] mt-1">Carte prospect · sans compte Nexus</p>
                   )}
+                  {/* A7 — « Un profil semble correspondre → voir » : ouvre la feuille de la carte. */}
+                  {carte && <LienRapprochementCarte carteId={card.id} className="mt-1 min-h-[32px]" />}
                   {/* Tableau blanc : qui d'autre suit ce dossier dans l'unité. */}
                   {modeUnite && collegues.length > 0 && (
                     <p className="text-[12px] text-[#9CA3AF] mt-1">
@@ -1901,6 +1907,20 @@ export function RecruteurPipelineMobile() {
   const isEmpty = !loading && cards.length === 0;
 
   return (
+    /* A7 — propositions de rapprochement (lot D) et fusion (lot E), même
+       fournisseur que le web, présentées en feuille du bas. Pro de l'unité
+       seulement : la base ne rend rien à un compte gratuit, et la démo n'en
+       demande pas. */
+    <FournisseurRapprochements
+      actif={modeUnite && !isFreeDemoMode}
+      variante="feuille"
+      onAccepter={async (r) => {
+        const erreur = await fusionnerCarte(createClient(), r.carte_id, r.athlete_id);
+        if (!erreur && selectedCard?.id === r.carte_id) handleSheetClose();
+        void invaliderTableauBlanc(queryClient);
+        return erreur;
+      }}
+    >
     <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
       {/* Pull-to-refresh indicator */}
       {(isPulling || isRefreshing) && (
@@ -1968,6 +1988,9 @@ export function RecruteurPipelineMobile() {
           <ErreurChargement message={MESSAGES_PROCESSUS.cartes(true)} onReessayer={reessayerUnite} />
         </div>
       )}
+
+      {/* A7 — « N profils semblent correspondre à tes cartes prospect ». */}
+      {modeUnite && !loading && <BandeauRapprochements className="mx-4 mt-2" />}
 
       {/* Content — page-par-stage (Fix 2 iter 6.1a-fix) */}
       {loading ? (
@@ -2108,5 +2131,6 @@ export function RecruteurPipelineMobile() {
         :global(.nx-confirm-pulse) { animation: nx-confirm-pulse-kf 1.5s ease-in-out infinite; }
       `}</style>
     </div>
+    </FournisseurRapprochements>
   );
 }
