@@ -280,7 +280,8 @@ export default function PartnerAthletesSearch({
             placeholder="Rechercher par nom..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
+            // 16 px sous sm : iOS (Safari et l'appli) zoome sur un champ plus petit au focus.
+            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[16px] sm:text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
           />
         </div>
 

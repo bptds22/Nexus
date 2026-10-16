@@ -33,7 +33,7 @@ import { FilterRow, TogglePill, FilterBottomSheetShell } from "@/components/shar
 import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
-import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
+import { useAthleteSearch, coteAffichee } from "@/lib/queries/recruiter/useAthleteSearch";
 import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
@@ -480,6 +480,11 @@ export interface AthleteCardProps {
     school: string;
     graduationYear: number;
     stars: number;
+    /** W2 — note du partenaire et son organisation (recherche seulement ; les
+     *  autres surfaces ne les passent pas). Affichée par coteAffichee() : celle
+     *  du coach d'abord, sinon celle du partenaire AVEC son nom, jamais seule. */
+    starsPartenaire?: number | null;
+    starsPartenaireOrg?: string | null;
     isVerified: boolean;
     lastValidation?: string | null;
     isFavorited: boolean;
@@ -545,6 +550,7 @@ export function AthleteCardMobile({
   // absente. Voir les deux blocs de doc sur AthleteCardProps.
   const identityLocked = a.identityVisible === false || (a.identityVisible === undefined && !!isFree);
   const verifiedActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
+  const cote = coteAffichee({ stars: a.stars, starsPartenaire: a.starsPartenaire ?? null, starsPartenaireOrg: a.starsPartenaireOrg ?? null });
   // Iter 7.3 Section B — status pill retiré du grid card
   const [showHeartPop, setShowHeartPop] = useState(false);
   const lastTapRef = useRef(0);
@@ -688,12 +694,20 @@ export function AthleteCardMobile({
             </div>
           )}
         </div>
-        {/* Top-right : stars pill (Iter 7.4 Section B — 14px lisible) */}
-        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 z-10">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-          <span className="text-[14px] font-bold text-white leading-none">{a.stars.toFixed(1)}</span>
+        {/* Top-right : stars pill (Iter 7.4 Section B — 14px lisible). W2 : la cote
+            du partenaire, si c'est elle, porte le nom de l'organisation dessous. */}
+        <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+          <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <span className="text-[14px] font-bold text-white leading-none">{cote.valeur.toFixed(1)}</span>
+          </div>
+          {cote.organisation && (
+            <span data-cote-partenaire className="bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/85 max-w-[110px] truncate">
+              {cote.organisation}
+            </span>
+          )}
         </div>
         {/* Double-tap heart pop (Instagram-style) */}
         <AnimatePresence>
@@ -759,6 +773,7 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
   const verifiedActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
   const pill = statusPillFromStatus(a.recruitmentStatus);
   const identityLocked = a.identityVisible === false || (a.identityVisible === undefined && !!isFree);
+  const cote = coteAffichee({ stars: a.stars, starsPartenaire: a.starsPartenaire ?? null, starsPartenaireOrg: a.starsPartenaireOrg ?? null });
   return (
     <Link href={`/recruteur/athletes/${a.id}`} className="block">
       <div className="flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
@@ -800,7 +815,10 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
               <svg width="11" height="11" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
-              <span className="text-[11px] font-bold text-white">{a.stars.toFixed(1)}</span>
+              <span className="text-[11px] font-bold text-white">{cote.valeur.toFixed(1)}</span>
+              {cote.organisation && (
+                <span data-cote-partenaire className="text-[10px] font-bold text-[#9CA3AF] truncate max-w-[110px]">· {cote.organisation}</span>
+              )}
             </div>
             {pill && (
               <>
@@ -1181,6 +1199,10 @@ export function RecruteurRechercheMobile() {
     programmeIds: progFilterProgramIds,
     // Jamais true quand le bouton est masqué : la RPC lèverait.
     offertParMonCegep: offertParMonCegep && monCegepAUnCatalogue,
+    // W2 — la cote du partenaire compte dans « 4+ étoiles » et le tri, comme au
+    // web. Envoyée DANS LE MÊME LOT que son libellé sur les cartes (coteAffichee),
+    // jamais avant : sans libellé, une note de partenaire passerait pour celle du coach.
+    inclurePartenaires: true,
     tier,
   });
   const loading = tierLoading || athletesLoading;
