@@ -262,7 +262,9 @@ export default function CoachAthleteProfilePage() {
   useEffect(() => {
     if (!id) return;
     let annule = false;
-    loadAthleteTransferState(id).then((st) => { if (!annule) setTrState(st); });
+    // Les lectures de transfert lèvent désormais leurs erreurs (2026-10-16) : jamais de rejet non géré.
+    loadAthleteTransferState(id).then((st) => { if (!annule) setTrState(st); })
+      .catch((e) => console.error("[coach/athlete] transfert :", e instanceof Error ? e.message : String(e)));
     return () => { annule = true; };
   }, [id]);
   /* grille_id de l'éval affichée > position de l'athlète > GENERIQUE. Les deux
@@ -1202,7 +1204,8 @@ export default function CoachAthleteProfilePage() {
             setTrToast(msg);
             /* Recharge l'état de transfert ET la fiche : le nom d'équipe
                affiché sur la carte vient du chargement principal. */
-            loadAthleteTransferState(id).then(setTrState);
+            loadAthleteTransferState(id).then(setTrState)
+              .catch((e) => console.error("[coach/athlete] transfert :", e instanceof Error ? e.message : String(e)));
             loadAthleteRaw(id).then(({ data: refreshed }) => {
               if (refreshed) setA(mapToRecruiterView(refreshed as Record<string, unknown>));
             });

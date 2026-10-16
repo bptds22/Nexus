@@ -23,6 +23,7 @@ import { lireCartes, versMembreListe, ajouterCarteAListe, retirerCarteDeListe } 
 import { LegendeProspect, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import { useFavorisUnite } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Listes de Prospects — Organized folders for pipeline athletes
@@ -302,6 +303,8 @@ function AddAthleteModal({
   /* Les CARTES PROSPECT de l'unité (lot C, retour BP) : une carte s'ajoute
      à une liste d'unité comme un athlète. La base refuse toute autre liste. */
   const [cartesDispo, setCartesDispo] = useState<ProspectListAthlete[]>([]);
+  const [erreurCartes, setErreurCartes] = useState(false);
+  const [essaiCartes, setEssaiCartes] = useState(0);
   useEffect(() => {
     // Liste personnelle (sans unité) : aucune carte proposée — dérivé au rendu.
     if (!uniteSportId || !monCegep) return;
@@ -317,18 +320,25 @@ function AddAthleteModal({
         const sportIds = [...new Set(lignes.map((l) => l.sport_athlete_id))];
         const nomsSports = new Map<string, string>();
         if (sportIds.length > 0) {
-          const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          const { data: sports, error: errSports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          if (errSports) throw errSports;
           for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
         }
         if (annule) return;
+        setErreurCartes(false);
         setCartesDispo(lignes.map((l) => versMembreListe(l, nomsSports.get(l.sport_athlete_id) ?? "")).filter((c) => !existingIds.has(c.id)));
       } catch (e) {
+        // Correctif 2026-10-16 : on le DIT (bandeau + « Réessayer »), au lieu
+        // d'une fenêtre sans cartes qui laissait croire qu'il n'y en avait pas.
         console.error("[listes] cartes prospect :", e instanceof Error ? e.message : String(e));
+        if (!annule) setErreurCartes(true);
       }
     })();
     return () => { annule = true; };
-  }, [uniteSportId, monCegep, existingIds]);
+  }, [uniteSportId, monCegep, existingIds, essaiCartes]);
 
+  const [erreurFavs, setErreurFavs] = useState(false);
+  const [essaiFavs, setEssaiFavs] = useState(0);
   useEffect(() => {
     if (favoris.isLoading) return;
     let annule = false;
@@ -339,6 +349,7 @@ function AddAthleteModal({
         /* Les cartes projetées, résolues par lot. */
         const cardMap = await fetchRecruiterAthleteCards(supabase, ids);
         if (annule) return;
+        setErreurFavs(false);
 
         const mapped: ProspectListAthlete[] = [...cardMap.values()].map((card) => ({
           id: card.id,
@@ -362,9 +373,14 @@ function AddAthleteModal({
       }
       setLoading(false);
     }
-    loadFavs();
+    // Correctif 2026-10-16 : un échec ne laisse plus « Chargement… » à vie
+    // ni une liste vide — bandeau + « Réessayer ».
+    loadFavs().catch((e) => {
+      console.error("[listes] favoris à ajouter :", e instanceof Error ? e.message : String(e));
+      if (!annule) { setErreurFavs(true); setLoading(false); }
+    });
     return () => { annule = true; };
-  }, [existingIds, idsFavoris, favoris.isLoading]);
+  }, [existingIds, idsFavoris, favoris.isLoading, essaiFavs]);
 
   const filtered = useMemo(() => {
     const tous = [...available, ...(uniteSportId && monCegep ? cartesDispo : [])];
@@ -401,6 +417,21 @@ function AddAthleteModal({
             autoFocus
           />
         </div>
+
+        {erreurCartes && (
+          <ErreurChargement
+            className="mt-3"
+            message="Les cartes prospect de l'unité n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+            onReessayer={() => { setErreurCartes(false); setEssaiCartes((n) => n + 1); }}
+          />
+        )}
+        {erreurFavs && (
+          <ErreurChargement
+            className="mt-3"
+            message="Tes favoris n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+            onReessayer={() => { setErreurFavs(false); setLoading(true); setEssaiFavs((n) => n + 1); }}
+          />
+        )}
 
         {/* Athletes list */}
         <div className="mt-3 flex-1 overflow-y-auto space-y-1 min-h-0">
@@ -569,7 +600,7 @@ function ExpandedListView({
      BP — un seul fil de notes, celui du joueur). L'app 1.4.3 en écrit encore :
      les siennes restent LISIBLES ici, marquées « depuis l'app », jusqu'à la
      1.4.4 (registre §38). */
-  const { data: listNotes = [] } = useNotesListeUnite(list.id);
+  const { data: listNotes = [], isError: erreurNotes, refetch: relireNotes } = useNotesListeUnite(list.id);
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const verifiedCount = list.athletes.filter((a) => a.is_verified).length;
@@ -740,6 +771,12 @@ function ExpandedListView({
       )}
 
       {/* Notes écrites depuis l'app 1.4.3 (notes de LISTE) — lecture seule. */}
+      {erreurNotes && (
+        <ErreurChargement
+          message="Les notes de cette liste n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { void relireNotes(); }}
+        />
+      )}
       {listNotes.length > 0 && (
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-5 py-4" data-testid="notes-liste-app">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Notes de la liste — depuis l&apos;app</p>
@@ -833,7 +870,7 @@ function ListesPageContent() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
-  const { data: lists = [], isLoading: loading } = useListesUnite();
+  const { data: lists = [], isLoading: loading, isError: erreurListes, refetch: relireListes } = useListesUnite();
   const { data: auteurs = {} } = useAuteursUnite();
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -959,6 +996,12 @@ function ListesPageContent() {
 
           {loading ? (
             <p className="text-[13px] text-[#6b7280] py-8">Chargement...</p>
+          ) : erreurListes ? (
+            /* Correctif 2026-10-16 : une lecture en échec n'est plus un « aucune liste ». */
+            <ErreurChargement
+              message="Tes listes n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+              onReessayer={() => { void relireListes(); }}
+            />
           ) : lists.length === 0 ? (
             <EmptyState onCreate={() => setShowCreateModal(true)} />
           ) : (

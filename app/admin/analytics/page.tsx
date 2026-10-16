@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 type PipelineStage =
   | "IDENTIFIE"
@@ -102,39 +105,45 @@ export default function AdminAnalytiquePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [aRes, uRes, pRes, cRes, mRes, spRes, schRes] = await Promise.all([
-        supabase
-          .from("athletes")
-          .select(
-            "id,sport_id,school_id,coach_id,verified,profile_completion,cote_globale_entraineur,consentement_parental,consent_id,modified_since_verification,video_faits_saillants_url,video_match_complet_url,video_entrainement_url,created_at",
-          ),
-        supabase.from("users").select("id,role,school_id,first_name,last_name,status,created_at"),
-        supabase.from("recruiter_pipeline").select("id,recruiter_id,athlete_id,stage,moved_at,created_at"),
-        supabase.from("conversations").select("id,recruiter_id,coach_id"),
-        supabase.from("messages").select("id,conversation_id,sender_id,created_at"),
+      /* Correctif 2026-10-16 : chaque table est lue EN ENTIER (lireTout —
+         PostgREST coupait chacune à 1000 lignes sans le dire, faussant tous
+         les agrégats), et une erreur est LEVÉE au lieu d'un tableau vide. */
+      const tout = <T,>(table: string, colonnes: string) => lireTout<T>((de, a) => supabase
+        .from(table).select(colonnes, { count: "exact" }).order("id").range(de, a));
+      const [athletesLus, usersLus, pipelineLu, conversationsLues, messagesLus, spRes, schRes] = await Promise.all([
+        tout<Athlete>("athletes",
+          "id,sport_id,school_id,coach_id,verified,profile_completion,cote_globale_entraineur,consentement_parental,consent_id,modified_since_verification,video_faits_saillants_url,video_match_complet_url,video_entrainement_url,created_at"),
+        tout<User>("users", "id,role,school_id,first_name,last_name,status,created_at"),
+        tout<PipelineEntry>("recruiter_pipeline", "id,recruiter_id,athlete_id,stage,moved_at,created_at"),
+        tout<Conversation>("conversations", "id,recruiter_id,coach_id"),
+        tout<Message>("messages", "id,conversation_id,sender_id,created_at"),
         supabase.from("sports").select("id,nom").order("nom"),
         // Pagination obligatoire : ces régions alimentent des AGRÉGATS
         // (athlètes/écoles/recruteurs par région). Tronquée à 1000 lignes,
         // la table faisait sortir des athlètes du décompte régional sans
         // le moindre signe.
-        fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,region").range(f, t), "AdminAnalytics"),
+        fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,region").order("id").range(f, t), "AdminAnalytics"),
       ]);
 
-      setAthletes((aRes.data || []) as Athlete[]);
-      setUsers((uRes.data || []) as User[]);
-      setPipeline((pRes.data || []) as PipelineEntry[]);
-      setConversations((cRes.data || []) as Conversation[]);
-      setMessages((mRes.data || []) as Message[]);
+      if (spRes.error) throw spRes.error;
+      setAthletes(athletesLus);
+      setUsers(usersLus);
+      setPipeline(pipelineLu);
+      setConversations(conversationsLues);
+      setMessages(messagesLus);
       setSports((spRes.data || []) as Sport[]);
       // schRes vient de fetchAllRows : c'est déjà un tableau, pas un { data }.
       setSchools(schRes);
       setLoading(false);
-    })();
-  }, [supabase]);
+    })().catch((e) => { signalerChargement(e, "admin/analytics"); setLoading(false); });
+  }, [supabase, essaiChargement, signalerChargement]);
 
   // ─── Aggregates ────────────────────────────────────────────────
   const total = athletes.length;
@@ -398,6 +407,17 @@ export default function AdminAnalytiquePage() {
     if (loading) return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
+
+  if (chargement.erreur) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <ErreurChargement
+          message="L'analytique n'a pas pu être chargée. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import { genderLabel } from "@/lib/config/gender";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { uploadImage } from "@/lib/upload/uploadImage";
@@ -116,6 +119,9 @@ export default function AdminSchoolDetailPage() {
 
   const [school, setSchool] = useState<SchoolRow | null>(null);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [toastKind, setToastKind] = useState<"info" | "error">("info");
@@ -177,6 +183,7 @@ export default function AdminSchoolDetailPage() {
     (async () => {
       setLoading(true);
       const { data: sch, error } = await supabase.from("schools").select("*").eq("id", id).maybeSingle();
+      if (error) throw error;
       if (cancelled) return;
       if (!sch) { setSchool(null); setLoading(false); return; }
       setSchool(sch as SchoolRow);
@@ -185,8 +192,9 @@ export default function AdminSchoolDetailPage() {
          Sans cette lecture, l'admin affichait toujours l'import RSEQ et ne
          voyait jamais le logo réellement déposé par l'école — c'est ce
          décalage qui a fait croire que le téléversement ne marchait pas. */
-      const { data: pc } = await supabase
+      const { data: pc, error: errPc } = await supabase
         .from("school_page_content").select("logo_path").eq("school_id", id).maybeSingle();
+      if (errPc) throw errPc;
       if (cancelled) return;
       setLogoPath((pc as { logo_path: string | null } | null)?.logo_path ?? null);
 
@@ -195,7 +203,7 @@ export default function AdminSchoolDetailPage() {
       // Tronquée à 1000, une région ne vivant que dans les 199 dernières
       // écoles n'apparaissait jamais dans le menu.
       const regRows = await fetchAllRows<{ region: string | null }>(
-        (f, t) => supabase.from("schools").select("region").range(f, t),
+        (f, t) => supabase.from("schools").select("region").order("id").range(f, t),
         "AdminSchoolDetail",
       );
       const regs = Array.from(new Set(regRows
@@ -207,17 +215,19 @@ export default function AdminSchoolDetailPage() {
       // has completed onboarding. A half-finished signup (linked but
       // onboarding_complete = false) does NOT count — no real consent. A null
       // count (query error / RLS) → 0 → false → no logo (fail-safe).
-      const { count: staffCount } = await supabase
+      const { count: staffCount, error: errStaff } = await supabase
         .from("users")
         .select("id", { count: "exact", head: true })
         .eq("school_id", id)
         .eq("onboarding_complete", true);
+      if (errStaff) throw errStaff;
       if (!cancelled) setLogoAllowed((staffCount ?? 0) > 0);
 
       // NOTE: Transfer dropdown fetches schools on demand (see loadAllSchools()).
 
       // Fetch athlete ids first (needed for views + activity)
-      const { data: athleteRowsRaw } = await supabase
+      // Correctif 2026-10-16 : toutes les lignes (lireTout), erreurs levées.
+      const athleteRowsRaw = await lireTout<Record<string, unknown>>((de, a) => supabase
         .from("athletes")
         .select(`
           id, first_name, last_name, photo_url, verified, status, annee_diplomation,
@@ -225,9 +235,11 @@ export default function AdminSchoolDetailPage() {
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           evaluations!athlete_id(cote_globale, updated_at)
-        `)
+        `, { count: "exact" })
         .eq("school_id", id)
-        .order("last_name");
+        .order("last_name")
+        .order("id")
+        .range(de, a));
       const athleteIds: string[] = ((athleteRowsRaw as { id: string }[] | null) || []).map((a) => a.id);
 
       const mappedAthletes: AthleteRow[] = ((athleteRowsRaw as Record<string, unknown>[] | null) || []).map((r) => {
@@ -281,6 +293,8 @@ export default function AdminSchoolDetailPage() {
           .eq("role", "COACH")
           .eq("school_id", id),
       ]);
+      if (scRes.error) throw scRes.error;
+      if (legacyRes.error) throw legacyRes.error;
 
       // Build per-coach metadata (role/sport from school_coaches, when present).
       // Phase 6.1.x : team membership patched in after team_coaches fetch below.
@@ -315,11 +329,13 @@ export default function AdminSchoolDetailPage() {
       const allCoachIds = Array.from(coachMeta.keys());
       let userById = new Map<string, Record<string, unknown>>();
       if (allCoachIds.length > 0) {
-        const { data: userRows, error: userErr } = await supabase
-          .from("users")
+        // Identifiants dans le corps (users_par_ids), toutes les lignes, erreur levée.
+        const userRows = await lireTout<Record<string, unknown>>((de, a) => supabase
+          .rpc("users_par_ids", { p_ids: allCoachIds }, { count: "exact" })
           .select("id, first_name, last_name, email, is_school_admin, role, avatar_url, created_at")
-          .in("id", allCoachIds);
-        userById = new Map(((userRows as Record<string, unknown>[] | null) || []).map((u) => [u.id as string, u]));
+          .order("id")
+          .range(de, a));
+        userById = new Map(userRows.map((u) => [u.id as string, u]));
       }
 
       // per-coach athlete + verified counts
@@ -356,21 +372,24 @@ export default function AdminSchoolDetailPage() {
 
       // Teams — use SELECT * so we accept whatever columns the table has
       // (some deployments use `name`, others `nom`). We read either below.
-      const { data: teamRows, error: teamErr } = await supabase
+      const teamList = await lireTout<Record<string, unknown>>((de, a) => supabase
         .from("teams")
-        .select("*, sports!sport_id(nom)")
-        .eq("school_id", id);
-      const teamList = (teamRows as Record<string, unknown>[] | null) || [];
+        .select("*, sports!sport_id(nom)", { count: "exact" })
+        .eq("school_id", id)
+        .order("id")
+        .range(de, a));
       const teamIds: string[] = teamList.map((t) => t.id as string);
 
       // team_athletes counts
       let teamAthleteCount = new Map<string, number>();
       if (teamIds.length > 0) {
-        const { data: taRows } = await supabase
-          .from("team_athletes")
-          .select("team_id")
-          .in("team_id", teamIds);
-        for (const row of (taRows as { team_id: string }[] | null) || []) {
+        // Équipes dans le corps (team_athletes_par_equipes), toutes les lignes.
+        const taRows = await lireTout<{ team_id: string }>((de, a) => supabase
+          .rpc("team_athletes_par_equipes", { p_ids: teamIds }, { count: "exact" })
+          .select("id, team_id")
+          .order("id")
+          .range(de, a));
+        for (const row of taRows) {
           teamAthleteCount.set(row.team_id, (teamAthleteCount.get(row.team_id) || 0) + 1);
         }
       }
@@ -390,11 +409,12 @@ export default function AdminSchoolDetailPage() {
       const coachByTeamId = new Map<string, { coachId: string; role: string | null }>();
       let teamCoachCoachIds: string[] = [];
       if (teamIds.length > 0) {
-        const { data: tcRows, error: tcErr } = await supabase
-          .from("team_coaches")
-          .select("team_id, coach_id, role")
-          .in("team_id", teamIds);
-        for (const row of (tcRows as Record<string, unknown>[] | null) || []) {
+        const tcRows = await lireTout<Record<string, unknown>>((de, a) => supabase
+          .rpc("team_coaches_par_equipes", { p_ids: teamIds }, { count: "exact" })
+          .select("id, team_id, coach_id, role")
+          .order("id")
+          .range(de, a));
+        for (const row of tcRows) {
           const tid = row.team_id as string;
           const cid = row.coach_id as string;
           const role = (row.role as string) ?? null;
@@ -410,7 +430,7 @@ export default function AdminSchoolDetailPage() {
         }
         teamsByCoachId.forEach((v) => v.sort((a, b) => a.localeCompare(b, "fr")));
         teamCoachCoachIds = Array.from(new Set(
-          ((tcRows as Record<string, unknown>[] | null) || []).map((r) => r.coach_id as string)
+          tcRows.map((r) => r.coach_id as string)
         ));
       }
 
@@ -419,11 +439,12 @@ export default function AdminSchoolDetailPage() {
       // registered in school_coaches).
       const extraCoachIds = teamCoachCoachIds.filter((cid) => !userById.has(cid));
       if (extraCoachIds.length > 0) {
-        const { data: extraUsers } = await supabase
-          .from("users")
+        const extraUsers = await lireTout<Record<string, unknown>>((de, a) => supabase
+          .rpc("users_par_ids", { p_ids: extraCoachIds }, { count: "exact" })
           .select("id, first_name, last_name")
-          .in("id", extraCoachIds);
-        for (const u of (extraUsers as Record<string, unknown>[] | null) || []) {
+          .order("id")
+          .range(de, a));
+        for (const u of extraUsers) {
           userById.set(u.id as string, u);
         }
       }
@@ -463,10 +484,13 @@ export default function AdminSchoolDetailPage() {
       // recruiter_athlete_views for this school's athletes
       let profileViews = 0;
       if (athleteIds.length > 0) {
-        const { count: pv } = await supabase
+        // Correctif 2026-10-16 : filtré par jointure sur l'école (les identifiants
+        // de tous les athlètes de l'école ne passent plus dans l'adresse).
+        const { count: pv, error: errVues } = await supabase
           .from("recruiter_athlete_views")
-          .select("*", { count: "exact", head: true })
-          .in("athlete_id", athleteIds);
+          .select("id, athletes!inner(school_id)", { count: "exact", head: true })
+          .eq("athletes.school_id", id);
+        if (errVues) throw errVues;
         profileViews = pv || 0;
       }
 
@@ -485,17 +509,29 @@ export default function AdminSchoolDetailPage() {
       if (athleteIds.length === 0 && coachIdsForActivity.length === 0) {
         if (!cancelled) setActivities([]);
       } else {
-        // Build a union: athlete_id IN (...) OR coach_id IN (...)
-        const filters: string[] = [];
-        if (athleteIds.length > 0) filters.push(`athlete_id.in.(${athleteIds.join(",")})`);
-        if (coachIdsForActivity.length > 0) filters.push(`coach_id.in.(${coachIdsForActivity.join(",")})`);
-        const { data: actRows } = await supabase
-          .from("activities")
-          .select("*, athletes(first_name, last_name)")
-          .or(filters.join(","))
-          .order("created_at", { ascending: false })
-          .limit(30);
-        const mappedAct: ActivityRow[] = ((actRows as Record<string, unknown>[] | null) || []).map((r) => {
+        /* Union « athlète de l'école OU coach de l'école », les 30 dernières.
+           Correctif 2026-10-16 : les athlètes ne passent plus dans l'adresse
+           (`athlete_id.in.(…)` sur toute l'école) — jointure sur l'école ;
+           les coachs (quelques-uns) restent un filtre. Deux lectures de 30,
+           fusionnées, dédoublonnées, retriées : même résultat. Erreurs levées. */
+        const [parAthlete, parCoach] = await Promise.all([
+          athleteIds.length > 0
+            ? supabase.from("activities").select("*, athletes!inner(first_name, last_name, school_id)")
+                .eq("athletes.school_id", id).order("created_at", { ascending: false }).order("id").limit(30)
+            : Promise.resolve({ data: [], error: null }),
+          coachIdsForActivity.length > 0
+            ? supabase.from("activities").select("*, athletes(first_name, last_name)")
+                .in("coach_id", coachIdsForActivity).order("created_at", { ascending: false }).order("id").limit(30)
+            : Promise.resolve({ data: [], error: null }),
+        ]);
+        if (parAthlete.error) throw parAthlete.error;
+        if (parCoach.error) throw parCoach.error;
+        const parId = new Map<string, Record<string, unknown>>();
+        for (const r of [...(parAthlete.data ?? []), ...(parCoach.data ?? [])] as Record<string, unknown>[]) parId.set(r.id as string, r);
+        const actRows = [...parId.values()]
+          .sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)))
+          .slice(0, 30);
+        const mappedAct: ActivityRow[] = actRows.map((r) => {
           const ath = r.athletes as Record<string, unknown> | null;
           const athName = ath ? `${(ath.first_name as string) || ""} ${(ath.last_name as string) || ""}`.trim() : null;
           const cid = r.coach_id as string | null;
@@ -517,9 +553,9 @@ export default function AdminSchoolDetailPage() {
       }
 
       setLoading(false);
-    })();
+    })().catch((e) => { if (!cancelled) { signalerChargement(e, "admin/ecole"); setLoading(false); } });
     return () => { cancelled = true; };
-  }, [supabase, id]);
+  }, [supabase, id, essaiChargement, signalerChargement]);
 
   // Upload logo établissement (net-neuf). Bucket avatars, préfixe
   // logos/schools/ (RLS admin-write existante). preserveTransparency → PNG.
@@ -658,17 +694,23 @@ export default function AdminSchoolDetailPage() {
   }
 
   async function loadAllSchools() {
-    const { data, error } = await supabase
-      .from("schools")
-      .select("id, name, city, type")
-      .neq("id", id)
-      .order("name", { ascending: true })
-      .limit(10000);
-    if (error) {
-      notify(`Erreur chargement écoles : ${error.message}`);
+    /* Correctif 2026-10-16 : `.limit(10000)` ne levait PAS le plafond de
+       PostgREST — 1000 écoles sur 1206, les dernières par ordre alphabétique
+       absentes du menu de transfert, sans un mot. Toutes les pages. */
+    let data: SchoolOption[];
+    try {
+      data = await lireTout<SchoolOption>((de, a) => supabase
+        .from("schools")
+        .select("id, name, city, type", { count: "exact" })
+        .neq("id", id)
+        .order("name", { ascending: true })
+        .order("id")
+        .range(de, a));
+    } catch (e) {
+      notify(`Erreur chargement écoles : ${e instanceof Error ? e.message : String(e)}`, "error");
       return;
     }
-    const mapped: SchoolOption[] = ((data || []) as SchoolOption[]).map((s) => ({
+    const mapped: SchoolOption[] = data.map((s) => ({
       id: s.id,
       name: s.name,
       type: s.type ?? null,
@@ -768,6 +810,16 @@ export default function AdminSchoolDetailPage() {
     notify("Équipe supprimée");
   }
 
+  if (chargement.erreur) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <ErreurChargement
+          message="Cet établissement n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      </div>
+    );
+  }
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-6 py-12 text-center text-[#6b7280]">Chargement...</div>

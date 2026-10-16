@@ -15,6 +15,8 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ── Types ── */
 
@@ -74,6 +76,9 @@ function RecrusCegepPage() {
   // par sport de l'ATHLÈTE.
   const filtreSport = useFiltreSportUnite();
   const cleFiltre = filtreSport.ids ? [...filtreSport.ids].sort().join(",") : "tous";
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     if (!filtreSport.pret) return;
@@ -84,10 +89,13 @@ function RecrusCegepPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data: currentUser } = await supabase.from("users").select("school_id").eq("id", user.id).single();
+      // Aucune erreur avalée (correctif 2026-10-16) : elles montent au bandeau « Réessayer ».
+      const { data: currentUser, error: errMoi } = await supabase.from("users").select("school_id").eq("id", user.id).single();
+      if (errMoi) throw errMoi;
       if (!currentUser?.school_id) { setLoading(false); return; }
 
-      const { data: equipe } = await supabase.from("users").select("id, first_name, last_name, sport_id").eq("school_id", currentUser.school_id);
+      const { data: equipe, error: errEquipe } = await supabase.from("users").select("id, first_name, last_name, sport_id").eq("school_id", currentUser.school_id);
+      if (errEquipe) throw errEquipe;
       const retenus = filtreSport.ids;
       const team = (equipe || []).filter((t) => !retenus || retenus.has(t.id as string));
       const teamIds = team?.map((t) => t.id) || [];
@@ -146,6 +154,7 @@ function RecrusCegepPage() {
         lireCartesCegep(supabase, currentUser.school_id as string, sportsRetenus),
         supabase.from("sports").select("id, nom"),
       ]);
+      if (sportsRes.error) throw sportsRes.error;
       const nomSport = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
       const recruesCartes: RecrueCegep[] = cartes
         .filter((c) => c.etape === "ENGAGE" || c.etape === "LETTRE_SIGNEE")
@@ -169,9 +178,9 @@ function RecrusCegepPage() {
       setRecruits([...mapped, ...recruesCartes].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")));
       setLoading(false);
     }
-    load();
+    load().catch((e) => { signalerChargement(e, "cegep/recrues"); setLoading(false); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtreSport.pret, cleFiltre]);
+  }, [filtreSport.pret, cleFiltre, essaiChargement, signalerChargement]);
 
   const sports = useMemo(
     () => ["Tous", ...Array.from(new Set(recruits.map((r) => r.sport).filter(Boolean)))],
@@ -206,6 +215,13 @@ function RecrusCegepPage() {
             {loading ? "Chargement..." : `${recruits.length} athlète${recruits.length !== 1 ? "s" : ""} recruté${recruits.length !== 1 ? "s" : ""} cette saison`}
           </p>
         </div>
+
+        {chargement.erreur && (
+          <ErreurChargement
+            message="Les recrues n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+            onReessayer={chargement.reessayer}
+          />
+        )}
 
         {/* KPI circle */}
         <div

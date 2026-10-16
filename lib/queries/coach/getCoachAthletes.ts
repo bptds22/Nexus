@@ -33,6 +33,7 @@
 ═══════════════════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 export type CoachAthleteRelation = "OWNER" | "TEAM" | "SCHOOL";
 
@@ -52,29 +53,25 @@ interface CoachAthleteRow {
 }
 
 /**
- * Charge le périmètre canonique d'athlètes du user courant.
- * Ne throw jamais : retombe sur un périmètre vide en cas d'erreur RPC.
+ * Charge le périmètre canonique d'athlètes du user courant — TOUT le
+ * périmètre et une erreur LEVÉE (correctif 2026-10-16, décision BP : aucun
+ * plafond, aucune erreur en silence). La RPC rend des lignes, que PostgREST
+ * coupait à 1000 sans le dire : lireTout les lit toutes (une ligne par
+ * athlète, triées par athlete_id). L'écran affiche l'erreur avec « Réessayer ».
  *
  * @param includePending inclure les EN_ATTENTE (défaut true — le coach gère
  *   ses athlètes en attente de consentement dans toutes ses surfaces ; le
  *   côté recruteur reste protégé par SA propre RLS, jamais ce chemin).
  */
-export async function loadCoachAthleteScope(
+export async function lireCoachAthleteScope(
   supabase: SupabaseClient,
   opts: { includePending?: boolean } = {},
 ): Promise<CoachAthleteScope> {
   const includePending = opts.includePending ?? true;
-  const { data, error } = await supabase.rpc("get_coach_athletes", {
-    p_include_pending: includePending,
-  });
-  const empty: CoachAthleteScope = {
-    ids: [],
-    relationById: new Map(),
-    statusById: new Map(),
-  };
-  if (error || !data) return empty;
-
-  const rows = data as CoachAthleteRow[];
+  const rows = await lireTout<CoachAthleteRow>((de, a) => supabase
+    .rpc("get_coach_athletes", { p_include_pending: includePending }, { count: "exact" })
+    .order("athlete_id")
+    .range(de, a));
   const ids: string[] = [];
   const relationById = new Map<string, CoachAthleteRelation>();
   const statusById = new Map<string, string>();
@@ -84,6 +81,23 @@ export async function loadCoachAthleteScope(
     statusById.set(r.athlete_id, r.status);
   }
   return { ids, relationById, statusById };
+}
+
+/**
+ * Variante qui ne lève jamais : retombe sur un périmètre vide (erreur
+ * journalisée). Pour les surfaces pas encore passées à l'affichage d'erreur
+ * (mobile — lot mobile à venir —, messagerie). Le périmètre est complet.
+ */
+export async function loadCoachAthleteScope(
+  supabase: SupabaseClient,
+  opts: { includePending?: boolean } = {},
+): Promise<CoachAthleteScope> {
+  try {
+    return await lireCoachAthleteScope(supabase, opts);
+  } catch (e) {
+    console.error("[get_coach_athletes]", e instanceof Error ? e.message : String(e));
+    return { ids: [], relationById: new Map(), statusById: new Map() };
+  }
 }
 
 /** Convenience : juste le compte du périmètre (surfaces « count »). */

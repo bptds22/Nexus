@@ -80,9 +80,12 @@ export function messageRetraitFavori(collegues: string[], dossier: Dossier = nul
 
 /** Étape du dossier de l'unité (unite_pipeline, l'étape la plus avancée). */
 async function lireDossier(athleteId: string): Promise<Dossier> {
-  const { data, error } = await createClient().rpc("unite_pipeline");
+  // Filtré EN BASE sur l'athlète (correctif 2026-10-16) : lire tout le
+  // processus puis chercher l'athlète échouait au-delà de 1000 dossiers
+  // (coupure PostgREST) — l'athlète passait pour « hors processus ».
+  const { data, error } = await createClient().rpc("unite_pipeline").eq("athlete_id", athleteId);
   if (error) throw error;
-  const ligne = ((data ?? []) as { athlete_id: string; stage: string | null }[]).find((l) => l.athlete_id === athleteId);
+  const ligne = ((data ?? []) as { athlete_id: string; stage: string | null }[])[0];
   return ligne ? { etape: (ligne.stage || "IDENTIFIE").toUpperCase() } : null;
 }
 

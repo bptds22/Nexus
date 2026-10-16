@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 /* ═══════════════════════════════════════════════════════════════
    transferAthletes — GESTION DES ATHLÈTES, pivotée PAR ÉQUIPE.
@@ -97,10 +98,14 @@ export async function loadTransferContext(
   const uid = session?.user?.id;
   if (!uid) return { myTeamIds: new Set(), isDirector: false };
 
-  const [{ data: tcRows }, { data: scRows }] = await Promise.all([
+  const [{ data: tcRows, error: errTc }, { data: scRows, error: errSc }] = await Promise.all([
     supabase.from("team_coaches").select("team_id").eq("coach_id", uid),
     supabase.from("school_coaches").select("role").eq("coach_id", uid).eq("school_id", schoolId),
   ]);
+  // Correctif 2026-10-16 : une erreur est LEVÉE — des droits lus à vide
+  // faisaient passer un directeur pour un simple coach, sans un mot.
+  if (errTc) throw errTc;
+  if (errSc) throw errSc;
 
   const isDirector = (scRows ?? []).some((r) =>
     ["DIRECTEUR", "DIRECTEUR_INTERIM"].includes((r as { role: string }).role),
@@ -123,22 +128,26 @@ export async function loadSchoolTeams(
   schoolId: string,
   ctx: TransferContext,
 ): Promise<TeamOption[]> {
-  const { data: teamRows } = await supabase
+  /* Correctif 2026-10-16 (aucun plafond, aucune erreur en silence) : toutes
+     les lignes (lireTout), les équipes dans le CORPS (team_athletes_par_equipes
+     — l'adresse refusait au-delà de ~200 équipes) et une erreur LEVÉE. */
+  const rows = await lireTout<Record<string, unknown>>((de, a) => supabase
     .from("teams")
-    .select("id, name, division, age_group, sports!sport_id(nom)")
+    .select("id, name, division, age_group, sports!sport_id(nom)", { count: "exact" })
     .eq("school_id", schoolId)
-    .order("name");
-
-  const rows = (teamRows ?? []) as Record<string, unknown>[];
+    .order("name")
+    .order("id")
+    .range(de, a));
   const ids = rows.map((t) => t.id as string);
 
   const counts = new Map<string, number>();
   if (ids.length > 0) {
-    const { data: taRows } = await supabase
-      .from("team_athletes")
-      .select("team_id")
-      .in("team_id", ids);
-    for (const r of (taRows ?? []) as { team_id: string }[]) {
+    const taRows = await lireTout<{ team_id: string }>((de, a) => supabase
+      .rpc("team_athletes_par_equipes", { p_ids: ids }, { count: "exact" })
+      .select("id, team_id")
+      .order("id")
+      .range(de, a));
+    for (const r of taRows) {
       counts.set(r.team_id, (counts.get(r.team_id) ?? 0) + 1);
     }
   }
@@ -174,23 +183,19 @@ async function countAthletesWithoutTeam(
   supabase: SupabaseClient,
   schoolId: string,
 ): Promise<number> {
-  const { data } = await supabase
+  const data = await lireTout<{ id: string }>((de, a) => supabase
     .from("athletes")
-    .select("id")
+    .select("id", { count: "exact" })
     .eq("school_id", schoolId)
-    .in("status", ["ACTIF", "EN_ATTENTE"]);
+    .in("status", ["ACTIF", "EN_ATTENTE"])
+    .order("id")
+    .range(de, a));
 
-  const ids = ((data ?? []) as { id: string }[]).map((a) => a.id);
+  const ids = data.map((a) => a.id);
   if (ids.length === 0) return 0;
 
-  const { data: taRows } = await supabase
-    .from("team_athletes")
-    .select("athlete_id")
-    .in("athlete_id", ids);
-
-  const withTeam = new Set(
-    ((taRows ?? []) as { athlete_id: string }[]).map((r) => r.athlete_id),
-  );
+  // Une lecture en échec comptait TOUTE l'école « sans équipe » : levée.
+  const withTeam = await athletesAvecEquipe(supabase, ids);
   return ids.filter((id) => !withTeam.has(id)).length;
 }
 
@@ -203,33 +208,29 @@ export async function loadAthletesForTeam(
   if (!teamId) return [];
 
   if (teamId === NO_TEAM_ID) {
-    const { data } = await supabase
+    const rows = await lireTout<Record<string, unknown>>((de, a) => supabase
       .from("athletes")
-      .select(ATHLETE_COLS)
+      .select(ATHLETE_COLS, { count: "exact" })
       .eq("school_id", schoolId)
       // #EN_ATTENTE inclus (badgé) — même règle que les autres pickers.
-      .in("status", ["ACTIF", "EN_ATTENTE"]);
-
-    const rows = (data ?? []) as Record<string, unknown>[];
+      .in("status", ["ACTIF", "EN_ATTENTE"])
+      .order("id")
+      .range(de, a));
     if (rows.length === 0) return [];
 
-    const { data: taRows } = await supabase
-      .from("team_athletes")
-      .select("athlete_id")
-      .in("athlete_id", rows.map((a) => a.id as string));
-    const withTeam = new Set(
-      ((taRows ?? []) as { athlete_id: string }[]).map((r) => r.athlete_id),
-    );
+    const withTeam = await athletesAvecEquipe(supabase, rows.map((a) => a.id as string));
 
     return rows.filter((a) => !withTeam.has(a.id as string)).map((a) => mapAthlete(a, undefined));
   }
 
-  const { data } = await supabase
+  const data = await lireTout<Record<string, unknown>>((de, a) => supabase
     .from("team_athletes")
-    .select(`id, athlete_id, athletes!athlete_id(${ATHLETE_COLS})`)
-    .eq("team_id", teamId);
+    .select(`id, athlete_id, athletes!athlete_id(${ATHLETE_COLS})`, { count: "exact" })
+    .eq("team_id", teamId)
+    .order("id")
+    .range(de, a));
 
-  return ((data ?? []) as Record<string, unknown>[])
+  return data
     .map((row) => {
       const aRel = row.athletes as Record<string, unknown> | Record<string, unknown>[] | null;
       const a = (Array.isArray(aRel) ? aRel[0] : aRel) as Record<string, unknown> | null;
@@ -239,6 +240,17 @@ export async function loadAthletesForTeam(
       return mapAthlete(a, row.id as string);
     })
     .filter((x): x is TransferAthlete => x !== null);
+}
+
+/** Les athlètes (parmi `ids`) qui ont au moins une équipe — identifiants dans
+ *  le CORPS (team_athletes_par_athletes), toutes les lignes, erreur levée. */
+async function athletesAvecEquipe(supabase: SupabaseClient, ids: string[]): Promise<Set<string>> {
+  const taRows = await lireTout<{ athlete_id: string }>((de, a) => supabase
+    .rpc("team_athletes_par_athletes", { p_ids: ids }, { count: "exact" })
+    .select("id, athlete_id")
+    .order("id")
+    .range(de, a));
+  return new Set(taRows.map((r) => r.athlete_id));
 }
 
 function mapAthlete(a: Record<string, unknown>, rowId: string | undefined): TransferAthlete {

@@ -2,6 +2,9 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import { UserCheck, AlertTriangle, AlertCircle, ShieldOff, ShieldCheck, Mail, Phone, Building2, X } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -66,53 +69,53 @@ export default function AdminRecruteursPage() {
   const supabase = useMemo(() => createClient(), []);
   const [rows, setRows] = useState<RecruiterRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
   const [activeMonthCount, setActiveMonthCount] = useState(0);
   const [tab, setTab] = useState<FilterTab>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    load();
+    load().catch((e) => { chargement.signaler(e, "admin/recruteurs"); setLoading(false); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [chargement.essai]);
 
+  /* Correctif 2026-10-16 : toutes les lignes (lireTout — chaque lecture était
+     coupée à 1000 sans le dire), aucun identifiant de recruteur dans
+     l'adresse (tous les recruteurs y passaient), une erreur LEVÉE → bandeau. */
   async function load() {
     setLoading(true);
+    const tout = <T,>(table: string, colonnes: string) => lireTout<T>((de, a) => supabase
+      .from(table).select(colonnes, { count: "exact" }).order("id").range(de, a));
 
     // 1. Fetch all recruiters + school name
-    const { data: recruiters, error: rErr } = await supabase
+    const recruiters = await lireTout<Record<string, unknown> & { id: string }>((de, a) => supabase
       .from("users")
-      .select("id, email, first_name, last_name, phone, avatar_url, school_id, status, created_at, schools!school_id(name)")
+      .select("id, email, first_name, last_name, phone, avatar_url, school_id, status, created_at, schools!school_id(name)", { count: "exact" })
       .eq("role", "RECRUTEUR")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(de, a));
 
-    if (rErr) {
-      console.error("[AdminRecruteurs] load error:", rErr.message);
-      setLoading(false);
-      return;
-    }
+    const recruiterIds = new Set(recruiters.map((r) => r.id));
 
-    const recruiterIds = (recruiters || []).map((r) => r.id as string);
-
-    // 2. Activity: messages sent
-    let msgsByUser = new Map<string, number>();
-    let pipeByUser = new Map<string, number>();
-    if (recruiterIds.length > 0) {
-      const { data: msgs } = await supabase
-        .from("messages")
-        .select("sender_id")
-        .in("sender_id", recruiterIds);
-      (msgs || []).forEach((m) => {
-        const sid = m.sender_id as string;
+    // 2. Activity: messages sent — tout, filtré ici sur les recruteurs.
+    const msgsByUser = new Map<string, number>();
+    const pipeByUser = new Map<string, number>();
+    if (recruiterIds.size > 0) {
+      const [msgs, pipes] = await Promise.all([
+        tout<{ sender_id: string | null }>("messages", "sender_id"),
+        tout<{ recruiter_id: string | null }>("recruiter_pipeline", "recruiter_id"),
+      ]);
+      msgs.forEach((m) => {
+        const sid = m.sender_id;
+        if (!sid || !recruiterIds.has(sid)) return;
         msgsByUser.set(sid, (msgsByUser.get(sid) || 0) + 1);
       });
-
-      const { data: pipes } = await supabase
-        .from("recruiter_pipeline")
-        .select("recruiter_id")
-        .in("recruiter_id", recruiterIds);
-      (pipes || []).forEach((p) => {
-        const rid = p.recruiter_id as string;
+      pipes.forEach((p) => {
+        const rid = p.recruiter_id;
+        if (!rid || !recruiterIds.has(rid)) return;
         pipeByUser.set(rid, (pipeByUser.get(rid) || 0) + 1);
       });
     }
@@ -124,12 +127,14 @@ export default function AdminRecruteursPage() {
     const monthStartIso = firstOfMonth.toISOString();
 
     const [convsMonth, pipeMonth] = await Promise.all([
-      supabase.from("conversations").select("recruiter_id").gte("created_at", monthStartIso),
-      supabase.from("recruiter_pipeline").select("recruiter_id").gte("updated_at", monthStartIso),
+      lireTout<{ recruiter_id: string }>((de, a) => supabase.from("conversations").select("recruiter_id", { count: "exact" })
+        .gte("created_at", monthStartIso).order("id").range(de, a)),
+      lireTout<{ recruiter_id: string }>((de, a) => supabase.from("recruiter_pipeline").select("recruiter_id", { count: "exact" })
+        .gte("updated_at", monthStartIso).order("id").range(de, a)),
     ]);
     const activeIds = new Set<string>();
-    (convsMonth.data || []).forEach((r) => activeIds.add(r.recruiter_id as string));
-    (pipeMonth.data || []).forEach((r) => activeIds.add(r.recruiter_id as string));
+    convsMonth.forEach((r) => activeIds.add(r.recruiter_id));
+    pipeMonth.forEach((r) => activeIds.add(r.recruiter_id));
     setActiveMonthCount(activeIds.size);
 
     // 4. Build rows with flags
@@ -254,6 +259,13 @@ export default function AdminRecruteursPage() {
           </button>
         ))}
       </div>
+
+      {chargement.erreur && (
+        <ErreurChargement
+          message="Les recruteurs n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      )}
 
       {/* Table */}
       <div className="bg-[#1A1D24] border border-[#1e2128] rounded-xl overflow-hidden">

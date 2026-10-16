@@ -28,7 +28,8 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 /* ── Public types ─────────────────────────────────────────────── */
 
@@ -205,20 +206,40 @@ export async function loadCoachTasks(
   supabase: SupabaseClient,
   coachUserId: string,
 ): Promise<CoachTasksBreakdown> {
+  try {
+    return await lireCoachTasks(supabase, coachUserId);
+  } catch (e) {
+    console.error("[loadCoachTasks]", e instanceof Error ? e.message : String(e));
+    return { unverified: [], missingEval: [], pendingSuggestions: [], total: 0 };
+  }
+}
+
+/**
+ * Variante STRICTE (correctif 2026-10-16, décision BP : aucun plafond, aucune
+ * erreur en silence) : tout le périmètre, les identifiants dans le CORPS
+ * (athletes_par_ids, athlete_suggestions_par_athletes — l'adresse refusait
+ * au-delà de ~200 athlètes), toutes les lignes, et une erreur LEVÉE. Pour les
+ * écrans qui affichent l'erreur (tableau de bord web). loadCoachTasks, plus
+ * haut, garde le contrat « 0 plutôt qu'une erreur » des badges et du mobile.
+ */
+export async function lireCoachTasks(
+  supabase: SupabaseClient,
+  coachUserId: string,
+): Promise<CoachTasksBreakdown> {
   // Périmètre canonique (owner ∪ team, +école si directeur ; ACTIF+EN_ATTENTE)
   // — source unique get_coach_athletes. La file « à traiter » couvre donc
   // exactement les athlètes du roster : plus de divergence badge / liste /
   // dashboard, et le directeur obtient le périmètre école automatiquement
   // (le RPC détecte son statut). coachUserId ne sert plus au scope, seulement
   // à attribuer l'éval « la mienne » (coteGlobale de la EvalQuickSheet).
-  const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+  const { ids: scopeIds } = await lireCoachAthleteScope(supabase);
   if (!scopeIds.length) {
     return { unverified: [], missingEval: [], pendingSuggestions: [], total: 0 };
   }
 
-  const [athletesRes, suggestionsRes] = await Promise.all([
-    supabase
-      .from("athletes")
+  const [athletes, suggestions] = await Promise.all([
+    lireTout<AthleteRow>((de, a) => supabase
+      .rpc("athletes_par_ids", { p_ids: scopeIds }, { count: "exact" })
       .select(`
         id,
         first_name,
@@ -233,9 +254,10 @@ export async function loadCoachTasks(
         positions!position_id(abreviation),
         evaluations(coach_id, cote_globale, rapport_entraineur)
       `)
-      .in("id", scopeIds),
-    supabase
-      .from("athlete_suggestions")
+      .order("id")
+      .range(de, a)),
+    lireTout<SuggestionRow>((de, a) => supabase
+      .rpc("athlete_suggestions_par_athletes", { p_ids: scopeIds }, { count: "exact" })
       .select(`
         id,
         athlete_id,
@@ -249,20 +271,11 @@ export async function loadCoachTasks(
       // Suggestions des athlètes en périmètre canonique — filtre direct sur
       // athlete_id (le RPC a déjà borné le set : owner ∪ team ∪ école-dir).
       // status EN_ATTENTE = suggestion en attente de décision du coach.
-      .in("athlete_id", scopeIds)
       .eq("status", "EN_ATTENTE")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(de, a)),
   ]);
-
-  if (athletesRes.error) {
-    console.error("[loadCoachTasks] athletes query failed:", athletesRes.error.message);
-  }
-  if (suggestionsRes.error) {
-    console.error("[loadCoachTasks] suggestions query failed:", suggestionsRes.error.message);
-  }
-
-  const athletes = (athletesRes.data ?? []) as AthleteRow[];
-  const suggestions = (suggestionsRes.data ?? []) as SuggestionRow[];
 
   const unverified: CoachTaskAthlete[] = [];
   const missingEval: CoachTaskAthlete[] = [];
@@ -331,7 +344,18 @@ export async function loadCoachTaskCounts(
   supabase: SupabaseClient,
   coachUserId: string,
 ): Promise<CoachTaskCounts> {
-  const breakdown = await loadCoachTasks(supabase, coachUserId);
+  return compter(await loadCoachTasks(supabase, coachUserId));
+}
+
+/** Variante stricte (erreur levée) — tableau de bord web. */
+export async function lireCoachTaskCounts(
+  supabase: SupabaseClient,
+  coachUserId: string,
+): Promise<CoachTaskCounts> {
+  return compter(await lireCoachTasks(supabase, coachUserId));
+}
+
+function compter(breakdown: CoachTasksBreakdown): CoachTaskCounts {
   return {
     unverified: breakdown.unverified.length,
     missingEval: breakdown.missingEval.length,

@@ -553,7 +553,7 @@ function CalendrierContent() {
   // téléchargé puis masqué, il n'est jamais demandé.
   // Lot B2, étape 3 : le calendrier de l'UNITÉ — cibles de tous les
   // collègues, et leurs visites planifiées (useCalendrierUnite).
-  const { data, isLoading, isError } = useCalendrierUnite(!isFree && !tierLoading);
+  const { data, isLoading, isError, refetch } = useCalendrierUnite(!isFree && !tierLoading);
   const { data: regions = [] } = useRegions();
   const { data: lists = [] } = useListesUnite(!isFree && !tierLoading);
   const { data: posData } = usePositionsBySport(filters.sport || null);
@@ -920,8 +920,15 @@ function CalendrierContent() {
               </div>
               <h3 className="mb-2 text-[20px] font-bold text-[#EDEFF3]">Calendrier momentanément indisponible</h3>
               <p className="mx-auto max-w-[520px] text-[15px] text-[#8A909C]">
-                Les matchs n&apos;ont pas pu être chargés. Réessayez dans un moment.
+                Les matchs n&apos;ont pas pu être chargés. Vérifie ta connexion, puis réessaie.
               </p>
+              <button
+                type="button"
+                onClick={() => { void refetch(); }}
+                className="mt-5 rounded-lg bg-[#E63946] px-5 py-2.5 text-[14px] font-bold text-white hover:bg-[#D42B22]"
+              >
+                Réessayer
+              </button>
             </div>
           ) : !actifs.m && !actifs.v && !actifs.r ? (
             <div className="mt-[34px] rounded-2xl border border-[#262A33] bg-[#1A1D24] px-[30px] py-[40px] text-center text-[15px] text-[#8A909C]">

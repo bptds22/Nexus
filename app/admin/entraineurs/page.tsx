@@ -2,6 +2,9 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import { AlertTriangle, AlertCircle, Building2, Mail, Phone, ShieldCheck, ShieldOff, UserCheck, Users, X } from "lucide-react";
 import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
 
@@ -77,55 +80,58 @@ export default function AdminEntraineursPage() {
   const supabase = useMemo(() => createClient(), []);
   const [rows, setRows] = useState<CoachRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
   const [tab, setTab] = useState<FilterTab>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    load();
+    load().catch((e) => { chargement.signaler(e, "admin/entraineurs"); setLoading(false); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [chargement.essai]);
 
+  /* Correctif 2026-10-16 : toutes les lignes (lireTout), aucun identifiant de
+     coach dans l'adresse (TOUS les comptes COACH y passaient : refus au-delà
+     de ~200, rôles et compteurs à 0 sans un mot), erreur LEVÉE → bandeau. */
   async function load() {
     setLoading(true);
+    const tout = <T,>(table: string, colonnes: string) => lireTout<T>((de, a) => supabase
+      .from(table).select(colonnes, { count: "exact" }).order("id").range(de, a));
 
-    const { data: coaches, error } = await supabase
+    const coaches = await lireTout<Record<string, unknown> & { id: string }>((de, a) => supabase
       .from("users")
-      .select(COACH_SELECT)
+      .select(COACH_SELECT, { count: "exact" })
       .eq("role", "COACH")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(de, a));
 
-    if (error) {
-      console.error("[AdminEntraineurs] load error:", error.message);
-      setLoading(false);
-      return;
-    }
-
-    const coachIds = (coaches || []).map((c) => c.id as string);
+    const coachIds = new Set(coaches.map((c) => c.id));
 
     const roleByCoach = new Map<string, CoachRole>();
     const teamsByCoach = new Map<string, number>();
     const athletesByCoach = new Map<string, number>();
 
-    if (coachIds.length > 0) {
-      const [scRes, tcRes, athRes] = await Promise.all([
-        supabase.from("school_coaches").select("coach_id, role").in("coach_id", coachIds),
-        supabase.from("team_coaches").select("coach_id").in("coach_id", coachIds),
-        supabase.from("athletes").select("coach_id").in("coach_id", coachIds),
+    if (coachIds.size > 0) {
+      const [scRows, tcRows, athRows] = await Promise.all([
+        tout<{ coach_id: string | null; role: string | null }>("school_coaches", "coach_id, role"),
+        tout<{ coach_id: string | null }>("team_coaches", "coach_id"),
+        tout<{ coach_id: string | null }>("athletes", "coach_id"),
       ]);
 
-      for (const r of ((scRes.data || []) as { coach_id: string | null; role: string | null }[])) {
-        if (r.coach_id && r.role) roleByCoach.set(r.coach_id, r.role as CoachRole);
+      for (const r of scRows) {
+        if (r.coach_id && r.role && coachIds.has(r.coach_id)) roleByCoach.set(r.coach_id, r.role as CoachRole);
       }
-      for (const t of ((tcRes.data || []) as { coach_id: string | null }[])) {
-        if (t.coach_id) teamsByCoach.set(t.coach_id, (teamsByCoach.get(t.coach_id) || 0) + 1);
+      for (const t of tcRows) {
+        if (t.coach_id && coachIds.has(t.coach_id)) teamsByCoach.set(t.coach_id, (teamsByCoach.get(t.coach_id) || 0) + 1);
       }
-      for (const a of ((athRes.data || []) as { coach_id: string | null }[])) {
-        if (a.coach_id) athletesByCoach.set(a.coach_id, (athletesByCoach.get(a.coach_id) || 0) + 1);
+      for (const a of athRows) {
+        if (a.coach_id && coachIds.has(a.coach_id)) athletesByCoach.set(a.coach_id, (athletesByCoach.get(a.coach_id) || 0) + 1);
       }
     }
 
-    const built: CoachRow[] = (coaches || []).map((c) => {
+    const built: CoachRow[] = coaches.map((c) => {
       const id = c.id as string;
       const joined = embeddedSchool((c as { schools?: unknown }).schools);
       const schoolId = (c.school_id as string) || null;
@@ -237,6 +243,13 @@ export default function AdminEntraineursPage() {
           </button>
         ))}
       </div>
+
+      {chargement.erreur && (
+        <ErreurChargement
+          message="Les entraîneurs n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      )}
 
       {/* Table */}
       <div className="bg-[#1A1D24] border border-[#1e2128] rounded-xl overflow-hidden">

@@ -9,6 +9,7 @@ import { useCegepStats } from "@/lib/queries/recruiter/useCegepStats";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import {
   BarChart,
   Bar,
@@ -219,7 +220,7 @@ function CegepDashboardContent() {
   // Cache 10 min → navigation tab → CÉGEP instantanée la 2e visite.
   // Filtre « sport de l'unité » (lot A) : ouvert sur le sport de l'admin.
   const filtreSport = useFiltreSportUnite();
-  const { data: stats, isLoading: loading } = useCegepStats(filtreSport.ids, filtreSport.pret);
+  const { data: stats, isLoading: loading, isError, refetch } = useCegepStats(filtreSport.ids, filtreSport.pret);
 
   const schoolName = stats?.schoolName ?? "Mon CÉGEP";
   const recruesCount = stats?.recruesCount ?? 0;
@@ -238,6 +239,19 @@ function CegepDashboardContent() {
     return (
       <div className="px-5 sm:px-8 py-8 max-w-[1400px] mx-auto">
         <p className="text-[#6b7280] text-sm">Chargement du tableau de bord...</p>
+      </div>
+    );
+  }
+
+  // Correctif 2026-10-16 : des compteurs à 0 n'affirment plus « rien » quand
+  // la lecture a échoué — on le dit, avec « Réessayer ».
+  if (isError && !stats) {
+    return (
+      <div className="px-5 sm:px-8 py-8 max-w-[1400px] mx-auto">
+        <ErreurChargement
+          message="Le tableau de bord n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { void refetch(); }}
+        />
       </div>
     );
   }

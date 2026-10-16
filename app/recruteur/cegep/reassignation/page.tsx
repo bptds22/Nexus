@@ -14,6 +14,8 @@ import {
   type RecruiterEvalRow,
 } from "@/lib/queries/shared/recruiterAthleteCards";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ── Local types (replaces mock imports) ── */
 
@@ -293,6 +295,9 @@ function ReassignationPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [transferActivity, setTransferActivity] = useState<string | null>(null);
   const [transferHistory, setTransferHistory] = useState<TransferRecord[]>([]);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     async function load() {
@@ -300,14 +305,17 @@ function ReassignationPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data: currentUser } = await supabase.from("users").select("school_id, first_name, last_name").eq("id", user.id).single();
+      // Aucune erreur avalée (correctif 2026-10-16) : elles montent au bandeau « Réessayer ».
+      const { data: currentUser, error: errMoi } = await supabase.from("users").select("school_id, first_name, last_name").eq("id", user.id).single();
+      if (errMoi) throw errMoi;
       if (!currentUser?.school_id) { setLoading(false); return; }
 
       // All team members
-      const { data: team } = await supabase
+      const { data: team, error: errEquipe } = await supabase
         .from("users")
         .select("id, first_name, last_name, role, sport")
         .eq("school_id", currentUser.school_id);
+      if (errEquipe) throw errEquipe;
 
       const recs: ReassignRecruiter[] = (team || []).map((t) => ({
         id: t.id,
@@ -366,8 +374,8 @@ function ReassignationPage() {
       setAthletes(athList);
       setLoading(false);
     }
-    load();
-  }, []);
+    load().catch((e) => { signalerChargement(e, "cegep/reassignation"); setLoading(false); });
+  }, [essaiChargement, signalerChargement]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -530,6 +538,13 @@ function ReassignationPage() {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto space-y-6">
+
+      {chargement.erreur && (
+        <ErreurChargement
+          message="Les athlètes à réassigner n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      )}
 
       {/* ── Departing banner ─────────────────────────────────── */}
       {departingRecruiters.map((r) => (

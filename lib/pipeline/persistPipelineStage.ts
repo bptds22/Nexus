@@ -120,15 +120,22 @@ export async function lireDossierActeur(
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: unite, error } = await supabase.rpc("unite_pipeline", { p_sport_id: null, p_tout_le_cegep: false });
+  // Filtré EN BASE sur l'athlète (correctif 2026-10-16) : au-delà de 1000
+  // dossiers, la coupure PostgREST faisait passer l'athlète « hors processus ».
+  const { data: unite, error } = await supabase
+    .rpc("unite_pipeline", { p_sport_id: null, p_tout_le_cegep: false })
+    .eq("athlete_id", athleteId);
+  // Une erreur retombe sur la ligne propre du recruteur (gratuit, ou sans
+  // unité), lue juste après — jamais sur « rien ».
+  if (error) console.error("[pipeline] unite_pipeline (dossier de l'acteur) :", error.message);
   if (!error) {
-    const l = ((unite ?? []) as { athlete_id: string; stage: string | null; visit_at: string | null; recruteurs: string[] | null }[])
-      .find((x) => x.athlete_id === athleteId);
+    const l = ((unite ?? []) as { athlete_id: string; stage: string | null; visit_at: string | null; recruteurs: string[] | null }[])[0];
     if (l) return { stage: l.stage, visit_at: l.visit_at, collegues: (l.recruteurs ?? []).filter((r) => r !== user.id) };
   }
-  const { data } = await supabase
+  const { data, error: errPropre } = await supabase
     .from("recruiter_pipeline").select("stage, visit_at")
     .eq("recruiter_id", user.id).eq("athlete_id", athleteId).maybeSingle();
+  if (errPropre) throw errPropre;
   return data
     ? { stage: (data.stage as string | null) ?? null, visit_at: (data.visit_at as string | null) ?? null, collegues: [] }
     : null;

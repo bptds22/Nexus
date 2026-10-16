@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ─────────────────────────────────────────────────────────────────
    Admin Subscriptions — Wired to public.subscriptions + users.
@@ -77,13 +80,23 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [toast, setToast] = useState<string | null>(null);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
 
+  /* Correctif 2026-10-16 : les deux tables EN ENTIER (lireTout — coupées à
+     1000 lignes sans le dire), une erreur levée → bandeau « Réessayer ». */
   async function refresh() {
-    const [uRes, sRes] = await Promise.all([
-      supabase.from("users").select("id,email,first_name,last_name,role").order("created_at", { ascending: false }),
-      supabase.from("subscriptions").select("id,user_id,tier,status"),
-    ]);
-    setRows(buildRows((uRes.data || []) as UserRecord[], (sRes.data || []) as SubRecord[]));
+    try {
+      const [users, subs] = await Promise.all([
+        lireTout<UserRecord>((de, a) => supabase.from("users").select("id,email,first_name,last_name,role", { count: "exact" })
+          .order("created_at", { ascending: false }).order("id").range(de, a)),
+        lireTout<SubRecord>((de, a) => supabase.from("subscriptions").select("id,user_id,tier,status", { count: "exact" })
+          .order("id").range(de, a)),
+      ]);
+      setRows(buildRows(users, subs));
+    } catch (e) {
+      chargement.signaler(e, "admin/subscriptions");
+    }
   }
 
   useEffect(() => {
@@ -93,7 +106,7 @@ export default function AdminSubscriptionsPage() {
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]);
+  }, [supabase, chargement.essai]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -212,7 +225,12 @@ export default function AdminSubscriptionsPage() {
         </select>
       </div>
 
-      {loading ? (
+      {chargement.erreur ? (
+        <ErreurChargement
+          message="Les abonnements n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      ) : loading ? (
         <div className="text-center py-12 text-[#6b7280]">Chargement…</div>
       ) : rows.length === 0 ? (
         <div className="text-center py-12 text-[#6b7280]">Aucun utilisateur</div>

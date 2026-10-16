@@ -23,6 +23,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dossiersParUnite, type DossierUnite } from "@/lib/cegep/dossiersUnite";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 /** Miroir de `coach_pipeline_for_my_athletes` — quatre colonnes, pas une de plus. */
 export interface CoachPipelineRow {
@@ -37,22 +38,37 @@ export interface CoachPipelineRow {
  * Périmètre serveur : athlètes dont il est `coach_id`, plus
  * `get_coach_athletes(true)` (équipes coachées ; toute l'école pour un
  * directeur). `athleteIds` et `stages` ne font que RESTREINDRE ce périmètre.
- * En cas d'erreur : journalisée, liste vide — un indicateur à 0 plutôt
- * qu'un écran cassé.
+ * Correctif 2026-10-16 : TOUTES les lignes (lireTout — la RPC rend des lignes,
+ * coupées à 1000 sans le dire) et une erreur est LEVÉE : un indicateur à 0
+ * affirmait « aucun placement » alors qu'on n'en savait rien. L'écran
+ * l'affiche, avec « Réessayer ».
  */
+export async function lireCoachPipeline(
+  supabase: SupabaseClient,
+  opts: { athleteIds?: readonly string[]; stages?: readonly string[] } = {},
+): Promise<CoachPipelineRow[]> {
+  return lireTout<CoachPipelineRow>((de, a) => supabase
+    .rpc("coach_pipeline_for_my_athletes", {
+      p_athlete_ids: opts.athleteIds ?? null,
+      p_stages: opts.stages ?? null,
+    }, { count: "exact" })
+    .order("athlete_id").order("recruiter_id")
+    .range(de, a));
+}
+
+/** Variante qui ne lève jamais (liste vide, erreur journalisée) — pour les
+ *  surfaces pas encore passées à l'affichage d'erreur (fiche athlète,
+ *  réputation, mobile : lot mobile à venir). Les lignes sont complètes. */
 export async function fetchCoachPipeline(
   supabase: SupabaseClient,
   opts: { athleteIds?: readonly string[]; stages?: readonly string[] } = {},
 ): Promise<CoachPipelineRow[]> {
-  const { data, error } = await supabase.rpc("coach_pipeline_for_my_athletes", {
-    p_athlete_ids: opts.athleteIds ?? null,
-    p_stages: opts.stages ?? null,
-  });
-  if (error) {
-    console.error("[pipeline] coach_pipeline_for_my_athletes :", error.message);
+  try {
+    return await lireCoachPipeline(supabase, opts);
+  } catch (e) {
+    console.error("[pipeline] coach_pipeline_for_my_athletes :", e instanceof Error ? e.message : String(e));
     return [];
   }
-  return (data ?? []) as CoachPipelineRow[];
 }
 
 /** Miroir de `cegep_pipeline_overview` — aucune colonne privée. */
@@ -76,15 +92,14 @@ export async function fetchCegepPipelineOverview(
   stages?: readonly string[],
 ): Promise<CegepPipelineRow[]> {
   if (recruiterIds.length === 0) return [];
-  const { data, error } = await supabase.rpc("cegep_pipeline_overview", {
-    p_recruiter_ids: recruiterIds,
-    p_stages: stages ?? null,
-  });
-  if (error) {
-    console.error("[pipeline] cegep_pipeline_overview :", error.message);
-    return [];
-  }
-  return (data ?? []) as CegepPipelineRow[];
+  // Toutes les lignes, erreur LEVÉE (correctif 2026-10-16, voir plus haut).
+  return lireTout<CegepPipelineRow>((de, a) => supabase
+    .rpc("cegep_pipeline_overview", {
+      p_recruiter_ids: recruiterIds,
+      p_stages: stages ?? null,
+    }, { count: "exact" })
+    .order("recruiter_id").order("athlete_id")
+    .range(de, a));
 }
 
 /**
@@ -104,7 +119,7 @@ export async function fetchDossiersUniteCegep(
     fetchCegepPipelineOverview(supabase, recruiterIds, stages),
     supabase.from("users").select("id, sport_id").in("id", recruiterIds as string[]),
   ]);
-  if (sportsRes.error) console.error("[pipeline] sports de l'équipe :", sportsRes.error.message);
+  if (sportsRes.error) throw sportsRes.error;
   const sportParRecruteur = new Map<string, string | null>(
     ((sportsRes.data ?? []) as { id: string; sport_id: string | null }[]).map((u) => [u.id, u.sport_id]),
   );

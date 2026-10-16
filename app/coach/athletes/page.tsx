@@ -21,7 +21,10 @@ import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
 import InviteByEmailModal from "./_components/InviteByEmailModal";
 import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
-import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import { orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
 import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
 import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
@@ -307,6 +310,10 @@ function MesAthletesContent() {
    *  La RLS de school_claim_rejections borne déjà à mon école : pas de filtre
    *  d'école côté client, qui ne ferait que dupliquer la règle. */
   const [rejections, setRejections] = useState<Record<string, string>>({});
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) :
+  // un roster vide ne dit plus « aucun athlète » quand la lecture a échoué.
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   // Apply URL filter presets
   useEffect(() => {
@@ -344,7 +351,8 @@ function MesAthletesContent() {
         .eq("id", session.user.id)
         .single();
 
-      if (coachError || !coachRow?.school_id) {
+      if (coachError) throw coachError;
+      if (!coachRow?.school_id) {
         console.error("[Coach roster] Coach has no school_id assigned", coachError);
         setLoading(false);
         return;
@@ -376,13 +384,14 @@ function MesAthletesContent() {
       //
       // includePending: false — même décision de statut que la requête école
       // ci-dessous (.eq status ACTIF), cf. le bloc de statuts qui la documente.
-      const { ids: scopeIds } = await loadCoachAthleteScope(supabase, { includePending: false });
+      const { ids: scopeIds } = await lireCoachAthleteScope(supabase, { includePending: false });
       setRosterScopeIds(new Set(scopeIds));
       if (dir.isDirector) setDirectorScopeIds(new Set(scopeIds));
 
-      const { data, error } = await supabase
+      // TOUTES les lignes (lireTout, correctif 2026-10-16), erreur levée.
+      const data = await lireTout<Record<string, unknown>>((de, a) => supabase
         .from("athletes")
-        .select(ATHLETE_ROSTER_SELECT)
+        .select(ATHLETE_ROSTER_SELECT, { count: "exact" })
         // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
         // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
         //
@@ -420,22 +429,27 @@ function MesAthletesContent() {
         // consultable par son ancien coach, c'est un choix a prendre, pas un
         // oubli a corriger ici.
         .eq("school_id", coachSchoolId)
-        .eq("status", "ACTIF");
+        .eq("status", "ACTIF")
+        .order("id")
+        .range(de, a));
 
       // ── Périmètre canonique (Roster) ───────────────────────────────────
       // MÊME SELECT, autre borne : `.in("id", scopeIds)` au lieu du filtre
       // d'école. Pattern identique à CoachAthletesMobile (validé en prod
       // mobile). C'est cette requête — et elle seule — qui ramène les
       // athlètes de ligue civile (school_id NULL) du coach.
-      const { data: scopeData } = scopeIds.length
-        ? await supabase
-            .from("athletes")
+      // Correctif 2026-10-16 : les identifiants dans le CORPS (athletes_par_ids
+      // — l'adresse refusait au-delà de ~170 athlètes avec ce select), toutes
+      // les lignes, erreur levée (avant : le roster retombait en silence sur
+      // les seules lignes d'école, sans les athlètes civils).
+      const scopeData = scopeIds.length
+        ? await lireTout<Record<string, unknown>>((de, a) => supabase
+            .rpc("athletes_par_ids", { p_ids: scopeIds }, { count: "exact" })
             .select(ATHLETE_ROSTER_SELECT)
-            .in("id", scopeIds)
             .eq("status", "ACTIF")
-        : { data: [] as Record<string, unknown>[] };
-
-      if (!data && !scopeData) { setLoading(false); return; }
+            .order("id")
+            .range(de, a))
+        : [];
 
       // Union des DEUX périmètres, dédupliquée par id : une seule passe de
       // mapping ci-dessous. La re-partition (Roster vs École) se fait sur les
@@ -449,10 +463,14 @@ function MesAthletesContent() {
 
       // Load favorite counts from recruiter_favorites
       const athleteIds = allRows.map((a: Record<string, unknown>) => a.id as string);
-      const { data: favRows } = await supabase
-        .from("recruiter_favorites")
-        .select("athlete_id")
-        .in("athlete_id", athleteIds);
+      // Identifiants dans le corps, toutes les lignes, erreur levée (2026-10-16).
+      const favRows = athleteIds.length > 0
+        ? await lireTout<{ athlete_id: string }>((de, a) => supabase
+            .rpc("recruiter_favorites_par_athletes", { p_ids: athleteIds }, { count: "exact" })
+            .select("id, athlete_id")
+            .order("id")
+            .range(de, a))
+        : [];
 
       // Build favorite counts per athlete
       const favCounts: Record<string, number> = {};
@@ -625,49 +643,47 @@ function MesAthletesContent() {
         .filter((a) => a.coach_id === session.user.id)
         .map((a) => a.id);
       if (myAthleteIds.length > 0) {
-        const { data: sugs } = await supabase
-          .from("athlete_suggestions")
+        const sugs = await lireTout<{
+          id: string; champ: string | null; valeur_actuelle: unknown; valeur_proposee: unknown; message: unknown;
+          created_at: string | null; athletes: unknown;
+        }>((de, a) => supabase
+          .rpc("athlete_suggestions_par_athletes", { p_ids: myAthleteIds }, { count: "exact" })
           .select("id, champ, valeur_actuelle, valeur_proposee, message, created_at, athlete_id, athletes!athlete_id(first_name, last_name)")
-          .in("athlete_id", myAthleteIds)
           .eq("status", "EN_ATTENTE")
-          .order("created_at", { ascending: false });
-        if (sugs) {
-          setPendingSuggestions(sugs.map((s) => {
-            const ath = (Array.isArray(s.athletes) ? s.athletes[0] : s.athletes) as { first_name?: string; last_name?: string } | null;
-            return {
-              id: s.id,
-              athleteName: ath ? `${ath.first_name || ""} ${ath.last_name || ""}`.trim() : "",
-              champ: s.champ || "",
-              valeurActuelle: (s.valeur_actuelle as string) || "",
-              valeurProposee: (s.valeur_proposee as string) || "",
-              message: (s.message as string) || "",
-              createdAt: s.created_at || "",
-            };
-          }));
-        }
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(de, a));
+        setPendingSuggestions(sugs.map((s) => {
+          const ath = (Array.isArray(s.athletes) ? s.athletes[0] : s.athletes) as { first_name?: string; last_name?: string } | null;
+          return {
+            id: s.id,
+            athleteName: ath ? `${ath.first_name || ""} ${ath.last_name || ""}`.trim() : "",
+            champ: s.champ || "",
+            valeurActuelle: (s.valeur_actuelle as string) || "",
+            valeurProposee: (s.valeur_proposee as string) || "",
+            message: (s.message as string) || "",
+            createdAt: s.created_at || "",
+          };
+        }));
       }
 
       /* Rejets ACTIFS — lecture bornée par la RLS de la table à mon école.
-         Non bloquante : si elle échoue, la file s'affiche sans les mentions
-         plutôt que pas du tout. */
-      const { data: rejRows, error: rejError } = await supabase
+         Correctif 2026-10-16 : toutes les lignes, et une erreur n'est plus
+         avalée (la file sans ses mentions « déjà rejeté » se faisait passer
+         pour complète) — bandeau + « Réessayer ». */
+      const rejRows = await lireTout<{ athlete_id: string; rejected_at: string }>((de, a) => supabase
         .from("school_claim_rejections")
-        .select("athlete_id, rejected_at")
-        .is("cancelled_at", null);
-
-      if (rejError) {
-        console.error("[Coach roster] lecture des rejets échouée", rejError);
-      } else {
-        setRejections(Object.fromEntries(
-          (rejRows ?? []).map((r) => [r.athlete_id as string, r.rejected_at as string]),
-        ));
-      }
+        .select("athlete_id, rejected_at", { count: "exact" })
+        .is("cancelled_at", null)
+        .order("id")
+        .range(de, a));
+      setRejections(Object.fromEntries(rejRows.map((r) => [r.athlete_id, r.rejected_at])));
 
       setLoading(false);
     };
 
-    loadAthletes();
-  }, [refreshVersion]);
+    loadAthletes().catch((e) => { signalerChargement(e, "coach/athletes"); setLoading(false); });
+  }, [refreshVersion, essaiChargement, signalerChargement]);
 
   // Load positions dynamically when sport changes
   useEffect(() => {
@@ -995,6 +1011,15 @@ function MesAthletesContent() {
         ))}
       </div>
     );
+
+  if (chargement.erreur) return (
+    <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
+      <ErreurChargement
+        message="Tes athlètes n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+        onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+      />
+    </div>
+  );
 
   // Loading state
   if (loading) return (

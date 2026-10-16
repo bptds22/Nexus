@@ -3,8 +3,11 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
-import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireCoachPipeline } from "@/lib/pipeline/pipelineVues";
+import { lireCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
@@ -87,6 +90,9 @@ function SchoolDashboardContent() {
     { id: string; name: string; age_group: string | null; division: string | null; gender: string | null;
       label: string; headCoach: string; athleteCount: number }[]
   >([]);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     async function loadDashboard() {
@@ -95,52 +101,57 @@ function SchoolDashboardContent() {
       if (!user) { setLoading(false); return; }
 
       // Get my school from school_coaches
-      const { data: mySchool } = await supabase
+      // maybeSingle : « aucune école » n'est pas une erreur ; une vraie erreur
+      // est levée (correctif 2026-10-16).
+      const { data: mySchool, error: errMonEcole } = await supabase
         .from("school_coaches")
         .select("school_id")
         .eq("coach_id", user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
+      if (errMonEcole) throw errMonEcole;
 
       if (!mySchool) { setLoading(false); return; }
 
       // Get school name — try from users.school_id → schools
-      const { data: userRow } = await supabase
+      const { data: userRow, error: errMoi } = await supabase
         .from("users")
         .select("school_id")
         .eq("id", user.id)
         .single();
+      if (errMoi) throw errMoi;
       if (userRow?.school_id) {
-        const { data: school } = await supabase
+        const { data: school, error: errEcole } = await supabase
           .from("schools")
           .select("name")
           .eq("id", userRow.school_id)
-          .single();
+          .maybeSingle();
+        if (errEcole) throw errEcole;
         if (school) setSchoolName(school.name);
       }
 
-      // Get all coaches at my school
-      const { data: schoolCoaches } = await supabase
+      // Get all coaches at my school (toutes les lignes, erreur levée)
+      const schoolCoaches = await lireTout<{ coach_id: string; role: string | null; sport: string | null }>((de, a) => supabase
         .from("school_coaches")
-        .select("coach_id, role, sport")
-        .eq("school_id", mySchool.school_id);
-      const coachIds = schoolCoaches?.map(sc => sc.coach_id) || [];
+        .select("coach_id, role, sport", { count: "exact" })
+        .eq("school_id", mySchool.school_id)
+        .order("id")
+        .range(de, a));
+      const coachIds = schoolCoaches.map(sc => sc.coach_id);
 
       // Périmètre canonique — source unique get_coach_athletes (directeur →
       // école ∪ équipes ; ACTIF+EN_ATTENTE, DESACTIVE/DIPLOME exclus). Remplace
       // .in("coach_id", coachIds) qui ratait les athlètes d'équipe et les non
       // réclamés (coach_id NULL) et ne filtrait aucun statut.
-      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
-      let athletes:
-        | { id: string; first_name: string | null; last_name: string | null; sport_id: string | null; coach_id: string | null; profile_completion: number | null }[]
-        | null = null;
-      if (scopeIds.length) {
-        ({ data: athletes } = await supabase
-          .from("athletes")
-          .select("id, first_name, last_name, sport_id, coach_id, profile_completion")
-          .in("id", scopeIds));
-      }
-      const athleteList = athletes || [];
+      // Correctif 2026-10-16 : identifiants dans le CORPS, toutes les lignes.
+      const { ids: scopeIds } = await lireCoachAthleteScope(supabase);
+      const athleteList = scopeIds.length
+        ? await lireTout<{ id: string; first_name: string | null; last_name: string | null; sport_id: string | null; coach_id: string | null; profile_completion: number | null }>((de, a) => supabase
+            .rpc("athletes_par_ids", { p_ids: scopeIds }, { count: "exact" })
+            .select("id, first_name, last_name, sport_id, coach_id, profile_completion")
+            .order("id")
+            .range(de, a))
+        : [];
       const athleteIds = athleteList.map(a => a.id);
 
       // KPI 1: Total athletes
@@ -157,7 +168,7 @@ function SchoolDashboardContent() {
         /* Lot 2a — RPC coach. Périmètre = get_coach_athletes : un directeur
            voit enfin le pipeline des athlètes des AUTRES coachs de l'école.
            Sous l'ancienne policy (coach_id = moi), ce compte sous-comptait. */
-        placementsCount = (await fetchCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] })).length;
+        placementsCount = (await lireCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] })).length;
       }
 
       setStats({
@@ -173,10 +184,11 @@ function SchoolDashboardContent() {
       // Views by sport — zero for now
       const sportIds = [...new Set(athleteList.map(a => a.sport_id).filter(Boolean))];
       if (sportIds.length > 0) {
-        const { data: sports } = await supabase
+        const { data: sports, error: errSports } = await supabase
           .from("sports")
           .select("id, nom")
           .in("id", sportIds);
+        if (errSports) throw errSports;
         if (sports) setViewsBySport(sports.map(s => ({ sport: s.nom, views: 0 })));
       }
 
@@ -192,7 +204,7 @@ function SchoolDashboardContent() {
 
       // Funnel — count pipeline by status
       if (athleteIds.length > 0) {
-        const pipelineEntries = await fetchCoachPipeline(supabase, { athleteIds });
+        const pipelineEntries = await lireCoachPipeline(supabase, { athleteIds });
 
         const counts: Record<string, number> = {};
         (pipelineEntries || []).forEach((p: { stage: string }) => {
@@ -213,13 +225,15 @@ function SchoolDashboardContent() {
 
       // Coach ranking
       if (coachIds.length > 0) {
-        const { data: coachProfiles } = await supabase
-          .from("users")
+        // Identifiants dans le corps (users_par_ids), erreur levée (2026-10-16).
+        const coachProfiles = await lireTout<{ id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }>((de, a) => supabase
+          .rpc("users_par_ids", { p_ids: coachIds }, { count: "exact" })
           .select("id, first_name, last_name, avatar_url")
-          .in("id", coachIds);
+          .order("id")
+          .range(de, a));
 
-        const coachOverviews: CoachOverview[] = (schoolCoaches || []).map(sc => {
-          const profile = coachProfiles?.find(u => u.id === sc.coach_id);
+        const coachOverviews: CoachOverview[] = schoolCoaches.map(sc => {
+          const profile = coachProfiles.find(u => u.id === sc.coach_id);
           const coachAthletes = athleteList.filter(a => a.coach_id === sc.coach_id);
           const completed = coachAthletes.filter(a => ((a.profile_completion as number) || 0) >= 60).length;
           const total = coachAthletes.length;
@@ -252,16 +266,19 @@ function SchoolDashboardContent() {
 
       // ── Équipes de l'école (aperçu supervision) ───────────────
       // Nom de l'org des équipes : le nom d'une équipe n'est affiché que s'il en diffère.
-      const { data: orgEquipes } = await supabase
+      const { data: orgEquipes, error: errOrg } = await supabase
         .from("schools").select("name").eq("id", mySchool.school_id).maybeSingle();
+      if (errOrg) throw errOrg;
       const nomOrg = (orgEquipes as { name?: string } | null)?.name ?? null;
-      const { data: teamRows } = await supabase
+      const teamRows = await lireTout<Record<string, unknown>>((de, a) => supabase
         .from("teams")
-        .select("id, name, age_group, division, gender, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)")
+        .select("id, name, age_group, division, gender, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)", { count: "exact" })
         .eq("school_id", mySchool.school_id)
         .eq("is_active", true)
-        .order("created_at", { ascending: false });
-      if (teamRows) {
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(de, a));
+      {
         const headIds = new Set<string>();
         for (const t of teamRows) {
           for (const tc of ((t as { team_coaches?: { coach_id?: string; role?: string }[] }).team_coaches || [])) {
@@ -270,8 +287,12 @@ function SchoolDashboardContent() {
         }
         const headNameMap = new Map<string, string>();
         if (headIds.size > 0) {
-          const { data: hu } = await supabase.from("users").select("id, first_name, last_name").in("id", Array.from(headIds));
-          for (const u of hu || []) headNameMap.set(u.id, `${u.first_name || ""} ${u.last_name || ""}`.trim());
+          const hu = await lireTout<{ id: string; first_name: string | null; last_name: string | null }>((de, a) => supabase
+            .rpc("users_par_ids", { p_ids: Array.from(headIds) }, { count: "exact" })
+            .select("id, first_name, last_name")
+            .order("id")
+            .range(de, a));
+          for (const u of hu) headNameMap.set(u.id, `${u.first_name || ""} ${u.last_name || ""}`.trim());
         }
         setSchoolTeams(trierEquipes(teamRows.map((t) => {
           const tt = t as {
@@ -297,8 +318,19 @@ function SchoolDashboardContent() {
 
       setLoading(false);
     }
-    loadDashboard();
-  }, []);
+    loadDashboard().catch((e) => { signalerChargement(e, "coach/ecole"); setLoading(false); });
+  }, [essaiChargement, signalerChargement]);
+
+  if (chargement.erreur) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto">
+        <ErreurChargement
+          message="Le tableau de bord de ton école n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

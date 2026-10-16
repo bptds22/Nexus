@@ -148,7 +148,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     // Les 1263 programmes sont TOUS is_displayed=true et TOUS rattachés à un
     // cégep : le filtre ne borne rien et on dépasse les 1000. Pagination.
     fetchAllRows<{ school_id: string; name: string; program_id: string | null }>(
-      (f, t) => supabase.from("school_programs").select("school_id, name, program_id").eq("is_displayed", true).range(f, t),
+      (f, t) => supabase.from("school_programs").select("school_id, name, program_id").eq("is_displayed", true).order("id").range(f, t),
       "cegepSearch/programs",
     ),
     supabase.from("school_page_content").select("school_id, nickname, logo_path, sell_text, color_primary"),
