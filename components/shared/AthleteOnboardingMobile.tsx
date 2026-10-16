@@ -45,7 +45,9 @@ import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
-import { apercuCodeEquipe, orphelinPourReclamation } from "@/lib/invitations/apercuCodeEquipe";
+import { apercuCodeEquipe, nomsAffichablesCode, orphelinPourReclamation } from "@/lib/invitations/apercuCodeEquipe";
+import { equipeNommable } from "@/lib/invitations/equipeNommable";
+import { chargerCoachsNommablesEquipe } from "@/lib/queries/athlete/coachsNommables";
 import AthleteOnboardingWowMobile from "@/components/shared/AthleteOnboardingWowMobile";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -284,20 +286,24 @@ export function AthleteOnboardingMobile() {
         gender: t.gender, season: t.season, league: t.league,
       }, t.schoolName),
     });
+    // Règle RSEQ : noms affichés seulement pour une équipe secondaire ou civile
+    // (même helper que le web) ; les identifiants restent posés.
+    const noms = nomsAffichablesCode(t);
     setJoinCodeUsed(v.code);
     setSelectedTeamId(t.teamId);
-    setSelectedTeamName(t.teamName ?? "");
+    setSelectedTeamName(noms.equipe);
     setUserContext(isCivil ? "ligue_civile" : "scolaire");
+    setEcoleNommable(equipeNommable(t.schoolType));
 
     if (isCivil) {
       setSelectedClubId(t.schoolId);
-      setSelectedClubName(t.schoolName ?? "");
+      setSelectedClubName(noms.organisation);
       setSelectedSchoolId(null);
       setSelectedSchoolName("");
       setSelectedCoachId(null);      // le coach est une notion scolaire ici
     } else {
       setSelectedSchoolId(t.schoolId);
-      setSelectedSchoolName(t.schoolName ?? "");
+      setSelectedSchoolName(noms.organisation);
       setSelectedClubId(null);
       setSelectedClubName("");
     }
@@ -355,6 +361,10 @@ export function AthleteOnboardingMobile() {
   const [scolaireTeamsLoaded, setScolaireTeamsLoaded] = useState(false);
   const [scolaireTeamsLoading, setScolaireTeamsLoading] = useState(false);
 
+  /* Règle RSEQ (décision BP 2026-10-16) : la section « Mon coach » n'existe
+     que pour une école secondaire (ou un club). Le choix manuel ne propose que
+     des écoles secondaires ; un CODE ou une REPRISE peut poser un cégep. */
+  const [ecoleNommable, setEcoleNommable] = useState(true);
   const [teamCoaches, setTeamCoaches] = useState<TeamCoachRow[]>([]);
   const [teamCoachesLoaded, setTeamCoachesLoaded] = useState(false);
   const [teamCoachesLoading, setTeamCoachesLoading] = useState(false);
@@ -540,7 +550,9 @@ export function AthleteOnboardingMobile() {
         }
         if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id as string);
-          if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
+          setEcoleNommable(equipeNommable(schoolType));
+          // Règle RSEQ : le nom d'un cégep n'est pas affiché à l'athlète.
+          if (schoolRel?.name && equipeNommable(schoolType)) setSelectedSchoolName(schoolRel.name);
         }
         if (!existing.school_id && existing.ecole_non_listee) {
           setEcoleIntrouvable(true);
@@ -777,25 +789,12 @@ export function AthleteOnboardingMobile() {
     setTeamCoachesLoading(true);
     setTeamCoachesLoaded(false);
     (async () => {
-      const supabase = createClient();
-      const { data: rows } = await supabase
-        .from("team_coaches")
-        .select("id, coach_id, role, users!coach_id(first_name, last_name)")
-        .eq("team_id", selectedTeamId);
+      // Règle RSEQ (décision BP 2026-10-16) : seulement les coachs NOMMABLES,
+      // filtrés en base (coachs_nommables_equipe, déjà triés entraîneur-chef
+      // d'abord). Équipe collégiale → liste vide. Même porte que le web.
+      const rows = await chargerCoachsNommablesEquipe(createClient(), selectedTeamId);
       if (cancelled) return;
-      const mapped: TeamCoachRow[] = ((rows as Record<string, unknown>[]) || []).map((r) => {
-        const u = flatten(r.users as { first_name?: string; last_name?: string } | { first_name?: string; last_name?: string }[] | null);
-        return {
-          id: r.id as string,
-          coach_id: r.coach_id as string,
-          role: (r.role as string) || "assistant",
-          first_name: u?.first_name ?? null,
-          last_name: u?.last_name ?? null,
-        };
-      });
-      // Tri : head_coach d'abord, puis coordinator, puis assistant.
-      const roleOrder: Record<string, number> = { head_coach: 0, coordinator: 1, assistant: 2 };
-      mapped.sort((a, b) => (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99));
+      const mapped: TeamCoachRow[] = rows.map((r) => ({ id: r.coach_id, ...r }));
       setTeamCoaches(mapped);
       setTeamCoachesLoaded(true);
       setTeamCoachesLoading(false);
@@ -1551,6 +1550,7 @@ export function AthleteOnboardingMobile() {
             scolaireTeamsLoaded={scolaireTeamsLoaded}
             scolaireTeamsCount={scolaireTeams.length}
             teamCoachesLoaded={teamCoachesLoaded}
+            ecoleNommable={ecoleNommable}
             teamCoaches={teamCoaches}
             selectedCoachId={selectedCoachId}
             onSelectCoach={(c) => {
@@ -1724,6 +1724,7 @@ export function AthleteOnboardingMobile() {
           setEcoleNonListee("");
           setSelectedSchoolId(s.id);
           setSelectedSchoolName(s.name);
+          setEcoleNommable(true); // la liste ne propose que des écoles SECONDAIRE
           // Reset équipe + coach si école change (orphan team_id sinon)
           setSelectedCoachId(null);
           setSelectedCoachName("");
@@ -1983,6 +1984,8 @@ interface Step1Props {
   scolaireTeamsCount: number;
   // Iter team-2 — coachs de l'équipe scolaire (inline radio)
   teamCoachesLoaded: boolean;
+  /** École secondaire (ou club) : la section « Mon coach » peut exister. */
+  ecoleNommable: boolean;
   teamCoaches: TeamCoachRow[];
   selectedCoachId: string | null;
   onSelectCoach: (coach: TeamCoachRow) => void;
@@ -2276,8 +2279,9 @@ function Step1Content(p: Step1Props) {
                     placeholder="Sélectionner mon équipe…"
                     onTap={p.onOpenScolaireTeam}
                   />
-                  {/* Section COACH — dépend de la team choisie */}
-                  {p.selectedTeamId && (
+                  {/* Section COACH — dépend de la team choisie. Règle RSEQ :
+                      jamais pour une école qui n'est pas secondaire. */}
+                  {p.selectedTeamId && p.ecoleNommable && (
                     <>
                       <SectionTitle>Mon coach</SectionTitle>
                       {!p.teamCoachesLoaded ? (
