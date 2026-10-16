@@ -19,3 +19,11 @@ test("aperçu : sectionFaiteRef posé dans le minuteur, après avoir trouvé la 
   assert.ok(bloc.indexOf("if (!cible) return;") < pose, "pas de drapeau sans cible");
   assert.ok(bloc.indexOf("cible.scrollIntoView(") > pose);
 });
+
+test("démarrage à froid : le consommateur laisse l'intention à postLoginDispatch pendant l'amorçage", () => {
+  const c = readFileSync(join(process.cwd(), "components/push/PushDeepLinkConsumer.tsx"), "utf8");
+  assert.match(c, /return chemin === "\/" \|\| chemin === "\/auth" \|\| chemin\.startsWith\("\/auth\/"\);/);
+  assert.match(c, /if \(!uid \|\| estPageAmorcage\(window\.location\.pathname\)\) \{\s*deferredRef\.current = true;/);
+  assert.match(c, /if \(!userId \|\| !deferredRef\.current \|\| estPageAmorcage\(pathname \?\? ""\)\) return;/);
+  assert.match(c, /\}, \[userId, pathname, consume\]\);/);
+});

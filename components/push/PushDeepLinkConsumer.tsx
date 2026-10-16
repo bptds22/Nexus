@@ -10,6 +10,14 @@
    du boot ET du login. Une seule intention, deux consommateurs, et
    takePendingIntent() lit-et-efface pour qu'elle ne serve qu'une fois.
 
+   Démarrage à froid (relevé émulateur 1.4.5) : l'événement de tap, retenu
+   par le plugin, arrive PENDANT l'amorçage, sur /auth. Le consommer ici
+   faisait une course perdue : ce composant poussait la carte, puis
+   postLoginDispatch, ne trouvant plus rien, poussait l'accueil par-dessus.
+   Sur une page d'amorçage (/, /auth), on laisse donc l'intention à
+   postLoginDispatch ; et si elle est arrivée après lui, on la reprend dès
+   que la page n'est plus une page d'amorçage.
+
    iOS affiche la bannière même au premier plan
    (presentationOptions: ['badge','sound','alert'] dans capacitor.config),
    donc le cas 1 EST un tap : même chemin que le cas 2, pas de mécanisme
@@ -24,12 +32,17 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { PUSH_DEEPLINK_EVENT } from "@/lib/push/registerPush";
 import { takePendingIntent, resolveDestination } from "@/lib/push/pushIntent";
+
+/** Pages où postLoginDispatch n'a pas encore tranché la destination. */
+export function estPageAmorcage(chemin: string): boolean {
+  return chemin === "/" || chemin === "/auth" || chemin.startsWith("/auth/");
+}
 
 export function PushDeepLinkConsumer() {
   const router = useRouter();
@@ -45,10 +58,11 @@ export function PushDeepLinkConsumer() {
   // Un tap reçu AVANT que la session soit connue (fréquent au resume) ne
   // doit pas être perdu : on le note, et l'effet sur [userId] rejoue.
   const deferredRef = useRef(false);
+  const pathname = usePathname();
 
   const consume = useCallback(async () => {
     const uid = userIdRef.current;
-    if (!uid) {
+    if (!uid || estPageAmorcage(window.location.pathname)) {
       // Pas encore de session : l'intention reste en Preferences. Soit ce
       // composant la reprend quand la session arrive, soit — si l'app était
       // froide ou l'usager déconnecté — postLoginDispatch la trouvera au
@@ -87,11 +101,12 @@ export function PushDeepLinkConsumer() {
     };
   }, [consume, queryClient]);
 
-  // Rejoue le tap mis de côté dès que la session est connue.
+  // Rejoue le tap mis de côté dès que la session est connue et que
+  // l'amorçage est fini (postLoginDispatch a eu sa chance d'abord).
   useEffect(() => {
-    if (!userId || !deferredRef.current) return;
+    if (!userId || !deferredRef.current || estPageAmorcage(pathname ?? "")) return;
     void consume();
-  }, [userId, consume]);
+  }, [userId, pathname, consume]);
 
   return null;
 }
