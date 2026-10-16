@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { chargerCoachsNommablesEcole } from "@/lib/queries/athlete/coachsNommables";
 
 /* ═══════════════════════════════════════════════════════════════
    CoachPicker — single-select grid of coaches at a given school.
    Reused by athlete onboarding step 1 and athlete settings.
    Pure: receives schoolId + selectedCoachId, emits onChange.
    No toast, modal, or persistence side effects baked in.
+
+   RÈGLE RSEQ (décision BP 2026-10-16) : écran ATHLÈTE — seuls les coachs
+   NOMMABLES (coachs_nommables_ecole, filtrés en base par coach_nommable)
+   sont proposés. Un cégep n'en a jamais ; un coach collégial qui coache aussi
+   au secondaire non plus. Avec `entete`, rien n'est rendu (ni titre ni
+   message) tant qu'il n'y a aucun coach nommable.
 ═══════════════════════════════════════════════════════════════ */
 
 interface CoachOption {
@@ -23,6 +30,9 @@ export interface CoachPickerProps {
   selectedCoachId: string | null;
   onChange: (coachId: string | null) => void;
   className?: string;
+  /** Titre de section : rendu au-dessus de la grille SEULEMENT s'il y a au
+   *  moins un coach nommable ; sinon le composant ne rend rien du tout. */
+  entete?: ReactNode;
 }
 
 function initialsFor(firstName: string, lastName: string): string {
@@ -36,6 +46,7 @@ export default function CoachPicker({
   selectedCoachId,
   onChange,
   className = "",
+  entete,
 }: CoachPickerProps) {
   const [coaches, setCoaches] = useState<CoachOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,19 +65,11 @@ export default function CoachPicker({
       setError(null);
       const supabase = createClient();
 
-      // 1. Coaches at this school
-      const { data: coachRows, error: coachErr } = await supabase
-        .from("users")
-        .select("id, first_name, last_name, photo_url")
-        .eq("school_id", schoolId)
-        .eq("role", "COACH");
-
-      if (coachErr) {
-        console.error("[CoachPicker] coach load failed:", coachErr);
-        if (!cancelled) {
-          setError("Impossible de charger les coaches");
-          setLoading(false);
-        }
+      // 1. Coachs NOMMABLES de cette école (règle RSEQ, filtrés en base).
+      //    Erreur → liste vide : jamais une liste non filtrée.
+      const coachRows = await chargerCoachsNommablesEcole(supabase, schoolId);
+      if (coachRows.length === 0) {
+        if (!cancelled) { setCoaches([]); setLoading(false); }
         return;
       }
 
@@ -83,12 +86,9 @@ export default function CoachPicker({
         counts.set(cid, (counts.get(cid) ?? 0) + 1);
       }
 
-      const result: CoachOption[] = (coachRows ?? []).map((c) => ({
-        id: c.id as string,
-        firstName: (c.first_name as string) ?? "",
-        lastName: (c.last_name as string) ?? "",
-        photoUrl: (c.photo_url as string | null) ?? null,
-        athleteCount: counts.get(c.id as string) ?? 0,
+      const result: CoachOption[] = coachRows.map((c) => ({
+        ...c,
+        athleteCount: counts.get(c.id) ?? 0,
       }));
 
       if (!cancelled) {
@@ -103,6 +103,9 @@ export default function CoachPicker({
   }, [schoolId]);
 
   if (loading) {
+    // Avec un en-tête : rien tant qu'on ne sait pas s'il y a des coachs à
+    // proposer (pas de titre « Mon coach » qui apparaîtrait puis disparaîtrait).
+    if (entete) return null;
     return (
       <div className={`text-[13px] text-[#9CA3AF] ${className}`}>
         Chargement des coaches...
@@ -117,12 +120,13 @@ export default function CoachPicker({
   }
 
   if (coaches.length === 0) {
+    if (entete) return null;
     return (
       <div
         className={`bg-[#13151a] border border-[#2D3748] rounded-lg p-4 ${className}`}
       >
         <p className="text-[13px] text-[#9CA3AF]">
-          Aucun coach inscrit à cette école pour l&apos;instant. Tu pourras en
+          Aucun coach à proposer pour l&apos;instant. Tu pourras en
           sélectionner un plus tard.
         </p>
       </div>
@@ -136,9 +140,9 @@ export default function CoachPicker({
   const cardUnselected =
     "bg-[#1A1D24] border border-[#2D3748] hover:border-[#4a4d56]";
 
-  return (
+  const grille = (
     <div
-      className={`grid grid-cols-2 md:grid-cols-3 gap-3 ${className}`}
+      className={`grid grid-cols-2 md:grid-cols-3 gap-3 ${entete ? "" : className}`}
     >
       {coaches.map((coach) => {
         const selected = coach.id === selectedCoachId;
@@ -233,4 +237,5 @@ export default function CoachPicker({
       </button>
     </div>
   );
+  return entete ? <div className={className}>{entete}{grille}</div> : grille;
 }

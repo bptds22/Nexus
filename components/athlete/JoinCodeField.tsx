@@ -19,11 +19,14 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  resolveTeamJoinToken,
   normalizeJoinCode,
   isPlausibleJoinCode,
   type ResolvedJoinTeam,
 } from "@/lib/queries/athlete/teamAttachment";
+// Compte connecté (onboarding, Mon équipe, transfert — web et mobile) : l'aperçu
+// filtré en base (apercu_code_equipe, coachs nommables seulement). La page
+// publique /join garde resolveTeamJoinToken.
+import { resoudreApercuCode } from "@/lib/queries/athlete/coachsNommables";
 import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
 import LignesEquipe from "@/components/athlete/LignesEquipe";
 import { equipeNommable } from "@/lib/invitations/equipeNommable";
@@ -54,7 +57,7 @@ export default function JoinCodeField({ initialCode = "", onResolved }: Props) {
     }
 
     setBusy(true);
-    const resolved = await resolveTeamJoinToken(createClient(), clean);
+    const resolved = await resoudreApercuCode(createClient(), clean);
     setBusy(false);
 
     // Code inexistant (null) et code invalide (isValid false) reçoivent la

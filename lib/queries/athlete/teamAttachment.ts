@@ -144,6 +144,12 @@ export async function resolveTeamJoinToken(
   const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | undefined;
   if (!row) return null;                       // code inexistant
 
+  return versEquipeResolue(row);
+}
+
+/** Une ligne de resolve_team_join_token (ou d'apercu_code_equipe, mêmes
+ *  colonnes) → ResolvedJoinTeam. Partagé avec lib/queries/athlete/coachsNommables. */
+export function versEquipeResolue(row: Record<string, unknown>): ResolvedJoinTeam {
   return {
     teamId: (row.team_id as string) ?? null,
     teamName: (row.team_name as string) ?? null,
