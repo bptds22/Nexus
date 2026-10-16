@@ -37,6 +37,9 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { badgesDepuisRaw } from "@/lib/queries/shared/athleteBadges";
 import { MAX_BADGES_AFFICHES } from "@/lib/config/badgeCatalogue";
 import { AdaptiveBadgesRow } from "@/components/shared/badges/AdaptiveBadgesRow";
+import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
+import { zoneImageRangee } from "@/components/shared/athlete/tailleBadgeFiche";
+import { actionsBadgePartenaireFiche } from "@/lib/badges/actionsFiche";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type {
   RecruitmentStatus,
@@ -723,6 +726,12 @@ function StatusVisitSheet({
 export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMode, viewer = "recruiter" }: Props) {
   // Iter 1 : on ne gère QUE viewerMode "recruiter" en mobile dédié.
   // Pour preview/partner, le PageClient route vers le desktop body.
+  /* Registre §97 — badges partenaire (lots W3/W3b), aux règles du web :
+     badge propre au partenaire en 120 px sans nom dessous, badge Nexus posé
+     par un partenaire en 96 px avec « par {partenaire} » (BadgePartenaireVignette,
+     tailleBadgeFiche.ts). Appelé AVANT le retour anticipé : un hook de plus
+     après lui serait conditionnel. */
+  const badgesPartenaire = useBadgesPartenaires(viewerMode === "recruiter" ? athleteId : null);
   if (viewerMode !== "recruiter") return null;
 
   // Step 6 unification — viewer flag drives recruteur-only gates +
@@ -759,6 +768,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   }, [isCoach, athleteId]);
 
   const id = athleteId;
+  // Coach : Masquer / Réafficher sous un badge partenaire, comme sur le web.
+  const actionsBadgePartenaire = actionsBadgePartenaireFiche(viewer);
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
   const canUsePipeline = tier === "pro" || tier === "all_star";
@@ -2413,6 +2424,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {a.distinctions.length > 0 && (
           <div className="mt-6">
             <BadgesRow distinctions={a.distinctions} mounted={mounted} badgesRevealed={badgesRevealed} />
+          </div>
+        )}
+        {/* Badges partenaire (§97) : à la suite des Distinctions, comme sur le
+            web, mais en rangée à part — la rangée adaptative est taillée pour
+            des cellules de 110 px (3 par ligne), un badge propre de partenaire
+            en prend 140. flex-wrap : deux badges propres tiennent côte à côte
+            (2 × 140 + 6 ≤ 343 px). zoneImageRangee aligne les libellés des
+            badges Nexus sur la boîte de 120 px quand la rangée en contient une. */}
+        {id && badgesPartenaire.length > 0 && (
+          <div className={`${a.distinctions.length > 0 ? "mt-4" : "mt-6"} flex flex-wrap justify-center gap-x-[6px] gap-y-4`} data-badges-partenaire-mobile>
+            {badgesPartenaire.map((b) => (
+              <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} zoneImage={zoneImageRangee(badgesPartenaire)} />
+            ))}
           </div>
         )}
 

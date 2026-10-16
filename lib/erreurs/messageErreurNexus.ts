@@ -47,3 +47,11 @@ export function messageCourrielDejaPris(message: string | null | undefined): str
   if (!message || !message.includes("athletes_email_lower_btrim_uniq")) return null;
   return "Une fiche athlète utilise déjà ce courriel : cet athlète a probablement déjà sa fiche. Vérifie l'adresse, puis invite-le plutôt que d'en créer une seconde.";
 }
+
+/* Phrase complète d'un refus d'enregistrement, dans l'ordre du web
+   (/coach/athletes/create) : courriel déjà pris, puis refus NEXUS, sinon le
+   message générique de l'appelant. Jamais le texte brut de la base. Partagé
+   avec l'assistant coach mobile (registre §84). */
+export function messageErreurSauvegarde(message: string | null | undefined, generique: string): string {
+  return messageCourrielDejaPris(message) ?? messageErreurNexus(message) ?? generique;
+}
