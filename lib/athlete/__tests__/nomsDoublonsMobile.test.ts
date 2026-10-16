@@ -105,9 +105,10 @@ test("liste coach mobile : nom_a_confirmer lu, effectif gardé, sections hors li
   const src = lire("components/shared/CoachAthletesMobile.tsx");
   assert.match(src, /\s+nom_a_confirmer,\s/);
   assert.match(src, /nomAConfirmer: a\.nom_a_confirmer === true/);
-  assert.match(src, /a\.coachId == null && nomPresentable\(a\)/);
-  assert.match(src, /a\.coachId !== currentUserId && a\.coachId != null && nomPresentable\(a\)/);
-  assert.match(src, /\(\) => athletes\.filter\(\(a\) => a\.coachId === currentUserId\)/); // effectif non filtré
+  assert.match(src, /a\.coachId == null && ecoleIds\.has\(a\.id\) && nomPresentable\(a\)/);
+  assert.match(src, /a\.coachId != null && a\.coachId !== currentUserId\s*&& isDirector && perimetreIds\.has\(a\.id\) && ecoleIds\.has\(a\.id\) && nomPresentable\(a\)/);
+  // Effectif non filtré par le nom (borné au périmètre, comme le web).
+  assert.match(src, /\(\) => athletes\.filter\(\(a\) => a\.coachId === currentUserId && perimetreIds\.has\(a\.id\)\)/);
   assert.match(src, /<EtiquetteNomAConfirmer a=\{a\} \/>/);
   assert.match(src, /phraseFichesMasquees\(nbNomsEnAttente\)/);
 });
@@ -135,4 +136,14 @@ test("onboarding mobile : l'avertissement de doublon vient à l'écran (sous le 
   assert.match(src, /<div className="pt-4" id="nx-doublon-inscription">\{p\.doublon\}<\/div>/);
   assert.match(src, /document\.getElementById\("nx-doublon-inscription"\)\?\.scrollIntoView\(\{ behavior: "smooth", block: "center" \}\);/);
   assert.match(src, /\}, \[doublonPossible\]\);/);
+});
+
+test("liste coach mobile : « à réclamer » et fiches masquées bâtis sur les lignes de l'ÉCOLE, comme le web", () => {
+  const src = lire("components/shared/CoachAthletesMobile.tsx");
+  assert.match(src, /\.select\(SELECT_ROSTER_MOBILE, \{ count: "exact" \}\)\s*\.eq\("school_id", coachRow\.school_id\)\s*\.eq\("status", "ACTIF"\)/);
+  assert.match(src, /a\.coachId == null && ecoleIds\.has\(a\.id\) && nomPresentable\(a\)/);
+  assert.match(src, /!nomPresentable\(a\) && ecoleIds\.has\(a\.id\)\s*&& !\(a\.coachId === currentUserId && perimetreIds\.has\(a\.id\)\)/);
+  assert.match(src, /a\.coachId === currentUserId && perimetreIds\.has\(a\.id\)/);
+  // L'étiquette en grille aussi (la carte web la porte).
+  assert.equal((src.match(/\{!nomPresentable\(a\) && <div className="mt-1"><EtiquetteNomAConfirmer a=\{a\} \/><\/div>\}/g) ?? []).length, 2);
 });

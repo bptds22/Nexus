@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
 import { AthleteCardMobile } from "@/components/shared/RecruteurRechercheMobile";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -1005,6 +1006,40 @@ function InviteByEmailSheet({
    MAIN
 ═══════════════════════════════════════════════════════════════ */
 
+/** Colonnes du roster mobile — périmètre ET lignes de l'école (même select). */
+const SELECT_ROSTER_MOBILE = `
+          id,
+          photo_url,
+          first_name,
+          last_name,
+          nom_a_confirmer,
+          verified,
+          last_profile_validation,
+          video_faits_saillants_url,
+          annee_diplomation,
+          cote_globale_entraineur,
+          school_id,
+          coach_id,
+          numero_jersey,
+          status,
+          statut_recrutement_override,
+          recruitment_status, committed_school_id, open_to_offers,
+          sport_id,
+          position_id,
+          mentions_academiques,
+          moyenne_generale,
+          created_at,
+          sports!sport_id(nom),
+          positions!position_id(nom, abreviation),
+          context,
+          schools!school_id(name, region, type),
+          committed_school:schools!committed_school_id(name),
+          team_athletes(team_id, teams!team_id(gender, division, league, rseq_team_id, schools!school_id(type))),
+          athlete_badges(contexte, retire_le, badges(code, libelle)),
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
+            evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
+        `;
+
 export function CoachAthletesMobile() {
   const router = useRouter();
   const toast = useMobileToast();
@@ -1053,6 +1088,10 @@ export function CoachAthletesMobile() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [scrollY, setScrollY] = useState(0);
 
+  // Périmètre canonique et lignes de l'école (partition identique au web).
+  const [perimetreIds, setPerimetreIds] = useState<Set<string>>(new Set());
+  const [ecoleIds, setEcoleIds] = useState<Set<string>>(new Set());
+
   // Claim
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirm, setShowConfirm] = useState(false);
@@ -1089,8 +1128,9 @@ export function CoachAthletesMobile() {
       if (!cancelled) setCoachOrgType(((Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { type?: SchoolType } | null)?.type ?? null);
 
       // Périmètre canonique « mes athlètes » — source unique get_coach_athletes
-      // (owner ∪ team, +école si directeur ; ACTIF+EN_ATTENTE badgés). Plus de
-      // query parallèle ; le partitionnement se fait en mémoire sur ce périmètre.
+      // (owner ∪ team, +école si directeur ; ACTIF+EN_ATTENTE badgés). Les
+      // lignes de l'école sont lues à part (« à réclamer », fiches masquées),
+      // et la partition se fait en mémoire, comme sur le web.
       // includePending: false — DÉCISION DU 2026-08-08, cf. le bloc de statuts
       // plus bas. get_coach_athletes a p_include_pending DEFAULT true : appelé
       // sans argument il ramènerait les EN_ATTENTE, que le revert du 08-08 a
@@ -1101,38 +1141,7 @@ export function CoachAthletesMobile() {
 
       const athletesQuery = supabase
         .from("athletes")
-        .select(`
-          id,
-          photo_url,
-          first_name,
-          last_name,
-          nom_a_confirmer,
-          verified,
-          last_profile_validation,
-          video_faits_saillants_url,
-          annee_diplomation,
-          cote_globale_entraineur,
-          school_id,
-          coach_id,
-          numero_jersey,
-          status,
-          statut_recrutement_override,
-          recruitment_status, committed_school_id, open_to_offers,
-          sport_id,
-          position_id,
-          mentions_academiques,
-          moyenne_generale,
-          created_at,
-          sports!sport_id(nom),
-          positions!position_id(nom, abreviation),
-          context,
-          schools!school_id(name, region, type),
-          committed_school:schools!committed_school_id(name),
-          team_athletes(team_id, teams!team_id(gender, division, league, rseq_team_id, schools!school_id(type))),
-          athlete_badges(contexte, retire_le, badges(code, libelle)),
-          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
-            evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
-        `)
+        .select(SELECT_ROSTER_MOBILE)
         // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
         // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
         //
@@ -1174,9 +1183,34 @@ export function CoachAthletesMobile() {
         // documente l'intention à l'endroit où on la lit.
         .eq("status", "ACTIF");
 
-      const { data } = await athletesQuery;
+      const { data: dataPerimetre } = await athletesQuery;
 
-      if (!data || cancelled) { if (!cancelled) setLoading(false); return; }
+      if (!dataPerimetre || cancelled) { if (!cancelled) setLoading(false); return; }
+
+      /* Lignes de l'ÉCOLE — comme le web (app/coach/athletes/page.tsx). « À
+         réclamer » et le compte des fiches masquées sont des questions d'école :
+         bâtis sur le seul périmètre, ils perdaient les fiches réclamées par un
+         autre coach (relevé émulateur 1.4.5 : « 1 fiche masquée » absente). */
+      let lignesEcole: Record<string, unknown>[] = [];
+      try {
+        lignesEcole = await lireTout<Record<string, unknown>>((de, a) => supabase
+          .from("athletes")
+          .select(SELECT_ROSTER_MOBILE, { count: "exact" })
+          .eq("school_id", coachRow.school_id)
+          .eq("status", "ACTIF")
+          .order("id")
+          .range(de, a));
+      } catch (e) {
+        console.error("[coach athletes] lignes de l'école", e);
+      }
+      if (cancelled) return;
+      const idsPerimetre = new Set(scopeIds);
+      const idsEcole = new Set(lignesEcole.map((r) => r.id as string));
+      const parId = new Map<string, Record<string, unknown>>();
+      for (const r of [...(dataPerimetre as Record<string, unknown>[]), ...lignesEcole]) parId.set(r.id as string, r);
+      const data = [...parId.values()];
+      setPerimetreIds(idsPerimetre);
+      setEcoleIds(idsEcole);
 
       // Favorites count — same source as web (L297-310)
       const ids = data.map((a: Record<string, unknown>) => a.id as string);
@@ -1231,25 +1265,27 @@ export function CoachAthletesMobile() {
 
   /* ── Partition (Roster vs unclaimed) ── */
   const myRoster = useMemo(
-    () => athletes.filter((a) => a.coachId === currentUserId),
-    [athletes, currentUserId]
+    () => athletes.filter((a) => a.coachId === currentUserId && perimetreIds.has(a.id)),
+    [athletes, currentUserId, perimetreIds]
   );
   /* D1b — même règle que app/coach/athletes/page.tsx : les fiches sans nom ou
      au nom à confirmer RESTENT dans l'effectif du coach (étiquetées) et sortent
      des sections hors de sa liste (« à réclamer », « école »). */
   const unclaimedAthletes = useMemo(
-    () => athletes.filter((a) => a.coachId == null && nomPresentable(a)),
-    [athletes]
+    () => athletes.filter((a) => a.coachId == null && ecoleIds.has(a.id) && nomPresentable(a)),
+    [athletes, ecoleIds]
   );
   const nbNomsEnAttente = useMemo(
-    () => athletes.filter((a) => a.coachId !== currentUserId && !nomPresentable(a)).length,
-    [athletes, currentUserId]
+    () => athletes.filter((a) => !nomPresentable(a) && ecoleIds.has(a.id)
+      && !(a.coachId === currentUserId && perimetreIds.has(a.id))).length,
+    [athletes, currentUserId, perimetreIds, ecoleIds]
   );
   // Director oversight: school athletes owned by OTHER coaches (unclaimed
   // stay in the À réclamer tab, never double-listed).
   const schoolAthletes = useMemo(
-    () => athletes.filter((a) => a.coachId !== currentUserId && a.coachId != null && nomPresentable(a)),
-    [athletes, currentUserId]
+    () => athletes.filter((a) => a.coachId != null && a.coachId !== currentUserId
+      && isDirector && perimetreIds.has(a.id) && ecoleIds.has(a.id) && nomPresentable(a)),
+    [athletes, currentUserId, isDirector, perimetreIds, ecoleIds]
   );
 
   /* ── Filter pipeline (Roster tab) — shared across both director sections ── */
@@ -1463,16 +1499,18 @@ export function CoachAthletesMobile() {
     viewMode === "grid" ? (
       <div className="grid grid-cols-2 gap-3 p-4">
         {list.map((a) => (
-          <AthleteCardMobile
-            key={a.id}
-            a={cardData(a)}
-            isFree={false}
-            favDisabled
-            onToggleFav={() => { /* no-op coach roster */ }}
-            favoritesCount={a.favoritesCount}
-            profileHref={`/coach/athletes/${a.id}`}
-            layoutIdPrefix="coach-athlete-photo"
-          />
+          <div key={a.id}>
+            <AthleteCardMobile
+              a={cardData(a)}
+              isFree={false}
+              favDisabled
+              onToggleFav={() => { /* no-op coach roster */ }}
+              favoritesCount={a.favoritesCount}
+              profileHref={`/coach/athletes/${a.id}`}
+              layoutIdPrefix="coach-athlete-photo"
+            />
+            {!nomPresentable(a) && <div className="mt-1"><EtiquetteNomAConfirmer a={a} /></div>}
+          </div>
         ))}
       </div>
     ) : (
@@ -1672,6 +1710,8 @@ export function CoachAthletesMobile() {
                           profileHref={`/coach/athletes/${a.id}`}
                           layoutIdPrefix="coach-athlete-photo"
                         />
+                        {/* D1b — l'étiquette aussi en grille, comme la carte web. */}
+                        {!nomPresentable(a) && <div className="mt-1"><EtiquetteNomAConfirmer a={a} /></div>}
                       </motion.div>
                     ))}
                   </AnimatePresence>
