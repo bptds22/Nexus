@@ -83,6 +83,7 @@
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import { coteCarte, type CoteCarte } from "@/lib/evaluations/coteCarte";
 import { createClient } from "@/lib/supabase/client";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 import { taxonomyFromSearchRow, type TaxonomySource } from "@/lib/config/team-taxonomy";
@@ -311,15 +312,9 @@ const MIN_SEARCH_LEN = 3;
  *  et le tri serveur : celle du coach si elle existe, sinon celle du
  *  partenaire. `organisation` non nul = la note vient du partenaire : la
  *  carte DOIT alors afficher ce nom à côté des étoiles. */
-export function coteAffichee(a: Pick<SearchAthleteRow, "stars" | "starsPartenaire" | "starsPartenaireOrg">): {
-  valeur: number;
-  organisation: string | null;
-} {
-  if (a.stars > 0) return { valeur: a.stars, organisation: null };
-  if (a.starsPartenaire && a.starsPartenaire > 0) {
-    return { valeur: a.starsPartenaire, organisation: a.starsPartenaireOrg ?? "Partenaire" };
-  }
-  return { valeur: 0, organisation: null };
+export function coteAffichee(a: Pick<SearchAthleteRow, "stars" | "starsPartenaire" | "starsPartenaireOrg">): CoteCarte {
+  // La règle est celle de toutes les cartes (lib/evaluations/coteCarte.ts).
+  return coteCarte(a.stars, { cote: a.starsPartenaire, organisation: a.starsPartenaireOrg });
 }
 
 export function useAthleteSearch(filters: AthleteSearchFilters) {

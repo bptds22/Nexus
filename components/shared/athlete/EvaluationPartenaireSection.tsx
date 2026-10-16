@@ -60,12 +60,16 @@ export function useEvaluationsPartenaires(athleteId: string | null | undefined):
 /** La forme compacte : une ligne par partenaire, dans le bloc du coach. */
 export function EvaluationPartenaireLigne({
   athleteId,
+  evaluations,
   className = "",
 }: {
   athleteId: string | null | undefined;
+  /** Déjà lues par l'hôte (une seule lecture par fiche) ; sinon lues ici. */
+  evaluations?: EvaluationPartenaire[];
   className?: string;
 }) {
-  const evals = useEvaluationsPartenaires(athleteId);
+  const lues = useEvaluationsPartenaires(evaluations ? null : athleteId);
+  const evals = evaluations ?? lues;
   if (evals.length === 0) return null;
   return (
     <>
@@ -90,10 +94,13 @@ export function EvaluationPartenaireLigne({
 
 export default function EvaluationPartenaireSection({
   athleteId,
+  evaluations,
   verrouille = false,
   coachAEvalue = false,
 }: {
   athleteId: string | null | undefined;
+  /** Déjà lues par l'hôte (une seule lecture par fiche) ; sinon lues ici. */
+  evaluations?: EvaluationPartenaire[];
   /** Recruteur gratuit : même verrou que le rapport de l'entraîneur. */
   verrouille?: boolean;
   /** Le coach a évalué : la ligne compacte (dans son bloc) remplace la section. */
@@ -101,7 +108,8 @@ export default function EvaluationPartenaireSection({
 }) {
   // Le hook est TOUJOURS appelé ; c'est le rendu qui s'efface.
   const grilleSet = useGrilles();
-  const evals = useEvaluationsPartenaires(coachAEvalue ? null : athleteId);
+  const lues = useEvaluationsPartenaires(coachAEvalue || evaluations ? null : athleteId);
+  const evals = evaluations ?? lues;
 
   if (coachAEvalue || evals.length === 0) return null;
 

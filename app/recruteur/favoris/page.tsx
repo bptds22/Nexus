@@ -13,6 +13,8 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { useFavoriteAthletesUnite } from "@/lib/queries/recruiter/useFavoriteAthletes";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { RecruteurFavorisMobile } from "@/components/shared/RecruteurFavorisMobile";
+import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
+import { coteCarteDepuisEvaluations, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -27,9 +29,14 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    pouvait pas le signaler puisque les deux formes portaient le même nom. */
 import type { FavoriAthlete } from "@/lib/queries/recruiter/useFavoriteAthletes";
 
+/* La cote de la carte : celle du coach, sinon celle d'un partenaire AVEC son
+   nom (lib/evaluations/coteCarte.ts) — calculée ici, côté web : le hook des
+   favoris sert aussi l'appli, branchée au lot mobile. */
+type FavoriCarte = FavoriAthlete & { cote: CoteCarte };
+
 /* ── Grid Card (same as coach Mes Athlètes) ──────────────── */
 
-function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (id: string) => void }) {
+function FavoriGridCard({ a, onUnfavorite }: { a: FavoriCarte; onUnfavorite: (id: string) => void }) {
   // L'identité n'est plus une décision de tier prise ici : elle arrive du
   // serveur, ligne par ligne, et couvre aussi la Loi 25 que `isFree` ignorait.
   const locked = !a.identityVisible;
@@ -69,13 +76,22 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
           )}
         </div>
 
-        {/* Top right — stars */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5">
-          {Array.from({ length: 5 }, (_, i) => (
-            <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#4a4d56"} stroke="none">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-          ))}
+        {/* Top right — stars. Note d'un PARTENAIRE : « Évaluation {organisation} »
+            dessous, pour qu'on ne la prenne jamais pour une note de coach. */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1">
+          <div className="flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5"
+            title={a.cote.organisation ? `${libelleCotePartenaire(a.cote.organisation)} — pas une note d'entraîneur` : undefined}>
+            {Array.from({ length: 5 }, (_, i) => (
+              <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={a.cote.valeur >= i + 1 ? "#F59E0B" : "#4a4d56"} stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            ))}
+          </div>
+          {a.cote.organisation && (
+            <span data-cote-partenaire className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85 max-w-[170px] truncate">
+              {libelleCotePartenaire(a.cote.organisation)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -165,7 +181,7 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
 
 /* ── List Row ────────────────────────────────────────────────── */
 
-function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (id: string) => void }) {
+function FavoriListRow({ a, onUnfavorite }: { a: FavoriCarte; onUnfavorite: (id: string) => void }) {
   const locked = !a.identityVisible;
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
@@ -235,14 +251,20 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
 
       {/* Stars — fixed width */}
       <div className="w-[120px] shrink-0">
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5"
+          title={a.cote.organisation ? `${libelleCotePartenaire(a.cote.organisation)} — pas une note d'entraîneur` : undefined}>
           {Array.from({ length: 5 }, (_, i) => (
-            <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+            <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.cote.valeur >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           ))}
-          <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
+          <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.cote.valeur.toFixed(1)}</span>
         </div>
+        {a.cote.organisation && (
+          <p data-cote-partenaire className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] truncate mt-0.5">
+            {libelleCotePartenaire(a.cote.organisation)}
+          </p>
+        )}
       </div>
 
       {/* Height/weight — fixed width */}
@@ -294,7 +316,14 @@ function FavorisContent() {
   const { maxFavorites, loading: tierLoading } = useSubscription();
   // Migration TanStack (iter 5.3a) — fetch + transformation déléguées
   // Lot B2, étape 2 : pour un Pro, les favoris de l'UNITÉ, avec qui les a posés.
-  const { athletes, favoris, isLoading: dataLoading } = useFavoriteAthletesUnite();
+  const { athletes: favorisBruts, favoris, isLoading: dataLoading } = useFavoriteAthletesUnite();
+  // Cote partenaire (lecture W2, par lot) : n'affiche rien tant qu'elle n'est
+  // pas arrivée — la carte montre d'abord la cote du coach, jamais un faux 0 partenaire.
+  const { data: cotesPartenaires } = useCotesPartenaires(favorisBruts.map((a) => a.id));
+  const athletes = useMemo<FavoriCarte[]>(
+    () => favorisBruts.map((a) => ({ ...a, cote: coteCarteDepuisEvaluations(a.stars, cotesPartenaires?.get(a.id)) })),
+    [favorisBruts, cotesPartenaires],
+  );
   const loading = dataLoading || tierLoading;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
@@ -351,12 +380,13 @@ function FavorisContent() {
     if (sport) list = list.filter(a => a.sport === sport);
     if (region) list = list.filter(a => a.region === region);
     if (promotion) list = list.filter(a => a.graduationYear === parseInt(promotion));
-    if (minRating) list = list.filter(a => a.stars >= parseFloat(minRating));
+    // Même règle que la recherche web : la cote AFFICHÉE (coach, sinon partenaire).
+    if (minRating) list = list.filter(a => a.cote.valeur >= parseFloat(minRating));
     if (verifiedOnly) list = list.filter(a => a.isVerified);
     if (withVideoOnly) list = list.filter(a => a.hasVideo);
     if (withSportBadge) list = list.filter(a => a.badges.length > 0);
     if (withAcademicBadge) list = list.filter(a => false); // no academic badges on FavoriAthlete yet
-    list.sort((a, b) => b.stars - a.stars);
+    list.sort((a, b) => b.cote.valeur - a.cote.valeur);
     return list;
   }, [athletes, search, sport, region, promotion, minRating, verifiedOnly, withVideoOnly, withSportBadge, withAcademicBadge]);
 

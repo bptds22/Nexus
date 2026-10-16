@@ -35,7 +35,8 @@ import { etapePorteVisite, visiteApresChangementEtape } from "@/lib/pipeline/reg
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import { traitGroups, resolvePositionId, type GrilleRef } from "@/lib/evaluations/grilles";
-import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
+import EvaluationPartenaireSection, { EvaluationPartenaireLigne, useEvaluationsPartenaires } from "@/components/shared/athlete/EvaluationPartenaireSection";
+import { coteCarteDepuisEvaluations, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
 import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
 import { zoneImageRangee } from "@/components/shared/athlete/tailleBadgeFiche";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
@@ -161,11 +162,13 @@ function positionAbbr(pos: string): string {
   return pos.length > 4 ? pos.slice(0, 3).toUpperCase() : pos.toUpperCase();
 }
 
-function PlayerCard({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boolean }) {
+function PlayerCard({ a, isFree, cote }: { a: AthleteProfileRecruiterView; isFree: boolean; cote: CoteCarte }) {
   // `isFree` reste pour les sections GATÉES PAR TIER (contenu premium).
   // L'identité, elle, ne se décide plus ici : elle vient du serveur.
   const locked = a.identityVisible === false;
-  const ratingValue = a.overallRating;
+  // Coach d'abord, sinon partenaire AVEC « Évaluation {organisation} » sous
+  // les étoiles (lib/evaluations/coteCarte.ts) — jamais d'étoiles partenaire seules.
+  const ratingValue = cote.valeur;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
   const sportDisplay = sportKey ? (SPORT_DISPLAY[sportKey] || a.primarySport) : a.primarySport;
@@ -255,6 +258,11 @@ function PlayerCard({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boo
                 ))}
                 <div className="card-star-shimmer absolute inset-0 pointer-events-none" />
               </div>
+              {cote.organisation && (
+                <div data-cote-partenaire title={`${libelleCotePartenaire(cote.organisation)} — pas une note d'entraîneur`} style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: '#6B7280', marginTop: -2, marginBottom: 6, lineHeight: 1.2, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 170 }}>
+                  {libelleCotePartenaire(cote.organisation)}
+                </div>
+              )}
               <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{a.isCivil
                 ? (a.teamName || a.leagueName || "")
                 : (a.schoolName || "").replace(/^École secondaire /i, "É.S. ").replace(/^École sec\. /i, "É.S. ")}</div>
@@ -328,6 +336,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // broaden its meaning.
   const isPreview = viewerMode !== "recruiter";
   const isPartner = viewerMode === "partner";
+  // Évaluations partenaires (lecture W2) : UNE lecture pour la carte, la ligne
+  // compacte et la section — avant le premier retour anticipé (règle des hooks).
+  const evaluationsPartenaires = useEvaluationsPartenaires(id);
   const router = useRouter();
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
@@ -845,7 +856,16 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* ══════════ HERO — 2 Columns ══════════ */}
         <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch">
           <div className="shrink-0 flex justify-center lg:justify-start">
-            <PlayerCard a={a} isFree={lockContent} />
+            <PlayerCard
+              a={a}
+              isFree={lockContent}
+              /* Le coach a évalué → sa cote, exactement comme avant (overallRating). */
+              cote={aUneCote(coteGlobale)
+                ? { valeur: a.overallRating, organisation: null }
+                : coteCarteDepuisEvaluations(null, evaluationsPartenaires.map((ev) => ({
+                    id: ev.id, athleteId: id, organisation: ev.organisation, cote: ev.coteGlobale, updatedAt: ev.updatedAt,
+                  })))}
+            />
           </div>
 
           <div className="flex-1 min-w-0 lg:pt-2 space-y-5">
@@ -1072,7 +1092,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   </div>
                 )}
                 {/* W2b — le coach a évalué : le partenaire tient en UNE ligne. */}
-                {!isDetailed && aUneCote(coteGlobale) && <EvaluationPartenaireLigne athleteId={id} className="ml-5" />}
+                {!isDetailed && aUneCote(coteGlobale) && <EvaluationPartenaireLigne athleteId={id} evaluations={evaluationsPartenaires} className="ml-5" />}
 
                 {/* Detailed: Cote Globale + full 8-trait grid + distinctions */}
                 {isDetailed && (
@@ -1137,7 +1157,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
                     {/* W2b — sous « Moyenne des traits » : la ligne du partenaire
                         (étoiles + cote globale, JAMAIS ses critères). */}
-                    {aUneCote(coteGlobale) && <EvaluationPartenaireLigne athleteId={id} />}
+                    {aUneCote(coteGlobale) && <EvaluationPartenaireLigne athleteId={id} evaluations={evaluationsPartenaires} />}
 
                     {(a.distinctions.length > 0 || badgesPartenaire.length > 0) && (
                       <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
@@ -1169,7 +1189,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* W2b — section complète SEULEMENT si le coach n'a pas évalué ; sinon
             la ligne compacte est déjà dans son bloc. Verrouillé (recruteur
             gratuit) avec une cote du coach : le verrou du rapport couvre tout. */}
-        <EvaluationPartenaireSection athleteId={id} verrouille={lockContent} coachAEvalue={aUneCote(coteGlobale)} />
+        <EvaluationPartenaireSection athleteId={id} evaluations={evaluationsPartenaires} verrouille={lockContent} coachAEvalue={aUneCote(coteGlobale)} />
 
         <SectionFaitsSaillants a={a} verrouille={lockContent} />
 
