@@ -9,8 +9,12 @@
      · unite_grades()    — le grade de l'unité (le plus récent) ;
      · unite_auteurs()   — les NOMS des auteurs (users n'est pas lisible
        entre collègues) ;
-     · recruiter_notes   — la dernière note de suivi, avec son auteur (la
-       RLS rend les notes de l'unité à un Pro).
+     · processus_cartes / processus_dernieres_notes (2026-10-16) — TOUTES
+       les cartes prospect, puis la dernière note de chaque carte et de
+       chaque dossier : une valeur chacune, sans plafond ni identifiants dans
+       l'adresse. Les notes arrivent par une seconde lecture, en parallèle :
+       les cartes s'affichent sans les attendre (voir dernieresNotes).
+   Aucune erreur n'est avalée : `error` / `notes.erreur`, et `reessayer`.
 
    Réservé au Pro : un compte gratuit reste sur usePipelineCards (ses propres
    lignes, mode démo, décision BP 1). La base le garantit de toute façon :
@@ -28,6 +32,7 @@
    existantes de la page (["pipeline"]) couvrent aussi celle-ci.
 ═══════════════════════════════════════════════════════════════ */
 
+import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -37,7 +42,8 @@ import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade } from "@/lib/config/grades";
 import type { PipelineData } from "@/lib/queries/recruiter/usePipelineCards";
 import { fetchEquipesAthletes } from "@/lib/queries/recruiter/divisionsEquipe";
-import { lireCartes, lireDernieresNotesCartes, versKanban } from "@/lib/cartes/carteProspect";
+import { lireCartes, lireDernieresNotesProcessus, versKanban } from "@/lib/cartes/carteProspect";
+import { appliquerDernieresNotes, type EtatNotes, type NotesProcessus } from "@/lib/pipeline/dernieresNotes";
 
 export interface AuteurUnite {
   id: string;
@@ -85,16 +91,34 @@ interface LigneUnite {
   ajoute_le: string | null;
 }
 
-export function useProcessusUnite(options: { enabled: boolean; sportId?: string | null; toutLeCegep?: boolean }) {
+/** Ce que rend useProcessusUnite : les cartes (dès qu'elles sont lues), et
+ *  l'état de la seconde lecture, celle des dernières notes. */
+export interface ProcessusUnite {
+  /** Cartes + dernières notes posées (ou leur état, voir dernieresNotes). */
+  data: PipelineData | undefined;
+  /** Première lecture des cartes en cours. */
+  isLoading: boolean;
+  /** Lecture des cartes en échec : l'écran l'affiche avec « Réessayer ». */
+  error: Error | null;
+  reessayer: () => void;
+  notes: { etat: EtatNotes; erreur: Error | null; reessayer: () => void };
+}
+
+/** `avecNotes: false` : l'écran n'affiche aucune note (pipeline et tableau de
+ *  bord mobiles) — la seconde lecture n'est pas faite du tout. */
+export function useProcessusUnite(options: { enabled: boolean; sportId?: string | null; toutLeCegep?: boolean; avecNotes?: boolean }): ProcessusUnite {
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
   const monCegep = currentUser?.profile.school_id ?? null;
   const sportId = options.sportId ?? null;
   const tout = !!options.toutLeCegep;
+  const actif = !!userId && options.enabled;
+  const avecNotes = options.avecNotes !== false;
+  const monSportProfil = currentUser?.profile.sport_id ?? null;
 
-  return useQuery<PipelineData>({
-    queryKey: ["pipeline", "unite", userId, sportId, tout],
-    enabled: !!userId && options.enabled,
+  const cartesQ = useQuery<PipelineData>({
+    queryKey: ["pipeline", "unite", userId, sportId, tout, monSportProfil],
+    enabled: actif,
     // Lot C : cartes prospect incluses (même clé, même invalidation).
     // Tableau PARTAGÉ : toujours périmé d'office — rechargé à chaque
     // affichage et au retour sur l'onglet (refetchOnWindowFocus, défaut).
@@ -103,12 +127,26 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
       const supabase = createClient();
       const params = { p_sport_id: sportId, p_tout_le_cegep: tout };
 
-      const [pipe, grades, auteurs] = await Promise.all([
-        supabase.rpc("unite_pipeline", params),
-        supabase.rpc("unite_grades", params),
-        supabase.rpc("unite_auteurs"),
+      /* Les cartes prospect partent DÈS LE DÉPART, en parallèle des lectures
+         de l'unité (correctif 2026-10-16 : elles attendaient deux allers-retours
+         de plus). Leur sport par défaut est celui de l'appelant
+         (users.sport_id, le même que unite_auteurs rend pour lui). */
+      const [[pipe, grades, auteurs], [lignesCartes, sportsRes]] = await Promise.all([
+        Promise.all([
+          supabase.rpc("unite_pipeline", params),
+          supabase.rpc("unite_grades", params),
+          supabase.rpc("unite_auteurs"),
+        ]),
+        Promise.all([
+          lireCartes(supabase, { cegepId: monCegep, sportId: sportId ?? monSportProfil, toutLeCegep: tout }),
+          supabase.from("sports").select("id, nom"),
+        ]),
       ]);
+      // Aucune erreur avalée (correctif 2026-10-16) : grades vides ou noms
+      // « Recruteur » partout seraient des données fausses affichées sans un mot.
       if (pipe.error) throw pipe.error;
+      if (grades.error) throw grades.error;
+      if (auteurs.error) throw auteurs.error;
       const parAuteur: Record<string, AuteurUnite> = {};
       for (const a of (auteurs.data ?? []) as AuteurUnite[]) parAuteur[a.id] = a;
 
@@ -132,22 +170,9 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
         if (isGrade(g.grade)) gradeMap[`${g.athlete_id}|${g.unite_sport_id ?? ""}`] = g.grade;
       }
 
-      /* Dernière note de suivi par athlète, avec son auteur. Une erreur ne
-         casse pas le processus : colonne vide plutôt que kanban blanc. */
-      const noteMap: Record<string, { content: string; created_at: string; auteur: string }> = {};
-      if (ids.length > 0) {
-        const { data: notes, error } = await supabase
-          .from("recruiter_notes")
-          .select("athlete_id, content, created_at, recruiter_id")
-          .in("athlete_id", ids)
-          .order("created_at", { ascending: false });
-        if (error) console.error("[useProcessusUnite] dernière note :", error.message);
-        for (const n of (notes ?? []) as { athlete_id: string; content: string; created_at: string; recruiter_id: string }[]) {
-          if (!noteMap[n.athlete_id]) {
-            noteMap[n.athlete_id] = { content: n.content, created_at: n.created_at, auteur: nomAuteur(parAuteur[n.recruiter_id]) };
-          }
-        }
-      }
+      /* Les dernières notes (dossiers ET cartes) ne sont PLUS lues ici :
+         seconde lecture, lancée en même temps (notesQ plus bas) — les
+         cartes s'affichent sans les attendre (correctif 2026-10-16). */
 
       const sportDuDossier = new Map(lignes.map((l) => [l.athlete_id, l.unite_sport_id]));
       const [cardMap, { divisions, ligues, equipes }] = await Promise.all([
@@ -199,7 +224,7 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
           taille_pieds: card?.taille_pieds ?? null,
           taille_pouces: card?.taille_pouces ?? null,
           poids_lbs: card?.poids_lbs ?? null,
-          derniere_note: noteMap[l.athlete_id] ?? null,
+          derniere_note: undefined,
           suivi_par: recruteurs,
           suivi_par_noms: recruteurs.map((id) => nomAuteur(parAuteur[id])),
           unite_sport_id: l.unite_sport_id,
@@ -212,30 +237,75 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
       /* CARTES PROSPECT (lot C) : les athlètes pas encore sur Nexus que
          l'unité suit. Converties au format d'un dossier (versKanban) : kanban,
          tableau, entonnoir et tuiles du tableau de bord les comptent sans
-         savoir ce qu'elles sont. Même filtre de sport que les dossiers. Une
-         erreur de lecture ne casse pas le processus : les dossiers restent. */
-      let cartes: PipelineKanbanCard[] = [];
-      try {
-        const [lignesCartes, sportsRes] = await Promise.all([
-          lireCartes(supabase, { cegepId: monCegep, sportId: sportId ?? monSport, toutLeCegep: tout }),
-          supabase.from("sports").select("id, nom"),
-        ]);
-        const nomsSports = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
-        const notesCartes = await lireDernieresNotesCartes(supabase, lignesCartes.map((l) => l.id));
-        cartes = lignesCartes.map((l) => versKanban(l, {
+         savoir ce qu'elles sont. Même filtre de sport que les dossiers.
+         TOUTES les cartes (processus_cartes, sans plafond). Une erreur de
+         lecture est LEVÉE (correctif 2026-10-16) : un processus amputé de ses
+         cartes sans un mot laissait croire qu'elles avaient disparu — l'écran
+         affiche maintenant l'erreur et « Réessayer ». Lues dès le départ
+         (plus haut), en parallèle des lectures de l'unité. */
+      if (sportsRes.error) throw sportsRes.error;
+      const nomsSports = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
+      const cartes = lignesCartes.map((l) => {
+        const k = versKanban(l, {
           nomSport: (id) => nomsSports.get(id) ?? "",
           nomAuteur: (id) => (id ? nomAuteur(parAuteur[id]) : "Recruteur"),
-          derniereNote: notesCartes[l.id] ?? null,
-        }));
-      } catch (e) {
-        console.error("[useProcessusUnite] cartes prospect :", e instanceof Error ? e.message : String(e));
-      }
+        });
+        return { ...k, derniere_note: undefined } as PipelineKanbanCard;
+      });
 
       /* Pas de « concurrents » en mode unité : les lignes lisibles d'autres
          recruteurs sont celles des COLLÈGUES, pas d'autres cégeps. */
       return { cards: [...cards, ...cartes], competitorMap: {} };
     },
   });
+
+  /* DERNIÈRES NOTES (dossiers + cartes) : une seule lecture,
+     processus_dernieres_notes — ni identifiants dans l'adresse, ni plafond.
+     Lancée EN MÊME TEMPS que les cartes (elle n'en dépend pas) ; le sport
+     des cartes est celui de l'appelant (users.sport_id) quand aucun n'est
+     choisi, comme lireCartes plus haut et unite_pipeline en base. Même
+     préfixe ["pipeline"] : les invalidations existantes la couvrent. */
+  const notesQ = useQuery<NotesProcessus & { auteurs: Record<string, AuteurUnite> }>({
+    queryKey: ["pipeline", "unite-notes", userId, sportId, tout],
+    enabled: actif && avecNotes,
+    staleTime: 0,
+    queryFn: async () => {
+      const supabase = createClient();
+      // Les noms des auteurs avec les notes (unite_auteurs) : une note n'est
+      // jamais affichée signée « Recruteur » le temps qu'ils arrivent.
+      const [notes, auteursRes] = await Promise.all([
+        lireDernieresNotesProcessus(supabase, { cegepId: monCegep, sportId: sportId ?? monSportProfil, toutLeCegep: tout }),
+        supabase.rpc("unite_auteurs"),
+      ]);
+      if (auteursRes.error) throw auteursRes.error;
+      const auteurs: Record<string, AuteurUnite> = {};
+      for (const a of (auteursRes.data ?? []) as AuteurUnite[]) auteurs[a.id] = a;
+      return { ...notes, auteurs };
+    },
+  });
+
+  const etatNotes: EtatNotes = !avecNotes || notesQ.data ? "pret" : notesQ.isError ? "erreur" : "chargement";
+  const brut = cartesQ.data;
+  const notes = notesQ.data;
+  const data = useMemo<PipelineData | undefined>(() => {
+    if (!brut) return undefined;
+    if (!avecNotes) return brut;
+    const nom = (id: string | null) => (id ? nomAuteur(notes?.auteurs[id]) : "Recruteur");
+    return { ...brut, cards: appliquerDernieresNotes(brut.cards, notes, etatNotes, nom) };
+  }, [brut, notes, etatNotes, avecNotes]);
+
+  const { refetch: relireCartes } = cartesQ;
+  const { refetch: relireNotes } = notesQ;
+  const reessayer = useCallback(() => { void relireCartes(); void relireNotes(); }, [relireCartes, relireNotes]);
+  const reessayerNotes = useCallback(() => { void relireNotes(); }, [relireNotes]);
+
+  return {
+    data,
+    isLoading: cartesQ.isLoading,
+    error: cartesQ.error,
+    reessayer,
+    notes: { etat: etatNotes, erreur: notesQ.error, reessayer: reessayerNotes },
+  };
 }
 
 /* ── Notes de suivi d'un athlète, signées (panneau) ───────────────── */

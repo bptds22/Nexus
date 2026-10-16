@@ -1,0 +1,29 @@
+APPLICATION EN PROD — Mon processus : cartes et notes par fonctions (20261016060000), SUR GO DE BP SEULEMENT
+
+Ordre : la migration AVANT le code web (et avant toute appli mobile qui l'embarque). Le nouveau code n'appelle
+QUE les nouvelles fonctions : sans elles, Mon processus affiche « Ton processus n'a pas pu être chargé ».
+L'ancien code, lui, fonctionne avec ou sans la migration (rien d'existant n'est modifié) : appliquer la base
+d'abord ne casse rien.
+
+1. Relevé avant (lecture seule) : docs/processus-rpc/prod/etat-avant.sql doit rendre 7cf4b4282075e604ca6b7d74b2c12d24|12
+   (relevé le 2026-10-16 : identique en prod et en local — unite_pipeline, carte_lecture_ok, acces_carte_lecture,
+   9 policies des cartes ; les quatre fonctions processus_* absentes ; dernière version prod 20261016040000).
+2. docs/processus-rpc/prod/lot-prod.sql (md5 a4365bbf39c8d453e1fc98889e594351, 38 246 octets) EN UN SEUL APPEL
+   (connecteur execute_sql) — une transaction : relevé, gardes (une transaction, version absente, état de départ),
+   le fichier octet pour octet (md5 2e7b5dabfd5fa690b0fe152669990ef6), schema_migrations, admin_operations
+   (MIGRATION_PROCESSUS_CARTES_RPC), empreinte e1146ae5cf5be08cb8f6c77d7bc3052a (16 éléments), données inchangées
+   (cartes_prospect, cartes_prospect_notes, recruiter_notes, recruiter_pipeline, users). Pas apply_migration (le
+   lot enregistre lui-même sa version). Si une carte ou une note est écrite pendant la seconde du lot, la garde
+   « une donnée a changé » annule tout : rien n'est appliqué, relancer.
+3. Lecture seule après : empreinte-objets.sql = e1146ae5cf5be08cb8f6c77d7bc3052a|16 ;
+   etat-avant.sql = 5357a55ccaa843269072bcdd121cc992|16.
+   Contrôle fonctionnel (lecture seule, compte du directeur Lauréats) : processus_cartes rend les 953 cartes,
+   processus_dernieres_notes les dernières notes (≈ une par carte annotée).
+4. Rollback si besoin : supabase/rollback/20261016060000_rollback_processus_cartes_rpc.sql
+   (md5 0b5351b1d7f90932e8ad7f8be54dc76e, une transaction) — APRÈS avoir ramené le code web en arrière. Prouvé en
+   local : ramène etat-avant.sql à 7cf4b4282075e604ca6b7d74b2c12d24|12, l'état prod relevé.
+
+Preuve locale : docs/processus-rpc/prod/preuve-locale.txt (garde fausse → rien ; envoi en morceaux → arrêt avant
+toute écriture ; lot réel → appliqué ; 2e envoi → refusé ; banc sur la base migrée 27|0).
+Banc : docs/processus-rpc/tests-processus-rpc.sql (transaction annulée, données fictives) — équivalence fonction =
+RLS pour chaque compte local × 5 filtres (245 cas, 0 écart), volume > 1000, carte fusionnée, droits, export.

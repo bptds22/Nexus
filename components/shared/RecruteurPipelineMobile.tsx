@@ -29,6 +29,8 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
 import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import ErreurChargement, { MESSAGES_PROCESSUS } from "@/components/shared/ErreurChargement";
+import ListeParTranches from "@/components/shared/ListeParTranches";
 import { estCarte } from "@/lib/cartes/carteProspect";
 import { OngletInfosCarte, OngletHistoriqueCarte, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
@@ -1559,10 +1561,12 @@ export function RecruteurPipelineMobile() {
   const filtreSport = useFiltreSportUnite();
   const choixSport = adminCegep ? filtreSport.choix : null;
   const sportParam = choixSport && choixSport !== TOUS && choixSport !== SANS_SPORT ? choixSport : null;
-  const { data: donneesUnite, isLoading: chargementUnite } = useProcessusUnite({
+  const { data: donneesUnite, isLoading: chargementUnite, error: erreurUnite, reessayer: reessayerUnite } = useProcessusUnite({
     enabled: modeUnite && (!adminCegep || filtreSport.pret),
     sportId: sportParam,
     toutLeCegep: choixSport === TOUS,
+    // Aucune note à l'écran mobile : pas de seconde lecture (correctif 2026-10-16).
+    avecNotes: false,
   });
   const pipelineData = modeUnite ? donneesUnite : isFreeDemoMode ? donneesDemo : undefined;
   const pipelineLoading = modeUnite ? chargementUnite : isFreeDemoMode ? chargementDemo : true;
@@ -1893,9 +1897,22 @@ export function RecruteurPipelineMobile() {
         </div>
       )}
 
+      {/* Plus aucune erreur de lecture en silence (correctif 2026-10-16) :
+          des cartes déjà affichées restent, avec le bandeau ; sans cartes,
+          le bandeau remplace la liste — jamais un faux « processus vide ». */}
+      {modeUnite && erreurUnite && !loading && cards.length > 0 && (
+        <div className="px-4 pt-2">
+          <ErreurChargement message={MESSAGES_PROCESSUS.cartes(true)} onReessayer={reessayerUnite} />
+        </div>
+      )}
+
       {/* Content — page-par-stage (Fix 2 iter 6.1a-fix) */}
       {loading ? (
         <SkeletonList />
+      ) : modeUnite && erreurUnite && cards.length === 0 ? (
+        <div className="px-4 pt-6">
+          <ErreurChargement message={MESSAGES_PROCESSUS.cartes(false)} onReessayer={reessayerUnite} />
+        </div>
       ) : isEmpty ? (
         <EmptyState isFreeDemo={isFreeDemoMode} />
       ) : (
@@ -1927,8 +1944,16 @@ export function RecruteurPipelineMobile() {
               {activeStageCards.length === 0 ? (
                 <EmptyStageState stage={STAGE_BY_LOWER[activeStage]} />
               ) : (
-                <div className="space-y-2">
-                  {activeStageCards.map((card) => {
+                /* TOUTES les cartes du stage sont là (comptées, filtrées,
+                   triées) ; seul le rendu avance par tranches de 50 au
+                   défilement (correctif 2026-10-16 : 952 cartes animées
+                   d'un coup figeaient l'ouverture). Nouvelle liste = `key`
+                   nouvelle : on repart du haut. */
+                <ListeParTranches
+                  key={`${activeStage}|${sortBy}|${quick.join(",")}|${JSON.stringify(filters)}`}
+                  className="space-y-2"
+                  items={activeStageCards}
+                  rendre={(card) => {
                     const canSwipeLeft = activeStageIndex > 0;
                     const canSwipeRight = activeStageIndex < STAGES.length - 1;
                     const prevStageLabel = canSwipeLeft ? STAGES[activeStageIndex - 1].label : "Limite";
@@ -1947,8 +1972,8 @@ export function RecruteurPipelineMobile() {
                         onEdgeBounce={handleSwipeEdgeBounce}
                       />
                     );
-                  })}
-                </div>
+                  }}
+                />
               )}
             </motion.div>
           </AnimatePresence>

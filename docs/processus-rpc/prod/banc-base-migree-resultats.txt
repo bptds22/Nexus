@@ -1,0 +1,28 @@
+1|OK|équivalence fonction = RLS, tous comptes × 5 filtres — 245 cas, 0 écarts 
+2|OK|des cas non vides ont bien été comparés — 26 cas avec cartes
+3|OK|r3 : plus de 1000 cartes, une seule valeur — 1501
+4|OK|r3 : la carte fusionnée n'apparaît pas
+5|OK|r3 : aucune carte d'une autre unité
+6|OK|r3 : tri etape_le décroissant
+7|OK|r3 : format imbriqué (teams, etablissement, positions présents)
+8|OK|r3 : 1500 dernières notes de cartes (plus de 1000) — 1501
+9|OK|r3 : la plus récente gagne
+10|OK|r3 : note de la fusionnée absente
+11|OK|r3 : dernière note de dossier = la plus récente
+12|OK|r3 (non admin) ne lit pas l'unité B — 0
+13|OK|r1 (admin) : tout le cégep = A + B — 1521
+14|OK|r4 (autre cégep) : aucune carte de A — 0
+15|OK|r6 (gratuit) : aucune carte — 0
+16|OK|sans identité : aucune carte — 0
+17|OK|export r3 : les 1600 notes (plus de 1000), aucune perdue — 1600/1600
+18|OK|export : du plus ancien au plus récent
+19|OK|export r4 (autre cégep) : aucune note — 0
+20|OK|export : tableaux vides ou nuls → listes vides
+21|OK|anon ne peut exécuter public.processus_cartes(uuid, uuid, boolean)
+22|OK|anon ne peut exécuter public.processus_dernieres_notes_cartes(uuid, uuid, boolean)
+23|OK|anon ne peut exécuter public.processus_dernieres_notes(uuid, uuid, boolean)
+24|OK|anon ne peut exécuter public.processus_notes_export(uuid[], uuid[])
+25|OK|authenticated peut exécuter public.processus_cartes(uuid, uuid, boolean)
+26|OK|authenticated peut exécuter public.processus_dernieres_notes(uuid, uuid, boolean)
+27|OK|authenticated peut exécuter public.processus_notes_export(uuid[], uuid[])
+27|0

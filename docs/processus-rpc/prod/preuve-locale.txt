@@ -1,0 +1,26 @@
+PREUVE LOCALE — lot processus (cartes et notes par fonctions) — 2026-10-16T09:32:56
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 2e7b5dabfd5fa690b0fe152669990ef6
+  md5 lot-prod.sql      : a4365bbf39c8d453e1fc98889e594351
+  état de départ : 7cf4b4282075e604ca6b7d74b2c12d24|12  (prod avant = 7cf4b4282075e604ca6b7d74b2c12d24|12) version=0 operations=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte e1146ae5cf5be08cb8f6c77d7bc3052a / 16 éléments) — tout est annulé 
+  état après : 7cf4b4282075e604ca6b7d74b2c12d24|12  (prod avant = 7cf4b4282075e604ca6b7d74b2c12d24|12) version=0 operations=0
+
+== 2. Instructions envoyées SÉPARÉMENT (en morceaux, pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:53: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : 7cf4b4282075e604ca6b7d74b2c12d24|12  (prod avant = 7cf4b4282075e604ca6b7d74b2c12d24|12) version=0 operations=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"5002|2371|25|24|49","etat_objets":"7cf4b4282075e604ca6b7d74b2c12d24","operations":67,"version_deja":0,"derniere_version":"20261016040000","pg":"17.6"}, "apres" : {"donnees" : "5002|2371|25|24|49", "version" : "20261016060000", "md5_enregistre" : "2e7b5dabfd5fa690b0fe152669990ef6", "admin_operation" : "b4b1b444-c409-4379-9717-afab5472cd9e", "fonctions" : 4, "meme_transaction" : true}} 
+  état après : 5357a55ccaa843269072bcdd121cc992|16  (prod avant = 7cf4b4282075e604ca6b7d74b2c12d24|12) version=1 operations=1
+  empreinte des objets en base : e1146ae5cf5be08cb8f6c77d7bc3052a|16  (attendue e1146ae5cf5be08cb8f6c77d7bc3052a|16)
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: migration processus_cartes_rpc déjà présente — rien n'est appliqué 
+  état après : 5357a55ccaa843269072bcdd121cc992|16  (prod avant = 7cf4b4282075e604ca6b7d74b2c12d24|12) version=1 operations=1
+
+== 5. Banc sur la base issue du lot ==
+  27|0   (ok | échecs)
