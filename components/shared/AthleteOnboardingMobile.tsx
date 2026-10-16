@@ -196,6 +196,16 @@ export function AthleteOnboardingMobile() {
   /* D1 — doublon probable : une vérification par visite, jamais bloquante. */
   const [doublonPossible, setDoublonPossible] = useState<DoublonInscription | null>(null);
   const doublonVerifie = useRef(false);
+  /* Le bloc est rendu en fin de formulaire, sous le pli et derrière le bouton
+     fixe (relevé émulateur 1.4.5) : sans ce défilement, « Continuer » semblait
+     ne rien faire et le 2e appui enregistrait sans que l'avertissement soit vu. */
+  useEffect(() => {
+    if (!doublonPossible) return;
+    const t = window.setTimeout(() => {
+      document.getElementById("nx-doublon-inscription")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [doublonPossible]);
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -2455,7 +2465,7 @@ function Step1Content(p: Step1Props) {
       )}
 
       {/* D1 — doublon probable : au-dessus du bouton fixe, « Continuer » enregistre. */}
-      {p.doublon && <div className="pt-4">{p.doublon}</div>}
+      {p.doublon && <div className="pt-4" id="nx-doublon-inscription">{p.doublon}</div>}
 
     </div>
   );

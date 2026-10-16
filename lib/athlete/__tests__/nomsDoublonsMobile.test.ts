@@ -129,3 +129,10 @@ test("assistant coach mobile : courriel exact → invitation, même identité av
   assert.match(src, /<MemeIdentiteAvertissement/);
   assert.match(src, /messageErreurSauvegarde\(/); // l'unicité du courriel garde son message
 });
+
+test("onboarding mobile : l'avertissement de doublon vient à l'écran (sous le pli sinon)", () => {
+  const src = lire("components/shared/AthleteOnboardingMobile.tsx");
+  assert.match(src, /<div className="pt-4" id="nx-doublon-inscription">\{p\.doublon\}<\/div>/);
+  assert.match(src, /document\.getElementById\("nx-doublon-inscription"\)\?\.scrollIntoView\(\{ behavior: "smooth", block: "center" \}\);/);
+  assert.match(src, /\}, \[doublonPossible\]\);/);
+});
