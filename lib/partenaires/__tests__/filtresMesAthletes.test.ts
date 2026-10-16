@@ -17,9 +17,7 @@ import {
 } from "@/lib/partenaires/filtresMesAthletes";
 
 // Fins de ligne normalisées : une extraction Windows (autocrlf) rend des CRLF.
-const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/
-/g, "
-");
+const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 
 const badge = (ref: string, libelle: string, nexus: boolean): BadgeMonAthlete => ({
   attributionId: `att-${ref}-${Math.random()}`, badgeRef: ref, libelle, nexus,
