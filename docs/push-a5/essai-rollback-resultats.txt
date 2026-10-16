@@ -1,0 +1,3 @@
+apres_migration|1
+fonctions_identiques_a_A4a|10|10|10
+contrainte|f|f

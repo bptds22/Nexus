@@ -1,0 +1,12 @@
+APPLICATION EN PROD — push A5 (20261016020000), SUR GO DE BP SEULEMENT
+
+1. Relevé avant (lecture seule) : docs/push-a5/prod/etat-avant.sql doit rendre a356cc149bde5a47d7ba7b06af675d0e|21
+   (relevé le 2026-10-16 : identique ; version 20261016020000 absente ; push_destination absente).
+2. docs/push-a5/prod/lot-prod.sql (md5 8725314ff5f8e0b032e13dab90568a0a, 42 600 octets) EN UN SEUL APPEL
+   (connecteur execute_sql) — une transaction : relevé, gardes (une transaction, version absente, état de départ),
+   le fichier octet pour octet (md5 0e53c5595a1d069e64ced2b6af4efbf8), schema_migrations, admin_operations
+   (MIGRATION_PUSH_A5), empreinte ec6969a0d28d379b47d15f91eb414ea2, données inchangées.
+   Si le connecteur refuse : psql "<url prod>" -X -v ON_ERROR_STOP=1 -At -c "$(cat docs/push-a5/prod/lot-prod.sql)"
+3. Lecture seule après : empreinte-objets.sql = ec6969a0d28d379b47d15f91eb414ea2|22 ; etat-avant.sql = dfb0b69ac9cbd6b034477a5d9177a5ee|22.
+4. Premier push réel : data = type announcement + nx_type + route ; une ligne athlete_notifications par élément de file.
+5. Rollback si besoin : supabase/rollback/20261016020000_rollback_push_a5_ouverture.sql (une transaction).

@@ -1,0 +1,26 @@
+PREUVE LOCALE — lot push A5 — 2026-10-15T21:15:11
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 0e53c5595a1d069e64ced2b6af4efbf8
+  md5 lot-prod.sql      : 8725314ff5f8e0b032e13dab90568a0a
+  état de départ : a356cc149bde5a47d7ba7b06af675d0e|21  (prod avant = a356cc149bde5a47d7ba7b06af675d0e|21) version=0 operations_A5=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte ec6969a0d28d379b47d15f91eb414ea2 / 22 éléments) — tout est annulé 
+  état après : a356cc149bde5a47d7ba7b06af675d0e|21  (prod avant = a356cc149bde5a47d7ba7b06af675d0e|21) version=0 operations_A5=0
+
+== 2. Instructions envoyées SÉPARÉMENT (en morceaux, pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:55: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : a356cc149bde5a47d7ba7b06af675d0e|21  (prod avant = a356cc149bde5a47d7ba7b06af675d0e|21) version=0 operations_A5=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"100|0|0|0|1|50|34|34|0|0|153a6b65afc5a2cee56bf4a5e69b2f99","etat_objets":"a356cc149bde5a47d7ba7b06af675d0e","operations":61,"version_deja":0,"derniere_version":"20261016010000","pg":"17.6"}, "apres" : {"donnees" : "100|0|0|0|1|50|34|34|0|0|153a6b65afc5a2cee56bf4a5e69b2f99", "version" : "20261016020000", "md5_enregistre" : "0e53c5595a1d069e64ced2b6af4efbf8", "admin_operation" : "88dc7159-2dbe-4367-ab6e-dbef5345d580", "destination_badge" : {"route": "/athlete/profil/apercu?section=badges", "nx_type": "BADGE_COACH"}, "meme_transaction" : true}} 
+  état après : dfb0b69ac9cbd6b034477a5d9177a5ee|22  (prod avant = a356cc149bde5a47d7ba7b06af675d0e|21) version=1 operations_A5=1
+  empreinte des objets en base : ec6969a0d28d379b47d15f91eb414ea2|22  (attendue ec6969a0d28d379b47d15f91eb414ea2|22)
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: migration push A5 déjà présente — rien n'est appliqué 
+  état après : dfb0b69ac9cbd6b034477a5d9177a5ee|22  (prod avant = a356cc149bde5a47d7ba7b06af675d0e|21) version=1 operations_A5=1
+
+== 5. Banc push A5 (A4a entier + A5) sur la base issue du lot ==
+  89|0   (ok | échecs)

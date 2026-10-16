@@ -1,0 +1,5 @@
+Le client de la 1.4.4 face aux pushs A5.
+pushIntent144.ts = git show origin/release/1.4.4:lib/push/pushIntent.ts (MARKETING_VERSION 1.4.4, build iOS 21,
+versionCode Android 19) — non copié ici : le reconstituer avec cette commande dans ce dossier.
+payloads.txt = data des 5 genres produits par la base locale migrée (type announcement + push_destination).
+  node --experimental-strip-types --test verif144.test.ts   → resultats.txt : 10/10
