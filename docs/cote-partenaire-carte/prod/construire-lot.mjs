@@ -1,4 +1,4 @@
-// Construit le LOT DE PROD de 20261016170000 (cote partenaire sur la carte + filtres « Mes athlètes »).
+// Construit le LOT DE PROD de 20261016170000 (cartes, « Mes athlètes », Loi 25, demande de visibilité).
 // Même méthode que W4d (docs/partenaires-w4d/prod).
 //   cd C:\tmp\nexus-cote ; node docs/cote-partenaire-carte/prod/construire-lot.mjs <empreinte_objets> [--faux]
 // Une seule transaction : relevé avant → garde (une transaction, version absente) → le fichier octet
@@ -24,9 +24,14 @@ const md5Fichier = crypto.createHash("md5").update(brut).digest("hex");
 const empreinte = faux ? "0".repeat(32) : empreinteObjets;
 const requeteEmpreinte = fs.readFileSync(path.resolve("docs/cote-partenaire-carte/prod/empreinte-objets.sql"), "utf8")
   .split("\n").filter((l) => !l.startsWith("--")).join("\n").trim().replace(/;$/, "");
-// Données partenaire : ce lot n'en écrit aucune.
+// Données partenaire et consentements : ce lot n'en écrit aucune. Il peut écrire des demandes de
+// visibilité pour les cartes qui attendent déjà l'opt-in (prod 2026-10-16 : aucune) — comptées à part.
 const DONNEES = `(select count(*) from public.partner_evaluations) || '|' || (select count(*) from public.partner_athlete_badges)
-       || '|' || (select count(*) from public.partner_badges) || '|' || (select count(*) from public.media_partners)`;
+       || '|' || (select count(*) from public.partner_badges) || '|' || (select count(*) from public.media_partners)
+       || '|' || (select count(*) from public.athletes where partner_visibility_opt_in)
+       || '|' || (select count(*) from public.partenaire_prospects)`;
+const DEMANDES = `(select count(*) from public.athlete_notifications where type = 'PARTENAIRE_VISIBILITE_DEMANDE')
+       || '|' || (select count(*) from public.partenaire_prospects where statut = 'CONFIRMEE_ATTENTE_OPTIN')`;
 
 const lot = `-- LOT PROD ${VERSION} — généré par docs/cote-partenaire-carte/prod/construire-lot.mjs${faux ? " — VARIANTE DE PREUVE (empreinte fausse)" : ""}
 -- Fichier : supabase/migrations/${VERSION}_${NOM}.sql — md5 ${md5Fichier}
@@ -101,8 +106,10 @@ select json_build_object(
      'donnees', ${DONNEES},
      'version', (select version from supabase_migrations.schema_migrations where version = '${VERSION}'),
      'md5_enregistre', (select md5(statements[1]) from supabase_migrations.schema_migrations where version = '${VERSION}'),
+     'demandes_creees|cartes_en_attente', ${DEMANDES},
      'fonctions', (select count(*) from pg_proc where pronamespace = 'public'::regnamespace
-                    and proname in ('cotes_partenaires_athletes', 'partenaire_mes_athletes')),
+                    and proname in ('cotes_partenaires_athletes', 'partenaire_mes_athletes', 'accepter_visibilite_partenaire',
+                                    'partenaire_demander_visibilite', 'partenaire_regler_demandes_visibilite')),
      'meme_transaction', (select txid from _cote_releve) = txid_current())
 ) as resultat_lot_cote_partenaire;
 `;

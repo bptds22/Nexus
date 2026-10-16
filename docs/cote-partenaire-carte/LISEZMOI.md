@@ -1,82 +1,79 @@
-# Cote partenaire sur la carte du joueur + filtres « Mes athlètes » (2026-10-16)
+# Cote partenaire sur la carte, « Mes athlètes », Loi 25 et demande de visibilité (2026-10-16)
 
 Branche `feat/partenaire-cote-filtres`, depuis `origin/main` 2943f633. Web seulement (protocole
-web d'abord) ; logique partagée dans `lib/` pour l'appli 1.4.5.
+web d'abord) ; logique partagée dans `lib/` pour l'appli 1.4.5. **UNE migration :**
+`supabase/migrations/20261016170000_cote_partenaire_carte_mes_athletes.sql`, générée par
+`scratchpad/gen` (gabarit + corps d'origine relevés, remplacements exacts et vérifiés).
 
 ## 1. Cote partenaire sur la carte
-
-Règle unique — `lib/evaluations/coteCarte.ts` :
-- le coach a évalué → sa cote, exactement comme avant ;
-- sinon, une évaluation partenaire lisible → ses étoiles **+ « Évaluation {organisation} »**, jamais seules ;
-- sinon → étoiles vides, aucun libellé.
-
-Surfaces web : recherche (grille + ligne), Mes favoris (grille + ligne, filtre « cote » et tri sur
-la cote affichée, comme la recherche), fiche recruteur et aperçu (`PlayerCard`, une seule lecture W2
-partagée avec la ligne compacte et la section partenaire existantes).
-
-**Visibilité : aucun nouvel accès.** `cotes_partenaires_athletes(uuid[])` est `SECURITY INVOKER` et
-appelle `evaluations_partenaires_athlete()` (W2) athlète par athlète : elle rend exactement ce que
-l'appelant lit déjà sur la fiche, sans les critères. Banc : égalité stricte avec W2 pour recruteur,
-coach, athlète, autre athlète, partenaire (la sienne seulement), admin ; anon refusé.
-
-⚠️ **Constat sur la règle W2 en place (non modifiée ici)** : W2 ne revérifie PAS l'opt-in à la
-lecture. Un partenaire ne peut évaluer qu'un athlète admissible (opt-in, 14 ans ou accord parental),
-mais si l'athlète **retire** ensuite sa visibilité, le recruteur lit toujours la cote (essai C4).
-C'est vrai aujourd'hui pour la recherche et la fiche ; la carte hérite de la même règle. Pour
-« rien sans opt-in » au sens strict, il faut ajouter `is_partner_eligible_athlete()` à la lecture W2
-ET au LATERAL de `recruiter_search_athletes` — décision BP, lot séparé.
-
-### Plusieurs partenaires — règle PROPOSÉE : la plus récente
-
-Codée aujourd'hui parce que c'est déjà celle de la recherche en prod (LATERAL W2 : filtre « 4+ » et
-tri). En attente du OK de BP ; changer = `retenirCotePartenaire()` + ce LATERAL, ensemble.
-
-Pourquoi la plus récente plutôt qu'une moyenne :
-1. **Une cote, un nom.** La carte dit « Évaluation {organisation} ». Une moyenne de deux
-   organisations n'a pas d'auteur : il faudrait « Évaluation A et B (moyenne) », un chiffre que
-   personne n'a donné.
-2. **Cohérence carte / filtre / tri** : la recherche filtre et trie déjà sur la plus récente.
-3. **Échelles différentes** : deux organisations ne notent pas pareil ; les moyenner mélange des barèmes.
-4. Le détail ne se perd pas : la fiche montre déjà **toutes** les évaluations partenaires, chacune nommée.
-
-Limite assumée : la plus récente n'est pas forcément la meilleure source. Prod au 2026-10-16 :
-2 évaluations partenaires, 2 athlètes, **aucun cas multi-partenaires** — la règle ne change rien
-aujourd'hui.
+`lib/evaluations/coteCarte.ts` : coach d'abord ; sinon partenaire avec « Évaluation {organisation} » ;
+sinon rien. Surfaces web : recherche (grille + ligne), favoris, fiche et aperçu (`PlayerCard`).
+**Plusieurs partenaires : la plus récente** (confirmé BP), départagée par l'identifiant à date égale —
+côté client ET dans le LATERAL de la recherche (avant : ex æquo non départagés côté serveur).
+`cotes_partenaires_athletes(uuid[])` : INVOKER, délègue à `evaluations_partenaires_athlete()`.
 
 ## 2. « Mes athlètes » du partenaire
+Recherche (nom, école/club, position) + « Distinctions » à choix multiple (Tout / Aucun), combinées —
+`lib/partenaires/filtresMesAthletes.ts`. `partenaire_mes_athletes()` + `poste`, `poste_abr`, `badge_ref`.
 
-`lib/partenaires/filtresMesAthletes.ts` (logique pure) :
-- recherche par mots, accents ignorés : prénom, nom, école/club, position (nom ou abréviation) ;
-- « Distinctions » : choix multiple parmi les badges **réellement remis** (badges propres + badges
-  Nexus attribués, non retirés), avec « Tout » / « Aucun » ; un athlète passe s'il porte au moins un
-  badge coché ; aucun coché = filtre inactif ; « Tout » exclut les athlètes seulement évalués ;
-- recherche ET distinctions se combinent. La page n'avait pas d'autre filtre jusqu'ici.
+## 3. Loi 25 — un retrait d'opt-in est respecté immédiatement (décision BP)
+Sans opt-in actif (`is_partner_eligible_athlete` faux), plus rien du partenaire n'est visible, pour
+personne d'autre que l'admin — l'athlète lui-même, son coach et le partenaire auteur compris. Les
+données restent ; l'opt-in revient, tout réapparaît. Lectures resserrées (corps d'origine + la seule
+condition) : `evaluations_partenaires_athlete` (fiche, section, ligne, et le lot cartes par délégation),
+`badges_partenaires_athlete`, `recruiter_search_athletes` (cote partenaire, « 4+ étoiles », tri),
+`partenaire_badges_nexus_admissibles` (nommait le partenaire d'un badge posé). `partenaire_mes_athletes`
+l'était déjà. Inventaire : ce sont les SEULES fonctions qui lisent `partner_evaluations` /
+`partner_athlete_badges` pour un non-admin ; aucune vue ne les lit ; les badges Nexus remis par un
+partenaire vivent seulement dans `partner_athlete_badges`.
 
-`partenaire_mes_athletes()` : DROP + CREATE (RETURNS TABLE change), + `poste`, `poste_abr` en fin de
-table, + `badge_ref` dans chaque badge. Corps W4d inchangé sinon, ACL reposée et comparée en entier.
+**Prod (lecture seule, 2026-10-16) : 0 athlète touché** — 2 athlètes portent des données partenaires
+(2 évaluations, 11 badges), les deux avec opt-in actif.
 
-## Base de données
+Hors périmètre, signalé : les notifications DÉJÀ reçues par le jeune (« Tu as reçu le badge X de Y »,
+A4a) restent dans SA cloche après un retrait — c'est son historique, pas une exposition à un tiers.
 
+## 4. Demande de visibilité au jeune
+Seul chemin réel d'une évaluation/badge partenaire sur un jeune SANS opt-in actif : la carte prospect
+confirmée qui attend (`CONFIRMEE_ATTENTE_OPTIN`, W4a) — W2/W3/W3b refusent toute écriture directe.
+La demande naît là (trigger sur `partenaire_prospects`, aucune fonction W4 redéfinie) :
+- « {Partenaire} t'a évalué. » / « Accepte d'être visible des partenaires pour que ton évaluation
+  s'affiche. » — cloche + push (file A4a, genre `VISIBILITE_PARTENAIRE`). Ni cote ni badge.
+- Une demande ouverte par (jeune, partenaire) ; une 2e carte du même partenaire s'y ajoute.
+- Carte sans évaluation ni badge : pas de demande (rien à rendre visible).
+- A RETIRÉ son opt-in : aucune relance au retrait ; UNE demande si une nouvelle évaluation (carte)
+  arrive après, tous partenaires confondus.
+- **Arrimage W4** : la proposition « C'est toi ? » de la carte (PARTENAIRE_EVALUATION) est CONVERTIE
+  en demande, pas doublée ; son push, s'il n'est pas parti, est annulé par la règle W4 existante. Le
+  push de demande part 10 min plus tard et est ANNULÉ si le jeune a déjà accepté (dans l'écran de la
+  carte). Le bandeau W4 du portail athlète reste (rappel d'écran, pas un message envoyé).
+- « Accepter » → `accepter_visibilite_partenaire()` → `set_my_partner_visibility` (chemin existant) ;
+  sous 14 ans → demande au parent lié (`parent_notifications`, lien Consentements), sans activer ;
+  sans parent lié → message, demande gardée ouverte.
+- La demande se règle seule : ACCEPTEE (paramètres, parent, carte), CADUQUE (carte disparue).
+
+**Prod (lecture seule) : 0 jeune recevrait le message à la mise en prod** (aucune carte en attente
+d'opt-in ; 2 cartes : 1 ENVOYEE, 1 RESERVEE).
+
+## Base de données — preuves
 | Fichier | Rôle |
 |---|---|
-| `supabase/migrations/20261016170000_cote_partenaire_carte_mes_athletes.sql` | gardes md5 (= prod), 2 fonctions, ACL |
-| `supabase/rollback/20261016170000_rollback_…sql` | retour à W4d, prouvé (md5 71a92e78 restauré) |
-| `tests-cote-partenaire.sql` → `…-resultats.txt` | banc, 32/32 |
-| `prod/lot-prod.sql` (md5 cbd84b97…) | lot une transaction ; empreinte 96eee4fb… |
-| `prod/preuve-locale.txt` | garde fausse annule tout ; envoi séparé arrêté ; 2ᵉ envoi refusé |
-| `outils/captures-cote-partenaire.mjs` → `captures/` | headless, comptes adultes jetables, remise en état |
+| migration `20261016170000` (md5 `1ee801ea…`) | gardes md5 sans CR (= prod) sur 10 fonctions + 3 contraintes |
+| rollback `20261016170000` | retour exact (md5 de chaque corps vérifié), demandes supprimées |
+| `tests-cote-partenaire.sql` → `…-resultats.txt` | **104/104** |
+| `prod/lot-prod.sql` (md5 `c0919992…`, 113 Ko) | une transaction ; empreinte `386e556c…` (19 éléments) |
+| `prod/preuve-locale.txt` | garde fausse : tout annulé ; envoi séparé : arrêt ; 2ᵉ envoi refusé ; banc 104/0 |
+| `outils/captures-*.mjs` → `captures/` | headless, comptes jetables, remise en état |
 
-**Rien en prod.** Ordre au GO : lot-prod.sql par le connecteur (md5 vérifié avant), vérif lecture
-seule, PUIS le code. Le code dégrade proprement sans la migration (la page Mes athlètes marche,
-sans position ni filtre fin ; les cartes sans lot affichent la cote du coach) mais ne doit pas
-partir avant.
+Rien en prod. Au GO : `lot-prod.sql` par le connecteur (md5 vérifié avant), vérif lecture seule,
+PUIS le code.
 
 ## À brancher dans l'appli (1.4.5)
-
-- `RecruteurFavorisMobile` : `useCotesPartenaires` + `coteCarteDepuisEvaluations` + libellé.
-- `AthleteRecruiterProfileBodyMobile` (fiche et aperçu athlète `/athlete/profil/apercu`) : la carte
-  via `coteCarteDepuisEvaluations` sur `useEvaluationsPartenaires`.
-- Recherche mobile (B3) : déjà sur `coteAffichee()`, qui délègue maintenant à `coteCarte()` — même
-  sortie ; passer le texte à `libelleCotePartenaire()` pour dire « Évaluation … ».
-- Mes athlètes mobile (CC2) : `filtrerMesAthletes`, `optionsDistinctions`, `resumeDistinctions`,
-  `toutesLesDistinctions` — aucune copie de logique.
+- Favoris mobile, fiche et aperçu mobiles : `coteCarteDepuisEvaluations` + `libelleCotePartenaire`.
+- Recherche mobile (B3) : libellé via `libelleCotePartenaire()`.
+- Mes athlètes mobile : `filtresMesAthletes.ts`.
+- Cloche mobile : rendu `PARTENAIRE_VISIBILITE_DEMANDE` + bouton via `accepterVisibilitePartenaire()`
+  (`lib/partenaires/demandeVisibilite.ts`) — aujourd'hui l'appli affiche « Réponds sur nexussports.ca ».
+- Push : `nx_type = VISIBILITE_PARTENAIRE`, route `/athlete/notifications` (liste blanche existante).
+- Écran de réponse de carte mobile (registre §85) : « parent_required » pourrait passer par la même
+  demande au parent.

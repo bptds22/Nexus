@@ -8,7 +8,7 @@ $out = "docs\cote-partenaire-carte\prod\preuve-locale.txt"
 "PREUVE LOCALE — lot 20261016170000 — $(Get-Date -Format s)" | Out-File -Encoding utf8 $out
 function Note($t) { $t | Out-File -Encoding utf8 -Append $out; Write-Host $t }
 function Etat($titre) {
-  $r = docker exec $db psql -U postgres -d postgres -At -c "select 'lot_fn=' || (select count(*) from pg_proc where pronamespace='public'::regnamespace and proname='cotes_partenaires_athletes') || ' mes_athletes_md5=' || (select left(md5(prosrc),8) from pg_proc where proname='partenaire_mes_athletes') || ' version=' || (select count(*) from supabase_migrations.schema_migrations where version='20261016170000') || ' evals_partenaires=' || (select count(*) from public.partner_evaluations)"
+  $r = docker exec $db psql -U postgres -d postgres -At -c "select 'lot_fn=' || (select count(*) from pg_proc where pronamespace='public'::regnamespace and proname='cotes_partenaires_athletes') || ' accepter_fn=' || (select count(*) from pg_proc where pronamespace='public'::regnamespace and proname='accepter_visibilite_partenaire') || ' eval_w2_md5=' || (select left(md5(replace(prosrc,chr(13),'')),8) from pg_proc where proname='evaluations_partenaires_athlete') || ' mes_athletes_md5=' || (select left(md5(prosrc),8) from pg_proc where proname='partenaire_mes_athletes') || ' version=' || (select count(*) from supabase_migrations.schema_migrations where version='20261016170000') || ' evals_partenaires=' || (select count(*) from public.partner_evaluations)"
   Note "  état $titre : $r"
 }
 function UnMessage($fichier) {
@@ -24,7 +24,7 @@ Note ("  md5 lot-prod.sql      : " + (Get-FileHash docs\cote-partenaire-carte\pr
 docker cp supabase\rollback\20261016170000_rollback_cote_partenaire_carte_mes_athletes.sql "${db}:/tmp/rb-cote.sql" | Out-Null
 docker exec -e PGCLIENTENCODING=UTF8 $db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -1 -q -f /tmp/rb-cote.sql 2>&1 | Out-Null
 docker exec $db psql -U postgres -d postgres -q -c "delete from supabase_migrations.schema_migrations where version = '20261016170000'" | Out-Null
-Etat "de départ (lot retiré par le rollback ; W4d = 71a92e78)"
+Etat "de départ (lot retiré par le rollback ; W2 = 33d0544f, W4d = 71a92e78)"
 
 Note "`n== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) =="
 Note ("  réponse : " + (UnMessage "docs\cote-partenaire-carte\prod\lot-preuve-garde-fausse.sql"))
