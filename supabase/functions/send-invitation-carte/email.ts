@@ -2,16 +2,16 @@
 // carte prospect (lot C). Séparé de index.ts pour être importable sans
 // démarrer Deno.serve (test Node : lib/cartes/__tests__/invitationCarte.test.ts).
 //
-// Texte de BP (version du 2026-09-28, mot pour mot) : objet « Un recruteur
-// du [Cégep] recrute sur Nexus » ; « [Recruteur], recruteur au [Cégep],
-// utilise Nexus comme plateforme de recrutement et suit ton parcours. » ;
-// « Crée ton profil pour qu'il ait accès à tes infos, tes vidéos et ton
-// évaluation : c'est ce qui facilite et maximise ton recrutement. »
+// Règle RSEQ (correctif BP 2026-10-16) : le courriel et ses rappels ne nomment
+// NI le recruteur, NI le cégep, NI un coach collégial. Texte neutre :
+// « Un recruteur collégial s'intéresse à ton profil. Crée ton compte Nexus
+// pour qu'il puisse te suivre. » Les données ne portent donc plus ces noms :
+// ce qui n'arrive pas ici ne peut pas s'afficher.
 
 import { renderEmail, APP_URL } from "../_shared/emailLayout.ts";
 
-/** renderEmail n'échappe rien (parité historique) : tout ce qui vient d'une
- *  saisie (prénom de la carte, nom du recruteur, nom du cégep) est échappé ICI. */
+/** renderEmail n'échappe rien (parité historique) : ce qui vient d'une saisie
+ *  (le prénom de la carte) est échappé ICI. */
 function echapper(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -20,10 +20,6 @@ function echapper(s: string): string {
 export interface DonneesInvitation {
   /** Prénom saisi sur la carte. */
   prenom: string | null;
-  /** « Prénom Nom » du recruteur qui a créé la carte (null : inconnu). */
-  recruteur: string | null;
-  /** Nom du cégep de l'unité. */
-  cegep: string;
   /** Adresse invitée — pré-remplit l'inscription. */
   courriel: string;
   /** URL absolue et signée de /desabonnement. */
@@ -36,8 +32,8 @@ export interface DonneesInvitation {
 /** Au plus trois rappels par carte (demander_rappel_invitation). */
 export const RAPPELS_MAX = 3;
 
-export function sujet(cegep: string, rappel = false): string {
-  return `${rappel ? "Rappel : " : ""}Un recruteur du ${cegep} recrute sur Nexus`;
+export function sujet(rappel = false): string {
+  return `${rappel ? "Rappel : " : ""}Un recruteur collégial s'intéresse à ton profil`;
 }
 
 /** Lien d'inscription : le formulaire s'ouvre en mode inscription, l'adresse
@@ -48,32 +44,28 @@ export function lienInscription(courriel: string): string {
 
 export function buildBody(d: DonneesInvitation): { html: string; text: string } {
   const prenom = d.prenom?.trim() || "";
-  const recruteur = d.recruteur?.trim() || "";
-  const cegep = d.cegep.trim();
   const p = (s: string, dernier = false) =>
     `<p style="margin:0${dernier ? "" : " 0 12px"};">${s}</p>`;
 
-  const quiHtml = recruteur
-    ? `<strong>${echapper(recruteur)}</strong>, recruteur au ${echapper(cegep)},`
-    : `Un recruteur du ${echapper(cegep)}`;
-  const quiTexte = recruteur ? `${recruteur}, recruteur au ${cegep},` : `Un recruteur du ${cegep}`;
-  const suite = "utilise Nexus comme plateforme de recrutement et suit ton parcours.";
-  const profil = "Crée ton profil pour qu'il ait accès à tes infos, tes vidéos et ton évaluation : " +
+  const qui = "Un recruteur collégial s'intéresse à ton profil. Crée ton compte Nexus pour qu'il puisse te suivre.";
+  const profil = "Ton profil lui donne accès à tes infos, tes vidéos et ton évaluation : " +
     "c'est ce qui facilite et maximise ton recrutement. C'est gratuit, et ça prend quelques minutes.";
 
   return renderEmail({
     preheader: "Crée ton profil Nexus : c'est gratuit, et ça prend quelques minutes.",
-    heading: echapper(sujet(cegep, !!d.rappel)),
+    // Objet et phrase : des constantes, sans saisie — rien à échapper (et la
+    // version texte du courriel garderait sinon « &#39; » à la place de l'apostrophe).
+    heading: sujet(!!d.rappel),
     bodyHtml:
       p(prenom ? `Salut ${echapper(prenom)},` : "Salut,") +
-      p(`${quiHtml} ${suite}`) +
+      p(qui) +
       p(echapper(profil), true),
     ctaLabel: "Créer mon profil",
     ctaUrl: lienInscription(d.courriel),
     bodyText: [
       prenom ? `Salut ${prenom},` : "Salut,",
       "",
-      `${quiTexte} ${suite}`,
+      qui,
       "",
       profil,
     ].join("\n"),
@@ -81,9 +73,9 @@ export function buildBody(d: DonneesInvitation): { html: string; text: string } 
       // Plus de « pas d'autre courriel » : un recruteur peut demander un rappel
       // (au plus trois, sept jours d'écart) — le désabonnement les arrête tous.
       raison: d.rappel
-        ? `Tu reçois ce rappel parce qu'un recruteur du ${echapper(cegep)} t'a invité sur Nexus ` +
+        ? `Tu reçois ce rappel parce qu'un recruteur collégial t'a invité sur Nexus ` +
           `et a demandé à te le rappeler. Au plus ${RAPPELS_MAX} rappels ; le lien ci-dessous les arrête.`
-        : `Tu reçois ce courriel parce qu'un recruteur du ${echapper(cegep)} a indiqué ton adresse ` +
+        : `Tu reçois ce courriel parce qu'un recruteur collégial a indiqué ton adresse ` +
           `en suivant ton parcours sportif. Il peut t'envoyer au plus ${RAPPELS_MAX} rappels ; le lien ci-dessous les arrête.`,
       desabonnementUrl: d.desabonnementUrl,
     },

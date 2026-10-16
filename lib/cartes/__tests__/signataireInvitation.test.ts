@@ -1,7 +1,7 @@
-/* send-invitation-carte : au nom de QUI part l'invitation (décision BP
-   2026-10-07, 15 h 23). Le signataire est figé par la base sur la ligne
-   d'invitation ; l'edge function le lit À PART et retombe sur le créateur
-   s'il est NULL ou si la colonne n'existe pas (fenêtre de déploiement). */
+/* send-invitation-carte : quel que soit le signataire figé par la base
+   (décision BP 2026-10-07), le courriel ne nomme plus personne — règle RSEQ
+   (correctif BP 2026-10-16) : ni le recruteur, ni le cégep. L'envoi ne lit
+   plus ni users ni schools, et part même si la colonne signataire manque. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
@@ -22,7 +22,9 @@ type Rep = { data: unknown; error: { message: string; code?: string } | null };
 /** Client minimal : seules les requêtes de traiterInvitation sont servies. */
 function faux(o: { signataire: string | null; colonneAbsente?: boolean }) {
   const ecritures: { table: string; patch: unknown }[] = [];
+  const lus: string[] = [];
   const from = (table: string) => {
+    lus.push(table);
     const q = { op: "select", cols: "", patch: null as unknown, f: {} as Record<string, unknown> };
     const repondre = (): Rep => {
       if (q.op === "update") {
@@ -54,11 +56,11 @@ function faux(o: { signataire: string | null; colonneAbsente?: boolean }) {
     };
     return b;
   };
-  return { client: { from }, ecritures };
+  return { client: { from }, ecritures, lus };
 }
 
 async function envoyer(o: { signataire: string | null; colonneAbsente?: boolean }) {
-  const { client, ecritures } = faux(o);
+  const { client, ecritures, lus } = faux(o);
   let corps: { text: string } | null = null;
   const fetchFaux = (async (_url: string, init: { body: string }) => {
     corps = JSON.parse(init.body);
@@ -68,30 +70,28 @@ async function envoyer(o: { signataire: string | null; colonneAbsente?: boolean 
     { supabase: client, fetch: fetchFaux, resendApiKey: "k", desabonnementSecret: "s".repeat(40) },
     "00000000-0000-0000-0000-0000000000a1",
   );
-  return { r, texte: (corps as { text: string } | null)?.text ?? "", ecritures };
+  return { r, texte: (corps as { text: string } | null)?.text ?? "", ecritures, lus };
 }
 
-test("signataire = le collègue qui a ajouté le courriel → son nom dans l'invitation", async () => {
-  const { r, texte } = await envoyer({ signataire: COLLEGUE });
-  assert.equal(r.statut, "ENVOYE");
-  assert.match(texte, /Julie Collègue, recruteur au Cégep de Saint-Jérôme/);
-  assert.doesNotMatch(texte, /Rémi Créateur/);
-});
+const NOMS = /Julie|Collègue|Rémi|Créateur|Saint-Jérôme/;
 
-test("signataire = le créateur (carte créée avec courriel) → le nom du créateur", async () => {
-  const { texte } = await envoyer({ signataire: CREATEUR });
-  assert.match(texte, /Rémi Créateur, recruteur au Cégep de Saint-Jérôme/);
-});
+for (const cas of [
+  { nom: "signataire = un collègue", o: { signataire: COLLEGUE } },
+  { nom: "signataire = le créateur", o: { signataire: CREATEUR } },
+  { nom: "signataire NULL (invitation née avant la migration)", o: { signataire: null } },
+]) {
+  test(`${cas.nom} → envoyé, texte neutre, aucun nom`, async () => {
+    const { r, texte, lus } = await envoyer(cas.o);
+    assert.equal(r.statut, "ENVOYE");
+    assert.match(texte, /Un recruteur collégial s'intéresse à ton profil\. Crée ton compte Nexus pour qu'il puisse te suivre\./);
+    assert.doesNotMatch(texte, NOMS);
+    assert.ok(!lus.includes("users") && !lus.includes("schools"), `tables lues : ${lus.join(", ")}`);
+  });
+}
 
-test("signataire NULL (invitation née avant la migration) → le nom du créateur", async () => {
-  const { r, texte } = await envoyer({ signataire: null });
-  assert.equal(r.statut, "ENVOYE");
-  assert.match(texte, /Rémi Créateur, recruteur au Cégep de Saint-Jérôme/);
-});
-
-test("colonne absente (edge function déployée AVANT la migration) → l'envoi part quand même, au nom du créateur", async () => {
+test("colonne signataire absente (fenêtre de déploiement) → l'envoi part quand même, neutre", async () => {
   const { r, texte, ecritures } = await envoyer({ signataire: null, colonneAbsente: true });
   assert.equal(r.statut, "ENVOYE");
-  assert.match(texte, /Rémi Créateur, recruteur au Cégep de Saint-Jérôme/);
+  assert.doesNotMatch(texte, NOMS);
   assert.ok(ecritures.some((e) => e.table === "cartes_prospect_invitations" && (e.patch as { statut?: string }).statut === "ENVOYE"));
 });

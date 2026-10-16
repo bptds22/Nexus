@@ -12,7 +12,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import Link from "next/link";
@@ -82,20 +82,11 @@ export function MentionProspect({ inviteeLe, invitationEtat }: { inviteeLe?: str
   );
 }
 
-/** Le recruteur connecté et son cégep : la signature du texte à copier. */
-function useSignatureRecruteur() {
+/** Le sport de l'unité du recruteur connecté. (Le texte à copier ne porte
+ *  plus sa signature : règle RSEQ, 2026-10-16.) */
+function useSportUnite() {
   const { data: currentUser } = useCurrentUser();
-  const profil = currentUser?.profile;
-  const { data: cegep = null } = useQuery({
-    queryKey: ["ecole-nom", profil?.school_id],
-    enabled: !!profil?.school_id,
-    staleTime: Infinity,
-    queryFn: async () => {
-      const { data } = await createClient().from("schools").select("name").eq("id", profil!.school_id!).maybeSingle();
-      return (data?.name as string | undefined) ?? null;
-    },
-  });
-  return { recruteur: [profil?.first_name, profil?.last_name].filter(Boolean).join(" "), cegep, sportId: profil?.sport_id ?? null };
+  return { sportId: currentUser?.profile?.sport_id ?? null };
 }
 
 /** « Copier le texte » : le recruteur envoie l'invitation de son propre
@@ -108,9 +99,8 @@ export function CopierTexteInvitation({ carteId, prenom, courriel, encadre = fal
   carteId: string; prenom: string | null; courriel: string | null; encadre?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const { recruteur, cegep } = useSignatureRecruteur();
   const [copie, setCopie] = useState<{ type: "ok" | "erreur" | "manuel"; texte: string } | null>(null);
-  const texte = texteRenvoi({ prenom, recruteur, cegep, courriel });
+  const texte = texteRenvoi({ prenom, courriel });
 
   const journaliserCopie = async (confirmation: string) => {
     const { error } = await createClient().rpc("journaliser_renvoi_invitation", { p_carte: carteId });
@@ -338,7 +328,7 @@ function LigneCourriel({ card, valeur, onEnregistre }: {
   card: CarteKanban; valeur: string | null; onEnregistre: (courriel: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const { sportId } = useSignatureRecruteur();
+  const { sportId } = useSportUnite();
   const [edition, setEdition] = useState(false);
   const [brut, setBrut] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);

@@ -14,10 +14,10 @@ test("geste : ajout, changement, retrait, inchangé (casse et espaces ignorés)"
   assert.equal(gesteCourriel(null, ""), "INCHANGE");
 });
 
-test("fenêtre « Envoyer l'invitation ? » : le texte de BP, mot pour mot", () => {
+test("fenêtre « Envoyer l'invitation ? » : le texte de BP, règle RSEQ (aucun nom)", () => {
   assert.equal(TITRE_CONFIRMATION, "Envoyer l'invitation ?");
   assert.equal(texteConfirmation(" x@y.ca "),
-    "Nexus enverra automatiquement à x@y.ca un courriel l'invitant à s'inscrire, à ton nom et à celui de ton cégep. Une seule fois.");
+    "Nexus enverra automatiquement à x@y.ca un courriel l'invitant à s'inscrire. Il ne nomme ni toi ni ton cégep. Une seule fois.");
 });
 
 test("après l'ajout : « Nexus envoie l'invitation à … », ou la mention neutre — jamais le motif", () => {
