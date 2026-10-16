@@ -56,6 +56,15 @@ Avant A5, seule la carte partenaire avait sa ligne : badges (coach et partenaire
 - Client : `node --experimental-strip-types --import ./lib/evaluations/__tests__/register-alias.mjs --test
   "lib/push/__tests__/*.test.ts"` → 15/15.
 
+## Lot de prod (serveur seulement)
+
+`prod/` — même méthode qu'A4a. `construire-lot.mjs` → `lot-prod.sql` (md5 `8725314ff5f8e0b032e13dab90568a0a`) ;
+départ attendu `a356cc149bde5a47d7ba7b06af675d0e|21` (prod relevée le 2026-10-16 = local), empreinte après
+`ec6969a0d28d379b47d15f91eb414ea2|22`. `preuve-locale.sh` → `preuve-locale.txt` : garde fausse → tout annulé ; envoi
+en morceaux → arrêt avant écriture ; lot réel → OK ; 2ᵉ envoi refusé ; banc 89/0 sur la base issue du lot.
+`verif-1.4.4/` : le client 1.4.4 ouvre l'accueil pour chacun des 5 genres (10/10). Marche à suivre :
+`prod/application-prod.txt`.
+
 ## Limites connues
 
 - Aucune invitation d'équipe n'envoie de push aujourd'hui : la route existe côté client, pas d'envoi serveur.

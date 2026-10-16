@@ -1,0 +1,5 @@
+BADGE_COACH={"type": "announcement", "route": "/athlete/profil/apercu?section=badges", "nx_type": "BADGE_COACH", "envoi_id": 12, "categorie": "BADGES_EVALUATIONS"}
+BADGE_PARTENAIRE={"type": "announcement", "route": "/athlete/profil/apercu?section=badges", "nx_type": "BADGE_PARTENAIRE", "envoi_id": 12, "categorie": "BADGES_EVALUATIONS"}
+EVALUATION_COACH={"type": "announcement", "route": "/athlete/profil/apercu?section=evaluation", "nx_type": "EVALUATION_COACH", "envoi_id": 12, "categorie": "BADGES_EVALUATIONS"}
+EVALUATION_PARTENAIRE={"type": "announcement", "route": "/athlete/profil/apercu?section=evaluation", "nx_type": "EVALUATION_PARTENAIRE", "envoi_id": 12, "categorie": "BADGES_EVALUATIONS"}
+CARTE_PARTENAIRE={"type": "announcement", "route": "/athlete/cartes-partenaires", "nx_type": "CARTE_PARTENAIRE", "envoi_id": 12, "categorie": "BADGES_EVALUATIONS"}

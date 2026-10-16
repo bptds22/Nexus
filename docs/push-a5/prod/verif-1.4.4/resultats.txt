@@ -1,0 +1,12 @@
+ok 1 - 1.4.4 — push A5 BADGE_COACH : intention « announcement », accueil du jeune
+ok 2 - 1.4.4 — BADGE_COACH : même intention qu'un push A4a (sans nx_type ni route)
+ok 3 - 1.4.4 — push A5 BADGE_PARTENAIRE : intention « announcement », accueil du jeune
+ok 4 - 1.4.4 — BADGE_PARTENAIRE : même intention qu'un push A4a (sans nx_type ni route)
+ok 5 - 1.4.4 — push A5 EVALUATION_COACH : intention « announcement », accueil du jeune
+ok 6 - 1.4.4 — EVALUATION_COACH : même intention qu'un push A4a (sans nx_type ni route)
+ok 7 - 1.4.4 — push A5 EVALUATION_PARTENAIRE : intention « announcement », accueil du jeune
+ok 8 - 1.4.4 — EVALUATION_PARTENAIRE : même intention qu'un push A4a (sans nx_type ni route)
+ok 9 - 1.4.4 — push A5 CARTE_PARTENAIRE : intention « announcement », accueil du jeune
+ok 10 - 1.4.4 — CARTE_PARTENAIRE : même intention qu'un push A4a (sans nx_type ni route)
+# pass 10
+# fail 0

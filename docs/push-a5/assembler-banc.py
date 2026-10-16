@@ -44,3 +44,9 @@ rollback;
 """
 io.open('docs/push-a5/essai-rollback-a5.sql', 'w', encoding='utf-8', newline='\n').write(essai_rb)
 print('ok')
+
+# Variante pour une base DÉJÀ migrée (preuve du lot de prod, étape 5) : même banc, sans charger la migration.
+migree = (head.replace("rejoué APRÈS la migration A5", "rejoué sur une base OÙ A5 EST DÉJÀ APPLIQUÉE")
+          + a4.replace('\nbegin;\n', '\nbegin;\n', 1).replace(fin, '\n' + sec + fin, 1))
+io.open('docs/push-a5/tests-push-a5-base-migree.sql', 'w', encoding='utf-8', newline='\n').write(migree)
+print('ok migree')
