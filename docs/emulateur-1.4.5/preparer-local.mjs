@@ -154,6 +154,10 @@ async function preparer() {
     if (!a?.first_name || !a?.last_name) continue;
     const { data: carte, error } = await r.from("cartes_prospect").insert({ prenom: a.first_name, nom: a.last_name, team_id: c.team_id }).select("id").single();
     if (error) continue;
+    // La carte est mise en FILE (rapprochement_enfiler) ; pg_cron la traite chaque minute.
+    // On fait le passage tout de suite, par la même fonction que le cron.
+    const { error: errEval } = await svc.rpc("evaluer_rapprochements", { p_max: 500 });
+    if (errEval) note("evaluer_rapprochements : " + errEval.message);
     const { data: vues } = await r.rpc("rapprochements_unite");
     if ((vues ?? []).some((v) => v.carte_id === carte.id)) { note(`rapprochement : carte « ${a.first_name} ${a.last_name} » ↔ profil ${a.id}`); propose = true; break; }
     await svc.from("cartes_prospect").delete().eq("id", carte.id);
@@ -170,16 +174,30 @@ async function preparer() {
   const coachA = await coach(`e.coach${DOM}`, "Émulateur");
   const coachB = await coach(`e.coach.autre${DOM}`, "Autre");
 
-  // D1b — compte « Google » neuf : onboarding avec Prénom / Nom pré-remplis à confirmer.
-  const g1 = await compte(`e.athlete.google${DOM}`, { role: "ATHLETE", meta: { full_name: "Léa-Rose Tremblay Roy", date_naissance: "2008-06-06" }, app: { provider: "google", providers: ["google"] } });
+  // D1b — un compte « Google ». L'API d'administration force provider = email : le trigger
+  // trg_users_nom_google ne peut donc pas jouer ici. On pose EXACTEMENT ce qu'il aurait posé
+  // (couper_nom_complet, nom_a_confirmer) et on marque le compte google côté auth.
+  async function commeGoogle(uid, complet) {
+    const { data: c, error } = await svc.rpc("couper_nom_complet", { p: complet });
+    if (error) throw new Error("couper_nom_complet : " + error.message);
+    const { prenom, nom } = (c ?? [])[0] ?? {};
+    const { error: e2 } = await svc.from("users").update({ first_name: prenom, last_name: nom, nom_a_confirmer: true }).eq("id", uid);
+    if (e2) throw new Error("users nom_a_confirmer : " + e2.message);
+    await fetch(`${API}/auth/v1/admin/users/${uid}`, { method: "PUT", headers: H,
+      body: JSON.stringify({ app_metadata: { provider: "google", providers: ["google"] }, user_metadata: { full_name: complet } }) });
+    return { prenom, nom };
+  }
+  // Compte « Google » neuf : onboarding avec Prénom / Nom pré-remplis à confirmer.
+  const g1 = await compte(`e.athlete.google${DOM}`, { role: "ATHLETE", meta: { date_naissance: "2008-06-06" } });
+  await commeGoogle(g1, "Léa-Rose Tremblay Roy");
   const { data: u1 } = await svc.from("users").select("first_name, last_name, nom_a_confirmer").eq("id", g1).single();
   note(`compte Google neuf : ${u1.first_name} / ${u1.last_name} — à confirmer : ${u1.nom_a_confirmer}`);
 
   // D1b — fiche au nom à confirmer, onboarding fini, dans l'effectif de coachA (bandeau + étiquette).
   async function ficheAConfirmer(email, complet, coachId) {
-    const uid = await compte(email, { role: "ATHLETE", meta: { full_name: complet }, app: { provider: "google", providers: ["google"] } });
-    const { data: u } = await svc.from("users").select("first_name, last_name").eq("id", uid).single();
-    await svc.from("athletes").insert({ user_id: uid, first_name: u.first_name, last_name: u.last_name, email,
+    const uid = await compte(email, { role: "ATHLETE" });
+    const u = await commeGoogle(uid, complet);
+    await svc.from("athletes").insert({ user_id: uid, first_name: u.prenom, last_name: u.nom, email,
       school_id: ECOLE_COACH, coach_id: coachId, sport_id: equipeCoach.sport_id, status: "ACTIF", annee_diplomation: 2027, date_naissance: "2007-02-02" });
     await svc.from("users").update({ onboarding_complete: true }).eq("id", uid);
     const { data: a } = await svc.from("athletes").select("nom_a_confirmer").eq("user_id", uid).single();
