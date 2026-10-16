@@ -1,0 +1,8 @@
+1|OK|équivalence fonction = RLS, chaque compte local (49 comptes) — 1078 cas, 0 écart(s), 470 non vides
+2|OK|le banc voit des données (au moins un compte lit des cartes et des lignes) — 470 cas non vides
+3|OK|cartes_par_ids : 1500 cartes en une valeur (ni plafond ni troncature) — 1500 / 1500
+4|OK|cartes_par_ids : la carte fusionnée ne sort jamais — 0 fusionnée(s)
+5|OK|tableau vide / NULL : aucune ligne, aucune erreur
+6|OK|droits : anon refusé, authenticated permis, sur les 16 fonctions — 16 fonctions
+7|OK|sécurité : seule cartes_par_ids est DEFINER (row_security off) ; les 15 autres INVOKER — 16 fonctions
+7|0
