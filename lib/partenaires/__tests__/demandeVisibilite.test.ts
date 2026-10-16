@@ -13,7 +13,8 @@ import {
   texteEtatDemande,
 } from "@/lib/partenaires/demandeVisibilite";
 
-const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+// Fins de ligne normalisées : une extraction Windows (autocrlf) rend des CRLF.
+const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 const MIGRATION = "supabase/migrations/20261016170000_cote_partenaire_carte_mes_athletes.sql";
 
 test("état d'une demande : défaut EN_ATTENTE, textes des états réglés", () => {
