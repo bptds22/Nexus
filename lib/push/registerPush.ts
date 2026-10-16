@@ -84,9 +84,13 @@ export async function attachPushListeners(): Promise<void> {
   // Arrivée au premier plan : pas de navigation (l'usager n'a rien demandé),
   // mais l'inbox doit cesser de mentir. L'invalidation est portée par le
   // consommateur, qui a le QueryClient.
+  // A5 : la cloche aussi — chaque push A4a a sa notification, le compteur
+  // (barre d'onglets, tableau de bord) et la liste se relisent sur
+  // `notifications-updated`.
   await FirebaseMessaging.addListener('notificationReceived', () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('nx-push-received'));
+      window.dispatchEvent(new Event('notifications-updated'));
     }
   });
 
@@ -96,9 +100,13 @@ export async function attachPushListeners(): Promise<void> {
   await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
     void (async () => {
       const data = (event as { notification?: { data?: unknown } })?.notification?.data;
+      // Un push touché en arrière-plan n'a pas déclenché notificationReceived :
+      // la cloche se relit ici aussi.
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('notifications-updated'));
       const intent = parsePushData(data);
       if (!intent) {
-        // Type inconnu ou data absent : comportement d'avant, on ne fait rien.
+        // Data absent ou sans type : on ne fait rien (un type inconnu, lui,
+        // donne l'intention « notifications »).
         console.log('[push] action sans intention exploitable', event);
         return;
       }

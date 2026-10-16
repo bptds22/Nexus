@@ -6,8 +6,9 @@
    comportement natif est justement ce que la passe simulateur mesure.
 
    Ce que ces cas verrouillent, et qui n'est pas rejouable à la main sans
-   un appareil : la règle « tout ce qui n'est pas reconnu ne fait RIEN »
-   (garantie de non-régression du tap) et le repli sur l'inbox quand
+   un appareil : un data sans type ne fait RIEN, un type inconnu ouvre les
+   notifications (A5), une route hors liste blanche n'est jamais suivie, et
+   le repli sur l'inbox quand
    l'usager n'est pas participant du fil.
 
    Lancement (le glob de `npm test` ne couvre que lib/evaluations) :
@@ -53,13 +54,46 @@ test("parsePushData — une annonce donne une intention sans id", () => {
   assert.equal(i?.kind, "announcement");
 });
 
-test("parsePushData — data absent, vide ou inconnu ne donne RIEN", () => {
-  // La garantie « rien ne casse » : sans intention, aucun chemin nouveau.
+test("parsePushData — data absent, vide ou sans type ne donne RIEN", () => {
+  // Pas un push Nexus : aucun chemin ne s'active.
   assert.equal(parsePushData(undefined), null);
   assert.equal(parsePushData(null), null);
   assert.equal(parsePushData({}), null);
-  assert.equal(parsePushData({ type: "autre_chose", id: CONV }), null);
   assert.equal(parsePushData("message"), null);
+});
+
+test("parsePushData — A5 : un type inconnu ouvre les notifications", () => {
+  assert.equal(parsePushData({ type: "autre_chose", id: CONV })?.kind, "notifications");
+});
+
+/* ═══ A5 : nx_type + route, liste blanche ════════════════════════ */
+
+const route = (d: unknown) => (parsePushData(d) as { route?: string } | null)?.route;
+
+test("parsePushData — A5 : chaque type A4a donne son écran", () => {
+  const base = { type: "announcement", categorie: "BADGES_EVALUATIONS", envoi_id: "12" };
+  assert.equal(route({ ...base, nx_type: "BADGE_COACH" }), "/athlete/profil/apercu?section=badges");
+  assert.equal(route({ ...base, nx_type: "BADGE_PARTENAIRE" }), "/athlete/profil/apercu?section=badges");
+  assert.equal(route({ ...base, nx_type: "EVALUATION_COACH" }), "/athlete/profil/apercu?section=evaluation");
+  assert.equal(route({ ...base, nx_type: "EVALUATION_PARTENAIRE" }), "/athlete/profil/apercu?section=evaluation");
+  assert.equal(route({ ...base, nx_type: "CARTE_PARTENAIRE" }), "/athlete/cartes-partenaires");
+  assert.equal(route({ type: "announcement", nx_type: "TEAM_INVITATION" }), "/athlete/notifications?section=invitations");
+});
+
+test("parsePushData — A5 : une route reçue hors liste blanche n'est JAMAIS suivie", () => {
+  assert.equal(route({ type: "announcement", nx_type: "BADGE_COACH", route: "https://exemple.com" }),
+    "/athlete/profil/apercu?section=badges");
+  assert.equal(route({ type: "announcement", nx_type: "BADGE_COACH", route: "/admin" }),
+    "/athlete/profil/apercu?section=badges");
+  // Route permise, même si elle diffère du type : gardée (le serveur décide dans la liste).
+  assert.equal(route({ type: "announcement", nx_type: "BADGE_COACH", route: "/athlete/cartes-partenaires" }),
+    "/athlete/cartes-partenaires");
+});
+
+test("parsePushData — A5 : nx_type inconnu → notifications ; sans nx_type → accueil comme en 1.4.4", () => {
+  assert.equal(parsePushData({ type: "announcement", nx_type: "NOUVEAU_GENRE" })?.kind, "notifications");
+  assert.equal(parsePushData({ type: "announcement", nx_type: "NOUVEAU_GENRE", route: "/x" })?.kind, "notifications");
+  assert.equal(parsePushData({ type: "announcement", athlete_id: CONV })?.kind, "announcement");
 });
 
 test("parsePushData — un conversation_id qui n'est pas un uuid est refusé", () => {
@@ -109,4 +143,18 @@ test("resolveDestination — ADMIN/PARTNER n'ont pas de fil : accueil, pas d'URL
 test("resolveDestination — rôle inconnu : null, l'appelant garde sa destination", async () => {
   assert.equal(await resolveDestination(fakeSupabase(true), "", MESSAGE), null);
   assert.equal(await resolveDestination(fakeSupabase(true), "SUPER_ADMIN", ANNONCE), null);
+});
+
+test("resolveDestination — A5 : l'écran du jeune pour un ATHLETE, l'accueil pour les autres", async () => {
+  const r: PushIntent = { kind: "route", route: "/athlete/cartes-partenaires", ts: Date.now() };
+  assert.equal(await resolveDestination(fakeSupabase(true), "ATHLETE", r), "/athlete/cartes-partenaires");
+  assert.equal(await resolveDestination(fakeSupabase(true), "COACH", r), "/coach");
+  assert.equal(await resolveDestination(fakeSupabase(true), "", r), null);
+});
+
+test("resolveDestination — A5 : notifications du jeune ; accueil pour les rôles sans écran", async () => {
+  const n: PushIntent = { kind: "notifications", ts: Date.now() };
+  assert.equal(await resolveDestination(fakeSupabase(true), "ATHLETE", n), "/athlete/notifications");
+  assert.equal(await resolveDestination(fakeSupabase(true), "COACH", n), "/coach");
+  assert.equal(await resolveDestination(fakeSupabase(true), "RECRUTEUR", n), "/recruteur");
 });

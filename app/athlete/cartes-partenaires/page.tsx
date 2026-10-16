@@ -9,19 +9,20 @@
    confirmée qui attend la visibilité partenaire. Source :
    prospect_partenaire_mes_cartes (base W4a).
 
-   Web seulement : le mobile publié affiche la notification sans écran de
-   réponse ; son texte renvoie à nexussports.ca (registre §85, lot mobile).
+   Dans l'appli aussi depuis A5 (1.4.5) : le push CARTE_PARTENAIRE et la
+   notification PARTENAIRE_EVALUATION y mènent. La 1.4.4 n'a pas l'écran ;
+   son texte renvoie toujours à nexussports.ca (registre §85).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CarteProspectReponse from "@/components/athlete/prospects/CarteProspectReponse";
 import { chargerCartesJeune, type CarteJeune } from "@/lib/partenaires/prospects";
 
-export default function CartesPartenairesPage() {
-  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
+// Dans l'appli, pas de barre du haut : le titre passe sous l'encoche sans nx-safe-top.
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
+export default function CartesPartenairesPage() {
   const [cartes, setCartes] = useState<CarteJeune[] | null>(null);
   const [erreur, setErreur] = useState(false);
 
@@ -32,7 +33,7 @@ export default function CartesPartenairesPage() {
   }, []);
 
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-2xl" data-page-cartes-partenaires>
+    <div className={`px-4 sm:px-8 max-w-2xl ${IS_CAPACITOR ? "pb-6 nx-safe-top" : "py-6 sm:py-8"}`} data-page-cartes-partenaires>
       <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Mon espace athlète</p>
       <h1 className="font-head text-[26px] font-black text-white uppercase tracking-tight">Évaluations de partenaires</h1>
       <p className="text-[13px] text-[#9CA3AF] mt-1">
