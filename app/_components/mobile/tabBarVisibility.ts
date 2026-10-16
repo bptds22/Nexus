@@ -13,7 +13,7 @@
    En phase via cette fonction → pas de condition dupliquée en dur.
 ═══════════════════════════════════════════════════════════════ */
 
-export type TabBarRole = "coach" | "recruteur" | "athlete";
+export type TabBarRole = "coach" | "recruteur" | "athlete" | "partenaire";
 
 /** trailingSlash:true → le pathname runtime porte un slash final. On le
  *  normalise pour les comparaisons EXACTES (parité avec MobileTabBar). */
@@ -50,6 +50,9 @@ export function isTabBarHidden(role: TabBarRole, normalizedPath: string): boolea
   if (role === "coach" && normalizedPath.startsWith("/coach/parametres/")) return true;
   if (role === "coach" && normalizedPath.startsWith("/coach/reputation/")) return true;
   if (role === "coach" && normalizedPath.startsWith("/coach/equipes/")) return true;
+
+  // Partenaire — l'écran de bienvenue (conditions + mot de passe) est plein écran.
+  if (role === "partenaire" && normalizedPath === "/partenaire/bienvenue") return true;
 
   // Onboarding plein écran (athlète / coach / recruteur).
   if (role === "athlete" && normalizedPath === "/athlete/onboarding") return true;

@@ -4,8 +4,9 @@
  *
  * Ce fichier est descriptif — il sert de source vérité pour le scope mobile.
  * Les exclusions effectives sont implémentées via :
- *   - `notFound()` guard dans app/admin/layout.tsx + app/partenaire/layout.tsx
- *     (couvre tous les enfants — admin/* et partenaire/* segments complets)
+ *   - `notFound()` guard dans app/admin/layout.tsx (couvre tous les enfants —
+ *     admin/* segment complet). Le portail partenaire (/partenaire) n'est PLUS
+ *     exclu depuis la 1.4.5 (B1) : il est dans l'appli.
  *   - `notFound()` guard en tête de chaque page marketing/légale individuelle
  *   - `redirect('/auth')` guard en tête de app/page.tsx (root — sinon le bundle
  *     mobile n'aurait pas de point d'entrée valide)
@@ -28,13 +29,12 @@
  * 1. Marketing public : landing, tarifs, "pour les X", contenus éditoriaux
  * 2. Légales : remplacées par des PDFs (voir lib/legal/index.ts)
  * 3. Admin : gestion plateforme (rôle ADMIN, web-only)
- * 4. Portail partenaire : B2B desktop (rôle PARTNER, web-only)
+ * 4. (1.4.5) Le portail partenaire est sorti de cette liste : il est dans l'appli.
  * 5. Profil public partenaire : vitrine non-critique mobile
  */
 
 export const MOBILE_EXCLUDED_SEGMENTS = [
   '/admin',
-  '/partenaire',
   '/parent',   // Portal parental (Lot 1a) — web only. Exclusion effective via
                // le guard notFound() dans app/parent/layout.tsx.
 ] as const;

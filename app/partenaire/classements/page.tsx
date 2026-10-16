@@ -1,5 +1,10 @@
+"use client";
+
+/* 1.4.5 (B1) — rendu CLIENT (PageChargee) : le portail est dans l'appli, qui est un
+   export statique. Le corps est celui de l'ancien composant serveur, inchangé. */
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
+import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import ClassementsFilterBar from "../_components/ClassementsFilterBar";
 import {
   isOrgType,
@@ -94,13 +99,9 @@ function StarRow({ rating }: { rating: number | null }) {
   );
 }
 
-export default async function PartnerClassementsPage({
-  searchParams,
-}: {
-  searchParams: Promise<FilterParams>;
-}) {
-  const params = await searchParams;
-  const supabase = await createClient();
+async function rendre(brut: ParamsUrl) {
+  const params = brut as FilterParams;
+  const supabase = createClient();
 
   // Pre-fetch dropdown options
   const [sportsRes, positionsRes, regionsRes] = await Promise.all([
@@ -266,4 +267,8 @@ export default async function PartnerClassementsPage({
       )}
     </div>
   );
+}
+
+export default function PartnerClassementsPage() {
+  return <PageChargee rendre={rendre} />;
 }

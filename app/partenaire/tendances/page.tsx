@@ -1,5 +1,10 @@
+"use client";
+
+/* 1.4.5 (B1) — rendu CLIENT (PageChargee) : le portail est dans l'appli, qui est un
+   export statique. Le corps est celui de l'ancien composant serveur, inchangé. */
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
+import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import TendancesDropdownFilters from "../_components/TendancesDropdownFilters";
 import {
@@ -144,12 +149,8 @@ function EmptyPanel({ message }: { message: string }) {
   );
 }
 
-export default async function PartnerTendancesPage({
-  searchParams,
-}: {
-  searchParams: Promise<FilterParams>;
-}) {
-  const params = await searchParams;
+async function rendre(brut: ParamsUrl) {
+  const params = brut as FilterParams;
   const sportFilter = params.sport || null;
   const positionFilter = params.position || null;
   const regionFilter = params.region || null;
@@ -163,7 +164,7 @@ export default async function PartnerTendancesPage({
   const coteFilter = parseCoteMin(params.cote);
   const sortKey = isPartnerSortKey(params.sort) ? params.sort : DEFAULT_PARTNER_SORT;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Pre-fetch dropdown options. Sports list is small (16);
   // positions cap at ~50 across all sports — single query each,
@@ -318,4 +319,8 @@ export default async function PartnerTendancesPage({
       </div>
     </div>
   );
+}
+
+export default function PartnerTendancesPage() {
+  return <PageChargee rendre={rendre} />;
 }

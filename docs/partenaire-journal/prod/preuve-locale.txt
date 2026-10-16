@@ -1,0 +1,32 @@
+PREUVE LOCALE — lot journal partenaire — 2026-10-16T11:54:40-04:00
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 77b4533bf6e8eaee7a0a4ac5b15b3aea
+  md5 lot-prod.sql      : a23bd5517ac2c072c7e93b2a5a55791e
+  état de départ (migration retirée par le rollback) : fonction=absente version=0 vues=18 telechargements=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte d18a6ca68ce7ec68b09a3faa47cd9d51 / 8 éléments) — tout est annulé 
+  état après : fonction=absente version=0 vues=18 telechargements=0
+
+== 2. Instructions envoyées SÉPARÉMENT (pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:24: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture 
+  état après : fonction=absente version=0 vues=18 telechargements=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"18|0|3","version_deja":0,"derniere_version":"20261016060000","pg":"17.6"}, "apres" : {"donnees" : "18|0|3", "version" : "20261016150000", "md5_enregistre" : "77b4533bf6e8eaee7a0a4ac5b15b3aea", "fonction" : "partenaire_journaliser(uuid,text,text)", "meme_transaction" : true}} 
+  état après : fonction=partenaire_journaliser(uuid,text,text) version=1 vues=18 telechargements=0
+  empreinte des objets en base : d18a6ca68ce7ec68b09a3faa47cd9d51|8
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: migration journal partenaire déjà présente — rien n'est appliqué 
+  état après : fonction=partenaire_journaliser(uuid,text,text) version=1 vues=18 telechargements=0
+
+== 5. Tests au banc sur la base issue du lot ==
+  22 | 0   (ok | échecs)
+
+== 6. Rollback puis ré-application (état final = migration appliquée, comme avant la preuve) ==
+psql:/tmp/rb-pj.sql:21: NOTICE:  NEXUS rollback journal partenaire — OK
+  état après rollback : fonction=absente version=0 vues=18 telechargements=0
+  réponse : {"avant" : {"donnees":"18|0|3","version_deja":0,"derniere_version":"20261016060000","pg":"17.6"}, "apres" : {"donnees" : "18|0|3", "version" : "20261016150000", "md5_enregistre" : "77b4533bf6e8eaee7a0a4ac5b15b3aea", "fonction" : "partenaire_journaliser(uuid,text,text)", "meme_transaction" : true}} 
+  état final : fonction=partenaire_journaliser(uuid,text,text) version=1 vues=18 telechargements=0

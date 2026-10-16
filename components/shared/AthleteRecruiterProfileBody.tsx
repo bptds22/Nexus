@@ -548,7 +548,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // looking at their own profile via iframe) and partner mode
   // (partner-portal session) so neither pollutes recruiter view
   // counts. Partner sessions get audited separately to
-  // partner_profile_views via /api/partner/profile-views/log.
+  // partner_profile_views via partenaire_journaliser (lib/partenaires/journal.ts).
   useEffect(() => {
     if (viewerMode !== "recruiter") return;
     const recordView = async () => {

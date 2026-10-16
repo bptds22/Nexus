@@ -12,6 +12,7 @@ import MorePanel from "./MorePanel";
 import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 import { triggerHaptic } from "@/lib/haptics";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
+import { entreeVisible, usePeutEvaluer } from "@/lib/partenaires/navigation";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -156,6 +157,9 @@ interface TabConfig {
   adminBypass?: boolean;
   /** Substring d'URL pour considérer le tab actif (fallback href). */
   activeMatch?: string;
+  /** Actif sur le chemin EXACT seulement (accueil d'un portail dont les autres
+   *  écrans sont des sous-chemins : /partenaire). */
+  exact?: boolean;
 }
 
 const RECRUTEUR_TABS: TabConfig[] = [
@@ -189,14 +193,26 @@ const ATHLETE_TABS: TabConfig[] = [
   { key: "recherche-cegep", label: "Cégeps", href: "/athlete/recherche", icon: Icons.cegep, activeMatch: "/athlete/recherche" },
 ];
 
-const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete", TabConfig[]> = {
+/* Partenaire (1.4.5, B1) — l'accueil, la recherche, et les deux écrans
+   d'évaluation, montrés seulement si `peut_evaluer` (même règle que la barre
+   latérale du web : lib/partenaires/navigation.ts). Le reste du portail vit
+   dans le panneau Plus. Aucun palier : pas de requiredTier. */
+const PARTENAIRE_TABS: TabConfig[] = [
+  { key: "dashboard", label: "Accueil", href: "/partenaire", icon: Icons.dashboard, exact: true },
+  { key: "athletes", label: "Athlètes", href: "/partenaire/athletes", icon: Icons.search, activeMatch: "/partenaire/athletes" },
+  { key: "mes-athletes", label: "Mes athlètes", href: "/partenaire/mes-athletes", icon: Icons.users, activeMatch: "/partenaire/mes-athletes" },
+  { key: "prospects", label: "Prospects", href: "/partenaire/prospects", icon: Icons.flag, activeMatch: "/partenaire/prospects" },
+];
+
+const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete" | "partenaire", TabConfig[]> = {
   recruteur: RECRUTEUR_TABS,
   coach: COACH_TABS,
   athlete: ATHLETE_TABS,
+  partenaire: PARTENAIRE_TABS,
 };
 
 interface MobileTabBarProps {
-  role: "recruteur" | "coach" | "athlete";
+  role: "recruteur" | "coach" | "athlete" | "partenaire";
 }
 
 export default function MobileTabBar({ role }: MobileTabBarProps) {
@@ -211,6 +227,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // voit les cadenas (verrous) une fraction de seconde au login. On ne verrouille
   // donc QU'UNE FOIS le tier réellement chargé — voir `locked` plus bas.
   const { tier, isSchoolAdmin, loading: tierLoading } = useSubscription();
+  const peutEvaluer = usePeutEvaluer(IS_CAPACITOR && role === "partenaire");
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
@@ -406,9 +423,12 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // `document.body`.
   if (!mounted) return null;
 
-  const tabs = TABS_BY_ROLE[role];
+  const tabs = role === "partenaire"
+    ? TABS_BY_ROLE.partenaire.filter((t) => entreeVisible(t.href, peutEvaluer))
+    : TABS_BY_ROLE[role];
 
   function isActive(tab: TabConfig): boolean {
+    if (tab.exact) return normalizedPath === tab.href;
     const matchStr = tab.activeMatch ?? tab.href;
     const parts = matchStr.split("|");
     return parts.some((p) => pathname === p || pathname.startsWith(p + "/"));

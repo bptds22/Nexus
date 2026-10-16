@@ -17,6 +17,7 @@ import {
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { triggerHaptic } from "@/lib/haptics";
+import { enregistrerImage } from "@/lib/partage/enregistrerImage";
 
 /* ═══════════════════════════════════════════════════════════════
    MonParcoursMobile — Sprint B-1.
@@ -140,7 +141,7 @@ function locationLine(city: string | null, region: string | null): string {
 
    IS_CAPACITOR follows the canon dispatch flag — same one the
    page.tsx-level dispatch reads. */
-const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+// La branche native vit désormais dans lib/partage/enregistrerImage.ts.
 
 /* triggerHaptic — verbatim copy of the body's helper
    (AthleteRecruiterProfileBodyMobile.tsx :93-99). Dynamic import +
@@ -509,36 +510,11 @@ export default function MonParcoursMobile() {
         .replace(/[^a-z0-9]+/g, "-");
       const fileName = `nexus-carte-${slug}.png`;
 
-      if (IS_CAPACITOR) {
-        try {
-          // Strip the `data:image/png;base64,` prefix — Filesystem
-          // wants raw base64 without the data-URL header.
-          const base64 = dataUrl.split(",")[1];
-          const { Filesystem, Directory } = await import("@capacitor/filesystem");
-          const written = await Filesystem.writeFile({
-            path: fileName,
-            data: base64,
-            directory: Directory.Cache,
-          });
-          const { Share } = await import("@capacitor/share");
-          await Share.share({
-            title: "Ma carte Nexus",
-            files: [written.uri],
-            dialogTitle: "Enregistrer ou partager ma carte",
-          });
-        } catch (e) {
-          console.error("[mon-parcours mobile] native share failed:", e);
-          showToast("error", "Impossible d'ouvrir le partage. Réessaie.");
-        }
-      } else {
-        // Web — unchanged anchor-click download. The dataURL is the
-        // <a href> directly ; the browser writes to the Downloads
-        // folder (or prompts depending on user settings).
-        const link = document.createElement("a");
-        link.download = fileName;
-        link.href = dataUrl;
-        link.click();
-      }
+      // Web : <a download> ; appli : Filesystem + feuille de partage (lib/partage/enregistrerImage).
+      const issue = await enregistrerImage({
+        dataUrl, nomFichier: fileName, titre: "Ma carte Nexus", dialogue: "Enregistrer ou partager ma carte",
+      });
+      if (issue === "echec") showToast("error", "Impossible d'ouvrir le partage. Réessaie.");
     } catch (e) {
       console.error("[mon-parcours mobile] card export failed:", e);
       showToast("error", "Export impossible. Réessaie dans un instant.");

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { doitPasserParBienvenue, ROUTE_BIENVENUE } from "@/lib/partenaires/accesPartenaire";
 
 /* ═══════════════════════════════════════════════════════════════
    Nexus middleware — minimal, single-purpose.
@@ -44,7 +45,7 @@ export async function middleware(request: NextRequest) {
 
   // Welcome screen itself must be reachable. Excluding here
   // (matcher patterns can't easily express negative matches).
-  if (pathname === "/partenaire/bienvenue") {
+  if (pathname === ROUTE_BIENVENUE) {
     return NextResponse.next();
   }
 
@@ -100,9 +101,11 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  if (!partner.terms_accepted_at || !partner.password_reset_completed_at) {
+  // Même règle que le layout du portail (qui la refait côté client : l'appli
+  // n'a pas de middleware) — lib/partenaires/accesPartenaire.ts.
+  if (doitPasserParBienvenue(partner)) {
     return NextResponse.redirect(
-      new URL("/partenaire/bienvenue", request.url),
+      new URL(ROUTE_BIENVENUE, request.url),
     );
   }
 

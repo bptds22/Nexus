@@ -4,7 +4,8 @@
    Le même composant que celui des recruteurs (mode « partenaire »), gratuit. Le
    layout du portail ne laisse passer que le rôle PARTNER ; la base, elle, n'admet
    que les partenaires APPROVED (partenaire_admis) — un SUSPENDED ou REVOKED voit
-   le message de refus du composant, jamais de données. Web seulement. */
+   le message de refus du composant, jamais de données. Web ET appli depuis la 1.4.5
+   (portail partenaire mobile, B1). */
 
 import CarteMatchs from "@/components/carte-matchs/CarteMatchs";
 

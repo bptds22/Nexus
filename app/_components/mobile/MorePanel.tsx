@@ -157,7 +157,7 @@ interface PanelSection {
 interface MorePanelProps {
   open: boolean;
   onClose: () => void;
-  role: "recruteur" | "coach" | "athlete";
+  role: "recruteur" | "coach" | "athlete" | "partenaire";
   tier: "free" | "pro" | "all_star";
   /** True tant que le tier n'est pas chargé. Empêche d'afficher les cadenas /
    *  la carte d'upgrade en état « free » par défaut avant le fetch. */
@@ -398,6 +398,34 @@ export default function MorePanel({
         ],
       });
       return out;
+    }
+
+    /* Partenaire (1.4.5, B1) — le reste du portail, hors barre d'onglets.
+       Mêmes écrans que la barre latérale du web, dans le même ordre. */
+    if (role === "partenaire") {
+      return [
+        {
+          items: [
+            { key: "newsroom", label: "Newsroom", href: "/partenaire/newsroom", icon: Icons.activity },
+            { key: "tendances", label: "Tendances", href: "/partenaire/tendances", icon: Icons.trendingUp },
+            { key: "classements", label: "Classements", href: "/partenaire/classements", icon: Icons.trophy },
+            { key: "carte-matchs", label: "Carte des matchs", href: "/partenaire/carte-matchs", icon: Icons.calendar },
+            { key: "telechargements", label: "Téléchargements", href: "/partenaire/telechargements", icon: Icons.lists },
+          ],
+        },
+        {
+          title: "Compte",
+          items: [
+            { key: "profil", label: "Mon profil", href: "/partenaire/profil", icon: Icons.profile },
+            { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
+              const supabase = createClient();
+              try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
+              await deconnexion(supabase);
+              router.push("/auth");
+            } },
+          ],
+        },
+      ];
     }
 
     // athlete

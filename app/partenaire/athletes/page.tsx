@@ -1,4 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+/* 1.4.5 (B1) — rendu CLIENT (PageChargee) : le portail est dans l'appli, qui est un
+   export statique. Le corps est celui de l'ancien composant serveur, inchangé. */
+import { createClient } from "@/lib/supabase/client";
+import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import PartnerAthletesSearch from "@/components/partenaire/PartnerAthletesSearch";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -11,8 +16,8 @@ import PartnerAthletesSearch from "@/components/partenaire/PartnerAthletesSearch
 
 const PROMOTIONS = [2025, 2026, 2027, 2028, 2029];
 
-export default async function PartnerAthletesPage() {
-  const supabase = await createClient();
+async function rendre() {
+  const supabase = createClient();
 
   // Prefetch filter dropdown options — same pattern as
   // /partenaire/classements. These rarely change so the round-trip
@@ -40,4 +45,8 @@ export default async function PartnerAthletesPage() {
       />
     </div>
   );
+}
+
+export default function PartnerAthletesPage() {
+  return <PageChargee rendre={rendre} />;
 }

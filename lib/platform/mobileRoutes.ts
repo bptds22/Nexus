@@ -56,6 +56,12 @@ const DYNAMIC_ROUTES: DynamicRoute[] = [
     paramKey: 'coachId',
     toPlaceholder: () => '/coach/ecole/coachs/placeholder/',
   },
+  // partenaire/athletes/[id] — fiche partenaire (portail dans l'appli, 1.4.5 B1)
+  {
+    pattern: /^\/partenaire\/athletes\/([^/]+)\/?$/,
+    paramKey: 'id',
+    toPlaceholder: () => '/partenaire/athletes/placeholder/',
+  },
   // recruteur/athletes/[id]
   {
     pattern: /^\/recruteur\/athletes\/([^/]+)\/?$/,

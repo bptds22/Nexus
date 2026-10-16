@@ -31,7 +31,12 @@ const ROOT = process.cwd();
 const HIDE_PATTERNS = [
   // Whole excluded segments
   'app/admin/**/page.tsx',
-  'app/partenaire/**/page.tsx',
+  // app/partenaire/** N'EST PLUS masqué (1.4.5, B1) : le portail partenaire est
+  // dans l'appli. Ses pages serveur sont devenues des pages client
+  // (app/partenaire/_components/PageChargee.tsx), la fiche [id] a son shell
+  // `placeholder` (generateStaticParams) et sa route dans lib/platform/mobileRoutes.ts.
+  // Le profil PUBLIC d'un partenaire (/partenaires/[id]) et le lien d'une carte
+  // prospect (/p/[jeton]) restent web seulement, plus bas.
   'app/parent/**/page.tsx',   // Portal parental (Lot 1a) — web only.
   // Groupe (dev) : 7 pages de banc d'essai (editeur-test, wall-test, page-test,
   // team-test, recherche-test, recherche-mobile-test, equipe-editeur-test).

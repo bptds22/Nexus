@@ -1,5 +1,10 @@
+"use client";
+
+/* 1.4.5 (B1) — rendu CLIENT (PageChargee) : le portail est dans l'appli, qui est un
+   export statique. Le corps est celui de l'ancien composant serveur, inchangé. */
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
+import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import NewsroomDropdownFilters from "../_components/NewsroomDropdownFilters";
 import {
   isOrgType,
@@ -105,12 +110,8 @@ function FilterChip({ label, href, active }: { label: string; href: string; acti
   );
 }
 
-export default async function PartnerNewsroomPage({
-  searchParams,
-}: {
-  searchParams: Promise<FilterParams>;
-}) {
-  const params = await searchParams;
+async function rendre(brut: ParamsUrl) {
+  const params = brut as FilterParams;
   const typeFilter = params.type === "COMMITMENT" || params.type === "FIVE_STAR_SIGNUP" ? params.type : null;
   const rangeFilter = params.range === "7d" ? "7d" : params.range === "all" ? "all" : "30d";
   const orgFilter = isOrgType(params.org) ? params.org : null;
@@ -128,7 +129,7 @@ export default async function PartnerNewsroomPage({
   const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
   const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Pre-fetch dropdown options for the sport + position filters.
   // Sports list is small (16) and positions cap at ~50 across all
@@ -362,4 +363,8 @@ export default async function PartnerNewsroomPage({
       )}
     </div>
   );
+}
+
+export default function PartnerNewsroomPage() {
+  return <PageChargee rendre={rendre} />;
 }

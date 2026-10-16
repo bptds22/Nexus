@@ -1,5 +1,10 @@
+"use client";
+
+/* 1.4.5 (B1) — rendu CLIENT (PageChargee) : le portail est dans l'appli, qui est un
+   export statique. Le corps est celui de l'ancien composant serveur, inchangé. */
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
+import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -68,8 +73,8 @@ function formatRelativeFrench(iso: string): string {
   return `Il y a ${Math.floor(days / 30)} mois`;
 }
 
-export default async function PartnerTelechargementsPage() {
-  const supabase = await createClient();
+async function rendre() {
+  const supabase = createClient();
   /* LECTURE PAR RPC — depuis le 2026-08-19 (point 5b du chantier RLS
      partenaire). Cette page embarquait `athletes(...)` dans sa requête sur
      partner_card_downloads. Cet embed dépendait de la policy « Approved
@@ -216,4 +221,8 @@ export default async function PartnerTelechargementsPage() {
       )}
     </div>
   );
+}
+
+export default function PartnerTelechargementsPage() {
+  return <PageChargee rendre={rendre} />;
 }

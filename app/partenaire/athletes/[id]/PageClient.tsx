@@ -1,10 +1,13 @@
 "use client";
 
 import {  useEffect, useRef, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toPng } from "html-to-image";
 import { createClient } from "@/lib/supabase/client";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
+import { journaliserTelechargement, journaliserVue } from "@/lib/partenaires/journal";
+import { enregistrerImage, rendusNecessaires } from "@/lib/partage/enregistrerImage";
 /* loadAthleteRaw N'EST PLUS APPELE ICI (2026-08-19, point 5a du chantier RLS
    partenaire). Il projetait 58 colonnes racine via le chemin de donnees COACH,
    dont les 11 interdites : email, telephone, date_naissance, nom_parent,
@@ -33,9 +36,11 @@ import {
    render the not-available state.
 
    Two preview tabs (publication / story) with download buttons.
-   Capture is client-side via html-to-image; the
-   /api/partner/cards/log-download endpoint logs the audit row
-   before the PNG actually saves.
+   Capture is client-side via html-to-image; the download is logged
+   BEFORE the PNG saves, by partenaire_journaliser (fonction en base,
+   1.4.5 : l'appli n'embarque pas les routes /api/partner/*).
+   Dans l'appli : l'id vient de useDynamicParam (shell placeholder),
+   et la carte part par la feuille de partage (lib/partage).
 
    Filename: nexus-{firstname}-{lastname}-{format}.png
 ═══════════════════════════════════════════════════════════════ */
@@ -193,8 +198,8 @@ function mapPartnerRpcToRecruiterView(r: PartnerAthleteRow): AthleteProfileRecru
 }
 
 export default function PartnerAthleteProfilePage() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  // Web : le segment [id] ; appli : le shell `placeholder` + l'id déposé en sessionStorage.
+  const id = useDynamicParam("id");
   const router = useRouter();
   const [athlete, setAthlete] = useState<AthleteProfileRecruiterView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,6 +223,7 @@ export default function PartnerAthleteProfilePage() {
   };
 
   useEffect(() => {
+    if (!id || id === "placeholder") return;
     (async () => {
       // Eligibility guard runs first (defense in depth — RLS on
       // athletes also gates the row, but the explicit check gives
@@ -258,17 +264,9 @@ export default function PartnerAthleteProfilePage() {
         .then((r) => setMaEvaluation(r.find((e) => e.estLaMienne) ?? null))
         .catch((e) => console.warn("[partenaire] évaluation :", e?.message ?? e));
 
-      // Fire-and-forget profile-view audit log. Failures are
-      // swallowed — auditing shouldn't block the page from
-      // rendering (but the route still validates partner status
-      // + eligibility server-side and refuses to log if either
-      // fails, so no false rows can land).
-      fetch("/api/partner/profile-views/log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ athlete_id: id }),
-      }).catch((err) => {
-      });
+      // Journal de vue, sans attendre : un journal qui échoue n'empêche pas
+      // de lire (la fonction refait les gardes et n'écrit rien si l'une tombe).
+      void journaliserVue(supabase, id);
     })();
   }, [id]);
 
@@ -285,14 +283,9 @@ export default function PartnerAthleteProfilePage() {
         setDownloading(null);
         return;
       }
-      const logRes = await fetch("/api/partner/cards/log-download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ athlete_id: id, format }),
-      });
-      if (!logRes.ok) {
-        const json = await logRes.json().catch(() => ({}));
-        showToast("error", json.error || `Erreur ${logRes.status}`);
+      const refus = await journaliserTelechargement(supabase, id, format);
+      if (refus) {
+        showToast("error", refus);
         setDownloading(null);
         return;
       }
@@ -309,23 +302,24 @@ export default function PartnerAthleteProfilePage() {
         setDownloading(null);
         return;
       }
-      const dataUrl = await toPng(node, {
+      const options = {
         // pixelRatio 1: AthletePlayerCard's outer container already
         // renders at the exact target dimensions (publication =
         // 1080×1350, story = 1080×1920), so no oversampling needed.
         pixelRatio: 1,
         cacheBust: true,
         backgroundColor: undefined,
-      });
+      };
+      // WebView : un 1er rendu « réchauffe » les images embarquées (lib/partage).
+      if (rendusNecessaires() === 2) await toPng(node, options);
+      const dataUrl = await toPng(node, options);
 
-      // 4. Trigger browser download
+      // 4. Web : téléchargement ; appli : feuille de partage (Photos, Fichiers…).
       const filename = `nexus-${safeFilenamePart(athlete.firstName)}-${safeFilenamePart(athlete.lastName)}-${format}.png`;
-      const link = document.createElement("a");
-      link.download = filename;
-      link.href = dataUrl;
-      link.click();
+      const issue = await enregistrerImage({ dataUrl, nomFichier: filename, titre: "Carte Nexus", dialogue: "Enregistrer ou partager la carte" });
+      if (issue === "echec") { showToast("error", "Impossible d'ouvrir le partage. Réessaie."); return; }
 
-      showToast("success", `Carte ${format} téléchargée.`);
+      showToast("success", issue === "partage" ? `Carte ${format} prête.` : `Carte ${format} téléchargée.`);
     } catch (e) {
       console.error("[partner card download]", e);
       showToast("error", "Échec du téléchargement.");

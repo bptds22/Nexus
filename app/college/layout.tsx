@@ -15,10 +15,11 @@
    tab bar À AFFICHER, et laquelle.
 
    Règle : la tab bar n'a de sens que pour un compte qui a un portail.
-     · pas de session, ou rôle sans portail (PARENT, PARTNER, ADMIN)
+     · pas de session, ou rôle sans portail (PARENT, ADMIN)
        → aucune tab bar : tous les onglets mèneraient à des routes
          gardées, ce serait une navigation en trompe-l'œil.
-     · COACH / RECRUTEUR / ATHLETE → sa tab bar, son rôle.
+     · COACH / RECRUTEUR / ATHLETE / PARTNER → sa tab bar, son rôle
+       (le portail partenaire est dans l'appli depuis la 1.4.5).
 
    --tabzone suit CE QUI EST RÉELLEMENT MONTÉ, pas la plateforme :
    c'est le correctif du vide de 88px. Avant, les pages réservaient
@@ -37,11 +38,12 @@ import { createClient } from "@/lib/supabase/client";
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /** Les seuls rôles qui possèdent une tab bar. */
-type TabRole = "coach" | "recruteur" | "athlete";
+type TabRole = "coach" | "recruteur" | "athlete" | "partenaire";
 const ROLE_TO_TAB: Record<string, TabRole> = {
   COACH: "coach",
   RECRUTEUR: "recruteur",
   ATHLETE: "athlete",
+  PARTNER: "partenaire",
 };
 
 /** ESPACE OCCUPÉ PAR LA TAB BAR, mesuré depuis le bas du viewport : la bulle

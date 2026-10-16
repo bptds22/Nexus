@@ -3,6 +3,12 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { openExternal } from "@/components/shared/settings/utils";
+import { adressePublique } from "@/lib/partage/adressePublique";
+
+/* La page publique (/partenaires/[id]) reste web seulement : dans l'appli,
+   elle s'ouvre dans le navigateur intégré, sur le domaine public. */
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import { uploadImage, cheminStorageDepuisUrl } from "@/lib/upload/uploadImage";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -308,6 +314,7 @@ export default function PartnerProfilePage() {
             <Link
               href={`/partenaires/${partner.id}`}
               target="_blank"
+              onClick={IS_CAPACITOR ? (e) => { e.preventDefault(); void openExternal(`${adressePublique()}/partenaires/${partner.id}`); } : undefined}
               className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#E63946] hover:text-[#D93C3C] transition-colors"
             >
               Voir ma page publique

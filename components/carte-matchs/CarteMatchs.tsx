@@ -24,7 +24,7 @@
    dessiné ici ; les ajouts (dates, bascule étroite) reprennent ses jetons.
 
    · Recruteur : Pro (FeatureGate dans la page). Partenaire : gratuit, APPROVED.
-   · Web seulement (les deux pages).
+   · Recruteur : web seulement (registre §77). Partenaire : web et appli (1.4.5, B1).
 ═══════════════════════════════════════════════════════════════ */
 
 import * as React from "react";

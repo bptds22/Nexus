@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { MediaPartner, PartnerStatus } from "@/lib/types/models";
 import { initialesOrganisation } from "@/lib/partners/initiales";
 import { deconnexion } from "@/lib/auth/deconnexion";
+import { entreeVisible } from "@/lib/partenaires/navigation";
 
 const NAV_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [
   {
@@ -106,7 +107,7 @@ export default function PartnerSidebar({ mobileOpen, onClose }: { mobileOpen: bo
       </div>
 
       <nav className="flex-1 px-3 py-5 space-y-1">
-        {NAV_ITEMS.filter((item) => (item.href !== "/partenaire/prospects" && item.href !== "/partenaire/mes-athletes") || partner?.peut_evaluer === true).map((item) => {
+        {NAV_ITEMS.filter((item) => entreeVisible(item.href, partner?.peut_evaluer)).map((item) => {
           const isActive = pathname === item.href || (item.href !== "/partenaire" && pathname.startsWith(item.href + "/"));
           return (
             <Link
