@@ -15,7 +15,10 @@ import {
 } from "@/lib/evaluations/coteCarte";
 import { coteAffichee } from "@/lib/queries/recruiter/useAthleteSearch";
 
-const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+// Fins de ligne normalisées : une extraction Windows (autocrlf) rend des CRLF.
+const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/
+/g, "
+");
 const ev = (id: string, cote: number, updatedAt: string, organisation = "Org " + id): CotePartenaire =>
   ({ id, athleteId: "a1", organisation, cote, updatedAt });
 
