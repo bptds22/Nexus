@@ -107,6 +107,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 import { triggerHaptic } from "@/lib/haptics";
 import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
+import { athletesMemeIdentite, cleIdentite, peutInviterMemeIdentite, suggestionExacte, TEXTES_MEME_IDENTITE, type AthleteMemeIdentite } from "@/lib/queries/coach/athletesMemeIdentite";
+import MemeIdentiteAvertissement from "@/components/coach/MemeIdentiteAvertissement";
 
 /* ── Haptics helper (matches onboarding shells) ─────────────── */
 
@@ -266,6 +268,11 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
      athlète a déjà un compte, il n'a rien à réclamer. */
   const [ancreAilleurs, setAncreAilleurs] = useState(false);
   const [equipeTransfert, setEquipeTransfert] = useState<string | null>(null);
+  /* D1 — « même identité » : même nom + même date de naissance qu'une fiche que
+     ce coach VOIT déjà (RLS). Montrée une fois par identité, comme le web. */
+  const [memeIdentite, setMemeIdentite] = useState<AthleteMemeIdentite[]>([]);
+  const identiteVerifiee = useRef<string | null>(null);
+  const [inviteMemeIdentite, setInviteMemeIdentite] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
   const [openTransfertTeamPicker, setOpenTransfertTeamPicker] = useState(false);
   const [envoiAncre, setEnvoiAncre] = useState(false);
   const [resultatAncre, setResultatAncre] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -603,6 +610,21 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       setEnvoiAncre(false);
     }
   }, [form.identity.email, equipeTransfert, envoiAncre]);
+
+  /* Invitation d'un athlète trouvé par « même identité » : la RPC du transfert
+     (par courriel, résolu côté serveur), comme le web. */
+  const inviterMemeIdentite = useCallback(async (a: AthleteMemeIdentite) => {
+    if (!a.courriel || !equipeTransfert || envoiAncre) return;
+    setEnvoiAncre(true);
+    setInviteMemeIdentite(null);
+    try {
+      const r = await inviteAnchoredAthlete(createClient(), a.courriel, equipeTransfert);
+      if (r.ok) void triggerHaptic("Success");
+      setInviteMemeIdentite({ id: a.athleteId, ok: r.ok, msg: r.message || "Invitation envoyée — il devra l'accepter." });
+    } finally {
+      setEnvoiAncre(false);
+    }
+  }, [equipeTransfert, envoiAncre]);
 
   const handleSelectSuggestion = useCallback((suggestion: AthleteEmailSuggestion) => {
     setForm((prev) => ({
@@ -974,6 +996,36 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       return;
     }
 
+    /* D1 — avant de créer, même logique que le web (verifierAvantCreation) :
+       1. courriel EXACT d'une suggestion tapé sans la cliquer → on bascule vers
+          l'invitation, comme le clic l'aurait fait ;
+       2. même nom + même date de naissance qu'une fiche que ce coach voit → on
+          la lui montre à l'écran 1, une fois. */
+    if (isCreate && !linkedToExisting) {
+      const exacte = suggestionExacte(emailAutocomplete?.suggestions, form.identity.email);
+      if (exacte) {
+        handleSelectSuggestion(exacte);
+        setSaving(false);
+        setShowSummarySheet(false);
+        setDirection(-1); setSlide(0);
+        return;
+      }
+      const { firstName, lastName, dateOfBirth } = form.identity;
+      const cle = cleIdentite(firstName, lastName, dateOfBirth);
+      if (identiteVerifiee.current !== cle) {
+        const trouves = await athletesMemeIdentite(supabase, firstName, lastName, dateOfBirth);
+        identiteVerifiee.current = cle;
+        setMemeIdentite(trouves);
+        setInviteMemeIdentite(null);
+        if (trouves.length > 0) {
+          setSaving(false);
+          setShowSummarySheet(false);
+          setDirection(-1); setSlide(0);
+          return;
+        }
+      }
+    }
+
     if (isCreate && linkedToExisting) {
       setSaving(false);
       setShowSummarySheet(false);
@@ -1056,7 +1108,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     router.push(isCreate ? "/coach/athletes" : `/coach/athletes/${savedId}`);
   }, [
     isCreate, form, athleteId, recruitmentStatus, committedSchoolId, coach.schoolId, linkedToExisting,
-    ancreAilleurs, router, toast, missingRequiredAll,
+    ancreAilleurs, router, toast, missingRequiredAll, emailAutocomplete, handleSelectSuggestion,
   ]);
 
   /* ── Chip-row navigation hooks (top-level, never below an
@@ -1693,6 +1745,50 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               </p>
             )}
           </div>
+        )}
+        {/* D1 — MÊME IDENTITÉ : masquée dès que le nom ou la date change. */}
+        {isCreate && memeIdentite.length > 0 && identiteVerifiee.current === cleIdentite(d.firstName, d.lastName, d.dateOfBirth) && (
+          <MemeIdentiteAvertissement
+            athletes={memeIdentite}
+            onContinuer={() => { void triggerHaptic("Light"); setMemeIdentite([]); }}
+            voirFiche={(a, libelle) => (
+              <button type="button"
+                onClick={() => {
+                  try { sessionStorage.setItem(`${SESSION_KEY_PREFIX}id`, a.athleteId); } catch { /* no-op */ }
+                  router.push("/coach/athletes/placeholder/");
+                }}
+                className="min-h-[44px] px-4 rounded-xl border border-[#2D3748] text-white text-[13px] font-semibold active:border-[#E63946]/60">
+                {libelle}
+              </button>
+            )}
+            inviter={(a) => (
+              <>
+                {peutInviterMemeIdentite(a) && coach.teams.length > 0 && (
+                  <>
+                    <PickerRow inline label=""
+                      value={equipeTransfert ? coach.teams.find((t) => t.id === equipeTransfert)?.name ?? "Équipe sélectionnée" : ""}
+                      placeholder="Choisir une équipe"
+                      onTap={() => {
+                        void triggerHaptic("Light");
+                        if (coach.teams.length === 1) setEquipeTransfert(coach.teams[0].id);
+                        else setOpenTransfertTeamPicker(true);
+                      }} />
+                    <button type="button"
+                      disabled={!equipeTransfert || envoiAncre || (inviteMemeIdentite?.id === a.athleteId && inviteMemeIdentite.ok)}
+                      onClick={() => { void triggerHaptic("Light"); void inviterMemeIdentite(a); }}
+                      className="min-h-[44px] rounded-xl bg-[#E63946] px-4 text-[13px] font-bold text-white active:bg-[#D42B22] disabled:opacity-40">
+                      {envoiAncre ? "Envoi…" : TEXTES_MEME_IDENTITE.inviter}
+                    </button>
+                  </>
+                )}
+                {inviteMemeIdentite?.id === a.athleteId && (
+                  <p className={`text-[12px] font-semibold ${inviteMemeIdentite.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                    {inviteMemeIdentite.ok ? "✓ " : ""}{inviteMemeIdentite.msg}
+                  </p>
+                )}
+              </>
+            )}
+          />
         )}
         {isCreate && linkedToExisting && (
           <div className="p-3 rounded-2xl bg-[#1A1D24] border border-[#E63946]/30">

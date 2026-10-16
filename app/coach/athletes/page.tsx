@@ -25,6 +25,8 @@ import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
 import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
 import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
+import { nomPresentable, phraseFichesMasquees } from "@/lib/athlete/nomAConfirmer";
+import EtiquetteNomAConfirmer from "@/components/athlete/EtiquetteNomAConfirmer";
 
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 import {
@@ -65,22 +67,8 @@ const PROMOTIONS = ["2026", "2027", "2028"];
 
 
 /* ── Coach Athlete Card (grid view) ─────────────────────────── */
-/* D1b (décision BP 2026-10-15) : sans prénom, sans nom, ou nom recopié de Google
-   et pas encore confirmé par l'athlète. La fiche RESTE dans la liste du coach,
-   étiquetée ; elle sort seulement des recherches (recruteur, sections « à
-   réclamer » et « école »). */
-function nomPresentable(a: RosterAthlete): boolean {
-  return !!a.firstName.trim() && !!a.lastName.trim() && !a.nomAConfirmer;
-}
-
-function EtiquetteNomAConfirmer({ a }: { a: RosterAthlete }) {
-  if (nomPresentable(a)) return null;
-  return (
-    <span data-nom-a-confirmer className="inline-flex items-center px-2 py-0.5 rounded-full border border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#F59E0B] text-[11px] font-bold">
-      Nom à confirmer par l&apos;athlète
-    </span>
-  );
-}
+/* D1b (décision BP 2026-10-15) : règle et étiquette partagées avec l'appli
+   (lib/athlete/nomAConfirmer.ts, components/athlete/EtiquetteNomAConfirmer.tsx). */
 
 function CoachAthleteCard({ a }: { a: RosterAthlete }) {
   return (
@@ -1059,9 +1047,7 @@ function MesAthletesContent() {
           </p>
           {nbNomsEnAttente > 0 && (
             <p data-noms-en-attente className="text-[12px] text-[#F59E0B] mt-1">
-              {nbNomsEnAttente === 1
-                ? "1 fiche de l'école masquée : l'athlète doit confirmer son prénom et son nom."
-                : `${nbNomsEnAttente} fiches de l'école masquées : les athlètes doivent confirmer leur prénom et leur nom.`}
+              {phraseFichesMasquees(nbNomsEnAttente)}
             </p>
           )}
         </div>

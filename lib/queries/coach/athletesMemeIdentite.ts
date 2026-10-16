@@ -63,3 +63,30 @@ export async function athletesMemeIdentite(
     courriel: l.courriel,
   }));
 }
+
+/** Courriel EXACT d'une suggestion tapé sans la cliquer (D1) : la suggestion à
+ *  prendre comme si le coach l'avait cliquée. Avant, la création partait — et le
+ *  doublon se faisait en silence. */
+export function suggestionExacte<T extends { email: string }>(
+  suggestions: readonly T[] | undefined | null,
+  courriel: string,
+): T | undefined {
+  const c = courriel.trim().toLowerCase();
+  if (!c) return undefined;
+  return (suggestions ?? []).find((s) => s.email.trim().toLowerCase() === c);
+}
+
+export const TEXTES_MEME_IDENTITE = {
+  titre: "Cet athlète existe déjà",
+  detail: "Même nom et même date de naissance. Ouvre sa fiche plutôt que d'en créer une seconde.",
+  mien: "Déjà dans ton effectif",
+  pasMien: "Pas dans ton effectif",
+  voir: "Voir sa fiche",
+  inviter: "Inviter à rejoindre mon équipe",
+  continuer: "Ce n'est pas lui — continuer la création",
+} as const;
+
+/** Inviter n'a de sens que pour une fiche AVEC compte qui n'est pas déjà à ce coach. */
+export function peutInviterMemeIdentite(a: AthleteMemeIdentite): boolean {
+  return !a.estLeMien && a.aUnCompte && !!a.courriel;
+}

@@ -38,7 +38,8 @@ import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 import { messageErreurNexus, messageCourrielDejaPris } from "@/lib/erreurs/messageErreurNexus";
-import { athletesMemeIdentite, cleIdentite, type AthleteMemeIdentite } from "@/lib/queries/coach/athletesMemeIdentite";
+import { athletesMemeIdentite, cleIdentite, peutInviterMemeIdentite, suggestionExacte, TEXTES_MEME_IDENTITE, type AthleteMemeIdentite } from "@/lib/queries/coach/athletesMemeIdentite";
+import MemeIdentiteAvertissement from "@/components/coach/MemeIdentiteAvertissement";
 import ErreurSauvegarde, { MESSAGE_ERREUR_GENERIQUE } from "@/components/shared/ErreurSauvegarde";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -725,10 +726,7 @@ export default function CreateAthletePage() {
         lui montre, une fois. Ce qu'il ne voit pas ne sort jamais de la base. */
   async function verifierAvantCreation(): Promise<boolean> {
     if (linkedToExisting) return true;
-    const courriel = form.identity.email.trim().toLowerCase();
-    const exacte = courriel
-      ? emailAutocomplete?.suggestions.find((s) => s.email.trim().toLowerCase() === courriel)
-      : undefined;
+    const exacte = suggestionExacte(emailAutocomplete?.suggestions, form.identity.email);
     if (exacte) {
       await handleSelectSuggestion(exacte);
       goToStep(1);
@@ -1073,55 +1071,41 @@ export default function CreateAthletePage() {
           {/* MÊME IDENTITÉ (D1) — seulement des fiches que ce coach voit déjà.
               Masquée dès que le nom ou la date change (la question n'est plus la même). */}
           {memeIdentite.length > 0 && identiteVerifiee.current === cleIdentite(d.firstName, d.lastName, d.dateOfBirth) && (
-            <div data-meme-identite className="sm:col-span-2 rounded-lg bg-[#1A1D24] border border-[#F59E0B]/30 p-4">
-              <p className="text-[13px] font-semibold text-white">Cet athlète existe déjà</p>
-              <p className="text-[12px] text-[#9CA3AF] mt-1 leading-relaxed">
-                Même nom et même date de naissance. Ouvre sa fiche plutôt que d&apos;en créer une seconde.
-              </p>
-              <ul className="mt-3 space-y-3">
-                {memeIdentite.map((a) => (
-                  <li key={a.athleteId} className="rounded-lg border border-[#2D3748] bg-[#111317] p-3">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="text-[14px] font-semibold text-white">{a.prenom} {a.nom}</span>
-                      {a.ecole && <span className="text-[12px] text-[#9CA3AF]">· {a.ecole}</span>}
-                      <span className="text-[11px] font-semibold text-[#F59E0B]">
-                        {a.estLeMien ? "Déjà dans ton effectif" : "Pas dans ton effectif"}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                      <a href={`/coach/athletes/${a.athleteId}`}
-                        className="px-4 py-2.5 text-center rounded-lg border border-[#2D3748] text-white text-[13px] font-semibold hover:border-[#E63946]/60">
-                        Voir sa fiche
-                      </a>
-                      {!a.estLeMien && a.aUnCompte && a.courriel && coachTeam.teams.length > 0 && (
-                        <>
-                          <select value={equipeTransfert ?? ""} onChange={(e) => setEquipeTransfert(e.target.value || null)}
-                            title="Équipe d'accueil"
-                            className="flex-1 bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-[#E63946]/50">
-                            <option value="">Choisir une équipe</option>
-                            {coachTeam.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                          </select>
-                          <button type="button" onClick={() => void inviterMemeIdentite(a)}
-                            disabled={!equipeTransfert || envoiAncre || (inviteMemeIdentite?.id === a.athleteId && inviteMemeIdentite.ok)}
-                            className="px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                            {envoiAncre ? "Envoi…" : "Inviter à rejoindre mon équipe"}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    {inviteMemeIdentite?.id === a.athleteId && (
-                      <p className={`text-[12px] font-semibold mt-2 ${inviteMemeIdentite.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
-                        {inviteMemeIdentite.ok ? "✓ " : ""}{inviteMemeIdentite.msg}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <button type="button" onClick={() => { setMemeIdentite([]); void goNext(); }}
-                className="mt-3 text-[12px] font-semibold text-[#9CA3AF] hover:text-white underline underline-offset-2">
-                Ce n&apos;est pas lui — continuer la création
-              </button>
-            </div>
+            <MemeIdentiteAvertissement
+              className="sm:col-span-2"
+              athletes={memeIdentite}
+              onContinuer={() => { setMemeIdentite([]); void goNext(); }}
+              voirFiche={(a, libelle) => (
+                <a href={`/coach/athletes/${a.athleteId}`}
+                  className="px-4 py-2.5 text-center rounded-lg border border-[#2D3748] text-white text-[13px] font-semibold hover:border-[#E63946]/60">
+                  {libelle}
+                </a>
+              )}
+              inviter={(a) => (
+                <>
+                  {peutInviterMemeIdentite(a) && coachTeam.teams.length > 0 && (
+                    <>
+                      <select value={equipeTransfert ?? ""} onChange={(e) => setEquipeTransfert(e.target.value || null)}
+                        title="Équipe d'accueil"
+                        className="flex-1 bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-[#E63946]/50">
+                        <option value="">Choisir une équipe</option>
+                        {coachTeam.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                      <button type="button" onClick={() => void inviterMemeIdentite(a)}
+                        disabled={!equipeTransfert || envoiAncre || (inviteMemeIdentite?.id === a.athleteId && inviteMemeIdentite.ok)}
+                        className="px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                        {envoiAncre ? "Envoi…" : TEXTES_MEME_IDENTITE.inviter}
+                      </button>
+                    </>
+                  )}
+                  {inviteMemeIdentite?.id === a.athleteId && (
+                    <p className={`text-[12px] font-semibold self-center ${inviteMemeIdentite.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                      {inviteMemeIdentite.ok ? "✓ " : ""}{inviteMemeIdentite.msg}
+                    </p>
+                  )}
+                </>
+              )}
+            />
           )}
         </div>
 

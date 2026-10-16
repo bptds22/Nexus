@@ -55,6 +55,8 @@ import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
+import { nomPresentable, phraseFichesMasquees } from "@/lib/athlete/nomAConfirmer";
+import EtiquetteNomAConfirmer from "@/components/athlete/EtiquetteNomAConfirmer";
 import { orgNounDe, orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 /* ── Constants ────────────────────────────────────────────── */
@@ -121,6 +123,8 @@ export interface CoachAthlete {
   isVerified: boolean;
   lastValidation: string | null;
   isPending: boolean;
+  /** D1b — nom recopié de Google, pas encore confirmé par l'athlète. */
+  nomAConfirmer: boolean;
   jersey: string;
   recruitmentStatus: string;
   committedSchoolName: string | null;
@@ -205,6 +209,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
     id,
     firstName: (a.first_name as string) || "",
     lastName: (a.last_name as string) || "",
+    nomAConfirmer: a.nom_a_confirmer === true,
     photo: (a.photo_url as string) || "",
     taxonomy: taxonomyFromAthleteRow(a),
     position: posObj?.abreviation || posObj?.nom || "",
@@ -680,6 +685,7 @@ export function CoachAthleteRowMobile({ a, onTap }: { a: CoachAthlete; onTap: ()
             <span className="shrink-0 text-[9px] font-black uppercase tracking-wider text-[#F59E0B] bg-[#F59E0B]/15 border border-[#F59E0B]/30 rounded-full px-1.5 py-0.5">En attente</span>
           )}
         </div>
+        {!nomPresentable(a) && <div className="mt-0.5"><EtiquetteNomAConfirmer a={a} /></div>}
         <p className="text-[11px] text-[#9CA3AF] truncate mt-0.5">
           {a.position || a.sportName || "—"} · {a.noTeam ? "Ligue civile" : a.school || "—"}
         </p>
@@ -1100,6 +1106,7 @@ export function CoachAthletesMobile() {
           photo_url,
           first_name,
           last_name,
+          nom_a_confirmer,
           verified,
           last_profile_validation,
           video_faits_saillants_url,
@@ -1227,14 +1234,21 @@ export function CoachAthletesMobile() {
     () => athletes.filter((a) => a.coachId === currentUserId),
     [athletes, currentUserId]
   );
+  /* D1b — même règle que app/coach/athletes/page.tsx : les fiches sans nom ou
+     au nom à confirmer RESTENT dans l'effectif du coach (étiquetées) et sortent
+     des sections hors de sa liste (« à réclamer », « école »). */
   const unclaimedAthletes = useMemo(
-    () => athletes.filter((a) => a.coachId == null),
+    () => athletes.filter((a) => a.coachId == null && nomPresentable(a)),
     [athletes]
+  );
+  const nbNomsEnAttente = useMemo(
+    () => athletes.filter((a) => a.coachId !== currentUserId && !nomPresentable(a)).length,
+    [athletes, currentUserId]
   );
   // Director oversight: school athletes owned by OTHER coaches (unclaimed
   // stay in the À réclamer tab, never double-listed).
   const schoolAthletes = useMemo(
-    () => athletes.filter((a) => a.coachId !== currentUserId && a.coachId != null),
+    () => athletes.filter((a) => a.coachId !== currentUserId && a.coachId != null && nomPresentable(a)),
     [athletes, currentUserId]
   );
 
@@ -1548,6 +1562,11 @@ export function CoachAthletesMobile() {
               : `${unclaimedAthletes.length} à réclamer`}
         </span>
       </div>
+
+      {/* D1b — fiches hors de l'effectif retirées faute de nom confirmé (comme le web). */}
+      {!loading && nbNomsEnAttente > 0 && (
+        <p data-noms-en-attente className="px-4 pb-2 text-[12px] text-[#F59E0B]">{phraseFichesMasquees(nbNomsEnAttente)}</p>
+      )}
 
       {/* Content */}
       <AnimatePresence mode="wait">

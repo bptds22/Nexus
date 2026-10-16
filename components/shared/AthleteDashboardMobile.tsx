@@ -31,6 +31,7 @@ import { selectBestEvaluation, isDetailed } from "@/lib/evaluations/selectEvalua
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import BandeauNomAConfirmer from "@/components/athlete/BandeauNomAConfirmer";
 import { DashboardGradientLayout } from "@/components/shared/dashboard/DashboardGradientLayout";
 import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeting";
 import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
@@ -527,6 +528,11 @@ export default function AthleteDashboardMobile() {
         dateLabel={dateLabel}
         verifiedBadge={badgeActive}
       />
+
+      {/* D1b — nom recopié de Google à confirmer, ou fiche sans nom. Le même
+          bandeau que le web (même RPC, mêmes textes) : avant toute autre
+          bannière, la fiche est hors de la recherche recruteur tant qu'il est là. */}
+      <BandeauNomAConfirmer className="mb-3" />
 
       {/* Phase 1 banners — kept inline above the hero (D3 locked).
           Conditional on real counts ; same routing targets as desktop

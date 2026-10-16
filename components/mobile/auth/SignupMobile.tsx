@@ -65,6 +65,7 @@ import { isAdult, isUnder14, peutConsentirPartenaires } from "@/lib/legal/ageGat
 import { LegalSheetMobile, type LegalDocKey } from "@/components/legal/LegalSheetMobile";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import { triggerHaptic } from "@/lib/haptics";
+import { SuggestionCourriel, useSuggestionCourriel } from "@/components/auth/SuggestionCourriel";
 
 
 const RELATION_OPTIONS: PickerOption[] = [
@@ -175,6 +176,9 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
 
   // Validation par écran (athlète)
   const emailValid = EMAIL_RE.test(email.trim());
+  /* D1 — courriel mal écrit (gmail.con…) : suggéré avant de continuer, comme
+     le web. Non bloquant. */
+  const sugg = useSuggestionCourriel(email);
   const pwdValid = password.length >= 8;
   const pwdMatches = confirmPassword.length > 0 && confirmPassword === password;
   // Iter 7.50-a-bis-2a-fix-2 — policy + data obligatoires gatent l'écran 1
@@ -247,13 +251,14 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
 
   const handleNext = useCallback(() => {
     triggerHaptic("Light");
+    if ((step === 1 || step === 2) && sugg.enAttente) { sugg.montrer(); return; }
     if (step === 1 && canProceedStep1) setStep(2);
     // Step 2 → Step 3 UNIQUEMENT pour un athlète mineur.
     // Iter coach-signup — un coach ne va JAMAIS au step 3 (adulte, pas
     // de parental). Pour un athlète majeur (age-gate §B), le CTA bascule
     // directement sur "Créer mon compte" et appelle handleSubmit.
     else if (step === 2 && canProceedStep2 && userType === "athlete" && !userIsAdult) setStep(3);
-  }, [step, canProceedStep1, canProceedStep2, userType, userIsAdult]);
+  }, [step, canProceedStep1, canProceedStep2, userType, userIsAdult, sugg]);
 
   const handleBack = useCallback(() => {
     triggerHaptic("Light");
@@ -273,6 +278,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
+    if (sugg.enAttente) { sugg.montrer(); return; }
     // Loi 25 — jamais de compte auth pour un <14 (garde défensive en plus
     // du blocage du CTA via canProceedStep2/birthdateUnder14).
     if (isUnder14(birthdate)) return;
@@ -497,7 +503,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
       router.replace("/athlete/onboarding");
     }, 400);
   }, [
-    canSubmit, email, password, firstName, lastName, birthdate,
+    canSubmit, sugg, email, password, firstName, lastName, birthdate,
     userType, coachContext, userIsAdult,
     parentFirstName, parentLastName, parentEmail, parentRelationship,
     consentPolicy, consentData, consentMarketing,
@@ -567,6 +573,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
       {step === 1 && (
         <Step1Account
           email={email} setEmail={setEmail}
+          suggestion={sugg}
           password={password} setPassword={setPassword}
           confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
           showPwd={showPwd} setShowPwd={setShowPwd}
@@ -583,6 +590,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           firstName={firstName} setFirstName={setFirstName}
           lastName={lastName} setLastName={setLastName}
           email={email} setEmail={setEmail} emailValid={emailValid}
+          suggestion={sugg}
           birthdate={birthdate} setBirthdate={setBirthdate}
           consentPolicy={consentPolicy} setConsentPolicy={setConsentPolicy}
           consentData={consentData} setConsentData={setConsentData}
@@ -726,8 +734,11 @@ const labelCls = "block uppercase mb-1 text-[13px] font-bold tracking-[0.18em] t
 
 // Iter signup-reorg — Step 1 (compte) : props épurées. Les 3 consents
 // génériques (policy/data/marketing) sont passés à Step2You désormais.
+type Suggestion = ReturnType<typeof useSuggestionCourriel>;
+
 interface Step1Props {
   email: string; setEmail: (v: string) => void;
+  suggestion: Suggestion;
   password: string; setPassword: (v: string) => void;
   confirmPassword: string; setConfirmPassword: (v: string) => void;
   showPwd: boolean; setShowPwd: (v: boolean) => void;
@@ -766,12 +777,16 @@ function Step1Account(p: Step1Props) {
             value={p.email}
             onChange={(e) => p.setEmail(e.target.value)}
             onFocus={() => p.setInputFocused(true)}
-            onBlur={() => p.setInputFocused(false)}
+            onBlur={() => { p.setInputFocused(false); p.suggestion.montrer(); }}
             placeholder="nom@exemple.ca"
             className={inputCls}
             style={{ fontSize: 17 }}
           />
         </div>
+        {p.suggestion.visible && p.suggestion.propose && (
+          <SuggestionCourriel className="-mt-1" propose={p.suggestion.propose}
+            onCorriger={() => p.setEmail(p.suggestion.propose!)} onGarder={p.suggestion.garder} />
+        )}
 
         <div className={fieldCls}>
           <label htmlFor="signup-pwd" className={labelCls}>Mot de passe (min. 8)</label>
@@ -902,6 +917,7 @@ interface Step2YouProps {
   firstName: string; setFirstName: (v: string) => void;
   lastName: string; setLastName: (v: string) => void;
   email: string; setEmail: (v: string) => void; emailValid: boolean;
+  suggestion: Suggestion;
   birthdate: string; setBirthdate: (v: string) => void;
   consentPolicy: boolean; setConsentPolicy: (v: boolean) => void;
   consentData: boolean; setConsentData: (v: boolean) => void;
@@ -983,12 +999,16 @@ function Step2You(p: Step2YouProps) {
                 value={p.email}
                 onChange={(e) => p.setEmail(e.target.value)}
                 onFocus={() => p.setInputFocused(true)}
-                onBlur={() => p.setInputFocused(false)}
+                onBlur={() => { p.setInputFocused(false); p.suggestion.montrer(); }}
                 placeholder="nom@exemple.ca"
                 className={inputCls}
                 style={{ fontSize: 17 }}
               />
             </div>
+            {p.suggestion.visible && p.suggestion.propose && (
+              <SuggestionCourriel className="-mt-1" propose={p.suggestion.propose}
+                onCorriger={() => p.setEmail(p.suggestion.propose!)} onGarder={p.suggestion.garder} />
+            )}
             {p.email && !p.emailValid && (
               <p className="text-[12px] text-[#EF4444] -mt-1 px-1">Format de courriel invalide.</p>
             )}

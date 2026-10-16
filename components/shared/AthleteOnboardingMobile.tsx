@@ -60,6 +60,10 @@ import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
+import { confirmerNomSiAConfirmer, nomADemander } from "@/lib/athlete/nomAConfirmer";
+import { verifierDoublonInscription, type DoublonInscription } from "@/lib/athlete/doublonInscription";
+import { AvertissementDoublonInscription, PlusieursSports } from "@/components/athlete/AvertissementDoublonInscription";
+import { deconnexion } from "@/lib/auth/deconnexion";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
@@ -185,6 +189,13 @@ export function AthleteOnboardingMobile() {
   // État formulaire (set minimum)
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  /* D1b — Prénom / Nom à l'écran 1 quand l'un manque ou est à confirmer (nom
+     recopié de Google) : même règle que l'étape 1 du web. Décidé une fois à
+     l'init, pour que les champs ne disparaissent pas pendant la saisie. */
+  const [afficherNom, setAfficherNom] = useState(false);
+  /* D1 — doublon probable : une vérification par visite, jamais bloquante. */
+  const [doublonPossible, setDoublonPossible] = useState<DoublonInscription | null>(null);
+  const doublonVerifie = useRef(false);
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -418,6 +429,10 @@ export function AthleteOnboardingMobile() {
       const meta = user.user_metadata || {};
       if (meta.first_name) setFirstName(meta.first_name as string);
       if (meta.last_name) setLastName(meta.last_name as string);
+      // D1b — ce que l'écran 1 aura sous les yeux, pour décider des champs Nom.
+      let prenomVu = (meta.first_name as string | undefined) ?? "";
+      let nomVu = (meta.last_name as string | undefined) ?? "";
+      let nomFlag = false;
       if (meta.sport) setPrimarySport(meta.sport as string);
 
       // Lecture unique de public.users, avec retry. Juste après le signup
@@ -430,11 +445,12 @@ export function AthleteOnboardingMobile() {
         last_name: string | null;
         context: string | null;
         onboarding_complete: boolean | null;
+        nom_a_confirmer: boolean | null;
       } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data } = await supabase
           .from("users")
-          .select("first_name, last_name, context, onboarding_complete")
+          .select("first_name, last_name, context, onboarding_complete, nom_a_confirmer")
           .eq("id", user.id)
           .maybeSingle();
         if (data) { userRow = data; break; }
@@ -445,7 +461,10 @@ export function AthleteOnboardingMobile() {
       if (!meta.first_name) {
         if (userRow?.first_name) setFirstName(userRow.first_name);
         if (userRow?.last_name) setLastName(userRow.last_name);
+        prenomVu = userRow?.first_name ?? "";
+        nomVu = userRow?.last_name ?? "";
       }
+      nomFlag = userRow?.nom_a_confirmer === true;
 
       // Context athlète
       const ctxRaw = userRow?.context;
@@ -504,6 +523,9 @@ export function AthleteOnboardingMobile() {
         // Pré-fill set minimum
         if (existing.first_name) setFirstName(existing.first_name as string);
         if (existing.last_name) setLastName(existing.last_name as string);
+        if (existing.first_name) prenomVu = existing.first_name as string;
+        if (existing.last_name) nomVu = existing.last_name as string;
+        if (existing.nom_a_confirmer === true) nomFlag = true;
         if (existing.telephone) setPhone(existing.telephone as string);
         if (existing.photo_url) setPhoto(existing.photo_url as string);
         if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
@@ -627,6 +649,8 @@ export function AthleteOnboardingMobile() {
           setShowClaimModal(true);
         }
       }
+
+      if (!cancelled) setAfficherNom(nomADemander(prenomVu, nomVu, nomFlag));
 
       } catch (err) {
         // Échec inattendu (réseau, auth) — état récupérable plutôt que
@@ -910,6 +934,7 @@ export function AthleteOnboardingMobile() {
   // Step 1 = équipe (sport principal + école OR équipe civile).
   const canProceedScreen1 = !!(
     primarySport &&
+    (!afficherNom || (firstName.trim() && lastName.trim())) &&
     (userContext === "ligue_civile" ? true : (selectedSchoolId || ecoleNonListeeValide))
   );
 
@@ -1334,10 +1359,23 @@ export function AthleteOnboardingMobile() {
     if (step !== 1 || !canProceedScreen1 || saving) return;
     triggerHaptic("Light");
     setSaving(true);
-    const id = await enregistrerFiche(createClient(), false);
+    const supabase = createClient();
+    /* D1 — avant le PREMIER enregistrement, une fois par visite. La date de
+       naissance vient du signup (metadata), comme dans enregistrerFiche. */
+    if (!doublonVerifie.current) {
+      doublonVerifie.current = true;
+      const { data: { session } } = await supabase.auth.getSession();
+      const dn = session?.user?.user_metadata?.date_naissance;
+      const doublon = await verifierDoublonInscription(supabase, firstName, lastName, typeof dn === "string" && dn ? dn : null);
+      if (doublon) { setDoublonPossible(doublon); setSaving(false); return; }
+    }
+    setDoublonPossible(null);
+    const id = await enregistrerFiche(supabase, false);
+    // D1b — le nom vu et validé à cet écran est confirmé (jamais bloquant).
+    if (id) await confirmerNomSiAConfirmer(supabase, firstName, lastName);
     setSaving(false);
     if (id) setStep(2);
-  }, [step, canProceedScreen1, saving, enregistrerFiche]);
+  }, [step, canProceedScreen1, saving, enregistrerFiche, firstName, lastName]);
 
   const handleBack = useCallback(() => {
     triggerHaptic("Light");
@@ -1588,6 +1626,17 @@ export function AthleteOnboardingMobile() {
             // serait absurde. Les champs déjà saisis sont conservés —
             // releaseCodeLock ne remet à zéro que le verrou et l'équipe.
             onReleaseCode={() => { releaseCodeLock(); setStep(0); }}
+            afficherNom={afficherNom}
+            firstName={firstName} setFirstName={setFirstName}
+            lastName={lastName} setLastName={setLastName}
+            doublon={doublonPossible ? (
+              <AvertissementDoublonInscription
+                code={doublonPossible}
+                enCours={saving}
+                onContinuer={() => { void handleNext(); }}
+                onAutreAdresse={async () => { await deconnexion(); router.push("/auth"); }}
+              />
+            ) : null}
           />
         )}
 
@@ -2013,6 +2062,12 @@ interface Step1Props {
     sportName: string; details: { essentiel: string; contexte: string };
   } | null;
   onReleaseCode: () => void;
+  /** D1b — Prénom / Nom quand l'un manque ou est à confirmer. */
+  afficherNom: boolean;
+  firstName: string; setFirstName: (v: string) => void;
+  lastName: string; setLastName: (v: string) => void;
+  /** D1 — avertissement de doublon probable (null = rien). */
+  doublon: React.ReactNode;
 }
 
 function Step1Content(p: Step1Props) {
@@ -2099,6 +2154,25 @@ function Step1Content(p: Step1Props) {
       </div>
       )}
 
+      {/* D1b — même règle que l'étape 1 du web : le nom recopié de Google se
+          relit ici, et il est confirmé au premier enregistrement. */}
+      {p.afficherNom && (
+        <div data-champs-nom className="mb-4 space-y-3">
+          <SectionTitle>Ton nom</SectionTitle>
+          <input
+            type="text" aria-label="Prénom" placeholder="Prénom" autoComplete="given-name"
+            value={p.firstName} onChange={(e) => p.setFirstName(e.target.value)} maxLength={80}
+            className="w-full h-12 rounded-xl bg-[#111317] border border-white/[0.10] px-3 text-[16px] text-white placeholder:text-white/30 focus:outline-none focus:border-[#E63946]/50"
+          />
+          <input
+            type="text" aria-label="Nom" placeholder="Nom" autoComplete="family-name"
+            value={p.lastName} onChange={(e) => p.setLastName(e.target.value)} maxLength={80}
+            className="w-full h-12 rounded-xl bg-[#111317] border border-white/[0.10] px-3 text-[16px] text-white placeholder:text-white/30 focus:outline-none focus:border-[#E63946]/50"
+          />
+          <p className="text-[12px] leading-relaxed text-white/45">Tel qu&apos;il apparaîtra sur ta carte joueur.</p>
+        </div>
+      )}
+
       <SectionTitle>Sport principal</SectionTitle>
       {/* Sport VERROUILLÉ quand un code est actif : il vient de l'équipe. Le
           laisser modifiable rouvrirait l'incohérence qu'on corrige (profil
@@ -2130,6 +2204,8 @@ function Step1Content(p: Step1Props) {
         })}
       </div>
       )}
+      {/* D1 — un compte par sport faisait un doublon. */}
+      <PlusieursSports className="mt-2 mb-2" />
 
       {/* Organisation et équipe DÉJÀ décidées par le code : on les confirme,
           on ne les repropose pas. Les pickers resteraient une invitation à se
@@ -2377,6 +2453,9 @@ function Step1Content(p: Step1Props) {
           )}
         </>
       )}
+
+      {/* D1 — doublon probable : au-dessus du bouton fixe, « Continuer » enregistre. */}
+      {p.doublon && <div className="pt-4">{p.doublon}</div>}
 
     </div>
   );
