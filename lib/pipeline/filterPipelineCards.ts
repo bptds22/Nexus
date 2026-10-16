@@ -158,6 +158,13 @@ export function estDuType(card: FilterablePipelineCard, type: TypeCarte): boolea
   return type === "prospects" ? prospect : !prospect;
 }
 
+/** La pastille Type ne choisit rien si toutes les cartes sont du même type et
+ *  que rien n'est choisi : grisée, jamais cachée (règle BP, web et appli). */
+export function typeCarteGrise(cards: readonly FilterablePipelineCard[], choix: TypeCarte | null): boolean {
+  if (choix !== null) return false;
+  return new Set(cards.map((c) => estCarte(c as unknown as PipelineKanbanCard))).size < 2;
+}
+
 /* ── LES CHIPS RAPIDES ──────────────────────────────────────────────────
    Des prédicats booléens, pas des facettes : ils ne se déclinent pas en
    valeurs et n'ont donc ni menu ni « Non renseigné ». Cumulables entre eux
@@ -370,6 +377,15 @@ export interface FacetOption {
   value: string;
   label: string;
   count: number;
+}
+
+/** Libellé d'une facette à cocher, web et appli : 0 coché → « Toutes les… »,
+ *  1 → sa valeur, 2+ → « Équipe (3) ». */
+export function libelleFacette(def: FacetDef, options: readonly FacetOption[], selected: readonly string[]): string {
+  const n = selected.length;
+  if (n === 0) return def.allLabel;
+  if (n === 1) return options.find((o) => o.value === selected[0])?.label ?? def.label;
+  return `${def.label} (${n})`;
 }
 
 /* Les compteurs sont calculés sur les cartes filtrées par les AUTRES

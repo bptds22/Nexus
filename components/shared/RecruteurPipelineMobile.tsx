@@ -58,9 +58,22 @@ import {
   EMPTY_FILTERS,
   quickDepuisFiltreUrl,
   FILTRE_PIPELINE_URL,
+  FACET_ECOLE,
+  FACET_EQUIPE,
+  TYPES_CARTE,
+  basculerTout,
+  filtrerOptionsFacette,
+  isFacetOffered,
+  libelleFacette,
+  nettoyerEquipes,
+  toggleFacetValue,
+  typeCarteGrise,
+  type ExtraFilters,
   type PipelineFilters,
   type QuickKey,
+  type TypeCarte,
 } from "@/lib/pipeline/filterPipelineCards";
+import { MobileMultiPicker } from "@/components/mobile/MobileMultiPicker";
 import { useUpdatePipelineStage } from "@/lib/queries/recruiter/useUpdatePipelineStage";
 import { etapePorteVisite, etapeApresSaisieVisite } from "@/lib/pipeline/regleVisite";
 import { useTogglePipelinePriority } from "@/lib/queries/recruiter/useTogglePipelinePriority";
@@ -637,13 +650,17 @@ function SwipeableCard({
    Les chips venues d'un lien du tableau de bord (?filtre=relances) filtrent
    toujours : la pastille du bouton les compte, Réinitialiser les retire.
 
-   Pas de champ École ici (retour BP, recette 1.4.4) : le web n'en a pas non
-   plus (ExtraFilters.school existe toujours côté lib/pipeline pour d'autres
-   appelants, mais plus pour ce sheet). */
+   1.4.5 (A6) — « École / Club », « Équipe » et « Type » rejoignent le sheet,
+   comme sur le web (BP 2026-10-15) : mêmes helpers de lib/pipeline
+   (FACET_ECOLE, FACET_EQUIPE, nettoyerEquipes, basculerTout, TYPES_CARTE),
+   choix MULTIPLES pour École et Équipe, Type exclusif. Règle BP pour ces
+   trois-là : TOUJOURS affichés, grisés (jamais cachés) quand une seule
+   valeur est possible. Les autres listes gardent leur comportement. */
 function FiltresSheet({
   open, onClose,
   filters, setFilters,
   setQuick,
+  typeCarte, setTypeCarte, extra,
   sortBy, setSortBy,
   cards, nbResultats,
   filtreSport,
@@ -653,6 +670,10 @@ function FiltresSheet({
   filters: PipelineFilters;
   setFilters: (updater: (f: PipelineFilters) => PipelineFilters) => void;
   setQuick: (updater: (q: QuickKey[]) => QuickKey[]) => void;
+  typeCarte: TypeCarte | null;
+  setTypeCarte: (updater: (t: TypeCarte | null) => TypeCarte | null) => void;
+  /** Chips + Type : les compteurs des listes en tiennent compte (comme le web). */
+  extra: ExtraFilters;
   sortBy: PipelineSortMode;
   setSortBy: (v: PipelineSortMode) => void;
   cards: PipelineKanbanCard[];
@@ -667,12 +688,18 @@ function FiltresSheet({
      reste (facetOptions exclut la facette comptée) : une valeur proposée
      rend au moins un athlète. */
   const options = useMemo(() => ({
-    sport: facetOptions(cards, "sport", filters),
-    league: facetOptions(cards, "league", filters),
-    region: facetOptions(cards, "region", filters),
-    position: facetOptions(cards, "position", filters),
-    graduation_year: facetOptions(cards, "graduation_year", filters),
-  }), [cards, filters]);
+    sport: facetOptions(cards, "sport", filters, extra),
+    league: facetOptions(cards, "league", filters, extra),
+    region: facetOptions(cards, "region", filters, extra),
+    position: facetOptions(cards, "position", filters, extra),
+    graduation_year: facetOptions(cards, "graduation_year", filters, extra),
+    school: facetOptions(cards, "school", filters, extra),
+    team: facetOptions(cards, "team", filters, extra),
+  }), [cards, filters, extra]);
+  // La PRÉSENCE se juge sur l'ensemble des cartes, le CONTENU sur le contexte (web).
+  const ecoleOfferte = isFacetOffered(cards, "school", filters);
+  const equipeOfferte = isFacetOffered(cards, "team", filters);
+  const typeGrise = typeCarteGrise(cards, typeCarte);
 
   // Même feuille que Recherche (décision BP 2026-10-05) : FilterRow +
   // MobilePicker pour chaque champ, plus de <select> natif. Un état d'ouverture
@@ -683,6 +710,8 @@ function FiltresSheet({
   const [openPosition, setOpenPosition] = useState(false);
   const [openPromotion, setOpenPromotion] = useState(false);
   const [openSort, setOpenSort] = useState(false);
+  const [openEcole, setOpenEcole] = useState(false);
+  const [openEquipe, setOpenEquipe] = useState(false);
 
   const sportsDirecteur = filtreSport
     ? filtreSport.options.filter((o) => o.valeur !== SANS_SPORT && o.valeur !== TOUS).length
@@ -691,6 +720,7 @@ function FiltresSheet({
   const reinitialiser = () => {
     setFilters(() => EMPTY_FILTERS);
     setQuick(() => []);
+    setTypeCarte(() => null);
     setSortBy(DEFAULT_PIPELINE_SORT);
     if (filtreSport?.monSportId) filtreSport.setChoix(filtreSport.monSportId);
     toast.info({ message: "Filtres réinitialisés" });
@@ -728,8 +758,30 @@ function FiltresSheet({
           <FilterRow label="Région" value={libelleFiltre("region", "Toutes les régions")} onTap={() => setOpenRegion(true)} />
           <FilterRow label="Position" value={libelleFiltre("position", "Toutes")} onTap={() => setOpenPosition(true)} />
           <FilterRow label="Promotion" value={libelleFiltre("graduation_year", "Toutes")} onTap={() => setOpenPromotion(true)} />
+          <FilterRow label={FACET_ECOLE.label} value={libelleFacette(FACET_ECOLE, options.school, filters.school)}
+            onTap={() => setOpenEcole(true)} disabled={!ecoleOfferte} />
+          <FilterRow label={FACET_EQUIPE.label} value={libelleFacette(FACET_EQUIPE, options.team, filters.team)}
+            onTap={() => setOpenEquipe(true)} disabled={!equipeOfferte} />
           <FilterRow label="Trier par" value={sortLabel} onTap={() => setOpenSort(true)} />
         </div>
+
+        {/* Type — deux valeurs EXCLUSIVES ; un second tap sur la valeur active la
+            retire (= tout). Grisée, jamais cachée (règle BP), comme le web. */}
+        <section className="px-4" data-filtre-type>
+          <h3 className={titre}>Type</h3>
+          <div role="group" aria-label="Type" className="flex gap-2">
+            {TYPES_CARTE.map((t) => {
+              const on = typeCarte === t.key;
+              return (
+                <button key={t.key} type="button" disabled={typeGrise} aria-pressed={on}
+                  onClick={() => { void triggerHaptic("Light"); setTypeCarte((cur) => (cur === t.key ? null : t.key)); }}
+                  className={`flex-1 min-h-[44px] rounded-full text-[13px] font-bold border transition-colors ${on ? "bg-white/[0.06] text-white border-white/40" : "bg-[#13151a] text-[#9CA3AF] border-[#2D3748]"}${typeGrise ? " opacity-50" : ""}`}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
       </FilterBottomSheetShell>
 
       <MobilePicker open={openSport} onClose={() => setOpenSport(false)} title="Sport" options={picker("sport", "Tous")}
@@ -742,6 +794,13 @@ function FiltresSheet({
         value={filters.position[0] ?? ""} onChange={(v) => setFilters((f) => ({ ...f, position: v ? [String(v)] : [] }))} />
       <MobilePicker open={openPromotion} onClose={() => setOpenPromotion(false)} title="Promotion" options={picker("graduation_year", "Toutes")}
         value={filters.graduation_year[0] ?? ""} onChange={(v) => setFilters((f) => ({ ...f, graduation_year: v ? [String(v)] : [] }))} />
+      <MobileMultiPicker open={openEcole} onClose={() => setOpenEcole(false)} title={FACET_ECOLE.label}
+        options={options.school} selected={filters.school} filtrer={filtrerOptionsFacette}
+        onToggle={(v) => setFilters((f) => nettoyerEquipes(cards, f, toggleFacetValue(f, "school", v)))} />
+      <MobileMultiPicker open={openEquipe} onClose={() => setOpenEquipe(false)} title={FACET_EQUIPE.label}
+        options={options.team} selected={filters.team} filtrer={filtrerOptionsFacette}
+        onToggle={(v) => setFilters((f) => toggleFacetValue(f, "team", v))}
+        onBasculerTout={(listees) => setFilters((f) => basculerTout(f, "team", listees))} />
       <MobilePicker open={openSort} onClose={() => setOpenSort(false)} title="Trier par"
         options={PIPELINE_SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
         value={sortBy} onChange={(v) => setSortBy((v as PipelineSortMode) ?? DEFAULT_PIPELINE_SORT)} />
@@ -1600,6 +1659,9 @@ export function RecruteurPipelineMobile() {
   );
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [quick, setQuick] = useState<QuickKey[]>(() => quickDepuisFiltreUrl(filtreUrl));
+  // A6 — Prospects / Sur Nexus (exclusif), comme le web.
+  const [typeCarte, setTypeCarte] = useState<TypeCarte | null>(null);
+  const extra = useMemo<ExtraFilters>(() => ({ quick, type: typeCarte }), [quick, typeCarte]);
   /* « + Prospect » — mêmes conditions que le web : la carte naît dans
      l'unité du recruteur, donc pas quand un directeur regarde un autre
      sport (ou tout le cégep). */
@@ -1624,8 +1686,8 @@ export function RecruteurPipelineMobile() {
      Le TOTAL, lui, reste brut : c'est « combien d'athlètes je suis », une
      réponse qui ne doit pas bouger quand je regarde un sous-ensemble. */
   const cardsFiltrees = useMemo(
-    () => filterPipelineCards(cards, filters, { quick }),
-    [cards, filters, quick],
+    () => filterPipelineCards(cards, filters, extra),
+    [cards, filters, extra],
   );
 
   const cardsByStage = useMemo(() => {
@@ -1653,9 +1715,9 @@ export function RecruteurPipelineMobile() {
     // FILTRER PUIS TRIER — même ordre qu'au web. Les facettes viennent de
     // lib/pipeline/filterPipelineCards, le tri de sortPipelineCards : les
     // deux surfaces appellent exactement les mêmes fonctions.
-    const list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters, { quick });
+    const list = filterPipelineCards(cardsByStage[activeStage] ?? [], filters, extra);
     return sortPipelineCards(list, sortBy);
-  }, [cardsByStage, activeStage, filters, quick, sortBy]);
+  }, [cardsByStage, activeStage, filters, extra, sortBy]);
 
   // Index du stage actif pour les bornes du swipe (canSwipeLeft/Right)
   const activeStageIndex = useMemo(
@@ -1865,7 +1927,7 @@ export function RecruteurPipelineMobile() {
 
       <PipelineHeader
         totalCount={cards.length}
-        nActiveFilters={activeFilterCount(filters, { quick })}
+        nActiveFilters={activeFilterCount(filters, extra)}
         onFilterTap={handleMenuTap}
       />
 
@@ -1951,7 +2013,7 @@ export function RecruteurPipelineMobile() {
                    d'un coup figeaient l'ouverture). Nouvelle liste = `key`
                    nouvelle : on repart du haut. */
                 <ListeParTranches
-                  key={`${activeStage}|${sortBy}|${quick.join(",")}|${JSON.stringify(filters)}`}
+                  key={`${activeStage}|${sortBy}|${quick.join(",")}|${typeCarte ?? ""}|${JSON.stringify(filters)}`}
                   className="space-y-2"
                   items={activeStageCards}
                   rendre={(card) => {
@@ -2022,6 +2084,7 @@ export function RecruteurPipelineMobile() {
         onClose={() => setMenuOpen(false)}
         filters={filters} setFilters={setFilters}
         setQuick={setQuick}
+        typeCarte={typeCarte} setTypeCarte={setTypeCarte} extra={extra}
         sortBy={sortBy} setSortBy={setSortBy}
         cards={cards}
         nbResultats={cardsFiltrees.length}

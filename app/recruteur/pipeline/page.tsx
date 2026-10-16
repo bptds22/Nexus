@@ -40,6 +40,8 @@ import {
   FILTRE_PIPELINE_URL,
   quickDepuisFiltreUrl,
   filtrerOptionsFacette,
+  libelleFacette,
+  typeCarteGrise,
   type FacetDef,
   type FacetOption,
   type PipelineFilters,
@@ -1727,12 +1729,8 @@ function FacetDropdown({
   const [requete, setRequete] = useState("");
   const n = selected.length;
   const visibles = searchable ? filtrerOptionsFacette(options, requete, selected) : options;
-  // 0 coché → « Toutes les positions ». 1 → sa valeur. 2+ → « Position (3) ».
-  const label = n === 0
-    ? def.allLabel
-    : n === 1
-      ? (options.find((o) => o.value === selected[0])?.label ?? def.label)
-      : `${def.label} (${n})`;
+  // 0 coché → « Toutes les positions ». 1 → sa valeur. 2+ → « Position (3) ». Partagé avec l'appli.
+  const label = libelleFacette(def, options, selected);
 
   return (
     <div className="relative">
@@ -2206,7 +2204,6 @@ function PipelinePageContent() {
     [cards, filters, extra],
   );
   // La pastille Type ne choisit rien si toutes les cartes sont du même type : grisée.
-  const typesPresents = useMemo(() => new Set(cards.map((c) => estCarte(c))).size, [cards]);
 
   const nActiveFilters = activeFilterCount(filters, extra);
   // Tri d'en-tête sans mode équivalent dans le menu : tableau seulement.
@@ -2617,7 +2614,7 @@ function PipelinePageContent() {
           <div role="group" aria-label="Type" className="flex items-center gap-2">
             {TYPES_CARTE.map((t) => {
               const on = typeCarte === t.key;
-              const grise = typesPresents < 2 && typeCarte === null;
+              const grise = typeCarteGrise(cards, typeCarte);
               return (
                 <button
                   key={t.key}
