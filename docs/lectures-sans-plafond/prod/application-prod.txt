@@ -1,0 +1,44 @@
+APPLICATION EN PROD — Lectures sans plafond (20261016080000), SUR GO DE BP SEULEMENT
+Suite du correctif processus-rpc (20261016060000, déjà en prod).
+
+Ordre : la migration AVANT le code web. Le nouveau code appelle les nouvelles fonctions : sans elles, les écrans
+touchés affichent « … n'a pas pu être chargé — Réessayer ». L'ancien code fonctionne avec ou sans la migration
+(rien d'existant n'est modifié, seize fonctions de LECTURE sont ajoutées) : appliquer la base d'abord ne casse rien.
+Le mobile (applis installées) n'est pas concerné : il n'embarque ce tronc qu'à son prochain build (lot mobile).
+
+1. Relevé avant (lecture seule) : docs/lectures-sans-plafond/prod/etat-avant.sql doit rendre
+   21280015fba68a00183647d59c52eb48|12
+   (relevé le 2026-10-16 : identique en prod et en local — processus_cartes, acces_carte_lecture, carte_lecture_ok,
+   9 policies des cartes ; les seize fonctions *_par_* absentes ; processus-rpc 20261016060000 bien présent).
+2. docs/lectures-sans-plafond/prod/lot-prod.sql (md5 45bf66f16bc80dc685f191129e76cd71, 37 867 octets) EN UN SEUL
+   APPEL (connecteur execute_sql) — une transaction : relevé, gardes (une transaction, version absente, état de
+   départ), le fichier octet pour octet (md5 ddb85453dda3ba998225e6bc0b0b808b), schema_migrations, admin_operations
+   (MIGRATION_LECTURES_SANS_PLAFOND), empreinte e54c87845beefe00ea3d5345210a5bcc (28 éléments), données inchangées
+   (cartes_prospect, athletes, users, team_athletes, recruiter_pipeline). Pas apply_migration (le lot enregistre lui-même
+   sa version). Si une de ces tables est écrite pendant la seconde du lot, la garde « une donnée a changé » annule
+   tout : rien n'est appliqué, relancer.
+   Repli si le connecteur refuse (« requestState ») : psql lancé par BP, même fichier —
+     $env:PGCLIENTENCODING="UTF8"; psql "<chaîne session pooler>" -X -v ON_ERROR_STOP=1 -1 -f docs/lectures-sans-plafond/prod/lot-prod.sql
+3. Lecture seule après : empreinte-objets.sql = e54c87845beefe00ea3d5345210a5bcc|28 ;
+   etat-avant.sql = b26c3af2d31942295a61616db614502d|28.
+4. Code web : merge de fix/lectures-sans-plafond vers main, déploiement, puis PROMOTE Vercel (la prod est épinglée :
+   un push n'est pas servi). Le code de processus-rpc (déjà mergé sur main, pas encore servi en prod d'après les
+   journaux du 2026-10-16 : la prod lit encore /rest/v1/cartes_prospect) part dans le même Promote — sa migration
+   est en prod depuis le matin, l'ordre est donc respecté pour les deux.
+   Contrôle fonctionnel (Lauréats, Saint-Hyacinthe football, 953 cartes) : calendrier, Mes listes, Mon cégep chargent ;
+   journaux API : plus de 400/414 sur cartes_prospect_notes ; les nouvelles fonctions répondent en 200.
+5. Rollback si besoin : supabase/rollback/20261016080000_rollback_lectures_sans_plafond.sql
+   (md5 c4e5271c1ecc86cc3c03434933daf843, une transaction) — APRÈS avoir ramené le code web en arrière (Promote du
+   déploiement précédent). Prouvé en local : ramène etat-avant.sql à 21280015fba68a00183647d59c52eb48|12.
+
+Preuve locale : docs/lectures-sans-plafond/prod/preuve-locale.txt (garde fausse → rien ; envoi en morceaux → arrêt
+avant toute écriture ; lot réel → appliqué, empreinte identique ; 2e envoi → refusé ; banc sur la base migrée 7|0 ;
+rollback → état de départ exact ; ré-application → appliqué).
+Banc SQL : docs/lectures-sans-plafond/tests-lectures-sans-plafond.sql (transaction annulée, données fictives) —
+équivalence fonction = RLS pour chaque compte local (49 comptes, 1 078 cas, 0 écart), 1 500 cartes en une valeur,
+carte fusionnée exclue, tableau vide/NULL, droits (anon refusé), seule cartes_par_ids DEFINER.
+Preuves HTTP (vrai PostgREST local, max-rows 1000) : docs/lectures-sans-plafond/preuve-http.test.ts (9/9) et
+preuve-http-coach-admin.test.ts (5/5) — le défaut reproduit (.in() de 1000+ ids refusé, lecture coupée à 1000,
+menu admin à 1000 écoles sur 1184) puis corrigé (tout est lu, mêmes lignes que la lecture directe).
+Contrôle statique : docs/lectures-sans-plafond/verifier-tris-rpc.mjs (sur le résultat d'une fonction, PostgREST
+refuse de trier sur une colonne non sélectionnée — 59 lectures triées, 0 faute).

@@ -3,6 +3,37 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import JSZip from "jszip";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
+
+/* Lecture COMPLÈTE d'une table pour les exports Loi 25 (correctif 2026-10-16) :
+   PostgREST coupait chaque table à 1000 lignes sans le dire — un export légal
+   incomplet qui avait l'air complet. Toutes les pages, triées par id, et une
+   erreur LEVÉE (l'export échoue en le disant, rien n'est téléchargé). */
+type RequeteExport = ReturnType<ReturnType<ReturnType<typeof createClient>["from"]>["select"]>;
+function lireExport(
+  supabase: ReturnType<typeof createClient>,
+  table: string,
+  colonnes: string,
+  filtrer: (q: RequeteExport) => RequeteExport,
+): Promise<Record<string, unknown>[]> {
+  return lireTout<Record<string, unknown>>((de, a) =>
+    filtrer(supabase.from(table).select(colonnes, { count: "exact" })).order("id").range(de, a));
+}
+
+/* La RPC des cartes prospects partenaire rend des lignes (coupées à 1000) : lue
+   page par page, triée sur toutes ses colonnes (aucune clé unique). */
+function lireProspectsPartenaires(
+  supabase: ReturnType<typeof createClient>,
+  args: { p_user: string | null; p_debut: string | null; p_fin: string | null },
+): Promise<Record<string, unknown>[]> {
+  return lireTout<Record<string, unknown>>((de, a) => supabase
+    .rpc("admin_loi25_prospects_partenaires", args, { count: "exact" })
+    .order("horodatage").order("source").order("action").order("partner_id").order("carte_id")
+    .order("acteur").order("athlete_id").order("details")
+    .range(de, a));
+}
 import {
   AlertTriangle,
   Search,
@@ -122,30 +153,38 @@ function ConsentementsTab() {
   const [sportFilter, setSportFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) : un
+  // registre de consentements vide ou incomplet n'est jamais affiché sans le dire.
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     (async () => {
       // Query real athlete rows — filter to minors (< 18) on the client after age compute.
       // TODO: Wire to a dedicated loi25_consents table for richer status
       // (obtained / pending / withdrawn / expired + method + form version).
-      const { data, error } = await supabase
+      // Toutes les lignes (lireTout — coupées à 1000 avant), erreur levée.
+      const data = await lireTout<Record<string, unknown>>((de, a) => supabase
         .from("athletes")
-        .select("id, first_name, last_name, date_naissance, consentement_parental, consentement_parental_date, coach_id, schools!school_id(name), sports!sport_id(nom)")
-        .order("last_name", { ascending: true });
-      if (error) { console.error("[Admin Loi 25] consent fetch error:", error.message); setLoading(false); return; }
+        .select("id, first_name, last_name, date_naissance, consentement_parental, consentement_parental_date, coach_id, schools!school_id(name), sports!sport_id(nom)", { count: "exact" })
+        .order("last_name", { ascending: true })
+        .order("id")
+        .range(de, a));
 
-      const coachIds = [...new Set(((data || []) as Record<string, unknown>[]).map((a) => a.coach_id as string).filter(Boolean))];
+      const coachIds = [...new Set(data.map((a) => a.coach_id as string).filter(Boolean))];
       const coachNames = new Map<string, string>();
       if (coachIds.length > 0) {
-        const { data: coaches } = await supabase.from("users").select("id, first_name, last_name").in("id", coachIds);
-        (coaches || []).forEach((c: Record<string, unknown>) => {
+        const coaches = await lireTout<Record<string, unknown>>((de, a) => supabase
+          .rpc("users_par_ids", { p_ids: coachIds }, { count: "exact" })
+          .select("id, first_name, last_name").order("id").range(de, a));
+        coaches.forEach((c) => {
           const fn = (c.first_name as string) || "";
           const ln = (c.last_name as string) || "";
           coachNames.set(c.id as string, `${fn[0] || ""}. ${ln}`.trim());
         });
       }
 
-      const built: ConsentRow[] = ((data || []) as Record<string, unknown>[]).map((a) => {
+      const built: ConsentRow[] = data.map((a) => {
         const schoolRaw = a.schools;
         const school = (Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw) as { name?: string } | null;
         const sportRaw = a.sports;
@@ -168,20 +207,18 @@ function ConsentementsTab() {
 
       // Attestation pipeline counts — read parental_consents (the coach-
       // attestation Loi 25 flow). Admin-only via the new SELECT policy.
-      const { data: pcRows, error: pcErr } = await supabase
+      const pcRows = await lireTout<{ status: string }>((de, a) => supabase
         .from("parental_consents")
-        .select("status");
-      if (pcErr) {
-        console.error("[Admin Loi 25] parental_consents fetch error:", pcErr.message);
-      } else {
-        const counts = { ATTESTED: 0, PENDING: 0, WITHDRAWN: 0, EXPIRED: 0 };
-        for (const r of (pcRows || []) as { status: string }[]) {
-          if (r.status in counts) counts[r.status as keyof typeof counts] += 1;
-        }
-        setAttestCounts(counts);
+        .select("status", { count: "exact" })
+        .order("id")
+        .range(de, a));
+      const counts = { ATTESTED: 0, PENDING: 0, WITHDRAWN: 0, EXPIRED: 0 };
+      for (const r of pcRows) {
+        if (r.status in counts) counts[r.status as keyof typeof counts] += 1;
       }
-    })();
-  }, [supabase]);
+      setAttestCounts(counts);
+    })().catch((e) => { signalerChargement(e, "admin/loi25 — consentements"); setLoading(false); });
+  }, [supabase, essaiChargement, signalerChargement]);
 
   const schools = [...new Set(rows.map((r) => r.schoolName))].sort();
   const sports = [...new Set(rows.map((r) => r.sportName))].sort();
@@ -204,6 +241,12 @@ function ConsentementsTab() {
 
   return (
     <div className="space-y-6">
+      {chargement.erreur && (
+        <ErreurChargement
+          message="Le registre des consentements n'a pas pu être chargé en entier. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      )}
       {/* Cards = coach-attestation pipeline (parental_consents). The per-row
           table below is the parallel athlete self-registration boolean — the
           two mechanisms are intentionally distinct, the caption flags it. */}
@@ -336,17 +379,22 @@ function IncidentsTab() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const notify = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2500); };
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const [erreurIncidents, setErreurIncidents] = useState(false);
 
   const refresh = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("loi25_incidents")
-      .select("id, date_incident, severity, type, description, affected_users_count, cause, containment, cai_notified, cai_notified_at, status, created_at")
-      .order("date_incident", { ascending: false });
-    if (error) {
-      console.error("[Admin Loi 25] incidents fetch error:", error.message);
-      setIncidents([]);
-    } else {
-      setIncidents((data || []) as IncidentRow[]);
+    try {
+      const data = await lireTout<IncidentRow>((de, a) => supabase
+        .from("loi25_incidents")
+        .select("id, date_incident, severity, type, description, affected_users_count, cause, containment, cai_notified, cai_notified_at, status, created_at", { count: "exact" })
+        .order("date_incident", { ascending: false })
+        .order("id")
+        .range(de, a));
+      setIncidents(data);
+      setErreurIncidents(false);
+    } catch (e) {
+      console.error("[Admin Loi 25] incidents fetch error:", e instanceof Error ? e.message : String(e));
+      setErreurIncidents(true);
     }
     setLoading(false);
   }, [supabase]);
@@ -355,6 +403,12 @@ function IncidentsTab() {
 
   return (
     <div className="space-y-6">
+      {erreurIncidents && (
+        <ErreurChargement
+          message="Le registre des incidents n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setErreurIncidents(false); setLoading(true); void refresh(); }}
+        />
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="text-[13px] text-[#9CA3AF]">Registre des incidents de confidentialité (Loi 25 — saisie manuelle par l&apos;admin).</p>
         <button type="button" onClick={() => setShowForm(true)}
@@ -633,12 +687,14 @@ function AuditTab() {
       const dr = dateBounds();
 
       // Profile snapshot — users row + (for ATHLETE) athletes row.
-      const { data: userRow } = await supabase.from("users").select("*").eq("id", pickedUser.id).single();
+      const { data: userRow, error: errUser } = await supabase.from("users").select("*").eq("id", pickedUser.id).single();
+      if (errUser) throw errUser;
       const profileRows: Record<string, unknown>[] = [];
       if (userRow) profileRows.push({ _table: "users", ...(userRow as Record<string, unknown>) });
       let athleteId: string | null = null;
       if (pickedUser.role === "ATHLETE") {
-        const { data: ath } = await supabase.from("athletes").select("*").eq("user_id", pickedUser.id).maybeSingle();
+        const { data: ath, error: errAth } = await supabase.from("athletes").select("*").eq("user_id", pickedUser.id).maybeSingle();
+        if (errAth) throw errAth;
         if (ath) {
           athleteId = (ath as { id: string }).id;
           profileRows.push({ _table: "athletes", ...(ath as Record<string, unknown>) });
@@ -649,10 +705,11 @@ function AuditTab() {
       // Role-specific event tables.
       if (pickedUser.role === "ATHLETE" && athleteId) {
         async function fetchByAthlete(table: string, tsCol: string, fname: string) {
-          let q = supabase.from(table).select("*").eq("athlete_id", athleteId);
-          if (dr) q = q.gte(tsCol, dr.startIso).lte(tsCol, dr.endIso);
-          const { data } = await q;
-          zip.file(fname, toCsv((data || []) as Record<string, unknown>[]));
+          const data = await lireExport(supabase, table, "*", (q) => {
+            q = q.eq("athlete_id", athleteId);
+            return dr ? q.gte(tsCol, dr.startIso).lte(tsCol, dr.endIso) : q;
+          });
+          zip.file(fname, toCsv(data));
         }
         await fetchByAthlete("consent_audit_trail",     "created_at", "consent_audit_trail.csv");
         await fetchByAthlete("activities",              "created_at", "activities.csv");
@@ -662,63 +719,43 @@ function AuditTab() {
         await fetchByAthlete("athlete_suggestions",     "created_at", "athlete_suggestions.csv");
       } else if (pickedUser.role === "COACH") {
         // activities — coach or actor
-        let q1 = supabase.from("activities").select("*").or(`coach_id.eq.${pickedUser.id},actor_id.eq.${pickedUser.id}`);
-        if (dr) q1 = q1.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: actRows } = await q1;
-        zip.file("activities.csv", toCsv((actRows || []) as Record<string, unknown>[]));
-
-        let q2 = supabase.from("athlete_suggestions").select("*").eq("coach_id", pickedUser.id);
-        if (dr) q2 = q2.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: sugRows } = await q2;
-        zip.file("athlete_suggestions.csv", toCsv((sugRows || []) as Record<string, unknown>[]));
-
-        let q3 = supabase.from("consent_audit_trail").select("*").eq("coach_id", pickedUser.id);
-        if (dr) q3 = q3.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: catRows } = await q3;
-        zip.file("consent_audit_trail.csv", toCsv((catRows || []) as Record<string, unknown>[]));
-
+        const periode = (q: RequeteExport) => (dr ? q.gte("created_at", dr.startIso).lte("created_at", dr.endIso) : q);
+        zip.file("activities.csv", toCsv(await lireExport(supabase, "activities", "*",
+          (q) => periode(q.or(`coach_id.eq.${pickedUser.id},actor_id.eq.${pickedUser.id}`)))));
+        zip.file("athlete_suggestions.csv", toCsv(await lireExport(supabase, "athlete_suggestions", "*",
+          (q) => periode(q.eq("coach_id", pickedUser.id)))));
+        zip.file("consent_audit_trail.csv", toCsv(await lireExport(supabase, "consent_audit_trail", "*",
+          (q) => periode(q.eq("coach_id", pickedUser.id)))));
         // search_filter_events — télémétrie des filtres, porte user_id (2026-09-17).
-        let q4 = supabase.from("search_filter_events").select("*").eq("user_id", pickedUser.id);
-        if (dr) q4 = q4.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: sfeRows } = await q4;
-        zip.file("search_filter_events.csv", toCsv((sfeRows || []) as Record<string, unknown>[]));
+        zip.file("search_filter_events.csv", toCsv(await lireExport(supabase, "search_filter_events", "*",
+          (q) => periode(q.eq("user_id", pickedUser.id)))));
       } else if (pickedUser.role === "RECRUTEUR") {
-        let q1 = supabase.from("recruiter_athlete_views").select("*").eq("recruiter_id", pickedUser.id);
-        if (dr) q1 = q1.gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
-        const { data: ravRows } = await q1;
-        zip.file("recruiter_views.csv", toCsv((ravRows || []) as Record<string, unknown>[]));
-
-        let q2 = supabase.from("recruiter_activity_log").select("*").eq("recruiter_id", pickedUser.id);
-        if (dr) q2 = q2.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: ralRows } = await q2;
-        zip.file("recruiter_activity_log.csv", toCsv((ralRows || []) as Record<string, unknown>[]));
-
+        zip.file("recruiter_views.csv", toCsv(await lireExport(supabase, "recruiter_athlete_views", "*", (q) => {
+          q = q.eq("recruiter_id", pickedUser.id);
+          return dr ? q.gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso) : q;
+        })));
+        const periode = (q: RequeteExport) => (dr ? q.gte("created_at", dr.startIso).lte("created_at", dr.endIso) : q);
+        zip.file("recruiter_activity_log.csv", toCsv(await lireExport(supabase, "recruiter_activity_log", "*",
+          (q) => periode(q.eq("recruiter_id", pickedUser.id)))));
         // search_filter_events — télémétrie des filtres, porte user_id (2026-09-17).
-        let q3 = supabase.from("search_filter_events").select("*").eq("user_id", pickedUser.id);
-        if (dr) q3 = q3.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: sfeRows } = await q3;
-        zip.file("search_filter_events.csv", toCsv((sfeRows || []) as Record<string, unknown>[]));
+        zip.file("search_filter_events.csv", toCsv(await lireExport(supabase, "search_filter_events", "*",
+          (q) => periode(q.eq("user_id", pickedUser.id)))));
       } else if (pickedUser.role === "ADMIN") {
-        let q1 = supabase.from("loi25_incidents").select("*").eq("created_by", pickedUser.id);
-        if (dr) q1 = q1.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: incRows } = await q1;
-        zip.file("loi25_incidents.csv", toCsv((incRows || []) as Record<string, unknown>[]));
-
-        let q2 = supabase.from("loi25_portability_requests").select("*").eq("created_by", pickedUser.id);
-        if (dr) q2 = q2.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        const { data: pReqRows } = await q2;
-        zip.file("loi25_portability_requests.csv", toCsv((pReqRows || []) as Record<string, unknown>[]));
+        const periode = (q: RequeteExport) => (dr ? q.gte("created_at", dr.startIso).lte("created_at", dr.endIso) : q);
+        zip.file("loi25_incidents.csv", toCsv(await lireExport(supabase, "loi25_incidents", "*",
+          (q) => periode(q.eq("created_by", pickedUser.id)))));
+        zip.file("loi25_portability_requests.csv", toCsv(await lireExport(supabase, "loi25_portability_requests", "*",
+          (q) => periode(q.eq("created_by", pickedUser.id)))));
       }
 
       // Cartes prospects partenaire (W4) — tous rôles. La fonction admin trie elle-même :
       // pour un PARTENAIRE, ses gestes et ses cartes actives, sans rien des rapprochements
       // (l'export peut lui être remis) ; pour un athlète, ce qui le vise.
       {
-        const { data: cpRows, error: cpErr } = await supabase.rpc("admin_loi25_prospects_partenaires", {
+        const cpRows = await lireProspectsPartenaires(supabase, {
           p_user: pickedUser.id, p_debut: dr?.startIso ?? null, p_fin: dr?.endIso ?? null,
         });
-        if (cpErr) throw cpErr;
-        zip.file("cartes_prospects_partenaire.csv", toCsv((cpRows || []) as Record<string, unknown>[]));
+        zip.file("cartes_prospects_partenaire.csv", toCsv(cpRows));
       }
 
       // Messages — full content. Find conversations the user is involved in.
@@ -727,13 +764,16 @@ function AuditTab() {
       else if (pickedUser.role === "COACH") convoFilter = `coach_id.eq.${pickedUser.id}`;
       else if (pickedUser.role === "RECRUTEUR") convoFilter = `recruiter_id.eq.${pickedUser.id}`;
       if (convoFilter) {
-        const { data: convos } = await supabase.from("conversations").select("id").or(convoFilter);
-        const convoIds = ((convos || []) as { id: string }[]).map((c) => c.id);
+        const convos = await lireExport(supabase, "conversations", "id", (q) => q.or(convoFilter));
+        const convoIds = convos.map((c) => c.id as string);
         if (convoIds.length > 0) {
-          let q = supabase.from("messages").select("*").in("conversation_id", convoIds);
-          if (dr) q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-          const { data: msgs } = await q;
-          zip.file("messages.csv", toCsv((msgs || []) as Record<string, unknown>[]));
+          // Identifiants dans le CORPS (messages_par_conversations), toutes les pages.
+          const msgs = await lireTout<Record<string, unknown>>((de, a) => {
+            let q = supabase.rpc("messages_par_conversations", { p_ids: convoIds }, { count: "exact" }).select("*");
+            if (dr) q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+            return q.order("id").range(de, a);
+          });
+          zip.file("messages.csv", toCsv(msgs));
         } else {
           zip.file("messages.csv", toCsv([]));
         }
@@ -745,7 +785,7 @@ function AuditTab() {
       notify(`Exporté : ${fname}`);
     } catch (err) {
       console.error("[Audit export user]", err);
-      notify("Erreur — voir la console");
+      notify("L'export a échoué : rien n'a été téléchargé. Réessaie (détail dans la console).");
     } finally {
       setGenerating(false);
     }
@@ -765,39 +805,43 @@ function AuditTab() {
 
       // consent_audit_trail
       {
-        let q = supabase.from("consent_audit_trail").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        if (optUser) q = q.eq("coach_id", optUser);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "consent_audit_trail", "*", (q) => {
+          q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          return optUser ? q.eq("coach_id", optUser) : q;
+        });
+        for (const r of data) {
           push(r.created_at as string, "consent_audit_trail", (r.action as string) || "", (r.coach_id as string) ?? null, "COACH", (r.athlete_id as string) ?? null,
             { previous_status: r.previous_status, new_status: r.new_status, ip_address: r.ip_address, metadata: r.metadata });
         }
       }
       // activities
       {
-        let q = supabase.from("activities").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        if (optUser) q = q.or(`actor_id.eq.${optUser},coach_id.eq.${optUser}`);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "activities", "*", (q) => {
+          q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          return optUser ? q.or(`actor_id.eq.${optUser},coach_id.eq.${optUser}`) : q;
+        });
+        for (const r of data) {
           push(r.created_at as string, "activities", (r.type as string) || "", (r.actor_id as string) ?? null, (r.actor_role as string) ?? null, (r.athlete_id as string) ?? null,
             { coach_id: r.coach_id, metadata: r.metadata });
         }
       }
       // recruiter_athlete_views
       {
-        let q = supabase.from("recruiter_athlete_views").select("*").gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
-        if (optUser) q = q.eq("recruiter_id", optUser);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "recruiter_athlete_views", "*", (q) => {
+          q = q.gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
+          return optUser ? q.eq("recruiter_id", optUser) : q;
+        });
+        for (const r of data) {
           push(r.viewed_at as string, "recruiter_athlete_views", "PROFILE_VIEW", (r.recruiter_id as string) ?? null, "RECRUTEUR", (r.athlete_id as string) ?? null, {});
         }
       }
       // recruiter_activity_log
       {
-        let q = supabase.from("recruiter_activity_log").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        if (optUser) q = q.eq("recruiter_id", optUser);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "recruiter_activity_log", "*", (q) => {
+          q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          return optUser ? q.eq("recruiter_id", optUser) : q;
+        });
+        for (const r of data) {
           push(r.created_at as string, "recruiter_activity_log", (r.action_type as string) || "", (r.recruiter_id as string) ?? null, "RECRUTEUR", (r.athlete_id as string) ?? null,
             { list_id: r.list_id, details: r.details });
         }
@@ -807,35 +851,38 @@ function AuditTab() {
       {
         let partnerIds: string[] | null = null;
         if (optUser) {
-          const { data: mps } = await supabase.from("media_partners").select("id").eq("user_id", optUser);
+          const { data: mps, error: errMps } = await supabase.from("media_partners").select("id").eq("user_id", optUser);
+          if (errMps) throw errMps;
           partnerIds = ((mps || []) as { id: string }[]).map((m) => m.id);
         }
         if (partnerIds === null || partnerIds.length > 0) {
-          let q = supabase.from("partner_profile_views").select("*").gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
-          if (partnerIds) q = q.in("partner_id", partnerIds);
-          const { data } = await q;
-          for (const r of (data || []) as Record<string, unknown>[]) {
+          // partnerIds : les fiches partenaire d'UN compte (une ou deux) — l'adresse reste courte.
+          const data = await lireExport(supabase, "partner_profile_views", "*", (q) => {
+            q = q.gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
+            return partnerIds ? q.in("partner_id", partnerIds) : q;
+          });
+          for (const r of data) {
             push(r.viewed_at as string, "partner_profile_views", "PARTNER_VIEW", (r.partner_id as string) ?? null, "PARTNER", (r.athlete_id as string) ?? null, {});
           }
         }
       }
       // athlete_suggestions
       {
-        let q = supabase.from("athlete_suggestions").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        if (optUser) q = q.or(`submitted_by.eq.${optUser},coach_id.eq.${optUser}`);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "athlete_suggestions", "*", (q) => {
+          q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          return optUser ? q.or(`submitted_by.eq.${optUser},coach_id.eq.${optUser}`) : q;
+        });
+        for (const r of data) {
           push(r.created_at as string, "athlete_suggestions", `SUGGESTION_${r.status ?? ""}`, (r.submitted_by as string) ?? null, null, (r.athlete_id as string) ?? null,
             { champ: r.champ, valeur_proposee: r.valeur_proposee, status: r.status });
         }
       }
       // Cartes prospects partenaire (W4) — journal des gestes, sans nom.
       {
-        const { data, error } = await supabase.rpc("admin_loi25_prospects_partenaires", {
+        const data = await lireProspectsPartenaires(supabase, {
           p_user: optUser, p_debut: dr.startIso, p_fin: dr.endIso,
         });
-        if (error) throw error;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        for (const r of data) {
           if (r.source !== "partenaire_prospects_journal") continue;
           push(r.horodatage as string, "partenaire_prospects_journal", (r.action as string) || "", (r.acteur as string) ?? null, null, (r.athlete_id as string) ?? null,
             { partner_id: r.partner_id, carte_id: r.carte_id, details: r.details });
@@ -843,29 +890,32 @@ function AuditTab() {
       }
       // messages — METADATA ONLY (no body content)
       {
-        let q = supabase.from("messages").select("id, conversation_id, sender_id, created_at").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        if (optUser) q = q.eq("sender_id", optUser);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "messages", "id, conversation_id, sender_id, created_at", (q) => {
+          q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          return optUser ? q.eq("sender_id", optUser) : q;
+        });
+        for (const r of data) {
           push(r.created_at as string, "messages", "MESSAGE_SENT", (r.sender_id as string) ?? null, null, null, { conversation_id: r.conversation_id });
         }
       }
       // loi25_incidents
       {
-        let q = supabase.from("loi25_incidents").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        if (optUser) q = q.eq("created_by", optUser);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "loi25_incidents", "*", (q) => {
+          q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          return optUser ? q.eq("created_by", optUser) : q;
+        });
+        for (const r of data) {
           push(r.created_at as string, "loi25_incidents", `INCIDENT_${r.status ?? ""}`, (r.created_by as string) ?? null, "ADMIN", null,
             { severity: r.severity, type: r.type, affected_users_count: r.affected_users_count, cai_notified: r.cai_notified });
         }
       }
       // loi25_portability_requests
       {
-        let q = supabase.from("loi25_portability_requests").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
-        if (optUser) q = q.eq("created_by", optUser);
-        const { data } = await q;
-        for (const r of (data || []) as Record<string, unknown>[]) {
+        const data = await lireExport(supabase, "loi25_portability_requests", "*", (q) => {
+          q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          return optUser ? q.eq("created_by", optUser) : q;
+        });
+        for (const r of data) {
           push(r.created_at as string, "loi25_portability_requests", `PORT_${r.status ?? ""}`, (r.created_by as string) ?? null, "ADMIN", null,
             { request_type: r.request_type, requester_name: r.requester_name });
         }
@@ -879,7 +929,7 @@ function AuditTab() {
       notify(`Exporté : ${fname} (${allRows.length} événement${allRows.length > 1 ? "s" : ""})`);
     } catch (err) {
       console.error("[Audit export period]", err);
-      notify("Erreur — voir la console");
+      notify("L'export a échoué : rien n'a été téléchargé. Réessaie (détail dans la console).");
     } finally {
       setGenerating(false);
     }

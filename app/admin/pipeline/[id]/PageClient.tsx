@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 type Stage = "IDENTIFIE" | "CONTACTE" | "VISITE_PLANIFIEE" | "ENGAGE" | "LETTRE_SIGNEE";
 const STAGE_ORDER: Stage[] = ["IDENTIFIE", "CONTACTE", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
@@ -138,21 +141,29 @@ export default function AdminRecruiterDetailPage() {
   const [stagnantOnly, setStagnantOnly] = useState(false);
   const [athSortKey, setAthSortKey] = useState<AthSortKey>("moved_at");
   const [athSortDir, setAthSortDir] = useState<"asc" | "desc">("asc");
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     if (!id) return;
     (async () => {
       setLoading(true);
 
-      const [uRes, pipeRes, convRes] = await Promise.all([
+      /* Correctif 2026-10-16 : toutes les lignes (lireTout), les identifiants
+         dans le CORPS (fonctions *_par_ids), une erreur LEVÉE → bandeau. */
+      const [uRes, pipeData, convs] = await Promise.all([
         supabase.from("users").select("id,first_name,last_name,school_id,created_at").eq("id", id).maybeSingle(),
-        supabase.from("recruiter_pipeline").select("id,recruiter_id,athlete_id,stage,moved_at,created_at,flagged").eq("recruiter_id", id),
-        supabase.from("conversations").select("id,recruiter_id,coach_id,athlete_id,last_message_at").eq("recruiter_id", id),
+        lireTout<PipeRow>((de, a) => supabase.from("recruiter_pipeline")
+          .select("id,recruiter_id,athlete_id,stage,moved_at,created_at,flagged", { count: "exact" })
+          .eq("recruiter_id", id).order("id").range(de, a)),
+        lireTout<ConvRow>((de, a) => supabase.from("conversations")
+          .select("id,recruiter_id,coach_id,athlete_id,last_message_at", { count: "exact" })
+          .eq("recruiter_id", id).order("id").range(de, a)),
       ]);
+      if (uRes.error) throw uRes.error;
 
       const user = uRes.data as User | null;
-      const pipeData = (pipeRes.data || []) as PipeRow[];
-      const convs = (convRes.data || []) as ConvRow[];
 
       setRecruiter(user);
       setPipe(pipeData);
@@ -164,22 +175,23 @@ export default function AdminRecruiterDetailPage() {
       const convAthleteIds = Array.from(new Set(convs.map((c) => c.athlete_id).filter((x): x is string => !!x)));
       const allAthleteIds = Array.from(new Set([...athleteIds, ...convAthleteIds]));
 
-      const [aRes, msgRes, coachRes, schAllRes, sportsAllRes, posAllRes] = await Promise.all([
-        allAthleteIds.length > 0
-          ? supabase.from("athletes").select("id,first_name,last_name,sport_id,position_id,school_id,verified,photo_url").in("id", allAthleteIds)
-          : Promise.resolve({ data: [] as AthleteRow[] }),
-        convIds.length > 0
-          ? supabase.from("messages").select("id,conversation_id,sender_id,content,read_at,created_at").in("conversation_id", convIds)
-          : Promise.resolve({ data: [] as MessageRow[] }),
-        coachIds.length > 0
-          ? supabase.from("users").select("id,first_name,last_name").in("id", coachIds)
-          : Promise.resolve({ data: [] as User[] }),
+      const parIds = <T,>(fn: string, ids: string[], colonnes: string) => ids.length > 0
+        ? lireTout<T>((de, a) => supabase.rpc(fn, { p_ids: ids }, { count: "exact" }).select(colonnes).order("id").range(de, a))
+        : Promise.resolve([] as T[]);
+      const [athletesLus, messagesLus, coachesLus, schAllRes, sportsAllRes, posAllRes] = await Promise.all([
+        parIds<AthleteRow>("athletes_par_ids", allAthleteIds, "id,first_name,last_name,sport_id,position_id,school_id,verified,photo_url"),
+        parIds<MessageRow>("messages_par_conversations", convIds, "id,conversation_id,sender_id,content,read_at,created_at"),
+        parIds<User>("users_par_ids", coachIds, "id,first_name,last_name"),
         user?.school_id
           ? supabase.from("schools").select("id,name").eq("id", user.school_id).maybeSingle()
-          : Promise.resolve({ data: null as { id: string; name: string | null } | null }),
+          : Promise.resolve({ data: null as { id: string; name: string | null } | null, error: null }),
         supabase.from("sports").select("id,nom"),
         supabase.from("positions").select("id,nom"),
       ]);
+      for (const r of [schAllRes, sportsAllRes, posAllRes]) if (r.error) throw r.error;
+      const aRes = { data: athletesLus };
+      const msgRes = { data: messagesLus };
+      const coachRes = { data: coachesLus };
 
       const athletesById = new Map<string, AthleteRow>();
       for (const a of (aRes.data || []) as AthleteRow[]) athletesById.set(a.id, a);
@@ -197,8 +209,8 @@ export default function AdminRecruiterDetailPage() {
       ));
       const schoolsByIdMap = new Map<string, string>();
       if (athleteSchoolIds.length > 0) {
-        const { data } = await supabase.from("schools").select("id,name").in("id", athleteSchoolIds);
-        for (const s of (data || []) as { id: string; name: string | null }[]) {
+        const data = await parIds<{ id: string; name: string | null }>("schools_par_ids", athleteSchoolIds, "id,name");
+        for (const s of data) {
           if (s.name) schoolsByIdMap.set(s.id, s.name);
         }
       }
@@ -287,8 +299,8 @@ export default function AdminRecruiterDetailPage() {
         });
       setConversations(convRows);
       setLoading(false);
-    })();
-  }, [id, supabase]);
+    })().catch((e) => { signalerChargement(e, "admin/pipeline/recruteur"); setLoading(false); });
+  }, [id, supabase, essaiChargement, signalerChargement]);
 
   // Stage breakdown
   const byStage = useMemo(() => {
@@ -337,6 +349,17 @@ export default function AdminRecruiterDetailPage() {
   function toggleAthSort(key: AthSortKey) {
     if (athSortKey === key) setAthSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setAthSortKey(key); setAthSortDir("asc"); }
+  }
+
+  if (chargement.erreur) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <ErreurChargement
+          message="Le pipeline de ce recruteur n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      </div>
+    );
   }
 
   if (loading) {

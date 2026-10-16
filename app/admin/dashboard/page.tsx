@@ -8,6 +8,9 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { chargerRepartitionComptesAthletes, type RepartitionComptes } from "@/lib/admin/comptesAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 
@@ -111,6 +114,10 @@ export default function AdminDashboard() {
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [comptesAthletes, setComptesAthletes] =
     useState<{ repartition: RepartitionComptes | null; erreur: string | null } | null>(null);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) : des
+  // indicateurs à 0 n'affirment plus « rien » quand la lecture a échoué.
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     (async () => {
@@ -130,19 +137,26 @@ export default function AdminDashboard() {
         supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "COACH"),
         supabase.from("users").select("id", { count: "exact", head: true }).in("role", ["RECRUTEUR"]),
         supabase.from("schools").select("id", { count: "exact", head: true }),
-        supabase.from("athletes").select("school_id").not("school_id", "is", null),
+        // Correctif 2026-10-16 : lectures de table entière via lireTout (coupées
+        // à 1000 lignes sans le dire avant), rendues au format { data, error }.
+        lireTout<{ school_id: string | null }>((de, a) => supabase.from("athletes").select("school_id", { count: "exact" })
+          .not("school_id", "is", null).order("id").range(de, a)).then((data) => ({ data, error: null })),
         supabase.from("athletes").select("id", { count: "exact", head: true }).eq("verified", true),
         supabase.from("athletes").select("id", { count: "exact", head: true }).is("coach_id", null),
-        supabase.from("athletes").select("profile_completion"),
-        supabase.from("evaluations").select("cote_globale").not("cote_globale", "is", null),
+        lireTout<{ profile_completion: number | null }>((de, a) => supabase.from("athletes").select("profile_completion", { count: "exact" })
+          .order("id").range(de, a)).then((data) => ({ data, error: null })),
+        lireTout<{ cote_globale: number | null }>((de, a) => supabase.from("evaluations").select("cote_globale", { count: "exact" })
+          .not("cote_globale", "is", null).order("id").range(de, a)).then((data) => ({ data, error: null })),
         // Loi 25 compliance — fetch director profile_data (small population:
         // 1 per school) and count declines client-side. Mirrors the RPRP
         // tab's approach; avoids PostgREST JSONB-key-IS-NULL filter syntax
         // gymnastics that may differ across supabase-js versions.
-        supabase.from("users").select("profile_data").eq("is_school_admin", true),
+        lireTout<{ profile_data: Record<string, unknown> | null }>((de, a) => supabase.from("users").select("profile_data", { count: "exact" })
+          .eq("is_school_admin", true).order("id").range(de, a)).then((data) => ({ data, error: null })),
         // Même source et même calcul que /admin/athletes — voir lib/admin/comptesAthletes.
         chargerRepartitionComptesAthletes(supabase),
       ]);
+      for (const r of [athletesTot, coachesTot, recruitersTot, schoolsTot, verifiedCount, noEvalCount]) if (r.error) throw r.error;
       if (repartitionComptes.erreur) console.error("[admin/dashboard] comptes athlètes :", repartitionComptes.erreur);
       setComptesAthletes(repartitionComptes);
 
@@ -208,6 +222,7 @@ export default function AdminDashboard() {
         supabase.from("recruiter_pipeline").select("id", { count: "exact", head: true }).gte("updated_at", startOfWeekISO),
         supabase.from("recruiter_pipeline").select("id", { count: "exact", head: true }).gte("updated_at", startOfLastWeekISO).lt("updated_at", startOfWeekISO),
       ]);
+      for (const r of [viewsThis, viewsLast, favsThis, favsLast, pipeThis, pipeLast]) if (r.error) throw r.error;
       let msgsThis = 0, msgsLast = 0;
       try {
         const [mThis, mLast] = await Promise.all([
@@ -255,9 +270,10 @@ export default function AdminDashboard() {
       setRegistrationSeries(series);
 
       // ── Row 4 — pipeline funnel ────────────────────────────────
-      const { data: pipelineRows } = await supabase.from("recruiter_pipeline").select("stage");
+      const pipelineRows = await lireTout<{ stage: string | null }>((de, a) => supabase
+        .from("recruiter_pipeline").select("stage", { count: "exact" }).order("id").range(de, a));
       const stageCounts = new Map<string, number>();
-      for (const r of (pipelineRows || []) as { stage: string | null }[]) {
+      for (const r of pipelineRows) {
         if (!r.stage) continue;
         stageCounts.set(r.stage, (stageCounts.get(r.stage) ?? 0) + 1);
       }
@@ -267,9 +283,11 @@ export default function AdminDashboard() {
       setFunnel(funnelData);
 
       // ── Row 5 — top 5 schools by views ─────────────────────────
-      const { data: viewsJoin } = await supabase
+      const viewsJoin = await lireTout<unknown>((de, a) => supabase
         .from("recruiter_athlete_views")
-        .select("athlete_id, athletes!athlete_id(school_id, schools!school_id(name))");
+        .select("athlete_id, athletes!athlete_id(school_id, schools!school_id(name))", { count: "exact" })
+        .order("id")
+        .range(de, a));
       const schoolCounts = new Map<string, { name: string; views: number }>();
       for (const v of (viewsJoin || []) as unknown as Array<{ athletes: { school_id: string | null; schools: { name: string } | null } | null }>) {
         const schoolId = v.athletes?.school_id;
@@ -283,11 +301,12 @@ export default function AdminDashboard() {
       setTopSchools(ranked);
 
       // ── Row 5 — recent platform activity ───────────────────────
-      const { data: acts } = await supabase
+      const { data: acts, error: errActs } = await supabase
         .from("activities")
         .select("id, type, created_at, metadata, athletes(first_name, last_name)")
         .order("created_at", { ascending: false })
         .limit(8);
+      if (errActs) throw errActs;
       const mappedActs: ActivityRow[] = (acts || []).map((r: Record<string, unknown>) => {
         const a = r.athletes as { first_name?: string; last_name?: string } | null;
         return {
@@ -301,8 +320,8 @@ export default function AdminDashboard() {
       setActivity(mappedActs);
 
       setLoading(false);
-    })();
-  }, [supabase]);
+    })().catch((e) => { signalerChargement(e, "admin/dashboard"); setLoading(false); });
+  }, [supabase, essaiChargement, signalerChargement]);
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-8">
@@ -310,6 +329,13 @@ export default function AdminDashboard() {
         <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">
           Tableau de bord
         </h1>
+        {chargement.erreur && (
+          <ErreurChargement
+            className="mt-4"
+            message="Le tableau de bord n'a pas pu être chargé en entier. Vérifie ta connexion, puis réessaie."
+            onReessayer={chargement.reessayer}
+          />
+        )}
         <p className="text-[13px] text-[#6b7280] mt-1">
           Santé de la plateforme Nexus en temps réel
         </p>

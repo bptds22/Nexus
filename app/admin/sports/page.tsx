@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 interface SportRow {
   id: string;
@@ -28,6 +31,8 @@ export default function AdminSportsPage() {
   const [sports, setSports] = useState<SportRow[]>([]);
   const [positions, setPositions] = useState<PositionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
   const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [newPos, setNewPos] = useState<{ nom: string; abreviation: string }>({ nom: "", abreviation: "" });
@@ -39,21 +44,31 @@ export default function AdminSportsPage() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function fetchAll() {
+  function fetchAll() {
+    chargerTout().catch((e) => { chargement.signaler(e, "admin/sports"); setLoading(false); });
+  }
+
+  /* Correctif 2026-10-16 : les athlètes et les positions EN ENTIER (lireTout —
+     coupés à 1000 sans le dire, les compteurs par sport auraient menti), et
+     une erreur LEVÉE → bandeau « Réessayer ». */
+  async function chargerTout() {
     setLoading(true);
-    const [sportsRes, athletesRes, positionsRes] = await Promise.all([
+    const [sportsRes, athletesData, positionsData] = await Promise.all([
       supabase.from("sports").select("id,nom,categorie").order("nom"),
-      supabase.from("athletes").select("sport_id"),
-      supabase.from("positions").select("id,nom,abreviation,sport_id").order("nom"),
+      lireTout<{ sport_id: string | null }>((de, a) => supabase.from("athletes").select("sport_id", { count: "exact" })
+        .order("id").range(de, a)),
+      lireTout<PositionRow>((de, a) => supabase.from("positions").select("id,nom,abreviation,sport_id", { count: "exact" })
+        .order("nom").order("id").range(de, a)),
     ]);
+    if (sportsRes.error) throw sportsRes.error;
 
     const athleteCounts = new Map<string, number>();
-    for (const a of (athletesRes.data || []) as { sport_id: string | null }[]) {
+    for (const a of athletesData) {
       if (!a.sport_id) continue;
       athleteCounts.set(a.sport_id, (athleteCounts.get(a.sport_id) || 0) + 1);
     }
     const positionCounts = new Map<string, number>();
-    for (const p of (positionsRes.data || []) as { sport_id: string }[]) {
+    for (const p of positionsData) {
       positionCounts.set(p.sport_id, (positionCounts.get(p.sport_id) || 0) + 1);
     }
 
@@ -65,14 +80,14 @@ export default function AdminSportsPage() {
         position_count: positionCounts.get(s.id as string) || 0,
       })),
     );
-    setPositions((positionsRes.data || []) as PositionRow[]);
+    setPositions(positionsData);
     setLoading(false);
   }
 
   useEffect(() => {
     fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]);
+  }, [supabase, chargement.essai]);
 
   const columns: AdminColumn<SportRow>[] = [
     {
@@ -200,7 +215,12 @@ export default function AdminSportsPage() {
         </div>
       )}
 
-      {loading ? (
+      {chargement.erreur ? (
+        <ErreurChargement
+          message="Les sports n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      ) : loading ? (
         <div className="text-center py-12 text-[#6b7280]">Chargement...</div>
       ) : sports.length === 0 ? (
         <div className="text-center py-12 text-[#6b7280]">Aucun sport</div>

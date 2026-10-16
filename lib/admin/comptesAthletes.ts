@@ -18,6 +18,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 export type InscriptionFiche = "complete" | "commencee" | "sans_compte" | "compte_non_athlete";
 
@@ -90,18 +91,31 @@ export function datesCreationComptes(
   return dates;
 }
 
+/** Tous les comptes athlètes sans fiche (RPC à lignes, lue page par page). */
+export function lireComptesSansFiche<T = { inscrit_le?: string | null }>(supabase: SupabaseClient): Promise<T[]> {
+  return lireTout<T>((de, a) => supabase
+    .rpc("admin_comptes_athletes_sans_fiche", {}, { count: "exact" })
+    .order("user_id")
+    .range(de, a));
+}
+
 /** Pour les écrans qui n'ont besoin que des chiffres (tableau de bord). */
 export async function chargerRepartitionComptesAthletes(
   supabase: SupabaseClient,
 ): Promise<{ repartition: RepartitionComptes | null; datesCreation: string[]; erreur: string | null }> {
-  const [fiches, sansFiche] = await Promise.all([
-    supabase.from("athletes").select(SELECT_INSCRIPTION),
-    supabase.rpc("admin_comptes_athletes_sans_fiche"),
-  ]);
-  const erreur = fiches.error?.message ?? sansFiche.error?.message ?? null;
-  if (erreur) return { repartition: null, datesCreation: [], erreur };
-  const lignesFiches = (fiches.data ?? []) as { user_id?: unknown; compte?: unknown }[];
-  const lignesSansFiche = (sansFiche.data ?? []) as { inscrit_le?: string | null }[];
+  /* Correctif 2026-10-16 : TOUTES les lignes (lireTout — fiches et comptes
+     sans fiche étaient coupés à 1000 sans le dire, faussant la répartition). */
+  let lignesFiches: { user_id?: unknown; compte?: unknown }[];
+  let lignesSansFiche: { inscrit_le?: string | null }[];
+  try {
+    [lignesFiches, lignesSansFiche] = await Promise.all([
+      lireTout<{ user_id?: unknown; compte?: unknown }>((de, a) => supabase
+        .from("athletes").select(SELECT_INSCRIPTION, { count: "exact" }).order("id").range(de, a)),
+      lireComptesSansFiche(supabase),
+    ]);
+  } catch (e) {
+    return { repartition: null, datesCreation: [], erreur: e instanceof Error ? e.message : String(e) };
+  }
   return {
     repartition: repartitionComptesAthletes(lignesFiches.map(inscriptionDeFiche), lignesSansFiche.length),
     datesCreation: datesCreationComptes(lignesFiches, lignesSansFiche),

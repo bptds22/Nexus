@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 type UserRole =
   | "ADMIN"
@@ -91,6 +94,9 @@ export default function AdminUsersPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ user: UserRow; action: "deactivate" | "reactivate" } | null>(null);
   const [version, setVersion] = useState(0);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
   const [inviteForm, setInviteForm] = useState({
     email: "",
     first_name: "",
@@ -115,26 +121,31 @@ export default function AdminUsersPage() {
       // la table a plus de 1000 lignes et PostgREST tronque, ce qui faisait
       // afficher un tiret à des comptes pourtant rattachés. Même patron que
       // /admin/recruteurs.
-      const [uRes, subRes, athRes] = await Promise.all([
-        supabase
+      /* Correctif 2026-10-16 : chaque table est lue EN ENTIER (lireTout —
+         PostgREST coupait à 1000 lignes sans le dire : au-delà, des comptes
+         disparaissaient de la liste) ; une erreur est levée → bandeau. */
+      const [usersLus, subsLus, athRows] = await Promise.all([
+        lireTout<Record<string, unknown>>((de, a) => supabase
           .from("users")
-          .select(USERS_SELECT)
+          .select(USERS_SELECT, { count: "exact" })
           // L'identité de service « Équipe Nexus » n'est pas un utilisateur :
           // aucune action de cette page (statut, rôle, suppression) n'a de sens
           // sur elle, et la voir listée invite à y toucher.
           .eq("is_service_identity", false)
-          .order("created_at", { ascending: false }),
-        supabase.from("subscriptions").select("user_id,tier"),
-        supabase.from("athletes").select("id,user_id,school_id,schools!school_id(name,type)"),
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(de, a)),
+        lireTout<{ user_id: string; tier: string }>((de, a) => supabase
+          .from("subscriptions").select("user_id,tier", { count: "exact" }).order("id").range(de, a)),
+        lireTout<AthleteJoinRow>((de, a) => supabase
+          .from("athletes").select("id,user_id,school_id,schools!school_id(name,type)", { count: "exact" }).order("id").range(de, a)),
       ]);
-      const subMap = new Map<string, string>(
-        (subRes.data || []).map((s: { user_id: string; tier: string }) => [s.user_id, s.tier]),
-      );
+      const subMap = new Map<string, string>(subsLus.map((s) => [s.user_id, s.tier]));
       // Repli athlète : un ATHLETE porte son établissement sur sa fiche
       // `athletes`, pas sur `users`. On récupère l'embed de CETTE ligne.
       const athleteSchoolMap = new Map<string, { id: string | null; name: string | null; type: string | null }>();
       const athleteIdMap = new Map<string, string>();
-      for (const a of ((athRes.data || []) as AthleteJoinRow[])) {
+      for (const a of athRows) {
         if (!a.user_id) continue;
         athleteIdMap.set(a.user_id, a.id);
         if (a.school_id) {
@@ -146,7 +157,7 @@ export default function AdminUsersPage() {
         }
       }
 
-      const mapped: UserRow[] = (uRes.data || []).map((u: Record<string, unknown>) => {
+      const mapped: UserRow[] = usersLus.map((u) => {
         const uid = u.id as string;
         const userSchoolId = (u.school_id as string) ?? null;
         const joined = embeddedSchool(u.schools);
@@ -171,8 +182,8 @@ export default function AdminUsersPage() {
 
       setRows(mapped);
       setLoading(false);
-    })();
-  }, [supabase, version]);
+    })().catch((e) => { signalerChargement(e, "admin/users"); setLoading(false); });
+  }, [supabase, version, essaiChargement, signalerChargement]);
 
   async function updateStatus(user: UserRow, newStatus: AccountStatus) {
     const { error } = await supabase.from("users").update({ status: newStatus }).eq("id", user.id);
@@ -348,34 +359,9 @@ export default function AdminUsersPage() {
     setTimeout(() => setToast(null), 3000);
     setShowInvite(false);
     setInviteForm({ email: "", first_name: "", last_name: "", role: "COACH", is_school_admin: false, school_id: "" });
-    // Refresh
-    const { data } = await supa
-      .from("users")
-      .select(USERS_SELECT)
-      .eq("is_service_identity", false)
-      .order("created_at", { ascending: false });
-    if (data) {
-      setRows((prev) => {
-        return data.map((u: Record<string, unknown>) => {
-          const joined = embeddedSchool(u.schools);
-          return {
-            id: u.id as string,
-            email: (u.email as string) ?? "",
-            first_name: (u.first_name as string) ?? null,
-            last_name: (u.last_name as string) ?? null,
-            role: u.role as UserRole,
-            status: u.status as AccountStatus,
-            school_id: (u.school_id as string) ?? null,
-            school_name: joined?.name ?? null,
-            school_type: joined?.type ?? null,
-            is_school_admin: (u.is_school_admin as boolean) ?? false,
-            subscription_tier: prev.find((p) => p.id === u.id)?.subscription_tier ?? "free",
-            created_at: u.created_at as string,
-            created_at_fmt: formatDate(u.created_at as string),
-          };
-        });
-      });
-    }
+    // Rechargement COMPLET (le même que l'ouverture : toutes les lignes,
+    // erreur affichée) — correctif 2026-10-16.
+    setVersion((v) => v + 1);
   }
 
   const selectBase =
@@ -428,7 +414,12 @@ export default function AdminUsersPage() {
         </select>
       </div>
 
-      {loading ? (
+      {chargement.erreur ? (
+        <ErreurChargement
+          message="Les utilisateurs n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      ) : loading ? (
         <div className="text-center py-12 text-[#6b7280]">Chargement...</div>
       ) : rows.length === 0 ? (
         <div className="text-center py-12 text-[#6b7280]">Aucun utilisateur</div>

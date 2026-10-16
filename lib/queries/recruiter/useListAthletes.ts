@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import { lireCartesParIds, type LigneCarte } from "@/lib/cartes/carteProspect";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 export interface ListMetadata {
   id: string;
@@ -56,6 +57,8 @@ export interface UseListAthletesResult {
   athletes: ListAthlete[];
   isLoading: boolean;
   error: Error | null;
+  /** Relire après une erreur (correctif 2026-10-16). */
+  reessayer: () => void;
   /** Stats agrégées client-side (identiques desktop). */
   stats: {
     total: number;
@@ -199,33 +202,31 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
         });
 
       /* CARTES PROSPECT de la liste (lot C mobile) : liaison à part,
-         cartes_prospect_listes — jamais recruiter_list_members. Une erreur
-         de lecture laisse les athlètes (parité avec useListesUnite, web). */
+         cartes_prospect_listes — jamais recruiter_list_members. TOUTES les
+         liaisons et toutes les cartes (cartes_par_ids) ; une erreur est
+         LEVÉE (correctif 2026-10-16), l'écran l'affiche. */
       let prospects: ListAthlete[] = [];
-      try {
-        const { data: liaisons, error: errLiaisons } = await supabase
-          .from("cartes_prospect_listes")
-          .select("carte_id, created_at")
-          .eq("list_id", listId);
-        if (errLiaisons) throw errLiaisons;
-        const lignes = (liaisons ?? []) as { carte_id: string; created_at: string }[];
-        if (lignes.length > 0) {
-          const cartes = await lireCartesParIds(supabase, lignes.map((l) => l.carte_id));
-          // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — pas celui de
-          // l'unité, qui peut désormais différer d'une carte à l'autre.
-          const sportIds = [...new Set(cartes.map((c) => c.sport_athlete_id))];
-          const nomsSports = new Map<string, string>();
-          if (sportIds.length > 0) {
-            const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
-            for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
-          }
-          const parCarteId = new Map(cartes.map((c) => [c.id, c]));
-          prospects = lignes
-            .filter((l) => parCarteId.has(l.carte_id))
-            .map((l) => carteVersListAthlete(parCarteId.get(l.carte_id)!, nomsSports.get(parCarteId.get(l.carte_id)!.sport_athlete_id) ?? "", l.created_at));
+      const lignes = await lireTout<{ carte_id: string; created_at: string }>((de, a) => supabase
+        .from("cartes_prospect_listes")
+        .select("carte_id, created_at", { count: "exact" })
+        .eq("list_id", listId)
+        .order("id")
+        .range(de, a));
+      if (lignes.length > 0) {
+        const cartes = await lireCartesParIds(supabase, lignes.map((l) => l.carte_id));
+        // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — pas celui de
+        // l'unité, qui peut désormais différer d'une carte à l'autre.
+        const sportIds = [...new Set(cartes.map((c) => c.sport_athlete_id))];
+        const nomsSports = new Map<string, string>();
+        if (sportIds.length > 0) {
+          const { data: sports, error: errSports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          if (errSports) throw errSports;
+          for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
         }
-      } catch (e) {
-        console.error("[useListAthletes] cartes prospect :", e instanceof Error ? e.message : String(e));
+        const parCarteId = new Map(cartes.map((c) => [c.id, c]));
+        prospects = lignes
+          .filter((l) => parCarteId.has(l.carte_id))
+          .map((l) => carteVersListAthlete(parCarteId.get(l.carte_id)!, nomsSports.get(parCarteId.get(l.carte_id)!.sport_athlete_id) ?? "", l.created_at));
       }
 
       const tous = [...athletes, ...prospects].sort((a, b) => (b.addedAt || "").localeCompare(a.addedAt || ""));
@@ -245,6 +246,8 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
     athletes,
     isLoading: query.isLoading,
     error: query.error as Error | null,
+    /** Relire la liste après une erreur (correctif 2026-10-16 : l'écran la dit). */
+    reessayer: () => { void query.refetch(); },
     stats: computeStats(athletes),
   };
 }

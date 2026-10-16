@@ -10,6 +10,8 @@ import { fetchCegepPipelineOverview } from "@/lib/pipeline/pipelineVues";
 import type { TrainerOverview } from "@/lib/types/models";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -115,6 +117,9 @@ function TrainersListPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [allTrainers, setAllTrainers] = useState<TrainerOverview[]>([]);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     async function load() {
@@ -122,13 +127,16 @@ function TrainersListPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data: currentUser } = await supabase.from("users").select("school_id").eq("id", user.id).single();
+      // Aucune erreur avalée (correctif 2026-10-16) : elles montent au bandeau « Réessayer ».
+      const { data: currentUser, error: errMoi } = await supabase.from("users").select("school_id").eq("id", user.id).single();
+      if (errMoi) throw errMoi;
       if (!currentUser?.school_id) { setLoading(false); return; }
 
-      const { data: team } = await supabase
+      const { data: team, error: errEquipe } = await supabase
         .from("users")
         .select("id, first_name, last_name, role, sport, division, created_at, is_school_admin")
         .eq("school_id", currentUser.school_id);
+      if (errEquipe) throw errEquipe;
 
       if (!team) { setLoading(false); return; }
 
@@ -149,6 +157,9 @@ function TrainersListPage() {
             supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("recruiter_id", t.id),
             supabase.from("messages").select("*", { count: "exact", head: true }).eq("sender_id", t.id).gte("created_at", thirtyDaysAgo),
           ]);
+          // Un compteur en échec n'affiche plus 0 : l'erreur monte au bandeau.
+          if (favRes.error) throw favRes.error;
+          if (msgRes.error) throw msgRes.error;
           return {
             id: t.id,
             firstName: (t.first_name as string) || "",
@@ -168,8 +179,8 @@ function TrainersListPage() {
       setAllTrainers(trainers);
       setLoading(false);
     }
-    load();
-  }, []);
+    load().catch((e) => { signalerChargement(e, "cegep/recruteurs"); setLoading(false); });
+  }, [essaiChargement, signalerChargement]);
 
   const activeTrainers = allTrainers.filter((t) => t.accountStatus === "ACTIF");
   const deactivatedTrainers = allTrainers.filter((t) => t.accountStatus === "DESACTIVE");
@@ -272,6 +283,13 @@ function TrainersListPage() {
           </p>
         </div>
       </div>
+
+      {chargement.erreur && (
+        <ErreurChargement
+          message="Les entraîneurs du cégep n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      )}
 
       {/* Filters bar */}
       <div className="flex flex-wrap items-center gap-3">

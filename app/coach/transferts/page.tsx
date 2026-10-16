@@ -19,6 +19,8 @@ import {
   type TransferContext,
 } from "@/lib/coach/transferAthletes";
 import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -67,6 +69,10 @@ function MesTransfertsContent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) : un
+  // échec de lecture rendait « Sans équipe » = toute l'école, sans un mot.
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   function flashToast(kind: "success" | "error", message: string) {
     setToast({ kind, message });
@@ -86,11 +92,12 @@ function MesTransfertsContent() {
       if (!session) { router.replace("/auth"); return; }
 
       const uid = session.user.id;
-      const { data: me } = await supabase
+      const { data: me, error: errMoi } = await supabase
         .from("users")
         .select("school_id, schools!school_id(type)")
         .eq("id", uid)
         .maybeSingle();
+      if (errMoi) throw errMoi;
 
       const sid = me?.school_id ?? null;
       const schoolRel = (me as { schools?: unknown } | null)?.schools;
@@ -111,19 +118,26 @@ function MesTransfertsContent() {
         }
       }
       setLoading(false);
-    })();
+    })().catch((e) => { signalerChargement(e, "coach/transferts"); setLoading(false); setLoadingAthletes(false); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, [router, essaiChargement]);
 
   // Load the selected source coach's athletes.
   const loadSource = useCallback(async (sid: string, coachId: string) => {
     if (!coachId) { setSourceAthletes([]); return; }
     setLoadingAthletes(true);
     const supabase = createClient();
-    const list = await loadAthletesForTeam(supabase, sid, coachId);
-    setSourceAthletes(list);
-    setLoadingAthletes(false);
-  }, []);
+    try {
+      const list = await loadAthletesForTeam(supabase, sid, coachId);
+      setSourceAthletes(list);
+    } catch (e) {
+      // Jamais une liste vide ou fausse : bandeau + « Réessayer ».
+      setSourceAthletes([]);
+      signalerChargement(e, "coach/transferts — athlètes");
+    } finally {
+      setLoadingAthletes(false);
+    }
+  }, [signalerChargement]);
 
   function onSourceChange(value: string) {
     setSourceId(value);
@@ -206,9 +220,24 @@ function MesTransfertsContent() {
     setSubmitting(false);
     setDestId("");
     if (schoolId) {
-      await refreshTeams(schoolId, ctx);
+      try {
+        await refreshTeams(schoolId, ctx);
+      } catch (e) {
+        signalerChargement(e, "coach/transferts — équipes");
+      }
       await loadSource(schoolId, sourceId);
     }
+  }
+
+  if (chargement.erreur) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <ErreurChargement
+          message="Les équipes et les athlètes de ton organisation n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); setSourceId(""); setSourceAthletes([]); chargement.reessayer(); }}
+        />
+      </div>
+    );
   }
 
   if (loading) {

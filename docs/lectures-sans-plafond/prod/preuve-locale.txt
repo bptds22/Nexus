@@ -1,0 +1,33 @@
+PREUVE LOCALE — lot lectures sans plafond — 2026-10-16T12:17:13
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : ddb85453dda3ba998225e6bc0b0b808b
+  md5 lot-prod.sql      : 45bf66f16bc80dc685f191129e76cd71
+  md5 rollback          : c4e5271c1ecc86cc3c03434933daf843
+  état de départ : 21280015fba68a00183647d59c52eb48|12  (prod avant = 21280015fba68a00183647d59c52eb48|12) version=0 operations=2
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte e54c87845beefe00ea3d5345210a5bcc / 28 éléments) — tout est annulé 
+  état après : 21280015fba68a00183647d59c52eb48|12  (prod avant = 21280015fba68a00183647d59c52eb48|12) version=0 operations=2
+
+== 2. Instructions envoyées SÉPARÉMENT (en morceaux, pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:56: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : 21280015fba68a00183647d59c52eb48|12  (prod avant = 21280015fba68a00183647d59c52eb48|12) version=0 operations=2
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"954|54|49|50|24","etat_objets":"21280015fba68a00183647d59c52eb48","operations":70,"version_deja":0,"derniere_version":"20261016150000","pg":"17.6"}, "apres" : {"donnees" : "954|54|49|50|24", "version" : "20261016080000", "md5_enregistre" : "ddb85453dda3ba998225e6bc0b0b808b", "admin_operation" : "d0c1f8fc-ac6b-4a06-8f52-477ffa757cf9", "fonctions" : 16, "meme_transaction" : true}} 
+  état après : b26c3af2d31942295a61616db614502d|28  (prod avant = 21280015fba68a00183647d59c52eb48|12) version=1 operations=3
+  empreinte des objets en base : e54c87845beefe00ea3d5345210a5bcc|28  (attendue e54c87845beefe00ea3d5345210a5bcc|28)
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: migration lectures_sans_plafond déjà présente — rien n'est appliqué 
+  état après : b26c3af2d31942295a61616db614502d|28  (prod avant = 21280015fba68a00183647d59c52eb48|12) version=1 operations=3
+
+== 5. Banc sur la base issue du lot ==
+  7|0   (ok | échecs)
+
+== 6. Rollback (une transaction) : retour exact à l'état de départ, puis le lot ré-appliqué ==
+  rollback : sans erreur
+  état après rollback : 21280015fba68a00183647d59c52eb48|12  (prod avant = 21280015fba68a00183647d59c52eb48|12) version=0 operations=3
+  ré-application : {"avant" : {"donnees":"954|54|49|50|24","etat_objets":"21280015fba68a00183647d59c52eb48","operations":71,"version_deja":0,"derniere_version":"20261016150000","pg":"17.6"}, "apres" : {"donnees" : "954|54|49|50|24", "version" : "20261016080000", "md5_enregistre" : "ddb85453dda3ba998225e6bc0b0b808b", "admin_operation" : "04627935-7f0a-42bc-82be-b78bbc55c8c0", "fonctions" : 16, "meme_transaction" : true}} 
+  état final : b26c3af2d31942295a61616db614502d|28  (prod avant = 21280015fba68a00183647d59c52eb48|12) version=1 operations=4

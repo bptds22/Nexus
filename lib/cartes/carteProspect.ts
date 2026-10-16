@@ -133,15 +133,9 @@ export interface LigneCarte {
   positions: { abreviation: string | null } | null;
 }
 
-const SELECT_CARTE = `
-  id, unite_cegep_id, unite_sport_id, cree_par, prenom, nom, team_id, position_id, numero, promotion,
-  taille_pieds, taille_pouces, poids_lbs, lien_video, courriel, telephone, parent_nom, parent_courriel, etape, grade, relance_le, relance_note,
-  visite_le, drapeau, invitee_le, invitation_etat, renvois_invitation, dernier_renvoi_le, etape_le, derniere_activite, created_at,
-  school_id, sport_athlete_id,
-  teams!team_id(name, division, league, age_group, gender, zone, season, rseq_team_id, schools!school_id(name, region, type)),
-  etablissement:schools!school_id(name, region, type),
-  positions!position_id(abreviation)
-`;
+/* Le FORMAT d'une carte lue (LigneCarte : colonnes, équipe/école/établissement
+   et position imbriqués) est construit en base, par processus_cartes et
+   cartes_par_ids (migrations 20261016060000 et 20261016080000). */
 
 function un<T>(v: T | T[] | null | undefined): T | null {
   return (Array.isArray(v) ? v[0] : v) ?? null;
@@ -172,12 +166,16 @@ export async function lireCartes(
   }));
 }
 
-/** Des cartes précises, par id (membres d'une liste). */
+/** Des cartes précises, par id (membres d'une liste). Par cartes_par_ids
+ *  (correctif 2026-10-16) : les identifiants dans le CORPS de l'appel (plus
+ *  dans l'adresse, refusée au-delà de ~220), une seule valeur, aucun plafond ;
+ *  même format et même accès que processus_cartes. Erreur LEVÉE. */
 export async function lireCartesParIds(supabase: SupabaseClient, ids: string[]): Promise<LigneCarte[]> {
   if (ids.length === 0) return [];
-  const { data, error } = await supabase.from("cartes_prospect").select(SELECT_CARTE).in("id", ids);
+  const { data, error } = await supabase.rpc("cartes_par_ids", { p_ids: ids });
   if (error) throw error;
-  return ((data ?? []) as unknown as LigneCarte[]).map((l) => ({
+  if (!Array.isArray(data)) throw new Error("cartes_par_ids : réponse inattendue");
+  return (data as unknown as LigneCarte[]).map((l) => ({
     ...l,
     teams: un(l.teams as never) as LigneCarte["teams"],
     positions: un(l.positions as never) as LigneCarte["positions"],
@@ -570,13 +568,9 @@ export async function lireCartesCegep(
   cegepId: string,
   sportsRetenus: Set<string> | null,
 ): Promise<CarteCegep[]> {
-  let lignes: LigneCarte[] = [];
-  try {
-    lignes = await lireCartes(supabase, { cegepId, sportId: null, toutLeCegep: true });
-  } catch (e) {
-    console.error("[cartes] Mon CÉGEP :", e instanceof Error ? e.message : String(e));
-    return [];
-  }
+  // Erreur LEVÉE (correctif 2026-10-16) : des statistiques sans les cartes,
+  // sans un mot, sous-comptaient l'unité. L'écran l'affiche.
+  const lignes = await lireCartes(supabase, { cegepId, sportId: null, toutLeCegep: true });
   return lignes
     .filter((l) => !sportsRetenus || sportsRetenus.has(l.unite_sport_id))
     .map((l) => ({

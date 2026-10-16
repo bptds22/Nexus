@@ -4,15 +4,18 @@ import InterimCoachBanner from "@/components/shared/coach/InterimCoachBanner";
 import { loadMyInterimTeams, type InterimTeam } from "@/lib/queries/coach/interimTeams";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
+import { lireCoachPipeline } from "@/lib/pipeline/pipelineVues";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import ActionBar from "./_components/ActionBar";
 import KpiCards from "./_components/KpiCards";
 import HotAthletes from "./_components/HotAthletes";
 import ActivityFeed from "./_components/ActivityFeed";
 import { CoachDashboardMobile } from "@/components/shared/CoachDashboardMobile";
-import { loadCoachTaskCounts } from "@/lib/coach/tasks";
+import { lireCoachTaskCounts } from "@/lib/coach/tasks";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
-import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
 import type { ActionBarData, KpiData, HotAthlete } from "./_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
@@ -57,6 +60,10 @@ export default function TableauDeBordPage() {
     message: string | null;
     metadata: Record<string, unknown> | null;
   }[]>([]);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) : des
+  // indicateurs à 0 n'affirment plus « rien » quand la lecture a échoué.
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     const supabase = createClient();
@@ -69,11 +76,12 @@ export default function TableauDeBordPage() {
       // Interim source of truth = users.is_school_admin + profile_data.admin_type
       // ('interim'). school_coaches.role est toujours 'COACH' dans le workflow
       // admin_claims (RPRP attesté + modération) — ne plus s'y fier ici.
-      const { data: profile } = await supabase
+      const { data: profile, error: errProfil } = await supabase
         .from("users")
         .select("first_name, last_name, school_id, is_school_admin, profile_data, schools!school_id(name)")
         .eq("id", user.id)
         .single();
+      if (errProfil) throw errProfil;
 
       let resolvedSchoolName = "";
       if (profile) {
@@ -115,23 +123,26 @@ export default function TableauDeBordPage() {
       setIsDirector(isDir);
       let schoolCoachIds: string[] = [];
       if (isDir) {
-        const { data: scRows } = await supabase
-          .from("school_coaches").select("coach_id").eq("school_id", coachSchoolId);
-        schoolCoachIds = [...new Set((scRows ?? []).map((r) => (r as { coach_id: string }).coach_id).filter(Boolean))];
-        const { count: teamCount } = await supabase
+        const scRows = await lireTout<{ coach_id: string }>((de, a) => supabase
+          .from("school_coaches").select("coach_id", { count: "exact" }).eq("school_id", coachSchoolId)
+          .order("id").range(de, a));
+        schoolCoachIds = [...new Set(scRows.map((r) => r.coach_id).filter(Boolean))];
+        const { count: teamCount, error: errEquipes } = await supabase
           .from("teams").select("id", { count: "exact", head: true })
           .eq("school_id", coachSchoolId).eq("is_active", true);
+        if (errEquipes) throw errEquipes;
         setActiveTeams(teamCount || 0);
       }
 
       // Load unread INTERIM_DEMOTED notifications
-      const { data: demotions } = await supabase
+      const { data: demotions, error: errRetrogradations } = await supabase
         .from("coach_notifications")
         .select("id, title, message, metadata")
         .eq("coach_id", user.id)
         .eq("type", "INTERIM_DEMOTED")
         .eq("read", false)
         .order("created_at", { ascending: false });
+      if (errRetrogradations) throw errRetrogradations;
 
       if (demotions && demotions.length > 0) {
         setDemotionNotifications(demotions.map((d) => ({
@@ -145,16 +156,16 @@ export default function TableauDeBordPage() {
       // Périmètre canonique roster — source unique get_coach_athletes (owner ∪
       // team, +école si directeur ; ACTIF+EN_ATTENTE). Même set que le roster,
       // le chat, l'à-traiter : le compte du dashboard ne peut plus diverger.
-      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
-      let athleteRows: { id: string; verified: boolean }[] | null = null;
-      if (scopeIds.length) {
-        ({ data: athleteRows } = await supabase
-          .from("athletes")
-          .select("id, verified")
-          .in("id", scopeIds));
-      }
-
-      const athletes = athleteRows || [];
+      // Correctif 2026-10-16 : tout le périmètre, les identifiants dans le
+      // CORPS (athletes_par_ids), toutes les lignes, erreur levée.
+      const { ids: scopeIds } = await lireCoachAthleteScope(supabase);
+      const athletes = scopeIds.length
+        ? await lireTout<{ id: string; verified: boolean }>((de, a) => supabase
+            .rpc("athletes_par_ids", { p_ids: scopeIds }, { count: "exact" })
+            .select("id, verified")
+            .order("id")
+            .range(de, a))
+        : [];
       const coachAthleteIds = athletes.map((a: { id: string }) => a.id);
       const totalAthletes = athletes.length;
       const verifiedCount = athletes.filter((a: { verified: boolean }) => a.verified).length;
@@ -163,7 +174,7 @@ export default function TableauDeBordPage() {
       let unreadMessages = 0;
       if (coachAthleteIds.length > 0) {
         // Lot 2a — RPC coach (4 colonnes), plus de lecture directe du pipeline.
-        unreadMessages = (await fetchCoachPipeline(supabase, { athleteIds: coachAthleteIds, stages: ["CONTACTE"] })).length;
+        unreadMessages = (await lireCoachPipeline(supabase, { athleteIds: coachAthleteIds, stages: ["CONTACTE"] })).length;
       }
 
       // Banner 2 + 3b + 4: tâches "à traiter" via le helper partagé.
@@ -172,7 +183,7 @@ export default function TableauDeBordPage() {
       // alimentés par UNE SEULE source. Adds 'missingEvals' (ÉTAPE 3b nouveau).
       // Un seul appel : get_coach_athletes (dans loadCoachTaskCounts) détecte
       // le directeur → périmètre école automatique. Plus de branche isDir.
-      const taskCounts = await loadCoachTaskCounts(supabase, user.id);
+      const taskCounts = await lireCoachTaskCounts(supabase, user.id);
 
       // Banner 3: new athletes added (unread) — séparé, pas une "tâche"
       const newAthletesSel = supabase
@@ -180,9 +191,10 @@ export default function TableauDeBordPage() {
         .select("id", { count: "exact", head: true })
         .eq("type", "ATHLETE_ADDED")
         .eq("read", false);
-      const { count: newAthletesCount } = await (isDir
+      const { count: newAthletesCount, error: errNouveaux } = await (isDir
         ? newAthletesSel.in("coach_id", schoolCoachIds.length ? schoolCoachIds : ["00000000-0000-0000-0000-000000000000"])
         : newAthletesSel.eq("coach_id", user.id));
+      if (errNouveaux) throw errNouveaux;
 
       setActionBar({
         unreadMessages,
@@ -198,16 +210,23 @@ export default function TableauDeBordPage() {
       const firstOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
       const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
 
-      let viewsThisMonth = 0;
-      let viewsLastMonth = 0;
-      if (coachAthleteIds.length > 0) {
-        const [{ count: thisCount }, { count: lastCount }] = await Promise.all([
-          supabase.from("recruiter_athlete_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfThisMonth).lt("viewed_at", firstOfNextMonth),
-          supabase.from("recruiter_athlete_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfLastMonth).lt("viewed_at", firstOfThisMonth),
-        ]);
-        viewsThisMonth = thisCount || 0;
-        viewsLastMonth = lastCount || 0;
-      }
+      /* Correctif 2026-10-16 : les vues des DEUX derniers mois en une lecture
+         complète (identifiants dans le corps — un compte « head » les mettait
+         dans l'adresse), comptées ici. La semaine en cours (plus bas) est
+         toujours dans cette fenêtre : son lundi tombe au plus tôt le mois
+         dernier. */
+      const vues = coachAthleteIds.length > 0
+        ? await lireTout<{ athlete_id: string; viewed_at: string }>((de, a) => supabase
+            .rpc("recruiter_athlete_views_par_athletes", { p_ids: coachAthleteIds }, { count: "exact" })
+            .select("id, athlete_id, viewed_at")
+            .gte("viewed_at", firstOfLastMonth)
+            .lt("viewed_at", firstOfNextMonth)
+            .order("id")
+            .range(de, a))
+        : [];
+      const instant = (iso: string) => new Date(iso).getTime();
+      const viewsThisMonth = vues.filter((v) => instant(v.viewed_at) >= instant(firstOfThisMonth)).length;
+      const viewsLastMonth = vues.length - viewsThisMonth;
 
       // Calculate trend — always produce a value
       let viewsTrend = 0;
@@ -223,7 +242,7 @@ export default function TableauDeBordPage() {
       // ── KPI 4: Active conversations (distinct recruiters in active pipeline statuses) ──
       let activeConversations = 0;
       if (coachAthleteIds.length > 0) {
-        const activeRows = await fetchCoachPipeline(supabase, {
+        const activeRows = await lireCoachPipeline(supabase, {
           athleteIds: coachAthleteIds,
           stages: ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE"],
         });
@@ -251,29 +270,25 @@ export default function TableauDeBordPage() {
         monday.setHours(0, 0, 0, 0);
         const startOfWeek = monday.toISOString();
 
-        // Views this week per athlete
-        const { data: viewRows } = await supabase
-          .from("recruiter_athlete_views")
-          .select("athlete_id")
-          .in("athlete_id", coachAthleteIds)
-          .gte("viewed_at", startOfWeek);
+        // Views this week per athlete (déjà lues plus haut, fenêtre de deux mois).
+        const viewRows = vues.filter((v) => instant(v.viewed_at) >= instant(startOfWeek));
 
         const viewCounts = new Map<string, number>();
-        for (const r of (viewRows || [])) {
+        for (const r of viewRows) {
           viewCounts.set(r.athlete_id, (viewCounts.get(r.athlete_id) || 0) + 1);
         }
 
         // Favorite count per athlete (distinct recruiters who favorited)
-        const { data: favRows } = await supabase
-          .from("recruiter_favorites")
-          .select("athlete_id")
-          .in("athlete_id", coachAthleteIds);
+        // Toutes les lignes, identifiants dans le corps, erreur levée (2026-10-16).
+        const favRows = await lireTout<{ athlete_id: string }>((de, a) => supabase
+          .rpc("recruiter_favorites_par_athletes", { p_ids: coachAthleteIds }, { count: "exact" })
+          .select("id, athlete_id")
+          .order("id")
+          .range(de, a));
 
         const favCounts = new Map<string, number>();
-        if (favRows) {
-          for (const r of favRows) {
-            favCounts.set(r.athlete_id, (favCounts.get(r.athlete_id) || 0) + 1);
-          }
+        for (const r of favRows) {
+          favCounts.set(r.athlete_id, (favCounts.get(r.athlete_id) || 0) + 1);
         }
 
         // Sort by views descending, take top 5
@@ -283,10 +298,12 @@ export default function TableauDeBordPage() {
 
         if (sorted.length > 0) {
           const topIds = sorted.map(([id]) => id);
-          const { data: topProfiles } = await supabase
+          // Cinq identifiants au plus : l'adresse reste courte. Erreur levée.
+          const { data: topProfiles, error: errTop } = await supabase
             .from("athletes")
             .select("id, first_name, last_name, cote_globale_entraineur, positions!position_id(abreviation, nom)")
             .in("id", topIds);
+          if (errTop) throw errTop;
 
           const profileMap = new Map<string, Record<string, unknown>>();
           if (topProfiles) {
@@ -319,13 +336,15 @@ export default function TableauDeBordPage() {
       // ── Activities feed (from recruiter_activity_log for coach's athletes) ──
       let activityRows: Record<string, unknown>[] | null = null;
       if (coachAthleteIds.length > 0) {
-        const { data } = await supabase
-          .from("recruiter_activity_log")
+        // Les 20 dernières (voulu) ; identifiants dans le corps, erreur levée.
+        const { data, error: errActivite } = await supabase
+          .rpc("recruiter_activity_log_par_athletes", { p_ids: coachAthleteIds })
           .select("id, action_type, details, created_at, athlete_id")
-          .in("athlete_id", coachAthleteIds)
           .order("created_at", { ascending: false })
+          .order("id")
           .limit(20);
-        activityRows = data;
+        if (errActivite) throw errActivite;
+        activityRows = data as Record<string, unknown>[] | null;
       }
 
       if (activityRows && activityRows.length > 0) {
@@ -393,8 +412,8 @@ export default function TableauDeBordPage() {
       setLoading(false);
     }
 
-    load();
-  }, []);
+    load().catch((e) => { signalerChargement(e, "coach/tableau-de-bord"); setLoading(false); });
+  }, [essaiChargement, signalerChargement]);
 
   async function dismissDemotion(notificationId: string) {
     const supabase = createClient();
@@ -427,6 +446,13 @@ export default function TableauDeBordPage() {
         </p>
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
       </div>
+
+      {chargement.erreur && (
+        <ErreurChargement
+          message="Ton tableau de bord n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      )}
 
       {/* Lot C — bandeau persistant « coach intérimaire ». Disparaît seul
           dès qu'un entraîneur-chef titulaire est nommé. */}

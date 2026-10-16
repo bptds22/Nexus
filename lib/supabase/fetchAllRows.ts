@@ -18,6 +18,10 @@
  * (`schools!school_id(name,type)`) : c'est une requête au lieu de deux
  * et rien à tronquer. Voir lib/config/schoolTypes.ts.
  *
+ * La requête DOIT trier sur une clé unique (ex. `.order("id")`) : chaque
+ * tranche est une requête à part ; sans tri, PostgreSQL ne garantit pas
+ * l'ordre, et une ligne peut sortir deux fois quand une autre manque.
+ *
  * @param build   construit la requête pour une tranche donnée
  * @param label   préfixe de log, pour situer l'appelant en cas d'erreur
  */
@@ -29,7 +33,12 @@ export async function fetchAllRows<T>(
   const all: T[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await build(from, from + PAGE - 1);
-    if (error) { console.error(`[${label}]`, error); break; }
+    // Correctif 2026-10-16 : l'erreur est LEVÉE. Avant, journalisée puis
+    // « break » : une liste PARTIELLE rendue comme complète.
+    if (error) {
+      const message = error && typeof error === "object" && "message" in error ? String((error as { message: unknown }).message) : String(error);
+      throw new Error(`[${label}] ${message}`);
+    }
     if (!data || data.length === 0) break;
     all.push(...data);
     if (data.length < PAGE) break;

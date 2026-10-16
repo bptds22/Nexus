@@ -197,9 +197,11 @@ function ModifierContent({ id }: { id: string }) {
     // Pagination : sélecteur d'établissement d'engagement. Tronqué à 1000
     // lignes, il rendait les 199 derniers noms inatteignables.
     fetchAllRows<{ id: string; name: string }>(
-      (f, t) => supabase.from("schools").select("id, name").order("name").range(f, t),
+      (f, t) => supabase.from("schools").select("id, name").order("name").order("id").range(f, t),
       "CoachModifierAthlete",
-    ).then((schoolsData) => setSchoolsList(schoolsData));
+    ).then((schoolsData) => setSchoolsList(schoolsData))
+      // fetchAllRows lève désormais ses erreurs (2026-10-16) : jamais de rejet non géré.
+      .catch((e) => console.error("[coach/modifier] établissements :", e instanceof Error ? e.message : String(e)));
 
     // Load coach's school + teams from the `teams` table (cf. requête plus
     // bas). NB : `equipes` est une table morte — 0 ligne, aucun code ne la

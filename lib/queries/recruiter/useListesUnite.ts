@@ -28,6 +28,7 @@ import { nomAuteur, type AuteurUnite } from "@/lib/queries/recruiter/useProcessu
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import type { ProspectList, ProspectListAthlete } from "@/app/recruteur/listes/_data/mockListsData";
 import { lireCartesParIds, versMembreListe } from "@/lib/cartes/carteProspect";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 interface LigneListe {
   id: string;
@@ -59,63 +60,65 @@ export function useListesUnite(enabled = true) {
     staleTime: 0,
     queryFn: async () => {
       const supabase = createClient();
-      const [listesRes, auteursRes] = await Promise.all([
-        supabase
+      /* Correctif 2026-10-16 : lectures COMPLÈTES (lireTout, plus de coupure à
+         1000) et aucune erreur avalée — l'écran l'affiche avec « Réessayer ». */
+      const [listesLues, auteursRes] = await Promise.all([
+        lireTout<LigneListe>((de, a) => supabase
           .from("recruiter_lists")
-          .select("id, name, description, created_at, updated_at, recruiter_id, unite_cegep_id, unite_sport_id")
-          .order("updated_at", { ascending: false }),
+          .select("id, name, description, created_at, updated_at, recruiter_id, unite_cegep_id, unite_sport_id", { count: "exact" })
+          .order("updated_at", { ascending: false })
+          .order("id")
+          .range(de, a)),
         supabase.rpc("unite_auteurs"),
       ]);
-      if (listesRes.error) throw listesRes.error;
       if (auteursRes.error) throw auteursRes.error;
       const auteurs: Record<string, AuteurUnite> = {};
       for (const a of (auteursRes.data ?? []) as AuteurUnite[]) auteurs[a.id] = a;
       const monSport = moi ? auteurs[moi]?.sport_id ?? null : null;
 
       // Les siennes (unité ou pas), et celles de SON unité.
-      const listes = ((listesRes.data ?? []) as LigneListe[]).filter(
+      const listes = listesLues.filter(
         (l) =>
           l.recruiter_id === moi ||
           (!!monCegep && !!monSport && l.unite_cegep_id === monCegep && l.unite_sport_id === monSport),
       );
 
       const ids = listes.map((l) => l.id);
-      let membres: LigneMembre[] = [];
-      if (ids.length > 0) {
-        const { data, error } = await supabase
-          .from("recruiter_list_members")
-          .select("list_id, athlete_id, added_at, added_by")
-          .in("list_id", ids);
-        if (error) throw error;
-        membres = (data ?? []) as LigneMembre[];
-      }
+      const membres = ids.length > 0
+        ? await lireTout<LigneMembre>((de, a) => supabase
+            .from("recruiter_list_members")
+            .select("list_id, athlete_id, added_at, added_by", { count: "exact" })
+            .in("list_id", ids)
+            .order("id")
+            .range(de, a))
+        : [];
 
       const cartes = await fetchRecruiterAthleteCards(supabase, [...new Set(membres.map((m) => m.athlete_id))]);
 
       /* CARTES PROSPECT dans les listes (lot C, retour BP) : liaison à part,
-         cartes_prospect_listes. Une erreur de lecture laisse les athlètes. */
+         cartes_prospect_listes. TOUTES les liaisons (lireTout) et toutes les
+         cartes (cartes_par_ids : identifiants dans le corps). Une erreur est
+         LEVÉE (correctif 2026-10-16) : des listes affichées sans leurs cartes,
+         sans un mot, laissaient croire qu'elles avaient été retirées. */
       let liaisons: { list_id: string; carte_id: string; created_at: string; ajoute_par: string | null }[] = [];
       let cartesProspect = new Map<string, Awaited<ReturnType<typeof lireCartesParIds>>[number]>();
       const nomsSports = new Map<string, string>();
       if (ids.length > 0) {
-        try {
-          const { data, error } = await supabase
-            .from("cartes_prospect_listes")
-            .select("list_id, carte_id, created_at, ajoute_par")
-            .in("list_id", ids);
-          if (error) throw error;
-          liaisons = (data ?? []) as typeof liaisons;
-          const lues = await lireCartesParIds(supabase, [...new Set(liaisons.map((l) => l.carte_id))]);
-          cartesProspect = new Map(lues.map((c) => [c.id, c]));
-          // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — pas celui de
-          // l'unité, qui peut désormais différer d'une carte à l'autre.
-          const sports = [...new Set(lues.map((c) => c.sport_athlete_id))];
-          if (sports.length > 0) {
-            const { data: s } = await supabase.from("sports").select("id, nom").in("id", sports);
-            for (const x of (s ?? []) as { id: string; nom: string }[]) nomsSports.set(x.id, x.nom);
-          }
-        } catch (e) {
-          console.error("[useListesUnite] cartes prospect :", e instanceof Error ? e.message : String(e));
+        liaisons = await lireTout<(typeof liaisons)[number]>((de, a) => supabase
+          .from("cartes_prospect_listes")
+          .select("list_id, carte_id, created_at, ajoute_par", { count: "exact" })
+          .in("list_id", ids)
+          .order("id")
+          .range(de, a));
+        const lues = await lireCartesParIds(supabase, [...new Set(liaisons.map((l) => l.carte_id))]);
+        cartesProspect = new Map(lues.map((c) => [c.id, c]));
+        // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — pas celui de
+        // l'unité, qui peut désormais différer d'une carte à l'autre.
+        const sports = [...new Set(lues.map((c) => c.sport_athlete_id))];
+        if (sports.length > 0) {
+          const { data: s, error: errSports } = await supabase.from("sports").select("id, nom").in("id", sports);
+          if (errSports) throw errSports;
+          for (const x of (s ?? []) as { id: string; nom: string }[]) nomsSports.set(x.id, x.nom);
         }
       }
 
@@ -189,13 +192,15 @@ export function useNotesListeUnite(listId: string | null) {
     enabled: !!moi && !!listId,
     staleTime: 0,
     queryFn: async () => {
-      const { data, error } = await createClient()
+      // Toutes les notes (lireTout, correctif 2026-10-16), erreur levée.
+      const supabase = createClient();
+      return lireTout<NoteListe>((de, a) => supabase
         .from("recruiter_list_notes")
-        .select("id, content, created_at, recruiter_id")
+        .select("id, content, created_at, recruiter_id", { count: "exact" })
         .eq("list_id", listId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as NoteListe[];
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(de, a));
     },
   });
 }

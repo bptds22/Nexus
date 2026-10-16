@@ -18,6 +18,8 @@
 ───────────────────────────────────────────────────────────────── */
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 type Fil = {
   id: string;
@@ -49,55 +51,62 @@ export default function AdminConversations() {
   const [reponse, setReponse] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [serviceId, setServiceId] = useState<string | null>(null);
+  /** Lecture en échec (correctif 2026-10-16) : bandeau + « Réessayer ». */
+  const [erreurLecture, setErreurLecture] = useState(false);
 
-  const charger = useCallback(async () => {
-    setChargement(true);
-    setErreur(null);
+  /* Correctif 2026-10-16 : TOUS les fils (plus de « 200 premiers »), les
+     identifiants dans le CORPS (fonctions *_par_ids : 200 fils remplissaient
+     déjà l'adresse), toutes les lignes, et une erreur LEVÉE. */
+  async function chargerFils() {
     const supabase = createClient();
 
-    const { data: svc } = await supabase
+    const { data: svc, error: errSvc } = await supabase
       .from("users").select("id").eq("is_service_identity", true).maybeSingle();
+    if (errSvc) throw errSvc;
     setServiceId(svc?.id ?? null);
 
     /* Tri par activité récente : c'est l'ordre d'un support — le fil qui
        vient de bouger passe devant, pas le plus ancien. */
-    const { data, error } = await supabase
+    const lignes = await lireTout<{ id: string; last_message_at: string | null; athlete_id: string | null; coach_id: string | null; recruiter_id: string | null }>((de, a) => supabase
       .from("conversations")
-      .select("id, last_message_at, athlete_id, coach_id, recruiter_id")
+      .select("id, last_message_at, athlete_id, coach_id, recruiter_id", { count: "exact" })
       .eq("conversation_type", "ADMIN_USER")
       .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(200);
-    if (error) { setErreur(error.message); setChargement(false); return; }
-
-    const lignes = data ?? [];
+      .order("id")
+      .range(de, a));
     // Les athlètes passent par athletes.user_id ; coach et recruteur sont
     // déjà des user_id. Deux résolutions, un seul aller-retour chacune.
-    const athleteIds = lignes.map((c) => c.athlete_id).filter(Boolean) as string[];
-    const userIds = lignes.flatMap((c) => [c.coach_id, c.recruiter_id]).filter(Boolean) as string[];
+    const athleteIds = [...new Set(lignes.map((c) => c.athlete_id).filter(Boolean) as string[])];
+    const userIds = [...new Set(lignes.flatMap((c) => [c.coach_id, c.recruiter_id]).filter(Boolean) as string[])];
 
     const athMap = new Map<string, { userId: string | null; nom: string }>();
     if (athleteIds.length) {
-      const { data: a } = await supabase
-        .from("athletes").select("id, user_id, first_name, last_name").in("id", athleteIds);
-      (a ?? []).forEach((r) => athMap.set(r.id, {
+      const a = await lireTout<{ id: string; user_id: string | null; first_name: string | null; last_name: string | null }>((de, fin) => supabase
+        .rpc("athletes_par_ids", { p_ids: athleteIds }, { count: "exact" })
+        .select("id, user_id, first_name, last_name").order("id").range(de, fin));
+      a.forEach((r) => athMap.set(r.id, {
         userId: r.user_id,
         nom: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "Athlète",
       }));
     }
     const uMap = new Map<string, string>();
     if (userIds.length) {
-      const { data: u } = await supabase
-        .from("users").select("id, first_name, last_name").in("id", userIds);
-      (u ?? []).forEach((r) => uMap.set(r.id, `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "Utilisateur"));
+      const u = await lireTout<{ id: string; first_name: string | null; last_name: string | null }>((de, fin) => supabase
+        .rpc("users_par_ids", { p_ids: userIds }, { count: "exact" })
+        .select("id, first_name, last_name").order("id").range(de, fin));
+      u.forEach((r) => uMap.set(r.id, `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "Utilisateur"));
     }
 
-    const { data: derniers } = await supabase
-      .from("messages")
-      .select("conversation_id, content, created_at")
-      .in("conversation_id", lignes.map((c) => c.id))
-      .order("created_at", { ascending: false });
+    const derniers = lignes.length > 0
+      ? await lireTout<{ conversation_id: string; content: string | null; created_at: string }>((de, a) => supabase
+          .rpc("messages_par_conversations", { p_ids: lignes.map((c) => c.id) }, { count: "exact" })
+          .select("id, conversation_id, content, created_at")
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(de, a))
+      : [];
     const apercuMap = new Map<string, string>();
-    (derniers ?? []).forEach((m) => {
+    derniers.forEach((m) => {
       if (!apercuMap.has(m.conversation_id)) apercuMap.set(m.conversation_id, m.content ?? "");
     });
 
@@ -113,6 +122,18 @@ export default function AdminConversations() {
         apercu: (apercuMap.get(c.id) ?? "").slice(0, 120),
       };
     }));
+  }
+
+  const charger = useCallback(async () => {
+    setChargement(true);
+    setErreur(null);
+    setErreurLecture(false);
+    try {
+      await chargerFils();
+    } catch (e) {
+      console.error("[admin/messages] fils :", e instanceof Error ? e.message : String(e));
+      setErreurLecture(true);
+    }
     setChargement(false);
   }, []);
 
@@ -121,12 +142,18 @@ export default function AdminConversations() {
   const ouvrir = async (f: Fil) => {
     setOuvert(f); setMsgs([]); setReponse("");
     const supabase = createClient();
-    const { data } = await supabase
-      .from("messages")
-      .select("id, sender_id, content, created_at, retracted_at")
-      .eq("conversation_id", f.id)
-      .order("created_at", { ascending: true });
-    setMsgs((data ?? []) as Msg[]);
+    // Tout le fil (lireTout), et une erreur dite — jamais un fil vide.
+    try {
+      setMsgs(await lireTout<Msg>((de, a) => supabase
+        .from("messages")
+        .select("id, sender_id, content, created_at, retracted_at", { count: "exact" })
+        .eq("conversation_id", f.id)
+        .order("created_at", { ascending: true })
+        .order("id")
+        .range(de, a)));
+    } catch (e) {
+      setErreur(`Ce fil n'a pas pu être chargé (${e instanceof Error ? e.message : String(e)}). Réessaie.`);
+    }
   };
 
   const repondre = async () => {
@@ -154,6 +181,12 @@ export default function AdminConversations() {
 
   return (
     <div className="space-y-4">
+      {erreurLecture && (
+        <ErreurChargement
+          message="Les fils de messages n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { void charger(); }}
+        />
+      )}
       {erreur && (
         <p className="text-[13px] text-[#FCA5A5] bg-[#2A1416] border border-[#E63946] rounded-lg px-4 py-3">{erreur}</p>
       )}
