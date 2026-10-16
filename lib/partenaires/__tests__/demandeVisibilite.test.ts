@@ -84,3 +84,24 @@ test("web : bouton « Accepter » hors du bouton de la ligne ; parent mené à C
   const parent = lire("app/parent/(app)/notifications/page.tsx");
   assert.match(parent, /if \(n\.type === TYPE_DEMANDE_PARENT\) router\.push\("\/parent\/consentements"\)/);
 });
+
+test("écran de carte, moins de 14 ans : la MÊME demande au parent que « Accepter »", async () => {
+  const { demanderAuParentDepuisCarte } = await import("@/lib/partenaires/demandeVisibilite");
+  const faux = (ligne: unknown, rpc: unknown) => {
+    const appels: unknown[] = [];
+    const b: Record<string, unknown> = {};
+    for (const m of ["select", "eq", "contains", "order"]) b[m] = () => b;
+    b.limit = () => Promise.resolve({ data: ligne ? [ligne] : [], error: null });
+    return { appels, client: { from: () => b, rpc: (f: string, a: unknown) => { appels.push([f, a]); return Promise.resolve({ data: rpc, error: null }); } } };
+  };
+  let f = faux({ id: "d1", metadata: { etat: "EN_ATTENTE" } }, { ok: true, etat: "DEMANDE_PARENT" });
+  assert.equal(await demanderAuParentDepuisCarte(f.client as never, "c1", true, "v1"), texteEtatDemande("DEMANDE_PARENT"));
+  assert.deepEqual(f.appels, [["accepter_visibilite_partenaire", { p_notification: "d1", p_policy_version: "v1" }]]);
+  f = faux({ id: "d1", metadata: { etat: "DEMANDE_PARENT" } }, null);
+  assert.equal(await demanderAuParentDepuisCarte(f.client as never, "c1", true, "v1"), texteEtatDemande("DEMANDE_PARENT"));
+  assert.equal(f.appels.length, 0, "déjà envoyée : pas de second avis au parent");
+  f = faux(null, null);
+  assert.match(await demanderAuParentDepuisCarte(f.client as never, "c1", false, "v1"), /Confirme d'abord/);
+  assert.match(lire("components/athlete/prospects/CarteProspectReponse.tsx"),
+    /await demanderAuParentDepuisCarte\(createClient\(\), carte\.carteId, issue\?\.type === "attente", PRIVACY_POLICY_VERSION\)/);
+});
