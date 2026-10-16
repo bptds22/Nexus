@@ -10,16 +10,18 @@
      qu'on prendrait pour la note d'un coach ;
    - sinon → rien (0 : la carte garde ses étoiles vides, pas de libellé).
 
-   Plusieurs partenaires : on retient LA PLUS RÉCENTE (updated_at) — la
-   règle déjà appliquée par recruiter_search_athletes (W2) au filtre
-   « 4+ étoiles » et au tri. Une carte ne peut pas afficher une cote et
-   un tri en désaccord. Changer de règle = changer `retenirCotePartenaire`
-   ET le LATERAL de recruiter_search_athletes, ensemble.
+   Plusieurs partenaires : LA PLUS RÉCENTE (updated_at, puis l'identifiant
+   à date égale) — règle confirmée par BP le 2026-10-16, la même que
+   recruiter_search_athletes au filtre « 4+ étoiles » et au tri. Une carte
+   ne peut pas afficher une cote et un tri en désaccord. Changer de règle =
+   changer `retenirCotePartenaire` ET le LATERAL de la recherche, ensemble.
 
    Visibilité : rien de nouveau. Les cotes viennent de
    cotes_partenaires_athletes(), qui délègue athlète par athlète à
    evaluations_partenaires_athlete() (W2) — la lecture que la fiche fait
-   déjà. Un athlète refusé par W2 n'a pas de ligne : pas de cote.
+   déjà. Un athlète refusé par W2 n'a pas de ligne : pas de cote. Loi 25
+   (2026-10-16) : sans opt-in partenaire ACTIF, W2 ne rend rien (sauf à
+   l'admin) — un retrait efface la cote de toutes les cartes, aussitôt.
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
