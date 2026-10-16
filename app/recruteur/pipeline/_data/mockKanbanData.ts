@@ -77,6 +77,10 @@ export interface PipelineKanbanCard {
    *  next_action_note, qui est la note attachée à la RELANCE. `null` = aucune
    *  note. Optionnel : les fixtures mock ne le portent pas. */
   derniere_note?: { content: string; created_at: string; auteur?: string } | null;
+  /** Lecture des dernières notes encore en cours, ou en échec (mode unité,
+   *  lib/pipeline/dernieresNotes) : l'écran montre un indicateur ou l'erreur,
+   *  jamais une note vide. Absent = derniere_note fait foi. */
+  derniere_note_etat?: "chargement" | "erreur";
   /** Tableau blanc (lot B2) : les recruteurs de l'unité qui suivent
    *  l'athlète, et leurs noms prêts à afficher (useProcessusUnite). Absents
    *  en mode démo gratuit (ses seules lignes). */

@@ -147,18 +147,25 @@ function un<T>(v: T | T[] | null | undefined): T | null {
   return (Array.isArray(v) ? v[0] : v) ?? null;
 }
 
-/** Lit les cartes lisibles (la RLS décide), filtrées comme le processus :
- *  l'unité de l'appelant par défaut, un sport précis, ou tout le cégep. */
+/** Paramètres des fonctions du processus (migration 20261016060000). */
+function parametresProcessus(options: { cegepId: string | null; sportId: string | null; toutLeCegep?: boolean }) {
+  return { p_cegep_id: options.cegepId, p_sport_id: options.sportId, p_tout_le_cegep: !!options.toutLeCegep };
+}
+
+/** Lit TOUTES les cartes lisibles, filtrées comme le processus : l'unité de
+ *  l'appelant par défaut, un sport précis, ou tout le cégep.
+ *  Par processus_cartes (correctif 2026-10-16) : UNE valeur jsonb, donc ni
+ *  plafond de 1000 lignes ni liste d'identifiants dans l'adresse, quel que
+ *  soit le volume. Même format et même accès que l'ancienne lecture
+ *  PostgREST. Une erreur est LEVÉE : jamais une liste tronquée ou vide. */
 export async function lireCartes(
   supabase: SupabaseClient,
   options: { cegepId: string | null; sportId: string | null; toutLeCegep?: boolean },
 ): Promise<LigneCarte[]> {
-  let q = supabase.from("cartes_prospect").select(SELECT_CARTE);
-  if (options.cegepId) q = q.eq("unite_cegep_id", options.cegepId);
-  if (!options.toutLeCegep && options.sportId) q = q.eq("unite_sport_id", options.sportId);
-  const { data, error } = await q.order("etape_le", { ascending: false });
+  const { data, error } = await supabase.rpc("processus_cartes", parametresProcessus(options));
   if (error) throw error;
-  return ((data ?? []) as unknown as LigneCarte[]).map((l) => ({
+  if (!Array.isArray(data)) throw new Error("processus_cartes : réponse inattendue");
+  return (data as unknown as LigneCarte[]).map((l) => ({
     ...l,
     teams: un(l.teams as never) as LigneCarte["teams"],
     positions: un(l.positions as never) as LigneCarte["positions"],
@@ -200,23 +207,24 @@ export function versMembreListe(l: LigneCarte, nomSport: string) {
   };
 }
 
-/** Dernière note par carte, avec son auteur (colonne « Note de suivi »). */
-export async function lireDernieresNotesCartes(
+/** Une dernière note : contenu, date, id de l'auteur (nom résolu par l'appelant). */
+export interface DerniereNote { content: string; created_at: string; auteur: string | null }
+
+/** Dernière note de chaque carte ET de chaque dossier du processus (colonne
+ *  « Note de suivi »), par processus_dernieres_notes — mêmes filtres que
+ *  lireCartes ; les dossiers sont ceux de unite_pipeline(sportId, tout).
+ *  Remplace la lecture filtrée sur la liste des carte_id, qui mettait tous les identifiants
+ *  dans l'adresse (400 en prod au-delà de ~950 cartes, erreur avalée).
+ *  Une erreur est LEVÉE : l'écran l'affiche, jamais une colonne vide. */
+export async function lireDernieresNotesProcessus(
   supabase: SupabaseClient,
-  ids: string[],
-): Promise<Record<string, { content: string; created_at: string; auteur: string | null }>> {
-  const out: Record<string, { content: string; created_at: string; auteur: string | null }> = {};
-  if (ids.length === 0) return out;
-  const { data, error } = await supabase
-    .from("cartes_prospect_notes")
-    .select("carte_id, contenu, created_at, auteur")
-    .in("carte_id", ids)
-    .order("created_at", { ascending: false });
-  if (error) { console.error("[cartes] dernières notes :", error.message); return out; }
-  for (const n of (data ?? []) as { carte_id: string; contenu: string; created_at: string; auteur: string | null }[]) {
-    if (!out[n.carte_id]) out[n.carte_id] = { content: n.contenu, created_at: n.created_at, auteur: n.auteur };
-  }
-  return out;
+  options: { cegepId: string | null; sportId: string | null; toutLeCegep?: boolean },
+): Promise<{ cartes: Record<string, DerniereNote>; dossiers: Record<string, DerniereNote> }> {
+  const { data, error } = await supabase.rpc("processus_dernieres_notes", parametresProcessus(options));
+  if (error) throw error;
+  const d = data as { cartes?: Record<string, DerniereNote> | null; dossiers?: Record<string, DerniereNote> | null } | null;
+  if (!d || typeof d !== "object") throw new Error("processus_dernieres_notes : réponse inattendue");
+  return { cartes: d.cartes ?? {}, dossiers: d.dossiers ?? {} };
 }
 
 /** Une carte au format d'un dossier du kanban. */

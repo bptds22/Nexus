@@ -8,12 +8,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
 import { useProcessusUnite } from "@/lib/queries/recruiter/useProcessusUnite";
+import ErreurChargement, { MESSAGES_PROCESSUS } from "@/components/shared/ErreurChargement";
 import { useFiltreSportUnite } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
 import { TOUS, SANS_SPORT } from "@/lib/cegep/filtreSportUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { trierTableau, triApresClic, triVersMode, MODE_VERS_TRI, type TriTableau } from "@/lib/pipeline/triTableau";
+import { notesParLigne, type NotesExport } from "@/lib/pipeline/dernieresNotes";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import {
   sortPipelineCards,
@@ -822,7 +824,17 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
     }
     case "note":
       /* La DERNIÈRE note de suivi (recruiter_notes), avec sa date — pas la
-         note de relance, qui passe au survol de la colonne Relance. */
+         note de relance, qui passe au survol de la colonne Relance.
+         Notes encore en route (seconde lecture, correctif 2026-10-16) : un
+         indicateur discret, JAMAIS une cellule vide qui dirait « aucune note ». */
+      if (card.derniere_note_etat === "chargement") {
+        return (
+          <span role="status" aria-label="Chargement de la note" title="Chargement de la note…" className="block h-2.5 w-24 animate-pulse rounded-full bg-[#2a2d36]" />
+        );
+      }
+      if (card.derniere_note_etat === "erreur") {
+        return <span className="text-[12px] text-[#6b7280]" title="Les dernières notes n'ont pas pu être chargées">Note non chargée</span>;
+      }
       return card.derniere_note ? (
         <span className="line-clamp-2 leading-snug text-[#9CA3AF]" title={card.derniere_note.content}>
           <span className="font-semibold text-[#6b7280]">{formatDateNote(card.derniere_note.created_at, now)}{card.derniere_note.auteur ? ` · ${card.derniere_note.auteur}` : ""} — </span>
@@ -1912,7 +1924,7 @@ function PipelinePageContent() {
   const sportParam = choixSport && choixSport !== TOUS && choixSport !== SANS_SPORT ? choixSport : null;
   const toutCegep = choixSport === TOUS;
   const { data: donneesDemo } = usePipelineCards({ enabled: isFreeDemoMode });
-  const { data: donneesUnite } = useProcessusUnite({
+  const { data: donneesUnite, error: erreurUnite, reessayer: reessayerUnite, notes: notesUnite } = useProcessusUnite({
     enabled: modeUnite && (!adminCegep || filtreSport.pret),
     sportId: sportParam,
     toutLeCegep: toutCegep,
@@ -2241,37 +2253,23 @@ function PipelinePageContent() {
 
       /* Tableau blanc (lot B2) : les notes de l'UNITÉ (la RLS les rend à un
          Pro), chacune signée : « date — Auteur — texte ». */
+      /* Cartes prospect (lot C) : leurs notes, signées de la même façon.
+         UNE lecture (processus_notes_export, correctif 2026-10-16) : les
+         identifiants voyagent dans le corps de l'appel — l'ancienne lecture
+         .in(...) les mettait dans l'adresse (export des Lauréats en échec) et
+         plafonnait à 1000 notes sans le dire. */
       const ids = lignesExport.map((c) => c.id);
-      const [{ data: lignesNotes, error: errNotes }, { data: auteurs }] = await Promise.all([
-        supabase
-          .from("recruiter_notes")
-          .select("athlete_id, content, created_at, recruiter_id")
-          .in("athlete_id", ids)
-          .order("created_at", { ascending: true }),
+      const idsCartes = lignesExport.filter((c) => estCarte(c)).map((c) => c.id);
+      const [{ data: notesExport, error: errNotes }, { data: auteurs, error: errAuteurs }] = await Promise.all([
+        supabase.rpc("processus_notes_export", { p_athletes: ids, p_cartes: idsCartes }),
         supabase.rpc("unite_auteurs"),
       ]);
-      if (errNotes) { showToast("Export impossible : notes de suivi illisibles"); return; }
+      if (errNotes || errAuteurs || !notesExport) { showToast("Export impossible : les notes de suivi n'ont pas pu être lues. Réessaie."); return; }
       const nomPar: Record<string, string> = {};
       for (const a of (auteurs ?? []) as { id: string; first_name: string | null; last_name: string | null }[]) {
         nomPar[a.id] = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim() || "Recruteur";
       }
-      const notesPar: Record<string, string[]> = {};
-      for (const n of (lignesNotes ?? []) as { athlete_id: string; content: string; created_at: string; recruiter_id: string }[]) {
-        (notesPar[n.athlete_id] ??= []).push(`${dateLocale(n.created_at)} — ${nomPar[n.recruiter_id] ?? "Recruteur"} — ${n.content}`);
-      }
-      // Cartes prospect (lot C) : leurs notes, signées de la même façon.
-      const idsCartes = lignesExport.filter((c) => estCarte(c)).map((c) => c.id);
-      if (idsCartes.length > 0) {
-        const { data: notesCartes, error: errCartes } = await supabase
-          .from("cartes_prospect_notes")
-          .select("carte_id, contenu, created_at, auteur")
-          .in("carte_id", idsCartes)
-          .order("created_at", { ascending: true });
-        if (errCartes) { showToast("Export impossible : notes des cartes illisibles"); return; }
-        for (const n of (notesCartes ?? []) as { carte_id: string; contenu: string; created_at: string; auteur: string | null }[]) {
-          (notesPar[n.carte_id] ??= []).push(`${dateLocale(n.created_at)} — ${(n.auteur && nomPar[n.auteur]) || "Recruteur"} — ${n.contenu}`);
-        }
-      }
+      const notesPar = notesParLigne(notesExport as NotesExport, (id) => (id && nomPar[id]) || "Recruteur", dateLocale);
 
       const { error: errJournal } = await supabase.from("pipeline_exports").insert({ nb_lignes: lignesExport.length });
       if (errJournal) { showToast("Export annulé : il n'a pas pu être journalisé"); return; }
@@ -2459,6 +2457,15 @@ function PipelinePageContent() {
       {/* §40 (lot B2, étape 3) : un autre sport, ou tout le cégep, se lit sans
           s'écrire — dit en tête de page, pas seulement dans le panneau. */}
       {adminCegep && <AvisLectureSeule filtre={filtreSport} />}
+
+      {/* Plus aucune erreur de lecture en silence (correctif 2026-10-16) :
+          les cartes, puis les dernières notes, chacune avec « Réessayer ». */}
+      {modeUnite && erreurUnite && (
+        <ErreurChargement message={MESSAGES_PROCESSUS.cartes(!!donneesUnite)} onReessayer={reessayerUnite} />
+      )}
+      {modeUnite && !erreurUnite && !!donneesUnite && notesUnite.erreur && (
+        <ErreurChargement message={MESSAGES_PROCESSUS.notes} onReessayer={notesUnite.reessayer} />
+      )}
 
       {/* Rétention des cartes prospect (lot C, décision BP) : avis 30 jours
           avant la suppression automatique, faute d'activité. Calculé ici,
