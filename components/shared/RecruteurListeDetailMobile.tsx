@@ -25,6 +25,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 
 /* ── ListAthleteCardMobile ─────────────────────────────────────
@@ -549,7 +550,7 @@ function StatsBar({
 function DetailInner({ listId }: { listId: string }) {
   const router = useRouter();
   const toast = useMobileToast();
-  const { list, athletes, isLoading, stats } = useListAthletes(listId);
+  const { list, athletes, isLoading, stats, error: erreurListe, reessayer } = useListAthletes(listId);
   const removeMut = useRemoveListMember();
   const deleteMut = useDeleteList();
 
@@ -714,6 +715,14 @@ function DetailInner({ listId }: { listId: string }) {
                 <div key={i} className="h-[132px] rounded-2xl bg-[#1A1D24] animate-pulse" />
               ))}
             </div>
+          ) : erreurListe ? (
+            /* Plus jamais une liste « vide » quand la lecture a échoué
+               (correctif 2026-10-16) : on le dit, avec « Réessayer ». */
+            <ErreurChargement
+              className="mt-4"
+              message="Cette liste n'a pas pu être chargée. Vérifie ta connexion, puis réessaie."
+              onReessayer={() => { triggerHaptic("Light"); reessayer(); }}
+            />
           ) : athletes.length === 0 ? (
             <EmptyState onAdd={() => { triggerHaptic("Light"); setAddAthleteOpen(true); }} />
           ) : (

@@ -512,7 +512,7 @@ export function RecruteurCalendrierMobile() {
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = useCalendrierUnite(!isFree && !tierLoading);
+  const { data, isLoading, isError, refetch } = useCalendrierUnite(!isFree && !tierLoading);
   const { data: regions = [] } = useRegions();
   const { data: lists = [] } = useListesUnite(!isFree && !tierLoading);
   const { data: posData } = usePositionsBySport(filters.sport || null);
@@ -727,8 +727,15 @@ export function RecruteurCalendrierMobile() {
               <div className="mt-6 rounded-2xl border border-[#262A33] bg-[#1A1D24] px-6 py-12 text-center">
                 <h3 className="mb-2 text-[18px] font-bold text-[#EDEFF3]">Calendrier momentanément indisponible</h3>
                 <p className="mx-auto max-w-[420px] text-[14px] text-[#8A909C]">
-                  Les matchs n&apos;ont pas pu être chargés. Réessayez dans un moment.
+                  Les matchs n&apos;ont pas pu être chargés. Vérifie ta connexion, puis réessaie.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => { void refetch(); }}
+                  className="mt-5 h-11 rounded-xl bg-[#E63946] px-5 text-[13px] font-bold uppercase tracking-widest text-white active:bg-[#D42B22]"
+                >
+                  Réessayer
+                </button>
               </div>
             ) : view === "list" ? (
               semaines.length === 0 ? (

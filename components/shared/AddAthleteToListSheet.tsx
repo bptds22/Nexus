@@ -22,6 +22,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { lireCartes, ajouterCarteAListe } from "@/lib/cartes/carteProspect";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 
 export interface AddAthleteToListSheetProps {
@@ -79,6 +80,8 @@ export function AddAthleteToListSheet({
   // d'unité comme un athlète — parité avec AddAthleteModal (web).
   const [cartes, setCartes] = useState<Candidate[]>([]);
   const [cartesLoading, setCartesLoading] = useState(!!(uniteCegepId && uniteSportId));
+  const [erreurCartes, setErreurCartes] = useState(false);
+  const [essaiCartes, setEssaiCartes] = useState(0);
   useEffect(() => {
     if (!uniteCegepId || !uniteSportId) { setCartes([]); setCartesLoading(false); return; }
     let annule = false;
@@ -92,10 +95,12 @@ export function AddAthleteToListSheet({
         const sportIds = [...new Set(lignes.map((l) => l.sport_athlete_id))];
         const nomsSports = new Map<string, string>();
         if (sportIds.length > 0) {
-          const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          const { data: sports, error: errSports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+          if (errSports) throw errSports;
           for (const s of (sports ?? []) as { id: string; nom: string }[]) nomsSports.set(s.id, s.nom);
         }
         if (annule) return;
+        setErreurCartes(false);
         setCartes(lignes.map((l): Candidate => ({
           id: l.id,
           fullName: `${l.prenom} ${l.nom}`.trim(),
@@ -112,13 +117,16 @@ export function AddAthleteToListSheet({
           isProspect: true,
         })));
       } catch (e) {
+        // Correctif 2026-10-16 : on le DIT (bandeau + « Réessayer »), au lieu
+        // d'une feuille sans cartes qui laissait croire qu'il n'y en avait pas.
         console.error("[AddAthleteToListSheet] cartes prospect :", e instanceof Error ? e.message : String(e));
+        if (!annule) setErreurCartes(true);
       } finally {
         if (!annule) setCartesLoading(false);
       }
     })();
     return () => { annule = true; };
-  }, [uniteCegepId, uniteSportId]);
+  }, [uniteCegepId, uniteSportId, essaiCartes]);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -236,6 +244,15 @@ export function AddAthleteToListSheet({
               </span>
               <div className="w-9" />
             </div>
+
+            {erreurCartes && (
+              <div className="px-4 pt-3">
+                <ErreurChargement
+                  message="Les cartes prospect de l'unité n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+                  onReessayer={() => { triggerHaptic("Light"); setErreurCartes(false); setEssaiCartes((n) => n + 1); }}
+                />
+              </div>
+            )}
 
             {/* Search bar */}
             <div className="px-4 pt-3 pb-2">
