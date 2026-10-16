@@ -5,7 +5,7 @@
 //
 // La base a DÉJÀ décidé (trigger cartes_prospect_inviter, à la création de la
 // carte ou à l'ajout de son courriel) : ici on ne fait qu'envoyer une ligne
-// A_ENVOYER, UNE fois, au nom de son signataire.
+// A_ENVOYER, UNE fois — texte neutre, aucun nom (règle RSEQ, 2026-10-16).
 //
 // UNE FOIS, EN TROIS COUCHES :
 //   1. la ligne n'existe qu'à la création (trigger AFTER INSERT), au plus une
