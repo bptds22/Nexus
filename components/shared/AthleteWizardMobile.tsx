@@ -271,6 +271,16 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   /* D1 — « même identité » : même nom + même date de naissance qu'une fiche que
      ce coach VOIT déjà (RLS). Montrée une fois par identité, comme le web. */
   const [memeIdentite, setMemeIdentite] = useState<AthleteMemeIdentite[]>([]);
+  /* L'avertissement est rendu sous le pli, derrière le bouton fixe : le retour
+     à l'écran 1 le laissait invisible (relevé émulateur 1.4.5). On l'amène au
+     centre dès qu'il paraît. */
+  useEffect(() => {
+    if (memeIdentite.length === 0) return;
+    const t = window.setTimeout(() => {
+      document.getElementById("nx-meme-identite")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [memeIdentite]);
   const identiteVerifiee = useRef<string | null>(null);
   const [inviteMemeIdentite, setInviteMemeIdentite] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
   const [openTransfertTeamPicker, setOpenTransfertTeamPicker] = useState(false);
@@ -1748,6 +1758,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         )}
         {/* D1 — MÊME IDENTITÉ : masquée dès que le nom ou la date change. */}
         {isCreate && memeIdentite.length > 0 && identiteVerifiee.current === cleIdentite(d.firstName, d.lastName, d.dateOfBirth) && (
+          <div id="nx-meme-identite">
           <MemeIdentiteAvertissement
             athletes={memeIdentite}
             onContinuer={() => { void triggerHaptic("Light"); setMemeIdentite([]); }}
@@ -1789,6 +1800,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               </>
             )}
           />
+          </div>
         )}
         {isCreate && linkedToExisting && (
           <div className="p-3 rounded-2xl bg-[#1A1D24] border border-[#E63946]/30">

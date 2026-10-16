@@ -147,3 +147,10 @@ test("liste coach mobile : « à réclamer » et fiches masquées bâtis sur les
   // L'étiquette en grille aussi (la carte web la porte).
   assert.equal((src.match(/\{!nomPresentable\(a\) && <div className="mt-1"><EtiquetteNomAConfirmer a=\{a\} \/><\/div>\}/g) ?? []).length, 2);
 });
+
+test("assistant coach mobile : l'avertissement « même identité » vient à l'écran", () => {
+  const src = lire("components/shared/AthleteWizardMobile.tsx");
+  assert.match(src, /<div id="nx-meme-identite">\s*<MemeIdentiteAvertissement/);
+  assert.match(src, /document\.getElementById\("nx-meme-identite"\)\?\.scrollIntoView\(\{ behavior: "smooth", block: "center" \}\);/);
+  assert.match(src, /\}, \[memeIdentite\]\);/);
+});
