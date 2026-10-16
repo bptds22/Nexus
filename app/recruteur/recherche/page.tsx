@@ -15,6 +15,7 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { useAthleteSearch, coteAffichee } from "@/lib/queries/recruiter/useAthleteSearch";
+import { libelleCotePartenaire } from "@/lib/evaluations/coteCarte";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
@@ -145,8 +146,8 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
             ))}
           </div>
           {cote.organisation && (
-            <span className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85 max-w-[150px] truncate">
-              {cote.organisation}
+            <span data-cote-partenaire className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85 max-w-[170px] truncate">
+              {libelleCotePartenaire(cote.organisation)}
             </span>
           )}
         </div>
@@ -308,8 +309,8 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
             ))}
             <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{cote.valeur.toFixed(1)}</span>
             {cote.organisation && (
-              <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] truncate max-w-[110px]">
-                · {cote.organisation}
+              <span data-cote-partenaire className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] truncate max-w-[140px]">
+                · {libelleCotePartenaire(cote.organisation)}
               </span>
             )}
           </div>

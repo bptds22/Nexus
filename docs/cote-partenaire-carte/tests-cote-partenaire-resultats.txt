@@ -1,0 +1,641 @@
+﻿              set_config              
+--------------------------------------
+ 66666666-0000-0000-0000-00000000000a
+
+              set_config              
+--------------------------------------
+ 455bd55d-0416-4411-88fa-775354975e85
+
+              set_config              
+--------------------------------------
+ eeeeeeee-0000-0000-0000-0000000000aa
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c9001
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7001
+
+              set_config              
+--------------------------------------
+ 33333333-0000-0000-0000-0000000000b1
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c7008
+
+              set_config              
+--------------------------------------
+ 842da8f6-41bf-4b75-bc72-83afc68bfe1c
+
+              set_config              
+--------------------------------------
+ 082fdf2b-bb33-43a8-b5ca-9a37f67f4c1a
+
+              set_config              
+--------------------------------------
+ 5d719dfb-6cab-4988-bec7-250284a899c5
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-0000000c2012
+
+              set_config              
+--------------------------------------
+ d3a00000-0000-4000-8000-00000000a001
+
+              set_config              
+--------------------------------------
+ 4b859bf1-5832-4258-897c-e094062926af
+
+              set_config              
+--------------------------------------
+ ff88ed38-aabc-45d9-b472-7baae131d016
+
+                                          set_config                                           
+-----------------------------------------------------------------------------------------------
+ array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]
+
+ set_config 
+------------
+ 2026-08-v1
+
+                                                                                                                  set_config                                                                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select (select count(*) from public.cotes_partenaires_athletes(array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]))::text || '|' ||                                                              +
+    ((select coalesce(string_agg(id::text || organisation || cote_globale::text, ',' order by id), '') from public.cotes_partenaires_athletes(array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]))+
+     = (select coalesce(string_agg(e.id::text || e.organisation || e.cote_globale::text, ',' order by e.id), '')                                                                                                                             +
+          from unnest(array['d3a00000-0000-4000-8000-0000000c2012', 'd3a00000-0000-4000-8000-00000000a001']::uuid[]) x cross join lateral public.evaluations_partenaires_athlete(x) e))::text
+
+                                                         set_config                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ select (select count(*) from public.evaluations_partenaires_athlete('d3a00000-0000-4000-8000-0000000c2012'))::text || '|'  +
+    || (select count(*) from public.badges_partenaires_athlete('d3a00000-0000-4000-8000-0000000c2012'))::text || '|'        +
+    || (select count(*) from public.cotes_partenaires_athletes(array['d3a00000-0000-4000-8000-0000000c2012']::uuid[]))::text
+
+                                                                                       set_config                                                                                        
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select coalesce((select cote_partenaire::text from public.recruiter_search_athletes(p_inclure_partenaires => true) where id = 'd3a00000-0000-4000-8000-0000000c2012'), 'absent') || '|'+
+    || (select count(*) from public.recruiter_search_athletes(p_min_rating => 3, p_inclure_partenaires => true) where id = 'd3a00000-0000-4000-8000-0000000c2012')::text || '|'         +
+    || coalesce((select (r.cote_globale is null and r.cote_partenaire is not null)::text                                                                                                +
+                   from public.recruiter_search_athletes(p_sort_by => 'rating_desc', p_inclure_partenaires => true) r where r.id = 'd3a00000-0000-4000-8000-0000000c2012'), 'absent')
+
+                                                                                                    set_config                                                                                                     
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ with c as (select public.partenaire_prospect_enregistrer(null, %L, %L, %L::uuid, null, null, null, 2027, true, %s, %L::jsonb, %L::uuid[], %L::uuid[]) as id) insert into _ids select %L, id from c returning 'ok'
+
+                                                           set_config                                                           
+--------------------------------------------------------------------------------------------------------------------------------
+ with j as (select public.partenaire_prospect_lien(%L) as t) insert into _jet select %L, t from j returning length(jeton)::text
+
+                                                         set_config                                                         
+----------------------------------------------------------------------------------------------------------------------------
+ select coalesce(string_agg(case n.metadata->>'partner_id' when %L then 'p1' when %L then 'p2' else '?' end                +
+             || ':' || (n.metadata->>'etat') || ':' || jsonb_array_length(n.metadata->'cartes'), ',' order by 1), 'aucune')+
+        from public.athlete_notifications n where n.athlete_id = %L and n.type = 'PARTENAIRE_VISIBILITE_DEMANDE'
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ set_config 
+------------
+ Botteur|K
+
+ set_config 
+------------
+ Félix
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ file_traitee 
+--------------
+ t
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ file_traitee 
+--------------
+ t
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+ essai 
+-------
+ 
+
+  n  | verdict |                                                       test                                                       |                                                                                                                                                                                                                                                                                                                                                                                        detail                                                                                                                                                                                                                                                                                                                                                                                         
+-----+---------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   1 | OK      | A1 Félix active la visibilité partenaire                                                                         | true (attendu true)
+   2 | OK      | A2 p1 évalue Félix (4)                                                                                           | true (attendu true)
+   3 | OK      | A3 p2 évalue Félix (3)                                                                                           | true (attendu true)
+   4 | OK      | A4 p1 remet son badge propre à Félix                                                                             | true (attendu true)
+   5 | OK      | A5 p1 remet le badge Nexus Vitesse à Félix                                                                       | true (attendu true)
+   6 | OK      | A6 p1 ne peut pas évaluer Mathis (pas d'opt-in)                                                                  | ERR:42501 (attendu ERR:42501)
+   7 | OK      | B1 recruteur : lot identique à W2 (2 évaluations)                                                                | 2|true (attendu 2|true)
+   8 | OK      | B2 Félix lui-même : identique à W2                                                                               | 2|true (attendu 2|true)
+   9 | OK      | B3 Mathis (autre athlète) : rien                                                                                 | 0|true (attendu 0|true)
+  10 | OK      | B4 p1 : la sienne seulement                                                                                      | 1|true (attendu 1|true)
+  11 | OK      | B5 admin : tout                                                                                                  | 2|true (attendu 2|true)
+  12 | OK      | B6 lot vide ou NULL : aucune ligne                                                                               | 0 (attendu 0)
+  13 | OK      | B7 doublons dans le lot : pas de lignes doublées                                                                 | 2 (attendu 2)
+  14 | OK      | B8 VISIBLE recruteur : évals|badges|lot                                                                          | 2|2|2 (attendu 2|2|2)
+  15 | OK      | B9 VISIBLE coach de Félix                                                                                        | 2|2|2 (attendu 2|2|2)
+  16 | OK      | B10 VISIBLE Félix lui-même                                                                                       | 2|2|2 (attendu 2|2|2)
+  17 | OK      | B11 VISIBLE p1 (les siennes)                                                                                     | 1|2|1 (attendu 1|2|1)
+  18 | OK      | B12 VISIBLE p2 (la sienne)                                                                                       | 1|0|1 (attendu 1|0|1)
+  19 | OK      | B13 VISIBLE admin                                                                                                | 2|2|2 (attendu 2|2|2)
+  20 | OK      | B14 recherche : cote partenaire (la plus récente : p2, 3) | dans « 4+ » (seuil 3) | triée sur la cote partenaire | 3.00|1|true (attendu 3.00|1|true)
+  21 | OK      | B15 p1 : badges Nexus admissibles lisibles                                                                       | true (attendu true)
+  22 | OK      | C1 Félix retire sa visibilité                                                                                    | true (attendu true)
+  23 | OK      | C4a RETIRÉ recruteur : rien                                                                                      | 0|0|0 (attendu 0|0|0)
+  24 | OK      | C4b RETIRÉ coach de Félix : rien                                                                                 | 0|0|0 (attendu 0|0|0)
+  25 | OK      | C4c RETIRÉ Félix lui-même : rien                                                                                 | 0|0|0 (attendu 0|0|0)
+  26 | OK      | C4d RETIRÉ p1 (auteur) : rien                                                                                    | 0|0|0 (attendu 0|0|0)
+  27 | OK      | C4e RETIRÉ p2 (auteur) : rien                                                                                    | 0|0|0 (attendu 0|0|0)
+  28 | OK      | C4f RETIRÉ Mathis : rien                                                                                         | 0|0|0 (attendu 0|0|0)
+  29 | OK      | C4g RETIRÉ admin : TOUT (seule exception)                                                                        | 2|2|2 (attendu 2|2|2)
+  30 | OK      | C4h RETIRÉ recherche : pas de cote partenaire | hors « 4+ » | plus triée sur la cote partenaire                  | absent|0|false (attendu absent|0|false)
+  31 | OK      | C4i RETIRÉ p1 : badges Nexus admissibles refusés                                                                 | ERR:42501 (attendu ERR:42501)
+  32 | OK      | C4j RETIRÉ Mes athlètes de p1 : Félix absent                                                                     | 0 (attendu 0)
+  33 | OK      | C4k RETIRÉ : pas de relance au retrait (aucune demande)                                                          | aucune (attendu aucune)
+  34 | OK      | C5 rien n'est effacé : 2 évaluations, 2 badges en base                                                           | 2|2 (attendu 2|2)
+  35 | OK      | C6 Félix réactive                                                                                                | true (attendu true)
+  36 | OK      | C7 RÉACTIVÉ recruteur : tout réapparaît                                                                          | 2|2|2 (attendu 2|2|2)
+  37 | OK      | C8 RÉACTIVÉ recherche : cote, « 4+ » et tri reviennent                                                           | 3.00|1|true (attendu 3.00|1|true)
+  38 | OK      | C10 Félix DESACTIVE : lot vide pour le recruteur                                                                 | 0|true (attendu 0|true)
+  39 | OK      | C11 p2 suspendu : son évaluation cesse d'apparaître                                                              | 1|true (attendu 1|true)
+  40 | OK      | D1 p1 : badge_ref = id du catalogue (Nexus → badges.id, propre → partner_badges.id)                              | false:true,true:true (attendu false:true,true:true)
+  41 | OK      | D2 p1 : poste et poste_abr = la position de Félix                                                                | Botteur|K (attendu Botteur|K)
+  42 | OK      | D3 p1 : colonnes W4d inchangées (prénom, cote 4, 2 badges)                                                       | Félix|4.00|2 (attendu Félix|4.00|2)
+  43 | OK      | D4 recruteur : Mes athlètes vide                                                                                 | 0 (attendu 0)
+  44 | OK      | E1 p1 crée c1 « Mathis » (cote 4,5, badge propre + Vitesse)                                                      | ok (attendu ok)
+  45 | OK      | E2 lien c1                                                                                                       | 64 (attendu 64)
+  46 | OK      | E3 Mathis ouvre c1                                                                                               | Mathis (attendu Mathis)
+  47 | OK      | E4 Mathis : « c'est moi » → attente d'opt-in                                                                     | attente_optin (attendu attente_optin)
+  48 | OK      | E5 une demande p1 EN_ATTENTE                                                                                     | p1:EN_ATTENTE:1 (attendu p1:EN_ATTENTE:1)
+  49 | OK      | E6 texte : « Média Preuve t'a évalué. » + invitation, sans cote ni badge                                         | Média Preuve t'a évalué. / Accepte d'être visible des partenaires pour que ton évaluation s'affiche. / false (attendu Média Preuve t'a évalué. / Accepte d'être visible des partenaires pour que ton évaluation s'affiche. / false)
+  50 | OK      | E7 Mathis ne voit toujours RIEN de p1 (évaluation pas transférée, et pas visible)                                | 0 (attendu 0)
+  51 | OK      | E8 un push en file (genre VISIBILITE_PARTENAIRE, relié à la demande, sans cloche en double)                      | 1|true (attendu 1|true)
+  52 | OK      | E9 p1 crée c2 pour Mathis (cote 3)                                                                               | ok (attendu ok)
+  53 | OK      | E10 lien c2                                                                                                      | 64 (attendu 64)
+  54 | OK      | E11 Mathis ouvre c2                                                                                              | Mathis (attendu Mathis)
+  55 | OK      | E12 Mathis confirme c2                                                                                           | attente_optin (attendu attente_optin)
+  56 | OK      | E13 MÊME partenaire : toujours UNE demande, qui porte les 2 cartes                                               | p1:EN_ATTENTE:2 (attendu p1:EN_ATTENTE:2)
+  57 | OK      | E14 p2 crée c3 VIDE (ni cote ni badge)                                                                           | ok (attendu ok)
+  58 | OK      | E15 lien c3                                                                                                      | 64 (attendu 64)
+  59 | OK      | E16 Mathis ouvre c3                                                                                              | Mathis (attendu Mathis)
+  60 | OK      | E17 Mathis confirme c3                                                                                           | attente_optin (attendu attente_optin)
+  61 | OK      | E18 carte VIDE : rien à rendre visible, aucune demande de p2                                                     | p1:EN_ATTENTE:2 (attendu p1:EN_ATTENTE:2)
+  62 | OK      | E19 p2 crée c4 pour Mathis (cote 2)                                                                              | ok (attendu ok)
+  63 | OK      | E20 lien c4                                                                                                      | 64 (attendu 64)
+  64 | OK      | E21 Mathis ouvre c4                                                                                              | Mathis (attendu Mathis)
+  65 | OK      | E22 Mathis confirme c4                                                                                           | attente_optin (attendu attente_optin)
+  66 | OK      | E23 AUTRE partenaire : sa propre demande                                                                         | p1:EN_ATTENTE:2,p2:EN_ATTENTE:1 (attendu p1:EN_ATTENTE:2,p2:EN_ATTENTE:1)
+  67 | OK      | E24 file : demande p1 traitée normalement (non annulée), p2 encore en attente                                    | p1:SANS_JETON,p2:EN_ATTENTE (attendu p1:SANS_JETON,p2:EN_ATTENTE)
+  68 | OK      | E25 un autre compte ne peut pas accepter la demande de Mathis                                                    | introuvable (attendu introuvable)
+  69 | OK      | E26 sans session : rien à accepter                                                                               | introuvable (attendu introuvable)
+  70 | OK      | E27 Mathis (17 ans) ACCEPTE la demande de p1 → opt-in par le chemin existant                                     | ACCEPTEE (attendu ACCEPTEE)
+  71 | OK      | E28 les DEUX demandes réglées (le jeune est visible)                                                             | p1:ACCEPTEE:2,p2:ACCEPTEE:1 (attendu p1:ACCEPTEE:2,p2:ACCEPTEE:1)
+  72 | OK      | E29 transfert fait (W4a) : les évaluations de p1 et p2 sont visibles du recruteur                                | 2 (attendu 2)
+  73 | OK      | E30 accepter de nouveau : déjà traitée                                                                           | deja_traitee (attendu deja_traitee)
+  74 | OK      | E31 file : le push p2 est ANNULÉ (demande acceptée avant son départ)                                             | p1:SANS_JETON,p2:ANNULE (attendu p1:SANS_JETON,p2:ANNULE)
+  75 | OK      | F1 Félix retire de nouveau sa visibilité                                                                         | true (attendu true)
+  76 | OK      | F2 p2 crée c5 « Félix » (cote 5)                                                                                 | ok (attendu ok)
+  77 | OK      | F3 lien c5                                                                                                       | 64 (attendu 64)
+  78 | OK      | F4 Félix ouvre c5                                                                                                | Félix (attendu Félix)
+  79 | OK      | F5 Félix confirme c5                                                                                             | attente_optin (attendu attente_optin)
+  80 | OK      | F6 a RETIRÉ + NOUVELLE évaluation : UNE demande                                                                  | p2:EN_ATTENTE:1 (attendu p2:EN_ATTENTE:1)
+  81 | OK      | F7 p1 crée c6 « Félix »                                                                                          | ok (attendu ok)
+  82 | OK      | F8 lien c6                                                                                                       | 64 (attendu 64)
+  83 | OK      | F9 Félix ouvre c6                                                                                                | Félix (attendu Félix)
+  84 | OK      | F10 Félix confirme c6                                                                                            | attente_optin (attendu attente_optin)
+  85 | OK      | F11 a RETIRÉ : pas de 2e relance, même d'un autre partenaire                                                     | p2:EN_ATTENTE:1 (attendu p2:EN_ATTENTE:1)
+  86 | OK      | F12 Félix (13 ans) accepte sans parent lié → parent_absent, demande toujours ouverte                             | parent_absent|EN_ATTENTE (attendu parent_absent|EN_ATTENTE)
+  87 | OK      | F13 parent lié : « Accepter » lance la DEMANDE AU PARENT (pas d'activation)                                      | DEMANDE_PARENT (attendu DEMANDE_PARENT)
+  88 | OK      | F14 Félix toujours invisible ; un avis au parent, sans cote ni badge, vers Consentements                         | false|1|true|/parent/consentements (attendu false|1|true|/parent/consentements)
+  89 | OK      | F15 le parent lit la demande (sa cloche)                                                                         | 1 (attendu 1)
+  90 | OK      | F16 le parent donne son accord (chemin existant set_child_consent)                                               | true (attendu true)
+  91 | OK      | F17 la demande se règle seule : ACCEPTEE                                                                         | p2:ACCEPTEE:1 (attendu p2:ACCEPTEE:1)
+  92 | OK      | F18 tout réapparaît pour le recruteur (une évaluation par partenaire)                                            | 2|2|2 (attendu 2|2|2)
+  93 | OK      | F19 W4a « déjà évalué » : les évaluations existantes de p1 (4) et p2 (3) sont gardées                            | 3.00,4.00 (attendu 3.00,4.00)
+  94 | OK      | G1 p1 crée c7 « Félix »                                                                                          | ok (attendu ok)
+  95 | OK      | G2 lien c7                                                                                                       | 64 (attendu 64)
+  96 | OK      | G3 Félix ouvre c7                                                                                                | Félix (attendu Félix)
+  97 | OK      | G4 Félix confirme c7                                                                                             | attente_optin (attendu attente_optin)
+  98 | OK      | G5 carte disparue (échéance, annulation) : demande CADUQUE                                                       | p1:CADUQUE:1 (attendu p1:CADUQUE:1)
+  99 | OK      | H1 anon : lot refusé                                                                                             | ERR:42501 (attendu ERR:42501)
+ 100 | OK      | H2 anon : Mes athlètes refusée                                                                                   | ERR:42501 (attendu ERR:42501)
+ 101 | OK      | H6 anon : « Accepter » refusé                                                                                    | ERR:42501 (attendu ERR:42501)
+ 102 | OK      | H3 les fonctions internes de la demande ne sont pas appelables                                                   | ERR:42501 (attendu ERR:42501)
+ 103 | OK      | H4 ACL complètes                                                                                                 | accepter_visibilite_partenaire=authenticated,postgres,service_role;badges_partenaires_athlete=authenticated,postgres,service_role;cotes_partenaires_athletes=authenticated,postgres,service_role;evaluations_partenaires_athlete=authenticated,postgres,service_role;partenaire_demander_visibilite=postgres,service_role;partenaire_mes_athletes=authenticated,postgres,service_role (attendu accepter_visibilite_partenaire=authenticated,postgres,service_role;badges_partenaires_athlete=authenticated,postgres,service_role;cotes_partenaires_athletes=authenticated,postgres,service_role;evaluations_partenaires_athlete=authenticated,postgres,service_role;partenaire_demander_visibilite=postgres,service_role;partenaire_mes_athletes=authenticated,postgres,service_role)
+ 104 | OK      | H5 le lot est INVOKER, Mes athlètes DEFINER                                                                      | cotes_partenaires_athletes=false,partenaire_mes_athletes=true (attendu cotes_partenaires_athletes=false,partenaire_mes_athletes=true)
+
+ ok  | echecs 
+-----+--------
+ 104 |      0
+

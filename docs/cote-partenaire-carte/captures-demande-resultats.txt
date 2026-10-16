@@ -1,0 +1,17 @@
+préparation : p1 évaluateur ; Alex (adulte) et Noa (13 ans, parent lié) sans opt-in — jetables
+Alex confirme la carte : attente_optin
+recruteur, AVANT acceptation : évaluations partenaires d'Alex : 0
+cloche : texte = ["Média Preuve t'a évalué.",""] | aucun chiffre de cote : true
+après « Accepter » : Accepte d'être visible des partenaires pour que ton évaluation s'affiche.
+recruteur, APRÈS acceptation : évaluations partenaires d'Alex : 1
+après RETRAIT : libellé partenaire sur la carte : 0 | section partenaire : 0 | lecture W2 recruteur : 0
+après RETRAIT : lecture W2 admin : 1
+Noa confirme la carte : attente_optin
+Noa après « Accepter » : Accepte d'être visible des partenaires pour que ton évaluation s'affiche.
+Noa : opt-in activé directement ? false (attendu false : c'est au parent)
+parent : demande = ["Demande de visibilité partenaires",""] | sans cote : true
+parent : clic →  /parent/consentements
+remise en état : compte jetable supprimé : 200
+remise en état : compte jetable supprimé : 200
+remise en état : p1 {"peut_evaluer":false,"status":"APPROVED"} | évaluations partenaires 0 | cartes p1 0 | demandes 0
+erreurs JavaScript des pages : aucune

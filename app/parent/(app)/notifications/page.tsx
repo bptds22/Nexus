@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { TYPE_DEMANDE_PARENT } from "@/lib/partenaires/demandeVisibilite";
 
 /* ═══════════════════════════════════════════════════════════════
    Portal parental — Lot 1c. Page Notifications (web only).
@@ -10,11 +12,14 @@ import { createClient } from "@/lib/supabase/client";
    Liste antéchronologique (50 dernières) des parent_notifications du
    parent (RLS restreint aux siennes). Marquer lu au clic + tout marquer lu.
    Tout est ANONYME (title/message générés côté trigger, sans identité).
+   Exception qui MÈNE quelque part (2026-10-16) : la demande de visibilité
+   partenaires de l'enfant (CHILD_PARTNER_VISIBILITY_REQUEST) ouvre
+   Consentements, où le parent donne — ou non — son accord.
    ═══════════════════════════════════════════════════════════════ */
 
 interface Notif {
   id: string;
-  type: "CHILD_FAVORITED" | "CHILD_PIPELINE_STAGE" | "CHILD_VISIT_PLANNED" | string;
+  type: "CHILD_FAVORITED" | "CHILD_PIPELINE_STAGE" | "CHILD_VISIT_PLANNED" | "CHILD_PARTNER_VISIBILITY_REQUEST" | string;
   title: string;
   message: string | null;
   read: boolean;
@@ -24,6 +29,9 @@ interface Notif {
 const card = "bg-[#1A1D24] border border-white/5 rounded-xl";
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
+  CHILD_PARTNER_VISIBILITY_REQUEST: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+  ),
   CHILD_FAVORITED: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
   ),
@@ -36,6 +44,7 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 };
 
 export default function ParentNotificationsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Notif[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -113,7 +122,8 @@ export default function ParentNotificationsPage() {
       ) : (
         <div className="space-y-2">
           {items.map((n) => (
-            <button key={n.id} type="button" onClick={() => markRead(n.id)}
+            <button key={n.id} type="button" data-type={n.type}
+              onClick={() => { markRead(n.id); if (n.type === TYPE_DEMANDE_PARENT) router.push("/parent/consentements"); }}
               className={`${card} w-full text-left px-4 py-3.5 flex items-start gap-3.5 transition-colors hover:border-white/10 ${n.read ? "opacity-70" : ""}`}>
               <span className={`shrink-0 mt-0.5 ${n.read ? "text-[#6B7280]" : "text-[#E63946]"}`}>
                 {TYPE_ICON[n.type] ?? TYPE_ICON.CHILD_PIPELINE_STAGE}

@@ -1,0 +1,26 @@
+﻿PREUVE LOCALE — lot 20261016170000 — 2026-10-16T14:02:52
+
+== 0. Fichier testé et lots ==
+  md5 fichier migration : 1ee801ea4be50260434b4a198ff4fd2d
+  md5 lot-prod.sql      : c0919992e1cd5bc0a34ccc04abb5cd49
+  état de départ (lot retiré par le rollback ; W2 = 33d0544f, W4d = 71a92e78) : lot_fn=0 accepter_fn=0 eval_w2_md5=33d0544f mes_athletes_md5=71a92e78 version=0 evals_partenaires=0
+
+== 1. Une garde qui échoue À LA FIN annule tout (variante : empreinte attendue fausse) ==
+  réponse : ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte 386e556c5e11b483441b9063f694dae8 / 19 éléments) — tout est annulé
+  état après : lot_fn=0 accepter_fn=0 eval_w2_md5=33d0544f mes_athletes_md5=71a92e78 version=0 evals_partenaires=0
+
+== 2. Instructions envoyées SÉPARÉMENT (pas une transaction) : arrêt avant toute écriture ==
+  réponse : psql:/tmp/lot.sql:26: ERROR:  NEXUS LOT: les instructions ne partagent pas une seule transaction — arrêt avant toute écriture
+  état après : lot_fn=0 accepter_fn=0 eval_w2_md5=33d0544f mes_athletes_md5=71a92e78 version=0 evals_partenaires=0
+
+== 3. Le lot réel, en UN message ==
+  réponse : {"avant" : {"donnees":"0|0|0|6|6|48","version_deja":0,"derniere_version":"20261016150000","pg":"17.6"}, "apres" : {"donnees" : "0|0|0|6|6|48", "version" : "20261016170000", "md5_enregistre" : "1ee801ea4be50260434b4a198ff4fd2d", "demandes_creees|cartes_en_attente" : "0|0", "fonctions" : 5, "meme_transaction" : true}}
+  état après : lot_fn=1 accepter_fn=1 eval_w2_md5=a1fe334a mes_athletes_md5=299aea32 version=1 evals_partenaires=0
+  empreinte des objets en base : 386e556c5e11b483441b9063f694dae8|19
+
+== 4. Le même lot une 2e fois : refusé, rien ne change ==
+  réponse : ERROR:  NEXUS LOT: 20261016170000 déjà présente — rien n'est appliqué
+  état après : lot_fn=1 accepter_fn=1 eval_w2_md5=a1fe334a mes_athletes_md5=299aea32 version=1 evals_partenaires=0
+
+== 5. Tests au banc sur la base issue du lot ==
+  104|0   (ok | échecs)

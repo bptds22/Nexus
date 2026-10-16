@@ -1,0 +1,19 @@
+préparation : p1 évaluateur (football, 1 badge propre) ; Alex (sans coach), Sam (coach 5 ), Zoé (rien) — adultes jetables
+p1 : Alex 4/5 + « Esprit sportif » + Vitesse ; Sam 2/5 + Vitesse
+recruteur, lot : [["Alex","Média Preuve",4],["Sam","Média Preuve",2]]
+recherche grille : « Évaluation Média Preuve » : true | une seule fois (Alex, pas Sam) : 1
+recherche ligne : libellé présent : true
+favoris : libellé : true | occurrences : 1
+fiche Alex : libellé sur la carte : true
+fiche Sam (coach 5) : aucun libellé partenaire sur la carte : true | ligne partenaire dans le bloc du coach : true
+aperçu (Alex lui-même) : libellé : true
+Mes athlètes : compte : 2 athlètes
+recherche « quart » : Alex : true | Sam absent : true | 1 sur 2
+Distinctions = Esprit sportif : Alex : true | Sam absent : true | 1 sur 2
+« Tout » : bouton = true | compte : 2 athlètes
+combinés « sam » + Esprit sportif : aucun : true
+remise en état : compte jetable supprimé : 200
+remise en état : compte jetable supprimé : 200
+remise en état : compte jetable supprimé : 200
+remise en état : p1 {"peut_evaluer":false,"status":"APPROVED"} | évaluations partenaires 0 | badges partenaires 0 | favoris jetables 0
+erreurs JavaScript des pages : aucune
