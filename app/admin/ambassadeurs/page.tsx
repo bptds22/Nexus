@@ -2,6 +2,8 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    /admin/ambassadeurs — la contrepartie administrative du programme.
@@ -83,6 +85,9 @@ const dateCourte = (iso: string) =>
 export default function AdminAmbassadeursPage() {
   const [classement, setClassement] = useState<Ambassadeur[]>([]);
   const [chargement, setChargement] = useState(true);
+  /** Lecture en échec (correctif 2026-10-16) : bandeau + « Réessayer », au
+   *  lieu d'un classement vide ou périmé affiché sans un mot. */
+  const [erreurLecture, setErreurLecture] = useState(false);
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -95,25 +100,27 @@ export default function AdminAmbassadeursPage() {
      permet à l'effet de poser l'état dans un callback plutôt que dans son
      corps synchrone (react-hooks/set-state-in-effect), et d'annuler au
      démontage. */
-  const lire = useCallback(async (): Promise<Ambassadeur[] | null> => {
+  /* Correctif 2026-10-16 : toutes les lignes (lireTout), aucun identifiant
+     dans l'adresse (fonctions *_par_ids, ou table lue en entier puis filtrée),
+     et une erreur LEVÉE — l'écran l'affiche. */
+  const lire = useCallback(async (): Promise<Ambassadeur[]> => {
     const supabase = createClient();
     const depuis = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
 
-    const [{ data: revs, error }, { data: clics }] = await Promise.all([
-      supabase
+    const [lignes, clics] = await Promise.all([
+      lireTout<Revendication>((de, a) => supabase
         .from("ambassadeur_revendications")
-        .select("id, parrain_athlete_id, prenom, statut, methode, created_at, raison_rejet, filleul_user_id")
-        .order("created_at", { ascending: false }),
-      supabase.from("ambassadeur_liens_clics").select("athlete_id, jour, n").gt("jour", depuis),
+        .select("id, parrain_athlete_id, prenom, statut, methode, created_at, raison_rejet, filleul_user_id", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(de, a)),
+      lireTout<{ athlete_id: string; n: number }>((de, a) => supabase
+        .from("ambassadeur_liens_clics").select("athlete_id, jour, n", { count: "exact" }).gt("jour", depuis)
+        .order("athlete_id").order("jour").range(de, a)),
     ]);
 
-    if (error) {
-      console.error("[AdminAmbassadeurs] lecture:", error.message);
-      return null;
-    }
-    const lignes = (revs ?? []) as unknown as Revendication[];
     const clicsPar = new Map<string, number>();
-    for (const c of (clics ?? []) as { athlete_id: string; n: number }[]) {
+    for (const c of clics) {
       clicsPar.set(c.athlete_id, (clicsPar.get(c.athlete_id) ?? 0) + c.n);
     }
 
@@ -123,25 +130,34 @@ export default function AdminAmbassadeursPage() {
     if (ids.length === 0) return [];
     const filleuls = [...new Set(lignes.map((r) => r.filleul_user_id).filter((x): x is string => !!x))];
 
-    const [{ data: fiches }, { data: paliers }, { data: suivi }, { data: comptes }] = await Promise.all([
-      supabase.from("athletes").select("id, first_name, last_name, email").in("id", ids),
-      supabase.from("ambassadeur_paliers").select("athlete_id, palier").in("athlete_id", ids),
-      supabase.from("ambassadeur_suivi").select("athlete_id, post_ig_le, chandail_envoye_le").in("athlete_id", ids),
+    const retenus = new Set(ids);
+    const [fiches, paliersTous, suiviTous, comptes] = await Promise.all([
+      lireTout<{ id: string; first_name: string; last_name: string; email: string | null }>((de, a) => supabase
+        .rpc("athletes_par_ids", { p_ids: ids }, { count: "exact" })
+        .select("id, first_name, last_name, email").order("id").range(de, a)),
+      lireTout<{ athlete_id: string; palier: number }>((de, a) => supabase
+        .from("ambassadeur_paliers").select("athlete_id, palier", { count: "exact" })
+        .order("athlete_id").order("palier").range(de, a)),
+      lireTout<{ athlete_id: string; post_ig_le: string | null; chandail_envoye_le: string | null }>((de, a) => supabase
+        .from("ambassadeur_suivi").select("athlete_id, post_ig_le, chandail_envoye_le", { count: "exact" })
+        .order("athlete_id").range(de, a)),
       filleuls.length
-        ? supabase.from("users").select("id, first_name, last_name, email").in("id", filleuls)
-        : Promise.resolve({ data: [] }),
+        ? lireTout<{ id: string; first_name: string | null; last_name: string | null; email: string | null }>((de, a) => supabase
+            .rpc("users_par_ids", { p_ids: filleuls }, { count: "exact" })
+            .select("id, first_name, last_name, email").order("id").range(de, a))
+        : Promise.resolve([]),
     ]);
+    const paliers = paliersTous.filter((p) => retenus.has(p.athlete_id));
+    const suivi = suiviTous.filter((s) => retenus.has(s.athlete_id));
 
     const pal = new Map<string, number[]>();
-    for (const p of (paliers ?? []) as { athlete_id: string; palier: number }[]) {
+    for (const p of paliers) {
       pal.set(p.athlete_id, [...(pal.get(p.athlete_id) ?? []), p.palier].sort((a, b) => a - b));
     }
-    const sui = new Map(((suivi ?? []) as { athlete_id: string; post_ig_le: string | null; chandail_envoye_le: string | null }[])
-      .map((s) => [s.athlete_id, s]));
-    const cpt = new Map(((comptes ?? []) as { id: string; first_name: string | null; last_name: string | null; email: string | null }[])
-      .map((u) => [u.id, u]));
+    const sui = new Map(suivi.map((s) => [s.athlete_id, s]));
+    const cpt = new Map(comptes.map((u) => [u.id, u]));
 
-    return ((fiches ?? []) as { id: string; first_name: string; last_name: string; email: string | null }[])
+    return fiches
       .map((f) => {
         const siennes = lignes.filter((r) => r.parrain_athlete_id === f.id);
         return {
@@ -178,7 +194,13 @@ export default function AdminAmbassadeursPage() {
     let vivant = true;
     lire().then((r) => {
       if (!vivant) return;
-      if (r) setClassement(r);
+      setErreurLecture(false);
+      setClassement(r);
+      setChargement(false);
+    }, (e: unknown) => {
+      console.error("[AdminAmbassadeurs] lecture:", e instanceof Error ? e.message : String(e));
+      if (!vivant) return;
+      setErreurLecture(true);
       setChargement(false);
     });
     return () => { vivant = false; };
@@ -230,6 +252,12 @@ export default function AdminAmbassadeursPage() {
         </p>
       </div>
 
+      {erreurLecture && (
+        <ErreurChargement
+          message="Le classement des ambassadeurs n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setChargement(true); recharger(); }}
+        />
+      )}
       {chargement ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />

@@ -15,6 +15,9 @@ import { avecZone } from "@/lib/config/teamLabel";
 import { createTeam, joinTeam } from "@/lib/queries/coach/createTeam";
 import { loadTeamClaimPreview, claimPreviewMessage, type TeamClaimPreview } from "@/lib/queries/coach/teamClaimPreview";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import CoachEquipesMobile from "@/components/shared/CoachEquipesMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -79,13 +82,22 @@ function EquipesPageDesktop() {
   const [formValid, setFormValid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) : une
+  // liste vide n'affirme plus « aucune équipe » quand la lecture a échoué.
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement } = chargement;
 
   useEffect(() => {
     loadTeams();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [essaiChargement]);
 
-  async function loadTeams() {
+  /** Recharge la liste ; une erreur passe au bandeau « Réessayer ». */
+  function loadTeams() {
+    chargerEquipes().catch((e) => { chargement.signaler(e, "coach/equipes"); setLoading(false); });
+  }
+
+  async function chargerEquipes() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
@@ -97,30 +109,35 @@ function EquipesPageDesktop() {
     // civil : school_id de la LIGUE_CIVILE row set par 6.2.a-hotfix).
     // school_id NULL ne bloque plus le chargement — le bouton "Créer"
     // sera disabled si non set, mais les teams existantes s'affichent.
-    const { data: profile } = await supabase
+    const { data: profile, error: errProfil } = await supabase
       .from("users")
       .select("school_id")
       .eq("id", user.id)
       .single();
+    if (errProfil) throw errProfil;
 
     if (profile?.school_id) setSchoolId(profile.school_id);
 
     // Get teams where I'm a coach (via team_coaches)
-    const { data: myTeamRows } = await supabase
+    const myTeamRows = await lireTout<{ team_id: string }>((de, a) => supabase
       .from("team_coaches")
-      .select("team_id")
-      .eq("coach_id", user.id);
-    const myTeamIds = (myTeamRows || []).map((r) => r.team_id);
+      .select("team_id", { count: "exact" })
+      .eq("coach_id", user.id)
+      .order("id")
+      .range(de, a));
+    const myTeamIds = myTeamRows.map((r) => r.team_id);
 
     // Load sports for create form
-    const { data: sportsData } = await supabase.from("sports").select("id, nom").order("nom");
+    const { data: sportsData, error: errSports } = await supabase.from("sports").select("id, nom").order("nom");
+    if (errSports) throw errSports;
     if (sportsData) setSports(sportsData);
 
     // Count existing roster athletes (for migration prompt)
-    const { count } = await supabase
+    const { count, error: errCompte } = await supabase
       .from("athletes")
       .select("id", { count: "exact", head: true })
       .eq("coach_id", user.id);
+    if (errCompte) throw errCompte;
     setRosterCount(count || 0);
 
     // Oversight directeur : un directeur d'école voit TOUTES les équipes
@@ -139,17 +156,18 @@ function EquipesPageDesktop() {
 
     // Load teams with coaches and athlete counts. Directeur → école
     // entière ; coach → ses équipes.
-    let teamsQuery = supabase
-      .from("teams")
-      .select("id, name, age_group, division, zone, league, season, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)")
+    // Correctif 2026-10-16 : toutes les lignes, erreur levée ; les équipes du
+    // coach passent dans le CORPS (teams_par_ids), plus dans l'adresse.
+    const COLONNES_EQUIPE = "id, created_at, name, age_group, division, zone, league, season, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)";
+    const teamsData = await lireTout<Record<string, unknown>>((de, a) => (directorSchoolId
+      ? supabase.from("teams").select(COLONNES_EQUIPE, { count: "exact" }).eq("school_id", directorSchoolId)
+      : supabase.rpc("teams_par_ids", { p_ids: myTeamIds }, { count: "exact" }).select(COLONNES_EQUIPE))
       .eq("is_active", true)
-      .order("created_at", { ascending: false });
-    teamsQuery = directorSchoolId
-      ? teamsQuery.eq("school_id", directorSchoolId)
-      : teamsQuery.in("id", myTeamIds);
-    const { data: teamsData } = await teamsQuery;
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(de, a));
 
-    if (teamsData) {
+    {
       // Collect all coach IDs to resolve names in one query
       const allCoachIds = new Set<string>();
       for (const t of teamsData) {
@@ -159,11 +177,12 @@ function EquipesPageDesktop() {
       }
       const coachNameMap = new Map<string, string>();
       if (allCoachIds.size > 0) {
-        const { data: coachUsers } = await supabase
-          .from("users")
+        const coachUsers = await lireTout<{ id: string; first_name: string | null; last_name: string | null }>((de, a) => supabase
+          .rpc("users_par_ids", { p_ids: Array.from(allCoachIds) }, { count: "exact" })
           .select("id, first_name, last_name")
-          .in("id", Array.from(allCoachIds));
-        for (const u of coachUsers || []) {
+          .order("id")
+          .range(de, a));
+        for (const u of coachUsers) {
           coachNameMap.set(u.id, `${u.first_name || ""} ${u.last_name || ""}`.trim());
         }
       }
@@ -279,6 +298,17 @@ function EquipesPageDesktop() {
     );
     loadTeams();
   }, [pendingClaim, currentUserId, claimBusy]);
+
+  if (chargement.erreur) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto">
+        <ErreurChargement
+          message="Tes équipes n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

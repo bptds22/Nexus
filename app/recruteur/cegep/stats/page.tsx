@@ -9,6 +9,9 @@ import KpiCardRow from "@/components/director/KpiCardRow";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
 import { lireCartesCegep } from "@/lib/cartes/carteProspect";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import {
   fetchRecruiterAthleteCards,
   displayFullName,
@@ -160,6 +163,9 @@ function CegepStatsPage() {
   // confondre avec le menu « Sport de l'athlète » de l'entonnoir.
   const filtreSport = useFiltreSportUnite();
   const cleFiltre = filtreSport.ids ? [...filtreSport.ids].sort().join(",") : "tous";
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     if (!filtreSport.pret) return;
@@ -173,16 +179,20 @@ function CegepStatsPage() {
       if (!user) { setLoading(false); return; }
 
       // Sports list for the filter dropdown
-      const { data: sportsList } = await supabase.from("sports").select("id, nom").order("nom");
+      const { data: sportsList, error: errSportsListe } = await supabase.from("sports").select("id, nom").order("nom");
+      if (errSportsListe) throw errSportsListe;
       setSports(sportsList || []);
 
-      const { data: currentUser } = await supabase.from("users").select("school_id").eq("id", user.id).single();
+      const { data: currentUser, error: errMoi } = await supabase.from("users").select("school_id").eq("id", user.id).single();
+      if (errMoi) throw errMoi;
       if (!currentUser?.school_id) { setLoading(false); return; }
 
-      const { data: school } = await supabase.from("schools").select("name").eq("id", currentUser.school_id).single();
+      const { data: school, error: errEcole } = await supabase.from("schools").select("name").eq("id", currentUser.school_id).single();
+      if (errEcole) throw errEcole;
       if (school) setSchoolName(school.name);
 
-      const { data: teamData } = await supabase.from("users").select("id, first_name, last_name, sport_id").eq("school_id", currentUser.school_id);
+      const { data: teamData, error: errEquipe } = await supabase.from("users").select("id, first_name, last_name, sport_id").eq("school_id", currentUser.school_id);
+      if (errEquipe) throw errEquipe;
       const retenus = filtreSport.ids;
       const teamList: TeamMember[] = (teamData || []).filter((t) => !retenus || retenus.has(t.id));
       setTeam(teamList);
@@ -190,10 +200,11 @@ function CegepStatsPage() {
       if (teamIds.length === 0) { setLoading(false); return; }
 
       // Contacts initiés — count conversations started by team members
-      const { count: convCount } = await supabase
+      const { count: convCount, error: errConv } = await supabase
         .from("conversations")
         .select("*", { count: "exact", head: true })
         .in("recruiter_id", teamIds);
+      if (errConv) throw errConv;
       setContactsCount(convCount ?? 0);
 
       /* TEMPS 1 — la relation possédée, SANS identité.
@@ -214,13 +225,17 @@ function CegepStatsPage() {
          comptent plus deux fois. */
       const overview = await fetchDossiersUniteCegep(supabase, teamIds);
       const pipelineAthleteIds = [...new Set(overview.map((p) => p.athlete_id).filter(Boolean))];
-      const { data: athleteAttrs } = pipelineAthleteIds.length > 0
-        ? await supabase
-            .from("athletes")
+      /* Correctif 2026-10-16 : les identifiants dans le CORPS (athletes_par_ids
+         — l'adresse refusait au-delà de ~220 dossiers), TOUTES les lignes, et
+         une erreur LEVÉE (sports et régions tombaient sur « Autre »). */
+      const athleteAttrs = pipelineAthleteIds.length > 0
+        ? await lireTout<Record<string, unknown>>((de, a) => supabase
+            .rpc("athletes_par_ids", { p_ids: pipelineAthleteIds }, { count: "exact" })
             .select("id, sport_id, sports!sport_id(nom), positions!position_id(abreviation), evaluations(cote_globale)")
-            .in("id", pipelineAthleteIds)
-        : { data: [] };
-      const attrsById = new Map((athleteAttrs ?? []).map((a) => [a.id as string, a]));
+            .order("id")
+            .range(de, a))
+        : [];
+      const attrsById = new Map(athleteAttrs.map((a) => [a.id as string, a]));
 
       const pipeline: PipelineRow[] = overview.map((p) => ({
         recruiter_id: p.recruiter_id,
@@ -240,6 +255,7 @@ function CegepStatsPage() {
         lireCartesCegep(supabase, currentUser.school_id as string, sportsRetenus),
         supabase.from("sports").select("id, nom"),
       ]);
+      if (sportsRes.error) throw sportsRes.error;
       const nomSport = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
       for (const c of cartes) {
         pipeline.push({
@@ -280,11 +296,14 @@ function CegepStatsPage() {
         return sObj?.nom || "Autre";
       };
 
-      // Consultés = unique athletes viewed per sport
-      const { data: viewsBySport } = await supabase
+      // Consultés = unique athletes viewed per sport. TOUTES les vues
+      // (lireTout : la table dépasse largement 1000 lignes), erreur levée.
+      const viewsBySport = await lireTout<{ athlete_id: string; athletes?: unknown }>((de, a) => supabase
         .from("recruiter_athlete_views")
-        .select("athlete_id, athletes!athlete_id(sports!sport_id(nom))")
-        .in("recruiter_id", teamIds);
+        .select("athlete_id, athletes!athlete_id(sports!sport_id(nom))", { count: "exact" })
+        .in("recruiter_id", teamIds)
+        .order("id")
+        .range(de, a));
       const viewedByAthlete = new Set<string>();
       for (const v of (viewsBySport || [])) {
         const key = `${v.athlete_id}`;
@@ -293,11 +312,13 @@ function CegepStatsPage() {
         ensureSport(extractSport(v)).consulted++;
       }
 
-      // Favorisés = athletes in recruiter_favorites per sport
-      const { data: favsBySport } = await supabase
+      // Favorisés = athletes in recruiter_favorites per sport (toutes les lignes).
+      const favsBySport = await lireTout<{ athlete_id: string; recruiter_id: string; unite_sport_id: string | null; athletes?: unknown }>((de, a) => supabase
         .from("recruiter_favorites")
-        .select("athlete_id, recruiter_id, unite_sport_id, athletes!athlete_id(sports!sport_id(nom))")
-        .in("recruiter_id", teamIds);
+        .select("athlete_id, recruiter_id, unite_sport_id, athletes!athlete_id(sports!sport_id(nom))", { count: "exact" })
+        .in("recruiter_id", teamIds)
+        .order("id")
+        .range(de, a));
       // Un favori d'unité compte une fois, même posé par deux collègues.
       const favorisVus = new Set<string>();
       for (const f of favsBySport || []) {
@@ -326,9 +347,9 @@ function CegepStatsPage() {
 
       setLoading(false);
     }
-    load();
+    load().catch((e) => { signalerChargement(e, "cegep/stats"); setLoading(false); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtreSport.pret, cleFiltre]);
+  }, [filtreSport.pret, cleFiltre, essaiChargement]);
 
   /* === Filter-derived data === */
   const STAGE_MAP: Record<string, keyof FunnelData> = {
@@ -523,6 +544,17 @@ function CegepStatsPage() {
     { key: "engaged",        label: "Engagés",          value: funnel.engaged,        color: "#E63946" },
     { key: "signed",         label: "Signés",           value: funnel.signed,         color: "#E63946" },
   ];
+
+  if (chargement.erreur) {
+    return (
+      <div className="px-5 sm:px-8 py-8 max-w-[1400px] mx-auto">
+        <ErreurChargement
+          message="Les statistiques n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="px-5 sm:px-8 py-8 max-w-[1400px] mx-auto"><p className="text-[#6b7280] text-sm">Chargement des statistiques...</p></div>;

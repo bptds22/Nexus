@@ -5,6 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 type RecruitBucket = "OUVERT" | "EN_PROCESSUS" | "RECRUTE" | "RETIRE" | null;
 
@@ -94,6 +97,8 @@ export default function AdminSportDetailPage() {
   const id = params?.id as string;
 
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
   const [sportName, setSportName] = useState<string>("");
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -111,32 +116,44 @@ export default function AdminSportDetailPage() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function fetchAll() {
+  function fetchAll() {
+    chargerTout().catch((e) => { chargement.signaler(e, "admin/sport"); setLoading(false); });
+  }
+
+  /* Correctif 2026-10-16 : toutes les lignes (lireTout), aucun identifiant
+     d'athlète dans l'adresse, et une erreur LEVÉE (bandeau « Réessayer »). */
+  async function chargerTout() {
     if (!id) return;
     setLoading(true);
 
-    const [sportRes, athletesRes, positionsRes, schoolsRes, platformRes] = await Promise.all([
+    const [sportRes, athletesData, positionsRes, schoolsRes, platformLu] = await Promise.all([
       supabase.from("sports").select("id,nom").eq("id", id).maybeSingle(),
-      supabase
+      lireTout<Athlete>((de, a) => supabase
         .from("athletes")
         .select(
           "id,first_name,last_name,sport_id,position_id,school_id,coach_id,verified,statut_recrutement_override,profile_completion,annee_diplomation,photo_url,numero_jersey,cote_globale_entraineur,created_at",
+          { count: "exact" },
         )
-        .eq("sport_id", id),
+        .eq("sport_id", id)
+        .order("id")
+        .range(de, a)),
       supabase.from("positions").select("id,sport_id,nom,abreviation").eq("sport_id", id).order("nom"),
       // Pagination : ce map alimente le classement des établissements et
       // la répartition régionale du sport. Tronqué, il faisait disparaître
       // des athlètes de leur école et de leur région.
-      fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,region,city").range(f, t), "AdminSportDetail"),
-      supabase.from("athletes").select("cote_globale_entraineur").not("cote_globale_entraineur", "is", null),
+      fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,region,city").order("id").range(f, t), "AdminSportDetail"),
+      lireTout<{ cote_globale_entraineur: number | null }>((de, a) => supabase
+        .from("athletes").select("cote_globale_entraineur", { count: "exact" })
+        .not("cote_globale_entraineur", "is", null).order("id").range(de, a)),
     ]);
+    if (sportRes.error) throw sportRes.error;
+    if (positionsRes.error) throw positionsRes.error;
 
-    const platformRatings = ((platformRes.data || []) as { cote_globale_entraineur: number | null }[])
+    const platformRatings = platformLu
       .map((a) => a.cote_globale_entraineur)
       .filter((v): v is number => typeof v === "number");
     setPlatformAvg(platformRatings.length > 0 ? platformRatings.reduce((s, v) => s + v, 0) / platformRatings.length : null);
 
-    const athletesData = (athletesRes.data || []) as Athlete[];
     const positionsData = (positionsRes.data || []) as Omit<Position, "athlete_count">[];
 
     setSportName(((sportRes.data as { nom?: string } | null)?.nom as string) || "");
@@ -154,14 +171,16 @@ export default function AdminSportDetailPage() {
     for (const s of schoolsRes) sMap.set(s.id, s);
     setSchoolsMap(sMap);
 
-    const athleteIds = athletesData.map((a) => a.id);
+    // Le pipeline des athlètes du sport : par jointure (aucun identifiant
+    // dans l'adresse), toutes les lignes.
     let pipelineData: { recruiter_id: string | null; athlete_id: string | null }[] = [];
-    if (athleteIds.length > 0) {
-      const pipeRes = await supabase
+    if (athletesData.length > 0) {
+      pipelineData = await lireTout<{ recruiter_id: string | null; athlete_id: string | null }>((de, a) => supabase
         .from("recruiter_pipeline")
-        .select("recruiter_id,athlete_id")
-        .in("athlete_id", athleteIds);
-      pipelineData = (pipeRes.data || []) as typeof pipelineData;
+        .select("recruiter_id,athlete_id,athletes!inner(sport_id)", { count: "exact" })
+        .eq("athletes.sport_id", id)
+        .order("id")
+        .range(de, a));
     }
     const distinctRecruiters = new Set<string>();
     for (const r of pipelineData) if (r.recruiter_id) distinctRecruiters.add(r.recruiter_id);
@@ -283,15 +302,19 @@ export default function AdminSportDetailPage() {
         return;
       }
       const ids = Array.from(schoolAgg.keys());
-      const { data } = await supabase
+      // Tous les coachs actifs (quelques centaines), filtrés ici : les écoles
+      // du sport ne passent plus dans l'adresse. Erreur → bandeau.
+      const data = await lireTout<{ school_id: string | null }>((de, a) => supabase
         .from("users")
-        .select("school_id")
+        .select("school_id", { count: "exact" })
         .eq("role", "COACH")
         .eq("status", "ACTIF")
-        .in("school_id", ids);
+        .order("id")
+        .range(de, a));
+      const retenues = new Set(ids);
       const coachCount = new Map<string, number>();
-      for (const u of (data || []) as { school_id: string | null }[]) {
-        if (!u.school_id) continue;
+      for (const u of data) {
+        if (!u.school_id || !retenues.has(u.school_id)) continue;
         coachCount.set(u.school_id, (coachCount.get(u.school_id) || 0) + 1);
       }
       const rows: SchoolRow[] = ids
@@ -308,7 +331,7 @@ export default function AdminSportDetailPage() {
         .sort((a, b) => b.athlete_count - a.athlete_count);
       setSchoolRows(rows);
     }
-    loadCoaches();
+    loadCoaches().catch((e) => chargement.signaler(e, "admin/sport — coachs"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [athletes, schoolsMap]);
 
@@ -338,6 +361,17 @@ export default function AdminSportDetailPage() {
 
   const displayedPositions = showAllPositions ? positions : positions.slice(0, 8);
   const remainingPositions = positions.length - 8;
+
+  if (chargement.erreur) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <ErreurChargement
+          message="Ce sport n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { chargement.reessayer(); fetchAll(); }}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

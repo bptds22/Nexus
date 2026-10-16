@@ -33,6 +33,7 @@ import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/share
 import { nomAuteur, type AuteurUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { construireCalendrier, type RecruitingCalendarData, type CalendarTarget } from "@/lib/queries/recruiter/useRecruitingCalendar";
 import { lireCartes } from "@/lib/cartes/carteProspect";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 /** Une visite planifiée de l'unité (recruiter_pipeline.visit_at). */
 export interface VisiteUnite {
@@ -99,35 +100,44 @@ export function useCalendrierUnite(enabled: boolean) {
     staleTime: 0,
     queryFn: async () => {
       const supabase = createClient();
-      const [pipeRes, favRes, listesRes, auteursRes] = await Promise.all([
-        supabase.rpc("unite_pipeline"),
-        supabase.rpc("unite_favoris"),
-        supabase.from("recruiter_lists").select("id, recruiter_id, unite_cegep_id, unite_sport_id"),
+      /* Correctif 2026-10-16 : toutes les lectures sont COMPLÈTES (lireTout :
+         les fonctions d'unité rendent des lignes, que PostgREST coupait à 1000)
+         et aucune erreur n'est plus avalée — l'écran l'affiche. */
+      const [lignes, favoris, listesLues, auteursRes] = await Promise.all([
+        lireTout<LigneUnite>((de, a) => supabase
+          .rpc("unite_pipeline", {}, { count: "exact" })
+          .order("athlete_id").order("unite_cegep_id").order("unite_sport_id")
+          .range(de, a)),
+        lireTout<{ athlete_id: string }>((de, a) => supabase
+          .rpc("unite_favoris", {}, { count: "exact" })
+          .order("athlete_id").order("unite_cegep_id").order("unite_sport_id")
+          .range(de, a)),
+        lireTout<{ id: string; recruiter_id: string; unite_cegep_id: string | null; unite_sport_id: string | null }>((de, a) => supabase
+          .from("recruiter_lists")
+          .select("id, recruiter_id, unite_cegep_id, unite_sport_id", { count: "exact" })
+          .order("id")
+          .range(de, a)),
         supabase.rpc("unite_auteurs"),
       ]);
-      if (pipeRes.error) throw pipeRes.error;
-      if (favRes.error) throw favRes.error;
-      if (listesRes.error) throw listesRes.error;
+      if (auteursRes.error) throw auteursRes.error;
       const auteurs: Record<string, AuteurUnite> = {};
       for (const a of (auteursRes.data ?? []) as AuteurUnite[]) auteurs[a.id] = a;
       const monSport = moi ? auteurs[moi]?.sport_id ?? null : null;
 
       // Les listes : les siennes, et celles de SON unité (cf. useListesUnite).
-      const listIds = ((listesRes.data ?? []) as { id: string; recruiter_id: string; unite_cegep_id: string | null; unite_sport_id: string | null }[])
+      const listIds = listesLues
         .filter((l) => l.recruiter_id === moi
           || (!!monCegep && !!monSport && l.unite_cegep_id === monCegep && l.unite_sport_id === monSport))
         .map((l) => l.id);
-      let membres: { athlete_id: string; list_id: string }[] = [];
-      if (listIds.length > 0) {
-        const { data, error } = await supabase
-          .from("recruiter_list_members")
-          .select("athlete_id, list_id")
-          .in("list_id", listIds);
-        if (error) throw error;
-        membres = (data ?? []) as { athlete_id: string; list_id: string }[];
-      }
+      const membres = listIds.length > 0
+        ? await lireTout<{ athlete_id: string; list_id: string }>((de, a) => supabase
+            .from("recruiter_list_members")
+            .select("athlete_id, list_id", { count: "exact" })
+            .in("list_id", listIds)
+            .order("id")
+            .range(de, a))
+        : [];
 
-      const lignes = (pipeRes.data ?? []) as LigneUnite[];
       const stageByAthlete = new Map<string, string>();
       for (const l of lignes) if (l.stage) stageByAthlete.set(l.athlete_id, l.stage);
       const listsByAthlete = new Map<string, string[]>();
@@ -135,26 +145,25 @@ export function useCalendrierUnite(enabled: boolean) {
 
       const targetIds = Array.from(new Set<string>([
         ...lignes.map((l) => l.athlete_id),
-        ...((favRes.data ?? []) as { athlete_id: string }[]).map((f) => f.athlete_id),
+        ...favoris.map((f) => f.athlete_id),
         ...membres.map((m) => m.athlete_id),
       ]));
 
       /* CARTES PROSPECT de l'unité (lot C) : les matchs de leur équipe, leurs
-         visites et leurs relances, marqués « prospect ». Une erreur de
-         lecture laisse le calendrier des athlètes Nexus intact. */
-      let cartesProspect: Awaited<ReturnType<typeof lireCartes>> = [];
-      try {
-        cartesProspect = await lireCartes(supabase, { cegepId: monCegep, sportId: monSport });
-      } catch (e) {
-        console.error("[useCalendrierUnite] cartes prospect :", e instanceof Error ? e.message : String(e));
-      }
+         visites et leurs relances, marqués « prospect ». TOUTES les cartes
+         (processus_cartes) ; une erreur est levée (correctif 2026-10-16) :
+         un calendrier sans ses prospects, sans un mot, laissait croire qu'ils
+         n'avaient pas de match. */
+      const cartesProspect = await lireCartes(supabase, { cegepId: monCegep, sportId: monSport });
       const listesParCarte = new Map<string, string[]>();
       if (cartesProspect.length > 0 && listIds.length > 0) {
-        const { data } = await supabase
+        const liaisons = await lireTout<{ carte_id: string; list_id: string }>((de, a) => supabase
           .from("cartes_prospect_listes")
-          .select("carte_id, list_id")
-          .in("list_id", listIds);
-        for (const m of (data ?? []) as { carte_id: string; list_id: string }[]) {
+          .select("carte_id, list_id", { count: "exact" })
+          .in("list_id", listIds)
+          .order("id")
+          .range(de, a));
+        for (const m of liaisons) {
           listesParCarte.set(m.carte_id, [...(listesParCarte.get(m.carte_id) ?? []), m.list_id]);
         }
       }
@@ -164,7 +173,9 @@ export function useCalendrierUnite(enabled: boolean) {
       const nomsSportsAthletes = new Map<string, string>();
       const sportIdsCartes = [...new Set(cartesProspect.map((c) => c.sport_athlete_id))];
       if (sportIdsCartes.length > 0) {
-        const { data: sportsRows } = await supabase.from("sports").select("id, nom").in("id", sportIdsCartes);
+        // Quelques sports au plus : l'adresse reste courte. L'erreur n'est plus ignorée.
+        const { data: sportsRows, error: errSports } = await supabase.from("sports").select("id, nom").in("id", sportIdsCartes);
+        if (errSports) throw errSports;
         for (const s of (sportsRows ?? []) as { id: string; nom: string }[]) nomsSportsAthletes.set(s.id, s.nom);
       }
       const ciblesCartes: CalendarTarget[] = cartesProspect
@@ -200,18 +211,19 @@ export function useCalendrierUnite(enabled: boolean) {
 
       /* MATCHS AJOUTÉS depuis la carte des matchs (lot B) : ceux de SON unité
          (son cégep, son sport — comme les listes ci-dessus ; la RLS laisse
-         l'admin cégep lire les autres sports, on ne les mêle pas). Une erreur
-         de lecture (table absente : base pas encore migrée) laisse le
-         calendrier intact. */
+         l'admin cégep lire les autres sports, on ne les mêle pas). La table
+         existe partout depuis le lot B : une erreur est désormais LEVÉE
+         (correctif 2026-10-16), toutes les lignes sont lues. */
       let matchsAjoutes: string[] = [];
       if (monCegep && monSport) {
-        const { data: rowsAjoutes, error: errAjoutes } = await supabase
+        const rowsAjoutes = await lireTout<{ game_id: string }>((de, a) => supabase
           .from("matchs_ajoutes")
-          .select("game_id")
+          .select("game_id", { count: "exact" })
           .eq("unite_cegep_id", monCegep)
-          .eq("unite_sport_id", monSport);
-        if (errAjoutes) console.error("[useCalendrierUnite] matchs ajoutés :", errAjoutes.message);
-        else matchsAjoutes = ((rowsAjoutes ?? []) as { game_id: string }[]).map((r) => r.game_id);
+          .eq("unite_sport_id", monSport)
+          .order("id")
+          .range(de, a));
+        matchsAjoutes = rowsAjoutes.map((r) => r.game_id);
       }
 
       const base = await construireCalendrier(supabase, targetIds, stageByAthlete, listsByAthlete, ciblesCartes, matchsAjoutes);

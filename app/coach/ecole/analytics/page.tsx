@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
-import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireCoachPipeline } from "@/lib/pipeline/pipelineVues";
+import { lireCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -72,6 +75,9 @@ export default function CoachAnalyticsWrapper() {
 function CoachAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [d, setD] = useState<AnalyticsData | null>(null);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     async function fetchData() {
@@ -102,14 +108,16 @@ function CoachAnalyticsPage() {
         .eq("coach_id", user.id)
         .limit(1)
         .maybeSingle();
+      if (scErr) throw scErr;
 
       let mySchoolId = (scRow?.school_id as string | undefined) || null;
       if (!mySchoolId) {
-        const { data: userRow } = await supabase
+        const { data: userRow, error: errMoi } = await supabase
           .from("users")
           .select("school_id")
           .eq("id", user.id)
           .maybeSingle();
+        if (errMoi) throw errMoi;
         mySchoolId = (userRow?.school_id as string | undefined) || null;
       }
 
@@ -123,10 +131,16 @@ function CoachAnalyticsPage() {
       //    école ∪ équipes ; ACTIF+EN_ATTENTE, DESACTIVE/DIPLOME exclus). Le
       //    scope école captait déjà les coach_id NULL ; le RPC ajoute les
       //    athlètes d'équipe et applique enfin le filtre statut.
-      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      const { ids: scopeIds } = await lireCoachAthleteScope(supabase);
       if (!scopeIds.length) { setD(emptyData); setLoading(false); return; }
-      const { data: athletes, error: athleteErr } = await supabase
-        .from("athletes")
+      // Correctif 2026-10-16 : identifiants dans le CORPS (avec ce select,
+      // l'adresse refusait au-delà de ~170 athlètes), toutes les lignes,
+      // erreur levée (athleteErr n'était jamais lu).
+      const athleteList = await lireTout<{
+        id: string; first_name: string | null; last_name: string | null; sport_id: string;
+        verified: boolean | null; annee_diplomation: number | null; positions: unknown; [k: string]: unknown;
+      }>((de, a) => supabase
+        .rpc("athletes_par_ids", { p_ids: scopeIds }, { count: "exact" })
         // Every column calculateProfileCompletion needs, plus the evaluations join it looks at.
         // profile_completion (the denormalized field) is deliberately NOT used anymore — it's
         // stale for athletes that were edited without the trigger firing.
@@ -143,9 +157,9 @@ function CoachAnalyticsPage() {
           team_athletes(team_id),
           evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at)
         `)
-        .in("id", scopeIds);
+        .order("id")
+        .range(de, a));
 
-      const athleteList = athletes || [];
       const totalAthletes = athleteList.length;
 
       if (totalAthletes === 0) {
@@ -158,24 +172,26 @@ function CoachAnalyticsPage() {
 
       // 4. Pull all recruiter-interest signals in parallel. No date filter — the
       //    page shows lifetime totals (the weekly chart buckets viewed_at itself).
-      //    .limit(10000) overrides PostgREST's default 1000-row cap.
+      //    Correctif 2026-10-16 : `.limit(10000)` NE levait PAS le plafond de
+      //    PostgREST (1000 lignes, coupées sans le dire) et le `count` n'était
+      //    jamais comparé. lireTout lit toutes les pages et vérifie le total ;
+      //    les identifiants voyagent dans le corps (fonctions *_par_athletes).
 
-      const [pipeline, viewsRes, favoritesRes, convsRes] = await Promise.all([
-        // Lot 2a — RPC coach (athlete_id, recruiter_id, stage, updated_at) ; pas de
-        // plafond PostgREST à contourner, le count n'était pas lu.
-        fetchCoachPipeline(supabase, { athleteIds }),
+      const [pipeline, profileViews, favorites, conversations] = await Promise.all([
+        // Lot 2a — RPC coach (athlete_id, recruiter_id, stage, updated_at).
+        lireCoachPipeline(supabase, { athleteIds }),
         // recruiter_athlete_views is the authoritative view-tracking table (matches the
         // counter shown on the recruiter-side athlete profile page).
-        supabase.from("recruiter_athlete_views").select("athlete_id, recruiter_id, viewed_at", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
-        supabase.from("recruiter_favorites").select("athlete_id, recruiter_id", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
-        supabase.from("conversations").select("athlete_id, recruiter_id", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
+        lireTout<{ athlete_id: string; recruiter_id: string | null; viewed_at: string | null }>((de, a) => supabase
+          .rpc("recruiter_athlete_views_par_athletes", { p_ids: athleteIds }, { count: "exact" })
+          .select("id, athlete_id, recruiter_id, viewed_at").order("id").range(de, a)),
+        lireTout<{ athlete_id: string; recruiter_id: string | null }>((de, a) => supabase
+          .rpc("recruiter_favorites_par_athletes", { p_ids: athleteIds }, { count: "exact" })
+          .select("id, athlete_id, recruiter_id").order("id").range(de, a)),
+        lireTout<{ athlete_id: string; recruiter_id: string | null }>((de, a) => supabase
+          .rpc("conversations_par_athletes", { p_ids: athleteIds }, { count: "exact" })
+          .select("id, athlete_id, recruiter_id").order("id").range(de, a)),
       ]);
-      const profileViews = viewsRes.data || [];
-      const favorites = favoritesRes.data || [];
-      const conversations = convsRes.data || [];
-
-      // `count` is the true row count PostgREST saw (before any .limit()); `data.length` is what
-      // was returned after pagination. If they differ for any query, we're being paginated.
 
       // Per-athlete breakdown so we can spot mismatches vs. the recruiter-side counter.
       const perAthleteViewTotals: Record<string, number> = {};
@@ -188,7 +204,8 @@ function CoachAnalyticsPage() {
       const sportIds = [...new Set(athleteList.map(a => a.sport_id).filter(Boolean))];
       const sportsMap: Record<string, string> = {};
       if (sportIds.length > 0) {
-        const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+        const { data: sports, error: errSports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+        if (errSports) throw errSports;
         if (sports) sports.forEach(s => { sportsMap[s.id] = s.nom; });
       }
 
@@ -273,16 +290,21 @@ function CoachAnalyticsPage() {
       const interestRecruiterIds = [...new Set(interestRows.map(r => r.recruiter_id))];
       let cegeps_interested: AnalyticsData["cegeps_interested"] = [];
       if (interestRecruiterIds.length > 0) {
-        const { data: recruiterUsers } = await supabase.from("users").select("id, school_id").in("id", interestRecruiterIds);
-        const cegepSchoolIds = [...new Set((recruiterUsers || []).map((r: Record<string, unknown>) => r.school_id).filter(Boolean))] as string[];
+        // Identifiants dans le corps, toutes les lignes, erreur levée (2026-10-16).
+        const recruiterUsers = await lireTout<{ id: string; school_id: string | null }>((de, a) => supabase
+          .rpc("users_par_ids", { p_ids: interestRecruiterIds }, { count: "exact" })
+          .select("id, school_id").order("id").range(de, a));
+        const cegepSchoolIds = [...new Set(recruiterUsers.map((r) => r.school_id).filter(Boolean))] as string[];
         const schoolsMap: Record<string, string> = {};
         if (cegepSchoolIds.length > 0) {
-          const { data: schools } = await supabase.from("schools").select("id, name").in("id", cegepSchoolIds);
-          if (schools) schools.forEach((s: { id: string; name: string }) => { schoolsMap[s.id] = s.name; });
+          const schools = await lireTout<{ id: string; name: string }>((de, a) => supabase
+            .rpc("schools_par_ids", { p_ids: cegepSchoolIds }, { count: "exact" })
+            .select("id, name").order("id").range(de, a));
+          schools.forEach((s: { id: string; name: string }) => { schoolsMap[s.id] = s.name; });
         }
         const cegepData: Record<string, { athletes: Set<string>; sports: Set<string> }> = {};
         interestRows.forEach(row => {
-          const rec = (recruiterUsers || []).find((r: Record<string, unknown>) => r.id === row.recruiter_id) as { school_id?: string } | undefined;
+          const rec = recruiterUsers.find((r) => r.id === row.recruiter_id);
           if (!rec?.school_id) return;
           const schoolName = schoolsMap[rec.school_id] || rec.school_id;
           if (!cegepData[schoolName]) cegepData[schoolName] = { athletes: new Set(), sports: new Set() };
@@ -386,8 +408,19 @@ function CoachAnalyticsPage() {
       });
       setLoading(false);
     }
-    fetchData();
-  }, []);
+    fetchData().catch((e) => { signalerChargement(e, "coach/ecole/analytics"); setLoading(false); });
+  }, [essaiChargement, signalerChargement]);
+
+  if (chargement.erreur) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto">
+        <ErreurChargement
+          message="L'analytique de ton école n'a pas pu être chargée. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      </div>
+    );
+  }
 
   if (loading || !d) {
     return (

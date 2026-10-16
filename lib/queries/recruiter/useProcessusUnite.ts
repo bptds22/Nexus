@@ -34,6 +34,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { lireTout } from "@/lib/supabase/lireTout";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
@@ -133,8 +134,16 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
          (users.sport_id, le même que unite_auteurs rend pour lui). */
       const [[pipe, grades, auteurs], [lignesCartes, sportsRes]] = await Promise.all([
         Promise.all([
-          supabase.rpc("unite_pipeline", params),
-          supabase.rpc("unite_grades", params),
+          // TOUTES les lignes (lireTout, correctif 2026-10-16) : ces fonctions
+          // rendent des lignes, que PostgREST coupait à 1000 sans le dire.
+          lireTout<LigneUnite>((de, a) => supabase
+            .rpc("unite_pipeline", params, { count: "exact" })
+            .order("athlete_id").order("unite_cegep_id").order("unite_sport_id")
+            .range(de, a)),
+          lireTout<{ athlete_id: string; unite_sport_id: string | null; grade: string }>((de, a) => supabase
+            .rpc("unite_grades", params, { count: "exact" })
+            .order("athlete_id").order("unite_cegep_id").order("unite_sport_id")
+            .range(de, a)),
           supabase.rpc("unite_auteurs"),
         ]),
         Promise.all([
@@ -144,8 +153,6 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
       ]);
       // Aucune erreur avalée (correctif 2026-10-16) : grades vides ou noms
       // « Recruteur » partout seraient des données fausses affichées sans un mot.
-      if (pipe.error) throw pipe.error;
-      if (grades.error) throw grades.error;
       if (auteurs.error) throw auteurs.error;
       const parAuteur: Record<string, AuteurUnite> = {};
       for (const a of (auteurs.data ?? []) as AuteurUnite[]) parAuteur[a.id] = a;
@@ -156,7 +163,7 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
          d'un autre sport sont en lecture seule à cette étape — voir la page.) */
       const monSport = userId ? parAuteur[userId]?.sport_id ?? null : null;
       const parAthlete = new Map<string, LigneUnite>();
-      for (const l of (pipe.data ?? []) as LigneUnite[]) {
+      for (const l of pipe) {
         const deja = parAthlete.get(l.athlete_id);
         if (!deja || (deja.unite_sport_id !== monSport && l.unite_sport_id === monSport)) parAthlete.set(l.athlete_id, l);
       }
@@ -166,7 +173,7 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
       // Clé athlète × unité : en « tout le cégep », deux unités peuvent
       // grader le même athlète — la carte prend le grade de SON dossier.
       const gradeMap: Record<string, string> = {};
-      for (const g of (grades.data ?? []) as { athlete_id: string; unite_sport_id: string | null; grade: string }[]) {
+      for (const g of grades) {
         if (isGrade(g.grade)) gradeMap[`${g.athlete_id}|${g.unite_sport_id ?? ""}`] = g.grade;
       }
 

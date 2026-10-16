@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDossiersUniteCegep } from "@/lib/pipeline/pipelineVues";
 import { lireCartesCegep } from "@/lib/cartes/carteProspect";
+import { lireTout } from "@/lib/supabase/lireTout";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export interface CegepActivityRow {
@@ -59,15 +60,19 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
       const supabase = createClient();
 
       // 1. School name
-      const { data: school } = await supabase
+      // Correctif 2026-10-16 : aucune erreur avalée — la requête échoue,
+      // l'écran l'affiche avec « Réessayer ».
+      const { data: school, error: errEcole } = await supabase
         .from("schools").select("name").eq("id", schoolId).single();
+      if (errEcole) throw errEcole;
       const schoolName = school?.name ?? "Mon CÉGEP";
 
       // 2. Team members
-      const { data: teamMembers } = await supabase
+      const { data: teamMembers, error: errEquipe } = await supabase
         .from("users")
         .select("id, first_name, last_name, role, sport_id")
         .eq("school_id", schoolId);
+      if (errEquipe) throw errEquipe;
       const rList = (teamMembers ?? []).filter((r) => !recruteurs || recruteurs.has(r.id as string));
       const recruiterIds = rList.map((r) => r.id as string);
       const recruiterFullMap = new Map(rList.map((r) => [r.id as string, `${r.first_name || ""} ${r.last_name || ""}`]));
@@ -101,6 +106,9 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
         lireCartesCegep(supabase, schoolId, sportsRetenus),
         supabase.from("sports").select("id, nom"),
       ]);
+      if (messagesRes.error) throw messagesRes.error;
+      if (viewsRes.error) throw viewsRes.error;
+      if (sportsRes.error) throw sportsRes.error;
       const nomSport = new Map(((sportsRes.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x.nom]));
 
       const recruesCount = overview.filter((p) => p.stage === "LETTRE_SIGNEE").length
@@ -114,12 +122,15 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
          relu à part. Même table, même RLS recruteur (athlètes ACTIF) — un
          athlète non visible retombe sur « Autre » / « Inconnue », comme l'embed
          nul d'avant. */
-      const { data: athleteAttrs } = uniqueAthletes.size > 0
-        ? await supabase
-            .from("athletes")
+      // Les identifiants dans le CORPS (athletes_par_ids), toutes les lignes,
+      // erreur levée (correctif 2026-10-16).
+      const athleteAttrs = uniqueAthletes.size > 0
+        ? await lireTout<Record<string, unknown>>((de, a) => supabase
+            .rpc("athletes_par_ids", { p_ids: [...uniqueAthletes] }, { count: "exact" })
             .select("id, sports!sport_id(nom), schools!school_id(region)")
-            .in("id", [...uniqueAthletes])
-        : { data: [] };
+            .order("id")
+            .range(de, a))
+        : [];
       const firstRel = <T,>(rel: T | T[] | null | undefined): T | null =>
         (Array.isArray(rel) ? rel[0] : rel) ?? null;
       const sportByAthlete = new Map<string, string>();
@@ -188,12 +199,14 @@ export function useCegepStats(recruteurs: Set<string> | null = null, filtrePret 
       const regionTotal = regionData.reduce((s, r) => s + r.count, 0);
 
       // 7. Activity feed
-      const { data: activityData } = await supabase
+      // Les 10 dernières, voulu (pas un plafond). L'erreur n'est plus ignorée.
+      const { data: activityData, error: errActivite } = await supabase
         .from("recruiter_activity_log")
         .select("id, action_type, details, created_at, recruiter_id")
         .in("recruiter_id", recruiterIds)
         .order("created_at", { ascending: false })
         .limit(10);
+      if (errActivite) throw errActivite;
       const recentActivity = (activityData ?? []).map((a): CegepActivityRow & { recruiterName: string } => ({
         id: a.id as string,
         action_type: a.action_type as string,

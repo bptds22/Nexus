@@ -6,7 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
-import { EMBED_COMPTE, inscriptionDeFiche, repartitionComptesAthletes, type InscriptionFiche } from "@/lib/admin/comptesAthletes";
+import { EMBED_COMPTE, inscriptionDeFiche, repartitionComptesAthletes, lireComptesSansFiche, type InscriptionFiche } from "@/lib/admin/comptesAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 interface AthleteRow {
   id: string;
@@ -162,6 +165,9 @@ function AdminAthletesPageInner() {
   const [sansFiche, setSansFiche] = useState<SansFicheRow[]>([]);
   const [sansFicheErreur, setSansFicheErreur] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
   const [searchQuery, setSearchQuery] = useState("");
 
   const isUserView = !!filterParam && USER_LIST_FILTERS.has(filterParam);
@@ -196,29 +202,36 @@ function AdminAthletesPageInner() {
       // désormais de la jointure, et le menu de filtre se déduit des
       // lignes déjà chargées (cf. schoolsWithAthletes).
       const spRes = await supabase.from("sports").select("id,nom").order("nom");
+      if (spRes.error) throw spRes.error;
       setSports((spRes.data as Sport[]) || []);
+      /* Correctif 2026-10-16 : chaque table est lue EN ENTIER (lireTout —
+         PostgREST coupait à 1000 lignes sans le dire) ; une erreur est levée. */
+      const tout = <T,>(table: string, colonnes: string) => lireTout<T>((de, a) => supabase
+        .from(table).select(colonnes, { count: "exact" }).order("id").range(de, a));
 
       if (isUserView) {
         // Branch: fetch users + pipeline + athlete→coach linkage.
         const targetRole = filterParam === "coach-sans-athletes" ? "COACH" : "RECRUTEUR";
-        const [uRes, linkRes, pipeRes] = await Promise.all([
-          supabase.from("users")
-            .select("id,first_name,last_name,email,role,school_id,created_at,schools!school_id(name,type)")
-            .eq("role", targetRole),
-          supabase.from("athletes").select("coach_id"),
-          supabase.from("recruiter_pipeline").select("recruiter_id"),
+        const [usersLus, linkRows, pipeRows] = await Promise.all([
+          lireTout<UserRow & { schools?: unknown }>((de, a) => supabase.from("users")
+            .select("id,first_name,last_name,email,role,school_id,created_at,schools!school_id(name,type)", { count: "exact" })
+            .eq("role", targetRole)
+            .order("id")
+            .range(de, a)),
+          tout<{ coach_id: string | null }>("athletes", "coach_id"),
+          tout<{ recruiter_id: string | null }>("recruiter_pipeline", "recruiter_id"),
         ]);
 
         const coachIdsWithAthletes = new Set<string>();
-        for (const a of (linkRes.data || []) as { coach_id: string | null }[]) {
+        for (const a of linkRows) {
           if (a.coach_id) coachIdsWithAthletes.add(a.coach_id);
         }
         const recruiterIdsActive = new Set<string>();
-        for (const p of (pipeRes.data || []) as { recruiter_id: string | null }[]) {
+        for (const p of pipeRows) {
           if (p.recruiter_id) recruiterIdsActive.add(p.recruiter_id);
         }
 
-        const filtered = ((uRes.data || []) as (UserRow & { schools?: unknown })[])
+        const filtered = usersLus
           .filter((u) => filterParam === "coach-sans-athletes"
             ? !coachIdsWithAthletes.has(u.id)
             : !recruiterIdsActive.has(u.id))
@@ -252,34 +265,30 @@ function AdminAthletesPageInner() {
       /* Les comptes sans fiche arrivent par une RPC à part : un échec de
          celle-ci (migration pas encore appliquée, par exemple) ne doit pas
          vider la liste des athlètes — on le dit dans l'écran, et on continue. */
-      const sansFicheTask = supabase.rpc("admin_comptes_athletes_sans_fiche").then(({ data, error }) => {
-        if (error) {
-          console.error("[admin/athletes] admin_comptes_athletes_sans_fiche:", error.message);
-          setSansFicheErreur(error.message);
-          setSansFiche([]);
-        } else {
-          setSansFicheErreur(null);
-          setSansFiche((data as SansFicheRow[]) || []);
-        }
+      const sansFicheTask = lireComptesSansFiche<SansFicheRow>(supabase).then((data) => {
+        setSansFicheErreur(null);
+        setSansFiche(data);
+      }, (e: unknown) => {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error("[admin/athletes] admin_comptes_athletes_sans_fiche:", message);
+        setSansFicheErreur(message);
+        setSansFiche([]);
       });
 
-      const tasks: PromiseLike<unknown>[] = [
-        supabase.from("athletes").select(athletesSelect).order("created_at", { ascending: false }),
+      const cutoff = new Date(Date.now() - 30 * 86_400_000).toISOString();
+      const [athletesLus, , stagnants] = await Promise.all([
+        lireTout<Record<string, unknown>>((de, a) => supabase
+          .from("athletes").select(athletesSelect, { count: "exact" })
+          .order("created_at", { ascending: false }).order("id").range(de, a)),
         sansFicheTask,
-      ];
-      if (filterParam === "pipeline-stagnant") {
-        const cutoff = new Date(Date.now() - 30 * 86_400_000).toISOString();
-        tasks.push(
-          supabase.from("recruiter_pipeline").select("athlete_id").lt("moved_at", cutoff),
-        );
-      }
-      const results = await Promise.all(tasks);
-      const aRes = results[0] as { data: unknown[] | null };
-      // results[1] = sansFicheTask (état posé dans son .then) ; le pipeline, s'il
-      // a été demandé, est en [2].
-      const STAGNANT_IDX = 2;
+        filterParam === "pipeline-stagnant"
+          ? lireTout<{ athlete_id: string | null }>((de, a) => supabase
+              .from("recruiter_pipeline").select("athlete_id", { count: "exact" })
+              .lt("moved_at", cutoff).order("id").range(de, a))
+          : Promise.resolve(null),
+      ]);
 
-      const mapped: AthleteRow[] = ((aRes.data || []) as Record<string, unknown>[]).map((a) => {
+      const mapped: AthleteRow[] = athletesLus.map((a) => {
         const coach = a.coach as { first_name?: string; last_name?: string } | null;
         const sportRel = a.sports as { nom?: string } | null;
         const schoolRel = embeddedSchool(a.schools);
@@ -312,10 +321,9 @@ function AdminAthletesPageInner() {
         };
       });
 
-      if (filterParam === "pipeline-stagnant" && results[STAGNANT_IDX]) {
-        const pipeData = results[STAGNANT_IDX] as { data: { athlete_id: string | null }[] | null };
+      if (filterParam === "pipeline-stagnant" && stagnants) {
         const ids = new Set<string>();
-        for (const p of pipeData.data || []) if (p.athlete_id) ids.add(p.athlete_id);
+        for (const p of stagnants) if (p.athlete_id) ids.add(p.athlete_id);
         setStagnantAthleteIds(ids);
       } else {
         setStagnantAthleteIds(new Set());
@@ -324,8 +332,8 @@ function AdminAthletesPageInner() {
       setRows(mapped);
       setUserRows([]);
       setLoading(false);
-    })();
-  }, [supabase, filterParam, isUserView]);
+    })().catch((e) => { signalerChargement(e, "admin/athletes"); setLoading(false); });
+  }, [supabase, filterParam, isUserView, essaiChargement, signalerChargement]);
 
   const filteredRows = useMemo(() => {
     let list = rows;
@@ -697,7 +705,12 @@ function AdminAthletesPageInner() {
         </div>
       )}
 
-      {loading ? (
+      {chargement.erreur ? (
+        <ErreurChargement
+          message="La liste n'a pas pu être chargée. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      ) : loading ? (
         <div className="text-center py-12 text-[#6b7280]">Chargement...</div>
       ) : isUserView ? (
         <UserListTable rows={userRows} />

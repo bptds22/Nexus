@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { lireTout } from "@/lib/supabase/lireTout";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ═══════════════════════════════════════════════════════════════
    RejetsSection — les rattachements rejetés, et le chemin du retour.
@@ -47,29 +49,50 @@ export default function RejetsSection({ onCancelSuccess }: { onCancelSuccess?: (
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  /** Lecture en échec (correctif 2026-10-16) : la section le DIT au lieu de
+   *  disparaître comme s'il n'y avait aucun rejet. */
+  const [erreurLecture, setErreurLecture] = useState(false);
+  const [essai, setEssai] = useState(0);
 
   /* `lire` RETOURNE les lignes au lieu de poser l'état : l'effet les pose dans
      un callback, jamais dans son corps (cascade de rendus), et le drapeau
      `annule` évite d'écrire dans un composant démonté. */
+  /* Toutes les lignes (lireTout : la RPC rend des lignes, coupées à 1000), et
+     une erreur LEVÉE (correctif 2026-10-16). */
   const lire = useCallback(async (): Promise<RejetLigne[]> => {
     const supabase = createClient();
-    const { data, error } = await supabase.rpc("list_school_rejections");
-    if (error) {
-      console.error("[list_school_rejections]", error);
-      return [];
-    }
-    return (data ?? []) as RejetLigne[];
+    return lireTout<RejetLigne>((de, a) => supabase
+      .rpc("list_school_rejections", {}, { count: "exact" })
+      .order("rejection_id")
+      .range(de, a));
   }, []);
 
   useEffect(() => {
     let annule = false;
     lire().then((rows) => {
       if (annule) return;
+      setErreurLecture(false);
       setLignes(rows);
+      setChargement(false);
+    }).catch((e) => {
+      console.error("[list_school_rejections]", e instanceof Error ? e.message : String(e));
+      if (annule) return;
+      setErreurLecture(true);
       setChargement(false);
     });
     return () => { annule = true; };
-  }, [lire]);
+  }, [lire, essai]);
+
+  /** Relit après un geste ; une erreur de lecture passe au bandeau. */
+  async function relire() {
+    try {
+      setLignes(await lire());
+      setErreurLecture(false);
+    } catch (e) {
+      console.error("[list_school_rejections]", e instanceof Error ? e.message : String(e));
+      setErreurLecture(true);
+    }
+  }
 
   async function annuler(ligne: RejetLigne) {
     if (enCours) return;
@@ -86,12 +109,21 @@ export default function RejetsSection({ onCancelSuccess }: { onCancelSuccess?: (
       setErreur(error.message?.replace(/^NEXUS:\s*/, "") || "Impossible d'annuler ce rejet.");
       // On relit : si le refus vient de la garde, la ligne porte désormais
       // `reattache` et l'écran le dira sans qu'on ait à recliquer.
-      setLignes(await lire());
+      await relire();
       return;
     }
 
-    setLignes(await lire());
+    await relire();
     onCancelSuccess?.();
+  }
+
+  if (erreurLecture) {
+    return (
+      <ErreurChargement
+        message="Les rattachements rejetés n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+        onReessayer={() => { setErreurLecture(false); setChargement(true); setEssai((n) => n + 1); }}
+      />
+    );
   }
 
   // Rien à montrer : pas de section vide qui pose une question sans objet.

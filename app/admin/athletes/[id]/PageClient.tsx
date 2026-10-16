@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import DatePicker from "@/app/coach/components/DatePicker";
 import { MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
 import SchoolSelect from "@/components/ui/SchoolSelect";
@@ -306,6 +308,9 @@ export default function AdminAthleteDetailPage() {
      avant le premier retour du composant. */
   const [progPickerOpen, setProgPickerOpen] = useState(false);
   const { data: catalogueProg } = useCegepPrograms();
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     (async () => {
@@ -316,13 +321,15 @@ export default function AdminAthleteDetailPage() {
         supabase.from("positions").select("id,nom,sport_id,abreviation"),
         // Pagination : liste complète pour le sélecteur d'établissement.
         // (L'affichage du nom, lui, passe par la jointure — cf. plus bas.)
-        fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,city,region").order("name").range(f, t), "AdminAthleteDetail"),
+        fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,city,region").order("name").order("id").range(f, t), "AdminAthleteDetail"),
         supabase
           .from("recruiter_pipeline")
           .select("id, recruiter_id, stage, moved_at, updated_at")
           .eq("athlete_id", id)
           .order("updated_at", { ascending: false }),
       ]);
+      // Aucune erreur avalée (correctif 2026-10-16) : bandeau « Réessayer ».
+      for (const r of [aRes, spRes, posRes, pipeRes]) if (r.error) throw r.error;
 
       type PipelineRaw = {
         id: string;
@@ -349,6 +356,7 @@ export default function AdminAthleteDetailPage() {
           .from("users")
           .select("id, first_name, last_name, email, school_id, schools!school_id(name,type)")
           .in("id", recruiterIds);
+        if (recRes.error) throw recRes.error;
         recruiterMap = new Map(
           ((recRes.data as RecruiterRow[]) || []).map((r) => [r.id, r]),
         );
@@ -425,10 +433,12 @@ export default function AdminAthleteDetailPage() {
       } catch (err) {
         console.error("[admin/athletes] loadAthleteRaw failed:", err);
       }
-      const [{ count: vc }, { count: fc }] = await Promise.all([
+      const [{ count: vc, error: errVues }, { count: fc, error: errFavoris }] = await Promise.all([
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
         supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
       ]);
+      if (errVues) throw errVues;
+      if (errFavoris) throw errFavoris;
       setViewCount(vc || 0);
       setFavoriteCount(fc || 0);
 
@@ -436,8 +446,8 @@ export default function AdminAthleteDetailPage() {
       setPositions((posRes.data as Position[]) || []);
       setSchools(schRes);
       setLoading(false);
-    })();
-  }, [supabase, id]);
+    })().catch((e) => { signalerChargement(e, "admin/athlete"); setLoading(false); });
+  }, [supabase, id, essaiChargement, signalerChargement]);
 
   function A(key: string) {
     return (athlete as Record<string, unknown>)[key];
@@ -647,6 +657,17 @@ export default function AdminAthleteDetailPage() {
     setToast("Enregistré");
     setTimeout(() => setToast(null), 2500);
     setSaving(false);
+  }
+
+  if (chargement.erreur) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <ErreurChargement
+          message="Cette fiche n'a pas pu être chargée. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      </div>
+    );
   }
 
   if (loading) {

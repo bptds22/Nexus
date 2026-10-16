@@ -27,6 +27,7 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 export interface FavorisUnite {
   /** Vrai pour un Pro / All Star : les favoris sont ceux de l'unité. */
@@ -59,9 +60,12 @@ export function useFavorisUnite(): FavorisUnite {
     // Tableau PARTAGÉ : rechargé à chaque affichage et au retour sur l'onglet.
     staleTime: 0,
     queryFn: async () => {
-      const { data, error } = await createClient().rpc("unite_favoris");
-      if (error) throw error;
-      return (data ?? []) as LigneFavori[];
+      // TOUTES les lignes (correctif 2026-10-16 : coupure à 1000 sinon).
+      const supabase = createClient();
+      return lireTout<LigneFavori>((de, a) => supabase
+        .rpc("unite_favoris", {}, { count: "exact" })
+        .order("athlete_id").order("unite_cegep_id").order("unite_sport_id")
+        .range(de, a));
     },
   });
   const propres = useFavorites();

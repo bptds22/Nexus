@@ -30,6 +30,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 /** Une ligne d'évaluation telle que projetée dans l'agrégat `evaluations`.
  *  `updated_at` est indispensable : selectBestEvaluation trie dessus et
@@ -136,13 +137,13 @@ export async function fetchRecruiterAthleteCards(
   const ids = Array.from(new Set(athleteIds.filter(Boolean)));
   if (ids.length === 0) return new Map();
 
-  const { data, error } = await supabase.rpc("recruiter_athlete_cards", {
-    p_athlete_ids: ids,
-  });
-
-  if (error) throw error;
-
-  const rows = (data ?? []) as RecruiterAthleteCard[];
+  /* TOUTES les cartes (correctif 2026-10-16) : la RPC rend des lignes, que
+     PostgREST coupait à 1000 sans le dire. Les identifiants voyagent déjà
+     dans le corps (POST) ; on lit toutes les pages, triées par id. */
+  const rows = await lireTout<RecruiterAthleteCard>((de, a) => supabase
+    .rpc("recruiter_athlete_cards", { p_athlete_ids: ids }, { count: "exact" })
+    .order("id")
+    .range(de, a));
   const map = new Map(rows.map((r) => [r.id, r]));
 
   /* CARTE ABSENTE ≠ IDENTITÉ VERROUILLÉE — et c'est un piège qui a

@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 type Stage = "IDENTIFIE" | "CONTACTE" | "VISITE_PLANIFIEE" | "ENGAGE" | "LETTRE_SIGNEE";
 const STAGE_ORDER: Stage[] = ["IDENTIFIE", "CONTACTE", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
@@ -88,23 +91,27 @@ export default function AdminPipelinePage() {
 
   const [sortKey, setSortKey] = useState<SortKey>("pipeline_count");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       // L'établissement vient de la jointure : un select complet de
       // `schools` était tronqué par PostgREST au-delà de 1000 lignes.
-      const [uRes, pipeRes, convRes, msgRes] = await Promise.all([
-        supabase.from("users").select("id,first_name,last_name,school_id,role,schools!school_id(name,type)"),
-        supabase.from("recruiter_pipeline").select("id,recruiter_id,stage,moved_at,created_at"),
-        supabase.from("conversations").select("id,recruiter_id"),
-        supabase.from("messages").select("id,conversation_id,sender_id,read_at,created_at"),
+      /* Correctif 2026-10-16 : chaque table EN ENTIER (lireTout — coupées à
+         1000 lignes sans le dire, faussant tous les compteurs), erreur levée. */
+      const tout = <T,>(table: string, colonnes: string) => lireTout<T>((de, a) => supabase
+        .from(table).select(colonnes, { count: "exact" }).order("id").range(de, a));
+      const [usersLus, pipeline, conversations, messages] = await Promise.all([
+        tout<UserRow>("users", "id,first_name,last_name,school_id,role,schools!school_id(name,type)"),
+        tout<PipelineEntry>("recruiter_pipeline", "id,recruiter_id,stage,moved_at,created_at"),
+        tout<ConvRow>("conversations", "id,recruiter_id"),
+        tout<MessageRow>("messages", "id,conversation_id,sender_id,read_at,created_at"),
       ]);
 
-      const users = ((uRes.data || []) as UserRow[]).filter((u) => u.role === "RECRUTEUR");
-      const pipeline = (pipeRes.data || []) as PipelineEntry[];
-      const conversations = (convRes.data || []) as ConvRow[];
-      const messages = (msgRes.data || []) as MessageRow[];
+      const users = usersLus.filter((u) => u.role === "RECRUTEUR");
 
       const now = Date.now();
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
@@ -201,8 +208,8 @@ export default function AdminPipelinePage() {
       setGlobalStagnant(pipeline.filter((p) => p.moved_at && now - new Date(p.moved_at).getTime() > STALE_MS).length);
 
       setLoading(false);
-    })();
-  }, [supabase]);
+    })().catch((e) => { signalerChargement(e, "admin/pipeline"); setLoading(false); });
+  }, [supabase, essaiChargement, signalerChargement]);
 
   const conversionPct = totalPipeline > 0 ? Math.round((lettreSignee / totalPipeline) * 100) : 0;
 
@@ -231,6 +238,17 @@ export default function AdminPipelinePage() {
   }
 
   const bigStagnantAlerts = recruiters.filter((r) => r.stagnant_count > 5);
+
+  if (chargement.erreur) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <ErreurChargement
+          message="Le pipeline n'a pas pu être chargé. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

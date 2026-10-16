@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 type SchoolType = "SECONDAIRE" | "CEGEP" | "LIGUE_CIVILE";
 type Reseau = "PUBLIC" | "PRIVE";
@@ -68,6 +70,9 @@ export default function AdminSchoolsPage() {
   const router = useRouter();
   const [rows, setRows] = useState<SchoolRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) :
+  // fetchAllRows lève désormais ses erreurs au lieu de rendre une liste partielle.
+  const chargement = useErreurChargement();
   const [typeFilter, setTypeFilter] = useState<"all" | SchoolType>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
@@ -100,20 +105,24 @@ export default function AdminSchoolsPage() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function fetchAll() {
+  function fetchAll() {
+    chargerTout().catch((e) => { chargement.signaler(e, "admin/schools"); setLoading(false); });
+  }
+
+  async function chargerTout() {
     setLoading(true);
     const [schoolsData, athletesData, scCoachesData, legacyCoachesData, recruitersData, teamsData] = await Promise.all([
-      fetchAllRows<Record<string, unknown>>((f, t) => supabase.from("schools").select("id,name,type,city,region,reseau,langue").order("name").range(f, t)),
-      fetchAllRows<{ school_id: string | null }>((f, t) => supabase.from("athletes").select("school_id").range(f, t)),
+      fetchAllRows<Record<string, unknown>>((f, t) => supabase.from("schools").select("id,name,type,city,region,reseau,langue").order("name").order("id").range(f, t)),
+      fetchAllRows<{ school_id: string | null }>((f, t) => supabase.from("athletes").select("school_id").order("id").range(f, t)),
       // La colonne est `coach_id`, PAS `user_id` : le select fautif rendait
       // une erreur PostgREST, fetchAllRows la loguait et retournait [], donc
       // le compte d'entraîneurs retombait sur le seul users.school_id. Sans
       // écart numérique à ce jour (les paires coïncident), mais tout coach
       // rattaché uniquement via school_coaches aurait manqué à l'appel.
-      fetchAllRows<{ school_id: string | null; coach_id: string | null }>((f, t) => supabase.from("school_coaches").select("school_id, coach_id").range(f, t), "AdminSchools"),
-      fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "COACH").range(f, t)),
-      fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "RECRUTEUR").range(f, t)),
-      fetchAllRows<{ school_id: string | null; sport_id: string | null }>((f, t) => supabase.from("teams").select("school_id,sport_id").range(f, t)),
+      fetchAllRows<{ school_id: string | null; coach_id: string | null }>((f, t) => supabase.from("school_coaches").select("school_id, coach_id").order("id").range(f, t), "AdminSchools"),
+      fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "COACH").order("id").range(f, t)),
+      fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "RECRUTEUR").order("id").range(f, t)),
+      fetchAllRows<{ school_id: string | null; sport_id: string | null }>((f, t) => supabase.from("teams").select("school_id,sport_id").order("id").range(f, t)),
     ]);
 
     const athleteCounts = new Map<string, number>();
@@ -173,7 +182,7 @@ export default function AdminSchoolsPage() {
   useEffect(() => {
     fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]);
+  }, [supabase, chargement.essai]);
 
   const regionOptions = useMemo(() => {
     const set = new Set<string>();
@@ -569,7 +578,12 @@ export default function AdminSchoolsPage() {
         </span>
       </div>
 
-      {loading ? (
+      {chargement.erreur ? (
+        <ErreurChargement
+          message="Les établissements n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={chargement.reessayer}
+        />
+      ) : loading ? (
         <div className="text-center py-12 text-[#6b7280]">Chargement...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-[#6b7280]">Aucun établissement</div>

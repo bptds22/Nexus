@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
-import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireCoachPipeline } from "@/lib/pipeline/pipelineVues";
+import { lireCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 import PlacementsTable from "@/components/director/PlacementsTable";
 import type { Placement } from "@/lib/types/models";
 
@@ -15,6 +18,10 @@ export default function PlacementsPageWrapper() {
 function PlacementsPage() {
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [loading, setLoading] = useState(true);
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16) : une
+  // liste vide n'affirme plus « aucun placement » quand la lecture a échoué.
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     async function loadPlacements() {
@@ -23,41 +30,46 @@ function PlacementsPage() {
       if (!user) { setLoading(false); return; }
 
       // Get my school
-      const { data: mySchool } = await supabase
+      const { data: mySchool, error: errMonEcole } = await supabase
         .from("school_coaches")
         .select("school_id")
         .eq("coach_id", user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
+      if (errMonEcole) throw errMonEcole;
 
       if (!mySchool) { setLoading(false); return; }
 
       // Get all coaches at my school
-      const { data: schoolCoaches } = await supabase
+      const schoolCoaches = await lireTout<{ coach_id: string }>((de, a) => supabase
         .from("school_coaches")
-        .select("coach_id")
-        .eq("school_id", mySchool.school_id);
+        .select("coach_id", { count: "exact" })
+        .eq("school_id", mySchool.school_id)
+        .order("id")
+        .range(de, a));
 
-      if (!schoolCoaches || schoolCoaches.length === 0) { setLoading(false); return; }
+      if (schoolCoaches.length === 0) { setLoading(false); return; }
       const coachIds = schoolCoaches.map(sc => sc.coach_id);
 
       // Périmètre canonique — source unique get_coach_athletes (directeur →
       // école ∪ équipes ; ACTIF+EN_ATTENTE). Remplace .in("coach_id", coachIds).
       // (coachIds reste utilisé plus bas pour les profils coachs.)
-      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      // Correctif 2026-10-16 : identifiants dans le CORPS, toutes les lignes.
+      const { ids: scopeIds } = await lireCoachAthleteScope(supabase);
       if (!scopeIds.length) { setLoading(false); return; }
-      const { data: athletes } = await supabase
-        .from("athletes")
+      const athletes = await lireTout<Record<string, unknown> & { id: string }>((de, a) => supabase
+        .rpc("athletes_par_ids", { p_ids: scopeIds }, { count: "exact" })
         .select("id, first_name, last_name, sport_id, coach_id, position_id, sports!sport_id(nom), positions!position_id(nom, abreviation)")
-        .in("id", scopeIds);
+        .order("id")
+        .range(de, a));
 
-      if (!athletes || athletes.length === 0) { setLoading(false); return; }
+      if (athletes.length === 0) { setLoading(false); return; }
       const athleteIds = athletes.map(a => a.id);
 
       // Get pipeline entries with LETTRE_SIGNEE
       /* Lot 2a — RPC coach : plus d'`id` de ligne pipeline. La clé du
          placement devient (athlete_id, recruiter_id), unique en base. */
-      const pipelineEntries = await fetchCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] });
+      const pipelineEntries = await lireCoachPipeline(supabase, { athleteIds, stages: ["LETTRE_SIGNEE"] });
 
       if (!pipelineEntries || pipelineEntries.length === 0) {
         setPlacements([]);
@@ -67,29 +79,37 @@ function PlacementsPage() {
 
       // Get recruiter profiles → school_id
       const recruiterIds = [...new Set(pipelineEntries.map(p => p.recruiter_id))];
-      const { data: recruiterUsers } = await supabase
-        .from("users")
+      // Identifiants dans le corps (users_par_ids, schools_par_ids), toutes
+      // les lignes, erreur levée (correctif 2026-10-16).
+      const recruiterUsers = await lireTout<{ id: string; first_name: string | null; last_name: string | null; school_id: string | null }>((de, a) => supabase
+        .rpc("users_par_ids", { p_ids: recruiterIds }, { count: "exact" })
         .select("id, first_name, last_name, school_id")
-        .in("id", recruiterIds);
+        .order("id")
+        .range(de, a));
 
       // Get CÉGEP school names
-      const cegepSchoolIds = [...new Set((recruiterUsers || []).map((r: { school_id: string | null }) => r.school_id).filter(Boolean))] as string[];
-      const { data: cegepSchools } = cegepSchoolIds.length > 0
-        ? await supabase.from("schools").select("id, name").in("id", cegepSchoolIds)
-        : { data: [] };
+      const cegepSchoolIds = [...new Set(recruiterUsers.map((r) => r.school_id).filter(Boolean))] as string[];
+      const cegepSchools = cegepSchoolIds.length > 0
+        ? await lireTout<{ id: string; name: string }>((de, a) => supabase
+            .rpc("schools_par_ids", { p_ids: cegepSchoolIds }, { count: "exact" })
+            .select("id, name")
+            .order("id")
+            .range(de, a))
+        : [];
 
       // Get coach user profiles
-      const { data: coachUsers } = await supabase
-        .from("users")
+      const coachUsers = await lireTout<{ id: string; first_name: string | null; last_name: string | null }>((de, a) => supabase
+        .rpc("users_par_ids", { p_ids: coachIds }, { count: "exact" })
         .select("id, first_name, last_name")
-        .in("id", coachIds);
+        .order("id")
+        .range(de, a));
 
       // Build Placement objects matching the shared type
       const mapped: Placement[] = pipelineEntries.map(pe => {
         const athlete = athletes.find(a => a.id === pe.athlete_id) as Record<string, unknown> | undefined;
-        const recruiter = recruiterUsers?.find((r: { id: string }) => r.id === pe.recruiter_id) as Record<string, unknown> | undefined;
-        const cegep = cegepSchools?.find((s: { id: string }) => s.id === (recruiter?.school_id as string)) as { name?: string } | undefined;
-        const coach = coachUsers?.find((u: { id: string }) => u.id === (athlete?.coach_id as string)) as Record<string, unknown> | undefined;
+        const recruiter = recruiterUsers.find((r: { id: string }) => r.id === pe.recruiter_id) as Record<string, unknown> | undefined;
+        const cegep = cegepSchools.find((s: { id: string }) => s.id === (recruiter?.school_id as string)) as { name?: string } | undefined;
+        const coach = coachUsers.find((u: { id: string }) => u.id === (athlete?.coach_id as string)) as Record<string, unknown> | undefined;
 
         // Sport name from join
         const sportRaw = athlete?.sports;
@@ -120,10 +140,21 @@ function PlacementsPage() {
       setPlacements(mapped);
       setLoading(false);
     }
-    loadPlacements();
-  }, []);
+    loadPlacements().catch((e) => { signalerChargement(e, "coach/ecole/placements"); setLoading(false); });
+  }, [essaiChargement, signalerChargement]);
 
   const count = placements.length;
+
+  if (chargement.erreur) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto">
+        <ErreurChargement
+          message="Les placements n'ont pas pu être chargés. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

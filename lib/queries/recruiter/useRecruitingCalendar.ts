@@ -46,6 +46,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { genderLabel } from "@/lib/config/gender";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import { lireTout } from "@/lib/supabase/lireTout";
 import { sourceDuMatch, type SourceMatch } from "@/lib/calendar/sourceMatch";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -198,45 +199,55 @@ export function useRecruitingCalendar(enabled: boolean = true) {
       const supabase = createClient();
 
       /* ── 1. Cibles = pipeline ∪ favoris ∪ membres de listes ── */
-      const { data: listRows } = await supabase
+      /* Correctif 2026-10-16 : chaque lecture est COMPLÈTE (lireTout, plus de
+         coupure à 1000) et une erreur est LEVÉE (l'écran l'affiche avec
+         « Réessayer ») — plus de calendrier amputé sans un mot. */
+      const listRows = await lireTout<{ id: string }>((de, a) => supabase
         .from("recruiter_lists")
-        .select("id")
-        .eq("recruiter_id", userId);
-      const listIds = ((listRows ?? []) as { id: string }[]).map((l) => l.id);
+        .select("id", { count: "exact" })
+        .eq("recruiter_id", userId)
+        .order("id")
+        .range(de, a));
+      const listIds = listRows.map((l) => l.id);
 
-      const [pipelineRes, favoritesRes, membersRes] = await Promise.all([
-        supabase
+      const [pipelineRows, favoriteRows, memberRows] = await Promise.all([
+        lireTout<{ athlete_id: string; stage: string | null }>((de, a) => supabase
           .from("recruiter_pipeline")
-          .select("athlete_id, stage")
-          .eq("recruiter_id", userId),
-        supabase
+          .select("athlete_id, stage", { count: "exact" })
+          .eq("recruiter_id", userId)
+          .order("id")
+          .range(de, a)),
+        lireTout<{ athlete_id: string }>((de, a) => supabase
           .from("recruiter_favorites")
-          .select("athlete_id")
-          .eq("recruiter_id", userId),
+          .select("athlete_id", { count: "exact" })
+          .eq("recruiter_id", userId)
+          .order("id")
+          .range(de, a)),
+        // Ses propres listes : peu nombreuses, l'adresse reste courte.
         listIds.length
-          ? supabase
+          ? lireTout<{ athlete_id: string; list_id: string }>((de, a) => supabase
               .from("recruiter_list_members")
-              .select("athlete_id, list_id")
+              .select("athlete_id, list_id", { count: "exact" })
               .in("list_id", listIds)
-          : Promise.resolve({ data: [], error: null }),
+              .order("id")
+              .range(de, a))
+          : Promise.resolve([] as { athlete_id: string; list_id: string }[]),
       ]);
 
       const stageByAthlete = new Map<string, string>();
-      ((pipelineRes.data ?? []) as { athlete_id: string; stage: string | null }[])
-        .forEach((r) => { if (r.stage) stageByAthlete.set(r.athlete_id, r.stage); });
+      pipelineRows.forEach((r) => { if (r.stage) stageByAthlete.set(r.athlete_id, r.stage); });
 
       const listsByAthlete = new Map<string, string[]>();
-      ((membersRes.data ?? []) as { athlete_id: string; list_id: string }[])
-        .forEach((r) => {
-          const cur = listsByAthlete.get(r.athlete_id) ?? [];
-          cur.push(r.list_id);
-          listsByAthlete.set(r.athlete_id, cur);
-        });
+      memberRows.forEach((r) => {
+        const cur = listsByAthlete.get(r.athlete_id) ?? [];
+        cur.push(r.list_id);
+        listsByAthlete.set(r.athlete_id, cur);
+      });
 
       const targetIds = Array.from(new Set<string>([
-        ...((pipelineRes.data ?? []) as { athlete_id: string }[]).map((r) => r.athlete_id),
-        ...((favoritesRes.data ?? []) as { athlete_id: string }[]).map((r) => r.athlete_id),
-        ...((membersRes.data ?? []) as { athlete_id: string }[]).map((r) => r.athlete_id),
+        ...pipelineRows.map((r) => r.athlete_id),
+        ...favoriteRows.map((r) => r.athlete_id),
+        ...memberRows.map((r) => r.athlete_id),
       ]));
 
       if (targetIds.length === 0) return EMPTY;
@@ -281,13 +292,16 @@ export async function construireCalendrier(
      ACTIF présent dans le pipeline, les favoris ou les listes du
      recruteur — c'est exactement la définition de targetIds, donc
      la couverture est totale ici, vérifiés ou non. */
-  const { data: linkRows, error: linkErr } = targetIds.length > 0
-    ? await supabase
-        .from("team_athletes")
-        .select("athlete_id, team_id, teams!team_id(id, name)")
-        .in("athlete_id", targetIds)
-    : { data: [], error: null };
-  if (linkErr) throw linkErr;
+  /* Correctif 2026-10-16 : les identifiants voyagent dans le CORPS
+     (team_athletes_par_athletes) — plus dans l'adresse, refusée au-delà de
+     ~220 athlètes — et TOUTES les lignes sont lues (lireTout), même RLS. */
+  const linkRows = targetIds.length > 0
+    ? await lireTout<Record<string, unknown>>((de, a) => supabase
+        .rpc("team_athletes_par_athletes", { p_ids: targetIds }, { count: "exact" })
+        .select("id, athlete_id, team_id, teams!team_id(id, name)")
+        .order("id")
+        .range(de, a))
+    : [];
 
   const linksByAthlete = new Map<string, Record<string, unknown>[]>();
   for (const row of (linkRows ?? []) as Record<string, unknown>[]) {
@@ -375,17 +389,18 @@ export async function construireCalendrier(
       source_nom, source_url, collecte_le, rseq_league_id,
       venue_lat, venue_lon, sector
     `;
+  /* Correctif 2026-10-16 : games_des_equipes reçoit les équipes dans le
+     CORPS (l'ancien filtre .or(...in...) mettait chaque équipe DEUX fois
+     dans l'adresse) ; tous les matchs à venir sont lus, aucun plafond. */
   const ids = Array.from(teamIds);
-  const inList = `(${ids.join(",")})`;
-  const { data: gameRowsCibles, error: gameErr } = ids.length > 0
-    ? await supabase
-        .from("games")
+  const gameRowsCibles = ids.length > 0
+    ? await lireTout<Record<string, unknown>>((de, a) => supabase
+        .rpc("games_des_equipes", { p_equipes: ids, p_depuis: todayIso() }, { count: "exact" })
         .select(COLONNES_MATCH)
-        .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
-        .gte("game_date", todayIso())
         .order("game_date", { ascending: true })
-    : { data: [], error: null };
-  if (gameErr) throw gameErr;
+        .order("id", { ascending: true })
+        .range(de, a))
+    : [];
 
   /* ── 3b. Matchs ajoutés par l'unité (lot B) — par id, à venir seulement.
      Un match à la fois ajouté ET joué par une cible n'apparaît qu'une fois.
@@ -394,13 +409,13 @@ export async function construireCalendrier(
   let gameRows = (gameRowsCibles ?? []) as Record<string, unknown>[];
   const manquants = [...ajoutes].filter((id) => !gameRows.some((g) => g.id === id));
   if (manquants.length > 0) {
-    const { data: rowsAjoutes, error: errAjoutes } = await supabase
-      .from("games")
+    const rowsAjoutes = await lireTout<Record<string, unknown>>((de, a) => supabase
+      .rpc("games_par_ids", { p_ids: manquants }, { count: "exact" })
       .select(COLONNES_MATCH)
-      .in("id", manquants)
-      .gte("game_date", todayIso());
-    if (errAjoutes) throw errAjoutes;
-    gameRows = [...gameRows, ...((rowsAjoutes ?? []) as Record<string, unknown>[])]
+      .gte("game_date", todayIso())
+      .order("id")
+      .range(de, a));
+    gameRows = [...gameRows, ...rowsAjoutes]
       .sort((a, b) => String(a.game_date).localeCompare(String(b.game_date)));
   }
 
@@ -426,11 +441,14 @@ export async function construireCalendrier(
       .filter((v): v is string => typeof v === "string" && !teamNameById.has(v)),
   ));
   if (opponentIds.length > 0) {
-    const { data: oppRows } = await supabase
-      .from("teams")
+    // Les adversaires : dans le corps (teams_par_ids), toutes les pages, et
+    // l'erreur n'est plus ignorée (correctif 2026-10-16).
+    const oppRows = await lireTout<{ id: string | null; name: string | null }>((de, a) => supabase
+      .rpc("teams_par_ids", { p_ids: opponentIds }, { count: "exact" })
       .select("id, name")
-      .in("id", opponentIds);
-    ((oppRows ?? []) as { id: string | null; name: string | null }[])
+      .order("id")
+      .range(de, a));
+    oppRows
       .forEach((r) => {
         if (r.id && r.name && !teamNameById.has(r.id)) {
           teamNameById.set(r.id, r.name);

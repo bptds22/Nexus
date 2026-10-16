@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { fetchCoachPipeline } from "@/lib/pipeline/pipelineVues";
-import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireCoachPipeline } from "@/lib/pipeline/pipelineVues";
+import { lireCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { lireTout } from "@/lib/supabase/lireTout";
+import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
+import ErreurChargement from "@/components/shared/ErreurChargement";
 
 /* ── types ──────────────────────────────────────────────── */
 
@@ -51,6 +54,9 @@ function StatsPage() {
   const [topAthletes, setTopAthletes] = useState<TopAthlete[]>([]);
   const [sportsList, setSportsList] = useState<string[]>(["Tous"]);
   const [pipelineCounts, setPipelineCounts] = useState<PipelineCounts>({ IDENTIFIE: 0, CONTACTE: 0, EN_DISCUSSION: 0, ENGAGE: 0, LETTRE_SIGNEE: 0 });
+  // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
+  const chargement = useErreurChargement();
+  const { essai: essaiChargement, signaler: signalerChargement } = chargement;
 
   useEffect(() => {
     async function fetchData() {
@@ -58,35 +64,42 @@ function StatsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data: mySchool } = await supabase
+      const { data: mySchool, error: errMonEcole } = await supabase
         .from("school_coaches")
         .select("school_id")
         .eq("coach_id", user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
+      if (errMonEcole) throw errMonEcole;
       if (!mySchool) { setLoading(false); return; }
 
       // Périmètre canonique — source unique get_coach_athletes (directeur →
       // école ∪ équipes ; ACTIF+EN_ATTENTE). Remplace .in("coach_id", coachIds).
-      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      const { ids: scopeIds } = await lireCoachAthleteScope(supabase);
       if (!scopeIds.length) { setLoading(false); return; }
 
-      const { data: athletes } = await supabase
-        .from("athletes")
+      // Correctif 2026-10-16 : identifiants dans le CORPS, toutes les lignes.
+      const athletes = await lireTout<{
+        id: string; first_name: string | null; last_name: string | null; sport_id: string; coach_id: string | null;
+        profile_completion: number | null; sports: unknown; positions: unknown;
+      }>((de, a) => supabase
+        .rpc("athletes_par_ids", { p_ids: scopeIds }, { count: "exact" })
         .select("id, first_name, last_name, sport_id, coach_id, profile_completion, verified, annee_diplomation, position_id, sports!sport_id(nom), positions!position_id(nom, abreviation)")
-        .in("id", scopeIds);
+        .order("id")
+        .range(de, a));
 
-      if (!athletes || athletes.length === 0) { setLoading(false); return; }
+      if (athletes.length === 0) { setLoading(false); return; }
       const athleteIds = athletes.map(a => a.id);
 
       /* Lot 2a — RPC coach (athlete_id, recruiter_id, stage, updated_at).
          Périmètre get_coach_athletes : le directeur voit toute son école. */
-      const pipeline = await fetchCoachPipeline(supabase, { athleteIds });
+      const pipeline = await lireCoachPipeline(supabase, { athleteIds });
 
       const sportIds = [...new Set(athletes.map(a => a.sport_id).filter(Boolean))];
       let sportsMap: Record<string, string> = {};
       if (sportIds.length > 0) {
-        const { data: sports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+        const { data: sports, error: errSports } = await supabase.from("sports").select("id, nom").in("id", sportIds);
+        if (errSports) throw errSports;
         if (sports) sports.forEach(s => { sportsMap[s.id] = s.nom; });
       }
 
@@ -125,16 +138,25 @@ function StatsPage() {
       const recruiterIds = [...new Set(activePipeline.map(p => p.recruiter_id).filter(Boolean))];
       let cegepList: InterestedCegep[] = [];
       if (recruiterIds.length > 0) {
-        const { data: recruiterUsers } = await supabase.from("users").select("id, school_id").in("id", recruiterIds);
-        const cegepSchoolIds = [...new Set((recruiterUsers || []).map((r: Record<string, unknown>) => r.school_id).filter(Boolean))] as string[];
+        // Identifiants dans le corps, toutes les lignes, erreur levée (2026-10-16).
+        const recruiterUsers = await lireTout<{ id: string; school_id: string | null }>((de, a) => supabase
+          .rpc("users_par_ids", { p_ids: recruiterIds }, { count: "exact" })
+          .select("id, school_id")
+          .order("id")
+          .range(de, a));
+        const cegepSchoolIds = [...new Set(recruiterUsers.map((r) => r.school_id).filter(Boolean))] as string[];
         let schoolsMap: Record<string, string> = {};
         if (cegepSchoolIds.length > 0) {
-          const { data: schools } = await supabase.from("schools").select("id, name").in("id", cegepSchoolIds);
-          if (schools) schools.forEach((s: { id: string; name: string }) => { schoolsMap[s.id] = s.name; });
+          const schools = await lireTout<{ id: string; name: string }>((de, a) => supabase
+            .rpc("schools_par_ids", { p_ids: cegepSchoolIds }, { count: "exact" })
+            .select("id, name")
+            .order("id")
+            .range(de, a));
+          schools.forEach((s: { id: string; name: string }) => { schoolsMap[s.id] = s.name; });
         }
         const cegepAthletes: Record<string, Set<string>> = {};
         activePipeline.forEach(p => {
-          const rec = (recruiterUsers || []).find((r: Record<string, unknown>) => r.id === p.recruiter_id) as { school_id?: string } | undefined;
+          const rec = recruiterUsers.find((r) => r.id === p.recruiter_id);
           if (!rec?.school_id) return;
           const schoolName = schoolsMap[rec.school_id] || rec.school_id;
           if (!cegepAthletes[schoolName]) cegepAthletes[schoolName] = new Set();
@@ -172,8 +194,8 @@ function StatsPage() {
 
       setLoading(false);
     }
-    fetchData();
-  }, []);
+    fetchData().catch((e) => { signalerChargement(e, "coach/ecole/stats"); setLoading(false); });
+  }, [essaiChargement, signalerChargement]);
 
   const handleExport = useCallback(() => {
     setToast(true);
@@ -197,6 +219,17 @@ function StatsPage() {
     { label: "Placés", value: pipelineCounts.LETTRE_SIGNEE, color: "#E63946" },
   ];
   const maxFunnel = Math.max(...funnelSteps.map(s => s.value), 1);
+
+  if (chargement.erreur) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto">
+        <ErreurChargement
+          message="Les statistiques de ton école n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { setLoading(true); chargement.reessayer(); }}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
