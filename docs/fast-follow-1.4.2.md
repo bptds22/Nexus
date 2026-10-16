@@ -2781,3 +2781,22 @@ club dans le menu Équipe, sous cette école.
 
 **Accepté tel quel par BP le 2026-10-15.** À revoir seulement si un recruteur s'en plaint : il faudrait
 alors lier le filtre à l'école de l'ÉQUIPE plutôt qu'à celle de la fiche.
+
+## 100. Cartes prospect et équipes RSEQ : 3 points relevés pendant la correction des Lauréats (2026-10-15, à faire hors chantier)
+
+1. **`send-invitation-carte` à corriger pour la règle RSEQ.** L'edge function déployée (v6, `email.ts`)
+   NOMME le recruteur et le cégep. L'objet est « Un recruteur du {cégep} recrute sur Nexus », le corps
+   « {Prénom Nom}, recruteur au {cégep}, utilise Nexus… », et le pied de page reprend le cégep. Le lot
+   « invitations sans coach » (merge `947b6332`) n'a corrigé que `send-invitation` et
+   `send-team-invitation`. Il faut un lot dédié : aucun recruteur ni cégep nommé à l'athlète. **Tant que ce
+   n'est pas fait, aucun import de cartes ne porte de courriel.** Ajouter un courriel plus tard déclenche
+   l'invitation tout seul (trigger `trg_carte_z_inviter_ajout`).
+2. **Les équipes « pérennes » s'affichent « 2025-2026 ».** La Juvénile créée le 2026-05-22 (et 323 équipes,
+   tous sports) porte `season = '2025-2026'`, mais le `rseq_team_id` et les matchs de 2026-2027. L'étiquette
+   se voit sur la ligne « Club · Sport · Saison » (`lignesEquipeResolue`), et dans le filtre « Équipe » en
+   cas d'homonyme. Voir `scripts/veille-rseq/reparation/classement-2025-2026/README.md`. Depuis la
+   correction A (`admin_operations` `66762765…`), les 372 cartes Lauréats concernées sont sur ces pérennes.
+3. **`deactivate_stale_orphan_teams()` : ne pas la lancer.** Elle passerait `is_active = false` sur les
+   pérennes sans coach ni athlète, parce que leur saison est antérieure à `current_season()`. Aucun cron
+   ne l'appelle aujourd'hui. À corriger, ou à supprimer, avant tout appel. Corriger le point 2 la rendrait
+   sûre.
