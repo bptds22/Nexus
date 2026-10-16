@@ -1599,15 +1599,19 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   /* A5 — ouverture au clic d'un push : la section demandée vient à l'écran
      une fois la fiche chargée. L'évaluation vit dans l'onglet Rapport, les
      badges dans le haut de fiche. Une seule fois par fiche ; sans la section
-     (aucun badge, par exemple), la fiche reste en haut. */
+     (aucun badge, par exemple), la fiche reste en haut.
+     « Fait » n'est posé qu'APRÈS le défilement : `a` change de référence dans
+     les 600 ms (relevé émulateur 1.4.5), le nettoyage annule le minuteur, et
+     un drapeau posé avant laissait la fiche en haut pour de bon. */
   const sectionFaiteRef = useRef(false);
   useEffect(() => {
     if (!section || !a || sectionFaiteRef.current) return;
-    sectionFaiteRef.current = true;
     if (section === "evaluation") setActiveTab("rapport");
     const t = window.setTimeout(() => {
-      document.getElementById(section === "badges" ? "nx-apercu-badges" : "nx-apercu-evaluation")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const cible = document.getElementById(section === "badges" ? "nx-apercu-badges" : "nx-apercu-evaluation");
+      if (!cible) return;
+      sectionFaiteRef.current = true;
+      cible.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 600);
     return () => window.clearTimeout(t);
   }, [section, a]);
