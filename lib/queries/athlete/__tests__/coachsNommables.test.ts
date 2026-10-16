@@ -5,6 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import {
   chargerCoachsNommablesEcole, chargerCoachsNommablesEquipe, resoudreApercuCode, versCoachEcole, versCoachEquipe,
 } from "@/lib/queries/athlete/coachsNommables";
@@ -94,12 +95,14 @@ test("JoinCodeField (web + mobile) résout par apercu_code_equipe ; /join (anony
 });
 
 test("migration : trois fonctions, droits exacts (authenticated seulement), filtre par coach_nommable", () => {
-  const sql = lire("supabase/migrations/20261016040000_coachs_nommables.sql");
+  // Fins de ligne normalisées : une extraction Windows (core.autocrlf) rend le fichier en CRLF ; le md5
+  // du texte en LF reste celui du fichier testé et du lot prod.
+  const sql = lire("supabase/migrations/20261016040000_coachs_nommables.sql").replace(/\r\n/g, "\n");
   for (const f of ["coachs_nommables_ecole(uuid)", "coachs_nommables_equipe(uuid)", "apercu_code_equipe(text)"]) {
     assert.ok(sql.includes(`revoke all on function public.${f} from public, anon, authenticated;`), f);
     assert.ok(sql.includes(`grant execute on function public.${f} to authenticated;`), f);
   }
   assert.equal((sql.match(/public\.coach_nommable\(/g) ?? []).length >= 2, true);
   assert.doesNotMatch(sql, /to anon/);
-  assert.doesNotMatch(sql, /\r/);
+  assert.equal(createHash("md5").update(sql).digest("hex"), "6d31a088090ba749066fdddfb5225322");
 });
