@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { ecouterRecouvrementClavier } from "@/lib/mobile/recouvrementClavier";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KeyboardInset — publie la hauteur du clavier natif dans --kbd-h, une fois
@@ -35,31 +36,13 @@ import { useEffect } from "react";
 export function KeyboardInset() {
   useEffect(() => {
     const racine = document.documentElement;
-    let show: { remove: () => void } | null = null;
-    let hide: { remove: () => void } | null = null;
-    let annule = false;
-
-    (async () => {
-      try {
-        const { Keyboard } = await import("@capacitor/keyboard");
-        if (annule) return;
-        // `keyboardWillShow` et non `keyboardDidShow` : l'animation du panneau
-        // part en même temps que celle du clavier au lieu de la suivre.
-        show = await Keyboard.addListener("keyboardWillShow", (info) => {
-          racine.style.setProperty("--kbd-h", `${info.keyboardHeight}px`);
-        });
-        hide = await Keyboard.addListener("keyboardWillHide", () => {
-          racine.style.setProperty("--kbd-h", "0px");
-        });
-      } catch {
-        /* web ou plugin absent — la règle CSS retombe sur 0px */
-      }
-    })();
-
+    // Le RECOUVREMENT du clavier, pas sa hauteur brute : sur Android 15+, la
+    // WebView a déjà rétréci (voir lib/mobile/recouvrementClavier).
+    const arreter = ecouterRecouvrementClavier((px) => {
+      racine.style.setProperty("--kbd-h", `${px}px`);
+    });
     return () => {
-      annule = true;
-      show?.remove();
-      hide?.remove();
+      arreter();
       racine.style.removeProperty("--kbd-h");
     };
   }, []);

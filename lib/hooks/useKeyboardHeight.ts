@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ecouterRecouvrementClavier } from "@/lib/mobile/recouvrementClavier";
 
 /* ═══════════════════════════════════════════════════════════════
    useKeyboardHeight — hauteur (px) du clavier natif iOS/Android.
@@ -17,17 +18,8 @@ import { useState, useEffect } from "react";
 ═══════════════════════════════════════════════════════════════ */
 export function useKeyboardHeight(): number {
   const [kbdH, setKbdH] = useState(0);
-  useEffect(() => {
-    let show: { remove: () => void } | null = null;
-    let hide: { remove: () => void } | null = null;
-    (async () => {
-      try {
-        const { Keyboard } = await import("@capacitor/keyboard");
-        show = await Keyboard.addListener("keyboardWillShow", (info) => setKbdH(info.keyboardHeight));
-        hide = await Keyboard.addListener("keyboardWillHide", () => setKbdH(0));
-      } catch { /* web — no-op */ }
-    })();
-    return () => { show?.remove(); hide?.remove(); };
-  }, []);
+  // Le RECOUVREMENT, pas la hauteur brute : Android 15+ rétrécit déjà la
+  // WebView (voir lib/mobile/recouvrementClavier).
+  useEffect(() => ecouterRecouvrementClavier(setKbdH), []);
   return kbdH;
 }
