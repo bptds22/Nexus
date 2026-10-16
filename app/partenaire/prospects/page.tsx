@@ -21,6 +21,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import FormulaireCarte from "@/components/partenaire/prospects/FormulaireCarte";
 import EnvoyerLien from "@/components/partenaire/prospects/EnvoyerLien";
+import { adressePublique } from "@/lib/partage/adressePublique";
 import {
   adresseLien,
   chargerCartesTerminees,
@@ -141,7 +142,8 @@ export default function MesProspectsPage() {
     setConfirmation(null);
     try {
       const jeton = await genererLien(createClient(), carteId);
-      setLien(adresseLien(window.location.origin, jeton));
+      // Domaine public (NEXT_PUBLIC_APP_URL), jamais l'adresse locale de la WebView de l'appli.
+      setLien(adresseLien(adressePublique(), jeton));
       await charger();
     } catch (e) {
       notifier("erreur", messageErreurCarte(e, "Le lien n'a pas pu être créé."));

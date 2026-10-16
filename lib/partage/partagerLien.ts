@@ -77,3 +77,31 @@ export async function partagerLien(opts: { url: string; titre: string; texte: st
 
   return (await copier(url)) ? "copie" : "echec";
 }
+
+/** Même cascade pour un MESSAGE dont le lien fait partie du texte (texto d'une
+ *  carte prospect, 1.4.5 B2). Pas de `url` séparée : certaines applis
+ *  l'ajouteraient une seconde fois sous le message. Copie = le message entier. */
+export async function partagerTexte(opts: { texte: string; titre: string }): Promise<IssuePartage> {
+  const { texte, titre } = opts;
+
+  if (IS_CAPACITOR) {
+    try {
+      const { Share } = await import("@capacitor/share");
+      await Share.share({ title: titre, text: texte, dialogTitle: titre });
+      return "partage";
+    } catch (e) {
+      if (estAnnulation(e)) return "annule";
+    }
+  }
+
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    try {
+      await navigator.share({ title: titre, text: texte });
+      return "partage";
+    } catch (e) {
+      if (estAnnulation(e)) return "annule";
+    }
+  }
+
+  return (await copier(texte)) ? "copie" : "echec";
+}

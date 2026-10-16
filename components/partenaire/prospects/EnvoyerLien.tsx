@@ -15,11 +15,20 @@
    - « Partager » : le partage natif, s'il existe ;
    - « Copier » : toujours.
    Le message est court, signé de l'organisation, sans nom ni évaluation.
+
+   Dans l'appli (1.4.5, B2) : « Envoyer par texto » ouvre la FEUILLE DE
+   PARTAGE native (Messages, WhatsApp…) avec le message — pas de sms:, que
+   la WebView ne relaie pas de façon fiable. Le lien du message est bâti sur
+   NEXT_PUBLIC_APP_URL (lib/partage/adressePublique.ts), jamais sur l'adresse
+   locale de la WebView.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { lienSms, messageTexto } from "@/lib/partenaires/prospects";
+import { partagerTexte } from "@/lib/partage/partagerLien";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 export default function EnvoyerLien({
   organisation,
@@ -55,6 +64,12 @@ export default function EnvoyerLien({
     try { await navigator.share({ text: message }); } catch { /* annulé */ }
   };
 
+  // Appli : la feuille de partage native ; repli sur la copie du message.
+  const envoyerAppli = async () => {
+    const issue = await partagerTexte({ texte: message, titre: "Envoyer le lien" });
+    if (issue === "copie") { setCopie("message"); setTimeout(() => setCopie(null), 2000); }
+  };
+
   // Rendu dans <body>, comme FormulaireCarte (barre du haut mobile).
   return createPortal(
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="titre-lien" data-envoyer-lien>
@@ -75,21 +90,27 @@ export default function EnvoyerLien({
         </p>
 
         <div className="mt-4 flex flex-col sm:flex-row gap-2">
-          {tactile && (
+          {IS_CAPACITOR && (
+            <button type="button" onClick={() => void envoyerAppli()} data-envoyer-texto-appli
+              className="flex-1 min-h-[44px] text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg">
+              Envoyer par texto
+            </button>
+          )}
+          {!IS_CAPACITOR && tactile && (
             <a href={lienSms(message)} className="flex-1 text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg">
               Envoyer par texto
             </a>
           )}
-          {partage && (
+          {!IS_CAPACITOR && partage && (
             <button type="button" onClick={() => void partager()} className="flex-1 px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg">
               Partager…
             </button>
           )}
           <button type="button" onClick={() => void copier("message")}
-            className={`flex-1 px-4 py-2.5 text-[13px] font-bold rounded-lg ${tactile ? "border border-[#2D3748] text-white hover:bg-white/5" : "bg-[#E63946] hover:bg-[#D42B22] text-white"}`}>
+            className={`flex-1 min-h-[44px] px-4 py-2.5 text-[13px] font-bold rounded-lg ${tactile || IS_CAPACITOR ? "border border-[#2D3748] text-white hover:bg-white/5" : "bg-[#E63946] hover:bg-[#D42B22] text-white"}`}>
             {copie === "message" ? "Message copié" : "Copier le message"}
           </button>
-          <button type="button" onClick={() => void copier("lien")} className="flex-1 px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg">
+          <button type="button" onClick={() => void copier("lien")} className="flex-1 min-h-[44px] px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg">
             {copie === "lien" ? "Lien copié" : "Copier le lien seul"}
           </button>
         </div>

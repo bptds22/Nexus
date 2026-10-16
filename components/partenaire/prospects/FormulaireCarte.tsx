@@ -21,6 +21,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import { libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
 import { trierEquipes } from "@/lib/teams/teamLabel";
 import EditeurEvaluationPartenaire, {
@@ -54,6 +57,7 @@ export default function FormulaireCarte({
   onClose: () => void;
   onEnregistree: (id: string, nouvelle: boolean) => void;
 }) {
+  const geometrieClavier = useSheetKeyboardGeometry("100vh");
   const annee = new Date().getFullYear();
   const promotions = useMemo(() => Array.from({ length: 8 }, (_, i) => annee - 1 + i), [annee]);
 
@@ -209,8 +213,12 @@ export default function FormulaireCarte({
 
   // Rendue dans <body> : dans le <main> du portail (z-10), la barre du haut mobile
   // (z-30) recouvrirait le haut de la fenêtre, quel que soit son z-index.
+  // Appli (1.4.5, B2) : règle clavier du projet — la fenêtre défilante REMONTE au-dessus
+  // du clavier ET se PLAFONNE (KeyboardResize.None : rien ne rétrécit tout seul) ; la
+  // zone sûre du haut est rendue (barre d'état en surimpression).
   return createPortal(
-    <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="titre-carte-prospect">
+    <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="titre-carte-prospect"
+      style={IS_CAPACITOR ? { ...geometrieClavier, paddingTop: "env(safe-area-inset-top)" } : undefined}>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !enCours && onClose()} />
       <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 sm:p-6 max-w-2xl w-full mx-4 my-6 shadow-2xl" data-formulaire-carte>
         <h3 id="titre-carte-prospect" className="font-head text-[18px] font-black text-white uppercase tracking-tight">
