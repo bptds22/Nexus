@@ -220,23 +220,34 @@ export default function CarteMatchsMobile({ mode }: { mode: ModeCarte }) {
     </>
   );
 
-  /* ── une ligne de match (liste, sheet de filtre, « autres matchs ») ── */
-  const ligne = (m: MatchRecherche, avecSource = true) => {
+  /* ── une ligne de match (liste, sheet de filtre) — COMPACTE (BP 2026-10-17) :
+        heure et date, les deux équipes, catégorie · division · lieu, le « + ».
+        Rien d'autre : la source, la description RSEQ et les liens de calendrier
+        sont dans la fiche du match (Apercu), au toucher de la ligne.
+        Deux zones de toucher SÉPARÉES, deux vrais boutons : « ouvrir la fiche »
+        (toute la ligne sauf la colonne du « + ») et le « + » (44 px). Cause du
+        « + » parasite (émulateur 2026-10-17) : la ligne n'était qu'un <article>
+        dont le clic passe par React (écouteur à la racine) ; pour le WebView
+        Android elle n'était pas cliquable, et son ajustement de toucher
+        AIMANTAIT un toucher près du « + » sur le « + » — le match s'ajoutait au
+        lieu d'ouvrir la fiche. Un vrai <button> pour la fiche reçoit son toucher. ── */
+  const ligne = (m: MatchRecherche) => {
     const t = terrainDe(m);
     const heure = heureCarte(m.heure);
     return (
-      <article key={m.id} className={"row cm-row" + (m.id === courant ? " sel" : "")} data-testid="ligne-match" data-match={m.id} data-terrain={t?.id}
-        onClick={() => ouvrirMatch(m)}>
-        <div className="cm-quand">
-          <div className={"cm-heure" + (heure === "Heure à confirmer" ? " tbc" : "")} data-testid="heure-match">{heure}</div>
-          <div className="cm-date-carte">{dateCarte(m.jour)}</div>
-        </div>
-        <div className="rowmid">
-          <div className="cm-titre">{titreMatch(m)}</div>
-          <div className="rowmeta">{groupeMatch(m) ? `${groupeMatch(m)} · ` : ""}{m.terrain || LIEU_NON_PRECISE}</div>
-          {avecSource && <Source m={m} sources={e.sources} />}
-        </div>
-        <div className="rowright">
+      <article key={m.id} className={"row cm-row" + (m.id === courant ? " sel" : "")} data-testid="ligne-match" data-match={m.id} data-terrain={t?.id}>
+        <button type="button" className="cm-ouvrir" data-testid="ouvrir-match" aria-label={`Ouvrir la fiche : ${titreMatch(m)}`}
+          onClick={() => ouvrirMatch(m)}>
+          <span className="cm-quand">
+            <span className={"cm-heure" + (heure === "Heure à confirmer" ? " tbc" : "")} data-testid="heure-match">{heure}</span>
+            <span className="cm-date-carte">{dateCarte(m.jour)}</span>
+          </span>
+          <span className="rowmid">
+            <span className="cm-titre">{titreMatch(m)}</span>
+            <span className="rowmeta">{groupeMatch(m) ? `${groupeMatch(m)} · ` : ""}{m.terrain || LIEU_NON_PRECISE}</span>
+          </span>
+        </button>
+        <div className="rowright cm-zone-plus">
           <BoutonCalendrier mode={mode} m={m} enCours={e.enCours === m.id} onClick={() => e.basculerMatch(m)} />
         </div>
       </article>
@@ -329,7 +340,7 @@ export default function CarteMatchsMobile({ mode }: { mode: ModeCarte }) {
           <span>{e.matchs.length} match{e.matchs.length > 1 ? "s" : ""}</span>
           <span className="l" />
         </div>
-        <div className="rows">{etatsListe}{e.matchs.map((m) => ligne(m, false))}</div>
+        <div className="rows">{etatsListe}{e.matchs.map((m) => ligne(m))}</div>
       </div>
     </>
   );
@@ -450,12 +461,16 @@ function Apercu({ mode, m, prise, onClose, suivis, actif, enCours, sources, autr
             <div data-testid="autres-matchs">
               <div className="kicker2">Autres matchs à ce terrain</div>
               {autres.map((x) => (
-                <article key={x.id} className="row cm-row" data-testid="autre-match" data-match={x.id} onClick={() => onOuvrir(x)}>
-                  <div className="rowmid">
-                    <div className="cm-titre">{titreMatch(x)}</div>
-                    <div className="rowmeta">{groupeMatch(x) ? `${groupeMatch(x)} · ` : ""}{libelleJour(x.jour)} · {heureQuebec(x.heure)}</div>
-                  </div>
-                  <div className="rowright">
+                <article key={x.id} className="row cm-row" data-testid="autre-match" data-match={x.id}>
+                  {/* Deux vrais boutons, comme la ligne de la liste (ajustement de toucher du WebView). */}
+                  <button type="button" className="cm-ouvrir" data-testid="ouvrir-match" aria-label={`Ouvrir la fiche : ${titreMatch(x)}`}
+                    onClick={() => onOuvrir(x)}>
+                    <span className="rowmid">
+                      <span className="cm-titre">{titreMatch(x)}</span>
+                      <span className="rowmeta">{groupeMatch(x) ? `${groupeMatch(x)} · ` : ""}{libelleJour(x.jour)} · {heureQuebec(x.heure)}</span>
+                    </span>
+                  </button>
+                  <div className="rowright cm-zone-plus">
                     <BoutonCalendrier mode={mode} m={x} enCours={enCours === x.id} onClick={() => onCalendrier(x)} />
                   </div>
                 </article>
@@ -508,14 +523,19 @@ const CSS = `
   background:#DC3441;border-radius:10px;padding:8px 12px;font-size:14.5px;font-weight:700}
 .rm.cm-mobile .cm-jour-nom{color:#fff}
 .rm.cm-mobile .cm-jour-n{font-size:12.5px;font-weight:500;color:#fff;white-space:nowrap}
-.rm.cm-mobile .cm-row{align-items:flex-start}
+.rm.cm-mobile .cm-row{align-items:stretch;gap:0;padding:0}
+.rm.cm-mobile .cm-ouvrir{flex:1;min-width:0;display:flex;align-items:flex-start;gap:12px;padding:12px 8px 12px 12px;
+  background:none;border:0;border-radius:16px 0 0 16px;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.rm.cm-mobile .cm-ouvrir .cm-quand,.rm.cm-mobile .cm-ouvrir .rowmid,.rm.cm-mobile .cm-ouvrir .cm-heure,
+.rm.cm-mobile .cm-ouvrir .cm-date-carte,.rm.cm-mobile .cm-ouvrir .cm-titre,.rm.cm-mobile .cm-ouvrir .rowmeta{display:block}
+.rm.cm-mobile .cm-zone-plus{justify-content:flex-start;padding:12px 12px 12px 4px}
 .rm.cm-mobile .cm-quand{flex:0 0 58px;min-width:0}
 .rm.cm-mobile .cm-heure{padding-top:1px;font-size:15px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rm.cm-mobile .cm-heure.tbc{white-space:normal;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--mut)}
 .rm.cm-mobile .cm-date-carte{margin-top:3px;font-size:11.5px;font-weight:600;color:var(--mut);white-space:nowrap}
 .rm.cm-mobile .cm-titre{font-size:15.5px;font-weight:700;line-height:1.25;margin-bottom:3px}
 .rm.cm-mobile .cm-row .rowmeta{white-space:normal}
-.rm.cm-mobile .cm-plus{font-size:19px;font-weight:700;line-height:1}
+.rm.cm-mobile .cm-plus{width:44px;height:44px;border-radius:22px;font-size:19px;font-weight:700;line-height:1}
 .rm.cm-mobile .cm-plus.on{color:var(--green);border-color:rgba(34,197,94,.5)}
 .rm.cm-mobile .cm-plus:disabled{opacity:1;cursor:default}
 .rm.cm-mobile .cm-src{font-size:12.5px;color:var(--mut)}

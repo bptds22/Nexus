@@ -94,3 +94,24 @@ test("menu « Plus » recruteur : Carte des matchs après Calendrier, sans verro
   // Le partenaire garde la sienne.
   assert.match(src, /\{ key: "carte-matchs", label: "Carte des matchs", href: "\/partenaire\/carte-matchs", icon: Icons\.calendar \}/);
 });
+
+test("ligne compacte (appli) : heure/date, équipes, catégorie · division · lieu, « + » ; la source va dans la fiche", () => {
+  const mob = lire("components/carte-matchs/CarteMatchsMobile.tsx");
+  const debut = mob.indexOf("const ligne = (m: MatchRecherche) => {");
+  const corps = mob.slice(debut, mob.indexOf("\n  };", debut));
+  assert.ok(debut > 0);
+  assert.doesNotMatch(corps, /<Source /, "pas de source dans la ligne");
+  assert.match(corps, /<span className="cm-titre">\{titreMatch\(m\)\}<\/span>/);
+  assert.match(corps, /\{groupeMatch\(m\) \? `\$\{groupeMatch\(m\)\} · ` : ""\}\{m\.terrain \|\| LIEU_NON_PRECISE\}/);
+  assert.match(corps, /<BoutonCalendrier /);
+  // La fiche du match garde tout le détail (source, description, calendrier officiel).
+  assert.match(mob.slice(mob.indexOf("function Apercu(")), /<Source m=\{m\} sources=\{sources\} \/>/);
+  // « + » : zone de 44 px, et un toucher sur lui n'ouvre jamais la fiche.
+  assert.match(mob, /\.rm\.cm-mobile \.cm-plus\{width:44px;height:44px;/);
+  assert.match(mob, /onClick=\{\(ev\) => \{ ev\.stopPropagation\(\); void tap\(\); onClick\(\); \}\}/);
+  // « + » parasite : la fiche s'ouvre par un VRAI bouton (sinon le WebView aimante le toucher sur le « + ») ;
+  // l'<article> n'a plus de onClick, dans la liste comme dans « Autres matchs à ce terrain ».
+  assert.match(corps, /<button type="button" className="cm-ouvrir" data-testid="ouvrir-match"[^>]*\n\s*onClick=\{\(\) => ouvrirMatch\(m\)\}>/);
+  assert.doesNotMatch(mob, /<article[^>]*onClick=/);
+  assert.equal((mob.match(/className="rowright cm-zone-plus"/g) || []).length, 2);
+});
