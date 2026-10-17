@@ -47,6 +47,8 @@ import {
 } from "@/components/shared/settings";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { deconnexion } from "@/lib/auth/deconnexion";
+import { useEntraineurChef } from "@/components/athlete/EntraineurChefLecture";
+import { texteEntraineurChef } from "@/lib/athlete/entraineurChef";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -61,6 +63,8 @@ interface AthleteProfile {
   schoolName: string;
   leagueTeamName: string;
   leagueName: string;
+  /** Première équipe (team_athletes) — son entraîneur-chef nommable est affiché (point 9). */
+  teamId: string | null;
   coachName: string;
   /* B2 — Confidentialité fields (mirror desktop page.tsx L168-184). */
   dateOfBirth: string | null;
@@ -80,6 +84,7 @@ export function AthleteParametresMobile() {
 
   /* ── State (hooks BEFORE any early return — Rules of Hooks 7.8d) */
   const [profile, setProfile] = useState<AthleteProfile | null>(null);
+  const entraineurChef = useEntraineurChef(profile?.teamId);
   const [loading, setLoading] = useState(true);
   const [signupDate, setSignupDate] = useState<string>("");
 
@@ -186,6 +191,7 @@ export function AthleteParametresMobile() {
       schoolName: (schoolRel as { name?: string } | null)?.name ?? "",
       leagueTeamName: teamRel?.name ?? "",
       leagueName: leagueRel?.name ?? "",
+      teamId: taRow?.team_id ?? null,
       coachName: coachRel
         ? `${(coachRel as { first_name?: string }).first_name ?? ""} ${(coachRel as { last_name?: string }).last_name ?? ""}`.trim()
         : "",
@@ -410,20 +416,17 @@ export function AthleteParametresMobile() {
         </Group>
       )}
 
-      {/* MON COACH — read-only (no change affordance per B1 decision) */}
-      <SectionLabel>Mon coach</SectionLabel>
-      <Group>
-        {profile?.coachName ? (
-          <NavRow label="Coach" value={profile.coachName} isFirst rightChevron="none" />
-        ) : (
-          <NavRow
-            label="Aucun coach assigné"
-            sublabel="Tu peux sélectionner un coach depuis le web."
-            isFirst
-            rightChevron="none"
-          />
-        )}
-      </Group>
+      {/* Point 9, option A (BP 2026-10-17) : plus de « Mon coach » ni de renvoi au web
+          pour en choisir un. Le coach officiel est l'entraîneur-chef de l'équipe
+          (doctrine du 2026-09-09) : lecture seule, seulement s'il est nommable. */}
+      {entraineurChef && (
+        <>
+          <SectionLabel>Mon entraîneur-chef</SectionLabel>
+          <Group>
+            <NavRow label={texteEntraineurChef(entraineurChef)} isFirst rightChevron="none" />
+          </Group>
+        </>
+      )}
 
       {/* COMMUNICATIONS — voir RecruteurParametresMobile pour le raisonnement
           complet. En résumé : les six bascules de notification et le maître

@@ -12,7 +12,7 @@ import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
 import { isUnder14, MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
 import SchoolSelect from "@/components/ui/SchoolSelect";
-import CoachPicker from "@/components/coach/CoachPicker";
+import EntraineurChefLecture from "@/components/athlete/EntraineurChefLecture";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
@@ -2287,27 +2287,10 @@ function AthleteOnboardingDesktop() {
                   </div>
                 )}
 
-                {/* Coach picker — only after school selection */}
-                {/* Règle RSEQ (décision BP 2026-10-16) : seulement les coachs
-                    nommables (coachs_nommables_ecole) ; aucune section du tout
-                    s'il n'y en a pas — un cégep n'en a jamais. */}
-                {selectedSchoolId && (
-                  <CoachPicker
-                    schoolId={selectedSchoolId}
-                    selectedCoachId={selectedCoachId}
-                    onChange={setSelectedCoachId}
-                    className="mb-6"
-                    entete={
-                      <>
-                        <div className={sectionTitle}>
-                          <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
-                          Mon coach <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
-                        </div>
-                        <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton coach actuel. Tu pourras changer plus tard.</p>
-                      </>
-                    }
-                  />
-                )}
+                {/* Point 9, option A (BP 2026-10-17) : plus de liste « Mon coach ».
+                    Le coach officiel est l'entraîneur-chef de l'équipe (doctrine
+                    du 2026-09-09) ; il s'affiche en lecture seule au choix de
+                    l'équipe (étape 2), s'il est nommable. */}
               </>
             )}
 
@@ -2536,6 +2519,7 @@ function AthleteOnboardingDesktop() {
                     Changer
                   </button>
                 </div>
+                <EntraineurChefLecture teamId={codeLock.teamId} className="mt-3 text-[13px] font-semibold text-white" />
               </div>
             ) : userContext === "scolaire" && selectedSchoolId && primarySport && (
               <div className="mt-5 mb-5">
@@ -2549,6 +2533,7 @@ function AthleteOnboardingDesktop() {
                   onSelect={(t) => { setSelectedTeamId(t.id); setSelectedTeamName(t.name); setJoinCodeUsed(null); }}
                   onContinueWithoutTeam={() => { setSelectedTeamId(null); setSelectedTeamName(""); setJoinCodeUsed(null); }}
                 />
+                <EntraineurChefLecture teamId={selectedTeamId} className="mt-3 text-[13px] font-semibold text-white" />
               </div>
             )}
 

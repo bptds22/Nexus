@@ -84,7 +84,10 @@ test("web : onboarding — « Tu as un code d'équipe ? », aperçu et noms filt
   assert.equal((src.match(/Tu as un code d&apos;équipe \?/g) ?? []).length, 2);
   assert.match(src, /const noms = nomsAffichablesCode\(t\);/);
   assert.match(src, /apercuCodeEquipe\(codeLock\)\.titre/);
-  assert.match(src, /<CoachPicker\s+schoolId=\{selectedSchoolId\}[\s\S]{0,400}entete=\{/);
+  // Point 9, option A (BP 2026-10-17) : plus de liste « Mon coach » ; l'entraîneur-chef en lecture seule.
+  assert.doesNotMatch(src, /<CoachPicker|CoachPicker from/);
+  assert.match(src, /<EntraineurChefLecture teamId=\{codeLock\.teamId\}/);
+  assert.match(src, /<EntraineurChefLecture teamId=\{selectedTeamId\}/);
 });
 
 test("JoinCodeField (web + mobile) résout par apercu_code_equipe ; /join (anonyme) garde resolve_team_join_token", () => {

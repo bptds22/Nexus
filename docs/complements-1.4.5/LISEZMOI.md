@@ -27,13 +27,21 @@ plus `exists_exact` (« Il fait partie d'une autre équipe ») ; nouveau drapeau
 déjà dans ton effectif », création bloquée (pas de doublon). Colonne de retour ajoutée → DROP +
 CREATE, droits rétablis à l'identique ; l'appli 1.4.4 ignore la colonne.
 
-## Retiré du lot : point 9 (coach choisi)
+## Point 9 (coach choisi) : option A, côté écran seulement — hors migration
 
 Le coach choisi est remplacé par l'entraîneur-chef **par conception** : doctrine T3 du 2026-09-09
 (`20260909133830_responsable_equipe_vague2`) — `athletes.coach_id` est le **responsable** de l'équipe,
 recalculé par `trg_team_athletes_referent` à chaque arrivée et par `trg_team_coaches_referent` à chaque
 changement de staff. Corriger `_apply_team_attachment_core` seul ne sert à rien (le trigger repose le
-chef juste après — banc B2 en échec). Décision de BP requise.
+chef juste après — banc B2 en échec).
+
+**Décision BP du 2026-10-17 (option A)** : on garde la doctrine. La LISTE « Mon coach » est retirée
+partout où l'athlète la voyait — onboarding web (`/athlete/onboarding`), paramètres web
+(`/athlete/parametres` : plus de « Changer », « Retirer », « Sélectionner un coach »), onboarding et
+paramètres de l'appli. À la place, en lecture seule : « Ton entraîneur-chef : X », seulement si cet
+entraîneur-chef est nommable (`coachs_nommables_equipe`) ; sinon, rien. Règle partagée :
+`lib/athlete/entraineurChef.ts` ; ligne : `components/athlete/EntraineurChefLecture.tsx`. **Aucun
+changement en base ni à l'aiguillage des recruteurs.**
 
 ## Fichiers
 

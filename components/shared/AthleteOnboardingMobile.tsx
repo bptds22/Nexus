@@ -48,6 +48,7 @@ import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimPr
 import { apercuCodeEquipe, nomsAffichablesCode, orphelinPourReclamation } from "@/lib/invitations/apercuCodeEquipe";
 import { equipeNommable } from "@/lib/invitations/equipeNommable";
 import { chargerCoachsNommablesEquipe } from "@/lib/queries/athlete/coachsNommables";
+import { entraineurChefNommable, texteEntraineurChef } from "@/lib/athlete/entraineurChef";
 import AthleteOnboardingWowMobile from "@/components/shared/AthleteOnboardingWowMobile";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -2081,7 +2082,6 @@ interface Step1Props {
 }
 
 function Step1Content(p: Step1Props) {
-  const roleLabel = (r: string) => r === "head_coach" ? "Entraîneur-chef" : r === "coordinator" ? "Coordonnateur" : "Assistant";
   // Règle RSEQ (§93) : l'équipe du code, son école et ses coachs ne sont
   // nommés que pour une équipe secondaire ou civile.
   const apercu = p.codeLock ? apercuCodeEquipe(p.codeLock) : null;
@@ -2252,43 +2252,15 @@ function Step1Content(p: Step1Props) {
             </button>
           </div>
 
-          {/* Coachs : la liste est filtrée par l'école dérivée du code — le
-              parent charge teamCoaches depuis selectedTeamId, que applyCodeLock
-              vient de poser. Aucun câblage supplémentaire. Règle RSEQ (§93) :
-              jamais pour une équipe collégiale ou de type inconnu. */}
-          {apercu!.coachsVisibles && p.teamCoachesLoaded && p.teamCoaches.length > 0 && (
-            <>
-              <SectionTitle>Mon coach</SectionTitle>
-              <div className="space-y-2">
-                {p.teamCoaches.map((c) => {
-                  const active = p.selectedCoachId === c.coach_id;
-                  return (
-                    <button
-                      key={c.coach_id}
-                      type="button"
-                      onClick={() => { triggerHaptic("Light"); p.onSelectCoach(c); }}
-                      className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-left transition-colors ${
-                        active
-                          ? "bg-[#E63946]/10 border border-[#E63946]/30"
-                          : "bg-[#1A1D24] border border-white/[0.06]"
-                      }`}
-                    >
-                      <span className="text-[14px] text-white">
-                        {`${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "Entraîneur"}
-                      </span>
-                      <span className="text-[11px] text-white/40">{roleLabel(c.role ?? "")}</span>
-                    </button>
-                  );
-                })}
-                <button
-                  type="button"
-                  onClick={() => { triggerHaptic("Light"); p.onClearCoach(); }}
-                  className="text-[12px] text-white/40 underline px-1 min-h-[44px]"
-                >
-                  Continuer sans coach
-                </button>
-              </div>
-            </>
+          {/* Point 9, option A (BP 2026-10-17) : plus de liste « Mon coach ». Le coach
+              officiel est l'entraîneur-chef de l'équipe (doctrine du 2026-09-09) ; en
+              lecture seule, seulement s'il est nommable (coachs_nommables_equipe, chargés
+              par le parent depuis selectedTeamId). Règle RSEQ (§93) : jamais pour une
+              équipe collégiale ou de type inconnu. */}
+          {apercu!.coachsVisibles && p.teamCoachesLoaded && entraineurChefNommable(p.teamCoaches) && (
+            <p className="text-[14px] font-semibold text-white px-1 mt-3" data-testid="entraineur-chef">
+              {texteEntraineurChef(entraineurChefNommable(p.teamCoaches)!)}
+            </p>
           )}
         </>
       ) : p.userContext === "scolaire" ? (
@@ -2365,63 +2337,13 @@ function Step1Content(p: Step1Props) {
                     placeholder="Sélectionner mon équipe…"
                     onTap={p.onOpenScolaireTeam}
                   />
-                  {/* Section COACH — dépend de la team choisie. Règle RSEQ :
-                      jamais pour une école qui n'est pas secondaire. */}
-                  {p.selectedTeamId && p.ecoleNommable && (
-                    <>
-                      <SectionTitle>Mon coach</SectionTitle>
-                      {!p.teamCoachesLoaded ? (
-                        <p className="text-[12px] text-white/40 italic px-1 mt-1">
-                          Chargement des coachs…
-                        </p>
-                      ) : p.teamCoaches.length === 0 ? (
-                        // CAS B — équipe choisie sans coach inscrit
-                        <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-4">
-                          <p className="text-[15px] text-white/90 leading-relaxed">
-                            Cette équipe n&apos;a pas encore de coach sur Nexus. Invite ton coach à vérifier ton profil.
-                          </p>
-                        </div>
-                      ) : (
-                        // CAS A — équipe + coachs : radio inline
-                        <div className="space-y-2">
-                          {p.teamCoaches.map((c) => {
-                            const active = p.selectedCoachId === c.coach_id;
-                            const fullName = `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "—";
-                            return (
-                              <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => { triggerHaptic("Light"); p.onSelectCoach(c); }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors min-h-[52px] text-left ${
-                                  active
-                                    ? "bg-[#E63946]/12 border-[#E63946]/40"
-                                    : "bg-[#1A1D24] border-white/[0.06] active:bg-white/[0.04]"
-                                }`}
-                              >
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                  active ? "border-[#E63946]" : "border-white/30"
-                                }`}>
-                                  {active && <div className="w-2.5 h-2.5 rounded-full bg-[#E63946]" />}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[15px] font-semibold text-white truncate">{fullName}</p>
-                                  <p className="text-[12px] text-white/55">{roleLabel(c.role)}</p>
-                                </div>
-                              </button>
-                            );
-                          })}
-                          {p.selectedCoachId && (
-                            <button
-                              type="button"
-                              onClick={() => { triggerHaptic("Light"); p.onClearCoach(); }}
-                              className="w-full h-11 rounded-2xl border border-white/[0.10] text-[13px] font-semibold text-white/55 active:bg-white/[0.04]"
-                            >
-                              Continuer sans coach
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </>
+                  {/* Point 9, option A (BP 2026-10-17) : plus de liste « Mon coach » ;
+                      l'entraîneur-chef de l'équipe choisie, en lecture seule, s'il est
+                      nommable. Règle RSEQ : jamais pour une école qui n'est pas secondaire. */}
+                  {p.selectedTeamId && p.ecoleNommable && p.teamCoachesLoaded && entraineurChefNommable(p.teamCoaches) && (
+                    <p className="text-[14px] font-semibold text-white px-1 mt-3" data-testid="entraineur-chef">
+                      {texteEntraineurChef(entraineurChefNommable(p.teamCoaches)!)}
+                    </p>
                   )}
                 </>
               )}
