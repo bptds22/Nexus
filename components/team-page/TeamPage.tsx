@@ -115,14 +115,14 @@ export default function TeamPage({ team }: { team: TeamData }) {
       <style dangerouslySetInnerHTML={{ __html: DNA_CSS + TP_CSS }} />
       <GrainOverlay id="tpg" />
       <div className="rv">
-        <TeamHero team={team} cible={cible} onToggleCible={toggleCible} />
+        <TeamHero team={team} cible={cible} onToggleCible={toggleCible} ciblesVisibles={targets.visible} />
       </div>
       <CalendarSection team={team} />
       <PresentationSection team={team} />
       {/* Besoins : seule section qui ne se vide pas d'elle-même (le terrain se
           rend même sans donnée) → la visibilité se décide ici. */}
       {!(team.hiddenSections ?? []).includes("besoins") && (
-        <BesoinsWidget team={team} cible={cible} onToggleCible={toggleCible} />
+        <BesoinsWidget team={team} cible={cible} onToggleCible={toggleCible} ciblesVisibles={targets.visible} />
       )}
       <DejaEngageesSection team={team} />
     </div>

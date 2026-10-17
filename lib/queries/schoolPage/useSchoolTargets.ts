@@ -9,13 +9,17 @@
 // optimistement (+/-1) au-dessus de la valeur initiale. Viewer non-athlète
 // (recruteur, déconnecté) : canTarget=false, toggle no-op (aucun effet de bord).
 // SSR intact (effets client only) → non-régression /page-test préservée.
+// `visible` : le bouton est-il montré à ce viewer (lib/cibles/visibiliteBouton
+// — masqué pour un PARTENAIRE, et tant que la session n'est pas lue).
 
 import * as React from "react";
 import { createClient } from "@/lib/supabase/client";
+import { boutonCiblesVisible } from "@/lib/cibles/visibiliteBouton";
 
 export interface SchoolTargetsState {
   inTargets: boolean;
   canTarget: boolean;
+  visible: boolean;
   followers: number;
   busy: boolean;
   toggle: () => void;
@@ -26,8 +30,28 @@ export function useSchoolTargets(schoolId: string, initialFollowers: number): Sc
   const [inTargets, setInTargets] = React.useState(false);
   const [followers, setFollowers] = React.useState(initialFollowers);
   const [busy, setBusy] = React.useState(false);
+  const [viewer, setViewer] = React.useState<{ resolu: boolean; role: string | null }>({ resolu: false, role: null });
 
   React.useEffect(() => { setFollowers(initialFollowers); }, [initialFollowers]);
+
+  // Rôle du viewer (users.role, source de vérité) — indépendant du schoolId :
+  // la page équipe en mode fixture masque aussi le bouton à un partenaire.
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let role: string | null = null;
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+          role = (data as { role: string | null } | null)?.role ?? null;
+        }
+      } catch { /* lecture impossible : traité comme un visiteur */ }
+      if (!cancelled) setViewer({ resolu: true, role });
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Résout l'athlète connecté + son état de ciblage pour ce collège.
   // schoolId vide = appelant sans collège résolu (page équipe en mode fixture) :
@@ -74,5 +98,5 @@ export function useSchoolTargets(schoolId: string, initialFollowers: number): Sc
     }
   }, [athleteId, busy, inTargets, schoolId]);
 
-  return { inTargets, canTarget: !!athleteId, followers, busy, toggle };
+  return { inTargets, canTarget: !!athleteId, visible: boutonCiblesVisible(viewer.resolu, viewer.role), followers, busy, toggle };
 }

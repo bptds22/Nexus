@@ -15,11 +15,13 @@ import type { TeamData } from "./content";
 import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function TeamHero({
-  team, cible, onToggleCible,
+  team, cible, onToggleCible, ciblesVisibles = true,
 }: {
   team: TeamData;
   cible: boolean;
   onToggleCible: () => void;
+  /** Faux → bouton et divulgation masqués (partenaire : lib/cibles/visibiliteBouton). */
+  ciblesVisibles?: boolean;
 }) {
   const nameLines = team.nom.split("\n");
   // La photo peut manquer (fichier absent / pas encore saisie) → fallback thémé.
@@ -91,6 +93,7 @@ export default function TeamHero({
           </div>
         </div>
         {/* Cibles — state partagé avec la box besoins (R3). Rouge Nexus = plateforme. */}
+        {ciblesVisibles && <>
         <button type="button" className={`cibles${cible ? " on" : ""}`} onClick={onToggleCible}>
           <Heart size={17} fill="currentColor" aria-hidden />
           {cible ? "Dans tes cibles" : "Rajouter à mes cibles"}
@@ -99,6 +102,7 @@ export default function TeamHero({
             écrit `athlete_targets(school_id)` : on cible le CÉGEP depuis une
             page équipe, donc la phrase parle bien des recruteurs du cégep. */}
         <p className="cibles-disc">{divulgationCible(cible)}</p>
+        </>}
       </div>
     </div>
   );

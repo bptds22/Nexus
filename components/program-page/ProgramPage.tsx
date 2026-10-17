@@ -75,7 +75,7 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
   // athlete_targets (Bloc 2 étape 4d) : le hook résout l'athlète connecté, la
   // RLS applique. Compteur « suivent » = count_followers_by_school (serveur) +
   // ajustement optimiste. 86 = repli historique du fixture dev (non-régression).
-  const { inTargets, followers, toggle: toggleTargets } = useSchoolTargets(school.id, content.followersCount ?? 86);
+  const { inTargets, followers, visible: ciblesVisibles, toggle: toggleTargets } = useSchoolTargets(school.id, content.followersCount ?? 86);
   // Sections masquées par l'école → la page les SAUTE (aucun trou). Absent → tout visible.
   const hidden = content.hiddenSections ?? [];
 
@@ -158,7 +158,7 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
       <div className="pagewrap">
         <GrainOverlay />
 
-        <StatRows schoolName={school.schoolName} city={school.city} stats={content.stats} inTargets={inTargets} onToggleTargets={toggleTargets} followers={followers} />
+        <StatRows schoolName={school.schoolName} city={school.city} stats={content.stats} inTargets={inTargets} onToggleTargets={toggleTargets} followers={followers} ciblesVisibles={ciblesVisibles} />
         <SportsGrid sports={content.sports} />
         <SaisonEnCours equipes={saison} />
         {!hidden.includes("campus") && <CampusSection content={content} />}
@@ -176,7 +176,7 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
           />
         )}
         {!hidden.includes("news") && <NewsSection news={content.news} />}
-        <CtaCibles ctaTitle={content.ctaTitle} inTargets={inTargets} onToggleTargets={toggleTargets} />
+        {ciblesVisibles && <CtaCibles ctaTitle={content.ctaTitle} inTargets={inTargets} onToggleTargets={toggleTargets} />}
         <div className="pfoot">⚡ Propulsé par Nexus · données de démonstration</div>
       </div>
     </div>
