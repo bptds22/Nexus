@@ -35,6 +35,7 @@ import {
   type CarteJeune,
   type ReponseConfirmation,
 } from "@/lib/partenaires/prospects";
+import { demanderAuParentDepuisCarte, texteEtatDemande } from "@/lib/partenaires/demandeVisibilite";
 
 type Issue =
   | { type: "transferee"; r: Extract<ReponseConfirmation, { statut: "transferee" }> }
@@ -71,6 +72,8 @@ export default function CarteProspectReponse({
   const [confirmerRefus, setConfirmerRefus] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Un AVIS (pas une erreur) : la demande est partie au parent.
+  const [avis, setAvis] = useState<string | null>(null);
   const [mineur, setMineur] = useState(false);
   const [plus, setPlus] = useState(false);
   const partenaire = carte.partenaire ?? "Un partenaire de Nexus";
@@ -120,9 +123,14 @@ export default function CarteProspectReponse({
       });
       const res = data as { ok?: boolean; reason?: string } | null;
       if (error || !res?.ok) {
-        setErreur(res?.reason === "parent_required"
-          ? "Ton parent doit donner son accord depuis son portail parent Nexus."
-          : "L'activation n'a pas fonctionné. Réessaie dans un instant.");
+        // Sous 14 ans : la MÊME demande au parent que « Accepter » dans la cloche
+        // (décision BP 2026-10-16) — jamais une activation directe.
+        if (res?.reason === "parent_required") {
+          const m = await demanderAuParentDepuisCarte(createClient(), carte.carteId, issue?.type === "attente", PRIVACY_POLICY_VERSION);
+          if (m === texteEtatDemande("DEMANDE_PARENT")) setAvis(m); else setErreur(m);
+        } else {
+          setErreur("L'activation n'a pas fonctionné. Réessaie dans un instant.");
+        }
         return;
       }
       if (issue?.type === "attente") {
@@ -285,6 +293,7 @@ export default function CarteProspectReponse({
         </>
       )}
 
+      {avis && <p className="mt-4 text-[13px] text-[#F5C46B]" role="status" data-avis-parent>{avis}</p>}
       {erreur && <p className="mt-4 text-[13px] text-[#EF4444]" role="alert">{erreur}</p>}
     </div>
   );

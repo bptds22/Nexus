@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import PendingInvitations from "./_components/PendingInvitations";
+import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import {
+  accepterVisibilitePartenaire,
+  etatDemande,
+  texteEtatDemande,
+  TYPE_DEMANDE_VISIBILITE,
+} from "@/lib/partenaires/demandeVisibilite";
 
 /* ═══════════════════════════════════════════════════════════════
    Notifications — Athlete activity alerts (wired to Supabase)
@@ -43,7 +50,11 @@ type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED"
      reçue). Les quatre ajouts, comme ci-dessus ; le badge et l'évaluation du
      coach réutilisent COACH_DISTINCTION_ADDED et COACH_EVALUATION_UPDATED. */
   | "PARTENAIRE_BADGE"
-  | "PARTENAIRE_EVALUATION_RECUE";
+  | "PARTENAIRE_EVALUATION_RECUE"
+  /* Demande de visibilité partenaire (2026-10-16) : un partenaire a évalué ce
+     jeune, qui n'a pas l'opt-in actif. Quatre ajouts + son propre rendu
+     (bouton « Accepter », jamais imbriqué dans le bouton de la ligne). */
+  | "PARTENAIRE_VISIBILITE_DEMANDE";
 
 interface AthleteNotif {
   id: string;
@@ -86,6 +97,7 @@ const DOT_COLOR: Record<NotifType, string> = {
   // Mêmes couleurs que leurs pendants du coach : badge or, évaluation verte.
   PARTENAIRE_BADGE: "#F59E0B",
   PARTENAIRE_EVALUATION_RECUE: "#22C55E",
+  PARTENAIRE_VISIBILITE_DEMANDE: "#F59E0B",
 };
 
 const TYPE_ICON: Record<NotifType, React.ReactNode> = {
@@ -115,6 +127,7 @@ const TYPE_ICON: Record<NotifType, React.ReactNode> = {
   // Mêmes icônes que COACH_DISTINCTION_ADDED et COACH_EVALUATION_UPDATED.
   PARTENAIRE_BADGE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
   PARTENAIRE_EVALUATION_RECUE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>,
+  PARTENAIRE_VISIBILITE_DEMANDE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
 };
 
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
@@ -183,7 +196,7 @@ export default function NotificationsPage() {
          des jalons personnels, pas des gestes de coach. Les oublier ici les
          rendrait invisibles dans TOUS les onglets sauf « Tout » — le défaut
          exact de TEAM_INVITATION avant son correctif. */
-      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5", "PARTENAIRE_EVALUATION", "PARTENAIRE_BADGE", "PARTENAIRE_EVALUATION_RECUE"].includes(n.type));
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5", "PARTENAIRE_EVALUATION", "PARTENAIRE_BADGE", "PARTENAIRE_EVALUATION_RECUE", "PARTENAIRE_VISIBILITE_DEMANDE"].includes(n.type));
       case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
       case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION", "COACH_CLAIMED"].includes(n.type));
       default: return notifs;
@@ -212,6 +225,30 @@ export default function NotificationsPage() {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   }
+
+  /* « Accepter » une demande de visibilité : le serveur active l'opt-in par le
+     chemin existant, ou (sous 14 ans) envoie la demande au parent. L'état
+     rendu est celui que le serveur a écrit — jamais deviné ici. */
+  const [acceptation, setAcceptation] = useState<string | null>(null);
+  const [erreurDemande, setErreurDemande] = useState<{ id: string; message: string } | null>(null);
+  const accepterDemande = async (n: AthleteNotif) => {
+    setAcceptation(n.id);
+    setErreurDemande(null);
+    const r = await accepterVisibilitePartenaire(createClient(), n.id, PRIVACY_POLICY_VERSION);
+    setAcceptation(null);
+    if (!r.ok) {
+      setErreurDemande({ id: n.id, message: r.message });
+      return;
+    }
+    setNotifs((prev) => prev.map((x) => x.id === n.id
+      ? { ...x, read: true, metadata: { ...x.metadata, etat: r.etat } }
+      // Le jeune est visible : ses autres demandes sont réglées côté serveur aussi.
+      : r.etat === "ACCEPTEE" && x.type === TYPE_DEMANDE_VISIBILITE && etatDemande(x.metadata) === "EN_ATTENTE"
+        ? { ...x, read: true, metadata: { ...x.metadata, etat: "ACCEPTEE" } }
+        : x));
+    window.dispatchEvent(new Event("notifications-updated"));
+    showToast(r.etat === "ACCEPTEE" ? "Visibilité partenaires activée" : "Demande envoyée à ton parent");
+  };
 
   const FILTERS: { key: FilterKey; label: string; count?: number; color?: string }[] = [
     { key: "all", label: "Toutes", count: notifs.length },
@@ -297,6 +334,41 @@ export default function NotificationsPage() {
         <div className="space-y-2">
           {filtered.map((n) => {
             const color = DOT_COLOR[n.type] || "#9CA3AF";
+            if (n.type === TYPE_DEMANDE_VISIBILITE) {
+              const etat = etatDemande(n.metadata);
+              const texteEtat = texteEtatDemande(etat);
+              return (
+                <div key={n.id} data-demande-visibilite={etat}
+                  className={`w-full text-left rounded-lg border p-4 ${n.read ? "bg-[#1A1D24] border-white/5" : "bg-[#1A1D24] border-[#F59E0B]/40"}`}>
+                  <div className="flex items-start gap-3">
+                    {!n.read && <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0 mt-2" />}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}15` }}>
+                      <span style={{ color }}>{TYPE_ICON[n.type]}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[13px] leading-relaxed ${n.read ? "text-[#9CA3AF]" : "text-white font-semibold"}`}>{n.title}</p>
+                      {n.message && <p className="text-[12px] text-[#9CA3AF] mt-0.5">{n.message}</p>}
+                      {texteEtat ? (
+                        <p className="text-[12px] text-[#6b7280] mt-1">{texteEtat}</p>
+                      ) : IS_CAPACITOR ? (
+                        /* Lot mobile 1.4.5 : le geste se fait sur le web d'ici là. */
+                        <p className="text-[12px] text-[#6b7280] mt-1">Réponds sur nexussports.ca.</p>
+                      ) : (
+                        <div className="mt-2.5 flex items-center gap-3 flex-wrap">
+                          <button type="button" disabled={acceptation === n.id} onClick={() => void accepterDemande(n)}
+                            className="px-4 py-2 bg-[#F59E0B] hover:bg-[#E08E06] text-[#111317] text-[12px] font-bold rounded-lg disabled:opacity-50">
+                            {acceptation === n.id ? "Un instant…" : "Accepter"}
+                          </button>
+                          <span className="text-[11px] text-[#6b7280]">Tu pourras la retirer en tout temps dans tes paramètres.</span>
+                        </div>
+                      )}
+                      {erreurDemande?.id === n.id && <p role="alert" className="text-[12px] text-[#EF4444] mt-1.5">{erreurDemande.message}</p>}
+                      <p className="text-[11px] text-[#4a4d56] mt-1" title={new Date(n.created_at).toLocaleString("fr-CA")}>{relativeTimeFr(n.created_at)}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
               /* Une notification de re-validation MENE quelque part : c'est la
                  seule dont l'utilite depend d'une action. Les autres restent
                  informatives — le clic les marque lues, sans navigation. */

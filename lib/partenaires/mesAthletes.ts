@@ -7,6 +7,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface BadgeMonAthlete {
   attributionId: string;
+  /** Le badge du CATALOGUE (badges.id si Nexus, partner_badges.id si propre) :
+   *  la clé du filtre « Distinctions ». Null avant la migration 20261016170000. */
+  badgeRef: string | null;
   libelle: string | null;
   nexus: boolean;
   code: string | null;
@@ -22,6 +25,9 @@ export interface MonAthlete {
   nom: string;
   sport: string | null;
   ecole: string | null;
+  /** Position (nom et abréviation) — null avant la migration 20261016170000. */
+  poste: string | null;
+  posteAbr: string | null;
   evaluationId: string | null;
   coteGlobale: number | null;
   evalueeLe: string | null;
@@ -38,11 +44,14 @@ export async function chargerMesAthletes(supabase: SupabaseClient): Promise<MonA
     nom: (r.nom as string | null) ?? "",
     sport: (r.sport as string | null) ?? null,
     ecole: (r.ecole as string | null) ?? null,
+    poste: (r.poste as string | null) ?? null,
+    posteAbr: (r.poste_abr as string | null) ?? null,
     evaluationId: (r.evaluation_id as string | null) ?? null,
     coteGlobale: r.cote_globale == null ? null : Number(r.cote_globale),
     evalueeLe: (r.evaluee_le as string | null) ?? null,
     badges: ((r.badges as Record<string, unknown>[] | null) ?? []).map((b) => ({
       attributionId: b.attribution_id as string,
+      badgeRef: (b.badge_ref as string | null) ?? null,
       libelle: (b.libelle as string | null) ?? null,
       nexus: b.nexus === true,
       code: (b.code as string | null) ?? null,
