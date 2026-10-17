@@ -48,3 +48,11 @@ export const CIBLE_DIVULGATION_LISTE =
 export function divulgationCible(dansLesCibles: boolean): string {
   return dansLesCibles ? CIBLE_DIVULGATION_APRES : CIBLE_DIVULGATION_AVANT;
 }
+
+/**
+ * Boîte « besoins » d'une page équipe, poste sans ouverture (web ET appli).
+ * La cible se pose sur le cégep : ce sont ses RECRUTEURS qui la lisent, pas
+ * des coachs (corrigé au lot 0 sur le web, repris tel quel par l'appli).
+ */
+export const PHRASE_SANS_OUVERTURE =
+  "Pas d'ouverture à ton poste pour l'instant — mais montre ton intérêt : les recruteurs voient qui les cible.";

@@ -33,13 +33,16 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 export default function EnvoyerLien({
   organisation,
   adresse,
+  evalue,
   onClose,
 }: {
   organisation: string;
   adresse: string;
+  /** La carte porte une évaluation (cote globale) : sinon, le texto invite sans « t'a évalué ». */
+  evalue: boolean;
   onClose: () => void;
 }) {
-  const message = messageTexto(organisation, adresse);
+  const message = messageTexto(organisation, adresse, evalue);
   const [tactile, setTactile] = useState(false);
   const [partage, setPartage] = useState(false);
   const [copie, setCopie] = useState<"lien" | "message" | null>(null);

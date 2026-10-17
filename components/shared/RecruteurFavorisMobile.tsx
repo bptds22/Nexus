@@ -23,6 +23,8 @@ import { AthleteCardMobile } from "@/components/shared/RecruteurRechercheMobile"
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { triggerHaptic } from "@/lib/haptics";
+import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
+import { retenirCotePartenaire } from "@/lib/evaluations/coteCarte";
 
 
 export function RecruteurFavorisMobile() {
@@ -32,6 +34,9 @@ export function RecruteurFavorisMobile() {
      même chemin que le web : un Pro retire POUR L'UNITÉ (et du processus),
      avec une confirmation qui nomme les collègues ou l'étape avancée. */
   const { athletes, favoris, isLoading } = useFavoriteAthletesUnite();
+  // Cote partenaire sur la carte, comme le web (app/recruteur/favoris) : même lecture
+  // groupée, même règle (coach d'abord, sinon la partenaire la plus récente).
+  const { data: cotesPartenaires } = useCotesPartenaires(athletes.map((a) => a.id));
   const { basculer, modale } = useBasculeFavori();
   // `tierLoading` : tant que le tier n'est pas chargé, on ne rend PAS les cartes
   // (le Provider défaute tier→"free" avant le fetch, ce qui anonymiserait les
@@ -188,6 +193,8 @@ export function RecruteurFavorisMobile() {
                       school: a.school,
                       graduationYear: a.graduationYear,
                       stars: a.stars,
+                      starsPartenaire: retenirCotePartenaire(cotesPartenaires?.get(a.id))?.cote ?? null,
+                      starsPartenaireOrg: retenirCotePartenaire(cotesPartenaires?.get(a.id))?.organisation ?? null,
                       isVerified: a.isVerified,
                       lastValidation: a.lastValidation,
                       isFavorited: true,

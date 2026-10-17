@@ -91,6 +91,8 @@ export interface CoachTeamDetailAthlete {
   committedSchoolName: string | null;
   openToOffers: boolean | null;
   school: string;
+  /** D1b — nom recopié de Google, à confirmer par l'athlète (athletes.nom_a_confirmer). */
+  nomAConfirmer: boolean;
 }
 
 export interface CoachTeamDetailInvitation {
@@ -233,7 +235,8 @@ export function useCoachTeamDetail(teamId: string | null | undefined) {
             annee_diplomation, taille_pieds, taille_pouces, poids_lbs,
             cote_globale_entraineur,
             school_id, schools!school_id(name, region, type),
-            user_id, users!athletes_user_id_fkey(region)
+            user_id, users!athletes_user_id_fkey(region),
+            nom_a_confirmer
           )
         `)
         .eq("team_id", teamId);
@@ -274,6 +277,7 @@ export function useCoachTeamDetail(teamId: string | null | undefined) {
           committedSchoolName: committed?.name || null,
           openToOffers: (ath?.open_to_offers as boolean | null) ?? null,
           school: schoolSubLine,
+          nomAConfirmer: ath?.nom_a_confirmer === true,
         };
       });
 

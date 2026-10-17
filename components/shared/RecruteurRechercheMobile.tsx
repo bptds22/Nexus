@@ -34,6 +34,7 @@ import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori"
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useAthleteSearch, coteAffichee } from "@/lib/queries/recruiter/useAthleteSearch";
+import { libelleCotePartenaire } from "@/lib/evaluations/coteCarte";
 import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
@@ -705,7 +706,7 @@ export function AthleteCardMobile({
           </div>
           {cote.organisation && (
             <span data-cote-partenaire className="bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/85 max-w-[110px] truncate">
-              {cote.organisation}
+              {libelleCotePartenaire(cote.organisation)}
             </span>
           )}
         </div>
@@ -817,7 +818,7 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
               </svg>
               <span className="text-[11px] font-bold text-white">{cote.valeur.toFixed(1)}</span>
               {cote.organisation && (
-                <span data-cote-partenaire className="text-[10px] font-bold text-[#9CA3AF] truncate max-w-[110px]">· {cote.organisation}</span>
+                <span data-cote-partenaire className="text-[10px] font-bold text-[#9CA3AF] truncate max-w-[110px]">· {libelleCotePartenaire(cote.organisation)}</span>
               )}
             </div>
             {pill && (

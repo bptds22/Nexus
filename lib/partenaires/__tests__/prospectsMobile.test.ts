@@ -12,7 +12,7 @@ const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
 test("le lien du texto : domaine public, jamais l'adresse locale de la WebView", () => {
   const page = lire("app/partenaire/prospects/page.tsx");
-  assert.match(page, /setLien\(adresseLien\(adressePublique\(\), jeton\)\);/);
+  assert.match(page, /setLien\(\{ adresse: adresseLien\(adressePublique\(\), jeton\), evalue \}\);/);
   assert.doesNotMatch(page, /window\.location\.origin/);
   const adr = lire("lib/partage/adressePublique.ts");
   assert.match(adr, /process\.env\.NEXT_PUBLIC_APP_URL/);
@@ -51,4 +51,16 @@ test("ce que la page fait déjà, identique dans l'appli : x/50, révoquer, supp
   assert.match(page, /await supprimerCarte\(createClient\(\), carteId\);/);
   assert.match(page, /chargerCartesTerminees/);
   assert.doesNotMatch(page, /window\.confirm|confirm\(/);
+});
+
+test("texto : sans évaluation sur la carte, il invite sans « t'a évalué » (web et appli)", () => {
+  const adr = adresseLien("https://nexussports.ca", "ab".repeat(32));
+  assert.equal(messageTexto("Club Test", adr, false), `Salut! Club Test t'invite sur Nexus : ${adr}\n— Club Test`);
+  assert.doesNotMatch(messageTexto("Club Test", adr, false), /évalu/);
+  // Avec évaluation : le texte d'aujourd'hui, inchangé (c'est aussi le défaut).
+  assert.equal(messageTexto("Club Test", adr, true), messageTexto("Club Test", adr));
+  const page = lire("app/partenaire/prospects/page.tsx");
+  assert.match(page, /const evalue = cartes\.find\(\(c\) => c\.id === carteId\)\?\.coteGlobale != null;/);
+  assert.match(page, /<EnvoyerLien organisation=\{partenaire\.organizationName\} adresse=\{lien\.adresse\} evalue=\{lien\.evalue\}/);
+  assert.match(lire("components/partenaire/prospects/EnvoyerLien.tsx"), /const message = messageTexto\(organisation, adresse, evalue\);/);
 });

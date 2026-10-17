@@ -230,9 +230,12 @@ export function adresseLien(origine: string, jeton: string): string {
 }
 
 /** Texto pré-rempli : court, signé de l'organisation, sans nom du jeune ni
- *  évaluation (le message peut être lu par d'autres que lui). */
-export function messageTexto(organisation: string, adresse: string): string {
-  return `Salut! ${organisation} t'a évalué et t'invite à voir ton évaluation sur Nexus : ${adresse}\n— ${organisation}`;
+ *  évaluation (le message peut être lu par d'autres que lui). Sans évaluation
+ *  sur la carte, il ne dit pas « t'a évalué » : il invite (BP 2026-10-16). */
+export function messageTexto(organisation: string, adresse: string, evalue = true): string {
+  return evalue
+    ? `Salut! ${organisation} t'a évalué et t'invite à voir ton évaluation sur Nexus : ${adresse}\n— ${organisation}`
+    : `Salut! ${organisation} t'invite sur Nexus : ${adresse}\n— ${organisation}`;
 }
 
 /** sms: avec corps — `?&body=` est lu par iOS ET Android. */

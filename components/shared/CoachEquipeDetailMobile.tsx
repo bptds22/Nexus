@@ -64,11 +64,13 @@ function toCoachAthlete(
     anneeDiplomation: number | null; cote: number | null;
     recruitmentStatus: string | null;
     committedSchoolName: string | null; openToOffers: boolean | null;
+    nomAConfirmer: boolean;
   },
   isCivilTeam: boolean,
 ): CoachAthlete {
   return {
     id: a.athleteId,
+    nomAConfirmer: a.nomAConfirmer,
     firstName: a.firstName,
     lastName: a.lastName,
     photo: a.photoUrl,

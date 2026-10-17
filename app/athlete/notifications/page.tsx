@@ -350,10 +350,8 @@ export default function NotificationsPage() {
                       {n.message && <p className="text-[12px] text-[#9CA3AF] mt-0.5">{n.message}</p>}
                       {texteEtat ? (
                         <p className="text-[12px] text-[#6b7280] mt-1">{texteEtat}</p>
-                      ) : IS_CAPACITOR ? (
-                        /* Lot mobile 1.4.5 : le geste se fait sur le web d'ici là. */
-                        <p className="text-[12px] text-[#6b7280] mt-1">Réponds sur nexussports.ca.</p>
                       ) : (
+                        /* Web ET appli (1.4.5) : le même geste, la même RPC. */
                         <div className="mt-2.5 flex items-center gap-3 flex-wrap">
                           <button type="button" disabled={acceptation === n.id} onClick={() => void accepterDemande(n)}
                             className="px-4 py-2 bg-[#F59E0B] hover:bg-[#E08E06] text-[#111317] text-[12px] font-bold rounded-lg disabled:opacity-50">

@@ -4,6 +4,7 @@ import {  useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toPng } from "html-to-image";
+import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
 import { createClient } from "@/lib/supabase/client";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { journaliserTelechargement, journaliserVue } from "@/lib/partenaires/journal";
@@ -303,6 +304,7 @@ export default function PartnerAthleteProfilePage() {
         return;
       }
       const options = {
+        ...OPTIONS_IMAGE_INJOIGNABLE, // photo injoignable : sautée, l'export réussit
         // pixelRatio 1: AthletePlayerCard's outer container already
         // renders at the exact target dimensions (publication =
         // 1080×1350, story = 1080×1920), so no oversampling needed.

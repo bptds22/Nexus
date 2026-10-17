@@ -16,6 +16,7 @@ import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { CIBLE_DIVULGATION_LISTE } from "@/lib/cibles/divulgation";
 import { toPng } from "html-to-image";
+import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
 import MonParcoursMobile from "@/components/shared/MonParcoursMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -312,6 +313,7 @@ function MonParcoursPageDesktop() {
         await document.fonts.ready;
       }
       const dataUrl = await toPng(captureRef.current, {
+        ...OPTIONS_IMAGE_INJOIGNABLE, // photo injoignable : sautée, l'export réussit
         pixelRatio: 1,
         cacheBust: true,
         backgroundColor: undefined,

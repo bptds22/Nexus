@@ -94,6 +94,8 @@ import SuggestionsAlert, { type PendingSuggestion } from "@/components/coach/pro
 import SuggestionSheet from "@/components/coach/SuggestionSheet";
 import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
 import { triggerHaptic } from "@/lib/haptics";
+import { useEvaluationsPartenaires } from "@/components/shared/athlete/EvaluationPartenaireSection";
+import { coteCarteDepuisEvaluations, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
@@ -186,11 +188,11 @@ function positionAbbr(pos: string): string {
     starsRevealed: nombre d'étoiles visibles (0-5). Permet l'animation cascade au mount.
     cardRevealed: contrôle l'animation d'arrivée propre (opacity+scale) — sans glitch latéral.
     photoParallaxY: décalage Y appliqué sur la photo pour effet parallax subtil au scroll. */
-function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, photoParallaxY = 0, layoutIdPrefix = "athlete-photo" }: { a: AthleteProfileRecruiterView; isFree: boolean; starsRevealed?: number; cardRevealed?: boolean; photoParallaxY?: number; layoutIdPrefix?: string }) {
+function PlayerCardMobile({ a, isFree, cote, starsRevealed = 5, cardRevealed = true, photoParallaxY = 0, layoutIdPrefix = "athlete-photo" }: { a: AthleteProfileRecruiterView; isFree: boolean; /** Coach d'abord, sinon partenaire (lib/evaluations/coteCarte) ; absente = cote du coach. */ cote?: CoteCarte; starsRevealed?: number; cardRevealed?: boolean; photoParallaxY?: number; layoutIdPrefix?: string }) {
   // `isFree` reste pour les sections GATÉES PAR TIER. L'identité, elle, vient
   // du serveur — voir AthleteRecruiterProfileBody, même règle.
   const locked = a.identityVisible === false;
-  const ratingValue = a.overallRating;
+  const ratingValue = cote ? cote.valeur : a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
   const sportDisplay = sportKey ? (SPORT_DISPLAY[sportKey] || a.primarySport) : a.primarySport;
@@ -337,6 +339,11 @@ function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, p
                   );
                 })}
               </div>
+              {cote?.organisation && (
+                <div data-cote-partenaire title={`${libelleCotePartenaire(cote.organisation)} — pas une note d'entraîneur`} style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: '#6B7280', marginTop: -2, marginBottom: 5, lineHeight: 1.2, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
+                  {libelleCotePartenaire(cote.organisation)}
+                </div>
+              )}
               <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{a.isCivil
                 ? (a.teamName || a.leagueName || "")
                 : (a.schoolName || "").replace(/^École secondaire /i, "É.S. ").replace(/^École sec\. /i, "É.S. ")}</div>
@@ -734,6 +741,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      tailleBadgeFiche.ts). Appelé AVANT le retour anticipé : un hook de plus
      après lui serait conditionnel. */
   const badgesPartenaire = useBadgesPartenaires(viewerMode === "recruiter" ? athleteId : null);
+  // Cote partenaire sur la carte quand le coach n'a pas évalué (comme le web, PlayerCard).
+  const evaluationsPartenaires = useEvaluationsPartenaires(viewerMode === "recruiter" ? athleteId : null);
   if (viewerMode !== "recruiter") return null;
 
   // Step 6 unification — viewer flag drives recruteur-only gates +
@@ -2291,7 +2300,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
         {/* Player Card */}
         <div className="py-1">
-          <PlayerCardMobile a={a} isFree={isRecruiter && lockContent} starsRevealed={starsRevealed} cardRevealed={cardRevealed} photoParallaxY={expandedSlideProgress === 0 ? scrollY * 0.15 : 0} layoutIdPrefix={isCoach ? "coach-athlete-photo" : "athlete-photo"} />
+          <PlayerCardMobile a={a} isFree={isRecruiter && lockContent}
+            cote={aUneCote(coteGlobale)
+              ? { valeur: a.overallRating, organisation: null }
+              : coteCarteDepuisEvaluations(null, evaluationsPartenaires.map((ev) => ({
+                  id: ev.id, athleteId: id, organisation: ev.organisation, cote: ev.coteGlobale, updatedAt: ev.updatedAt,
+                })))} starsRevealed={starsRevealed} cardRevealed={cardRevealed} photoParallaxY={expandedSlideProgress === 0 ? scrollY * 0.15 : 0} layoutIdPrefix={isCoach ? "coach-athlete-photo" : "athlete-photo"} />
         </div>
 
         {/* Nom + jersey (fade-up depuis 8px) */}

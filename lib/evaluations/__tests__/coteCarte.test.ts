@@ -114,8 +114,19 @@ test("surfaces web : recherche, favoris, fiche/aperçu passent par la règle et 
   assert.equal((fiche.match(/evaluations=\{evaluationsPartenaires\}/g) ?? []).length, 3);
 });
 
-test("pas de branchement mobile dans ce lot (protocole web d'abord)", () => {
-  for (const f of ["components/shared/AthleteRecruiterProfileBodyMobile.tsx", "components/shared/RecruteurFavorisMobile.tsx", "lib/queries/recruiter/useFavoriteAthletes.ts"]) {
-    assert.doesNotMatch(lire(f), /coteCarte|useCotesPartenaires|cotes_partenaires_athletes/, f);
-  }
+test("appli (1.4.5) : la cote partenaire sur les cartes, comme le web", () => {
+  // Recherche : le libellé du web, jamais le nom brut de l'organisation.
+  const rech = lire("components/shared/RecruteurRechercheMobile.tsx");
+  assert.equal((rech.match(/\{libelleCotePartenaire\(cote\.organisation\)\}/g) ?? []).length, 2);
+  assert.doesNotMatch(rech, /· \{cote\.organisation\}/);
+  // Favoris : même lecture groupée et même règle que app/recruteur/favoris.
+  const fav = lire("components/shared/RecruteurFavorisMobile.tsx");
+  assert.match(fav, /useCotesPartenaires\(athletes\.map\(\(a\) => a\.id\)\)/);
+  assert.match(fav, /starsPartenaire: retenirCotePartenaire\(cotesPartenaires\?\.get\(a\.id\)\)\?\.cote \?\? null/);
+  // Fiche : coach d'abord, sinon partenaire ; libellé sous les étoiles.
+  const fiche = lire("components/shared/AthleteRecruiterProfileBodyMobile.tsx");
+  assert.match(fiche, /const ratingValue = cote \? cote\.valeur : a\.overallRating;/);
+  assert.match(fiche, /\? \{ valeur: a\.overallRating, organisation: null \}/, "coach évalué : la carte inchangée");
+  assert.match(fiche, /: coteCarteDepuisEvaluations\(null, evaluationsPartenaires\.map/);
+  assert.match(fiche, /\{libelleCotePartenaire\(cote\.organisation\)\}/);
 });

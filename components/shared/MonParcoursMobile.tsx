@@ -18,6 +18,7 @@ import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { triggerHaptic } from "@/lib/haptics";
 import { enregistrerImage } from "@/lib/partage/enregistrerImage";
+import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
 
 /* ═══════════════════════════════════════════════════════════════
    MonParcoursMobile — Sprint B-1.
@@ -497,6 +498,7 @@ export default function MonParcoursMobile() {
       // les rend du 1er coup. Workaround connu : appeler toPng 2× (le 1er
       // "réchauffe"/charge les images, le 2e les rend) et garder le 2e.
       const toPngOpts = {
+        ...OPTIONS_IMAGE_INJOIGNABLE, // photo injoignable : sautée, l'export réussit
         pixelRatio: 1,
         backgroundColor: undefined,
         style: { animation: "none", transition: "none" },

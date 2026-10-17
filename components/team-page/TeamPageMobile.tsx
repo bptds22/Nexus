@@ -49,6 +49,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { tap } from "@/lib/haptics";
 import { triggerHaptic } from "@/lib/haptics";
+import { PHRASE_SANS_OUVERTURE } from "@/lib/cibles/divulgation";
 
 /** Fil d'Ariane posé par « L'affiche » de la page école — dit à la page équipe
  *  qu'une page école la précède dans l'historique, donc qu'il faut DÉPILER. */
@@ -1069,10 +1070,7 @@ function BesoinsMobile({ team, cible, onToggleCible, ciblesVisibles = true }: { 
       )}
       {ms?.kind === "none" && ciblesVisibles && (
         <div className="needbox none">
-          <div className="nb-l">
-            Pas d&apos;ouverture à ton poste pour l&apos;instant — mais montre ton intérêt :
-            les coachs voient qui les suit.
-          </div>
+          <div className="nb-l">{PHRASE_SANS_OUVERTURE}</div>
           <CiblesBtn cible={cible} onToggle={onToggleCible} small />
         </div>
       )}

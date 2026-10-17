@@ -42,7 +42,8 @@ test("vignette partagée : pas de nom sous un badge propre, « par {organisation
 test("corps mobile : badges partenaire branchés par le hook et la vignette du web, actions selon le lecteur", () => {
   const src = lire("components/shared/AthleteRecruiterProfileBodyMobile.tsx");
   // Avant le retour anticipé du composant (sinon hook conditionnel).
-  assert.match(src, /const badgesPartenaire = useBadgesPartenaires\(viewerMode === "recruiter" \? athleteId : null\);\s*\n\s*if \(viewerMode !== "recruiter"\) return null;/);
+  // (La lecture des évaluations partenaires, 1.4.5, se place au même endroit.)
+  assert.match(src, /const badgesPartenaire = useBadgesPartenaires\(viewerMode === "recruiter" \? athleteId : null\);[\s\S]{0,300}?const evaluationsPartenaires = useEvaluationsPartenaires\(viewerMode === "recruiter" \? athleteId : null\);\s*\n\s*if \(viewerMode !== "recruiter"\) return null;/);
   assert.match(src, /actionsBadgePartenaireFiche\(viewer\)/);
   assert.match(src, /<BadgePartenaireVignette key=\{b\.id\} badge=\{b\} athleteId=\{id\} actions=\{actionsBadgePartenaire\} zoneImage=\{zoneImageRangee\(badgesPartenaire\)\} \/>/);
 });

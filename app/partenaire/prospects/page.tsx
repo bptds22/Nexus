@@ -76,7 +76,7 @@ export default function MesProspectsPage() {
   const [chargement, setChargement] = useState(true);
   const [erreurChargement, setErreurChargement] = useState(false);
   const [formulaire, setFormulaire] = useState<{ carte: CartePartenaire | null } | null>(null);
-  const [lien, setLien] = useState<string | null>(null);
+  const [lien, setLien] = useState<{ adresse: string; evalue: boolean } | null>(null);
   const [confirmation, setConfirmation] = useState<{ carteId: string; action: "supprimer" | "nouveau-lien" | "revoquer" } | null>(null);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [avis, setAvis] = useState<{ type: "succes" | "erreur"; texte: string } | null>(null);
@@ -143,7 +143,9 @@ export default function MesProspectsPage() {
     try {
       const jeton = await genererLien(createClient(), carteId);
       // Domaine public (NEXT_PUBLIC_APP_URL), jamais l'adresse locale de la WebView de l'appli.
-      setLien(adresseLien(adressePublique(), jeton));
+      // Le texto ne dit « t'a évalué » que si la carte porte une évaluation.
+      const evalue = cartes.find((c) => c.id === carteId)?.coteGlobale != null;
+      setLien({ adresse: adresseLien(adressePublique(), jeton), evalue });
       await charger();
     } catch (e) {
       notifier("erreur", messageErreurCarte(e, "Le lien n'a pas pu être créé."));
@@ -396,7 +398,7 @@ export default function MesProspectsPage() {
         />
       )}
       {lien && partenaire && (
-        <EnvoyerLien organisation={partenaire.organizationName} adresse={lien} onClose={() => setLien(null)} />
+        <EnvoyerLien organisation={partenaire.organizationName} adresse={lien.adresse} evalue={lien.evalue} onClose={() => setLien(null)} />
       )}
     </div>
   );
