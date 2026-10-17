@@ -196,7 +196,7 @@ export default function NotificationsPage() {
          des jalons personnels, pas des gestes de coach. Les oublier ici les
          rendrait invisibles dans TOUS les onglets sauf « Tout » — le défaut
          exact de TEAM_INVITATION avant son correctif. */
-      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5", "PARTENAIRE_EVALUATION", "PARTENAIRE_BADGE", "PARTENAIRE_EVALUATION_RECUE", "PARTENAIRE_VISIBILITE_DEMANDE"].includes(n.type));
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP", "SCHOOL_CLAIM_REJECTED", "AMBASSADEUR_PALIER_3", "AMBASSADEUR_PALIER_5", "PARTENAIRE_BADGE", "PARTENAIRE_EVALUATION_RECUE", "PARTENAIRE_EVALUATION", "PARTENAIRE_VISIBILITE_DEMANDE"].includes(n.type));
       case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
       case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED", "TEAM_INVITATION", "COACH_CLAIMED"].includes(n.type));
       default: return notifs;
