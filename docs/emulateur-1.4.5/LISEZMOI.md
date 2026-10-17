@@ -47,3 +47,14 @@
 `node docs/emulateur-1.4.5/preparer-local.mjs --retirer` — retire comptes, fiches, cartes,
 partenaires et rattachements créés. Les lignes de journal partenaire de la séance partent avec
 le partenaire (ON DELETE CASCADE).
+
+## 3. Banc local du vrai build (APK sans rechargement à chaud)
+
+La base locale n'est joignable qu'en `http://127.0.0.1:54321`, et le vrai build refuse le HTTP en
+clair (`cleartext: false`, `net::ERR_CLEARTEXT_NOT_PERMITTED`). Pour le banc local SEULEMENT, sur
+autorisation de BP : `android:usesCleartextTraffic="true"` dans
+`android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml` (généré, non suivi), puis
+recompiler l'APK de test. À retirer dès la fin du banc (`npx cap sync android` ou à la main), puis
+`gradlew clean`, et le prouver : `grep -rn usesCleartextTraffic android/` = aucun résultat.
+
+**Le build de publication ne doit JAMAIS contenir usesCleartextTraffic. Vérifier par grep avant chaque bundleRelease.**
