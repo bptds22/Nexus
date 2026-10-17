@@ -14,5 +14,17 @@
 export const IMAGE_INJOIGNABLE =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
-/** À étaler dans les options de `toPng`. */
-export const OPTIONS_IMAGE_INJOIGNABLE = { imagePlaceholder: IMAGE_INJOIGNABLE } as const;
+/** Une image lue mais illisible (réponse 400/403/500 enveloppée comme image) fait
+ *  échouer l'<img> du clone : sans gestionnaire, html-to-image REJETTE toute la
+ *  capture. On remplace sa source par le pixel transparent et on continue. */
+export function imageEnEchec(e: Event | string): void {
+  const img = typeof e === "string" ? null : (e.target as HTMLImageElement | null);
+  if (img && img.src !== IMAGE_INJOIGNABLE) img.src = IMAGE_INJOIGNABLE;
+}
+
+/** À étaler dans les options de `toPng` : image injoignable (lecture refusée) ET
+ *  image illisible (chargement en échec) — les deux sont sautées. */
+export const OPTIONS_IMAGE_INJOIGNABLE = {
+  imagePlaceholder: IMAGE_INJOIGNABLE,
+  onImageErrorHandler: imageEnEchec,
+} as const;

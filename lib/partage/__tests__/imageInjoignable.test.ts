@@ -15,6 +15,14 @@ test("le remplaçant est une image PNG valide (data URL), passée en imagePlaceh
   assert.equal(OPTIONS_IMAGE_INJOIGNABLE.imagePlaceholder, IMAGE_INJOIGNABLE);
 });
 
+test("image illisible (réponse 400 enveloppée) : le gestionnaire pose le pixel et ne rejette pas", () => {
+  // Relevé émulateur 1.4.5 : une photo en 400 faisait échouer tout l'export (« Event »).
+  const img = { src: "data:image/jpeg;base64,PAS-UNE-IMAGE" };
+  OPTIONS_IMAGE_INJOIGNABLE.onImageErrorHandler({ target: img } as unknown as Event);
+  assert.equal(img.src, IMAGE_INJOIGNABLE);
+  assert.doesNotThrow(() => OPTIONS_IMAGE_INJOIGNABLE.onImageErrorHandler("erreur"));
+});
+
 test("les trois exports (Mon parcours web et appli, fiche partenaire) l'étalent dans leurs options", () => {
   for (const f of ["app/athlete/mon-parcours/page.tsx", "components/shared/MonParcoursMobile.tsx", "app/partenaire/athletes/[id]/PageClient.tsx"]) {
     const src = lire(f);
