@@ -32,27 +32,20 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { List, Map as MapIcon } from "lucide-react";
-import { useSubscription } from "@/lib/hooks/useSubscription";
 import BoutonAbonnementAgenda from "@/components/recruteur/agenda/BoutonAbonnementAgenda";
-import { useCalendrierUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
-import { useOrigineCarte } from "@/lib/carteMatchs/useOrigineCarte";
-import { useProfilsMatchs } from "@/lib/carteMatchs/useProfilsMatchs";
-import {
-  useBasculerCalendrier, useMatchsRecherche, useProfilsPartenaire, useSourcesMatchs, useSportsCarte, useSuggestionsCarte,
-  type ModeCarte,
-} from "@/lib/carteMatchs/useMatchsRecherche";
+import type { ModeCarte } from "@/lib/carteMatchs/useMatchsRecherche";
 import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 import type { SourceMatch } from "@/lib/calendar/sourceMatch";
 import { CS_CSS, FiltreBtn, ListeCases } from "@/components/cegep-search/CegepSearch";
 import {
-  TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour, libelleJour,
-  terrainsCarte, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, groupeMatch, jourDecale,
-  libelleProfils, libelleDontSuivis, dateSaisie, bornerFin, avisFinAjustee, matchsLisibles, dateCourte, dateCarte, enTeteJour, heureCarte, trierMatchs, ajouterPastille, parametresPastilles, LIEU_NON_PRECISE,
-  type PastilleCarte,
-  type MatchRecherche, type ProfilsMatch, type TypeMatch,
+  TYPES_MATCH, libelleJour, terrainDe, etatCalendrier, heureQuebec, libelleDivision, lienItineraire, titreMatch, groupeMatch,
+  libelleProfils, libelleDontSuivis, dateSaisie, dateCourte, dateCarte, enTeteJour, heureCarte, LIEU_NON_PRECISE,
+  titreBoutonCalendrier, libelleCtaCalendrier, noteCalendrier, noteProfilsNonNommes,
+  type MatchRecherche, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
-import type { MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
+import type { MapFocus } from "@/components/cegep-search/MapPane";
 import { hauteurSousOnglets } from "@/lib/mobile/zoneOnglets";
+import { useCarteMatchsEtat, useDetailsMatch, LIBELLES_TYPES, TEXTE_REFUS_PARTENAIRE } from "@/lib/carteMatchs/useCarteMatchsEtat";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -60,48 +53,26 @@ const MapPane = dynamic(() => import("@/components/cegep-search/MapPane"), { ssr
 
 /** Même seuil que le @media du modèle (CS_CSS, max-width:1000px). */
 const ETROIT = "(max-width: 1000px)";
-const LIBELLES_TYPES = Object.fromEntries(TYPES_MATCH.map((t) => [t.v, t.label]));
-const TOUS_LES_TYPES: TypeMatch[] = TYPES_MATCH.map((t) => t.v);
 
 
 export default function CarteMatchs({ mode }: { mode: ModeCarte }) {
-  const partenaire = mode === "partenaire";
-  const { tier, loading: tierLoading } = useSubscription();
-  // Partenaire : gratuit ; la base n'admet que les APPROVED (refus affiché plus bas).
-  const actif = partenaire || (tier !== "free" && !tierLoading);
-  const { data: origine } = useOrigineCarte(actif && !partenaire);
-  const { data: sports } = useSportsCarte(actif);
-  // Les cibles de l'unité : seulement pour « dont X suivi(s) » dans le panneau
-  // (même cache que le Calendrier). Jamais pour un partenaire.
-  const { data: unite } = useCalendrierUnite(actif && !partenaire);
-  const suivisUnite = React.useMemo(() => new Set((unite?.targets ?? []).map((t) => t.athleteId)), [unite]);
-  const basculer = useBasculerCalendrier(mode);
+  // L'état et la logique (filtres, plage, pastilles, résultats, sélection, « + ») :
+  // lib/carteMatchs/useCarteMatchsEtat, partagé avec l'écran mobile.
+  const {
+    partenaire, actif, sports, suivisUnite, aujourdhui,
+    debut, fin, avisPlage, poserPlage, erreur, saison,
+    q, setQ, setTexte, pastilles, setPastilles,
+    setSuggOuvert, suggActif, setSuggActif, suggPret, proposees, menuVisible, choisirSuggestion,
+    mesMatchs, setMesMatchs, sport, setSport, types, setTypes, categorie, setCategorie, division, setDivision,
+    filtresPoses, retirerFiltres,
+    isLoading, isError, isFetching, refuse, options, matchs, jours, terrains, sansLieu, sources, points,
+    selection, setSelection, choisi, terrainChoisi, premierDuTerrain,
+    enCours, basculerMatch,
+  } = useCarteMatchsEtat(mode);
 
   const rootRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
   const [hauteur, setHauteur] = React.useState("100dvh");
-
-  const aujourdhui = React.useMemo(() => jourDecale(new Date(), 0), []);
-  const [debut, setDebut] = React.useState(aujourdhui);
-  const [fin, setFin] = React.useState("");
-  /** « Période limitée à 31 jours — fin ajustée au … » : visible tant que les dates ne bougent pas. */
-  const [avisPlage, setAvisPlage] = React.useState<string | null>(null);
-  const [q, setQ] = React.useState("");
-  const [texte, setTexte] = React.useState("");
-  /** Pastilles Équipe / Terrain choisies dans les suggestions (BP 2026-10-09). */
-  const [pastilles, setPastilles] = React.useState<PastilleCarte[]>([]);
-  const [suggOuvert, setSuggOuvert] = React.useState(false);
-  const [suggActif, setSuggActif] = React.useState(0);
-  /** « Mes matchs » (partenaire) : seulement les matchs ajoutés, sur la saison à venir. */
-  const [mesMatchs, setMesMatchs] = React.useState(false);
-  const saison = pastilles.length > 0 || mesMatchs;
-  const [sport, setSport] = React.useState("");
-  // Partenaire : pas d'unité, donc pas de sport imposé — la recherche part tout de suite.
-  const [sportInitialise, setSportInitialise] = React.useState(partenaire);
-  const [types, setTypes] = React.useState<TypeMatch[]>(TYPES_PAR_DEFAUT);
-  const [categorie, setCategorie] = React.useState("");
-  const [division, setDivision] = React.useState("");
-  const [selection, setSelection] = React.useState<string | null>(null);
   const [survol, setSurvol] = React.useState<string | null>(null);
   const [focus, setFocus] = React.useState<MapFocus | null>(null);
   const jeton = React.useRef(0);
@@ -137,65 +108,15 @@ export default function CarteMatchs({ mode }: { mode: ModeCarte }) {
     return () => mq.removeEventListener("change", maj);
   }, []);
 
-  // Sport par défaut = celui de l'unité (décision BP), posé une fois ; modifiable.
-  React.useEffect(() => {
-    if (sportInitialise || !origine) return;
-    setSport(typeof origine.sportUnite === "string" ? origine.sportUnite : "");
-    setSportInitialise(true);
-  }, [origine, sportInitialise]);
-
-  // Recherche texte : la base reçoit le texte 300 ms après la dernière frappe.
-  React.useEffect(() => {
-    const t = window.setTimeout(() => setTexte(q), 300);
-    return () => window.clearTimeout(t);
-  }, [q]);
-
-  // Avec une pastille : la saison à venir entière, la date de fin ne compte plus.
-  const erreur = saison ? null : erreurPlage(debut, fin || null);
-  const { equipes, lieux } = parametresPastilles(pastilles);
-  const { data, isLoading, isError, isFetching, error: erreurRecherche } = useMatchsRecherche(
-    // Les filtres s'appliquent PARTOUT, pastille ou non (BP 2026-10-09). Avec une pastille,
-    // la saison à venir entière, et le texte ne sert qu'à chercher la pastille suivante.
-    saison
-      ? { debut, fin: debut, sport, types, texte: pastilles.length ? "" : texte, equipes, lieux, mesMatchs }
-      : { debut, fin: fin || debut, sport, types, texte, equipes, lieux },
-    actif && sportInitialise && !erreur,
-    mode,
-  );
-  /** La base refuse (42501) : partenaire non approuvé (SUSPENDED, REVOKED, en attente). */
-  const refuse = isError && (erreurRecherche as { code?: string } | null)?.code === "42501";
-  // Plage refusée ou recherche en erreur : liste ET carte vides, ensemble — jamais
-  // les marqueurs de la recherche précédente (BP 2026-10-09).
-  const tous = React.useMemo(() => (erreur || isError ? [] : matchsLisibles(data)), [data, erreur, isError]);
-  const options = React.useMemo(() => optionsCatDiv(tous), [tous]);
-  const matchs = React.useMemo(
-    () => trierMatchs(filtrerCatDiv(tous, categorie, division)),
-    [tous, categorie, division],
-  );
-  const jours = React.useMemo(() => grouperParJour(matchs), [matchs]);
-  const terrains = React.useMemo(() => terrainsCarte(matchs), [matchs]);
-  const sansLieu = matchs.filter((m) => !terrainDe(m)).length;
-  const { data: sources } = useSourcesMatchs(matchs.map((m) => m.id), actif);
-
-  const points: MapPoint[] = React.useMemo(
-    () => terrains.map((t) => ({ id: t.id, nom: t.nom, lat: t.lat, lng: t.lon, riche: false, cible: t.cible })),
-    [terrains],
-  );
-  const choisi = matchs.find((m) => m.id === selection) ?? null;
-  const terrainChoisi = choisi ? terrainDe(choisi)?.id ?? null : null;
-
   const viser = React.useCallback((type: MapFocus["type"], ids: string[]) => {
     jeton.current += 1;
     setFocus({ token: jeton.current, type, ids });
   }, []);
 
-  // Nouveaux résultats : la carte cadre tous les terrains ; un match sorti des résultats ferme le panneau.
+  // Nouveaux résultats : la carte cadre tous les terrains.
   React.useEffect(() => {
     if (terrains.length > 0) viser("bounds", terrains.map((t) => t.id));
   }, [terrains, viser]);
-  React.useEffect(() => {
-    if (selection && !matchs.some((m) => m.id === selection)) setSelection(null);
-  }, [matchs, selection]);
 
   /** Ouvre le panneau d'un match ; si la carte est à l'écran, zoome sur son
    *  terrain (flyTo du modèle). Carte masquée : on reste sur la liste. */
@@ -203,14 +124,13 @@ export default function CarteMatchs({ mode }: { mode: ModeCarte }) {
     setSelection(m.id);
     const t = terrainDe(m);
     if (t && !carteMasquee) viser("fly", [t.id]);
-  }, [viser, carteMasquee]);
+  }, [viser, carteMasquee, setSelection]);
 
   // Clic sur un point : le premier match de ce terrain (même panneau).
   const ouvrirPoint = React.useCallback((terrainId: string) => {
-    const t = terrains.find((x) => x.id === terrainId);
-    const m = t ? matchs.find((x) => x.id === t.matchIds[0]) : null;
+    const m = premierDuTerrain(terrainId);
     if (m) { setSelection(m.id); viser("fly", [terrainId]); }
-  }, [terrains, matchs, viser]);
+  }, [premierDuTerrain, viser, setSelection]);
 
   React.useEffect(() => {
     if (!selection) return;
@@ -239,36 +159,6 @@ export default function CarteMatchs({ mode }: { mode: ModeCarte }) {
     if (!liste) revenirCarte();
   };
 
-  /** Pose la plage ; au-delà de JOURS_MAX, la fin est ramenée et on le DIT. */
-  const poserPlage = (d: string, f: string) => {
-    const b = bornerFin(d, f);
-    setDebut(d);
-    setFin(b.fin);
-    setAvisPlage(b.ajustee ? avisFinAjustee(b.fin) : null);
-  };
-
-  const enCours = basculer.isPending ? basculer.variables?.gameId ?? null : null;
-  const basculerMatch = (m: MatchRecherche) => {
-    const etat = etatCalendrier(m);
-    if (etat === "SUIVI" || enCours) return;
-    basculer.mutate({ gameId: m.id, ajouter: etat === "LIBRE" });
-  };
-
-  // Suggestions : sur le texte (déjà temporisé, 300 ms), avec les filtres en place. Une
-  // pastille déjà posée n'est plus proposée.
-  const { suggestions, pret: suggPret } = useSuggestionsCarte(texte, { sport, types, categorie, division }, actif && types.length > 0);
-  const filtresPoses = !!sport || !!categorie || !!division || types.length < TOUS_LES_TYPES.length;
-  /** « Retirer les filtres » : tous les sports, tous les types, toutes catégories et divisions. */
-  const retirerFiltres = () => { setSport(""); setTypes(TOUS_LES_TYPES); setCategorie(""); setDivision(""); };
-  const proposees = suggestions.filter((x) => !pastilles.some((y) => y.genre === x.genre && y.cle === x.cle));
-  const menuVisible = suggOuvert && q.trim().length >= 2 && texte.trim().length >= 2 && (proposees.length > 0 || suggPret);
-  /** Une suggestion devient une pastille ; le texte libre est vidé (sinon il
-   *  filtrerait encore la saison de l'équipe choisie). */
-  const choisirSuggestion = (x: PastilleCarte) => {
-    setPastilles((l) => ajouterPastille(l, { genre: x.genre, cle: x.cle, libelle: x.libelle, detail: x.detail }));
-    setQ(""); setTexte(""); setSuggOuvert(false); setSuggActif(0);
-  };
-
   const filtreUnique = (label: string, valeur: string, valeurs: string[], poser: (v: string) => void, opts?: { lib?: (v: string) => string; toujoursActif?: boolean }) => {
     // Une seule valeur (ou aucune) : présent mais grisé, jamais caché (décision BP).
     // Une valeur posée absente des résultats reste modifiable, pour pouvoir la retirer.
@@ -293,7 +183,7 @@ export default function CarteMatchs({ mode }: { mode: ModeCarte }) {
       <div className="cs cm" style={{ minHeight: 320, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} data-testid="carte-refus">
         <style dangerouslySetInnerHTML={{ __html: CS_CSS + CM_CSS }} />
         <p style={{ maxWidth: 460, textAlign: "center", color: "var(--soft)", fontSize: 15 }}>
-          La carte des matchs est réservée aux partenaires approuvés. Écris-nous à{" "}
+          {TEXTE_REFUS_PARTENAIRE}{" "}
           <a href="mailto:info@nexussports.ca" style={{ color: "#fff", textDecoration: "underline" }}>info@nexussports.ca</a>.
         </p>
       </div>
@@ -563,10 +453,7 @@ function Source({ source }: { source: SourceMatch | undefined }) {
 /** « + » / « ✓ » — le bouton rond du modèle (.heart). */
 function BoutonCalendrier({ mode, m, enCours, onClick }: { mode: ModeCarte; m: MatchRecherche; enCours: boolean; onClick: () => void }) {
   const etat = etatCalendrier(m);
-  const titre = mode === "partenaire"
-    ? (etat === "AJOUTE" ? "Dans mon agenda — retirer" : "Ajouter à mon agenda")
-    : etat === "SUIVI" ? "Au calendrier : un athlète suivi par ton unité y joue"
-    : etat === "AJOUTE" ? "Au calendrier de ton unité — retirer" : "Ajouter au calendrier de ton unité";
+  const titre = titreBoutonCalendrier(mode, etat);
   return (
     <button
       type="button" data-testid="bouton-calendrier" data-etat={etat}
@@ -588,22 +475,7 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
   autres: MatchRecherche[];
   onCalendrier: (m: MatchRecherche) => void; onOuvrir: (m: MatchRecherche) => void; onClose: () => void;
 }) {
-  const partenaire = mode === "partenaire";
-  const { parMatch, isLoading: chargeRecruteur } = useProfilsMatchs(!partenaire && m.nb_profils > 0 ? [m.id] : [], suivis, actif && !partenaire);
-  const profils: ProfilsMatch | undefined = partenaire ? undefined : parMatch.get(m.id);
-  const pp = useProfilsPartenaire(partenaire ? m.id : null, actif && partenaire && m.nb_profils > 0);
-  const total = partenaire ? (pp.total || m.nb_profils) : (profils?.total ?? m.nb_profils);
-  const isLoading = partenaire ? pp.isLoading : chargeRecruteur;
-  const etat = etatCalendrier(m);
-  const t = terrainDe(m);
-  const details: [string, string | null][] = [
-    ["Terrain", m.terrain || LIEU_NON_PRECISE],
-    ["Catégorie", m.categorie],
-    ["Division", libelleDivision(m.division) || null],
-    ["Zone", m.zone?.trim() || null],
-    ["Ligue", m.ligue],
-    ["Type", m.type ? LIBELLES_TYPES[m.type] : null],
-  ];
+  const { partenaire, profils, pp, total, isLoading, etat, terrain: t, details } = useDetailsMatch(mode, m, suivis, actif);
   return (
     <div className="preview" data-testid="panneau">
       <button className="close" onClick={onClose} aria-label="Fermer">✕</button>
@@ -644,11 +516,7 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
                 </div>
               ))}
               {total > pp.profils.length && (
-                <span className="note" data-testid="profils-non-nommes">
-                  {pp.profils.length === 0
-                    ? "Ces athlètes n'ont pas rendu leur profil visible aux partenaires."
-                    : `${total - pp.profils.length} autre${total - pp.profils.length > 1 ? "s" : ""} n'${total - pp.profils.length > 1 ? "ont" : "a"} pas rendu ${total - pp.profils.length > 1 ? "leur" : "son"} profil visible aux partenaires.`}
-                </span>
+                <span className="note" data-testid="profils-non-nommes">{noteProfilsNonNommes(total, pp.profils.length)}</span>
               )}
             </>
           )}
@@ -671,15 +539,9 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
         {t && <a className="btn page" href={lienItineraire(t.lat, t.lon)} target="_blank" rel="noopener noreferrer">Itinéraire</a>}
         <button className="btn target" data-testid="panneau-calendrier" data-etat={etat}
           disabled={etat === "SUIVI" || enCours === m.id} onClick={() => onCalendrier(m)}>
-          {partenaire
-            ? (etat === "AJOUTE" ? "✓ Dans mon agenda — retirer" : "+ Ajouter à mon agenda")
-            : etat === "LIBRE" ? "+ Ajouter à mon calendrier" : etat === "AJOUTE" ? "✓ Dans mon calendrier — retirer" : "✓ Au calendrier"}
+          {libelleCtaCalendrier(mode, etat)}
         </button>
-        <span className="note">
-          {partenaire ? "Tes matchs : le filtre « Mes matchs » et ton agenda synchronisé."
-            : etat === "SUIVI" ? "Un athlète suivi par ton unité joue dans ce match : il est déjà au Calendrier."
-            : "Le calendrier est partagé avec ton unité."}
-        </span>
+        <span className="note">{noteCalendrier(mode, etat)}</span>
       </div>
 
       {autres.length > 0 && (

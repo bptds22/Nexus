@@ -538,3 +538,35 @@ export function profilsPartenaireLisibles(data: unknown): { total: number; profi
 }
 
 
+
+/* ── Libellés du « + » et du panneau d'un match — web ET appli (même texte). ── */
+
+type ModeLibelles = "recruteur" | "partenaire";
+
+/** Titre (et aria-label) du bouton rond « + » / « ✓ » d'une ligne. */
+export function titreBoutonCalendrier(mode: ModeLibelles, etat: EtatCalendrier): string {
+  if (mode === "partenaire") return etat === "AJOUTE" ? "Dans mon agenda — retirer" : "Ajouter à mon agenda";
+  return etat === "SUIVI" ? "Au calendrier : un athlète suivi par ton unité y joue"
+    : etat === "AJOUTE" ? "Au calendrier de ton unité — retirer" : "Ajouter au calendrier de ton unité";
+}
+
+/** Libellé du grand bouton du panneau. */
+export function libelleCtaCalendrier(mode: ModeLibelles, etat: EtatCalendrier): string {
+  if (mode === "partenaire") return etat === "AJOUTE" ? "✓ Dans mon agenda — retirer" : "+ Ajouter à mon agenda";
+  return etat === "LIBRE" ? "+ Ajouter à mon calendrier" : etat === "AJOUTE" ? "✓ Dans mon calendrier — retirer" : "✓ Au calendrier";
+}
+
+/** La note sous le grand bouton du panneau. */
+export function noteCalendrier(mode: ModeLibelles, etat: EtatCalendrier): string {
+  if (mode === "partenaire") return "Tes matchs : le filtre « Mes matchs » et ton agenda synchronisé.";
+  return etat === "SUIVI" ? "Un athlète suivi par ton unité joue dans ce match : il est déjà au Calendrier."
+    : "Le calendrier est partagé avec ton unité.";
+}
+
+/** Partenaire : la phrase des athlètes comptés mais non nommés (visibilité non cochée). */
+export function noteProfilsNonNommes(total: number, nommes: number): string | null {
+  const n = total - nommes;
+  if (n <= 0) return null;
+  if (nommes === 0) return "Ces athlètes n'ont pas rendu leur profil visible aux partenaires.";
+  return `${n} autre${n > 1 ? "s" : ""} n'${n > 1 ? "ont" : "a"} pas rendu ${n > 1 ? "leur" : "son"} profil visible aux partenaires.`;
+}

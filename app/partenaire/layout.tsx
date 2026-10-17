@@ -42,6 +42,9 @@ export default function PartenaireLayout({ children }: { children: React.ReactNo
   // la comparaison exacte sinon l'écran bienvenue n'est jamais reconnu.
   const isWelcomeFlow = normalizeTabPath(pathname) === ROUTE_BIENVENUE;
   const chromeless = isTabBarHidden("partenaire", normalizeTabPath(pathname));
+  // Carte des matchs (appli) : écran plein (components/carte-mobile), qui porte son
+  // propre titre — l'en-tête « Espace partenaire » passerait par-dessus.
+  const pleinEcran = normalizeTabPath(pathname) === "/partenaire/carte-matchs";
 
   useEffect(() => {
     let vivant = true;
@@ -102,12 +105,14 @@ export default function PartenaireLayout({ children }: { children: React.ReactNo
             paddingBottom: chromeless ? 0 : "calc(env(safe-area-inset-bottom) + 88px)",
           }}
         >
+          {!pleinEcran && (
           <div
             className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-[#1e2128] px-5 flex items-end justify-center"
             style={{ paddingTop: "env(safe-area-inset-top)", minHeight: "calc(env(safe-area-inset-top) + 48px)" }}
           >
             <span className="pb-3 text-[12px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Espace partenaire</span>
           </div>
+          )}
           <PreMaintenanceBanner />
           {children}
         </main>

@@ -25,7 +25,9 @@ import type { SourceMatch } from "@/lib/calendar/sourceMatch";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-async function ouvrirDansLApp(e: MouseEvent<HTMLAnchorElement>, url: string) {
+/** Ouvre `url` dans le navigateur intégré de l'app (repli : nouvel onglet).
+ *  Aussi lu par la carte des matchs mobile (« Itinéraire »). */
+export async function ouvrirDansLApp(e: MouseEvent<HTMLAnchorElement>, url: string) {
   e.preventDefault();
   try {
     const { Browser } = await import("@capacitor/browser");
