@@ -1,0 +1,17 @@
+== Preuve locale du lot compléments 1.4.5 (2026-10-16 23:27:34)
+-- 0. rollback local (état de départ = prod relevée)
+départ: fonction=absente version=0
+-- 1. lot à garde FAUSSE (une transaction) : doit tout annuler
+psql:/tmp/lot-preuve-garde-fausse.sql:597: ERROR:  NEXUS LOT: objets créés ≠ objets testés en local (empreinte d27ddde2d5470cb0474760351e5be455 / 3 éléments) — tout est annulé
+après lot faux: fonction=absente version=0
+-- 2. lot RÉEL (une transaction)
+{"avant" : {"donnees":"1|48|62","version_deja":0,"derniere_version":"20261016170000","pg":"17.6"}, "apres" : {"donnees" : "1|48|62", "version" : "20261017010000", "md5_enregistre" : "d95f608347271299b8e66eabc5c32669", "fonction" : "non_contact_carte(uuid,integer)", "meme_transaction" : true}}
+empreinte après: d27ddde2d5470cb0474760351e5be455|3
+-- 3. second envoi : refusé
+psql:/tmp/lot-prod.sql:24: ERROR:  NEXUS LOT: migration compléments 1.4.5 déjà présente — rien n'est appliqué
+-- 4. banc sur la base issue du lot
+20 | 0
+-- 5. rollback puis ré-application du lot
+après rollback: fonction=absente
+{"avant" : {"donnees":"1|48|62","version_deja":0,"derniere_version":"20261016170000","pg":"17.6"}, "apres" : {"donnees" : "1|48|62", "version" : "20261017010000", "md5_enregistre" : "d95f608347271299b
+banc après ré-application: 20 | 0

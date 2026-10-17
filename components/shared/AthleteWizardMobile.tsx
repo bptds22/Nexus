@@ -83,6 +83,8 @@ import {
 import { POSITIONS } from "@/lib/sports-data";
 import {
   lookupInvitableByEmail,
+  courrielExistant,
+  TEXTES_DEJA_MON_EFFECTIF,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
@@ -267,6 +269,8 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
      jamais par un INSERT direct, et JAMAIS par athlete_invitations : cet
      athlète a déjà un compte, il n'a rien à réclamer. */
   const [ancreAilleurs, setAncreAilleurs] = useState(false);
+  /** 1.4.5 : le courriel est celui d'un athlète déjà dans MON effectif — création bloquée, sans « autre équipe ». */
+  const [dejaMien, setDejaMien] = useState(false);
   const [equipeTransfert, setEquipeTransfert] = useState<string | null>(null);
   /* D1 — « même identité » : même nom + même date de naissance qu'une fiche que
      ce coach VOIT déjà (RLS). Montrée une fois par identité, comme le web. */
@@ -521,6 +525,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       setEmailAutocomplete(null);
       setShowSuggestions(false);
       setAncreAilleurs(false);
+      setDejaMien(false);
       setResultatAncre(null);
       return;
     }
@@ -555,7 +560,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         // PRÉFIXE et se levait dès 4 caractères — taper « bptd » suffisait à
         // afficher la bannière, bloquer la création et proposer le bouton.
         // Le préfixe reste pour les SUGGESTIONS ci-dessus, où il est utile.
-        setAncreAilleurs(result.existsExact && result.suggestions.length === 0);
+        // 1.4.5 : un athlète déjà à moi n'est pas « d'une autre équipe » (lib, règle partagée).
+        const existant = courrielExistant(result);
+        setAncreAilleurs(existant === "AUTRE_EQUIPE");
+        setDejaMien(existant === "MON_EFFECTIF");
       } catch (err) {
         console.error("[EmailAutocomplete] lookup error:", err);
       }
@@ -996,6 +1004,12 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
        coach. Créer produirait un doublon (l'index unique sur athletes.email ne
        couvre pas le courriel du seul compte). La seule action légitime est
        l'invitation, proposée dans le bloc de l'écran 1. */
+    if (isCreate && dejaMien) {
+      setSaving(false);
+      setShowSummarySheet(false);
+      toast.error({ message: TEXTES_DEJA_MON_EFFECTIF.titre, detail: TEXTES_DEJA_MON_EFFECTIF.detail });
+      return;
+    }
     if (isCreate && ancreAilleurs) {
       setSaving(false);
       setShowSummarySheet(false);
@@ -1118,7 +1132,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     router.push(isCreate ? "/coach/athletes" : `/coach/athletes/${savedId}`);
   }, [
     isCreate, form, athleteId, recruitmentStatus, committedSchoolId, coach.schoolId, linkedToExisting,
-    ancreAilleurs, router, toast, missingRequiredAll, emailAutocomplete, handleSelectSuggestion,
+    ancreAilleurs, dejaMien, router, toast, missingRequiredAll, emailAutocomplete, handleSelectSuggestion,
   ]);
 
   /* ── Chip-row navigation hooks (top-level, never below an
@@ -1709,6 +1723,12 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                 <p className="text-[12px] text-white/55">{s.email}{s.sportName ? ` · ${s.sportName}` : ""}</p>
               </button>
             ))}
+          </div>
+        )}
+        {isCreate && dejaMien && (
+          <div className="p-4 rounded-2xl bg-[#1A1D24] border border-[#22C55E]/30" data-deja-mon-effectif>
+            <p className="text-[13px] font-semibold text-white">{TEXTES_DEJA_MON_EFFECTIF.titre}</p>
+            <p className="text-[12px] text-white/60 mt-1 leading-relaxed">{TEXTES_DEJA_MON_EFFECTIF.detail}</p>
           </div>
         )}
         {/* ANCRÉ AILLEURS — un athlète existe à ce courriel, mais il appartient

@@ -12,7 +12,7 @@ const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
 test("le lien du texto : domaine public, jamais l'adresse locale de la WebView", () => {
   const page = lire("app/partenaire/prospects/page.tsx");
-  assert.match(page, /setLien\(\{ adresse: adresseLien\(adressePublique\(\), jeton\), evalue \}\);/);
+  assert.match(page, /setLien\(\{ carteId, adresse: adresseLien\(adressePublique\(\), jeton\), evalue \}\);/);
   assert.doesNotMatch(page, /window\.location\.origin/);
   const adr = lire("lib/partage/adressePublique.ts");
   assert.match(adr, /process\.env\.NEXT_PUBLIC_APP_URL/);
@@ -24,10 +24,10 @@ test("le lien du texto : domaine public, jamais l'adresse locale de la WebView",
 
 test("« Envoyer par texto » dans l'appli : feuille de partage native, message entier, repli sur la copie", () => {
   const src = lire("components/partenaire/prospects/EnvoyerLien.tsx");
-  assert.match(src, /\{IS_CAPACITOR && \(\s*<button type="button" onClick=\{\(\) => void envoyerAppli\(\)\}/);
+  assert.match(src, /\{IS_CAPACITOR && \(\s*<button type="button" disabled=\{bloque\} onClick=\{\(\) => void envoyerAppli\(\)\}/);
   assert.match(src, /partagerTexte\(\{ texte: message, titre: "Envoyer le lien" \}\)/);
-  // Le sms: et le partage navigateur restent au web.
-  assert.match(src, /\{!IS_CAPACITOR && tactile && \(/);
+  // Le sms: et le partage navigateur restent au web (le sms: disparaît pendant une période de non-contact).
+  assert.match(src, /\{!IS_CAPACITOR && tactile && !bloque && \(/);
   assert.match(src, /\{!IS_CAPACITOR && partage && \(/);
   const lib = lire("lib/partage/partagerLien.ts");
   assert.match(lib, /await Share\.share\(\{ title: titre, text: texte, dialogTitle: titre \}\);/);

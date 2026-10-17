@@ -135,6 +135,46 @@ export async function genererLien(supabase: SupabaseClient, carteId: string): Pr
   return data as string;
 }
 
+/* ── Période de non-contact (blackout_periods, /admin/blackouts) ─────────
+   Pendant une période active pour le sport et la promotion d'une carte, le
+   serveur refuse de créer ou de remplacer son lien (partenaire_prospect_lien) ;
+   l'écran grise « Envoyer par texto », « Copier le message » et « Nouveau lien »
+   avec la date de fin. Même règle que l'écriture recruteur ↔ athlète. */
+
+const MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/** « 26 octobre 2026 » — la même forme que le message du serveur. */
+export function dateLongueFr(iso: string): string {
+  const [a, m, j] = iso.slice(0, 10).split("-").map(Number);
+  return `${j} ${MOIS_FR[m - 1]} ${a}`;
+}
+
+export function texteNonContact(fin: string): string {
+  return `Période de non-contact jusqu'au ${dateLongueFr(fin)}`;
+}
+
+/** La fin de la période active de chaque carte (AAAA-MM-JJ), par identifiant de carte.
+ *  Une lecture par couple (sport, promotion). Lecture en échec : aucune période
+ *  affichée — le serveur refuse quand même le lien pendant la période. */
+export async function lireNonContactCartes(
+  supabase: SupabaseClient,
+  cartes: readonly Pick<CartePartenaire, "id" | "sportId" | "promotion">[],
+): Promise<Map<string, string>> {
+  const parCle = new Map<string, string | null>();
+  await Promise.all([...new Set(cartes.map((c) => `${c.sportId}|${c.promotion ?? ""}`))].map(async (cle) => {
+    const [sport, promo] = cle.split("|");
+    const { data, error } = await supabase.rpc("non_contact_carte", { p_sport: sport, p_promo: promo === "" ? null : Number(promo) });
+    const fin = !error ? ((data as { date_fin: string }[] | null)?.[0]?.date_fin ?? null) : null;
+    parCle.set(cle, fin);
+  }));
+  const res = new Map<string, string>();
+  for (const c of cartes) {
+    const fin = parCle.get(`${c.sportId}|${c.promotion ?? ""}`);
+    if (fin) res.set(c.id, fin);
+  }
+  return res;
+}
+
 export async function revoquerLien(supabase: SupabaseClient, carteId: string): Promise<void> {
   const { error } = await supabase.rpc("partenaire_prospect_revoquer_lien", { p_carte: carteId });
   if (error) throw error;

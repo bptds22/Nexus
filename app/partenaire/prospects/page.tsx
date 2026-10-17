@@ -32,7 +32,9 @@ import {
   LIBELLE_RAISON_BADGE,
   LIBELLE_STATUT,
   LIMITE_CARTES,
+  lireNonContactCartes,
   messageErreurCarte,
+  texteNonContact,
   revoquerLien,
   supprimerCarte,
   type CartePartenaire,
@@ -76,7 +78,9 @@ export default function MesProspectsPage() {
   const [chargement, setChargement] = useState(true);
   const [erreurChargement, setErreurChargement] = useState(false);
   const [formulaire, setFormulaire] = useState<{ carte: CartePartenaire | null } | null>(null);
-  const [lien, setLien] = useState<{ adresse: string; evalue: boolean } | null>(null);
+  const [lien, setLien] = useState<{ carteId: string; adresse: string; evalue: boolean } | null>(null);
+  /** Fin de la période de non-contact active, par carte (AAAA-MM-JJ). */
+  const [nonContact, setNonContact] = useState<Map<string, string>>(new Map());
   const [confirmation, setConfirmation] = useState<{ carteId: string; action: "supprimer" | "nouveau-lien" | "revoquer" } | null>(null);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [avis, setAvis] = useState<{ type: "succes" | "erreur"; texte: string } | null>(null);
@@ -92,6 +96,7 @@ export default function MesProspectsPage() {
       const [c, t] = await Promise.all([chargerMesCartes(supabase), chargerCartesTerminees(supabase)]);
       setCartes(c);
       setTerminees(t);
+      setNonContact(await lireNonContactCartes(supabase, c));
       // Libellés lisibles : sports, positions, établissements et équipes des cartes.
       const ids = (f: (x: CartePartenaire) => string | null) => [...new Set(c.map(f).filter((x): x is string => !!x))];
       const [sp, po, ec, eq] = await Promise.all([
@@ -145,7 +150,7 @@ export default function MesProspectsPage() {
       // Domaine public (NEXT_PUBLIC_APP_URL), jamais l'adresse locale de la WebView de l'appli.
       // Le texto ne dit « t'a évalué » que si la carte porte une évaluation.
       const evalue = cartes.find((c) => c.id === carteId)?.coteGlobale != null;
-      setLien({ adresse: adresseLien(adressePublique(), jeton), evalue });
+      setLien({ carteId, adresse: adresseLien(adressePublique(), jeton), evalue });
       await charger();
     } catch (e) {
       notifier("erreur", messageErreurCarte(e, "Le lien n'a pas pu être créé."));
@@ -250,6 +255,8 @@ export default function MesProspectsPage() {
                 const jours = joursRestants(c.expireLe);
                 const conf = confirmation?.carteId === c.id ? confirmation.action : null;
                 const lienEnvoye = c.statut !== "A_ENVOYER";
+                // Période de non-contact : ni texto, ni nouveau lien (le serveur refuse aussi).
+                const finNonContact = nonContact.get(c.id) ?? null;
                 return (
                   <li key={c.id} className="rounded-xl border border-[#2D3748] bg-[#1A1D24] p-4 sm:p-5" data-carte-prospect={c.id}>
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -301,7 +308,8 @@ export default function MesProspectsPage() {
                       </div>
                     ) : (
                       <div className="mt-4 flex items-center gap-2 flex-wrap">
-                        <button type="button" disabled={occupe === c.id}
+                        <button type="button" disabled={occupe === c.id || !!finNonContact}
+                          title={finNonContact ? texteNonContact(finNonContact) : undefined}
                           onClick={() => (lienEnvoye ? setConfirmation({ carteId: c.id, action: "nouveau-lien" }) : void envoyer(c.id))}
                           className="px-3.5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg disabled:opacity-50"
                           data-action="envoyer">
@@ -322,6 +330,9 @@ export default function MesProspectsPage() {
                           Supprimer
                         </button>
                       </div>
+                    )}
+                    {finNonContact && (
+                      <p className="mt-2 text-[12px] font-semibold text-[#F5C46B]" data-non-contact={finNonContact}>{texteNonContact(finNonContact)}</p>
                     )}
                   </li>
                 );
@@ -398,7 +409,8 @@ export default function MesProspectsPage() {
         />
       )}
       {lien && partenaire && (
-        <EnvoyerLien organisation={partenaire.organizationName} adresse={lien.adresse} evalue={lien.evalue} onClose={() => setLien(null)} />
+        <EnvoyerLien organisation={partenaire.organizationName} adresse={lien.adresse} evalue={lien.evalue}
+          nonContactJusquau={nonContact.get(lien.carteId) ?? null} onClose={() => setLien(null)} />
       )}
     </div>
   );

@@ -195,6 +195,8 @@ interface InvitableRow {
   has_account: boolean | null;
   exists_not_invitable: boolean | null;
   exists_exact: boolean | null;
+  /** 1.4.5 : courriel exact d'un athlète déjà dans MON effectif (absent avant la migration 20261017010000). */
+  exists_mine?: boolean | null;
 }
 
 export interface InvitableLookupResult {
@@ -213,6 +215,9 @@ export interface InvitableLookupResult {
    *  quelqu'un qu'on n'a pas fini d'identifier.
    *  Toujours zéro PII — un booléen de plus, rien d'autre. */
   existsExact: boolean;
+  /** Courriel exact d'un athlète déjà dans l'effectif du coach (avec compte) :
+   *  « Déjà dans ton effectif », jamais « autre équipe ». Zéro PII. */
+  existsMine: boolean;
 }
 
 /**
@@ -226,7 +231,7 @@ export async function lookupInvitableByEmail(
 ): Promise<InvitableLookupResult> {
   const trimmed = partial.trim().toLowerCase();
   if (trimmed.length < MIN_QUERY_LENGTH) {
-    return { status: "too_short", suggestions: [], existsNotInvitable: false, existsExact: false };
+    return { status: "too_short", suggestions: [], existsNotInvitable: false, existsExact: false, existsMine: false };
   }
 
   const { data, error } = await supabase.rpc("lookup_invitable_athletes_by_email", {
@@ -234,7 +239,7 @@ export async function lookupInvitableByEmail(
   });
   if (error) {
     console.error("[athleteEmailAutocomplete] invitable RPC error:", error);
-    return { status: "error", suggestions: [], existsNotInvitable: false, existsExact: false };
+    return { status: "error", suggestions: [], existsNotInvitable: false, existsExact: false, existsMine: false };
   }
 
   const rows = (data as InvitableRow[] | null) ?? [];
@@ -251,12 +256,14 @@ export async function lookupInvitableByEmail(
     }));
   const existsNotInvitable = rows.some((r) => r.exists_not_invitable === true);
   const existsExact = rows.some((r) => r.exists_exact === true);
+  const existsMine = rows.some((r) => r.exists_mine === true);
 
   return {
     status: suggestions.length > 0 ? "ok" : "no_results",
     suggestions,
     existsNotInvitable,
     existsExact,
+    existsMine,
   };
 }
 
@@ -266,3 +273,20 @@ export async function lookupInvitableByEmail(
 export function resetEmailAutocompleteRateLimit(): void {
   lookupHistory.length = 0;
 }
+
+/** Ce que l'écran de création dit d'un courriel déjà pris (web ET appli) :
+ *  « autre équipe » (proposer l'invitation), « mon effectif » (il est déjà à
+ *  moi), ou rien. Les deux premiers bloquent la création : ce serait un doublon. */
+export type CourrielExistant = "AUTRE_EQUIPE" | "MON_EFFECTIF" | null;
+
+export function courrielExistant(r: Pick<InvitableLookupResult, "existsExact" | "existsMine" | "suggestions">): CourrielExistant {
+  if (r.suggestions.length > 0) return null;
+  if (r.existsMine) return "MON_EFFECTIF";
+  if (r.existsExact) return "AUTRE_EQUIPE";
+  return null;
+}
+
+export const TEXTES_DEJA_MON_EFFECTIF = {
+  titre: "Cet athlète est déjà dans ton effectif",
+  detail: "Sa fiche existe déjà : retrouve-le dans « Mes athlètes ». Inutile de la créer.",
+} as const;

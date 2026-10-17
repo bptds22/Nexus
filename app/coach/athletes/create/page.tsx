@@ -24,6 +24,8 @@ import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import {
   lookupInvitableByEmail,
+  courrielExistant,
+  TEXTES_DEJA_MON_EFFECTIF,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
@@ -297,6 +299,8 @@ export default function CreateAthletePage() {
      SEUL, sans identité : on ne peut ni nommer l'athlète, ni créer sa fiche.
      On propose l'invitation, résolue côté serveur. */
   const [ancreAilleurs, setAncreAilleurs] = useState(false);
+  /** 1.4.5 : le courriel est celui d'un athlète déjà dans MON effectif — création bloquée, sans « autre équipe ». */
+  const [dejaMien, setDejaMien] = useState(false);
   const [equipeTransfert, setEquipeTransfert] = useState<string | null>(null);
   const [envoiAncre, setEnvoiAncre] = useState(false);
   /* Même nom + même date de naissance (D1, 2026-10-15) : seulement des fiches que
@@ -340,6 +344,7 @@ export default function CreateAthletePage() {
       setEmailAutocomplete(null);
       setShowSuggestions(false);
       setAncreAilleurs(false);
+      setDejaMien(false);
       setResultatAncre(null);
       return;
     }
@@ -360,7 +365,10 @@ export default function CreateAthletePage() {
         // PRÉFIXE et se levait dès 4 caractères — taper « bptd » suffisait à
         // afficher la bannière, bloquer la création et proposer le bouton.
         // Le préfixe reste pour les SUGGESTIONS ci-dessus, où il est utile.
-        setAncreAilleurs(result.existsExact && result.suggestions.length === 0);
+        // 1.4.5 : un athlète déjà à moi n'est pas « d'une autre équipe » (lib, règle partagée).
+        const existant = courrielExistant(result);
+        setAncreAilleurs(existant === "AUTRE_EQUIPE");
+        setDejaMien(existant === "MON_EFFECTIF");
       } catch (err) {
         console.error("[EmailAutocomplete] lookup error:", err);
       }
@@ -757,7 +765,7 @@ export default function CreateAthletePage() {
        l'INSERT si la fiche porte ce courriel — mais pas si le courriel n'est que
        celui de son COMPTE. La seule action légitime est l'invitation, proposée
        à l'étape 1. */
-    if (ancreAilleurs) {
+    if (ancreAilleurs || dejaMien) {
       setCurrentStep(1);
       setShowErrors(true);
       return;
@@ -958,6 +966,12 @@ export default function CreateAthletePage() {
               autoComplete="off"
               placeholder="athlete@email.com" className={inputCls} />
 
+{dejaMien && (
+              <div className="mt-2 rounded-lg bg-[#1A1D24] border border-[#22C55E]/30 p-4" data-deja-mon-effectif>
+                <p className="text-[13px] font-semibold text-white">{TEXTES_DEJA_MON_EFFECTIF.titre}</p>
+                <p className="text-[12px] text-[#9CA3AF] mt-1 leading-relaxed">{TEXTES_DEJA_MON_EFFECTIF.detail}</p>
+              </div>
+            )}
             {/* ANCRÉ AILLEURS — un athlète existe à ce courriel mais appartient
                 déjà à quelqu'un d'autre. On ne peut ni le nommer (le drapeau
                 arrive sans identité) ni le créer (ce serait le doublon). La

@@ -25,7 +25,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { lienSms, messageTexto } from "@/lib/partenaires/prospects";
+import { lienSms, messageTexto, texteNonContact } from "@/lib/partenaires/prospects";
 import { partagerTexte } from "@/lib/partage/partagerLien";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -34,14 +34,18 @@ export default function EnvoyerLien({
   organisation,
   adresse,
   evalue,
+  nonContactJusquau = null,
   onClose,
 }: {
   organisation: string;
   adresse: string;
   /** La carte porte une évaluation (cote globale) : sinon, le texto invite sans « t'a évalué ». */
   evalue: boolean;
+  /** Période de non-contact active (AAAA-MM-JJ) : texto, partage et copies désactivés. */
+  nonContactJusquau?: string | null;
   onClose: () => void;
 }) {
+  const bloque = !!nonContactJusquau;
   const message = messageTexto(organisation, adresse, evalue);
   const [tactile, setTactile] = useState(false);
   const [partage, setPartage] = useState(false);
@@ -92,28 +96,31 @@ export default function EnvoyerLien({
           {message}
         </p>
 
+        {bloque && (
+          <p className="mt-4 text-[12px] font-semibold text-[#F5C46B]" data-non-contact={nonContactJusquau}>{texteNonContact(nonContactJusquau as string)}</p>
+        )}
         <div className="mt-4 flex flex-col sm:flex-row gap-2">
           {IS_CAPACITOR && (
-            <button type="button" onClick={() => void envoyerAppli()} data-envoyer-texto-appli
-              className="flex-1 min-h-[44px] text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg">
+            <button type="button" disabled={bloque} onClick={() => void envoyerAppli()} data-envoyer-texto-appli
+              className="flex-1 min-h-[44px] text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
               Envoyer par texto
             </button>
           )}
-          {!IS_CAPACITOR && tactile && (
-            <a href={lienSms(message)} className="flex-1 text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg">
+          {!IS_CAPACITOR && tactile && !bloque && (
+            <a href={lienSms(message)} className="flex-1 text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
               Envoyer par texto
             </a>
           )}
           {!IS_CAPACITOR && partage && (
-            <button type="button" onClick={() => void partager()} className="flex-1 px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg">
+            <button type="button" disabled={bloque} onClick={() => void partager()} className="flex-1 px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
               Partager…
             </button>
           )}
-          <button type="button" onClick={() => void copier("message")}
-            className={`flex-1 min-h-[44px] px-4 py-2.5 text-[13px] font-bold rounded-lg ${tactile || IS_CAPACITOR ? "border border-[#2D3748] text-white hover:bg-white/5" : "bg-[#E63946] hover:bg-[#D42B22] text-white"}`}>
+          <button type="button" disabled={bloque} onClick={() => void copier("message")}
+            className={`flex-1 min-h-[44px] px-4 py-2.5 text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed ${tactile || IS_CAPACITOR ? "border border-[#2D3748] text-white hover:bg-white/5" : "bg-[#E63946] hover:bg-[#D42B22] text-white"}`}>
             {copie === "message" ? "Message copié" : "Copier le message"}
           </button>
-          <button type="button" onClick={() => void copier("lien")} className="flex-1 min-h-[44px] px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg">
+          <button type="button" disabled={bloque} onClick={() => void copier("lien")} className="flex-1 min-h-[44px] px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
             {copie === "lien" ? "Lien copié" : "Copier le lien seul"}
           </button>
         </div>
