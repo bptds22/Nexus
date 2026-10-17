@@ -17,6 +17,7 @@ export default function StatRows({
   inTargets,
   onToggleTargets,
   followers = 86,
+  ciblesVisibles = true,
 }: {
   schoolName: string;
   city: string;
@@ -26,6 +27,8 @@ export default function StatRows({
   /** nb d'athlètes ciblant ce collège (count_followers_by_school). Défaut 86 =
    *  valeur historique du fixture dev (préserve la non-régression /page-test). */
   followers?: number;
+  /** Faux → bloc « Suivre » masqué (partenaire : lib/cibles/visibiliteBouton). */
+  ciblesVisibles?: boolean;
 }) {
   const first = schoolName.split(" ")[0];
   const body = schoolName.slice(first.length).trim();
@@ -47,7 +50,7 @@ export default function StatRows({
               sur athlete_id (profils d'athlètes), aucune sur school_id. La
               pastille reviendra le jour où ce compteur existera vraiment.
               `followers` ci-dessous, lui, vient de count_followers_by_school. */}
-          <div className="hfollow rv">
+          {ciblesVisibles && <div className="hfollow rv">
             <button
               type="button"
               className={inTargets ? "hf-btn on" : "hf-btn"}
@@ -64,7 +67,7 @@ export default function StatRows({
             {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Cibler
                 n'est pas un signet privé : le cégep le voit. */}
             <div className="hf-disc">{divulgationCible(inTargets)}</div>
-          </div>
+          </div>}
         </div>
       </div>
       <div className="tstack">

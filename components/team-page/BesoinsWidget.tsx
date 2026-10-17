@@ -17,11 +17,13 @@ import {
 import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function BesoinsWidget({
-  team, cible, onToggleCible,
+  team, cible, onToggleCible, ciblesVisibles = true,
 }: {
   team: TeamData;
   cible: boolean;
   onToggleCible: () => void;
+  /** Faux → appel « montre ton intérêt » masqué (partenaire). */
+  ciblesVisibles?: boolean;
 }) {
   const cfg: SportConfig | undefined = SPORT_CONFIGS[team.sportKey];
   const [fi, setFi] = React.useState(0);
@@ -102,7 +104,7 @@ export default function BesoinsWidget({
           </div>
         </div>
       )}
-      {ms?.kind === "none" && (
+      {ms?.kind === "none" && ciblesVisibles && (
         <div className="needbox none">
           {/* « les coachs voient qui les suit » disait le MAUVAIS RÔLE : la
               cible se pose sur le cégep, elle est lue par ses RECRUTEURS, pas

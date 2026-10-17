@@ -231,7 +231,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
   // S1 follow + CTA partagent UN seul état cible — source unique (identique au
   // web : useSchoolTargets, RLS « Athletes manage own targets »).
-  const { inTargets, followers, toggle: toggleTargets } = useSchoolTargets(school.id, content.followersCount ?? 86);
+  const { inTargets, followers, visible: ciblesVisibles, toggle: toggleTargets } = useSchoolTargets(school.id, content.followersCount ?? 86);
   /* Le ♥ de l'aperçu et le CTA de la bande partagent le MÊME état cible : ils
      partagent donc aussi le même retour haptique, posé une seule fois ici. */
   const toggleTargetsTap = React.useCallback(() => { void tap(); toggleTargets(); }, [toggleTargets]);
@@ -522,7 +522,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
       {/* Ni le tab bar flottant ni la pilule de cible ne coupent le contenu :
           --tabzone réserve les deux (voir app/college/layout.tsx). */}
       <div className="tabspacer" aria-hidden />
-      <PiluleCibles inTargets={inTargets} onToggle={toggleTargetsTap} />
+      {ciblesVisibles && <PiluleCibles inTargets={inTargets} onToggle={toggleTargetsTap} />}
     </main>
   );
 }

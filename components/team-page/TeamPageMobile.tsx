@@ -497,12 +497,12 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
       <CalendrierMobile team={team} />
       <PresentationMobile team={team} />
       {!(team.hiddenSections ?? []).includes("besoins") && (
-        <BesoinsMobile team={team} cible={cible} onToggleCible={toggleCible} />
+        <BesoinsMobile team={team} cible={cible} onToggleCible={toggleCible} ciblesVisibles={targets.visible} />
       )}
       <EngageesMobile team={team} />
       {/* Rien n'est coupé par le tab bar flottant. */}
       <div className="tabspacer" aria-hidden />
-      <PiluleCibles cible={cible} onToggle={toggleCible} />
+      {targets.visible && <PiluleCibles cible={cible} onToggle={toggleCible} />}
     </main>
   );
 }
@@ -965,7 +965,7 @@ function enPortrait<T extends { acro: string; left: number; top: number }>(
   });
 }
 
-function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: boolean; onToggleCible: () => void }) {
+function BesoinsMobile({ team, cible, onToggleCible, ciblesVisibles = true }: { team: TeamData; cible: boolean; onToggleCible: () => void; ciblesVisibles?: boolean }) {
   const cfg: SportConfig | undefined = SPORT_CONFIGS[team.sportKey];
   const [fi, setFi] = React.useState(0);
   // Sport sans terrain Nexus (athlétisme, natation…) : aucune plaque à montrer →
@@ -1067,7 +1067,7 @@ function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: 
           </div>
         </div>
       )}
-      {ms?.kind === "none" && (
+      {ms?.kind === "none" && ciblesVisibles && (
         <div className="needbox none">
           <div className="nb-l">
             Pas d&apos;ouverture à ton poste pour l&apos;instant — mais montre ton intérêt :
