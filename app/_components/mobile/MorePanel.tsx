@@ -234,6 +234,9 @@ export default function MorePanel({
             // CTA Pro). Un lock ici ouvrirait l'UpgradeModal et le mur ne
             // serait jamais rendu.
             { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar },
+            // Carte des matchs — Pro aussi, même raison : pas de requiredTier, le
+            // gratuit atteint la page et y voit la porte Pro (FeatureGate).
+            { key: "carte-matchs", label: "Carte des matchs", href: "/recruteur/carte-matchs", icon: Icons.calendar },
             // « Ma page » — l'editeur de la vitrine publique. L'ecran mobile ne
             // fait que renvoyer au web (les deux editeurs sont desktop). PAS de
             // requiredTier ici : meme raison que Calendrier et Listes ci-dessus

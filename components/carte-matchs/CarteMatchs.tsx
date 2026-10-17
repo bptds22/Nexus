@@ -24,7 +24,8 @@
    dessiné ici ; les ajouts (dates, bascule étroite) reprennent ses jetons.
 
    · Recruteur : Pro (FeatureGate dans la page). Partenaire : gratuit, APPROVED.
-   · Recruteur : web seulement (registre §77). Partenaire : web et appli (1.4.5, B1).
+   · Web et appli, pour les deux rôles (recruteur : appli depuis le lot carte des matchs
+     mobile ; partenaire : 1.4.5, B1). Dans l'appli, la hauteur réserve la barre d'onglets.
 ═══════════════════════════════════════════════════════════════ */
 
 import * as React from "react";
@@ -51,6 +52,9 @@ import {
   type MatchRecherche, type ProfilsMatch, type TypeMatch,
 } from "@/lib/carteMatchs/carteMatchs";
 import type { MapFocus, MapPoint } from "@/components/cegep-search/MapPane";
+import { hauteurSousOnglets } from "@/lib/mobile/zoneOnglets";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 const MapPane = dynamic(() => import("@/components/cegep-search/MapPane"), { ssr: false });
 
@@ -113,10 +117,12 @@ export default function CarteMatchs({ mode }: { mode: ModeCarte }) {
   const [resizeToken, setResizeToken] = React.useState(0);
 
   // Hauteur disponible = viewport moins ce qui est au-dessus (même calcul que le modèle).
+  // Dans l'appli, moins la barre d'onglets flottante aussi : sinon le bas de la liste,
+  // de la carte et la bascule « Carte » passent dessous (relevé émulateur 1.4.5).
   React.useEffect(() => {
     const calc = () => {
       const top = rootRef.current?.getBoundingClientRect().top ?? 0;
-      setHauteur(`calc(100dvh - ${Math.max(0, Math.round(top))}px)`);
+      setHauteur(hauteurSousOnglets(top, IS_CAPACITOR));
     };
     calc();
     window.addEventListener("resize", calc);
