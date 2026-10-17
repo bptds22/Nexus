@@ -42,7 +42,7 @@ export default function PartenaireLayout({ children }: { children: React.ReactNo
   // la comparaison exacte sinon l'écran bienvenue n'est jamais reconnu.
   const isWelcomeFlow = normalizeTabPath(pathname) === ROUTE_BIENVENUE;
   const chromeless = isTabBarHidden("partenaire", normalizeTabPath(pathname));
-  // Carte des matchs (appli) : écran plein (components/carte-mobile), qui porte son
+  // Carte des matchs (appli) : écran plein (components/carte-mobile, cadre propre à la carte des matchs), qui porte son
   // propre titre — l'en-tête « Espace partenaire » passerait par-dessus.
   const pleinEcran = normalizeTabPath(pathname) === "/partenaire/carte-matchs";
 

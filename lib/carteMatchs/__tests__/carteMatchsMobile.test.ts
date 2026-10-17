@@ -40,15 +40,13 @@ test("libellés du « + » et du panneau : les textes du web, une seule source",
   assert.equal(noteProfilsNonNommes(5, 2), "3 autres n'ont pas rendu leur profil visible aux partenaires.");
 });
 
-test("coquille partagée : RechercheMobile passe par CarteMobile, sans sa propre sheet", () => {
+test("cadre propre à la carte des matchs : « Trouve ton cégep » ne le lit pas (décision BP)", () => {
   const rm = lire("components/cegep-search/RechercheMobile.tsx");
-  assert.match(rm, /import CarteMobile, \{ CarteMobileMessage, useCarteMobile \} from "@\/components\/carte-mobile\/CarteMobile";/);
-  assert.match(rm, /const etat = useCarteMobile<FKey>\(\);/);
-  assert.match(rm, /<CarteMobile\n\s*etat=\{etat\}\n\s*css=\{CSS\}/);
-  for (const absent of ["SHEET_MS", "nx-rm-sheet-tall", "dynamic(", "onGrabStart", "--tabzone\": IS_CAPACITOR"]) {
-    assert.ok(!rm.includes(absent), absent);
-  }
+  assert.ok(!rm.includes("carte-mobile"), "RechercheMobile ne dépend pas de CarteMobile");
+  assert.match(rm, /const SHEET_MS = 280;/); // son cadre à lui, intact
   const sh = lire("components/carte-mobile/CarteMobile.tsx");
+  // Le cadre ne dépend que de la carte (MapPane), jamais de l'écran cégep.
+  assert.doesNotMatch(sh, /from "@\/components\/cegep-search\/(RechercheMobile|CegepSearch)"/);
   assert.match(sh, /const MapPane = dynamic\(\(\) => import\("@\/components\/cegep-search\/MapPane"\), \{ ssr: false \}\);/);
   assert.match(sh, /"--tabzone": IS_CAPACITOR \? ZONE_ONGLETS : "env\(safe-area-inset-bottom\)"/);
   assert.match(sh, /document\.body\.classList\.toggle\("nx-rm-sheet-tall", tall\);/);

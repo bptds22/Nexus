@@ -2,10 +2,12 @@
 
 // components/carte-mobile/CarteMobile.tsx
 //
-// COQUILLE MOBILE D'UNE CARTE — sortie telle quelle de RechercheMobile
-// (« Trouve ton cégep », la carte cégep des joueurs) pour servir aussi la carte
-// des matchs (recruteur et partenaire). Même librairie (MapPane, Leaflet), mêmes
-// marqueurs, même comportement ; seule la source des données change.
+// COQUILLE MOBILE DE LA CARTE DES MATCHS — COPIE du cadre de RechercheMobile
+// (« Trouve ton cégep », la carte cégep des joueurs), pour la carte des matchs
+// (recruteur et partenaire). Même librairie (MapPane, Leaflet), mêmes marqueurs,
+// même comportement ; seule la source des données change.
+// Décision BP 2026-10-16 : « Trouve ton cégep » n'est PAS touché et ne lit pas
+// ce fichier ; une correction du cadre ici ne s'y reporte donc pas d'elle-même.
 //
 // Modèle d'interaction = Google Maps : deux écrans MUTUELLEMENT EXCLUSIFS
 // (liste XOR carte) et UNE sheet à trois modes ('list' | 'filter' | 'preview')
