@@ -43,6 +43,7 @@ import { messageErreurNexus, messageCourrielDejaPris } from "@/lib/erreurs/messa
 import { athletesMemeIdentite, cleIdentite, peutInviterMemeIdentite, suggestionExacte, TEXTES_MEME_IDENTITE, type AthleteMemeIdentite } from "@/lib/queries/coach/athletesMemeIdentite";
 import MemeIdentiteAvertissement from "@/components/coach/MemeIdentiteAvertissement";
 import ErreurSauvegarde, { MESSAGE_ERREUR_GENERIQUE } from "@/components/shared/ErreurSauvegarde";
+import { prendreEquipeACreer } from "@/lib/coach/equipeACreer";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -555,6 +556,23 @@ export default function CreateAthletePage() {
           }),
         });
 
+        // C4 (1.4.5) : « + Créer » depuis la page d'une équipe → cette équipe déjà choisie.
+        const equipes = (teams ?? []) as { id: string; name: string | null; age_group: string | null; division: string | null; league: string | null }[];
+        const voulue = equipes.find((t) => t.id === prendreEquipeACreer(equipes.map((e) => e.id)));
+        if (voulue) {
+          setForm((prev) => ({
+            ...prev,
+            sports: {
+              ...prev.sports,
+              selectedTeamId: voulue.id,
+              currentTeam: voulue.name || "",
+              teamLevel: [voulue.age_group, voulue.division].filter(Boolean).join(" "),
+              teamDivision: voulue.division || "",
+              league: voulue.league || "RSEQ",
+            },
+          }));
+        }
+
         // Set school info on the form
         setForm((prev) => ({
           ...prev,
@@ -581,8 +599,10 @@ export default function CreateAthletePage() {
 
 
         if (teams.length > 0) {
-          setLeagueTeamId(teams[0].id);
-          setLeagueTeamName(teams[0].name || "");
+          // C4 (1.4.5) : l'équipe d'où vient « + Créer », sinon la première.
+          const choisie = teams.find((t) => t.id === prendreEquipeACreer(teams.map((e) => e.id))) ?? teams[0];
+          setLeagueTeamId(choisie.id);
+          setLeagueTeamName(choisie.name || "");
         }
       }
     }

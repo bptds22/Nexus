@@ -31,14 +31,11 @@ import {
 import { TeamPickerSheet, type TeamPickerItem } from "@/components/shared/teams/TeamPickerSheet";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { roleLabel } from "@/lib/coach/teamRoles";
 import { triggerHaptic } from "@/components/shared/settings";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
-const ROLE_LABEL: Record<string, string> = {
-  head_coach: "Chef",
-  assistant: "Assistant",
-  coordinator: "Coordo",
-};
+// C4 (1.4.5) : les libellés communs (lib/coach/teamRoles), plus « Chef / Coordo ».
 const ROLE_PILL: Record<string, string> = {
   head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
   assistant: "bg-white/[0.06] text-[#9CA3AF] border-white/10",
@@ -256,7 +253,7 @@ export default function CoachEquipesMobile() {
                           key={i}
                           className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border ${ROLE_PILL[c.role] || ROLE_PILL.assistant}`}
                         >
-                          {ROLE_LABEL[c.role] || c.role}
+                          {roleLabel(c.role)}
                         </span>
                       ))}
                       {t.coaches.length > 3 && (

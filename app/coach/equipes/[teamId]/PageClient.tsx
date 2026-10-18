@@ -7,7 +7,7 @@ import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
-import { orgLabelPossessive, isCivilType, type SchoolType } from "@/lib/utils/orgLabel";
+import { isCivilType, type SchoolType } from "@/lib/utils/orgLabel";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
@@ -17,7 +17,8 @@ import CoachEquipeDetailMobile from "@/components/shared/CoachEquipeDetailMobile
 import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import CoachRoleLine from "@/components/shared/coach/CoachRoleLine";
 import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
-import { isReferentRole, type TeamRole } from "@/lib/coach/teamRoles";
+import { isReferentRole, roleLabel, type TeamRole } from "@/lib/coach/teamRoles";
+import { poserEquipeACreer } from "@/lib/coach/equipeACreer";
 import { nomGroupe } from "@/lib/civil/classementCivil";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -100,6 +101,12 @@ interface TeamState {
   gender: string;
   isActive: boolean;
   myRole: "ADMIN" | "COACH";
+  /** Rôle brut dans team_coaches (null : directeur sans rôle dans l'équipe). */
+  rawRole: string | null;
+  /** C4 (1.4.5) — mêmes droits que l'appli (useCoachTeamDetail) : ajouter un entraîneur = le
+   *  responsable ; en retirer un = la direction (politique de team_coaches). */
+  canAddStaff: boolean;
+  canRemoveStaff: boolean;
 }
 
 function formatHeightWeight(pieds: number | null, pouces: number | null, lbs: number | null): string {
@@ -170,6 +177,7 @@ function TeamDetailPageDesktop() {
   // everything UI-side; no more users.context guard.
   const isCivil = isCivilType(team?.schoolType);
 
+  const [retraitCoach, setRetraitCoach] = useState<string | null>(null);
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
   useEffect(() => { load(); }, [teamId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -284,6 +292,9 @@ function TeamDetailPageDesktop() {
       gender: (tRec.gender as string) || "",
       isActive: (tRec.is_active as boolean) ?? true,
       myRole,
+      rawRole: rawRole ?? null,
+      canAddStaff: directorView || isReferentRole(rawRole) || rawRole === "ADMIN",
+      canRemoveStaff: directorView || rawRole === "ADMIN",
     };
 
     setTeam(teamState);
@@ -589,9 +600,11 @@ function TeamDetailPageDesktop() {
     load();
   }
 
+  /* C4 (1.4.5) : chaque écriture DIT son échec (avant : avis de succès même refusée par la base). */
   async function addCoach(coachId: string) {
     const supabase = createClient();
-    await supabase.from("team_coaches").insert({ team_id: teamId, coach_id: coachId, role: newCoachRole });
+    const { error } = await supabase.from("team_coaches").insert({ team_id: teamId, coach_id: coachId, role: newCoachRole });
+    if (error) { showToast("L'entraîneur n'a pas pu être ajouté."); return; }
     setShowAddCoach(false);
     showToast("Entraîneur ajouté");
     load();
@@ -617,21 +630,24 @@ function TeamDetailPageDesktop() {
   }
 
   async function removeCoach(rowId: string) {
+    setRetraitCoach(null);
     const supabase = createClient();
-    await supabase.from("team_coaches").delete().eq("id", rowId);
+    const { error } = await supabase.from("team_coaches").delete().eq("id", rowId);
+    if (error) { showToast("L'entraîneur n'a pas pu être retiré."); return; }
     showToast("Entraîneur retiré");
     load();
   }
 
   async function saveTeamInfo() {
     const supabase = createClient();
-    await supabase.from("teams").update({
+    const { error } = await supabase.from("teams").update({
       name: editName.trim(),
       age_group: editAgeGroup.trim() || null,
       division: editDivision.trim() || null,
       league: editLeague.trim() || null,
       season: editSeason,
     }).eq("id", teamId);
+    if (error) { showToast("Les informations n'ont pas pu être enregistrées."); return; }
     showToast("Informations mises à jour");
     load();
   }
@@ -639,8 +655,18 @@ function TeamDetailPageDesktop() {
   async function deactivateTeam() {
     if (!confirm("Désactiver cette équipe? Les athlètes ne seront pas supprimés.")) return;
     const supabase = createClient();
-    await supabase.from("teams").update({ is_active: false }).eq("id", teamId);
+    const { error } = await supabase.from("teams").update({ is_active: false }).eq("id", teamId);
+    if (error) { showToast("L'équipe n'a pas pu être désactivée."); return; }
     router.push("/coach/equipes");
+  }
+
+  /* C4 (1.4.5) : l'appli disait « Réactive-la sur le web » — le web n'avait pas de bouton. */
+  async function reactivateTeam() {
+    const supabase = createClient();
+    const { error } = await supabase.from("teams").update({ is_active: true }).eq("id", teamId);
+    if (error) { showToast("L'équipe n'a pas pu être réactivée."); return; }
+    showToast("Équipe réactivée");
+    load();
   }
 
   if (loading) {
@@ -655,13 +681,15 @@ function TeamDetailPageDesktop() {
     );
   }
 
+  /* C4 (1.4.5) : un coach de l'école hors de l'équipe (et non directeur) voyait un chargement
+     sans fin. On le lui dit. */
   if (!team) {
     return (
-      <div className="px-6 sm:px-10 py-8 max-w-[1000px] mx-auto">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-[#1A1D24] rounded w-64" />
-          <div className="h-40 bg-[#1A1D24] rounded-xl" />
-          <div className="h-40 bg-[#1A1D24] rounded-xl" />
+      <div className="px-6 sm:px-10 py-8 max-w-[1000px] mx-auto" data-equipe-inaccessible>
+        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6">
+          <p className="text-[15px] font-bold text-white">Tu ne fais pas partie de cette équipe.</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1">Seuls ses entraîneurs et la direction de l&apos;école peuvent l&apos;ouvrir.</p>
+          <Link href="/coach/equipes" className="inline-block mt-4 text-[13px] font-bold text-[#E63946] hover:text-[#ff4d5a]">← Mes équipes</Link>
         </div>
       </div>
     );
@@ -684,7 +712,8 @@ function TeamDetailPageDesktop() {
         team.gender,
         team.schoolName,
         team.season,
-        team.myRole === "ADMIN" ? "Coach principal" : "Coach",
+        // C4 (1.4.5) : le libellé commun (lib/coach/teamRoles), plus « Coach principal ».
+        team.rawRole ? roleLabel(team.rawRole) : "",
       ].filter(Boolean)
     : [
         team.sportName,
@@ -712,7 +741,13 @@ function TeamDetailPageDesktop() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round">
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-[13px] font-bold text-[#F59E0B]">Cette équipe est désactivée</p>
+          <p className="text-[13px] font-bold text-[#F59E0B] flex-1">Cette équipe est désactivée</p>
+          {team.myRole === "ADMIN" && (
+            <button type="button" onClick={reactivateTeam} data-reactiver-equipe
+              className="px-3.5 py-1.5 rounded-lg border border-[#F59E0B]/50 text-[12px] font-bold text-[#F59E0B] hover:bg-[#F59E0B]/10">
+              Réactiver
+            </button>
+          )}
         </div>
       )}
 
@@ -737,8 +772,10 @@ function TeamDetailPageDesktop() {
       <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className={sectionTitle}>Entraîneurs</h2>
-          <button type="button" onClick={() => { setShowAddCoach(true); loadAvailableCoaches(); }}
-            className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">+ Ajouter</button>
+          {team.canAddStaff && (
+            <button type="button" onClick={() => { setShowAddCoach(true); loadAvailableCoaches(); }}
+              className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">+ Ajouter</button>
+          )}
         </div>
         {coaches.length === 0 ? (
           <p className="text-[13px] text-[#4a4d56]">Aucun entraîneur assigné</p>
@@ -759,15 +796,23 @@ function TeamDetailPageDesktop() {
                 <div className="flex items-center gap-3 shrink-0">
                   <CoachRoleLine
                     role={c.role}
-                    canEdit
+                    canEdit={team.myRole === "ADMIN"}
                     teamCoachCount={coaches.length}
                     teamHasReferent={coaches.some((o) => o.id !== c.id && isReferentRole(o.role))}
                     busy={roleBusy !== null}
                     onChange={(next) => changeCoachRole(c, next)}
                   />
-                  <button type="button" onClick={() => removeCoach(c.id)} className="text-[#4a4d56] hover:text-[#E63946] transition-colors" title="Retirer">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-                  </button>
+                  {team.canRemoveStaff && (retraitCoach === c.id ? (
+                    <span className="flex items-center gap-1.5" data-confirmer-retrait>
+                      <button type="button" onClick={() => removeCoach(c.id)}
+                        className="px-2.5 py-1 bg-[#E63946] text-white text-[11px] font-bold rounded-md">Confirmer le retrait</button>
+                      <button type="button" onClick={() => setRetraitCoach(null)} className="px-2 py-1 text-[11px] text-[#9CA3AF] hover:text-white">Annuler</button>
+                    </span>
+                  ) : (
+                    <button type="button" onClick={() => setRetraitCoach(c.id)} className="text-[#4a4d56] hover:text-[#E63946] transition-colors" title="Retirer">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+                    </button>
+                  ))}
                 </div>
               </div>
             ))}
@@ -788,7 +833,7 @@ function TeamDetailPageDesktop() {
               <button type="button" onClick={() => { setShowAddAthlete(true); loadAvailableAthletes(); }}
                 className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">+ Ajouter un athlète</button>
             )}
-            <Link href="/coach/athletes/create" className="text-[11px] font-bold text-[#6b7280] hover:text-white transition-colors">+ Créer</Link>
+            <Link href="/coach/athletes/create" onClick={() => poserEquipeACreer(teamId)} className="text-[11px] font-bold text-[#6b7280] hover:text-white transition-colors">+ Créer</Link>
           </div>
         </div>
         {athletes.length === 0 ? (
@@ -894,6 +939,20 @@ function TeamDetailPageDesktop() {
       )}
 
       {/* ── Section C: Informations ─────────────────────────── */}
+      {/* C4 (1.4.5) : modifiables par le responsable seulement, comme dans l'appli. */}
+      {team.myRole !== "ADMIN" ? (
+        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5" data-infos-lecture>
+          <h2 className={sectionTitle}>Informations de l&apos;équipe</h2>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3">
+            {([["Nom", team.name], ["Catégorie d'âge", team.ageGroup], ["Division", team.division], ["Ligue", team.league], ["Saison", team.season], ["Genre", team.gender]] as const).map(([l, v]) => (
+              <div key={l} className="flex items-baseline justify-between gap-3 border-b border-white/[0.04] py-1.5">
+                <dt className="text-[12px] text-[#6b7280]">{l}</dt><dd className="text-[13px] text-white">{v || "—"}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-[12px] text-[#6b7280] mt-3">Seul le responsable de l&apos;équipe peut modifier ces informations.</p>
+        </div>
+      ) : (
       <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
         <h2 className={sectionTitle}>Informations de l&apos;équipe</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -933,11 +992,12 @@ function TeamDetailPageDesktop() {
         </div>
         <div className="flex items-center justify-between">
           <button type="button" onClick={deactivateTeam} className="text-[12px] font-bold text-[#EF4444] hover:text-[#f87171] transition-colors">
-            Désactiver {orgLabelPossessive(team.schoolType).toLowerCase().startsWith("ma") ? "ma" : "mon"} équipe
+            Désactiver l&apos;équipe
           </button>
           <button type="button" onClick={saveTeamInfo} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors">Enregistrer</button>
         </div>
       </div>
+      )}
 
       {/* ── Athlète déjà ancré ailleurs : invitation, jamais déplacement ──── */}
       {blockedAthlete && (

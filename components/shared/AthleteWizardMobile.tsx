@@ -67,6 +67,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/utils/profileValidation";
 import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
+import { prendreEquipeACreer } from "@/lib/coach/equipeACreer";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
 import BadgePicker, { ContexteEditeur } from "@/components/shared/BadgePicker";
@@ -404,6 +405,17 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         region: school?.region || "",
         teams,
       });
+
+      // C4 (1.4.5) : « Créer un nouvel athlète » depuis une équipe → cette équipe déjà choisie.
+      if (isCreate) {
+        const voulue = teams.find((t) => t.id === prendreEquipeACreer(teams.map((e) => e.id)));
+        if (voulue) {
+          setForm((prev) => ({
+            ...prev,
+            sports: { ...prev.sports, selectedTeamId: voulue.id, currentTeam: voulue.name, teamLevel: voulue.level, teamDivision: voulue.division, league: voulue.league },
+          }));
+        }
+      }
 
       // Pre-seed coach school on form (read-only chip on Identité card)
       setForm((prev) => ({

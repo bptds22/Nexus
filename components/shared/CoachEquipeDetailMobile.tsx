@@ -45,6 +45,7 @@ import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import CoachRoleLine from "@/components/shared/coach/CoachRoleLine";
 import { setTeamCoachRole } from "@/lib/queries/coach/setTeamCoachRole";
 import { isReferentRole, type TeamRole } from "@/lib/coach/teamRoles";
+import { poserEquipeACreer } from "@/lib/coach/equipeACreer";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -141,6 +142,15 @@ export default function CoachEquipeDetailMobile() {
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["coach-team", teamId] });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
+  }
+
+  /* C4 (1.4.5) : réactiver sur place — le bandeau disait « Réactive-la sur le web », sans bouton nulle part. */
+  async function reactiver() {
+    triggerHaptic("Light");
+    const { error } = await createClient().from("teams").update({ is_active: true }).eq("id", teamId);
+    if (error) { toast.error({ message: "L'équipe n'a pas pu être réactivée." }); return; }
+    toast.success({ message: "Équipe réactivée" });
+    invalidate();
   }
 
   /* Lot D — changement de rôle, même mutation partagée que le web. */
@@ -352,8 +362,14 @@ export default function CoachEquipeDetailMobile() {
           <div className="bg-[#EF4444]/[0.06] border border-[#EF4444]/20 rounded-2xl p-4">
             <p className="text-[13px] font-bold text-[#EF4444]">Équipe désactivée</p>
             <p className="text-[12px] text-[#9CA3AF] mt-0.5">
-              Cette équipe n&apos;apparaît plus aux recruteurs. Réactive-la sur le web.
+              Cette équipe n&apos;apparaît plus aux recruteurs.
             </p>
+            {isAdmin && (
+              <button type="button" onClick={() => void reactiver()} data-reactiver-equipe
+                className="mt-3 min-h-[44px] w-full rounded-xl border border-[#EF4444]/40 text-[14px] font-bold text-white active:bg-white/[0.04]">
+                Réactiver l&apos;équipe
+              </button>
+            )}
           </div>
         )}
 
@@ -471,7 +487,7 @@ export default function CoachEquipeDetailMobile() {
               <NavRow
                 label="Créer un nouvel athlète"
                 isFirst={team.isCivil}
-                onTap={() => { triggerHaptic("Light"); router.push("/coach/athletes/create"); }}
+                onTap={() => { triggerHaptic("Light"); poserEquipeACreer(teamId); router.push("/coach/athletes/create"); }}
               />
             </Group>
           </div>
@@ -557,7 +573,7 @@ export default function CoachEquipeDetailMobile() {
         schoolId={team.schoolId || null}
         excludeIds={athletes.map((a) => a.athleteId)}
         onPicked={addAthleteToTeam}
-        onCreateNew={() => router.push("/coach/athletes/create")}
+        onCreateNew={() => { poserEquipeACreer(teamId); router.push("/coach/athletes/create"); }}
       />
 
       {/* Confirm sheets */}
