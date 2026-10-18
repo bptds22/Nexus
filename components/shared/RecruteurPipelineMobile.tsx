@@ -1279,7 +1279,7 @@ function PipelineDetailSheet({
                 </div>
               )}
               {onglet === "infos" ? (
-                estCarte(card) ? <OngletInfosCarte card={card} /> : null
+                estCarte(card) ? <OngletInfosCarte card={card} lectureSeule={lectureSeule} /> : null
               ) : onglet === "historique" ? (
                 estCarte(card) ? <OngletHistoriqueCarte carteId={card.id} /> : <OngletHistoriquePanneau athleteId={card.id} />
               ) : (

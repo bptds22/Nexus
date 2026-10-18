@@ -32,6 +32,7 @@ import { leagueOf } from "@/lib/config/team-taxonomy";
 import { trierEquipes } from "@/lib/teams/teamLabel";
 import { KANBAN_COLUMNS } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { ligneSignee } from "@/lib/historique/signature";
+import ModifierCarte from "@/components/recruteur/cartes/ModifierCarte";
 
 /* MARQUEUR D'UNE CARTE (retours BP) : plus de pastille dans les listes —
    un FOND ROUGE LÉGER (#E63946 à 11 %) sur TOUTE la ligne du tableau (colonne
@@ -600,14 +601,32 @@ function SectionGrisee({ titre }: { titre: string }) {
  *  — protocole web-d'abord : l'app garde exactement les lignes d'avant. */
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-export function OngletInfosCarte({ card }: { card: CarteKanban }) {
+export function OngletInfosCarte({ card, lectureSeule = false }: { card: CarteKanban; lectureSeule?: boolean }) {
   const c = card.carte;
+  /* « Modifier » : TOUTE l'info de la carte (1.4.5) — web ET appli. Seule l'unité propriétaire
+     écrit (RLS) ; un dossier d'une autre unité, lu par un directeur, reste en lecture. */
+  const [modifierOuvert, setModifierOuvert] = useState(false);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
   // Le courriel est remonté ici : la ligne Téléphone doit savoir s'il vient d'être ajouté.
   const [courriel, setCourriel] = useState(c.courriel);
   const taille = card.taille_pieds ? `${card.taille_pieds}'${card.taille_pouces ?? 0}"` : null;
   const creeLe = new Date(c.creeLe).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
   return (
     <div className="space-y-4">
+      {!lectureSeule && (
+        <div>
+          <button type="button" onClick={() => { setConfirmation(null); setModifierOuvert(true); }} data-testid="bouton-modifier-carte"
+            className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg border border-[#E63946]/50 bg-[#E63946]/10 hover:bg-[#E63946]/20 active:bg-[#E63946]/25 text-[#E63946] text-[13px] font-bold uppercase tracking-wider transition-colors">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" /></svg>
+            Modifier la carte
+          </button>
+          {confirmation && <p role="status" className="text-[12px] text-[#22C55E] font-bold mt-2" data-testid="confirmation-modifier-carte">{confirmation}</p>}
+        </div>
+      )}
+      {modifierOuvert && (
+        <ModifierCarte card={card} onClose={() => setModifierOuvert(false)}
+          onEnregistre={(m) => { setModifierOuvert(false); setConfirmation(m); }} />
+      )}
       <div className="rounded-lg border border-[#2D3748] bg-[#13151a] px-4 py-2">
         {/* Le sport de L'ATHLÈTE (décision BP 2026-10-05) — `card.sport`
             porte désormais la même valeur (le kanban et les filtres du

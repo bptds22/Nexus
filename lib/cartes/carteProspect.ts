@@ -354,7 +354,22 @@ const VERS_COLONNE: Record<string, string> = {
   courriel: "courriel",
   parentNom: "parent_nom",
   parentCourriel: "parent_courriel",
+  // 1.4.5 (BP) : TOUTE l'info de la carte se modifie (formulaire « Modifier »). Seule l'unité
+  // propriétaire écrit (RLS cartes_update) ; une carte prospect n'écrit JAMAIS dans `athletes`.
+  prenom: "prenom",
+  nom: "nom",
+  schoolId: "school_id",       // ne bouge que sans équipe (trigger 20261017130000) ; sinon l'établissement suit l'équipe
+  positionId: "position_id",
+  numero: "numero",
+  promotion: "promotion",
+  taillePieds: "taille_pieds",
+  taillePouces: "taille_pouces",
+  poidsLbs: "poids_lbs",
+  lienVideo: "lien_video",
 };
+
+/** Les clés que le formulaire « Modifier » peut écrire (exporté pour les tests de la liste blanche). */
+export const CHAMPS_MODIFIABLES_CARTE = Object.keys(VERS_COLONNE);
 
 export async function ecrireCarte(supabase: SupabaseClient, carteId: string, champs: Record<string, unknown>) {
   const patch: Record<string, unknown> = {};

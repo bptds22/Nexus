@@ -1438,7 +1438,7 @@ function SlideOver({
             ))}
           </div>
           {onglet === "infos" ? (
-            carte ? <OngletInfosCarte card={carte} /> : <OngletInfosPanneau athleteId={card.id} />
+            carte ? <OngletInfosCarte card={carte} lectureSeule={lectureSeule} /> : <OngletInfosPanneau athleteId={card.id} />
           ) : onglet === "historique" ? (
             carte ? <OngletHistoriqueCarte carteId={card.id} /> : <OngletHistoriquePanneau athleteId={card.id} />
           ) : (
