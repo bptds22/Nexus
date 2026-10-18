@@ -50,6 +50,8 @@ import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import VisitDateEditor from "@/components/shared/VisitDateEditor";
 import { persistPipelineStage, lireDossierActeur } from "@/lib/pipeline/persistPipelineStage";
+import type { RaisonRetrait } from "@/lib/retraits/retraits";
+import { ChoixRaisonRetrait, LigneRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
 import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { needsAutoMessage } from "@/lib/config/recruitmentStatuses";
@@ -557,8 +559,11 @@ const SHEET_STATUSES: { id: RecruitmentStatus; label: string; color: string }[] 
 function StatusVisitSheet({
   open, onClose, currentStatus, visitAtIso,
   athleteName, sport, schoolName,
-  onSelectStatus, onSaveVisitDate, savingVisit = false, messageRetrait,
+  onSelectStatus, onRetirer, athleteId, onSaveVisitDate, savingVisit = false, messageRetrait,
 }: {
+  /** « Retiré » avec sa raison (BP 2026-10-18) : rien n'est supprimé. */
+  onRetirer: (retrait: { raison: RaisonRetrait; note: string }) => void;
+  athleteId: string;
   /** Tableau blanc : la phrase de confirmation du retrait (nomme les
    *  collègues). Le retrait demande DEUX touchers, comme Mon processus. */
   messageRetrait: string;
@@ -578,9 +583,11 @@ function StatusVisitSheet({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(0);
   const [confirmRetrait, setConfirmRetrait] = useState(false);
+  const [raisonRetrait, setRaisonRetrait] = useState<RaisonRetrait | null>(null);
+  const [noteRetrait, setNoteRetrait] = useState("");
 
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { if (!open) setConfirmRetrait(false); }, [open]);
+  useEffect(() => { if (!open) { setConfirmRetrait(false); setRaisonRetrait(null); setNoteRetrait(""); } }, [open]);
   useEffect(() => { if (!open) { setDragOffset(0); setIsDragging(false); } }, [open]);
 
   if (!mounted) return null;
@@ -702,25 +709,39 @@ function StatusVisitSheet({
               {/* Retiré — sortie du processus POUR TOUTE L'UNITÉ (lot 2 de la
                   1.4.4). Deux touchers : le premier montre ce que le retrait
                   fait et nomme les collègues, le second retire. */}
+              {/* BP 2026-10-18 : « Retiré » garde le dossier, avec sa raison (obligatoire). */}
+              {currentStatus === "retire" ? (
+              <div className="pt-3 border-t border-white/[0.06]">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[#9CA3AF] font-bold">Retiré</p>
+                <LigneRetrait id={athleteId} carte={false} className="mt-1 text-[13px]" />
+                <p className="mt-1.5 text-[12px] text-[#6B7280]">Pour le remettre dans le processus, choisis une étape ci-dessus.</p>
+              </div>
+              ) : (
               <div className="pt-1 border-t border-white/[0.06] space-y-2">
                 {confirmRetrait && (
-                  <p className="text-[12px] text-[#F59E0B] leading-snug px-1 pt-2" role="alert">{messageRetrait}</p>
+                  <div className="px-1 pt-2">
+                    <p className="text-[12px] text-[#F59E0B] leading-snug" role="alert">{messageRetrait}</p>
+                    <ChoixRaisonRetrait mobile raison={raisonRetrait} onRaison={setRaisonRetrait} note={noteRetrait} onNote={setNoteRetrait} />
+                  </div>
                 )}
                 <button
                   type="button"
+                  disabled={confirmRetrait && !raisonRetrait}
                   onClick={() => {
                     triggerHaptic(confirmRetrait ? "Medium" : "Light");
                     if (!confirmRetrait) { setConfirmRetrait(true); return; }
+                    if (!raisonRetrait) return;
                     setConfirmRetrait(false);
-                    onSelectStatus("retire");
+                    onRetirer({ raison: raisonRetrait, note: noteRetrait });
                   }}
-                  className={`w-full py-3 rounded-2xl text-[12px] uppercase tracking-wider font-bold transition-colors ${
+                  className={`w-full py-3 rounded-2xl text-[12px] uppercase tracking-wider font-bold transition-colors disabled:opacity-50 ${
                     confirmRetrait ? "bg-[#E63946] text-white" : "bg-[#1A1D24] text-[#9CA3AF] active:bg-white/[0.04]"
                   }`}
                 >
-                  {confirmRetrait ? "Confirmer le retrait" : "Retirer du processus"}
+                  {confirmRetrait ? "Retirer" : "Retirer du processus"}
                 </button>
               </div>
+              )}
             </div>
           </motion.div>
         </>
@@ -1911,7 +1932,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   /* Stage désormais PERSISTÉ (avant : state local → perdu au refresh).
      Optimiste, rollback si Postgres refuse (RLS Free → user_has_pro()). */
-  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) {
+  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason; retrait?: { raison: RaisonRetrait; note: string } }) {
     const prevStatus = pipelineStatus;
     const prevVisitAt = visitAt;
     const nextVisitAt = newStatus === "visite_planifiee" ? (extra?.visitDate ?? null) : null;
@@ -1923,6 +1944,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       athleteId: id,
       status: newStatus,
       visitAtIso: extra?.visitDate,
+      retrait: extra?.retrait,
     });
 
     if (!res.ok) {
@@ -1931,7 +1953,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       toast.error({
         message: res.reason === "pro_required"
           ? "Fonctionnalité Pro"
-          : "Statut non enregistré",
+          : newStatus === "retire" && res.message ? res.message : "Statut non enregistré",
         detail: res.reason === "pro_required"
           ? "Passe à Pro pour gérer ton processus."
           : undefined,
@@ -1939,7 +1961,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       return;
     }
 
-    setMyPipelineStage(newStatus === "retire" ? null : newStatus.toUpperCase());
+    // BP 2026-10-18 : « Retiré » est une vraie étape (RETIRE), le dossier reste dans l'unité.
+    setMyPipelineStage(newStatus.toUpperCase());
+    if (newStatus === "retire") toast.success({ message: "Retiré du processus" });
   }
 
   /* Sélection d'un statut depuis le bottom sheet. Réplique la sémantique du
@@ -3517,6 +3541,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           sport={a.primarySport}
           schoolName={a.schoolName}
           onSelectStatus={handleSheetSelectStatus}
+          onRetirer={(retrait) => { setStatusSheetOpen(false); void handleStatusChange("retire", { retrait }); }}
+          athleteId={id}
           onSaveVisitDate={handleSaveVisitDate}
           savingVisit={savingVisit}
           messageRetrait={messageRetraitProcessus(nomsCollegues, canUsePipeline)}

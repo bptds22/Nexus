@@ -36,6 +36,8 @@ import { OngletInfosCarte, OngletHistoriqueCarte, SURFACE_PROSPECT } from "@/com
 import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
 import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { messageRetraitProcessus, MESSAGE_RETRAIT_CARTE } from "@/lib/pipeline/messagesUnite";
+import type { RaisonRetrait } from "@/lib/retraits/retraits";
+import { ChoixRaisonRetrait, LigneRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
 import OngletInfosPanneau from "@/app/recruteur/pipeline/_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "@/app/recruteur/pipeline/_components/OngletHistoriquePanneau";
 import { useFiltreSportUnite, type FiltreSportUnite as FiltreSportUniteEtat } from "@/lib/queries/recruiter/useFiltreSportUnite";
@@ -120,7 +122,13 @@ const STAGES: StageConfig[] = [
   { key: "LETTRE_SIGNEE",    lower: "lettre_signee",    label: "Lettre signée",    color: "#E63946" }, // rouge Nexus
 ];
 
-const STAGE_BY_LOWER: Record<string, StageConfig> = Object.fromEntries(STAGES.map((s) => [s.lower, s]));
+/* « Retiré » (BP 2026-10-18) : le dossier n'est plus supprimé, il passe dans cet onglet, en fin de
+   processus, avec sa raison. Il n'est PAS une étape active : ni dans « Changer le statut » (on retire
+   par le bouton, avec une raison), ni dans le balayage gauche/droite. */
+const RETIRE: StageConfig = { key: "RETIRE", lower: "retire", label: "Retiré", color: "#4B5563" };
+const ONGLETS: StageConfig[] = [...STAGES, RETIRE];
+
+const STAGE_BY_LOWER: Record<string, StageConfig> = Object.fromEntries(ONGLETS.map((s) => [s.lower, s]));
 
 /* ── Recruitment status (global athlète) palette ─────────────── */
 
@@ -339,7 +347,7 @@ function StageTabsSticky({
     >
       <div ref={containerRef} className="overflow-x-auto nx-no-scrollbar">
         <div className="flex gap-2 px-4 py-2.5 min-w-max">
-          {STAGES.map((stage) => {
+          {ONGLETS.map((stage) => {
             const isActive = activeStage === stage.lower;
             return (
               <button
@@ -486,6 +494,8 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
           {[card.position || card.sport, card.jersey ? `#${card.jersey}` : null]
             .filter(Boolean).join(" · ") || "—"}
         </p>
+
+        {card.status === "retire" && <LigneRetrait id={card.id} carte={prospect} className="mt-1 line-clamp-2 pr-2" />}
 
         {/* Épure (recette 1.4.4, BP 2026-10-02) : plus de pastille de statut
             global (EN PROCESSUS, OUVERT…) ni de « Aucun mouvement depuis N j »
@@ -942,6 +952,8 @@ function PipelineDetailSheet({
   // un snapshot non réactif au cache TanStack.
   const [gradeLocal, setGradeLocal] = useState<Grade | null>(card?.grade ?? null);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [raisonRetrait, setRaisonRetrait] = useState<RaisonRetrait | null>(null);
+  const [noteRetrait, setNoteRetrait] = useState("");
   // Date de visite locale — le `card` prop est un snapshot (non réactif au
   // cache TanStack). On la garde en local pour un feedback immédiat après
   // enregistrement ; l'invalidate du hook rafraîchit la liste kanban.
@@ -982,12 +994,13 @@ function PipelineDetailSheet({
   // Iter 6.1e Fix 4 — Auto-cancel du confirm "Retirer" après 3s d'inactivité
   // pour éviter qu'un tap accidentel reste actif si l'utilisateur ferme le
   // sheet et revient plus tard.
+  // BP 2026-10-18 : on choisit maintenant une raison — le délai ne court que tant qu'aucune n'est choisie,
+  // et il laisse le temps de lire.
   useEffect(() => {
-    if (!confirmRemove) return;
-    // Des collègues à nommer : le temps de LIRE la phrase avant qu'elle parte.
-    const t = window.setTimeout(() => setConfirmRemove(false), collegues.length > 0 || carte ? 8000 : 3000);
+    if (!confirmRemove || raisonRetrait) return;
+    const t = window.setTimeout(() => setConfirmRemove(false), 20000);
     return () => window.clearTimeout(t);
-  }, [confirmRemove, collegues.length, carte]);
+  }, [confirmRemove, raisonRetrait]);
 
   if (!mounted) return null;
 
@@ -1111,14 +1124,17 @@ function PipelineDetailSheet({
       return;
     }
     if (!confirmRemove) { setConfirmRemove(true); return; }
+    // BP 2026-10-18 : la raison est obligatoire ; rien n'est supprimé (étape « Retiré »).
+    if (!raisonRetrait) { toast.warning({ message: "Choisis la raison du retrait" }); return; }
     try {
-      // Pour toute l'unité (unite_retirer_du_processus) — la confirmation a
+      // Pour toute l'unité (unite_retirer / carte_retirer) — la confirmation a
       // nommé les collègues juste avant. Unité du dossier, comme le web.
-      await removeFromPipeline.mutateAsync({ cardId: card.id, sportId: card.unite_sport_id ?? null, carte });
-      toast.success({ message: carte ? "Carte prospect supprimée" : "Athlète retiré du processus" });
+      await removeFromPipeline.mutateAsync({ cardId: card.id, sportId: card.unite_sport_id ?? null, carte, raison: raisonRetrait, note: noteRetrait });
+      toast.success({ message: "Retiré du processus" });
+      setRaisonRetrait(null); setNoteRetrait("");
       onClose();
-    } catch {
-      toast.error({ message: "Erreur lors du retrait" });
+    } catch (e) {
+      toast.error({ message: e instanceof Error && e.message ? e.message : "Erreur lors du retrait" });
     }
   };
 
@@ -1502,16 +1518,27 @@ function PipelineDetailSheet({
                 {/* Iter 6.1e Fix 4 — État confirm = rouge plein + halo pulse.
                     Tableau blanc : la phrase dit ce que le retrait fait, et
                     NOMME les collègues (même texte que le web). */}
-                {confirmRemove && (
-                  <p className="text-[12px] text-[#F59E0B] leading-snug px-1" role="alert">
-                    {carte ? MESSAGE_RETRAIT_CARTE : messageRetraitProcessus(collegues, modeUnite)}
-                  </p>
+                {card.status === "retire" && (
+                  <div className="rounded-2xl bg-[#1A1D24] px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-[#9CA3AF] font-bold">Retiré</p>
+                    <LigneRetrait id={card.id} carte={carte} className="mt-1 text-[13px]" />
+                    <p className="mt-1.5 text-[12px] text-[#6B7280]">Pour le remettre dans le processus, choisis une étape dans « Changer le statut ».</p>
+                  </div>
                 )}
+                {confirmRemove && card.status !== "retire" && (
+                  <div className="px-1">
+                    <p className="text-[12px] text-[#F59E0B] leading-snug" role="alert">
+                      {carte ? MESSAGE_RETRAIT_CARTE : messageRetraitProcessus(collegues, modeUnite)}
+                    </p>
+                    <ChoixRaisonRetrait mobile raison={raisonRetrait} onRaison={setRaisonRetrait} note={noteRetrait} onNote={setNoteRetrait} />
+                  </div>
+                )}
+                {card.status !== "retire" && (
                 <button
                   type="button"
                   onClick={() => { void triggerHaptic("Medium"); handleRemove(); }}
-                  disabled={isFreeDemoMode}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border text-[13px] font-bold transition-all ${
+                  disabled={isFreeDemoMode || (confirmRemove && !raisonRetrait)}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border text-[13px] font-bold transition-all disabled:opacity-50 ${
                     confirmRemove
                       ? "border-[#E63946] bg-[#E63946] text-white nx-confirm-pulse"
                       : "border-[#E63946]/30 bg-transparent text-[#E63946] active:bg-[#E63946]/10"
@@ -1521,8 +1548,9 @@ function PipelineDetailSheet({
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                   </svg>
-                  {confirmRemove ? (carte ? "Confirmer la suppression" : "Confirmer le retrait") : (carte ? "Supprimer la carte" : "Retirer du processus")}
+                  {confirmRemove ? "Retirer" : "Retirer du processus"}
                 </button>
+                )}
               </div>
               </>
               )}
@@ -1698,7 +1726,7 @@ export function RecruteurPipelineMobile() {
 
   const cardsByStage = useMemo(() => {
     const grouped: Record<string, PipelineKanbanCard[]> = {};
-    for (const s of STAGES) grouped[s.lower] = [];
+    for (const s of ONGLETS) grouped[s.lower] = [];
     for (const card of cards) {
       const stageLower = (card.status || "identifie").toString().toLowerCase();
       if (grouped[stageLower]) grouped[stageLower].push(card);
@@ -1708,7 +1736,7 @@ export function RecruteurPipelineMobile() {
   /* Les pastilles des onglets comptent sur les cartes FILTRÉES. */
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const s of STAGES) c[s.lower] = 0;
+    for (const s of ONGLETS) c[s.lower] = 0;
     for (const card of cardsFiltrees) {
       const k = (card.status || "identifie").toString().toLowerCase();
       if (c[k] !== undefined) c[k]++;
@@ -2037,8 +2065,9 @@ export function RecruteurPipelineMobile() {
                   className="space-y-2"
                   items={activeStageCards}
                   rendre={(card) => {
+                    // Onglet « Retiré » (index -1) : aucun balayage — on remet par « Changer le statut ».
                     const canSwipeLeft = activeStageIndex > 0;
-                    const canSwipeRight = activeStageIndex < STAGES.length - 1;
+                    const canSwipeRight = activeStageIndex >= 0 && activeStageIndex < STAGES.length - 1;
                     const prevStageLabel = canSwipeLeft ? STAGES[activeStageIndex - 1].label : "Limite";
                     const nextStageLabel = canSwipeRight ? STAGES[activeStageIndex + 1].label : "Limite";
                     return (

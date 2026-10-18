@@ -1,13 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════
    useRemoveFromPipeline — TanStack mutation (iter 6.1a)
-   Retire un athlète de « Mon processus ».
+   Retire un athlète (ou une carte prospect) de « Mon processus ».
 
-   Tableau blanc (lot 2 de la 1.4.4, registre §38) : unite_retirer_du_processus
-   — le dossier part POUR TOUTE L'UNITÉ (les lignes de chaque collègue), avec
-   UNE ligne de journal signée par l'acteur. Avant, un DELETE de « ma ligne » :
-   le dossier restait dans l'unité par les lignes des collègues, et revenait
-   au rechargement. La confirmation qui NOMME les collègues est faite par
-   l'écran AVANT d'appeler ce hook (décision BP 3, même texte que le web).
+   BP 2026-10-18 : RIEN n'est supprimé. Le dossier passe à l'étape RETIRE,
+   en fin de processus, avec une RAISON obligatoire et une note — il reste
+   visible à toute l'unité, pour que personne ne le recrute deux fois.
+   Athlète → unite_retirer (pour toute l'unité, UNE ligne de journal signée) ;
+   carte prospect → carte_retirer. Plus aucun appel à unite_retirer_du_processus
+   ni à la suppression de carte : sans la migration 20261018140000, l'erreur
+   remonte (« Mise à jour requise côté serveur »), jamais de repli.
+   La confirmation qui NOMME les collègues est faite par l'écran AVANT
+   d'appeler ce hook (décision BP 3, même texte que le web).
 
    `sportId` : l'unité du dossier (unite_sport_id de la carte), comme le web.
 
@@ -18,26 +21,23 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
-import { retirerCarte } from "@/lib/cartes/carteProspect";
 import { patcherDossiers, restaurerDossiers } from "@/lib/queries/recruiter/cacheDossiers";
+import { messageRetrait, retirerDossier, type RaisonRetrait } from "@/lib/retraits/retraits";
 
 export function useRemoveFromPipeline() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    /** `carte` : retirer une carte prospect la SUPPRIME (décision BP, lot C). */
-    mutationFn: async ({ cardId, sportId, carte = false }: { cardId: string; sportId?: string | null; carte?: boolean }) => {
-      if (carte) {
-        const erreur = await retirerCarte(createClient(), cardId);
-        if (erreur) throw erreur;
-        return;
-      }
-      const { error } = await createClient().rpc("unite_retirer_du_processus", {
-        p_athlete_id: cardId, p_sport_id: sportId ?? null,
-      });
-      if (error) throw error;
+    mutationFn: async ({ cardId, sportId, carte = false, raison, note }: {
+      cardId: string; sportId?: string | null; carte?: boolean; raison: RaisonRetrait; note?: string | null;
+    }) => {
+      const erreur = await retirerDossier(createClient(), { id: cardId, carte, sportId, raison, note });
+      if (erreur) throw new Error(messageRetrait(erreur));
     },
-    onMutate: async ({ cardId }) => ({ instantane: await patcherDossiers(queryClient, cardId, null) }),
+    // Optimiste : la carte passe dans « Retiré » (elle ne disparaît plus).
+    onMutate: async ({ cardId }) => ({
+      instantane: await patcherDossiers(queryClient, cardId, (c) => ({ ...c, status: "retire" })),
+    }),
     onError: (_err, _vars, context) => restaurerDossiers(queryClient, context?.instantane),
     onSettled: () => { void invaliderTableauBlanc(queryClient); },
   });

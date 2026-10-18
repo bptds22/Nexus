@@ -9,14 +9,15 @@ export function joindreNomsUnite(noms: string[]): string {
   return `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}`;
 }
 
-/** Retirer une carte prospect la SUPPRIME (décision BP, lot C). */
+/** Retirer une carte prospect ne la supprime plus (BP 2026-10-18) : elle passe dans « Retiré ». */
 export const MESSAGE_RETRAIT_CARTE =
-  "Cette carte prospect sera supprimée pour toute l'unité, avec ses notes. Il ne restera qu'une trace de la suppression, sans les informations de l'athlète.";
+  "La carte passe dans « Retiré », avec ta raison : elle reste visible à toute l'unité, pour que personne ne la recrute deux fois.";
 
 /** Confirmation d'un retrait du processus : nomme les collègues qui suivent
  *  aussi l'athlète, et dit que le retrait vaut pour toute l'unité. */
 export function messageRetraitProcessus(noms: string[], modeUnite: boolean): string {
-  if (!modeUnite) return "Il ne sera plus dans ton suivi actif.";
-  if (noms.length === 0) return "Le dossier sera retiré du processus de ton unité.";
-  return `Suivi aussi par ${joindreNomsUnite(noms)}. Le dossier sera retiré pour toute l'unité — pour ${noms.length === 1 ? "ce collègue" : "ces collègues"} aussi.`;
+  // BP 2026-10-18 : le dossier n'est plus supprimé, il passe dans « Retiré » avec sa raison.
+  if (!modeUnite) return "Le dossier passe dans « Retiré », avec ta raison.";
+  if (noms.length === 0) return "Le dossier passe dans « Retiré » pour ton unité, avec ta raison : personne ne le recrutera deux fois.";
+  return `Suivi aussi par ${joindreNomsUnite(noms)}. Le dossier passe dans « Retiré » pour toute l'unité — pour ${noms.length === 1 ? "ce collègue" : "ces collègues"} aussi.`;
 }

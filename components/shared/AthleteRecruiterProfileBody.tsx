@@ -26,6 +26,8 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { MAX_BADGES_AFFICHES } from "@/lib/config/badgeCatalogue";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
+import type { RaisonRetrait } from "@/lib/retraits/retraits";
+import { LigneRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
@@ -699,7 +701,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   /* Le stage est désormais PERSISTÉ (avant : setState local uniquement → tout
      changement de statut depuis la fiche était perdu au refresh). Optimiste :
      on peint l'UI tout de suite, on rollback si Postgres refuse. */
-  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) {
+  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason; retrait?: { raison: RaisonRetrait; note: string } }) {
     const prevStatus = pipelineStatus;
     const prevVisitAt = visitAt;
     // regleVisite : la date survit à Engagé / Lettre signée, disparaît sous
@@ -713,6 +715,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       athleteId: id,
       status: newStatus,
       visitAtIso: extra?.visitDate,
+      retrait: extra?.retrait,
     });
 
     if (!res.ok) {
@@ -721,13 +724,14 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       setStatusToast({
         message: res.reason === "pro_required"
           ? "Fonctionnalité Pro — passe à Pro pour gérer ton processus."
-          : "Le changement de statut n'a pas pu être enregistré.",
+          : newStatus === "retire" && res.message ? res.message : "Le changement de statut n'a pas pu être enregistré.",
       });
       return;
     }
 
     // Garde « Mon statut » (lu depuis la DB) cohérent avec le dropdown.
-    setMyPipelineStage(newStatus === "retire" ? null : newStatus.toUpperCase());
+    // BP 2026-10-18 : « Retiré » est une vraie étape (RETIRE), le dossier reste.
+    setMyPipelineStage(newStatus.toUpperCase());
     // Mon processus, le calendrier et le tableau de bord lisent ce dossier :
     // sans ceci, ils restaient sur l'ancienne étape (correctif 2026-09-24).
     void invaliderTableauBlanc(queryClient);
@@ -922,6 +926,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                       return <span className="text-[12px] font-bold text-white uppercase tracking-wider">{libelleStatut}</span>;
                     }
                     return (
+                      <>
                       <StatusChangeDropdown
                         currentStatus={pipelineStatus}
                         athleteId={id}
@@ -940,6 +945,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                           </>
                         }
                       />
+                      {/* BP 2026-10-18 : la raison du retrait, visible à l'unité. */}
+                      {pipelineStatus === "retire" && <LigneRetrait id={id} carte={false} className="mt-1 max-w-[260px]" />}
+                      </>
                     );
                   })() : tier === "free" ? (
                     <button

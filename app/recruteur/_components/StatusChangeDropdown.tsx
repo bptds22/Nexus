@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
-import { getStatusConfig, getValidTransitions, needsAutoMessage, RETIRE_REASONS, RECRUITMENT_STATUSES } from "@/lib/config/recruitmentStatuses";
+import type { RaisonRetrait } from "@/lib/retraits/retraits";
+import { ChoixRaisonRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
+import { getStatusConfig, getValidTransitions, needsAutoMessage, RECRUITMENT_STATUSES } from "@/lib/config/recruitmentStatuses";
 import { combineVisitInstant } from "@/lib/pipeline/visitInstant";
 import { StatusIcon } from "./RecruitmentStatusBadge";
 
@@ -22,7 +24,7 @@ interface Props {
   /** `visitDate` : instant ISO COMPLET (date + heure si saisie), pas un
    *  simple YYYY-MM-DD — il part tel quel dans recruiter_pipeline.visit_at
    *  (timestamptz). Voir combineVisitInstant() plus bas. */
-  onStatusChange: (newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) => void;
+  onStatusChange: (newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason; retrait?: { raison: RaisonRetrait; note: string } }) => void;
   onComposeIntro?: () => void;
   onCelebrate?: () => void;
   /** Contenu du déclencheur. Absent → le bouton « Changer le statut ». La
@@ -55,7 +57,9 @@ export default function StatusChangeDropdown({
   const [showVisitDate, setShowVisitDate] = useState(false);
   const [visitDate, setVisitDate] = useState("");
   const [visitTime, setVisitTime] = useState("");
-  const [retireReason, setRetireReason] = useState<RetireReason | "">("");
+  // BP 2026-10-18 : raison obligatoire (3 choix) + note, enregistrées (unite_retirer).
+  const [raisonRetrait, setRaisonRetrait] = useState<RaisonRetrait | null>(null);
+  const [noteRetrait, setNoteRetrait] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
   const transitions = getValidTransitions(currentStatus);
@@ -123,10 +127,12 @@ export default function StatusChangeDropdown({
   }
 
   function confirmRetire() {
-    onStatusChange("retire", { retireReason: (retireReason as RetireReason) || undefined });
+    if (!raisonRetrait) return;
+    onStatusChange("retire", { retrait: { raison: raisonRetrait, note: noteRetrait } });
     setOpen(false);
     setShowRetireReason(false);
-    setRetireReason("");
+    setRaisonRetrait(null);
+    setNoteRetrait("");
   }
 
   return (
@@ -243,21 +249,13 @@ export default function StatusChangeDropdown({
           {/* Retire reason */}
           {showRetireReason && (
             <div className="p-4 space-y-3">
-              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF]">Raison du retrait</p>
-              <select
-                value={retireReason}
-                onChange={(e) => setRetireReason(e.target.value as RetireReason)}
-                aria-label="Raison du retrait"
-                className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] focus:border-[#374151] outline-none"
-              >
-                <option value="">Optionnel — sélectionner</option>
-                {RETIRE_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
+              <p className="text-[12px] leading-snug text-[#9CA3AF]">Le dossier passe dans « Retiré » pour ton unité, avec ta raison : personne ne le recrutera deux fois.</p>
+              <ChoixRaisonRetrait raison={raisonRetrait} onRaison={setRaisonRetrait} note={noteRetrait} onNote={setNoteRetrait} />
               <div className="flex gap-2">
                 <button type="button" onClick={() => { setShowRetireReason(false); }} className="flex-1 px-3 py-2 rounded-lg text-[12px] font-bold text-[#6b7280] hover:text-white transition-colors">
                   Retour
                 </button>
-                <button type="button" onClick={confirmRetire} className="flex-1 px-3 py-2 rounded-lg text-[12px] font-bold bg-[#374151] text-[#9CA3AF] hover:bg-[#4B5563] transition-colors">
+                <button type="button" onClick={confirmRetire} disabled={!raisonRetrait} className="flex-1 px-3 py-2 rounded-lg text-[12px] font-bold bg-[#EF4444] text-white hover:bg-[#DC2626] transition-colors disabled:opacity-40">
                   Retirer
                 </button>
               </div>

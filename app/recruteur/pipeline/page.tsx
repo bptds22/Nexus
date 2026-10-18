@@ -89,7 +89,11 @@ import { PencilIcon } from "@/components/shared/wizard/modeIcons";
 import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
 import OngletInfosPanneau from "./_components/OngletInfosPanneau";
 import OngletHistoriquePanneau from "./_components/OngletHistoriquePanneau";
-import { estCarte, bientotPurgee, ecrireCarte, retirerCarte } from "@/lib/cartes/carteProspect";
+import { estCarte, bientotPurgee, ecrireCarte } from "@/lib/cartes/carteProspect";
+// « Retiré » ne supprime plus rien (BP 2026-10-18) : étape RETIRE + raison.
+import { retirerDossier, messageRetrait as messageErreurRetrait, type RaisonRetrait } from "@/lib/retraits/retraits";
+import { ChoixRaisonRetrait, LigneRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
+import { invaliderRetraits } from "@/lib/queries/recruiter/useRetraits";
 import { formaterTelephone } from "@/lib/cartes/saisie";
 import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
 import { fusionnerCarte } from "@/lib/cartes/fusions";
@@ -293,24 +297,24 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
 /* ── Confirmation Modal ───────────────────────────────────────── */
 
 function ConfirmModal({
-  title, message, confirmLabel, confirmColor, textarea, onConfirm, onCancel,
+  title, message, confirmLabel, confirmColor, raison, onConfirm, onCancel,
 }: {
   title: string; message: string; confirmLabel?: string; confirmColor?: string;
-  textarea?: { placeholder: string; value: string; onChange: (v: string) => void };
+  /** Retrait : raison obligatoire + note (BP 2026-10-18). Confirmer reste grisé sans raison. */
+  raison?: { valeur: RaisonRetrait | null; onChange: (r: RaisonRetrait) => void; note: string; onNote: (v: string) => void };
   onConfirm: () => void; onCancel: () => void;
 }) {
+  const bloque = !!raison && !raison.valeur;
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-[modalIn_0.2s_ease-out]">
         <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">{title}</h3>
         <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">{message}</p>
-        {textarea && (
-          <textarea value={textarea.value} onChange={(e) => textarea.onChange(e.target.value)} placeholder={textarea.placeholder} rows={2} className="w-full mt-3 bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none" />
-        )}
+        {raison && <ChoixRaisonRetrait raison={raison.valeur} onRaison={raison.onChange} note={raison.note} onNote={raison.onNote} />}
         <div className="flex items-center justify-end gap-3 mt-5">
           <button type="button" onClick={onCancel} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-          <button type="button" onClick={onConfirm} className="px-5 py-2 text-white text-[13px] font-bold rounded-lg transition-colors" style={{ backgroundColor: confirmColor || RED }}>{confirmLabel || "Confirmer"}</button>
+          <button type="button" onClick={onConfirm} disabled={bloque} className="px-5 py-2 text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-40" style={{ backgroundColor: confirmColor || RED }}>{confirmLabel || "Confirmer"}</button>
         </div>
       </div>
     </div>
@@ -464,6 +468,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
           {/* Carte prospect : avis de suppression dans les 30 derniers jours. */}
           {estCarte(card) && <div className="mt-1"><MarqueurExpiration carte={card} /></div>}
           {estCarte(card) && <div className="mt-1"><LienRapprochementCarte carteId={card.id} /></div>}
+          {card.status === "retire" && <LigneRetrait id={card.id} carte={estCarte(card)} className="mt-1" />}
 
           {/* School + Year (or "Ligue Civile" badge) */}
           <p className="text-[12px] text-[#6b7280] mt-1 truncate flex items-center gap-1.5">
@@ -1306,7 +1311,7 @@ function SlideOver({
   isFreeDemoMode, onTeaseUpgrade, modeUnite, moi, lectureSeule,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
-  onStatusChange: (cardId: string, newStatus: RecruitmentStatus) => void;
+  onStatusChange: (cardId: string, newStatus: RecruitmentStatus, retrait?: { raison: RaisonRetrait; note: string }) => void;
   /** `null` retire le grade (DELETE de la ligne, pas un NULL en base). */
   onSetGrade: (cardId: string, grade: Grade | null, previousGrade: Grade | null) => void;
   /** Écrit recruiter_pipeline.visit_at. `null` efface la date. */
@@ -1345,6 +1350,7 @@ function SlideOver({
   const colleguesQuiSuivent = collegues(card, moi);
   const [pendingStatus, setPendingStatus] = useState<RecruitmentStatus | null>(null);
   const [retireReason, setRetireReason] = useState("");
+  const [retireRaison, setRetireRaison] = useState<RaisonRetrait | null>(null);
   const currentCol = KANBAN_COLUMNS.find((c) => c.id === card.status);
 
   const handleStatusClick = (status: RecruitmentStatus) => {
@@ -1354,9 +1360,11 @@ function SlideOver({
 
   const confirmStatus = () => {
     if (pendingStatus) {
-      onStatusChange(card.id, pendingStatus);
+      if (pendingStatus === "retire" && !retireRaison) return;
+      onStatusChange(card.id, pendingStatus, pendingStatus === "retire" && retireRaison ? { raison: retireRaison, note: retireReason } : undefined);
       setPendingStatus(null);
       setRetireReason("");
+      setRetireRaison(null);
     }
   };
 
@@ -1457,6 +1465,13 @@ function SlideOver({
             onTease={onTeaseUpgrade}
           />
           <div>
+            {card.status === "retire" && (
+              <div className="mb-3 rounded-lg border border-[#2D3748] bg-[#111317] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#9CA3AF]">Retiré</p>
+                <LigneRetrait id={card.id} carte={!!carte} className="mt-1 text-[12px]" />
+                <p className="mt-1.5 text-[11px] text-[#6b7280]">Pour le remettre dans le processus, choisis une étape ci-dessous.</p>
+              </div>
+            )}
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Changer le statut</h3>
             <div className="grid grid-cols-2 gap-2">
               {KANBAN_COLUMNS.map((col) => {
@@ -1671,9 +1686,9 @@ function SlideOver({
             : `${card.full_name} sera déplacé vers ${pendingLabel}.`}
           confirmLabel={pendingIsRetire ? "Retirer" : "Confirmer"}
           confirmColor={pendingIsRetire ? "#EF4444" : RED}
-          textarea={pendingIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}
+          raison={pendingIsRetire ? { valeur: retireRaison, onChange: setRetireRaison, note: retireReason, onNote: setRetireReason } : undefined}
           onConfirm={confirmStatus}
-          onCancel={() => { setPendingStatus(null); setRetireReason(""); }}
+          onCancel={() => { setPendingStatus(null); setRetireReason(""); setRetireRaison(null); }}
         />
       )}
     </>
@@ -1824,6 +1839,7 @@ function PipelinePageContent() {
   const [activeCard, setActiveCard] = useState<PipelineKanbanCard | null>(null);
   const [pendingDrop, setPendingDrop] = useState<{ cardId: string; from: RecruitmentStatus; to: RecruitmentStatus } | null>(null);
   const [retireReason, setRetireReason] = useState("");
+  const [retireRaison, setRetireRaison] = useState<RaisonRetrait | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
   // Pastille « Type » : null = tout ; « prospects » ou « nexus », exclusifs.
@@ -1986,7 +2002,7 @@ function PipelinePageContent() {
      autres étapes s'écrivent sur la ligne de l'acteur ; regleVisite (décision
      BP 2026-09-23) : la date de visite n'est effacée que sous « Visite
      planifiée ». */
-  const handleStatusChange = useCallback(async (cardId: string, newStatus: RecruitmentStatus) => {
+  const handleStatusChange = useCallback(async (cardId: string, newStatus: RecruitmentStatus, retrait?: { raison: RaisonRetrait; note: string }) => {
     if (isFreeDemoMode) {
       teaseUpgrade();
       setSelectedCard(null);
@@ -1994,24 +2010,19 @@ function PipelinePageContent() {
     }
     if (bloqueAutreUnite(cardId)) return;
     if (newStatus === "retire") {
+      // BP 2026-10-18 : rien n'est supprimé — étape RETIRE + raison, athlète comme carte prospect.
+      // Jamais de repli sur la suppression : sans la migration, un message clair.
+      if (!retrait) return;
       const dossier = cards.find((c) => c.id === cardId);
-      // Carte prospect : la retirer la SUPPRIME (décision BP), trace en base.
-      if (estCarte(dossier)) {
-        const errCarte = await retirerCarte(createClient(), cardId);
-        if (errCarte) { showToast("Erreur lors du retrait"); return; }
-        invaliderProcessus();
-        setSelectedCard(null);
-        showToast("Carte prospect supprimée");
-        return;
-      }
-      const { error } = await createClient().rpc("unite_retirer_du_processus", {
-        p_athlete_id: cardId,
-        p_sport_id: dossier?.unite_sport_id ?? null,
+      const erreur = await retirerDossier(createClient(), {
+        id: cardId, carte: estCarte(dossier), sportId: dossier?.unite_sport_id ?? null,
+        raison: retrait.raison, note: retrait.note,
       });
-      if (error) { showToast("Erreur lors du retrait"); return; }
+      if (erreur) { showToast(messageErreurRetrait(erreur)); return; }
       invaliderProcessus();
+      void invaliderRetraits(queryClient);
       setSelectedCard(null);
-      showToast("Athlète retiré du processus");
+      showToast("Retiré du processus");
       return;
     }
     const error = await ecrireDossier(cardId, { stage: newStatus.toUpperCase(), ...champVisitePourEtape(newStatus) });
@@ -2019,7 +2030,7 @@ function PipelinePageContent() {
     invaliderProcessus();
     setSelectedCard(null);
     showToast(`Statut changé → ${KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus}`);
-  }, [showToast, isFreeDemoMode, teaseUpgrade, cards, ecrireDossier, invaliderProcessus, bloqueAutreUnite]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, cards, ecrireDossier, invaliderProcessus, bloqueAutreUnite, queryClient]);
 
   /* ── Grade (slide-over) ─────────────────────────────────────────
      `selectedCard` est un SNAPSHOT : l'optimistic update du hook patche le
@@ -2324,12 +2335,14 @@ function PipelinePageContent() {
 
   const confirmDrop = useCallback(() => {
     if (!pendingDrop) return;
-    handleStatusChange(pendingDrop.cardId, pendingDrop.to);
+    if (pendingDrop.to === "retire" && !retireRaison) return;
+    handleStatusChange(pendingDrop.cardId, pendingDrop.to, pendingDrop.to === "retire" && retireRaison ? { raison: retireRaison, note: retireReason } : undefined);
     setPendingDrop(null);
     setRetireReason("");
-  }, [pendingDrop, handleStatusChange]);
+    setRetireRaison(null);
+  }, [pendingDrop, handleStatusChange, retireRaison, retireReason]);
 
-  const cancelDrop = useCallback(() => { setPendingDrop(null); setRetireReason(""); }, []);
+  const cancelDrop = useCallback(() => { setPendingDrop(null); setRetireReason(""); setRetireRaison(null); }, []);
 
   const dropIsRetire = pendingDrop?.to === "retire";
   const dropLabel = pendingDrop ? KANBAN_COLUMNS.find((c) => c.id === pendingDrop.to)?.label : "";
@@ -2718,7 +2731,7 @@ function PipelinePageContent() {
             : `${dropCardName} sera déplacé vers ${dropLabel}.`}
           confirmLabel={dropIsRetire ? "Retirer" : "Confirmer"}
           confirmColor={dropIsRetire ? "#EF4444" : RED}
-          textarea={dropIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}
+          raison={dropIsRetire ? { valeur: retireRaison, onChange: setRetireRaison, note: retireReason, onNote: setRetireReason } : undefined}
           onConfirm={confirmDrop}
           onCancel={cancelDrop}
         />

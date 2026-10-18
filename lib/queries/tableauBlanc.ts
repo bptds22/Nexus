@@ -39,6 +39,7 @@ export const CLES_TABLEAU_BLANC = [
   "unread-activity-count",
   "cegep-stats",            // Mon CÉGEP
   "rapprochements",         // lot D : propositions carte ↔ profil
+  "retraits-unite",         // raisons des retraits (étape Retiré, BP 2026-10-18)
 ] as const;
 
 const ENSEMBLE: ReadonlySet<string> = new Set(CLES_TABLEAU_BLANC);

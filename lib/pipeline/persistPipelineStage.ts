@@ -36,6 +36,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { champVisitePourEtape, etapePorteVisite } from "@/lib/pipeline/regleVisite";
+import { messageRetrait, retirerDossier, type RaisonRetrait } from "@/lib/retraits/retraits";
 
 /** Stages acceptés par chk_recruiter_pipeline_stage. */
 const DB_STAGES = [
@@ -66,22 +67,26 @@ export interface PersistStageInput {
   /** Instant ISO complet (date + heure éventuelle). Écrit seulement à partir
    *  de « Visite planifiée » ; absent → la date existante n'est pas touchée. */
   visitAtIso?: string;
+  /** « Retiré » : raison obligatoire + note (BP 2026-10-18). Sans elle, rien n'est écrit. */
+  retrait?: { raison: RaisonRetrait; note?: string | null };
 }
 
 export async function persistPipelineStage(
-  { athleteId, status, visitAtIso }: PersistStageInput,
+  { athleteId, status, visitAtIso, retrait }: PersistStageInput,
 ): Promise<PersistResult> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, reason: "unauthenticated" };
 
-  // « Retiré » = sortie du processus, POUR TOUTE L'UNITÉ (tableau blanc).
+  // « Retiré » = étape RETIRE POUR TOUTE L'UNITÉ, avec sa raison (BP 2026-10-18) : rien n'est supprimé,
+  // et jamais de repli sur la suppression (sans la migration : « Mise à jour requise côté serveur »).
   if (status === "retire") {
-    const { error } = await supabase.rpc("unite_retirer_du_processus", { p_athlete_id: athleteId, p_sport_id: null });
+    if (!retrait) return { ok: false, reason: "failed", message: "Choisis la raison du retrait." };
+    const error = await retirerDossier(supabase, { id: athleteId, carte: false, sportId: null, raison: retrait.raison, note: retrait.note });
     if (error) {
       return isRlsDenial(error.code, error.message)
         ? { ok: false, reason: "pro_required" }
-        : { ok: false, reason: "failed", message: error.message };
+        : { ok: false, reason: "failed", message: messageRetrait(error) };
     }
     return { ok: true, cleared: true };
   }
