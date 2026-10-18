@@ -9,6 +9,7 @@ import {
   chargerCotesPartenaires,
   coteCarte,
   coteCarteDepuisEvaluations,
+  deuxCotes,
   libelleCotePartenaire,
   retenirCotePartenaire,
   type CotePartenaire,
@@ -129,4 +130,23 @@ test("appli (1.4.5) : la cote partenaire sur les cartes, comme le web", () => {
   assert.match(fiche, /\? \{ valeur: a\.overallRating, organisation: null \}/, "coach évalué : la carte inchangée");
   assert.match(fiche, /: coteCarteDepuisEvaluations\(null, evaluationsPartenaires\.map/);
   assert.match(fiche, /\{libelleCotePartenaire\(cote\.organisation\)\}/);
+});
+
+test("deuxCotes : le coach ET le partenaire côte à côte, rien n'est caché derrière l'autre (1.4.5)", () => {
+  const e = [ev("a", 4, "2026-10-01T00:00:00Z", "L'Esprit Sportif")];
+  assert.deepEqual(deuxCotes(3.5, e), { coach: 3.5, partenaire: { valeur: 4, organisation: "L'Esprit Sportif" } });
+  // Partenaire seul : plus de « Pas encore évalué ».
+  assert.deepEqual(deuxCotes(0, e), { coach: 0, partenaire: { valeur: 4, organisation: "L'Esprit Sportif" } });
+  assert.deepEqual(deuxCotes(null, e).coach, 0);
+  // Coach seul, ou personne : rien du partenaire (Loi 25 : sans opt-in la lecture est vide).
+  assert.deepEqual(deuxCotes(4.2, []), { coach: 4.2, partenaire: null });
+  assert.deepEqual(deuxCotes(undefined, undefined), { coach: 0, partenaire: null });
+});
+
+test("les cartes de pipeline et la fiche mobile n'affichent « Pas encore évalué » que sans AUCUNE évaluation (1.4.5)", () => {
+  for (const f of ["app/recruteur/pipeline/page.tsx", "components/shared/RecruteurPipelineMobile.tsx", "components/shared/AthleteRecruiterProfileBodyMobile.tsx"]) {
+    assert.match(lire(f), /deuxCotes\(/, f);
+    assert.match(lire(f), /CotesEvaluations|libelleCotePartenaire/, f);
+  }
+  assert.doesNotMatch(lire("components/shared/AthleteRecruiterProfileBodyMobile.tsx"), /\) : <span className="text-\[16px\] text-\[#6B7280\] font-normal">Pas encore évalué<\/span>/);
 });

@@ -87,6 +87,27 @@ export function coteCarteDepuisEvaluations(
   return coteCarte(coteCoach, p ? { cote: p.cote, organisation: p.organisation } : null);
 }
 
+/** Les DEUX évaluations d'un joueur, côte à côte (demande BP 1.4.5) : celle du
+ *  coach ET la partenaire retenue, chacune avec son libellé. Contrairement à
+ *  `coteCarte` (une seule cote par carte), rien n'est caché derrière l'autre.
+ *  `coach` vaut 0 quand le coach n'a pas évalué ; `partenaire` est null sans
+ *  évaluation lisible (Loi 25 : sans opt-in actif, la lecture ne rend rien). */
+export interface DeuxCotes {
+  coach: number;
+  partenaire: { valeur: number; organisation: string } | null;
+}
+
+export function deuxCotes(
+  coteCoach: number | null | undefined,
+  evals: readonly CotePartenaire[] | null | undefined,
+): DeuxCotes {
+  const p = retenirCotePartenaire(evals);
+  return {
+    coach: typeof coteCoach === "number" && coteCoach > 0 ? coteCoach : 0,
+    partenaire: p ? { valeur: p.cote, organisation: p.organisation || ORGANISATION_INCONNUE } : null,
+  };
+}
+
 type Ligne = { id: string; athlete_id: string; organisation: string | null; cote_globale: number | string; updated_at: string };
 
 /** Les évaluations partenaires lisibles d'un lot d'athlètes, groupées par athlète.

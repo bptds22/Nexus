@@ -95,7 +95,8 @@ import SuggestionSheet from "@/components/coach/SuggestionSheet";
 import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
 import { triggerHaptic } from "@/lib/haptics";
 import { useEvaluationsPartenaires } from "@/components/shared/athlete/EvaluationPartenaireSection";
-import { coteCarteDepuisEvaluations, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
+import { coteCarteDepuisEvaluations, deuxCotes, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
+import CotesEvaluations from "@/components/shared/CotesEvaluations";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
@@ -2678,10 +2679,26 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                     chaque fois, donc raté — c'était un style inline. Séparation conservée via l'espace. */}
                 <section className={mobileSection} id="nx-apercu-evaluation">
                   <div className="flex flex-col items-center pt-6 pb-6">
-                    <StarRating rating={coteGlobale} size="md" showNumber={false} />
-                    <p className="text-[32px] font-head font-black text-white mt-3 leading-none">
-                      {aUneCote(coteGlobale) ? <>{coteGlobale.toFixed(1)}<span className="text-[16px] text-[#6B7280] font-normal">/5</span></> : <span className="text-[16px] text-[#6B7280] font-normal">Pas encore évalué</span>}
-                    </p>
+                    {(() => {
+                      /* Coach ET partenaire, côte à côte, chacun avec son libellé.
+                         « Pas encore évalué » seulement si ni l'un ni l'autre. Loi 25 :
+                         evaluationsPartenaires est vide sans opt-in actif (la RPC ne
+                         rend rien), donc rien du partenaire ne s'affiche alors. */
+                      const cotesDuJoueur = deuxCotes(aUneCote(coteGlobale) ? coteGlobale : 0, evaluationsPartenaires.map((ev) => ({
+                        id: ev.id, athleteId: id, organisation: ev.organisation, cote: ev.coteGlobale, updatedAt: ev.updatedAt,
+                      })));
+                      if (aUneCote(coteGlobale) && !cotesDuJoueur.partenaire) {
+                        return (
+                          <>
+                            <StarRating rating={coteGlobale} size="md" showNumber={false} />
+                            <p className="text-[32px] font-head font-black text-white mt-3 leading-none">
+                              {coteGlobale.toFixed(1)}<span className="text-[16px] text-[#6B7280] font-normal">/5</span>
+                            </p>
+                          </>
+                        );
+                      }
+                      return <CotesEvaluations cotes={cotesDuJoueur} taille="md" className="justify-center" libelleCoach="Cote du coach" />;
+                    })()}
                     <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mt-2">Cote Globale</p>
                     {/* #1 attribution : quand la cote publique vient d'un AUTRE
                         évaluateur que le coach qui regarde (ex. le directeur). */}

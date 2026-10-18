@@ -92,6 +92,10 @@ import VisitDateEditor from "@/components/shared/VisitDateEditor";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { triggerHaptic } from "@/lib/haptics";
 import { aUneCote } from "@/lib/evaluations/presence";
+import { deuxCotes, libelleCotePartenaire } from "@/lib/evaluations/coteCarte";
+import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
+import { CotesPartenairesProvider, useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
+import CotesEvaluations from "@/components/shared/CotesEvaluations";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
 
@@ -377,6 +381,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
   const [first, ...rest] = (card.full_name || "").split(/\s+/);
   const now = useClientNow();
   const relance = formatRelancePill(card.next_action_at, now);
+  const cotes = deuxCotes(aUneCote(card.coach_rating) ? card.coach_rating : 0, useCotesPartenairesDe(prospect ? null : card.id));
   // Iter 7.1 — Card = UNE SEULE SURFACE. Photo en FOND absolute gauche,
   // gradient horizontal → #1A1D24 OPAQUE à droite (couleur de la carte),
   // texte en absolute overlay sur la zone fondue. Aucune 2-boîtes empilées
@@ -438,22 +443,30 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
           elle grandissait la ligne et la carte (120 px fixes, centrée,
           overflow-hidden) rognait les étoiles par le haut (recette 1.4.4). */}
       <div className="absolute top-2.5 right-3 z-20 flex flex-col items-end gap-1 pointer-events-none">
-        <span className="flex items-center gap-1">
-          {/* Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence).
-              Sans elle, ni étoile ni chiffre — la carte n'affirme rien. */}
-          {aUneCote(card.coach_rating) ? (
-            <>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              <span className="text-[13px] font-bold text-white">{card.coach_rating.toFixed(1)}</span>
-            </>
-          ) : prospect ? (
-            <span className="text-[10px] uppercase tracking-wider font-bold text-[#E63946]">Prospect</span>
-          ) : (
-            <span className="text-[10px] text-[#6B7280]">Non évalué</span>
-          )}
-        </span>
+        {/* Coach ET partenaire : chacun sa ligne, le partenaire avec son libellé.
+            « Non évalué » seulement si ni l'un ni l'autre ont évalué. */}
+        {cotes.coach > 0 && (
+          <span className="flex items-center gap-1">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <span className="text-[13px] font-bold text-white">{cotes.coach.toFixed(1)}</span>
+          </span>
+        )}
+        {cotes.partenaire && (
+          <span className="flex items-center gap-1 max-w-[150px]" data-cote-partenaire>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#F59E0B" stroke="none" className="shrink-0">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <span className="text-[11px] font-bold text-white shrink-0">{cotes.partenaire.valeur.toFixed(1)}</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF] truncate">{libelleCotePartenaire(cotes.partenaire.organisation)}</span>
+          </span>
+        )}
+        {cotes.coach <= 0 && !cotes.partenaire && (
+          prospect
+            ? <span className="text-[10px] uppercase tracking-wider font-bold text-[#E63946]">Prospect</span>
+            : <span className="text-[10px] text-[#6B7280]">Non évalué</span>
+        )}
         <GradeChip grade={card.grade} />
       </div>
 
@@ -921,6 +934,7 @@ function PipelineDetailSheet({
      vers ecrireCarte / retirerCarte. Pas de profil ni de message : l'athlète
      n'a pas de compte. */
   const carte = estCarte(card);
+  const cotesPartenairesFiche = useCotesPartenairesDe(carte ? null : card?.id);
 
   const [isPriority, setIsPriority] = useState(card?.flagged ?? false);
   // Grade local — même raison que visitAtLocal/nextActionAtLocal : `card` est
@@ -1374,22 +1388,7 @@ function PipelineDetailSheet({
               {/* Cote — les étoiles vides restent visibles pour tenir la mise en
                   page, mais SANS chiffre : « 0,0 » affirmerait une note de zéro
                   là où il n'y a pas de note (lib/evaluations/presence). */}
-              {!carte && <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <svg key={i} width="14" height="14" viewBox="0 0 24 24"
-                    fill={aUneCote(card.coach_rating) && i <= Math.round(card.coach_rating) ? "#F59E0B" : "#4a4d56"} stroke="none">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                ))}
-                {aUneCote(card.coach_rating) ? (
-                  <>
-                    <span className="text-[13px] font-bold text-[#F59E0B] ml-1">{card.coach_rating.toFixed(1)}</span>
-                    <span className="text-[11px] text-[#6B7280] ml-1">Cote du coach</span>
-                  </>
-                ) : (
-                  <span className="text-[11px] text-[#6B7280] ml-1">Pas encore évalué par son entraîneur</span>
-                )}
-              </div>}
+              {!carte && <CotesEvaluations cotes={deuxCotes(aUneCote(card.coach_rating) ? card.coach_rating : 0, cotesPartenairesFiche)} libelleCoach="Cote du coach" vide="Pas encore évalué" />}
 
               {/* Grade — SOUS la cote (lot 3 de la 1.4.4). Cibles 44px
                   (compact={false}) : c'est du tactile, pas du curseur. */}
@@ -1640,6 +1639,10 @@ export function RecruteurPipelineMobile() {
      tous les useMemo qui en dépendent se recalculaient sans arrêt — le lint le
      signalait déjà avant l'ajout des compteurs filtrés. */
   const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
+  /* Évaluations partenaires de toutes les cartes, lues d'un coup (RPC groupée,
+     toutes les pages) — pas une requête par carte. Loi 25 : rien sans opt-in actif. */
+  const idsAthletes = useMemo(() => cards.filter((c) => !estCarte(c)).map((c) => c.id), [cards]);
+  const { data: cotesPartenaires } = useCotesPartenaires(idsAthletes);
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
   const loading = tierLoading || pipelineLoading;
@@ -1911,6 +1914,7 @@ export function RecruteurPipelineMobile() {
        fournisseur que le web, présentées en feuille du bas. Pro de l'unité
        seulement : la base ne rend rien à un compte gratuit, et la démo n'en
        demande pas. */
+    <CotesPartenairesProvider cotes={cotesPartenaires}>
     <FournisseurRapprochements
       actif={modeUnite && !isFreeDemoMode}
       variante="feuille"
@@ -2132,5 +2136,6 @@ export function RecruteurPipelineMobile() {
       `}</style>
     </div>
     </FournisseurRapprochements>
+    </CotesPartenairesProvider>
   );
 }

@@ -69,6 +69,10 @@ import { getCurrentSeason } from "@/lib/utils/season";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
+import { deuxCotes } from "@/lib/evaluations/coteCarte";
+import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
+import { CotesPartenairesProvider, useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
+import CotesEvaluations from "@/components/shared/CotesEvaluations";
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
 import { GRADES, type Grade } from "@/lib/config/grades";
 import { champVisitePourEtape, etapePorteVisite } from "@/lib/pipeline/regleVisite";
@@ -419,6 +423,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
   const staleDays = daysSince(card.moved_at, now);
   const compAhead = isCompetitorAhead(card.id, card.status, competitorMap);
   const hasAction = card.next_action_at || card.next_action_note;
+  const cotesPartenaires = useCotesPartenairesDe(estCarte(card) ? null : card.id);
 
   // Left border
 
@@ -589,10 +594,12 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
           <div className="mt-2 flex items-center gap-2">
             {/* Une cote ABSENTE n'est pas une cote de ZERO
                 (lib/evaluations/presence) : StarRating rendrait « 0.0 ». */}
-            {aUneCote(card.coach_rating)
-              ? <StarRating rating={card.coach_rating} size="md" />
-              : estCarte(card) ? null /* un prospect ne sera jamais évalué par un coach */
-              : <span className="text-[12px] text-[#6b7280]">Pas encore évalué</span>}
+            {/* Coach ET partenaire (Évaluation L'Esprit Sportif), côte à côte :
+                « Pas encore évalué » seulement si ni l'un ni l'autre. */}
+            <CotesEvaluations
+              cotes={deuxCotes(aUneCote(card.coach_rating) ? card.coach_rating : 0, cotesPartenaires)}
+              vide={estCarte(card) ? null /* un prospect ne sera jamais évalué par un coach */ : "Pas encore évalué"}
+            />
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
         </div>
@@ -1354,6 +1361,7 @@ function SlideOver({
   const [visitTime, setVisitTime] = useState(() => isoToInputs(card.visit_at ?? null).time);
   // Notes de suivi : FilNotesSuivi (un seul fil par joueur, retour BP).
   const carte = estCarte(card) ? card : null;
+  const cotesPartenairesFiche = useCotesPartenairesDe(carte ? null : card.id);
   const colleguesQuiSuivent = collegues(card, moi);
   const [pendingStatus, setPendingStatus] = useState<RecruitmentStatus | null>(null);
   const [retireReason, setRetireReason] = useState("");
@@ -1407,7 +1415,7 @@ function SlideOver({
             )}
             {card.graduation_year > 0 && <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>}
 
-            <div className="flex items-center gap-2 mt-3">{carte ? <span className="text-[12px] text-[#4a4d56]">Cote du coach : disponible quand l&apos;athlète sera sur Nexus</span> : aUneCote(card.coach_rating) ? <><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué par son entraîneur</span>}</div>
+            <div className="flex items-center gap-2 mt-3">{carte ? <span className="text-[12px] text-[#4a4d56]">Cote du coach : disponible quand l&apos;athlète sera sur Nexus</span> : <CotesEvaluations cotes={deuxCotes(aUneCote(card.coach_rating) ? card.coach_rating : 0, cotesPartenairesFiche)} libelleCoach="Cote du coach" vide="Pas encore évalué" />}</div>
           </div>
           {/* ONGLETS (lot C1, décision BP 2026-09-24) — sous le nom. « Actions »
               par défaut : tout ce que le panneau portait déjà, inchangé et dans
@@ -1929,6 +1937,11 @@ function PipelinePageContent() {
   });
   const pipelineData = modeUnite ? donneesUnite : isFreeDemoMode ? donneesDemo : undefined;
   const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
+  /* Évaluations partenaires de TOUTES les cartes, lues d'un coup (RPC groupée,
+     toutes les pages) — jamais une requête par carte. Loi 25 : la RPC ne rend
+     rien sans opt-in partenaire actif ; sans ligne, la carte n'affiche rien. */
+  const idsAthletes = useMemo(() => cards.filter((c) => !estCarte(c)).map((c) => c.id), [cards]);
+  const { data: cotesPartenaires } = useCotesPartenaires(idsAthletes);
   const competitorMap = pipelineData?.competitorMap ?? {};
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
@@ -2352,6 +2365,7 @@ function PipelinePageContent() {
   return (
     /* Lot D : les propositions de rapprochement de l'unité (Pro seulement).
        Lot E : Accepter = fusionner ; la carte disparaît, son panneau se ferme. */
+    <CotesPartenairesProvider cotes={cotesPartenaires}>
     <FournisseurRapprochements
       actif={modeUnite && !isFreeDemoMode}
       onAccepter={async (r) => {
@@ -2766,5 +2780,6 @@ function PipelinePageContent() {
       `}</style>
     </div>
     </FournisseurRapprochements>
+    </CotesPartenairesProvider>
   );
 }

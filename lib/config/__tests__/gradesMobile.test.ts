@@ -23,17 +23,17 @@ test("les lectures de grade du mobile passent toutes par isGrade (aucune liste l
   assert.doesNotMatch(lire("components/shared/RecruteurPipelineMobile.tsx"), /"A\+", "A", "B\+"/);
 });
 
-test("picker tactile : 5 colonnes (5 + 4), compact : 9", () => {
+test("picker : UNE seule rangée défilante, centrée sur le grade choisi (1.4.5)", () => {
   const src = lire("components/shared/GradeChip.tsx");
-  assert.match(src, /const grille = compact \? "grid-cols-9" : "grid-cols-5";/);
+  assert.match(src, /flex flex-nowrap gap-1\.5 overflow-x-auto/);
+  assert.doesNotMatch(src, /grid-cols-/);
+  assert.match(src, /querySelector<HTMLElement>\('\[aria-pressed="true"\]'\)/);
   assert.match(lire("components/shared/RecruteurPipelineMobile.tsx"), /<GradePicker[^>]*compact=\{false\}/);
 });
 
-test("arithmétique : 5 colonnes gardent ≥ 44 px sur 390 px, 9 non", () => {
+test("arithmétique : 9 cibles tactiles de 44 px tiennent sur une rangée qui défile", () => {
   // Fiche mobile : 390 px - 2 × 16 px de marge - 2 × 16 px de padding de carte ; gap-1.5 = 6 px.
   const utile = 390 - 64;
-  const largeur = (n: number) => (utile - (n - 1) * 6) / n;
-  assert.ok(largeur(5) >= 44, `5 colonnes : ${largeur(5)} px`);
-  assert.ok(largeur(9) < 44, `9 colonnes : ${largeur(9)} px`);
-  assert.equal(Math.ceil(GRADES.length / 5), 2, "deux rangées");
+  const requis = GRADES.length * 44 + (GRADES.length - 1) * 6;
+  assert.ok(requis > utile, `${requis} px > ${utile} px : la rangée défile au lieu de s'écraser`);
 });
