@@ -105,7 +105,8 @@ export default function ConsentementsPage() {
      ne la montre pas non plus). Depuis le 2026-10-02 (décision BP) c'est la
      case de l'athlète LUI-MÊME dès 14 ans : plus de case parentale. Le nom de
      l'état est historique. */
-  const [consentPartnerAdult, setConsentPartnerAdult] = useState(false);
+  // C5 (1.4.5) : choix OBLIGATOIRE et libre — null tant que l'athlète n'a pas répondu Oui ou Non.
+  const [consentPartnerAdult, setConsentPartnerAdult] = useState<boolean | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -163,18 +164,22 @@ export default function ConsentementsPage() {
   const isMinor = birthdate.length > 0 && !isAdult(birthdate);
   const parentEmailValid = EMAIL_RE.test(parentEmail.trim());
 
+  // C5 : l'athlète de 14 ans et plus voit le choix partenaires (même condition que l'affichage).
+  const choixPartenairesFait = !(role === "ATHLETE" && !!birthdate && !birthdateUnder14) || consentPartnerAdult !== null;
+
   const canSubmit = useMemo(() => {
     // Approche C — role/context déjà en DB : le gate ne porte que sur DOB +
     // consentements (+ parental si mineur).
     if (!birthdate) return false;
     if (birthdateUnder14) return false;   // Loi 25 — hard-block <14, sans exception
     if (!consentPolicy || !consentData) return false;
+    if (!choixPartenairesFait) return false;
     if (isMinor) {
       if (!parentFirstName.trim() || !parentLastName.trim() || !parentEmailValid) return false;
       if (!consentProfile || !consentVisibility) return false;
     }
     return true;
-  }, [birthdate, birthdateUnder14, consentPolicy, consentData, isMinor, parentFirstName, parentLastName, parentEmailValid, consentProfile, consentVisibility]);
+  }, [birthdate, birthdateUnder14, consentPolicy, consentData, choixPartenairesFait, isMinor, parentFirstName, parentLastName, parentEmailValid, consentProfile, consentVisibility]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit || submitting || !user || !role) return;
@@ -198,7 +203,7 @@ export default function ConsentementsPage() {
           ? { parentalProfile: consentProfile, parentalVisibility: consentVisibility }
           : {}),
         ...(role === "ATHLETE"
-          ? { partnerVisibility: consentPartnerAdult }
+          ? { partnerVisibility: consentPartnerAdult === true }
           : {}),
       };
       const parent: ParentPII | undefined = isMinor
@@ -381,6 +386,7 @@ export default function ConsentementsPage() {
             checked={consentPartnerAdult}
             onChange={setConsentPartnerAdult}
             audience="adult"
+            obligatoire
           />
         )}
 

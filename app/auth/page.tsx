@@ -480,14 +480,15 @@ function AuthContent() {
                         submitted={submitted}
                       />
 
-                      {/* Athlète de 14 ans et plus : SA case partenaires,
-                          décochée, optionnelle (décision BP 2026-10-02 — à
-                          14 ans le jeune consent seul, plus de case parentale). */}
+                      {/* Athlète de 14 ans et plus : SON choix partenaires (décision BP 2026-10-02 —
+                          à 14 ans le jeune consent seul). C5 (1.4.5) : Oui ou Non OBLIGATOIRE, sans
+                          défaut. */}
                       {sf.showsAdultPartnerConsent && (
                         <PartnerVisibilityConsentCard
                           checked={sf.consentAdultPartnerVisibility}
                           onChange={sf.setConsentAdultPartnerVisibility}
                           audience="adult"
+                          obligatoire
                         />
                       )}
 

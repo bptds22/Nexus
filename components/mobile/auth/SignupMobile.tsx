@@ -160,7 +160,8 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
      BP 2026-10-02 : à 14 ans le jeune consent seul, la case parentale de
      l'écran 3 a disparu. Le nom de l'état est historique (majeurs seulement
      jusque-là). */
-  const [consentAdultPartnerVisibility, setConsentAdultPartnerVisibility] = useState(false);
+  // C5 (1.4.5) : choix OBLIGATOIRE et libre — null tant que l'athlète n'a pas répondu Oui ou Non.
+  const [consentAdultPartnerVisibility, setConsentAdultPartnerVisibility] = useState<boolean | null>(null);
   const [openRelation, setOpenRelation] = useState(false);
   // Iter 7.50-a-bis (legal-2) — bottom sheet pour les 3 docs légaux.
   // null = sheet fermé. State au niveau parent → le formulaire conserve
@@ -194,13 +195,17 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
   // les 14-17 gardent l'écran parent (userIsAdult=false), seuls les <14 sont
   // refusés. Réévalué à chaque render (rebranche si la date change).
   const birthdateUnder14 = isUnder14(birthdate);
+  // C5 (1.4.5) : l'athlète de 14 ans et plus DOIT répondre Oui ou Non à la visibilité partenaires.
+  const montreChoixPartenaires = userType === "athlete" && peutConsentirPartenaires(birthdate);
+  const choixPartenairesFait = !montreChoixPartenaires || consentAdultPartnerVisibility !== null;
   const canProceedStep2 = canProceedStep1
     && firstName.trim().length > 0
     && lastName.trim().length > 0
     && emailValid
     && birthdate.length > 0
     && !birthdateUnder14
-    && consentPolicy && consentData;
+    && consentPolicy && consentData
+    && choixPartenairesFait;
   // Iter age-gate §B — utilisateur majeur (18+) calculé depuis birthdate.
   // Réévalué à chaque render : si l'utilisateur revient à l'écran 2 et
   // change sa date, le flow se rebranche tout seul.
@@ -417,7 +422,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           policy: consentPolicy,
           data: consentData,
           marketing: consentMarketing,
-          partnerVisibility: consentAdultPartnerVisibility,
+          partnerVisibility: consentAdultPartnerVisibility === true,
         })
       : buildConsentMetadata(
           {
@@ -426,7 +431,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
             marketing: consentMarketing,
             parentalProfile: consentProfile,
             parentalVisibility: consentVisibility,
-            partnerVisibility: consentAdultPartnerVisibility,
+            partnerVisibility: consentAdultPartnerVisibility === true,
           },
           {
             firstName: parentFirstName.trim(),
@@ -476,7 +481,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
             policy: consentPolicy,
             data: consentData,
             marketing: consentMarketing,
-            partnerVisibility: consentAdultPartnerVisibility,
+            partnerVisibility: consentAdultPartnerVisibility === true,
           }
         : {
             policy: consentPolicy,
@@ -484,7 +489,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
             marketing: consentMarketing,
             parentalProfile: consentProfile,
             parentalVisibility: consentVisibility,
-            partnerVisibility: consentAdultPartnerVisibility,
+            partnerVisibility: consentAdultPartnerVisibility === true,
           });
       if (!persistResult.ok) {
         console.warn("[SignupMobile] persistInitialConsents:", persistResult.error);
@@ -598,7 +603,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           onOpenLegal={(key) => setLegalSheet(key)}
           setInputFocused={setInputFocused}
           audience={userType}
-          showsAdultPartnerConsent={userType === "athlete" && peutConsentirPartenaires(birthdate)}
+          showsAdultPartnerConsent={montreChoixPartenaires}
           consentAdultPartnerVisibility={consentAdultPartnerVisibility}
           setConsentAdultPartnerVisibility={setConsentAdultPartnerVisibility}
         />
@@ -907,6 +912,8 @@ function Step1Account(p: Step1Props) {
      2. Tes parents  — prénom parent* / nom parent* / courriel parent* / relation
      3. Consentement parental — 2 cases required + PartnerVisibilityConsentCard (opt)
    Le partner consent ne gate JAMAIS le CTA (cf canSubmit) — Loi 25.
+   → C5 (1.4.5, décision BP) : il le gate désormais, mais Oui ET Non passent : le choix est
+     obligatoire, son contenu reste libre.
 
    Iter signup-reorg — splittés à nouveau :
    - Step2You      : Toi (prénom/nom/email + ÂGE + 3 consents génériques)
@@ -932,7 +939,7 @@ interface Step2YouProps {
   audience?: "athlete" | "coach" | "recruiter";
   /** Athlète majeur : sa case partenaires (parité web). */
   showsAdultPartnerConsent?: boolean;
-  consentAdultPartnerVisibility?: boolean;
+  consentAdultPartnerVisibility?: boolean | null;
   setConsentAdultPartnerVisibility?: (v: boolean) => void;
 }
 
@@ -1098,9 +1105,10 @@ function Step2You(p: Step2YouProps) {
 
         {p.showsAdultPartnerConsent && p.setConsentAdultPartnerVisibility && (
           <PartnerVisibilityConsentCard
-            checked={!!p.consentAdultPartnerVisibility}
+            checked={p.consentAdultPartnerVisibility ?? null}
             onChange={p.setConsentAdultPartnerVisibility}
             audience="adult"
+            obligatoire
           />
         )}
       </div>

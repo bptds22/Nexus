@@ -30,6 +30,12 @@
    When unchecked, those columns should NOT be written (preserve
    existing values for repeat onboarding flows).
 
+   C5 (1.4.5, décision BP) : à l'inscription de l'athlète, le choix est
+   OBLIGATOIRE mais LIBRE (Loi 25 : un consentement ne s'impose pas) —
+   `obligatoire` remplace la case par deux boutons « Oui, j'autorise » /
+   « Non, pas maintenant », sans défaut ; l'appelant bloque la suite tant
+   que `checked` vaut null.
+
    Wording note: le texte de responsabilité partagée (Loi 25) provient
    de partnerResponsibilityText() dans lib/legal/partnerMediaCopy.ts —
    SOURCE UNIQUE, pronom adapté selon l'audience (self / athlete).
@@ -38,8 +44,11 @@
 import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 
 interface PartnerVisibilityConsentCardProps {
-  checked: boolean;
+  /** null = pas encore répondu (mode `obligatoire`) ; ailleurs, null vaut non. */
+  checked: boolean | null;
   onChange: (next: boolean) => void;
+  /** C5 : choix Oui / Non obligatoire, sans défaut, au lieu de la case optionnelle. */
+  obligatoire?: boolean;
   /**
    * Whose perspective the copy addresses. Defaults to "athlete"
    * for backwards compatibility with the self-signup call site.
@@ -98,19 +107,28 @@ const COPY: Record<"athlete" | "adult" | "coach", Copy> = {
 export default function PartnerVisibilityConsentCard({
   checked,
   onChange,
+  obligatoire = false,
   audience = "athlete",
 }: PartnerVisibilityConsentCardProps) {
   const copy = COPY[audience];
+  const coche = checked === true;
 
   return (
-    <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 mt-6">
+    <div data-choix-partenaires={obligatoire ? String(checked) : undefined}
+      className={`bg-[#1A1D24] border rounded-xl p-5 mt-6 ${obligatoire && checked === null ? "border-[#E63946]/50" : "border-[#2D3748]"}`}>
       <div className="flex items-center gap-2 mb-3">
         <h3 className="font-head text-[15px] font-black text-white uppercase tracking-tight">
           Visibilité auprès des partenaires Nexus
         </h3>
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] bg-[#13151a] border border-[#2D3748] rounded-full px-2 py-0.5">
-          Optionnel
-        </span>
+        {obligatoire ? (
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF6B76] bg-[#E63946]/10 border border-[#E63946]/40 rounded-full px-2 py-0.5">
+            Ton choix
+          </span>
+        ) : (
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] bg-[#13151a] border border-[#2D3748] rounded-full px-2 py-0.5">
+            Optionnel
+          </span>
+        )}
       </div>
 
       <p className="text-[13px] text-[#9CA3AF] leading-relaxed">{copy.intro}</p>
@@ -133,15 +151,33 @@ export default function PartnerVisibilityConsentCard({
         {partnerResponsibilityText(audience === "coach" ? "athlete" : "self")}
       </p>
 
+      {obligatoire ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-5" role="radiogroup" aria-label="Visibilité auprès des partenaires Nexus">
+            <button type="button" role="radio" aria-checked={checked === true} onClick={() => onChange(true)} data-choix-partenaires-oui
+              className={`min-h-[48px] px-4 rounded-xl border text-[14px] font-bold transition-colors ${checked === true ? "bg-[#E63946] border-[#E63946] text-white" : "border-[#2D3748] text-white hover:border-[#E63946]/60"}`}>
+              Oui, j’autorise
+            </button>
+            <button type="button" role="radio" aria-checked={checked === false} onClick={() => onChange(false)} data-choix-partenaires-non
+              className={`min-h-[48px] px-4 rounded-xl border text-[14px] font-bold transition-colors ${checked === false ? "bg-white/[0.10] border-white/40 text-white" : "border-[#2D3748] text-white hover:border-white/40"}`}>
+              Non, pas maintenant
+            </button>
+          </div>
+          <p className="text-[11px] italic text-[#6b7280] leading-relaxed mt-3">
+            Choisis Oui ou Non pour continuer. Tu pourras changer d’avis en tout temps dans tes paramètres.
+          </p>
+        </>
+      ) : (
+      <>
       <label className="flex items-start gap-3 cursor-pointer group mt-5">
         <input
           type="checkbox"
-          checked={checked}
+          checked={coche}
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only"
         />
-        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${checked ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56] group-hover:border-[#6b7280]"}`}>
-          {checked && (
+        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${coche ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56] group-hover:border-[#6b7280]"}`}>
+          {coche && (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">
               <path d="M20 6L9 17l-5-5" />
             </svg>
@@ -155,6 +191,9 @@ export default function PartnerVisibilityConsentCard({
       <p className="text-[11px] italic text-[#6b7280] leading-relaxed mt-3 pl-8">
         {copy.helper}
       </p>
+      </>
+      )}
     </div>
   );
 }
+

@@ -32,21 +32,27 @@ export const PARTNER_MEDIA_COPY = {
 
 /* Texte canonique de RESPONSABILITÉ PARTAGÉE (Loi 25) du consentement de
    communication aux partenaires média. Pronom adapté selon la surface :
-   - "self"    : l'athlète 14-17 gère son propre consentement → « votre carte »
+   - "self"    : l'athlète (14 ans et plus) gère son propre consentement → « ta carte »,
+     au TUTOIEMENT comme le reste de la carte (C5, 1.4.5 : la carte passait du « tu » au « vous »)
    - "child"   : le parent gère celui de son enfant          → « la carte de votre enfant »
    - "athlete" : le coach enregistre l'autorisation parentale → « la carte de l'athlète »
    Nexus reste responsable de la communication + du consentement ; le partenaire
    de la protection des renseignements reçus. */
 export function partnerResponsibilityText(subject: "self" | "child" | "athlete"): string {
-  const objet =
-    subject === "self"
-      ? "votre carte"
-      : subject === "child"
-        ? "la carte de votre enfant"
-        : "la carte de l’athlète";
+  // C5 (1.4.5) : la cote figure sur la carte (PARTNER_MEDIA_COPY.whatAppears) ; la liste le dit aussi.
+  const champs = "(nom, position, établissement, cote, photo)";
+  if (subject === "self") {
+    return (
+      `En activant cette option, tu autorises Nexus à communiquer ta carte ${champs} ` +
+      "à ses partenaires média approuvés, qui l’utilisent dans leurs publications. Chaque partenaire " +
+      "est responsable de la protection des renseignements qu’il reçoit ; Nexus demeure responsable " +
+      "de cette communication et du consentement. Tu peux retirer ce consentement en tout temps."
+    );
+  }
+  const objet = subject === "child" ? "la carte de votre enfant" : "la carte de l’athlète";
   return (
     `En activant cette option, vous autorisez Nexus à communiquer ${objet} ` +
-    "(nom, position, établissement, photo) à ses partenaires média approuvés, " +
+    `${champs} à ses partenaires média approuvés, ` +
     "qui l’utilisent dans leurs publications. Chaque partenaire est responsable " +
     "de la protection des renseignements qu’il reçoit ; Nexus demeure responsable " +
     "de cette communication et du consentement. Vous pouvez retirer ce consentement en tout temps."
