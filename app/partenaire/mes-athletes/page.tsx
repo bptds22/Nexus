@@ -1,7 +1,7 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   /partenaire/mes-athletes — « Mes athlètes » (W4d).
+   /partenaire/mes-athletes — « Mes évaluations » (W4d ; renommée en 1.4.5, P2).
 
    Les athlètes que le partenaire a évalués ou badgés, tant qu'ils lui
    sont visibles (partenaire_mes_athletes) : un jeune qui retire sa
@@ -13,19 +13,35 @@
    Filtres (2026-10-16) : recherche (nom, école/club, position) et
    « Distinctions » à choix multiple, combinés — logique partagée dans
    lib/partenaires/filtresMesAthletes.ts (l'appli la réutilise telle quelle).
+
+   P2 (1.4.5) : cartes COMPACTES — photo, nom, sport · position · école, ta
+   cote, badges selon la règle R3 (<CarteBadges> : tes badges d'abord, puis
+   ceux du coach, 5 au total, puis +N ; lecture groupée par
+   PartenaireCartesProvider). Toucher la carte ouvre la fiche ; « Évaluer » /
+   « Modifier » reste sur la carte. Le retrait d'un badge se fait sur la fiche
+   (BadgesPartenaire), avec ses confirmations.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import CarteBadges from "@/components/shared/CarteBadges";
+import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
-import { chargerMesAthletes, type BadgeMonAthlete, type MonAthlete } from "@/lib/partenaires/mesAthletes";
+import {
+  chargerMesAthletes,
+  chargerVignettesMesAthletes,
+  type BadgeMonAthlete,
+  type MonAthlete,
+  type VignetteMonAthlete,
+} from "@/lib/partenaires/mesAthletes";
 import {
   chargerContexteEvaluation,
   chargerEvaluationsPartenaires,
   type EvaluationPartenaire,
 } from "@/lib/evaluations/partenaire";
-import { iconeBadgeUrl, retirerBadgePartenaire, signalerBadgesPartenaire } from "@/lib/badges/partenaire";
+import { iconeBadgeUrl } from "@/lib/badges/partenaire";
 import { badgeSvgPath } from "@/lib/config/badges";
 import {
   basculerDistinction,
@@ -130,12 +146,49 @@ function MenuDistinctions({ options, choix, onChange }: {
   );
 }
 
+/** Une carte compacte. Le nom est un lien étiré sur toute la carte (fiche au toucher) ; le bouton
+ *  « Évaluer » passe au-dessus. La carte se déclare à l'approche de l'écran : ses badges partenaire
+ *  partent avec le paquet suivant (PartenaireCartesProvider). */
+function CarteEvaluation({ a, vignette, occupe, onEvaluer }: {
+  a: MonAthlete;
+  vignette: VignetteMonAthlete | undefined;
+  occupe: boolean;
+  onEvaluer: () => void;
+}) {
+  const ref = useDeclarerCarteVisible(a.athleteId);
+  const nom = `${a.prenom} ${a.nom}`.trim();
+  return (
+    <li className="relative rounded-xl border border-[#2D3748] bg-[#1A1D24] hover:border-[#E63946]/40 transition-colors" data-mon-athlete={a.athleteId}>
+      <div ref={ref} className="flex items-center gap-3 p-3">
+        <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-[#2F3440] shrink-0">
+          <AthletePhotoFill photoUrl={vignette?.photo} firstName={a.prenom} lastName={a.nom} initialsFontSize={22} className="object-[center_15%]" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <Link href={`/partenaire/athletes/${a.athleteId}`} data-fiche-au-toucher
+            className="block text-[15px] font-bold text-white truncate after:absolute after:inset-0 after:rounded-xl">
+            {nom || "Athlète"}
+          </Link>
+          <p className="text-[12px] text-[#9CA3AF] truncate">{[a.sport, a.posteAbr ?? a.poste, a.ecole].filter(Boolean).join(" · ") || "—"}</p>
+          <div className="mt-1 flex items-center gap-2" title={a.evalueeLe ? `Évalué le ${dateCourte(a.evalueeLe)}` : undefined}>
+            {a.coteGlobale != null ? <Etoiles cote={a.coteGlobale} /> : <span className="text-[12px] text-[#6b7280]">Pas encore évalué</span>}
+          </div>
+          <CarteBadges athleteId={a.athleteId} coach={vignette?.badgesCoach} variante="ligne" className="mt-1.5" />
+        </div>
+        <button type="button" disabled={occupe} onClick={onEvaluer}
+          className="relative z-10 shrink-0 min-h-[40px] px-3 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg disabled:opacity-50">
+          {a.coteGlobale != null ? "Modifier" : "Évaluer"}
+        </button>
+      </div>
+    </li>
+  );
+}
+
 export default function MesAthletesPartenairePage() {
   const [athletes, setAthletes] = useState<MonAthlete[]>([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
   const [avis, setAvis] = useState<{ ok: boolean; texte: string } | null>(null);
-  const [retrait, setRetrait] = useState<string | null>(null);
+  const [vignettes, setVignettes] = useState<Map<string, VignetteMonAthlete>>(new Map());
   const [occupe, setOccupe] = useState<string | null>(null);
   const [edition, setEdition] = useState<{ athlete: MonAthlete; grilleId: string | null; existante: EvaluationPartenaire | null } | null>(null);
   const [texte, setTexte] = useState("");
@@ -158,8 +211,11 @@ export default function MesAthletesPartenairePage() {
 
   const charger = useCallback(async () => {
     try {
-      setAthletes(await chargerMesAthletes(createClient()));
+      const supabase = createClient();
+      const liste = await chargerMesAthletes(supabase);
+      setAthletes(liste);
       setErreur(null);
+      setVignettes(await chargerVignettesMesAthletes(supabase, liste.map((x) => x.athleteId)));
     } catch (e) {
       setErreur(messageErreur(e));
     } finally {
@@ -188,25 +244,10 @@ export default function MesAthletesPartenairePage() {
     }
   }
 
-  async function retirerBadge(a: MonAthlete, b: BadgeMonAthlete) {
-    setOccupe(b.attributionId);
-    try {
-      await retirerBadgePartenaire(createClient(), b.attributionId);
-      signalerBadgesPartenaire(a.athleteId);
-      notifier(true, `Badge « ${b.libelle ?? ""} » retiré.`);
-      setRetrait(null);
-      await charger();
-    } catch (e) {
-      notifier(false, messageErreur(e));
-    } finally {
-      setOccupe(null);
-    }
-  }
-
   return (
     <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-5xl" data-page-mes-athletes>
       <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Espace partenaire</p>
-      <h1 className="font-head text-[26px] sm:text-[30px] font-black text-white uppercase tracking-tight">Mes athlètes</h1>
+      <h1 className="font-head text-[26px] sm:text-[30px] font-black text-white uppercase tracking-tight">Mes évaluations</h1>
       <p className="text-[13px] text-[#9CA3AF] mt-1 max-w-xl">
         Les athlètes que tu as évalués ou à qui tu as remis un badge. Un athlète qui retire sa visibilité
         partenaire disparaît de cette liste ; ton évaluation et tes badges ne sont pas effacés pour autant.
@@ -237,7 +278,7 @@ export default function MesAthletesPartenairePage() {
             <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
             <input type="search" value={texte} onChange={(e) => setTexte(e.target.value)}
               placeholder="Nom, école ou club, position"
-              aria-label="Rechercher dans mes athlètes"
+              aria-label="Rechercher dans mes évaluations"
               className="w-full h-10 pl-9 pr-3 rounded-lg border border-[#2D3748] bg-[#13151a] text-white text-[16px] sm:text-[13px] placeholder:text-[#6b7280] focus:outline-none focus:border-[#E63946]/60" />
           </div>
           <MenuDistinctions options={options} choix={distinctions} onChange={setDistinctions} />
@@ -254,76 +295,14 @@ export default function MesAthletesPartenairePage() {
         {visibles.length === 0 ? (
           <p className="mt-6 text-[13px] text-[#9CA3AF]">Aucun athlète ne correspond à ces filtres.</p>
         ) : (
-        <ul className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <PartenaireCartesProvider>
+        <ul className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
           {visibles.map((a) => (
-            <li key={a.athleteId} className="rounded-xl border border-[#2D3748] bg-[#1A1D24] p-4 flex flex-col gap-3" data-mon-athlete={a.athleteId}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[16px] font-bold text-white">{`${a.prenom} ${a.nom}`.trim()}</p>
-                  <p className="text-[12px] text-[#9CA3AF]">{[a.sport, a.poste, a.ecole].filter(Boolean).join(" · ") || "—"}</p>
-                </div>
-                <span className="text-[11px] text-[#6b7280] shrink-0">{dateCourte(a.derniereAction)}</span>
-              </div>
-
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7280]">Ton évaluation</p>
-                {a.coteGlobale != null ? (
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    <Etoiles cote={a.coteGlobale} />
-                    <span className="text-[11px] text-[#6b7280]">le {dateCourte(a.evalueeLe)}</span>
-                  </div>
-                ) : (
-                  <p className="mt-1 text-[12px] text-[#9CA3AF]">Pas encore évalué.</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7280]">Tes badges</p>
-                {a.badges.length === 0 ? (
-                  <p className="mt-1 text-[12px] text-[#9CA3AF]">Aucun badge.</p>
-                ) : (
-                  <ul className="mt-1.5 space-y-1.5">
-                    {a.badges.map((b) => (
-                      <li key={b.attributionId} className="flex items-center gap-2 flex-wrap">
-                        <IconeBadge b={b} />
-                        <span className="text-[13px] text-white">{b.libelle ?? "—"}</span>
-                        {b.masque && <span className="text-[11px] text-[#F59E0B]">masqué par le coach</span>}
-                        <span className="text-[11px] text-[#6b7280]">{dateCourte(b.le)}</span>
-                        {retrait === b.attributionId ? (
-                          <span className="flex items-center gap-1.5 ml-auto">
-                            <button type="button" disabled={occupe === b.attributionId} onClick={() => void retirerBadge(a, b)}
-                              className="px-2.5 py-1 bg-[#E63946] text-white text-[11px] font-bold rounded-md disabled:opacity-50">
-                              Confirmer le retrait
-                            </button>
-                            <button type="button" onClick={() => setRetrait(null)} className="px-2 py-1 text-[11px] text-[#9CA3AF] hover:text-white">
-                              Annuler
-                            </button>
-                          </span>
-                        ) : (
-                          <button type="button" onClick={() => setRetrait(b.attributionId)}
-                            className="ml-auto px-2.5 py-1 text-[11px] font-bold text-[#9CA3AF] hover:text-[#E63946]">
-                            Retirer
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div className="flex gap-2 flex-wrap pt-1">
-                <Link href={`/partenaire/athletes/${a.athleteId}`}
-                  className="px-3.5 py-2 border border-[#2D3748] text-white hover:border-[#E63946]/60 text-[12px] font-bold rounded-lg">
-                  Voir la fiche
-                </Link>
-                <button type="button" disabled={occupe === `eval:${a.athleteId}`} onClick={() => void ouvrirEvaluation(a)}
-                  className="px-3.5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg disabled:opacity-50">
-                  {a.coteGlobale != null ? "Modifier l'évaluation" : "Évaluer"}
-                </button>
-              </div>
-            </li>
+            <CarteEvaluation key={a.athleteId} a={a} vignette={vignettes.get(a.athleteId)}
+              occupe={occupe === `eval:${a.athleteId}`} onEvaluer={() => void ouvrirEvaluation(a)} />
           ))}
         </ul>
+        </PartenaireCartesProvider>
         )}
         </>
       )}

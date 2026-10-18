@@ -200,7 +200,7 @@ const ATHLETE_TABS: TabConfig[] = [
 const PARTENAIRE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/partenaire", icon: Icons.dashboard, exact: true },
   { key: "athletes", label: "Athlètes", href: "/partenaire/athletes", icon: Icons.search, activeMatch: "/partenaire/athletes" },
-  { key: "mes-athletes", label: "Mes athlètes", href: "/partenaire/mes-athletes", icon: Icons.users, activeMatch: "/partenaire/mes-athletes" },
+  { key: "mes-athletes", label: "Mes évaluations", href: "/partenaire/mes-athletes", icon: Icons.users, activeMatch: "/partenaire/mes-athletes" },
   { key: "prospects", label: "Prospects", href: "/partenaire/prospects", icon: Icons.flag, activeMatch: "/partenaire/prospects" },
 ];
 

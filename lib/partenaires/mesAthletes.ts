@@ -4,6 +4,7 @@
    ses données ne sont pas effacées (W2). RPC partenaire_mes_athletes. */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 
 export interface BadgeMonAthlete {
   attributionId: string;
@@ -61,4 +62,33 @@ export async function chargerMesAthletes(supabase: SupabaseClient): Promise<MonA
     })),
     derniereAction: (r.derniere_action as string | null) ?? null,
   }));
+}
+
+/** Ce qu'une carte compacte « Mes évaluations » (P2, 1.4.5) ajoute à la ligne : la photo et les
+ *  badges du COACH (règle R3 : badges du partenaire d'abord, puis le coach, 5 au total, puis +N).
+ *  Lus dans top_athletes_view — la vue que la recherche partenaire lit déjà, avec la même garde
+ *  d'éligibilité : aucune donnée nouvelle. Un athlète absent de la vue garde ses initiales. */
+export interface VignetteMonAthlete {
+  photo: string | null;
+  badgesCoach: { badgeId: string; label: string }[];
+}
+
+/** Par paquets de 200 identifiants (URL raisonnable, sous le plafond PostgREST). Échec : carte sans photo ni badge coach. */
+export async function chargerVignettesMesAthletes(
+  supabase: SupabaseClient,
+  ids: readonly string[],
+): Promise<Map<string, VignetteMonAthlete>> {
+  const res = new Map<string, VignetteMonAthlete>();
+  const uniques = [...new Set(ids)];
+  for (let i = 0; i < uniques.length; i += 200) {
+    const { data, error } = await supabase.from("top_athletes_view").select("id, photo_url, badges").in("id", uniques.slice(i, i + 200));
+    if (error) continue;
+    for (const r of (data ?? []) as { id: string; photo_url: string | null; badges: unknown }[]) {
+      res.set(r.id, {
+        photo: r.photo_url ?? null,
+        badgesCoach: pastillesBadges(r.badges).map((d) => ({ badgeId: d.code, label: textePastille(d) })),
+      });
+    }
+  }
+  return res;
 }
