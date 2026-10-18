@@ -32,6 +32,11 @@ import { applyTeamAttachment } from "@/lib/queries/athlete/teamAttachment";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import { taRows, headCoachName } from "@/lib/queries/shared/embeds";
 import { teamDetails } from "@/lib/config/teamLabel";
+import { nomEstCeluiDuClub } from "@/lib/teams/teamLabel";
+
+// NLS (BP 2026-10-18) : la ligue qui ne fait que répéter le club ne se relit pas sur chaque équipe.
+const ligueUtile = (ligue: string | null | undefined, club: string | null | undefined) =>
+  ligue && !nomEstCeluiDuClub(ligue, club) ? ligue : null;
 
 interface CurrentAnchor {
   teamId: string | null;
@@ -152,7 +157,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
               zone: (team.zone as string) ?? null,
               gender: (team.gender as string) ?? null,
               season: (team.season as string) ?? null,
-              league: (team.league as string) ?? null,
+              league: ligueUtile((team.league as string) ?? null, one<{ name?: string }>(team.schools)?.name),
             }),
           }
         : null,
@@ -417,7 +422,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
                       >
                         <div className="text-[14px] font-semibold text-white">{t.name}</div>
                         <div className="text-[12px] text-[#6b7280]">
-                          {teamDetails(t)}
+                          {teamDetails({ ...t, league: ligueUtile(t.league, orgName) })}
                           {current ? " · équipe actuelle" : ""}
                         </div>
                       </button>
@@ -508,7 +513,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
                 >
                   <p className="truncate text-[16px] font-semibold text-white">{t.name}</p>
                   <p className="truncate text-[13px] text-white/55">
-                    {teamDetails(t)}
+                    {teamDetails({ ...t, league: ligueUtile(t.league, orgName) })}
                     {courante ? " · équipe actuelle" : ""}
                   </p>
                   {/* Coach-chef — RENDU CONDITIONNEL : rien n'est produit si aucun

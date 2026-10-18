@@ -4397,8 +4397,8 @@ function UmbrellaStep({
                   )}
                 </div>
                 )}
-                {/* La ligue, sauf quand elle ne fait que répéter le club (NLS). */}
-                {team.league && !(rechercheEquipe && nomEstCeluiDuClub(team.league, schoolName)) && (
+                {/* La ligue, sauf quand elle ne fait que répéter le club qu'on vient de choisir (NLS, BP 2026-10-18). */}
+                {team.league && !nomEstCeluiDuClub(team.league, schoolName) && (
                   <p className="text-[11px] text-[#9CA3AF] mt-2 truncate">{team.league}</p>
                 )}
                 <p className="text-[11px] text-[#22C55E] font-bold mt-3">
