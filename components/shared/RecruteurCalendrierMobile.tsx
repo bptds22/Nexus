@@ -45,6 +45,9 @@ import { aUneCote } from "@/lib/evaluations/presence";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { triggerHaptic } from "@/lib/haptics";
 import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
+import { useDetailsVisites } from "@/lib/queries/recruiter/useDetailsVisites";
+import { cleVisite, resumeVisite } from "@/lib/visites/detailsVisite";
+import { BoutonDetailsVisite, FenetreDetailsVisite } from "@/components/recruteur/visites/DetailsVisite";
 
 
 const SPORT_OPTIONS: PickerOption[] = [
@@ -165,6 +168,11 @@ function lienCible(id: string, prospect?: boolean): string {
 /** Visite planifiée de l'unité (lot B2) ou d'une carte prospect (lot C) —
  *  un événement du calendrier au même titre qu'un match. */
 function VisiteCard({ v }: { v: VisiteUnite }) {
+  // Détails (BP 2026-10-18) : une seule lecture partagée par toutes les cartes (même clé).
+  const { data: detailsData } = useDetailsVisites(true);
+  const [ouverte, setOuverte] = useState(false);
+  const details = detailsData?.parCle.get(cleVisite(v.athleteId, v.prospect)) ?? null;
+  const resume = resumeVisite(details);
   const d = new Date(v.visitAt);
   const heure = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
   const aHeure = !(d.getHours() === 0 && d.getMinutes() === 0);
@@ -186,8 +194,13 @@ function VisiteCard({ v }: { v: VisiteUnite }) {
         {v.suiviPar.length > 0 && (
           <div className="mt-0.5 truncate text-[12.5px] text-[#8A909C]">Suivi par {v.suiviPar.join(", ")}</div>
         )}
+        {resume && <div className="mt-0.5 truncate text-[12.5px] text-[#C9CDD4]" data-testid="resume-visite">{resume}</div>}
+        {detailsData?.disponible && (
+          <div className="mt-2"><BoutonDetailsVisite appli onClick={() => { triggerHaptic("Light"); setOuverte(true); }} /></div>
+        )}
       </div>
       <StagePill stage={v.stage} />
+      {ouverte && <FenetreDetailsVisite appli visite={v} details={details} onFermer={() => setOuverte(false)} />}
     </div>
   );
 }

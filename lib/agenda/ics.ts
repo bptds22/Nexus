@@ -29,6 +29,50 @@ export interface EvenementAgenda {
   note: string | null;
 }
 
+/** Détails d'une visite pour l'agenda (agenda_visites_details, BP 2026-10-18) :
+ *  le lieu, le lien Zoom et le responsable suivent l'événement dans Google / Outlook. */
+export interface DetailsVisiteAgenda {
+  cible: "athlete" | "carte";
+  cible_id: string;
+  format: "EN_PERSONNE" | "ZOOM" | "TELEPHONE";
+  adresse: string | null;
+  lien: string | null;
+  /** Nom résolu : recruteur Nexus, sinon le nom tapé. */
+  responsable: string | null;
+  note: string | null;
+}
+
+const FORMAT_AGENDA: Record<DetailsVisiteAgenda["format"], string> = {
+  EN_PERSONNE: "En personne",
+  ZOOM: "Zoom",
+  TELEPHONE: "Téléphone",
+};
+
+/** Clé d'une visite dans les détails : « athlete:<id> » ou « carte:<id> ». */
+export const cleDetailsAgenda = (d: Pick<DetailsVisiteAgenda, "cible" | "cible_id">) => `${d.cible}:${d.cible_id}`;
+
+export function indexerDetailsAgenda(lignes: readonly DetailsVisiteAgenda[]): Map<string, DetailsVisiteAgenda> {
+  return new Map(lignes.map((d) => [cleDetailsAgenda(d), d]));
+}
+
+/** LOCATION, URL et lignes de DESCRIPTION d'une visite détaillée. Le lien Zoom
+ *  n'est retenu que s'il est en https:// (la base l'exige déjà). */
+export function champsVisiteAgenda(d: DetailsVisiteAgenda | undefined): { lieu: string | null; url: string | null; lignes: string[] } {
+  if (!d) return { lieu: null, url: null, lignes: [] };
+  const lien = d.format === "ZOOM" && d.lien && /^https:\/\//i.test(d.lien.trim()) ? d.lien.trim() : null;
+  const adresse = d.format === "EN_PERSONNE" ? d.adresse?.trim() || null : null;
+  return {
+    lieu: adresse ?? lien,
+    url: lien,
+    lignes: [
+      `Format : ${FORMAT_AGENDA[d.format] ?? d.format}`,
+      d.responsable?.trim() ? `Responsable : ${d.responsable.trim()}` : null,
+      lien ? `Zoom : ${lien}` : null,
+      d.note?.trim() || null,
+    ].filter((x): x is string => !!x),
+  };
+}
+
 export const NOM_CALENDRIER = "Nexus — relances, visites et matchs";
 export const NOM_CALENDRIER_PARTENAIRE = "Nexus — mes matchs";
 
@@ -59,6 +103,8 @@ export interface OptionsIcs {
   nom?: string;
   /** Lien d'un match (la carte des matchs du rôle) ; aucun lien si absent. */
   lienMatch?: (m: MatchAgenda) => string;
+  /** Détails des visites, par cleDetailsAgenda (lieu, Zoom, responsable). */
+  detailsVisites?: Map<string, DetailsVisiteAgenda>;
 }
 
 /** Échappement TEXT de la RFC 5545 (§3.3.11). */
@@ -135,7 +181,12 @@ export function genererIcs(evenements: EvenementAgenda[], origine: string, maint
   ];
   for (const e of evenements) {
     const lien = lienDossier(origine, e);
-    const description = [e.note?.trim(), `Dossier : ${lien}`].filter(Boolean).join("\n\n");
+    const visite = e.type === "VISITE" ? champsVisiteAgenda(options.detailsVisites?.get(cleDetailsAgenda(e))) : null;
+    const description = [
+      visite && visite.lignes.length > 0 ? visite.lignes.join("\n") : null,
+      e.note?.trim(),
+      `Dossier : ${lien}`,
+    ].filter(Boolean).join("\n\n");
     const debutFin: string[] = [];
     if (e.type === "RELANCE") {
       if (!e.jour) continue;
@@ -153,8 +204,10 @@ export function genererIcs(evenements: EvenementAgenda[], origine: string, maint
       `DTSTAMP:${stamp}`,
       ...debutFin,
       `SUMMARY:${echapper(titreEvenement(e))}`,
+      ...(visite?.lieu ? [`LOCATION:${echapper(visite.lieu)}`] : []),
       `DESCRIPTION:${echapper(description)}`,
-      `URL:${lien}`,
+      // Visite sur Zoom : le lien de la rencontre ; sinon le dossier (aussi dans la description).
+      `URL:${visite?.url ?? lien}`,
       "TRANSP:TRANSPARENT",
       "END:VEVENT",
     );

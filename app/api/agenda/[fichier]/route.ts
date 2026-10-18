@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   genererIcs, estJetonPartenaire, FORME_JETON, NOM_CALENDRIER_PARTENAIRE,
-  type EvenementAgenda, type MatchAgenda,
+  indexerDetailsAgenda,
+  type DetailsVisiteAgenda, type EvenementAgenda, type MatchAgenda,
 } from "@/lib/agenda/ics";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -58,15 +59,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ fichier:
     const existe = await supabase.rpc("agenda_flux_existe", { p_jeton: jeton } as never);
     if (existe.error) return erreur("existe", existe.error);
     if (existe.data !== true) return introuvable();
-    const [flux, matchs] = await Promise.all([
+    const [flux, matchs, details] = await Promise.all([
       supabase.rpc("agenda_flux", { p_jeton: jeton } as never),
       supabase.rpc("agenda_matchs_unite", { p_jeton: jeton } as never),
+      // Détails des visites (lieu, Zoom, responsable — BP 2026-10-18). Facultatif :
+      // fonction absente (migration pas encore appliquée) ou erreur → flux sans détails.
+      supabase.rpc("agenda_visites_details", { p_jeton: jeton } as never),
     ]);
     if (flux.error) return erreur("flux", flux.error);
     if (matchs.error) return erreur("matchs", matchs.error);
+    if (details.error) console.error("[api/agenda] détails de visite (ignorés) :", details.error.code);
     ics = genererIcs((flux.data ?? []) as EvenementAgenda[], origine, new Date(), {
       matchs: (matchs.data ?? []) as MatchAgenda[],
       lienMatch: () => `${origine}/recruteur/calendrier`,
+      detailsVisites: indexerDetailsAgenda(details.error ? [] : ((details.data ?? []) as DetailsVisiteAgenda[])),
     });
   }
 

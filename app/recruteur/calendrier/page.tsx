@@ -46,6 +46,9 @@ import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { RecruteurCalendrierMobile } from "@/components/shared/RecruteurCalendrierMobile";
 import BoutonAbonnementAgenda from "@/components/recruteur/agenda/BoutonAbonnementAgenda";
+import { useDetailsVisites } from "@/lib/queries/recruiter/useDetailsVisites";
+import { cleVisite, resumeVisite } from "@/lib/visites/detailsVisite";
+import { BoutonDetailsVisite, FenetreDetailsVisite } from "@/components/recruteur/visites/DetailsVisite";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -254,6 +257,11 @@ function StagePill({ stage }: { stage: string | null }) {
    dans le processus (recruiter_pipeline.visit_at), par n'importe quel
    recruteur de l'unité. */
 function VisiteCard({ v }: { v: VisiteUnite }) {
+  // Détails (BP 2026-10-18) : une seule lecture partagée par toutes les cartes (même clé).
+  const { data: detailsData } = useDetailsVisites(true);
+  const [ouverte, setOuverte] = useState(false);
+  const details = detailsData?.parCle.get(cleVisite(v.athleteId, v.prospect)) ?? null;
+  const resume = resumeVisite(details);
   const d = new Date(v.visitAt);
   const heure = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
   const aHeure = !(d.getHours() === 0 && d.getMinutes() === 0);
@@ -275,8 +283,11 @@ function VisiteCard({ v }: { v: VisiteUnite }) {
         {v.suiviPar.length > 0 && (
           <div className="mt-0.5 truncate text-[13px] text-[#8A909C]">Suivi par {v.suiviPar.join(", ")}</div>
         )}
+        {resume && <div className="mt-0.5 truncate text-[13px] text-[#C9CDD4]" data-testid="resume-visite">{resume}</div>}
       </div>
+      {detailsData?.disponible && <BoutonDetailsVisite onClick={() => setOuverte(true)} />}
       <StagePill stage={v.stage} />
+      {ouverte && <FenetreDetailsVisite visite={v} details={details} onFermer={() => setOuverte(false)} />}
     </div>
   );
 }
