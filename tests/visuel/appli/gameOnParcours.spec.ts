@@ -27,9 +27,11 @@ test("appli Game On — parcours (écrit en local)", async ({ page, context }) =
     } else {
       await page.getByRole("button", { name: "+ Numéro" }).click();
       for (const c of numero) await page.getByRole("button", { name: c, exact: true }).click();
+      if (numero === "16") await page.screenshot({ path: "test-results/visuel/appli-game-on-pave.png" });
       await page.getByRole("button", { name: "OK", exact: true }).click();
     }
     await page.getByLabel("Note sur ce joueur").fill(texte);
+    if (texte === "Bonne lecture du jeu") { await page.getByRole("button", { name: "Bras" }).first().click().catch(() => {}); await page.screenshot({ path: "test-results/visuel/appli-game-on-note.png" }); }
     await page.getByRole("button", { name: "Enregistrer" }).click();
     await page.waitForTimeout(400);
   }

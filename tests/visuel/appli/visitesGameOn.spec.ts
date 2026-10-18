@@ -19,6 +19,8 @@ async function ouvrir(page: import("@playwright/test").Page, context: import("@p
 
 test("appli recruteur — Game On", async ({ page, context }) => {
   const versCloud = await ouvrir(page, context, "/recruteur/game-on");
+  await page.getByRole("button", { name: /Autre match/ }).first().waitFor({ timeout: 30_000 }).catch(() => {});
+  await page.waitForTimeout(3000); // écran de démarrage de l'appli, superposé quelques secondes
   await page.screenshot({ path: "test-results/visuel/appli-recruteur-game-on.png" });
   const autre = page.getByRole("button", { name: /Autre match/ }).first();
   if (await autre.isVisible().catch(() => false)) {
@@ -37,6 +39,19 @@ test("appli recruteur — calendrier, détails de visite", async ({ page, contex
     await bouton.click();
     await page.waitForTimeout(600);
     await page.screenshot({ path: "test-results/visuel/appli-recruteur-visite-details.png" });
+  }
+  expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
+});
+
+test("appli recruteur — barre du bas et panneau Plus", async ({ page, context }) => {
+  const versCloud = await ouvrir(page, context, "/recruteur/tableau-de-bord");
+  await page.waitForTimeout(3000); // écran de démarrage de l'appli, superposé quelques secondes
+  await page.screenshot({ path: "test-results/visuel/appli-recruteur-barre.png" });
+  const plus = page.getByRole("button", { name: /Plus/ }).last();
+  if (await plus.isVisible().catch(() => false)) {
+    await plus.click();
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: "test-results/visuel/appli-recruteur-plus.png" });
   }
   expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
 });
