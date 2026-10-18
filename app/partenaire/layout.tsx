@@ -8,10 +8,28 @@ import { createClient } from "@/lib/supabase/client";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
 import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
+import { AnimatedRoute, type OngletsAnimes } from "@/app/recruteur/_components/AnimatedRoute";
+import EnTeteMobilePartenaire from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
 import { isTabBarHidden, normalizeTabPath } from "@/app/_components/mobile/tabBarVisibility";
 import { lireAccesPartenaire, ROUTE_BIENVENUE } from "@/lib/partenaires/accesPartenaire";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+/** Ordre des onglets de l'appli (MobileTabBar PARTENAIRE_TABS) : sens du glissement entre onglets. */
+const ONGLETS_PARTENAIRE: OngletsAnimes = [
+  { index: 0, matchers: ["/partenaire"], exact: true },
+  { index: 1, matchers: ["/partenaire/athletes"] },
+  { index: 2, matchers: ["/partenaire/mes-athletes"] },
+  { index: 3, matchers: ["/partenaire/prospects"] },
+];
+/** Écrans du menu « Plus » : en-tête natif posé par le layout. */
+const TITRES_EN_TETE: Record<string, string> = {
+  "/partenaire/newsroom": "Newsroom",
+  "/partenaire/tendances": "Tendances",
+  "/partenaire/classements": "Classements",
+  "/partenaire/telechargements": "Téléchargements",
+  "/partenaire/profil": "Mon profil",
+};
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Partner Portal Layout
@@ -45,6 +63,9 @@ export default function PartenaireLayout({ children }: { children: React.ReactNo
   // Carte des matchs (appli) : écran plein (components/carte-mobile, cadre propre à la carte des matchs), qui porte son
   // propre titre — l'en-tête « Espace partenaire » passerait par-dessus.
   const pleinEcran = normalizeTabPath(pathname) === "/partenaire/carte-matchs";
+  // Appli (1.4.5, « natif, pas web ») : les écrans du menu « Plus » reçoivent l'en-tête natif du
+  // layout ; les onglets et la fiche dessinent le leur (comme chaque écran recruteur).
+  const titreEnTete = TITRES_EN_TETE[normalizeTabPath(pathname)] ?? null;
 
   useEffect(() => {
     let vivant = true;
@@ -105,16 +126,18 @@ export default function PartenaireLayout({ children }: { children: React.ReactNo
             paddingBottom: chromeless ? 0 : "calc(env(safe-area-inset-bottom) + 88px)",
           }}
         >
-          {!pleinEcran && (
-          <div
-            className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-[#1e2128] px-5 flex items-end justify-center"
-            style={{ paddingTop: "env(safe-area-inset-top)", minHeight: "calc(env(safe-area-inset-top) + 48px)" }}
-          >
-            <span className="pb-3 text-[12px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Espace partenaire</span>
-          </div>
-          )}
           <PreMaintenanceBanner />
-          {children}
+          {/* Plus de barre générique « Espace partenaire » : transitions iOS (AnimatedRoute, comme les
+              autres portails) et en-tête natif par écran. AnimatedRoute place la page en absolu : la
+              marge de la barre d'onglets est portée ici (nx-mobile-pb-tabbar). */}
+          <AnimatedRoute tabs={ONGLETS_PARTENAIRE}>
+            <div className={chromeless || pleinEcran ? "" : "nx-mobile-pb-tabbar"}>
+              {titreEnTete && <EnTeteMobilePartenaire titre={titreEnTete} />}
+              {/* Écrans « Plus » : leur titre web est caché et leurs marges deviennent natives
+                  (globals.css, [data-ecran-plus]) — le corps de page reste celui du web. */}
+              {titreEnTete ? <div data-ecran-plus>{children}</div> : children}
+            </div>
+          </AnimatedRoute>
         </main>
         <MobileTabBar role="partenaire" />
       </div>

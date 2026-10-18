@@ -80,10 +80,12 @@ test("routes : appli → CarteMatchsMobile, web → CarteMatchs ; recruteur derr
   assert.match(rec, /<FeatureGate feature="recruiting_calendar" requiredTier="pro">\s*\{IS_CAPACITOR \? <CarteMatchsMobile mode="recruteur" \/> : <CarteMatchs mode="recruteur" \/>\}\s*<\/FeatureGate>/);
   const par = lire("app/partenaire/carte-matchs/page.tsx");
   assert.match(par, /return IS_CAPACITOR \? <CarteMatchsMobile mode="partenaire" \/> : <CarteMatchs mode="partenaire" \/>;/);
-  // L'en-tête « Espace partenaire » ne passe pas par-dessus l'écran plein.
+  // 1.4.5 (« natif, pas web ») : plus de barre « Espace partenaire » ; l'écran plein n'a ni en-tête
+  // de layout ni marge de barre d'onglets (il gère sa propre hauteur).
   const lay = lire("app/partenaire/layout.tsx");
   assert.match(lay, /const pleinEcran = normalizeTabPath\(pathname\) === "\/partenaire\/carte-matchs";/);
-  assert.match(lay, /\{!pleinEcran && \(\n\s*<div\n\s*className="sticky top-0 z-30/);
+  assert.ok(lay.includes('<div className={chromeless || pleinEcran ? "" : "nx-mobile-pb-tabbar"}>'));
+  assert.ok(lay.includes("<AnimatedRoute tabs={ONGLETS_PARTENAIRE}>"));
 });
 
 test("menu « Plus » recruteur : Carte des matchs après Calendrier, sans verrou", () => {

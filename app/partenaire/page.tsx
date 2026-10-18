@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { MediaPartner, PartnerStatus } from "@/lib/types/models";
+import AccueilPartenaireMobile from "@/components/partenaire/mobile/AccueilPartenaireMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Partner Tableau de bord — Phase 2 landing.
@@ -57,7 +60,13 @@ const TILES = [
   },
 ];
 
+/* Appli (1.4.5, « natif, pas web ») : Accueil natif ; le web reste inchangé.
+   Aiguillage sans hook — les hooks vivent dans chaque variante. */
 export default function PartenaireDashboardPage() {
+  return IS_CAPACITOR ? <AccueilPartenaireMobile /> : <AccueilPartenaireWeb />;
+}
+
+function AccueilPartenaireWeb() {
   const [partner, setPartner] = useState<MediaPartner | null>(null);
   const [loading, setLoading] = useState(true);
 

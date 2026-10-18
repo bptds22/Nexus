@@ -36,16 +36,20 @@ import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-const TAB_PATHS: { index: number; matchers: string[] }[] = [
+/** `exact` : la route seule, pas ses sous-routes (ex. l'Accueil /partenaire). */
+export type OngletsAnimes = { index: number; matchers: string[]; exact?: boolean }[];
+
+const TAB_PATHS: OngletsAnimes = [
   { index: 0, matchers: ["/recruteur/tableau-de-bord"] },
   { index: 1, matchers: ["/recruteur/recherche", "/recruteur/athletes"] },
   { index: 2, matchers: ["/recruteur/pipeline"] },
   { index: 3, matchers: ["/recruteur/messages"] },
 ];
 
-function getTabIndex(pathname: string): number {
-  for (const tab of TAB_PATHS) {
-    if (tab.matchers.some((m) => pathname === m || pathname.startsWith(m + "/"))) {
+function getTabIndex(pathname: string, onglets: OngletsAnimes): number {
+  const sansSlash = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+  for (const tab of onglets) {
+    if (tab.matchers.some((m) => tab.exact ? sansSlash === m : pathname === m || pathname.startsWith(m + "/"))) {
       return tab.index;
     }
   }
@@ -56,9 +60,10 @@ function segmentCount(pathname: string): number {
   return pathname.split("/").filter(Boolean).length;
 }
 
-export function AnimatedRoute({ children }: { children: ReactNode }) {
+/** `tabs` : les onglets d'un AUTRE portail (partenaire, 1.4.5) ; par défaut ceux du recruteur. */
+export function AnimatedRoute({ children, tabs = TAB_PATHS }: { children: ReactNode; tabs?: OngletsAnimes }) {
   const pathname = usePathname() || "";
-  const currentIndex = getTabIndex(pathname);
+  const currentIndex = getTabIndex(pathname, tabs);
   const prevIndexRef = useRef<number>(currentIndex);
   const prevPathnameRef = useRef<string>(pathname);
   const isFirstMountRef = useRef<boolean>(true);

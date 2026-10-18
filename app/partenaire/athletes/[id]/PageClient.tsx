@@ -1,6 +1,7 @@
 "use client";
 
-import {  useEffect, useRef, useState } from "react";
+import {  useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toPng } from "html-to-image";
@@ -23,6 +24,9 @@ import AthleteRecruiterProfileBody from "@/components/shared/AthleteRecruiterPro
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
 import ActionsPartenaireFiche from "@/components/partenaire/ActionsPartenaireFiche";
+import EnTeteMobilePartenaire, { BoutonRondPartenaire } from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
+import FeuilleActionsFiche, { IconeEtoile, IconeMenu, IconeTelecharger, type ActionFiche } from "@/components/partenaire/mobile/FicheActionsMobile";
+import { useMobileToast } from "@/components/mobile/MobileToast";
 import {
   chargerContexteEvaluation,
   chargerEvaluationsPartenaires,
@@ -47,6 +51,23 @@ import {
 ═══════════════════════════════════════════════════════════════ */
 
 type CardFormat = "publication" | "story";
+
+/* Appli : chrome natif (en-tête collant + feuille d'actions iOS) au lieu du
+   lien « ← Retour », du sélecteur de format et des boutons. Le web est inchangé. */
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+/* Retour de la fiche dans l'appli : l'écran d'origine peut déposer sa route
+   sous cette clé ; à défaut, la recherche d'athlètes. */
+const CLE_RETOUR_FICHE = "nexus.partenaire.retourFiche";
+const RETOUR_FICHE_DEFAUT = "/partenaire/athletes";
+const abonnementVide = () => () => {};
+function lireRetourFiche(): string {
+  try {
+    return window.sessionStorage.getItem(CLE_RETOUR_FICHE) || RETOUR_FICHE_DEFAUT;
+  } catch {
+    return RETOUR_FICHE_DEFAUT;
+  }
+}
 
 const FORMAT_META: Record<CardFormat, { name: string; formatLabel: string; size: string; previewWidth: number; previewHeight: number }> = {
   publication: { name: "Publication", formatLabel: "Format publication", size: "1080×1350", previewWidth: 270, previewHeight: 338 },
@@ -218,7 +239,17 @@ export default function PartnerAthleteProfilePage() {
   const captureRefPub = useRef<HTMLDivElement | null>(null);
   const captureRefStory = useRef<HTMLDivElement | null>(null);
 
+  // Appli : feuille d'actions de l'en-tête, toast natif, retour explicite.
+  const [feuilleOuverte, setFeuilleOuverte] = useState(false);
+  const toastMobile = useMobileToast();
+  const retourFiche = useSyncExternalStore(abonnementVide, lireRetourFiche, () => RETOUR_FICHE_DEFAUT);
+
   const showToast = (kind: "success" | "error", message: string) => {
+    if (IS_CAPACITOR) {
+      if (kind === "success") toastMobile.success({ message });
+      else toastMobile.error({ message });
+      return;
+    }
     setToast({ kind, message });
     setTimeout(() => setToast(null), 3500);
   };
@@ -331,6 +362,16 @@ export default function PartnerAthleteProfilePage() {
   }
 
   if (loading) {
+    if (IS_CAPACITOR) {
+      return (
+        <>
+          <EnTeteMobilePartenaire compact titre="Athlète" retour={retourFiche} />
+          <div className="px-4 py-6">
+            <p className="text-[13px] text-[#6B7280]">Chargement…</p>
+          </div>
+        </>
+      );
+    }
     return (
       <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto">
         <p className="text-[13px] text-[#6B7280]">Chargement…</p>
@@ -340,7 +381,9 @@ export default function PartnerAthleteProfilePage() {
 
   if (error || !athlete) {
     return (
-      <div className="px-6 sm:px-10 py-8 max-w-[800px] mx-auto">
+      <>
+      {IS_CAPACITOR && <EnTeteMobilePartenaire compact titre="Athlète" retour={retourFiche} />}
+      <div className={IS_CAPACITOR ? "px-4 py-6" : "px-6 sm:px-10 py-8 max-w-[800px] mx-auto"}>
         <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-10 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#1A1D24] border border-[#2D3748] mb-4">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -349,23 +392,71 @@ export default function PartnerAthleteProfilePage() {
             </svg>
           </div>
           <p className="text-[13px] text-[#9CA3AF] font-semibold">{error || "Athlète introuvable."}</p>
-          <button type="button" onClick={() => router.push("/partenaire/athletes")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] mt-4">
+          <button type="button" onClick={() => router.push(IS_CAPACITOR ? retourFiche : "/partenaire/athletes")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] mt-4">
             ← Retour aux athlètes
           </button>
         </div>
       </div>
+      </>
     );
   }
 
+  const nomAthlete = `${athlete.firstName} ${athlete.lastName}`.trim();
+
+  /* Appli : tout ce que la rangée web propose passe par la feuille d'actions
+     (mêmes gestionnaires). Les actions de ActionsPartenaireFiche restent
+     rendues dans la page : le composant porte sa propre confirmation. */
+  const actionsFiche: ActionFiche[] = [
+    { label: "Télécharger — publication", icon: <IconeTelecharger />, disabled: downloading !== null, onClick: () => { setFeuilleOuverte(false); void handleDownload("publication"); } },
+    { label: "Télécharger — story", icon: <IconeTelecharger />, disabled: downloading !== null, onClick: () => { setFeuilleOuverte(false); void handleDownload("story"); } },
+    ...(contexteEval?.peutEvaluer
+      ? [{ label: maEvaluation ? "Modifier mon évaluation" : "Évaluer", icon: <IconeEtoile />, onClick: () => { setFeuilleOuverte(false); setEvalOuverte(true); } }]
+      : []),
+  ];
+
+  const modaleEvaluation = evalOuverte && contexteEval ? (
+    <EvaluerAthleteModal
+      athleteId={id}
+      athleteNom={nomAthlete}
+      grilleId={contexteEval.grilleId}
+      existante={maEvaluation}
+      onClose={() => setEvalOuverte(false)}
+      onSaved={() => {
+        setEvalOuverte(false);
+        showToast("success", "Évaluation enregistrée.");
+        chargerEvaluationsPartenaires(createClient(), id)
+          .then((r) => setMaEvaluation(r.find((e) => e.estLaMienne) ?? null))
+          .catch(() => {});
+      }}
+    />
+  ) : null;
+
   return (
-    <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
+    <>
+    {IS_CAPACITOR && (
+      <EnTeteMobilePartenaire
+        compact
+        titre={nomAthlete || "Athlète"}
+        sousTitre={downloading ? "Génération de la carte…" : undefined}
+        retour={retourFiche}
+        action={
+          <BoutonRondPartenaire libelle="Actions" principal={false} onClick={() => setFeuilleOuverte(true)}>
+            <IconeMenu />
+          </BoutonRondPartenaire>
+        }
+      />
+    )}
+    <div className={IS_CAPACITOR ? "px-4 pt-2 pb-6 space-y-5" : "px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6"}>
+      {!IS_CAPACITOR && (
       <Link href="/partenaire/athletes" className="text-[12px] font-bold text-[#9CA3AF] hover:text-white transition-colors inline-flex items-center gap-1">
         ← Retour
       </Link>
+      )}
 
       {/* Compact card download — format selector + single button.
           The card itself renders inside the editorial profile body
           below; no need for a separate preview here. */}
+      {!IS_CAPACITOR && (
       <div className="flex items-center gap-3 flex-wrap">
         <select
           value={activeFormat}
@@ -395,6 +486,7 @@ export default function PartnerAthleteProfilePage() {
           </button>
         )}
       </div>
+      )}
 
       {/* W3 / C — retirer son évaluation, attribuer un badge. */}
       <ActionsPartenaireFiche
@@ -405,21 +497,11 @@ export default function PartnerAthleteProfilePage() {
         notifier={showToast}
       />
 
-      {evalOuverte && contexteEval && (
-        <EvaluerAthleteModal
-          athleteId={id}
-          athleteNom={`${athlete.firstName} ${athlete.lastName}`.trim()}
-          grilleId={contexteEval.grilleId}
-          existante={maEvaluation}
-          onClose={() => setEvalOuverte(false)}
-          onSaved={() => {
-            setEvalOuverte(false);
-            showToast("success", "Évaluation enregistrée.");
-            chargerEvaluationsPartenaires(createClient(), id)
-              .then((r) => setMaEvaluation(r.find((e) => e.estLaMienne) ?? null))
-              .catch(() => {});
-          }}
-        />
+      {/* Appli : la modale (`fixed inset-0`) sort d'AnimatedRoute, conteneur transformé. */}
+      {IS_CAPACITOR && modaleEvaluation ? createPortal(modaleEvaluation, document.body) : modaleEvaluation}
+
+      {IS_CAPACITOR && (
+        <FeuilleActionsFiche open={feuilleOuverte} onClose={() => setFeuilleOuverte(false)} actions={actionsFiche} />
       )}
 
       {/* Off-screen full-size renderings for capture (one per format, both kept ready) */}
@@ -440,8 +522,8 @@ export default function PartnerAthleteProfilePage() {
           partner sessions don't pollute view counts. */}
       <AthleteRecruiterProfileBody athleteId={id} viewerMode="partner" />
 
-      {/* Toast */}
-      {toast && (
+      {/* Toast (web — l'appli passe par useMobileToast) */}
+      {!IS_CAPACITOR && toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]">
           <div className={`bg-[#1A1D24] border rounded-lg px-5 py-3 shadow-lg flex items-center gap-3 ${toast.kind === "success" ? "border-[#22C55E]/30" : "border-[#EF4444]/30"}`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={toast.kind === "success" ? "#22C55E" : "#EF4444"} strokeWidth="2.5" strokeLinecap="round">
@@ -452,5 +534,6 @@ export default function PartnerAthleteProfilePage() {
         </div>
       )}
     </div>
+    </>
   );
 }

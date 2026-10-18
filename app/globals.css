@@ -1461,6 +1461,11 @@ body.light-mode .nx-partner-slot--majeur:hover {
    Web (et mobile-web, qui n'a pas de barre) : les 64px d'origine, inchangés.
    Miroir JS : TABBAR_PB_APP, lib/config/mobileTokens.ts. */
 html.is-capacitor .nx-mobile-pb-tabbar { padding-bottom: calc(88px + 24px + env(safe-area-inset-bottom)); }
+/* Partenaire, APPLI (1.4.5, « natif, pas web ») : écrans du menu « Plus » (Newsroom, Tendances,
+   Classements, Téléchargements, Mon profil). L'en-tête natif du layout porte le titre : le titre
+   web de la page est caché, et sa racine prend les marges d'écran natives. Web : inchangé. */
+html.is-capacitor [data-ecran-plus] h1.font-head { display: none; }
+html.is-capacitor [data-ecran-plus] > div:first-child { padding: 8px 16px 0; max-width: none; }
 .nx-mobile-edge-x       { padding-left: 16px; padding-right: 16px; }
 .nx-mobile-radius-card  { border-radius: 16px; }
 .nx-mobile-radius-sheet { border-top-left-radius: 16px; border-top-right-radius: 16px; }

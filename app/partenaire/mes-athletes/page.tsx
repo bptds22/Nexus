@@ -29,6 +29,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import CarteBadges from "@/components/shared/CarteBadges";
 import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
+import MesEvaluationsMobile from "@/components/partenaire/mobile/MesEvaluationsMobile";
 import { Avis, Chargement, classesBouton, classesPage, classesSurface, EnTetePartenaire, EtatVide } from "@/components/partenaire/kit/KitPartenaire";
 import {
   chargerMesAthletes,
@@ -183,7 +184,15 @@ function CarteEvaluation({ a, vignette, occupe, onEvaluer }: {
   );
 }
 
+/* Appli (Capacitor) : écran NATIF dédié (MesEvaluationsMobile, 1.4.5). Bascule sans hook,
+   figée au build : le web garde MesEvaluationsWeb tel quel. */
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 export default function MesAthletesPartenairePage() {
+  return IS_CAPACITOR ? <MesEvaluationsMobile /> : <MesEvaluationsWeb />;
+}
+
+function MesEvaluationsWeb() {
   const [athletes, setAthletes] = useState<MonAthlete[]>([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);

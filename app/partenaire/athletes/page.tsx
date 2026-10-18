@@ -7,6 +7,8 @@ import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import PartnerAthletesSearch from "@/components/partenaire/PartnerAthletesSearch";
 import { classesPage } from "@/components/partenaire/kit/KitPartenaire";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/athletes — listing of partner-eligible athletes
    with full filter set. Server component prefetches dropdown
@@ -37,7 +39,8 @@ async function rendre() {
   ).sort() as string[];
 
   return (
-    <div className={classesPage(true)}>
+    // Appli : l'écran porte ses propres marges natives (en-tête bord à bord).
+    <div className={IS_CAPACITOR ? "min-h-screen bg-[#111317]" : classesPage(true)}>
       <PartnerAthletesSearch
         sports={sports}
         positions={positions}

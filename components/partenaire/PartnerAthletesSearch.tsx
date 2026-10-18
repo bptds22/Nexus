@@ -10,6 +10,7 @@ import { AthleteCardMobile } from "@/components/shared/RecruteurRechercheMobile"
 import FiltresRechercheFeuille from "@/components/partenaire/recherche/FiltresRechercheFeuille";
 import { nombreFiltresActifs, versCarteRecherche } from "@/lib/partenaires/recherche";
 import { Chargement, classesBouton, classesSurface, EnTetePartenaire, EtatVide } from "@/components/partenaire/kit/KitPartenaire";
+import EnTeteMobilePartenaire from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -337,12 +338,17 @@ export default function PartnerAthletesSearch({
   };
 
   return (
-    <div className="space-y-6">
+    <div className={IS_CAPACITOR ? "space-y-4 px-4 pt-1" : "space-y-6"}>
+      {/* Appli (1.4.5, « natif, pas web ») : l'en-tête natif collant, bord à bord. */}
+      {IS_CAPACITOR ? (
+        <div className="-mx-4 -mt-1"><EnTeteMobilePartenaire titre="Recherche" /></div>
+      ) : (
       <EnTetePartenaire
         titre="Recherche"
         // C2 (1.4.5) : aucun compte de joueurs.
         sousTitre="Les athlètes qui ont accepté la diffusion partenaire, prêts à être publiés."
       />
+      )}
 
       {petit && (
         <div className="flex items-center gap-2" data-recherche-partenaire-petit>

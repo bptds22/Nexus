@@ -44,6 +44,10 @@ import {
   type CarteTerminee,
 } from "@/lib/partenaires/prospects";
 import { Avis, Chargement, classesBouton, classesPage, classesSurface, EnTetePartenaire, EtatVide, Pastille, type TonPastille } from "@/components/partenaire/kit/KitPartenaire";
+import MesAthletesMobile from "@/components/partenaire/mobile/MesAthletesMobile";
+
+// Appli (1.4.5) : écran natif à part (MesAthletesMobile) ; le web reste MesAthletesWeb.
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 interface Partenaire { id: string; organizationName: string; peutEvaluer: boolean; approuve: boolean }
 
@@ -73,7 +77,11 @@ function Etoiles({ cote }: { cote: number }) {
   );
 }
 
-export default function MesProspectsPage() {
+export default function ProspectsPartenairePage() {
+  return IS_CAPACITOR ? <MesAthletesMobile /> : <MesAthletesWeb />;
+}
+
+function MesAthletesWeb() {
   const [partenaire, setPartenaire] = useState<Partenaire | null>(null);
   const [sportsPermis, setSportsPermis] = useState<{ id: string; nom: string }[]>([]);
   const [cartes, setCartes] = useState<CartePartenaire[]>([]);
