@@ -92,6 +92,16 @@ Le pont RSEQ relie les données de `diffusion.s1.rseq.ca` / `s1.rseq.ca`
   par diffusion seul, deux saisons). Les menus du site (`GetRegionSports`) ne
   sont pas une source de vérité. Audit complet : `docs/rseq-audit-20261008/`.
 
+### TRAVAIL À DISTANCE (décision BP, 2026-10-18)
+
+- **Après chaque changement** : `npm run lint`, `npm run build` et `npm test`. Corriger jusqu'à
+  ce que tout passe AVANT de répondre. **Une commande de build à la fois.**
+- **Changement d'interface** : lancer `npm run test:visuel` (Playwright, navigateur sans interface,
+  Supabase LOCALE — jamais la prod) et analyser la capture (`test-results/visuel/`).
+- **Chaque tâche se termine par un résumé court** : ce qui a changé, résultat des tests, prochaine
+  étape suggérée.
+- **Jamais de push, de déploiement ni de migration en prod** sans l'accord explicite de BP.
+
 ---
 
 ## PROJECT OVERVIEW

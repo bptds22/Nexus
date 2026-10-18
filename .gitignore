@@ -124,3 +124,8 @@ android/.idea/
 
 # Listes de dépistage reçues des coachs/recruteurs (renseignements personnels) — jamais versionnées
 data/coachs/
+
+# Tests visuels Playwright (npm run test:visuel) — captures et rapports régénérables
+/test-results/
+/test-results/visuel/
+/playwright-report/
