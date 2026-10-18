@@ -14,13 +14,15 @@
 -- FUSIONNÉE avec un vrai athlète est masquée et non écrivable pour tous (cartes_non_fusionnees,
 -- lot E) ; ce trigger n'écrit jamais dans athletes.
 --
+-- Garde : empreinte md5 du corps RÉEL en prod (relevée le 2026-10-17, sans commentaires :
+-- 90b07925…), pas celle du texte d'une migration.
 -- Rollback : supabase/rollback/20261017130000_rollback_carte_etablissement_modifiable.sql
 
 do $$
 begin
   if (select md5(replace(p.prosrc, E'\r', '')) from pg_proc p where p.oid = to_regprocedure('public.cartes_prospect_avant_update()'))
-       is distinct from '177e99f1c2f6dbc620aaa810ecf0d0dc' then
-    raise exception 'NEXUS: cartes_prospect_avant_update ne correspond pas au relevé (20261005192511) — ne pas écraser une version inconnue';
+       is distinct from '90b079257971091e31a03f366cbf5aed' then
+    raise exception 'NEXUS: cartes_prospect_avant_update ne correspond pas au corps relevé en prod — ne pas écraser une version inconnue';
   end if;
 end $$;
 
