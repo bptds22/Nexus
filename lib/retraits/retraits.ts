@@ -10,11 +10,13 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type RaisonRetrait = "PAS_INTERESSE" | "NIVEAU" | "AUTRE";
+export type RaisonRetrait = "PAS_INTERESSE" | "NIVEAU" | "ERREUR" | "AUTRE";
 
 export const RAISONS_RETRAIT: readonly { code: RaisonRetrait; libelle: string; aide: string }[] = [
   { code: "PAS_INTERESSE", libelle: "Pas intéressé", aide: "L'athlète n'est pas intéressé" },
   { code: "NIVEAU", libelle: "Pas le niveau", aide: "Pas le niveau recherché" },
+  // BP 2026-10-18 : ajouté par erreur, ou jamais vraiment scouté.
+  { code: "ERREUR", libelle: "Erreur / pas scouté", aide: "Ajouté par erreur ou jamais vraiment évalué" },
   { code: "AUTRE", libelle: "Autre", aide: "Précise dans la note" },
 ];
 

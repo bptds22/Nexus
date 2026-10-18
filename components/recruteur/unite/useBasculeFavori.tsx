@@ -13,7 +13,10 @@
      la même que le retrait du processus). Seul à l'avoir : pas de modale,
      comme avant.
 
-   RETIRER UN FAVORI RETIRE AUSSI DU PROCESSUS (décision BP 2026-09-28, web) :
+   RETIRER UN FAVORI PASSE LE DOSSIER EN « RETIRÉ » (BP 2026-10-18 ; avant : le supprimait).
+   Un dossier dans le processus demande la raison (Pourquoi ?) et va à l'étape RETIRE
+   (unite_retirer), comme depuis Mon processus. Déjà retiré ou hors processus : le cœur seul.
+   Historique (décision BP 2026-09-28, web) :
    - dossier à Identifié ou Contacté (ou retiré) : les deux partent, sans
      question — sauf la confirmation d'unité si des collègues l'ont en favori ;
    - dossier PLUS AVANCÉ (En discussion → Lettre signée) : confirmation
@@ -40,6 +43,8 @@ import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { definirFavori, retirerFavoriUnite, type ResultatFavori } from "@/lib/queries/shared/definirFavori";
 import { getStatusConfig, type RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { useFavorisUnite, joindreNoms, type FavorisUnite } from "@/lib/queries/recruiter/useFavorisUnite";
+import { ChoixRaisonRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
+import { messageRetrait, retirerDossier, type RaisonRetrait } from "@/lib/retraits/retraits";
 
 interface EnAttente {
   athleteId: string;
@@ -51,6 +56,11 @@ interface EnAttente {
 
 /** Le dossier de l'unité pour l'athlète : absent, ou son étape. */
 type Dossier = { etape: string } | null;
+
+/** Un dossier actif (pas déjà retiré) : retirer le favori le passe en « Retiré », avec une raison. */
+export function dossierActif(dossier: Dossier): boolean {
+  return !!dossier && dossier.etape !== "RETIRE";
+}
 
 /** Étapes au-delà de Contacté : le retrait demande une confirmation. */
 const ETAPES_AVANCEES = new Set(["EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"]);
@@ -69,12 +79,13 @@ export function messageRetraitFavori(collegues: string[], dossier: Dossier = nul
   const ce = collegues.length === 1 ? "ce collègue" : "ces collègues";
   const parts: string[] = [];
   if (estEtapeAvancee(dossier)) {
-    parts.push(`Cet athlète est en ${libelleEtape(dossier!.etape)}. Retirer le favori le retirera aussi du processus de l'unité.`);
+    parts.push(`Cet athlète est en ${libelleEtape(dossier!.etape)}. Retirer le favori le passera dans « Retiré » du processus de l'unité.`);
     if (collegues.length > 0) parts.push(`Aussi en favori chez ${joindreNoms(collegues)} — pour ${ce} aussi.`);
   } else {
     parts.push(`Aussi en favori chez ${joindreNoms(collegues)}. Le cœur sera retiré pour toute l'unité — pour ${ce} aussi.`);
-    if (dossier) parts.push("Il sera aussi retiré du processus de l'unité.");
+    if (dossierActif(dossier)) parts.push("Il passera aussi dans « Retiré » du processus de l'unité.");
   }
+  if (parts.length === 0 && dossierActif(dossier)) parts.push("Il passera dans « Retiré » du processus de l'unité, avec sa raison.");
   return parts.join(" ");
 }
 
@@ -89,15 +100,14 @@ async function lireDossier(athleteId: string): Promise<Dossier> {
   return ligne ? { etape: (ligne.stage || "IDENTIFIE").toUpperCase() } : null;
 }
 
-/** Favori PUIS processus, dans cet ordre. */
-async function retirerFavoriEtDossier(queryClient: QueryClient, athleteId: string, dossier: Dossier): Promise<ResultatFavori> {
+/** Favori PUIS processus, dans cet ordre. Le dossier n'est plus supprimé : il passe en « Retiré ». */
+async function retirerFavoriEtDossier(queryClient: QueryClient, athleteId: string, dossier: Dossier, raison: RaisonRetrait | null, note: string): Promise<ResultatFavori> {
   const r = await retirerFavoriUnite(queryClient, athleteId);
-  if (!r.ok || !dossier) return r;
-  const { error } = await createClient().rpc("unite_retirer_du_processus", { p_athlete_id: athleteId });
+  if (!r.ok || !dossierActif(dossier) || !raison) return r;
+  const err = await retirerDossier(createClient(), { id: athleteId, carte: false, raison, note });
   void invaliderTableauBlanc(queryClient);
-  if (error) {
-    console.error(`[favoris] retrait du processus refusé — ${error.code ?? ""} ${error.message}`);
-    return { ok: false, message: "Favori retiré, mais l'athlète est resté dans le processus. Retire-le depuis Mon processus." };
+  if (err) {
+    return { ok: false, message: `Favori retiré, mais l'athlète est resté dans le processus. ${messageRetrait(err)}` };
   }
   return r;
 }
@@ -110,6 +120,8 @@ export function useBasculeFavori(): {
   const queryClient = useQueryClient();
   const favoris = useFavorisUnite();
   const [attente, setAttente] = useState<EnAttente | null>(null);
+  const [raison, setRaison] = useState<RaisonRetrait | null>(null);
+  const [note, setNote] = useState("");
   const enCours = useRef(false);
 
   const basculer = useCallback(
@@ -123,10 +135,12 @@ export function useBasculeFavori(): {
       } catch {
         return { ok: false, message: "Impossible de lire le processus de l'unité. Réessaie." };
       }
-      if (collegues.length === 0 && !estEtapeAvancee(dossier)) {
-        return retirerFavoriEtDossier(queryClient, athleteId, dossier);
+      // Sans dossier actif ni collègue : le cœur seul, sans question.
+      if (collegues.length === 0 && !dossierActif(dossier)) {
+        return retirerFavoriEtDossier(queryClient, athleteId, dossier, null, "");
       }
       return new Promise<ResultatFavori | null>((resoudre) => {
+        setRaison(null); setNote("");
         setAttente({ athleteId, nomAthlete: nomAthlete || "cet athlète", collegues, dossier, resoudre });
       });
     },
@@ -140,12 +154,13 @@ export function useBasculeFavori(): {
 
   const confirmer = useCallback(async () => {
     if (!attente || enCours.current) return;
+    if (dossierActif(attente.dossier) && !raison) return;
     enCours.current = true;
-    const r = await retirerFavoriEtDossier(queryClient, attente.athleteId, attente.dossier);
+    const r = await retirerFavoriEtDossier(queryClient, attente.athleteId, attente.dossier, raison, note);
     enCours.current = false;
     attente.resoudre(r);
     setAttente(null);
-  }, [attente, queryClient]);
+  }, [attente, queryClient, raison, note]);
 
   const modale = attente ? (
     <div className="fixed inset-0 z-[90] flex items-center justify-center" role="dialog" aria-modal="true">
@@ -155,11 +170,14 @@ export function useBasculeFavori(): {
           Retirer {attente.nomAthlete} des favoris ?
         </h3>
         <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">{messageRetraitFavori(attente.collegues, attente.dossier)}</p>
+        {dossierActif(attente.dossier) && (
+          <ChoixRaisonRetrait raison={raison} onRaison={setRaison} note={note} onNote={setNote} />
+        )}
         <div className="flex items-center justify-end gap-3 mt-5">
           <button type="button" onClick={annuler} className="px-4 py-2 [@media(hover:none)]:min-h-[44px] text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">
             Annuler
           </button>
-          <button type="button" onClick={() => void confirmer()} className="px-5 py-2 [@media(hover:none)]:min-h-[44px] text-white text-[13px] font-bold rounded-lg bg-[#EF4444] hover:bg-[#DC2626] transition-colors">
+          <button type="button" onClick={() => void confirmer()} disabled={dossierActif(attente.dossier) && !raison} className="disabled:opacity-40 px-5 py-2 [@media(hover:none)]:min-h-[44px] text-white text-[13px] font-bold rounded-lg bg-[#EF4444] hover:bg-[#DC2626] transition-colors">
             {estEtapeAvancee(attente.dossier) ? "Retirer" : "Retirer pour l’unité"}
           </button>
         </div>

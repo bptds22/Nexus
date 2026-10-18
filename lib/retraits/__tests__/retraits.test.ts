@@ -13,9 +13,9 @@ import { messageRetraitProcessus, MESSAGE_RETRAIT_CARTE } from "@/lib/pipeline/m
 
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 
-test("trois raisons, dans l'ordre de BP, codes alignés sur la base", () => {
-  assert.deepEqual(RAISONS_RETRAIT.map((r) => r.code), ["PAS_INTERESSE", "NIVEAU", "AUTRE"]);
-  assert.deepEqual(RAISONS_RETRAIT.map((r) => r.libelle), ["Pas intéressé", "Pas le niveau", "Autre"]);
+test("quatre raisons, dans l'ordre de BP, codes alignés sur la base", () => {
+  assert.deepEqual(RAISONS_RETRAIT.map((r) => r.code), ["PAS_INTERESSE", "NIVEAU", "ERREUR", "AUTRE"]);
+  assert.deepEqual(RAISONS_RETRAIT.map((r) => r.libelle), ["Pas intéressé", "Pas le niveau", "Erreur / pas scouté", "Autre"]);
   assert.equal(NOTE_RETRAIT_MAX, 500);
   assert.equal(estRaison("NIVEAU"), true);
   assert.equal(estRaison("engage_ailleurs"), false);
@@ -23,7 +23,7 @@ test("trois raisons, dans l'ordre de BP, codes alignés sur la base", () => {
   assert.equal(libelleRaison("???"), "Retiré");
   // La migration accepte exactement ces codes.
   const sql = lire("supabase/migrations/20261018140000_retrait_garde_la_carte.sql");
-  assert.ok(sql.includes("raison in ('PAS_INTERESSE', 'NIVEAU', 'AUTRE')"));
+  assert.ok(sql.includes("raison in ('PAS_INTERESSE', 'NIVEAU', 'ERREUR', 'AUTRE')"));
 });
 
 test("résumé de carte : raison · note · par qui, quand", () => {
@@ -84,4 +84,17 @@ test("affichage : colonne / onglet « Retiré » avec la raison ; hors étapes a
   assert.ok(app.includes("const canSwipeRight = activeStageIndex >= 0 && activeStageIndex < STAGES.length - 1;"));
   // Les raisons se rechargent avec tout le tableau blanc.
   assert.ok(lire("lib/queries/tableauBlanc.ts").includes('"retraits-unite"'));
+});
+
+test("favori retiré : le dossier passe en « Retiré » avec une raison, jamais supprimé", () => {
+  const src = lire("components/recruteur/unite/useBasculeFavori.tsx");
+  assert.ok(!src.includes('rpc("unite_retirer_du_processus"'));
+  assert.ok(src.includes("retirerDossier(createClient(), { id: athleteId, carte: false, raison, note })"));
+  assert.ok(src.includes("<ChoixRaisonRetrait raison={raison} onRaison={setRaison} note={note} onNote={setNote} />"));
+});
+
+test("carte des matchs : un retiré n'est plus « suivi »", () => {
+  const sql = lire("supabase/migrations/20261018140000_retrait_garde_la_carte.sql");
+  assert.ok(sql.includes("where r.athlete_id = s.athlete_id and r.stage = 'RETIRE'"));
+  assert.ok(sql.includes("and cp.etape <> 'RETIRE'"));
 });
