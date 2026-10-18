@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Sorties générées : dossiers de build à part (dev:web, dev:mobile, test:visuel) et Playwright.
+    ".next-web/**",
+    ".next-mobile/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 
