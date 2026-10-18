@@ -7,6 +7,7 @@ import { connecterLocal } from "./session";
 const COMPTE = process.env.VISUEL_PARTENAIRE ?? "e.partenaire@emulateur.local";
 const PAGES: [string, string][] = [
   ["prospects", "/partenaire/prospects"],
+  ["evaluations", "/partenaire/mes-athletes"],
 ];
 const FORMATS = [
   { nom: "bureau", viewport: { width: 1280, height: 860 } },
