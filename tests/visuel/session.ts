@@ -29,3 +29,17 @@ export async function connecterLocal(context: BrowserContext, baseURL: string, e
   const url = new URL(baseURL);
   await context.addCookies(ecrits.map((c) => ({ name: c.name, value: c.value, domain: url.hostname, path: "/", sameSite: "Lax" as const })));
 }
+
+/** Build « appli » (NEXT_PUBLIC_CAPACITOR_BUILD) : le client Supabase y garde la session dans
+ *  localStorage (lib/supabase/client.ts), clé sb-<hôte>-auth-token. Posée avant le premier script de
+ *  la page. Même session locale, même garde : jamais la prod. */
+export async function connecterLocalAppli(context: BrowserContext, email: string): Promise<void> {
+  const admin = createClient(SUPABASE_LOCAL_URL, SERVICE_LOCALE, { auth: { persistSession: false } });
+  const { data: lien, error: e1 } = await admin.auth.admin.generateLink({ type: "magiclink", email });
+  if (e1 || !lien.properties?.hashed_token) throw new Error(`lien magique local : ${e1?.message ?? "sans jeton"}`);
+  const anon = createClient(SUPABASE_LOCAL_URL, ANON_LOCALE, { auth: { persistSession: false } });
+  const { data: v, error: e2 } = await anon.auth.verifyOtp({ token_hash: lien.properties.hashed_token, type: "magiclink" });
+  if (e2 || !v.session) throw new Error(`vérification locale : ${e2?.message ?? "sans session"}`);
+  const cle = `sb-${new URL(SUPABASE_LOCAL_URL).hostname.split(".")[0]}-auth-token`;
+  await context.addInitScript(([k, valeur]) => { window.localStorage.setItem(k, valeur); }, [cle, JSON.stringify(v.session)] as const);
+}

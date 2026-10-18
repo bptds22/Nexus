@@ -10,6 +10,15 @@ import { ANON_LOCALE, SERVICE_LOCALE, SUPABASE_LOCAL_URL } from "./tests/visuel/
 // posée) — voir tests/visuel/local.ts.
 const PORT = 3100; // hors de 3000/3001 (dev web, dev mobile d'autres sessions)
 const BASE_URL = `http://localhost:${PORT}`;
+// Écrans propres à l'appli (IS_CAPACITOR) : même code que `npm run dev:mobile`, servi au navigateur sans
+// interface. Seuls les tests de tests/visuel/appli/ l'utilisent.
+const PORT_APPLI = 3101;
+const BASE_URL_APPLI = `http://localhost:${PORT_APPLI}`;
+const ENV_LOCAL = {
+  NEXT_PUBLIC_SUPABASE_URL: SUPABASE_LOCAL_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ANON_LOCALE,
+  SUPABASE_SERVICE_ROLE_KEY: SERVICE_LOCALE,
+};
 
 export default defineConfig({
   testDir: "tests/visuel",
@@ -23,8 +32,11 @@ export default defineConfig({
     headless: true,
     locale: "fr-CA",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
+  projects: [
+    { name: "chromium", testIgnore: "appli/**", use: { ...devices["Desktop Chrome"] } },
+    { name: "appli", testMatch: "appli/**/*.spec.ts", use: { ...devices["Desktop Chrome"], baseURL: BASE_URL_APPLI, viewport: { width: 390, height: 844 }, hasTouch: true } },
+  ],
+  webServer: [{
     // Démarré par Playwright, coupé à la fin du test. Dossier de build à part (.next-web, ignoré par git).
     command: `npx next dev -p ${PORT}`,
     url: BASE_URL,
@@ -33,12 +45,14 @@ export default defineConfig({
     reuseExistingServer: false,
     stdout: "ignore",
     stderr: "pipe",
-    env: {
-      NEXT_DIST_DIR: ".next-web",
-      NEXT_PUBLIC_SUPABASE_URL: SUPABASE_LOCAL_URL,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ANON_LOCALE,
-      SUPABASE_SERVICE_ROLE_KEY: SERVICE_LOCALE,
-      NEXT_PUBLIC_APP_URL: BASE_URL,
-    },
-  },
+    env: { ...ENV_LOCAL, NEXT_DIST_DIR: ".next-web", NEXT_PUBLIC_APP_URL: BASE_URL },
+  }, {
+    command: `npx next dev -p ${PORT_APPLI}`,
+    url: BASE_URL_APPLI,
+    timeout: 180_000,
+    reuseExistingServer: false,
+    stdout: "ignore",
+    stderr: "pipe",
+    env: { ...ENV_LOCAL, NEXT_PUBLIC_CAPACITOR_BUILD: "true", NEXT_DIST_DIR: ".next-mobile", NEXT_PUBLIC_APP_URL: BASE_URL_APPLI },
+  }],
 });
