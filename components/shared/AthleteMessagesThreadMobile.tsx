@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useMessages, type MessageRow } from "@/lib/queries/recruiter/useMessages";
@@ -154,6 +155,8 @@ function AthleteCoachThreadMobile() {
         const supabase = createClient();
         await supabase.rpc("mark_conversation_read", { p_conv: conversationId });
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        // C3 (1.4.5) : la pastille Messages suit la lecture.
+        signalerCompteursAJour();
       } catch { /* best-effort */ }
     })();
   }, [conversationId, queryClient]);

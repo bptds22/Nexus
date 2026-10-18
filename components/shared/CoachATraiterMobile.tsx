@@ -30,6 +30,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 import {
   loadCoachTasks,
   type CoachTasksBreakdown,
@@ -943,6 +944,7 @@ export function CoachATraiterMobile() {
     }
     toast.success({ message: "Athlète vérifié" });
     reload();
+    signalerCompteursAJour(); // C3 (1.4.5) : pastille « À traiter »
   }, [coachUserId, reload, toast]);
 
   const onApprove = useCallback(async (suggestionId: string) => {
@@ -959,6 +961,7 @@ export function CoachATraiterMobile() {
     toast.success({ message: "Suggestion approuvée" });
     setSuggestionSheet(null);
     reload();
+    signalerCompteursAJour();
   }, [reload, toast]);
 
   const onReject = useCallback(async (suggestionId: string) => {
@@ -978,6 +981,7 @@ export function CoachATraiterMobile() {
     setRejectReason("");
     setSuggestionSheet(null);
     reload();
+    signalerCompteursAJour();
   }, [rejectReason, reload, toast]);
 
   const onOpenSuggestionSheet = useCallback((suggestion: CoachTaskSuggestion, athleteName: string) => {

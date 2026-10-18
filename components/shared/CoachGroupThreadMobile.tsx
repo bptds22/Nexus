@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useMessages, type MessageRow } from "@/lib/queries/recruiter/useMessages";
 import { useSendMessage } from "@/lib/queries/recruiter/useSendMessage";
@@ -51,7 +52,8 @@ export function CoachGroupThreadMobile() {
     supabase.from("conversation_participants")
       .update({ last_read_at: new Date().toISOString() })
       .eq("conversation_id", conversationId).eq("user_id", userId)
-      .then(() => queryClient.invalidateQueries({ queryKey: ["conversations"] }));
+      // C3 (1.4.5) : la pastille Messages suit la lecture.
+      .then(() => { queryClient.invalidateQueries({ queryKey: ["conversations"] }); signalerCompteursAJour(); });
   }, [conversationId, userId, queryClient]);
 
   // Realtime : refetch sous RLS (jamais d'injection de payload brut).

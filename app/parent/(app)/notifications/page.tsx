@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { TYPE_DEMANDE_PARENT } from "@/lib/partenaires/demandeVisibilite";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 
 /* ═══════════════════════════════════════════════════════════════
    Portal parental — Lot 1c. Page Notifications (web only).
@@ -77,6 +78,7 @@ export default function ParentNotificationsPage() {
     const supabase = createClient();
     const { error } = await supabase.from("parent_notifications").update({ read: true }).eq("id", id);
     if (error) setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: false } : n))); // revert
+    else signalerCompteursAJour(); // C3 (1.4.5) : la cloche suit
   }
 
   async function markAllRead() {
@@ -87,6 +89,7 @@ export default function ParentNotificationsPage() {
     const supabase = createClient();
     const { error } = await supabase.from("parent_notifications").update({ read: true }).eq("read", false);
     if (error) setItems(snapshot); // revert
+    else signalerCompteursAJour(); // C3 (1.4.5) : la cloche suit
     setMarking(false);
   }
 

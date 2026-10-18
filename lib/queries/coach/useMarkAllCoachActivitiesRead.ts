@@ -12,6 +12,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export function useMarkAllCoachActivitiesRead() {
@@ -36,6 +37,9 @@ export function useMarkAllCoachActivitiesRead() {
       queryClient.invalidateQueries({ queryKey: ["activity-feed"] });
       // Also clear any tab-bar unread badge tied to the coach.
       queryClient.invalidateQueries({ queryKey: ["unread-activity-count", userId] });
+      // C3 (1.4.5) : la barre d'onglets et la barre latérale écoutent ces signaux, pas la clé ci-dessus.
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("activities-updated"));
+      signalerCompteursAJour();
     },
   });
 }

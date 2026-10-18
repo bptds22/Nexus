@@ -5,6 +5,7 @@ import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { surReprise } from "@/lib/push/pastillesAppareil";
 import { deconnexion } from "@/lib/auth/deconnexion";
 import { usePurgeSacOnboarding } from "@/lib/auth/usePurgeSacOnboarding";
 
@@ -142,8 +143,19 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
   useEffect(() => {
     fetchBadges();
     const handler = () => fetchBadges();
+    /* C3 (1.4.5) : aussi « notifications-updated » (lectures, pushs), le retour à
+       l'onglet, et un second compte 2 s après la navigation — le fil ouvert marque
+       ses messages lus APRÈS ce premier compte (course constatée). */
     window.addEventListener("activities-updated", handler);
-    return () => window.removeEventListener("activities-updated", handler);
+    window.addEventListener("notifications-updated", handler);
+    const finReprise = surReprise(handler);
+    const second = window.setTimeout(handler, 2000);
+    return () => {
+      window.removeEventListener("activities-updated", handler);
+      window.removeEventListener("notifications-updated", handler);
+      finReprise();
+      window.clearTimeout(second);
+    };
     // pathname dep → re-fetch on navigation so the Messages badge clears
     // after the coach opens a thread (read_at updated in the thread view).
   }, [fetchBadges, pathname]);

@@ -13,6 +13,7 @@ import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 import { triggerHaptic } from "@/lib/haptics";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 import { entreeVisible, usePeutEvaluer } from "@/lib/partenaires/navigation";
+import { surReprise, viderNotificationsLivrees } from "@/lib/push/pastillesAppareil";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -393,14 +394,26 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
 
     loadBadges();
 
-    // Listeners d'events window — chaque rôle a son canal de refresh.
+    /* C3 (1.4.5) — les pastilles ne bougeaient qu'au changement de route. Elles se
+       recalculent maintenant aussi :
+       · sur les deux signaux de lecture, pour TOUS les rôles (le recruteur et le coach
+         n'écoutaient pas « notifications-updated », émis par la lecture d'un fil et
+         par chaque push reçu) ;
+       · à la reprise de l'appli (et le plateau de notifications est vidé : sur
+         Android, la pastille de l'icône en dépend) ;
+       · toutes les 60 s tant que l'écran est visible (Realtime n'est publié pour
+         aucune de ces tables). */
     const handler = () => loadBadges();
-    if (role === "coach") window.addEventListener("activities-updated", handler);
-    if (role === "athlete") window.addEventListener("notifications-updated", handler);
+    window.addEventListener("activities-updated", handler);
+    window.addEventListener("notifications-updated", handler);
+    const finReprise = surReprise(() => { void viderNotificationsLivrees(); loadBadges(); });
+    const minuterie = window.setInterval(() => { if (document.visibilityState === "visible") loadBadges(); }, 60_000);
     return () => {
       cancelled = true;
-      if (role === "coach") window.removeEventListener("activities-updated", handler);
-      if (role === "athlete") window.removeEventListener("notifications-updated", handler);
+      window.removeEventListener("activities-updated", handler);
+      window.removeEventListener("notifications-updated", handler);
+      finReprise();
+      window.clearInterval(minuterie);
     };
   }, [pathname, role]);
 

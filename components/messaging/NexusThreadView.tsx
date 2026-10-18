@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 import { COURRIEL_SUPPORT, MAILTO_SUPPORT } from "@/lib/config/contact";
 import { useMessages, type MessageRow } from "@/lib/queries/recruiter/useMessages";
 import { useSendMessage } from "@/lib/queries/recruiter/useSendMessage";
@@ -89,6 +90,8 @@ function useMarkAdminThreadRead(conversationId: string, ready: boolean) {
       try {
         await createClient().rpc("mark_conversation_read", { p_conv: conversationId });
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        // C3 (1.4.5) : la pastille Messages suit la lecture.
+        signalerCompteursAJour();
       } catch (err) {
         console.error("[NexusThread] mark-read failed:", err);
       }

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { surReprise } from "@/lib/push/pastillesAppareil";
 import NexusLogo from "@/components/ui/NexusLogo";
 
 /* Portail parent gardé (Lot 1a) — rôle PARENT requis, sinon redirect /auth.
@@ -13,6 +14,7 @@ export default function ParentPortalLayout({ children }: { children: React.React
   const router = useRouter();
   const [status, setStatus] = useState<"checking" | "ok">("checking");
   const [unread, setUnread] = useState(0);
+  const pathname = usePathname();
 
   useEffect(() => {
     let cancelled = false;
@@ -25,15 +27,33 @@ export default function ParentPortalLayout({ children }: { children: React.React
       if (cancelled) return;
       if (profile?.role === "PARENT") setStatus("ok");
       else { router.replace("/auth"); return; }
-      // Compteur non-lu (RLS restreint aux lignes du parent).
-      const { count } = await supabase
+    })();
+    return () => { cancelled = true; };
+  }, [router]);
+
+  /* Compteur non-lu de la cloche (RLS restreint aux lignes du parent). C3 (1.4.5) : il
+     n'était lu qu'une fois ; il suit maintenant la navigation, le signal émis par la
+     page Notifications et le retour à l'onglet. */
+  useEffect(() => {
+    if (status !== "ok") return;
+    let cancelled = false;
+    const charger = async () => {
+      const { count } = await createClient()
         .from("parent_notifications")
         .select("id", { count: "exact", head: true })
         .eq("read", false);
       if (!cancelled) setUnread(count ?? 0);
-    })();
-    return () => { cancelled = true; };
-  }, [router]);
+    };
+    void charger();
+    const handler = () => { void charger(); };
+    window.addEventListener("notifications-updated", handler);
+    const finReprise = surReprise(handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("notifications-updated", handler);
+      finReprise();
+    };
+  }, [status, pathname]);
 
   if (status !== "ok") {
     return (
