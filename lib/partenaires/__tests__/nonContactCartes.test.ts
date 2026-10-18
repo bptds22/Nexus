@@ -1,22 +1,22 @@
-/* Compléments 1.4.5 — période de non-contact sur les cartes prospect partenaire
-   (point 5) et « mon effectif » ≠ « autre équipe » (point 10). Web et appli : le
+/* Compléments 1.4.5 — période de non-contact (P5 : le texto du RECRUTEUR se grise, le partenaire
+   n'est plus bloqué) et « mon effectif » ≠ « autre équipe » (point 10). Web et appli : le
    portail partenaire et la création d'athlète passent par les mêmes fonctions. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { dateLongueFr, lireNonContactCartes, texteNonContact } from "@/lib/partenaires/prospects";
+import { dateLongueFr, lireNonContact, texteNonContact } from "@/lib/nonContact";
 import { courrielExistant, TEXTES_DEJA_MON_EFFECTIF } from "@/lib/coach/athleteEmailAutocomplete";
 
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 
-test("non-contact : la mention, avec la date en français (même forme que le serveur)", () => {
+test("non-contact : la mention, avec la date en français", () => {
   assert.equal(dateLongueFr("2026-11-10"), "10 novembre 2026");
   assert.equal(dateLongueFr("2027-08-01"), "1 août 2027");
   assert.equal(texteNonContact("2026-11-10"), "Période de non-contact jusqu'au 10 novembre 2026");
 });
 
-test("non-contact : une lecture par couple (sport, promotion), la fin rendue par carte ; échec = rien", async () => {
+test("non-contact : lireNonContact rend la fin de période, null sans période ou en échec", async () => {
   const appels: unknown[] = [];
   const faux = {
     rpc: async (nom: string, args: { p_sport: string; p_promo: number | null }) => {
@@ -24,37 +24,37 @@ test("non-contact : une lecture par couple (sport, promotion), la fin rendue par
       if (args.p_sport === "panne") return { data: null, error: { message: "x" } };
       return { data: args.p_sport === "foot" && args.p_promo === 2028 ? [{ date_fin: "2026-11-10" }] : [], error: null };
     },
-  } as unknown as Parameters<typeof lireNonContactCartes>[0];
-  const r = await lireNonContactCartes(faux, [
-    { id: "a", sportId: "foot", promotion: 2028 },
-    { id: "b", sportId: "foot", promotion: 2028 },
-    { id: "c", sportId: "foot", promotion: 2030 },
-    { id: "d", sportId: "panne", promotion: null },
-  ]);
-  assert.deepEqual([...r.entries()], [["a", "2026-11-10"], ["b", "2026-11-10"]]);
-  assert.equal(appels.length, 3, "foot|2028 lu une seule fois");
-  assert.deepEqual(appels.find((x) => (x as [string, { p_sport: string }])[1].p_sport === "panne"), ["non_contact_carte", { p_sport: "panne", p_promo: null }]);
+  } as unknown as Parameters<typeof lireNonContact>[0];
+  assert.equal(await lireNonContact(faux, "foot", 2028), "2026-11-10");
+  assert.equal(await lireNonContact(faux, "foot", 2030), null);
+  assert.equal(await lireNonContact(faux, "panne", null), null);
+  assert.deepEqual(appels[2], ["non_contact_carte", { p_sport: "panne", p_promo: null }]);
 });
 
-test("non-contact : la page grise « Envoyer par texto » / « Nouveau lien » et la feuille grise texto et copies", () => {
-  const page = lire("app/partenaire/prospects/page.tsx");
-  assert.match(page, /setNonContact\(await lireNonContactCartes\(supabase, c\)\);/);
-  assert.match(page, /disabled=\{occupe === c\.id \|\| !!finNonContact\}/);
-  assert.match(page, /\{texteNonContact\(finNonContact\)\}/);
-  assert.match(page, /nonContactJusquau=\{nonContact\.get\(lien\.carteId\) \?\? null\}/);
-  const feuille = lire("components/partenaire/prospects/EnvoyerLien.tsx");
-  assert.match(feuille, /const bloque = !!nonContactJusquau;/);
-  assert.match(feuille, /disabled=\{bloque\} onClick=\{\(\) => void copier\("message"\)\}/);
-  assert.match(feuille, /disabled=\{bloque\} onClick=\{\(\) => void copier\("lien"\)\}/);
-  assert.match(feuille, /\{texteNonContact\(nonContactJusquau as string\)\}/);
+test("P5 : le partenaire n'est plus grisé (page et feuille d'envoi)", () => {
+  for (const f of ["app/partenaire/prospects/page.tsx", "components/partenaire/prospects/EnvoyerLien.tsx", "lib/partenaires/prospects.ts"]) {
+    const src = lire(f);
+    assert.doesNotMatch(src, /non_contact_carte|nonContact|NonContact/, f);
+  }
 });
 
-test("serveur : la garde est dans partenaire_prospect_lien (lot 20261017010000), pas seulement au bouton", () => {
-  const sql = lire("supabase/migrations/20261017010000_complements_1_4_5.sql");
-  assert.match(sql, /select n\.date_fin into v_fin from public\.non_contact_carte\(v_carte\.sport_id, v_carte\.promotion\) n;/);
-  assert.match(sql, /raise exception 'NEXUS: Période de non-contact jusqu''au %'/);
-  // Placée AVANT la levée de réservation : un refus ne touche à rien.
-  assert.ok(sql.indexOf("non_contact_carte(v_carte.sport_id") < sql.indexOf("prospect_partenaire_lever_reservation_lien(p_carte, 'NOUVEAU_LIEN')"));
+test("P5 : le texto du recruteur se grise (téléphone sans courriel) avec la date de fin", () => {
+  const src = lire("components/shared/CreerProspectMobile.tsx");
+  for (const extrait of [
+    "queryFn: () => lireNonContact(createClient(), sportAthleteId, promoNombre)",
+    "const texteBloque = !!finNonContact && courriel.trim().length === 0 && telephone.trim().length > 0;",
+    "disabled={!valide || enCours || texteBloque}",
+    "if (!valide || enCours || !etablissement || texteBloque) return;",
+    "{texteNonContact(finNonContact)}",
+  ]) assert.ok(src.includes(extrait), extrait);
+});
+
+test("serveur (20261017140000) : la garde partenaire est retirée, non_contact_carte reste", () => {
+  const sql = lire("supabase/migrations/20261017140000_non_contact_retrait_partenaire.sql");
+  const corps = sql.slice(sql.indexOf("CREATE OR REPLACE FUNCTION public.partenaire_prospect_lien"), sql.indexOf("end $lien$;"));
+  assert.doesNotMatch(corps, /non_contact_carte|v_fin/);
+  assert.doesNotMatch(sql, /drop function public.non_contact_carte/i);
+  assert.match(sql, /is distinct from '8670f3dae66bff7295b1da08587a2bf0'/);
 });
 
 test("mon effectif ≠ autre équipe : la règle partagée", () => {

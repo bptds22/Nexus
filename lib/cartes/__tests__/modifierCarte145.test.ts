@@ -51,7 +51,9 @@ test("le formulaire : tous les champs, astérisques, Enregistrer / Annuler avec 
 
 test("migration établissement : corps relevé, ACL comparée, rollback exact — et NON appliquée par le code", () => {
   const m = lire("supabase/migrations/20261017130000_carte_etablissement_modifiable.sql");
-  assert.match(m, /177e99f1c2f6dbc620aaa810ecf0d0dc/);
+  // Garde sur l'empreinte RÉELLE de la prod (corps stocké sans commentaires), pas celle d'un texte.
+  assert.match(m, /is distinct from '90b079257971091e31a03f366cbf5aed'/);
+  assert.doesNotMatch(m, /177e99f1c2f6dbc620aaa810ecf0d0dc/);
   assert.match(m, /l''établissement suit l''équipe — change l''équipe/);
   assert.match(m, /cet établissement a une équipe de ce sport — choisis-la/);
   assert.match(m, /_acl_avant/);

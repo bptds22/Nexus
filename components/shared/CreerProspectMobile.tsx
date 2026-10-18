@@ -23,6 +23,8 @@
    · téléphone SEUL → l'app Messages s'ouvre avec le texto pré-écrit
      (texteRenvoi, le texte du web) ; le recruteur appuie sur Envoyer.
      Avec les deux, le courriel suffit : pas de seconde invitation.
+   · période de non-contact (P5, 1.4.5) pour le sport et la promotion :
+     téléphone sans courriel → bouton grisé avec la date de fin.
    Doublons : la détection du web (lib/cartes/doublonsCarte), en
    avertissement discret ; le second appui crée quand même. Pas de QR.
 
@@ -43,6 +45,7 @@ import { chercherDoublonsCarte, type DoublonCarte } from "@/lib/cartes/doublonsC
 import { MENTION_INVITATION_NON_ENVOYEE } from "@/lib/cartes/invitationEtat";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 import { texteRenvoi, lienSms } from "@/lib/cartes/renvoiInvitation";
+import { lireNonContact, texteNonContact } from "@/lib/nonContact";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -209,6 +212,18 @@ export default function CreerProspectMobile({ sportId, onClose }: {
   const aContact = courriel.trim().length > 0 || telephone.trim().length > 0;
   const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!sportAthleteId && equipeOk && aContact;
 
+  /* P5 (1.4.5) : période de non-contact pour le sport et la promotion de l'athlète. Le texto part
+     du téléphone du recruteur — Nexus ne peut pas le bloquer au serveur : le bouton se grise quand
+     l'invitation passerait par texto (téléphone sans courriel). Promotion vide : toute période du
+     sport compte. */
+  const promoNombre = promotion.trim() === "" ? null : Number(promotion);
+  const { data: finNonContact = null } = useQuery({
+    queryKey: ["non-contact", sportAthleteId, promoNombre],
+    enabled: !!sportAthleteId,
+    queryFn: () => lireNonContact(createClient(), sportAthleteId, promoNombre),
+  });
+  const texteBloque = !!finNonContact && courriel.trim().length === 0 && telephone.trim().length > 0;
+
   const promotions = useMemo(() => {
     const an = new Date().getFullYear();
     return Array.from({ length: 6 }, (_, i) => an + i);
@@ -233,7 +248,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
   const toucher = () => { setAvertissements(null); setErreur(null); };
 
   const soumettre = async () => {
-    if (!valide || enCours || !etablissement) return;
+    if (!valide || enCours || !etablissement || texteBloque) return;
     setErreur(null);
     const l = lectures();
     const fautes: Partial<Record<Champ, string>> = {};
@@ -545,10 +560,15 @@ export default function CreerProspectMobile({ sportId, onClose }: {
         </div>
 
         <div className="px-4 pt-2 pb-3 border-t border-white/[0.06]">
+          {texteBloque && finNonContact && (
+            <p data-testid="prospect-non-contact" data-non-contact={finNonContact} className="mb-2 text-[12px] font-semibold text-[#F5C46B]">
+              {texteNonContact(finNonContact)}
+            </p>
+          )}
           <button
             type="button"
             data-testid="prospect-creer"
-            disabled={!valide || enCours}
+            disabled={!valide || enCours || texteBloque}
             onClick={() => void soumettre()}
             className="w-full min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-40"
           >
