@@ -70,16 +70,31 @@ export function Card({ children }: { children: React.ReactNode }) {
       validation, numericMode drives the keyboard hint.
       `pattern="[0-9]*"` is added on iOS for "numeric" mode only
       (skip on "decimal" — pattern would block the dot). */
+/* ── Étiquette (C1, 1.4.5) : un champ requis porte son astérisque rouge ; s'il
+      manque après une tentative de passer à l'étape suivante (`manquant`),
+      l'étiquette passe au rouge et la valeur affiche « Requis ». */
+function Etiquette({ label, required, manquant }: { label: string; required?: boolean; manquant?: boolean }) {
+  return (
+    <span className={manquant ? "text-[14px] text-[#FF6B76] font-semibold" : labelCls}>
+      {label}
+      {required && <span className="text-[#E63946] ml-0.5" aria-hidden="true">*</span>}
+    </span>
+  );
+}
+const requisCls = "text-[14px] text-[#FF6B76] font-semibold";
+
 export function InlineEditRow({
-  label, value, onSave, placeholder, type = "text", detailed, numericMode,
+  label, value, onSave, placeholder, type = "text", detailed, numericMode, required, manquant,
 }: {
   label: string;
   value: string;
   onSave: (v: string) => void;
   placeholder?: string;
   type?: "text" | "email" | "tel" | "url" | "number";
-  /** Kept in signature for backwards-compat; per-field asterisk removed — section carries it. */
+  /** Champ requis : astérisque rouge après l'étiquette (C1, 1.4.5). */
   required?: boolean;
+  /** Requis et vide après une tentative de continuer : étiquette rouge, « Requis ». */
+  manquant?: boolean;
   detailed?: boolean;
   /** Numeric keypad hint (mobile). Applies REGARDLESS of `type` so
    *  unit-suffixed text fields can still surface the numeric keypad
@@ -117,7 +132,7 @@ export function InlineEditRow({
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0">
       <div className="flex items-center gap-2 min-w-0 shrink-0">
-        <span className={labelCls}>{label}</span>
+        <Etiquette label={label} required={required} manquant={manquant && !value} />
         {detailed && <DetailedTag />}
       </div>
       {editing ? (
@@ -137,8 +152,8 @@ export function InlineEditRow({
         />
       ) : (
         <button type="button" onClick={() => { void triggerHaptic("Light"); setEditing(true); }}
-          className={`${valueCls} ${showAdd ? "text-white/30 font-normal" : ""} text-right active:opacity-70 truncate min-w-0 flex-1`}>
-          {value || (placeholder ? placeholder : "Ajouter")}
+          className={`${showAdd && manquant ? requisCls : valueCls} ${showAdd && !manquant ? "text-white/30 font-normal" : ""} text-right active:opacity-70 truncate min-w-0 flex-1`}>
+          {value || (manquant ? "Requis" : placeholder ? placeholder : "Ajouter")}
         </button>
       )}
     </div>
@@ -196,14 +211,16 @@ export function EmailEditRow({
 /* ── PickerRow — read-only label + value, fires onTap. Parent opens
       the actual MobilePicker / SearchSheet. */
 export function PickerRow({
-  label, value, onTap, placeholder, detailed, inline,
+  label, value, onTap, placeholder, detailed, inline, required, manquant,
 }: {
   label: string;
   value: string;
   onTap: () => void;
   placeholder?: string;
-  /** Kept in signature for backwards-compat; per-field asterisk is gone — section header carries it. */
+  /** Champ requis : astérisque rouge (C1, 1.4.5). */
   required?: boolean;
+  /** Requis et vide après une tentative de continuer. */
+  manquant?: boolean;
   detailed?: boolean;
   inline?: boolean;
 }) {
@@ -212,13 +229,13 @@ export function PickerRow({
       className={`w-full flex items-center justify-between gap-3 px-4 py-3 ${inline ? "rounded-2xl bg-[#111317]" : "border-b border-white/[0.06] last:border-0"} active:bg-white/[0.02]`}>
       {label && (
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className={labelCls}>{label}</span>
+          <Etiquette label={label} required={required} manquant={manquant && !value} />
           {detailed && <DetailedTag />}
         </div>
       )}
       <div className="flex items-center min-w-0">
-        <span className={`${valueCls} ${value ? "" : "text-white/30 font-normal"} truncate`}>
-          {value || placeholder || "Sélectionner"}
+        <span className={`${!value && manquant ? requisCls : valueCls} ${value || manquant ? "" : "text-white/30 font-normal"} truncate`}>
+          {value || (manquant ? "Requis" : placeholder || "Sélectionner")}
         </span>
       </div>
     </button>
@@ -228,13 +245,15 @@ export function PickerRow({
 /* ── DateRow — visible value text + invisible native <input type="date">
       overlaid on the right ; tap opens the OS date picker. */
 export function DateRow({
-  label, value, onChange,
+  label, value, onChange, required, manquant,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
-  /** Kept in signature for backwards-compat; per-field asterisk removed. */
+  /** Champ requis : astérisque rouge (C1, 1.4.5). */
   required?: boolean;
+  /** Requis et vide après une tentative de continuer. */
+  manquant?: boolean;
 }) {
   /* Native date picker is opened by tapping the row. We keep the input
      visible but fully transparent and overlaid on the right, so the
@@ -243,10 +262,10 @@ export function DateRow({
      actually reads. */
   return (
     <label className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0 cursor-pointer active:bg-white/[0.02]">
-      <span className={labelCls}>{label}</span>
+      <Etiquette label={label} required={required} manquant={manquant && !value} />
       <div className="relative flex items-center min-w-0">
-        <span className={`${valueCls} ${value ? "" : "text-white/30 font-normal"} truncate`}>
-          {value || "Sélectionner"}
+        <span className={`${!value && manquant ? requisCls : valueCls} ${value || manquant ? "" : "text-white/30 font-normal"} truncate`}>
+          {value || (manquant ? "Requis" : "Sélectionner")}
         </span>
         {/* Invisible native input takes the tap → opens the OS date picker. */}
         <input type="date"
@@ -262,21 +281,23 @@ export function DateRow({
 
 /* ── ReadOnlyRow — non-editable display (school, city, region). */
 export function ReadOnlyRow({
-  label, value, detailed,
+  label, value, detailed, required, manquant,
 }: {
   label: string;
   value: string;
   detailed?: boolean;
-  /** Kept in signature for backwards-compat; per-field asterisk removed. */
+  /** Champ requis : astérisque rouge (C1, 1.4.5). */
   required?: boolean;
+  /** Requis et vide après une tentative de continuer. */
+  manquant?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0">
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        <span className={labelCls}>{label}</span>
+        <Etiquette label={label} required={required} manquant={manquant && !value} />
         {detailed && <DetailedTag />}
       </div>
-      <span className={`${valueCls} text-white/70`}>{value || "—"}</span>
+      <span className={!value && manquant ? requisCls : `${valueCls} text-white/70`}>{value || (manquant ? "Requis" : "—")}</span>
     </div>
   );
 }

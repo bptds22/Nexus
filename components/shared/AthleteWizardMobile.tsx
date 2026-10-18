@@ -34,6 +34,12 @@
      canProceed reflects this.
    - Step 5 (Évaluation) KEEPS its Simplifié | Détaillé toggle
      because it changes save semantics (cote_globale auto-average).
+   - C1 (1.4.5) : chaque champ requis porte son astérisque. Passer à une
+     étape plus loin par les puces VALIDE les étapes d'avant : s'il manque
+     un champ, on revient à la première étape incomplète, ses champs
+     manquants passent au rouge (« Requis ») et un encadré les nomme. La
+     puce d'une étape signalée porte un point rouge. Même chose si
+     « Créer le profil » trouve des champs manquants.
    - Step 1 carries a small footer note that plants the green/yellow/
      red permission color seed (cosmetic, matches athlete edit page).
 
@@ -835,6 +841,21 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     return missing;
   }, [form, isCreate]);
 
+  /* ── C1 : champs manquants PAR ÉTAPE (création), mêmes libellés que la liste complète ── */
+  const manquantsEtape = useCallback((i: number): string[] => {
+    if (!isCreate) return [];
+    const tous = missingRequiredAll();
+    const parEtape: Record<number, string[]> = {
+      0: ["Prénom", "Nom", "Date de naissance", "Promotion", "Genre", "École", "Ville", "Région"],
+      3: ["Sport principal", "Position principale", "Numéro", "Équipe"],
+    };
+    const liste = (parEtape[i] ?? []).filter((x) => tous.includes(x));
+    if (i === 0 && form.identity.dateOfBirth && isUnder14(form.identity.dateOfBirth)) liste.push("Âge : 14 ans et plus");
+    return liste;
+  }, [isCreate, missingRequiredAll, form.identity.dateOfBirth]);
+  /** Les étapes où le coach a tenté d'avancer avec des champs requis vides. */
+  const [etapesSignalees, setEtapesSignalees] = useState<ReadonlySet<number>>(new Set());
+
   /* ── Diff (edit summary) ─────────────────────────────────── */
   const computeDiff = useCallback((): { label: string; old: string; new: string }[] => {
     const rows: { label: string; old: string; new: string }[] = [];
@@ -944,6 +965,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   const handleFinish = useCallback(async () => {
     const missing = missingRequiredAll();
     if (isCreate && missing.length > 0) {
+      setEtapesSignalees(new Set([0, 3].filter((k) => !canProceed(k))));
       toast.warning({ message: "Champs requis manquants" });
       return;
     }
@@ -1143,6 +1165,21 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       Array.from({ length: i }, (_, k) => canProceed(k)).every(Boolean)
     );
   }, [isEdit, canProceed]);
+  /** Aller à l'étape i. En création, aller PLUS LOIN valide les étapes d'avant : la première
+   *  incomplète s'ouvre, signalée (champs en rouge + encadré), au lieu d'une puce muette. */
+  const allerAEtape = (i: number) => {
+    if (isEdit || i <= slide || reachableSlides[i]) {
+      setDirection(i > slide ? 1 : -1);
+      setSlide(i);
+      return;
+    }
+    const k = Array.from({ length: i }, (_, x) => x).find((x) => !canProceed(x));
+    if (k === undefined) { setDirection(1); setSlide(i); return; }
+    setEtapesSignalees((e) => new Set([...e, k]));
+    if (k !== slide) { setDirection(k > slide ? 1 : -1); setSlide(k); }
+    const liste = manquantsEtape(k);
+    toast.warning({ message: liste.length > 0 ? `Il manque : ${liste.join(", ")}` : "Champs requis manquants" });
+  };
   const activeChipRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     activeChipRef.current?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
@@ -1254,14 +1291,16 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                   ? "bg-white/[0.10] text-white border border-white/[0.10]"
                   : reachable
                     ? "bg-[#1A1D24] text-white/70 border border-white/[0.06] active:bg-white/[0.04]"
-                    : "bg-[#1A1D24] text-white/30 border border-white/[0.06] cursor-not-allowed";
+                    : "bg-[#1A1D24] text-white/30 border border-white/[0.06]";
               return (
                 <button key={i} type="button"
                   ref={isCurrent ? activeChipRef : null}
-                  onClick={() => { void triggerHaptic("Light"); if (reachable) { setDirection(i > slide ? 1 : -1); setSlide(i); } }}
-                  disabled={!reachable}
-                  className={`px-4 py-2 rounded-full text-[12px] font-bold uppercase tracking-[0.14em] whitespace-nowrap transition-colors ${chipCls}`}>
+                  onClick={() => { void triggerHaptic("Light"); allerAEtape(i); }}
+                  className={`relative px-4 py-2 rounded-full text-[12px] font-bold uppercase tracking-[0.14em] whitespace-nowrap transition-colors ${chipCls}`}>
                   {i + 1}. {label}
+                  {etapesSignalees.has(i) && manquantsEtape(i).length > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#E63946] ring-2 ring-[#111317]" aria-label="Champs requis manquants" />
+                  )}
                 </button>
               );
             })}
@@ -1584,8 +1623,21 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
      STEP RENDERERS
   ════════════════════════════════════════════════════════════ */
 
+  /** Encadré C1 : les champs requis qui manquent à cette étape, après une tentative d'avancer. */
+  function bandeauManquants(i: number) {
+    const liste = etapesSignalees.has(i) ? manquantsEtape(i) : [];
+    if (liste.length === 0) return null;
+    return (
+      <div role="alert" data-champs-manquants className="rounded-2xl border border-[#E63946]/40 bg-[#E63946]/10 px-4 py-3">
+        <p className="text-[13px] font-bold text-[#FF6B76]">Champs requis manquants</p>
+        <p className="text-[13px] text-white/80 mt-0.5">{liste.join(" · ")}</p>
+      </div>
+    );
+  }
+
   function renderStep1() {
     const d = form.identity;
+    const signale = etapesSignalees.has(0);
     const due = isEdit && isValidationDue(validationState);
     const expired = isEdit && isValidationExpired(validationState);
     return (
@@ -1596,9 +1648,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           </h2>
           <p className="text-[13px] text-white/55 mt-1">
             Informations personnelles de base
-            <span className="ml-1 text-white/35">· * étape avec champs requis</span>
+            <span className="ml-1 text-white/35">· * champ requis</span>
           </p>
         </div>
+        {bandeauManquants(0)}
 
         {/* Monthly re-validation banner (edit only, informational — no
             confirm button : it's the athlete's action). Reuses the
@@ -1670,9 +1723,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         {/* Essentials */}
         <Card>
           <InlineEditRow label="Prénom" value={d.firstName}
-            onSave={(v) => updateIdentity("firstName", v)} required />
+            onSave={(v) => updateIdentity("firstName", v)} required manquant={signale} />
           <InlineEditRow label="Nom" value={d.lastName}
-            onSave={(v) => updateIdentity("lastName", v)} required />
+            onSave={(v) => updateIdentity("lastName", v)} required manquant={signale} />
           {/* DOB lecture seule à l'edit (ReadOnlyRow) : aucun <14 ne peut
               légitimement exister (gate à la création). En create la DOB reste
               saisissable (DateRow) + son gate <14. */}
@@ -1680,17 +1733,17 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             <ReadOnlyRow label="Date de naissance" value={d.dateOfBirth} />
           ) : (
             <DateRow label="Date de naissance" value={d.dateOfBirth}
-              onChange={(v) => updateIdentity("dateOfBirth", v)} required />
+              onChange={(v) => updateIdentity("dateOfBirth", v)} required manquant={signale} />
           )}
           {isCreate && d.dateOfBirth && isUnder14(d.dateOfBirth) && (
             <p className="text-[12px] text-[#EF4444] px-4 pb-2">L&apos;inscription est réservée aux 14 ans et plus.</p>
           )}
           <PickerRow label="Promotion"
             value={d.gradYear}
-            onTap={() => setOpenPromoPicker(true)} required />
+            onTap={() => setOpenPromoPicker(true)} required manquant={signale} />
           <PickerRow label="Genre"
             value={d.gender === "M" ? "Masculin" : d.gender === "F" ? "Féminin" : d.gender === "X" ? "Non genré" : ""}
-            onTap={() => setOpenGenderPicker(true)} required />
+            onTap={() => setOpenGenderPicker(true)} required manquant={signale} />
         </Card>
 
         {/* Courriel — CRÉATION ET ÉDITION.
@@ -1865,9 +1918,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         {/* Affiliation (school) + advanced details */}
         <AdvancedDivider />
         <Card>
-          <ReadOnlyRow label="École secondaire" value={d.school} detailed required />
-          <ReadOnlyRow label="Ville" value={d.city} detailed required={isCreate} />
-          <ReadOnlyRow label="Région" value={d.region} detailed required={isCreate} />
+          <ReadOnlyRow label="École secondaire" value={d.school} detailed required manquant={signale} />
+          <ReadOnlyRow label="Ville" value={d.city} detailed required={isCreate} manquant={signale} />
+          <ReadOnlyRow label="Région" value={d.region} detailed required={isCreate} manquant={signale} />
           <InlineEditRow label="Téléphone" value={d.phone}
             onSave={(v) => updateIdentity("phone", v)}
             placeholder="(514) 000-0000"
@@ -2053,13 +2106,14 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           </h2>
           <p className="text-[13px] text-white/55 mt-1">
             Sport, position et équipe
-            <span className="ml-1 text-white/35">· * étape avec champs requis</span>
+            <span className="ml-1 text-white/35">· * champ requis</span>
           </p>
         </div>
+        {bandeauManquants(3)}
 
         <Card>
           <PickerRow label="Sport principal" value={s.primarySport}
-            onTap={() => setOpenSportPicker(true)} required />
+            onTap={() => setOpenSportPicker(true)} required manquant={etapesSignalees.has(3)} />
           {s.primarySport === "Autre" && (
             <InlineEditRow label="Précise le sport" value={s.primarySportDetail}
               onSave={(v) => updateSports("primarySportDetail", v)}
@@ -2068,18 +2122,18 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           {isCustomSport ? (
             <InlineEditRow label="Position principale" value={s.primaryPosition}
               onSave={(v) => updateSports("primaryPosition", v)}
-              placeholder="Saisis la position…" required />
+              placeholder="Saisis la position…" required manquant={etapesSignalees.has(3)} />
           ) : (
             <PickerRow label="Position principale" value={s.primaryPosition}
               onTap={() => s.primarySport ? setOpenPrimaryPosPicker(true) : null}
-              placeholder={s.primarySport ? "Sélectionner" : "Choisis un sport d'abord"} required />
+              placeholder={s.primarySport ? "Sélectionner" : "Choisis un sport d'abord"} required manquant={etapesSignalees.has(3)} />
           )}
           <InlineEditRow label="Numéro" value={s.jerseyNumber}
             onSave={(v) => updateSports("jerseyNumber", v.replace(/\D/g, ""))}
-            placeholder="#" type="number" numericMode="numeric" required />
+            placeholder="#" type="number" numericMode="numeric" required manquant={etapesSignalees.has(3)} />
           <PickerRow label="Équipe" value={teamLabel}
             onTap={() => coach.teams.length > 0 ? setOpenTeamPicker(true) : null}
-            placeholder={coach.teams.length === 0 ? "Aucune équipe — crée-en une" : "Sélectionner"} required />
+            placeholder={coach.teams.length === 0 ? "Aucune équipe — crée-en une" : "Sélectionner"} required manquant={etapesSignalees.has(3)} />
           {s.teamLevel && (
             <ReadOnlyRow label="Niveau" value={s.teamLevel} />
           )}
