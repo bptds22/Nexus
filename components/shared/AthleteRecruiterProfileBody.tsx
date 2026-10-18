@@ -5,6 +5,7 @@ import { joindreNoms } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useQueryClient } from "@tanstack/react-query";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useState, useEffect } from "react";
+import { limiterBadgesFiche } from "@/lib/badges/carteBadges";
 import { useFicheAthleteDonnees } from "@/components/shared/athlete/useFicheAthleteDonnees";
 import {
   sectionLabel, cardBase, pillBase, FreeLock, InfoRow,
@@ -379,6 +380,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   /* W3 — badges partenaire, à la FIN de la rangée « Distinctions ». Sur le
      portail partenaire, l'auteur peut retirer les siens depuis la rangée. */
   const badgesPartenaire = useBadgesPartenaires(id);
+  /* « +N » de la carte-joueur : 5 badges au total, le reste se déplie (1.4.5). */
+  const [badgesDeplies, setBadgesDeplies] = useState(false);
   const actionsBadgePartenaire = isPartner ? "partenaire" as const : null;
   /* Règle de lecture des grilles : grille_id de l'éval affichée d'abord, sinon
      la position. Le partenaire n'a NI l'un NI l'autre — partner_athlete_profile
@@ -1006,14 +1009,27 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </div>
 
               {(a.distinctions.length > 0 || badgesPartenaire.length > 0) && (
-                <div className="flex items-start gap-9 flex-wrap">
-                  {a.distinctions.slice(0, MAX_BADGES_AFFICHES).map((d, i) => (
-                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" zoneImage={zoneImageRangee(badgesPartenaire)} />
-                  ))}
-                  {id && badgesPartenaire.map((b) => (
-                    <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} zoneImage={zoneImageRangee(badgesPartenaire)} />
-                  ))}
-                </div>
+                (() => {
+                  /* Carte-joueur : 5 badges au total, partenaire d'abord (personnalisé, puis
+                     les autres), puis coach ; le reste se déplie avec « +N ». */
+                  const coachBadges = a.distinctions.slice(0, MAX_BADGES_AFFICHES);
+                  const lim = badgesDeplies ? { partenaire: badgesPartenaire, coach: coachBadges, reste: 0 } : limiterBadgesFiche(badgesPartenaire, coachBadges);
+                  return (
+                    <div className="flex items-start gap-9 flex-wrap">
+                      {lim.coach.map((d, i) => (
+                        <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} libelle={d.libelle} size="lg" zoneImage={zoneImageRangee(badgesPartenaire)} />
+                      ))}
+                      {id && lim.partenaire.map((b) => (
+                        <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} zoneImage={zoneImageRangee(badgesPartenaire)} />
+                      ))}
+                      {lim.reste > 0 && (
+                        <button type="button" onClick={() => setBadgesDeplies(true)} className="self-center inline-flex items-center px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors" aria-label={`Voir les ${lim.reste} autres badges`}>
+                          +{lim.reste}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()
               )}
             </div>
 

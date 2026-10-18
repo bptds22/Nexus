@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
-import NxIcon from "@/components/ui/NxIcon";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
@@ -14,7 +13,9 @@ import { useFavoriteAthletesUnite } from "@/lib/queries/recruiter/useFavoriteAth
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { RecruteurFavorisMobile } from "@/components/shared/RecruteurFavorisMobile";
 import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
-import { coteCarteDepuisEvaluations, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
+import { coteCarteDepuisEvaluations, cotePartenaireEnPlus, retenirCotePartenaire, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
+import CarteBadges from "@/components/shared/CarteBadges";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -32,7 +33,7 @@ import type { FavoriAthlete } from "@/lib/queries/recruiter/useFavoriteAthletes"
 /* La cote de la carte : celle du coach, sinon celle d'un partenaire AVEC son
    nom (lib/evaluations/coteCarte.ts) — calculée ici, côté web : le hook des
    favoris sert aussi l'appli, branchée au lot mobile. */
-type FavoriCarte = FavoriAthlete & { cote: CoteCarte };
+type FavoriCarte = FavoriAthlete & { cote: CoteCarte; enPlus: { valeur: number; organisation: string } | null };
 
 /* ── Grid Card (same as coach Mes Athlètes) ──────────────── */
 
@@ -92,6 +93,21 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriCarte; onUnfavorite: (id
               {libelleCotePartenaire(a.cote.organisation)}
             </span>
           )}
+          {a.enPlus && (
+            <>
+              <span className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85">Évaluation du coach</span>
+              <div data-cote-partenaire className="flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5" title={`${libelleCotePartenaire(a.enPlus.organisation)} — pas une note d'entraîneur`}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={a.enPlus!.valeur >= i + 0.5 ? "#F59E0B" : "#4a4d56"} stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+              </div>
+              <span className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85 max-w-[170px] truncate">
+                {libelleCotePartenaire(a.enPlus.organisation)}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -147,16 +163,8 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriCarte; onUnfavorite: (id
           <p className="text-[13px] text-[#9CA3AF]">{a.heightWeight}</p>
         )}
 
-        {/* Badges */}
-        {a.badges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {a.badges.slice(0, 2).map((b) => (
-              <span key={b.badgeId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[12px] font-bold text-[#E63946]">
-                {b.icon && <NxIcon name={b.icon} size={12} className="text-[#E63946]" />} {b.label}
-              </span>
-            ))}
-          </div>
-        )}
+        {/* Badges : 5 au plus (partenaire d'abord, puis coach), puis « +N ». */}
+        <CarteBadges athleteId={a.id} coach={a.badges} variante="grille" className="mt-2" />
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
@@ -265,6 +273,11 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriCarte; onUnfavorite: (id:
             {libelleCotePartenaire(a.cote.organisation)}
           </p>
         )}
+        {a.enPlus && (
+          <p data-cote-partenaire className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] truncate mt-0.5" title={`${libelleCotePartenaire(a.enPlus.organisation)} — pas une note d'entraîneur`}>
+            <span className="text-[#F59E0B] normal-case tracking-normal text-[11px]">★ {a.enPlus.valeur.toFixed(1)}</span> {libelleCotePartenaire(a.enPlus.organisation)}
+          </p>
+        )}
       </div>
 
       {/* Height/weight — fixed width */}
@@ -272,8 +285,10 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriCarte; onUnfavorite: (id:
         <span className="text-[12px] text-[#6b7280]">{a.heightWeight || ""}</span>
       </div>
 
-      {/* Spacer */}
-      <div className="flex-1" />
+      {/* Badges : 5 au plus, puis « +N » — la ligne ne déborde pas (rangée rognée). */}
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <CarteBadges athleteId={a.id} coach={a.badges} variante="ligne" />
+      </div>
 
       {a.favoriPar && (
         <span className="text-[11px] text-[#9CA3AF] truncate max-w-[180px] shrink-0" title={`Favori de ${a.favoriPar}`}>
@@ -321,7 +336,15 @@ function FavorisContent() {
   // pas arrivée — la carte montre d'abord la cote du coach, jamais un faux 0 partenaire.
   const { data: cotesPartenaires } = useCotesPartenaires(favorisBruts.map((a) => a.id));
   const athletes = useMemo<FavoriCarte[]>(
-    () => favorisBruts.map((a) => ({ ...a, cote: coteCarteDepuisEvaluations(a.stars, cotesPartenaires?.get(a.id)) })),
+    () => favorisBruts.map((a) => {
+      const retenue = retenirCotePartenaire(cotesPartenaires?.get(a.id));
+      return {
+        ...a,
+        cote: coteCarteDepuisEvaluations(a.stars, cotesPartenaires?.get(a.id)),
+        // Le coach ET le partenaire ont évalué : les deux s'affichent (1.4.5).
+        enPlus: cotePartenaireEnPlus(a.stars, retenue ? { cote: retenue.cote, organisation: retenue.organisation } : null),
+      };
+    }),
     [favorisBruts, cotesPartenaires],
   );
   const loading = dataLoading || tierLoading;
@@ -510,13 +533,17 @@ function FavorisContent() {
           <p className="text-[14px] text-[#6b7280]">Aucun favori ne correspond à tes critères.</p>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filtered.map(a => <FavoriGridCard key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
-        </div>
+        <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filtered.map(a => <FavoriGridCard key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
+          </div>
+        </PartenaireCartesProvider>
       ) : (
-        <div className="flex flex-col gap-2">
-          {filtered.map(a => <FavoriListRow key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
-        </div>
+        <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
+          <div className="flex flex-col gap-2">
+            {filtered.map(a => <FavoriListRow key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
+          </div>
+        </PartenaireCartesProvider>
       )}
     </div>
   );

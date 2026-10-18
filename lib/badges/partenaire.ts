@@ -28,6 +28,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { idsUniques, lireTout } from "@/lib/supabase/lireTout";
 
 export const BUCKET_BADGES_PARTENAIRE = "partner-badges";
 
@@ -83,6 +84,50 @@ export async function chargerBadgesPartenaires(
     estNexus: !!r.est_nexus,
     codeNexus: r.badge_code ?? null,
   }));
+}
+
+type LigneBadgeLot = {
+  athlete_id: string; id: string; badge_id: string; libelle: string; icone_path: string | null; organisation: string;
+  created_at: string; est_masque: boolean; est_le_mien: boolean; peut_masquer: boolean;
+  badge_code: string | null; est_nexus: boolean | null;
+};
+
+/** Les badges partenaire d'un LOT d'athlètes (cartes : recherche, favoris, listes, processus),
+ *  groupés par athlète. UN appel groupé, toutes les pages (lireTout) : ni requête par carte,
+ *  ni plafond de 1 000. Lecture arbitrée serveur athlète par athlète (badges_partenaires_athlete) :
+ *  Loi 25 — sans opt-in partenaire actif, rien. Un badge MASQUÉ n'est jamais montré sur une carte. */
+export async function chargerBadgesPartenairesLot(
+  supabase: SupabaseClient,
+  athleteIds: Iterable<string | null | undefined>,
+): Promise<Map<string, BadgePartenaire[]>> {
+  const ids = idsUniques(athleteIds).sort();
+  const parAthlete = new Map<string, BadgePartenaire[]>();
+  if (ids.length === 0) return parAthlete;
+  const lignes = await lireTout<LigneBadgeLot>((de, a) => supabase
+    .rpc("badges_partenaires_athletes", { p_athlete_ids: ids }, { count: "exact" })
+    .select("athlete_id, id, badge_id, libelle, icone_path, organisation, created_at, est_masque, est_le_mien, peut_masquer, badge_code, est_nexus")
+    .order("id")
+    .range(de, a));
+  for (const r of lignes) {
+    if (r.est_masque) continue;
+    const b: BadgePartenaire = {
+      id: r.id,
+      badgeId: r.badge_id,
+      libelle: r.libelle,
+      organisation: r.organisation,
+      iconeUrl: iconeBadgeUrl(supabase, r.icone_path),
+      poseLe: r.created_at,
+      estMasque: false,
+      estLeMien: !!r.est_le_mien,
+      peutMasquer: !!r.peut_masquer,
+      estNexus: !!r.est_nexus,
+      codeNexus: r.badge_code ?? null,
+    };
+    const l = parAthlete.get(r.athlete_id);
+    if (l) l.push(b); else parAthlete.set(r.athlete_id, [b]);
+  }
+  for (const l of parAthlete.values()) l.sort((x, y) => (x.poseLe < y.poseLe ? -1 : x.poseLe > y.poseLe ? 1 : x.id < y.id ? -1 : 1));
+  return parAthlete;
 }
 
 export interface BadgeCatalogue {

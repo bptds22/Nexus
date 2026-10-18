@@ -87,6 +87,19 @@ export function coteCarteDepuisEvaluations(
   return coteCarte(coteCoach, p ? { cote: p.cote, organisation: p.organisation } : null);
 }
 
+/** L'évaluation PARTENAIRE à ajouter à côté de celle du coach, quand les deux existent
+ *  (1.4.5). `coteCarte` n'affiche qu'une cote ; quand le coach a évalué, celle du partenaire
+ *  disparaissait — elle s'affiche maintenant en plus, avec son libellé. Null sinon (le
+ *  partenaire seul est déjà la cote affichée par `coteCarte`). */
+export function cotePartenaireEnPlus(
+  coteCoach: number | null | undefined,
+  partenaire: { cote: number | null | undefined; organisation: string | null | undefined } | null | undefined,
+): { valeur: number; organisation: string } | null {
+  const c = partenaire?.cote;
+  if (!(typeof coteCoach === "number" && coteCoach > 0) || !(typeof c === "number" && c > 0)) return null;
+  return { valeur: c, organisation: partenaire?.organisation || ORGANISATION_INCONNUE };
+}
+
 /** Les DEUX évaluations d'un joueur, côte à côte (demande BP 1.4.5) : celle du
  *  coach ET la partenaire retenue, chacune avec son libellé. Contrairement à
  *  `coteCarte` (une seule cote par carte), rien n'est caché derrière l'autre.

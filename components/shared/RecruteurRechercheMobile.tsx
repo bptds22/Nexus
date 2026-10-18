@@ -33,8 +33,10 @@ import { FilterRow, TogglePill, FilterBottomSheetShell } from "@/components/shar
 import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
-import { useAthleteSearch, coteAffichee } from "@/lib/queries/recruiter/useAthleteSearch";
+import { useAthleteSearch, coteAffichee, coteEnPlus } from "@/lib/queries/recruiter/useAthleteSearch";
 import { libelleCotePartenaire } from "@/lib/evaluations/coteCarte";
+import CarteBadges from "@/components/shared/CarteBadges";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
 import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
@@ -486,6 +488,8 @@ export interface AthleteCardProps {
      *  du coach d'abord, sinon celle du partenaire AVEC son nom, jamais seule. */
     starsPartenaire?: number | null;
     starsPartenaireOrg?: string | null;
+    /** Badges du coach (recherche) : avec ceux du partenaire, 5 au plus sur la carte. */
+    badges?: { badgeId: string; label: string; icon?: string }[];
     isVerified: boolean;
     lastValidation?: string | null;
     isFavorited: boolean;
@@ -552,6 +556,7 @@ export function AthleteCardMobile({
   const identityLocked = a.identityVisible === false || (a.identityVisible === undefined && !!isFree);
   const verifiedActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
   const cote = coteAffichee({ stars: a.stars, starsPartenaire: a.starsPartenaire ?? null, starsPartenaireOrg: a.starsPartenaireOrg ?? null });
+  const enPlus = coteEnPlus({ stars: a.stars, starsPartenaire: a.starsPartenaire ?? null, starsPartenaireOrg: a.starsPartenaireOrg ?? null });
   // Iter 7.3 Section B — status pill retiré du grid card
   const [showHeartPop, setShowHeartPop] = useState(false);
   const lastTapRef = useRef(0);
@@ -709,6 +714,21 @@ export function AthleteCardMobile({
               {libelleCotePartenaire(cote.organisation)}
             </span>
           )}
+          {/* Le coach ET le partenaire ont évalué : les deux, chacun avec son libellé (1.4.5). */}
+          {enPlus && (
+            <>
+              <span className="bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/85">Évaluation du coach</span>
+              <div data-cote-partenaire className="flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span className="text-[12px] font-bold text-white leading-none">{enPlus.valeur.toFixed(1)}</span>
+              </div>
+              <span className="bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/85 max-w-[110px] truncate">
+                {libelleCotePartenaire(enPlus.organisation)}
+              </span>
+            </>
+          )}
         </div>
         {/* Double-tap heart pop (Instagram-style) */}
         <AnimatePresence>
@@ -756,6 +776,8 @@ export function AthleteCardMobile({
               </span>
             )}
           </div>
+          {/* Badges : partenaire d'abord, puis coach — 5 au plus, puis « +N » (rangée rognée). */}
+          {!identityLocked && <CarteBadges athleteId={a.id} coach={a.badges} variante="ligne" className="mt-1.5 max-h-[20px]" />}
         </div>
       </motion.div>
       <style jsx>{`
@@ -775,6 +797,7 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
   const pill = statusPillFromStatus(a.recruitmentStatus);
   const identityLocked = a.identityVisible === false || (a.identityVisible === undefined && !!isFree);
   const cote = coteAffichee({ stars: a.stars, starsPartenaire: a.starsPartenaire ?? null, starsPartenaireOrg: a.starsPartenaireOrg ?? null });
+  const enPlus = coteEnPlus({ stars: a.stars, starsPartenaire: a.starsPartenaire ?? null, starsPartenaireOrg: a.starsPartenaireOrg ?? null });
   return (
     <Link href={`/recruteur/athletes/${a.id}`} className="block">
       <div className="flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
@@ -832,6 +855,17 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
             <span className="text-[#4a4d56]">·</span>
             <span className="text-[10px] uppercase text-[#6B7280]">{a.graduationYear}</span>
           </div>
+          {/* Coach ET partenaire : l'évaluation du partenaire à côté, avec son libellé (1.4.5). */}
+          {enPlus && (
+            <div data-cote-partenaire className="flex items-center gap-1 mt-1 min-w-0">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#F59E0B" stroke="none" className="shrink-0">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <span className="text-[11px] font-bold text-white shrink-0">{enPlus.valeur.toFixed(1)}</span>
+              <span className="text-[10px] font-bold text-[#9CA3AF] truncate">· {libelleCotePartenaire(enPlus.organisation)}</span>
+            </div>
+          )}
+          {!identityLocked && <CarteBadges athleteId={a.id} coach={a.badges} variante="ligne" className="mt-1 max-h-[20px]" />}
         </div>
         {/* Heart button right */}
         <div onClick={(e) => { void triggerHaptic("Light"); e.preventDefault(); e.stopPropagation(); }}>
@@ -1384,6 +1418,7 @@ export function RecruteurRechercheMobile() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
           >
+            <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
             {viewMode === "grid" ? (
               <div className="grid grid-cols-2 gap-3 p-4">
                 <AnimatePresence mode="popLayout">
@@ -1437,6 +1472,7 @@ export function RecruteurRechercheMobile() {
                 </AnimatePresence>
               </div>
             )}
+            </PartenaireCartesProvider>
           </motion.div>
         )}
       </AnimatePresence>

@@ -83,7 +83,7 @@
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
-import { coteCarte, type CoteCarte } from "@/lib/evaluations/coteCarte";
+import { coteCarte, cotePartenaireEnPlus, type CoteCarte } from "@/lib/evaluations/coteCarte";
 import { createClient } from "@/lib/supabase/client";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 import { taxonomyFromSearchRow, type TaxonomySource } from "@/lib/config/team-taxonomy";
@@ -315,6 +315,11 @@ const MIN_SEARCH_LEN = 3;
 export function coteAffichee(a: Pick<SearchAthleteRow, "stars" | "starsPartenaire" | "starsPartenaireOrg">): CoteCarte {
   // La règle est celle de toutes les cartes (lib/evaluations/coteCarte.ts).
   return coteCarte(a.stars, { cote: a.starsPartenaire, organisation: a.starsPartenaireOrg });
+}
+
+/** L'évaluation du partenaire À CÔTÉ de celle du coach, quand les deux existent (1.4.5). */
+export function coteEnPlus(a: Pick<SearchAthleteRow, "stars" | "starsPartenaire" | "starsPartenaireOrg">) {
+  return cotePartenaireEnPlus(a.stars, { cote: a.starsPartenaire, organisation: a.starsPartenaireOrg });
 }
 
 export function useAthleteSearch(filters: AthleteSearchFilters) {

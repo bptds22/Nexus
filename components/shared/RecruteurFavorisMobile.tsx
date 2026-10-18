@@ -25,6 +25,7 @@ import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { triggerHaptic } from "@/lib/haptics";
 import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
 import { retenirCotePartenaire } from "@/lib/evaluations/coteCarte";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
 
 
 export function RecruteurFavorisMobile() {
@@ -171,6 +172,7 @@ export function RecruteurFavorisMobile() {
           // ~250ms cubic-bezier canon, PUIS reflow auto des cartes restantes
           // vers le haut. Si Undo → l'item réapparaît avec l'animation d'entrée
           // (initial → animate). Pattern canon retrait liste mobile.
+          <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
           <div className="grid grid-cols-2 gap-3">
             <AnimatePresence mode="popLayout">
               {filtered.map((a) => (
@@ -204,6 +206,7 @@ export function RecruteurFavorisMobile() {
                       openToOffers: a.openToOffers,
                       noTeam: a.noTeam,
                       identityVisible: a.identityVisible,
+                      badges: a.badges,
                     }}
                     favDisabled={false}
                     onToggleFav={handleUnfavorite}
@@ -218,6 +221,7 @@ export function RecruteurFavorisMobile() {
               ))}
             </AnimatePresence>
           </div>
+          </PartenaireCartesProvider>
         )}
       </div>
       {modale}

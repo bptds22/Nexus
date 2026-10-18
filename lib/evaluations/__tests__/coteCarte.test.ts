@@ -97,12 +97,14 @@ test("surfaces web : recherche, favoris, fiche/aperçu passent par la règle et 
   const recherche = lire("app/recruteur/recherche/page.tsx");
   assert.equal((recherche.match(/\{libelleCotePartenaire\(cote\.organisation\)\}/g) ?? []).length, 2, "grille et ligne");
   assert.match(recherche, /· \{libelleCotePartenaire\(cote\.organisation\)\}/);
-  assert.equal((recherche.match(/data-cote-partenaire/g) ?? []).length, 2);
+  // 2 pour la cote affichée (grille, ligne) + 2 pour l'évaluation du partenaire à côté du coach (1.4.5).
+  assert.equal((recherche.match(/data-cote-partenaire/g) ?? []).length, 4);
+  assert.equal((recherche.match(/enPlus\.organisation/g) ?? []).length >= 4, true);
 
   const favoris = lire("app/recruteur/favoris/page.tsx");
   assert.match(favoris, /useCotesPartenaires\(favorisBruts\.map\(\(a\) => a\.id\)\)/);
   assert.match(favoris, /coteCarteDepuisEvaluations\(a\.stars, cotesPartenaires\?\.get\(a\.id\)\)/);
-  assert.equal((favoris.match(/data-cote-partenaire/g) ?? []).length, 2);
+  assert.equal((favoris.match(/data-cote-partenaire/g) ?? []).length, 4, "cote affichée + évaluation partenaire à côté du coach (1.4.5)");
   assert.doesNotMatch(favoris, /fill=\{a\.stars >=/, "plus d'étoiles lues directement sur la cote du coach");
   assert.match(favoris, /a\.cote\.valeur >= parseFloat\(minRating\)/);
 

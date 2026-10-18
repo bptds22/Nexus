@@ -19,6 +19,7 @@ import RelanceFiche from "@/components/shared/RelanceFiche";
 
 import { plateformeDeUrl, plateformeDuLien, type ClePlateforme } from "@/lib/config/plateformesLien";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { limiterBadgesFiche } from "@/lib/badges/carteBadges";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -742,6 +743,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      tailleBadgeFiche.ts). Appelé AVANT le retour anticipé : un hook de plus
      après lui serait conditionnel. */
   const badgesPartenaire = useBadgesPartenaires(viewerMode === "recruiter" ? athleteId : null);
+  /* « +N » de la carte-joueur : 5 badges au total, le reste se déplie (1.4.5). */
+  const [badgesDeplies, setBadgesDeplies] = useState(false);
   // Cote partenaire sur la carte quand le coach n'a pas évalué (comme le web, PlayerCard).
   const evaluationsPartenaires = useEvaluationsPartenaires(viewerMode === "recruiter" ? athleteId : null);
   if (viewerMode !== "recruiter") return null;
@@ -2042,6 +2045,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   // cote_globale_entraineur last-write, 5.0), PAS la moyenne des traits (qui, pour
   // un coach, sont les SIENS via la RLS → 4.6). traitAvg reste le repli.
   const coteGlobale = a.overallRating || traitAvg || 0;
+  /* 5 badges au total sur la carte-joueur : badge personnalisé du partenaire, ses autres badges,
+     puis ceux du coach. Le reste se déplie avec « +N » (aucune information perdue). */
+  const limFiche = badgesDeplies
+    ? { partenaire: badgesPartenaire, coach: a.distinctions, reste: 0 }
+    : limiterBadgesFiche(badgesPartenaire, a.distinctions);
 
   const tests: { label: string; value?: string }[] = [
     { label: "40 verges", value: a.fortyYard },
@@ -2458,9 +2466,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         )}
 
         {/* Badges (size sm partout, justify-center, gap-x-6 gap-y-3) — plus bas dans la hiérarchie */}
-        {a.distinctions.length > 0 && (
+        {limFiche.coach.length > 0 && (
           <div className="mt-6" id="nx-apercu-badges">
-            <BadgesRow distinctions={a.distinctions} mounted={mounted} badgesRevealed={badgesRevealed} />
+            <BadgesRow distinctions={limFiche.coach} mounted={mounted} badgesRevealed={badgesRevealed} />
           </div>
         )}
         {/* Badges partenaire (§97) : à la suite des Distinctions, comme sur le
@@ -2469,11 +2477,16 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             en prend 140. flex-wrap : deux badges propres tiennent côte à côte
             (2 × 140 + 6 ≤ 343 px). zoneImageRangee aligne les libellés des
             badges Nexus sur la boîte de 120 px quand la rangée en contient une. */}
-        {id && badgesPartenaire.length > 0 && (
-          <div className={`${a.distinctions.length > 0 ? "mt-4" : "mt-6"} flex flex-wrap justify-center gap-x-[6px] gap-y-4`} data-badges-partenaire-mobile>
-            {badgesPartenaire.map((b) => (
+        {id && (limFiche.partenaire.length > 0 || limFiche.reste > 0) && (
+          <div className={`${limFiche.coach.length > 0 ? "mt-4" : "mt-6"} flex flex-wrap justify-center items-center gap-x-[6px] gap-y-4`} data-badges-partenaire-mobile>
+            {limFiche.partenaire.map((b) => (
               <BadgePartenaireVignette key={b.id} badge={b} athleteId={id} actions={actionsBadgePartenaire} zoneImage={zoneImageRangee(badgesPartenaire)} />
             ))}
+            {limFiche.reste > 0 && (
+              <button type="button" onClick={() => { triggerHaptic("Light"); setBadgesDeplies(true); }} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-3 rounded-full bg-white/5 border border-white/10 text-[13px] font-bold text-[#9CA3AF] active:bg-white/10" aria-label={`Voir les ${limFiche.reste} autres badges`}>
+                +{limFiche.reste}
+              </button>
+            )}
           </div>
         )}
 

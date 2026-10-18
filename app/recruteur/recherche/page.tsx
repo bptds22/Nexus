@@ -7,14 +7,15 @@ import { FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
 import { trierDecouverte } from "@/lib/recherche/triDecouverte";
 import { useJournalFiltres } from "@/lib/recherche/useJournalFiltres";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
-import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
-import { useAthleteSearch, coteAffichee } from "@/lib/queries/recruiter/useAthleteSearch";
+import { useAthleteSearch, coteAffichee, coteEnPlus } from "@/lib/queries/recruiter/useAthleteSearch";
+import CarteBadges from "@/components/shared/CarteBadges";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
 import { libelleCotePartenaire } from "@/lib/evaluations/coteCarte";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
@@ -89,6 +90,7 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
 }) {
   // W2 — cote du coach, sinon celle du partenaire AVEC son nom (jamais seule).
   const cote = coteAffichee(a);
+  const enPlus = coteEnPlus(a);
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
@@ -150,6 +152,23 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
               {libelleCotePartenaire(cote.organisation)}
             </span>
           )}
+          {/* Le coach ET le partenaire ont évalué : les deux s'affichent, chacun
+              avec son libellé (1.4.5). */}
+          {enPlus && (
+            <>
+              <span className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85">Évaluation du coach</span>
+              <div data-cote-partenaire className="flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5" title={`${libelleCotePartenaire(enPlus.organisation)} — pas une note d'entraîneur`}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={enPlus.valeur >= i + 0.5 ? "#F59E0B" : "#4a4d56"} stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+              </div>
+              <span className="bg-black/70 backdrop-blur-md rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/85 max-w-[170px] truncate">
+                {libelleCotePartenaire(enPlus.organisation)}
+              </span>
+            </>
+          )}
         </div>
 
       </Link>
@@ -201,16 +220,8 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
           </div>
         )}
 
-        {/* Badges */}
-        {a.badges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {a.badges.map((b) => (
-              <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946]">
-                {b.icon && <NxIcon name={b.icon} size={10} className="text-[#E63946]" />} {b.label}
-              </span>
-            ))}
-          </div>
-        )}
+        {/* Badges : 5 au plus (partenaire d'abord, puis coach), puis « +N ». */}
+        <CarteBadges athleteId={a.id} coach={a.badges} variante="grille" className="mt-2" />
 
         {/* Footer — school · year left, voir le profil right */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
@@ -250,6 +261,7 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
   favDisabledReason: string;
 }) {
   const cote = coteAffichee(a);
+  const enPlus = coteEnPlus(a);
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
 
@@ -314,6 +326,18 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
               </span>
             )}
           </div>
+          {/* Coach ET partenaire : le partenaire à côté, avec son libellé (1.4.5). */}
+          {enPlus && (
+            <div data-cote-partenaire className="flex items-center gap-0.5 min-w-0" title={`${libelleCotePartenaire(enPlus.organisation)} — pas une note d'entraîneur`}>
+              {Array.from({ length: 5 }, (_, i) => (
+                <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={enPlus.valeur >= i + 0.5 ? "#F59E0B" : "#374151"} stroke="none">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              ))}
+              <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{enPlus.valeur.toFixed(1)}</span>
+              <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] truncate max-w-[140px]">· {libelleCotePartenaire(enPlus.organisation)}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -338,13 +362,9 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
       {/* Promotion */}
       <span className="text-[13px] text-[#9CA3AF] shrink-0 w-[50px]">{a.graduationYear}</span>
 
-      {/* Badges */}
-      <div className="flex gap-1.5 flex-1 min-w-0">
-        {a.badges.map((b) => (
-          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946] whitespace-nowrap">
-            {b.icon && <NxIcon name={b.icon} size={10} className="text-[#E63946]" />} {b.label}
-          </span>
-        ))}
+      {/* Badges : 5 au plus, puis « +N » — la ligne ne déborde plus (rangée rognée). */}
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <CarteBadges athleteId={a.id} coach={a.badges} variante="ligne" />
       </div>
 
       {/* Fav toggle */}
@@ -1054,7 +1074,7 @@ function RechercheContent() {
           </p>
         </div>
       ) : (
-        <>
+        <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
           {(() => {
             // favorites.size is the recruiter's current favorite count — the
             // DB still enforces the cap via RLS; this just blocks the click
@@ -1092,7 +1112,7 @@ function RechercheContent() {
               affichés — d'autres correspondent » là où la requête tronquait
               volontairement à N. La RPC ne tronque plus : la bannière serait
               devenue un mensonge, et le composant avec elle. */}
-        </>
+        </PartenaireCartesProvider>
       )}
     </div>
   );

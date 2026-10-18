@@ -93,8 +93,9 @@ import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanb
 import { triggerHaptic } from "@/lib/haptics";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { deuxCotes, libelleCotePartenaire } from "@/lib/evaluations/coteCarte";
-import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
-import { CotesPartenairesProvider, useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
+import { useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
+import CarteBadges from "@/components/shared/CarteBadges";
 import CotesEvaluations from "@/components/shared/CotesEvaluations";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
@@ -532,6 +533,10 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
             </div>
           );
         })()}
+
+        {/* Badges du partenaire (5 au plus, puis « +N ») — une rangée rognée : la
+            carte reste à 120 px, rien ne déborde. */}
+        {!prospect && <CarteBadges athleteId={card.id} variante="ligne" className="mt-1 max-h-[20px]" />}
 
       </div>
     </button>
@@ -1642,7 +1647,6 @@ export function RecruteurPipelineMobile() {
   /* Évaluations partenaires de toutes les cartes, lues d'un coup (RPC groupée,
      toutes les pages) — pas une requête par carte. Loi 25 : rien sans opt-in actif. */
   const idsAthletes = useMemo(() => cards.filter((c) => !estCarte(c)).map((c) => c.id), [cards]);
-  const { data: cotesPartenaires } = useCotesPartenaires(idsAthletes);
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
   const loading = tierLoading || pipelineLoading;
@@ -1914,7 +1918,7 @@ export function RecruteurPipelineMobile() {
        fournisseur que le web, présentées en feuille du bas. Pro de l'unité
        seulement : la base ne rend rien à un compte gratuit, et la démo n'en
        demande pas. */
-    <CotesPartenairesProvider cotes={cotesPartenaires}>
+    <PartenaireCartesProvider ids={idsAthletes}>
     <FournisseurRapprochements
       actif={modeUnite && !isFreeDemoMode}
       variante="feuille"
@@ -2136,6 +2140,6 @@ export function RecruteurPipelineMobile() {
       `}</style>
     </div>
     </FournisseurRapprochements>
-    </CotesPartenairesProvider>
+    </PartenaireCartesProvider>
   );
 }

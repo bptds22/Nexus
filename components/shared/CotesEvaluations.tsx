@@ -10,7 +10,8 @@
    toujours collé à ses étoiles. */
 
 import StarRating from "@/components/ui/StarRating";
-import { libelleCotePartenaire, type DeuxCotes } from "@/lib/evaluations/coteCarte";
+import { deuxCotes, libelleCotePartenaire, type DeuxCotes } from "@/lib/evaluations/coteCarte";
+import { useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
 
 export default function CotesEvaluations({
   cotes,
@@ -48,4 +49,15 @@ export default function CotesEvaluations({
       )}
     </div>
   );
+}
+
+/** Pour une rangée qui a seulement l'identifiant et la cote du coach : le partenaire vient du
+ *  lot lu par la page (PartenaireCartesProvider) — aucune requête ici. */
+export function CotesEvaluationsAthlete({
+  athleteId,
+  coteCoach,
+  ...reste
+}: { athleteId: string | null | undefined; coteCoach: number | null | undefined } & Omit<React.ComponentProps<typeof CotesEvaluations>, "cotes">) {
+  const evals = useCotesPartenairesDe(athleteId);
+  return <CotesEvaluations cotes={deuxCotes(coteCoach, evals)} {...reste} />;
 }

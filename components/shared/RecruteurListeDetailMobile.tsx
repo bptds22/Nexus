@@ -26,6 +26,9 @@ import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import ErreurChargement from "@/components/shared/ErreurChargement";
+import { CotesEvaluationsAthlete } from "@/components/shared/CotesEvaluations";
+import CarteBadges from "@/components/shared/CarteBadges";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
 
 
 /* ── ListAthleteCardMobile ─────────────────────────────────────
@@ -98,7 +101,7 @@ function ListAthleteCardMobile({
           type="button"
           onClick={() => { triggerHaptic("Light"); onTap(); }}
           className="w-full relative overflow-hidden active:opacity-80 transition-opacity text-left bg-[#1A1D24]"
-          style={{ height: 132 }}
+          style={{ height: 156 }}
         >
           {/* Photo bleed gauche 150px (canon 14.1) */}
           {locked ? (
@@ -155,20 +158,17 @@ function ListAthleteCardMobile({
                   </svg>
                 </span>
               )}
-              {!athlete.isProspect && (
-                <span className="flex-shrink-0 ml-auto flex items-center gap-1">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span className="text-[15px] font-bold text-white tabular-nums">{athlete.coachRating.toFixed(1)}</span>
-                </span>
-              )}
             </div>
 
             <p className="text-[14px] text-[#9CA3AF] mt-1.5 truncate">
               {[athlete.positionAbbr || athlete.sportName, athlete.jersey ? `#${athlete.jersey}` : null]
                 .filter(Boolean).join(" · ") || "—"}
             </p>
+
+            {/* Les deux évaluations, chacune avec son libellé : coach ET partenaire (1.4.5). */}
+            {!athlete.isProspect && !locked && (
+              <CotesEvaluationsAthlete athleteId={athlete.athleteId} coteCoach={athlete.coachRating} taille="sm" vide="Non évalué" libelleCoach="Coach" className="mt-1.5 pr-10" />
+            )}
 
             {statusConfig && (
               <div className="flex items-center gap-1.5 mt-2">
@@ -177,6 +177,11 @@ function ListAthleteCardMobile({
                   {statusConfig.shortLabel ?? statusConfig.label}
                 </span>
               </div>
+            )}
+
+            {/* Badges du partenaire : 5 au plus, puis « +N » (rangée rognée). */}
+            {!athlete.isProspect && !locked && (
+              <CarteBadges athleteId={athlete.athleteId} variante="ligne" className="mt-1.5 max-h-[20px] pr-10" />
             )}
           </div>
         </button>
@@ -726,6 +731,7 @@ function DetailInner({ listId }: { listId: string }) {
           ) : athletes.length === 0 ? (
             <EmptyState onAdd={() => { triggerHaptic("Light"); setAddAthleteOpen(true); }} />
           ) : (
+            <PartenaireCartesProvider ids={athletes.filter((a) => !a.isProspect).map((a) => a.athleteId)}>
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {athletes.map((a) => (
@@ -747,6 +753,7 @@ function DetailInner({ listId }: { listId: string }) {
                 ))}
               </AnimatePresence>
             </div>
+            </PartenaireCartesProvider>
           )}
         </div>
 

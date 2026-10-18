@@ -24,6 +24,10 @@ export const BADGE_ORDER = ["captain", "allstar", "progression", "team_leader", 
 /** Max badges per athlete */
 export const MAX_BADGES = 5;
 
+/** Badges affichés SUR UNE CARTE (recherche, favoris, listes, processus, carte-joueur
+ *  de la fiche) : 5 au TOTAL, coach et partenaire confondus, puis « +N » (1.4.5). */
+export const MAX_BADGES_CARTE = 5;
+
 /** Max characters for team_leader / league_leader / custom detail text */
 export const MAX_DETAIL_LENGTH = 30;
 

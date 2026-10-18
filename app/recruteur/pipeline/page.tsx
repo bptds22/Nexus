@@ -67,11 +67,11 @@ import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { getCurrentSeason } from "@/lib/utils/season";
 // Pipeline movement is now unrestricted — no validation imports needed
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
-import StarRating from "@/components/ui/StarRating";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { deuxCotes } from "@/lib/evaluations/coteCarte";
-import { useCotesPartenaires } from "@/lib/queries/shared/useCotesPartenaires";
-import { CotesPartenairesProvider, useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
+import { useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
+import CarteBadges from "@/components/shared/CarteBadges";
 import CotesEvaluations from "@/components/shared/CotesEvaluations";
 import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
 import { GRADES, type Grade } from "@/lib/config/grades";
@@ -602,6 +602,8 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             />
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
+          {/* Badges (partenaire d'abord, puis coach) : 5 au plus, puis « +N ». */}
+          {!estCarte(card) && <CarteBadges athleteId={card.id} variante="ligne" className="mt-2" />}
         </div>
 
       </button>
@@ -1941,7 +1943,6 @@ function PipelinePageContent() {
      toutes les pages) — jamais une requête par carte. Loi 25 : la RPC ne rend
      rien sans opt-in partenaire actif ; sans ligne, la carte n'affiche rien. */
   const idsAthletes = useMemo(() => cards.filter((c) => !estCarte(c)).map((c) => c.id), [cards]);
-  const { data: cotesPartenaires } = useCotesPartenaires(idsAthletes);
   const competitorMap = pipelineData?.competitorMap ?? {};
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
@@ -2365,7 +2366,7 @@ function PipelinePageContent() {
   return (
     /* Lot D : les propositions de rapprochement de l'unité (Pro seulement).
        Lot E : Accepter = fusionner ; la carte disparaît, son panneau se ferme. */
-    <CotesPartenairesProvider cotes={cotesPartenaires}>
+    <PartenaireCartesProvider ids={idsAthletes}>
     <FournisseurRapprochements
       actif={modeUnite && !isFreeDemoMode}
       onAccepter={async (r) => {
@@ -2780,6 +2781,6 @@ function PipelinePageContent() {
       `}</style>
     </div>
     </FournisseurRapprochements>
-    </CotesPartenairesProvider>
+    </PartenaireCartesProvider>
   );
 }

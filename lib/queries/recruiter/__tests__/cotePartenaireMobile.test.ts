@@ -22,7 +22,9 @@ test("recherche recruteur mobile : p_inclure_partenaires ET le libellé, dans le
   assert.equal((src.match(/const cote = coteAffichee\(\{ stars: a\.stars, starsPartenaire: a\.starsPartenaire \?\? null, starsPartenaireOrg: a\.starsPartenaireOrg \?\? null \}\);/g) ?? []).length, 2);
   assert.equal((src.match(/\{cote\.valeur\.toFixed\(1\)\}/g) ?? []).length, 2);
   assert.doesNotMatch(src, /\{a\.stars\.toFixed\(1\)\}/);
-  assert.equal((src.match(/data-cote-partenaire/g) ?? []).length, 2);
+  // 2 pour la cote affichée (carte + ligne) + 2 pour l'évaluation du partenaire À CÔTÉ du coach (1.4.5).
+  assert.equal((src.match(/data-cote-partenaire/g) ?? []).length, 4);
+  assert.equal((src.match(/coteEnPlus\(\{ stars: a\.stars/g) ?? []).length, 2);
   // La RPC reçoit bien le 16e paramètre.
   assert.match(lire("lib/queries/recruiter/useAthleteSearch.ts"), /p_inclure_partenaires: filters\.inclurePartenaires \?\? false,/);
 });

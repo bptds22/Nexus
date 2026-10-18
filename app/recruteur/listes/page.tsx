@@ -10,7 +10,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
-import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import type { ProspectList, ProspectListAthlete } from "./_data/mockListsData";
@@ -19,6 +18,9 @@ import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useListesUnite, useNotesListeUnite } from "@/lib/queries/recruiter/useListesUnite";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
+import { CotesEvaluationsAthlete } from "@/components/shared/CotesEvaluations";
+import CarteBadges from "@/components/shared/CarteBadges";
+import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
 import { lireCartes, versMembreListe, ajouterCarteAListe, retirerCarteDeListe } from "@/lib/cartes/carteProspect";
 import { LegendeProspect, SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
 import { useFavorisUnite } from "@/lib/queries/recruiter/useFavorisUnite";
@@ -617,6 +619,7 @@ function ExpandedListView({
   const existingIds = useMemo(() => new Set(list.athletes.map((a) => a.id)), [list.athletes]);
 
   return (
+    <PartenaireCartesProvider ids={list.athletes.filter((a) => !a.prospect).map((a) => a.id)}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -729,9 +732,9 @@ function ExpandedListView({
                     <RecruitmentStatusBadge status={(a.pipeline_status || "ouvert").toUpperCase() as GlobalRecruitmentStatus} size="sm" />
                   </div>
 
-                  {/* Stars — fixed width */}
-                  <div className="w-[120px] shrink-0">
-                    {!a.prospect && <StarRating rating={a.coach_rating} size="sm" />}
+                  {/* Cotes — coach ET partenaire (1.4.5), chacune avec son libellé. */}
+                  <div className="w-[170px] shrink-0 min-w-0">
+                    {!a.prospect && <CotesEvaluationsAthlete athleteId={a.id} coteCoach={a.coach_rating} taille="sm" vide="Non évalué" libelleCoach="Coach" />}
                   </div>
 
                   {/* Added date + who added it — fixed width */}
@@ -742,8 +745,10 @@ function ExpandedListView({
                     )}
                   </div>
 
-                  {/* Spacer */}
-                  <div className="flex-1" />
+                  {/* Badges du partenaire : 5 au plus, puis « +N » (rangée rognée, jamais de débordement). */}
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    {!a.prospect && <CarteBadges athleteId={a.id} variante="ligne" />}
+                  </div>
 
                   {/* Notes + Actions — une carte ouvre SON fil (cartes_prospect_notes). */}
                   <button type="button" onClick={() => setExpandedNotes(expandedNotes === a.id ? null : a.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors shrink-0 ${expandedNotes === a.id ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#6b7280] hover:text-white hover:bg-white/5"}`}>
@@ -821,6 +826,7 @@ function ExpandedListView({
         />
       )}
     </div>
+    </PartenaireCartesProvider>
   );
 }
 
