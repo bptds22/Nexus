@@ -8,6 +8,7 @@ const COMPTE = process.env.VISUEL_PARTENAIRE ?? "e.partenaire@emulateur.local";
 const PAGES: [string, string][] = [
   ["prospects", "/partenaire/prospects"],
   ["evaluations", "/partenaire/mes-athletes"],
+  ["recherche", "/partenaire/athletes"],
 ];
 const FORMATS = [
   { nom: "bureau", viewport: { width: 1280, height: 860 } },
@@ -30,3 +31,18 @@ for (const [nom, chemin] of PAGES) {
     });
   }
 }
+
+// Recherche, téléphone : la feuille « Filtres » ouverte (lecture seule, aucun filtre appliqué).
+test("partenaire recherche — feuille Filtres (téléphone)", async ({ page, context, baseURL }) => {
+  const versCloud: string[] = [];
+  await page.route(/\.supabase\.co\//, (route) => { versCloud.push(route.request().url()); return route.abort(); });
+  await connecterLocal(context, baseURL!, COMPTE);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/partenaire/athletes", { waitUntil: "load" });
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.locator("[data-ouvrir-filtres]").click();
+  await expect(page.locator("[data-filtres-recherche-partenaire]")).toBeVisible();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: "test-results/visuel/partenaire-recherche-filtres-telephone.png" });
+  expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
+});
