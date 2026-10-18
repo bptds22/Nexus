@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import CarteBadges from "@/components/shared/CarteBadges";
+import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
+import { AthleteCardMobile } from "@/components/shared/RecruteurRechercheMobile";
+import FiltresRechercheFeuille from "@/components/partenaire/recherche/FiltresRechercheFeuille";
+import { nombreFiltresActifs, versCarteRecherche } from "@/lib/partenaires/recherche";
+import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 
 /* ═══════════════════════════════════════════════════════════════
    PartnerAthletesSearch — partner-scoped search for
@@ -24,7 +30,30 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
    client query). Tech debt logged in
    docs/post-launch-bugs.md — three near-duplicate athlete
    search implementations are now in the codebase.
+   P1 (1.4.5) — « Athlètes » devient « Recherche », sur le modèle de la
+   recherche recruteur. Téléphone et appli : recherche + bouton « Filtres »
+   qui ouvre LA feuille du recruteur (FiltresRechercheFeuille), cartes
+   natives AthleteCardMobile (adaptateur lib/partenaires/recherche.ts),
+   toucher une carte ouvre la fiche partenaire. Bureau : mêmes filtres en
+   ligne qu'avant. Partout : badges selon la règle R3 (CarteBadges, lecture
+   groupée PartenaireCartesProvider). Mêmes données qu'avant.
 ═══════════════════════════════════════════════════════════════ */
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+const REQUETE_PETIT = "(max-width: 639px)";
+
+/** Téléphone (sous sm) ou appli : la version « feuille + cartes natives ». Au rendu serveur : bureau. */
+function useEstPetitEcran(): boolean {
+  return useSyncExternalStore(
+    (avertir) => {
+      const mq = window.matchMedia(REQUETE_PETIT);
+      mq.addEventListener("change", avertir);
+      return () => mq.removeEventListener("change", avertir);
+    },
+    () => IS_CAPACITOR || window.matchMedia(REQUETE_PETIT).matches,
+    () => IS_CAPACITOR,
+  );
+}
 
 type AthleteRow = {
   id: string;
@@ -96,6 +125,51 @@ function hasDistinctions(raw: unknown): boolean {
   return false;
 }
 
+function CarteRechercheBureau({ a }: { a: AthleteRow }) {
+  const ref = useDeclarerCarteVisible(a.id);
+  const name = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim();
+  const coach = useMemo(() => pastillesBadges(a.badges).map((d) => ({ badgeId: d.code, label: textePastille(d) })), [a.badges]);
+  return (
+    <Link
+      href={`/partenaire/athletes/${a.id}`}
+      className="bg-[#1A1D24] rounded-xl border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.10)] transition-all duration-300 overflow-hidden group flex flex-col"
+    >
+      <div ref={ref} className="relative h-[180px] bg-[#2F3440] overflow-hidden">
+        <AthletePhotoFill
+          photoUrl={a.photo_url}
+          firstName={a.first_name}
+          lastName={a.last_name}
+          initialsFontSize={72}
+          className="object-[center_15%]"
+        />
+        <div
+          className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]"
+          style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }}
+        />
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5">
+          <StarRow rating={a.cote_globale_entraineur} />
+          {a.cote_globale_entraineur == null ? (
+            /* Absence ≠ zéro : « 0.0 » en doré se lit comme une évaluation faible. */
+            <span className="text-[10px] font-semibold text-[#9CA3AF] ml-1.5 whitespace-nowrap" title="Aucune évaluation d'entraîneur">
+              Non évalué
+            </span>
+          ) : (
+            <span className="text-[11px] font-bold text-[#F59E0B] ml-1.5">{a.cote_globale_entraineur.toFixed(1)}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4 flex flex-col flex-1 gap-1">
+        <p className="text-[15px] font-bold text-white group-hover:text-[#E63946] transition-colors">{name}</p>
+        <p className="text-[12px] text-[#9CA3AF] truncate">{[a.sport_name, a.position_name].filter(Boolean).join(" · ") || "—"}</p>
+        <p className="text-[11px] text-[#6b7280] truncate">{a.school_name || "—"}{a.region ? ` · ${a.region}` : ""}</p>
+        {a.annee_diplomation && <p className="text-[11px] font-bold text-[#E63946] mt-1">Promotion {a.annee_diplomation}</p>}
+        <CarteBadges athleteId={a.id} coach={coach} variante="grille" className="mt-2" />
+      </div>
+    </Link>
+  );
+}
+
 export default function PartnerAthletesSearch({
   sports,
   positions,
@@ -115,6 +189,8 @@ export default function PartnerAthletesSearch({
   const [withVideoOnly, setWithVideoOnly] = useState(false);
   const [sortBy, setSortBy] = useState("cote_desc");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [feuilleOuverte, setFeuilleOuverte] = useState(false);
+  const petit = useEstPetitEcran();
 
   // Data state
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
@@ -243,6 +319,8 @@ export default function PartnerAthletesSearch({
     !!orgType || !!genre || !!minRating || withSportBadge || withVideoOnly ||
     sortBy !== "cote_desc";
 
+  const nbFiltres = nombreFiltresActifs({ sport, position, promotion, region, orgType, genre, minRating, withSportBadge, withVideoOnly, sortBy });
+
   const resetFilters = () => {
     setSearch("");
     setSport("");
@@ -262,14 +340,66 @@ export default function PartnerAthletesSearch({
       {/* Header — title + dynamic count */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Athlètes</h1>
+          <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Recherche</h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">
             {filtered.length} athlète{filtered.length === 1 ? "" : "s"} disponible{filtered.length === 1 ? "" : "s"} pour publication
           </p>
         </div>
       </div>
 
-      {/* Search bar + primary filters */}
+      {petit && (
+        <div className="flex items-center gap-2" data-recherche-partenaire-petit>
+          <div className="relative flex-1 min-w-0">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="search"
+              placeholder="Rechercher par nom..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Rechercher un athlète"
+              className="w-full h-11 bg-[#13151a] border border-[#2a2d36] rounded-xl pl-10 pr-3 text-[16px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none"
+            />
+          </div>
+          <button type="button" onClick={() => setFeuilleOuverte(true)} data-ouvrir-filtres
+            className={`relative h-11 px-4 rounded-xl border text-[14px] font-bold flex items-center gap-2 ${nbFiltres > 0 ? "border-[#E63946]/50 bg-[#E63946]/10 text-white" : "border-[#2a2d36] bg-[#13151a] text-[#9CA3AF]"}`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+            </svg>
+            Filtres
+            {nbFiltres > 0 && <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#E63946] text-white text-[11px] font-bold flex items-center justify-center">{nbFiltres}</span>}
+          </button>
+        </div>
+      )}
+      <FiltresRechercheFeuille
+        open={petit && feuilleOuverte}
+        onClose={() => setFeuilleOuverte(false)}
+        onReset={resetFilters}
+        resultCount={filtered.length}
+        filtres={{ sport, position, promotion, region, orgType, genre, minRating, withSportBadge, withVideoOnly, sortBy }}
+        poser={(p) => {
+          if (p.sport !== undefined) setSport(p.sport);
+          if (p.position !== undefined) setPosition(p.position);
+          if (p.promotion !== undefined) setPromotion(p.promotion);
+          if (p.region !== undefined) setRegion(p.region);
+          if (p.orgType !== undefined) setOrgType(p.orgType);
+          if (p.genre !== undefined) setGenre(p.genre);
+          if (p.minRating !== undefined) setMinRating(p.minRating);
+          if (p.withSportBadge !== undefined) setWithSportBadge(p.withSportBadge);
+          if (p.withVideoOnly !== undefined) setWithVideoOnly(p.withVideoOnly);
+          if (p.sortBy !== undefined) setSortBy(p.sortBy);
+        }}
+        sports={sports}
+        positions={dynamicPositions}
+        regions={regions}
+        promotions={promotions}
+      />
+
+      {/* Search bar + primary filters (bureau) */}
+      {!petit && (
       <div className="space-y-3">
         <div className="relative">
           <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -499,6 +629,7 @@ export default function PartnerAthletesSearch({
           </div>
         )}
       </div>
+      )}
 
       {/* Results */}
       {loading ? (
@@ -542,63 +673,20 @@ export default function PartnerAthletesSearch({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((a) => {
-            const name = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim();
-            return (
-              <Link
-                key={a.id}
-                href={`/partenaire/athletes/${a.id}`}
-                className="bg-[#1A1D24] rounded-xl border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.10)] transition-all duration-300 overflow-hidden group flex flex-col"
-              >
-                <div className="relative h-[180px] bg-[#2F3440] overflow-hidden">
-                  <AthletePhotoFill
-                    photoUrl={a.photo_url}
-                    firstName={a.first_name}
-                    lastName={a.last_name}
-                    initialsFontSize={72}
-                    className="object-[center_15%]"
-                  />
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]"
-                    style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }}
-                  />
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5">
-                    <StarRow rating={a.cote_globale_entraineur} />
-                    {a.cote_globale_entraineur == null ? (
-                      /* Absence ≠ zéro : « 0.0 » en doré se lit comme une
-                         évaluation faible sur un athlète nommé, alors qu'aucun
-                         entraîneur ne s'est prononcé. Gris neutre, et on le dit. */
-                      <span
-                        className="text-[10px] font-semibold text-[#9CA3AF] ml-1.5 whitespace-nowrap"
-                        title="Aucune évaluation d'entraîneur"
-                      >
-                        Non évalué
-                      </span>
-                    ) : (
-                      <span className="text-[11px] font-bold text-[#F59E0B] ml-1.5">
-                        {a.cote_globale_entraineur.toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-4 flex flex-col flex-1 gap-1">
-                  <p className="text-[15px] font-bold text-white group-hover:text-[#E63946] transition-colors">{name}</p>
-                  <p className="text-[12px] text-[#9CA3AF] truncate">
-                    {[a.sport_name, a.position_name].filter(Boolean).join(" · ") || "—"}
-                  </p>
-                  <p className="text-[11px] text-[#6b7280] truncate">
-                    {a.school_name || "—"}{a.region ? ` · ${a.region}` : ""}
-                  </p>
-                  {a.annee_diplomation && (
-                    <p className="text-[11px] font-bold text-[#E63946] mt-1">Promotion {a.annee_diplomation}</p>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <PartenaireCartesProvider>
+          {petit ? (
+            <div className="grid grid-cols-2 gap-3" data-cartes-natives>
+              {filtered.map((a) => (
+                <AthleteCardMobile key={a.id} a={versCarteRecherche(a)} favDisabled onToggleFav={() => {}}
+                  favoritesCount={0} profileHref={`/partenaire/athletes/${a.id}`} layoutIdPrefix="partenaire-athlete-photo" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((a) => <CarteRechercheBureau key={a.id} a={a} />)}
+            </div>
+          )}
+        </PartenaireCartesProvider>
       )}
     </div>
   );

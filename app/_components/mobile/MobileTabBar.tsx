@@ -199,7 +199,7 @@ const ATHLETE_TABS: TabConfig[] = [
    dans le panneau Plus. Aucun palier : pas de requiredTier. */
 const PARTENAIRE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/partenaire", icon: Icons.dashboard, exact: true },
-  { key: "athletes", label: "Athlètes", href: "/partenaire/athletes", icon: Icons.search, activeMatch: "/partenaire/athletes" },
+  { key: "athletes", label: "Recherche", href: "/partenaire/athletes", icon: Icons.search, activeMatch: "/partenaire/athletes" },
   { key: "mes-athletes", label: "Mes évaluations", href: "/partenaire/mes-athletes", icon: Icons.users, activeMatch: "/partenaire/mes-athletes" },
   { key: "prospects", label: "Mes athlètes", href: "/partenaire/prospects", icon: Icons.flag, activeMatch: "/partenaire/prospects" },
 ];

@@ -704,10 +704,13 @@ export function AthleteCardMobile({
             du partenaire, si c'est elle, porte le nom de l'organisation dessous. */}
         <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
           <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={cote.valeur > 0 ? "#F59E0B" : "#4a4d56"} stroke="none">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span className="text-[14px] font-bold text-white leading-none">{cote.valeur.toFixed(1)}</span>
+            {/* Absence ≠ zéro (P1, 1.4.5) : « 0.0 » se lit comme une évaluation faible. */}
+            {cote.valeur > 0
+              ? <span className="text-[14px] font-bold text-white leading-none">{cote.valeur.toFixed(1)}</span>
+              : <span className="text-[11px] font-semibold text-[#9CA3AF] leading-none" title="Aucune évaluation">Non évalué</span>}
           </div>
           {cote.organisation && (
             <span data-cote-partenaire className="bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/85 max-w-[110px] truncate">
@@ -836,10 +839,12 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
           </p>
           <div className="flex items-center gap-2 mt-1">
             <div className="flex items-center gap-1">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill={cote.valeur > 0 ? "#F59E0B" : "#4a4d56"} stroke="none">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
-              <span className="text-[11px] font-bold text-white">{cote.valeur.toFixed(1)}</span>
+              {cote.valeur > 0
+                ? <span className="text-[11px] font-bold text-white">{cote.valeur.toFixed(1)}</span>
+                : <span className="text-[11px] font-semibold text-[#9CA3AF]">Non évalué</span>}
               {cote.organisation && (
                 <span data-cote-partenaire className="text-[10px] font-bold text-[#9CA3AF] truncate max-w-[110px]">· {libelleCotePartenaire(cote.organisation)}</span>
               )}
