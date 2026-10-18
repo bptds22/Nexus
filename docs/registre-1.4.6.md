@@ -45,3 +45,10 @@ Dicter, gabarits courts — `components/shared/ChampNote.tsx`). Le **mode match*
 l'appli iOS, dont la WebView n'expose pas `SpeechRecognition`), met le curseur dans le champ et
 indique le micro du clavier. Un vrai bouton de dictée dans l'appli demande un plugin natif
 (`@capacitor-community/speech-recognition`) : à décider avec le mode match.
+
+## Dictée « à la Wispr Flow » — mise de côté (décision BP 2026-10-18)
+
+Game On reste au texte (le bouton Dicter actuel renvoie au micro du clavier dans l'appli iOS).
+Une vraie dictée (module natif `@capacitor-community/speech-recognition`, bouton à maintenir, « numéro 16… »
+qui choisit le joueur) et le nettoyage par IA (Whisper / Claude) ne se font PAS pour l'instant : BP les voit
+comme un **supplément payant par mois**, à reprendre avec la grille tarifaire.
