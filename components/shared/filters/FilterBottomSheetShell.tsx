@@ -17,7 +17,7 @@
    primitives — plus de feuille à base de <select> natifs.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { triggerHaptic } from "@/lib/haptics";
 
@@ -74,26 +74,31 @@ export interface FilterBottomSheetShellProps {
   /** Les lignes (FilterRow) et sections (pilules, blocs propres à l'écran) —
    *  chaque appelant compose les siennes avec les mêmes primitives. */
   children: ReactNode;
-  /** « Appliquer (12 athlètes) » par défaut — personnalisable si un futur
-   *  appelant ne liste pas des athlètes. */
+  /** « Appliquer » par défaut — C2 (1.4.5) : aucun compte de joueurs, le
+   *  bouton ne dit plus combien d'athlètes la sélection garde. resultCount
+   *  reste dans le contrat (un appelant peut s'en servir pour son libellé). */
   libelleApplique?: (n: number) => string;
 }
 
 export function FilterBottomSheetShell({
   open, onClose, onReset, resultCount, children,
-  libelleApplique = (n) => `Appliquer${n > 0 ? ` (${n} athlète${n !== 1 ? "s" : ""})` : ""}`,
+  libelleApplique = () => "Appliquer",
 }: FilterBottomSheetShellProps) {
-  const [mounted, setMounted] = useState(false);
+  // Monté côté client (portail dans <body>) : faux au rendu serveur, vrai ensuite.
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  // Départ du glissement : une ref (une variable locale était remise à 0 à chaque rendu).
+  const debutGlissement = useRef(0);
 
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => {
+  // Fermée : le glissement repart de zéro (ajustement pendant le rendu, pas dans un effet).
+  const [etaitOuverte, setEtaitOuverte] = useState(open);
+  if (open !== etaitOuverte) {
+    setEtaitOuverte(open);
     if (!open) { setDragOffset(0); setIsDragging(false); }
-  }, [open]);
+  }
 
   if (!mounted || !open) return null;
-  let handleStartY = 0;
   const closeSheet = () => { triggerHaptic("Light"); onClose(); };
 
   return createPortal(
@@ -123,17 +128,17 @@ export function FilterBottomSheetShell({
             de démarrage immédiat au touchstart non plus : seul un vrai
             déplacement vertical engage le glissement, jamais un tap. */}
         <div
-          onTouchStart={(e) => { handleStartY = e.touches[0].clientY; }}
+          onTouchStart={(e) => { debutGlissement.current = e.touches[0].clientY; }}
           onTouchMove={(e) => {
-            if (handleStartY === 0) return;
-            const dy = Math.max(0, e.touches[0].clientY - handleStartY);
+            if (debutGlissement.current === 0) return;
+            const dy = Math.max(0, e.touches[0].clientY - debutGlissement.current);
             if (!isDragging && dy > 4) setIsDragging(true);
             if (isDragging || dy > 4) setDragOffset(dy);
           }}
           onTouchEnd={() => {
             if (dragOffset > 100) closeSheet();
             else setDragOffset(0);
-            setIsDragging(false); handleStartY = 0;
+            setIsDragging(false); debutGlissement.current = 0;
           }}
         >
           <div className="flex justify-center pt-3 pb-2">

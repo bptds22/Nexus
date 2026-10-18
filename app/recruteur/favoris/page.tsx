@@ -429,14 +429,16 @@ function FavorisContent() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mes favoris</h1>
+          {/* C2 (1.4.5) : aucun compte de joueurs — ni « Favoris : N », ni
+              « N / max », ni « N résultats ». Le palier limité garde sa limite,
+              en rouge une fois atteinte. */}
           <p className="text-[14px] text-[#9CA3AF] mt-1">
             {maxFavorites === -1
-              ? <>{favoris.modeUnite ? "Favoris de ton unité" : "Favoris"}&nbsp;: <span className="font-bold text-white">{athletes.length}</span></>
-              : <>Favoris&nbsp;: <span className={`font-bold ${athletes.length >= maxFavorites ? "text-[#E63946]" : "text-white"}`}>{athletes.length} / {maxFavorites}</span></>}
+              ? <>{favoris.modeUnite ? "Les favoris de ton unité" : "Tes athlètes favoris"}</>
+              : <>Limite&nbsp;: <span className={`font-bold ${athletes.length >= maxFavorites ? "text-[#E63946]" : "text-white"}`}>{maxFavorites} favoris</span></>}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[13px] font-bold text-[#6b7280]">{filtered.length} résultat{filtered.length !== 1 ? "s" : ""}</span>
           <div className="flex items-center bg-[#13151a] border border-[#2a2d36] rounded-lg overflow-hidden">
             <button type="button" title="Vue grille" onClick={() => setViewMode("grid")} className={`p-2 transition-colors ${viewMode === "grid" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>

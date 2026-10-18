@@ -809,7 +809,8 @@ function RechercheContent() {
               aria-label="Organisation"
             >
               <option value="">Toutes les organisations</option>
-              {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+              {/* C2 (1.4.5) : aucun compte de joueurs — libellés seuls dans les menus. */}
+              {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
             </select>
           )}
 
@@ -821,7 +822,7 @@ function RechercheContent() {
               aria-label="Ligue"
             >
               <option value="">Toutes les ligues</option>
-              {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+              {leagueOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
             </select>
           )}
 
@@ -833,7 +834,7 @@ function RechercheContent() {
               aria-label="Division"
             >
               <option value="">Toutes les divisions</option>
-              {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+              {divisionOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
             </select>
           )}
 

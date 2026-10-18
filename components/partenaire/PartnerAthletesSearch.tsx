@@ -340,7 +340,8 @@ export default function PartnerAthletesSearch({
     <div className="space-y-6">
       <EnTetePartenaire
         titre="Recherche"
-        sousTitre={<>{filtered.length} athlète{filtered.length === 1 ? "" : "s"} disponible{filtered.length === 1 ? "" : "s"} pour publication</>}
+        // C2 (1.4.5) : aucun compte de joueurs.
+        sousTitre="Les athlètes qui ont accepté la diffusion partenaire, prêts à être publiés."
       />
 
       {petit && (

@@ -109,11 +109,12 @@ test("profilsParMatch : regroupe par match, dédoublonne, suivis d'abord puis pa
   assert.equal(g1.profils[1].position, "QB");
   assert.equal(r.has("g3"), false);
   assert.equal(profilsParMatch([l("g1", "a1", "Roy")]).get("g1")!.suivis, 0, "sans unité : aucun suivi");
-  assert.equal(libelleProfils(g1), "3 profils Nexus");
-  assert.equal(libelleProfils({ total: 1 }), "1 profil Nexus");
+  // C2 (1.4.5) : aucun compte de joueurs — plus de nombre dans les libellés.
+  assert.equal(libelleProfils(g1), "Profils Nexus");
+  assert.equal(libelleProfils({ total: 1 }), "Profil Nexus");
   assert.equal(libelleProfils({ total: 0 }), null);
-  assert.equal(libelleDontSuivis(g1), "dont 1 suivi");
-  assert.equal(libelleDontSuivis({ suivis: 2 }), "dont 2 suivis");
+  assert.equal(libelleDontSuivis(g1), "dont un athlète suivi");
+  assert.equal(libelleDontSuivis({ suivis: 2 }), "dont des athlètes suivis");
   assert.equal(libelleDontSuivis({ suivis: 0 }), null);
 });
 

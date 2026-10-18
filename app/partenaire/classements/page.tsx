@@ -183,7 +183,8 @@ async function rendre(brut: ParamsUrl) {
      page, lui, annonçait « Top 25 » même avec neuf lignes. Les deux se
      dérivent maintenant du MÊME test, pour qu'ils ne puissent plus diverger. */
   const auPlafond = athletes.length === 25;
-  const heading = auPlafond ? "Top 25" : `${athletes.length} athlète${athletes.length === 1 ? "" : "s"}`;
+  // C2 (1.4.5) : aucun compte de joueurs — « Classement » au lieu de « N athlètes ».
+  const heading = auPlafond ? "Top 25" : "Classement";
   const sousTitre = auPlafond
     ? "Top 25 par sport, position, région et promotion"
     : "Classement par sport, position, région et promotion";

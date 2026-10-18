@@ -363,10 +363,8 @@ function DetailColumn({ name, targets, className = "" }: { name: string; targets
   return (
     <div className={`px-[22px] py-[18px] ${className}`}>
       <div className="mb-3 text-[13px] font-bold tracking-[0.1em] uppercase text-[#B9BFC9]">
+        {/* C2 (1.4.5) : aucun compte de joueurs — plus de « N cibles » par équipe. */}
         {name}
-        <span className="ml-2 text-[12.5px] font-medium tracking-normal normal-case text-[#5C6575]">
-          {targets.length} cible{targets.length > 1 ? "s" : ""}
-        </span>
       </div>
       {targets.length === 0 ? (
         <div className="text-[13.5px] italic text-[#5C6575]">Aucune de vos cibles dans cette équipe.</div>
@@ -440,7 +438,8 @@ function MatchCard({ m }: { m: MatchView }) {
             {extra > 0 && <Avatar text={`+${extra}`} more className="-ml-[9px]" />}
           </div>
           <span className="inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-[15px] py-[7px] text-[14px] font-semibold text-[#EDEFF3]">
-            <b className="font-extrabold text-[#E63946]">{m.count}</b> cible{m.count > 1 ? "s" : ""}
+            {/* C2 (1.4.5) : aucun compte de joueurs — libellé neutre, sans nombre. */}
+            Cibles
           </span>
           <svg
             width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"

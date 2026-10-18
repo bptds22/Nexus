@@ -142,10 +142,8 @@ export function AddToListSheet({ open, onClose, athleteId, athleteFullName }: Ad
                           style={{ backgroundColor: l.color }}
                         />
                         <div className="flex-1 min-w-0">
+                          {/* C2 (1.4.5) : aucun compte de joueurs — nombre d'athlètes de la liste retiré. */}
                           <p className="text-[15px] font-semibold text-white truncate">{l.name}</p>
-                          <p className="text-[12px] text-white/55 mt-0.5 tabular-nums">
-                            {l.athleteCount} athlète{l.athleteCount > 1 ? "s" : ""}
-                          </p>
                         </div>
                         {/* Checkbox iOS-style : cercle vide ou cercle plein avec check */}
                         <span

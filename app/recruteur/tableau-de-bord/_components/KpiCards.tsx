@@ -27,7 +27,6 @@ const FOND_PAR_ETAPE = [0.06, 0.12, 0.2, 0.3, 0.42, 0.6];
 
 export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record<string, number> }) {
   const counts = (pipelineCounts || {}) as Record<RecruitmentStatus, number>;
-  const totalActive = PIPELINE_STATUSES.reduce((s, k) => s + (counts[k] || 0), 0);
 
   return (
       /* Fond #E63946 à 4 %, bordure à 25 %, barre de 4 px à gauche (ombre
@@ -54,13 +53,14 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
             // s'intensifie de gauche à droite avec l'avancement ; texte BLANC
             // partout. L'entonnoir « chauffe » vers la signature.
             // - Étape AVEC athlètes : fond #E63946 à FOND_PAR_ETAPE[i], bordure
-            //   rouge pleine, chiffre / icône / libellé blancs.
+            //   rouge pleine, icône / libellé blancs.
             // - Étape VIDE : pas de fond, contour rouge pointillé, texte blanc
             //   à 50 % — en retrait, jamais effacée.
+            // C2 (1.4.5) : aucun compte de joueurs — plus de chiffre par étape,
+            // plus de total actif ni de « N retirés » sous l'entonnoir.
             const fond = FOND_PAR_ETAPE[i] ?? 0.3;
             const texte = isActive ? "#FFFFFF" : "rgba(255,255,255,0.5)";
             const iconColor = texte;
-            const numberColor = texte;
             const labelColor = texte;
             const borderColor = isActive ? "rgba(230,57,70,0.85)" : "rgba(230,57,70,0.45)";
             const background = isActive ? `rgba(230,57,70,${fond})` : "transparent";
@@ -86,38 +86,23 @@ export function EntonnoirProcessus({ pipelineCounts }: { pipelineCounts?: Record
                 <div className="flex justify-center mb-2">
                   <StatusIcon icon={cfg.icon} color={iconColor} size={16} />
                 </div>
-                <p className="text-[26px] font-head font-black leading-none" style={{ color: numberColor }}>
-                  {count}
-                </p>
-                <p className="text-[11px] font-bold tracking-[0.15em] uppercase mt-1" style={{ color: labelColor }}>
+                <p className="text-[11px] font-bold tracking-[0.15em] uppercase" style={{ color: labelColor }}>
                   {cfg.shortLabel}
                 </p>
               </div>
             );
           })}
         </div>
-
-        {/* Total + retired */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E63946]/20">
-          <span className="text-[13px] text-[#D1D5DB]">
-            <span className="font-bold text-white">{totalActive}</span> athlète{totalActive !== 1 ? "s" : ""} actif{totalActive !== 1 ? "s" : ""} dans ton processus
-          </span>
-          {counts.retire > 0 && (
-            <span className="text-[13px] text-[#D1D5DB]">
-              {counts.retire} retiré{counts.retire !== 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
       </section>
   );
 }
 
-export function IndicateursMessagerie({ data, pipelineCounts }: { data: RecruiterKpiData; pipelineCounts?: Record<string, number> }) {
-  const counts = (pipelineCounts || {}) as Record<RecruitmentStatus, number>;
-  // Le taux de conversion rapporte les engagés au total ACTIF de l'entonnoir.
-  const totalActive = PIPELINE_STATUSES.reduce((s, k) => s + (counts[k] || 0), 0);
+/* C2 (1.4.5) : aucun compte de joueurs — la tuile « Taux de conversion »
+   (engagés / total actif de l'entonnoir) est retirée : elle dérivait d'un
+   compte d'athlètes. Restent les deux indicateurs de messagerie. */
+export function IndicateursMessagerie({ data }: { data: RecruiterKpiData }) {
   return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="group bg-[#1A1D24] rounded-xl border border-[#2D3748] hover:border-[#E63946]/20 px-5 py-4 flex items-center gap-4 relative overflow-hidden transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E63946] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
           <div className="w-10 h-10 rounded-full bg-[#E63946]/15 flex items-center justify-center shrink-0">
@@ -145,31 +130,6 @@ export function IndicateursMessagerie({ data, pipelineCounts }: { data: Recruite
             <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-0.5">Réponses reçues</p>
           </div>
         </div>
-
-        {(() => {
-          // Conversion: contacted (all who passed contacte) vs committed (engage + lettre_signee)
-          const total = totalActive;
-          const committed = (counts.engage || 0) + (counts.lettre_signee || 0);
-          const rate = total > 0 ? Math.round((committed / total) * 100) : 0;
-          return (
-            <div className="group bg-[#1A1D24] rounded-xl border border-[#2D3748] hover:border-[#E63946]/20 px-5 py-4 flex items-center gap-4 relative overflow-hidden transition-all duration-300">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E63946] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-              <div className="w-10 h-10 rounded-full bg-[#E63946]/15 flex items-center justify-center shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                  <polyline points="16 7 22 7 22 13" />
-                </svg>
-              </div>
-              <div className="flex items-center gap-2">
-                <div>
-                  <p className="text-[26px] font-head font-black text-white leading-none">{rate}%</p>
-                  <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-0.5">Taux de conversion</p>
-                </div>
-                {/* fraction hidden */}
-              </div>
-            </div>
-          );
-        })()}
       </div>
   );
 }

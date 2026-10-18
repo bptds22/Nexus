@@ -279,10 +279,8 @@ function DetailColumn({ name, targets }: { name: string; targets: CalendarTarget
   return (
     <div className="border-t border-[#1E2129] px-4 py-3.5">
       <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.1em] text-[#B9BFC9]">
+        {/* C2 (1.4.5) : aucun compte de joueurs — « N cibles » par équipe retiré. */}
         {name}
-        <span className="ml-2 text-[11.5px] font-medium normal-case tracking-normal text-[#5C6575]">
-          {targets.length} cible{targets.length > 1 ? "s" : ""}
-        </span>
       </div>
       {targets.length === 0 ? (
         <div className="text-[13px] italic text-[#5C6575]">Aucune de vos cibles dans cette équipe.</div>
@@ -346,7 +344,8 @@ function MatchCard({ m }: { m: MatchView }) {
               {extra > 0 && <Avatar text={`+${extra}`} more className="-ml-2" />}
             </div>
             <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-3 py-1 text-[13px] font-semibold text-[#EDEFF3]">
-              <b className="font-extrabold text-[#E63946]">{m.count}</b> cible{m.count > 1 ? "s" : ""}
+              {/* C2 (1.4.5) : aucun compte de joueurs — pastille sans nombre. */}
+              <b className="font-extrabold text-[#E63946]">Cibles</b>
             </span>
           </div>
         </div>
@@ -453,8 +452,8 @@ function FreeWall() {
     <div className="relative mt-6 overflow-hidden rounded-2xl border border-[#262A33] bg-[#1A1D24] px-6 py-12 text-center">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none p-5 opacity-45 blur-[7px]">
         {[
-          { d: "12", mo: "Oct", h: "Vulkins Jean-Eudes", v: "Phénix André-Grasset", n: 6 },
-          { d: "14", mo: "Oct", h: "Titans Limoilou", v: "Élans Garneau", n: 2 },
+          { d: "12", mo: "Oct", h: "Vulkins Jean-Eudes", v: "Phénix André-Grasset" },
+          { d: "14", mo: "Oct", h: "Titans Limoilou", v: "Élans Garneau" },
         ].map((g) => (
           <div key={g.d} className="mb-3 flex items-center gap-3 rounded-2xl border border-[#262A33] bg-[#1A1D24] px-4 py-3.5">
             <div className="w-12 shrink-0 text-center">
@@ -465,7 +464,8 @@ function FreeWall() {
               {g.h}<span className="px-1 text-[13px] font-medium text-[#5C6575]">vs</span>{g.v}
             </div>
             <span className="shrink-0 rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-3 py-1 text-[13px] font-semibold text-[#EDEFF3]">
-              <b className="font-extrabold text-[#E63946]">{g.n}</b> cibles
+              {/* C2 (1.4.5) : aucun compte de joueurs, même dans l'aperçu flouté. */}
+              <b className="font-extrabold text-[#E63946]">Cibles</b>
             </span>
           </div>
         ))}

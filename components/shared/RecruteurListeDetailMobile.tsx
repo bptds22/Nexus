@@ -516,14 +516,13 @@ function ListActionSheet({
 /* ── ConfirmDeleteListSheet (réutilisé Sprint 1 pattern) ─────── */
 
 function ConfirmDeleteListSheet({
-  open, onClose, list, athleteCount, onConfirm, modeUnite = false,
+  open, onClose, list, onConfirm, modeUnite = false,
 }: {
   /** Tableau blanc : la liste est supprimée pour toute l'unité. */
   modeUnite?: boolean;
   open: boolean;
   onClose: () => void;
   list: ListMetadata | null;
-  athleteCount: number;
   onConfirm: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -561,7 +560,7 @@ function ConfirmDeleteListSheet({
                   : modeUnite ? "Cette liste sera supprimée pour toute l'unité — cette action est irréversible. " : "Cette liste sera supprimée. "}
                 {modeUnite
                   ? "Les athlètes resteront dans les favoris."
-                  : <>Les {athleteCount} athlète{athleteCount > 1 ? "s" : ""} ne seront pas supprimés de tes favoris, juste retirés de cette liste.</>}
+                  : "Les athlètes ne seront pas supprimés de tes favoris, juste retirés de cette liste."}
               </p>
             </div>
             <div className="px-4 pb-5 space-y-2">
@@ -661,22 +660,20 @@ function ConfirmRetraitMembreSheet({
 /* ── StatsBar ──────────────────────────────────────────────── */
 
 function StatsBar({
-  total, verifiedCount, dominantSport, avgRating,
+  dominantSport, avgRating,
 }: {
-  total: number;
-  verifiedCount: number;
   dominantSport: string | null;
   avgRating: number;
 }) {
   // Iter 7.28 Section 1 — étoile cote rendue séparément en doré canon (#F59E0B)
   // pour cohérence avec les étoiles des cartes athlètes. Le `rating` slot porte
   // un flag dédié pour appliquer la couleur or à l'étoile, le chiffre reste blanc.
-  const items: { label: string; value: string; rating?: boolean }[] = [
-    { label: `athlète${total > 1 ? "s" : ""}`, value: String(total) },
-    { label: total > 1 ? "vérifiés" : "vérifié", value: String(verifiedCount) },
-  ];
+  // C2 (1.4.5) : aucun compte de joueurs — « N athlètes » et « N vérifiés »
+  // retirés ; restent le sport dominant et la cote moyenne.
+  const items: { label: string; value: string; rating?: boolean }[] = [];
   if (dominantSport) items.push({ label: dominantSport, value: "" });
   if (avgRating > 0) items.push({ label: "cote moy.", value: avgRating.toFixed(1), rating: true });
+  if (items.length === 0) return null;
 
   return (
     <div className="px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-white/70">
@@ -852,8 +849,6 @@ function DetailInner({ listId }: { listId: string }) {
         {/* Stats bar */}
         {!isLoading && athletes.length > 0 && (
           <StatsBar
-            total={stats.total}
-            verifiedCount={stats.verifiedCount}
             dominantSport={stats.dominantSport}
             avgRating={stats.avgRating}
           />
@@ -959,7 +954,6 @@ function DetailInner({ listId }: { listId: string }) {
         open={confirmDeleteOpen}
         onClose={() => setConfirmDeleteOpen(false)}
         list={list}
-        athleteCount={stats.total}
         onConfirm={handleConfirmDelete}
         modeUnite={modeUnite}
       />

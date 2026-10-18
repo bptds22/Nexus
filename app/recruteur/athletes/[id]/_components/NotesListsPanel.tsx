@@ -252,8 +252,9 @@ export default function NotesListsPanel({ athleteId }: { athleteId: string }) {
                     </svg>
                     <div>
                       <p className="text-[13px] font-bold text-white">{list.name}</p>
+                      {/* C2 (1.4.5) : aucun compte de joueurs — plus de « N athlètes ». */}
                       <p className="text-[11px] text-[#6b7280] mt-0.5">
-                        {list.memberCount} athlète{list.memberCount !== 1 ? "s" : ""} · Créée le {new Date(list.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "short", year: "numeric" })}
+                        Créée le {new Date(list.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                     </div>
                   </div>

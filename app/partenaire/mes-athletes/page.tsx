@@ -117,7 +117,6 @@ function MenuDistinctions({ options, choix, onChange }: {
             className="accent-[#E63946] w-4 h-4 shrink-0" />
           <IconeBadge b={{ nexus: o.nexus, code: o.code, iconePath: o.iconePath, libelle: o.libelle }} />
           <span className="text-[13px] text-white flex-1 min-w-0 truncate">{o.libelle}</span>
-          <span className="text-[11px] text-[#6b7280] shrink-0">{o.nbAthletes}</span>
         </label>
       ))}
     </div>
@@ -278,9 +277,6 @@ export default function MesAthletesPartenairePage() {
               Réinitialiser
             </button>
           )}
-          <span className="ml-auto text-[12px] text-[#6b7280]" data-compte-mes-athletes>
-            {visibles.length === athletes.length ? `${athletes.length} athlète${athletes.length > 1 ? "s" : ""}` : `${visibles.length} sur ${athletes.length}`}
-          </span>
         </div>
         {visibles.length === 0 ? (
           <div className="mt-6"><EtatVide titre="Aucun athlète ne correspond à ces filtres" /></div>

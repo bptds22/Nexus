@@ -325,51 +325,28 @@ function completenessColor(pct: number): string {
 
 /* ── Funnel Summary Bar ──────────────────────────────────────── */
 
-/* Le bandeau compte les cartes FILTRÉES, pas le pipeline entier (Lot 2b).
-   Un récapitulatif qui annonce « 15 athlètes suivis » au-dessus d'un kanban
-   qui en montre 6 ne récapitule rien : il contredit l'écran.
-
-   Le total absolu reste affiché en référence — « 6 sur 15 » — pour que le
-   filtre se lise comme un cadrage temporaire et non comme une perte de
-   données. Sans filtre actif, l'affichage ne change pas d'un pixel. */
-function FunnelSummary({ cards, totalCards }: { cards: PipelineKanbanCard[]; totalCards: number }) {
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const col of KANBAN_COLUMNS) c[col.id] = 0;
-    for (const card of cards) c[card.status] = (c[card.status] || 0) + 1;
-    return c;
-  }, [cards]);
-
-  const total = cards.length;
-  const isFiltered = total !== totalCards;
+/* C2 (1.4.5) : aucun compte de joueurs. Le bandeau n'affiche plus ni total
+   (« N athlètes suivis », « N sur M »), ni compte par étape, ni taux de
+   conversion entre étapes : il ne reste que la légende ordonnée des étapes
+   du pipeline, avec leur couleur. */
+function FunnelSummary() {
   const stages = KANBAN_COLUMNS.filter((c) => c.id !== "retire");
-  const conversions: { pct: number }[] = [];
-  for (let i = 1; i < stages.length; i++) {
-    const prev = counts[stages[i - 1].id] || 0;
-    const cur = counts[stages[i].id] || 0;
-    conversions.push({ pct: prev > 0 ? Math.round((cur / prev) * 100) : 0 });
-  }
 
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-6 py-5">
       <div className="flex items-baseline gap-2 mb-4">
-        <span className="font-head text-[28px] font-black text-white leading-none">{total}</span>
-        {isFiltered && (
-          <span className="text-[15px] font-bold text-[#6b7280] leading-none">sur {totalCards}</span>
-        )}
-        <span className="text-[14px] font-bold text-[#9CA3AF] uppercase tracking-wider">athlètes suivis</span>
+        <span className="text-[14px] font-bold text-[#9CA3AF] uppercase tracking-wider">Étapes du pipeline</span>
       </div>
       <div className="flex items-center gap-0 overflow-x-auto">
         {stages.map((stage, i) => (
           <div key={stage.id} className="flex items-center shrink-0">
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: stage.phase === "commitment" ? "rgba(230,57,70,0.08)" : "rgba(107,114,128,0.06)" }}>
-              <span className="font-head text-[22px] font-black leading-none" style={{ color: stage.color }}>{counts[stage.id]}</span>
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
               <span className="text-[13px] font-semibold text-[#9CA3AF] whitespace-nowrap">{stage.label.toLowerCase()}</span>
             </div>
             {i < stages.length - 1 && (
               <div className="flex flex-col items-center mx-1.5 shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-                <span className="text-[10px] font-bold text-[#4a4d56] mt-0.5">{conversions[i]?.pct}%</span>
               </div>
             )}
           </div>
@@ -1289,7 +1266,8 @@ function KanbanColumn({
             <span title={tooltip}><HeaderIcon /></span>
             <span className="text-[12px] font-bold uppercase tracking-[0.15em] text-white">{colDef.label}</span>
           </div>
-          <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-black text-white" style={{ backgroundColor: colDef.color }}>{cards.length}</span>
+          {/* C2 (1.4.5) : aucun compte de joueurs — pastille de couleur sans nombre. */}
+          <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colDef.color }} />
         </div>
       </div>
       <div
@@ -1802,8 +1780,8 @@ function FacetDropdown({
                       </svg>
                     )}
                   </span>
+                  {/* C2 (1.4.5) : aucun compte de joueurs — plus de compte par option. */}
                   <span title={opt.label} className={`flex-1 truncate ${on ? "text-white" : "text-[#9CA3AF]"}`}>{opt.label}</span>
-                  <span className="text-[11px] text-[#4a4d56]">{opt.count}</span>
                 </button>
               );
             })}
@@ -2310,7 +2288,8 @@ function PipelinePageContent() {
       lien.click();
       lien.remove();
       URL.revokeObjectURL(url);
-      showToast(`${lignesExport.length} athlète${lignesExport.length > 1 ? "s" : ""} exporté${lignesExport.length > 1 ? "s" : ""}`);
+      // C2 (1.4.5) : aucun compte de joueurs dans le toast.
+      showToast("Athlètes exportés");
     } finally {
       setExportEnCours(false);
     }
@@ -2407,7 +2386,7 @@ function PipelinePageContent() {
           disabled={isFreeDemoMode || exportEnCours || sortedCards.length === 0}
           title={isFreeDemoMode
             ? "L'export est réservé aux membres Pro"
-            : `Exporter les ${sortedCards.length} athlète${sortedCards.length > 1 ? "s" : ""} affiché${sortedCards.length > 1 ? "s" : ""} (fichier Excel)`}
+            : "Exporter les athlètes affichés (fichier Excel)"}
           className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#2a2d36] bg-[#13151a] text-[14px] font-bold text-white hover:border-[#4a4d56] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -2479,12 +2458,13 @@ function PipelinePageContent() {
           avant la suppression automatique, faute d'activité. Calculé ici,
           sans table d'avis : tout geste sur la carte repousse l'échéance. */}
       {(() => {
+        // C2 (1.4.5) : aucun compte de joueurs — l'avis ne chiffre plus les cartes.
         const n = cards.filter((c) => bientotPurgee(c) && !estAutreUnite(c)).length;
         if (n === 0) return null;
         return (
           <div role="note" className="rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/[0.06] px-4 py-3 text-[13px] text-[#E5E7EB]">
             <span className="font-bold text-[#F59E0B]">
-              {n > 1 ? `${n} cartes prospect seront supprimées` : "1 carte prospect sera supprimée"} dans moins de 30 jours
+              {n > 1 ? "Des cartes prospect seront supprimées" : "Une carte prospect sera supprimée"} dans moins de 30 jours
             </span>{" "}
             faute d&apos;activité depuis 11 mois. Une note, une étape ou une relance la garde un an de plus.
           </div>
@@ -2494,7 +2474,7 @@ function PipelinePageContent() {
       {/* Lot D : « N profils semblent correspondre à tes cartes ». */}
       <BandeauRapprochements />
 
-      <FunnelSummary cards={filteredCards} totalCards={cards.length} />
+      <FunnelSummary />
 
       {/* ── BARRE DE FILTRES ET DE TRI (Lot 2b) ──────────────────────────
           Alignée sur le langage de la page Recherche : champ de recherche,
@@ -2641,17 +2621,10 @@ function PipelinePageContent() {
             })}
           </div>
 
-          {/* Conditionnel : « 15 sur 15 » en permanence serait du bruit. Il
-              n'apparaît que quand un filtre retire réellement des cartes —
-              c'est lui qui explique un kanban à moitié vide. */}
+          {/* C2 (1.4.5) : aucun compte de joueurs — le « N sur M » filtré a été retiré. */}
           <div className="ml-auto flex items-center gap-4">
             {/* Légende des cartes prospect (retour BP) : EN HAUT, à côté des filtres. */}
             {cards.some((c) => estCarte(c)) && <LegendeProspect />}
-            {nActiveFilters > 0 && (
-              <span className="text-[12px] text-[#9CA3AF]">
-                <span className="font-bold text-white">{filteredCards.length}</span> sur {cards.length}
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -2676,11 +2649,11 @@ function PipelinePageContent() {
       <div className="lg:hidden overflow-x-auto -mx-4 px-4">
         <div className="flex gap-1 min-w-max">
           {KANBAN_COLUMNS.map((col) => {
-            const count = getCardsByStatus(sortedCards, col.id).length;
+            // C2 (1.4.5) : aucun compte de joueurs — onglet = libellé seul.
             const isActive = mobileTab === col.id;
             return (
               <button key={col.id} type="button" onClick={() => setMobileTab(col.id)} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${isActive ? (col.phase === "commitment" ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#6B7280]/10 text-[#9CA3AF] border border-[#6B7280]/20") : "text-[#6b7280] border border-transparent hover:text-[#9CA3AF]"}`}>
-                {col.label} <span className={`text-[10px] font-black ${isActive ? "" : "text-[#4a4d56]"}`}>{count}</span>
+                {col.label}
               </button>
             );
           })}

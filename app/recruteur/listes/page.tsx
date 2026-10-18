@@ -110,18 +110,20 @@ function ConfirmModal({
 
 /* ── Sport breakdown pills ────────────────────────────────────── */
 
+/* C2 (1.4.5) : aucun compte de joueurs — les sports de la liste, sans « ×N ».
+   L'ordre (sport le plus représenté d'abord) est conservé. */
 function SportBreakdown({ athletes }: { athletes: ProspectListAthlete[] }) {
   const breakdown = useMemo(() => {
     const m = new Map<string, number>();
     for (const a of athletes) m.set(a.sport, (m.get(a.sport) || 0) + 1);
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).map(([sport]) => sport);
   }, [athletes]);
 
   return (
     <span className="text-[11px] text-[#6b7280]">
-      {breakdown.map(([sport, count], i) => (
+      {breakdown.map((sport, i) => (
         <span key={sport}>
-          {i > 0 && " · "}{sport} ×{count}
+          {i > 0 && " · "}{sport}
         </span>
       ))}
     </span>
@@ -542,17 +544,10 @@ function ListCard({
       {/* Description */}
       <p className="text-[13px] text-[#9CA3AF] mt-1.5 line-clamp-1">{list.description}</p>
 
-      {/* Athlete count */}
-      <div className="flex items-center gap-1.5 mt-3">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
-        </svg>
-        <span className="text-[13px] font-bold text-white">{list.athletes.length} athlète{list.athletes.length !== 1 ? "s" : ""}</span>
-      </div>
+      {/* C2 (1.4.5) : aucun compte de joueurs — la ligne « N athlètes » est retirée. */}
 
       {/* Sport breakdown */}
-      <div className="mt-2">
+      <div className="mt-3">
         <SportBreakdown athletes={list.athletes} />
       </div>
 
@@ -716,7 +711,6 @@ function ExpandedListView({
 
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
-  const verifiedCount = list.athletes.filter((a) => a.is_verified).length;
   const avgRating = list.athletes.length > 0
     ? (list.athletes.reduce((s, a) => s + a.coach_rating, 0) / list.athletes.length).toFixed(1)
     : "0.0";
@@ -724,7 +718,7 @@ function ExpandedListView({
   const sportSummary = useMemo(() => {
     const m = new Map<string, number>();
     for (const a of list.athletes) m.set(a.sport, (m.get(a.sport) || 0) + 1);
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).map(([s, c]) => `${c} ${s}`).join(", ");
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).map(([s]) => s).join(", ");
   }, [list.athletes]);
 
   const existingIds = useMemo(() => new Set(list.athletes.map((a) => a.id)), [list.athletes]);
@@ -756,13 +750,15 @@ function ExpandedListView({
         </button>
       </div>
 
-      {/* Stats bar */}
+      {/* Stats bar — C2 (1.4.5) : aucun compte de joueurs (ni « N athlètes »,
+          ni « N vérifiés », ni compte par sport). */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-5 py-3 flex flex-wrap items-center gap-x-5 gap-y-1">
-        <span className="text-[13px] font-bold text-white">{list.athletes.length} athlète{list.athletes.length !== 1 ? "s" : ""}</span>
-        <span className="text-[#2D3748]">·</span>
-        <span className="text-[13px] text-[#9CA3AF]">{verifiedCount} vérifié{verifiedCount !== 1 ? "s" : ""}</span>
-        <span className="text-[#2D3748]">·</span>
-        <span className="text-[13px] text-[#9CA3AF]">{sportSummary}</span>
+        {sportSummary && (
+          <>
+            <span className="text-[13px] text-[#9CA3AF]">{sportSummary}</span>
+            <span className="text-[#2D3748]">·</span>
+          </>
+        )}
         <span className="text-[#2D3748]">·</span>
         <span className="text-[13px] text-[#9CA3AF] flex items-center gap-1">
           <svg width="12" height="12" viewBox="0 0 24 24" fill={GOLD} stroke="none">

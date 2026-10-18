@@ -1286,7 +1286,8 @@ export function RecruteurRechercheMobile() {
   const versPicker = useCallback(
     (opts: TaxonomyOption[], tous: string) => [
       { value: "", label: tous },
-      ...opts.map((o) => ({ value: o.value, label: `${o.label} (${o.count})`, disabled: o.disabled })),
+      // C2 (1.4.5) : aucun compte de joueurs — libellé seul, sans « (N) ».
+      ...opts.map((o) => ({ value: o.value, label: o.label, disabled: o.disabled })),
     ],
     [],
   );

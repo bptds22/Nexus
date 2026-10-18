@@ -99,7 +99,8 @@ export function RecruteurFavorisMobile() {
 
   return (
     <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
-      {/* Header sticky : titre + count */}
+      {/* Header sticky : titre seul.
+          C2 (1.4.5) : aucun compte de joueurs — le nombre de favoris est retiré. */}
       <div
         className="sticky top-0 z-30 bg-[#111317]"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
@@ -108,11 +109,6 @@ export function RecruteurFavorisMobile() {
           <h1 className="font-head text-[26px] font-black text-white uppercase tracking-tight">
             Mes Favoris
           </h1>
-          {!isLoading && athletes.length > 0 && (
-            <span className="text-[13px] text-white/55 font-semibold tabular-nums">
-              {athletes.length}
-            </span>
-          )}
         </div>
 
         {/* Search locale (nom uniquement, pas le filter sheet) */}

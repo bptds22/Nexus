@@ -24,8 +24,13 @@ import Link from "next/link";
    tronquée en dernier recours, jamais repliée.
 ───────────────────────────────────────────────────────────────── */
 
+/* C2 (1.4.5) : aucun compte de joueurs. Une tuile qui compterait des
+   athlètes passe par l'état « voir » : pas de chiffre, un « Voir » à la
+   place ; `disponible` dit seulement s'il y a quelque chose à ouvrir
+   (même règle lien / gris que pour un chiffre > 0 ou 0). */
 export type ValeurTuile =
   | { etat: "chiffre"; n: number }
+  | { etat: "voir"; disponible: boolean }
   | { etat: "sans_objet"; motif: string }
   | { etat: "chargement" };
 
@@ -52,9 +57,12 @@ export default function TuilesTableauDeBord({ tuiles }: { tuiles: Tuile[] }) {
 
 function UneTuile({ tuile }: { tuile: Tuile }) {
   const { valeur } = tuile;
-  const actif = valeur.etat === "chiffre" && valeur.n > 0;
+  const actif =
+    (valeur.etat === "chiffre" && valeur.n > 0)
+    || (valeur.etat === "voir" && valeur.disponible);
   const affiche =
     valeur.etat === "chiffre" ? valeur.n.toLocaleString("fr-CA")
+    : valeur.etat === "voir" ? "Voir"
     : valeur.etat === "sans_objet" ? "—"
     : "…";
   const contexte = valeur.etat === "sans_objet" ? valeur.motif : tuile.aide;

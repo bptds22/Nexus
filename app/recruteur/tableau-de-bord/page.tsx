@@ -180,7 +180,9 @@ function RecruteurTableauDeBordDesktop() {
       href: `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`,
       valeur: !aUnCegepRattache
         ? { etat: "sans_objet", motif: "Aucun cégep rattaché au compte" }
-        : cibles ? { etat: "chiffre", n: cibles.length } : { etat: "chargement" },
+        /* C2 (1.4.5) : aucun compte de joueurs — « Voir » au lieu du nombre
+           (idem « Nouveaux (10 j) » plus bas). */
+        : cibles ? { etat: "voir", disponible: cibles.length > 0 } : { etat: "chargement" },
     },
     {
       cle: "visites", libelle: "Visites à venir", accent: ROUGE,
@@ -194,7 +196,7 @@ function RecruteurTableauDeBordDesktop() {
          une fiche semée par un coach compte aussi. */
       aide: "Profils créés depuis 10 jours",
       href: `/recruteur/recherche?${CLES_FILTRES.filterNewOnly}=true`,
-      valeur: nouveaux ? { etat: "chiffre", n: nouveaux.length } : { etat: "chargement" },
+      valeur: nouveaux ? { etat: "voir", disponible: nouveaux.length > 0 } : { etat: "chargement" },
     },
   ];
 
@@ -256,7 +258,7 @@ function RecruteurTableauDeBordDesktop() {
           filtrée. */}
       <section className="space-y-4">
         <h2 className="font-head font-bold text-[15px] tracking-[0.15em] uppercase text-white">Mon activité</h2>
-        <IndicateursMessagerie data={kpiData} pipelineCounts={pipelineCounts} />
+        <IndicateursMessagerie data={kpiData} />
         <TuilesTableauDeBord tuiles={tuiles} />
       </section>
 

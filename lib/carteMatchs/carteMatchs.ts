@@ -455,16 +455,17 @@ export function profilsParMatch(
   return out;
 }
 
-/** « 4 profils Nexus », « 1 profil Nexus » ; null si aucun (rien à afficher). */
+/** « Profils Nexus » (au singulier s'il n'y en a qu'un) ; null si aucun (rien à afficher).
+ *  C2 (1.4.5) : aucun compte de joueurs — le nombre n'est plus affiché. */
 export function libelleProfils(p: Pick<ProfilsMatch, "total"> | null | undefined): string | null {
   if (!p || p.total <= 0) return null;
-  return `${p.total} profil${p.total > 1 ? "s" : ""} Nexus`;
+  return p.total > 1 ? "Profils Nexus" : "Profil Nexus";
 }
 
-/** « dont 1 suivi », « dont 2 suivis » ; null si l'unité n'en suit aucun. */
+/** « dont des athlètes suivis » ; null si l'unité n'en suit aucun. C2 (1.4.5) : sans nombre. */
 export function libelleDontSuivis(p: Pick<ProfilsMatch, "suivis"> | null | undefined): string | null {
   if (!p || p.suivis <= 0) return null;
-  return `dont ${p.suivis} suivi${p.suivis > 1 ? "s" : ""}`;
+  return p.suivis > 1 ? "dont des athlètes suivis" : "dont un athlète suivi";
 }
 
 /* ── Source (BP 2026-10-09) ────────────────────────────────── */
@@ -568,5 +569,7 @@ export function noteProfilsNonNommes(total: number, nommes: number): string | nu
   const n = total - nommes;
   if (n <= 0) return null;
   if (nommes === 0) return "Ces athlètes n'ont pas rendu leur profil visible aux partenaires.";
-  return `${n} autre${n > 1 ? "s" : ""} n'${n > 1 ? "ont" : "a"} pas rendu ${n > 1 ? "leur" : "son"} profil visible aux partenaires.`;
+  // C2 (1.4.5) : aucun compte de joueurs.
+  return n > 1 ? "D'autres athlètes n'ont pas rendu leur profil visible aux partenaires."
+    : "Un autre athlète n'a pas rendu son profil visible aux partenaires.";
 }

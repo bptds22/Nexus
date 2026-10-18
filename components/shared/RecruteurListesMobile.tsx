@@ -200,7 +200,7 @@ function ConfirmDeleteSheet({
                 ) : (
                   <>
                     <span className="text-white font-semibold">« {list.name} »</span> sera supprimée.
-                    Les {list.athleteCount} athlète{list.athleteCount > 1 ? "s" : ""} ne seront pas supprimés
+                    Les athlètes ne seront pas supprimés
                     de tes favoris, juste retirés de cette liste.
                   </>
                 )}
@@ -254,17 +254,13 @@ function ListCard({
             {list.description && (
               <p className="text-[15px] text-white/55 mt-0.5 truncate">{list.description}</p>
             )}
-            <div className="flex items-center gap-2 mt-2 text-[13px] text-white/70">
-              <span className="tabular-nums">
-                {list.athleteCount} athlète{list.athleteCount > 1 ? "s" : ""}
-              </span>
-              {list.dominantSport && (
-                <>
-                  <span className="text-white/30">·</span>
-                  <span className="truncate">{list.dominantSport}</span>
-                </>
-              )}
-            </div>
+            {/* C2 (1.4.5) : aucun compte de joueurs — le nombre d'athlètes de
+                la liste est retiré ; seul le sport dominant reste. */}
+            {list.dominantSport && (
+              <div className="flex items-center gap-2 mt-2 text-[13px] text-white/70">
+                <span className="truncate">{list.dominantSport}</span>
+              </div>
+            )}
             <p className="text-[11px] text-white/40 mt-2">
               {list.auteur ? <>Créée par {list.auteur} · </> : null}Modifiée {formatRelativeDate(list.updatedAt)}
             </p>

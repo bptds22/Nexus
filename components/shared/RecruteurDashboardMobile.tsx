@@ -60,10 +60,9 @@ const PROCESSUS_STAGES: { key: string; label: string; intensity: number }[] = [
 ];
 
 function MonProcessusFunnel({
-  counts, totalCount, onSeeAll,
+  counts, onSeeAll,
 }: {
   counts: Record<string, number>;
-  totalCount: number;
   onSeeAll: () => void;
 }) {
   // Iter 7.3 Section C — survival% (closing %) : pour chaque stage k,
@@ -82,13 +81,12 @@ function MonProcessusFunnel({
     <div className="px-4">
       <div className="bg-[#1A1D24] rounded-2xl p-[18px] border border-white/[0.05]">
         {/* Header carte */}
+        {/* C2 (1.4.5) : aucun compte de joueurs — ni total, ni nombre par
+            étape, ni pourcentage chiffré. Seules les barres restent. */}
         <div className="flex items-baseline justify-between mb-5">
           <h2 className="text-xs uppercase tracking-wider text-white/70 font-semibold">
             Mon processus
           </h2>
-          <span className="text-[13px] text-white/85 tabular-nums">
-            {totalCount} athlète{totalCount !== 1 ? "s" : ""}
-          </span>
         </div>
 
         {/* Lignes par stage avec barre survival% (rétrécit en descendant = funnel) */}
@@ -104,12 +102,6 @@ function MonProcessusFunnel({
                   />
                   <span className={`text-base font-medium truncate ${isEmpty ? "text-white/45" : "text-white/[0.88]"}`}>
                     {s.label}
-                  </span>
-                  <span className="text-[12px] text-white/45 tabular-nums flex-shrink-0">
-                    · {s.count}
-                  </span>
-                  <span className={`flex-1 text-right text-[17px] font-bold tabular-nums ${isEmpty ? "text-white/45" : "text-white"}`}>
-                    {s.survival}%
                   </span>
                 </div>
                 <div className="ml-[18px] mt-1.5 h-[4px] rounded overflow-hidden bg-white/[0.05]">
@@ -365,13 +357,6 @@ export function RecruteurDashboardMobile() {
     return out;
   }, [canUsePipeline, pipelineData, relanceCards, kpiBundle]);
 
-  const totalPipeline = useMemo(
-    () => Object.entries(pipelineCounts)
-      .filter(([k]) => k !== "retire")
-      .reduce((sum, [, n]) => sum + n, 0),
-    [pipelineCounts]
-  );
-
   // Pipeline limit selon tier (Free=0, Pro=50, AllStar=-1)
 
   // Iter 6.1c sessionStorage pour back nav vers dashboard
@@ -455,7 +440,8 @@ export function RecruteurDashboardMobile() {
     >
       <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
         {nbNouveaux > 0 ? (
-          <>{nbNouveaux} {nbNouveaux > 1 ? "nouveaux joueurs" : "nouveau joueur"}<br /><span className="text-[#E63946]">cette semaine</span></>
+          /* C2 (1.4.5) : aucun compte de joueurs — la phrase ne dit plus combien. */
+          <>Nouveaux joueurs<br /><span className="text-[#E63946]">cette semaine</span></>
         ) : (
           <>Explore tes<br /><span className="text-[#E63946]">cibles</span></>
         )}
@@ -535,8 +521,9 @@ export function RecruteurDashboardMobile() {
           },
           {
             label: "Te ciblent",
-            value: !aUnCegepRattache ? "—" : cibles ? cibles.length : "—",
-            subtitle: !aUnCegepRattache ? "aucun cégep" : "athlètes",
+            /* C2 (1.4.5) : aucun compte de joueurs — « Voir » au lieu du nombre. */
+            value: !aUnCegepRattache ? "—" : cibles ? "Voir" : "—",
+            subtitle: !aUnCegepRattache ? "aucun cégep" : "les athlètes",
             onTap: () => router.push(`/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`),
           },
         ]}
@@ -569,7 +556,6 @@ export function RecruteurDashboardMobile() {
       <div className="py-6">
         <MonProcessusFunnel
           counts={pipelineCounts}
-          totalCount={totalPipeline}
           onSeeAll={() => router.push("/recruteur/pipeline")}
         />
       </div>

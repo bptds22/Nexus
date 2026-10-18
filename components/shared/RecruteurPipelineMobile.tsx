@@ -205,8 +205,7 @@ function useClientNow(): number {
    existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
    NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
    qu'on ait à ouvrir quoi que ce soit. */
-function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
-  totalCount: number;
+function PipelineHeader({ nActiveFilters, onFilterTap }: {
   nActiveFilters: number;
   onFilterTap: () => void;
 }) {
@@ -215,8 +214,9 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h1 className="font-head text-[24px] font-black text-white uppercase tracking-tight">Mon processus</h1>
+          {/* C2 (1.4.5) : aucun compte de joueurs — le total d'athlètes est retiré. */}
           <p className="text-[13px] text-[#9CA3AF] mt-0.5">
-            {totalCount} athlète{totalCount !== 1 ? "s" : ""} · Saison 2025-2026
+            Saison 2025-2026
           </p>
         </div>
         {/* UNE pilule LABELLISÉE, et elle est la porte unique. Le ⋮ est mort —
@@ -277,9 +277,8 @@ function PipelineHeader({ totalCount, nActiveFilters, onFilterTap }: {
 /* ── StageTabsSticky ─────────────────────────────────────────── */
 
 function StageTabsSticky({
-  counts, activeStage, scrolled, onTabTap,
+  activeStage, scrolled, onTabTap,
 }: {
-  counts: Record<string, number>;
   activeStage: string;
   scrolled: boolean;
   onTabTap: (lower: string) => void;
@@ -342,7 +341,6 @@ function StageTabsSticky({
         <div className="flex gap-2 px-4 py-2.5 min-w-max">
           {STAGES.map((stage) => {
             const isActive = activeStage === stage.lower;
-            const count = counts[stage.lower] ?? 0;
             return (
               <button
                 key={stage.lower}
@@ -355,10 +353,8 @@ function StageTabsSticky({
                     : "bg-[#1A1D24] text-[#9CA3AF] active:bg-white/5"
                 }`}
               >
+                {/* C2 (1.4.5) : aucun compte de joueurs — plus de nombre par étape. */}
                 {stage.label}
-                <span className={`ml-1.5 text-[10px] ${isActive ? "text-white/80" : "text-[#6B7280]"}`}>
-                  {count}
-                </span>
               </button>
             );
           })}
@@ -749,11 +745,11 @@ function FiltresSheet({
   };
   const titre = "text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2";
 
-  /** Les options d'un MobilePicker pour une facette, comptes inclus — même
-   *  info que les <option> natifs d'avant ("Libellé (12)"). */
+  /** Les options d'un MobilePicker pour une facette.
+   *  C2 (1.4.5) : aucun compte de joueurs — libellé seul, sans « (N) ». */
   const picker = (cle: "sport" | "league" | "region" | "position" | "graduation_year", tous: string) => [
     { value: "", label: tous },
-    ...options[cle].map((o) => ({ value: o.value, label: `${o.label} (${o.count})` })),
+    ...options[cle].map((o) => ({ value: o.value, label: o.label })),
   ];
   const libelleFiltre = (cle: "sport" | "league" | "region" | "position" | "graduation_year", tous: string) => {
     const v = filters[cle][0] ?? "";
@@ -765,7 +761,7 @@ function FiltresSheet({
     <>
       <FilterBottomSheetShell
         open={open} onClose={onClose} onReset={reinitialiser} resultCount={nbResultats}
-        libelleApplique={(n) => `Voir ${n} athlète${n > 1 ? "s" : ""}`}
+        libelleApplique={() => "Voir les athlètes"}
       >
         {montrerUnite && filtreSport && (
           <section className="px-4">
@@ -1951,7 +1947,6 @@ export function RecruteurPipelineMobile() {
       )}
 
       <PipelineHeader
-        totalCount={cards.length}
         nActiveFilters={activeFilterCount(filters, extra)}
         onFilterTap={handleMenuTap}
       />
@@ -1969,7 +1964,6 @@ export function RecruteurPipelineMobile() {
       )}
 
       <StageTabsSticky
-        counts={counts}
         activeStage={activeStage}
         scrolled={scrolled}
         onTabTap={handleTabTap}
@@ -2017,9 +2011,7 @@ export function RecruteurPipelineMobile() {
             <h2 className="text-[11px] uppercase tracking-[0.2em] text-[#6B7280] font-bold">
               {STAGE_BY_LOWER[activeStage]?.label}
             </h2>
-            <span className="text-[11px] text-[#4a4d56] font-bold">
-              ({activeStageCards.length})
-            </span>
+            {/* C2 (1.4.5) : aucun compte de joueurs — « (N) » de l'étape retiré. */}
           </div>
 
           {/* Cards du stage actif — fade cross-transition 200ms */}

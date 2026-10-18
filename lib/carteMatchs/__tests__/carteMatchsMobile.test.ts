@@ -36,8 +36,9 @@ test("libellés du « + » et du panneau : les textes du web, une seule source",
   assert.match(noteCalendrier("recruteur", "SUIVI"), /déjà au Calendrier\.$/);
   assert.equal(noteProfilsNonNommes(3, 3), null);
   assert.equal(noteProfilsNonNommes(2, 0), "Ces athlètes n'ont pas rendu leur profil visible aux partenaires.");
-  assert.equal(noteProfilsNonNommes(3, 2), "1 autre n'a pas rendu son profil visible aux partenaires.");
-  assert.equal(noteProfilsNonNommes(5, 2), "3 autres n'ont pas rendu leur profil visible aux partenaires.");
+  // C2 (1.4.5) : aucun compte de joueurs.
+  assert.equal(noteProfilsNonNommes(3, 2), "Un autre athlète n'a pas rendu son profil visible aux partenaires.");
+  assert.equal(noteProfilsNonNommes(5, 2), "D'autres athlètes n'ont pas rendu leur profil visible aux partenaires.");
 });
 
 test("cadre propre à la carte des matchs : « Trouve ton cégep » ne le lit pas (décision BP)", () => {

@@ -44,7 +44,8 @@ export default function ListeParTranches<T>({ items, rendre, tranche = TRANCHE_A
       {items.slice(0, n).map(rendre)}
       {reste && (
         <div ref={sentinelle} role="status" className="py-4 text-center text-[12px] text-[#6B7280]">
-          {items.length - n} autre{items.length - n > 1 ? "s" : ""} à afficher…
+          {/* C2 (1.4.5) : aucun compte de joueurs — plus de « N autres ». */}
+          Afficher plus…
         </div>
       )}
     </div>
