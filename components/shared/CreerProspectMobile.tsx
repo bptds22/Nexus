@@ -68,17 +68,21 @@ interface Position { id: string; abreviation: string | null; nom: string }
 const champ = "w-full min-h-[46px] bg-[#1A1D24] border border-white/10 rounded-xl px-3 text-[15px] text-white placeholder:text-[#4a4d56] outline-none focus:border-[#E63946] [&>option]:bg-[#13151a] disabled:opacity-50";
 const etiquette = "block text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-1.5";
 
-export default function CreerProspectMobile({ sportId, onClose }: {
+export default function CreerProspectMobile({ sportId, onClose, prerempli, onCarteCreee }: {
   /** Sport de l'unité du recruteur : la carte naît dans SON unité. */
   sportId: string;
   onClose: () => void;
+  /** Game On : prénom et numéro notés pendant le match. */
+  prerempli?: { prenom?: string | null; numero?: string | null };
+  /** Game On : l'id de la carte, dès qu'elle existe (pour y lier les notes du match). */
+  onCarteCreee?: (id: string) => void;
 }) {
   const toast = useMobileToast();
   const queryClient = useQueryClient();
   const kbdStyle = useSheetKeyboardGeometry("90vh");
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
-  const [prenom, setPrenom] = useState("");
+  const [prenom, setPrenom] = useState(prerempli?.prenom ?? "");
   const [nom, setNom] = useState("");
   const [genre, setGenre] = useState<Genre>("SCOLAIRE");
   const [recherche, setRecherche] = useState("");
@@ -90,9 +94,10 @@ export default function CreerProspectMobile({ sportId, onClose }: {
   const [equipeChoisie, setEquipeChoisie] = useState("");
   const [courriel, setCourriel] = useState("");
   const [telephone, setTelephone] = useState("");
-  const [plus, setPlus] = useState(false);
+  // Game On : un numéro noté au match ouvre « Plus de détails » pour qu'on le voie.
+  const [plus, setPlus] = useState(!!prerempli?.numero);
   const [positionId, setPositionId] = useState("");
-  const [numero, setNumero] = useState("");
+  const [numero, setNumero] = useState(prerempli?.numero ?? "");
   const [promotion, setPromotion] = useState("");
   const [taille, setTaille] = useState("");
   const [poids, setPoids] = useState("");
@@ -291,6 +296,7 @@ export default function CreerProspectMobile({ sportId, onClose }: {
         parentCourriel: l.parentCourriel.ok ? l.parentCourriel.valeur : null,
       });
       if (error) { setErreur("La carte n'a pas pu être créée. Réessaie."); return; }
+      if (carteId) onCarteCreee?.(carteId);
       triggerHaptic("Medium");
       void invaliderTableauBlanc(queryClient);
       const quiEst = `${prenom.trim()} ${nom.trim()}`;

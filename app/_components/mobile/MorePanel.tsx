@@ -237,6 +237,9 @@ export default function MorePanel({
             // Carte des matchs — Pro aussi, même raison : pas de requiredTier, le
             // gratuit atteint la page et y voit la porte Pro (FeatureGate).
             { key: "carte-matchs", label: "Carte des matchs", href: "/recruteur/carte-matchs", icon: Icons.calendar },
+            // Game On — le mode match (BP 2026-10-18) : ici, PAS dans la barre du bas. Pro, même raison
+            // que ci-dessus : pas de requiredTier, le gratuit atteint la porte Pro de la page.
+            { key: "game-on", label: "Game On", href: "/recruteur/game-on", icon: Icons.activity },
             // « Ma page » — l'editeur de la vitrine publique. L'ecran mobile ne
             // fait que renvoyer au web (les deux editeurs sont desktop). PAS de
             // requiredTier ici : meme raison que Calendrier et Listes ci-dessus

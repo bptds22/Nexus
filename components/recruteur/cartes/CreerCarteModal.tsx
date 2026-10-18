@@ -51,12 +51,16 @@ interface Position { id: string; abreviation: string | null; nom: string }
 const champ = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const etiquette = "block text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] mb-1";
 
-export default function CreerCarteModal({ sportId, onClose, onCreee }: {
+export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, onCarteCreee }: {
   sportId: string;
   onClose: () => void;
   onCreee: (message: string) => void;
+  /** Game On : prénom et numéro notés pendant le match. */
+  prerempli?: { prenom?: string | null; numero?: string | null };
+  /** Game On : l'id de la carte, dès qu'elle existe (pour y lier les notes du match). */
+  onCarteCreee?: (id: string) => void;
 }) {
-  const [prenom, setPrenom] = useState("");
+  const [prenom, setPrenom] = useState(prerempli?.prenom ?? "");
   const [nom, setNom] = useState("");
   const [genre, setGenre] = useState<Genre>("SCOLAIRE");
   const [recherche, setRecherche] = useState("");
@@ -83,7 +87,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
   const [nomSport, setNomSport] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
   const [positionId, setPositionId] = useState("");
-  const [numero, setNumero] = useState("");
+  const [numero, setNumero] = useState(prerempli?.numero ?? "");
   const [promotion, setPromotion] = useState("");
   const [taille, setTaille] = useState("");
   const [poids, setPoids] = useState("");
@@ -290,6 +294,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee }: {
         setErreur("La carte n'a pas pu être créée. Réessaie.");
         return;
       }
+      if (id) onCarteCreee?.(id);
       const courrielCree = l.courriel.ok ? l.courriel.valeur : null;
       /* Avec courriel : le déclencheur de la base a statué dans la transaction
          de l'insertion (il peut ÉCARTER l'invitation) — on relit la carte au

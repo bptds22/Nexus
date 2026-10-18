@@ -84,6 +84,12 @@ const RECRUITER_ITEMS: NavItem[] = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>,
   },
   {
+    // Game On — le mode match (BP 2026-10-18) : notes par numéro pendant un match, tri après.
+    label: "Game On", href: "/recruteur/game-on",
+    requiredTier: "pro",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Mode match"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>,
+  },
+  {
     label: "Mon processus", href: "/recruteur/pipeline",
     requiredTier: "pro",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /><line x1="15" y1="3" x2="15" y2="21" /></svg>,
