@@ -36,7 +36,7 @@ import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { triggerHaptic } from "@/lib/haptics";
 import {
-  ETIQUETTES, dateSeance, fusionnerNotes, grouperParJoueur, libelleJoueur, messageErreur, notesEnAttente,
+  dateSeance, fusionnerNotes, grouperParJoueur, libelleJoueur, messageErreur, notesEnAttente,
   numeroValide, noteValide, pastillesCote, resumeEnvoi, suggestionsCartes, texteRecopie, titreSeance,
   type CarteCandidate, type Cote, type GroupeJoueur, type NoteAffichee, type SeanceLocale,
 } from "@/lib/gameOn/gameOn";
@@ -485,9 +485,8 @@ function FeuilleNote({ seance, cote, numero, prenomInitial, equipe, groupe, onFe
 }) {
   const [prenom, setPrenom] = useState(prenomInitial ?? "");
   const [texte, setTexte] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const ok = noteValide({ numero, prenom, texte, etiquettes: tags });
-  const basculer = (t: string) => { triggerHaptic("Light"); setTags((v) => (v.includes(t) ? v.filter((x) => x !== t) : [...v, t])); };
+  // BP 2026-10-18 : garder ça simple — pas d'étiquettes ni de gabarits, le texte (ou la voix) suffit.
+  const ok = noteValide({ numero, prenom, texte, etiquettes: [] });
   const sujet = `gameon:${seance.id}:${cote}:${numero ?? (prenomInitial ?? "").toLowerCase()}`;
   return (
     <div className="fixed inset-0 z-[65] flex flex-col justify-end bg-black/60" onClick={onFermer}>
@@ -521,20 +520,11 @@ function FeuilleNote({ seance, cote, numero, prenomInitial, equipe, groupe, onFe
             className="mb-3 h-12 w-full rounded-xl border border-[#2D3748] bg-[#111317] px-4 text-[16px] text-white placeholder:text-white/30" />
         )}
 
-        <div className="mb-3 flex flex-wrap gap-2">
-          {ETIQUETTES.map((t) => (
-            <button key={t} type="button" onClick={() => basculer(t)} aria-pressed={tags.includes(t)}
-              className={`h-11 rounded-full px-4 text-[14px] font-semibold ${tags.includes(t) ? "bg-[#E63946] text-white" : "bg-white/[0.06] text-white/80"}`}>
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false}
+        <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits
           placeholder="Ce que tu as vu…" ariaLabel="Note sur ce joueur" />
 
         <button type="button" disabled={!ok}
-          onClick={() => onEnregistrer({ prenom: prenom.trim() || prenomInitial || null, texte, etiquettes: tags })}
+          onClick={() => onEnregistrer({ prenom: prenom.trim() || prenomInitial || null, texte, etiquettes: [] })}
           className="mt-3 h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
           Enregistrer
         </button>

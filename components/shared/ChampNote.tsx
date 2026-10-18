@@ -48,6 +48,7 @@ export default function ChampNote({
   disabled = false,
   id,
   className = "",
+  sansGabarits = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -62,6 +63,8 @@ export default function ChampNote({
   disabled?: boolean;
   id?: string;
   className?: string;
+  /** Game On (BP 2026-10-18) : garder ça simple, sans bouton Gabarits. */
+  sansGabarits?: boolean;
 }) {
   const zone = useRef<HTMLTextAreaElement>(null);
   const [gabaritsOuverts, setGabaritsOuverts] = useState(false);
@@ -183,6 +186,7 @@ export default function ChampNote({
           </svg>
           {enEcoute ? "Arrêter" : "Dicter"}
         </button>
+        {!sansGabarits && (
         <button
           type="button"
           onClick={() => setGabaritsOuverts((o) => !o)}
@@ -192,6 +196,7 @@ export default function ChampNote({
         >
           Gabarits
         </button>
+        )}
         <span className="ml-auto text-[11px] text-[#6b7280]" aria-live="polite" data-testid="champ-note-brouillon">
           {etatBrouillon === "retabli" ? "Brouillon rétabli" : etatBrouillon === "enregistre" ? "Brouillon enregistré" : ""}
         </span>
