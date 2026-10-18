@@ -9,6 +9,7 @@ import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/
 import { AthleteCardMobile } from "@/components/shared/RecruteurRechercheMobile";
 import FiltresRechercheFeuille from "@/components/partenaire/recherche/FiltresRechercheFeuille";
 import { nombreFiltresActifs, versCarteRecherche } from "@/lib/partenaires/recherche";
+import { Chargement, classesBouton, classesSurface, EnTetePartenaire, EtatVide } from "@/components/partenaire/kit/KitPartenaire";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -132,7 +133,7 @@ function CarteRechercheBureau({ a }: { a: AthleteRow }) {
   return (
     <Link
       href={`/partenaire/athletes/${a.id}`}
-      className="bg-[#1A1D24] rounded-xl border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.10)] transition-all duration-300 overflow-hidden group flex flex-col"
+      className={`${classesSurface(true)} overflow-hidden group flex flex-col`}
     >
       <div ref={ref} className="relative h-[180px] bg-[#2F3440] overflow-hidden">
         <AthletePhotoFill
@@ -337,15 +338,10 @@ export default function PartnerAthletesSearch({
 
   return (
     <div className="space-y-6">
-      {/* Header — title + dynamic count */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Recherche</h1>
-          <p className="text-[14px] text-[#9CA3AF] mt-1">
-            {filtered.length} athlète{filtered.length === 1 ? "" : "s"} disponible{filtered.length === 1 ? "" : "s"} pour publication
-          </p>
-        </div>
-      </div>
+      <EnTetePartenaire
+        titre="Recherche"
+        sousTitre={<>{filtered.length} athlète{filtered.length === 1 ? "" : "s"} disponible{filtered.length === 1 ? "" : "s"} pour publication</>}
+      />
 
       {petit && (
         <div className="flex items-center gap-2" data-recherche-partenaire-petit>
@@ -633,45 +629,22 @@ export default function PartnerAthletesSearch({
 
       {/* Results */}
       {loading ? (
-        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-10 text-center">
-          <p className="text-[13px] text-[#6b7280]">Chargement...</p>
-        </div>
+        <Chargement />
       ) : filtered.length === 0 ? (
-        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-10 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#1A1D24] border border-[#2D3748] mb-4">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-            </svg>
-          </div>
-          {hasFilters ? (
-            <>
-              <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucun athlète ne correspond à ces filtres.</p>
-              <p className="text-[12px] text-[#6b7280] mt-1.5">Essayez d&apos;élargir votre recherche.</p>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold uppercase tracking-wider rounded-lg transition-colors"
-              >
-                Réinitialiser les filtres
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucun athlète disponible pour le moment.</p>
-              {/* Copie alignée sur is_partner_eligible_athlete() :
-                  partner_visibility_opt_in ET (18 ans OU consentement
-                  parental). La cote N'EST PAS une condition — l'ancienne
-                  formulation l'annonçait, et envoyait le partenaire réclamer
-                  des évaluations qui ne débloquent rien. Au 19 août 2026,
-                  22 des 24 athlètes éligibles n'ont aucune cote et s'affichent
-                  malgré tout. */}
-              <p className="text-[12px] text-[#6b7280] mt-1.5">
-                Les athlètes apparaissent ici une fois qu&apos;ils ont activé leur visibilité publique — et, s&apos;ils sont mineurs, obtenu le consentement d&apos;un parent.
-              </p>
-            </>
-          )}
-        </div>
+        hasFilters ? (
+          <EtatVide
+            titre="Aucun athlète ne correspond à ces filtres"
+            texte="Essaie d'élargir ta recherche."
+            action={<button type="button" onClick={resetFilters} className={classesBouton("principal")}>Réinitialiser les filtres</button>}
+          />
+        ) : (
+          /* Copie alignée sur is_partner_eligible_athlete() : partner_visibility_opt_in ET (18 ans OU
+             consentement parental). La cote N'EST PAS une condition. */
+          <EtatVide
+            titre="Aucun athlète disponible pour le moment"
+            texte="Les athlètes apparaissent ici une fois qu'ils ont activé leur visibilité publique — et, s'ils sont mineurs, obtenu le consentement d'un parent."
+          />
+        )
       ) : (
         <PartenaireCartesProvider>
           {petit ? (

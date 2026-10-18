@@ -39,13 +39,14 @@ import {
   type CartePartenaire,
   type CarteTerminee,
 } from "@/lib/partenaires/prospects";
+import { Avis, Chargement, classesBouton, classesPage, classesSurface, EnTetePartenaire, EtatVide, Pastille, type TonPastille } from "@/components/partenaire/kit/KitPartenaire";
 
 interface Partenaire { id: string; organizationName: string; peutEvaluer: boolean; approuve: boolean }
 
-const PILULE: Record<CartePartenaire["statut"], string> = {
-  A_ENVOYER: "bg-[#6B7280]/15 text-[#c8c8cc] border-[#6B7280]/30",
-  ENVOYEE: "bg-[#22C55E]/12 text-[#22C55E] border-[#22C55E]/30",
-  CORRESPONDANCE_POSSIBLE: "bg-[#F59E0B]/12 text-[#F59E0B] border-[#F59E0B]/30",
+const TON_STATUT: Record<CartePartenaire["statut"], TonPastille> = {
+  A_ENVOYER: "neutre",
+  ENVOYEE: "succes",
+  CORRESPONDANCE_POSSIBLE: "attention",
 };
 
 function dateCourte(iso: string): string {
@@ -185,64 +186,45 @@ export default function MesProspectsPage() {
 
   const terminesTries = useMemo(() => [...terminees].sort((a, b) => b.termineeLe.localeCompare(a.termineeLe)), [terminees]);
 
-  if (chargement) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (chargement) return <Chargement />;
 
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-5xl" data-page-prospects>
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Espace partenaire</p>
-          <h1 className="font-head text-[26px] sm:text-[30px] font-black text-white uppercase tracking-tight">Mes athlètes</h1>
-          <p className="text-[13px] text-[#9CA3AF] mt-1 max-w-xl">
-            Des jeunes que tu as repérés et qui ne sont pas encore sur Nexus. Crée leur carte, envoie-leur le lien :
-            s&apos;ils confirment que c&apos;est eux, ton évaluation et tes badges passent sur leur profil.
-          </p>
-        </div>
-        {autorise && (
-          <div className="flex items-center gap-3 shrink-0">
+    <div className={classesPage()} data-page-prospects>
+      <EnTetePartenaire
+        titre="Mes athlètes"
+        sousTitre="Des jeunes que tu as repérés et qui ne sont pas encore sur Nexus. Crée leur carte, envoie-leur le lien : s'ils confirment que c'est eux, ton évaluation et tes badges passent sur leur profil."
+        actions={autorise && (
+          <>
             <span className={`text-[12px] font-bold ${plein ? "text-[#F59E0B]" : "text-[#9CA3AF]"}`} data-compteur-cartes>
               {cartes.length} / {LIMITE_CARTES} cartes actives
             </span>
             <button type="button" disabled={plein} onClick={() => setFormulaire({ carte: null })}
-              className="px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className={classesBouton("principal")}
               title={plein ? "Limite de 50 cartes actives atteinte" : undefined}>
               + Nouvelle carte
             </button>
-          </div>
+          </>
         )}
-      </div>
+      />
 
-      {avis && (
-        <div role="status" className={`mt-5 rounded-lg border px-4 py-3 text-[13px] ${avis.type === "succes" ? "border-[#22C55E]/40 bg-[#22C55E]/10 text-[#86efac]" : "border-[#EF4444]/40 bg-[#EF4444]/10 text-[#fca5a5]"}`}>
-          {avis.texte}
-        </div>
-      )}
+      {avis && <div className="mt-5"><Avis ok={avis.type === "succes"}>{avis.texte}</Avis></div>}
 
       {!autorise ? (
-        <div className="mt-8 rounded-xl border border-[#2D3748] bg-[#1A1D24] p-6">
-          <p className="text-[14px] font-bold text-white">Les cartes prospects sont réservées aux partenaires évaluateurs.</p>
-          <p className="text-[13px] text-[#9CA3AF] mt-2">
-            {partenaire && !partenaire.approuve
+        <div className="mt-8">
+          <EtatVide
+            titre="Les cartes prospects sont réservées aux partenaires évaluateurs."
+            texte={partenaire && !partenaire.approuve
               ? "Ton organisation n'est pas encore approuvée."
               : "Ton organisation n'a pas encore la permission d'évaluer, ou aucun sport ne lui est attribué. Écris à l'équipe Nexus pour en parler."}
-          </p>
+          />
         </div>
       ) : erreurChargement ? (
-        <div className="mt-8 rounded-xl border border-[#EF4444]/40 bg-[#EF4444]/10 p-5 text-[13px] text-[#fca5a5]">
-          Tes cartes n&apos;ont pas pu être chargées. Recharge la page dans un instant.
-        </div>
+        <div className="mt-8"><Avis ok={false}>Tes cartes n&apos;ont pas pu être chargées. Recharge la page dans un instant.</Avis></div>
       ) : (
         <>
           {cartes.length === 0 ? (
-            <div className="mt-8 rounded-xl border border-dashed border-[#2D3748] p-8 text-center">
-              <p className="text-[14px] font-bold text-white">Aucune carte pour l&apos;instant</p>
-              <p className="text-[13px] text-[#9CA3AF] mt-1">Crée ta première carte, puis envoie le lien au jeune par texto.</p>
+            <div className="mt-8">
+              <EtatVide titre="Aucune carte pour l'instant" texte="Crée ta première carte, puis envoie le lien au jeune par texto." />
             </div>
           ) : (
             <ul className="mt-6 space-y-3">
@@ -252,14 +234,12 @@ export default function MesProspectsPage() {
                 const conf = confirmation?.carteId === c.id ? confirmation.action : null;
                 const lienEnvoye = c.statut !== "A_ENVOYER";
                 return (
-                  <li key={c.id} className="rounded-xl border border-[#2D3748] bg-[#1A1D24] p-4 sm:p-5" data-carte-prospect={c.id}>
+                  <li key={c.id} className={`${classesSurface()} p-4 sm:p-5`} data-carte-prospect={c.id}>
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h2 className="font-head text-[17px] font-black text-white uppercase tracking-tight">{c.prenom} {c.nom}</h2>
-                          <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold uppercase tracking-wider ${PILULE[c.statut]}`} data-statut={c.statut}>
-                            {LIBELLE_STATUT[c.statut]}
-                          </span>
+                          <Pastille ton={TON_STATUT[c.statut]} data-statut={c.statut}>{LIBELLE_STATUT[c.statut]}</Pastille>
                         </div>
                         <p className="text-[13px] text-[#c8c8cc] mt-1">
                           {[noms.sports[c.sportId], c.positionId ? noms.positions[c.positionId] : null, c.promotion ? `Promotion ${c.promotion}` : null].filter(Boolean).join(" · ")}
@@ -293,10 +273,10 @@ export default function MesProspectsPage() {
                         </span>
                         <button type="button" disabled={occupe === c.id}
                           onClick={() => void (conf === "supprimer" ? supprimer(c.id) : conf === "revoquer" ? revoquer(c.id) : envoyer(c.id))}
-                          className="px-3 py-1.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-md disabled:opacity-50">
+                          className={classesBouton("principal", true)}>
                           Confirmer
                         </button>
-                        <button type="button" onClick={() => setConfirmation(null)} className="px-3 py-1.5 text-[12px] font-semibold text-[#9CA3AF] hover:text-white">
+                        <button type="button" onClick={() => setConfirmation(null)} className={classesBouton("discret", true)}>
                           Annuler
                         </button>
                       </div>
@@ -304,22 +284,22 @@ export default function MesProspectsPage() {
                       <div className="mt-4 flex items-center gap-2 flex-wrap">
                         <button type="button" disabled={occupe === c.id}
                           onClick={() => (lienEnvoye ? setConfirmation({ carteId: c.id, action: "nouveau-lien" }) : void envoyer(c.id))}
-                          className="px-3.5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg disabled:opacity-50"
+                          className={classesBouton("principal", true)}
                           data-action="envoyer">
                           {lienEnvoye ? "Nouveau lien" : "Envoyer par texto"}
                         </button>
                         <button type="button" disabled={occupe === c.id} onClick={() => setFormulaire({ carte: c })}
-                          className="px-3.5 py-2 border border-[#2D3748] text-white hover:bg-white/5 text-[12px] font-bold rounded-lg disabled:opacity-50">
+                          className={classesBouton("secondaire", true)}>
                           Modifier
                         </button>
                         {lienEnvoye && (
                           <button type="button" disabled={occupe === c.id} onClick={() => setConfirmation({ carteId: c.id, action: "revoquer" })}
-                            className="px-3.5 py-2 border border-[#2D3748] text-[#9CA3AF] hover:text-white text-[12px] font-bold rounded-lg disabled:opacity-50">
+                            className={classesBouton("secondaire", true)}>
                             Révoquer le lien
                           </button>
                         )}
                         <button type="button" disabled={occupe === c.id} onClick={() => setConfirmation({ carteId: c.id, action: "supprimer" })}
-                          className="px-3.5 py-2 text-[#9CA3AF] hover:text-[#E63946] text-[12px] font-bold rounded-lg disabled:opacity-50">
+                          className={classesBouton("danger", true)}>
                           Supprimer
                         </button>
                       </div>
@@ -338,7 +318,7 @@ export default function MesProspectsPage() {
             {terminesTries.length === 0 ? (
               <p className="text-[13px] text-[#9CA3AF] mt-3">Aucune carte terminée.</p>
             ) : (
-              <ul className="mt-3 divide-y divide-[#2D3748]/60 rounded-xl border border-[#2D3748] bg-[#1A1D24]">
+              <ul className={`mt-3 divide-y divide-white/[0.06] ${classesSurface()}`}>
                 {terminesTries.map((t) => (
                   <li key={`${t.carteId}-${t.termineeLe}`} className="flex flex-col gap-2 px-4 py-3" data-terminee={t.issue}>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">

@@ -9,8 +9,8 @@ const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace
 
 test("P2 : le titre et la navigation disent « Mes évaluations » (route inchangée)", () => {
   const page = lire("app/partenaire/mes-athletes/page.tsx");
-  assert.ok(page.includes(">Mes évaluations</h1>"));
-  assert.ok(!page.includes(">Mes athlètes</h1>"));
+  assert.ok(page.includes('titre="Mes évaluations"'));
+  assert.ok(!page.includes('titre="Mes athlètes"'));
   assert.ok(lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Mes évaluations",\n    href: "/partenaire/mes-athletes",'));
   assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "mes-athletes", label: "Mes évaluations", href: "/partenaire/mes-athletes"'));
 });
@@ -23,7 +23,7 @@ test("P2 : cartes compactes — fiche au toucher, badges R3 groupés, Évaluer s
     "<Link href={`/partenaire/athletes/${a.athleteId}`} data-fiche-au-toucher",
     "after:absolute after:inset-0",
     '<CarteBadges athleteId={a.athleteId} coach={vignette?.badgesCoach} variante="ligne"',
-    "className=\"relative z-10 shrink-0",
+    "relative z-10 shrink-0 ${classesBouton(\"principal\", true)}",
     "setVignettes(await chargerVignettesMesAthletes(supabase, liste.map((x) => x.athleteId)));",
   ]) assert.ok(page.includes(extrait), extrait);
   // Le retrait d'un badge vit sur la fiche (BadgesPartenaire), plus sur la liste.
@@ -38,7 +38,7 @@ test("P2 : photo et badges coach lus dans top_athletes_view (la vue de la recher
 
 test("P3 : « Mes prospects » devient « Mes athlètes » (menu, onglet, titre) ; pas de puce « Ouverte »", () => {
   const page = lire("app/partenaire/prospects/page.tsx");
-  assert.ok(page.includes(">Mes athlètes</h1>"));
+  assert.ok(page.includes('titre="Mes athlètes"'));
   assert.ok(!page.includes(">Ouverte<") && !page.includes("\"Ouverte\""), "aucune puce « Ouverte » rendue");
   assert.ok(lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Mes athlètes",\n    href: "/partenaire/prospects",'));
   assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "prospects", label: "Mes athlètes", href: "/partenaire/prospects"'));

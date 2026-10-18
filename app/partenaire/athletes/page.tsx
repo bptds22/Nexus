@@ -5,6 +5,7 @@
 import { createClient } from "@/lib/supabase/client";
 import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import PartnerAthletesSearch from "@/components/partenaire/PartnerAthletesSearch";
+import { classesPage } from "@/components/partenaire/kit/KitPartenaire";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/athletes — listing of partner-eligible athletes
@@ -36,7 +37,7 @@ async function rendre() {
   ).sort() as string[];
 
   return (
-    <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto">
+    <div className={classesPage(true)}>
       <PartnerAthletesSearch
         sports={sports}
         positions={positions}

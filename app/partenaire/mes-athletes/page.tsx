@@ -29,6 +29,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import CarteBadges from "@/components/shared/CarteBadges";
 import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
+import { Avis, Chargement, classesBouton, classesPage, classesSurface, EnTetePartenaire, EtatVide } from "@/components/partenaire/kit/KitPartenaire";
 import {
   chargerMesAthletes,
   chargerVignettesMesAthletes,
@@ -158,7 +159,7 @@ function CarteEvaluation({ a, vignette, occupe, onEvaluer }: {
   const ref = useDeclarerCarteVisible(a.athleteId);
   const nom = `${a.prenom} ${a.nom}`.trim();
   return (
-    <li className="relative rounded-xl border border-[#2D3748] bg-[#1A1D24] hover:border-[#E63946]/40 transition-colors" data-mon-athlete={a.athleteId}>
+    <li className={`relative ${classesSurface(true)}`} data-mon-athlete={a.athleteId}>
       <div ref={ref} className="flex items-center gap-3 p-3">
         <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-[#2F3440] shrink-0">
           <AthletePhotoFill photoUrl={vignette?.photo} firstName={a.prenom} lastName={a.nom} initialsFontSize={22} className="object-[center_15%]" />
@@ -175,7 +176,7 @@ function CarteEvaluation({ a, vignette, occupe, onEvaluer }: {
           <CarteBadges athleteId={a.athleteId} coach={vignette?.badgesCoach} variante="ligne" className="mt-1.5" />
         </div>
         <button type="button" disabled={occupe} onClick={onEvaluer}
-          className="relative z-10 shrink-0 min-h-[40px] px-3 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg disabled:opacity-50">
+          className={`relative z-10 shrink-0 ${classesBouton("principal", true)}`}>
           {a.coteGlobale != null ? "Modifier" : "Évaluer"}
         </button>
       </div>
@@ -245,31 +246,20 @@ export default function MesAthletesPartenairePage() {
   }
 
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-5xl" data-page-mes-athletes>
-      <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Espace partenaire</p>
-      <h1 className="font-head text-[26px] sm:text-[30px] font-black text-white uppercase tracking-tight">Mes évaluations</h1>
-      <p className="text-[13px] text-[#9CA3AF] mt-1 max-w-xl">
-        Les athlètes que tu as évalués ou à qui tu as remis un badge. Un athlète qui retire sa visibilité
-        partenaire disparaît de cette liste ; ton évaluation et tes badges ne sont pas effacés pour autant.
-      </p>
+    <div className={classesPage()} data-page-mes-athletes>
+      <EnTetePartenaire
+        titre="Mes évaluations"
+        sousTitre="Les athlètes que tu as évalués ou à qui tu as remis un badge. Un athlète qui retire sa visibilité partenaire disparaît de cette liste ; ton évaluation et tes badges ne sont pas effacés pour autant."
+      />
 
-      {avis && (
-        <div role="status" className={`mt-5 rounded-lg border px-4 py-3 text-[13px] ${avis.ok ? "border-[#22C55E]/40 bg-[#22C55E]/10 text-[#86efac]" : "border-[#EF4444]/40 bg-[#EF4444]/10 text-[#fca5a5]"}`}>
-          {avis.texte}
-        </div>
-      )}
-      {erreur && <p className="mt-5 text-[13px] text-[#EF4444]">{erreur}</p>}
+      {avis && <div className="mt-5"><Avis ok={avis.ok}>{avis.texte}</Avis></div>}
+      {erreur && <div className="mt-5"><Avis ok={false}>{erreur}</Avis></div>}
 
       {chargement ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
-        </div>
+        <Chargement />
       ) : athletes.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-[#2D3748] bg-[#1A1D24] p-6">
-          <p className="text-[14px] font-bold text-white">Aucun athlète pour l&apos;instant.</p>
-          <p className="text-[13px] text-[#9CA3AF] mt-2">
-            Évalue un athlète ou remets-lui un badge depuis sa fiche : il apparaîtra ici.
-          </p>
+        <div className="mt-8">
+          <EtatVide titre="Aucun athlète pour l'instant" texte="Évalue un athlète ou remets-lui un badge depuis sa fiche : il apparaîtra ici." />
         </div>
       ) : (
         <>
@@ -293,7 +283,7 @@ export default function MesAthletesPartenairePage() {
           </span>
         </div>
         {visibles.length === 0 ? (
-          <p className="mt-6 text-[13px] text-[#9CA3AF]">Aucun athlète ne correspond à ces filtres.</p>
+          <div className="mt-6"><EtatVide titre="Aucun athlète ne correspond à ces filtres" /></div>
         ) : (
         <PartenaireCartesProvider>
         <ul className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">

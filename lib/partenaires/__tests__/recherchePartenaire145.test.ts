@@ -32,7 +32,7 @@ test("P1 : le nombre de filtres actifs (pastille du bouton « Filtres »)", () =
 test("P1 : téléphone et appli — feuille du recruteur, cartes natives, fiche partenaire au toucher", () => {
   const src = lire("components/partenaire/PartnerAthletesSearch.tsx");
   for (const extrait of [
-    'uppercase tracking-tight">Recherche</h1>',
+    'titre="Recherche"',
     "() => IS_CAPACITOR || window.matchMedia(REQUETE_PETIT).matches,",
     "<FiltresRechercheFeuille",
     "open={petit && feuilleOuverte}",
@@ -51,4 +51,17 @@ test("P1 : « Recherche » dans le menu, l'onglet de l'appli et le tableau de bo
   assert.ok(lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Recherche",\n    href: "/partenaire/athletes",'));
   assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "athletes", label: "Recherche", href: "/partenaire/athletes", icon: Icons.search'));
   assert.ok(lire("app/partenaire/page.tsx").includes('title: "Recherche",\n    href: "/partenaire/athletes",'));
+});
+
+test("P6 : les trois onglets de la 1.4.5 passent par le kit partagé (en-tête, surfaces, boutons, états)", () => {
+  const kit = lire("components/partenaire/kit/KitPartenaire.tsx");
+  assert.ok(kit.includes("bg-[#1A1D24]") && kit.includes("bg-[#E63946]"), "thème du recruteur : navy et rouge");
+  for (const f of ["components/partenaire/PartnerAthletesSearch.tsx", "app/partenaire/mes-athletes/page.tsx", "app/partenaire/prospects/page.tsx"]) {
+    const src = lire(f);
+    assert.ok(src.includes('from "@/components/partenaire/kit/KitPartenaire";'), f);
+    assert.ok(src.includes("<EnTetePartenaire"), f);
+    assert.ok(src.includes("<EtatVide"), f);
+    assert.ok(src.includes("classesSurface("), f);
+    assert.ok(!src.includes("animate-spin"), `${f} : le chargement passe par <Chargement />`);
+  }
 });
