@@ -31,7 +31,7 @@ test("appli Game On — parcours (écrit en local)", async ({ page, context }) =
       await page.getByRole("button", { name: "OK", exact: true }).click();
     }
     await page.getByLabel("Note sur ce joueur").fill(texte);
-    if (texte === "Bonne lecture du jeu") { await page.getByRole("button", { name: "Bras" }).first().click().catch(() => {}); await page.screenshot({ path: "test-results/visuel/appli-game-on-note.png" }); }
+    if (texte === "Bonne lecture du jeu") { await page.screenshot({ path: "test-results/visuel/appli-game-on-note.png" }); }
     await page.getByRole("button", { name: "Enregistrer" }).click();
     await page.waitForTimeout(400);
   }
