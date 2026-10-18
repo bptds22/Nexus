@@ -41,8 +41,8 @@ export type OngletsAnimes = { index: number; matchers: string[]; exact?: boolean
 
 const TAB_PATHS: OngletsAnimes = [
   { index: 0, matchers: ["/recruteur/tableau-de-bord"] },
-  { index: 1, matchers: ["/recruteur/recherche", "/recruteur/athletes"] },
-  { index: 2, matchers: ["/recruteur/pipeline"] },
+  { index: 1, matchers: ["/recruteur/calendrier"] },
+  { index: 2, matchers: ["/recruteur/game-on"] },
   { index: 3, matchers: ["/recruteur/messages"] },
 ];
 

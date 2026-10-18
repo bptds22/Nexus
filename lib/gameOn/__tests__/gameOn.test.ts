@@ -137,14 +137,19 @@ test("erreurs : fonction absente (prod sans migration) et messages NEXUS", () =>
   assert.equal(messageErreur({ message: "boom" }), "Une erreur est survenue. Réessaie.");
 });
 
-test("entrées : menu « Plus » de l'appli et barre latérale web, route Pro", () => {
-  const plus = lire("app/_components/mobile/MorePanel.tsx");
-  assert.ok(plus.includes('{ key: "game-on", label: "Game On", href: "/recruteur/game-on"'));
+test("entrées : barre du bas de l'appli et barre latérale web, route Pro", () => {
+  // BP 2026-10-18 (2e avis) : Game On monte dans la barre du bas, avec Calendrier et Messages.
+  const barre = lire("app/_components/mobile/MobileTabBar.tsx");
+  assert.ok(barre.includes('{ key: "game-on", label: "Game On", href: "/recruteur/game-on"'));
+  assert.ok(!lire("app/_components/mobile/MorePanel.tsx").includes('key: "game-on"'));
   const web = lire("app/recruteur/_components/RecruiterSidebar.tsx");
   assert.ok(web.includes('label: "Game On", href: "/recruteur/game-on"'));
   const page = lire("app/recruteur/game-on/page.tsx");
   assert.ok(page.includes('<FeatureGate feature="recruiting_calendar" requiredTier="pro">'));
   assert.ok(page.includes("<GameOn mobile={IS_CAPACITOR} />"));
-  // Pas d'onglet dans la barre du bas (décision BP).
-  assert.ok(!lire("app/_components/mobile/MobileTabBar.tsx").includes("game-on"));
+  // Recherche et Processus passent dans « Plus ».
+  const plus = lire("app/_components/mobile/MorePanel.tsx");
+  assert.ok(plus.includes('{ key: "recherche", label: "Recherche", href: "/recruteur/recherche"'));
+  assert.ok(plus.includes('{ key: "pipeline", label: "Mon processus", href: "/recruteur/pipeline"'));
+  assert.ok(!barre.includes('key: "recherche"') && !barre.includes('key: "pipeline"'));
 });

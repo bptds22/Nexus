@@ -95,6 +95,20 @@ const Icons = {
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
+  calendar: (
+    <svg {...SVG_PROPS}>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
+  // Game On : un sifflet stylisé (le match en cours).
+  gameOn: (
+    <svg {...SVG_PROPS}>
+      <circle cx="12" cy="12" r="9" />
+      <polygon points="10 8.5 16 12 10 15.5" fill="currentColor" />
+    </svg>
+  ),
   more: (
     <svg {...SVG_PROPS}>
       <circle cx="5" cy="12" r="1.6" fill="currentColor" />
@@ -165,8 +179,11 @@ interface TabConfig {
 
 const RECRUTEUR_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/recruteur/tableau-de-bord", icon: Icons.dashboard, activeMatch: "/recruteur/tableau-de-bord" },
-  { key: "recherche", label: "Recherche", href: "/recruteur/recherche", icon: Icons.search, activeMatch: "/recruteur/recherche|/recruteur/athletes" },
-  { key: "pipeline", label: "Processus", href: "/recruteur/pipeline", icon: Icons.kanban, requiredTier: "pro" },
+  // BP 2026-10-18 : sur le téléphone, la barre sert le terrain — Calendrier, Game On, Messages.
+  // Recherche et Processus passent dans « Plus » (MorePanel). Calendrier et Game On sans requiredTier :
+  // le gratuit atteint la page et y voit sa porte Pro (FeatureGate), comme dans le panneau Plus.
+  { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar, activeMatch: "/recruteur/calendrier" },
+  { key: "game-on", label: "Game On", href: "/recruteur/game-on", icon: Icons.gameOn, activeMatch: "/recruteur/game-on" },
   { key: "messages", label: "Messages", href: "/recruteur/messages", icon: Icons.envelope, requiredTier: "pro" },
 ];
 

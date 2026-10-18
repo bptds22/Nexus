@@ -88,11 +88,11 @@ test("routes : appli → CarteMatchsMobile, web → CarteMatchs ; recruteur derr
   assert.ok(lay.includes("<AnimatedRoute tabs={ONGLETS_PARTENAIRE}>"));
 });
 
-test("menu « Plus » recruteur : Carte des matchs après Calendrier, sans verrou", () => {
+test("menu « Plus » recruteur : Carte des matchs, sans verrou (Calendrier est dans la barre du bas)", () => {
   const src = lire("app/_components/mobile/MorePanel.tsx");
-  const cal = src.indexOf('{ key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier"');
   const carte = src.indexOf('{ key: "carte-matchs", label: "Carte des matchs", href: "/recruteur/carte-matchs", icon: Icons.calendar }');
-  assert.ok(cal > 0 && carte > cal, "après Calendrier");
+  assert.ok(carte > 0, "présente");
+  assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier"'));
   assert.doesNotMatch(src.slice(carte, src.indexOf("\n", carte)), /requiredTier/);
   // Le partenaire garde la sienne.
   assert.match(src, /\{ key: "carte-matchs", label: "Carte des matchs", href: "\/partenaire\/carte-matchs", icon: Icons\.calendar \}/);
