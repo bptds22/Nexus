@@ -35,3 +35,11 @@ test("P2 : photo et badges coach lus dans top_athletes_view (la vue de la recher
   assert.ok(lib.includes('supabase.from("top_athletes_view").select("id, photo_url, badges").in("id", uniques.slice(i, i + 200))'));
   assert.ok(lib.includes("badgesCoach: pastillesBadges(r.badges).map((d) => ({ badgeId: d.code, label: textePastille(d) })),"));
 });
+
+test("P3 : « Mes prospects » devient « Mes athlètes » (menu, onglet, titre) ; pas de puce « Ouverte »", () => {
+  const page = lire("app/partenaire/prospects/page.tsx");
+  assert.ok(page.includes(">Mes athlètes</h1>"));
+  assert.ok(!page.includes(">Ouverte<") && !page.includes("\"Ouverte\""), "aucune puce « Ouverte » rendue");
+  assert.ok(lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Mes athlètes",\n    href: "/partenaire/prospects",'));
+  assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "prospects", label: "Mes athlètes", href: "/partenaire/prospects"'));
+});

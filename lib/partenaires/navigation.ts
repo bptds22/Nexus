@@ -2,7 +2,8 @@
 
 /* Navigation du portail partenaire — ce qui s'affiche, web et appli (1.4.5, B1).
 
-   « Mes athlètes » et « Mes prospects » n'existent que pour un partenaire qui
+   « Mes évaluations » (/partenaire/mes-athletes) et « Mes athlètes » (/partenaire/prospects,
+   ex-« Mes prospects ») — noms de la 1.4.5 — n'existent que pour un partenaire qui
    peut évaluer (`media_partners.peut_evaluer`). La barre latérale du web et la
    barre d'onglets de l'appli lisent la MÊME règle. Ce n'est qu'un affichage :
    les RPC de ces écrans refusent d'elles-mêmes un partenaire sans permission. */

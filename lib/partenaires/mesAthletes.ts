@@ -1,4 +1,4 @@
-/* « Mes athlètes » du partenaire (W4d) : les athlètes qu'il a évalués ou badgés
+/* « Mes évaluations » du partenaire (W4d ; ex-« Mes athlètes », 1.4.5) : les athlètes qu'il a évalués ou badgés
    (badge non retiré), SEULEMENT s'ils lui sont encore visibles (fiche active et
    visibilité partenaire). Un jeune qui retire sa visibilité sort de la liste ;
    ses données ne sont pas effacées (W2). RPC partenaire_mes_athletes. */

@@ -1,7 +1,8 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   /partenaire/prospects — « Mes prospects » (W4b).
+   /partenaire/prospects — « Mes athlètes » (W4b ; « Mes prospects » renommée en 1.4.5, P3 —
+   pas de puce « Ouverte »).
 
    Les cartes d'un partenaire ÉVALUATEUR pour des jeunes qui ne sont pas
    encore sur Nexus. Base W4a (en prod) : tout passe par ses RPC.
@@ -197,7 +198,7 @@ export default function MesProspectsPage() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Espace partenaire</p>
-          <h1 className="font-head text-[26px] sm:text-[30px] font-black text-white uppercase tracking-tight">Mes prospects</h1>
+          <h1 className="font-head text-[26px] sm:text-[30px] font-black text-white uppercase tracking-tight">Mes athlètes</h1>
           <p className="text-[13px] text-[#9CA3AF] mt-1 max-w-xl">
             Des jeunes que tu as repérés et qui ne sont pas encore sur Nexus. Crée leur carte, envoie-leur le lien :
             s&apos;ils confirment que c&apos;est eux, ton évaluation et tes badges passent sur leur profil.

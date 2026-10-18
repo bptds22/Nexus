@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   « Mes athlètes » du partenaire — recherche et filtre « Distinctions »
+   « Mes évaluations » du partenaire (ex-« Mes athlètes », 1.4.5) — recherche et filtre « Distinctions »
    (demande BP du 2026-10-16). Logique pure, partagée web et appli.
 
    - Recherche : par MOTS, accents et casse ignorés ; chaque mot doit
