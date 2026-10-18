@@ -4,7 +4,8 @@
    RecruteurListeDetailMobile — iter 7.17 Sprint 2
    Détail d'une liste : header + stats bar + cartes athlètes
    (visuel Pipeline-style canon 14.1, horizontal photo-gauche) +
-   swipe-gauche pour retirer + tap-profil. Pas de notes ce sprint.
+   swipe-gauche pour retirer + tap-profil. Deux niveaux de notes (1.4.5) :
+   onglet « Notes » = la liste ; bulle de la carte = le fil du joueur.
    Gating PRO via FeatureGate (canon 14.x).
 ═══════════════════════════════════════════════════════════════ */
 
@@ -22,6 +23,7 @@ import { useDeleteList } from "@/lib/queries/recruiter/useDeleteList";
 import { getStatusConfig, type RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { AddAthleteToListSheet } from "@/components/shared/AddAthleteToListSheet";
 import { triggerHaptic } from "@/lib/haptics";
+import { formatRelativeDate } from "@/lib/utils/formatRelativeDate";
 import FilNotesSuiviMobile from "@/components/shared/FilNotesSuiviMobile";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -29,6 +31,12 @@ import ErreurChargement from "@/components/shared/ErreurChargement";
 import { CotesEvaluationsAthlete } from "@/components/shared/CotesEvaluations";
 import CarteBadges from "@/components/shared/CarteBadges";
 import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
+import { useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { useNotesListeUnite } from "@/lib/queries/recruiter/useListesUnite";
+import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 
 
 /* ── ListAthleteCardMobile ─────────────────────────────────────
@@ -294,10 +302,143 @@ function AthleteNotesSheet({
   );
 }
 
-/* ── Notes de LISTE (recruiter_list_notes) : RETIRÉES de l'app (lot 2 de la
-   1.4.4, registre §38). Un seul fil par joueur : celui de AthleteNotesSheet.
-   L'onglet « Notes » de la liste et son panneau (ListNotesPanel,
-   SegmentedTabs) sont partis avec. ─── */
+/* ── Notes de LISTE (recruiter_list_notes) — RÉTABLIES en 1.4.5 ───────────
+   Retirées par e131d05d (et 8f108751 côté web) au profit du seul fil par
+   joueur. Deux niveaux, comme avant : la note GÉNÉRALE de la liste (ici, onglet
+   « Notes ») et les notes PAR JOUEUR (AthleteNotesSheet → recruiter_notes, le fil
+   de Mon processus, sans doublon). Même table, même RLS qu'avant : aucune
+   migration. Signées ; les siennes se suppriment, celles des collègues se lisent. */
+
+function ListNotesPanel({ listId, modeUnite }: { listId: string; modeUnite: boolean }) {
+  const toast = useMobileToast();
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
+  const { data: notes = [], isLoading, isError, refetch } = useNotesListeUnite(listId);
+  const { data: auteurs = {} } = useAuteursUnite(modeUnite);
+  const [texte, setTexte] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  const [aSupprimer, setASupprimer] = useState<string | null>(null);
+
+  const poster = async () => {
+    const contenu = texte.trim();
+    if (!contenu || !moi || envoi) return;
+    setEnvoi(true);
+    const { error } = await createClient().from("recruiter_list_notes").insert({ list_id: listId, recruiter_id: moi, content: contenu });
+    setEnvoi(false);
+    if (error) { void triggerHaptic("Error"); toast.error({ message: "Note non enregistrée" }); return; }
+    void triggerHaptic("Light");
+    setTexte("");
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const supprimer = async (id: string) => {
+    setASupprimer(null);
+    const { error } = await createClient().from("recruiter_list_notes").delete().eq("id", id);
+    if (error) toast.error({ message: "Note non supprimée" });
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const peut = !!texte.trim() && !envoi && !!moi;
+  return (
+    <div className="flex flex-col" data-testid="notes-de-liste">
+      <div className="px-4 pt-3 pb-3 space-y-3">
+        <p className="text-[12px] text-white/55 leading-relaxed">
+          Une note sur la liste elle-même. Les notes d&apos;un joueur se prennent sur sa carte (bulle).
+        </p>
+        {isError && (
+          <ErreurChargement message="Les notes de cette liste n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie." onReessayer={() => { void refetch(); }} />
+        )}
+        {isLoading ? (
+          <div className="h-16 rounded-2xl bg-white/[0.04] animate-pulse" />
+        ) : notes.length === 0 && !isError ? (
+          <p className="text-[14px] text-white/55 italic text-center py-10">Aucune note sur cette liste.</p>
+        ) : (
+          notes.map((n) => {
+            const aMoi = !!moi && n.recruiter_id === moi;
+            return (
+              <div key={n.id} className="rounded-2xl bg-white/[0.04] px-3 py-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[11px] font-bold text-white/60 truncate">
+                    <span className="text-white">{aMoi ? "Moi" : nomAuteur(auteurs[n.recruiter_id])}</span> · {formatRelativeDate(n.created_at)}
+                  </p>
+                  {aMoi && aSupprimer !== n.id && (
+                    <button type="button" onClick={() => setASupprimer(n.id)} className="nx-mobile-touch-min text-[11px] font-bold text-white/45 active:text-[#EF4444]" aria-label="Supprimer cette note">Supprimer</button>
+                  )}
+                </div>
+                <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-words mt-1">{n.content}</p>
+                {aSupprimer === n.id && (
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="text-[12px] text-white/60">Supprimer cette note ?</span>
+                    <button type="button" onClick={() => void supprimer(n.id)} className="nx-mobile-touch-min text-[12px] font-bold text-[#EF4444]">Supprimer</button>
+                    <button type="button" onClick={() => setASupprimer(null)} className="nx-mobile-touch-min text-[12px] font-bold text-white/60">Annuler</button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+      {/* Composer collé au bas, au-dessus de la barre d'onglets ; --kbd-h le garde au-dessus du clavier. */}
+      <div
+        className="sticky bottom-0 bg-[#111317] border-t border-white/[0.06] px-4 pt-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", bottom: "calc(64px + env(safe-area-inset-bottom) + var(--kbd-h, 0px))" }}
+      >
+        <div className="flex items-end gap-2">
+          <textarea
+            value={texte}
+            onChange={(e) => setTexte(e.target.value.slice(0, 500))}
+            placeholder="Note pour cette liste…"
+            aria-label="Note pour cette liste"
+            rows={2}
+            className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
+          />
+          <button
+            type="button"
+            onClick={() => { void triggerHaptic("Light"); void poster(); }}
+            disabled={!peut}
+            aria-label="Ajouter"
+            className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${peut ? "bg-[#E63946] active:bg-[#D42B22]" : "bg-white/[0.06]"}`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={peut ? "#FFFFFF" : "#4a4d56"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Contrôle segmenté « Athlètes | Notes » ─── */
+function SegmentsListe({ vue, onChange, nbNotes }: { vue: "athletes" | "notes"; onChange: (v: "athletes" | "notes") => void; nbNotes: number }) {
+  const items: { value: "athletes" | "notes"; label: string; badge?: number }[] = [
+    { value: "athletes", label: "Athlètes" },
+    { value: "notes", label: "Notes", badge: nbNotes },
+  ];
+  return (
+    <div className="flex items-center gap-1 bg-[#13151a] rounded-full p-1 w-full" role="tablist">
+      {items.map((it) => {
+        const actif = it.value === vue;
+        return (
+          <button
+            key={it.value}
+            type="button"
+            role="tab"
+            aria-selected={actif}
+            onClick={() => { triggerHaptic("Light"); onChange(it.value); }}
+            className={`nx-mobile-touch-min inline-flex items-center justify-center flex-1 px-4 rounded-full text-[13px] font-bold uppercase tracking-[0.08em] transition-all ${actif ? "bg-[#E63946] text-white" : "text-[#9CA3AF] active:text-white"}`}
+          >
+            {it.label}
+            {typeof it.badge === "number" && it.badge > 0 && (
+              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] tabular-nums ${actif ? "bg-white/25 text-white" : "bg-white/[0.10] text-white/70"}`}>{it.badge}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 interface SheetAction {
   label: string;
@@ -571,6 +712,9 @@ function DetailInner({ listId }: { listId: string }) {
   const { tier, loading: tierLoading } = useSubscription();
   const modeUnite = !tierLoading && (tier === "pro" || tier === "all_star");
   const [retraitCible, setRetraitCible] = useState<ListAthlete | null>(null);
+  /* Deux niveaux de notes : « Athlètes » (une bulle par joueur → son fil) et « Notes » (la liste). */
+  const [vue, setVue] = useState<"athletes" | "notes">("athletes");
+  const { data: notesDeListe = [] } = useNotesListeUnite(listId);
 
   // Iter 7.24 — Set des athleteId déjà dans la liste, calculé depuis useListAthletes.
   // Passé au sheet pour masquer ces athlètes de la liste de favoris proposés.
@@ -711,8 +855,14 @@ function DetailInner({ listId }: { listId: string }) {
             avgRating={stats.avgRating}
           />
         )}
+        <div className="px-4 pt-2 pb-2">
+          <SegmentsListe vue={vue} onChange={setVue} nbNotes={notesDeListe.length} />
+        </div>
       </div>
 
+      {vue === "notes" ? (
+        <ListNotesPanel listId={listId} modeUnite={modeUnite} />
+      ) : (
       <div className="px-4 pt-3">
           {isLoading ? (
             <div className="space-y-3">
@@ -756,6 +906,7 @@ function DetailInner({ listId }: { listId: string }) {
             </PartenaireCartesProvider>
           )}
         </div>
+      )}
 
       {/* Iter 7.18 Sprint 3 — sheets */}
       <AthleteNotesSheet

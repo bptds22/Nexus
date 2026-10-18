@@ -15,6 +15,7 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import type { ProspectList, ProspectListAthlete } from "./_data/mockListsData";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useListesUnite, useNotesListeUnite } from "@/lib/queries/recruiter/useListesUnite";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
@@ -573,9 +574,123 @@ function AthleteNotesPanel({ athleteId, prospect, onErreur }: {
   prospect?: boolean;
   onErreur: (msg: string) => void;
 }) {
+  /* Les MÊMES options que dans Mon processus (pipeline/page.tsx) : Pro / All Star = le fil de
+     l'UNITÉ ; gratuit = démo, « Poster » ouvre l'offre Pro au lieu d'écrire (la RLS refuserait).
+     Avant : aucune option → un gratuit, ou un recruteur sans unité, voyait « Note non enregistrée ». */
+  const { tier, loading } = useSubscription();
+  const modeUnite = !loading && (tier === "pro" || tier === "all_star");
+  const demoGratuit = !loading && tier === "free";
   return (
     <div className="px-5 py-4">
-      <FilNotesSuivi sujet={{ type: prospect ? "carte" : "athlete", id: athleteId }} onErreur={onErreur} />
+      <FilNotesSuivi
+        sujet={{ type: prospect ? "carte" : "athlete", id: athleteId }}
+        lecture={modeUnite || prospect ? "unite" : "siennes"}
+        bloque={demoGratuit}
+        onTease={() => onErreur("Les notes sont réservées aux membres Pro")}
+        onErreur={onErreur}
+      />
+    </div>
+  );
+}
+
+/* Note GÉNÉRALE de la liste (recruiter_list_notes) — rétablie en 1.4.5.
+   Deux niveaux de notes, comme avant le lot C :
+     · la note de LISTE, ici : une zone pour la liste elle-même ;
+     · les notes PAR JOUEUR, dans chaque rangée : le fil de Mon processus
+       (FilNotesSuivi → recruiter_notes), sans doublon.
+   Retirée par 8f108751 (web) et e131d05d (appli) en croyant « un seul fil »
+   suffisant ; la table et sa RLS (les siennes en écriture, l'unité en lecture)
+   n'ont jamais bougé — aucune migration. Signées, celles des collègues se lisent
+   sans se supprimer. */
+function NotesDeListe({ listId, auteurs, onErreur }: {
+  listId: string;
+  auteurs: Record<string, { id: string; first_name: string | null; last_name: string | null; sport_id: string | null }>;
+  onErreur: (msg: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
+  const { data: notes = [], isError, refetch } = useNotesListeUnite(listId);
+  const [texte, setTexte] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  const [aSupprimer, setASupprimer] = useState<string | null>(null);
+
+  const poster = async () => {
+    const contenu = texte.trim();
+    if (!contenu || !moi || envoi) return;
+    setEnvoi(true);
+    const { error } = await createClient().from("recruiter_list_notes").insert({ list_id: listId, recruiter_id: moi, content: contenu });
+    setEnvoi(false);
+    if (error) { onErreur("Note non enregistrée"); return; }
+    setTexte("");
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  const supprimer = async (id: string) => {
+    setASupprimer(null);
+    const { error } = await createClient().from("recruiter_list_notes").delete().eq("id", id);
+    if (error) onErreur("Note non supprimée");
+    void invaliderTableauBlanc(queryClient);
+  };
+
+  return (
+    <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-5 py-4" data-testid="notes-de-liste">
+      <div className="flex items-center gap-2 mb-1">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Notes de la liste</h3>
+        {notes.length > 0 && <span className="text-[10px] text-[#4a4d56]">{notes.length}</span>}
+      </div>
+      <p className="text-[12px] text-[#6b7280] mb-3">Une note sur la liste elle-même. Les notes d&apos;un joueur se prennent sur sa rangée (« Notes »).</p>
+      {isError && (
+        <ErreurChargement
+          message="Les notes de cette liste n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
+          onReessayer={() => { void refetch(); }}
+        />
+      )}
+      <div className="flex gap-2">
+        <textarea
+          value={texte}
+          onChange={(e) => setTexte(e.target.value)}
+          rows={2}
+          placeholder="Ajouter une note à cette liste..."
+          aria-label="Ajouter une note à la liste"
+          className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void poster(); } }}
+        />
+        <button type="button" onClick={() => void poster()} disabled={envoi || !texte.trim() || !moi}
+          className="self-end px-3 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors shrink-0">
+          {envoi ? "..." : "Poster"}
+        </button>
+      </div>
+      {notes.length === 0 ? (
+        <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cette liste.</p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {notes.map((note) => {
+            const nom = nomAuteur(auteurs[note.recruiter_id]);
+            const aMoi = !!moi && note.recruiter_id === moi;
+            return (
+              <div key={note.id}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[11px] font-bold text-[#9CA3AF]">
+                    <span className="text-white">{aMoi ? "Moi" : nom}</span> · {new Date(note.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                  {aMoi && aSupprimer !== note.id && (
+                    <button type="button" onClick={() => setASupprimer(note.id)} className="text-[11px] font-bold text-[#6b7280] hover:text-[#EF4444] transition-colors" aria-label="Supprimer cette note">Supprimer</button>
+                  )}
+                </div>
+                <p className="text-[13px] text-[#e0e0e0] whitespace-pre-wrap mt-1">{note.content}</p>
+                {aSupprimer === note.id && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] text-[#9CA3AF]">Supprimer cette note ?</span>
+                    <button type="button" onClick={() => void supprimer(note.id)} className="text-[11px] font-bold text-[#EF4444]">Supprimer</button>
+                    <button type="button" onClick={() => setASupprimer(null)} className="text-[11px] font-bold text-[#6b7280] hover:text-white">Annuler</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -598,11 +713,6 @@ function ExpandedListView({
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
 
-  /* Notes de LISTE (recruiter_list_notes) : le web n'en écrit plus (retour
-     BP — un seul fil de notes, celui du joueur). L'app 1.4.3 en écrit encore :
-     les siennes restent LISIBLES ici, marquées « depuis l'app », jusqu'à la
-     1.4.4 (registre §38). */
-  const { data: listNotes = [], isError: erreurNotes, refetch: relireNotes } = useNotesListeUnite(list.id);
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const verifiedCount = list.athletes.filter((a) => a.is_verified).length;
@@ -775,30 +885,8 @@ function ExpandedListView({
         </div>
       )}
 
-      {/* Notes écrites depuis l'app 1.4.3 (notes de LISTE) — lecture seule. */}
-      {erreurNotes && (
-        <ErreurChargement
-          message="Les notes de cette liste n'ont pas pu être chargées. Vérifie ta connexion, puis réessaie."
-          onReessayer={() => { void relireNotes(); }}
-        />
-      )}
-      {listNotes.length > 0 && (
-        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] px-5 py-4" data-testid="notes-liste-app">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Notes de la liste — depuis l&apos;app</p>
-          {listNotes.map((note) => {
-            const nom = nomAuteur(auteurs[note.recruiter_id]);
-            return (
-              <div key={note.id} className="mb-3 last:mb-0">
-                <p className="text-[11px] font-bold text-[#9CA3AF]">
-                  <span className="text-white">{nom}</span> · {new Date(note.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
-                  <span className="ml-2 inline-flex items-center rounded-full border border-[#2D3748] px-1.5 py-[1px] text-[10px] font-bold uppercase tracking-wider text-[#6b7280]">depuis l&apos;app</span>
-                </p>
-                <p className="text-[13px] text-[#e0e0e0] whitespace-pre-wrap mt-1">{note.content}</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Note GÉNÉRALE de la liste (les notes par joueur sont sur leurs rangées). */}
+      <NotesDeListe listId={list.id} auteurs={auteurs} onErreur={onErreur} />
 
       {/* Add Athlete Modal */}
       {showAddModal && (
