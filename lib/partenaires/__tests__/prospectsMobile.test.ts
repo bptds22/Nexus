@@ -6,7 +6,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { adresseLien, messageTexto, LIMITE_CARTES } from "@/lib/partenaires/prospects";
+import { adresseLien, lienSms, messageTexto, LIMITE_CARTES } from "@/lib/partenaires/prospects";
 
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
@@ -22,16 +22,22 @@ test("le lien du texto : domaine public, jamais l'adresse locale de la WebView",
   assert.match(m, /^Salut! Club Test t'a évalué et t'invite à voir ton évaluation sur Nexus : https:\/\/nexussports\.ca\/p\/(ab){32}\n— Club Test$/);
 });
 
-test("« Envoyer par texto » dans l'appli : feuille de partage native, message entier, repli sur la copie", () => {
+test("P4 : « Envoyer par texto » ouvre Messages avec le message, sans numéro (web tactile et appli)", () => {
+  // iOS lit le corps après « & », Android après « ? » ; jamais de numéro.
+  const m = "Salut! Club & Co t'invite";
+  assert.equal(lienSms(m, true), "sms:&body=Salut!%20Club%20%26%20Co%20t'invite");
+  assert.equal(lienSms(m, false), "sms:?body=Salut!%20Club%20%26%20Co%20t'invite");
   const src = lire("components/partenaire/prospects/EnvoyerLien.tsx");
-  assert.match(src, /\{IS_CAPACITOR && \(\s*<button type="button" onClick=\{\(\) => void envoyerAppli\(\)\}/);
-  assert.match(src, /partagerTexte\(\{ texte: message, titre: "Envoyer le lien" \}\)/);
-  // Le sms: et le partage navigateur restent au web (P5 : plus de période de non-contact côté partenaire).
-  assert.match(src, /\{!IS_CAPACITOR && tactile && \(/);
-  assert.match(src, /\{!IS_CAPACITOR && partage && \(/);
+  for (const extrait of [
+    "const envoyerAppli = () => { window.location.href = lienSms(message, ios); };",
+    "<a href={lienSms(message, ios)} data-envoyer-texto",
+    "const [{ tactile, ios, partage }] = useState(lireAppareil);",
+    '? Capacitor.getPlatform() === "ios"',
+    'const issue = await partagerTexte({ texte: message, titre: "Envoyer le lien" });',
+  ]) assert.ok(src.includes(extrait), extrait);
+  assert.doesNotMatch(src, /useEffect/);
   const lib = lire("lib/partage/partagerLien.ts");
-  assert.match(lib, /await Share\.share\(\{ title: titre, text: texte, dialogTitle: titre \}\);/);
-  assert.match(lib, /return \(await copier\(texte\)\) \? "copie" : "echec";/);
+  assert.ok(lib.includes("await Share.share({ title: titre, text: texte, dialogTitle: titre });"));
 });
 
 test("formulaire de carte : remonter ET plafonner au-dessus du clavier (appli), jamais de bottom inline", () => {

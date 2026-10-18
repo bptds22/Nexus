@@ -238,9 +238,11 @@ export function messageTexto(organisation: string, adresse: string, evalue = tru
     : `Salut! ${organisation} t'invite sur Nexus : ${adresse}\n— ${organisation}`;
 }
 
-/** sms: avec corps — `?&body=` est lu par iOS ET Android. */
-export function lienSms(message: string): string {
-  return `sms:?&body=${encodeURIComponent(message)}`;
+/** P4 (option a, BP 1.4.5) : Messages s'ouvre avec le message et le lien, SANS numéro — Nexus
+ *  n'a aucune coordonnée du jeune, rien n'est saisi ni stocké. iOS lit le corps après « & »,
+ *  Android après « ? » (même règle que le texto du recruteur, lib/cartes/renvoiInvitation). */
+export function lienSms(message: string, ios: boolean): string {
+  return `sms:${ios ? "&" : "?"}body=${encodeURIComponent(message)}`;
 }
 
 /** Message lisible pour une erreur d'une RPC W4 (refus « NEXUS: … » de la

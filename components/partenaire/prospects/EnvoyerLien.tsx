@@ -16,19 +16,33 @@
    - « Copier » : toujours.
    Le message est court, signé de l'organisation, sans nom ni évaluation.
 
-   Dans l'appli (1.4.5, B2) : « Envoyer par texto » ouvre la FEUILLE DE
-   PARTAGE native (Messages, WhatsApp…) avec le message — pas de sms:, que
-   la WebView ne relaie pas de façon fiable. Le lien du message est bâti sur
-   NEXT_PUBLIC_APP_URL (lib/partage/adressePublique.ts), jamais sur l'adresse
-   locale de la WebView.
+   P4 (1.4.5, option a) : « Envoyer par texto » ouvre MESSAGES avec le message
+   et le lien, SANS numéro (sms:&body= sur iOS, sms:?body= sur Android) — au
+   web sur un appareil tactile, et dans l'appli comme le texto du recruteur
+   (window.location.href). Rien n'est saisi ni stocké. Dans l'appli, la
+   feuille de partage native reste offerte en second (« Partager… »). Le lien
+   du message est bâti sur NEXT_PUBLIC_APP_URL (lib/partage/adressePublique.ts),
+   jamais sur l'adresse locale de la WebView.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { lienSms, messageTexto } from "@/lib/partenaires/prospects";
 import { partagerTexte } from "@/lib/partage/partagerLien";
+import { Capacitor } from "@capacitor/core";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+/** Lu une fois à l'ouverture : la feuille n'est rendue que dans le navigateur (portail dans
+ *  <body>, après un geste), jamais au serveur. Téléphone ou tablette : écran tactile ou pointeur
+ *  grossier — un portable à écran tactile verra aussi le bouton ; la copie reste offerte à tous. */
+function lireAppareil() {
+  const tactile = (navigator.maxTouchPoints ?? 0) > 0 || !!window.matchMedia?.("(pointer: coarse)").matches;
+  const ios = IS_CAPACITOR
+    ? Capacitor.getPlatform() === "ios"
+    : /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && (navigator.maxTouchPoints ?? 0) > 1);
+  return { tactile, ios, partage: typeof navigator.share === "function" };
+}
 
 export default function EnvoyerLien({
   organisation,
@@ -43,17 +57,8 @@ export default function EnvoyerLien({
   onClose: () => void;
 }) {
   const message = messageTexto(organisation, adresse, evalue);
-  const [tactile, setTactile] = useState(false);
-  const [partage, setPartage] = useState(false);
+  const [{ tactile, ios, partage }] = useState(lireAppareil);
   const [copie, setCopie] = useState<"lien" | "message" | null>(null);
-
-  useEffect(() => {
-    // Téléphone ou tablette : écran tactile, ou pointeur grossier. Un portable à
-    // écran tactile verra aussi le bouton ; la copie reste offerte à tous.
-    setTactile(typeof window !== "undefined"
-      && ((navigator.maxTouchPoints ?? 0) > 0 || !!window.matchMedia?.("(pointer: coarse)").matches));
-    setPartage(typeof navigator !== "undefined" && typeof navigator.share === "function");
-  }, []);
 
   const copier = async (quoi: "lien" | "message") => {
     try {
@@ -67,8 +72,11 @@ export default function EnvoyerLien({
     try { await navigator.share({ text: message }); } catch { /* annulé */ }
   };
 
-  // Appli : la feuille de partage native ; repli sur la copie du message.
-  const envoyerAppli = async () => {
+  // Appli : Messages, comme le texto du recruteur (CreerProspectMobile).
+  const envoyerAppli = () => { window.location.href = lienSms(message, ios); };
+
+  // Appli, en second : la feuille de partage native ; repli sur la copie du message.
+  const partagerAppli = async () => {
     const issue = await partagerTexte({ texte: message, titre: "Envoyer le lien" });
     if (issue === "copie") { setCopie("message"); setTimeout(() => setCopie(null), 2000); }
   };
@@ -94,13 +102,19 @@ export default function EnvoyerLien({
 
         <div className="mt-4 flex flex-col sm:flex-row gap-2">
           {IS_CAPACITOR && (
-            <button type="button" onClick={() => void envoyerAppli()} data-envoyer-texto-appli
+            <button type="button" onClick={envoyerAppli} data-envoyer-texto-appli
               className="flex-1 min-h-[44px] text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
               Envoyer par texto
             </button>
           )}
+          {IS_CAPACITOR && (
+            <button type="button" onClick={() => void partagerAppli()} data-partager-appli
+              className="flex-1 min-h-[44px] px-4 py-2.5 border border-[#2D3748] text-white hover:bg-white/5 text-[13px] font-bold rounded-lg">
+              Partager…
+            </button>
+          )}
           {!IS_CAPACITOR && tactile && (
-            <a href={lienSms(message)} className="flex-1 text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
+            <a href={lienSms(message, ios)} data-envoyer-texto className="flex-1 text-center px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
               Envoyer par texto
             </a>
           )}
