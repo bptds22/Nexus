@@ -62,6 +62,7 @@
 
 "use client";
 
+import { useEffect, useRef } from "react";
 import { GRADES, type Grade } from "@/lib/config/grades";
 
 /* ── L'ÉCHELLE — LE LANGAGE VISUEL DU GRADE ─────────────────────────────
@@ -145,15 +146,25 @@ export function GradePicker({
   onSelect: (grade: Grade | null) => void;
   compact?: boolean;
 }) {
-  const cell = compact ? "h-8 text-[12px]" : "h-11 text-[14px]";
-  /* Tactile (mobile, registre §94) : 9 colonnes de 44 px ne tiennent pas sur
-     un écran de 390 px — les cellules tombaient à ~32 px de large. Deux
-     rangées, 5 + 4 : chaque cellule garde plus de 44 px dans les deux sens,
-     et l'ordre de lecture reste celui de l'échelle (A+ … C, puis D+ … E). */
-  const grille = compact ? "grid-cols-9" : "grid-cols-5";
+  const cell = compact ? "h-8 min-w-[40px] text-[12px]" : "h-11 min-w-[44px] text-[14px]";
+  /* UNE SEULE rangée, A+ … E, qui défile à l'horizontale comme une barre
+     (retour BP 1.4.5 : deux rangées 5 + 4 coupaient l'échelle). Chaque
+     bouton garde sa largeur minimale tactile ; la rangée déborde et défile
+     au lieu de s'écraser. À l'ouverture, elle défile jusqu'au grade choisi. */
+  const rangee = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const barre = rangee.current;
+    const actif = barre?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!barre || !actif) return;
+    barre.scrollLeft = actif.offsetLeft - (barre.clientWidth - actif.offsetWidth) / 2;
+  }, [value]);
   return (
     <div>
-      <div className={`grid ${grille} gap-1.5`}>
+      <div
+        ref={rangee}
+        data-testid="grade-picker-rangee"
+        className="flex flex-nowrap gap-1.5 overflow-x-auto overscroll-x-contain py-1 px-1 -mx-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {GRADES.map((g) => {
           const active = value === g;
           return (
@@ -163,7 +174,7 @@ export function GradePicker({
               onClick={() => onSelect(g)}
               aria-pressed={active}
               aria-label={`Grade ${g}`}
-              className={`${cell} rounded-md border font-black leading-none tracking-tight text-white transition-all ${GRADE_STYLES[g]} ${
+              className={`${cell} flex-1 shrink-0 rounded-md border px-2 font-black leading-none tracking-tight text-white transition-all ${GRADE_STYLES[g]} ${
                 active ? "ring-2 ring-white/80" : "opacity-70 hover:opacity-100"
               }`}
             >
