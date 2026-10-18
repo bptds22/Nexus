@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import ChampNote from "@/components/shared/ChampNote";
 
 /* ─────────────────────────────────────────────────────────────────
    NotesListsPanel — Recruiter notes + lists for an athlete
@@ -180,13 +181,13 @@ export default function NotesListsPanel({ athleteId }: { athleteId: string }) {
         {notesOpen && (
           <div className="px-5 pb-5 space-y-3">
             {/* Note input */}
-            <textarea
+            <ChampNote
               value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              rows={2}
+              onChange={setNoteText}
+              sujet={`athlete:${athleteId}`}
               placeholder="Ajouter une note..."
-              className="w-full bg-[#111317] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePostNote(); } }}
+              ariaLabel="Ajouter une note à cet athlète"
+              onEnvoyer={handlePostNote}
             />
             <div className="flex justify-end">
               <button

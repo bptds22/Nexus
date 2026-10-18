@@ -28,6 +28,7 @@ import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
 import { useNotesCarte } from "@/lib/cartes/useCartes";
 import { ajouterNoteCarte } from "@/lib/cartes/carteProspect";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import ChampNote from "@/components/shared/ChampNote";
 
 export interface SujetNotes {
   type: "athlete" | "carte";
@@ -105,14 +106,14 @@ export default function FilNotesSuivi({
 
       {!lectureSeule && (
         <div className="flex gap-2">
-          <textarea
+          <ChampNote
+            className="flex-1 min-w-0"
             value={texte}
-            onChange={(e) => setTexte(e.target.value)}
-            rows={2}
+            onChange={setTexte}
+            sujet={`${carte ? "carte" : "athlete"}:${sujet.id}`}
             placeholder="Ajouter une note..."
-            aria-label="Ajouter une note de suivi"
-            className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void poster(); } }}
+            ariaLabel="Ajouter une note de suivi"
+            onEnvoyer={() => void poster()}
           />
           <button
             type="button"

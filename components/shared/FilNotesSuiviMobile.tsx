@@ -37,6 +37,7 @@ import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { triggerHaptic } from "@/lib/haptics";
 import { useNotesCarte } from "@/lib/cartes/useCartes";
 import { ajouterNoteCarte } from "@/lib/cartes/carteProspect";
+import ChampNote from "@/components/shared/ChampNote";
 
 interface Note { id: string; content: string; created_at: string; recruiter_id?: string }
 
@@ -130,25 +131,25 @@ export default function FilNotesSuiviMobile({
 
       {ouvert && (<>
       {!lectureSeule && (
-        <div className="flex gap-2">
-          <input
-            type="text"
+        <div>
+          <ChampNote
+            mobile
             value={texte}
-            onChange={(e) => setTexte(e.target.value)}
+            onChange={setTexte}
+            sujet={`${carteId ? "carte" : "athlete"}:${carteId ?? athleteId}`}
             placeholder="Ajouter une note…"
-            aria-label="Ajouter une note de suivi"
-            className="flex-1 px-3 py-2.5 bg-[#0C0E12] rounded-2xl text-[16px] text-white placeholder:text-[#4a4d56] border border-white/[0.06] outline-none focus:border-[#E63946]/40"
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void poster(); } }}
+            ariaLabel="Ajouter une note de suivi"
+            envoyerAvecEntree={false}
           />
           <button
             type="button"
             onClick={() => void poster()}
             disabled={!texte.trim() || enCours}
-            className={`min-h-[44px] px-4 rounded-2xl text-[11px] uppercase tracking-wider font-bold transition-colors ${
+            className={`mt-2 w-full min-h-[44px] px-4 rounded-2xl text-[12px] uppercase tracking-wider font-bold transition-colors ${
               texte.trim() && !enCours ? "bg-[#E63946] text-white active:bg-[#D42B22]" : "bg-white/[0.06] text-[#4a4d56]"
             }`}
           >
-            {enCours ? "…" : "Poster"}
+            {enCours ? "…" : "Poster la note"}
           </button>
         </div>
       )}

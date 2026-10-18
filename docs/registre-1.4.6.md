@@ -28,3 +28,20 @@ cible ») : la cible se pose sur le cégep et ce sont ses recruteurs qui la lise
 
 `tsc` : `components/shared/CoachEquipeDetailMobile.tsx(70,3)` — `nomAConfirmer` requis par
 `CoachAthlete` depuis `b9285d39` (A2). Sans effet au build (`ignoreBuildErrors`), mais à poser.
+
+## Notes sur le terrain — « mode match » (option B du R6, décision BP 2026-10-17)
+
+Demande : les coachs prennent leurs notes dans OneNote, parce que nos notes ne sont pas claires
+pendant un match. La 1.4.5 livre l'option C (champ plus grand, brouillon automatique, bouton
+Dicter, gabarits courts — `components/shared/ChampNote.tsx`). Le **mode match** reste à rediscuter :
+
+- écran plein cadre ouvert depuis la carte du match, à une main (zone du pouce) ;
+- grosses touches par joueur (numéro de maillot → « Tremblay #7 ») et étiquettes en deux gestes
+  (à suivre, vitesse, leadership, à revoir), note vocale facultative ;
+- **hors ligne** : file locale envoyée au retour du réseau (les estrades ont un mauvais réseau) ;
+- effort estimé : 1 à 2 semaines. Aucun code en 1.4.5.
+
+**Dictée native** : `ChampNote` utilise la voix du navigateur quand elle existe et, sinon (cas de
+l'appli iOS, dont la WebView n'expose pas `SpeechRecognition`), met le curseur dans le champ et
+indique le micro du clavier. Un vrai bouton de dictée dans l'appli demande un plugin natif
+(`@capacitor-community/speech-recognition`) : à décider avec le mode match.

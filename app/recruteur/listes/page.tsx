@@ -16,6 +16,7 @@ import type { ProspectList, ProspectListAthlete } from "./_data/mockListsData";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import ChampNote from "@/components/shared/ChampNote";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useListesUnite, useNotesListeUnite } from "@/lib/queries/recruiter/useListesUnite";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
@@ -647,14 +648,14 @@ function NotesDeListe({ listId, auteurs, onErreur }: {
         />
       )}
       <div className="flex gap-2">
-        <textarea
+        <ChampNote
+          className="flex-1 min-w-0"
           value={texte}
-          onChange={(e) => setTexte(e.target.value)}
-          rows={2}
+          onChange={setTexte}
+          sujet={`liste:${listId}`}
           placeholder="Ajouter une note à cette liste..."
-          aria-label="Ajouter une note à la liste"
-          className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void poster(); } }}
+          ariaLabel="Ajouter une note à la liste"
+          onEnvoyer={() => void poster()}
         />
         <button type="button" onClick={() => void poster()} disabled={envoi || !texte.trim() || !moi}
           className="self-end px-3 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors shrink-0">

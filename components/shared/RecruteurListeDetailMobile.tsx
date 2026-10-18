@@ -31,6 +31,7 @@ import ErreurChargement from "@/components/shared/ErreurChargement";
 import { CotesEvaluationsAthlete } from "@/components/shared/CotesEvaluations";
 import CarteBadges from "@/components/shared/CarteBadges";
 import PartenaireCartesProvider from "@/components/shared/PartenaireCartesProvider";
+import ChampNote from "@/components/shared/ChampNote";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -385,13 +386,15 @@ function ListNotesPanel({ listId, modeUnite }: { listId: string; modeUnite: bool
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", bottom: "calc(64px + env(safe-area-inset-bottom) + var(--kbd-h, 0px))" }}
       >
         <div className="flex items-end gap-2">
-          <textarea
+          <ChampNote
+            mobile
+            className="flex-1 min-w-0"
             value={texte}
-            onChange={(e) => setTexte(e.target.value.slice(0, 500))}
+            onChange={(v) => setTexte(v.slice(0, 500))}
+            sujet={`liste:${listId}`}
             placeholder="Note pour cette liste…"
-            aria-label="Note pour cette liste"
-            rows={2}
-            className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
+            ariaLabel="Note pour cette liste"
+            envoyerAvecEntree={false}
           />
           <button
             type="button"
