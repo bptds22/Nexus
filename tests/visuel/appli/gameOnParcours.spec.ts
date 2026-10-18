@@ -17,6 +17,11 @@ test("appli Game On — parcours (écrit en local)", async ({ page, context }) =
   await page.getByPlaceholder("Ex. Cougars").fill("Cougars");
   await page.getByPlaceholder("Ex. Titans").fill("Titans");
   await page.getByRole("button", { name: "Commencer le match" }).click();
+  // Couleur des chandails, demandée à chaque match.
+  await page.getByRole("button", { name: "Cougars : chandail Noir" }).click();
+  await page.getByRole("button", { name: "Titans : chandail Blanc" }).click();
+  await page.screenshot({ path: "test-results/visuel/appli-game-on-couleurs.png" });
+  await page.getByRole("button", { name: "Commencer", exact: true }).click();
   await page.waitForTimeout(600);
   await page.screenshot({ path: "test-results/visuel/appli-game-on-match.png" });
 
@@ -37,6 +42,10 @@ test("appli Game On — parcours (écrit en local)", async ({ page, context }) =
   }
   await page.waitForTimeout(1500);
   await page.screenshot({ path: "test-results/visuel/appli-game-on-notes.png" });
+  await page.getByRole("button", { name: "Titans" }).first().click();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: "test-results/visuel/appli-game-on-notes-titans.png" });
+  await page.getByRole("button", { name: "Cougars" }).first().click();
 
   await page.getByRole("button", { name: "Terminer" }).click();
   await page.getByRole("button", { name: "Terminer et trier" }).click();
