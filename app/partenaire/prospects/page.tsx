@@ -22,6 +22,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import FormulaireCarte from "@/components/partenaire/prospects/FormulaireCarte";
 import EnvoyerLien from "@/components/partenaire/prospects/EnvoyerLien";
+import {
+  BandeauRapprochementsPartenaire, FenetreRapprochementsPartenaire, LienRapprochementCarte,
+} from "@/components/partenaire/prospects/RapprochementsPartenaire";
+import { chargerRapprochements, parCarte, type RapprochementPartenaire } from "@/lib/partenaires/rapprochements";
 import { adressePublique } from "@/lib/partage/adressePublique";
 import {
   adresseLien,
@@ -79,6 +83,9 @@ export default function MesProspectsPage() {
   const [erreurChargement, setErreurChargement] = useState(false);
   const [formulaire, setFormulaire] = useState<{ carte: CartePartenaire | null } | null>(null);
   const [lien, setLien] = useState<{ carteId: string; adresse: string; evalue: boolean } | null>(null);
+  // P2/P3 (1.4.5) : correspondances possibles de mes cartes, et la fenêtre ouverte (une carte, ou toutes).
+  const [rapprochements, setRapprochements] = useState<RapprochementPartenaire[]>([]);
+  const [fenetre, setFenetre] = useState<{ carteId?: string } | null>(null);
   const [confirmation, setConfirmation] = useState<{ carteId: string; action: "supprimer" | "nouveau-lien" | "revoquer" } | null>(null);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [avis, setAvis] = useState<{ type: "succes" | "erreur"; texte: string } | null>(null);
@@ -94,6 +101,8 @@ export default function MesProspectsPage() {
       const [c, t] = await Promise.all([chargerMesCartes(supabase), chargerCartesTerminees(supabase)]);
       setCartes(c);
       setTerminees(t);
+      // Lecture en échec (migration pas encore en prod) : aucune proposition, la page reste utilisable.
+      setRapprochements(await chargerRapprochements(supabase).catch(() => []));
       // Libellés lisibles : sports, positions, établissements et équipes des cartes.
       const ids = (f: (x: CartePartenaire) => string | null) => [...new Set(c.map(f).filter((x): x is string => !!x))];
       const [sp, po, ec, eq] = await Promise.all([
@@ -184,6 +193,7 @@ export default function MesProspectsPage() {
     }
   };
 
+  const nbParCarte = useMemo(() => parCarte(rapprochements), [rapprochements]);
   const terminesTries = useMemo(() => [...terminees].sort((a, b) => b.termineeLe.localeCompare(a.termineeLe)), [terminees]);
 
   if (chargement) return <Chargement />;
@@ -208,6 +218,9 @@ export default function MesProspectsPage() {
       />
 
       {avis && <div className="mt-5"><Avis ok={avis.type === "succes"}>{avis.texte}</Avis></div>}
+      {rapprochements.length > 0 && (
+        <div className="mt-5"><BandeauRapprochementsPartenaire total={rapprochements.length} onVoir={() => setFenetre({})} /></div>
+      )}
 
       {!autorise ? (
         <div className="mt-8">
@@ -253,11 +266,8 @@ export default function MesProspectsPage() {
                             </span>
                           )}
                         </div>
-                        {c.statut === "CORRESPONDANCE_POSSIBLE" && (
-                          <p className="text-[12px] text-[#F5C46B] mt-2 max-w-lg">
-                            Un athlète déjà inscrit, qui accepte d&apos;être vu des partenaires, pourrait être ce jeune. Nexus lui a demandé de confirmer ; c&apos;est lui qui décide.
-                          </p>
-                        )}
+                        {/* P2/P3 : c'est le partenaire qui décide, comme le recruteur. */}
+                        <LienRapprochementCarte n={nbParCarte.get(c.id) ?? 0} onVoir={() => setFenetre({ carteId: c.id })} />
                       </div>
                       <p className={`text-[12px] shrink-0 ${jours <= 7 ? "text-[#F59E0B]" : "text-[#6b7280]"}`}>
                         Expire le {dateCourte(c.expireLe)}{jours <= 7 ? ` (${jours} j)` : ""}
@@ -366,6 +376,18 @@ export default function MesProspectsPage() {
         </>
       )}
 
+      {fenetre && (
+        <FenetreRapprochementsPartenaire
+          propositions={fenetre.carteId ? rapprochements.filter((r) => r.carteId === fenetre.carteId) : rapprochements}
+          carte={(id) => {
+            const c = cartes.find((x) => x.id === id);
+            if (!c) return null;
+            return { nom: `${c.prenom} ${c.nom}`, ecole: c.schoolId ? noms.ecoles[c.schoolId] ?? null : null, promotion: c.promotion, sport: noms.sports[c.sportId] ?? null };
+          }}
+          onFermer={() => setFenetre(null)}
+          onDecide={() => void charger()}
+        />
+      )}
       {formulaire && (
         <FormulaireCarte
           sports={sportsPermis}
