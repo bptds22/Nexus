@@ -603,7 +603,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             <GradeChip grade={card.grade} className="ml-auto" />
           </div>
           {/* Badges (partenaire d'abord, puis coach) : 5 au plus, puis « +N ». */}
-          {!estCarte(card) && <CarteBadges athleteId={card.id} variante="ligne" className="mt-2" />}
+          {!estCarte(card) && <CarteBadges athleteId={card.id} coach={card.badges} variante="ligne" className="mt-2" />}
         </div>
 
       </button>
@@ -1939,10 +1939,6 @@ function PipelinePageContent() {
   });
   const pipelineData = modeUnite ? donneesUnite : isFreeDemoMode ? donneesDemo : undefined;
   const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
-  /* Évaluations partenaires de TOUTES les cartes, lues d'un coup (RPC groupée,
-     toutes les pages) — jamais une requête par carte. Loi 25 : la RPC ne rend
-     rien sans opt-in partenaire actif ; sans ligne, la carte n'affiche rien. */
-  const idsAthletes = useMemo(() => cards.filter((c) => !estCarte(c)).map((c) => c.id), [cards]);
   const competitorMap = pipelineData?.competitorMap ?? {};
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
@@ -2366,7 +2362,7 @@ function PipelinePageContent() {
   return (
     /* Lot D : les propositions de rapprochement de l'unité (Pro seulement).
        Lot E : Accepter = fusionner ; la carte disparaît, son panneau se ferme. */
-    <PartenaireCartesProvider ids={idsAthletes}>
+    <PartenaireCartesProvider>
     <FournisseurRapprochements
       actif={modeUnite && !isFreeDemoMode}
       onAccepter={async (r) => {

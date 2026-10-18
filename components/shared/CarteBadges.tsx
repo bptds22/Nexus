@@ -19,7 +19,7 @@
 import NxIcon from "@/components/ui/NxIcon";
 import { badgesDeCarte, type BadgeCarte, type BadgeCoachCarte } from "@/lib/badges/carteBadges";
 import type { BadgePartenaire } from "@/lib/badges/partenaire";
-import { useBadgesPartenairesDe } from "@/components/shared/PartenaireCartesProvider";
+import { useBadgesPartenairesDe, useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
 
 function Pastille({ b }: { b: BadgeCarte }) {
   if (b.genre === "coach") {
@@ -57,11 +57,14 @@ export default function CarteBadges({
   className?: string;
 }) {
   const duLot = useBadgesPartenairesDe(athleteId);
+  /* La carte se déclare à l'approche de l'écran : ses badges partenaire sont lus avec
+     son paquet d'environ 50 (PartenaireCartesProvider), jamais tous d'un coup. */
+  const ref = useDeclarerCarteVisible(athleteId);
   const { visibles, reste } = badgesDeCarte(coach, partenaire ?? duLot);
-  if (visibles.length === 0) return null;
+  if (visibles.length === 0) return <div ref={ref} aria-hidden className="h-0" />;
   const disposition = variante === "ligne" ? "flex-nowrap overflow-hidden" : "flex-wrap";
   return (
-    <div className={`flex items-center gap-1.5 min-w-0 ${disposition} ${className}`} data-testid="carte-badges">
+    <div ref={ref} className={`flex items-center gap-1.5 min-w-0 ${disposition} ${className}`} data-testid="carte-badges">
       {visibles.map((b) => <Pastille key={b.cle} b={b} />)}
       {reste.length > 0 && (
         <span

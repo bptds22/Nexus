@@ -38,6 +38,7 @@ import { lireTout } from "@/lib/supabase/lireTout";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import { badgesCoachDepuisEvaluations } from "@/lib/queries/shared/athleteBadges";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isGrade } from "@/lib/config/grades";
@@ -210,6 +211,7 @@ export function useProcessusUnite(options: { enabled: boolean; sportId?: string 
           division: "D1" as const,
           graduation_year: card?.annee_diplomation ?? 0,
           coach_rating: card?.cote_globale ?? 0,
+          badges: badgesCoachDepuisEvaluations(card?.evaluations as Record<string, unknown>[] | null | undefined),
           profile_completeness: card?.profile_completion ?? 0,
           is_verified: !!card?.verified,
           has_video: !!card?.a_une_video,

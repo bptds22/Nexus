@@ -536,7 +536,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
 
         {/* Badges du partenaire (5 au plus, puis « +N ») — une rangée rognée : la
             carte reste à 120 px, rien ne déborde. */}
-        {!prospect && <CarteBadges athleteId={card.id} variante="ligne" className="mt-1 max-h-[20px]" />}
+        {!prospect && <CarteBadges athleteId={card.id} coach={card.badges} variante="ligne" className="mt-1 max-h-[20px]" />}
 
       </div>
     </button>
@@ -1644,9 +1644,6 @@ export function RecruteurPipelineMobile() {
      tous les useMemo qui en dépendent se recalculaient sans arrêt — le lint le
      signalait déjà avant l'ajout des compteurs filtrés. */
   const cards = useMemo(() => pipelineData?.cards ?? [], [pipelineData]);
-  /* Évaluations partenaires de toutes les cartes, lues d'un coup (RPC groupée,
-     toutes les pages) — pas une requête par carte. Loi 25 : rien sans opt-in actif. */
-  const idsAthletes = useMemo(() => cards.filter((c) => !estCarte(c)).map((c) => c.id), [cards]);
   const { data: currentUser } = useCurrentUser();
   const moi = currentUser?.authUser.id ?? null;
   const loading = tierLoading || pipelineLoading;
@@ -1918,7 +1915,7 @@ export function RecruteurPipelineMobile() {
        fournisseur que le web, présentées en feuille du bas. Pro de l'unité
        seulement : la base ne rend rien à un compte gratuit, et la démo n'en
        demande pas. */
-    <PartenaireCartesProvider ids={idsAthletes}>
+    <PartenaireCartesProvider>
     <FournisseurRapprochements
       actif={modeUnite && !isFreeDemoMode}
       variante="feuille"

@@ -533,13 +533,13 @@ function FavorisContent() {
           <p className="text-[14px] text-[#6b7280]">Aucun favori ne correspond à tes critères.</p>
         </div>
       ) : viewMode === "grid" ? (
-        <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
+        <PartenaireCartesProvider>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {filtered.map(a => <FavoriGridCard key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
           </div>
         </PartenaireCartesProvider>
       ) : (
-        <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
+        <PartenaireCartesProvider>
           <div className="flex flex-col gap-2">
             {filtered.map(a => <FavoriListRow key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
           </div>

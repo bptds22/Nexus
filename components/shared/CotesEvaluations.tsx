@@ -12,6 +12,7 @@
 import StarRating from "@/components/ui/StarRating";
 import { deuxCotes, libelleCotePartenaire, type DeuxCotes } from "@/lib/evaluations/coteCarte";
 import { useCotesPartenairesDe } from "@/lib/evaluations/CotesPartenairesContext";
+import { useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
 
 export default function CotesEvaluations({
   cotes,
@@ -59,5 +60,6 @@ export function CotesEvaluationsAthlete({
   ...reste
 }: { athleteId: string | null | undefined; coteCoach: number | null | undefined } & Omit<React.ComponentProps<typeof CotesEvaluations>, "cotes">) {
   const evals = useCotesPartenairesDe(athleteId);
-  return <CotesEvaluations cotes={deuxCotes(coteCoach, evals)} {...reste} />;
+  const ref = useDeclarerCarteVisible(athleteId);
+  return <div ref={ref} className="min-w-0"><CotesEvaluations cotes={deuxCotes(coteCoach, evals)} {...reste} /></div>;
 }

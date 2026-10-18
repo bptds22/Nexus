@@ -1074,7 +1074,7 @@ function RechercheContent() {
           </p>
         </div>
       ) : (
-        <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
+        <PartenaireCartesProvider>
           {(() => {
             // favorites.size is the recruiter's current favorite count — the
             // DB still enforces the cap via RLS; this just blocks the click

@@ -619,7 +619,7 @@ function ExpandedListView({
   const existingIds = useMemo(() => new Set(list.athletes.map((a) => a.id)), [list.athletes]);
 
   return (
-    <PartenaireCartesProvider ids={list.athletes.filter((a) => !a.prospect).map((a) => a.id)}>
+    <PartenaireCartesProvider>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">

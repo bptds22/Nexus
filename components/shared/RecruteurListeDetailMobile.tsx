@@ -731,7 +731,7 @@ function DetailInner({ listId }: { listId: string }) {
           ) : athletes.length === 0 ? (
             <EmptyState onAdd={() => { triggerHaptic("Light"); setAddAthleteOpen(true); }} />
           ) : (
-            <PartenaireCartesProvider ids={athletes.filter((a) => !a.isProspect).map((a) => a.athleteId)}>
+            <PartenaireCartesProvider>
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {athletes.map((a) => (

@@ -172,7 +172,7 @@ export function RecruteurFavorisMobile() {
           // ~250ms cubic-bezier canon, PUIS reflow auto des cartes restantes
           // vers le haut. Si Undo → l'item réapparaît avec l'animation d'entrée
           // (initial → animate). Pattern canon retrait liste mobile.
-          <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
+          <PartenaireCartesProvider>
           <div className="grid grid-cols-2 gap-3">
             <AnimatePresence mode="popLayout">
               {filtered.map((a) => (

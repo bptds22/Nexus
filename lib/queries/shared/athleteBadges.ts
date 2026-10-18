@@ -13,6 +13,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BadgeEntry } from "@/lib/config/badgeCatalogue";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 
 export interface BadgesAthlete {
   /** Éditables par l'appelant : ses propres badges de 'saisie', PLUS les
@@ -418,4 +419,14 @@ function signalerPastille(code: string, raison: string): void {
 /** Le texte d'une pastille : le libellé, suivi du contexte s'il existe. */
 export function textePastille(p: PastilleBadge): string {
   return p.contexte ? `${p.libelle} — ${p.contexte}` : p.libelle;
+}
+
+/** Les badges du COACH d'une carte, depuis l'agrégat `evaluations` d'une projection
+ *  recruiter_athlete_cards — la même lecture que la recherche (meilleure évaluation,
+ *  puis pastillesBadges). Aucune requête de plus. */
+export function badgesCoachDepuisEvaluations(
+  evaluations: readonly Record<string, unknown>[] | null | undefined,
+): { badgeId: string; label: string }[] {
+  const meilleure = selectBestEvaluation([...(evaluations ?? [])]) as Record<string, unknown> | null;
+  return pastillesBadges(meilleure?.distinctions).map((d) => ({ badgeId: d.code, label: textePastille(d) }));
 }

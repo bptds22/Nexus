@@ -1418,7 +1418,7 @@ export function RecruteurRechercheMobile() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
           >
-            <PartenaireCartesProvider ids={filtered.map((a) => a.id)}>
+            <PartenaireCartesProvider>
             {viewMode === "grid" ? (
               <div className="grid grid-cols-2 gap-3 p-4">
                 <AnimatePresence mode="popLayout">

@@ -37,6 +37,8 @@ export interface PipelineKanbanCard {
    *  Optionnel : les fixtures mock ci-dessous ne le portent pas. */
   visit_at?: string | null;
   moved_at: string | null;
+  /** Badges du coach (projection recruiter_athlete_cards) — carte liée à un vrai athlète. Optionnel : fixtures mock, cartes prospect. */
+  badges?: { badgeId: string; label: string }[];
   // "Ligue Civile" indicator — true when athlete has neither school
   // nor league_team set (chk_school_or_league rules out both-set, so
   // this is the both-NULL case).

@@ -74,3 +74,21 @@ test("lecture groupée : une RPC par lot, toutes les pages, aucun appel par cart
   assert.match(sql, /array\['authenticated', 'postgres', 'service_role'\]/);
   assert.doesNotMatch(lire("components/shared/CarteBadges.tsx"), /chargerBadgesPartenaires\(/);
 });
+
+test("lecture PAR PAQUETS d'environ 50, au fil du défilement — jamais tous les résultats d'un coup (1.4.5)", () => {
+  const src = lire("components/shared/PartenaireCartesProvider.tsx");
+  assert.match(src, /export const TAILLE_PAQUET = 50;/);
+  assert.match(src, /IntersectionObserver/);
+  assert.match(src, /rootMargin: "300px 0px"/);
+  for (const f of ["app/recruteur/recherche/page.tsx", "app/recruteur/favoris/page.tsx", "app/recruteur/pipeline/page.tsx", "app/recruteur/listes/page.tsx",
+    "components/shared/RecruteurRechercheMobile.tsx", "components/shared/RecruteurFavorisMobile.tsx", "components/shared/RecruteurPipelineMobile.tsx", "components/shared/RecruteurListeDetailMobile.tsx"]) {
+    assert.doesNotMatch(lire(f), /<PartenaireCartesProvider ids=/, `${f} : plus d'identifiants en bloc`);
+  }
+});
+
+test("processus : les badges du coach des cartes liées à un vrai athlète passent par la même règle des 5", () => {
+  assert.match(lire("lib/queries/recruiter/useProcessusUnite.ts"), /badges: badgesCoachDepuisEvaluations\(/);
+  assert.match(lire("lib/queries/recruiter/usePipelineCards.ts"), /badges: badgesCoachDepuisEvaluations\(/);
+  assert.match(lire("app/recruteur/pipeline/page.tsx"), /<CarteBadges athleteId=\{card\.id\} coach=\{card\.badges\}/);
+  assert.match(lire("components/shared/RecruteurPipelineMobile.tsx"), /<CarteBadges athleteId=\{card\.id\} coach=\{card\.badges\}/);
+});

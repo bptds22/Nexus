@@ -6,7 +6,9 @@
 --    badges_partenaires_athlete() — aucune règle propre, aucun nouvel accès. Tout ce que la
 --    fiche cache (badge masqué, opt-in partenaire retiré — Loi 25, lecteur sans droit) reste
 --    caché ici, par construction. Même patron que cotes_partenaires_athletes(uuid[]).
---  · Le client lit toutes les pages (lireTout, .order("id").range()) : jamais « les 1000 premières ».
+--  · Le client l'appelle PAR PAQUETS d'environ 50 athlètes, seulement pour les cartes affichées, au fil
+--    du défilement (PartenaireCartesProvider) — jamais pour tous les résultats d'un coup — et lit toutes
+--    les pages de chaque paquet (lireTout, .order("id").range()) : jamais « les 1000 premières ».
 --
 -- Rien d'autre n'est touché. Rollback :
 --   supabase/rollback/20261017120000_rollback_badges_partenaires_athletes_lot.sql
