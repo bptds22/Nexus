@@ -14,7 +14,7 @@ Si la 1.4.5 n'est pas encore en prod, d'abord ses 4 migrations :
 3. `20261017140000_non_contact_retrait_partenaire`
 4. `20261018100000_rapprochement_partenaire`
 
-Puis les deux nouvelles :
+Puis les quatre nouvelles :
 
 5. `20261018120000_visites_details` — détails de visite + flux d'agenda.
 6. `20261018130000_mode_match` — Game On.
@@ -54,7 +54,8 @@ le 24 est réservé à la 1.4.5.
 
 ## 3. À tester en démo
 
-- **Game On** (menu « Plus » de l'appli recruteur, compte Pro) : choisir un match du jour ou « Autre match »,
+- **Game On** (onglet de la barre du bas de l'appli recruteur, compte Pro) : choisir un match du jour ou « Autre match »,
+  choisir la couleur des chandails des deux équipes,
   noter #16 / #1 en alternance, mode avion pendant quelques notes puis retour du réseau (« Tout est envoyé »),
   deuxième recruteur de la même unité sur le même match (notes signées), « Terminer », « Trier mes notes »
   (Lier à une carte, Créer une carte, Garder sans lier).
