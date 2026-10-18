@@ -46,3 +46,18 @@ test("partenaire recherche — feuille Filtres (téléphone)", async ({ page, co
   await page.screenshot({ path: "test-results/visuel/partenaire-recherche-filtres-telephone.png" });
   expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
 });
+
+// P2/P3 : correspondances possibles (bandeau + fenêtre Accepter / Refuser). Ne décide rien.
+// Sauté s'il n'y a aucune correspondance dans la base locale.
+test("partenaire mes athlètes — correspondances (bureau)", async ({ page, context, baseURL }) => {
+  await connecterLocal(context, baseURL!, COMPTE);
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await page.goto("/partenaire/prospects", { waitUntil: "load" });
+  await page.waitForLoadState("networkidle").catch(() => {});
+  const bandeau = page.locator("[data-bandeau-rapprochements-partenaire]");
+  test.skip((await bandeau.count()) === 0, "aucune correspondance dans la base locale");
+  await page.screenshot({ path: "test-results/visuel/partenaire-correspondances-bandeau.png" });
+  await bandeau.getByRole("button").click();
+  await expect(page.locator("[data-proposition-partenaire]").first()).toBeVisible();
+  await page.screenshot({ path: "test-results/visuel/partenaire-correspondances-fenetre.png" });
+});
