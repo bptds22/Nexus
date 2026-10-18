@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  CHANDAILS, couleurCote, texteSur, avecCouleurs,
   ajouterNote, cleJoueur, ecrireStock, fonctionAbsente, fusionnerNotes, grouperParJoueur, libelleJoueur,
   lireStock, lots, marquerEnvoyees, messageErreur, notesEnAttente, noteValide, nouvelleSeance, numeroValide,
   pastillesCote, remapperSeance, resumeEnvoi, suggestionsCartes, texteRecopie, versEnvoi,
@@ -152,4 +153,24 @@ test("entrées : barre du bas de l'appli et barre latérale web, route Pro", () 
   assert.ok(plus.includes('{ key: "recherche", label: "Recherche", href: "/recruteur/recherche"'));
   assert.ok(plus.includes('{ key: "pipeline", label: "Mon processus", href: "/recruteur/pipeline"'));
   assert.ok(!barre.includes('key: "recherche"') && !barre.includes('key: "pipeline"'));
+});
+
+test("couleurs des chandails : choisies à chaque match, texte lisible, repli rouge / bleu", () => {
+  assert.equal(CHANDAILS.length, 10);
+  assert.equal(couleurCote(null, "A"), "#E63946");
+  assert.equal(couleurCote({ couleurA: null, couleurB: null }, "B"), "#3B82F6");
+  assert.equal(couleurCote({ couleurA: "#27272A", couleurB: "#F8FAFC" }, "A"), "#27272A");
+  assert.equal(couleurCote({ couleurA: "pas-une-couleur", couleurB: null }, "A"), "#E63946");
+  assert.equal(texteSur("#F8FAFC"), "#111317"); // blanc → texte foncé
+  assert.equal(texteSur("#FACC15"), "#111317"); // jaune → texte foncé
+  assert.equal(texteSur("#27272A"), "#FFFFFF"); // noir → texte blanc
+  assert.equal(texteSur("#1E3A8A"), "#FFFFFF");
+  const e = { seance: { id: "s", gameId: null, equipeA: "A", equipeB: "B", lieu: null, commenceLe: "", termineLe: null, ouverte: false, termineeEnvoyee: false }, notes: [] };
+  const c = avecCouleurs(e, "#27272A", "#F8FAFC");
+  assert.equal(c.seance.couleurA, "#27272A");
+  assert.equal(c.seance.couleurB, "#F8FAFC");
+  assert.equal(e.seance.couleurA, undefined, "pas de mutation");
+  const ui = lire("components/game-on/GameOn.tsx");
+  assert.ok(ui.includes("Couleur des chandails"));
+  assert.ok(ui.includes("disabled={!ca || !cb}"), "les deux couleurs sont demandées");
 });

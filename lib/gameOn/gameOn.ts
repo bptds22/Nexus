@@ -26,6 +26,9 @@ export interface SeanceLocale {
   ouverte: boolean;
   /** « Terminer » envoyé à la base. */
   termineeEnvoyee: boolean;
+  /** Couleur du chandail de chaque côté, demandée à chaque match (BP 2026-10-18). Sur l'appareil seulement. */
+  couleurA?: string | null;
+  couleurB?: string | null;
 }
 
 export interface NoteLocale {
@@ -100,6 +103,43 @@ export function nouvelleSeance(id: string, p: {
     },
     notes: [],
   };
+}
+
+/* ── Couleurs des chandails (BP 2026-10-18) ─────────────────────────────
+   On ne connaît pas les couleurs des équipes (aucun champ en base pour les équipes,
+   et un chandail change entre maison et visiteur) : on DEMANDE à chaque match.
+   Ce que chacun choisit lui suffit pour se repérer. */
+export const CHANDAILS: readonly { nom: string; hex: string }[] = [
+  { nom: "Blanc", hex: "#F8FAFC" },
+  { nom: "Noir", hex: "#27272A" },
+  { nom: "Gris", hex: "#9CA3AF" },
+  { nom: "Rouge", hex: "#E63946" },
+  { nom: "Bleu", hex: "#3B82F6" },
+  { nom: "Marine", hex: "#1E3A8A" },
+  { nom: "Vert", hex: "#22C55E" },
+  { nom: "Jaune", hex: "#FACC15" },
+  { nom: "Orange", hex: "#F97316" },
+  { nom: "Mauve", hex: "#8B5CF6" },
+];
+
+const PAR_DEFAUT: Record<Cote, string> = { A: "#E63946", B: "#3B82F6" };
+
+/** Couleur d'un côté : celle choisie au début du match, sinon rouge / bleu (anciennes séances). */
+export function couleurCote(s: Pick<SeanceLocale, "couleurA" | "couleurB"> | null | undefined, cote: Cote): string {
+  const c = cote === "A" ? s?.couleurA : s?.couleurB;
+  return c && /^#[0-9a-f]{6}$/i.test(c) ? c : PAR_DEFAUT[cote];
+}
+
+/** Texte lisible sur cette couleur : foncé sur un chandail pâle (blanc, jaune), blanc sinon. */
+export function texteSur(hex: string): string {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return "#FFFFFF";
+  const [r, g, b] = m.slice(1).map((x) => parseInt(x, 16) / 255);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 0.62 ? "#111317" : "#FFFFFF";
+}
+
+export function avecCouleurs(e: EtatSeance, couleurA: string, couleurB: string): EtatSeance {
+  return { ...e, seance: { ...e.seance, couleurA, couleurB } };
 }
 
 /** Numéro de maillot : 1 à 3 chiffres, zéros de tête gardés tels quels (« 07 » ≠ « 7 » pour certains). */

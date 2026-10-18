@@ -15,7 +15,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { surReprise } from "@/lib/push/pastillesAppareil";
 import {
-  ajouterNote, ecrireStock, fonctionAbsente, lireStock, lots, marquerEnvoyees, messageErreur,
+  ajouterNote, avecCouleurs, ecrireStock, fonctionAbsente, lireStock, lots, marquerEnvoyees, messageErreur,
   notesEnAttente, nouvelleSeance, remapperSeance, retirerNote, versEnvoi,
   type Cote, type EtatSeance, type NoteAffichee, type NoteLocale, type StockGameOn,
 } from "@/lib/gameOn/gameOn";
@@ -232,6 +232,11 @@ export function useStockGameOn() {
     }
   }, [poser]);
 
+  /** Couleurs des chandails, demandées à chaque match. */
+  const colorer = useCallback((id: string, couleurA: string, couleurB: string) => {
+    majSeance(id, (e) => avecCouleurs(e, couleurA, couleurB));
+  }, [majSeance]);
+
   const activer = useCallback((id: string | null) => poser({ ...ref.current, active: id }), [poser]);
 
   const noter = useCallback((seance: string, n: Omit<NoteLocale, "envoyee">) => {
@@ -271,6 +276,6 @@ export function useStockGameOn() {
 
   return {
     stock, charge, enLigne, envoiEnCours, erreurEnvoi, indisponible, enAttente,
-    demarrer, rejoindre, activer, noter, supprimerNote, terminer, oublier, synchroniser,
+    demarrer, rejoindre, colorer, activer, noter, supprimerNote, terminer, oublier, synchroniser,
   };
 }

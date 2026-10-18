@@ -36,20 +36,22 @@ import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
 import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { triggerHaptic } from "@/lib/haptics";
 import {
-  dateSeance, fusionnerNotes, grouperParJoueur, libelleJoueur, messageErreur, notesEnAttente,
-  numeroValide, noteValide, pastillesCote, resumeEnvoi, suggestionsCartes, texteRecopie, titreSeance,
+  CHANDAILS, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, libelleJoueur, messageErreur, notesEnAttente,
+  numeroValide, noteValide, pastillesCote, resumeEnvoi, suggestionsCartes, texteRecopie, texteSur, titreSeance,
   type CarteCandidate, type Cote, type GroupeJoueur, type NoteAffichee, type SeanceLocale,
 } from "@/lib/gameOn/gameOn";
 import { nouvelId, useNotesSeance, useSeancesRecentes, useStockGameOn, type SeanceServeur } from "@/lib/gameOn/useGameOn";
 
-const ROUGE = "#E63946";
-const BLEU = "#3B82F6";
 const TOUS_TYPES: TypeMatch[] = ["SECONDAIRE", "COLLEGIAL", "CIVIL"];
-const couleurCote = (c: Cote) => (c === "A" ? ROUGE : BLEU);
 const heureCourte = (iso: string) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
 };
+
+/** Petit rond de la couleur du chandail, bordé pour rester visible (noir sur fond sombre). */
+function Chandail({ couleur, taille = 14 }: { couleur: string; taille?: number }) {
+  return <span aria-hidden className="inline-block shrink-0 rounded-full border border-white/40" style={{ width: taille, height: taille, background: couleur }} />;
+}
 
 type Vue = { type: "choix" } | { type: "match"; seance: string } | { type: "trier"; seance: string };
 
@@ -191,15 +193,24 @@ function EcranChoix({ st, seances, chargement, onMatch, onTrier }: {
     .sort((x, y) => y.seance.commenceLe.localeCompare(x.seance.commenceLe));
   const serveur = seances.filter((s) => !locales.some((l) => l.seance.id === s.id));
 
+  // Couleur des chandails : demandée à CHAQUE match, avant d'entrer (BP 2026-10-18).
+  const [aLancer, setALancer] = useState<{ equipeA: string; equipeB: string; lancer: (ca: string, cb: string) => void } | null>(null);
   const commencer = (m: MatchRecherche) => {
-    triggerHaptic("Medium");
-    onMatch(st.demarrer({ gameId: m.id, equipeA: m.domicile, equipeB: m.visiteur, lieu: m.terrain }));
+    triggerHaptic("Light");
+    setALancer({ equipeA: m.domicile, equipeB: m.visiteur, lancer: (ca, cb) => {
+      const id = st.demarrer({ gameId: m.id, equipeA: m.domicile, equipeB: m.visiteur, lieu: m.terrain });
+      st.colorer(id, ca, cb); onMatch(id);
+    } });
   };
   const commencerAutre = () => {
     if (!a.trim()) return;
-    triggerHaptic("Medium");
-    onMatch(st.demarrer({ equipeA: a, equipeB: b, lieu }));
-    setAutre(false); setA(""); setB(""); setLieu("");
+    triggerHaptic("Light");
+    const [ea, eb, el] = [a, b, lieu];
+    setALancer({ equipeA: ea.trim(), equipeB: eb.trim() || "Adversaire", lancer: (ca, cb) => {
+      const id = st.demarrer({ equipeA: ea, equipeB: eb, lieu: el });
+      st.colorer(id, ca, cb); onMatch(id);
+      setAutre(false); setA(""); setB(""); setLieu("");
+    } });
   };
 
   return (
@@ -293,7 +304,7 @@ function EcranChoix({ st, seances, chargement, onMatch, onTrier }: {
                   </span>
                 </span>
                 {!s.termine_le && (
-                  <button type="button" onClick={() => { st.rejoindre(s); onMatch(s.id); }}
+                  <button type="button" onClick={() => setALancer({ equipeA: s.equipe_a, equipeB: s.equipe_b || "Adversaire", lancer: (ca, cb) => { st.rejoindre(s); st.colorer(s.id, ca, cb); onMatch(s.id); } })}
                     className="h-11 shrink-0 rounded-full bg-white/[0.08] px-4 text-[13px] font-bold text-white">Rejoindre</button>
                 )}
                 {s.nb_notes > 0 && (
@@ -307,7 +318,54 @@ function EcranChoix({ st, seances, chargement, onMatch, onTrier }: {
           </ul>
         )}
       </Section>
+
+      {aLancer && (
+        <FeuilleCouleurs equipeA={aLancer.equipeA} equipeB={aLancer.equipeB}
+          onFermer={() => setALancer(null)}
+          onValider={(ca, cb) => { const l = aLancer; setALancer(null); triggerHaptic("Medium"); l.lancer(ca, cb); }} />
+      )}
     </div>
+  );
+}
+
+/* ── Couleur des chandails, à chaque match : un toucher par équipe ─────── */
+function FeuilleCouleurs({ equipeA, equipeB, onFermer, onValider }: {
+  equipeA: string; equipeB: string; onFermer: () => void; onValider: (ca: string, cb: string) => void;
+}) {
+  const [ca, setCa] = useState<string | null>(null);
+  const [cb, setCb] = useState<string | null>(null);
+  const rangee = (equipe: string, choisie: string | null, choisir: (h: string) => void) => (
+    <div className="mb-4">
+      <p className="mb-2 truncate text-[15px] font-bold text-white">{equipe}</p>
+      <div className="grid grid-cols-5 gap-2">
+        {CHANDAILS.map((c) => (
+          <button key={c.hex} type="button" aria-label={`${equipe} : chandail ${c.nom}`} aria-pressed={choisie === c.hex}
+            onClick={() => { triggerHaptic("Light"); choisir(c.hex); }}
+            className="flex h-12 items-center justify-center rounded-xl border-2"
+            style={{ background: c.hex, borderColor: choisie === c.hex ? "#FFFFFF" : "rgba(255,255,255,0.15)" }}>
+            {choisie === c.hex && <span className="text-[18px] font-black" style={{ color: texteSur(c.hex) }}>✓</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex flex-col justify-end bg-black/60" onClick={onFermer}>
+      <div className="rounded-t-3xl bg-[#1A1D24] px-4 pt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="text-[18px] font-black text-white">Couleur des chandails</p>
+          <button type="button" onClick={onFermer} className="h-11 px-2 text-[14px] font-semibold text-white/60">Annuler</button>
+        </div>
+        {rangee(equipeA, ca, setCa)}
+        {rangee(equipeB, cb, setCb)}
+        <button type="button" disabled={!ca || !cb} onClick={() => ca && cb && onValider(ca, cb)}
+          className="mt-1 h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
+          Commencer
+        </button>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -341,11 +399,14 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
   const s = etat.seance;
   const attente = notesEnAttente(etat).length;
   const nomCote = (c: Cote) => (c === "A" ? s.equipeA : s.equipeB || "Adversaire");
+  const cc = (c: Cote) => couleurCote(s, c);
   const pastilles = pastillesCote(groupes, cote);
   const groupeOuvert = joueur ? groupes.find((g) => g.cote === joueur.cote && (joueur.numero ? g.numero === joueur.numero : !g.numero && (g.prenom ?? "").toLowerCase() === (joueur.prenom ?? "").toLowerCase())) : null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#111317] text-white" style={{ paddingTop: "env(safe-area-inset-top)" }} data-game-on-match>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[#111317] text-white transition-colors" data-game-on-match
+      // Repère visuel (BP) : tout l'écran prend la teinte du chandail du côté noté.
+      style={{ paddingTop: "env(safe-area-inset-top)", backgroundImage: `linear-gradient(180deg, ${cc(cote)}40 0%, ${cc(cote)}14 35%, #111317 75%)` }}>
       {/* Barre du haut */}
       <div className="flex items-center gap-2 px-3 py-2">
         <button type="button" aria-label="Retour à la liste" onClick={() => { triggerHaptic("Light"); onQuitter(); }}
@@ -370,9 +431,9 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
           <button key={c} type="button" onClick={() => { triggerHaptic("Light"); setCote(c); }}
             className="h-12 min-w-0 rounded-xl px-3 text-[15px] font-bold"
             style={cote === c
-              ? { background: couleurCote(c), color: "white" }
-              : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)", border: `1px solid ${couleurCote(c)}55` }}>
-            <span className="block truncate">{nomCote(c)}</span>
+              ? { background: cc(c), color: texteSur(cc(c)), boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.35)" }
+              : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)" }}>
+            <span className="flex items-center justify-center gap-2">{cote !== c && <Chandail couleur={cc(c)} />}<span className="truncate">{nomCote(c)}</span></span>
           </button>
         ))}
       </div>
@@ -388,7 +449,7 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
             {pastilles.map((g) => (
               <button key={g.cle} type="button" onClick={() => { triggerHaptic("Light"); setJoueur({ cote: g.cote, numero: g.numero, prenom: g.prenom }); }}
                 className="flex min-h-[76px] flex-col items-center justify-center rounded-2xl border bg-[#1A1D24] px-2 py-2 active:bg-white/[0.06]"
-                style={{ borderColor: `${couleurCote(g.cote)}66` }}>
+                style={{ borderColor: cc(g.cote), borderWidth: 2 }}>
                 <span className="text-[26px] font-black leading-none">{g.numero ? `#${g.numero}` : "—"}</span>
                 <span className="mt-1 max-w-full truncate text-[12px] text-white/60">{g.prenom || `${g.notes.length} note${g.notes.length > 1 ? "s" : ""}`}</span>
               </button>
@@ -400,13 +461,13 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
       {/* Zone du pouce */}
       <div className="px-3 pt-2" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}>
         <button type="button" onClick={() => { triggerHaptic("Medium"); setPave(true); }}
-          className="h-16 w-full rounded-2xl text-[18px] font-black text-white" style={{ background: couleurCote(cote) }}>
+          className="h-16 w-full rounded-2xl text-[18px] font-black" style={{ background: cc(cote), color: texteSur(cc(cote)), boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.25)" }}>
           + Numéro
         </button>
       </div>
 
       {pave && (
-        <PaveNumerique couleur={couleurCote(cote)} equipe={nomCote(cote)}
+        <PaveNumerique couleur={cc(cote)} equipe={nomCote(cote)}
           onFermer={() => setPave(false)}
           onValider={(numero, prenom) => { setPave(false); setJoueur({ cote, numero, prenom }); }} />
       )}
@@ -455,7 +516,7 @@ function PaveNumerique({ couleur, equipe, onFermer, onValider }: {
             <input autoFocus value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Prénom ou repère (ex. « le gaucher »)"
               className="mb-3 h-14 w-full rounded-xl border border-[#2D3748] bg-[#111317] px-4 text-[18px] text-white placeholder:text-white/30" />
             <button type="button" disabled={!prenom.trim()} onClick={() => onValider(null, prenom.trim())}
-              className="h-14 w-full rounded-2xl text-[17px] font-black text-white disabled:opacity-40" style={{ background: couleur }}>Noter</button>
+              className="h-14 w-full rounded-2xl text-[17px] font-black disabled:opacity-40" style={{ background: couleur, color: texteSur(couleur) }}>Noter</button>
           </>
         ) : (
           <>
@@ -467,7 +528,7 @@ function PaveNumerique({ couleur, equipe, onFermer, onValider }: {
               <button type="button" aria-label="Effacer" onClick={() => setN((v) => v.slice(0, -1))} className="h-14 rounded-2xl bg-white/[0.03] text-[20px] text-white/70 active:bg-white/10">⌫</button>
               <button type="button" onClick={() => touche("0")} className="h-14 rounded-2xl bg-white/[0.06] text-[24px] font-bold text-white active:bg-white/15">0</button>
               <button type="button" disabled={!numeroValide(n)} onClick={() => onValider(numeroValide(n), null)}
-                className="h-14 rounded-2xl text-[17px] font-black text-white disabled:opacity-40" style={{ background: couleur }}>OK</button>
+                className="h-14 rounded-2xl text-[17px] font-black disabled:opacity-40" style={{ background: couleur, color: texteSur(couleur) }}>OK</button>
             </div>
           </>
         )}
@@ -493,7 +554,7 @@ function FeuilleNote({ seance, cote, numero, prenomInitial, equipe, groupe, onFe
       <div className="max-h-[92vh] overflow-y-auto rounded-t-3xl bg-[#1A1D24] px-4 pt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }} onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[28px] font-black leading-none text-white" style={{ color: couleurCote(cote) }}>{numero ? `#${numero}` : (prenomInitial || "Joueur")}</p>
+            <p className="flex items-center gap-2 text-[28px] font-black leading-none text-white"><Chandail couleur={couleurCote(seance, cote)} taille={18} />{numero ? `#${numero}` : (prenomInitial || "Joueur")}</p>
             <p className="mt-1 truncate text-[13px] text-white/50">{equipe}</p>
           </div>
           <button type="button" onClick={onFermer} className="h-11 shrink-0 px-2 text-[14px] font-semibold text-white/60">Annuler</button>
@@ -629,7 +690,7 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
           {aTrier.length === 0 && <p className="mb-4 text-[14px] text-[#22C55E]">Tout est trié. Beau travail !</p>}
           <ul className="space-y-3">
             {aTrier.map((g) => (
-              <LigneTri key={g.cle} g={g} ouvert={ouvert === g.cle} desactive={attente > 0 || enCours}
+              <LigneTri key={g.cle} g={g} couleur={couleurCote(locale?.seance, g.cote)} ouvert={ouvert === g.cle} desactive={attente > 0 || enCours}
                 suggestions={suggestionsCartes(g, cartesQ.data ?? [], equipesQ.data ?? [])}
                 onOuvrir={() => setOuvert((v) => (v === g.cle ? null : g.cle))}
                 onLierCarte={(c) => void lier(g, { carteId: c.id }, `${c.prenom} ${c.nom}`.trim())}
@@ -667,8 +728,8 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
   );
 }
 
-function LigneTri({ g, ouvert, desactive, suggestions, onOuvrir, onLierCarte, onLierAthlete, onCreer, onGarder }: {
-  g: GroupeJoueur; ouvert: boolean; desactive: boolean;
+function LigneTri({ g, couleur, ouvert, desactive, suggestions, onOuvrir, onLierCarte, onLierAthlete, onCreer, onGarder }: {
+  g: GroupeJoueur; couleur: string; ouvert: boolean; desactive: boolean;
   suggestions: (CarteCandidate & { memeEquipe: boolean })[];
   onOuvrir: () => void; onLierCarte: (c: CarteCandidate) => void; onLierAthlete: (id: string, nom: string) => void;
   onCreer: () => void; onGarder: () => void;
@@ -679,7 +740,7 @@ function LigneTri({ g, ouvert, desactive, suggestions, onOuvrir, onLierCarte, on
     <li className="rounded-2xl border border-white/10 bg-[#1A1D24] p-4">
       <button type="button" onClick={onOuvrir} className="flex w-full items-start justify-between gap-3 text-left">
         <span className="min-w-0">
-          <span className="block text-[18px] font-black" style={{ color: couleurCote(g.cote) }}>{libelleJoueur(g)}</span>
+          <span className="flex items-center gap-2 text-[18px] font-black text-white"><Chandail couleur={couleur} />{libelleJoueur(g)}</span>
           <span className="block text-[12px] text-white/50">{g.notes.length} note{g.notes.length > 1 ? "s" : ""}{suggestions.length > 0 ? ` · ${suggestions.length} carte${suggestions.length > 1 ? "s" : ""} possible${suggestions.length > 1 ? "s" : ""}` : ""}</span>
         </span>
         <span className="shrink-0 rounded-full bg-[#E63946] px-3 py-1.5 text-[13px] font-bold text-white">{ouvert ? "Fermer" : "Trier"}</span>
