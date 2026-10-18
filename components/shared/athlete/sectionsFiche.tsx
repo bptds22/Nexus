@@ -23,6 +23,8 @@ import ApercuHudl from "@/components/ui/ApercuHudl";
 import { hudlEnPlus } from "@/lib/video/apercuHudl";
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import { plateformeDuLien, type Plateforme } from "@/lib/config/plateformesLien";
+import { lienAffichable } from "@/lib/liensSociaux";
+import ReseauxSociaux, { aDesReseaux } from "@/components/shared/athlete/ReseauxSociaux";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 
@@ -416,16 +418,19 @@ export function SectionMediasLiens({ a, verrouille, compact = false }: { a: Athl
     { titre: "Entraînement", url: a.practiceVideoUrl },
     { url: a.hudlUrl, colonne: "hudl_url" },
     { url: a.youtubeUrl, colonne: "youtube_url" },
-    { url: a.instagramUrl, colonne: "instagram_url" },
   ] as { titre?: string; url?: string; colonne?: string }[])
-    .map((m) => ({ ...m, p: plateformeDuLien(m.url, m.colonne) }))
+    /* Href sûr (lib/liensSociaux) : une saisie qui n'est pas une URL n'arrive plus dans un href. */
+    .map((m) => ({ ...m, url: lienAffichable(m.url) ?? undefined, p: plateformeDuLien(m.url, m.colonne) }))
     .filter((m): m is typeof m & { url: string; p: Plateforme } => !!m.url && !!m.p)
     .map((m) => ({
       url: m.url, cle: m.p.cle,
       label: m.titre ?? `Voir sur ${m.p.libelle}`,
       detail: m.titre && m.p.cle !== "autre" ? m.p.libelle : null,
     }));
-  const hasMedia = mediaLinks.some((m) => m.url);
+  /* Réseaux sociaux (BP 2026-10-18) : Instagram, Facebook, TikTok, LinkedIn, en logos, à part des vidéos. */
+  const reseaux = { instagram_url: a.instagramUrl, facebook_url: a.facebookUrl, tiktok_url: a.tiktokUrl, linkedin_url: a.linkedinUrl };
+  const hasReseaux = aDesReseaux(reseaux);
+  const hasMedia = mediaLinks.some((m) => m.url) || hasReseaux;
   return (
     <>
       {/* ── Media & Links ────────────────────────────── */}
@@ -444,6 +449,7 @@ export function SectionMediasLiens({ a, verrouille, compact = false }: { a: Athl
         <section className="nx-slide-section">
           <h2 className={sectionLabel}>Médias & liens</h2>
           <div className={`${cardBase} p-5`}>
+            {mediaLinks.length > 0 && (
             <div className={compact ? "grid grid-cols-1 gap-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"}>
               {mediaLinks.map((m) => (
                 <a
@@ -464,6 +470,13 @@ export function SectionMediasLiens({ a, verrouille, compact = false }: { a: Athl
                 </a>
               ))}
             </div>
+            )}
+            {hasReseaux && (
+              <div className={mediaLinks.length > 0 ? "mt-5 border-t border-[#2D3748]/50 pt-4" : ""}>
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#6b7280]">Réseaux sociaux</p>
+                <ReseauxSociaux liens={reseaux} />
+              </div>
+            )}
           </div>
         </section>
       )}

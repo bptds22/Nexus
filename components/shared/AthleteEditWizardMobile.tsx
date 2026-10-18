@@ -48,7 +48,9 @@ import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@
 import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
-import { Card, InlineEditRow, PickerRow, ReadOnlyRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
+import { Card, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
+import type { ClePlateforme } from "@/lib/config/plateformesLien";
+import { RESEAUX, normaliserLien, normaliserReseau, type ResultatLien } from "@/lib/liensSociaux";
 import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -132,6 +134,10 @@ interface LoadedAthlete {
   hudlUrl: string;
   youtubeUrl: string;
   instagramUrl: string;
+  /** Profils de réseaux sociaux (BP 2026-10-18). */
+  facebookUrl: string;
+  tiktokUrl: string;
+  linkedinUrl: string;
   /* ── Évaluation (SUGGEST + LOCKED rapport) — mirrors web
         page.tsx :1053-1068 + :1115-1119 verbatim. The 14 trait keys
         match AthleteTraitRatings (the desktop's type) so the
@@ -542,12 +548,16 @@ function ChampDirectRow({
    immediate UPDATE athletes. No overlay, no portal.
 ═══════════════════════════════════════════════════════════════ */
 function DirectUrlRow({
-  label, value, onSave, placeholder,
+  label, value, onSave, placeholder, icone, normaliser = normaliserLien,
 }: {
   label: string;
   value: string;
   onSave: (v: string) => Promise<void>;
   placeholder?: string;
+  /** Logo de la plateforme (BP 2026-10-18). */
+  icone?: ClePlateforme;
+  /** Normalisation avant l'écriture directe : une saisie invalide n'est pas enregistrée. */
+  normaliser?: (v: string) => ResultatLien;
 }) {
   return (
     <div className="relative">
@@ -557,12 +567,13 @@ function DirectUrlRow({
         <PencilIcon color={GREEN} size={12} />
       </span>
       <div className="pl-6">
-        <InlineEditRow
+        <MediaUrlRow
           label={label}
           value={value}
-          onSave={onSave}
+          onSave={(v) => { void onSave(v); }}
           placeholder={placeholder}
-          type="url"
+          icone={icone}
+          normaliser={normaliser}
         />
       </div>
     </div>
@@ -748,6 +759,9 @@ export default function AthleteEditWizardMobile() {
       hudlUrl: (raw.hudl_url as string) || "",
       youtubeUrl: (raw.youtube_url as string) || "",
       instagramUrl: (raw.instagram_url as string) || "",
+      facebookUrl: (raw.facebook_url as string) || "",
+      tiktokUrl: (raw.tiktok_url as string) || "",
+      linkedinUrl: (raw.linkedin_url as string) || "",
       // Évaluation (SUGGEST traits + cote + LOCKED rapport + SUGGEST distinctions)
       traitRatings,
       overallRating,
@@ -1892,6 +1906,7 @@ function MediasStep({
       <p className="text-[12px] text-white/55 mb-3 px-1">
         Tu peux modifier ces liens directement — l&apos;enregistrement est immédiat.
       </p>
+      <p className="mb-2 px-1 text-[10px] font-bold tracking-[0.2em] uppercase text-white/50">Vidéos</p>
       <Card>
         <DirectUrlRow
           label="Faits saillants"
@@ -1907,22 +1922,34 @@ function MediasStep({
         />
         <DirectUrlRow
           label="Hudl"
+          icone="hudl"
           value={a.hudlUrl}
           placeholder="https://hudl.com/video/…"
           onSave={(v) => onDirect("hudl_url", v)}
         />
         <DirectUrlRow
           label="YouTube"
+          icone="youtube"
           value={a.youtubeUrl}
           placeholder="https://youtube.com/@…"
           onSave={(v) => onDirect("youtube_url", v)}
         />
-        <DirectUrlRow
-          label="Instagram"
-          value={a.instagramUrl}
-          placeholder="https://instagram.com/…"
-          onSave={(v) => onDirect("instagram_url", v)}
-        />
+      </Card>
+
+      {/* Réseaux sociaux (BP 2026-10-18) : « @pseudo » ou lien → URL du profil. */}
+      <p className="mt-5 mb-2 px-1 text-[10px] font-bold tracking-[0.2em] uppercase text-white/50">Réseaux sociaux</p>
+      <Card>
+        {RESEAUX.map((r) => (
+          <DirectUrlRow
+            key={r.cle}
+            label={r.libelle}
+            icone={r.cle}
+            value={a[`${r.cle}Url` as "instagramUrl" | "facebookUrl" | "tiktokUrl" | "linkedinUrl"]}
+            placeholder="@tonpseudo ou lien"
+            normaliser={(v) => normaliserReseau(r.cle, v)}
+            onSave={(v) => onDirect(r.colonne, v)}
+          />
+        ))}
       </Card>
     </div>
   );

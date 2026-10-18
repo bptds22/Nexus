@@ -56,6 +56,9 @@ const ATHLETE_SELECT = `
   hudl_url,
   youtube_url,
   instagram_url,
+  facebook_url,
+  tiktok_url,
+  linkedin_url,
   video_match_complet_url,
   video_entrainement_url,
   bio,
@@ -106,11 +109,18 @@ export async function loadAthleteRaw(athleteId: string) {
 
   if (!user) return { data: null, error: "Not authenticated" };
 
-  const { data, error } = await supabase
+  /* Réseaux sociaux (2026-10-18) : sur une base SANS la migration 20261018150000, la colonne
+     inconnue ferait échouer toute la lecture — on relit alors sans eux. */
+  const lire = (avecReseaux: boolean) => supabase
     .from("athletes")
-    .select(ATHLETE_SELECT)
+    // Même type de ligne que la liste complète (la sélection dynamique perdrait l'inférence).
+    .select((avecReseaux ? ATHLETE_SELECT : ATHLETE_SELECT.replace(/^\s*(facebook_url|tiktok_url|linkedin_url),\r?\n/gm, "")) as typeof ATHLETE_SELECT)
     .eq("id", athleteId)
     .single();
+  let { data, error } = await lire(true);
+  if (error && (error.code === "42703" || /facebook_url|tiktok_url|linkedin_url/.test(error.message ?? ""))) {
+    ({ data, error } = await lire(false));
+  }
 
   /* T2 — les libellés de programme résolus UNE fois ici, déposés sur `raw`
      sous une clé qui n'est pas une colonne. Les trois mappeurs synchrones
@@ -328,6 +338,9 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
       hudlLink: (raw.hudl_url as string) || "",
       youtubeLink: (raw.youtube_url as string) || "",
       instagramLink: (raw.instagram_url as string) || "",
+      facebookLink: (raw.facebook_url as string) || "",
+      tiktokLink: (raw.tiktok_url as string) || "",
+      linkedinLink: (raw.linkedin_url as string) || "",
       highlightVideo: (raw.video_faits_saillants_url as string) || "",
       fullGameVideo: (raw.video_match_complet_url as string) || "",
       trainingVideo: (raw.video_entrainement_url as string) || "",
@@ -505,6 +518,9 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     hudlUrl: (raw.hudl_url as string) || "",
     youtubeUrl: (raw.youtube_url as string) || "",
     instagramUrl: (raw.instagram_url as string) || "",
+    facebookUrl: (raw.facebook_url as string) || "",
+    tiktokUrl: (raw.tiktok_url as string) || "",
+    linkedinUrl: (raw.linkedin_url as string) || "",
     fullGameUrl: (raw.video_match_complet_url as string) || "",
     practiceVideoUrl: (raw.video_entrainement_url as string) || "",
     isVerified: !!(raw.verified),

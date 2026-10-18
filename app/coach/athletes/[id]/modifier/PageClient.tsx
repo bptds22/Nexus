@@ -36,6 +36,7 @@ import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import AthleteWizardMobile from "@/components/shared/AthleteWizardMobile";
+import ChampsReseauxSociaux from "@/components/shared/athlete/ChampsReseauxSociaux";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -104,7 +105,7 @@ function emptyForm(): AthleteFormData {
     physical: { heightFeet: "", heightInches: "", weightLbs: "", wingspan: "", handSize: "", dominantHand: "", dominantFoot: "", fortyYard: "", verticalJump: "", broadJump: "", benchPress: "", shuttleAgility: "", sprint100m: "" },
     sports: { primarySport: "", primarySportDetail: "", primaryPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false, parcoursEquipes: [] },
     scouting: { evalMode: "simple", starRating: 0, traitRatings: {}, badges: [], coachEndorsement: "" },
-    media: { hudlLink: "", youtubeLink: "", instagramLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
+    media: { hudlLink: "", youtubeLink: "", instagramLink: "", facebookLink: "", tiktokLink: "", linkedinLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
     submission: { recruitingStatus: "", preferredDivision: "" },
     parentalConsent: false,
     // Requis par la forme canonique. CREATE-only a l'ecriture, mais il vit
@@ -1069,7 +1070,6 @@ function ModifierContent({ id }: { id: string }) {
     const detailedFields = [
       { key: "hudlLink", label: "Lien Hudl", placeholder: "https://www.hudl.com/..." },
       { key: "youtubeLink", label: "Lien YouTube", placeholder: "https://youtube.com/..." },
-      { key: "instagramLink", label: "Lien Instagram", placeholder: "https://instagram.com/..." },
       { key: "fullGameVideo", label: "Vidéo de match complet", placeholder: "https://..." },
       { key: "trainingVideo", label: "Vidéo d'entraînement", placeholder: "https://..." },
     ];
@@ -1093,12 +1093,23 @@ function ModifierContent({ id }: { id: string }) {
 
         {(
           <div className="border-t border-[#1e2128] mt-6 pt-5">
-            <p className={sectionTitle}>Liens additionnels</p>
+            <p className={sectionTitle}>Vidéos</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {detailedFields.map((f) => (<div key={f.key}><label className={labelCls}>{f.label}</label><input type="url" value={d[f.key as keyof typeof d]} onChange={(e) => updateMedia(f.key, e.target.value)} placeholder={f.placeholder} className={inputCls} /></div>))}
             </div>
           </div>
         )}
+
+        {/* Réseaux sociaux (BP 2026-10-18) : logo, « @pseudo » ou lien → URL du profil. */}
+        <div className="border-t border-[#1e2128] mt-6 pt-5">
+          <ChampsReseauxSociaux
+            titreCls={sectionTitle}
+            labelCls={labelCls}
+            inputCls={inputCls}
+            valeurs={{ instagram: d.instagramLink, facebook: d.facebookLink, tiktok: d.tiktokLink, linkedin: d.linkedinLink }}
+            onChange={(cle, v) => updateMedia(`${cle}Link`, v)}
+          />
+        </div>
       </div>
     );
   }
@@ -1154,7 +1165,7 @@ function ModifierContent({ id }: { id: string }) {
           {scouting.coachEndorsement && (<div className="mt-2 p-3 bg-[#1A1D24] rounded-lg"><p className="text-[12px] text-[#6b7280] mb-1 font-bold uppercase tracking-wider">Rapport</p><p className="text-[12px] text-[#e0e0e0] italic leading-relaxed">&ldquo;{scouting.coachEndorsement.slice(0, 150)}{scouting.coachEndorsement.length > 150 ? "…" : ""}&rdquo;</p></div>)}
         </div>))}
 
-        {summaryCard("Médias", 6, (<div>{infoRow("Hudl", media.hudlLink)}{infoRow("YouTube", media.youtubeLink)}{infoRow("Instagram", media.instagramLink)}</div>))}
+        {summaryCard("Médias", 6, (<div>{infoRow("Hudl", media.hudlLink)}{infoRow("YouTube", media.youtubeLink)}{infoRow("Instagram", media.instagramLink)}{infoRow("Facebook", media.facebookLink)}{infoRow("TikTok", media.tiktokLink)}{infoRow("LinkedIn", media.linkedinLink)}</div>))}
 
         <div className="border-t border-[#1e2128] mt-6 pt-5">
           <div className="bg-[#1A1D24] border border-[#2A2D35] rounded-lg p-4">

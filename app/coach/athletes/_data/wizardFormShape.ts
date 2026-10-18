@@ -102,6 +102,9 @@ export interface AthleteFormData {
     hudlLink: string;
     youtubeLink: string;
     instagramLink: string;
+    facebookLink: string;
+    tiktokLink: string;
+    linkedinLink: string;
     highlightVideo: string;
     fullGameVideo: string;
     trainingVideo: string;
@@ -152,6 +155,7 @@ export function emptyAthleteForm(): AthleteFormData {
     },
     media: {
       hudlLink: "", youtubeLink: "", instagramLink: "",
+      facebookLink: "", tiktokLink: "", linkedinLink: "",
       highlightVideo: "", fullGameVideo: "", trainingVideo: "",
     },
     submission: { recruitingStatus: "", preferredDivision: "" },

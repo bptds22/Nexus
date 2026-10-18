@@ -38,6 +38,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AthleteFormData } from "./wizardFormShape";
 import { loadGrilles, grilleIdForSave } from "@/lib/evaluations/grilles";
 import { enregistrerBadgesSaisie } from "@/lib/queries/shared/athleteBadges";
+import { pourEnregistrerLien, pourEnregistrerReseau } from "@/lib/liensSociaux";
 
 /* ── Result + options ───────────────────────────────────────── */
 
@@ -187,13 +188,17 @@ function buildSharedAthletesPayload(
     cote_globale_entraineur: coteGlobale,
     notes_coach: form.scouting.coachEndorsement || null,
 
-    // Media
-    video_faits_saillants_url: form.media.highlightVideo || null,
-    hudl_url: form.media.hudlLink || null,
-    youtube_url: form.media.youtubeLink || null,
-    instagram_url: form.media.instagramLink || null,
-    video_match_complet_url: form.media.fullGameVideo || null,
-    video_entrainement_url: form.media.trainingVideo || null,
+    // Media — normalisés (lib/liensSociaux) : jamais une valeur que la base refuserait.
+    video_faits_saillants_url: pourEnregistrerLien(form.media.highlightVideo),
+    hudl_url: pourEnregistrerLien(form.media.hudlLink),
+    youtube_url: pourEnregistrerLien(form.media.youtubeLink),
+    video_match_complet_url: pourEnregistrerLien(form.media.fullGameVideo),
+    video_entrainement_url: pourEnregistrerLien(form.media.trainingVideo),
+    // Réseaux sociaux (BP 2026-10-18) : « @pseudo » ou lien → URL du profil.
+    instagram_url: pourEnregistrerReseau("instagram", form.media.instagramLink),
+    facebook_url: pourEnregistrerReseau("facebook", form.media.facebookLink),
+    tiktok_url: pourEnregistrerReseau("tiktok", form.media.tiktokLink),
+    linkedin_url: pourEnregistrerReseau("linkedin", form.media.linkedinLink),
 
     // Override (the in-pipeline status the coach manually pins)
     statut_recrutement_override: form.submission.recruitingStatus || null,

@@ -36,6 +36,9 @@
 import { useEffect, useState } from "react";
 import { labelCls, valueCls } from "./tokens";
 import { triggerHaptic } from "@/lib/haptics";
+import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import type { ClePlateforme } from "@/lib/config/plateformesLien";
+import type { ResultatLien } from "@/lib/liensSociaux";
 
 /* ── DetailedTag — small uppercase grey pill rendered next to a
       field label when detailed=true on one of the rows. */
@@ -418,13 +421,18 @@ export function TagInputRow({
       mobile overflow where a 50+ char URL couldn't fit a single-line
       right-aligned slot. */
 export function MediaUrlRow({
-  label, value, onSave, placeholder, detailed,
+  label, value, onSave, placeholder, detailed, icone, normaliser,
 }: {
   label: string;
   value: string;
   onSave: (v: string) => void;
   placeholder?: string;
   detailed?: boolean;
+  /** Logo de la plateforme devant le libellé (BP 2026-10-18). */
+  icone?: ClePlateforme;
+  /** Normalisation à l'enregistrement (lib/liensSociaux) : une saisie invalide
+   *  affiche son erreur et n'est PAS enregistrée. */
+  normaliser?: (v: string) => ResultatLien;
 }) {
   /* Two-line layout : label LEFT-TOP, URL truncated BELOW. Tap to edit
      inline (consistent with text-field pattern). Fixes mobile overflow
@@ -432,24 +440,38 @@ export function MediaUrlRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
-  const commit = () => { onSave(draft); setEditing(false); };
+  const [erreur, setErreur] = useState<string | null>(null);
+  const commit = () => {
+    if (normaliser) {
+      const res = normaliser(draft);
+      if (!res.ok) { setErreur(res.erreur); return; }
+      setErreur(null);
+      onSave(res.url ?? "");
+    } else {
+      onSave(draft);
+    }
+    setEditing(false);
+  };
 
   return (
     <div className="px-4 py-3 border-b border-white/[0.06] last:border-0">
       <div className="flex items-center gap-2 mb-1">
+        {icone && <PlateformeIcone cle={icone} size={16} />}
         <span className={labelCls}>{label}</span>
         {detailed && <DetailedTag />}
       </div>
       {editing ? (
-        <input type="url" inputMode="url" autoFocus
+        <input type={normaliser ? "text" : "url"} inputMode="url" autoFocus
+          autoCapitalize="none" autoCorrect="off" spellCheck={false}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => { setDraft(e.target.value); setErreur(null); }}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); commit(); }
-            if (e.key === "Escape") { setDraft(value); setEditing(false); }
+            if (e.key === "Escape") { setDraft(value); setErreur(null); setEditing(false); }
           }}
           aria-label={label}
+          aria-invalid={!!erreur}
           placeholder={placeholder}
           className="w-full bg-transparent text-[14px] text-white font-semibold outline-none"
         />
@@ -459,6 +481,7 @@ export function MediaUrlRow({
           {value || (placeholder || "Ajouter un lien")}
         </button>
       )}
+      {erreur && <p className="mt-1 text-[12px] text-[#F87171]" role="alert">{erreur}</p>}
     </div>
   );
 }

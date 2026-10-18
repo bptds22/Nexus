@@ -32,6 +32,8 @@ import { aUneCote } from "@/lib/evaluations/presence";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import ReseauxSociaux, { aDesReseaux } from "@/components/shared/athlete/ReseauxSociaux";
+import { lienAffichable } from "@/lib/liensSociaux";
 import { plateformeDuLien } from "@/lib/config/plateformesLien";
 
 /* ── constants ─────────────────────────────────────────────────── */
@@ -571,7 +573,7 @@ export default function AthleteProfileView({
             </section>
           )}
 
-          {(a.highlightVideoUrl || a.hudlUrl || a.youtubeUrl || a.instagramUrl || a.fullGameUrl || a.practiceVideoUrl) && (
+          {(a.highlightVideoUrl || a.hudlUrl || a.youtubeUrl || a.instagramUrl || a.facebookUrl || a.tiktokUrl || a.linkedinUrl || a.fullGameUrl || a.practiceVideoUrl) && (
             <section>
               <h2 className={sectionLabel}>Médias &amp; liens</h2>
               <div className={`${cardBase} p-5`}>
@@ -581,10 +583,9 @@ export default function AthleteProfileView({
                     { url: a.highlightVideoUrl, label: "Faits saillants" },
                     { url: a.hudlUrl, colonne: "hudl_url" },
                     { url: a.youtubeUrl, colonne: "youtube_url" },
-                    { url: a.instagramUrl, colonne: "instagram_url" },
                     { url: a.fullGameUrl, label: "Match complet" },
                     { url: a.practiceVideoUrl, label: "Entraînement" },
-                  ].map((m) => ({ ...m, p: plateformeDuLien(m.url, m.colonne) })).filter((m) => m.url && m.p).map((m) => {
+                  ].map((m) => ({ ...m, url: lienAffichable(m.url) ?? undefined, p: plateformeDuLien(m.url, m.colonne) })).filter((m) => m.url && m.p).map((m) => {
                     const libelle = m.label ?? `Voir sur ${m.p!.libelle}`;
                     return (
                       <a key={`${libelle}-${m.url}`} href={m.url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-[#111317] border border-white/5 hover:border-[#E63946]/30 transition-colors">
@@ -594,6 +595,13 @@ export default function AthleteProfileView({
                     );
                   })}
                 </div>
+                {/* Réseaux sociaux (BP 2026-10-18). */}
+                {aDesReseaux({ instagram_url: a.instagramUrl, facebook_url: a.facebookUrl, tiktok_url: a.tiktokUrl, linkedin_url: a.linkedinUrl }) && (
+                  <div className="mt-4">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#6b7280]">Réseaux sociaux</p>
+                    <ReseauxSociaux taille={40} liens={{ instagram_url: a.instagramUrl, facebook_url: a.facebookUrl, tiktok_url: a.tiktokUrl, linkedin_url: a.linkedinUrl }} />
+                  </div>
+                )}
               </div>
             </section>
           )}

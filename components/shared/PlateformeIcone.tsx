@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
    PlateformeIcone — la marque derrière un lien externe.
 
-   Des marques SIMPLIFIÉES, dessinées ici : pas de logo officiel
-   importé, pas d'appel réseau vers un CDN d'icônes. Chacune doit
-   rester reconnaissable à 18px, taille à laquelle un logo fidèle
-   devient une tache.
+   Les réseaux sociaux et YouTube portent leur LOGO OFFICIEL (chemins
+   simple-icons, lib/brand/logosMarques, partagés avec components/marketing/SocialIcons —
+   décision BP 2026-10-18 : « utilise les logos de ces compagnies »).
+   Vimeo, X et Drive restent des marques simplifiées dessinées ici.
+   Aucun appel réseau vers un CDN d'icônes.
 
    `autre` rend un maillon de chaîne en gris : un domaine inconnu ne
    reçoit ni couleur inventée ni marque empruntée.
@@ -14,6 +15,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { TEINTE_PLATEFORME, type ClePlateforme } from "@/lib/config/plateformesLien";
+import { LOGO_MARQUE } from "@/lib/brand/logosMarques";
 
 export default function PlateformeIcone({
   cle,
@@ -32,12 +34,7 @@ export default function PlateformeIcone({
 
   switch (cle) {
     case "youtube":
-      return (
-        <svg {...commun} fill={teinte}>
-          <path d="M23 12s0-3.2-.4-4.7a2.5 2.5 0 0 0-1.8-1.8C19.3 5 12 5 12 5s-7.3 0-8.8.5A2.5 2.5 0 0 0 1.4 7.3C1 8.8 1 12 1 12s0 3.2.4 4.7a2.5 2.5 0 0 0 1.8 1.8C4.7 19 12 19 12 19s7.3 0 8.8-.5a2.5 2.5 0 0 0 1.8-1.8C23 15.2 23 12 23 12z" />
-          <polygon points="10,15.2 15.5,12 10,8.8" fill="#111317" />
-        </svg>
-      );
+      return <svg {...commun} fill={teinte}><path d={LOGO_MARQUE.youtube} /></svg>;
     case "hudl":
       /* ⚠️ SEULE icône matricielle du jeu, et c'est PROVISOIRE.
          Le triskèle Hudl n'est pas redessinable de mémoire sans trahir une
@@ -61,13 +58,7 @@ export default function PlateformeIcone({
         />
       );
     case "instagram":
-      return (
-        <svg {...commun} fill="none" stroke={teinte} strokeWidth="2" strokeLinecap="round">
-          <rect x="3" y="3" width="18" height="18" rx="5" />
-          <circle cx="12" cy="12" r="4" />
-          <circle cx="17.5" cy="6.5" r="1.1" fill={teinte} stroke="none" />
-        </svg>
-      );
+      return <svg {...commun} fill={teinte}><path d={LOGO_MARQUE.instagram} /></svg>;
     case "vimeo":
       return (
         <svg {...commun} fill="none" stroke={teinte} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -75,12 +66,8 @@ export default function PlateformeIcone({
         </svg>
       );
     case "tiktok":
-      return (
-        <svg {...commun} fill="none" stroke={teinte} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5" />
-          <path d="M14 4c.4 2.4 2.1 4 4.5 4.2" />
-        </svg>
-      );
+      /* Le noir officiel de TikTok disparaîtrait sur le fond sombre : on garde la teinte cyan. */
+      return <svg {...commun} fill={teinte}><path d={LOGO_MARQUE.tiktok} /></svg>;
     case "x":
       return (
         <svg {...commun} fill={teinte}>
@@ -88,11 +75,9 @@ export default function PlateformeIcone({
         </svg>
       );
     case "facebook":
-      return (
-        <svg {...commun} fill={teinte}>
-          <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.7-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z" />
-        </svg>
-      );
+      return <svg {...commun} fill={teinte}><path d={LOGO_MARQUE.facebook} /></svg>;
+    case "linkedin":
+      return <svg {...commun} fill={teinte}><path d={LOGO_MARQUE.linkedin} /></svg>;
     case "drive":
       return (
         <svg {...commun} fill="none" stroke={teinte} strokeWidth="2" strokeLinejoin="round">

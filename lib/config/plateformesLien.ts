@@ -27,7 +27,7 @@
 
 export type ClePlateforme =
   | "hudl" | "youtube" | "instagram" | "vimeo"
-  | "tiktok" | "x" | "facebook" | "drive" | "autre";
+  | "tiktok" | "x" | "facebook" | "linkedin" | "drive" | "autre";
 
 export interface Plateforme {
   cle: ClePlateforme;
@@ -64,6 +64,7 @@ export function plateformeDeUrl(url: string | null | undefined): Plateforme | nu
   if (est("tiktok.com")) return { cle: "tiktok", libelle: "TikTok" };
   if (est("x.com") || est("twitter.com")) return { cle: "x", libelle: "X" };
   if (est("facebook.com") || est("fb.watch")) return { cle: "facebook", libelle: "Facebook" };
+  if (est("linkedin.com")) return { cle: "linkedin", libelle: "LinkedIn" };
   if (est("drive.google.com")) return { cle: "drive", libelle: "Google Drive" };
 
   return { cle: "autre", libelle: h };
@@ -75,6 +76,10 @@ export const PLATEFORME_PAR_COLONNE: Record<string, Plateforme> = {
   hudl_url: { cle: "hudl", libelle: "Hudl" },
   youtube_url: { cle: "youtube", libelle: "YouTube" },
   instagram_url: { cle: "instagram", libelle: "Instagram" },
+  // Profils de réseaux sociaux (BP 2026-10-18, migration 20261018150000).
+  facebook_url: { cle: "facebook", libelle: "Facebook" },
+  tiktok_url: { cle: "tiktok", libelle: "TikTok" },
+  linkedin_url: { cle: "linkedin", libelle: "LinkedIn" },
 };
 
 /** La plateforme d'un lien de la fiche, PAR SON DOMAINE d'abord (retour BP
@@ -103,6 +108,7 @@ export const TEINTE_PLATEFORME: Record<ClePlateforme, string> = {
   tiktok: "#25F4EE",
   x: "#FFFFFF",
   facebook: "#1877F2",
+  linkedin: "#0A66C2",
   drive: "#FBBC04",
   autre: "#6B7280",
 };

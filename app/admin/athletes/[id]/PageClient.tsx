@@ -40,6 +40,8 @@ import {
   getSportStats,
   type DistinctionEntry,
 } from "@/lib/config/badges";
+import ReseauxSociaux from "@/components/shared/athlete/ReseauxSociaux";
+import { lienAffichable, pourEnregistrerLien, pourEnregistrerReseau } from "@/lib/liensSociaux";
 
 /* ─────────────────────────────────────────────────────────────
    Admin athlete detail — full edit form wired to Supabase.
@@ -588,12 +590,16 @@ export default function AdminAthleteDetailPage() {
       ouvert_cegep_anglophone: !!A("ouvert_cegep_anglophone"),
       pret_changer_region: !!A("pret_changer_region"),
       regions_cegep_preferees: A("regions_cegep_preferees") ?? [],
-      video_faits_saillants_url: A("video_faits_saillants_url") || null,
-      hudl_url: A("hudl_url") || null,
-      youtube_url: A("youtube_url") || null,
-      instagram_url: A("instagram_url") || null,
-      video_match_complet_url: A("video_match_complet_url") || null,
-      video_entrainement_url: A("video_entrainement_url") || null,
+      // Liens normalisés (lib/liensSociaux) : jamais une valeur que la base refuserait.
+      video_faits_saillants_url: pourEnregistrerLien(A("video_faits_saillants_url")),
+      hudl_url: pourEnregistrerLien(A("hudl_url")),
+      youtube_url: pourEnregistrerLien(A("youtube_url")),
+      instagram_url: pourEnregistrerReseau("instagram", A("instagram_url")),
+      facebook_url: pourEnregistrerReseau("facebook", A("facebook_url")),
+      tiktok_url: pourEnregistrerReseau("tiktok", A("tiktok_url")),
+      linkedin_url: pourEnregistrerReseau("linkedin", A("linkedin_url")),
+      video_match_complet_url: pourEnregistrerLien(A("video_match_complet_url")),
+      video_entrainement_url: pourEnregistrerLien(A("video_entrainement_url")),
       status: A("status") || "ACTIF",
       verified: !!A("verified"),
       verification_method: A("verification_method") || null,
@@ -1302,7 +1308,10 @@ export default function AdminAthleteDetailPage() {
           {row("Vidéo faits saillants", text("video_faits_saillants_url"))}
           {row("Hudl", text("hudl_url"))}
           {row("YouTube", text("youtube_url"))}
-          {row("Instagram", text("instagram_url"))}
+          {row("Instagram", text("instagram_url", "@pseudo ou lien"))}
+          {row("Facebook", text("facebook_url", "@pseudo ou lien"))}
+          {row("TikTok", text("tiktok_url", "@pseudo ou lien"))}
+          {row("LinkedIn", text("linkedin_url", "pseudo ou lien"))}
           {row("Vidéo match complet", text("video_match_complet_url"))}
           {row("Vidéo entraînement", text("video_entrainement_url"))}
         </>,
@@ -1813,18 +1822,17 @@ export default function AdminAthleteDetailPage() {
               </section>
             )}
 
-            {(a.highlightVideoUrl || a.hudlUrl || a.youtubeUrl || a.instagramUrl || a.fullGameUrl || a.practiceVideoUrl) && (
+            {(a.highlightVideoUrl || a.hudlUrl || a.youtubeUrl || a.instagramUrl || a.facebookUrl || a.tiktokUrl || a.linkedinUrl || a.fullGameUrl || a.practiceVideoUrl) && (
               <section>
                 <h2 className={sectionLabel}>Médias &amp; liens</h2>
                 <div className={`${cardBase} p-5`}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
-                      { url: a.highlightVideoUrl, label: "Faits saillants", color: "#E63946" },
-                      { url: a.hudlUrl, label: "Hudl", color: "#F59E0B" },
-                      { url: a.youtubeUrl, label: "YouTube", color: "#EF4444" },
-                      { url: a.instagramUrl, label: "Instagram", color: "#E63946" },
-                      { url: a.fullGameUrl, label: "Match complet", color: "#6B7280" },
-                      { url: a.practiceVideoUrl, label: "Entraînement", color: "#6B7280" },
+                      { url: lienAffichable(a.highlightVideoUrl), label: "Faits saillants", color: "#E63946" },
+                      { url: lienAffichable(a.hudlUrl), label: "Hudl", color: "#F59E0B" },
+                      { url: lienAffichable(a.youtubeUrl), label: "YouTube", color: "#EF4444" },
+                      { url: lienAffichable(a.fullGameUrl), label: "Match complet", color: "#6B7280" },
+                      { url: lienAffichable(a.practiceVideoUrl), label: "Entraînement", color: "#6B7280" },
                     ].filter(m => m.url).map((m) => (
                       <a key={m.label} href={m.url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-[#111317] border border-white/5 hover:border-[#E63946]/30 transition-colors">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
@@ -1832,6 +1840,9 @@ export default function AdminAthleteDetailPage() {
                       </a>
                     ))}
                   </div>
+                  {/* Réseaux sociaux (BP 2026-10-18). */}
+                  <ReseauxSociaux className="mt-4" taille={40}
+                    liens={{ instagram_url: a.instagramUrl, facebook_url: a.facebookUrl, tiktok_url: a.tiktokUrl, linkedin_url: a.linkedinUrl }} />
                 </div>
               </section>
             )}

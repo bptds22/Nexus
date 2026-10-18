@@ -1,4 +1,6 @@
 "use client";
+import ReseauxSociaux, { aDesReseaux } from "@/components/shared/athlete/ReseauxSociaux";
+import { lienAffichable } from "@/lib/liensSociaux";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -1093,18 +1095,17 @@ export default function CoachAthleteProfilePage() {
           )}
 
           {/* Media */}
-          {(a.highlightVideoUrl || a.hudlUrl || a.youtubeUrl) && (
+          {(a.highlightVideoUrl || a.hudlUrl || a.youtubeUrl || a.fullGameUrl || a.practiceVideoUrl || a.instagramUrl || a.facebookUrl || a.tiktokUrl || a.linkedinUrl) && (
             <section>
               <h2 className={sectionLabel}>Médias &amp; liens</h2>
               <div className={`${cardBase} p-5`}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { url: a.highlightVideoUrl, label: "Faits saillants", color: "#E63946" },
-                    { url: a.hudlUrl, label: "Hudl", color: "#F59E0B" },
-                    { url: a.youtubeUrl, label: "YouTube", color: "#EF4444" },
-                    { url: a.instagramUrl, label: "Instagram", color: "#E63946" },
-                    { url: a.fullGameUrl, label: "Match complet", color: "#6B7280" },
-                    { url: a.practiceVideoUrl, label: "Entraînement", color: "#6B7280" },
+                    { url: lienAffichable(a.highlightVideoUrl), label: "Faits saillants", color: "#E63946" },
+                    { url: lienAffichable(a.hudlUrl), label: "Hudl", color: "#F59E0B" },
+                    { url: lienAffichable(a.youtubeUrl), label: "YouTube", color: "#EF4444" },
+                    { url: lienAffichable(a.fullGameUrl), label: "Match complet", color: "#6B7280" },
+                    { url: lienAffichable(a.practiceVideoUrl), label: "Entraînement", color: "#6B7280" },
                   ].filter(m => m.url).map((m) => (
                     <a key={m.label} href={m.url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-[#111317] border border-white/5 hover:border-[#E63946]/30 transition-colors">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
@@ -1112,6 +1113,13 @@ export default function CoachAthleteProfilePage() {
                     </a>
                   ))}
                 </div>
+                {/* Réseaux sociaux (BP 2026-10-18). */}
+                {aDesReseaux({ instagram_url: a.instagramUrl, facebook_url: a.facebookUrl, tiktok_url: a.tiktokUrl, linkedin_url: a.linkedinUrl }) && (
+                  <div className="mt-4">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#6b7280]">Réseaux sociaux</p>
+                    <ReseauxSociaux taille={40} liens={{ instagram_url: a.instagramUrl, facebook_url: a.facebookUrl, tiktok_url: a.tiktokUrl, linkedin_url: a.linkedinUrl }} />
+                  </div>
+                )}
               </div>
             </section>
           )}

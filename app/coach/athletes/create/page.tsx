@@ -44,6 +44,7 @@ import { athletesMemeIdentite, cleIdentite, peutInviterMemeIdentite, suggestionE
 import MemeIdentiteAvertissement from "@/components/coach/MemeIdentiteAvertissement";
 import ErreurSauvegarde, { MESSAGE_ERREUR_GENERIQUE } from "@/components/shared/ErreurSauvegarde";
 import { prendreEquipeACreer } from "@/lib/coach/equipeACreer";
+import ChampsReseauxSociaux from "@/components/shared/athlete/ChampsReseauxSociaux";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -128,6 +129,9 @@ interface AthleteFormData {
     hudlLink: string;
     youtubeLink: string;
     instagramLink: string;
+    facebookLink: string;
+    tiktokLink: string;
+    linkedinLink: string;
     highlightVideo: string;
     fullGameVideo: string;
     trainingVideo: string;
@@ -231,6 +235,7 @@ const INITIAL_FORM: AthleteFormData = {
   },
   media: {
     hudlLink: "", youtubeLink: "", instagramLink: "",
+    facebookLink: "", tiktokLink: "", linkedinLink: "",
     highlightVideo: "", fullGameVideo: "", trainingVideo: "",
   },
   submission: { recruitingStatus: "", preferredDivision: "" },
@@ -1615,7 +1620,6 @@ export default function CreateAthletePage() {
     const detailedFields = [
       { key: "hudlLink", label: "Lien Hudl", placeholder: "https://www.hudl.com/..." },
       { key: "youtubeLink", label: "Lien YouTube", placeholder: "https://youtube.com/..." },
-      { key: "instagramLink", label: "Lien Instagram", placeholder: "https://instagram.com/..." },
       { key: "fullGameVideo", label: "Vidéo de match complet", placeholder: "https://..." },
       { key: "trainingVideo", label: "Vidéo d'entraînement", placeholder: "https://..." },
     ];
@@ -1654,7 +1658,7 @@ export default function CreateAthletePage() {
         {/* Detailed: all other media links */}
         {(
           <div className="border-t border-[#1e2128] mt-6 pt-5">
-            <p className={sectionTitle}>Liens additionnels</p>
+            <p className={sectionTitle}>Vidéos</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {detailedFields.map((f) => (
                 <div key={f.key}>
@@ -1665,6 +1669,17 @@ export default function CreateAthletePage() {
             </div>
           </div>
         )}
+
+        {/* Réseaux sociaux (BP 2026-10-18) : logo, « @pseudo » ou lien → URL du profil. */}
+        <div className="border-t border-[#1e2128] mt-6 pt-5">
+          <ChampsReseauxSociaux
+            titreCls={sectionTitle}
+            labelCls={labelCls}
+            inputCls={inputCls}
+            valeurs={{ instagram: d.instagramLink, facebook: d.facebookLink, tiktok: d.tiktokLink, linkedin: d.linkedinLink }}
+            onChange={(cle, v) => updateMedia(`${cle}Link`, v)}
+          />
+        </div>
       </div>
     );
   }
@@ -1770,6 +1785,9 @@ export default function CreateAthletePage() {
             {infoRow("Hudl", media.hudlLink)}
             {infoRow("YouTube", media.youtubeLink)}
             {infoRow("Instagram", media.instagramLink)}
+            {infoRow("Facebook", media.facebookLink)}
+            {infoRow("TikTok", media.tiktokLink)}
+            {infoRow("LinkedIn", media.linkedinLink)}
             {infoRow("Faits saillants", media.highlightVideo)}
             {infoRow("Match complet", media.fullGameVideo)}
           </div>

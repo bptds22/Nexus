@@ -32,6 +32,9 @@ import { zoneImageRangee } from "@/components/shared/athlete/tailleBadgeFiche";
 import type { BadgePartenaire } from "@/lib/badges/partenaire";
 import { aUneCote } from "@/lib/evaluations/presence";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
+import PlateformeIcone from "@/components/shared/PlateformeIcone";
+import type { ClePlateforme } from "@/lib/config/plateformesLien";
+import { RESEAUX, normaliserLien, normaliserReseau, type CleReseau } from "@/lib/liensSociaux";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -95,8 +98,11 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
 
 /* ── Editable field wrapper (green) ───────────────────────────── */
 
-function EditableField({ label, value, onSave, type = "text", recruiterView }: {
+function EditableField({ label, value, onSave, type = "text", recruiterView, icone, placeholder }: {
   label: string; value: string; onSave: (v: string) => void; type?: "text" | "url" | "textarea"; recruiterView: boolean;
+  /** Logo de la plateforme (BP 2026-10-18). */
+  icone?: ClePlateforme;
+  placeholder?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -115,6 +121,7 @@ function EditableField({ label, value, onSave, type = "text", recruiterView }: {
     <div className="group relative py-2.5 border-b border-[#2D3748]/40 last:border-b-0">
       <div className="flex items-center justify-between">
         <span className="text-[13px] text-[#9CA3AF] flex items-center gap-1.5">
+          {icone && <PlateformeIcone cle={icone} size={15} />}
           {label}
           <span className="opacity-0 group-hover:opacity-100 transition-opacity"><PencilIcon color={GREEN} size={12} /></span>
         </span>
@@ -124,7 +131,7 @@ function EditableField({ label, value, onSave, type = "text", recruiterView }: {
               <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={2} title={label} placeholder={label}
                 className="bg-[#13151a] border border-[#22C55E]/40 rounded px-2 py-1 text-[13px] text-white w-48 focus:border-[#22C55E] outline-none resize-none" autoFocus />
             ) : (
-              <input type={type} value={draft} onChange={(e) => setDraft(e.target.value)} title={label} placeholder={label}
+              <input type={type} value={draft} onChange={(e) => setDraft(e.target.value)} title={label} placeholder={placeholder ?? label}
                 className="bg-[#13151a] border border-[#22C55E]/40 rounded px-2 py-1 text-[13px] text-white w-40 text-right focus:border-[#22C55E] outline-none" autoFocus
                 onKeyDown={(e) => { if (e.key === "Enter") { onSave(draft); setEditing(false); } if (e.key === "Escape") { setDraft(value); setEditing(false); } }} />
             )}
@@ -1165,6 +1172,7 @@ function AthleteProfilPageDesktop() {
 
   const [editableFields, setEditableFields] = useState({
     highlightVideo: "", hudl: "", youtube: "", instagram: "", fullGame: "",
+    facebook: "", tiktok: "", linkedin: "",
   });
 
   useEffect(() => {
@@ -1310,6 +1318,9 @@ function AthleteProfilPageDesktop() {
         youtube: mapped.youtubeUrl || "",
         instagram: mapped.instagramUrl || "",
         fullGame: mapped.fullGameUrl || "",
+        facebook: (raw.facebook_url as string) || "",
+        tiktok: (raw.tiktok_url as string) || "",
+        linkedin: (raw.linkedin_url as string) || "",
       });
       // Load existing suggestions
       if (raw.id) {
@@ -1462,15 +1473,23 @@ function AthleteProfilPageDesktop() {
   }
 
   const saveField = async (key: string, value: string) => {
-    setEditableFields((prev) => ({ ...prev, [key]: value }));
+    /* Liens normalisés (lib/liensSociaux, BP 2026-10-18) : un réseau social accepte « @pseudo »
+       ou le lien et devient l'URL du profil ; une vidéo est seulement assainie. Une saisie
+       invalide n'est pas enregistrée. */
+    const reseaux: Record<string, CleReseau> = { instagram: "instagram", facebook: "facebook", tiktok: "tiktok", linkedin: "linkedin" };
+    const res = reseaux[key] ? normaliserReseau(reseaux[key], value) : normaliserLien(value);
+    if (!res.ok) { showToast(res.erreur); return; }
+    const propre = res.url ?? "";
+    setEditableFields((prev) => ({ ...prev, [key]: propre }));
     if (athleteId) {
       const supabase = createClient();
       const dbMap: Record<string, string> = {
         highlightVideo: "video_faits_saillants_url", hudl: "hudl_url",
         youtube: "youtube_url", instagram: "instagram_url", fullGame: "video_match_complet_url",
+        facebook: "facebook_url", tiktok: "tiktok_url", linkedin: "linkedin_url",
       };
       const col = dbMap[key];
-      if (col) await supabase.from("athletes").update({ [col]: value || null }).eq("id", athleteId);
+      if (col) await supabase.from("athletes").update({ [col]: propre || null }).eq("id", athleteId);
     }
     showToast("Mis à jour!");
   };
@@ -1993,11 +2012,17 @@ function AthleteProfilPageDesktop() {
               Médias &amp; liens
               {!recruiterView && <PencilIcon color={GREEN} size={12} />}
             </h3>
+            <p className="mt-1 mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#4a4d56]">Vidéos</p>
             <EditableField label="Faits saillants" value={editableFields.highlightVideo} onSave={(v) => saveField("highlightVideo", v)} type="url" recruiterView={recruiterView} />
-            <EditableField label="Hudl" value={editableFields.hudl} onSave={(v) => saveField("hudl", v)} type="url" recruiterView={recruiterView} />
-            <EditableField label="YouTube" value={editableFields.youtube} onSave={(v) => saveField("youtube", v)} type="url" recruiterView={recruiterView} />
-            <EditableField label="Instagram" value={editableFields.instagram} onSave={(v) => saveField("instagram", v)} type="url" recruiterView={recruiterView} />
+            <EditableField label="Hudl" icone="hudl" value={editableFields.hudl} onSave={(v) => saveField("hudl", v)} type="url" recruiterView={recruiterView} />
+            <EditableField label="YouTube" icone="youtube" value={editableFields.youtube} onSave={(v) => saveField("youtube", v)} type="url" recruiterView={recruiterView} />
             <EditableField label="Match complet" value={editableFields.fullGame} onSave={(v) => saveField("fullGame", v)} type="url" recruiterView={recruiterView} />
+            {/* Réseaux sociaux (BP 2026-10-18) : « @pseudo » ou lien → URL du profil. */}
+            <p className="mt-5 mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#4a4d56]">Réseaux sociaux</p>
+            {RESEAUX.map((r) => (
+              <EditableField key={r.cle} label={r.libelle} icone={r.cle} placeholder="@tonpseudo ou lien"
+                value={editableFields[r.cle]} onSave={(v) => saveField(r.cle, v)} type="text" recruiterView={recruiterView} />
+            ))}
           </div>
         </div>
 

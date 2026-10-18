@@ -77,6 +77,7 @@ import {
   type BadgeEntry, type BadgeCatalogueEntry,
 } from "@/lib/config/badgeCatalogue";
 import { Card, ChipsBlock, DateRow, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
+import { RESEAUX, normaliserLien, normaliserReseau } from "@/lib/liensSociaux";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { diffTeamHistory, isTeamHistoryDiffEmpty, summarizeTeamHistoryDiff } from "@/components/shared/athlete/teamHistory";
 import type { TeamHistoryEntry } from "@/lib/types/models";
@@ -937,6 +938,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     push("Hudl", f.media.hudlLink, b.media.hudlLink);
     push("YouTube", f.media.youtubeLink, b.media.youtubeLink);
     push("Instagram", f.media.instagramLink, b.media.instagramLink);
+    push("Facebook", f.media.facebookLink, b.media.facebookLink);
+    push("TikTok", f.media.tiktokLink, b.media.tiktokLink);
+    push("LinkedIn", f.media.linkedinLink, b.media.linkedinLink);
     push("Match complet", f.media.fullGameVideo, b.media.fullGameVideo);
     push("Entraînement", f.media.trainingVideo, b.media.trainingVideo);
 
@@ -2396,7 +2400,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <Card>
           <MediaUrlRow label="Vidéo faits saillants" value={m.highlightVideo}
             onSave={(v) => updateMedia("highlightVideo", v)}
-            placeholder="https://…" />
+            placeholder="https://…" normaliser={normaliserLien} />
         </Card>
 
         {!m.highlightVideo && (
@@ -2410,21 +2414,29 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <AdvancedDivider />
 
         <Card>
-          <MediaUrlRow label="Hudl" value={m.hudlLink}
+          <MediaUrlRow label="Hudl" value={m.hudlLink} icone="hudl"
             onSave={(v) => updateMedia("hudlLink", v)}
-            placeholder="https://hudl.com/…" detailed />
-          <MediaUrlRow label="YouTube" value={m.youtubeLink}
+            placeholder="https://hudl.com/…" detailed normaliser={normaliserLien} />
+          <MediaUrlRow label="YouTube" value={m.youtubeLink} icone="youtube"
             onSave={(v) => updateMedia("youtubeLink", v)}
-            placeholder="https://youtube.com/…" detailed />
-          <MediaUrlRow label="Instagram" value={m.instagramLink}
-            onSave={(v) => updateMedia("instagramLink", v)}
-            placeholder="https://instagram.com/…" detailed />
+            placeholder="https://youtube.com/…" detailed normaliser={normaliserLien} />
           <MediaUrlRow label="Match complet" value={m.fullGameVideo}
             onSave={(v) => updateMedia("fullGameVideo", v)}
-            placeholder="https://…" detailed />
+            placeholder="https://…" detailed normaliser={normaliserLien} />
           <MediaUrlRow label="Entraînement" value={m.trainingVideo}
             onSave={(v) => updateMedia("trainingVideo", v)}
-            placeholder="https://…" detailed />
+            placeholder="https://…" detailed normaliser={normaliserLien} />
+        </Card>
+
+        {/* Réseaux sociaux (BP 2026-10-18) : logo, « @pseudo » ou lien → URL du profil. */}
+        <p className="px-1 pt-2 text-[12px] font-bold uppercase tracking-[0.18em] text-white/50">Réseaux sociaux</p>
+        <Card>
+          {RESEAUX.map((r) => (
+            <MediaUrlRow key={r.cle} label={r.libelle} icone={r.cle}
+              value={m[`${r.cle}Link` as "instagramLink" | "facebookLink" | "tiktokLink" | "linkedinLink"]}
+              onSave={(v) => updateMedia(`${r.cle}Link`, v)}
+              placeholder="@tonpseudo ou lien" normaliser={(v) => normaliserReseau(r.cle, v)} />
+          ))}
         </Card>
       </div>
     );

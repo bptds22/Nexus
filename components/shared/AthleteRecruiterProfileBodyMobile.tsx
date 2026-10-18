@@ -18,6 +18,8 @@ import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import RelanceFiche from "@/components/shared/RelanceFiche";
 
 import { plateformeDeUrl, plateformeDuLien, type ClePlateforme } from "@/lib/config/plateformesLien";
+import { lienAffichable } from "@/lib/liensSociaux";
+import ReseauxSociaux, { aDesReseaux } from "@/components/shared/athlete/ReseauxSociaux";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { limiterBadgesFiche } from "@/lib/badges/carteBadges";
 import { createPortal } from "react-dom";
@@ -982,13 +984,13 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     const identityCols = isSelfPreview
       ? "first_name, last_name, photo_url, numero_jersey, date_naissance,"
       : "";
-    supabase
+    const lireFiche = (colsReseaux: string) => supabase
       .from("athletes")
       .select(`
         id, user_id, ${identityCols}
         verified, profile_completion, last_profile_validation,
         annee_diplomation, genre,
-        video_faits_saillants_url, hudl_url, youtube_url, instagram_url,
+        video_faits_saillants_url, hudl_url, youtube_url, instagram_url, ${colsReseaux}
         video_match_complet_url, video_entrainement_url,
         moyenne_generale, matieres_fortes, mentions_academiques,
         programme_cegep_vise, programmes_vises, ouvert_cegep_prive, ouvert_cegep_anglophone,
@@ -1017,7 +1019,13 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         users!athletes_coach_id_fkey(first_name, last_name)
       ` as unknown as "*")
       .eq("id", id)
-      .single()
+      .single();
+    /* Réseaux sociaux (2026-10-18) : sur une base SANS la migration 20261018150000, la colonne
+       inconnue ferait échouer toute la lecture — on relit alors sans eux. */
+    lireFiche("facebook_url, tiktok_url, linkedin_url,")
+      .then((res) => (res.error && (res.error.code === "42703" || /facebook_url|tiktok_url|linkedin_url/.test(res.error.message ?? ""))
+        ? lireFiche("")
+        : res))
       .then(async ({ data, error }) => {
         if (error || !data) { setLoadingAthlete(false); return; }
 
@@ -1131,6 +1139,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           hudlUrl: (d.hudl_url as string) || "",
           youtubeUrl: (d.youtube_url as string) || "",
           instagramUrl: (d.instagram_url as string) || "",
+          facebookUrl: (d.facebook_url as string) || "",
+          tiktokUrl: (d.tiktok_url as string) || "",
+          linkedinUrl: (d.linkedin_url as string) || "",
           fullGameUrl: (d.video_match_complet_url as string) || "",
           practiceVideoUrl: (d.video_entrainement_url as string) || "",
           gpa: (d.moyenne_generale as number) || undefined,
@@ -2095,16 +2106,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const mediaLinks: { label: string; url?: string; cle: ClePlateforme }[] = ([
     { url: a.hudlUrl, colonne: "hudl_url" },
     { url: a.youtubeUrl, colonne: "youtube_url" },
-    { url: a.instagramUrl, colonne: "instagram_url" },
   ] as { url?: string; colonne: string }[]).flatMap((m) => {
+    /* Href sûr (lib/liensSociaux) ; Instagram est passé dans « Réseaux sociaux » (BP 2026-10-18). */
     const p = plateformeDuLien(m.url, m.colonne);
-    return p && m.url ? [{ label: `Voir sur ${p.libelle}`, url: m.url, cle: p.cle }] : [];
+    const url = lienAffichable(m.url);
+    return p && url ? [{ label: `Voir sur ${p.libelle}`, url, cle: p.cle }] : [];
   });
+  const reseaux = { instagram_url: a.instagramUrl, facebook_url: a.facebookUrl, tiktok_url: a.tiktokUrl, linkedin_url: a.linkedinUrl };
   const liensVideo = ([
     { titre: "Faits saillants", url: a.highlightVideoUrl },
     { titre: "Match complet", url: a.fullGameUrl },
   ] as { titre: string; url?: string }[])
-    .map((v) => ({ ...v, p: plateformeDeUrl(v.url) }))
+    .map((v) => ({ ...v, url: lienAffichable(v.url) ?? undefined, p: plateformeDeUrl(v.url) }))
     .filter((v) => v.url && v.p);
 
   /* ── Statut recrutement label (lisible) ── */
@@ -2825,7 +2838,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 )}
 
                 {/* DETAILED liens média (Hudl/YouTube/IG) */}
-                {isDetailed && (a.hudlUrl || a.youtubeUrl || a.instagramUrl || liensVideo.length > 0) && (
+                {isDetailed && (mediaLinks.length > 0 || liensVideo.length > 0) && (
                   <section className={mobileSection}>
                     <h2 className={sectionLabel}>Liens externes</h2>
                     <div className="flex flex-col gap-2">
@@ -2851,6 +2864,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                         </a>
                       ))}
                     </div>
+                  </section>
+                )}
+
+                {/* Réseaux sociaux (BP 2026-10-18) : logos ronds, ouverts dans le navigateur intégré. */}
+                {aDesReseaux(reseaux) && (
+                  <section className={mobileSection}>
+                    <h2 className={sectionLabel}>Réseaux sociaux</h2>
+                    <ReseauxSociaux liens={reseaux} />
                   </section>
                 )}
               </>

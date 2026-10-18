@@ -25,7 +25,7 @@ import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
 import type { AthleteProfileViewerMode } from "@/components/shared/AthleteRecruiterProfileBody";
 
-/** Les 61 colonnes de public.partner_athlete_profile, telles que la RPC les
+/** Les 65 colonnes de public.partner_athlete_profile (61 + les 4 réseaux sociaux, 2026-10-18), telles que la RPC les
  *  RETOURNE (verifie contre son RETURNS TABLE). Toute colonne absente d'ici
  *  n'existe pas cote partenaire — et c'est le seul endroit ou le verifier.
  *
@@ -92,6 +92,13 @@ type PartnerRpcRow = {
   /* ── Lot 5 — videos secondaires ─────────────────────────────────────── */
   video_match_complet_url: string | null;
   video_entrainement_url: string | null;
+
+  /* ── Réseaux sociaux — ouverts au partenaire par décision BP (2026-10-18,
+     migration 20261018150000), toujours pour un athlète ACTIF consentant. ── */
+  instagram_url: string | null;
+  facebook_url: string | null;
+  tiktok_url: string | null;
+  linkedin_url: string | null;
 
   /* ── Lot 7 — parcours d'equipes (JSONB brut, parseTeamHistory s'en
      charge : il accepte deja tableau, chaine ou n'importe quoi) ────────── */
@@ -307,12 +314,15 @@ type PartnerAdaptedRow = {
      13 fiches sur 48. Il reste masque a l'ecran ET absent de la RPC, ou un
      garde-fou SQL refuse son retour silencieux.
 
-     INSTAGRAM — hors lot. Ce n'est pas une video de sport, c'est le compte
-     personnel d'un mineur. L'ouvrir se decide, ne se deduit pas. */
+     INSTAGRAM — DÉCIDÉ le 2026-10-18 (BP) : le partenaire voit les réseaux
+     sociaux (Instagram, Facebook, TikTok, LinkedIn), projetés par la RPC. */
   recruitment_status: null;
   statut_recrutement_override: null;
   open_to_offers: null;
-  instagram_url: null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  tiktok_url: string | null;
+  linkedin_url: string | null;
 };
 
 /**
@@ -456,12 +466,16 @@ function adaptPartnerRow(r: PartnerRpcRow): PartnerAdaptedRow {
     video_match_complet_url: r.video_match_complet_url,
     video_entrainement_url: r.video_entrainement_url,
 
-    /* Absences qui restent : statut de recrutement (commercialement
-       sensible) et Instagram (hors lot). Voir le type ci-dessus. */
+    /* Absence qui reste : statut de recrutement (commercialement sensible).
+       Réseaux sociaux : ouverts au partenaire (BP 2026-10-18). Une RPC encore
+       à 61 colonnes (prod sans la migration) les rend undefined → null. */
     recruitment_status: null,
     statut_recrutement_override: null,
     open_to_offers: null,
-    instagram_url: null,
+    instagram_url: r.instagram_url ?? null,
+    facebook_url: r.facebook_url ?? null,
+    tiktok_url: r.tiktok_url ?? null,
+    linkedin_url: r.linkedin_url ?? null,
   };
 }
 
@@ -571,7 +585,7 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
     /* REQUETE DIRECTE — chemin RECRUTEUR et APERCU ATHLETE uniquement.
        Le partenaire ne passe plus par ici depuis le 2026-08-19 (point 5a du
        chantier RLS partenaire) : voir `source` juste apres. */
-    const directQuery = supabase
+    const lireDirect = (colsReseaux: string) => supabase
       .from("athletes")
       .select(`
         id,
@@ -586,6 +600,7 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
         hudl_url,
         youtube_url,
         instagram_url,
+        ${colsReseaux}
         video_match_complet_url,
         video_entrainement_url,
         moyenne_generale,
@@ -666,6 +681,18 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
        L'adaptateur redonne a la ligne la FORME que le mapping ci-dessous
        attend. Les champs qui restent absents le sont PAR DECISION, une par
        une, ecrites sur le type PartnerAdaptedRow. */
+    /* Réseaux sociaux (2026-10-18) : sur une base SANS la migration 20261018150000, la colonne
+       inconnue ferait échouer toute la lecture — on relit alors sans eux (fiche intacte, pas de
+       réseaux). Construit seulement sur ce chemin : le partenaire ne déclenche aucune requête ici. */
+    type Lecture = { data: unknown; error: unknown };
+    const lireDirectAvecRepli = (): PromiseLike<Lecture> =>
+      (lireDirect("facebook_url, tiktok_url, linkedin_url,") as unknown as PromiseLike<Lecture>).then((res) => {
+        const e = res.error as { code?: string; message?: string } | null;
+        if (e && (e.code === "42703" || /facebook_url|tiktok_url|linkedin_url/.test(e.message ?? ""))) {
+          return lireDirect("") as unknown as PromiseLike<Lecture>;
+        }
+        return res;
+      });
     const source: PromiseLike<{ data: unknown; error: unknown }> = isPartner
       ? supabase
           .rpc("partner_athlete_profile", { p_athlete_id: id })
@@ -674,7 +701,7 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
             data: r.data ? adaptPartnerRow(r.data as PartnerRpcRow) : null,
             error: r.error,
           }))
-      : (directQuery as unknown as PromiseLike<{ data: unknown; error: unknown }>);
+      : lireDirectAvecRepli();
 
     /* EN PARALLÈLE (recette 1.4.4, onglet Infos lent sur mobile) : l'identité
        (RPC recruteur) et le référent ne dépendent QUE de l'id — ils partaient
@@ -832,6 +859,9 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
           hudlUrl: (d.hudl_url as string) || "",
           youtubeUrl: (d.youtube_url as string) || "",
           instagramUrl: (d.instagram_url as string) || "",
+          facebookUrl: (d.facebook_url as string) || "",
+          tiktokUrl: (d.tiktok_url as string) || "",
+          linkedinUrl: (d.linkedin_url as string) || "",
           fullGameUrl: (d.video_match_complet_url as string) || "",
           practiceVideoUrl: (d.video_entrainement_url as string) || "",
           gpa: (d.moyenne_generale as number) || undefined,

@@ -36,6 +36,8 @@ import LignesEquipe from "@/components/athlete/LignesEquipe";
 import { apercuCodeEquipe, nomsAffichablesCode } from "@/lib/invitations/apercuCodeEquipe";
 import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
+import ChampsReseauxSociaux from "@/components/shared/athlete/ChampsReseauxSociaux";
+import { pourEnregistrerLien, pourEnregistrerReseau } from "@/lib/liensSociaux";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -905,6 +907,10 @@ function AthleteOnboardingDesktop() {
   const [hudlLink, setHudlLink] = useState("");
   const [youtubeLink, setYoutubeLink] = useState("");
   const [instagramLink, setInstagramLink] = useState("");
+  // Profils de réseaux sociaux (BP 2026-10-18).
+  const [facebookLink, setFacebookLink] = useState("");
+  const [tiktokLink, setTiktokLink] = useState("");
+  const [linkedinLink, setLinkedinLink] = useState("");
 
   // Parent / Guardian
   const [parentFirstName, setParentFirstName] = useState("");
@@ -1225,6 +1231,9 @@ function AthleteOnboardingDesktop() {
         if (existing.hudl_url) setHudlLink(existing.hudl_url);
         if (existing.youtube_url) setYoutubeLink(existing.youtube_url);
         if (existing.instagram_url) setInstagramLink(existing.instagram_url);
+        if (existing.facebook_url) setFacebookLink(existing.facebook_url);
+        if (existing.tiktok_url) setTiktokLink(existing.tiktok_url);
+        if (existing.linkedin_url) setLinkedinLink(existing.linkedin_url);
         // Resume at first incomplete step. Step 1 completion gate
         // mirrors canProceed() — for civil context, school_id can
         // legitimately be NULL ("Continuer sans équipe"), so we
@@ -1347,6 +1356,9 @@ function AthleteOnboardingDesktop() {
     if (full.hudl_url) setHudlLink(full.hudl_url);
     if (full.youtube_url) setYoutubeLink(full.youtube_url);
     if (full.instagram_url) setInstagramLink(full.instagram_url);
+    if (full.facebook_url) setFacebookLink(full.facebook_url);
+    if (full.tiktok_url) setTiktokLink(full.tiktok_url);
+    if (full.linkedin_url) setLinkedinLink(full.linkedin_url);
 
     // Critical: route every downstream save into the UPDATE branch
     // targeting the orphan row. The athleteRecord payload already
@@ -1729,10 +1741,14 @@ function AthleteOnboardingDesktop() {
       sport_id: sportData?.id || null,
       position_id: positionId,
       numero_jersey: jerseyNumber || null,
-      video_faits_saillants_url: highlightVideo || null,
-      hudl_url: hudlLink || null,
-      youtube_url: youtubeLink || null,
-      instagram_url: instagramLink || null,
+      // Liens normalisés (lib/liensSociaux) : jamais une valeur que la base refuserait.
+      video_faits_saillants_url: pourEnregistrerLien(highlightVideo),
+      hudl_url: pourEnregistrerLien(hudlLink),
+      youtube_url: pourEnregistrerLien(youtubeLink),
+      instagram_url: pourEnregistrerReseau("instagram", instagramLink),
+      facebook_url: pourEnregistrerReseau("facebook", facebookLink),
+      tiktok_url: pourEnregistrerReseau("tiktok", tiktokLink),
+      linkedin_url: pourEnregistrerReseau("linkedin", linkedinLink),
       // Parent / Guardian
       nom_parent: `${parentFirstName.trim()} ${parentLastName.trim()}`.trim() || null,
       parent_first_name: parentFirstName.trim() || null,
@@ -2542,8 +2558,16 @@ function AthleteOnboardingDesktop() {
               <div><label className={labelCls}>Faits saillants</label><input type="url" value={highlightVideo} onChange={(e) => setHighlightVideo(e.target.value)} placeholder="https://..." className={inputCls} /></div>
               <div><label className={labelCls}>Hudl</label><input type="url" value={hudlLink} onChange={(e) => setHudlLink(e.target.value)} placeholder="https://hudl.com/..." className={inputCls} /></div>
               <div><label className={labelCls}>YouTube</label><input type="url" value={youtubeLink} onChange={(e) => setYoutubeLink(e.target.value)} placeholder="https://youtube.com/..." className={inputCls} /></div>
-              <div><label className={labelCls}>Instagram</label><input type="url" value={instagramLink} onChange={(e) => setInstagramLink(e.target.value)} placeholder="https://instagram.com/..." className={inputCls} /></div>
             </div>
+
+            {/* Réseaux sociaux (BP 2026-10-18) : logo, « @pseudo » ou lien → URL du profil. */}
+            <div className={`${sectionTitle} mt-6`}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Réseaux sociaux</div>
+            <ChampsReseauxSociaux
+              labelCls={labelCls}
+              inputCls={inputCls}
+              valeurs={{ instagram: instagramLink, facebook: facebookLink, tiktok: tiktokLink, linkedin: linkedinLink }}
+              onChange={(cle, v) => ({ instagram: setInstagramLink, facebook: setFacebookLink, tiktok: setTiktokLink, linkedin: setLinkedinLink })[cle](v)}
+            />
           </div>
         )}
 

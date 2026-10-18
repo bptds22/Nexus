@@ -294,6 +294,10 @@ export interface AthleteFormMedia {
   hudlLink: string;
   youtubeLink: string;
   instagramLink: string;
+  /** Profils de réseaux sociaux (BP 2026-10-18). */
+  facebookLink: string;
+  tiktokLink: string;
+  linkedinLink: string;
   highlightVideo: string;
   fullGameVideo: string;
   trainingVideo: string;
@@ -826,6 +830,10 @@ export interface AthleteProfileRecruiterView {
   hudlUrl?: string;
   youtubeUrl?: string;
   instagramUrl?: string;
+  /** Profils de réseaux sociaux (BP 2026-10-18, migration 20261018150000). */
+  facebookUrl?: string;
+  tiktokUrl?: string;
+  linkedinUrl?: string;
   fullGameUrl?: string;
   practiceVideoUrl?: string;
 
