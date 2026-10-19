@@ -21,6 +21,8 @@
      sinon « Réclamée — profil non visible ». Les autres issues restent sans nom.
 ═══════════════════════════════════════════════════════════════ */
 
+import NotesDepistageCarte from "@/components/partenaire/NotesDepistageCarte";
+import { useComptesDepistagePartenaire } from "@/lib/gameOn/useGameOn";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -202,6 +204,7 @@ export default function CartesEnAttenteWeb({ propositionsSeulement = false, onTo
   };
 
   const nbParCarte = useMemo(() => parCarte(rapprochements), [rapprochements]);
+  const comptesDepistage = useComptesDepistagePartenaire().data;
   // Les réclamations dont le jeune est visible vivent dans « Mes évaluations » (6.1).
   const terminesTries = useMemo(() => [...terminees].filter((t) => !estReclameeVisible(t))
     .sort((a, b) => b.termineeLe.localeCompare(a.termineeLe)), [terminees]);
@@ -284,6 +287,7 @@ export default function CartesEnAttenteWeb({ propositionsSeulement = false, onTo
                         </div>
                         {/* P2/P3 : c'est le partenaire qui décide, comme le recruteur. */}
                         <LienRapprochementCarte n={nbParCarte.get(c.id) ?? 0} onVoir={() => setFenetre({ carteId: c.id })} />
+                        <NotesDepistageCarte carteId={c.id} nb={comptesDepistage?.get(c.id) ?? 0} />
                       </div>
                       <p className={`text-[12px] shrink-0 ${jours <= 7 ? "text-[#F59E0B]" : "text-[#6b7280]"}`}>
                         Expire le {dateCourte(c.expireLe)}{jours <= 7 ? ` (${jours} j)` : ""}

@@ -5,20 +5,21 @@
    il ne reste qu'à choisir la couleur des chandails. Libellé : lib/gameOn/libelles. */
 
 import Link from "next/link";
-import { DEPISTAGE, lienDepister } from "@/lib/gameOn/libelles";
+import { DEPISTAGE, lienDepister, type ModeDepistage } from "@/lib/gameOn/libelles";
 import { triggerHaptic } from "@/lib/haptics";
 
-export default function BoutonDepister({ gameId, equipeA, equipeB, lieu, className, onClick }: {
+export default function BoutonDepister({ gameId, equipeA, equipeB, lieu, className, onClick, mode = "recruteur" }: {
   gameId: string;
   equipeA: string;
   equipeB: string;
   lieu?: string | null;
   className?: string;
   onClick?: () => void;
+  mode?: ModeDepistage;
 }) {
   return (
     <Link
-      href={lienDepister({ gameId, equipeA, equipeB, lieu })}
+      href={lienDepister({ gameId, equipeA, equipeB, lieu }, mode)}
       data-testid="depister-ce-match"
       onClick={(e) => { e.stopPropagation(); triggerHaptic("Light"); onClick?.(); }}
       className={className ?? "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#E63946] px-4 text-[14px] font-bold text-white active:bg-[#D42B22] hover:bg-[#D42B22]"}

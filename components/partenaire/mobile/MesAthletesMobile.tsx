@@ -25,6 +25,8 @@
    Tout ce qui est fixe est porté sur <body> (AnimatedRoute piège le fixed).
 ═══════════════════════════════════════════════════════════════ */
 
+import NotesDepistageCarte from "@/components/partenaire/NotesDepistageCarte";
+import { useComptesDepistagePartenaire } from "@/lib/gameOn/useGameOn";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -184,11 +186,13 @@ const ICONES = {
 
 /* ── Rangée d'une carte active ────────────────────────────────── */
 
-function RangeeCarte({ c, noms, occupe, nbRapprochements, onOptions, onVoirRapprochements }: {
+function RangeeCarte({ c, noms, occupe, nbRapprochements, nbDepistage = 0, onOptions, onVoirRapprochements }: {
   c: CartePartenaire;
   noms: { sports: Record<string, string>; positions: Record<string, string>; ecoles: Record<string, string>; equipes: Record<string, string> };
   occupe: boolean;
   nbRapprochements: number;
+  /** Notes de dépistage liées à la carte (BP 2026-10-19). */
+  nbDepistage?: number;
   onOptions: () => void;
   onVoirRapprochements: () => void;
 }) {
@@ -239,6 +243,11 @@ function RangeeCarte({ c, noms, occupe, nbRapprochements, onOptions, onVoirRappr
       {nbRapprochements > 0 && (
         <div className="px-4 pb-3 -mt-2">
           <LienRapprochementCarte n={nbRapprochements} onVoir={onVoirRapprochements} />
+        </div>
+      )}
+      {nbDepistage > 0 && (
+        <div className="px-4 pb-3 -mt-2">
+          <NotesDepistageCarte carteId={c.id} nb={nbDepistage} />
         </div>
       )}
     </div>
@@ -453,6 +462,7 @@ export default function MesAthletesMobile({ propositionsSeulement = false, onTou
   };
 
   const nbParCarte = useMemo(() => parCarte(rapprochements), [rapprochements]);
+  const comptesDepistage = useComptesDepistagePartenaire().data;
   // Les réclamations dont le jeune est visible vivent dans « Mes évaluations » (6.1).
   const terminesTries = useMemo(() => [...terminees].filter((t) => !estReclameeVisible(t))
     .sort((a, b) => b.termineeLe.localeCompare(a.termineeLe)), [terminees]);
@@ -531,6 +541,7 @@ export default function MesAthletesMobile({ propositionsSeulement = false, onTou
                           noms={noms}
                           occupe={occupe === c.id}
                           nbRapprochements={nbParCarte.get(c.id) ?? 0}
+                          nbDepistage={comptesDepistage?.get(c.id) ?? 0}
                           onOptions={() => setMenu(c)}
                           onVoirRapprochements={() => setFenetre({ carteId: c.id })}
                         />

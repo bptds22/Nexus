@@ -17,6 +17,7 @@ begin
   end if;
 end $$;
 
+drop function public.partenaire_depistage_compte();
 drop function public.partenaire_prospect_notes_match(uuid);
 drop function public.partenaire_depistage_cartes(uuid[], uuid[]);
 drop function public.partenaire_match_notes_lier(uuid, text, text, text, uuid);

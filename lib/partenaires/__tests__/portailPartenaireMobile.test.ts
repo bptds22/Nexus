@@ -73,7 +73,7 @@ test("aucune page du portail n'est un composant serveur (l'export statique les r
     }
   };
   parcourir("app/partenaire");
-  assert.equal(pages.length, 12);
+  assert.equal(pages.length, 13); // + /partenaire/depistage (2026-10-19)
   for (const p of pages) {
     const src = lire(p);
     assert.doesNotMatch(src, /lib\/supabase\/server/, p);

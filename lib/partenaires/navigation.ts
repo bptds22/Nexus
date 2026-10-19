@@ -13,7 +13,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export const ENTREES_EVALUATION: readonly string[] = ["/partenaire/mes-athletes", "/partenaire/prospects"];
+// Dépistage (BP 2026-10-19) : ses notes vont à ses cartes — même règle.
+export const ENTREES_EVALUATION: readonly string[] = ["/partenaire/mes-athletes", "/partenaire/prospects", "/partenaire/depistage"];
 
 export function entreeVisible(href: string, peutEvaluer: boolean | null | undefined): boolean {
   return !ENTREES_EVALUATION.includes(href) || peutEvaluer === true;

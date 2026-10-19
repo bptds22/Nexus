@@ -202,8 +202,10 @@ test("Dépister ce match : le lien porte le match et ses deux équipes", () => {
     assert.ok(lire(p).includes("<BoutonDepister gameId="), p);
   }
   // Le bouton de la carte des matchs est réservé au recruteur.
-  assert.ok(lire("components/carte-matchs/CarteMatchs.tsx").includes('{mode === "recruteur" && <BoutonDepister'));
-  assert.ok(lire("components/carte-matchs/CarteMatchsMobile.tsx").includes("{!partenaire && <BoutonDepister"));
+  // BP 2026-10-19 : le partenaire dépiste aussi, vers SA route.
+  assert.ok(lire("components/carte-matchs/CarteMatchs.tsx").includes('mode={mode === "partenaire" ? "partenaire" : "recruteur"} />'));
+  assert.ok(lire("components/carte-matchs/CarteMatchsMobile.tsx").includes('mode={partenaire ? "partenaire" : "recruteur"} />'));
+  assert.ok(lienDepister({ gameId: id, equipeA: "A", equipeB: "B" }, "partenaire").startsWith("/partenaire/depistage?"));
 });
 
 test("tableau de bord : quatre pastilles, plus de liste « Matchs d'aujourd'hui »", () => {
@@ -225,8 +227,8 @@ test("tableau de bord : quatre pastilles, plus de liste « Matchs d'aujourd'hui 
   const ui = lire("components/game-on/GameOn.tsx");
   assert.ok(!ui.includes("useMatchsRecherche"), "aucune 3e liste de matchs");
   assert.ok(!ui.includes("Matchs d'aujourd'hui"));
-  assert.ok(ui.includes("useCalendrierUnite(true)"), "les matchs du jour viennent du calendrier");
-  assert.ok(ui.includes('href="/recruteur/carte-matchs"'), "Trouver un match → la carte des matchs");
+  assert.ok(ui.includes('useCalendrierUnite(mode === "recruteur")'), "les matchs du jour viennent du calendrier (recruteur)");
+  assert.ok(ui.includes('href={mode === "partenaire" ? "/partenaire/carte-matchs" : "/recruteur/carte-matchs"}'), "Trouver un match → la carte des matchs");
   assert.ok(lire("app/recruteur/game-on/page.tsx").includes("<Suspense"), "useSearchParams sous Suspense (export statique)");
 });
 

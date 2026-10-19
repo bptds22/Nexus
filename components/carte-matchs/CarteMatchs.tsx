@@ -537,8 +537,8 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
       )}
 
       <div className="pcta">
-        {/* Dépistage (BP 2026-10-18) : ouvre la séance avec ce match et ses deux équipes. Recruteur seulement. */}
-        {mode === "recruteur" && <BoutonDepister gameId={m.id} equipeA={m.domicile} equipeB={m.visiteur} lieu={m.terrain} className="btn target" />}
+        {/* Dépistage (BP 2026-10-18) : ouvre la séance avec ce match et ses deux équipes. Partenaire aussi (2026-10-19). */}
+        <BoutonDepister gameId={m.id} equipeA={m.domicile} equipeB={m.visiteur} lieu={m.terrain} className="btn target" mode={mode === "partenaire" ? "partenaire" : "recruteur"} />
         {t && <a className="btn page" href={lienItineraire(t.lat, t.lon)} target="_blank" rel="noopener noreferrer">Itinéraire</a>}
         <button className="btn target" data-testid="panneau-calendrier" data-etat={etat}
           disabled={etat === "SUIVI" || enCours === m.id} onClick={() => onCalendrier(m)}>

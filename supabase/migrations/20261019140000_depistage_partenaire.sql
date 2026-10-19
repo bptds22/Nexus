@@ -13,6 +13,7 @@
 --     sur la carte s'il manque.
 --   · partenaire_depistage_cartes : ses cartes actives des écoles / équipes du match.
 --   · partenaire_prospect_notes_match : les notes de dépistage liées à une de ses cartes.
+--   · partenaire_depistage_compte : combien de notes de dépistage par carte (Mes athlètes).
 --
 -- Partenaire admis = partenaire_admis() + sa ligne media_partners (user_id = auth.uid()) avec
 -- peut_evaluer. Cartes visées : statut A_ENVOYER, ENVOYEE, RESERVEE ou CONFIRMEE_ATTENTE_OPTIN.
@@ -262,15 +263,30 @@ as $$
    order by n.note_le
 $$;
 
+create function public.partenaire_depistage_compte()
+returns table (prospect_id uuid, nb integer)
+language sql stable security definer
+set search_path = public
+set row_security = off
+as $$
+  select n.partenaire_prospect_id, count(*)::int
+    from public.match_notes n
+    join public.partenaire_prospects c on c.id = n.partenaire_prospect_id
+   where c.partner_id = public.depistage_mon_partenaire()
+   group by n.partenaire_prospect_id
+$$;
+
 -- ── 6. ACL : poser, puis vérifier la liste COMPLÈTE triée ─────────────────
 revoke all on function public.depistage_mon_partenaire()                                   from public, anon, authenticated;
 revoke all on function public.partenaire_match_notes_lier(uuid, text, text, text, uuid)    from public, anon, authenticated;
 revoke all on function public.partenaire_depistage_cartes(uuid[], uuid[])                  from public, anon, authenticated;
 revoke all on function public.partenaire_prospect_notes_match(uuid)                        from public, anon, authenticated;
+revoke all on function public.partenaire_depistage_compte()                                from public, anon, authenticated;
 grant execute on function public.depistage_mon_partenaire()                                to service_role;
 grant execute on function public.partenaire_match_notes_lier(uuid, text, text, text, uuid) to authenticated, service_role;
 grant execute on function public.partenaire_depistage_cartes(uuid[], uuid[])               to authenticated, service_role;
 grant execute on function public.partenaire_prospect_notes_match(uuid)                     to authenticated, service_role;
+grant execute on function public.partenaire_depistage_compte()                             to authenticated, service_role;
 
 do $$
 declare
@@ -284,7 +300,8 @@ begin
       ('public.match_seances_recentes()'::regprocedure, array['authenticated','postgres','service_role']),
       ('public.partenaire_match_notes_lier(uuid,text,text,text,uuid)'::regprocedure, array['authenticated','postgres','service_role']),
       ('public.partenaire_depistage_cartes(uuid[],uuid[])'::regprocedure, array['authenticated','postgres','service_role']),
-      ('public.partenaire_prospect_notes_match(uuid)'::regprocedure, array['authenticated','postgres','service_role'])
+      ('public.partenaire_prospect_notes_match(uuid)'::regprocedure, array['authenticated','postgres','service_role']),
+      ('public.partenaire_depistage_compte()'::regprocedure, array['authenticated','postgres','service_role'])
     ) v(f, veut)
   loop
     select array_agg(t2.g order by t2.g) into vus

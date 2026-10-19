@@ -26,7 +26,7 @@
    estrades ne bloque jamais une note.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -49,7 +49,7 @@ import EnTeteMobilePartenaire from "@/components/partenaire/mobile/EnTeteMobileP
 import CreerCarteModal, { type PrerempliCarte } from "@/components/recruteur/cartes/CreerCarteModal";
 import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { triggerHaptic } from "@/lib/haptics";
-import { DEPISTAGE, ROUTE_DEPISTAGE, lireDepister } from "@/lib/gameOn/libelles";
+import { DEPISTAGE, lireDepister, routeDepistage, type ModeDepistage } from "@/lib/gameOn/libelles";
 import {
   CHANDAILS, PASTILLES, cleJoueur, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, connusDuCote, heureLigne, joueurConnu, libelleJoueur, messageErreur, nomCourt, prenomDe,
   notesEnAttente, numeroValide, noteValide, pastilleParDefaut, pastillesCote, rangerSeances, resumeEnvoi, suggestionsTri,
@@ -57,7 +57,7 @@ import {
   type Cote, type GroupeJoueur, type NoteAffichee, type Pastille, type SeanceLocale, type Suggestion,
 } from "@/lib/gameOn/gameOn";
 import {
-  nouvelId, useAthletesMatch, useCartesUnite, useEquipesMatch, useNotesSeance, useSeancesRecentes, useStockGameOn,
+  nouvelId, useAthletesMatch, useCartesPartenaire, useCartesUnite, useEquipesMatch, useNotesCartePartenaire, useNotesSeance, useSeancesRecentes, useStockGameOn,
   type EquipeMatch, type SeanceServeur,
 } from "@/lib/gameOn/useGameOn";
 
@@ -75,7 +75,30 @@ type Vue = { type: "choix" } | { type: "match"; seance: string } | { type: "trie
 /** Un match à lancer : on demande d'abord la couleur des chandails (à chaque match). */
 type ALancer = { equipeA: string; equipeB: string; lancer: (ca: string, cb: string) => void };
 
-export default function GameOn({ mobile = false }: { mobile?: boolean }) {
+/* Le mode (BP 2026-10-19) : le PARTENAIRE dépiste aussi. Ses notes vont à SES cartes « En attente »
+   (fonctions partenaire_*), sans athlètes Nexus à lier ni fil de processus d'unité. */
+const ModeCtx = createContext<ModeDepistage>("recruteur");
+const useMode = () => useContext(ModeCtx);
+
+/** Les cartes du mode : celles de l'unité (recruteur) ou celles du partenaire. */
+function useCartesDepistage(ecoles: readonly string[], idsEquipes: readonly string[]) {
+  const partenaire = useMode() === "partenaire";
+  const unite = useCartesUnite(partenaire ? AUCUNE : ecoles, partenaire ? AUCUNE : idsEquipes);
+  const siennes = useCartesPartenaire(ecoles, idsEquipes, partenaire);
+  return partenaire ? siennes : unite;
+}
+const AUCUNE: readonly string[] = [];
+
+export default function GameOn({ mobile = false, mode = "recruteur" }: { mobile?: boolean; mode?: ModeDepistage }) {
+  return (
+    <ModeCtx.Provider value={mode}>
+      <GameOnEcrans mobile={mobile} />
+    </ModeCtx.Provider>
+  );
+}
+
+function GameOnEcrans({ mobile }: { mobile: boolean }) {
+  const mode = useMode();
   const st = useStockGameOn();
   const { data: user } = useCurrentUser();
   const moi = user?.authUser.id ?? null;
@@ -99,7 +122,7 @@ export default function GameOn({ mobile = false }: { mobile?: boolean }) {
     const d = lireDepister(params);
     if (!d) return;
     lienLu.current = true;
-    router.replace(ROUTE_DEPISTAGE);
+    router.replace(routeDepistage(mode));
     const deja = Object.values(st.stock.seances).find((e) => e.seance.gameId === d.gameId && !e.seance.termineLe);
     // L'URL est une source EXTERNE (le lien suivi) : l'état se pose hors du corps de l'effet.
     queueMicrotask(() => {
@@ -118,7 +141,7 @@ export default function GameOn({ mobile = false }: { mobile?: boolean }) {
         },
       });
     });
-  }, [st, params, router]);
+  }, [st, params, router, mode]);
 
   // Une séance en cours sur l'appareil se rouvre d'elle-même (l'appli a pu être fermée en plein match).
   const active = st.stock.active ? st.stock.seances[st.stock.active] : null;
@@ -261,8 +284,9 @@ function EcranTableau({ st, seances, chargement, moi, onLancer, onMatch, onTrier
   const [lieu, setLieu] = useState("");
   const [choisie, setChoisie] = useState<Pastille | null>(null);
 
-  // Mes matchs du jour : ceux du calendrier de l'unité (aucune nouvelle liste de matchs).
-  const calendrierQ = useCalendrierUnite(true);
+  // Mes matchs du jour : ceux du calendrier de l'unité (aucune nouvelle liste de matchs). Partenaire : aucun.
+  const mode = useMode();
+  const calendrierQ = useCalendrierUnite(mode === "recruteur");
   const aujourdhui = useMemo(() => todayIso(), []);
   const duJour = useMemo(() => (calendrierQ.data?.games ?? [])
     .filter((g) => g.gameDate === aujourdhui)
@@ -389,7 +413,7 @@ function EcranTableau({ st, seances, chargement, moi, onLancer, onMatch, onTrier
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-2">
-        <Link href="/recruteur/carte-matchs" onClick={() => triggerHaptic("Light")} data-testid="trouver-match"
+        <Link href={mode === "partenaire" ? "/partenaire/carte-matchs" : "/recruteur/carte-matchs"} onClick={() => triggerHaptic("Light")} data-testid="trouver-match"
           className="flex h-12 items-center justify-center rounded-xl bg-[#E63946] text-[15px] font-bold text-white active:bg-[#D42B22]">
           {DEPISTAGE.trouver}
         </Link>
@@ -483,10 +507,11 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
   const groupes = useMemo(() => grouperParJoueur(notes, etat?.seance.prenoms), [notes, etat?.seance.prenoms]);
   // Joueur déjà connu (BP 2026-10-19) : athlètes Nexus du match et cartes de l'unité des deux équipes.
   const equipesQ = useEquipesMatch(etat?.seance.gameId);
-  const athletesQ = useAthletesMatch(etat?.seance.gameId);
+  const partenaire = useMode() === "partenaire";
+  const athletesQ = useAthletesMatch(partenaire ? null : etat?.seance.gameId);
   const idsEquipes = useMemo(() => [equipesQ.data?.A?.teamId, equipesQ.data?.B?.teamId].filter((x): x is string => !!x), [equipesQ.data]);
   const ecoles = useMemo(() => [equipesQ.data?.A?.etablissement?.id, equipesQ.data?.B?.etablissement?.id].filter((x): x is string => !!x), [equipesQ.data]);
-  const cartesQ = useCartesUnite(ecoles, idsEquipes);
+  const cartesQ = useCartesDepistage(ecoles, idsEquipes);
   if (!etat || !monte) return null;
   const s = etat.seance;
   const attente = notesEnAttente(etat).length;
@@ -815,16 +840,18 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, ecar
 const AVANT_MAX = 10;
 
 function NotesAvant({ connu, onPasLui }: { connu: Suggestion; onPasLui: () => void }) {
-  const carteQ = useNotesCarte(connu.type === "carte" ? connu.id : null);
-  const uniteQ = useNotesUnite(connu.type === "athlete" ? connu.id : null);
-  const q = connu.type === "carte" ? carteQ : uniteQ;
+  const partenaire = useMode() === "partenaire";
+  const carteQ = useNotesCarte(!partenaire && connu.type === "carte" ? connu.id : null);
+  const cartePartenaireQ = useNotesCartePartenaire(partenaire && connu.type === "carte" ? connu.id : null);
+  const uniteQ = useNotesUnite(!partenaire && connu.type === "athlete" ? connu.id : null);
+  const q = connu.type !== "carte" ? uniteQ : partenaire ? cartePartenaireQ : carteQ;
   const toutes = (q.data ?? []) as { id: string; content: string; created_at: string }[];
   const notes = toutes.slice(0, AVANT_MAX).reverse();
   return (
     <div className="mb-3" data-testid="fiche-joueur-avant">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="min-w-0 truncate text-[13px] font-bold text-[#22C55E]">
-          {connu.type === "carte" ? "Dans ton processus" : "Sur Nexus"} · {connu.nom}
+          {connu.type === "carte" ? (partenaire ? "Ta carte en attente" : "Dans ton processus") : "Sur Nexus"} · {connu.nom}
         </p>
         <button type="button" onClick={onPasLui} className="h-9 shrink-0 px-1 text-[12px] font-semibold text-white/50 underline">Pas lui</button>
       </div>
@@ -865,12 +892,13 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
   const attente = locale ? notesEnAttente(locale).length : 0;
 
   const equipesQ = useEquipesMatch(s?.gameId);
-  const athletesQ = useAthletesMatch(s?.gameId);
+  const partenaire = useMode() === "partenaire";
+  const athletesQ = useAthletesMatch(partenaire ? null : s?.gameId);
   const equipeDe = (c: Cote): EquipeMatch | null => (c === "A" ? equipesQ.data?.A : equipesQ.data?.B) ?? null;
   const idsEquipes = [equipesQ.data?.A?.teamId, equipesQ.data?.B?.teamId].filter((x): x is string => !!x);
 
   const ecoles = [equipesQ.data?.A?.etablissement?.id, equipesQ.data?.B?.etablissement?.id].filter((x): x is string => !!x);
-  const cartesQ = useCartesUnite(ecoles, idsEquipes);
+  const cartesQ = useCartesDepistage(ecoles, idsEquipes);
 
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [creer, setCreer] = useState<GroupeJoueur | null>(null);
@@ -882,6 +910,14 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
   // « Match X vs Y, date » et les notes.
   const lierUn = async (g: GroupeJoueur, cible: { athleteId?: string; carteId?: string } | null): Promise<{ erreur: string } | { recopie: boolean }> => {
     const supabase = createClient();
+    if (partenaire) {
+      // Partenaire : la base range les notes sur SA carte (et y pose le numéro s'il manque). Pas de fil à recopier.
+      if (cible?.athleteId) return { erreur: "Un partenaire lie ses notes à ses cartes." };
+      const { error: ep } = await supabase.rpc("partenaire_match_notes_lier", {
+        p_seance: seanceId, p_cote: g.cote, p_numero: g.numero, p_prenom: g.prenom, p_prospect_id: cible?.carteId ?? null,
+      });
+      return ep ? { erreur: messageErreur(ep) } : { recopie: true };
+    }
     const { error } = await supabase.rpc("match_notes_lier", {
       p_seance: seanceId, p_cote: g.cote, p_numero: g.numero, p_prenom: g.prenom,
       p_athlete_id: cible?.athleteId ?? null, p_carte_id: cible?.carteId ?? null,
@@ -906,7 +942,7 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
       if ("erreur" in r) { avis(r.erreur, true); return; }
       if (cible) {
         if (!r.recopie) avis("Lié, mais la note n'a pas pu être recopiée dans la fiche.", true);
-        else avis(`${libelleJoueur(g)} lié${nom ? ` à ${nom}` : ""} — notes ajoutées à son fil.`);
+        else avis(`${libelleJoueur(g)} lié${nom ? ` à ${nom}` : ""} — notes ajoutées à ${partenaire ? "sa carte" : "son fil"}.`);
         void invaliderTableauBlanc(qc);
       } else {
         avis(`${libelleJoueur(g)} gardé sans lien.`);
@@ -993,7 +1029,7 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
                 onOuvrir={() => setOuvert((v) => (v === g.cle ? null : g.cle))}
                 onLier={(sug) => void lier(g, sug.type === "carte" ? { carteId: sug.id } : { athleteId: sug.id }, sug.nom)}
                 onLierAthlete={(id, nom) => void lier(g, { athleteId: id }, nom)}
-                onCreer={() => setCreer(g)}
+                onCreer={partenaire ? null : () => setCreer(g)}
                 onGarder={() => void lier(g, null)} />
             ))}
           </ul>
@@ -1030,8 +1066,10 @@ function LigneTri({ g, couleur, ouvert, desactive, suggestions, onOuvrir, onLier
   g: GroupeJoueur; couleur: string; ouvert: boolean; desactive: boolean;
   suggestions: Suggestion[];
   onOuvrir: () => void; onLier: (s: Suggestion) => void; onLierAthlete: (id: string, nom: string) => void;
-  onCreer: () => void; onGarder: () => void;
+  /** null : pas de création ici (partenaire — ses cartes se créent dans Mes athlètes). */
+  onCreer: (() => void) | null; onGarder: () => void;
 }) {
+  const partenaire = useMode() === "partenaire";
   const [recherche, setRecherche] = useState(g.prenom ?? "");
   const [chercher, setChercher] = useState(false);
   const athletesQ = useAthleteAutocomplete(ouvert && chercher ? recherche : "");
@@ -1079,7 +1117,7 @@ function LigneTri({ g, couleur, ouvert, desactive, suggestions, onOuvrir, onLier
               </ul>
             )}
           </div>
-          <div>
+          {!partenaire && <div>
             {!chercher ? (
               <button type="button" onClick={() => setChercher(true)} className="text-[13px] font-bold text-white/70 underline">Chercher un autre athlète sur Nexus</button>
             ) : (
@@ -1104,9 +1142,9 @@ function LigneTri({ g, couleur, ouvert, desactive, suggestions, onOuvrir, onLier
                 )}
               </>
             )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" disabled={desactive} onClick={onCreer} className="h-12 rounded-xl bg-[#E63946] text-[14px] font-bold text-white disabled:opacity-40">Créer une carte</button>
+          </div>}
+          <div className={`grid gap-2 ${onCreer ? "grid-cols-2" : "grid-cols-1"}`}>
+            {onCreer && <button type="button" disabled={desactive} onClick={onCreer} className="h-12 rounded-xl bg-[#E63946] text-[14px] font-bold text-white disabled:opacity-40">Créer une carte</button>}
             <button type="button" disabled={desactive} onClick={onGarder} className="h-12 rounded-xl bg-white/[0.06] text-[14px] font-bold text-white/80 disabled:opacity-40">Garder sans lier</button>
           </div>
         </div>

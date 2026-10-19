@@ -430,3 +430,58 @@ export function useCartesUnite(ecoles: readonly string[], idsEquipes: readonly s
     },
   });
 }
+
+/** Les cartes « En attente » du PARTENAIRE des écoles et des équipes du match (BP 2026-10-19).
+ *  Fonction absente (prod sans la migration 20261019140000) : aucune carte, sans erreur. */
+export function useCartesPartenaire(ecoles: readonly string[], idsEquipes: readonly string[], actif = true) {
+  return useQuery<CarteCandidate[]>({
+    queryKey: ["game-on", "cartes-partenaire", ecoles.join(","), idsEquipes.join(",")],
+    enabled: actif && (ecoles.length > 0 || idsEquipes.length > 0),
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await createClient().rpc("partenaire_depistage_cartes", { p_ecoles: [...ecoles], p_equipes: [...idsEquipes] });
+      if (error) {
+        if (fonctionAbsente(error)) return [];
+        throw error;
+      }
+      return ((data ?? []) as { id: string; prenom: string | null; nom: string | null; numero: string | null; team_id: string | null; school_id: string | null; equipe: string | null }[])
+        .map((c) => ({ id: c.id, prenom: c.prenom ?? "", nom: c.nom ?? "", numero: c.numero, teamId: c.team_id, schoolId: c.school_id, equipe: c.equipe }));
+    },
+  });
+}
+
+/** Les notes de dépistage déjà liées à une carte du partenaire (le « fil » de sa carte). */
+export function useNotesCartePartenaire(prospectId: string | null) {
+  return useQuery<{ id: string; content: string; created_at: string }[]>({
+    queryKey: ["game-on", "notes-carte-partenaire", prospectId],
+    enabled: !!prospectId,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await createClient().rpc("partenaire_prospect_notes_match", { p_prospect_id: prospectId });
+      if (error) {
+        if (fonctionAbsente(error)) return [];
+        throw error;
+      }
+      const lignes = (data ?? []) as { id: string; note_le: string; texte: string; equipe_a: string; equipe_b: string | null; commence_le: string }[];
+      // Du plus récent au plus ancien, comme useNotesCarte ; le match en tête de chaque note.
+      return lignes.map((n) => ({
+        id: n.id, created_at: n.note_le,
+        content: `${n.equipe_b ? `${n.equipe_a} vs ${n.equipe_b}` : n.equipe_a}\n${n.texte}`,
+      })).reverse();
+    },
+  });
+}
+
+/** Combien de notes de dépistage par carte du partenaire (Mes athlètes) ; vide sans la migration. */
+export function useComptesDepistagePartenaire(actif = true) {
+  return useQuery<Map<string, number>>({
+    queryKey: ["game-on", "comptes-partenaire"],
+    enabled: actif,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await createClient().rpc("partenaire_depistage_compte");
+      if (error) return new Map();
+      return new Map(((data ?? []) as { prospect_id: string; nb: number }[]).map((r) => [r.prospect_id, r.nb]));
+    },
+  });
+}

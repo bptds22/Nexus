@@ -24,12 +24,20 @@ export const DEPISTAGE = {
 
 /** La route de l'écran (inchangée depuis « Game On »). */
 export const ROUTE_DEPISTAGE = "/recruteur/game-on";
+/** Le Dépistage du partenaire (BP 2026-10-19) : ses notes vont à ses cartes « En attente ». */
+export const ROUTE_DEPISTAGE_PARTENAIRE = "/partenaire/depistage";
+
+export type ModeDepistage = "recruteur" | "partenaire";
+
+export function routeDepistage(mode: ModeDepistage = "recruteur"): string {
+  return mode === "partenaire" ? ROUTE_DEPISTAGE_PARTENAIRE : ROUTE_DEPISTAGE;
+}
 
 /** Lien « Dépister ce match » : le match et ses deux équipes voyagent dans l'URL. */
-export function lienDepister(m: { gameId: string; equipeA: string; equipeB: string; lieu?: string | null }): string {
+export function lienDepister(m: { gameId: string; equipeA: string; equipeB: string; lieu?: string | null }, mode: ModeDepistage = "recruteur"): string {
   const p = new URLSearchParams({ match: m.gameId, a: m.equipeA, b: m.equipeB });
   if (m.lieu) p.set("lieu", m.lieu);
-  return `${ROUTE_DEPISTAGE}?${p.toString()}`;
+  return `${routeDepistage(mode)}?${p.toString()}`;
 }
 
 /** Lecture des paramètres d'un lien « Dépister ce match » ; null si le match manque. */
