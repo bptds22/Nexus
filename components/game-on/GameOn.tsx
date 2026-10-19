@@ -31,7 +31,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FeuilleBas } from "@/components/mobile/FeuilleBas";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useCalendrierUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
@@ -50,6 +50,7 @@ import ChampNote from "@/components/shared/ChampNote";
 import EnTeteMobilePartenaire from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
 import CreerCarteModal, { type PrerempliCarte } from "@/components/recruteur/cartes/CreerCarteModal";
 import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
+import FormulaireCarte from "@/components/partenaire/prospects/FormulaireCarte";
 import { triggerHaptic } from "@/lib/haptics";
 import { DEPISTAGE, lireDepister, routeDepistage, type ModeDepistage } from "@/lib/gameOn/libelles";
 import {
@@ -973,6 +974,24 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
 
   const ecoles = [equipesQ.data?.A?.etablissement?.id, equipesQ.data?.B?.etablissement?.id].filter((x): x is string => !!x);
   const cartesQ = useCartesDepistage(ecoles, idsEquipes);
+  // Partenaire : ses sports permis (pour créer une carte depuis le tri).
+  const sportsPermisQ = useQuery<{ id: string; nom: string }[]>({
+    queryKey: ["game-on", "sports-permis-partenaire"],
+    enabled: partenaire,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: mp } = await supabase.from("media_partners").select("id").eq("user_id", user.id).maybeSingle();
+      if (!mp) return [];
+      const { data } = await supabase.from("partenaire_sports_permis").select("sport_id, sports!sport_id(nom)").eq("partner_id", mp.id);
+      return ((data ?? []) as { sport_id: string; sports: { nom: string } | { nom: string }[] | null }[])
+        .map((r) => ({ id: r.sport_id, nom: (Array.isArray(r.sports) ? r.sports[0]?.nom : r.sports?.nom) ?? "" }))
+        .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    },
+  });
+  const sportsPermis = sportsPermisQ.data ?? [];
 
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [creer, setCreer] = useState<GroupeJoueur | null>(null);
@@ -1112,7 +1131,7 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
                 onOuvrir={() => setOuvert((v) => (v === g.cle ? null : g.cle))}
                 onLier={(sug) => void lier(g, sug.type === "carte" ? { carteId: sug.id } : { athleteId: sug.id }, sug.nom)}
                 onLierAthlete={(id, nom) => void lier(g, { athleteId: id }, nom)}
-                onCreer={partenaire ? null : () => setCreer(g)}
+                onCreer={() => setCreer(g)}
                 onGarder={() => void lier(g, null)} />
             ))}
           </ul>
@@ -1131,7 +1150,24 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
         </>
       )}
 
-      {creer && sportId && (mobile ? (
+      {/* Partenaire (BP 2026-10-19) : SA carte, préremplie depuis le match ; les notes s'y lient à l'enregistrement. */}
+      {creer && partenaire && (
+        <FormulaireCarte sports={sportsPermis} carte={null}
+          prerempli={(() => {
+            const p = prerempli(creer);
+            const e = p.etablissement;
+            return { prenom: creer.prenom, sportId: p.sportAthleteId ?? null, teamId: p.teamId ?? null,
+              etablissement: e ? { id: e.id, name: e.name, city: e.city, type: e.type ?? null } : null };
+          })()}
+          onClose={() => setCreer(null)}
+          onEnregistree={(id) => {
+            const g = creer;
+            setCreer(null);
+            void lier(g, { carteId: id }, `${g.prenom ?? ""}`.trim() || undefined);
+            void qc.invalidateQueries({ queryKey: ["game-on", "cartes-partenaire"] });
+          }} />
+      )}
+      {creer && !partenaire && sportId && (mobile ? (
         <CreerProspectMobile sportId={sportId} onClose={() => setCreer(null)}
           prerempli={prerempli(creer)}
           onCarteCreee={(id) => { const g = creer; void lier(g, { carteId: id }); }} />

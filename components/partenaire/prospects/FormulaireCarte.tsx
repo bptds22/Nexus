@@ -47,6 +47,7 @@ const etiquette = "block text-[11px] font-bold uppercase tracking-[0.15em] text-
 export default function FormulaireCarte({
   sports,
   carte,
+  prerempli,
   onClose,
   onEnregistree,
 }: {
@@ -54,6 +55,13 @@ export default function FormulaireCarte({
   sports: { id: string; nom: string }[];
   /** null = nouvelle carte. */
   carte: CartePartenaire | null;
+  /** Nouvelle carte depuis le Live (BP 2026-10-19) : prénom, sport, établissement et équipe du match. */
+  prerempli?: {
+    prenom: string | null;
+    sportId: string | null;
+    teamId: string | null;
+    etablissement: { id: string; name: string; city: string | null; type: string | null } | null;
+  } | null;
   onClose: () => void;
   onEnregistree: (id: string, nouvelle: boolean) => void;
 }) {
@@ -61,17 +69,20 @@ export default function FormulaireCarte({
   const annee = new Date().getFullYear();
   const promotions = useMemo(() => Array.from({ length: 8 }, (_, i) => annee - 1 + i), [annee]);
 
-  const [prenom, setPrenom] = useState(carte?.prenom ?? "");
+  const pre = carte ? null : prerempli ?? null;
+  const [prenom, setPrenom] = useState(carte?.prenom ?? pre?.prenom ?? "");
   const [nom, setNom] = useState(carte?.nom ?? "");
-  const [sportId, setSportId] = useState(carte?.sportId ?? (sports.length === 1 ? sports[0].id : ""));
+  const [sportId, setSportId] = useState(carte?.sportId
+    ?? (pre?.sportId && sports.some((s) => s.id === pre.sportId) ? pre.sportId : sports.length === 1 ? sports[0].id : ""));
   const [positions, setPositions] = useState<Position[]>([]);
   const [positionId, setPositionId] = useState(carte?.positionId ?? "");
-  const [genre, setGenre] = useState<Genre>("SCOLAIRE");
+  const [genre, setGenre] = useState<Genre>(pre?.etablissement?.type === "LIGUE_CIVILE" ? "CIVIL" : "SCOLAIRE");
   const [recherche, setRecherche] = useState("");
   const [tous, setTous] = useState<(Etablissement & { cle: string })[] | null>(null);
-  const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
+  const [etablissement, setEtablissement] = useState<Etablissement | null>(
+    pre?.etablissement ? { id: pre.etablissement.id, name: pre.etablissement.name, city: pre.etablissement.city } : null);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
-  const [equipeId, setEquipeId] = useState(carte?.teamId ?? "");
+  const [equipeId, setEquipeId] = useState(carte?.teamId ?? pre?.teamId ?? "");
   const [promotion, setPromotion] = useState(carte?.promotion ? String(carte.promotion) : "");
   // Une carte existante a déjà été attestée ; la case reste à cocher pour une nouvelle.
   const [atteste, setAtteste] = useState(!!carte);
