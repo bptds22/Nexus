@@ -270,6 +270,20 @@ const POOL_BY_ROLE: Record<RoleBarre, TabConfig[]> = {
     { key: "carte-matchs", label: "Matchs", href: "/partenaire/carte-matchs", icon: Icons.carte, activeMatch: "/partenaire/carte-matchs" },
     { key: "telechargements", label: "Télécharg.", href: "/partenaire/telechargements", icon: Icons.telecharger, activeMatch: "/partenaire/telechargements" },
   ],
+  coach: [
+    ...COACH_TABS,
+    { key: "equipes", label: "Équipes", href: "/coach/equipes", icon: Icons.layers, activeMatch: "/coach/equipes" },
+    { key: "transferts", label: "Transferts", href: "/coach/transferts", icon: Icons.users, activeMatch: "/coach/transferts" },
+    { key: "activites", label: "Activités", href: "/coach/activites", icon: Icons.checklist, activeMatch: "/coach/activites" },
+    { key: "reputation", label: "Réputation", href: "/coach/reputation", icon: Icons.trophee, activeMatch: "/coach/reputation" },
+  ],
+  athlete: [
+    ...ATHLETE_TABS,
+    { key: "profil", label: "Profil", href: "/athlete/profil", icon: Icons.user, activeMatch: "/athlete/profil" },
+    { key: "visibilite", label: "Visibilité", href: "/athlete/visibilite", icon: Icons.eye, activeMatch: "/athlete/visibilite" },
+    { key: "transfert", label: "Mon équipe", href: "/athlete/transfert", icon: Icons.users, activeMatch: "/athlete/transfert" },
+    { key: "notifications", label: "Notifs", href: "/athlete/notifications", icon: Icons.checklist, activeMatch: "/athlete/notifications" },
+  ],
 };
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete" | "partenaire", TabConfig[]> = {
@@ -298,7 +312,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   const peutEvaluer = usePeutEvaluer(IS_CAPACITOR && role === "partenaire");
 
   // Barre personnalisable (BP 2026-10-19) : le choix du compte (user_metadata), relu à l'enregistrement.
-  const roleBarre: RoleBarre | null = role === "recruteur" || role === "partenaire" ? role : null;
+  const roleBarre: RoleBarre = role;
   const [choixBarre, setChoixBarre] = useState<string[] | null>(null);
   const [metaCompte, setMetaCompte] = useState<Record<string, unknown> | null>(null);
   const [personnaliser, setPersonnaliser] = useState(false);

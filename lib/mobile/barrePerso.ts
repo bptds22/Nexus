@@ -13,7 +13,7 @@ export const MAX_ONGLETS = 4;
 export const EVENEMENT_BARRE_PERSO = "nx-barre-perso";
 export const EVENEMENT_OUVRIR_BARRE_PERSO = "nx-ouvrir-barre-perso";
 
-export type RoleBarre = "recruteur" | "partenaire";
+export type RoleBarre = "recruteur" | "partenaire" | "coach" | "athlete";
 
 /** Les onglets choisis, dans l'ordre ; les clés inconnues ou en double sont ignorées. Rien → le défaut. */
 export function resoudreBarre<T extends { key: string }>(choix: readonly string[] | null | undefined, pool: readonly T[], defaut: readonly T[]): T[] {

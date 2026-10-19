@@ -31,3 +31,23 @@ test("appli — personnaliser la barre : ajouter Recherche, puis revenir au déf
   await expect(nav.getByRole("link", { name: /Messages/ })).toBeVisible({ timeout: 15_000 });
   expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
 });
+
+test("appli — personnaliser la barre du COACH : ajouter Équipes, puis revenir au défaut (écrit en local)", async ({ page, context }) => {
+  test.skip(!process.env.VISUEL_PARCOURS, "écrit en base locale : VISUEL_PARCOURS=1 pour le lancer");
+  test.setTimeout(180_000);
+  await connecterLocalAppli(context, process.env.VISUEL_COACH ?? "e.coach@emulateur.local");
+  await page.goto("/coach/tableau-de-bord", { waitUntil: "load" });
+  const nav = page.getByRole("navigation", { name: "Navigation principale" });
+  await expect(nav).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("button", { name: "Plus d'options" }).click();
+  await page.getByRole("button", { name: "Personnaliser la barre" }).click();
+  await page.getByRole("button", { name: "Retirer À traiter" }).click();
+  await page.locator('[data-onglet-possible="equipes"]').click();
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(nav.getByRole("link", { name: /Équipes/ })).toBeVisible({ timeout: 15_000 });
+  await page.screenshot({ path: "test-results/visuel/appli-barre-perso-coach.png" });
+  await page.getByRole("button", { name: "Plus d'options" }).click();
+  await page.getByRole("button", { name: "Personnaliser la barre" }).click();
+  await page.getByRole("button", { name: "Par défaut" }).click();
+  await expect(nav.getByRole("link", { name: /À traiter/ })).toBeVisible({ timeout: 15_000 });
+});

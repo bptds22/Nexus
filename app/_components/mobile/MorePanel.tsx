@@ -397,6 +397,7 @@ export default function MorePanel({
         title: "Compte",
         items: [
           { key: "settings", label: "Paramètres", href: "/coach/settings", icon: Icons.settings },
+          { key: "barre", label: "Personnaliser la barre", href: "#", icon: Icons.layers, onClick: () => { window.dispatchEvent(new Event(EVENEMENT_OUVRIR_BARRE_PERSO)); } },
           { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
             const supabase = createClient();
             try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
@@ -471,6 +472,7 @@ export default function MorePanel({
         title: "Compte",
         items: [
           { key: "settings", label: "Paramètres", href: "/athlete/parametres", icon: Icons.settings },
+          { key: "barre", label: "Personnaliser la barre", href: "#", icon: Icons.layers, onClick: () => { window.dispatchEvent(new Event(EVENEMENT_OUVRIR_BARRE_PERSO)); } },
           { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
             const supabase = createClient();
             try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
