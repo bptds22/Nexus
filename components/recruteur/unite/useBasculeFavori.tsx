@@ -14,6 +14,8 @@
      comme avant.
 
    RETIRER UN FAVORI PASSE LE DOSSIER EN « RETIRÉ » (BP 2026-10-18 ; avant : le supprimait).
+   Et l'inverse : REMETTRE EN FAVORI un athlète retiré le sort de « Retiré » (Identifié) ;
+   retirer depuis la fiche ou le processus enlève aussi le cœur (retirerDossier).
    Un dossier dans le processus demande la raison (Pourquoi ?) et va à l'étape RETIRE
    (unite_retirer), comme depuis Mon processus. Déjà retiré ou hors processus : le cœur seul.
    Historique (décision BP 2026-09-28, web) :
@@ -47,7 +49,7 @@ import { ChoixRaisonRetrait } from "@/components/recruteur/retraits/ChoixRaisonR
 import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
-import { messageRetrait, retirerDossier, type RaisonRetrait } from "@/lib/retraits/retraits";
+import { messageRetrait, retirerDossier, sortirDeRetire, type RaisonRetrait } from "@/lib/retraits/retraits";
 
 interface EnAttente {
   athleteId: string;
@@ -133,7 +135,18 @@ export function useBasculeFavori(): {
 
   const basculer = useCallback(
     async (athleteId: string, estFavori: boolean, nomAthlete?: string): Promise<ResultatFavori | null> => {
-      if (!estFavori) return definirFavori(queryClient, athleteId, true);
+      if (!estFavori) {
+        // Remettre en favori sort de « Retiré » (BP 2026-10-18, nuit) : retiré = jamais en favori.
+        let avant: Dossier = null;
+        if (favoris.modeUnite) { try { avant = await lireDossier(athleteId); } catch { avant = null; } }
+        const r = await definirFavori(queryClient, athleteId, true);
+        if (r.ok && avant?.etape === "RETIRE") {
+          const err = await sortirDeRetire(createClient(), athleteId);
+          void invaliderTableauBlanc(queryClient);
+          if (err) return { ok: false, message: `Favori ajouté, mais l'athlète est resté dans « Retiré ». ${messageRetrait(err)}` };
+        }
+        return r;
+      }
       if (!favoris.modeUnite) return definirFavori(queryClient, athleteId, false);
       const collegues = favoris.collegues(athleteId);
       let dossier: Dossier;

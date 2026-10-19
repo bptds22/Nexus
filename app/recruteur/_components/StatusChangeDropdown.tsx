@@ -81,7 +81,7 @@ export default function StatusChangeDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  if (currentStatus === "none") return null;
+  // « none » : hors processus — on peut quand même choisir une étape ou retirer (BP 2026-10-18, nuit).
 
   function handleSelect(next: RecruitmentStatus) {
     // Contacté + no thread → compose intro
@@ -192,7 +192,9 @@ export default function StatusChangeDropdown({
               {/* All other statuses */}
               {otherStatuses.length > 0 && (
                 <>
-                  <p className="px-4 py-2 mt-1 border-t border-[#2D3748]/50 text-[9px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Tous les statuts</p>
+                  <p className={`px-4 py-2 text-[9px] font-bold tracking-[0.2em] uppercase text-[#6b7280] ${forwardStatuses.length > 0 ? "mt-1 border-t border-[#2D3748]/50" : ""}`}>
+                    {currentStatus === "retire" ? "Le remettre à l'étape" : "Tous les statuts"}
+                  </p>
                   {otherStatuses.map((s) => (
                     <button
                       key={s.id}

@@ -99,14 +99,51 @@ export interface DemandeRetrait {
   note?: string | null;
 }
 
-/** Retire SANS supprimer : unite_retirer (athlète) ou carte_retirer (carte). Jamais de repli sur la suppression. */
+/** unite_retirer refuse un athlète sans dossier dans l'unité (« n'est pas dans le processus »). */
+export function estHorsProcessus(e: { message?: string | null } | null | undefined): boolean {
+  return /n'est pas dans le processus/i.test(e?.message ?? "");
+}
+
+/** Retire SANS supprimer : unite_retirer (athlète) ou carte_retirer (carte). Jamais de repli sur la suppression.
+ *  Athlète (BP 2026-10-18, nuit) :
+ *  - hors processus (ni favori ni dossier) : le dossier est d'abord ouvert (unite_ecrire_dossier,
+ *    à Identifié), puis retiré — on peut TOUJOURS retirer depuis la fiche ;
+ *  - retiré = plus en favori : le cœur part pour l'unité (unite_retirer_favori). Un échec du cœur
+ *    n'annule pas le retrait (journalisé seulement). */
 export async function retirerDossier(supabase: SupabaseClient, d: DemandeRetrait): Promise<{ code?: string; message: string } | null> {
   const note = (d.note ?? "").trim().slice(0, NOTE_RETRAIT_MAX) || null;
-  const { error } = d.carte
-    ? await supabase.rpc("carte_retirer", { p_carte_id: d.id, p_raison: d.raison, p_note: note })
-    : await supabase.rpc("unite_retirer", { p_athlete_id: d.id, p_sport_id: d.sportId ?? null, p_raison: d.raison, p_note: note });
+  if (d.carte) {
+    const { error } = await supabase.rpc("carte_retirer", { p_carte_id: d.id, p_raison: d.raison, p_note: note });
+    if (error) {
+      console.error(`[retrait] ${error.code ?? ""} ${error.message}`);
+      return { code: error.code, message: error.message };
+    }
+    return null;
+  }
+  const retirer = () => supabase.rpc("unite_retirer", { p_athlete_id: d.id, p_sport_id: d.sportId ?? null, p_raison: d.raison, p_note: note });
+  let { error } = await retirer();
+  if (error && estHorsProcessus(error)) {
+    const ouvert = await supabase.rpc("unite_ecrire_dossier", { p_athlete_id: d.id, p_champs: { stage: "IDENTIFIE" } });
+    if (ouvert.error) {
+      console.error(`[retrait] ouverture du dossier ${ouvert.error.code ?? ""} ${ouvert.error.message}`);
+      return { code: ouvert.error.code, message: ouvert.error.message };
+    }
+    ({ error } = await retirer());
+  }
   if (error) {
     console.error(`[retrait] ${error.code ?? ""} ${error.message}`);
+    return { code: error.code, message: error.message };
+  }
+  const favori = await supabase.rpc("unite_retirer_favori", { p_athlete_id: d.id });
+  if (favori.error) console.error(`[retrait] cœur non retiré ${favori.error.code ?? ""} ${favori.error.message}`);
+  return null;
+}
+
+/** Remettre en favori un athlète retiré le sort de « Retiré » : première étape (Identifié). */
+export async function sortirDeRetire(supabase: SupabaseClient, athleteId: string): Promise<{ code?: string; message: string } | null> {
+  const { error } = await supabase.rpc("unite_ecrire_dossier", { p_athlete_id: athleteId, p_champs: { stage: "IDENTIFIE" } });
+  if (error) {
+    console.error(`[retrait] sortie de Retiré ${error.code ?? ""} ${error.message}`);
     return { code: error.code, message: error.message };
   }
   return null;

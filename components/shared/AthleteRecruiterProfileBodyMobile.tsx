@@ -56,6 +56,8 @@ import { persistPipelineStage, lireDossierActeur } from "@/lib/pipeline/persistP
 import type { RaisonRetrait } from "@/lib/retraits/retraits";
 import { ChoixRaisonRetrait, LigneRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
 import { messageRetraitProcessus } from "@/lib/pipeline/messagesUnite";
+import { useQueryClient } from "@tanstack/react-query";
+import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { needsAutoMessage } from "@/lib/config/recruitmentStatuses";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -559,13 +561,26 @@ const SHEET_STATUSES: { id: RecruitmentStatus; label: string; color: string }[] 
   { id: "lettre_signee",    label: "Lettre signée",    color: "#22C55E" }, // vert
 ];
 
+/** « Changer le statut », collé à la pastille du statut actuel (BP 2026-10-18, nuit). */
+function BoutonChangerStatut({ onOuvrir }: { onOuvrir: () => void }) {
+  return (
+    <button type="button" onClick={onOuvrir} data-testid="changer-statut"
+      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-[#2D3748] bg-[#1A1D24] px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] active:bg-white/[0.04] transition-colors">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+      Changer le statut
+    </button>
+  );
+}
+
 function StatusVisitSheet({
   open, onClose, currentStatus, visitAtIso,
   athleteName, sport, schoolName,
   onSelectStatus, onRetirer, athleteId, onSaveVisitDate, savingVisit = false, messageRetrait,
 }: {
   /** « Retiré » avec sa raison (BP 2026-10-18) : rien n'est supprimé. */
-  onRetirer: (retrait: { raison: RaisonRetrait; note: string }) => void;
+  onRetirer: (retrait: { raison: RaisonRetrait; note: string }) => void | Promise<unknown>;
   athleteId: string;
   /** Tableau blanc : la phrase de confirmation du retrait (nomme les
    *  collègues). Le retrait demande DEUX touchers, comme Mon processus. */
@@ -577,7 +592,7 @@ function StatusVisitSheet({
   athleteName: string;
   sport?: string;
   schoolName?: string;
-  onSelectStatus: (next: RecruitmentStatus) => void;
+  onSelectStatus: (next: RecruitmentStatus) => void | Promise<unknown>;
   onSaveVisitDate: (iso: string | undefined) => void | Promise<void>;
   savingVisit?: boolean;
 }) {
@@ -588,11 +603,16 @@ function StatusVisitSheet({
   const [confirmRetrait, setConfirmRetrait] = useState(false);
   const [raisonRetrait, setRaisonRetrait] = useState<RaisonRetrait | null>(null);
   const [noteRetrait, setNoteRetrait] = useState("");
+  // Retiré : la grille des étapes se montre sur « Le remettre » (BP 2026-10-18, nuit).
+  const [remettre, setRemettre] = useState(false);
+  // Après un retrait ou une remise : la raison (LigneRetrait), le cœur et Mon processus se relisent.
+  const queryClient = useQueryClient();
+  const relire = (p: void | Promise<unknown>) => { void Promise.resolve(p).then(() => invaliderTableauBlanc(queryClient)); };
   // Clavier (note du retrait, date de visite) : remonte ET plafonne, jamais sous l'encoche.
   const kbdStyle = useSheetKeyboardGeometry("90dvh");
 
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { if (!open) { setConfirmRetrait(false); setRaisonRetrait(null); setNoteRetrait(""); } }, [open]);
+  useEffect(() => { if (!open) { setConfirmRetrait(false); setRaisonRetrait(null); setNoteRetrait(""); setRemettre(false); } }, [open]);
   useEffect(() => { if (!open) { setDragOffset(0); setIsDragging(false); } }, [open]);
 
   if (!mounted) return null;
@@ -657,9 +677,10 @@ function StatusVisitSheet({
 
             {/* Scrollable body — min-h-0 : sans lui la zone ne rétrécit pas sous le clavier. */}
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-5">
-              {/* (a) Grille des statuts */}
+              {/* (a) Grille des statuts — cachée tant qu'un retiré n'est pas « remis ». */}
+              {(currentStatus !== "retire" || remettre) && (
               <div>
-                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Changer le statut</h3>
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">{currentStatus === "retire" ? "Le remettre à l'étape" : "Changer le statut"}</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {SHEET_STATUSES.map((s) => {
                     const active = currentStatus === s.id;
@@ -667,7 +688,7 @@ function StatusVisitSheet({
                       <button
                         key={s.id}
                         type="button"
-                        onClick={() => { triggerHaptic("Light"); onSelectStatus(s.id); }}
+                        onClick={() => { triggerHaptic("Light"); relire(onSelectStatus(s.id)); }}
                         // Statut actif désactivé — évite qu'un re-tap de « Visite
                         // planifiée » ré-écrive le stage et efface la date saisie.
                         disabled={active}
@@ -686,6 +707,7 @@ function StatusVisitSheet({
                   })}
                 </div>
               </div>
+              )}
 
               {/* (b) Section visite — seulement quand le statut courant est
                   VISITE_PLANIFIEE : poser/modifier la date + export agenda. */}
@@ -706,6 +728,7 @@ function StatusVisitSheet({
                       athleteName={athleteName}
                       sport={sport}
                       schoolName={schoolName}
+                      cible={{ id: athleteId }}
                     />
                   )}
                 </div>
@@ -716,13 +739,19 @@ function StatusVisitSheet({
                   fait et nomme les collègues, le second retire. */}
               {/* BP 2026-10-18 : « Retiré » garde le dossier, avec sa raison (obligatoire). */}
               {currentStatus === "retire" ? (
-              <div className="pt-3 border-t border-white/[0.06]">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-[#9CA3AF] font-bold">Retiré</p>
-                <LigneRetrait id={athleteId} carte={false} className="mt-1 text-[13px]" />
-                <p className="mt-1.5 text-[12px] text-[#6B7280]">Pour le remettre dans le processus, choisis une étape ci-dessus.</p>
+              <div className={`space-y-2 ${remettre ? "pt-3 border-t border-white/[0.06]" : ""}`} data-testid="section-retire">
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold">Retiré</h3>
+                <LigneRetrait id={athleteId} carte={false} className="text-[13px]" />
+                {!remettre && (
+                  <button type="button" onClick={() => { triggerHaptic("Light"); setRemettre(true); }}
+                    className="w-full py-3 rounded-2xl text-[12px] uppercase tracking-wider font-bold bg-[#1A1D24] text-white active:bg-white/[0.04]">
+                    Le remettre
+                  </button>
+                )}
               </div>
               ) : (
-              <div className="pt-1 border-t border-white/[0.06] space-y-2">
+              <div className="pt-3 border-t border-white/[0.06] space-y-2" data-testid="section-retire">
+                <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold">Retiré</h3>
                 {confirmRetrait && (
                   <div className="px-1 pt-2">
                     <p className="text-[12px] text-[#F59E0B] leading-snug" role="alert">{messageRetrait}</p>
@@ -737,13 +766,13 @@ function StatusVisitSheet({
                     if (!confirmRetrait) { setConfirmRetrait(true); return; }
                     if (!raisonRetrait) return;
                     setConfirmRetrait(false);
-                    onRetirer({ raison: raisonRetrait, note: noteRetrait });
+                    relire(onRetirer({ raison: raisonRetrait, note: noteRetrait }));
                   }}
                   className={`w-full py-3 rounded-2xl text-[12px] uppercase tracking-wider font-bold transition-colors disabled:opacity-50 ${
                     confirmRetrait ? "bg-[#E63946] text-white" : "bg-[#1A1D24] text-[#9CA3AF] active:bg-white/[0.04]"
                   }`}
                 >
-                  {confirmRetrait ? "Retirer" : "Retirer du processus"}
+                  {confirmRetrait ? "Confirmer le retrait" : "Retirer"}
                 </button>
               </div>
               )}
@@ -1778,10 +1807,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       setDossierCollegues(pipelineData?.collegues ?? []);
       setMyPipelineStage(pipelineData?.stage || null);
       setVisitAt((pipelineData?.visit_at as string | null) ?? null);
-      // Dropdown piloté par la DB, plus par getAthleteTracking() (mock).
-      if (pipelineData?.stage) {
-        setPipelineStatus(String(pipelineData.stage).toLowerCase() as RecruitmentStatus);
-      }
+      // Dropdown piloté par la DB, plus par getAthleteTracking() (mock). Sans dossier : « none ».
+      setPipelineStatus(pipelineData?.stage ? String(pipelineData.stage).toLowerCase() as RecruitmentStatus : "none");
     };
     loadPipeline();
   }, [id, isRecruiter]);
@@ -1993,9 +2020,10 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       router.push(`/recruteur/messages/nouveau?athlete=${id}`);
       return;
     }
-    handleStatusChange(next);
+    const ecrit = handleStatusChange(next);
     if (next === "lettre_signee") setShowCelebration(true);
     if (next !== "visite_planifiee") setStatusSheetOpen(false);
+    return ecrit;
   }
 
   /* Modification de la date de visite depuis le sheet — CHEMIN UNIQUE côté
@@ -2436,6 +2464,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             const dotCfg = PIPELINE_DOT_MAP[upper]; // undefined si statut non répertorié → pas de dot
             const haloColor = "rgba(230,57,70,0.15)"; // halo uniquement sur rouge animé
             return (
+              <>
+              <span className="inline-flex flex-wrap items-center justify-center gap-2">
               <span className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/[0.1] rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-white">
                 {dotCfg && (
                   <span
@@ -2449,6 +2479,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 {({
                   IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion",
                   VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée",
+                  RETIRE: "Retiré",
                 } as Record<string, string>)[upper] || myPipelineStage.replace(/_/g, " ")}
                 <style jsx>{`
                   @keyframes nx-breathe {
@@ -2458,9 +2489,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   .nx-pulse-dot { animation: nx-breathe 1.6s ease-in-out infinite; }
                 `}</style>
               </span>
+              {canUsePipeline && <BoutonChangerStatut onOuvrir={() => { triggerHaptic("Light"); setStatusSheetOpen(true); }} />}
+              </span>
+              {/* Retiré : la raison, la note, qui et quand — visible à toute l'unité (BP 2026-10-18, nuit). */}
+              {upper === "RETIRE" && <LigneRetrait id={id} carte={false} className="mt-1 max-w-[300px] text-center text-[12px]" />}
+              </>
             );
           })() : (
-            <span className="text-[12px] italic text-[#6b7280]">Pas dans le processus</span>
+            <span className="inline-flex flex-wrap items-center justify-center gap-2">
+              <span className="text-[12px] italic text-[#6b7280]">Pas dans le processus</span>
+              {/* Hors processus : on peut quand même choisir une étape ou retirer. */}
+              {canUsePipeline && <BoutonChangerStatut onOuvrir={() => { triggerHaptic("Light"); setStatusSheetOpen(true); }} />}
+            </span>
           )}
         </div>
         )}
@@ -2532,29 +2572,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
         {/* « Changer le statut » — ouvre un BOTTOM SHEET portalé (remplace le
             dropdown cassé qui débordait hors écran). RECRUITER-ONLY (Step 6). */}
-        {isRecruiter && canUsePipeline && pipelineStatus !== "none" && (
-          <div className="mt-4 flex justify-center">
-            <button
-              type="button"
-              onClick={() => { triggerHaptic("Light"); setStatusSheetOpen(true); }}
-              className="inline-flex items-center gap-2 rounded-full border border-[#2D3748] bg-[#1A1D24] px-5 py-2.5 text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] active:bg-white/[0.04] transition-colors"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Changer le statut
-            </button>
-          </div>
-        )}
+        {/* « Changer le statut » vit désormais À CÔTÉ du statut actuel (« Mon statut », plus haut). */}
 
         {/* Relance — la DATE seule ; la note reste au pipeline. Le pourquoi
             (frontières de données coach/recruteur) est écrit en tête de
             RelanceFiche, avec la décision produit qui le fixe.
             Gate : palier Pro ET athlète déjà dans le processus — sans ligne,
             l'UPDATE n'aurait rien à écrire et la RLS refuserait l'INSERT. */}
-        {isRecruiter && canUsePipeline && myPipelineStage && (
-          <RelanceFiche athleteId={id} />
+        {isRecruiter && canUsePipeline && myPipelineStage && myPipelineStage.toUpperCase() !== "RETIRE" && (
+          <RelanceFiche athleteId={id} modeUnite lienProcessus />
         )}
 
         {/* Visite planifiée + export agenda — gate strict : stage ET date. */}
@@ -2565,6 +2591,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               athleteName={`${a.firstName} ${a.lastName}`}
               sport={a.primarySport}
               schoolName={a.schoolName}
+              cible={{ id }}
             />
           </div>
         )}
@@ -3565,7 +3592,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           sport={a.primarySport}
           schoolName={a.schoolName}
           onSelectStatus={handleSheetSelectStatus}
-          onRetirer={(retrait) => { setStatusSheetOpen(false); void handleStatusChange("retire", { retrait }); }}
+          onRetirer={(retrait) => { setStatusSheetOpen(false); return handleStatusChange("retire", { retrait }); }}
           athleteId={id}
           onSaveVisitDate={handleSaveVisitDate}
           savingVisit={savingVisit}

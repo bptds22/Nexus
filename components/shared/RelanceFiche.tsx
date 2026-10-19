@@ -34,16 +34,21 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
 
-const SOUS_TITRE_FICHE = "La note de relance se saisit dans Mon processus.";
+/* BP 2026-10-18 (nuit) : le champ et « Se saisit dans Mon processus » se contredisaient. La DATE est
+   la même donnée que Mon processus (dossier de l'unité) et se saisit ici ; seule la NOTE reste là-bas. */
+const SOUS_TITRE_FICHE = "Même date que dans Mon processus. La note de relance s'ajoute dans Mon processus.";
 
-export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, className, modeUnite = false }: {
+export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, className, modeUnite = false, lienProcessus = false }: {
   athleteId: string;
+  /** Fiche athlète : un lien « Ouvrir Mon processus » sous la phrase (la note s'y saisit). */
+  lienProcessus?: boolean;
   /** Tableau blanc (lot B2) : la relance est celle du DOSSIER DE L'UNITÉ.
    *  Lecture sur n'importe quelle ligne de l'unité (les lignes sœurs sont
    *  synchronisées), écriture par unite_ecrire_dossier — toujours sur la
@@ -157,6 +162,12 @@ export default function RelanceFiche({ athleteId, sousTitre = SOUS_TITRE_FICHE, 
       {sousTitre && (
         <p className="mt-2 text-[11.5px] text-[#6b7280]">
           {sousTitre}
+          {lienProcessus && (
+            <>
+              {" "}
+              <Link href="/recruteur/pipeline" className="font-bold text-[#E63946] underline-offset-2 hover:underline">Ouvrir Mon processus</Link>
+            </>
+          )}
         </p>
       )}
     </div>

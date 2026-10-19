@@ -330,6 +330,21 @@ function CoachReputationCard({ rep, coachName }: { rep: NonNullable<AthleteProfi
 ═══════════════════════════════════════════════════════════════ */
 
 
+/** La valeur du statut, et « Changer le statut » juste à côté (BP 2026-10-18, nuit : contrôle clair). */
+function DeclencheurStatut({ libelle, discret = false }: { libelle: string; discret?: boolean }) {
+  return (
+    <>
+      <span className={discret ? "normal-case tracking-normal" : ""}>{libelle}</span>
+      <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-[#2D3748] bg-[#1A1D24] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] group-hover:border-[#E63946]/40 group-hover:text-[#E63946] transition-colors" data-testid="changer-statut">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+        Changer le statut
+      </span>
+    </>
+  );
+}
+
 export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: AthleteRecruiterProfileBodyProps) {
   const queryClient = useQueryClient();
   const id = athleteId;
@@ -551,9 +566,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       // Le dropdown est piloté par la DB, plus par le mock : `pipelineStatus`
       // était seedé depuis getAthleteTracking() (mockPipelineData), donc il
       // n'était jamais aligné sur la vraie row du recruteur.
-      if (pipelineData?.stage) {
-        setPipelineStatus(String(pipelineData.stage).toLowerCase() as RecruitmentStatus);
-      }
+      // Sans dossier : « none » (BP 2026-10-18, nuit) — l'état de départ venait d'une maquette.
+      setPipelineStatus(pipelineData?.stage ? String(pipelineData.stage).toLowerCase() as RecruitmentStatus : "none");
     };
     loadPipeline();
   }, [id]);
@@ -732,6 +746,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     // Garde « Mon statut » (lu depuis la DB) cohérent avec le dropdown.
     // BP 2026-10-18 : « Retiré » est une vraie étape (RETIRE), le dossier reste.
     setMyPipelineStage(newStatus.toUpperCase());
+    // Retiré = plus en favori (retirerDossier enlève le cœur de l'unité).
+    if (newStatus === "retire") setIsFavorited(false);
     // Mon processus, le calendrier et le tableau de bord lisent ce dossier :
     // sans ceci, ils restaient sur l'ancienne étape (correctif 2026-09-24).
     void invaliderTableauBlanc(queryClient);
@@ -915,6 +931,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                     const libelleStatut = ({
                       IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion",
                       VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée",
+                      RETIRE: "Retiré",
                     } as Record<string, string>)[myPipelineStage.toUpperCase()] || myPipelineStage.replace(/_/g, " ");
                     /* LA VALEUR EST LE BOUTON (décision BP 2026-09-23) : un clic
                        sur le statut ouvre le choix des étapes. L'ancien bouton
@@ -936,14 +953,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                         onCelebrate={() => setShowCelebration(true)}
                         menuAGauche
                         classeDeclencheur="group inline-flex items-center gap-1.5 text-[12px] font-bold text-white uppercase tracking-wider hover:text-[#E63946] transition-colors"
-                        declencheur={
-                          <>
-                            {libelleStatut}
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-[#6b7280] group-hover:text-[#E63946] transition-colors" aria-hidden>
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                          </>
-                        }
+                        declencheur={<DeclencheurStatut libelle={libelleStatut} />}
                       />
                       {/* BP 2026-10-18 : la raison du retrait, visible à l'unité. */}
                       {pipelineStatus === "retire" && <LigneRetrait id={id} carte={false} className="mt-1 max-w-[260px]" />}
@@ -961,6 +971,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                       </svg>
                       Passer à Pro pour le processus
                     </button>
+                  ) : canUsePipeline ? (
+                    /* Hors processus : on peut quand même choisir une étape ou retirer (BP 2026-10-18, nuit). */
+                    <StatusChangeDropdown
+                      currentStatus="none"
+                      athleteId={id}
+                      hasExistingThread={false}
+                      onStatusChange={handleStatusChange}
+                      onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
+                      onCelebrate={() => setShowCelebration(true)}
+                      menuAGauche
+                      classeDeclencheur="group inline-flex items-center gap-1.5 text-[12px] font-bold text-[#9CA3AF] hover:text-[#E63946] transition-colors"
+                      declencheur={<DeclencheurStatut libelle="Pas dans le processus" discret />}
+                    />
                   ) : (
                     <span className="text-[12px] text-[#6b7280]">Pas dans le processus</span>
                   )}
@@ -1062,15 +1085,16 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             cadre (arrondi 2xl, padding 4) — retour BP 2026-09-23. Seule, la
             relance garde sa demi-largeur : la rangée ne change pas de forme
             selon qu'une visite existe. */}
-        {!isPreview && canUsePipeline && myPipelineStage && (
+        {!isPreview && canUsePipeline && myPipelineStage && myPipelineStage.toUpperCase() !== "RETIRE" && (
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-            <RelanceFiche athleteId={id} className="h-full" />
+            <RelanceFiche athleteId={id} className="h-full" modeUnite lienProcessus />
             {etapePorteVisite(pipelineStatus) && visitAt && (
               <VisitCalendarCard
                 visitAtIso={visitAt}
                 athleteName={`${a.firstName} ${a.lastName}`}
                 sport={a.primarySport}
                 schoolName={a.schoolName}
+                cible={{ id }}
                 className="rounded-2xl p-4 h-full flex flex-col justify-between"
               />
             )}
