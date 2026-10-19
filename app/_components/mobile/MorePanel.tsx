@@ -8,6 +8,7 @@ import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
 import { deconnexion } from "@/lib/auth/deconnexion";
+import { EVENEMENT_OUVRIR_BARRE_PERSO } from "@/lib/mobile/barrePerso";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const PUBLIC_BASE = "https://nexussports.ca";
@@ -268,6 +269,8 @@ export default function MorePanel({
           items: [
             { key: "profil", label: "Mon profil", href: "/recruteur/profil", icon: Icons.profile },
             { key: "parametres", label: "Paramètres", href: "/recruteur/parametres", icon: Icons.settings },
+            // BP 2026-10-19 : choisir les onglets de la barre du bas (MobileTabBar l'ouvre).
+            { key: "barre", label: "Personnaliser la barre", href: "#", icon: Icons.layers, onClick: () => { window.dispatchEvent(new Event(EVENEMENT_OUVRIR_BARRE_PERSO)); } },
             // Iter 7.39 — vraie déconnexion : signOut Supabase + clear local + redirect /auth
             { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
               const supabase = createClient();
@@ -422,6 +425,7 @@ export default function MorePanel({
           title: "Compte",
           items: [
             { key: "profil", label: "Mon profil", href: "/partenaire/profil", icon: Icons.profile },
+            { key: "barre", label: "Personnaliser la barre", href: "#", icon: Icons.layers, onClick: () => { window.dispatchEvent(new Event(EVENEMENT_OUVRIR_BARRE_PERSO)); } },
             { key: "logout", label: "Déconnexion", href: "/auth", icon: Icons.logout, destructive: true, onClick: async () => {
               const supabase = createClient();
               try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }

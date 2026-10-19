@@ -90,7 +90,9 @@ test("aucune page du portail n'est un composant serveur (l'export statique les r
 test("barre d'onglets et panneau Plus : le rôle partenaire existe", () => {
   const tab = lire("app/_components/mobile/MobileTabBar.tsx");
   assert.match(tab, /partenaire: PARTENAIRE_TABS,/);
-  assert.match(tab, /TABS_BY_ROLE\.partenaire\.filter\(\(t\) => entreeVisible\(t\.href, peutEvaluer\)\)/);
+  // BP 2026-10-19 : barre personnalisable — la même règle d'accès filtre le défaut ET les choix.
+  assert.match(tab, /const visible = \(t: TabConfig\) => role !== "partenaire" \|\| entreeVisible\(t\.href, peutEvaluer\);/);
+  assert.match(tab, /POOL_BY_ROLE\[roleBarre\]\.filter\(visible\)/);
   assert.match(tab, /if \(tab\.exact\) return normalizedPath === tab\.href;/);
   const plus = lire("app/_components/mobile/MorePanel.tsx");
   for (const href of ["/partenaire/newsroom", "/partenaire/tendances", "/partenaire/classements", "/partenaire/carte-matchs", "/partenaire/telechargements", "/partenaire/profil"]) {

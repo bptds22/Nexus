@@ -15,6 +15,10 @@ import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 import { entreeVisible, usePeutEvaluer } from "@/lib/partenaires/navigation";
 import { surReprise, viderNotificationsLivrees } from "@/lib/push/pastillesAppareil";
 import { DEPISTAGE } from "@/lib/gameOn/libelles";
+import PersonnaliserBarre from "@/components/mobile/PersonnaliserBarre";
+import {
+  avecChoixBarre, lireChoixBarre, resoudreBarre, EVENEMENT_BARRE_PERSO, EVENEMENT_OUVRIR_BARRE_PERSO, type RoleBarre,
+} from "@/lib/mobile/barrePerso";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -109,6 +113,28 @@ const Icons = {
       <circle cx="12" cy="12" r="9" />
       <polygon points="10 8.5 16 12 10 15.5" fill="currentColor" />
     </svg>
+  ),
+  // Barre personnalisable (BP 2026-10-19) : les écrans qu'on peut y monter.
+  heart: (
+    <svg {...SVG_PROPS}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+  ),
+  carte: (
+    <svg {...SVG_PROPS}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+  ),
+  listes: (
+    <svg {...SVG_PROPS}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
+  ),
+  journal: (
+    <svg {...SVG_PROPS}><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2" /><path d="M18 14h-8" /><path d="M15 18h-5" /><path d="M10 6h8v4h-8z" /></svg>
+  ),
+  tendance: (
+    <svg {...SVG_PROPS}><path d="M3 17l6-6 4 4 8-8" /><polyline points="14 7 21 7 21 14" /></svg>
+  ),
+  trophee: (
+    <svg {...SVG_PROPS}><path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2" /><path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2" /><path d="M6 3h12v6a6 6 0 01-12 0V3z" /><path d="M12 15v3M8 21h8" /></svg>
+  ),
+  telecharger: (
+    <svg {...SVG_PROPS}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
   ),
   more: (
     <svg {...SVG_PROPS}>
@@ -225,6 +251,27 @@ const PARTENAIRE_TABS: TabConfig[] = [
   { key: "depistage", label: DEPISTAGE.onglet, href: "/partenaire/depistage", icon: Icons.gameOn, activeMatch: "/partenaire/depistage" },
 ];
 
+/* Barre personnalisable (BP 2026-10-19) : tout ce qu'on peut monter dans la barre, par rôle.
+   Les onglets par défaut d'abord ; le reste vient du panneau Plus (mêmes routes, mêmes portes Pro). */
+const POOL_BY_ROLE: Record<RoleBarre, TabConfig[]> = {
+  recruteur: [
+    ...RECRUTEUR_TABS,
+    { key: "recherche", label: "Recherche", href: "/recruteur/recherche", icon: Icons.search, activeMatch: "/recruteur/recherche" },
+    { key: "pipeline", label: "Processus", href: "/recruteur/pipeline", icon: Icons.kanban, activeMatch: "/recruteur/pipeline", requiredTier: "pro" },
+    { key: "favoris", label: "Favoris", href: "/recruteur/favoris", icon: Icons.heart, activeMatch: "/recruteur/favoris" },
+    { key: "listes", label: "Listes", href: "/recruteur/listes", icon: Icons.listes, activeMatch: "/recruteur/listes" },
+    { key: "carte-matchs", label: "Matchs", href: "/recruteur/carte-matchs", icon: Icons.carte, activeMatch: "/recruteur/carte-matchs" },
+  ],
+  partenaire: [
+    ...PARTENAIRE_TABS,
+    { key: "newsroom", label: "Newsroom", href: "/partenaire/newsroom", icon: Icons.journal, activeMatch: "/partenaire/newsroom" },
+    { key: "tendances", label: "Tendances", href: "/partenaire/tendances", icon: Icons.tendance, activeMatch: "/partenaire/tendances" },
+    { key: "classements", label: "Classements", href: "/partenaire/classements", icon: Icons.trophee, activeMatch: "/partenaire/classements" },
+    { key: "carte-matchs", label: "Matchs", href: "/partenaire/carte-matchs", icon: Icons.carte, activeMatch: "/partenaire/carte-matchs" },
+    { key: "telechargements", label: "Télécharg.", href: "/partenaire/telechargements", icon: Icons.telecharger, activeMatch: "/partenaire/telechargements" },
+  ],
+};
+
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete" | "partenaire", TabConfig[]> = {
   recruteur: RECRUTEUR_TABS,
   coach: COACH_TABS,
@@ -249,6 +296,39 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // donc QU'UNE FOIS le tier réellement chargé — voir `locked` plus bas.
   const { tier, isSchoolAdmin, loading: tierLoading } = useSubscription();
   const peutEvaluer = usePeutEvaluer(IS_CAPACITOR && role === "partenaire");
+
+  // Barre personnalisable (BP 2026-10-19) : le choix du compte (user_metadata), relu à l'enregistrement.
+  const roleBarre: RoleBarre | null = role === "recruteur" || role === "partenaire" ? role : null;
+  const [choixBarre, setChoixBarre] = useState<string[] | null>(null);
+  const [metaCompte, setMetaCompte] = useState<Record<string, unknown> | null>(null);
+  const [personnaliser, setPersonnaliser] = useState(false);
+  useEffect(() => {
+    if (!roleBarre) return;
+    let vivant = true;
+    const lire = async () => {
+      const { data: { user } } = await createClient().auth.getUser();
+      if (!vivant || !user) return;
+      setMetaCompte(user.user_metadata ?? null);
+      setChoixBarre(lireChoixBarre(user.user_metadata, roleBarre));
+    };
+    void lire();
+    const ouvrir = () => setPersonnaliser(true);
+    window.addEventListener(EVENEMENT_BARRE_PERSO, lire);
+    window.addEventListener(EVENEMENT_OUVRIR_BARRE_PERSO, ouvrir);
+    return () => {
+      vivant = false;
+      window.removeEventListener(EVENEMENT_BARRE_PERSO, lire);
+      window.removeEventListener(EVENEMENT_OUVRIR_BARRE_PERSO, ouvrir);
+    };
+  }, [roleBarre]);
+  const enregistrerBarre = async (cles: string[] | null) => {
+    if (!roleBarre) return;
+    const { error } = await createClient().auth.updateUser({ data: avecChoixBarre(metaCompte, roleBarre, cles) });
+    if (error) return;
+    setChoixBarre(cles && cles.length > 0 ? cles : null);
+    setPersonnaliser(false);
+    window.dispatchEvent(new Event(EVENEMENT_BARRE_PERSO));
+  };
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
@@ -456,8 +536,11 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // `document.body`.
   if (!mounted) return null;
 
-  const tabs = role === "partenaire"
-    ? TABS_BY_ROLE.partenaire.filter((t) => entreeVisible(t.href, peutEvaluer))
+  // Le partenaire ne voit que ce qu'il a le droit d'ouvrir (évaluer) ; la barre choisie, sinon le défaut.
+  const visible = (t: TabConfig) => role !== "partenaire" || entreeVisible(t.href, peutEvaluer);
+  const poolBarre = roleBarre ? POOL_BY_ROLE[roleBarre].filter(visible) : [];
+  const tabs = roleBarre
+    ? resoudreBarre(choixBarre, poolBarre, TABS_BY_ROLE[roleBarre].filter(visible))
     : TABS_BY_ROLE[role];
 
   function isActive(tab: TabConfig): boolean {
@@ -573,6 +656,15 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
           <span className="relative text-[11px] font-medium tracking-[0.04em] whitespace-nowrap">Plus</span>
         </button>
       </nav>
+
+      {personnaliser && roleBarre && (
+        <PersonnaliserBarre
+          pool={poolBarre.map((t) => ({ key: t.key, label: t.label, icon: t.icon }))}
+          actuels={tabs.map((t) => t.key)}
+          onFermer={() => setPersonnaliser(false)}
+          onEnregistrer={(cles) => enregistrerBarre(cles)}
+          onDefaut={() => enregistrerBarre(null)} />
+      )}
 
       <MorePanel
         open={moreOpen}
