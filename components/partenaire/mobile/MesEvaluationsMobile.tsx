@@ -31,8 +31,8 @@ import CarteBadges from "@/components/shared/CarteBadges";
 import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
 import BandeauVisibilite from "@/components/partenaire/BandeauVisibilite";
-import { chargerCartesTerminees, type CarteTerminee } from "@/lib/partenaires/prospects";
-import { reclameesHorsListe } from "@/lib/partenaires/vueMesAthletes";
+import { EVENEMENT_EVALUATION_PARTENAIRE } from "@/lib/evaluations/partenaire";
+import { EVENEMENT_BADGE_PARTENAIRE } from "@/lib/badges/partenaire";
 import {
   chargerMesAthletes,
   chargerVignettesMesAthletes,
@@ -224,7 +224,6 @@ export default function MesEvaluationsMobile() {
   const [texte, setTexte] = useState("");
   const [choixDistinctions, setChoixDistinctions] = useState<Set<string>>(new Set());
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
-  const [terminees, setTerminees] = useState<CarteTerminee[]>([]);
 
   const options = useMemo(() => optionsDistinctions(athletes), [athletes]);
   // Un badge retiré (ou un athlète sorti) ne laisse pas de case cochée fantôme — élagué
@@ -232,16 +231,14 @@ export default function MesEvaluationsMobile() {
   const distinctions = useMemo(() => elaguerDistinctions(choixDistinctions, options), [choixDistinctions, options]);
   const visibles = useMemo(() => filtrerMesAthletes(athletes, { texte, distinctions }), [athletes, texte, distinctions]);
   const actifs = filtresActifs({ texte, distinctions });
-  const reclamees = useMemo(() => reclameesHorsListe(terminees, new Set(athletes.map((a) => a.athleteId))), [terminees, athletes]);
 
   const charger = useCallback(async () => {
     try {
       const supabase = createClient();
-      const liste = await chargerMesAthletes(supabase);
+      // BP 2026-10-19 : seulement les athlètes où j'ai encore une évaluation ou un badge (plus de « réclamées » à part).
+      const liste = (await chargerMesAthletes(supabase)).filter((a) => a.evaluationId != null || a.badges.length > 0);
       setAthletes(liste);
       setErreur(null);
-      // Cartes réclamées par le jeune (ex-« Terminées ») ; en échec, la liste reste utilisable.
-      setTerminees(await chargerCartesTerminees(supabase).catch(() => []));
       setVignettes(await chargerVignettesMesAthletes(supabase, liste.map((x) => x.athleteId)));
     } catch (e) {
       setErreur(messageErreur(e));
@@ -250,6 +247,16 @@ export default function MesEvaluationsMobile() {
     }
   }, []);
   useEffect(() => { void charger(); }, [charger]);
+  // Retirer une évaluation ou un badge sur la fiche : la liste suit.
+  useEffect(() => {
+    const relire = () => { void charger(); };
+    window.addEventListener(EVENEMENT_EVALUATION_PARTENAIRE, relire);
+    window.addEventListener(EVENEMENT_BADGE_PARTENAIRE, relire);
+    return () => {
+      window.removeEventListener(EVENEMENT_EVALUATION_PARTENAIRE, relire);
+      window.removeEventListener(EVENEMENT_BADGE_PARTENAIRE, relire);
+    };
+  }, [charger]);
 
   const reessayer = () => {
     void triggerHaptic("Light");
@@ -343,24 +350,6 @@ export default function MesEvaluationsMobile() {
       </div>
 
       <div className="px-4 pt-2 pb-6">
-        {!chargement && reclamees.length > 0 && (
-          <section className="mb-4" data-reclamees>
-            <p className="px-1 mb-2 text-[11px] uppercase tracking-[0.18em] text-white/50 font-semibold">Cartes réclamées par le jeune</p>
-            <ul className="flex flex-col gap-2.5">
-              {reclamees.map((t) => (
-                <li key={t.carteId}>
-                  <button type="button" data-reclamee-visible
-                    onClick={() => { void triggerHaptic("Light"); router.push(`/partenaire/athletes/${t.athleteId}`); }}
-                    className="w-full text-left rounded-2xl bg-[#1A1D24] px-4 py-3.5 active:bg-white/[0.04]">
-                    <p className="text-[16px] font-bold text-white truncate">{`${t.prenom ?? ""} ${t.nom ?? ""}`.trim() || "Athlète"}</p>
-                    <p className="text-[13px] text-white/55 truncate">{[t.sport, t.poste, t.ecole].filter(Boolean).join(" · ") || "—"}</p>
-                    <p className="mt-1 text-[12px] text-[#4ADE80]">Réclamée · voir sa fiche</p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
         {chargement ? (
           <LignesSquelette />
         ) : erreur && athletes.length === 0 ? (
@@ -371,13 +360,13 @@ export default function MesEvaluationsMobile() {
               Réessayer
             </button>
           </div>
-        ) : athletes.length === 0 ? (reclamees.length > 0 ? null : (
+        ) : athletes.length === 0 ? (
           <EmptyState
             image="/empty/nexus-empty-shortlist.png"
             title="Aucun athlète pour l'instant"
             description="Évalue un athlète ou remets-lui un badge depuis sa fiche : il apparaîtra ici."
           />
-        )) : (
+        ) : (
           <>
             {erreur && (
               <div className="mb-3 flex items-center gap-3 rounded-2xl bg-[#E63946]/10 border border-[#E63946]/30 px-3 py-2.5">

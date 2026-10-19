@@ -34,8 +34,8 @@ import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
 import { Avis, Chargement, classesBouton, classesSurface, EtatVide } from "@/components/partenaire/kit/KitPartenaire";
 import BandeauVisibilite from "@/components/partenaire/BandeauVisibilite";
-import { chargerCartesTerminees, type CarteTerminee } from "@/lib/partenaires/prospects";
-import { reclameesHorsListe } from "@/lib/partenaires/vueMesAthletes";
+import { EVENEMENT_EVALUATION_PARTENAIRE } from "@/lib/evaluations/partenaire";
+import { EVENEMENT_BADGE_PARTENAIRE } from "@/lib/badges/partenaire";
 import {
   chargerMesAthletes,
   chargerVignettesMesAthletes,
@@ -199,7 +199,6 @@ export default function MesEvaluationsWeb() {
   const [edition, setEdition] = useState<{ athlete: MonAthlete; grilleId: string | null; existante: EvaluationPartenaire | null } | null>(null);
   const [texte, setTexte] = useState("");
   const [distinctions, setDistinctions] = useState<Set<string>>(new Set());
-  const [terminees, setTerminees] = useState<CarteTerminee[]>([]);
 
   const options = useMemo(() => optionsDistinctions(athletes), [athletes]);
   // Un badge retiré (ou un athlète sorti) ne laisse pas de case cochée fantôme.
@@ -210,7 +209,6 @@ export default function MesEvaluationsWeb() {
     });
   }, [options]);
   const visibles = useMemo(() => filtrerMesAthletes(athletes, { texte, distinctions }), [athletes, texte, distinctions]);
-  const reclamees = useMemo(() => reclameesHorsListe(terminees, new Set(athletes.map((a) => a.athleteId))), [terminees, athletes]);
 
   const notifier = (ok: boolean, texte: string) => {
     setAvis({ ok, texte });
@@ -220,11 +218,10 @@ export default function MesEvaluationsWeb() {
   const charger = useCallback(async () => {
     try {
       const supabase = createClient();
-      const liste = await chargerMesAthletes(supabase);
+      // BP 2026-10-19 : seulement les athlètes où j'ai encore une évaluation ou un badge (plus de « réclamées » à part).
+      const liste = (await chargerMesAthletes(supabase)).filter((a) => a.evaluationId != null || a.badges.length > 0);
       setAthletes(liste);
       setErreur(null);
-      // Cartes réclamées par le jeune (ex-« Terminées ») : en échec, la liste reste utilisable.
-      setTerminees(await chargerCartesTerminees(supabase).catch(() => []));
       setVignettes(await chargerVignettesMesAthletes(supabase, liste.map((x) => x.athleteId)));
     } catch (e) {
       setErreur(messageErreur(e));
@@ -233,6 +230,16 @@ export default function MesEvaluationsWeb() {
     }
   }, []);
   useEffect(() => { void charger(); }, [charger]);
+  // Retirer une évaluation ou un badge sur la fiche : la liste suit.
+  useEffect(() => {
+    const relire = () => { void charger(); };
+    window.addEventListener(EVENEMENT_EVALUATION_PARTENAIRE, relire);
+    window.addEventListener(EVENEMENT_BADGE_PARTENAIRE, relire);
+    return () => {
+      window.removeEventListener(EVENEMENT_EVALUATION_PARTENAIRE, relire);
+      window.removeEventListener(EVENEMENT_BADGE_PARTENAIRE, relire);
+    };
+  }, [charger]);
 
   async function ouvrirEvaluation(a: MonAthlete) {
     setOccupe(`eval:${a.athleteId}`);
@@ -261,27 +268,10 @@ export default function MesEvaluationsWeb() {
       {avis && <div className="mt-5"><Avis ok={avis.ok}>{avis.texte}</Avis></div>}
       {erreur && <div className="mt-5"><Avis ok={false}>{erreur}</Avis></div>}
 
-      {!chargement && reclamees.length > 0 && (
-        <section className="mt-5" data-reclamees>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-[#9CA3AF] font-semibold">Cartes réclamées par le jeune</p>
-          <ul className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {reclamees.map((t) => (
-              <li key={t.carteId} className={`relative ${classesSurface(true)} p-3`} data-reclamee-visible>
-                <Link href={`/partenaire/athletes/${t.athleteId}`}
-                  className="block text-[15px] font-bold text-white truncate after:absolute after:inset-0 after:rounded-xl">
-                  {`${t.prenom ?? ""} ${t.nom ?? ""}`.trim() || "Athlète"}
-                </Link>
-                <p className="text-[12px] text-[#9CA3AF] truncate">{[t.sport, t.poste, t.ecole].filter(Boolean).join(" · ") || "—"}</p>
-                <p className="mt-1 text-[12px] text-[#22C55E]">Réclamée · voir sa fiche</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {chargement ? (
         <Chargement />
-      ) : athletes.length === 0 && reclamees.length === 0 ? (
+      ) : athletes.length === 0 ? (
         <div className="mt-8">
           <EtatVide titre="Aucun athlète pour l'instant" texte="Évalue un athlète ou remets-lui un badge depuis sa fiche : il apparaîtra ici." />
         </div>
