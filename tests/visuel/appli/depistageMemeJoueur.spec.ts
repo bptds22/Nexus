@@ -19,6 +19,7 @@ test("appli Dépistage — même joueur : carte et profil Nexus au même numéro
   await page.getByRole("button", { name: "Commencer", exact: true }).click();
   await page.getByTestId("pastille-connue").filter({ hasText: "#17" }).click({ timeout: 20_000 });
   await expect(page.getByTestId("meme-joueur")).toContainText("Maxime Fournier", { timeout: 20_000 });
+  await expect(page.getByTestId("actions-athlete-connu")).toContainText("Voir le profil");
   await page.getByTestId("meme-joueur").getByRole("button", { name: "Fusionner" }).click();
   await page.screenshot({ path: "test-results/visuel/appli-depistage-meme-joueur.png" });
   await page.getByTestId("meme-joueur").getByRole("button", { name: "Pas le même" }).click();
