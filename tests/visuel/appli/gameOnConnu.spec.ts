@@ -19,9 +19,11 @@ test("appli Dépistage — joueur déjà connu (écrit en local)", async ({ page
   await page.getByRole("button", { name: "Hérons des Battures : chandail Blanc" }).click();
   await page.getByRole("button", { name: "Commencer", exact: true }).click();
 
-  await page.getByRole("button", { name: "+ Numéro" }).click();
-  for (const c of "16") await page.getByRole("button", { name: c, exact: true }).click();
-  await page.getByRole("button", { name: "OK", exact: true }).click();
+  // Dès le début : le joueur connu est déjà là, en pastille pointillée.
+  await expect(page.getByTestId("pastille-connue").first()).toContainText("Marc T.", { timeout: 20_000 });
+  await page.screenshot({ path: "test-results/visuel/appli-game-on-connu-depart.png" });
+  await page.getByTestId("pastille-connue").first().click();
+  await expect(page.getByLabel("Prénom du joueur").or(page.getByTestId("fiche-joueur-crayon"))).toContainText("Marc");
   // La fiche le reconnaît et montre ses notes d'avant, au-dessus de « Ce match ».
   await expect(page.getByTestId("fiche-joueur-connu")).toContainText("Marc Tremblay", { timeout: 20_000 });
   await expect(page.getByTestId("fiche-joueur-avant")).toContainText("gros bras");
