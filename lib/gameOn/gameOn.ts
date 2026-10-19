@@ -518,6 +518,20 @@ export function prenomDe(connu: Pick<Suggestion, "nom"> | null | undefined): str
   return connu?.nom.trim().split(/\s+/)[0] || null;
 }
 
+/** Peut-être le même joueur (BP 2026-10-19) : le numéro est reconnu comme un ATHLÈTE Nexus, et
+ *  l'unité a aussi UNE carte de cette équipe au même numéro — la fausse carte d'avant son arrivée
+ *  sur Nexus. On propose de les fusionner (la carte et son fil passent au profil). */
+export function carteJumelle(
+  g: Pick<GroupeJoueur, "cote" | "numero">,
+  connu: Pick<Suggestion, "type" | "id"> | null,
+  cartes: readonly CarteCandidate[],
+  equipeCote: string | null,
+): CarteCandidate | null {
+  if (!g.numero || !connu || connu.type !== "athlete" || !equipeCote) return null;
+  const c = cartes.filter((x) => x.teamId === equipeCote && (x.numero ?? "").trim() === g.numero);
+  return c.length === 1 ? c[0] : null;
+}
+
 /** « Pas lui » : on écarte (ou on rétablit, id null) le joueur reconnu pour ce numéro. */
 export function avecPasLui(e: EtatSeance, cle: string, id: string | null): EtatSeance {
   const pasLui = { ...(e.seance.pasLui ?? {}) };

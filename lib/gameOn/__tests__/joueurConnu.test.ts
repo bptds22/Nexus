@@ -1,7 +1,7 @@
 /* Dépistage — joueur déjà connu pendant le match (BP 2026-10-19). */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { avecPasLui, connusDuCote, joueurConnu, nomCourt, prenomDe, nouvelleSeance, type AthleteCandidat, type CarteCandidate } from "@/lib/gameOn/gameOn";
+import { avecPasLui, carteJumelle, connusDuCote, joueurConnu, nomCourt, prenomDe, nouvelleSeance, type AthleteCandidat, type CarteCandidate } from "@/lib/gameOn/gameOn";
 
 const carte = (id: string, numero: string | null, teamId: string | null, prenom = "Marc", nom = "Tremblay"): CarteCandidate =>
   ({ id, prenom, nom, numero, teamId, equipe: "Cougars" });
@@ -57,4 +57,13 @@ test("dès le début : les connus du côté, sans ceux déjà notés ni les éca
   assert.deepEqual(connusDuCote("A", athletes, cartes, "t-A", new Set(), { "A|#16": "c1" }).map((x) => x.numero), ["9", "22"]);
   assert.equal(prenomDe({ nom: "Marc Tremblay" }), "Marc");
   assert.equal(prenomDe(null), null);
+});
+
+test("peut-être le même joueur : un athlète Nexus reconnu ET une seule carte de l'équipe au même numéro", () => {
+  const cartes = [carte("c1", "16", "t-A"), carte("c2", "16", "t-Z")];
+  const athleteConnu = { type: "athlete" as const, id: "a1" };
+  assert.equal(carteJumelle({ cote: "A", numero: "16" }, athleteConnu, cartes, "t-A")?.id, "c1");
+  assert.equal(carteJumelle({ cote: "A", numero: "16" }, { type: "carte", id: "c1" }, cartes, "t-A"), null, "la carte est déjà le joueur reconnu");
+  assert.equal(carteJumelle({ cote: "A", numero: "9" }, athleteConnu, cartes, "t-A"), null);
+  assert.equal(carteJumelle({ cote: "A", numero: "16" }, athleteConnu, [...cartes, carte("c3", "16", "t-A")], "t-A"), null, "deux cartes : on ne choisit pas");
 });

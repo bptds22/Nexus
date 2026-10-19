@@ -39,6 +39,7 @@ import { todayIso } from "@/lib/queries/recruiter/useRecruitingCalendar";
 import { heureCarte } from "@/lib/carteMatchs/carteMatchs";
 import { useAthleteAutocomplete } from "@/lib/queries/recruiter/useAthleteAutocomplete";
 import { ajouterNoteCarte, ecrireCarte } from "@/lib/cartes/carteProspect";
+import { fusionnerCarte } from "@/lib/cartes/fusions";
 import { useNotesCarte } from "@/lib/cartes/useCartes";
 import { useNotesUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
@@ -51,10 +52,10 @@ import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { triggerHaptic } from "@/lib/haptics";
 import { DEPISTAGE, lireDepister, routeDepistage, type ModeDepistage } from "@/lib/gameOn/libelles";
 import {
-  CHANDAILS, PASTILLES, cleJoueur, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, connusDuCote, heureLigne, joueurConnu, libelleJoueur, messageErreur, nomCourt, prenomDe,
+  CHANDAILS, PASTILLES, carteJumelle, cleJoueur, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, connusDuCote, heureLigne, joueurConnu, libelleJoueur, messageErreur, nomCourt, prenomDe,
   notesEnAttente, numeroValide, noteValide, pastilleParDefaut, pastillesCote, rangerSeances, resumeEnvoi, suggestionsTri,
   texteRecopie, texteSur, titreSeance,
-  type Cote, type GroupeJoueur, type NoteAffichee, type Pastille, type SeanceLocale, type Suggestion,
+  type CarteCandidate, type Cote, type GroupeJoueur, type NoteAffichee, type Pastille, type SeanceLocale, type Suggestion,
 } from "@/lib/gameOn/gameOn";
 import {
   nouvelId, useAthletesMatch, useCartesPartenaire, useCartesUnite, useEquipesMatch, useNotesCartePartenaire, useNotesSeance, useSeancesRecentes, useStockGameOn,
@@ -620,6 +621,7 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
           seance={s} cote={joueur.cote} numero={joueur.numero} prenom={groupeOuvert?.prenom ?? joueur.prenom ?? prenomDe(connuDe(joueur))}
           equipe={nomCote(joueur.cote)} groupe={groupeOuvert ?? null}
           connu={connuDe(joueur)}
+          jumelle={carteJumelle(joueur, connuDe(joueur), cartesQ.data ?? [], (joueur.cote === "A" ? equipesQ.data?.A : equipesQ.data?.B)?.teamId ?? null)}
           ecarte={ecarteDe(joueur)}
           onPasLui={(id) => st.ecarter(seanceId, cleJoueur(joueur), id)}
           onRetablir={() => st.ecarter(seanceId, cleJoueur(joueur), null)}
@@ -692,11 +694,13 @@ function PaveNumerique({ couleur, equipe, onFermer, onValider }: {
    · l'historique du joueur (heure, auteur), suppression de MES notes ;
    · toucher une de MES notes la recharge : Enregistrer y AJOUTE une ligne datée
      (« 14 h 32 : … »), sans écraser le texte d'avant. Hors ligne comme le reste. */
-function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, ecarte, onPasLui, onRetablir, onFermer, onEnregistrer, onAjouterA, onRenommer, onSupprimer }: {
+function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, jumelle, ecarte, onPasLui, onRetablir, onFermer, onEnregistrer, onAjouterA, onRenommer, onSupprimer }: {
   seance: SeanceLocale; cote: Cote; numero: string | null; prenom: string | null; equipe: string;
   groupe: GroupeJoueur | null;
   /** Le joueur reconnu (athlète Nexus ou carte de l'unité), s'il y en a un. */
   connu: Suggestion | null;
+  /** Une carte de l'unité au même numéro alors que le joueur est reconnu comme athlète Nexus. */
+  jumelle: CarteCandidate | null;
   /** Le joueur écarté par « Pas lui » pour ce numéro, s'il y en a un. */
   ecarte: { id: string; nom: string } | null;
   onPasLui: (id: string) => void;
@@ -791,6 +795,7 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, ecar
           </button>
         </div>
       }>
+        {connu && jumelle && <MemeJoueur carte={jumelle} athlete={connu} />}
         {connu && <NotesAvant connu={connu} onPasLui={() => onPasLui(connu.id)} />}
         {!connu && ecarte && (
           <p className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2 text-[13px] text-white/60" data-testid="fiche-joueur-ecarte">
@@ -832,6 +837,47 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, ecar
         )}
         <div ref={finHistorique} />
     </FeuilleBas>
+  );
+}
+
+/* Peut-être le même joueur (BP 2026-10-19) : ta fausse carte et le vrai profil Nexus portent le même
+   numéro dans la même équipe. « Fusionner » (deux temps) : la carte et son fil passent au profil,
+   annulable 7 jours depuis l'Historique du dossier (lot E). « Pas le même » cache l'offre. */
+function MemeJoueur({ carte, athlete }: { carte: CarteCandidate; athlete: Suggestion }) {
+  const qc = useQueryClient();
+  const [etat, setEtat] = useState<"offre" | "confirmer" | "fusion" | "fait" | "cache">("offre");
+  const [erreur, setErreur] = useState<string | null>(null);
+  if (etat === "cache") return null;
+  const fusionner = async () => {
+    setEtat("fusion");
+    setErreur(null);
+    const e = await fusionnerCarte(createClient(), carte.id, athlete.id);
+    if (e) { setErreur(e); setEtat("confirmer"); return; }
+    setEtat("fait");
+    void invaliderTableauBlanc(qc);
+    void qc.invalidateQueries({ queryKey: ["game-on"] });
+  };
+  return (
+    <div className="mb-3 rounded-xl border border-[#3B82F6]/35 bg-[#3B82F6]/[0.08] px-3 py-2.5 text-[13px] text-white/85" data-testid="meme-joueur">
+      {etat === "fait" ? (
+        <p>Fusionné : la carte « {carte.prenom} {carte.nom} » et son fil sont maintenant sur le profil de {athlete.nom}.</p>
+      ) : (
+        <>
+          <p>Tu as aussi la carte <span className="font-semibold text-white">« {carte.prenom} {carte.nom} » #{carte.numero}</span> dans cette équipe : c&apos;est peut-être le même joueur que {athlete.nom}.</p>
+          {erreur && <p className="mt-1 text-[#FCA5A5]">{erreur}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {etat === "offre" ? (
+              <button type="button" onClick={() => setEtat("confirmer")} className="h-9 rounded-lg bg-[#3B82F6] px-3 text-[13px] font-bold text-white">Fusionner</button>
+            ) : (
+              <button type="button" disabled={etat === "fusion"} onClick={() => void fusionner()} className="h-9 rounded-lg bg-[#E63946] px-3 text-[13px] font-bold text-white disabled:opacity-50">
+                {etat === "fusion" ? "Fusion…" : "Confirmer : la carte passe au profil"}
+              </button>
+            )}
+            <button type="button" onClick={() => setEtat("cache")} className="h-9 text-[13px] font-semibold text-white/60 underline">Pas le même</button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
