@@ -40,6 +40,7 @@ import { heureCarte } from "@/lib/carteMatchs/carteMatchs";
 import { useAthleteAutocomplete } from "@/lib/queries/recruiter/useAthleteAutocomplete";
 import { ajouterNoteCarte, ecrireCarte } from "@/lib/cartes/carteProspect";
 import { fusionnerCarte } from "@/lib/cartes/fusions";
+import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori";
 import { useNotesCarte } from "@/lib/cartes/useCartes";
 import { useNotesUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
@@ -338,7 +339,7 @@ function EcranTableau({ st, seances, chargement, moi, onLancer, onMatch, onTrier
 
       {/* Les quatre pastilles (BP 2026-10-18). */}
       <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Tableau de bord du dépistage" data-testid="depistage-pastilles">
-        {PASTILLES.map((p) => (
+        {PASTILLES.filter((p) => mode === "recruteur" || p.cle !== "unite").map((p) => (
           <button key={p.cle} type="button" role="tab" aria-selected={pastille === p.cle} data-testid={`pastille-${p.cle}`}
             onClick={() => { triggerHaptic("Light"); setChoisie(p.cle); }}
             className={`flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-bold ${pastille === p.cle ? "border-[#E63946] bg-[#E63946] text-white" : "border-white/10 bg-white/[0.04] text-white/75"}`}>
@@ -881,6 +882,27 @@ function MemeJoueur({ carte, athlete }: { carte: CarteCandidate; athlete: Sugges
   );
 }
 
+/* Un athlète Nexus reconnu (BP 2026-10-19) : « Voir le profil » (retour au match par la flèche
+   du profil : la séance en cours se rouvre d'elle-même) et le cœur, pour le suivre tout de suite. */
+function ActionsAthleteConnu({ athleteId, nom }: { athleteId: string; nom: string }) {
+  const { favoris, basculer, modale } = useBasculeFavori();
+  const estFavori = favoris.ids.has(athleteId);
+  const [occupe, setOccupe] = useState(false);
+  return (
+    <div className="mb-2 flex items-center gap-4" data-testid="actions-athlete-connu">
+      <Link href={`/recruteur/athletes/${athleteId}`} onClick={() => triggerHaptic("Light")}
+        className="flex h-9 items-center text-[13px] font-bold text-white underline">Voir le profil</Link>
+      <button type="button" disabled={occupe || favoris.isLoading}
+        onClick={async () => { setOccupe(true); triggerHaptic("Light"); try { await basculer(athleteId, estFavori, nom); } finally { setOccupe(false); } }}
+        aria-pressed={estFavori}
+        className={`flex h-9 items-center gap-1.5 text-[13px] font-bold disabled:opacity-50 ${estFavori ? "text-[#E63946]" : "text-white/80"}`}>
+        <span aria-hidden>{estFavori ? "♥" : "♡"}</span>{estFavori ? "Dans les favoris" : "Ajouter aux favoris"}
+      </button>
+      {modale}
+    </div>
+  );
+}
+
 /* Ses notes d'AVANT ce match (BP 2026-10-19) : « je veux continuer mes notes, pas recommencer ».
    Le fil de la carte, ou les notes de l'unité sur l'athlète ; les 10 plus récentes, en ordre. */
 const AVANT_MAX = 10;
@@ -901,6 +923,7 @@ function NotesAvant({ connu, onPasLui }: { connu: Suggestion; onPasLui: () => vo
         </p>
         <button type="button" onClick={onPasLui} className="h-9 shrink-0 px-1 text-[12px] font-semibold text-white/50 underline">Pas lui</button>
       </div>
+      {!partenaire && connu.type === "athlete" && <ActionsAthleteConnu athleteId={connu.id} nom={connu.nom} />}
       {q.isLoading ? (
         <p className="text-[13px] text-white/40">Chargement de ses notes…</p>
       ) : q.isError ? (
@@ -974,6 +997,15 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
     const e2 = cible.carteId
       ? await ajouterNoteCarte(supabase, cible.carteId, texte)
       : moi ? (await supabase.from("recruiter_notes").insert({ recruiter_id: moi, athlete_id: cible.athleteId, content: texte })).error : null;
+    // BP 2026-10-19 : un joueur qu'on dépiste est IDENTIFIÉ — hors processus, son dossier s'ouvre à Identifié
+    // (jamais de recul s'il y est déjà ; une carte est déjà dans le processus dès sa création).
+    if (cible.athleteId) {
+      const { data: dossier } = await supabase.rpc("unite_pipeline").eq("athlete_id", cible.athleteId);
+      if (!((dossier ?? []) as unknown[]).length) {
+        const { error: eDossier } = await supabase.rpc("unite_ecrire_dossier", { p_athlete_id: cible.athleteId, p_champs: { stage: "IDENTIFIE" } });
+        if (eDossier) console.error(`[dépistage] dossier non ouvert ${eDossier.code ?? ""} ${eDossier.message}`);
+      }
+    }
     // Une carte sans numéro garde celui du match : au prochain match, il est reconnu tout seul.
     const carte = cible.carteId ? cartesQ.data?.find((c) => c.id === cible.carteId) : null;
     if (carte && !carte.numero?.trim() && g.numero) await ecrireCarte(supabase, carte.id, { numero: g.numero });

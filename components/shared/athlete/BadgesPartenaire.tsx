@@ -159,11 +159,12 @@ export function BadgePartenaireVignette({
         </button>
       )}
 
+      {/* BP 2026-10-19 : pas de confirmation, un badge se réattribue facilement. */}
       {peutRetirer && !confirmer && (
         <button
           type="button"
           disabled={occupe}
-          onClick={() => setConfirmer(true)}
+          onClick={() => agir(() => retirerBadgePartenaire(createClient(), badge.id))}
           className="text-[11px] font-semibold text-[#E63946] hover:underline underline-offset-2 disabled:opacity-50"
         >
           Retirer le badge

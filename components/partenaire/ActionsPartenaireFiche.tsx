@@ -18,7 +18,7 @@
      avec qui le porte — le serveur refuse de toute façon le doublon.
    - « Retirer un badge » (BP 2026-10-19) : à côté de « Retirer mon
      évaluation », la liste des badges que J'AI posés — les miens ET les
-     badges Nexus —, chacun avec sa confirmation. Le lien sous la vignette
+     badges Nexus —, en un toucher. Le lien sous la vignette
      des « Distinctions » reste (il était caché derrière « +N »).
 ═══════════════════════════════════════════════════════════════ */
 
@@ -69,7 +69,6 @@ export default function ActionsPartenaireFiche({
   const poses = useBadgesPartenaires(athleteId);
   const mesPoses = poses.filter((b) => b.estLeMien);
   const [retraitOuvert, setRetraitOuvert] = useState(false);
-  const [aRetirer, setARetirer] = useState<string | null>(null);
 
   useEffect(() => {
     if (!peutEvaluer) return;
@@ -120,7 +119,6 @@ export default function ActionsPartenaireFiche({
     try {
       await retirerBadgePartenaire(createClient(), poseId);
       signalerBadgesPartenaire(athleteId);
-      setARetirer(null);
       if (mesPoses.length <= 1) setRetraitOuvert(false);
       notifier("success", `Badge « ${libelle} » retiré.`);
     } catch (e) {
@@ -201,7 +199,7 @@ export default function ActionsPartenaireFiche({
           <button
             type="button"
             disabled={occupe}
-            onClick={() => { setRetraitOuvert((v) => !v); setARetirer(null); }}
+            onClick={() => setRetraitOuvert((v) => !v)}
             className="px-4 py-2 border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50"
             data-retirer-badge
           >
@@ -225,20 +223,11 @@ export default function ActionsPartenaireFiche({
                       <span className="text-[13px] font-semibold text-white truncate">{b.libelle}</span>
                       <span className="text-[11px] text-[#6B7280]">{b.estNexus ? "Badge Nexus" : "Ton badge"}</span>
                     </span>
-                    {aRetirer === b.id ? (
-                      <span className="flex items-center gap-1 shrink-0">
-                        <button type="button" disabled={occupe} onClick={() => retirerBadge(b.id, b.libelle)}
-                          className="px-2 py-1 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-md disabled:opacity-50">
-                          {occupe ? "…" : "Confirmer"}
-                        </button>
-                        <button type="button" disabled={occupe} onClick={() => setARetirer(null)} className="px-1 text-[12px] text-[#9CA3AF] hover:text-white">Non</button>
-                      </span>
-                    ) : (
-                      <button type="button" disabled={occupe} onClick={() => setARetirer(b.id)}
-                        className="shrink-0 px-2 py-1 text-[12px] font-bold text-[#E63946] hover:underline disabled:opacity-50">
-                        Retirer
-                      </button>
-                    )}
+                    {/* BP 2026-10-19 : pas de confirmation, un badge se réattribue facilement. */}
+                    <button type="button" disabled={occupe} onClick={() => retirerBadge(b.id, b.libelle)}
+                      className="shrink-0 px-2 py-1 text-[12px] font-bold text-[#E63946] hover:underline disabled:opacity-50">
+                      Retirer
+                    </button>
                   </div>
                 );
               })}
