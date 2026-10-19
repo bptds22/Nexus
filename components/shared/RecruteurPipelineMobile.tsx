@@ -1370,6 +1370,7 @@ function PipelineDetailSheet({
                       athleteName={card.full_name}
                       sport={card.sport || undefined}
                       schoolName={card.noTeam ? undefined : card.school || undefined}
+                      cible={{ id: card.id, prospect: estCarte(card) }}
                     />
                   )}
                 </div>

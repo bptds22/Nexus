@@ -48,6 +48,7 @@ import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 import { useDetailsVisites } from "@/lib/queries/recruiter/useDetailsVisites";
 import { cleVisite, resumeVisite } from "@/lib/visites/detailsVisite";
 import { BoutonDetailsVisite, FenetreDetailsVisite } from "@/components/recruteur/visites/DetailsVisite";
+import BoutonDepister from "@/components/game-on/BoutonDepister";
 
 
 const SPORT_OPTIONS: PickerOption[] = [
@@ -319,10 +320,13 @@ function MatchCard({ m }: { m: MatchView }) {
       <button
         type="button"
         onClick={() => { triggerHaptic("Light"); setOpen((v) => !v); }}
-        className="flex w-full items-start gap-3.5 px-4 py-3.5 text-left"
+        // Carte compacte (BP 2026-10-19) : la source et les joueurs vivent dans le dépli.
+        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+        data-testid="carte-match-calendrier"
+        aria-expanded={open}
       >
-        <div className="w-12 shrink-0 text-center">
-          <div className="text-[26px] font-extrabold leading-none tracking-[-0.02em] text-[#EDEFF3]">
+        <div className="w-10 shrink-0 text-center">
+          <div className="text-[22px] font-extrabold leading-none tracking-[-0.02em] text-[#EDEFF3]">
             {dayNumber(m.game.gameDate)}
           </div>
           <div className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[#E63946]">
@@ -332,7 +336,7 @@ function MatchCard({ m }: { m: MatchView }) {
 
         <div className="min-w-0 flex-1">
           {m.hot && (
-            <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#E63946]">
+            <span className="mb-0.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#E63946]">
               ★ Fort potentiel
             </span>
           )}
@@ -341,22 +345,20 @@ function MatchCard({ m }: { m: MatchView }) {
             <span className="px-1 text-[13px] font-medium text-[#5C6575]">vs</span>
             {m.game.visitorName}
           </div>
-          <div className="mt-1 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[13px] font-medium text-[#8A909C]">
+          <div className="mt-0.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[13px] font-medium text-[#8A909C]">
             {m.game.gameTime && <span>{m.game.gameTime}</span>}
             {m.game.venue && <span className="truncate">{m.game.venue}</span>}
+            {m.game.competition && <span className="text-[#5C6575]">{m.game.competition}</span>}
           </div>
-          {m.game.competition && (
-            <div className="mt-0.5 text-[12.5px] text-[#5C6575]">{m.game.competition}</div>
-          )}
 
-          <div className="mt-2.5 flex items-center gap-2.5">
+          <div className="mt-1.5 flex items-center gap-2">
             <div className="flex">
               {shown.map((t, i) => (
                 <Avatar key={`${t.athleteId}-${t.teamId}`} text={t.initials} className={i === 0 ? "" : "-ml-2"} />
               ))}
               {extra > 0 && <Avatar text={`+${extra}`} more className="-ml-2" />}
             </div>
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-3 py-1 text-[13px] font-semibold text-[#EDEFF3]">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-2.5 py-0.5 text-[12px] font-semibold text-[#EDEFF3]">
               {/* C2 (1.4.5) : aucun compte de joueurs — pastille sans nombre. */}
               <b className="font-extrabold text-[#E63946]">Cibles</b>
             </span>
@@ -371,14 +373,18 @@ function MatchCard({ m }: { m: MatchView }) {
         </svg>
       </button>
 
-      {/* Provenance — HORS du <button> : un lien ne s'imbrique pas dans un
-          bouton (HTML invalide, et le tap partirait dans les deux). */}
-      <SourceMatchLigne source={m.game.source} className="px-4 py-2.5" />
-
       {open && (
         <div className="bg-[#171A20]">
+          {/* Dépistage (BP 2026-10-18) : la séance s'ouvre avec ce match et ses deux équipes. */}
+          <div className="px-4 pt-3">
+            <BoutonDepister gameId={m.game.id} equipeA={m.game.homeName} equipeB={m.game.visitorName} lieu={m.game.venue || null}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#E63946] text-[15px] font-bold text-white active:bg-[#D42B22]" />
+          </div>
           <DetailColumn name={m.game.homeName} targets={m.homeTargets} />
           <DetailColumn name={m.game.visitorName} targets={m.visitorTargets} />
+          {/* Provenance — au dépli seulement (BP 2026-10-19), avec les joueurs. HORS du
+              <button> : un lien ne s'imbrique pas dans un bouton (HTML invalide). */}
+          <SourceMatchLigne source={m.game.source} className="px-4 py-2.5" />
         </div>
       )}
     </div>

@@ -77,7 +77,10 @@ import { GradeChip, GradePicker } from "@/components/shared/GradeChip";
 import { GRADES, type Grade } from "@/lib/config/grades";
 import { champVisitePourEtape, etapePorteVisite } from "@/lib/pipeline/regleVisite";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
-import { generateCalendarLinks, downloadIcs } from "@/lib/calendar/generateCalendarLinks";
+import { downloadIcs } from "@/lib/calendar/generateCalendarLinks";
+import { liensVisite } from "@/lib/calendar/evenementVisite";
+import { useDetailsVisites } from "@/lib/queries/recruiter/useDetailsVisites";
+import { cleVisite } from "@/lib/visites/detailsVisite";
 import {
   KANBAN_COLUMNS,
   getCardsByStatus,
@@ -1347,6 +1350,9 @@ function SlideOver({
   // Notes de suivi : FilNotesSuivi (un seul fil par joueur, retour BP).
   const carte = estCarte(card) ? card : null;
   const cotesPartenairesFiche = useCotesPartenairesDe(carte ? null : card.id);
+  // Détails de la visite (lieu, Zoom, responsable) : ils suivent l'export agenda.
+  const detailsVisites = useDetailsVisites(!!card.visit_at);
+  const detailsVisite = detailsVisites.data?.parCle.get(cleVisite(card.id, !!carte)) ?? null;
   const colleguesQuiSuivent = collegues(card, moi);
   const [pendingStatus, setPendingStatus] = useState<RecruitmentStatus | null>(null);
   const [retireReason, setRetireReason] = useState("");
@@ -1618,19 +1624,16 @@ function SlideOver({
 
                 {/* Export agenda — seulement quand il y a une date à exporter. */}
                 {card.visit_at && (() => {
-                  const start = new Date(card.visit_at);
-                  if (Number.isNaN(start.getTime())) return null;
-                  const title = card.sport
-                    ? `Visite — ${card.full_name} (${card.sport})`
-                    : `Visite — ${card.full_name}`;
-                  const { googleUrl, icsBlob } = generateCalendarLinks({
-                    title,
-                    description: `Visite planifiée avec ${card.full_name} via Nexus.`,
-                    location: card.school || "",
-                    startDate: start,
-                    durationMinutes: 60,
+                  // Même événement que partout (lib/calendar/evenementVisite) : lieu et description compris.
+                  const liens = liensVisite({
+                    visitAtIso: card.visit_at,
+                    athleteName: card.full_name,
+                    sport: card.sport,
+                    schoolName: card.school,
+                    details: detailsVisite,
                   });
-                  const icsName = `visite-${card.full_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.ics`;
+                  if (!liens) return null;
+                  const { googleUrl, icsBlob, icsName } = liens;
                   const btn = "flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2D3748] bg-[#13151a] text-xs font-semibold text-[#6B7280] hover:text-[#E63946] hover:border-[#E63946]/40 transition-colors";
 
                   return (

@@ -13,6 +13,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { FeuilleBas } from "@/components/mobile/FeuilleBas";
+import { BoutonsAgendaVisite } from "@/components/shared/VisitCalendarCard";
 import { messageErreurNexus } from "@/lib/erreurs/messageErreurNexus";
 import { nomAuteur, useAuteursUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useEnregistrerDetailsVisite } from "@/lib/queries/recruiter/useDetailsVisites";
@@ -118,6 +119,10 @@ function Contenu({ visite, details, onFermer }: { visite: VisiteUnite; details: 
             {details.note && <Ligne libelle="Note"><span className="whitespace-pre-line">{details.note}</span></Ligne>}
           </div>
           {ajoutePar && <p className="mt-2 text-[12px] text-[#8A909C]">Détails ajoutés par {ajoutePar}</p>}
+          {/* Export : le lieu (adresse ou Zoom) et la description suivent l'événement (lib/calendar/evenementVisite). */}
+          <div className="mt-4">
+            <BoutonsAgendaVisite compact entree={{ visitAtIso: visite.visitAt, athleteName: visite.fullName, details }} />
+          </div>
           <button type="button" onClick={() => setEdition(true)} className="mt-4 w-full rounded-xl bg-[#E63946] py-3 text-[15px] font-bold text-white hover:bg-[#d32f3c]">
             Modifier
           </button>

@@ -7,21 +7,27 @@
    (le gate vit chez l'appelant : pas de carte vide).
 
    Surface recruteur seulement — aucune donnée privée du recruteur
-   (recruiter_pipeline.notes) ne transite ici : la carte ne connaît que
-   l'athlète et l'instant.
+   (recruiter_pipeline.notes) ne transite ici. Avec `cible`, la carte lit
+   les Détails de la visite de l'unité (lieu, Zoom, responsable, note) :
+   ils suivent l'événement exporté (BP 2026-10-19, lib/calendar/evenementVisite).
 ═══════════════════════════════════════════════════════════════ */
 
 import { Capacitor } from "@capacitor/core";
 
-import { generateCalendarLinks, downloadIcs } from "@/lib/calendar/generateCalendarLinks";
+import { downloadIcs } from "@/lib/calendar/generateCalendarLinks";
+import { aUneHeure, liensVisite, type EntreeVisite } from "@/lib/calendar/evenementVisite";
+import { cleVisite } from "@/lib/visites/detailsVisite";
+import { useDetailsVisites } from "@/lib/queries/recruiter/useDetailsVisites";
 
 interface Props {
   /** Instant ISO (timestamptz) tel que lu en DB. */
   visitAtIso: string;
   athleteName: string;
   sport?: string;
-  /** École de l'athlète — devient LOCATION dans l'événement. */
+  /** École de l'athlète — LOCATION quand la visite n'a ni adresse ni lien. */
   schoolName?: string;
+  /** Le dossier de la visite : ses Détails (lieu, Zoom…) passent dans l'événement. */
+  cible?: { id: string; prospect?: boolean };
   /** Mise en forme du cadre. Fournie, elle REMPLACE le défaut
    *  (`rounded-lg px-4 py-3`) au lieu de s'y ajouter : deux arrondis ou deux
    *  paddings dans la même chaîne, c'est l'ordre du CSS qui tranche, pas nous.
@@ -41,37 +47,12 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
 };
 const TIME_FMT: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" };
 
-/** Minuit pile = l'utilisateur n'a pas saisi d'heure (elle est optionnelle).
- *  On n'affiche alors pas « à 00:00 », qui se lirait comme un vrai rendez-vous. */
-function hasTimeComponent(d: Date): boolean {
-  return d.getHours() !== 0 || d.getMinutes() !== 0;
-}
-
-export default function VisitCalendarCard({ visitAtIso, athleteName, sport, schoolName, className }: Props) {
-  const start = new Date(visitAtIso);
-  if (Number.isNaN(start.getTime())) return null;
-
-  const withTime = hasTimeComponent(start);
-  const dateLabel = start.toLocaleDateString("fr-CA", DATE_FMT);
-  const timeLabel = withTime ? start.toLocaleTimeString("fr-CA", TIME_FMT) : null;
-
-  // Événement d'1 h TOUJOURS. Sans heure saisie (instant à minuit local), on
-  // cale le départ à 12:00 — sinon le preview affiche un « minuit → 1 h »
-  // illisible. Avec heure saisie, on la respecte.
-  const eventStart = withTime
-    ? start
-    : new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0, 0);
-
-  const title = sport ? `Visite — ${athleteName} (${sport})` : `Visite — ${athleteName}`;
-  const { googleUrl, icsBlob } = generateCalendarLinks({
-    title,
-    description: `Visite planifiée avec ${athleteName} via Nexus.`,
-    location: schoolName || "",
-    startDate: eventStart,
-    durationMinutes: 60,
-  });
-
-  const icsName = `visite-${athleteName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.ics`;
+/** Les deux boutons d'export d'une visite (Google Agenda, Ajouter au calendrier).
+ *  Partagés par la carte de visite et la fenêtre Détails du calendrier. */
+export function BoutonsAgendaVisite({ entree, compact = false }: { entree: EntreeVisite; compact?: boolean }) {
+  const liens = liensVisite(entree);
+  if (!liens) return null;
+  const { googleUrl, icsBlob, icsName, evenement } = liens;
 
   /* Capacitor WebView ne sait pas ouvrir un onglet (`target="_blank"` navigue
      in-app ou no-op). Sur device on délègue au navigateur système via
@@ -91,11 +72,11 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
      SFSafariViewController refuse) ne mettent l'événement dans l'agenda.
 
      On utilise EventKit via @ebarooni/capacitor-calendar : `createEventWithPrompt`
-     ouvre l'ÉDITEUR D'ÉVÉNEMENT NATIF pré-rempli (titre/date/lieu). L'utilisateur
-     tape « Ajouter » → l'événement entre RÉELLEMENT dans le calendrier de
-     l'appareil (iOS : EKEventEditViewController ; Android : intent d'insertion).
-     iOS demande l'accès calendrier la 1ʳᵉ fois (clés Info.plist ajoutées). Web :
-     download .ics classique (marche dans un vrai navigateur). */
+     ouvre l'ÉDITEUR D'ÉVÉNEMENT NATIF pré-rempli (titre/date/lieu/description).
+     L'utilisateur tape « Ajouter » → l'événement entre RÉELLEMENT dans le
+     calendrier de l'appareil (iOS : EKEventEditViewController ; Android : intent
+     d'insertion). iOS demande l'accès calendrier la 1ʳᵉ fois (clés Info.plist
+     ajoutées). Web : download .ics classique (marche dans un vrai navigateur). */
   const addToCalendar = async () => {
     if (!Capacitor.isNativePlatform()) {
       downloadIcs(icsBlob, icsName);
@@ -103,19 +84,40 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
     }
     try {
       const { CapacitorCalendar } = await import("@ebarooni/capacitor-calendar");
-      const startMs = eventStart.getTime();
+      const startMs = evenement.start.getTime();
       await CapacitorCalendar.createEventWithPrompt({
-        title,
-        location: schoolName || undefined,
-        description: `Visite planifiée avec ${athleteName} via Nexus.`,
+        title: evenement.title,
+        location: evenement.location || undefined,
+        description: evenement.description,
         startDate: startMs,
         // Toujours un événement d'1 h (jamais journée entière ni minuit→1h).
-        endDate: startMs + 60 * 60 * 1000,
+        endDate: startMs + evenement.durationMinutes * 60 * 1000,
       });
     } catch (e) {
       console.error("[visite mobile] createEventWithPrompt a échoué:", e);
     }
   };
+
+  const btn = `flex-1 text-center rounded-lg border border-[#2D3748] bg-[#13151a] font-semibold text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors ${
+    compact ? "px-2 py-2 text-[13px]" : "px-3 py-2 text-sm"
+  }`;
+  return (
+    <div className="flex gap-2" data-testid="boutons-agenda-visite">
+      <button type="button" onClick={openGoogle} className={btn}>Google Agenda</button>
+      <button type="button" onClick={addToCalendar} className={btn}>Ajouter au calendrier</button>
+    </div>
+  );
+}
+
+export default function VisitCalendarCard({ visitAtIso, athleteName, sport, schoolName, cible, className }: Props) {
+  const detailsQ = useDetailsVisites(!!cible);
+  const details = cible ? detailsQ.data?.parCle.get(cleVisite(cible.id, cible.prospect)) ?? null : null;
+
+  const start = new Date(visitAtIso);
+  if (Number.isNaN(start.getTime())) return null;
+
+  const dateLabel = start.toLocaleDateString("fr-CA", DATE_FMT);
+  const timeLabel = aUneHeure(start) ? start.toLocaleTimeString("fr-CA", TIME_FMT) : null;
 
   return (
     <div className={`bg-[#1A1D24] border border-[#2D3748] ${className ?? "rounded-lg px-4 py-3"}`}>
@@ -132,21 +134,8 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
         </p>
       </div>
 
-      <div className="flex gap-2 mt-3">
-        <button
-          type="button"
-          onClick={openGoogle}
-          className="flex-1 text-center px-3 py-2 rounded-lg border border-[#2D3748] bg-[#13151a] text-sm font-semibold text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"
-        >
-          Google Agenda
-        </button>
-        <button
-          type="button"
-          onClick={addToCalendar}
-          className="flex-1 px-3 py-2 rounded-lg border border-[#2D3748] bg-[#13151a] text-sm font-semibold text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"
-        >
-          Ajouter au calendrier
-        </button>
+      <div className="mt-3">
+        <BoutonsAgendaVisite entree={{ visitAtIso, athleteName, sport, schoolName, details }} />
       </div>
     </div>
   );

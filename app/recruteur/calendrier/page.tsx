@@ -49,6 +49,7 @@ import BoutonAbonnementAgenda from "@/components/recruteur/agenda/BoutonAbonneme
 import { useDetailsVisites } from "@/lib/queries/recruiter/useDetailsVisites";
 import { cleVisite, resumeVisite } from "@/lib/visites/detailsVisite";
 import { BoutonDetailsVisite, FenetreDetailsVisite } from "@/components/recruteur/visites/DetailsVisite";
+import BoutonDepister from "@/components/game-on/BoutonDepister";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -403,14 +404,17 @@ function MatchCard({ m }: { m: MatchView }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-[22px] px-[22px] py-[18px] text-left text-[#EDEFF3] flex-wrap sm:flex-nowrap"
+        // Carte compacte (BP 2026-10-19) : la source et les joueurs vivent dans le dépli.
+        className="flex w-full items-center gap-4 px-4 py-3 text-left text-[#EDEFF3] flex-wrap sm:flex-nowrap"
+        data-testid="carte-match-calendrier"
+        aria-expanded={open}
       >
         {/* Bloc date */}
-        <div className="w-16 shrink-0 text-center">
-          <div className="text-[30px] font-extrabold leading-none tracking-[-0.02em]">
+        <div className="w-12 shrink-0 text-center">
+          <div className="text-[24px] font-extrabold leading-none tracking-[-0.02em]">
             {dayNumber(m.game.gameDate)}
           </div>
-          <div className="mt-[3px] text-[12px] font-bold uppercase tracking-[0.1em] text-[#E63946]">
+          <div className="mt-[2px] text-[11px] font-bold uppercase tracking-[0.1em] text-[#E63946]">
             {shortMonthLabel(m.game.gameDate)}
           </div>
         </div>
@@ -418,16 +422,16 @@ function MatchCard({ m }: { m: MatchView }) {
         {/* Matchup + meta */}
         <div className="flex-1 min-w-0">
           {m.hot && (
-            <span className="mb-1.5 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.08em] text-[#E63946]">
+            <span className="mb-0.5 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#E63946]">
               ★ Match à fort potentiel
             </span>
           )}
-          <div className="text-[17px] font-bold leading-[1.35]">
+          <div className="text-[15.5px] font-bold leading-[1.3]">
             {m.game.homeName}
-            <span className="px-1 text-[14.5px] font-medium text-[#5C6575]">vs</span>
+            <span className="px-1 text-[13.5px] font-medium text-[#5C6575]">vs</span>
             {m.game.visitorName}
           </div>
-          <div className="mt-1 flex flex-wrap gap-x-[14px] gap-y-1.5 text-[14.5px] font-medium text-[#8A909C]">
+          <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-[13.5px] font-medium text-[#8A909C]">
             {/* Même lecture et même format que la carte des matchs : « 18 h 30 »,
                 jamais le texte brut de la source (« 6:30 PM »). */}
             {m.game.gameTime && <span data-testid="heure-match">{heureCarte(m.game.gameTime)}</span>}
@@ -448,7 +452,7 @@ function MatchCard({ m }: { m: MatchView }) {
             ))}
             {extra > 0 && <Avatar text={`+${extra}`} more className="-ml-[9px]" />}
           </div>
-          <span className="inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-[15px] py-[7px] text-[14px] font-semibold text-[#EDEFF3]">
+          <span className="inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-3 py-1 text-[13px] font-semibold text-[#EDEFF3]">
             {/* C2 (1.4.5) : aucun compte de joueurs — libellé neutre, sans nombre. */}
             Cibles
           </span>
@@ -461,10 +465,12 @@ function MatchCard({ m }: { m: MatchView }) {
         </div>
       </button>
 
-      {/* Provenance — HORS du <button> : un lien ne s'imbrique pas dans un
-          bouton (HTML invalide, et le clic partirait dans les deux). */}
-      <SourceMatchLigne source={m.game.source} />
-
+      {open && (
+        <div className="flex justify-end border-t border-[#1E2129] bg-[#171A20] px-4 py-3">
+          {/* Dépistage (BP 2026-10-18) : la séance s'ouvre avec ce match et ses deux équipes. */}
+          <BoutonDepister gameId={m.game.id} equipeA={m.game.homeName} equipeB={m.game.visitorName} lieu={m.game.venue || null} />
+        </div>
+      )}
       {open && (
         <div className="grid grid-cols-1 border-t border-[#1E2129] bg-[#171A20] md:grid-cols-2">
           <DetailColumn name={m.game.homeName} targets={m.homeTargets} />
@@ -475,6 +481,9 @@ function MatchCard({ m }: { m: MatchView }) {
           />
         </div>
       )}
+      {/* Provenance — au dépli seulement (BP 2026-10-19), avec les joueurs. HORS du
+          <button> : un lien ne s'imbrique pas dans un bouton (HTML invalide). */}
+      {open && <SourceMatchLigne source={m.game.source} className="bg-[#171A20] px-4 py-[9px]" />}
     </div>
   );
 }
