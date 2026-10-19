@@ -43,7 +43,8 @@ import OngletHistoriquePanneau from "@/app/recruteur/pipeline/_components/Onglet
 import { useFiltreSportUnite, type FiltreSportUnite as FiltreSportUniteEtat } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
-import { FournisseurRapprochements, BandeauRapprochements, BoutonPropositions, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
+import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte, useContexteRapprochements } from "@/components/recruteur/cartes/Rapprochements";
+import MenuDeroulant from "@/components/shared/MenuDeroulant";
 import { fusionnerCarte } from "@/lib/cartes/fusions";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { createClient } from "@/lib/supabase/client";
@@ -213,11 +214,9 @@ function useClientNow(): number {
    existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
    NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
    qu'on ait à ouvrir quoi que ce soit. */
-function PipelineHeader({ nActiveFilters, onFilterTap, propositions = false }: {
+function PipelineHeader({ nActiveFilters, onFilterTap }: {
   nActiveFilters: number;
   onFilterTap: () => void;
-  /** BP 2026-10-19 : « Propositions » sous « Filtrer » (unité Pro). */
-  propositions?: boolean;
 }) {
   return (
     <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
@@ -278,10 +277,56 @@ function PipelineHeader({ nActiveFilters, onFilterTap, propositions = false }: {
             </span>
           )}
         </button>
-        <BoutonPropositions tactile actif={propositions} />
         </div>
       </div>
     </div>
+  );
+}
+
+/* ── « + » de Mon processus (BP 2026-10-19) : un menu déroulant — créer une carte, ou les
+   propositions (profils Nexus qui semblent correspondre à tes cartes, refusées comprises). ── */
+function PlusProcessus({ onCreer, propositions }: { onCreer: () => void; propositions: boolean }) {
+  const { parCarte, nbRefusees, ouvrir } = useContexteRapprochements();
+  const ref = useRef<HTMLButtonElement>(null);
+  const [ouvert, setOuvert] = useState(false);
+  const n = [...parCarte.values()].reduce((a, b) => a + b, 0);
+  const choix = "w-full min-h-[48px] flex items-center justify-between gap-3 rounded-lg px-3 text-left text-[15px] font-semibold text-white active:bg-white/[0.06]";
+  return (
+    <>
+      <button
+        ref={ref}
+        type="button"
+        data-testid="ajouter-prospect"
+        aria-label="Ajouter"
+        aria-haspopup="menu"
+        aria-expanded={ouvert}
+        onClick={() => {
+          triggerHaptic("Medium");
+          if (!propositions) { onCreer(); return; }
+          setOuvert((v) => !v);
+        }}
+        className="fixed right-4 z-50 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(230,57,70,0.4)] active:scale-95 active:bg-[#D42B22] transition-transform"
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px + 16px)" }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
+      </button>
+      {ouvert && (
+        <MenuDeroulant ancre={ref} onFermer={() => setOuvert(false)} largeur={260} testId="menu-plus-processus">
+          <button type="button" role="menuitem" className={choix} onClick={() => { triggerHaptic("Light"); setOuvert(false); onCreer(); }}>
+            Créer une nouvelle carte
+          </button>
+          <button type="button" role="menuitem" className={choix} onClick={() => { triggerHaptic("Light"); setOuvert(false); ouvrir(); }}>
+            Propositions
+            {n > 0 ? (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#3B82F6] text-[11px] font-black text-white">{n}</span>
+            ) : nbRefusees > 0 ? <span className="text-[12px] font-medium text-white/45">{nbRefusees} refusée{nbRefusees > 1 ? "s" : ""}</span> : null}
+          </button>
+        </MenuDeroulant>
+      )}
+    </>
   );
 }
 
@@ -1981,7 +2026,6 @@ export function RecruteurPipelineMobile() {
       <PipelineHeader
         nActiveFilters={activeFilterCount(filters, extra)}
         onFilterTap={handleMenuTap}
-        propositions={modeUnite && !isFreeDemoMode}
       />
 
       {/* Free demo banner */}
@@ -2113,19 +2157,7 @@ export function RecruteurPipelineMobile() {
           sinon `position: fixed` est piégé par le `transform` d'AnimatedRoute.
           Masqué quand une feuille est ouverte, pour ne pas la recouvrir. */}
       {peutCreerProspect && montePortail && !creerProspect && !menuOpen && !sheetOpen && createPortal(
-        <button
-          type="button"
-          data-testid="ajouter-prospect"
-          aria-label="Ajouter un prospect"
-          onClick={() => { triggerHaptic("Medium"); setCreerProspect(true); }}
-          className="fixed right-4 z-50 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(230,57,70,0.4)] active:scale-95 active:bg-[#D42B22] transition-transform"
-          style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px + 16px)" }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </svg>
-        </button>,
+        <PlusProcessus propositions={modeUnite && !isFreeDemoMode} onCreer={() => setCreerProspect(true)} />,
         document.body,
       )}
 

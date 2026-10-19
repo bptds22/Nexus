@@ -181,6 +181,7 @@ const ICONES = {
   nouveau: icone(<><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" /></>),
   modifier: icone(<><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z" /></>),
   revoquer: icone(<><circle cx="12" cy="12" r="10" /><path d="M4.93 4.93l14.14 14.14" /></>),
+  anciennes: icone(<><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></>),
   supprimer: icone(<><path d="M3 6h18" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></>, "#E63946"),
 };
 
@@ -331,7 +332,7 @@ export default function MesAthletesMobile({ propositionsSeulement = false, onTou
   const [lien, setLien] = useState<{ carteId: string; adresse: string; evalue: boolean } | null>(null);
   // P2/P3 (1.4.5) : correspondances possibles de mes cartes, et la fenêtre ouverte (une carte, ou toutes).
   const [rapprochements, setRapprochements] = useState<RapprochementPartenaire[]>([]);
-  const [fenetre, setFenetre] = useState<{ carteId?: string } | null>(null);
+  const [fenetre, setFenetre] = useState<{ carteId?: string; anciennes?: boolean } | null>(null);
   const [menu, setMenu] = useState<CartePartenaire | null>(null);
   const [confirmation, setConfirmation] = useState<{ carteId: string; action: ActionConfirmee } | null>(null);
   const [occupe, setOccupe] = useState<string | null>(null);
@@ -454,6 +455,8 @@ export default function MesAthletesMobile({ propositionsSeulement = false, onTou
         ? { label: "Nouveau lien", icon: ICONES.nouveau, disabled: bloque, onClick: () => demander(c.id, "nouveau-lien") }
         : { label: "Envoyer par texto", icon: ICONES.texto, disabled: bloque, onClick: () => { setMenu(null); void envoyer(c.id); } },
       { label: "Modifier", icon: ICONES.modifier, disabled: bloque, onClick: () => { setMenu(null); setFormulaire({ carte: c }); } },
+      // BP 2026-10-19 : revoir les profils déjà refusés pour cette carte, et les reproposer.
+      { label: "Anciennes propositions", icon: ICONES.anciennes, disabled: bloque, onClick: () => { setMenu(null); setFenetre({ carteId: c.id, anciennes: true }); } },
       ...(lienEnvoye
         ? [{ label: "Révoquer le lien", icon: ICONES.revoquer, disabled: bloque, onClick: () => demander(c.id, "revoquer") }]
         : []),
@@ -596,6 +599,8 @@ export default function MesAthletesMobile({ propositionsSeulement = false, onTou
       {fenetre && (
         <FenetreRapprochementsPartenaire
           propositions={fenetre.carteId ? rapprochements.filter((r) => r.carteId === fenetre.carteId) : rapprochements}
+          carteId={fenetre.carteId ?? null}
+          refuseesOuvertes={!!fenetre.anciennes}
           carte={(id) => {
             const c = cartes.find((x) => x.id === id);
             if (!c) return null;

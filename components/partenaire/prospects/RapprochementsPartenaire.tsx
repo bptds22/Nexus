@@ -101,8 +101,12 @@ function Colonne({ titre, lignes, photo }: { titre: string; lignes: { libelle: s
   );
 }
 
-export function FenetreRapprochementsPartenaire({ propositions, carte, onFermer, onDecide }: {
+export function FenetreRapprochementsPartenaire({ propositions, carte, onFermer, onDecide, carteId: carteChoisie = null, refuseesOuvertes = false }: {
   propositions: RapprochementPartenaire[];
+  /** Ouverte depuis UNE carte (« Anciennes propositions ») : ses refusées seulement. */
+  carteId?: string | null;
+  /** « Anciennes propositions » : la section des refusées est déjà dépliée. */
+  refuseesOuvertes?: boolean;
   /** Les libellés de la carte, par identifiant. */
   carte: (carteId: string) => ResumeCarte | null;
   onFermer: () => void;
@@ -184,7 +188,8 @@ export function FenetreRapprochementsPartenaire({ propositions, carte, onFermer,
           </section>
         );
       })}
-      <RefuseesPartenaire carte={carte} carteId={propositions.length > 0 && propositions.every((p) => p.carteId === propositions[0].carteId) ? propositions[0].carteId : null}
+      <RefuseesPartenaire carte={carte} ouvertParDefaut={refuseesOuvertes}
+        carteId={carteChoisie ?? (propositions.length > 0 && propositions.every((p) => p.carteId === propositions[0].carteId) ? propositions[0].carteId : null)}
         onReproposee={(m) => { setMessage({ ok: true, texte: m }); onDecide(); }} />
     </>
   );
@@ -220,7 +225,8 @@ export function FenetreRapprochementsPartenaire({ propositions, carte, onFermer,
 }
 
 /** Les propositions refusées, repliées sous les autres : « Proposer de nouveau » les remet en haut. */
-function RefuseesPartenaire({ carte, carteId, onReproposee }: {
+function RefuseesPartenaire({ carte, carteId, onReproposee, ouvertParDefaut = false }: {
+  ouvertParDefaut?: boolean;
   carte: (carteId: string) => ResumeCarte | null;
   /** Fenêtre ouverte depuis UNE carte : seulement ses refusées. */
   carteId: string | null;
@@ -228,9 +234,9 @@ function RefuseesPartenaire({ carte, carteId, onReproposee }: {
 }) {
   const toutes = useRefusees();
   const liste = carteId ? toutes.filter((r) => r.carteId === carteId) : toutes;
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert] = useState(ouvertParDefaut);
   const [enCours, setEnCours] = useState<string | null>(null);
-  if (liste.length === 0) return null;
+  if (liste.length === 0) return ouvertParDefaut ? <p className="mt-6 text-[14px] text-[#6b7280]">Aucune proposition refusée pour cette carte.</p> : null;
   const reproposer = async (r: RapprochementRefusePartenaire) => {
     const cle = `${r.carteId}:${r.athleteId}`;
     setEnCours(cle);

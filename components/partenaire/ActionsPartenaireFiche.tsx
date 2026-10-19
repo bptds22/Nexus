@@ -16,15 +16,15 @@
      serveur juge admissibles pour CET athlète (universels, et ceux de SON
      sport ; jamais les honneurs). Un badge déjà porté reste listé, grisé,
      avec qui le porte — le serveur refuse de toute façon le doublon.
-   Les choix de badges s'ouvrent dans une FENÊTRE (FeuilleBas, BP 2026-10-19 : le menu
-   déroulant était caché par la page).
+   Les choix de badges s'ouvrent dans un MENU DÉROULANT accroché au bouton (MenuDeroulant,
+   BP 2026-10-19 : l'ancien menu en absolu était caché par la page ; pas de fenêtre).
    - « Retirer un badge » (BP 2026-10-19) : à côté de « Retirer mon
      évaluation », la liste des badges que J'AI posés — les miens ET les
      badges Nexus —, en un toucher. Le lien sous la vignette
      des « Distinctions » reste (il était caché derrière « +N »).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   retirerEvaluationPartenaire,
@@ -44,7 +44,7 @@ import {
 } from "@/lib/badges/partenaire";
 import { badgeSvgPath } from "@/lib/config/badges";
 import { useBadgesPartenaires } from "@/components/shared/athlete/BadgesPartenaire";
-import { FeuilleBas } from "@/components/mobile/FeuilleBas";
+import MenuDeroulant from "@/components/shared/MenuDeroulant";
 
 function messageErreur(e: unknown): string {
   return (e as { message?: string })?.message?.replace(/^NEXUS:\s*/, "") ?? "Action impossible.";
@@ -72,6 +72,10 @@ export default function ActionsPartenaireFiche({
   const poses = useBadgesPartenaires(athleteId);
   const mesPoses = poses.filter((b) => b.estLeMien);
   const [retraitOuvert, setRetraitOuvert] = useState(false);
+  // Les trois menus déroulants s'accrochent à leur bouton (MenuDeroulant, jamais coupés par la page).
+  const refRetrait = useRef<HTMLButtonElement>(null);
+  const refBadge = useRef<HTMLButtonElement>(null);
+  const refNexus = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!peutEvaluer) return;
@@ -202,6 +206,7 @@ export default function ActionsPartenaireFiche({
           <button
             type="button"
             disabled={occupe}
+            ref={refRetrait}
             onClick={() => setRetraitOuvert((v) => !v)}
             className="px-4 py-2 border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50"
             data-retirer-badge
@@ -209,7 +214,7 @@ export default function ActionsPartenaireFiche({
             Retirer un badge
           </button>
           {retraitOuvert && (
-            <FeuilleBas onFermer={() => setRetraitOuvert(false)} titre="Retirer un badge" testId="feuille-retirer-badge" largeurModale={380}>
+            <MenuDeroulant ancre={refRetrait} onFermer={() => setRetraitOuvert(false)} testId="menu-retirer-badge">
               {mesPoses.map((b) => {
                 const svg = b.estNexus && b.codeNexus ? badgeSvgPath(b.codeNexus) : b.iconeUrl;
                 return (
@@ -234,7 +239,7 @@ export default function ActionsPartenaireFiche({
                   </div>
                 );
               })}
-            </FeuilleBas>
+            </MenuDeroulant>
           )}
         </div>
       )}
@@ -244,6 +249,7 @@ export default function ActionsPartenaireFiche({
           <button
             type="button"
             disabled={occupe || disponibles.length === 0}
+            ref={refBadge}
             onClick={() => setChoixOuvert((v) => !v)}
             className="px-4 py-2 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={disponibles.length === 0 ? "Tous tes badges sont déjà attribués à cet athlète" : undefined}
@@ -251,7 +257,7 @@ export default function ActionsPartenaireFiche({
             Attribuer un badge
           </button>
           {choixOuvert && disponibles.length > 0 && (
-            <FeuilleBas onFermer={() => setChoixOuvert(false)} titre="Attribuer un badge" testId="feuille-attribuer-badge" largeurModale={380}>
+            <MenuDeroulant ancre={refBadge} onFermer={() => setChoixOuvert(false)} testId="menu-attribuer-badge">
               {disponibles.map((b) => (
                 <button
                   key={b.id}
@@ -271,7 +277,7 @@ export default function ActionsPartenaireFiche({
                   <span className="text-[13px] font-semibold text-white">{b.libelle}</span>
                 </button>
               ))}
-            </FeuilleBas>
+            </MenuDeroulant>
           )}
         </div>
       )}
@@ -281,6 +287,7 @@ export default function ActionsPartenaireFiche({
           <button
             type="button"
             disabled={occupe || nexusLibres.length === 0}
+            ref={refNexus}
             onClick={() => setChoixNexusOuvert((v) => !v)}
             className="px-4 py-2 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={nexusLibres.length === 0 ? "Cet athlète porte déjà tous les badges Nexus que tu peux attribuer" : undefined}
@@ -289,7 +296,7 @@ export default function ActionsPartenaireFiche({
             Attribuer un badge Nexus
           </button>
           {choixNexusOuvert && (
-            <FeuilleBas onFermer={() => setChoixNexusOuvert(false)} titre="Attribuer un badge Nexus" testId="feuille-attribuer-badge-nexus" largeurModale={400}>
+            <MenuDeroulant ancre={refNexus} onFermer={() => setChoixNexusOuvert(false)} testId="menu-attribuer-badge-nexus" largeur={320}>
               {nexus.map((b) => {
                 const svg = badgeSvgPath(b.code);
                 return (
@@ -315,7 +322,7 @@ export default function ActionsPartenaireFiche({
                   </button>
                 );
               })}
-            </FeuilleBas>
+            </MenuDeroulant>
           )}
         </div>
       )}
