@@ -896,6 +896,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
+  // BP 2026-10-19 : après le cœur, l'étape affichée suit la base (elle restait « Retiré »).
+  const [versionDossier, setVersionDossier] = useState(0);
   /** Les autres recruteurs de l'unité qui suivent ce dossier (ids). */
   const [dossierCollegues, setDossierCollegues] = useState<string[]>([]);
   /* Tableau blanc : noms des collègues qui suivent le dossier (confirmation
@@ -1742,6 +1744,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     if (!res) return false;
     if (!res.ok) { toast.error({ message: "Échec", detail: res.message }); return false; }
     setMyFavCount((c) => (veut ? c + 1 : Math.max(0, c - 1)));
+    // Le cœur change l'étape (remis en favori = Identifié ; retiré = Retiré) : on relit le dossier.
+    setVersionDossier((v) => v + 1);
     // Haptic + scale animation gérés par HeartButton (iter 5.4) — pas de burst
     if (veut) triggerHaptic("Medium");
     return true;
@@ -1811,7 +1815,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       setPipelineStatus(pipelineData?.stage ? String(pipelineData.stage).toLowerCase() as RecruitmentStatus : "none");
     };
     loadPipeline();
-  }, [id, isRecruiter]);
+  }, [id, isRecruiter, versionDossier]);
 
   useEffect(() => {
     // Recruiter-only side-effect (RLS : recruiters manage own

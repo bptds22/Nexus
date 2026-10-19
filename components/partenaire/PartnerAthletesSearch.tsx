@@ -307,7 +307,10 @@ export default function PartnerAthletesSearch({
        distinctions pour ne pas dépendre d'un déploiement de la vue : si la
        colonne n'est pas encore servie, le filtre garde son ancien
        comportement au lieu de tout écarter. */
-    return athletes.filter((a) => hasDistinctions(a.badges) || hasDistinctions(a.distinctions));
+    /* BP 2026-10-19 : le filtre suit ce que la carte AFFICHE (les badges vivants, avec libellé).
+       Le repli sur `distinctions` (la dernière évaluation, figée) gardait des athlètes dont le
+       badge était parti : la carte ne montrait rien, le filtre les retenait. */
+    return athletes.filter((a) => hasDistinctions(a.badges) && pastillesBadges(a.badges).length > 0);
   }, [athletes, withSportBadge]);
 
   /* `genre` DOIT figurer ici : c'est ce test qui choisit lequel des deux états

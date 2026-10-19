@@ -496,6 +496,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     const t = window.setTimeout(() => setErreurFavori(null), 5000);
     return () => window.clearTimeout(t);
   }, [erreurFavori]);
+  // BP 2026-10-19 : après le cœur, l'étape affichée suit la base (elle restait « Retiré »).
+  const [versionDossier, setVersionDossier] = useState(0);
   const toggleFav = async (): Promise<string | null> => {
     if (favButtonDisabled) return null;
     setErreurFavori(null);
@@ -506,6 +508,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     if (!res.ok) { setErreurFavori(res.message); return res.message; }
     setIsFavorited(res.favori);
     setMyFavCount((c) => (veut ? c + 1 : Math.max(0, c - 1)));
+    // Le cœur change l'étape (remis en favori = Identifié ; retiré = Retiré) : on relit le dossier.
+    setVersionDossier((v) => v + 1);
     return null;
   };
 
@@ -570,7 +574,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       setPipelineStatus(pipelineData?.stage ? String(pipelineData.stage).toLowerCase() as RecruitmentStatus : "none");
     };
     loadPipeline();
-  }, [id]);
+  }, [id, versionDossier]);
 
   // Record profile view — awaits and logs errors. The upsert dedupes
   // per day via the (recruiter_id, athlete_id, view_date) unique key.
