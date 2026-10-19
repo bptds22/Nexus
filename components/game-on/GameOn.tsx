@@ -1,31 +1,42 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   Game On — le mode match du recruteur (BP 2026-10-18), web ET appli.
+   Dépistage (ex-« Game On ») — le mode match du recruteur, web ET appli.
+   Libellés : lib/gameOn/libelles (une seule source).
 
    Trois temps, sur une seule route (/recruteur/game-on) :
-     1. « Quel match ? » — séances de l'unité (reprendre, rejoindre, trier),
-        matchs d'aujourd'hui du sport de l'unité, ou « Autre match ».
+     1. Le tableau de bord — quatre pastilles : En cours · Mes matchs du jour
+        (tirés du calendrier) · À trier · Mon unité (séances des collègues, à
+        rejoindre). On n'y refait PAS une liste de matchs (BP 2026-10-18) :
+        « Trouver un match » ouvre la carte des matchs et ses filtres, et
+        « Dépister ce match » (carte des matchs, calendrier) arrive ici avec
+        le match et ses deux équipes dans l'URL. « + Autre match » reste pour
+        un match hors calendrier.
      2. Le match — plein écran, à une main : côté A / B, pastilles de numéros
-        (la plus récente d'abord), pavé numérique, feuille de note (prénom,
-        texte avec dictée et brouillon, étiquettes en un toucher).
-     3. « Trier mes notes » — chaque numéro est lié à une carte prospect ou à
-        un athlète Nexus (les notes sont recopiées dans sa fiche), une carte est
-        créée, ou le numéro est gardé sans lien.
+        (la plus récente d'abord), pavé numérique, fiche du joueur (en-tête
+        « #N · Prénom ✏️ », un bloc d'écriture qui se vide, l'historique ;
+        toucher une de MES notes la recharge, Enregistrer y AJOUTE une ligne
+        datée).
+     3. « Trier mes notes » — suggestions (athlètes Nexus et cartes de
+        l'équipe : même numéro ou nom proche), puis Lier, Créer une carte
+        (préremplie depuis le côté du match) ou Garder sans lier. Les notes
+        vont dans le fil de la carte sous « Match X vs Y, date ».
 
    Tout s'écrit d'abord sur l'appareil (lib/gameOn/useGameOn) : le réseau des
    estrades ne bloque jamais une note.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import { useMatchsRecherche } from "@/lib/carteMatchs/useMatchsRecherche";
-import { useOrigineCarte } from "@/lib/carteMatchs/useOrigineCarte";
-import { groupeMatch, heureCarte, jourDecale, titreMatch, trierMatchs, LIEU_NON_PRECISE, type MatchRecherche, type TypeMatch } from "@/lib/carteMatchs/carteMatchs";
+import { useCalendrierUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
+import { todayIso } from "@/lib/queries/recruiter/useRecruitingCalendar";
+import { heureCarte } from "@/lib/carteMatchs/carteMatchs";
 import { useAthleteAutocomplete } from "@/lib/queries/recruiter/useAthleteAutocomplete";
 import { ajouterNoteCarte } from "@/lib/cartes/carteProspect";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
@@ -33,17 +44,21 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { ConfirmSheet } from "@/components/shared/settings/ConfirmSheet";
 import ChampNote from "@/components/shared/ChampNote";
 import EnTeteMobilePartenaire from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
-import CreerCarteModal from "@/components/recruteur/cartes/CreerCarteModal";
+import CreerCarteModal, { type PrerempliCarte } from "@/components/recruteur/cartes/CreerCarteModal";
 import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { triggerHaptic } from "@/lib/haptics";
+import { DEPISTAGE, ROUTE_DEPISTAGE, lireDepister } from "@/lib/gameOn/libelles";
 import {
-  CHANDAILS, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, libelleJoueur, messageErreur, notesEnAttente,
-  numeroValide, noteValide, pastillesCote, resumeEnvoi, suggestionsCartes, texteRecopie, texteSur, titreSeance,
-  type CarteCandidate, type Cote, type GroupeJoueur, type NoteAffichee, type SeanceLocale,
+  CHANDAILS, PASTILLES, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, heureLigne, libelleJoueur, messageErreur,
+  notesEnAttente, numeroValide, noteValide, pastilleParDefaut, pastillesCote, rangerSeances, resumeEnvoi, suggestionsTri,
+  texteRecopie, texteSur, titreSeance,
+  type CarteCandidate, type Cote, type GroupeJoueur, type NoteAffichee, type Pastille, type SeanceLocale, type Suggestion,
 } from "@/lib/gameOn/gameOn";
-import { nouvelId, useNotesSeance, useSeancesRecentes, useStockGameOn, type SeanceServeur } from "@/lib/gameOn/useGameOn";
+import {
+  nouvelId, useAthletesMatch, useEquipesMatch, useNotesSeance, useSeancesRecentes, useStockGameOn,
+  type EquipeMatch, type SeanceServeur,
+} from "@/lib/gameOn/useGameOn";
 
-const TOUS_TYPES: TypeMatch[] = ["SECONDAIRE", "COLLEGIAL", "CIVIL"];
 const heureCourte = (iso: string) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
@@ -55,6 +70,8 @@ function Chandail({ couleur, taille = 14 }: { couleur: string; taille?: number }
 }
 
 type Vue = { type: "choix" } | { type: "match"; seance: string } | { type: "trier"; seance: string };
+/** Un match à lancer : on demande d'abord la couleur des chandails (à chaque match). */
+type ALancer = { equipeA: string; equipeB: string; lancer: (ca: string, cb: string) => void };
 
 export default function GameOn({ mobile = false }: { mobile?: boolean }) {
   const st = useStockGameOn();
@@ -68,6 +85,38 @@ export default function GameOn({ mobile = false }: { mobile?: boolean }) {
   };
   const seancesQ = useSeancesRecentes();
   const [vueChoisie, setVue] = useState<Vue | null>(null);
+  const [aLancer, setALancer] = useState<ALancer | null>(null);
+  const params = useSearchParams();
+  const router = useRouter();
+  const lienLu = useRef(false);
+
+  // « Dépister ce match » (carte des matchs, calendrier) : le match et ses deux équipes arrivent
+  // dans l'URL. Déjà ouvert sur l'appareil → on le reprend ; sinon couleurs, puis la séance.
+  useEffect(() => {
+    if (!st.charge || lienLu.current) return;
+    const d = lireDepister(params);
+    if (!d) return;
+    lienLu.current = true;
+    router.replace(ROUTE_DEPISTAGE);
+    const deja = Object.values(st.stock.seances).find((e) => e.seance.gameId === d.gameId && !e.seance.termineLe);
+    // L'URL est une source EXTERNE (le lien suivi) : l'état se pose hors du corps de l'effet.
+    queueMicrotask(() => {
+      if (deja) {
+        st.activer(deja.seance.id);
+        setVue({ type: "match", seance: deja.seance.id });
+        return;
+      }
+      setVue({ type: "choix" });
+      setALancer({
+        equipeA: d.equipeA, equipeB: d.equipeB,
+        lancer: (ca, cb) => {
+          const id = st.demarrer({ gameId: d.gameId, equipeA: d.equipeA, equipeB: d.equipeB, lieu: d.lieu });
+          st.colorer(id, ca, cb);
+          setVue({ type: "match", seance: id });
+        },
+      });
+    });
+  }, [st, params, router]);
 
   // Une séance en cours sur l'appareil se rouvre d'elle-même (l'appli a pu être fermée en plein match).
   const active = st.stock.active ? st.stock.seances[st.stock.active] : null;
@@ -78,14 +127,20 @@ export default function GameOn({ mobile = false }: { mobile?: boolean }) {
 
   if (indisponible) {
     return (
-      <Coquille mobile={mobile} titre="Game On" sousTitre="Mode match">
+      <Coquille mobile={mobile} titre={DEPISTAGE.titre} sousTitre="Mode match">
         <div className="rounded-2xl border border-white/10 bg-[#1A1D24] p-6 text-center">
-          <p className="text-[17px] font-bold text-white">Game On arrive bientôt</p>
+          <p className="text-[17px] font-bold text-white">{DEPISTAGE.bientot}</p>
           <p className="mt-2 text-[14px] text-white/60">Le mode match n&apos;est pas encore ouvert sur ton compte. Tes notes de match pourront y être prises dès son lancement.</p>
         </div>
       </Coquille>
     );
   }
+
+  const couleurs = aLancer && (
+    <FeuilleCouleurs equipeA={aLancer.equipeA} equipeB={aLancer.equipeB}
+      onFermer={() => setALancer(null)}
+      onValider={(ca, cb) => { const l = aLancer; setALancer(null); triggerHaptic("Medium"); l.lancer(ca, cb); }} />
+  );
 
   if (vue.type === "match" && st.stock.seances[vue.seance]) {
     return (
@@ -108,10 +163,12 @@ export default function GameOn({ mobile = false }: { mobile?: boolean }) {
   }
 
   return (
-    <Coquille mobile={mobile} titre="Game On" sousTitre="Mode match — tes notes de match, même sans réseau" message={message} onFermerMessage={() => setMessage(null)}>
-      <EcranChoix st={st} seances={seancesQ.data?.seances ?? []} chargement={seancesQ.isLoading}
+    <Coquille mobile={mobile} titre={DEPISTAGE.titre} sousTitre={DEPISTAGE.sousTitre} message={message} onFermerMessage={() => setMessage(null)}>
+      <EcranTableau st={st} seances={seancesQ.data?.seances ?? []} chargement={seancesQ.isLoading} moi={moi}
+        onLancer={setALancer}
         onMatch={(id) => setVue({ type: "match", seance: id })}
         onTrier={(id) => setVue({ type: "trier", seance: id })} />
+      {couleurs}
     </Coquille>
   );
 }
@@ -171,48 +228,78 @@ function Section({ titre, children, action }: { titre: string; children: ReactNo
   );
 }
 
-/* ── 1. Quel match ? ───────────────────────────────────────────── */
-function EcranChoix({ st, seances, chargement, onMatch, onTrier }: {
-  st: St; seances: SeanceServeur[]; chargement: boolean;
-  onMatch: (id: string) => void; onTrier: (id: string) => void;
+function Vide({ children }: { children: ReactNode }) {
+  return <p className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-[14px] text-white/50">{children}</p>;
+}
+
+/** Une ligne du tableau de bord : titre, détail, un bouton à droite. */
+function Ligne({ titre, detail, accent = false, children }: { titre: string; detail?: string; accent?: boolean; children?: ReactNode }) {
+  return (
+    <li className={`flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 ${accent ? "border-[#E63946]/40 bg-[#E63946]/10" : "border-white/10 bg-[#1A1D24]"}`}>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-bold text-white">{titre}</span>
+        {detail && <span className="block truncate text-[12px] text-white/55">{detail}</span>}
+      </span>
+      {children}
+    </li>
+  );
+}
+
+const btnRouge = "h-11 shrink-0 rounded-full bg-[#E63946] px-4 text-[13px] font-bold text-white active:bg-[#D42B22]";
+const btnGris = "h-11 shrink-0 rounded-full bg-white/[0.08] px-4 text-[13px] font-bold text-white active:bg-white/15";
+
+/* ── 1. Le tableau de bord : quatre pastilles ─────────────────── */
+function EcranTableau({ st, seances, chargement, moi, onLancer, onMatch, onTrier }: {
+  st: St; seances: SeanceServeur[]; chargement: boolean; moi: string | null;
+  onLancer: (l: ALancer) => void; onMatch: (id: string) => void; onTrier: (id: string) => void;
 }) {
-  const [texte, setTexte] = useState("");
   const [autre, setAutre] = useState(false);
   const [a, setA] = useState("");
   const [b, setB] = useState("");
   const [lieu, setLieu] = useState("");
-  const aujourdhui = useMemo(() => jourDecale(new Date(), 0), []);
-  const { data: origine, isFetched: origineLue } = useOrigineCarte(true);
-  const matchsQ = useMatchsRecherche(
-    { debut: aujourdhui, fin: aujourdhui, sport: origine?.sportUnite ?? "", types: TOUS_TYPES, texte },
-    origineLue,
-  );
-  const matchs = useMemo(() => trierMatchs(matchsQ.data ?? []), [matchsQ.data]);
+  const [choisie, setChoisie] = useState<Pastille | null>(null);
+
+  // Mes matchs du jour : ceux du calendrier de l'unité (aucune nouvelle liste de matchs).
+  const calendrierQ = useCalendrierUnite(true);
+  const aujourdhui = useMemo(() => todayIso(), []);
+  const duJour = useMemo(() => (calendrierQ.data?.games ?? [])
+    .filter((g) => g.gameDate === aujourdhui)
+    .sort((x, y) => (x.gameTime || "99").localeCompare(y.gameTime || "99")), [calendrierQ.data, aujourdhui]);
 
   const locales = Object.values(st.stock.seances)
     .filter((e) => !e.seance.termineLe)
     .sort((x, y) => y.seance.commenceLe.localeCompare(x.seance.commenceLe));
-  const serveur = seances.filter((s) => !locales.some((l) => l.seance.id === s.id));
+  const surAppareil = useMemo(() => new Set(Object.keys(st.stock.seances)), [st.stock.seances]);
+  const r = rangerSeances(seances, moi, surAppareil);
+  const nb: Record<Pastille, number> = {
+    "en-cours": locales.length + r.enCours.length, "du-jour": duJour.length, "a-trier": r.aTrier.length, unite: r.unite.length,
+  };
+  const pastille = choisie ?? pastilleParDefaut({ enCours: nb["en-cours"], duJour: nb["du-jour"], aTrier: nb["a-trier"] });
 
-  // Couleur des chandails : demandée à CHAQUE match, avant d'entrer (BP 2026-10-18).
-  const [aLancer, setALancer] = useState<{ equipeA: string; equipeB: string; lancer: (ca: string, cb: string) => void } | null>(null);
-  const commencer = (m: MatchRecherche) => {
+  const lancerJeu = (gameId: string, equipeA: string, equipeB: string, lieuJeu: string | null) => {
     triggerHaptic("Light");
-    setALancer({ equipeA: m.domicile, equipeB: m.visiteur, lancer: (ca, cb) => {
-      const id = st.demarrer({ gameId: m.id, equipeA: m.domicile, equipeB: m.visiteur, lieu: m.terrain });
+    const deja = locales.find((e) => e.seance.gameId === gameId);
+    if (deja) { st.activer(deja.seance.id); onMatch(deja.seance.id); return; }
+    onLancer({ equipeA, equipeB, lancer: (ca, cb) => {
+      const id = st.demarrer({ gameId, equipeA, equipeB, lieu: lieuJeu });
       st.colorer(id, ca, cb); onMatch(id);
     } });
   };
+  const rejoindre = (s: SeanceServeur) => onLancer({ equipeA: s.equipe_a, equipeB: s.equipe_b || "Adversaire", lancer: (ca, cb) => {
+    st.rejoindre(s); st.colorer(s.id, ca, cb); onMatch(s.id);
+  } });
   const commencerAutre = () => {
     if (!a.trim()) return;
     triggerHaptic("Light");
     const [ea, eb, el] = [a, b, lieu];
-    setALancer({ equipeA: ea.trim(), equipeB: eb.trim() || "Adversaire", lancer: (ca, cb) => {
+    onLancer({ equipeA: ea.trim(), equipeB: eb.trim() || "Adversaire", lancer: (ca, cb) => {
       const id = st.demarrer({ equipeA: ea, equipeB: eb, lieu: el });
       st.colorer(id, ca, cb); onMatch(id);
       setAutre(false); setA(""); setB(""); setLieu("");
     } });
   };
+  const detailSeance = (s: SeanceServeur) =>
+    `${dateSeance(s.commence_le)} · ${s.nb_notes} note${s.nb_notes > 1 ? "s" : ""}${s.nb_a_lier > 0 ? ` · ${s.nb_a_lier} à lier` : ""}`;
 
   return (
     <div>
@@ -222,31 +309,96 @@ function EcranChoix({ st, seances, chargement, onMatch, onTrier }: {
         </p>
       )}
 
-      {locales.length > 0 && (
-        <Section titre="En cours sur ce téléphone">
-          <ul className="space-y-2">
-            {locales.map((e) => (
-              <li key={e.seance.id}>
-                <button type="button" onClick={() => { st.activer(e.seance.id); onMatch(e.seance.id); }}
-                  className="flex w-full min-h-[56px] items-center justify-between gap-3 rounded-2xl border border-[#E63946]/40 bg-[#E63946]/10 px-4 py-3 text-left">
-                  <span className="min-w-0">
-                    <span className="block truncate text-[16px] font-bold text-white">{titreSeance(e.seance)}</span>
-                    <span className="block text-[13px] text-white/60">{e.notes.length} note{e.notes.length > 1 ? "s" : ""} · {heureCourte(e.seance.commenceLe)}</span>
-                  </span>
-                  <span className="shrink-0 rounded-full bg-[#E63946] px-3 py-1.5 text-[13px] font-bold text-white">Reprendre</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+      {/* Les quatre pastilles (BP 2026-10-18). */}
+      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Tableau de bord du dépistage" data-testid="depistage-pastilles">
+        {PASTILLES.map((p) => (
+          <button key={p.cle} type="button" role="tab" aria-selected={pastille === p.cle} data-testid={`pastille-${p.cle}`}
+            onClick={() => { triggerHaptic("Light"); setChoisie(p.cle); }}
+            className={`flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-bold ${pastille === p.cle ? "border-[#E63946] bg-[#E63946] text-white" : "border-white/10 bg-white/[0.04] text-white/75"}`}>
+            {p.libelle}
+            <span className={`min-w-[22px] rounded-full px-1.5 text-center text-[12px] ${pastille === p.cle ? "bg-white/25" : "bg-white/10"}`}>{nb[p.cle]}</span>
+          </button>
+        ))}
+      </div>
 
-      <Section titre="Matchs d'aujourd'hui" action={
-        <button type="button" onClick={() => setAutre((v) => !v)} className="text-[13px] font-bold text-[#E63946]">
+      <div className="mb-6" role="tabpanel">
+        {pastille === "en-cours" && (
+          locales.length + r.enCours.length === 0 ? <Vide>Aucun match en cours. Choisis un match du jour ou touche « {DEPISTAGE.trouver} ».</Vide> : (
+            <ul className="space-y-2">
+              {locales.map((e) => (
+                <Ligne key={e.seance.id} accent titre={titreSeance(e.seance)} detail={`${e.notes.length} note${e.notes.length > 1 ? "s" : ""} · ${heureCourte(e.seance.commenceLe)}`}>
+                  <button type="button" className={btnRouge} onClick={() => { triggerHaptic("Light"); st.activer(e.seance.id); onMatch(e.seance.id); }}>Reprendre</button>
+                </Ligne>
+              ))}
+              {r.enCours.map((s) => (
+                <Ligne key={s.id} titre={s.equipe_b ? `${s.equipe_a} vs ${s.equipe_b}` : s.equipe_a} detail={detailSeance(s)}>
+                  <button type="button" className={btnRouge} onClick={() => rejoindre(s)}>Reprendre</button>
+                </Ligne>
+              ))}
+            </ul>
+          )
+        )}
+
+        {pastille === "du-jour" && (
+          calendrierQ.isLoading ? <p className="py-6 text-center text-[14px] text-white/50">Chargement du calendrier…</p>
+            : duJour.length === 0 ? <Vide>Aucun match à ton calendrier aujourd&apos;hui. Touche « {DEPISTAGE.trouver} » pour en choisir un sur la carte.</Vide> : (
+              <ul className="space-y-2">
+                {duJour.map((g) => {
+                  const local = locales.find((e) => e.seance.gameId === g.id);
+                  return (
+                    <Ligne key={g.id} titre={`${g.homeName} vs ${g.visitorName}`}
+                      detail={[g.gameTime ? heureCarte(g.gameTime) : null, g.venue || null].filter(Boolean).join(" · ") || undefined}>
+                      <button type="button" className={btnRouge} data-testid="depister-match"
+                        onClick={() => lancerJeu(g.id, g.homeName, g.visitorName, g.venue || null)}>
+                        {local ? "Reprendre" : DEPISTAGE.bouton}
+                      </button>
+                    </Ligne>
+                  );
+                })}
+              </ul>
+            )
+        )}
+
+        {pastille === "a-trier" && (
+          chargement ? <p className="py-6 text-center text-[14px] text-white/50">Chargement…</p>
+            : r.aTrier.length === 0 ? <Vide>Rien à trier. Tes notes liées sont dans le fil de chaque carte.</Vide> : (
+              <ul className="space-y-2">
+                {r.aTrier.map((s) => (
+                  <Ligne key={s.id} titre={s.equipe_b ? `${s.equipe_a} vs ${s.equipe_b}` : s.equipe_a} detail={detailSeance(s)}>
+                    <button type="button" className={btnRouge} onClick={() => { st.rejoindre(s); onTrier(s.id); }}>Trier</button>
+                  </Ligne>
+                ))}
+              </ul>
+            )
+        )}
+
+        {pastille === "unite" && (
+          chargement ? <p className="py-6 text-center text-[14px] text-white/50">Chargement…</p>
+            : r.unite.length === 0 ? <Vide>Aucun collègue n&apos;est en train de dépister un match.</Vide> : (
+              <ul className="space-y-2">
+                {r.unite.map((s) => (
+                  <Ligne key={s.id} titre={s.equipe_b ? `${s.equipe_a} vs ${s.equipe_b}` : s.equipe_a} detail={detailSeance(s)}>
+                    <button type="button" className={btnGris} onClick={() => rejoindre(s)}>Rejoindre</button>
+                  </Ligne>
+                ))}
+              </ul>
+            )
+        )}
+      </div>
+
+      <div className="mb-6 grid grid-cols-2 gap-2">
+        <Link href="/recruteur/carte-matchs" onClick={() => triggerHaptic("Light")} data-testid="trouver-match"
+          className="flex h-12 items-center justify-center rounded-xl bg-[#E63946] text-[15px] font-bold text-white active:bg-[#D42B22]">
+          {DEPISTAGE.trouver}
+        </Link>
+        <button type="button" onClick={() => setAutre((v) => !v)} aria-expanded={autre}
+          className="h-12 rounded-xl border border-white/15 text-[15px] font-bold text-white active:bg-white/10">
           {autre ? "Annuler" : "+ Autre match"}
         </button>
-      }>
-        {autre ? (
+      </div>
+
+      {autre && (
+        <Section titre="Autre match (hors calendrier)">
           <div className="space-y-3 rounded-2xl border border-white/10 bg-[#1A1D24] p-4">
             <Champ libelle="Équipe A" valeur={a} onChange={setA} placeholder="Ex. Cougars" />
             <Champ libelle="Équipe B (facultatif)" valeur={b} onChange={setB} placeholder="Ex. Titans" />
@@ -256,74 +408,7 @@ function EcranChoix({ st, seances, chargement, onMatch, onTrier }: {
               Commencer le match
             </button>
           </div>
-        ) : (
-          <>
-            <input value={texte} onChange={(e) => setTexte(e.target.value)} placeholder="Chercher une équipe, un terrain…"
-              className="mb-3 h-12 w-full rounded-xl border border-[#2D3748] bg-[#111317] px-4 text-[16px] text-white placeholder:text-white/30" />
-            {matchsQ.isLoading || !origineLue ? (
-              <p className="py-6 text-center text-[14px] text-white/50">Chargement des matchs…</p>
-            ) : matchsQ.isError ? (
-              <p className="py-6 text-center text-[14px] text-white/50">Les matchs n&apos;ont pas pu être lus. Tu peux noter un « Autre match ».</p>
-            ) : matchs.length === 0 ? (
-              <p className="py-6 text-center text-[14px] text-white/50">Aucun match aujourd&apos;hui{texte ? " pour cette recherche" : ""}. Note un « Autre match ».</p>
-            ) : (
-              <ul className="space-y-2">
-                {matchs.slice(0, 60).map((m) => (
-                  <li key={m.id}>
-                    <button type="button" onClick={() => commencer(m)}
-                      className="flex w-full min-h-[56px] items-center gap-3 rounded-2xl border border-white/10 bg-[#1A1D24] px-4 py-3 text-left active:bg-white/[0.04]">
-                      <span className="w-14 shrink-0 text-[14px] font-bold text-white">{m.heure ? heureCarte(m.heure) : "—"}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-semibold text-white">{titreMatch(m)}</span>
-                        <span className="block truncate text-[12px] text-white/50">
-                          {groupeMatch(m) ? `${groupeMatch(m)} · ` : ""}{m.terrain || LIEU_NON_PRECISE}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </Section>
-
-      <Section titre="Séances de ton unité">
-        {chargement ? (
-          <p className="py-4 text-[14px] text-white/50">Chargement…</p>
-        ) : serveur.length === 0 ? (
-          <p className="py-2 text-[14px] text-white/50">Aucune séance récente.</p>
-        ) : (
-          <ul className="space-y-2">
-            {serveur.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#1A1D24] px-4 py-3">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-semibold text-white">{s.equipe_b ? `${s.equipe_a} vs ${s.equipe_b}` : s.equipe_a}</span>
-                  <span className="block text-[12px] text-white/50">
-                    {dateSeance(s.commence_le)} · {s.nb_notes} note{s.nb_notes > 1 ? "s" : ""}
-                    {s.nb_a_lier > 0 ? ` · ${s.nb_a_lier} à lier` : ""}
-                  </span>
-                </span>
-                {!s.termine_le && (
-                  <button type="button" onClick={() => setALancer({ equipeA: s.equipe_a, equipeB: s.equipe_b || "Adversaire", lancer: (ca, cb) => { st.rejoindre(s); st.colorer(s.id, ca, cb); onMatch(s.id); } })}
-                    className="h-11 shrink-0 rounded-full bg-white/[0.08] px-4 text-[13px] font-bold text-white">Rejoindre</button>
-                )}
-                {s.nb_notes > 0 && (
-                  <button type="button" onClick={() => { st.rejoindre(s); onTrier(s.id); }}
-                    className={`h-11 shrink-0 rounded-full px-4 text-[13px] font-bold ${s.nb_a_lier > 0 ? "bg-[#E63946] text-white" : "bg-white/[0.08] text-white/70"}`}>
-                    Trier
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      {aLancer && (
-        <FeuilleCouleurs equipeA={aLancer.equipeA} equipeB={aLancer.equipeB}
-          onFermer={() => setALancer(null)}
-          onValider={(ca, cb) => { const l = aLancer; setALancer(null); triggerHaptic("Medium"); l.lancer(ca, cb); }} />
+        </Section>
       )}
     </div>
   );
@@ -393,7 +478,7 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
   const [confirmer, setConfirmer] = useState(false);
 
   const notes = useMemo(() => fusionnerNotes(etat?.notes ?? [], serveurQ.data ?? [], moi), [etat?.notes, serveurQ.data, moi]);
-  const groupes = useMemo(() => grouperParJoueur(notes), [notes]);
+  const groupes = useMemo(() => grouperParJoueur(notes, etat?.seance.prenoms), [notes, etat?.seance.prenoms]);
   if (!etat || !monte) return null;
   const s = etat.seance;
   const attente = notesEnAttente(etat).length;
@@ -408,7 +493,7 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
       style={{ paddingTop: "env(safe-area-inset-top)", backgroundImage: `linear-gradient(180deg, ${cc(cote)}40 0%, ${cc(cote)}14 35%, #111317 75%)` }}>
       {/* Barre du haut */}
       <div className="flex items-center gap-2 px-3 py-2">
-        <button type="button" aria-label="Retour à la liste" onClick={() => { triggerHaptic("Light"); onQuitter(); }}
+        <button type="button" aria-label="Retour au tableau de bord" onClick={() => { triggerHaptic("Light"); onQuitter(); }}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-white/[0.06]">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
@@ -472,21 +557,25 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
       )}
 
       {joueur && (
-        <FeuilleNote
-          seance={s} cote={joueur.cote} numero={joueur.numero} prenomInitial={groupeOuvert?.prenom ?? joueur.prenom}
+        <FicheJoueur
+          seance={s} cote={joueur.cote} numero={joueur.numero} prenom={groupeOuvert?.prenom ?? joueur.prenom}
           equipe={nomCote(joueur.cote)} groupe={groupeOuvert ?? null}
           onFermer={() => setJoueur(null)}
           onSupprimer={async (id) => { await st.supprimerNote(seanceId, id); }}
+          onRenommer={(p) => {
+            if (groupeOuvert) st.renommer(seanceId, groupeOuvert, p);
+            setJoueur((j) => (j ? { ...j, prenom: p.trim() || null } : j));
+          }}
+          onAjouterA={(base, texte) => { st.ajouterA(seanceId, base, texte); triggerHaptic("Medium"); }}
           onEnregistrer={(n) => {
-            st.noter(seanceId, { id: nouvelId(), cote: joueur.cote, numero: joueur.numero, noteLe: new Date().toISOString(), ...n });
+            st.noter(seanceId, { id: nouvelId(), cote: joueur.cote, numero: joueur.numero, noteLe: new Date().toISOString(), etiquettes: [], ...n });
             triggerHaptic("Medium");
-            setJoueur(null);
           }} />
       )}
 
       <ConfirmSheet open={confirmer} onClose={() => setConfirmer(false)} variant="warning"
         title="Terminer le match ?"
-        message={attente > 0 ? `${attente} note${attente > 1 ? "s" : ""} attend${attente > 1 ? "ent" : ""} encore le réseau : elles partiront toutes seules. Tu pourras ensuite trier tes notes.` : "Tu pourras ensuite lier chaque numéro à une carte ou à un athlète."}
+        message={attente > 0 ? `${attente} note${attente > 1 ? "s" : ""} attend${attente > 1 ? "ent" : ""} encore le réseau : elles partiront toutes seules. Tu pourras ensuite trier tes notes.` : "Tu pourras ensuite lier chaque numéro à une carte ou à un athlète. Les notes restent visibles à ton unité."}
         confirmLabel="Terminer et trier"
         onConfirm={() => { setConfirmer(false); onTermine(); }} />
     </div>,
@@ -534,58 +623,120 @@ function PaveNumerique({ couleur, equipe, onFermer, onValider }: {
   );
 }
 
-function FeuilleNote({ seance, cote, numero, prenomInitial, equipe, groupe, onFermer, onEnregistrer, onSupprimer }: {
-  seance: SeanceLocale; cote: Cote; numero: string | null; prenomInitial: string | null; equipe: string;
+/* La fiche du joueur (BP 2026-10-18) :
+   · en-tête FIXE « #N · Prénom (facultatif) ✏️ », le prénom se corrige au crayon ;
+   · UN bloc d'écriture, qui se VIDE après Enregistrer (la fiche reste ouverte) ;
+   · l'historique du joueur (heure, auteur), suppression de MES notes ;
+   · toucher une de MES notes la recharge : Enregistrer y AJOUTE une ligne datée
+     (« 14 h 32 : … »), sans écraser le texte d'avant. Hors ligne comme le reste. */
+function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, onFermer, onEnregistrer, onAjouterA, onRenommer, onSupprimer }: {
+  seance: SeanceLocale; cote: Cote; numero: string | null; prenom: string | null; equipe: string;
   groupe: GroupeJoueur | null;
   onFermer: () => void;
-  onEnregistrer: (n: { prenom: string | null; texte: string; etiquettes: string[] }) => void;
+  onEnregistrer: (n: { prenom: string | null; texte: string }) => void;
+  onAjouterA: (base: NoteAffichee, texte: string) => void;
+  onRenommer: (prenom: string) => void;
   onSupprimer: (id: string) => Promise<void>;
 }) {
-  const [prenom, setPrenom] = useState(prenomInitial ?? "");
   const [texte, setTexte] = useState("");
-  // BP 2026-10-18 : garder ça simple — pas d'étiquettes ni de gabarits, le texte (ou la voix) suffit.
-  const ok = noteValide({ numero, prenom, texte, etiquettes: [] });
-  const sujet = `gameon:${seance.id}:${cote}:${numero ?? (prenomInitial ?? "").toLowerCase()}`;
+  const [cibleId, setCibleId] = useState<string | null>(null);
+  const [crayon, setCrayon] = useState(false);
+  const [prenomSaisi, setPrenomSaisi] = useState(prenom ?? "");
+  const cible = cibleId ? groupe?.notes.find((n) => n.id === cibleId) ?? null : null;
+  // BP 2026-10-18 : garder ça simple — pas d'étiquettes, pas de gabarits, pas de bouton Dicter.
+  const ok = cible ? !!texte.trim() : noteValide({ numero, prenom, texte, etiquettes: [] });
+  const sujet = `gameon:${seance.id}:${cote}:${numero ?? (prenom ?? "").toLowerCase()}`;
+  const historique = [...(groupe?.notes ?? [])].reverse();
+
+  const enregistrer = () => {
+    if (!ok) return;
+    if (cible) onAjouterA(cible, texte);
+    else onEnregistrer({ prenom: prenom?.trim() || null, texte });
+    setTexte("");
+    setCibleId(null);
+  };
+  const validerPrenom = () => { onRenommer(prenomSaisi); setCrayon(false); };
+
+  const entete = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex min-h-[44px] items-center gap-2">
+          <Chandail couleur={couleurCote(seance, cote)} taille={18} />
+          <span className="shrink-0 text-[26px] font-black leading-none text-white">{numero ? `#${numero}` : (prenom || "Joueur")}</span>
+          {numero && (crayon ? (
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <input autoFocus value={prenomSaisi} onChange={(e) => setPrenomSaisi(e.target.value)} maxLength={60}
+                onKeyDown={(e) => { if (e.key === "Enter") validerPrenom(); }}
+                placeholder="Prénom (facultatif)" aria-label="Prénom du joueur"
+                className="h-11 min-w-0 flex-1 rounded-xl border border-[#2D3748] bg-[#111317] px-3 text-[16px] text-white placeholder:text-white/30" />
+              <button type="button" onClick={validerPrenom} className="h-11 shrink-0 rounded-xl bg-white/10 px-3 text-[14px] font-bold text-white">OK</button>
+            </span>
+          ) : (
+            <button type="button" onClick={() => { setPrenomSaisi(prenom ?? ""); setCrayon(true); }} aria-label="Modifier le prénom"
+              data-testid="fiche-joueur-crayon"
+              className="flex min-h-[44px] min-w-0 items-center gap-1.5 text-left">
+              <span className={`truncate text-[18px] font-bold ${prenom ? "text-white" : "text-white/40"}`}>· {prenom || "Prénom (facultatif)"}</span>
+              <span aria-hidden className="text-[16px]">✏️</span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-0.5 truncate text-[13px] text-white/50">{equipe}</p>
+      </div>
+      <button type="button" onClick={onFermer} className="h-11 shrink-0 px-2 text-[14px] font-semibold text-white/60">Fermer</button>
+    </div>
+  );
+
   return (
-    <FeuilleBas variante="feuille" onFermer={onFermer} etiquette={`Note — ${numero ? `#${numero}` : (prenomInitial || "Joueur")}`} testId="game-on-note"
+    <FeuilleBas variante="feuille" onFermer={onFermer} etiquette={`Fiche — ${numero ? `#${numero}` : (prenom || "Joueur")}`} testId="game-on-note"
+      entete={entete}
       pied={
-        <button type="button" disabled={!ok}
-          onClick={() => onEnregistrer({ prenom: prenom.trim() || prenomInitial || null, texte, etiquettes: [] })}
+        <button type="button" disabled={!ok} onClick={enregistrer}
           className="h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
-          Enregistrer
+          {cible ? "Ajouter à cette note" : "Enregistrer"}
         </button>
       }>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="flex items-center gap-2 text-[28px] font-black leading-none text-white"><Chandail couleur={couleurCote(seance, cote)} taille={18} />{numero ? `#${numero}` : (prenomInitial || "Joueur")}</p>
-            <p className="mt-1 truncate text-[13px] text-white/50">{equipe}</p>
+        {cible && (
+          <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-[#E63946]/40 bg-[#E63946]/10 px-3 py-2 text-[13px] text-white">
+            <span className="min-w-0 truncate">Ajout à ta note de {heureLigne(cible.noteLe)}</span>
+            <button type="button" onClick={() => setCibleId(null)} className="shrink-0 font-bold text-white/70 underline">Nouvelle note</button>
           </div>
-          <button type="button" onClick={onFermer} className="h-11 shrink-0 px-2 text-[14px] font-semibold text-white/60">Annuler</button>
-        </div>
-
-        {groupe && groupe.notes.length > 0 && (
-          <ul className="mb-3 max-h-40 space-y-2 overflow-y-auto">
-            {groupe.notes.map((n: NoteAffichee) => (
-              <li key={n.id} className="rounded-xl bg-[#111317] px-3 py-2 text-[14px] text-white/80">
-                <span className="mr-2 text-[12px] text-white/40">{heureCourte(n.noteLe)}{n.deMoi ? "" : ` · ${n.auteurNom ?? "Collègue"}`}</span>
-                {n.etiquettes.length > 0 && <span className="mr-1 text-[12px] font-bold text-[#E63946]">{n.etiquettes.join(" · ")}</span>}
-                {n.texte}
-                {n.enAttente && <span className="ml-1 text-[11px] text-[#FCD34D]">(en attente)</span>}
-                {n.deMoi && !n.lieLe && (
-                  <button type="button" onClick={() => void onSupprimer(n.id)} className="ml-2 text-[12px] text-white/40 underline">retirer</button>
-                )}
-              </li>
-            ))}
-          </ul>
         )}
+        <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits sansDictee
+          placeholder={cible ? "Ce que tu ajoutes…" : "Ce que tu as vu…"} ariaLabel="Note sur ce joueur" />
 
-        {numero && (
-          <input value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Prénom (facultatif)"
-            className="mb-3 h-12 w-full rounded-xl border border-[#2D3748] bg-[#111317] px-4 text-[16px] text-white placeholder:text-white/30" />
+        {historique.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">Historique</p>
+            <ul className="space-y-2" data-testid="fiche-joueur-historique">
+              {historique.map((n: NoteAffichee) => {
+                const modifiable = n.deMoi && !n.lieLe;
+                const contenu = (
+                  <>
+                    <span className="mb-0.5 block text-[12px] text-white/45">
+                      {heureLigne(n.noteLe)} · {n.deMoi ? "Toi" : (n.auteurNom ?? "Collègue")}
+                      {n.enAttente && <span className="ml-1 text-[#FCD34D]">(en attente)</span>}
+                    </span>
+                    <span className="block whitespace-pre-line">{n.texte}</span>
+                  </>
+                );
+                return (
+                  <li key={n.id} className={`flex items-start gap-2 rounded-xl px-3 py-2 text-[14px] text-white/85 ${cibleId === n.id ? "bg-[#E63946]/15 ring-1 ring-[#E63946]/50" : "bg-[#111317]"}`}>
+                    {modifiable ? (
+                      <button type="button" className="min-w-0 flex-1 text-left" aria-label={`Ajouter à ta note de ${heureLigne(n.noteLe)}`}
+                        onClick={() => { triggerHaptic("Light"); setCibleId(n.id); }}>
+                        {contenu}
+                      </button>
+                    ) : <div className="min-w-0 flex-1">{contenu}</div>}
+                    {modifiable && (
+                      <button type="button" onClick={() => { if (cibleId === n.id) setCibleId(null); void onSupprimer(n.id); }}
+                        className="h-9 shrink-0 px-1 text-[12px] text-white/40 underline">Supprimer</button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
-
-        <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits
-          placeholder="Ce que tu as vu…" ariaLabel="Note sur ce joueur" />
     </FeuilleBas>
   );
 }
@@ -601,33 +752,41 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
     ?? (seanceServeur ? { equipeA: seanceServeur.equipe_a, equipeB: seanceServeur.equipe_b, commenceLe: seanceServeur.commence_le, gameId: seanceServeur.game_id } : null);
   const serveurQ = useNotesSeance(seanceId, moi);
   const notes = useMemo(() => fusionnerNotes(locale?.notes ?? [], serveurQ.data ?? [], moi), [locale?.notes, serveurQ.data, moi]);
-  const groupes = useMemo(() => grouperParJoueur(notes), [notes]);
+  const groupes = useMemo(() => grouperParJoueur(notes, locale?.seance.prenoms), [notes, locale?.seance.prenoms]);
   const attente = locale ? notesEnAttente(locale).length : 0;
   const numeros = useMemo(() => [...new Set(groupes.map((g) => g.numero).filter((n): n is string => !!n))].sort(), [groupes]);
 
+  const equipesQ = useEquipesMatch(s?.gameId);
+  const athletesQ = useAthletesMatch(s?.gameId);
+  const equipeDe = (c: Cote): EquipeMatch | null => (c === "A" ? equipesQ.data?.A : equipesQ.data?.B) ?? null;
+  const idsEquipes = [equipesQ.data?.A?.teamId, equipesQ.data?.B?.teamId].filter((x): x is string => !!x);
+
+  // Les cartes de l'unité : même numéro (toutes équipes) ET toutes celles des deux équipes du match.
   const cartesQ = useQuery<CarteCandidate[]>({
-    queryKey: ["game-on", "cartes", numeros.join(",")],
-    enabled: numeros.length > 0,
+    queryKey: ["game-on", "cartes", numeros.join(","), idsEquipes.join(",")],
+    enabled: numeros.length > 0 || idsEquipes.length > 0,
     queryFn: async () => {
-      const { data, error } = await createClient().from("cartes_prospect")
-        .select("id, prenom, nom, numero, team_id, teams:team_id(name)")
-        .in("numero", numeros).is("fusionnee_le", null).limit(200);
-      if (error) throw error;
-      return (data ?? []).map((c: Record<string, unknown>) => {
+      const supabase = createClient();
+      const champs = "id, prenom, nom, numero, team_id, teams:team_id(name)";
+      const [parNumero, parEquipe] = await Promise.all([
+        numeros.length > 0
+          ? supabase.from("cartes_prospect").select(champs).in("numero", numeros).is("fusionnee_le", null).limit(500)
+          : Promise.resolve({ data: [], error: null }),
+        idsEquipes.length > 0
+          ? supabase.from("cartes_prospect").select(champs).in("team_id", idsEquipes).is("fusionnee_le", null).limit(500)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (parNumero.error) throw parNumero.error;
+      if (parEquipe.error) throw parEquipe.error;
+      const vus = new Map<string, CarteCandidate>();
+      for (const c of [...(parNumero.data ?? []), ...(parEquipe.data ?? [])] as Record<string, unknown>[]) {
         const t = Array.isArray(c.teams) ? c.teams[0] : c.teams;
-        return {
+        vus.set(c.id as string, {
           id: c.id as string, prenom: (c.prenom as string) ?? "", nom: (c.nom as string) ?? "", numero: (c.numero as string) ?? null,
           teamId: (c.team_id as string) ?? null, equipe: ((t as { name?: string } | null)?.name) ?? null,
-        };
-      });
-    },
-  });
-  const equipesQ = useQuery<string[]>({
-    queryKey: ["game-on", "equipes-match", s?.gameId ?? null],
-    enabled: !!s?.gameId,
-    queryFn: async () => {
-      const { data } = await createClient().from("games").select("home_team_id, visitor_team_id").eq("id", s!.gameId!).maybeSingle();
-      return [data?.home_team_id, data?.visitor_team_id].filter((x): x is string => !!x);
+        });
+      }
+      return [...vus.values()];
     },
   });
 
@@ -648,12 +807,13 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
       });
       if (error) { avis(messageErreur(error), true); return; }
       if (cible) {
+        // Le fil de la carte (ou les notes de la fiche) reçoit « Match X vs Y, date », puis les notes.
         const texte = texteRecopie(s, g);
         const e2 = cible.carteId
           ? await ajouterNoteCarte(supabase, cible.carteId, texte)
           : moi ? (await supabase.from("recruiter_notes").insert({ recruiter_id: moi, athlete_id: cible.athleteId, content: texte })).error : null;
         if (e2) avis("Lié, mais la note n'a pas pu être recopiée dans la fiche.", true);
-        else avis(`${libelleJoueur(g)} lié${nom ? ` à ${nom}` : ""} — notes recopiées dans sa fiche.`);
+        else avis(`${libelleJoueur(g)} lié${nom ? ` à ${nom}` : ""} — notes ajoutées à son fil.`);
         void invaliderTableauBlanc(qc);
       } else {
         avis(`${libelleJoueur(g)} gardé sans lien.`);
@@ -667,6 +827,13 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
 
   const aTrier = groupes.filter((g) => !g.traite);
   const traites = groupes.filter((g) => g.traite);
+  const prerempli = (g: GroupeJoueur): PrerempliCarte => {
+    const e = equipeDe(g.cote);
+    return {
+      prenom: g.prenom, numero: g.numero,
+      etablissement: e?.etablissement ?? null, sportAthleteId: e?.sportId ?? null, teamId: e?.teamId ?? null,
+    };
+  };
 
   return (
     <div>
@@ -687,9 +854,9 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
           <ul className="space-y-3">
             {aTrier.map((g) => (
               <LigneTri key={g.cle} g={g} couleur={couleurCote(locale?.seance, g.cote)} ouvert={ouvert === g.cle} desactive={attente > 0 || enCours}
-                suggestions={suggestionsCartes(g, cartesQ.data ?? [], equipesQ.data ?? [])}
+                suggestions={suggestionsTri(g, athletesQ.data ?? [], cartesQ.data ?? [], equipeDe(g.cote)?.teamId ?? null)}
                 onOuvrir={() => setOuvert((v) => (v === g.cle ? null : g.cle))}
-                onLierCarte={(c) => void lier(g, { carteId: c.id }, `${c.prenom} ${c.nom}`.trim())}
+                onLier={(sug) => void lier(g, sug.type === "carte" ? { carteId: sug.id } : { athleteId: sug.id }, sug.nom)}
                 onLierAthlete={(id, nom) => void lier(g, { athleteId: id }, nom)}
                 onCreer={() => setCreer(g)}
                 onGarder={() => void lier(g, null)} />
@@ -712,11 +879,11 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
 
       {creer && sportId && (mobile ? (
         <CreerProspectMobile sportId={sportId} onClose={() => setCreer(null)}
-          prerempli={{ prenom: creer.prenom, numero: creer.numero }}
+          prerempli={prerempli(creer)}
           onCarteCreee={(id) => { const g = creer; void lier(g, { carteId: id }); }} />
       ) : (
         <CreerCarteModal sportId={sportId} onClose={() => setCreer(null)}
-          prerempli={{ prenom: creer.prenom, numero: creer.numero }}
+          prerempli={prerempli(creer)}
           onCarteCreee={(id) => { const g = creer; void lier(g, { carteId: id }); }}
           onCreee={(m) => { setCreer(null); avis(m); }} />
       ))}
@@ -724,72 +891,83 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
   );
 }
 
-function LigneTri({ g, couleur, ouvert, desactive, suggestions, onOuvrir, onLierCarte, onLierAthlete, onCreer, onGarder }: {
+function LigneTri({ g, couleur, ouvert, desactive, suggestions, onOuvrir, onLier, onLierAthlete, onCreer, onGarder }: {
   g: GroupeJoueur; couleur: string; ouvert: boolean; desactive: boolean;
-  suggestions: (CarteCandidate & { memeEquipe: boolean })[];
-  onOuvrir: () => void; onLierCarte: (c: CarteCandidate) => void; onLierAthlete: (id: string, nom: string) => void;
+  suggestions: Suggestion[];
+  onOuvrir: () => void; onLier: (s: Suggestion) => void; onLierAthlete: (id: string, nom: string) => void;
   onCreer: () => void; onGarder: () => void;
 }) {
   const [recherche, setRecherche] = useState(g.prenom ?? "");
-  const athletesQ = useAthleteAutocomplete(ouvert ? recherche : "");
+  const [chercher, setChercher] = useState(false);
+  const athletesQ = useAthleteAutocomplete(ouvert && chercher ? recherche : "");
   return (
     <li className="rounded-2xl border border-white/10 bg-[#1A1D24] p-4">
       <button type="button" onClick={onOuvrir} className="flex w-full items-start justify-between gap-3 text-left">
         <span className="min-w-0">
           <span className="flex items-center gap-2 text-[18px] font-black text-white"><Chandail couleur={couleur} />{libelleJoueur(g)}</span>
-          <span className="block text-[12px] text-white/50">{g.notes.length} note{g.notes.length > 1 ? "s" : ""}{suggestions.length > 0 ? ` · ${suggestions.length} carte${suggestions.length > 1 ? "s" : ""} possible${suggestions.length > 1 ? "s" : ""}` : ""}</span>
+          <span className="block text-[12px] text-white/50">{g.notes.length} note{g.notes.length > 1 ? "s" : ""}{suggestions.length > 0 ? ` · ${suggestions.length} suggestion${suggestions.length > 1 ? "s" : ""}` : ""}</span>
         </span>
         <span className="shrink-0 rounded-full bg-[#E63946] px-3 py-1.5 text-[13px] font-bold text-white">{ouvert ? "Fermer" : "Trier"}</span>
       </button>
       <ul className="mt-3 space-y-1.5">
         {g.notes.map((n) => (
           <li key={n.id} className="text-[14px] text-white/80">
-            <span className="mr-2 text-[12px] text-white/40">{heureCourte(n.noteLe)}{n.deMoi ? "" : ` · ${n.auteurNom ?? "Collègue"}`}</span>
-            {n.etiquettes.length > 0 && <span className="mr-1 text-[12px] font-bold text-[#E63946]">{n.etiquettes.join(" · ")}</span>}
-            {n.texte}
+            <span className="mr-2 text-[12px] text-white/40">{heureLigne(n.noteLe)}{n.deMoi ? "" : ` · ${n.auteurNom ?? "Collègue"}`}</span>
+            <span className="whitespace-pre-line">{n.texte}</span>
           </li>
         ))}
       </ul>
       {ouvert && (
         <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
-          {suggestions.length > 0 && (
-            <div>
-              <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">Cartes avec le #{g.numero}</p>
-              <ul className="space-y-2">
-                {suggestions.map((c) => (
-                  <li key={c.id}>
-                    <button type="button" disabled={desactive} onClick={() => onLierCarte(c)}
-                      className="flex w-full min-h-[48px] items-center justify-between gap-3 rounded-xl bg-[#111317] px-4 py-2 text-left disabled:opacity-40">
-                      <span className="min-w-0">
-                        <span className="block truncate text-[15px] font-semibold text-white">{`${c.prenom} ${c.nom}`.trim()}</span>
-                        <span className="block truncate text-[12px] text-white/50">{c.equipe ?? "Sans équipe"}{c.memeEquipe ? " · équipe du match" : ""}</span>
-                      </span>
-                      <span className="shrink-0 text-[13px] font-bold text-[#E63946]">Lier</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
           <div>
-            <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">Athlète sur Nexus</p>
-            <input value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Nom de l'athlète"
-              className="h-12 w-full rounded-xl border border-[#2D3748] bg-[#111317] px-4 text-[16px] text-white placeholder:text-white/30" />
-            {(athletesQ.data ?? []).length > 0 && (
-              <ul className="mt-2 space-y-2">
-                {(athletesQ.data ?? []).filter((a) => a.identityVisible).map((a) => (
-                  <li key={a.id}>
-                    <button type="button" disabled={desactive} onClick={() => onLierAthlete(a.id, a.fullName)}
-                      className="flex w-full min-h-[48px] items-center justify-between gap-3 rounded-xl bg-[#111317] px-4 py-2 text-left disabled:opacity-40">
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">Suggestions</p>
+            {suggestions.length === 0 ? (
+              <p className="text-[13px] text-white/50">Aucun athlète ni aucune carte de cette équipe avec ce numéro ou ce prénom.</p>
+            ) : (
+              <ul className="space-y-2" data-testid="tri-suggestions">
+                {suggestions.map((c) => (
+                  <li key={`${c.type}:${c.id}`}>
+                    <button type="button" disabled={desactive} onClick={() => onLier(c)}
+                      className="flex w-full min-h-[52px] items-center justify-between gap-3 rounded-xl bg-[#111317] px-4 py-2 text-left disabled:opacity-40">
                       <span className="min-w-0">
-                        <span className="block truncate text-[15px] font-semibold text-white">{a.fullName}{a.jersey ? ` · #${a.jersey}` : ""}</span>
-                        <span className="block truncate text-[12px] text-white/50">{[a.school, a.position].filter(Boolean).join(" · ")}</span>
+                        <span className="block truncate text-[15px] font-semibold text-white">{c.nom}{c.numero ? ` · #${c.numero}` : ""}</span>
+                        <span className="block truncate text-[12px] text-white/50">
+                          {c.type === "athlete" ? "Athlète Nexus" : "Carte prospect"}
+                          {c.memeEquipe ? " · équipe du match" : c.equipe ? ` · ${c.equipe}` : ""}
+                          {c.raison === "numero" ? " · même numéro" : " · nom proche"}
+                        </span>
                       </span>
                       <span className="shrink-0 text-[13px] font-bold text-[#E63946]">Lier</span>
                     </button>
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
+          <div>
+            {!chercher ? (
+              <button type="button" onClick={() => setChercher(true)} className="text-[13px] font-bold text-white/70 underline">Chercher un autre athlète sur Nexus</button>
+            ) : (
+              <>
+                <input value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Nom de l'athlète" autoFocus
+                  className="h-12 w-full rounded-xl border border-[#2D3748] bg-[#111317] px-4 text-[16px] text-white placeholder:text-white/30" />
+                {(athletesQ.data ?? []).length > 0 && (
+                  <ul className="mt-2 space-y-2">
+                    {(athletesQ.data ?? []).filter((a) => a.identityVisible).map((a) => (
+                      <li key={a.id}>
+                        <button type="button" disabled={desactive} onClick={() => onLierAthlete(a.id, a.fullName)}
+                          className="flex w-full min-h-[48px] items-center justify-between gap-3 rounded-xl bg-[#111317] px-4 py-2 text-left disabled:opacity-40">
+                          <span className="min-w-0">
+                            <span className="block truncate text-[15px] font-semibold text-white">{a.fullName}{a.jersey ? ` · #${a.jersey}` : ""}</span>
+                            <span className="block truncate text-[12px] text-white/50">{[a.school, a.position].filter(Boolean).join(" · ")}</span>
+                          </span>
+                          <span className="shrink-0 text-[13px] font-bold text-[#E63946]">Lier</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">

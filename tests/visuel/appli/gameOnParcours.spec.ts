@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { connecterLocalAppli } from "../session";
 
-// Game On dans l'APPLI : parcours complet sur le compte LOCAL e.recruteur@emulateur.local.
+// Dépistage (ex-Game On) dans l'APPLI : parcours complet (fiche du joueur : bloc qui se vide, ajout daté, crayon) sur le compte LOCAL e.recruteur@emulateur.local.
 // ÉCRIT sur la base LOCALE (une séance de test « Cougars vs Titans ») : lancer seulement à la demande
 // (VISUEL_PARCOURS=1), puis effacer la séance. Captures : test-results/visuel/appli-game-on-<étape>.png
 const COMPTE = process.env.VISUEL_RECRUTEUR ?? "e.recruteur@emulateur.local";
@@ -39,6 +39,24 @@ test("appli Game On — parcours (écrit en local)", async ({ page, context }) =
     if (texte === "Bonne lecture du jeu") { await page.screenshot({ path: "test-results/visuel/appli-game-on-note.png" }); }
     await page.getByRole("button", { name: "Enregistrer" }).click();
     await page.waitForTimeout(400);
+    // La fiche reste ouverte, le bloc est vide, la note est dans l'historique.
+    await expect(page.getByLabel("Note sur ce joueur")).toHaveValue("");
+    if (texte === "Bonne lecture du jeu") {
+      // Toucher MA note la recharge : Enregistrer y ajoute une ligne datée.
+      await page.getByRole("button", { name: /Ajouter à ta note de/ }).first().click();
+      await page.getByLabel("Note sur ce joueur").fill("Bon sur les longues passes");
+      await page.screenshot({ path: "test-results/visuel/appli-game-on-ajout.png" });
+      await page.getByRole("button", { name: "Ajouter à cette note" }).click();
+      await page.waitForTimeout(400);
+      // Le crayon : le prénom du joueur.
+      await page.getByRole("button", { name: "Modifier le prénom" }).click();
+      await page.getByLabel("Prénom du joueur").fill("Jean");
+      await page.getByRole("button", { name: "OK", exact: true }).click();
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: "test-results/visuel/appli-game-on-fiche.png" });
+    }
+    await page.getByTestId("game-on-note").getByRole("button", { name: "Fermer" }).click();
+    await page.waitForTimeout(300);
   }
   await page.waitForTimeout(1500);
   await page.screenshot({ path: "test-results/visuel/appli-game-on-notes.png" });

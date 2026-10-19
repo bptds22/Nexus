@@ -17,6 +17,7 @@ import Link from "next/link";
 import { Search, X, Check, ChevronDown, CalendarDays } from "lucide-react";
 import CarteMobile, { CarteMobileMessage, useCarteMobile } from "@/components/carte-mobile/CarteMobile";
 import BoutonAbonnementAgenda from "@/components/recruteur/agenda/BoutonAbonnementAgenda";
+import BoutonDepister from "@/components/game-on/BoutonDepister";
 import SourceMatchLigne, { ouvrirDansLApp } from "@/components/shared/SourceMatchLigne";
 import type { MapFocus } from "@/components/cegep-search/MapPane";
 import type { ModeCarte } from "@/lib/carteMatchs/useMatchsRecherche";
@@ -481,6 +482,8 @@ function Apercu({ mode, m, prise, onClose, suivis, actif, enCours, sources, autr
       </div>
 
       <div className="shFoot">
+        {/* Dépistage (BP 2026-10-18) : ouvre la séance avec ce match et ses deux équipes. Recruteur seulement. */}
+        {!partenaire && <BoutonDepister gameId={m.id} equipeA={m.domicile} equipeB={m.visiteur} lieu={m.terrain} className="btn primary" />}
         <button className={"btn primary" + (etat === "LIBRE" ? "" : " on")} data-testid="panneau-calendrier" data-etat={etat}
           disabled={etat === "SUIVI" || enCours === m.id} onClick={() => { void tap(); onCalendrier(m); }}>
           {libelleCtaCalendrier(mode, etat)}

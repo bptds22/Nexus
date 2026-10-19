@@ -76,12 +76,14 @@ export interface FeuilleBasProps {
   testId?: string;
   /** Classes de la zone défilante (marges intérieures). */
   classeContenu?: string;
+  /** En-tête FIXE sur mesure (au-dessus de la zone qui défile), à la place de `titre`. */
+  entete?: ReactNode;
 }
 
 export function FeuilleBas({
   ouvert = true, onFermer, titre, sousTitre, etiquette, pied, children,
   variante = "auto", hauteur = "92dvh", largeurModale = 520, fond = "#1A1D24",
-  fermerSurVoile = true, testId, classeContenu = "px-4 pb-3",
+  fermerSurVoile = true, testId, classeContenu = "px-4 pb-3", entete: enteteSurMesure,
 }: FeuilleBasProps) {
   const monte = useSyncExternalStore(() => () => {}, () => true, () => false);
   const auto = useSyncExternalStore(abonnerLargeur, estFeuilleAuto, () => false);
@@ -109,7 +111,9 @@ export function FeuilleBas({
 
   if (!monte || !ouvert) return null;
 
-  const entete = titre ? (
+  const entete = enteteSurMesure ? (
+    <div className="shrink-0 px-4 pb-3">{enteteSurMesure}</div>
+  ) : titre ? (
     <div className="flex shrink-0 items-start justify-between gap-3 px-4 pb-3">
       <div className="min-w-0">
         <h2 className="font-head text-[16px] font-black uppercase tracking-tight text-white">{titre}</h2>

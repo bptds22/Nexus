@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { connecterLocalAppli } from "../session";
 
-// Recruteur dans l'APPLI (compte LOCAL e.recruteur@emulateur.local) : Game On (menu « Plus ») et
+// Recruteur dans l'APPLI (compte LOCAL e.recruteur@emulateur.local) : Dépistage (onglet du bas, quatre pastilles) et
 // détails de visite (feuille du bas). Lecture seule. Captures : test-results/visuel/appli-recruteur-<écran>.png
 const COMPTE = process.env.VISUEL_RECRUTEUR ?? "e.recruteur@emulateur.local";
 
@@ -17,7 +17,7 @@ async function ouvrir(page: import("@playwright/test").Page, context: import("@p
   return versCloud;
 }
 
-test("appli recruteur — Game On", async ({ page, context }) => {
+test("appli recruteur — Dépistage", async ({ page, context }) => {
   const versCloud = await ouvrir(page, context, "/recruteur/game-on");
   await page.getByRole("button", { name: /Autre match/ }).first().waitFor({ timeout: 30_000 }).catch(() => {});
   await page.waitForTimeout(3000); // écran de démarrage de l'appli, superposé quelques secondes
@@ -27,6 +27,14 @@ test("appli recruteur — Game On", async ({ page, context }) => {
     await autre.click();
     await page.waitForTimeout(500);
     await page.screenshot({ path: "test-results/visuel/appli-recruteur-game-on-autre-match.png" });
+  }
+  for (const cle of ["du-jour", "a-trier", "unite"]) {
+    const p = page.getByTestId(`pastille-${cle}`);
+    if (await p.isVisible().catch(() => false)) {
+      await p.click();
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: `test-results/visuel/appli-recruteur-depistage-${cle}.png` });
+    }
   }
   expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
 });

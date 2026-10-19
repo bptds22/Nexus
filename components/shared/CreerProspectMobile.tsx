@@ -17,7 +17,10 @@
    de l'unité (cartes_prospect_avant_insert). Une seule → prise d'office ;
    aucune → la carte se rattache à l'établissement (même message qu'au web).
 
-   « Créer et inviter » — il faut un courriel OU un téléphone :
+   DEUX BOUTONS (BP 2026-10-18) : « Créer la carte » sans courriel ni
+   téléphone (aucune invitation), « Créer et inviter » seulement avec l'un
+   des deux. Un seul est actif à la fois (lib/cartes/boutonsCreation).
+   « Créer et inviter » — avec un courriel OU un téléphone :
    · courriel → NEXUS envoie l'invitation, par le même déclencheur que le
      web (une seule fois par adresse) ;
    · téléphone SEUL → l'app Messages s'ouvre avec le texto pré-écrit
@@ -46,6 +49,8 @@ import { texteRenvoi, lienSms } from "@/lib/cartes/renvoiInvitation";
 import { lireNonContact, texteNonContact } from "@/lib/nonContact";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { FeuilleBas } from "@/components/mobile/FeuilleBas";
+import type { PrerempliCarte } from "@/components/recruteur/cartes/CreerCarteModal";
+import { boutonsCreation } from "@/lib/cartes/boutonsCreation";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
 
@@ -70,9 +75,9 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
   /** Sport de l'unité du recruteur : la carte naît dans SON unité. */
   sportId: string;
   onClose: () => void;
-  /** Game On : prénom et numéro notés pendant le match. */
-  prerempli?: { prenom?: string | null; numero?: string | null };
-  /** Game On : l'id de la carte, dès qu'elle existe (pour y lier les notes du match). */
+  /** Dépistage : prénom et numéro notés au match, établissement / sport / équipe du côté du match. */
+  prerempli?: PrerempliCarte;
+  /** Dépistage : l'id de la carte, dès qu'elle existe (pour y lier les notes du match). */
   onCarteCreee?: (id: string) => void;
 }) {
   const toast = useMobileToast();
@@ -81,17 +86,21 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
 
   const [prenom, setPrenom] = useState(prerempli?.prenom ?? "");
   const [nom, setNom] = useState("");
-  const [genre, setGenre] = useState<Genre>("SCOLAIRE");
+  const [genre, setGenre] = useState<Genre>(prerempli?.etablissement?.type === "LIGUE_CIVILE" ? "CIVIL" : "SCOLAIRE");
   const [recherche, setRecherche] = useState("");
-  const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
+  // Dépistage : l'établissement de l'équipe du côté noté, déjà choisi.
+  const [etablissement, setEtablissement] = useState<Etablissement | null>(() => {
+    const e = prerempli?.etablissement;
+    return e ? { id: e.id, name: e.name, city: e.city, cle: normaliserNom(`${e.name} ${e.city ?? ""}`) } : null;
+  });
   // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — distinct du sport de
   // l'unité (sportId, prop) : la carte naît dans l'unité du créateur, mais
   // l'athlète peut jouer n'importe quel sport offert par son établissement.
-  const [sportAthleteId, setSportAthleteId] = useState("");
-  const [equipeChoisie, setEquipeChoisie] = useState("");
+  const [sportAthleteId, setSportAthleteId] = useState(prerempli?.sportAthleteId ?? "");
+  const [equipeChoisie, setEquipeChoisie] = useState(prerempli?.teamId ?? "");
   const [courriel, setCourriel] = useState("");
   const [telephone, setTelephone] = useState("");
-  // Game On : un numéro noté au match ouvre « Plus de détails » pour qu'on le voie.
+  // Dépistage : un numéro noté au match ouvre « Plus de détails » pour qu'on le voie.
   const [plus, setPlus] = useState(!!prerempli?.numero);
   const [positionId, setPositionId] = useState("");
   const [numero, setNumero] = useState(prerempli?.numero ?? "");
@@ -200,7 +209,9 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
   const teamId = equipes?.length === 1 ? equipes[0].id : equipeChoisie || null;
   const equipeOk = !!etablissement && equipes !== null && (sansEquipe || !!teamId);
   const aContact = courriel.trim().length > 0 || telephone.trim().length > 0;
-  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!sportAthleteId && equipeOk && aContact;
+  // Le courriel et le téléphone sont FACULTATIFS (BP 2026-10-18) : ils décident seulement du bouton actif.
+  const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!sportAthleteId && equipeOk;
+  const boutons = boutonsCreation(courriel, telephone);
 
   /* P5 (1.4.5) : période de non-contact pour le sport et la promotion de l'athlète. Le texto part
      du téléphone du recruteur — Nexus ne peut pas le bloquer au serveur : le bouton se grise quand
@@ -255,7 +266,6 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
     }
     const courrielLu = l.courriel.ok ? l.courriel.valeur : null;
     const telephoneLu = l.telephone.ok ? l.telephone.valeur : null;
-    if (!courrielLu && !telephoneLu) return;
     setEnCours(true);
     try {
       const supabase = createClient();
@@ -307,6 +317,10 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
         toast.success({ message: `Carte créée : ${quiEst}. Appuie sur Envoyer dans Messages.` });
         onClose();
         window.location.href = lienSms(telephoneLu, corps, Capacitor.getPlatform() === "ios");
+      } else {
+        // « Créer la carte » : sans courriel ni téléphone, aucune invitation.
+        toast.success({ message: `Carte créée : ${quiEst}.` });
+        onClose();
       }
     } finally {
       setEnCours(false);
@@ -342,11 +356,7 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
     </div>
   );
 
-  const libelleBouton = enCours
-    ? "…"
-    : avertissements && avertissements.length > 0
-      ? "Créer et inviter quand même"
-      : "Créer et inviter";
+  const quandMeme = !!avertissements && avertissements.length > 0;
 
   const pied = (
     <>
@@ -355,15 +365,27 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
           {texteNonContact(finNonContact)}
         </p>
       )}
-      <button
-        type="button"
-        data-testid="prospect-creer"
-        disabled={!valide || enCours || texteBloque}
-        onClick={() => void soumettre()}
-        className="w-full min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-40"
-      >
-        {libelleBouton}
-      </button>
+      {/* Deux boutons, un seul actif (BP 2026-10-18). */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          data-testid="prospect-creer"
+          disabled={!valide || enCours || !boutons.creer}
+          onClick={() => void soumettre()}
+          className="min-h-[48px] rounded-2xl border border-[#E63946] text-[#E63946] text-[14px] font-bold active:bg-[#E63946]/10 disabled:opacity-30"
+        >
+          {enCours && boutons.creer ? "…" : quandMeme ? "Créer quand même" : "Créer la carte"}
+        </button>
+        <button
+          type="button"
+          data-testid="prospect-creer-inviter"
+          disabled={!valide || enCours || !boutons.inviter || texteBloque}
+          onClick={() => void soumettre()}
+          className="min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-30"
+        >
+          {enCours && boutons.inviter ? "…" : quandMeme ? "Inviter quand même" : "Créer et inviter"}
+        </button>
+      </div>
     </>
   );
 
@@ -491,7 +513,7 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
             placeholder: "438 555-0123", type: "tel", inputMode: "tel",
             aide: "Sans courriel ? Ton app Messages s'ouvrira avec le texto déjà écrit — tu n'as qu'à l'envoyer.",
           })}
-          {!aContact && <p className="-mt-2 text-[12px] text-[#9CA3AF]">Un courriel ou un téléphone pour l&apos;inviter.</p>}
+          {!aContact && <p className="-mt-2 text-[12px] text-[#9CA3AF]">Facultatif : sans courriel ni téléphone, la carte est créée sans invitation.</p>}
 
           {/* « Plus d'infos » — replié par défaut : le terrain d'abord. */}
           <div className="rounded-2xl bg-[#1A1D24]/60 border border-white/[0.06]">

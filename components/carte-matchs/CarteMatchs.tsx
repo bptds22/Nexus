@@ -33,6 +33,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { List, Map as MapIcon } from "lucide-react";
 import BoutonAbonnementAgenda from "@/components/recruteur/agenda/BoutonAbonnementAgenda";
+import BoutonDepister from "@/components/game-on/BoutonDepister";
 import type { ModeCarte } from "@/lib/carteMatchs/useMatchsRecherche";
 import SourceMatchLigne from "@/components/shared/SourceMatchLigne";
 import type { SourceMatch } from "@/lib/calendar/sourceMatch";
@@ -536,6 +537,8 @@ function Panneau({ mode, m, source, suivis, actif, enCours, autres, onCalendrier
       )}
 
       <div className="pcta">
+        {/* Dépistage (BP 2026-10-18) : ouvre la séance avec ce match et ses deux équipes. Recruteur seulement. */}
+        {mode === "recruteur" && <BoutonDepister gameId={m.id} equipeA={m.domicile} equipeB={m.visiteur} lieu={m.terrain} className="btn target" />}
         {t && <a className="btn page" href={lienItineraire(t.lat, t.lon)} target="_blank" rel="noopener noreferrer">Itinéraire</a>}
         <button className="btn target" data-testid="panneau-calendrier" data-etat={etat}
           disabled={etat === "SUIVI" || enCours === m.id} onClick={() => onCalendrier(m)}>

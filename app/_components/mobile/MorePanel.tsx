@@ -231,7 +231,7 @@ export default function MorePanel({
         {
           items: [
             // BP 2026-10-18 : Recherche et Mon processus quittent la barre du bas pour ce panneau ;
-            // Calendrier et Game On y montent (MobileTabBar).
+            // Calendrier et Dépistage y montent (MobileTabBar).
             { key: "recherche", label: "Recherche", href: "/recruteur/recherche", icon: Icons.search },
             { key: "pipeline", label: "Mon processus", href: "/recruteur/pipeline", icon: Icons.kanban, requiredTier: "pro" },
             { key: "favoris", label: "Mes favoris", href: "/recruteur/favoris", icon: Icons.heart },

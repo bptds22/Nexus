@@ -26,7 +26,7 @@
    sport : le formulaire ne propose que le bon sport, la base le garantit.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
@@ -35,6 +35,7 @@ import { chercherDoublonsCarte } from "@/lib/cartes/doublonsCarte";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
 import { CopierTexteInvitation } from "@/components/recruteur/cartes/PanneauCarte";
 import { messageCreationCarte } from "@/lib/cartes/courrielCarte";
+import { boutonsCreation } from "@/lib/cartes/boutonsCreation";
 import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
 
 type Champ = "taille" | "poids" | "courriel" | "telephone" | "parentNom" | "parentCourriel" | "video";
@@ -48,6 +49,16 @@ interface Etablissement { id: string; name: string; city: string | null }
 interface Equipe { id: string; name: string; age_group: string | null; division: string | null; gender: string | null; libelle: string }
 interface Position { id: string; abreviation: string | null; nom: string }
 
+/** Préremplissage (Dépistage, BP 2026-10-18) : prénom et numéro notés au match, et l'établissement,
+ *  le sport et l'équipe du CÔTÉ du match (la catégorie et la division sont celles de l'équipe). */
+export interface PrerempliCarte {
+  prenom?: string | null;
+  numero?: string | null;
+  etablissement?: { id: string; name: string; city: string | null; type?: string | null } | null;
+  sportAthleteId?: string | null;
+  teamId?: string | null;
+}
+
 const champ = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const etiquette = "block text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] mb-1";
 
@@ -55,21 +66,24 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
   sportId: string;
   onClose: () => void;
   onCreee: (message: string) => void;
-  /** Game On : prénom et numéro notés pendant le match. */
-  prerempli?: { prenom?: string | null; numero?: string | null };
-  /** Game On : l'id de la carte, dès qu'elle existe (pour y lier les notes du match). */
+  /** Dépistage : prénom et numéro notés pendant le match, établissement / sport / équipe du côté. */
+  prerempli?: PrerempliCarte;
+  /** Dépistage : l'id de la carte, dès qu'elle existe (pour y lier les notes du match). */
   onCarteCreee?: (id: string) => void;
 }) {
   const [prenom, setPrenom] = useState(prerempli?.prenom ?? "");
   const [nom, setNom] = useState("");
-  const [genre, setGenre] = useState<Genre>("SCOLAIRE");
+  const [genre, setGenre] = useState<Genre>(prerempli?.etablissement?.type === "LIGUE_CIVILE" ? "CIVIL" : "SCOLAIRE");
+  // Le sport et l'équipe préremplis ne s'appliquent qu'UNE fois (au premier chargement).
+  const prefill = useRef({ sport: prerempli?.sportAthleteId ?? null, equipe: prerempli?.teamId ?? null });
   const [recherche, setRecherche] = useState("");
   /* Tous les établissements du genre qui ont une équipe du sport, chargés
      UNE fois : la recherche se fait ici, sans accents ni casse (la même
      normalisation que les doublons) — « academie » trouve « Académie les
      Estacades ». Un ilike côté base ne sait pas ignorer les accents. */
   const [tousEtablissements, setTousEtablissements] = useState<(Etablissement & { cle: string })[] | null>(null);
-  const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
+  const [etablissement, setEtablissement] = useState<Etablissement | null>(prerempli?.etablissement
+    ? { id: prerempli.etablissement.id, name: prerempli.etablissement.name, city: prerempli.etablissement.city } : null);
   // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — distinct du sport de
   // l'unité (sportId, prop) : la carte reste dans l'unité du créateur, mais
   // l'athlète qu'elle représente peut jouer n'importe quel sport offert par
@@ -142,8 +156,12 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
       const liste = [...vus.entries()].map(([id, nom]) => ({ id, nom })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
       setSportsEtablissement(liste);
       setSportsEtablissementCharges(true);
+      // Dépistage : le sport de l'équipe du match, une seule fois.
+      const voulu = prefill.current.sport;
+      prefill.current.sport = null;
+      if (voulu && (liste.length === 0 || liste.some((s) => s.id === voulu))) setSportAthleteId(voulu);
       // Un seul sport offert : pas de choix réel, on le pose directement.
-      if (liste.length === 1) setSportAthleteId(liste[0].id);
+      else if (liste.length === 1) setSportAthleteId(liste[0].id);
     })();
     return () => { annule = true; };
   }, [etablissement]);
@@ -209,7 +227,10 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
       const finales = trierEquipes((data ?? []) as Omit<Equipe, "libelle">[])
         .map((e) => ({ ...e, libelle: libelleEquipe(nomSport, e, etablissement.name) }));
       setEquipes(finales);
-      setEquipeId(finales.length === 1 ? finales[0].id : "");
+      // Dépistage : l'équipe du côté du match, une seule fois.
+      const voulue = prefill.current.equipe;
+      if (voulue && finales.some((e) => e.id === voulue)) prefill.current.equipe = null;
+      setEquipeId(voulue && finales.some((e) => e.id === voulue) ? voulue : finales.length === 1 ? finales[0].id : "");
       setEquipesChargees(true);
     })();
     return () => { annule = true; };
@@ -240,6 +261,8 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
      l'athlète le 2026-10-05). Avec des équipes, l'équipe reste obligatoire. */
   const sansEquipe = !!etablissement && equipesChargees && equipes.length === 0;
   const valide = prenom.trim().length > 0 && nom.trim().length > 0 && !!sportAthleteId && (!!equipe || sansEquipe);
+  const boutons = boutonsCreation(courriel, telephone);
+  const quandMeme = !!avertissements && avertissements.length > 0;
   const promotions = useMemo(() => {
     const an = new Date().getFullYear();
     return Array.from({ length: 6 }, (_, i) => an + i);
@@ -525,10 +548,22 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
         )}
         {erreur && <p role="alert" className="mt-3 text-[13px] text-[#EF4444]">{erreur}</p>}
 
-        <div className="flex items-center justify-end gap-3 mt-6">
+        {/* Deux boutons (BP 2026-10-18) : sans courriel ni téléphone → « Créer la carte » ;
+            avec l'un des deux → « Créer et inviter ». Un seul est actif à la fois. */}
+        <p className="mt-6 text-[12px] text-[#6b7280]" data-testid="carte-aide-boutons">
+          {boutons.inviter
+            ? "Avec un courriel ou un téléphone, la carte est créée et l'athlète est invité."
+            : "Sans courriel ni téléphone, la carte est créée sans invitation. Tu pourras l'inviter plus tard."}
+        </p>
+        <div className="flex flex-wrap items-center justify-end gap-3 mt-3">
           <button type="button" onClick={onClose} className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-          <button type="button" onClick={() => void soumettre()} disabled={!valide || enCours} className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 disabled:cursor-not-allowed text-white text-[13px] font-bold rounded-lg transition-colors">
-            {enCours ? "…" : avertissements && avertissements.length > 0 ? "Créer quand même" : "Créer la carte"}
+          <button type="button" data-testid="carte-creer" onClick={() => void soumettre()} disabled={!valide || enCours || !boutons.creer}
+            className="px-5 py-2.5 border border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10 disabled:opacity-30 disabled:cursor-not-allowed text-[13px] font-bold rounded-lg transition-colors">
+            {enCours && boutons.creer ? "…" : quandMeme ? "Créer quand même" : "Créer la carte"}
+          </button>
+          <button type="button" data-testid="carte-creer-inviter" onClick={() => void soumettre()} disabled={!valide || enCours || !boutons.inviter}
+            className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-30 disabled:cursor-not-allowed text-white text-[13px] font-bold rounded-lg transition-colors">
+            {enCours && boutons.inviter ? "…" : quandMeme ? "Créer et inviter quand même" : "Créer et inviter"}
           </button>
         </div>
       </div>

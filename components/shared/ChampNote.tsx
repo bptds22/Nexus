@@ -49,6 +49,7 @@ export default function ChampNote({
   id,
   className = "",
   sansGabarits = false,
+  sansDictee = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -65,6 +66,8 @@ export default function ChampNote({
   className?: string;
   /** Game On (BP 2026-10-18) : garder ça simple, sans bouton Gabarits. */
   sansGabarits?: boolean;
+  /** Dépistage (BP 2026-10-18) : pas de bouton « Dicter » — le micro du clavier suffit. */
+  sansDictee?: boolean;
 }) {
   const zone = useRef<HTMLTextAreaElement>(null);
   const [gabaritsOuverts, setGabaritsOuverts] = useState(false);
@@ -171,6 +174,7 @@ export default function ChampNote({
         }}
       />
       <div className="flex flex-wrap items-center gap-2 mt-2">
+        {!sansDictee && (
         <button
           type="button"
           onClick={dicter}
@@ -186,6 +190,7 @@ export default function ChampNote({
           </svg>
           {enEcoute ? "Arrêter" : "Dicter"}
         </button>
+        )}
         {!sansGabarits && (
         <button
           type="button"

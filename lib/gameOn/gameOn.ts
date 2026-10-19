@@ -29,6 +29,8 @@ export interface SeanceLocale {
   /** Couleur du chandail de chaque côté, demandée à chaque match (BP 2026-10-18). Sur l'appareil seulement. */
   couleurA?: string | null;
   couleurB?: string | null;
+  /** Prénom corrigé au crayon, par joueur (clé cleJoueur) — sur l'appareil ; mes notes le portent aussi. */
+  prenoms?: Record<string, string>;
 }
 
 export interface NoteLocale {
@@ -262,7 +264,7 @@ export function fusionnerNotes(locales: readonly NoteLocale[], serveur: readonly
   return [...parId.values()];
 }
 
-export function grouperParJoueur(notes: readonly NoteAffichee[]): GroupeJoueur[] {
+export function grouperParJoueur(notes: readonly NoteAffichee[], prenoms?: Record<string, string> | null): GroupeJoueur[] {
   const m = new Map<string, NoteAffichee[]>();
   for (const n of notes) {
     const k = cleJoueur(n);
@@ -273,7 +275,8 @@ export function grouperParJoueur(notes: readonly NoteAffichee[]): GroupeJoueur[]
   for (const [cle, l] of m) {
     const tri = [...l].sort((a, b) => a.noteLe.localeCompare(b.noteLe));
     const derniere = tri[tri.length - 1];
-    const prenom = [...tri].reverse().find((n) => (n.prenom ?? "").trim())?.prenom ?? null;
+    // Le prénom corrigé au crayon (BP 2026-10-18) passe avant celui des notes.
+    const prenom = prenoms?.[cle]?.trim() || ([...tri].reverse().find((n) => (n.prenom ?? "").trim())?.prenom ?? null);
     groupes.push({
       cle, cote: derniere.cote, numero: derniere.numero, prenom, notes: tri, derniere: derniere.noteLe,
       traite: tri.every((n) => !!n.lieLe),
@@ -309,15 +312,46 @@ export function dateSeance(iso: string): string {
   return d.toLocaleDateString("fr-CA", { day: "numeric", month: "short", year: "numeric" });
 }
 
-/** Le texte recopié dans la fiche : « Match A vs B — date », puis une ligne par note. */
+/** Titre du bloc recopié dans le fil de la carte (BP 2026-10-18) : « Match X vs Y, date ». */
+export function titreRecopie(s: Pick<SeanceLocale, "equipeA" | "equipeB" | "commenceLe">): string {
+  const d = dateSeance(s.commenceLe);
+  return `Match ${titreSeance(s)}${d ? `, ${d}` : ""}`;
+}
+
+/** Le texte recopié dans la fiche : le titre « Match X vs Y, date », puis une ligne par note (heure, auteur). */
 export function texteRecopie(s: Pick<SeanceLocale, "equipeA" | "equipeB" | "commenceLe">, g: Pick<GroupeJoueur, "numero" | "notes">): string {
   const lignes = g.notes.map((n) => {
     const tags = n.etiquettes.length ? `[${n.etiquettes.join(", ")}] ` : "";
     const qui = n.auteurNom && !n.deMoi ? ` (${n.auteurNom})` : "";
-    return `• ${tags}${n.texte.trim()}${qui}`.trimEnd();
+    const h = heureLigne(n.noteLe);
+    return `• ${h ? `${h} : ` : ""}${tags}${n.texte.trim()}${qui}`.trimEnd();
   });
-  const entete = `Match ${titreSeance(s)} — ${dateSeance(s.commenceLe)}${g.numero ? ` · #${g.numero}` : ""}`;
-  return [entete, ...lignes].join("\n").slice(0, 4000);
+  return [titreRecopie(s), ...lignes].join("\n").slice(0, 4000);
+}
+
+/* ── Fiche du joueur : ajouter à une de MES notes (BP 2026-10-18) ──── */
+
+/** « 14 h 32 » — l'heure locale d'une note, vide si illisible. */
+export function heureLigne(iso: string | Date): string {
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Ajoute une ligne datée sous le texte d'avant, sans l'écraser (« 14 h 32 : … »). Plafond de la base : 2000. */
+export function ajouterLigneDatee(avant: string, ajout: string, maintenant = new Date()): string {
+  const a = ajout.trim();
+  if (!a) return avant;
+  const ligne = `${heureLigne(maintenant)} : ${a}`;
+  return (avant.trim() ? `${avant.trimEnd()}\n${ligne}` : ligne).slice(0, 2000);
+}
+
+/** Corrige le prénom d'un joueur : la séance le retient (clé du joueur). */
+export function avecPrenom(e: EtatSeance, cle: string, prenom: string): EtatSeance {
+  const p = prenom.trim().slice(0, 60);
+  const prenoms = { ...(e.seance.prenoms ?? {}) };
+  if (p) prenoms[cle] = p; else delete prenoms[cle];
+  return { ...e, seance: { ...e.seance, prenoms } };
 }
 
 export interface CarteCandidate {
@@ -341,6 +375,116 @@ export function suggestionsCartes(g: Pick<GroupeJoueur, "numero" | "prenom">, ca
       || Number(!!prenom && b.prenom.toLowerCase().startsWith(prenom)) - Number(!!prenom && a.prenom.toLowerCase().startsWith(prenom))
       || `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`, "fr"))
     .slice(0, 5);
+}
+
+/* ── Trier : suggestions athlètes Nexus ET cartes (BP 2026-10-18) ──── */
+
+export interface AthleteCandidat {
+  id: string;
+  prenom: string;
+  nom: string;
+  numero: string | null;
+  /** Côté du match où il joue (DOMICILE = A, VISITEUR = B). */
+  cote: Cote;
+}
+
+export interface Suggestion {
+  type: "athlete" | "carte";
+  id: string;
+  nom: string;
+  numero: string | null;
+  equipe: string | null;
+  /** Pourquoi on la propose : même numéro, ou nom proche. */
+  raison: "numero" | "nom";
+  /** De l'équipe du côté noté. */
+  memeEquipe: boolean;
+}
+
+const sansAccents = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/** Le prénom noté au match ressemble-t-il à celui-ci ? (« Alex » ↔ « Alexandre », casse et accents ignorés.) */
+export function prenomProche(note: string | null | undefined, candidat: string): boolean {
+  const premier = (s: string) => sansAccents(s).split(/[\s.\-']+/).filter(Boolean)[0] ?? "";
+  const a = premier(note ?? ""), b = premier(candidat);
+  if (a.length < 2 || b.length < 2) return false;
+  return a.startsWith(b) || b.startsWith(a);
+}
+
+/** D'abord les athlètes Nexus et les cartes DE L'ÉQUIPE du côté noté (même numéro, puis nom proche),
+ *  ensuite les cartes d'ailleurs qui portent le même numéro. Six au plus. */
+export function suggestionsTri(
+  g: Pick<GroupeJoueur, "cote" | "numero" | "prenom">,
+  athletes: readonly AthleteCandidat[],
+  cartes: readonly CarteCandidate[],
+  equipeCote: string | null,
+): Suggestion[] {
+  const r: (Suggestion & { rang: number })[] = [];
+  const vu = new Set<string>();
+  const pousser = (s: Suggestion, rang: number) => {
+    const k = `${s.type}:${s.id}`;
+    if (vu.has(k)) return;
+    vu.add(k);
+    r.push({ ...s, rang });
+  };
+  for (const a of athletes) {
+    if (a.cote !== g.cote) continue;
+    const memeNumero = !!g.numero && (a.numero ?? "").trim() === g.numero;
+    if (!memeNumero && !prenomProche(g.prenom, a.prenom)) continue;
+    pousser({ type: "athlete", id: a.id, nom: `${a.prenom} ${a.nom}`.trim(), numero: a.numero, equipe: null,
+      raison: memeNumero ? "numero" : "nom", memeEquipe: true }, memeNumero ? 0 : 2);
+  }
+  for (const c of cartes) {
+    const memeEquipe = !!equipeCote && c.teamId === equipeCote;
+    const memeNumero = !!g.numero && (c.numero ?? "").trim() === g.numero;
+    const nomProche = prenomProche(g.prenom, c.prenom);
+    const nom = `${c.prenom} ${c.nom}`.trim();
+    if (memeEquipe && (memeNumero || nomProche)) {
+      pousser({ type: "carte", id: c.id, nom, numero: c.numero, equipe: c.equipe, raison: memeNumero ? "numero" : "nom", memeEquipe: true }, memeNumero ? 1 : 3);
+    } else if (memeNumero) {
+      pousser({ type: "carte", id: c.id, nom, numero: c.numero, equipe: c.equipe, raison: "numero", memeEquipe: false }, nomProche ? 4 : 5);
+    }
+  }
+  return r
+    .sort((a, b) => a.rang - b.rang || a.nom.localeCompare(b.nom, "fr"))
+    .slice(0, 6)
+    .map((x): Suggestion => ({ type: x.type, id: x.id, nom: x.nom, numero: x.numero, equipe: x.equipe, raison: x.raison, memeEquipe: x.memeEquipe }));
+}
+
+/* ── Tableau de bord : les quatre pastilles (BP 2026-10-18) ──────── */
+
+export type Pastille = "en-cours" | "du-jour" | "a-trier" | "unite";
+
+export const PASTILLES: readonly { cle: Pastille; libelle: string }[] = [
+  { cle: "en-cours", libelle: "En cours" },
+  { cle: "du-jour", libelle: "Mes matchs du jour" },
+  { cle: "a-trier", libelle: "À trier" },
+  { cle: "unite", libelle: "Mon unité" },
+];
+
+/** Une séance vue de la base (match_seances_recentes), forme minimale pour le tableau de bord. */
+export interface SeanceResume {
+  id: string;
+  cree_par: string;
+  termine_le: string | null;
+  nb_notes: number;
+  nb_a_lier: number;
+}
+
+/** Range les séances : en cours (les miennes, ouvertes), à trier (des notes à lier), mon unité
+ *  (celles des collègues, ouvertes : on peut les rejoindre). Les séances déjà sur l'appareil sont en cours. */
+export function rangerSeances<T extends SeanceResume>(seances: readonly T[], moi: string | null, surAppareil: ReadonlySet<string>) {
+  const enCours = seances.filter((s) => !s.termine_le && !surAppareil.has(s.id) && s.cree_par === moi);
+  const aTrier = seances.filter((s) => s.nb_a_lier > 0);
+  const unite = seances.filter((s) => !s.termine_le && !surAppareil.has(s.id) && s.cree_par !== moi);
+  return { enCours, aTrier, unite };
+}
+
+/** La pastille ouverte par défaut : en cours s'il y a un match ouvert, sinon les matchs du jour. */
+export function pastilleParDefaut(n: { enCours: number; duJour: number; aTrier: number }): Pastille {
+  if (n.enCours > 0) return "en-cours";
+  if (n.duJour > 0) return "du-jour";
+  if (n.aTrier > 0) return "a-trier";
+  return "du-jour";
 }
 
 /* ── Erreurs ───────────────────────────────────────────────────── */
