@@ -415,7 +415,6 @@ export default function MorePanel({
             { key: "tendances", label: "Tendances", href: "/partenaire/tendances", icon: Icons.trendingUp },
             { key: "classements", label: "Classements", href: "/partenaire/classements", icon: Icons.trophy },
             { key: "carte-matchs", label: "Carte des matchs", href: "/partenaire/carte-matchs", icon: Icons.calendar },
-            { key: "depistage", label: "Dépistage", href: "/partenaire/depistage", icon: Icons.activity },
             { key: "telechargements", label: "Téléchargements", href: "/partenaire/telechargements", icon: Icons.lists },
           ],
         },

@@ -9,6 +9,7 @@ import type { MediaPartner, PartnerStatus } from "@/lib/types/models";
 import { initialesOrganisation } from "@/lib/partners/initiales";
 import { deconnexion } from "@/lib/auth/deconnexion";
 import { entreeVisible } from "@/lib/partenaires/navigation";
+import { DEPISTAGE } from "@/lib/gameOn/libelles";
 
 const NAV_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [
   {
@@ -51,7 +52,7 @@ const NAV_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>,
   },
   {
-    label: "Dépistage",
+    label: DEPISTAGE.onglet,
     href: "/partenaire/depistage",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polygon points="10 8.5 16 12 10 15.5" /></svg>,
   },

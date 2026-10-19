@@ -220,8 +220,9 @@ const PARTENAIRE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/partenaire", icon: Icons.dashboard, exact: true },
   { key: "athletes", label: "Recherche", href: "/partenaire/athletes", icon: Icons.search, activeMatch: "/partenaire/athletes" },
   // Fusion du 2026-10-18 (6.1) : « Mes athlètes » porte les deux pastilles (En attente / Mes évaluations).
-  // Barre : Accueil · Recherche · Mes athlètes · Plus.
+  // Barre : Accueil · Recherche · Mes athlètes · Live · Plus (Live : BP 2026-10-19, partenaire qui évalue).
   { key: "mes-athletes", label: "Mes athlètes", href: "/partenaire/mes-athletes", icon: Icons.users, activeMatch: "/partenaire/mes-athletes|/partenaire/prospects" },
+  { key: "depistage", label: DEPISTAGE.onglet, href: "/partenaire/depistage", icon: Icons.gameOn, activeMatch: "/partenaire/depistage" },
 ];
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete" | "partenaire", TabConfig[]> = {

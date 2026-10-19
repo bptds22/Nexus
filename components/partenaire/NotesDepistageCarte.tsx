@@ -14,7 +14,7 @@ export default function NotesDepistageCarte({ carteId, nb }: { carteId: string; 
     <div className="mt-2" data-notes-depistage={carteId}>
       <button type="button" onClick={() => setOuvert((v) => !v)} aria-expanded={ouvert}
         className="min-h-[36px] text-[12px] font-bold text-[#22C55E] hover:underline">
-        Notes de dépistage ({nb}) {ouvert ? "▴" : "▾"}
+        Notes du Live ({nb}) {ouvert ? "▴" : "▾"}
       </button>
       {ouvert && (
         notesQ.isLoading ? <p className="text-[12px] text-[#6b7280]">Chargement…</p> : (

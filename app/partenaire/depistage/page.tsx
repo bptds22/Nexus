@@ -18,7 +18,7 @@ export default function DepistagePartenairePage() {
   if (!peut) {
     return (
       <div className="mx-auto max-w-xl px-4 py-12 text-center">
-        <p className="text-[17px] font-bold text-white">Le dépistage est offert aux partenaires qui évaluent.</p>
+        <p className="text-[17px] font-bold text-white">Le Live est offert aux partenaires qui évaluent.</p>
         <p className="mt-2 text-[14px] text-[#9CA3AF]">Écris à Nexus pour l&apos;activer sur ton compte.</p>
         <Link href="/partenaire" className="mt-6 inline-block text-[14px] font-bold text-[#E63946]">Retour à l&apos;accueil</Link>
       </div>
