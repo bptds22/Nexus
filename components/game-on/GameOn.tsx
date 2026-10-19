@@ -1158,7 +1158,10 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
             const p = prerempli(creer);
             const e = p.etablissement;
             return { prenom: creer.prenom, sportId: p.sportAthleteId ?? null, teamId: p.teamId ?? null,
-              etablissement: e ? { id: e.id, name: e.name, city: e.city, type: e.type ?? null } : null };
+              etablissement: e ? { id: e.id, name: e.name, city: e.city, type: e.type ?? null } : null,
+              rechercheEcole: (creer.cote === "A" ? s.equipeA : s.equipeB) ?? null,
+              notes: `${libelleJoueur(creer)} · ${equipeDe(creer.cote)?.nom ?? (creer.cote === "A" ? s.equipeA : s.equipeB ?? "")}
+${texteRecopie(s, creer)}` };
           })()}
           onClose={() => setCreer(null)}
           onEnregistree={(id) => {

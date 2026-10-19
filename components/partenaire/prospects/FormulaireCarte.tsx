@@ -61,6 +61,10 @@ export default function FormulaireCarte({
     sportId: string | null;
     teamId: string | null;
     etablissement: { id: string; name: string; city: string | null; type: string | null } | null;
+    /** Ce qu'il a noté au match (« Notes du match X vs Y » + les lignes), affiché pour évaluer à partir de ça. */
+    notes?: string | null;
+    /** Match hors calendrier (équipe inconnue) : le nom tapé au match lance la recherche d'école. */
+    rechercheEcole?: string | null;
   } | null;
   onClose: () => void;
   onEnregistree: (id: string, nouvelle: boolean) => void;
@@ -77,7 +81,7 @@ export default function FormulaireCarte({
   const [positions, setPositions] = useState<Position[]>([]);
   const [positionId, setPositionId] = useState(carte?.positionId ?? "");
   const [genre, setGenre] = useState<Genre>(pre?.etablissement?.type === "LIGUE_CIVILE" ? "CIVIL" : "SCOLAIRE");
-  const [recherche, setRecherche] = useState("");
+  const [recherche, setRecherche] = useState(pre && !pre.etablissement ? (pre.rechercheEcole ?? "") : "");
   const [tous, setTous] = useState<(Etablissement & { cle: string })[] | null>(null);
   const [etablissement, setEtablissement] = useState<Etablissement | null>(
     pre?.etablissement ? { id: pre.etablissement.id, name: pre.etablissement.name, city: pre.etablissement.city } : null);
@@ -239,6 +243,12 @@ export default function FormulaireCarte({
           Un jeune qui n&apos;est pas encore sur Nexus. Toi seul vois cette carte ; elle s&apos;efface après 60 jours.
           Aucune coordonnée : tu lui enverras le lien toi-même.
         </p>
+        {pre?.notes && (
+          <div className="mt-4 rounded-lg border border-[#22C55E]/30 bg-[#22C55E]/[0.06] px-3 py-2.5" data-notes-match-carte>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#22C55E] mb-1">Tes notes du match</p>
+            <p className="text-[13px] text-[#e0e0e0] whitespace-pre-line">{pre.notes}</p>
+          </div>
+        )}
 
         <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
