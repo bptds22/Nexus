@@ -53,6 +53,36 @@ export async function refuserRapprochement(supabase: SupabaseClient, id: string)
   return error;
 }
 
+/* ── Refusées (BP 2026-10-19) : les revoir, les proposer de nouveau ──
+   Migration 20261019150000 ; absente (prod sans elle) → aucune, sans erreur. */
+export interface RapprochementRefuse extends Rapprochement {
+  decide_le: string | null;
+  decide_par_nom: string | null;
+}
+
+export const CLE_RAPPROCHEMENTS_REFUSES = "rapprochements-refuses";
+
+export function useRapprochementsRefuses(enabled = true) {
+  const { data: currentUser } = useCurrentUser();
+  const moi = currentUser?.authUser.id ?? null;
+  return useQuery<RapprochementRefuse[]>({
+    queryKey: [CLE_RAPPROCHEMENTS_REFUSES, moi],
+    enabled: !!moi && enabled,
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await createClient().rpc("rapprochements_refuses_unite");
+      if (error) return [];
+      return (data ?? []) as RapprochementRefuse[];
+    },
+  });
+}
+
+export async function reproposerRapprochement(supabase: SupabaseClient, id: string) {
+  const { error } = await supabase.rpc("reproposer_rapprochement", { p_id: id });
+  if (error) console.error("[rapprochements] reproposer :", error.message);
+  return error;
+}
+
 /** Libellé de la raison, pour le recruteur. */
 export function raisonRapprochement(r: Pick<Rapprochement, "critere">): string {
   switch (r.critere) {

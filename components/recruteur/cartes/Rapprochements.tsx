@@ -25,7 +25,8 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import {
-  useRapprochements, refuserRapprochement, raisonRapprochement, type Rapprochement,
+  useRapprochements, useRapprochementsRefuses, refuserRapprochement, reproposerRapprochement, raisonRapprochement,
+  CLE_RAPPROCHEMENTS_REFUSES, type Rapprochement, type RapprochementRefuse,
 } from "@/lib/cartes/rapprochements";
 import { niveauRapprochement, libelleNiveau, differences } from "@/lib/cartes/niveauRapprochement";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
@@ -33,9 +34,11 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 
 interface ContexteRapprochements {
   parCarte: Map<string, number>;
+  /** Propositions refusées de l'unité (BP 2026-10-19 : les revoir). */
+  nbRefusees: number;
   ouvrir: (carteId?: string) => void;
 }
-const Contexte = createContext<ContexteRapprochements>({ parCarte: new Map(), ouvrir: () => {} });
+const Contexte = createContext<ContexteRapprochements>({ parCarte: new Map(), nbRefusees: 0, ouvrir: () => {} });
 export const useContexteRapprochements = () => useContext(Contexte);
 
 export function FournisseurRapprochements({
@@ -49,29 +52,42 @@ export function FournisseurRapprochements({
   children: React.ReactNode;
 }) {
   const { data: propositions = [] } = useRapprochements(actif);
+  const { data: refusees = [] } = useRapprochementsRefuses(actif);
   const [ouverte, setOuverte] = useState<{ carteId?: string } | null>(null);
   const parCarte = useMemo(() => {
     const m = new Map<string, number>();
     for (const p of propositions) m.set(p.carte_id, (m.get(p.carte_id) ?? 0) + 1);
     return m;
   }, [propositions]);
-  const valeur = useMemo(() => ({ parCarte, ouvrir: (carteId?: string) => setOuverte({ carteId }) }), [parCarte]);
+  const valeur = useMemo(() => ({ parCarte, nbRefusees: refusees.length, ouvrir: (carteId?: string) => setOuverte({ carteId }) }), [parCarte, refusees.length]);
   return (
     <Contexte.Provider value={valeur}>
       {children}
       {ouverte && (() => {
         const liste = ouverte.carteId ? propositions.filter((p) => p.carte_id === ouverte.carteId) : propositions;
+        const refuseesListe = ouverte.carteId ? refusees.filter((p) => p.carte_id === ouverte.carteId) : refusees;
         const Fenetre = variante === "feuille" ? FeuilleRapprochements : FenetreRapprochements;
-        return <Fenetre propositions={liste} onFermer={() => setOuverte(null)} onAccepter={onAccepter} />;
+        return <Fenetre propositions={liste} refusees={refuseesListe} onFermer={() => setOuverte(null)} onAccepter={onAccepter} />;
       })()}
     </Contexte.Provider>
   );
 }
 
 export function BandeauRapprochements({ className = "" }: { className?: string }) {
-  const { parCarte, ouvrir } = useContexteRapprochements();
+  const { parCarte, nbRefusees, ouvrir } = useContexteRapprochements();
   const n = [...parCarte.values()].reduce((a, b) => a + b, 0);
-  if (n === 0) return null;
+  if (n === 0) {
+    // Rien à décider, mais des refus à revoir : un lien discret (BP 2026-10-19).
+    if (nbRefusees === 0) return null;
+    return (
+      <div className={`${className} flex justify-end`}>
+        <button type="button" onClick={() => ouvrir()} data-testid="lien-refusees"
+          className="min-h-[36px] text-[12px] font-semibold text-[#9CA3AF] underline hover:text-white">
+          Propositions refusées ({nbRefusees})
+        </button>
+      </div>
+    );
+  }
   return (
     <div role="note" data-testid="bandeau-rapprochements"
       className={`${className} flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#3B82F6]/30 bg-[#3B82F6]/[0.07] px-4 py-3`}>
@@ -136,7 +152,8 @@ function useActionsRapprochement(onAccepter?: (r: Rapprochement) => Promise<stri
     setEnCours(r.id);
     const err = await refuserRapprochement(createClient(), r.id);
     setEnCours(null);
-    setMessage(err ? "La proposition n'a pas pu être refusée. Réessaie." : `Refusé : ce profil ne sera plus proposé pour « ${r.carte_prenom} ${r.carte_nom} ».`);
+    setMessage(err ? "La proposition n'a pas pu être refusée. Réessaie." : `Refusé : ce profil ne sera plus proposé pour « ${r.carte_prenom} ${r.carte_nom} ». Tu le retrouves dans « Propositions refusées ».`);
+    void queryClient.invalidateQueries({ queryKey: [CLE_RAPPROCHEMENTS_REFUSES] });
     void invaliderTableauBlanc(queryClient);
   };
   const accepter = async (r: Rapprochement) => {
@@ -147,7 +164,49 @@ function useActionsRapprochement(onAccepter?: (r: Rapprochement) => Promise<stri
     setMessage(err ?? `Fusionné : « ${r.athlete_prenom} ${r.athlete_nom} » reprend le suivi de la carte « ${r.carte_prenom} ${r.carte_nom} ». Tu peux annuler pendant 7 jours depuis l'Historique du dossier.`);
     void invaliderTableauBlanc(queryClient);
   };
-  return { enCours, message, refuser, accepter, peutAccepter: !!onAccepter };
+  const reproposer = async (r: RapprochementRefuse) => {
+    setEnCours(r.id);
+    const err = await reproposerRapprochement(createClient(), r.id);
+    setEnCours(null);
+    setMessage(err ? "La proposition n'a pas pu revenir. Réessaie." : `« ${r.athlete_prenom} ${r.athlete_nom} » est de nouveau proposé pour « ${r.carte_prenom} ${r.carte_nom} » : tu peux l'accepter plus haut.`);
+    void queryClient.invalidateQueries({ queryKey: [CLE_RAPPROCHEMENTS_REFUSES] });
+    void invaliderTableauBlanc(queryClient);
+  };
+  return { enCours, message, refuser, accepter, reproposer, peutAccepter: !!onAccepter };
+}
+
+/** Les refusées, repliées sous les propositions : qui a refusé, quand, « Proposer de nouveau ». */
+function Refusees({ refusees, a, tactile = false }: { refusees: RapprochementRefuse[]; a: Actions; tactile?: boolean }) {
+  const [ouvert, setOuvert] = useState(false);
+  if (refusees.length === 0) return null;
+  return (
+    <section className="mt-6 border-t border-[#2D3748] pt-4" data-testid="propositions-refusees">
+      <button type="button" onClick={() => setOuvert((v) => !v)} aria-expanded={ouvert}
+        className="min-h-[40px] text-[12px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] hover:text-white">
+        Propositions refusées ({refusees.length}) {ouvert ? "▴" : "▾"}
+      </button>
+      {ouvert && (
+        <ul className="mt-2 space-y-2">
+          {refusees.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#2D3748] bg-[#13151a] px-3 py-2.5">
+              <span className="min-w-0 text-[13px] text-[#c8c8cc]">
+                <span className="font-semibold text-white">{r.carte_prenom} {r.carte_nom}</span> ↔ {r.athlete_prenom} {r.athlete_nom}
+                <span className="block text-[11px] text-[#6b7280]">
+                  {raisonRapprochement(r)}
+                  {r.decide_par_nom ? ` · refusé par ${r.decide_par_nom}` : ""}
+                  {r.decide_le ? `, ${new Date(r.decide_le).toLocaleDateString("fr-CA", { day: "numeric", month: "short" })}` : ""}
+                </span>
+              </span>
+              <button type="button" onClick={() => void a.reproposer(r)} disabled={a.enCours === r.id}
+                className={`${tactile ? "min-h-[44px]" : ""} shrink-0 px-3 py-1.5 text-[12px] font-bold text-white border border-white/30 rounded-lg hover:bg-white/5 disabled:opacity-40`}>
+                Proposer de nouveau
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 type Actions = ReturnType<typeof useActionsRapprochement>;
@@ -211,8 +270,9 @@ function Proposition({ r, a, tactile = false }: { r: Rapprochement; a: Actions; 
   );
 }
 
-function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
+function FenetreRapprochements({ propositions, refusees, onFermer, onAccepter }: {
   propositions: Rapprochement[];
+  refusees: RapprochementRefuse[];
   onFermer: () => void;
   onAccepter?: (r: Rapprochement) => Promise<string | null>;
 }) {
@@ -227,6 +287,7 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
         {propositions.length === 0 ? (
           <p className="mt-6 text-[14px] text-[#6b7280]">Aucune proposition en attente.</p>
         ) : propositions.map((r) => <Proposition key={r.id} r={r} a={a} />)}
+        <Refusees refusees={refusees} a={a} />
         <div className="flex justify-end mt-6">
           <button type="button" onClick={onFermer} className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white">Fermer</button>
         </div>
@@ -238,8 +299,9 @@ function FenetreRapprochements({ propositions, onFermer, onAccepter }: {
 /* L'appli (A7) : feuille du bas presque plein écran, défilable, portée sur
    document.body (un ancêtre transformé capturerait le `fixed`). Aucun champ de
    saisie : pas de géométrie clavier à gérer. La zone sûre du bas est rendue. */
-function FeuilleRapprochements({ propositions, onFermer, onAccepter }: {
+function FeuilleRapprochements({ propositions, refusees, onFermer, onAccepter }: {
   propositions: Rapprochement[];
+  refusees: RapprochementRefuse[];
   onFermer: () => void;
   onAccepter?: (r: Rapprochement) => Promise<string | null>;
 }) {
@@ -265,6 +327,7 @@ function FeuilleRapprochements({ propositions, onFermer, onAccepter }: {
           {propositions.length === 0 ? (
             <p className="mt-6 text-[14px] text-[#6b7280]">Aucune proposition en attente.</p>
           ) : propositions.map((r) => <Proposition key={r.id} r={r} a={a} tactile />)}
+          <Refusees refusees={refusees} a={a} tactile />
         </div>
       </div>
     </div>,
