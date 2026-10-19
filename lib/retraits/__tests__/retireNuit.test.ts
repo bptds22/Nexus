@@ -68,7 +68,10 @@ test("« Aussi en favori chez » : les vrais noms (unite_auteurs), jamais de nom
 
 test("remettre en favori un retiré le sort de Retiré", () => {
   const src = lire("components/recruteur/unite/useBasculeFavori.tsx");
-  assert.ok(src.includes('if (r.ok && avant?.etape === "RETIRE")'));
+  // BP 2026-10-19 : une fenêtre dit qu'il a été retiré (raison lue AVANT, la base l'efface ensuite), puis confirme.
+  assert.ok(src.includes('if (avant?.etape !== "RETIRE") return definirFavori(queryClient, athleteId, true);'));
+  assert.ok(src.includes("const retrait = await lireRetrait(athleteId);"));
+  assert.ok(src.includes('testId="fenetre-remettre-favori"'));
   assert.ok(src.includes("sortirDeRetire(createClient(), athleteId)"));
 });
 

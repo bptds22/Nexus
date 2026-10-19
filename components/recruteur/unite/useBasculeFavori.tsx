@@ -49,7 +49,33 @@ import { ChoixRaisonRetrait } from "@/components/recruteur/retraits/ChoixRaisonR
 import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
-import { messageRetrait, retirerDossier, sortirDeRetire, type RaisonRetrait } from "@/lib/retraits/retraits";
+import { messageRetrait, resumeRetrait, retirerDossier, sortirDeRetire, versRetraits, cleRetrait, type RaisonRetrait, type Retrait } from "@/lib/retraits/retraits";
+import { invaliderRetraits } from "@/lib/queries/recruiter/useRetraits";
+
+/** Remettre en favori un athlète RETIRÉ (BP 2026-10-19) : on montre pourquoi il a été retiré, et on confirme. */
+interface ARemettre {
+  athleteId: string;
+  nomAthlete: string;
+  retrait: Retrait | null;
+  resoudre: (r: ResultatFavori | null) => void;
+}
+
+/** La raison du retrait, lue AVANT tout geste : la base l'efface dès que le dossier quitte « Retiré ». */
+async function lireRetrait(athleteId: string): Promise<Retrait | null> {
+  const { data, error } = await createClient().rpc("unite_retraits").eq("athlete_id", athleteId);
+  if (error) return null;
+  return versRetraits(data as Record<string, unknown>[]).get(cleRetrait(athleteId, false)) ?? null;
+}
+
+async function remettreEnFavori(queryClient: QueryClient, athleteId: string): Promise<ResultatFavori> {
+  const r = await definirFavori(queryClient, athleteId, true);
+  if (!r.ok) return r;
+  const err = await sortirDeRetire(createClient(), athleteId);
+  void invaliderTableauBlanc(queryClient);
+  void invaliderRetraits(queryClient);
+  if (err) return { ok: false, message: `Favori ajouté, mais l'athlète est resté dans « Retiré ». ${messageRetrait(err)}` };
+  return r;
+}
 
 interface EnAttente {
   athleteId: string;
@@ -129,6 +155,7 @@ export function useBasculeFavori(): {
   const queryClient = useQueryClient();
   const favoris = useFavorisUnite();
   const [attente, setAttente] = useState<EnAttente | null>(null);
+  const [aRemettre, setARemettre] = useState<ARemettre | null>(null);
   const [raison, setRaison] = useState<RaisonRetrait | null>(null);
   const [note, setNote] = useState("");
   const enCours = useRef(false);
@@ -137,15 +164,14 @@ export function useBasculeFavori(): {
     async (athleteId: string, estFavori: boolean, nomAthlete?: string): Promise<ResultatFavori | null> => {
       if (!estFavori) {
         // Remettre en favori sort de « Retiré » (BP 2026-10-18, nuit) : retiré = jamais en favori.
+        // BP 2026-10-19 : d'abord une fenêtre qui dit qu'il a été retiré, et pourquoi.
         let avant: Dossier = null;
         if (favoris.modeUnite) { try { avant = await lireDossier(athleteId); } catch { avant = null; } }
-        const r = await definirFavori(queryClient, athleteId, true);
-        if (r.ok && avant?.etape === "RETIRE") {
-          const err = await sortirDeRetire(createClient(), athleteId);
-          void invaliderTableauBlanc(queryClient);
-          if (err) return { ok: false, message: `Favori ajouté, mais l'athlète est resté dans « Retiré ». ${messageRetrait(err)}` };
-        }
-        return r;
+        if (avant?.etape !== "RETIRE") return definirFavori(queryClient, athleteId, true);
+        const retrait = await lireRetrait(athleteId);
+        return new Promise<ResultatFavori | null>((resoudre) => {
+          setARemettre({ athleteId, nomAthlete: nomAthlete || "cet athlète", retrait, resoudre });
+        });
       }
       if (!favoris.modeUnite) return definirFavori(queryClient, athleteId, false);
       const collegues = favoris.collegues(athleteId);
@@ -166,6 +192,20 @@ export function useBasculeFavori(): {
     },
     [queryClient, favoris],
   );
+
+  const annulerRemise = useCallback(() => {
+    aRemettre?.resoudre(null);
+    setARemettre(null);
+  }, [aRemettre]);
+
+  const confirmerRemise = useCallback(async () => {
+    if (!aRemettre || enCours.current) return;
+    enCours.current = true;
+    const r = await remettreEnFavori(queryClient, aRemettre.athleteId);
+    enCours.current = false;
+    aRemettre.resoudre(r);
+    setARemettre(null);
+  }, [aRemettre, queryClient]);
 
   const annuler = useCallback(() => {
     attente?.resoudre(null);
@@ -205,6 +245,32 @@ export function useBasculeFavori(): {
       {dossierActif(attente.dossier) && (
         <ChoixRaisonRetrait mobile={IS_CAPACITOR} raison={raison} onRaison={setRaison} note={note} onNote={setNote} />
       )}
+    </FeuilleBas>
+  ) : aRemettre ? (
+    <FeuilleBas
+      onFermer={annulerRemise}
+      titre={`${aRemettre.nomAthlete} a été retiré`}
+      testId="fenetre-remettre-favori"
+      largeurModale={400}
+      pied={
+        <div className="flex items-center justify-end gap-3">
+          <button type="button" onClick={annulerRemise} className="px-4 py-2 [@media(hover:none)]:min-h-[44px] text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">
+            Annuler
+          </button>
+          <button type="button" onClick={() => void confirmerRemise()} className="px-5 py-2 [@media(hover:none)]:min-h-[44px] text-white text-[13px] font-bold rounded-lg bg-[#E63946] hover:bg-[#D42B22] transition-colors">
+            Le remettre en favori
+          </button>
+        </div>
+      }
+    >
+      {aRemettre.retrait ? (
+        <p className="rounded-lg border border-[#2D3748] bg-[#111317] px-3 py-2.5 text-[13px] text-white/85 leading-relaxed" data-testid="remettre-raison">
+          {resumeRetrait(aRemettre.retrait)}
+        </p>
+      ) : (
+        <p className="text-[13px] text-[#9CA3AF] leading-relaxed">Il est dans « Retiré » du processus de l&apos;unité.</p>
+      )}
+      <p className="mt-3 text-[13px] text-[#9CA3AF] leading-relaxed">Es-tu sûr ? Il reviendra en favori et à l&apos;étape Identifié, pour toute l&apos;unité.</p>
     </FeuilleBas>
   ) : null;
 
