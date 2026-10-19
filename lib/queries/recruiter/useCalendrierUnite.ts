@@ -143,11 +143,14 @@ export function useCalendrierUnite(enabled: boolean) {
       const listsByAthlete = new Map<string, string[]>();
       for (const m of membres) listsByAthlete.set(m.athlete_id, [...(listsByAthlete.get(m.athlete_id) ?? []), m.list_id]);
 
+      // RETIRÉ (BP 2026-10-19) : un athlète retiré ne compte plus comme prospect au calendrier,
+      // même s'il reste dans une liste ; un match qui n'avait que lui disparaît (buildMatches).
+      const retires = new Set(lignes.filter((l) => (l.stage ?? "").toUpperCase() === "RETIRE").map((l) => l.athlete_id));
       const targetIds = Array.from(new Set<string>([
         ...lignes.map((l) => l.athlete_id),
         ...favoris.map((f) => f.athlete_id),
         ...membres.map((m) => m.athlete_id),
-      ]));
+      ])).filter((id) => !retires.has(id));
 
       /* CARTES PROSPECT de l'unité (lot C) : les matchs de leur équipe, leurs
          visites et leurs relances, marqués « prospect ». TOUTES les cartes
@@ -179,7 +182,7 @@ export function useCalendrierUnite(enabled: boolean) {
         for (const s of (sportsRows ?? []) as { id: string; nom: string }[]) nomsSportsAthletes.set(s.id, s.nom);
       }
       const ciblesCartes: CalendarTarget[] = cartesProspect
-        .filter((c) => !!c.team_id)
+        .filter((c) => !!c.team_id && c.etape !== "RETIRE")
         .map((c) => {
           const nomSportAthlete = nomsSportsAthletes.get(c.sport_athlete_id) ?? "";
           return {

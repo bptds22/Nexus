@@ -42,12 +42,6 @@ export interface DetailsVisiteAgenda {
   note: string | null;
 }
 
-const FORMAT_AGENDA: Record<DetailsVisiteAgenda["format"], string> = {
-  EN_PERSONNE: "En personne",
-  ZOOM: "Zoom",
-  TELEPHONE: "Téléphone",
-};
-
 /** Clé d'une visite dans les détails : « athlete:<id> » ou « carte:<id> ». */
 export const cleDetailsAgenda = (d: Pick<DetailsVisiteAgenda, "cible" | "cible_id">) => `${d.cible}:${d.cible_id}`;
 
@@ -64,12 +58,8 @@ export function champsVisiteAgenda(d: DetailsVisiteAgenda | undefined): { lieu: 
   return {
     lieu: adresse ?? lien,
     url: lien,
-    lignes: [
-      `Format : ${FORMAT_AGENDA[d.format] ?? d.format}`,
-      d.responsable?.trim() ? `Responsable : ${d.responsable.trim()}` : null,
-      lien ? `Zoom : ${lien}` : null,
-      d.note?.trim() || null,
-    ].filter((x): x is string => !!x),
+    // BP 2026-10-19 : seulement les notes de la visite (le lieu ou le lien Zoom sont dans LOCATION / URL).
+    lignes: [d.note?.trim() || null].filter((x): x is string => !!x),
   };
 }
 

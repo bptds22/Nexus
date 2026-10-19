@@ -21,7 +21,7 @@ const deplier = (ics: string) => ics.replace(/\r\n /g, "");
 test("en personne : LOCATION échappée, description Format / Responsable / Note, URL du dossier", () => {
   const ics = deplier(genererIcs([visite], ORIGINE, MAINTENANT, { detailsVisites: indexerDetailsAgenda([enPersonne]) }));
   assert.match(ics, /LOCATION:175 rue Principale\\, Granby\\; porte 2\r\n/);
-  assert.match(ics, /DESCRIPTION:Format : En personne\\nResponsable : Marc Tremblay\\nAvec les parents\\n\\nDossier : https:\/\/nexussports\.ca\/recruteur\/pipeline\?athlete=a1\r\n/);
+  assert.match(ics, /DESCRIPTION:Avec les parents\\n\\nDossier : https:\/\/nexussports\.ca\/recruteur\/pipeline\?athlete=a1\r\n/);
   assert.match(ics, /URL:https:\/\/nexussports\.ca\/recruteur\/pipeline\?athlete=a1\r\n/);
 });
 
@@ -31,7 +31,7 @@ test("Zoom : LOCATION et URL = le lien de la rencontre ; une carte se retrouve p
   const ics = deplier(genererIcs([carte, visite], ORIGINE, MAINTENANT, { detailsVisites: indexerDetailsAgenda([zoom]) }));
   assert.match(ics, /LOCATION:https:\/\/zoom\.us\/j\/123\?pwd=a\\,b\r\n/);
   assert.match(ics, /URL:https:\/\/zoom\.us\/j\/123\?pwd=a,b\r\n/);
-  assert.match(ics, /DESCRIPTION:Format : Zoom\\nZoom : https:\/\/zoom\.us\/j\/123\?pwd=a\\,b\\n\\nDossier/);
+  assert.match(ics, /DESCRIPTION:Dossier/);
   assert.doesNotMatch(ics, /ignorée/);
   // L'athlète a1 n'a pas de détails ici : son événement reste comme avant.
   assert.equal((ics.match(/LOCATION:/g) ?? []).length, 1);

@@ -15,7 +15,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { generateCalendarLinks, type CalendarLinks } from "@/lib/calendar/generateCalendarLinks";
-import { LIBELLE_FORMAT, type DetailsVisite } from "@/lib/visites/detailsVisite";
+import { type DetailsVisite } from "@/lib/visites/detailsVisite";
 
 export interface EntreeVisite {
   /** Instant ISO (timestamptz) de la visite. */
@@ -56,20 +56,13 @@ export function evenementVisite(e: EntreeVisite): EvenementVisite | null {
   const lien = d?.format === "ZOOM" && /^https:\/\//i.test(net(d.lien)) ? net(d.lien) : "";
   const adresse = d?.format === "EN_PERSONNE" ? net(d.adresse) : "";
 
-  const lignes = d
-    ? [
-        `Format : ${LIBELLE_FORMAT[d.format] ?? d.format}`,
-        net(d.responsable_nom) ? `Responsable : ${net(d.responsable_nom)}` : "",
-        lien ? `Zoom : ${lien}` : "",
-        adresse ? `Adresse : ${adresse}` : "",
-        net(d.note),
-      ]
-    : [];
+  // BP 2026-10-19 : la description de l'événement = SEULEMENT les notes de la visite
+  // (l'adresse ou le lien Zoom vont déjà dans « Lieu »).
 
   return {
     title: e.sport ? `Visite — ${e.athleteName} (${e.sport})` : `Visite — ${e.athleteName}`,
     location: adresse || lien || net(e.schoolName),
-    description: [`Visite planifiée avec ${e.athleteName} via Nexus.`, ...lignes].filter(Boolean).join("\n"),
+    description: net(d?.note),
     start,
     durationMinutes: 60,
   };

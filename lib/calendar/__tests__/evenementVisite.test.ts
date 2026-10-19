@@ -8,27 +8,21 @@ import { evenementVisite, liensVisite, nomFichierVisite } from "@/lib/calendar/e
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 const ISO = "2026-10-21T18:30:00Z";
 
-test("en personne : LIEU = adresse ; DESCRIPTION = format, responsable, adresse, note", () => {
+test("en personne : LIEU = adresse ; DESCRIPTION = seulement la note (BP 2026-10-19)", () => {
   const ev = evenementVisite({
     visitAtIso: ISO, athleteName: "Marie Côté", sport: "Football", schoolName: "Cégep X",
     details: { format: "EN_PERSONNE", adresse: " 175 rue Principale, Granby ", lien: null, responsable_nom: "Marc Tremblay", note: "Avec les parents" },
   })!;
   assert.equal(ev.title, "Visite — Marie Côté (Football)");
   assert.equal(ev.location, "175 rue Principale, Granby");
-  assert.equal(ev.description, [
-    "Visite planifiée avec Marie Côté via Nexus.",
-    "Format : En personne",
-    "Responsable : Marc Tremblay",
-    "Adresse : 175 rue Principale, Granby",
-    "Avec les parents",
-  ].join("\n"));
+  assert.equal(ev.description, "Avec les parents");
   assert.equal(ev.durationMinutes, 60);
 });
 
 test("Zoom : LIEU = lien https ; un lien non https est ignoré", () => {
   const z = evenementVisite({ visitAtIso: ISO, athleteName: "A B", details: { format: "ZOOM", adresse: "ignorée", lien: "https://zoom.us/j/1", responsable_nom: null, note: null } })!;
   assert.equal(z.location, "https://zoom.us/j/1");
-  assert.ok(z.description.includes("Zoom : https://zoom.us/j/1"));
+  assert.equal(z.description, "");
   assert.ok(!z.description.includes("ignorée"));
   const mauvais = evenementVisite({ visitAtIso: ISO, athleteName: "A B", schoolName: "École", details: { format: "ZOOM", adresse: null, lien: "http://x", responsable_nom: null, note: null } })!;
   assert.equal(mauvais.location, "École");
@@ -36,11 +30,11 @@ test("Zoom : LIEU = lien https ; un lien non https est ignoré", () => {
 
 test("téléphone : le format est dit ; sans détails, l'école reste le lieu (comportement d'avant)", () => {
   const t = evenementVisite({ visitAtIso: ISO, athleteName: "A B", schoolName: "École", details: { format: "TELEPHONE", adresse: null, lien: null, responsable_nom: "Julie", note: null } })!;
-  assert.ok(t.description.includes("Format : Téléphone"));
+  assert.equal(t.description, "");
   assert.equal(t.location, "École");
   const sans = evenementVisite({ visitAtIso: ISO, athleteName: "A B", schoolName: "École" })!;
   assert.equal(sans.location, "École");
-  assert.equal(sans.description, "Visite planifiée avec A B via Nexus.");
+  assert.equal(sans.description, "");
 });
 
 test("instant illisible → null ; minuit local (sans heure) → 12 h", () => {
@@ -57,12 +51,12 @@ test("Google : location et details encodés ; .ics : LOCATION / DESCRIPTION éch
   })!;
   const u = new URL(l.googleUrl);
   assert.equal(u.searchParams.get("location"), "175 rue Principale; Granby, QC");
-  assert.ok(u.searchParams.get("details")!.includes("Responsable : Marc"));
+  assert.equal(u.searchParams.get("details"), "Ligne 1\nLigne 2");
   assert.ok(u.searchParams.get("details")!.includes("Ligne 1\nLigne 2"));
   const ics = l.icsContent.replace(/\r\n /g, "");
   assert.ok(ics.includes(String.raw`LOCATION:175 rue Principale\; Granby\, QC`), ics);
   assert.ok(ics.includes(String.raw`Ligne 1\nLigne 2`));
-  assert.ok(ics.includes("Format : En personne"));
+  assert.ok(!ics.includes("Format : "));
   assert.equal(l.icsName, "visite-marie-cote.ics");
   assert.equal(nomFichierVisite("!!!"), "visite-nexus.ics");
 });
