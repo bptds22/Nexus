@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { ecouterRecouvrementClavier } from "@/lib/mobile/recouvrementClavier";
+import { champSousClavier } from "@/lib/mobile/feuilleBas";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KeyboardInset — publie la hauteur du clavier natif dans --kbd-h, une fois
@@ -36,14 +37,31 @@ import { ecouterRecouvrementClavier } from "@/lib/mobile/recouvrementClavier";
 export function KeyboardInset() {
   useEffect(() => {
     const racine = document.documentElement;
+    let minuteur: number | undefined;
     // Le RECOUVREMENT du clavier, pas sa hauteur brute : sur Android 15+, la
     // WebView a déjà rétréci (voir lib/mobile/recouvrementClavier).
     const arreter = ecouterRecouvrementClavier((px) => {
       racine.style.setProperty("--kbd-h", `${px}px`);
+      // CHAMP DANS LA PAGE (BP 2026-10-18, « Trier mes notes ») : les feuilles se
+      // remontent seules (FeuilleBas, useSheetKeyboardGeometry) ; un champ dans le
+      // <main> défilant restait sous le clavier. La classe ouvre une marge en bas
+      // du <main> (globals.css) et le champ caché est ramené au centre.
+      racine.classList.toggle("nx-clavier-ouvert", px > 0);
+      window.clearTimeout(minuteur);
+      if (px <= 0) return;
+      minuteur = window.setTimeout(() => {
+        const el = document.activeElement as HTMLElement | null;
+        if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+        if (champSousClavier(el.getBoundingClientRect().bottom, window.innerHeight, px)) {
+          el.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+      }, 320);
     });
     return () => {
       arreter();
+      window.clearTimeout(minuteur);
       racine.style.removeProperty("--kbd-h");
+      racine.classList.remove("nx-clavier-ouvert");
     };
   }, []);
 

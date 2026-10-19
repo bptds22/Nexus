@@ -1212,7 +1212,7 @@ function PipelineDetailSheet({
             </button>
 
             {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5"
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-5"
               /* Verrou horizontal. `touch-action: pan-y` existe deja sur la
                  RACINE du sheet, mais il ne protege pas ce conteneur-ci : c'est
                  LUI qui scrolle (`overflow-y-auto`), et sans contrainte sur X un

@@ -34,6 +34,7 @@ import { ecrireCarte, libelleEquipe, normaliserNom, type CarteKanban } from "@/l
 import { trierEquipes } from "@/lib/teams/teamLabel";
 import { lireTaille, lirePoids, lireLien } from "@/lib/cartes/saisie";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 
 type Champ = "prenom" | "nom" | "taille" | "poids" | "video" | "numero" | "etablissement" | "equipe";
 interface Etablissement { id: string; name: string; city: string | null }
@@ -230,16 +231,33 @@ export default function ModifierCarte({ card, onClose, onEnregistre }: {
 
   const Erreur = ({ k }: { k: Champ }) => erreurs[k] ? <p id={`modifier-carte-${k}-erreur`} className="text-[12px] text-[#EF4444] mt-1">{erreurs[k]}</p> : null;
 
-  return (
-    <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="titre-modifier-carte" data-testid="modifier-carte">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={fermer} />
-      <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-t-2xl sm:rounded-xl p-5 sm:p-6 max-w-lg w-full sm:mx-4 shadow-2xl max-h-[92vh] overflow-y-auto" style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}>
-        <h3 id="titre-modifier-carte" className="font-head text-[18px] font-black text-white uppercase tracking-tight">Modifier la carte</h3>
-        <p className="text-[13px] text-[#9CA3AF] mt-1">
-          Cette carte est à ton unité. Les changements ne touchent jamais un profil d&apos;athlète sur Nexus. Les champs avec <span className="text-[#E63946]">*</span> sont obligatoires.
-        </p>
+  /* La fenêtre partagée (BP 2026-10-18) : portail au-dessus de tout — elle était rendue
+     DANS la feuille du processus de l'appli —, au-dessus du clavier, jamais sous
+     l'encoche ; Enregistrer reste dans le pied, toujours visible. */
+  const pied = abandon ? (
+    <div className="rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/[0.08] p-3" role="alertdialog" aria-label="Abandonner les modifications">
+      <p className="text-[13px] text-white font-bold">Abandonner tes modifications ?</p>
+      <p className="text-[12px] text-[#9CA3AF] mt-0.5">Rien n&apos;a été enregistré.</p>
+      <div className="flex gap-2 mt-3">
+        <button type="button" onClick={onClose} className="flex-1 min-h-[44px] sm:min-h-0 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-[13px] font-bold">Oui, abandonner</button>
+        <button type="button" onClick={() => setAbandon(false)} className="flex-1 min-h-[44px] sm:min-h-0 px-4 py-2 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold">Continuer à modifier</button>
+      </div>
+    </div>
+  ) : (
+    <div className="flex justify-end gap-2">
+      <button type="button" onClick={fermer} className="min-h-[44px] sm:min-h-0 px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white">Annuler</button>
+      <button type="button" onClick={() => void enregistrer()} disabled={enCours || !modifie}
+        className="min-h-[44px] sm:min-h-0 px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[13px] font-bold rounded-lg transition-colors">
+        {enCours ? "Enregistrement…" : "Enregistrer"}
+      </button>
+    </div>
+  );
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
+  return (
+    <FeuilleBas onFermer={fermer} titre="Modifier la carte" testId="modifier-carte" largeurModale={512}
+      sousTitre={<>Cette carte est à ton unité. Les changements ne touchent jamais un profil d&apos;athlète sur Nexus. Les champs avec <span className="text-[#E63946]">*</span> sont obligatoires.</>}
+      pied={pied}>
+        <div className="mt-2 grid grid-cols-2 gap-3">
           <div>
             <label className={etiquette} htmlFor="modifier-carte-prenom">Prénom <span className="text-[#E63946]">*</span></label>
             <input id="modifier-carte-prenom" className={champCls} value={prenom} maxLength={80} aria-invalid={!!erreurs.prenom}
@@ -360,25 +378,6 @@ export default function ModifierCarte({ card, onClose, onEnregistre }: {
 
         {erreurGenerale && <p role="alert" className="text-[13px] text-[#EF4444] mt-4">{erreurGenerale}</p>}
 
-        {abandon ? (
-          <div className="mt-6 rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/[0.08] p-3" role="alertdialog" aria-label="Abandonner les modifications">
-            <p className="text-[13px] text-white font-bold">Abandonner tes modifications ?</p>
-            <p className="text-[12px] text-[#9CA3AF] mt-0.5">Rien n&apos;a été enregistré.</p>
-            <div className="flex gap-2 mt-3">
-              <button type="button" onClick={onClose} className="flex-1 min-h-[44px] sm:min-h-0 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-[13px] font-bold">Oui, abandonner</button>
-              <button type="button" onClick={() => setAbandon(false)} className="flex-1 min-h-[44px] sm:min-h-0 px-4 py-2 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold">Continuer à modifier</button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-end gap-2 mt-6">
-            <button type="button" onClick={fermer} className="min-h-[44px] sm:min-h-0 px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white">Annuler</button>
-            <button type="button" onClick={() => void enregistrer()} disabled={enCours || !modifie}
-              className="min-h-[44px] sm:min-h-0 px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[13px] font-bold rounded-lg transition-colors">
-              {enCours ? "Enregistrement…" : "Enregistrer"}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+    </FeuilleBas>
   );
 }

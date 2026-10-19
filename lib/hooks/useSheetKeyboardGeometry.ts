@@ -37,7 +37,11 @@ export function useSheetKeyboardGeometry(hauteurFermee = "85vh"): CSSProperties 
     bottom: kbdH,
     // …et sa hauteur est plafonnée à l'espace restant, pour que l'input et
     // la liste tiennent à l'écran au lieu de déborder par le haut.
-    maxHeight: kbdH > 0 ? `calc(100vh - ${kbdH}px - 12px)` : hauteurFermee,
+    // Zone sûre (BP 2026-10-18) : jamais sous la barre d'état ni l'encoche,
+    // clavier ouvert ou fermé — on retranche env(safe-area-inset-top).
+    maxHeight: kbdH > 0
+      ? `calc(100vh - ${kbdH}px - env(safe-area-inset-top) - 8px)`
+      : `min(${hauteurFermee}, calc(100dvh - env(safe-area-inset-top) - 12px))`,
     // Clavier fermé : on rend la safe-area (home indicator). Ouvert, le
     // clavier la recouvre déjà — la garder creuserait un vide.
     paddingBottom: kbdH > 0 ? 8 : "env(safe-area-inset-bottom)",

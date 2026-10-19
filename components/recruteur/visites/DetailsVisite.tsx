@@ -12,7 +12,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
+import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 import { messageErreurNexus } from "@/lib/erreurs/messageErreurNexus";
 import { nomAuteur, useAuteursUnite } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useEnregistrerDetailsVisite } from "@/lib/queries/recruiter/useDetailsVisites";
@@ -200,7 +200,8 @@ function Contenu({ visite, details, onFermer }: { visite: VisiteUnite; details: 
 
           {erreur && <p role="alert" className="rounded-xl border border-[#E63946]/40 bg-[#E63946]/10 px-3 py-2 text-[13px] text-[#FCA5A5]">{erreur}</p>}
 
-          <div className="flex gap-2">
+          {/* Collée au bas de la zone visible : Enregistrer reste à l'écran au-dessus du clavier. */}
+          <div className="sticky z-[1] -mx-5 -mb-5 flex gap-2 rounded-b-2xl bg-[#1A1D24] px-5 pb-5 pt-3" style={{ bottom: 0 }}>
             {details && (
               <button type="button" onClick={() => { setB(brouillonDepuis(details)); setAutre(!!brouillonDepuis(details).responsableNom); setErreur(""); setEdition(false); }}
                 className="flex-1 rounded-xl border border-[#262A33] py-3 text-[15px] font-semibold text-[#EDEFF3]">
@@ -224,28 +225,15 @@ export function FenetreDetailsVisite({
 }: { visite: VisiteUnite; details: Details | null; onFermer: () => void; appli?: boolean }) {
   // Monté côté client (portail dans <body>) : faux au rendu serveur, vrai ensuite.
   const monte = useSyncExternalStore(() => () => {}, () => true, () => false);
-  const kbdH = useKeyboardHeight();
   if (!monte) return null;
 
+  // Appli : la feuille du bas partagée (clavier, encoche, au-dessus de tout).
   if (appli) {
-    return createPortal(
-      <>
-        <div className="fixed inset-0 z-[70] bg-black/60" style={{ animation: "nx-modal-fade 200ms ease-out forwards" }} onClick={onFermer} aria-hidden />
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="titre-details-visite"
-          className="fixed bottom-0 left-0 right-0 z-[70] max-h-[92dvh] overflow-y-auto px-3"
-          style={{
-            paddingBottom: kbdH > 0 ? `${kbdH + 12}px` : "calc(env(safe-area-inset-bottom) + 12px)",
-            animation: "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-          }}
-        >
-          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-white/25" aria-hidden />
-          <Contenu visite={visite} details={details} onFermer={onFermer} />
-        </div>
-      </>,
-      document.body,
+    return (
+      <FeuilleBas variante="feuille" onFermer={onFermer} etiquette={`Détails de la visite — ${visite.fullName}`}
+        fond="#111317" classeContenu="px-3 pb-3" testId="feuille-details-visite">
+        <Contenu visite={visite} details={details} onFermer={onFermer} />
+      </FeuilleBas>
     );
   }
 

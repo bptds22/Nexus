@@ -32,10 +32,8 @@
    ramené dans la partie visible quand la feuille raccourcit.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
@@ -47,7 +45,7 @@ import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomPa
 import { texteRenvoi, lienSms } from "@/lib/cartes/renvoiInvitation";
 import { lireNonContact, texteNonContact } from "@/lib/nonContact";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
-import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
+import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/lib/haptics";
 
@@ -79,7 +77,6 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
 }) {
   const toast = useMobileToast();
   const queryClient = useQueryClient();
-  const kbdStyle = useSheetKeyboardGeometry("90vh");
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const [prenom, setPrenom] = useState(prerempli?.prenom ?? "");
@@ -109,19 +106,7 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  /* Champ ramené à vue (voir l'en-tête) : au focus, et quand la hauteur du
-     clavier change pendant qu'un champ a le focus. */
-  const zone = useRef<HTMLDivElement>(null);
-  const ramener = useCallback(() => {
-    window.setTimeout(() => {
-      const el = document.activeElement as HTMLElement | null;
-      if (el && zone.current?.contains(el) && (el.tagName === "INPUT" || el.tagName === "SELECT")) {
-        el.scrollIntoView({ block: "nearest" });
-      }
-    }, 300);
-  }, []);
-  const hauteurClavier = kbdStyle.bottom;
-  useEffect(() => { ramener(); }, [hauteurClavier, ramener]);
+  /* Clavier, zone sûre, champ ramené à vue : FeuilleBas (components/mobile). */
 
   // Positions et nom DU SPORT DE L'ATHLÈTE — jamais celui de l'unité.
   const { data: sport } = useQuery({
@@ -363,32 +348,37 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
       ? "Créer et inviter quand même"
       : "Créer et inviter";
 
-  return createPortal(
+  const pied = (
     <>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        className="fixed inset-0 z-[55] bg-black/60"
-        onClick={onClose}
-      />
-      <motion.div
-        role="dialog"
-        aria-label="Ajouter un prospect"
-        data-testid="creer-prospect"
-        initial={{ y: "100%" }} animate={{ y: 0 }}
-        transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
-        className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-        style={{ ...kbdStyle, touchAction: "pan-y" }}
+      {texteBloque && finNonContact && (
+        <p data-testid="prospect-non-contact" data-non-contact={finNonContact} className="mb-2 text-[12px] font-semibold text-[#F5C46B]">
+          {texteNonContact(finNonContact)}
+        </p>
+      )}
+      <button
+        type="button"
+        data-testid="prospect-creer"
+        disabled={!valide || enCours || texteBloque}
+        onClick={() => void soumettre()}
+        className="w-full min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-40"
       >
-        <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
-        <div className="flex items-center justify-between px-4">
-          <h2 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Ajouter un prospect</h2>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="w-9 h-9 -mr-2 rounded-full flex items-center justify-center active:bg-white/5">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <p className="px-4 text-[12px] text-[#6B7280] mb-3">Un athlète qui n&apos;est pas encore sur Nexus. Seuls tes collègues de l&apos;unité voient la carte.</p>
+        {libelleBouton}
+      </button>
+    </>
+  );
 
-        <div ref={zone} onFocus={ramener} className="flex-1 overflow-y-auto px-4 pb-3 space-y-4" style={{ overflowX: "hidden", overscrollBehaviorX: "none", touchAction: "pan-y" }}>
+  return (
+    <FeuilleBas
+      variante="feuille"
+      onFermer={onClose}
+      titre="Ajouter un prospect"
+      sousTitre={<>Un athlète qui n&apos;est pas encore sur Nexus. Seuls tes collègues de l&apos;unité voient la carte.</>}
+      testId="creer-prospect"
+      fond="#111317"
+      hauteur="90vh"
+      pied={pied}
+    >
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="prospect-prenom" className={etiquette}>Prénom <span className="text-[#E63946]">*</span></label>
@@ -565,24 +555,6 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
           {erreur && <p role="alert" className="text-[13px] text-[#EF4444]">{erreur}</p>}
         </div>
 
-        <div className="px-4 pt-2 pb-3 border-t border-white/[0.06]">
-          {texteBloque && finNonContact && (
-            <p data-testid="prospect-non-contact" data-non-contact={finNonContact} className="mb-2 text-[12px] font-semibold text-[#F5C46B]">
-              {texteNonContact(finNonContact)}
-            </p>
-          )}
-          <button
-            type="button"
-            data-testid="prospect-creer"
-            disabled={!valide || enCours || texteBloque}
-            onClick={() => void soumettre()}
-            className="w-full min-h-[48px] rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-40"
-          >
-            {libelleBouton}
-          </button>
-        </div>
-      </motion.div>
-    </>,
-    document.body,
+    </FeuilleBas>
   );
 }

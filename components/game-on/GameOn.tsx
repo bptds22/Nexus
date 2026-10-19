@@ -19,6 +19,7 @@
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -349,23 +350,21 @@ function FeuilleCouleurs({ equipeA, equipeB, onFermer, onValider }: {
       </div>
     </div>
   );
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div className="fixed inset-0 z-[70] flex flex-col justify-end bg-black/60" onClick={onFermer}>
-      <div className="rounded-t-3xl bg-[#1A1D24] px-4 pt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }} onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <p className="text-[18px] font-black text-white">Couleur des chandails</p>
-          <button type="button" onClick={onFermer} className="h-11 px-2 text-[14px] font-semibold text-white/60">Annuler</button>
-        </div>
-        {rangee(equipeA, ca, setCa)}
-        {rangee(equipeB, cb, setCb)}
+  return (
+    <FeuilleBas variante="feuille" onFermer={onFermer} etiquette="Couleur des chandails" testId="game-on-couleurs"
+      pied={
         <button type="button" disabled={!ca || !cb} onClick={() => ca && cb && onValider(ca, cb)}
-          className="mt-1 h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
+          className="h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
           Commencer
         </button>
+      }>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-[18px] font-black text-white">Couleur des chandails</p>
+        <button type="button" onClick={onFermer} className="h-11 px-2 text-[14px] font-semibold text-white/60">Annuler</button>
       </div>
-    </div>,
-    document.body,
+      {rangee(equipeA, ca, setCa)}
+      {rangee(equipeB, cb, setCb)}
+    </FeuilleBas>
   );
 }
 
@@ -503,8 +502,7 @@ function PaveNumerique({ couleur, equipe, onFermer, onValider }: {
   const [prenom, setPrenom] = useState("");
   const touche = (c: string) => { triggerHaptic("Light"); setN((v) => (v.length >= 3 ? v : v + c)); };
   return (
-    <div className="fixed inset-0 z-[65] flex flex-col justify-end bg-black/60" onClick={onFermer}>
-      <div className="rounded-t-3xl bg-[#1A1D24] px-4 pt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }} onClick={(e) => e.stopPropagation()}>
+    <FeuilleBas variante="feuille" onFermer={onFermer} etiquette={`Numéro — ${equipe}`} testId="game-on-pave" classeContenu="px-4 pb-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="truncate text-[14px] font-semibold text-white/60">{equipe}</p>
           <button type="button" onClick={() => setSansNumero((v) => !v)} className="h-11 text-[14px] font-bold text-[#E63946]">
@@ -532,8 +530,7 @@ function PaveNumerique({ couleur, equipe, onFermer, onValider }: {
             </div>
           </>
         )}
-      </div>
-    </div>
+    </FeuilleBas>
   );
 }
 
@@ -550,8 +547,14 @@ function FeuilleNote({ seance, cote, numero, prenomInitial, equipe, groupe, onFe
   const ok = noteValide({ numero, prenom, texte, etiquettes: [] });
   const sujet = `gameon:${seance.id}:${cote}:${numero ?? (prenomInitial ?? "").toLowerCase()}`;
   return (
-    <div className="fixed inset-0 z-[65] flex flex-col justify-end bg-black/60" onClick={onFermer}>
-      <div className="max-h-[92vh] overflow-y-auto rounded-t-3xl bg-[#1A1D24] px-4 pt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }} onClick={(e) => e.stopPropagation()}>
+    <FeuilleBas variante="feuille" onFermer={onFermer} etiquette={`Note — ${numero ? `#${numero}` : (prenomInitial || "Joueur")}`} testId="game-on-note"
+      pied={
+        <button type="button" disabled={!ok}
+          onClick={() => onEnregistrer({ prenom: prenom.trim() || prenomInitial || null, texte, etiquettes: [] })}
+          className="h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
+          Enregistrer
+        </button>
+      }>
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-[28px] font-black leading-none text-white"><Chandail couleur={couleurCote(seance, cote)} taille={18} />{numero ? `#${numero}` : (prenomInitial || "Joueur")}</p>
@@ -583,14 +586,7 @@ function FeuilleNote({ seance, cote, numero, prenomInitial, equipe, groupe, onFe
 
         <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits
           placeholder="Ce que tu as vu…" ariaLabel="Note sur ce joueur" />
-
-        <button type="button" disabled={!ok}
-          onClick={() => onEnregistrer({ prenom: prenom.trim() || prenomInitial || null, texte, etiquettes: [] })}
-          className="mt-3 h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
-          Enregistrer
-        </button>
-      </div>
-    </div>
+    </FeuilleBas>
   );
 }
 

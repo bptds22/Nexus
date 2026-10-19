@@ -23,6 +23,7 @@ import ReseauxSociaux, { aDesReseaux } from "@/components/shared/athlete/Reseaux
 import { useState, useEffect, useRef, useCallback } from "react";
 import { limiterBadgesFiche } from "@/lib/badges/carteBadges";
 import { createPortal } from "react-dom";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -587,6 +588,8 @@ function StatusVisitSheet({
   const [confirmRetrait, setConfirmRetrait] = useState(false);
   const [raisonRetrait, setRaisonRetrait] = useState<RaisonRetrait | null>(null);
   const [noteRetrait, setNoteRetrait] = useState("");
+  // Clavier (note du retrait, date de visite) : remonte ET plafonne, jamais sous l'encoche.
+  const kbdStyle = useSheetKeyboardGeometry("90dvh");
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setConfirmRetrait(false); setRaisonRetrait(null); setNoteRetrait(""); } }, [open]);
@@ -619,7 +622,7 @@ function StatusVisitSheet({
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
             // touchAction pan-y (#2) : verrouille le geste en vertical — le sheet
             // ne peut plus glisser gauche-droite (down = fermer uniquement).
-            style={{ maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom)", touchAction: "pan-y" }}
+            style={{ ...kbdStyle, touchAction: "pan-y" }}
           >
             {/* Handle iOS — drag area (swipe-down to close) */}
             <div
@@ -652,8 +655,8 @@ function StatusVisitSheet({
               </svg>
             </button>
 
-            {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+            {/* Scrollable body — min-h-0 : sans lui la zone ne rétrécit pas sous le clavier. */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-5">
               {/* (a) Grille des statuts */}
               <div>
                 <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Changer le statut</h3>

@@ -58,6 +58,12 @@ const config: CapacitorConfig = {
       // keyboardWillShow/Hide → CSS var --kbd-h → padding-bottom du shell
       // (MessageThreadShell). Fiable et indépendant du resize natif cassé.
       resize: KeyboardResize.None,
+      // Revu le 2026-10-18 (bogue clavier général, BP) : on GARDE None. Le correctif
+      // est côté web, une seule fois : components/mobile/FeuilleBas (feuilles du bas :
+      // remonte, plafonne, pied visible, jamais sous l'encoche) et KeyboardInset
+      // (--kbd-h + champ de la page ramené au-dessus du clavier). resizeOnFullScreen
+      // n'est PAS posé : il redimensionnerait la WebView Android, que
+      // lib/mobile/recouvrementClavier compense déjà (double compensation).
     },
   },
   experimental: {

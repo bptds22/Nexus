@@ -284,7 +284,7 @@ function AthleteNotesSheet({
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
               <FilNotesSuiviMobile
                 athleteId={athlete.athleteId}
                 carteId={athlete.isProspect ? athlete.athleteId : null}

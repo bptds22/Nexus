@@ -1538,3 +1538,16 @@ html.is-capacitor .nx-kbd-immobile.sticky.bottom-0 {
   html.is-capacitor .fixed.bottom-0,
   html.is-capacitor .sticky.bottom-0 { transition: none; }
 }
+
+/* ── Un champ DANS LA PAGE reste atteignable clavier ouvert (BP 2026-10-18) ──
+   La WebView ne rétrécit pas : un champ en bas du <main> défilant (ex. « Trier
+   mes notes » de Game On) restait sous le clavier, sans contenu en dessous pour
+   le faire monter. <KeyboardInset> pose .nx-clavier-ouvert pendant que le clavier
+   est ouvert : une marge de la hauteur du clavier s'ajoute au bout du <main>, et
+   il ramène le champ actif au centre. Rien ne change clavier fermé. */
+html.is-capacitor.nx-clavier-ouvert main::after {
+  content: "";
+  display: block;
+  flex: none;
+  height: var(--kbd-h, 0px);
+}

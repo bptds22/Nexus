@@ -44,6 +44,9 @@ import { definirFavori, retirerFavoriUnite, type ResultatFavori } from "@/lib/qu
 import { getStatusConfig, type RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { useFavorisUnite, joindreNoms, type FavorisUnite } from "@/lib/queries/recruiter/useFavorisUnite";
 import { ChoixRaisonRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
+import { FeuilleBas } from "@/components/mobile/FeuilleBas";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import { messageRetrait, retirerDossier, type RaisonRetrait } from "@/lib/retraits/retraits";
 
 interface EnAttente {
@@ -75,15 +78,19 @@ function libelleEtape(etape: string): string {
 
 /** Texte de la confirmation : l'étape si elle dépasse Contacté, les
  *  collègues s'ils l'ont aussi en favori (décision BP 3). */
-export function messageRetraitFavori(collegues: string[], dossier: Dossier = null): string {
+export function messageRetraitFavori(nomsCollegues: readonly (string | null | undefined)[], dossier: Dossier = null): string {
+  // Un nom introuvable ne s'affiche pas : jamais « Aussi en favori chez . » (BP 2026-10-18).
+  const collegues = nomsCollegues.map((n) => (n ?? "").trim()).filter(Boolean);
   const ce = collegues.length === 1 ? "ce collègue" : "ces collègues";
   const parts: string[] = [];
   if (estEtapeAvancee(dossier)) {
     parts.push(`Cet athlète est en ${libelleEtape(dossier!.etape)}. Retirer le favori le passera dans « Retiré » du processus de l'unité.`);
     if (collegues.length > 0) parts.push(`Aussi en favori chez ${joindreNoms(collegues)} — pour ${ce} aussi.`);
   } else {
-    parts.push(`Aussi en favori chez ${joindreNoms(collegues)}. Le cœur sera retiré pour toute l'unité — pour ${ce} aussi.`);
-    if (dossierActif(dossier)) parts.push("Il passera aussi dans « Retiré » du processus de l'unité.");
+    if (collegues.length > 0) {
+      parts.push(`Aussi en favori chez ${joindreNoms(collegues)}. Le cœur sera retiré pour toute l'unité — pour ${ce} aussi.`);
+      if (dossierActif(dossier)) parts.push("Il passera aussi dans « Retiré » du processus de l'unité.");
+    }
   }
   if (parts.length === 0 && dossierActif(dossier)) parts.push("Il passera dans « Retiré » du processus de l'unité, avec sa raison.");
   return parts.join(" ");
@@ -162,18 +169,16 @@ export function useBasculeFavori(): {
     setAttente(null);
   }, [attente, queryClient, raison, note]);
 
+  /* Une VRAIE fenêtre (BP 2026-10-18) : portail + au-dessus de tout, toujours à l'écran
+     même si on a défilé — feuille du bas dans l'appli, modale centrée sur le web. */
   const modale = attente ? (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={annuler} />
-      <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-        <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">
-          Retirer {attente.nomAthlete} des favoris ?
-        </h3>
-        <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">{messageRetraitFavori(attente.collegues, attente.dossier)}</p>
-        {dossierActif(attente.dossier) && (
-          <ChoixRaisonRetrait raison={raison} onRaison={setRaison} note={note} onNote={setNote} />
-        )}
-        <div className="flex items-center justify-end gap-3 mt-5">
+    <FeuilleBas
+      onFermer={annuler}
+      titre={`Retirer ${attente.nomAthlete} des favoris ?`}
+      testId="fenetre-retrait-favori"
+      largeurModale={400}
+      pied={
+        <div className="flex items-center justify-end gap-3">
           <button type="button" onClick={annuler} className="px-4 py-2 [@media(hover:none)]:min-h-[44px] text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">
             Annuler
           </button>
@@ -181,8 +186,13 @@ export function useBasculeFavori(): {
             {estEtapeAvancee(attente.dossier) ? "Retirer" : "Retirer pour l’unité"}
           </button>
         </div>
-      </div>
-    </div>
+      }
+    >
+      <p className="text-[13px] text-[#9CA3AF] leading-relaxed">{messageRetraitFavori(attente.collegues, attente.dossier)}</p>
+      {dossierActif(attente.dossier) && (
+        <ChoixRaisonRetrait mobile={IS_CAPACITOR} raison={raison} onRaison={setRaison} note={note} onNote={setNote} />
+      )}
+    </FeuilleBas>
   ) : null;
 
   return { favoris, basculer, modale };

@@ -90,7 +90,7 @@ test("favori retiré : le dossier passe en « Retiré » avec une raison, jamais
   const src = lire("components/recruteur/unite/useBasculeFavori.tsx");
   assert.ok(!src.includes('rpc("unite_retirer_du_processus"'));
   assert.ok(src.includes("retirerDossier(createClient(), { id: athleteId, carte: false, raison, note })"));
-  assert.ok(src.includes("<ChoixRaisonRetrait raison={raison} onRaison={setRaison} note={note} onNote={setNote} />"));
+  assert.ok(src.includes("<ChoixRaisonRetrait mobile={IS_CAPACITOR} raison={raison} onRaison={setRaison} note={note} onNote={setNote} />"));
 });
 
 test("carte des matchs : un retiré n'est plus « suivi »", () => {
