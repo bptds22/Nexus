@@ -1301,6 +1301,18 @@ function PipelineDetailSheet({
                   Dossier d&apos;une autre unité de ton cégep : lecture seule.
                 </p>
               )}
+              {/* Notes de suivi — LE fil du joueur, signé (lot 2 de la 1.4.4) :
+                  les notes de l'unité, les miennes supprimables, celles des
+                  collègues en lecture seule. Mode démo : les miennes, et
+                  « Poster » renvoie à l'offre Pro. En HAUT d'Actions (BP 2026-10-19). */}
+              <FilNotesSuiviMobile
+                athleteId={card.id}
+                carteId={carte ? card.id : null}
+                modeUnite={modeUnite}
+                lectureSeule={lectureSeule}
+                onTease={() => toast.warning({ message: "Les notes sont réservées aux membres Pro" })}
+                onErreur={(m) => toast.error({ message: m })}
+              />
 
               {/* Pill statut global + recruté ailleurs warning */}
               {(() => {
@@ -1449,18 +1461,6 @@ function PipelineDetailSheet({
                 </button>
               </div>
 
-              {/* Notes de suivi — LE fil du joueur, signé (lot 2 de la 1.4.4) :
-                  les notes de l'unité, les miennes supprimables, celles des
-                  collègues en lecture seule. Mode démo : les miennes, et
-                  « Poster » renvoie à l'offre Pro. */}
-              <FilNotesSuiviMobile
-                athleteId={card.id}
-                carteId={carte ? card.id : null}
-                modeUnite={modeUnite}
-                lectureSeule={lectureSeule}
-                onTease={() => toast.warning({ message: "Les notes sont réservées aux membres Pro" })}
-                onErreur={(m) => toast.error({ message: m })}
-              />
 
               {/* Grid Changer le statut */}
               <div>

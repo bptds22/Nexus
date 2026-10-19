@@ -114,6 +114,8 @@ export default function FilNotesSuivi({
             placeholder="Ajouter une note..."
             ariaLabel="Ajouter une note de suivi"
             onEnvoyer={() => void poster()}
+            sansGabarits
+            sansDictee
           />
           <button
             type="button"

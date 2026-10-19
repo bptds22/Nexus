@@ -118,15 +118,26 @@ export default function FilNotesSuiviMobile({
         onClick={() => { void triggerHaptic("Light"); setOuvert((o) => !o); }}
         aria-expanded={ouvert}
         data-testid="notes-bascule"
-        className="w-full min-h-[44px] flex items-center justify-between text-left"
+        className={`w-full min-h-[52px] flex items-center justify-between gap-3 text-left rounded-2xl border px-4 py-3 ${ouvert ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-white/10 bg-white/[0.04] active:bg-white/[0.07]"}`}
       >
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#9CA3AF] font-bold">
-          {titre} ({chargement ? "…" : notes.length})
+        {/* BP 2026-10-19 : qu'on VOIE que les notes sont là, sans déplier tout le fil. */}
+        <span className="min-w-0">
+          <span className="block text-[12px] uppercase tracking-[0.16em] text-white font-bold">
+            {titre} ({chargement ? "…" : notes.length})
+          </span>
+          {!ouvert && (
+            <span className="mt-0.5 block truncate text-[13px] text-[#9CA3AF]">
+              {chargement ? "Chargement…" : notes[0] ? notes[0].content.split("\n")[0] : lectureSeule ? "Aucune note" : "Aucune note — toucher pour en ajouter une"}
+            </span>
+          )}
         </span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round"
-          style={{ transform: ouvert ? "rotate(180deg)" : undefined, transition: "transform 150ms" }} aria-hidden>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <span className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-[#E63946]">
+          {ouvert ? "Fermer" : "Voir"}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+            style={{ transform: ouvert ? "rotate(180deg)" : undefined, transition: "transform 150ms" }} aria-hidden>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
       </button>
 
       {ouvert && (<>
@@ -140,6 +151,8 @@ export default function FilNotesSuiviMobile({
             placeholder="Ajouter une note…"
             ariaLabel="Ajouter une note de suivi"
             envoyerAvecEntree={false}
+            sansGabarits
+            sansDictee
           />
           <button
             type="button"
