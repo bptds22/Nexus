@@ -652,6 +652,7 @@ export function AthleteCardMobile({
           lastName={a.lastName}
           identityVisible={!identityLocked}
           initialsFontSize={64}
+          largeur={200}
           className="object-[center_15%]"
         />
         {/* Iter 7.5 Section B — gradient termine en #1A1D24 OPAQUE (couleur

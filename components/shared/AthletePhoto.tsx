@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { eteindreMiniatures, urlMiniature } from "@/lib/storage/miniature";
 import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -63,7 +64,11 @@ export default function AthletePhoto({
   identityVisible,
 }: AthletePhotoProps) {
   const [hasError, setHasError] = useState(false);
+  // BP 2026-10-19 (chargement des images) : miniature à la taille de la pastille, l'originale en repli.
+  const [originale, setOriginale] = useState(false);
+  const [chargee, setChargee] = useState(false);
   const showImage = !!photoUrl && !hasError;
+  const src = originale ? photoUrl : urlMiniature(photoUrl, size);
   const initials = getInitials(firstName, lastName);
   const altText = alt ?? `${firstName ?? ""} ${lastName ?? ""}`.trim();
 
@@ -85,11 +90,16 @@ export default function AthletePhoto({
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={photoUrl as string}
+        src={src as string}
         alt={altText}
-        onError={() => setHasError(true)}
+        width={size}
+        height={size}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => { setChargee(true); if (originale) eteindreMiniatures(); }}
+        onError={() => { if (!originale && src !== photoUrl) setOriginale(true); else setHasError(true); }}
         style={{ width: size, height: size }}
-        className={`rounded-full object-cover shrink-0 ${className}`}
+        className={`rounded-full object-cover shrink-0 bg-[#2D3748] transition-opacity duration-300 ${chargee ? "opacity-100" : "opacity-60"} ${className}`}
       />
     );
   }

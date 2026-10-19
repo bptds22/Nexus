@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { eteindreMiniatures, urlMiniature } from "@/lib/storage/miniature";
 import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -54,6 +55,10 @@ interface AthletePhotoFillProps {
    * tel quel. Seul un `false` EXPLICITE verrouille.
    */
   identityVisible?: boolean;
+  /** Largeur d'affichage en px (miniature demandée au double). Défaut 600. */
+  largeur?: number;
+  /** Les premières cartes d'une liste : chargées tout de suite, en priorité. */
+  prioritaire?: boolean;
 }
 
 export default function AthletePhotoFill({
@@ -63,9 +68,15 @@ export default function AthletePhotoFill({
   className = "",
   initialsFontSize = 120,
   identityVisible,
+  largeur = 600,
+  prioritaire = false,
 }: AthletePhotoFillProps) {
   const [hasError, setHasError] = useState(false);
+  // BP 2026-10-19 (chargement des images) : miniature d'abord, puis l'originale si elle échoue.
+  const [originale, setOriginale] = useState(false);
+  const [chargee, setChargee] = useState(false);
   const showImage = !!photoUrl && !hasError;
+  const src = originale ? photoUrl : urlMiniature(photoUrl, largeur);
   const f = (firstName ?? "").trim()[0] ?? "";
   const l = (lastName ?? "").trim()[0] ?? "";
 
@@ -80,14 +91,21 @@ export default function AthletePhotoFill({
 
   if (showImage) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={photoUrl as string}
-        alt={`${firstName ?? ""} ${lastName ?? ""}`.trim()}
-        crossOrigin="anonymous"
-        onError={() => setHasError(true)}
-        className={`absolute inset-0 w-full h-full object-cover z-[1] ${className}`}
-      />
+      <>
+        {!chargee && <div aria-hidden className="absolute inset-0 z-[1] animate-pulse bg-white/[0.04]" />}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src as string}
+          alt={`${firstName ?? ""} ${lastName ?? ""}`.trim()}
+          crossOrigin="anonymous"
+          loading={prioritaire ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={prioritaire ? "high" : "auto"}
+          onLoad={() => { setChargee(true); if (originale) eteindreMiniatures(); }}
+          onError={() => { if (!originale && src !== photoUrl) setOriginale(true); else setHasError(true); }}
+          className={`absolute inset-0 w-full h-full object-cover z-[1] transition-opacity duration-300 ${chargee ? "opacity-100" : "opacity-0"} ${className}`}
+        />
+      </>
     );
   }
 

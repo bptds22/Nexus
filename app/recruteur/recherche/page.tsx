@@ -106,6 +106,7 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
           lastName={a.lastName}
           identityVisible={a.identityVisible}
           initialsFontSize={72}
+          largeur={420}
           className="object-[center_15%]"
         />
         <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
