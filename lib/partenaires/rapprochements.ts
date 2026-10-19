@@ -70,3 +70,35 @@ export function parCarte(liste: readonly RapprochementPartenaire[]): Map<string,
   for (const r of liste) m.set(r.carteId, (m.get(r.carteId) ?? 0) + 1);
   return m;
 }
+
+/* ── Refusées (BP 2026-10-19) : les revoir, les proposer de nouveau ──
+   Migration 20261019190000 ; absente (prod sans elle) → aucune, sans erreur. */
+export interface RapprochementRefusePartenaire extends Omit<RapprochementPartenaire, "dejaPropose"> {
+  decideLe: string | null;
+}
+
+/** Signal pour relire les refusées (après un refus ou une reproposition). */
+export const EVENEMENT_REFUSEES_PARTENAIRE = "nx-refusees-partenaire";
+
+export async function chargerRefusesPartenaire(supabase: SupabaseClient): Promise<RapprochementRefusePartenaire[]> {
+  const { data, error } = await supabase.rpc("partenaire_rapprochements_refuses");
+  if (error) return [];
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    carteId: r.carte_id as string,
+    athleteId: r.athlete_id as string,
+    prenom: (r.prenom as string | null) ?? "",
+    nom: (r.nom as string | null) ?? "",
+    ecole: (r.ecole as string | null) ?? null,
+    sport: (r.sport as string | null) ?? null,
+    promotion: (r.promotion as number | null) ?? null,
+    photoUrl: (r.photo_url as string | null) ?? null,
+    critere: r.critere as string,
+    force: r.force === "MOYENNE" ? "MOYENNE" : "FAIBLE",
+    decideLe: (r.decide_le as string | null) ?? null,
+  }));
+}
+
+export async function reproposerRapprochementPartenaire(supabase: SupabaseClient, r: Pick<RapprochementPartenaire, "carteId" | "athleteId">): Promise<void> {
+  const { error } = await supabase.rpc("partenaire_rapprochement_reproposer", { p_carte: r.carteId, p_athlete: r.athleteId });
+  if (error) throw error;
+}

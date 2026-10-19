@@ -14,13 +14,14 @@
    passent sur le profil, la carte se termine (annulable 7 jours par Nexus).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import {
-  accepterRapprochement, libelleNiveauPartenaire, refuserRapprochement, type RapprochementPartenaire,
+  accepterRapprochement, chargerRefusesPartenaire, EVENEMENT_REFUSEES_PARTENAIRE, libelleNiveauPartenaire,
+  refuserRapprochement, reproposerRapprochementPartenaire, type RapprochementPartenaire, type RapprochementRefusePartenaire,
 } from "@/lib/partenaires/rapprochements";
 import { classesBouton } from "@/components/partenaire/kit/KitPartenaire";
 
@@ -29,8 +30,34 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /** Ce que la page sait de la carte (libellés déjà résolus). */
 export interface ResumeCarte { nom: string; ecole: string | null; promotion: number | null; sport: string | null }
 
+/** Les refusées du partenaire, relues à chaque refus ou reproposition (BP 2026-10-19). */
+function useRefusees(): RapprochementRefusePartenaire[] {
+  const [liste, setListe] = useState<RapprochementRefusePartenaire[]>([]);
+  useEffect(() => {
+    let vivant = true;
+    const charger = () => { void chargerRefusesPartenaire(createClient()).then((l) => { if (vivant) setListe(l); }); };
+    charger();
+    window.addEventListener(EVENEMENT_REFUSEES_PARTENAIRE, charger);
+    return () => { vivant = false; window.removeEventListener(EVENEMENT_REFUSEES_PARTENAIRE, charger); };
+  }, []);
+  return liste;
+}
+const signalerRefusees = () => window.dispatchEvent(new Event(EVENEMENT_REFUSEES_PARTENAIRE));
+
 export function BandeauRapprochementsPartenaire({ total, onVoir }: { total: number; onVoir: () => void }) {
-  if (total === 0) return null;
+  const refusees = useRefusees();
+  if (total === 0) {
+    // Rien à décider, mais des refus à revoir : un lien discret (BP 2026-10-19).
+    if (refusees.length === 0) return null;
+    return (
+      <div className="flex justify-end">
+        <button type="button" onClick={onVoir} data-lien-refusees-partenaire
+          className="min-h-[36px] text-[12px] font-semibold text-[#9CA3AF] underline hover:text-white">
+          Propositions refusées ({refusees.length})
+        </button>
+      </div>
+    );
+  }
   return (
     <div role="note" data-bandeau-rapprochements-partenaire
       className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#3B82F6]/30 bg-[#3B82F6]/[0.07] px-4 py-3">
@@ -91,13 +118,13 @@ export function FenetreRapprochementsPartenaire({ propositions, carte, onFermer,
     try {
       const supabase = createClient();
       if (choix === "accepter") await accepterRapprochement(supabase, r);
-      else await refuserRapprochement(supabase, r);
+      else { await refuserRapprochement(supabase, r); signalerRefusees(); }
       const c = carte(r.carteId);
       setMessage({
         ok: true,
         texte: choix === "accepter"
           ? `Accepté : ton évaluation et tes badges passent sur le profil de ${r.prenom} ${r.nom}. L'équipe Nexus peut annuler pendant 7 jours.`
-          : `Refusé : ce profil ne sera plus proposé pour « ${c?.nom ?? "ta carte"} ».`,
+          : `Refusé : ce profil ne sera plus proposé pour « ${c?.nom ?? "ta carte"} ». Tu le retrouves dans « Propositions refusées ».`,
       });
       onDecide();
     } catch (e) {
@@ -157,6 +184,8 @@ export function FenetreRapprochementsPartenaire({ propositions, carte, onFermer,
           </section>
         );
       })}
+      <RefuseesPartenaire carte={carte} carteId={propositions.length > 0 && propositions.every((p) => p.carteId === propositions[0].carteId) ? propositions[0].carteId : null}
+        onReproposee={(m) => { setMessage({ ok: true, texte: m }); onDecide(); }} />
     </>
   );
 
@@ -187,5 +216,59 @@ export function FenetreRapprochementsPartenaire({ propositions, carte, onFermer,
       </div>
     ),
     document.body,
+  );
+}
+
+/** Les propositions refusées, repliées sous les autres : « Proposer de nouveau » les remet en haut. */
+function RefuseesPartenaire({ carte, carteId, onReproposee }: {
+  carte: (carteId: string) => ResumeCarte | null;
+  /** Fenêtre ouverte depuis UNE carte : seulement ses refusées. */
+  carteId: string | null;
+  onReproposee: (message: string) => void;
+}) {
+  const toutes = useRefusees();
+  const liste = carteId ? toutes.filter((r) => r.carteId === carteId) : toutes;
+  const [ouvert, setOuvert] = useState(false);
+  const [enCours, setEnCours] = useState<string | null>(null);
+  if (liste.length === 0) return null;
+  const reproposer = async (r: RapprochementRefusePartenaire) => {
+    const cle = `${r.carteId}:${r.athleteId}`;
+    setEnCours(cle);
+    try {
+      await reproposerRapprochementPartenaire(createClient(), r);
+      signalerRefusees();
+      onReproposee(`« ${r.prenom} ${r.nom} » est de nouveau proposé pour « ${carte(r.carteId)?.nom ?? "ta carte"} » : tu peux l'accepter plus haut.`);
+    } finally {
+      setEnCours(null);
+    }
+  };
+  return (
+    <section className="mt-6 border-t border-white/[0.07] pt-4" data-propositions-refusees-partenaire>
+      <button type="button" onClick={() => setOuvert((v) => !v)} aria-expanded={ouvert}
+        className="min-h-[40px] text-[12px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] hover:text-white">
+        Propositions refusées ({liste.length}) {ouvert ? "▴" : "▾"}
+      </button>
+      {ouvert && (
+        <ul className="mt-2 space-y-2">
+          {liste.map((r) => {
+            const cle = `${r.carteId}:${r.athleteId}`;
+            return (
+              <li key={cle} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-[#13151a] px-3 py-2.5">
+                <span className="min-w-0 text-[13px] text-[#c8c8cc]">
+                  <span className="font-semibold text-white">{carte(r.carteId)?.nom ?? "Ta carte"}</span> ↔ {r.prenom} {r.nom}
+                  <span className="block text-[11px] text-[#6b7280]">
+                    {libelleNiveauPartenaire(r.critere).texte}
+                    {r.decideLe ? ` · refusé le ${new Date(r.decideLe).toLocaleDateString("fr-CA", { day: "numeric", month: "short" })}` : ""}
+                  </span>
+                </span>
+                <button type="button" disabled={enCours === cle} onClick={() => void reproposer(r)} className={classesBouton("secondaire", true)}>
+                  Proposer de nouveau
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
