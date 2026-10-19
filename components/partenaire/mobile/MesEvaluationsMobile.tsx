@@ -30,7 +30,9 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import CarteBadges from "@/components/shared/CarteBadges";
 import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/shared/PartenaireCartesProvider";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
-import EnTeteMobilePartenaire from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
+import BandeauVisibilite from "@/components/partenaire/BandeauVisibilite";
+import { chargerCartesTerminees, type CarteTerminee } from "@/lib/partenaires/prospects";
+import { reclameesHorsListe } from "@/lib/partenaires/vueMesAthletes";
 import {
   chargerMesAthletes,
   chargerVignettesMesAthletes,
@@ -208,6 +210,8 @@ function LignesSquelette() {
   );
 }
 
+/** Pastille « Mes évaluations » de « Mes athlètes » (fusion du 2026-10-18, 6.1) : l'en-tête
+ *  et les pastilles sont posés par MesAthletesPartenaire. */
 export default function MesEvaluationsMobile() {
   const router = useRouter();
   const toast = useMobileToast();
@@ -220,6 +224,7 @@ export default function MesEvaluationsMobile() {
   const [texte, setTexte] = useState("");
   const [choixDistinctions, setChoixDistinctions] = useState<Set<string>>(new Set());
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
+  const [terminees, setTerminees] = useState<CarteTerminee[]>([]);
 
   const options = useMemo(() => optionsDistinctions(athletes), [athletes]);
   // Un badge retiré (ou un athlète sorti) ne laisse pas de case cochée fantôme — élagué
@@ -227,6 +232,7 @@ export default function MesEvaluationsMobile() {
   const distinctions = useMemo(() => elaguerDistinctions(choixDistinctions, options), [choixDistinctions, options]);
   const visibles = useMemo(() => filtrerMesAthletes(athletes, { texte, distinctions }), [athletes, texte, distinctions]);
   const actifs = filtresActifs({ texte, distinctions });
+  const reclamees = useMemo(() => reclameesHorsListe(terminees, new Set(athletes.map((a) => a.athleteId))), [terminees, athletes]);
 
   const charger = useCallback(async () => {
     try {
@@ -234,6 +240,8 @@ export default function MesEvaluationsMobile() {
       const liste = await chargerMesAthletes(supabase);
       setAthletes(liste);
       setErreur(null);
+      // Cartes réclamées par le jeune (ex-« Terminées ») ; en échec, la liste reste utilisable.
+      setTerminees(await chargerCartesTerminees(supabase).catch(() => []));
       setVignettes(await chargerVignettesMesAthletes(supabase, liste.map((x) => x.athleteId)));
     } catch (e) {
       setErreur(messageErreur(e));
@@ -280,12 +288,11 @@ export default function MesEvaluationsMobile() {
   const distinctionsActives = distinctions.size > 0;
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white" data-page-mes-athletes>
+    <div className="text-white" data-page-mes-athletes data-vue-evaluations>
+      <div className="px-4 pt-2"><BandeauVisibilite className="mb-3" /></div>
       <div className="sticky top-0 z-30 bg-[#111317]">
-        <EnTeteMobilePartenaire titre="Mes évaluations" sousTitre="Les athlètes que tu as évalués ou badgés" />
-
         {athletes.length > 0 && (
-          <div className="px-4 pb-3" data-filtres-mes-athletes>
+          <div className="px-4 pt-2 pb-3" data-filtres-mes-athletes>
             <div className="relative">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
                 <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
@@ -336,6 +343,24 @@ export default function MesEvaluationsMobile() {
       </div>
 
       <div className="px-4 pt-2 pb-6">
+        {!chargement && reclamees.length > 0 && (
+          <section className="mb-4" data-reclamees>
+            <p className="px-1 mb-2 text-[11px] uppercase tracking-[0.18em] text-white/50 font-semibold">Cartes réclamées par le jeune</p>
+            <ul className="flex flex-col gap-2.5">
+              {reclamees.map((t) => (
+                <li key={t.carteId}>
+                  <button type="button" data-reclamee-visible
+                    onClick={() => { void triggerHaptic("Light"); router.push(`/partenaire/athletes/${t.athleteId}`); }}
+                    className="w-full text-left rounded-2xl bg-[#1A1D24] px-4 py-3.5 active:bg-white/[0.04]">
+                    <p className="text-[16px] font-bold text-white truncate">{`${t.prenom ?? ""} ${t.nom ?? ""}`.trim() || "Athlète"}</p>
+                    <p className="text-[13px] text-white/55 truncate">{[t.sport, t.poste, t.ecole].filter(Boolean).join(" · ") || "—"}</p>
+                    <p className="mt-1 text-[12px] text-[#4ADE80]">Réclamée · voir sa fiche</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {chargement ? (
           <LignesSquelette />
         ) : erreur && athletes.length === 0 ? (
@@ -346,13 +371,13 @@ export default function MesEvaluationsMobile() {
               Réessayer
             </button>
           </div>
-        ) : athletes.length === 0 ? (
+        ) : athletes.length === 0 ? (reclamees.length > 0 ? null : (
           <EmptyState
             image="/empty/nexus-empty-shortlist.png"
             title="Aucun athlète pour l'instant"
             description="Évalue un athlète ou remets-lui un badge depuis sa fiche : il apparaîtra ici."
           />
-        ) : (
+        )) : (
           <>
             {erreur && (
               <div className="mb-3 flex items-center gap-3 rounded-2xl bg-[#E63946]/10 border border-[#E63946]/30 px-3 py-2.5">
@@ -379,9 +404,6 @@ export default function MesEvaluationsMobile() {
                 </ul>
               </PartenaireCartesProvider>
             )}
-            <p className="mt-5 px-1 text-[12px] leading-relaxed text-white/40">
-              Un athlète qui retire sa visibilité partenaire disparaît de cette liste ; ton évaluation et tes badges ne sont pas effacés pour autant.
-            </p>
           </>
         )}
       </div>

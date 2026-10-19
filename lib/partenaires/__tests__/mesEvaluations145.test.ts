@@ -7,16 +7,18 @@ import { join } from "node:path";
 
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 
-test("P2 : le titre et la navigation disent « Mes évaluations » (route inchangée)", () => {
-  const page = lire("app/partenaire/mes-athletes/page.tsx");
-  assert.ok(page.includes('titre="Mes évaluations"'));
-  assert.ok(!page.includes('titre="Mes athlètes"'));
-  assert.ok(lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Mes évaluations",\n    href: "/partenaire/mes-athletes",'));
-  assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "mes-athletes", label: "Mes évaluations", href: "/partenaire/mes-athletes"'));
+test("6.1 (2026-10-18) : « Mes évaluations » devient une PASTILLE de « Mes athlètes » (route /partenaire/mes-athletes)", () => {
+  const fusion = lire("components/partenaire/MesAthletesPartenaire.tsx");
+  assert.ok(fusion.includes('<EnTetePartenaire titre="Mes athlètes"'));
+  assert.ok(fusion.includes(": <MesEvaluationsWeb />}"));
+  assert.ok(lire("lib/partenaires/vueMesAthletes.ts").includes('{ key: "evaluations", label: "Mes évaluations" }'));
+  assert.ok(lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Mes athlètes",\n    href: "/partenaire/mes-athletes",'));
+  assert.ok(!lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Mes évaluations"'));
+  assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "mes-athletes", label: "Mes athlètes", href: "/partenaire/mes-athletes"'));
 });
 
 test("P2 : cartes compactes — fiche au toucher, badges R3 groupés, Évaluer sur la carte", () => {
-  const page = lire("app/partenaire/mes-athletes/page.tsx");
+  const page = lire("components/partenaire/MesEvaluationsWeb.tsx");
   for (const extrait of [
     "<PartenaireCartesProvider>",
     "const ref = useDeclarerCarteVisible(a.athleteId);",
@@ -36,10 +38,10 @@ test("P2 : photo et badges coach lus dans top_athletes_view (la vue de la recher
   assert.ok(lib.includes("badgesCoach: pastillesBadges(r.badges).map((d) => ({ badgeId: d.code, label: textePastille(d) })),"));
 });
 
-test("P3 : « Mes prospects » devient « Mes athlètes » (menu, onglet, titre) ; pas de puce « Ouverte »", () => {
-  const page = lire("app/partenaire/prospects/page.tsx");
-  assert.ok(page.includes('titre="Mes athlètes"'));
+test("P3 / 6.1 : les cartes prospects sont la pastille « En attente » ; /partenaire/prospects redirige ; pas de puce « Ouverte »", () => {
+  const page = lire("components/partenaire/CartesEnAttenteWeb.tsx");
   assert.ok(!page.includes(">Ouverte<") && !page.includes("\"Ouverte\""), "aucune puce « Ouverte » rendue");
-  assert.ok(lire("app/partenaire/_components/PartnerSidebar.tsx").includes('label: "Mes athlètes",\n    href: "/partenaire/prospects",'));
-  assert.ok(lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "prospects", label: "Mes athlètes", href: "/partenaire/prospects"'));
+  assert.ok(lire("app/partenaire/prospects/page.tsx").includes('router.replace(adresseVue("attente"))'));
+  assert.ok(lire("lib/partenaires/vueMesAthletes.ts").includes('{ key: "attente", label: "En attente" }'));
+  assert.ok(!lire("app/_components/mobile/MobileTabBar.tsx").includes('{ key: "prospects"'));
 });

@@ -14,6 +14,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 import { entreeVisible, usePeutEvaluer } from "@/lib/partenaires/navigation";
 import { surReprise, viderNotificationsLivrees } from "@/lib/push/pastillesAppareil";
+import { DEPISTAGE } from "@/lib/gameOn/libelles";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -102,7 +103,7 @@ const Icons = {
       <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   ),
-  // Game On : un sifflet stylisé (le match en cours).
+  // Dépistage (ex-Game On) : un bouton « lecture » (le match en cours).
   gameOn: (
     <svg {...SVG_PROPS}>
       <circle cx="12" cy="12" r="9" />
@@ -179,11 +180,11 @@ interface TabConfig {
 
 const RECRUTEUR_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/recruteur/tableau-de-bord", icon: Icons.dashboard, activeMatch: "/recruteur/tableau-de-bord" },
-  // BP 2026-10-18 : sur le téléphone, la barre sert le terrain — Calendrier, Game On, Messages.
-  // Recherche et Processus passent dans « Plus » (MorePanel). Calendrier et Game On sans requiredTier :
+  // BP 2026-10-18 : sur le téléphone, la barre sert le terrain — Calendrier, Dépistage, Messages.
+  // Recherche et Processus passent dans « Plus » (MorePanel). Calendrier et Dépistage sans requiredTier :
   // le gratuit atteint la page et y voit sa porte Pro (FeatureGate), comme dans le panneau Plus.
   { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar, activeMatch: "/recruteur/calendrier" },
-  { key: "game-on", label: "Game On", href: "/recruteur/game-on", icon: Icons.gameOn, activeMatch: "/recruteur/game-on" },
+  { key: "game-on", label: DEPISTAGE.onglet, href: "/recruteur/game-on", icon: Icons.gameOn, activeMatch: "/recruteur/game-on" },
   { key: "messages", label: "Messages", href: "/recruteur/messages", icon: Icons.envelope, requiredTier: "pro" },
 ];
 
@@ -211,15 +212,16 @@ const ATHLETE_TABS: TabConfig[] = [
   { key: "recherche-cegep", label: "Cégeps", href: "/athlete/recherche", icon: Icons.cegep, activeMatch: "/athlete/recherche" },
 ];
 
-/* Partenaire (1.4.5, B1) — l'accueil, la recherche, et les deux écrans
-   d'évaluation, montrés seulement si `peut_evaluer` (même règle que la barre
+/* Partenaire (1.4.5, B1) — l'accueil, la recherche, et « Mes athlètes » (les deux
+   écrans d'évaluation fusionnés le 2026-10-18), montré seulement si `peut_evaluer` (même règle que la barre
    latérale du web : lib/partenaires/navigation.ts). Le reste du portail vit
    dans le panneau Plus. Aucun palier : pas de requiredTier. */
 const PARTENAIRE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/partenaire", icon: Icons.dashboard, exact: true },
   { key: "athletes", label: "Recherche", href: "/partenaire/athletes", icon: Icons.search, activeMatch: "/partenaire/athletes" },
-  { key: "mes-athletes", label: "Mes évaluations", href: "/partenaire/mes-athletes", icon: Icons.users, activeMatch: "/partenaire/mes-athletes" },
-  { key: "prospects", label: "Mes athlètes", href: "/partenaire/prospects", icon: Icons.flag, activeMatch: "/partenaire/prospects" },
+  // Fusion du 2026-10-18 (6.1) : « Mes athlètes » porte les deux pastilles (En attente / Mes évaluations).
+  // Barre : Accueil · Recherche · Mes athlètes · Plus.
+  { key: "mes-athletes", label: "Mes athlètes", href: "/partenaire/mes-athletes", icon: Icons.users, activeMatch: "/partenaire/mes-athletes|/partenaire/prospects" },
 ];
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete" | "partenaire", TabConfig[]> = {

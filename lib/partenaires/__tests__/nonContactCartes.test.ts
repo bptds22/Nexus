@@ -32,7 +32,7 @@ test("non-contact : lireNonContact rend la fin de période, null sans période o
 });
 
 test("P5 : le partenaire n'est plus grisé (page et feuille d'envoi)", () => {
-  for (const f of ["app/partenaire/prospects/page.tsx", "components/partenaire/prospects/EnvoyerLien.tsx", "lib/partenaires/prospects.ts"]) {
+  for (const f of ["components/partenaire/CartesEnAttenteWeb.tsx", "components/partenaire/prospects/EnvoyerLien.tsx", "lib/partenaires/prospects.ts"]) {
     const src = lire(f);
     assert.doesNotMatch(src, /non_contact_carte|nonContact|NonContact/, f);
   }
@@ -43,7 +43,8 @@ test("P5 : le texto du recruteur se grise (téléphone sans courriel) avec la da
   for (const extrait of [
     "queryFn: () => lireNonContact(createClient(), sportAthleteId, promoNombre)",
     "const texteBloque = !!finNonContact && courriel.trim().length === 0 && telephone.trim().length > 0;",
-    "disabled={!valide || enCours || texteBloque}",
+    // Nuit du 2026-10-18 : deux boutons ; seul « Créer et inviter » (texto) se grise.
+    "disabled={!valide || enCours || !boutons.inviter || texteBloque}",
     "if (!valide || enCours || !etablissement || texteBloque) return;",
     "{texteNonContact(finNonContact)}",
   ]) assert.ok(src.includes(extrait), extrait);

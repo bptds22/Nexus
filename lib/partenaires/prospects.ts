@@ -23,11 +23,10 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireTout } from "@/lib/supabase/lireTout";
 import { messageErreurNexus } from "@/lib/erreurs/messageErreurNexus";
 import type { CritereColonne } from "@/lib/evaluations/partenaire";
 
-/** Plafond de cartes actives par partenaire (garde serveur, 54000). */
-export const LIMITE_CARTES = 50;
 
 /* ── Partenaire ─────────────────────────────────────────────────── */
 
@@ -58,10 +57,11 @@ export const LIBELLE_STATUT: Record<StatutVuPartenaire, string> = {
   CORRESPONDANCE_POSSIBLE: "Correspondance possible",
 };
 
+/** Toutes les cartes, par pages (lireTout) : plus de plafond de cartes (BP 2026-10-18). */
 export async function chargerMesCartes(supabase: SupabaseClient): Promise<CartePartenaire[]> {
-  const { data, error } = await supabase.rpc("partenaire_prospects_mes_cartes");
-  if (error) throw error;
-  return ((data ?? []) as {
+  const data = await lireTout<Record<string, unknown>>((de, a) => supabase
+    .rpc("partenaire_prospects_mes_cartes", {}, { count: "exact" }).select("*").order("id").range(de, a));
+  return (data as unknown as {
     id: string; prenom: string; nom: string; sport_id: string; position_id: string | null;
     school_id: string | null; team_id: string | null; promotion: number | null;
     cote_globale: number | string | null; traits: Record<string, number> | null;
@@ -205,9 +205,9 @@ export const LIBELLE_ISSUE: Record<IssueCarte, string> = {
 /** W4d : partenaire_prospects_terminees — le nom d'une réclamation seulement si le jeune lui est
  *  encore visible ; les autres issues restent sans nom. */
 export async function chargerCartesTerminees(supabase: SupabaseClient): Promise<CarteTerminee[]> {
-  const { data, error } = await supabase.rpc("partenaire_prospects_terminees");
-  if (error) throw error;
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+  const data = await lireTout<Record<string, unknown>>((de, a) => supabase
+    .rpc("partenaire_prospects_terminees", {}, { count: "exact" }).select("*").order("carte_id").order("terminee_le").range(de, a));
+  return data.map((r) => ({
     carteId: r.carte_id as string,
     issue: r.issue as IssueCarte,
     creeLe: r.carte_creee_le as string,
@@ -249,7 +249,8 @@ export function lienSms(message: string, ios: boolean): string {
  *  base, sinon le message générique fourni). */
 export function messageErreurCarte(e: unknown, generique: string): string {
   const err = e as { code?: string; message?: string } | null;
-  if (err?.code === "54000") return "Tu as atteint la limite de 50 cartes actives. Retire une carte terminée ou inutile pour en créer une autre.";
+  // Plafond serveur tant que 20261019103000 n'est pas appliquée (BP 2026-10-18 : aucun maximum).
+  if (err?.code === "54000") return "Le nombre de cartes est encore limité sur le serveur. Retire une carte inutile pour en créer une autre.";
   return messageErreurNexus(err?.message) ?? generique;
 }
 

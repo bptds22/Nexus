@@ -6,8 +6,11 @@
    canon recruteur (components/shared/RecruteurDashboardMobile.tsx) :
      - salutation flottante sur la lueur rouge (organisation, date,
        pastille de statut PENDING / APPROVED / …) ;
-     - carte héros avec 3 encarts cliquables — « Voir », JAMAIS un
-       nombre (règle C2 de la 1.4.5 : aucun compte de joueurs) ;
+     - carte héros avec 3 STATISTIQUES cliquables (BP 2026-10-18, 6.4) :
+       En attente · À confirmer · Réclamées ce mois — calculées sur les
+       données DE CE PARTENAIRE seulement (règle C2 : jamais un total de la
+       plateforme ; lib/partenaires/accueilStats). Sans permission d'évaluer,
+       les encarts restent des raccourcis « Voir » ;
      - accès rapides en listes groupées natives (états actifs, haptique)
        vers les MÊMES routes que les tuiles du web (app/partenaire/page.tsx).
    Les entrées d'évaluation (Mes évaluations, Mes athlètes) suivent la
@@ -28,6 +31,7 @@ import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeti
 import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
 import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
 import { frenchDateUppercase } from "@/components/shared/dashboard/utils";
+import { chargerStatsAccueil, LIEN_STAT, type StatsAccueilPartenaire } from "@/lib/partenaires/accueilStats";
 
 /* ── Statut (mêmes libellés que le web) ───────────────────────── */
 
@@ -69,8 +73,8 @@ const GROUPES: { titre: string; entrees: Entree[] }[] = [
     titre: "Ton espace",
     entrees: [
       { titre: "Recherche", href: "/partenaire/athletes", description: "Les athlètes qui ont consenti à la diffusion partenaire", icone: ICONES.recherche },
-      { titre: "Mes évaluations", href: "/partenaire/mes-athletes", description: "Les athlètes que tu as évalués", icone: ICONES.evaluations },
-      { titre: "Mes athlètes", href: "/partenaire/prospects", description: "Ta liste d'athlètes à suivre", icone: ICONES.athletes },
+      // Fusion du 2026-10-18 (6.1) : En attente + Mes évaluations dans un seul écran.
+      { titre: "Mes athlètes", href: "/partenaire/mes-athletes", description: "Tes cartes en attente et tes évaluations", icone: ICONES.athletes },
     ],
   },
   {
@@ -144,6 +148,8 @@ export default function AccueilPartenaireMobile() {
   const [loading, setLoading] = useState(true);
   // Date posée côté client après la lecture (pas de décalage d'hydratation).
   const [dateDuJour, setDateDuJour] = useState<Date | null>(null);
+  // Statistiques DU partenaire (null tant que non lues, ou sans permission d'évaluer).
+  const [stats, setStats] = useState<StatsAccueilPartenaire | null>(null);
 
   useEffect(() => {
     let vivant = true;
@@ -164,6 +170,10 @@ export default function AccueilPartenaireMobile() {
       setPartner(ligne);
       setDateDuJour(new Date());
       setLoading(false);
+      if (ligne?.peut_evaluer) {
+        const s = await chargerStatsAccueil(supabase);
+        if (vivant) setStats(s);
+      }
     }
     void charger();
     return () => { vivant = false; };
@@ -185,9 +195,17 @@ export default function AccueilPartenaireMobile() {
   const peutEvaluer = partner?.peut_evaluer;
   const statut = partner ? STATUT[partner.status] : null;
 
-  /* Encarts du héros : des raccourcis, jamais des compteurs (C2). Sans
-     permission d'évaluer, Tendances et Classements prennent la place. */
-  const encarts = [
+  /* Encarts du héros : 3 statistiques du partenaire (6.4) ; sans permission
+     d'évaluer, des raccourcis « Voir » (Recherche, Tendances, Classements). */
+  const encartsStats = peutEvaluer ? [
+    { label: "En attente", value: stats?.enAttente ?? "–", subtitle: "lien envoyé", onTap: () => router.push(LIEN_STAT.enAttente) },
+    { label: "À confirmer", value: stats?.aConfirmer ?? "–", subtitle: "propositions", alerte: (stats?.aConfirmer ?? 0) > 0,
+      onTap: () => router.push(LIEN_STAT.aConfirmer) },
+    { label: "Réclamées ce mois", value: stats?.reclameesCeMois ?? "–",
+      subtitle: stats ? `${stats.evaluationsTotal} évaluation${stats.evaluationsTotal > 1 ? "s" : ""} au total` : undefined,
+      onTap: () => router.push(LIEN_STAT.reclamees) },
+  ] : null;
+  const encartsRaccourcis = [
     { label: "Recherche", href: "/partenaire/athletes", subtitle: "le catalogue" },
     { label: "Évaluations", href: "/partenaire/mes-athletes", subtitle: "les tiennes" },
     { label: "Mes athlètes", href: "/partenaire/prospects", subtitle: "à suivre" },
@@ -197,6 +215,7 @@ export default function AccueilPartenaireMobile() {
     .filter((e) => entreeVisible(e.href, peutEvaluer))
     .slice(0, 3)
     .map((e) => ({ label: e.label, value: "Voir", subtitle: e.subtitle, onTap: () => router.push(e.href) }));
+  const encarts = encartsStats ?? encartsRaccourcis;
 
   const groupes = GROUPES
     .map((g) => ({ ...g, entrees: g.entrees.filter((e) => entreeVisible(e.href, peutEvaluer)) }))
@@ -267,7 +286,8 @@ export default function AccueilPartenaireMobile() {
 
         <SectionDivider />
 
-        <div className="pt-6 space-y-6">
+        {/* Marge du bas : le dernier groupe n'est jamais caché derrière la barre d'onglets. */}
+        <div className="pt-6 space-y-6" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)" }} data-accueil-groupes>
           {groupes.map((g) => (
             <section key={g.titre}>
               <h2 className="px-4 mb-2 text-xs uppercase tracking-[0.18em] text-white/50 font-semibold">

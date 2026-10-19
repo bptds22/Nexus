@@ -9,6 +9,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireTout } from "@/lib/supabase/lireTout";
 
 export interface RapprochementPartenaire {
   carteId: string;
@@ -26,9 +27,9 @@ export interface RapprochementPartenaire {
 }
 
 export async function chargerRapprochements(supabase: SupabaseClient): Promise<RapprochementPartenaire[]> {
-  const { data, error } = await supabase.rpc("partenaire_rapprochements");
-  if (error) throw error;
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+  const data = await lireTout<Record<string, unknown>>((de, a) => supabase
+    .rpc("partenaire_rapprochements", {}, { count: "exact" }).select("*").order("carte_id").order("athlete_id").range(de, a));
+  return data.map((r) => ({
     carteId: r.carte_id as string,
     athleteId: r.athlete_id as string,
     prenom: (r.prenom as string | null) ?? "",

@@ -1,6 +1,8 @@
 "use client";
 
 /* Navigation du portail partenaire — ce qui s'affiche, web et appli (1.4.5, B1).
+   Depuis le 2026-10-18 (6.1), une seule entrée « Mes athlètes » (/partenaire/mes-athletes,
+   pastilles En attente / Mes évaluations) ; /partenaire/prospects n'est plus qu'une redirection.
 
    « Mes évaluations » (/partenaire/mes-athletes) et « Mes athlètes » (/partenaire/prospects,
    ex-« Mes prospects ») — noms de la 1.4.5 — n'existent que pour un partenaire qui

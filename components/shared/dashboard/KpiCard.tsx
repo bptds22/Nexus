@@ -33,11 +33,13 @@ export interface KpiCardProps {
   size?: "full" | "inset";
   onTap?: () => void;
   className?: string;
+  /** Valeur en rouge Nexus (ex. « À confirmer » > 0 de l'Accueil partenaire). */
+  alerte?: boolean;
 }
 
 export function KpiCard({
   label, value, subtitle, icon, trend, progress,
-  size = "full", onTap, className = "",
+  size = "full", onTap, className = "", alerte = false,
 }: KpiCardProps) {
   const isInset = size === "inset";
 
@@ -46,9 +48,7 @@ export function KpiCard({
   const cardRadius = isInset ? "rounded-xl" : "rounded-2xl";
   const cardPad = isInset ? "p-3" : "p-[18px]";
 
-  const valueCls = isInset
-    ? "text-[20px] font-extrabold text-white leading-none tabular-nums"
-    : "text-[28px] font-extrabold text-white leading-none tabular-nums";
+  const valueCls = `${isInset ? "text-[20px]" : "text-[28px]"} font-extrabold ${alerte ? "text-[#E63946]" : "text-white"} leading-none tabular-nums`;
 
   const labelCls = isInset
     ? "text-[9px] uppercase tracking-[0.18em] text-white/55 font-semibold"

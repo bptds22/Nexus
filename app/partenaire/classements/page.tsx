@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import ClassementsFilterBar from "../_components/ClassementsFilterBar";
+import EnTeteExploration from "../_components/EnTeteExploration";
 import {
   isOrgType,
   parseCoteMin,
@@ -191,17 +192,22 @@ async function rendre(brut: ParamsUrl) {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-6">
-      <div>
-        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Classements</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">{sousTitre}</p>
-      </div>
-
-      <ClassementsFilterBar
-        sports={sports}
-        positions={positions}
-        regions={distinctRegions}
-        graduationYears={GRADUATION_YEARS}
-      />
+      {/* 6.5 (BP 2026-10-18) : même modèle que Newsroom et Tendances — les filtres derrière UN
+          bouton « Filtres » à côté du titre. Pas de période : le Top 25 se classe à la cote. */}
+      <EnTeteExploration
+        titre="Classements"
+        sousTitre={sousTitre}
+        nbActifs={[params.sport, params.position, params.region, params.genre, orgFilter, coteFilter, yearFilter]
+          .filter((v) => v != null && v !== "").length + (sortKey !== DEFAULT_PARTNER_SORT ? 1 : 0)}
+        reinitialiser="/partenaire/classements"
+      >
+        <ClassementsFilterBar
+          sports={sports}
+          positions={positions}
+          regions={distinctRegions}
+          graduationYears={GRADUATION_YEARS}
+        />
+      </EnTeteExploration>
 
       {/* Results header */}
       <div className="flex items-center justify-between">

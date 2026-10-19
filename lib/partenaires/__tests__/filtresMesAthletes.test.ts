@@ -107,7 +107,8 @@ test("lib : poste, poste_abr et badge_ref lus depuis partenaire_mes_athletes", (
 });
 
 test("page web : la liste rendue est la liste FILTRÉE, par la logique partagée", () => {
-  const page = lire("app/partenaire/mes-athletes/page.tsx");
+  // Fusion du 2026-10-18 (6.1) : la liste web vit dans la pastille « Mes évaluations ».
+  const page = lire("components/partenaire/MesEvaluationsWeb.tsx");
   assert.match(page, /filtrerMesAthletes\(athletes, \{ texte, distinctions \}\)/);
   assert.match(page, /\{visibles\.map\(\(a\) => \(/);
   assert.doesNotMatch(page, /\{athletes\.map\(/);

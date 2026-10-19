@@ -6,7 +6,8 @@ import { connecterLocal } from "./session";
 // requête du navigateur vers un projet Supabase CLOUD fait échouer le test.
 const COMPTE = process.env.VISUEL_PARTENAIRE ?? "e.partenaire@emulateur.local";
 const PAGES: [string, string][] = [
-  ["prospects", "/partenaire/prospects"],
+  // 6.1 (2026-10-18) : « Mes athlètes » fusionné — les cartes prospects sont la pastille « En attente ».
+  ["prospects", "/partenaire/mes-athletes?vue=attente"],
   ["evaluations", "/partenaire/mes-athletes"],
   ["recherche", "/partenaire/athletes"],
 ];
@@ -25,7 +26,7 @@ for (const [nom, chemin] of PAGES) {
       const reponse = await page.goto(chemin, { waitUntil: "load" });
       expect(reponse?.status(), `statut HTTP de ${chemin}`).toBeLessThan(400);
       await page.waitForLoadState("networkidle").catch(() => {});
-      expect(new URL(page.url()).pathname, "pas renvoyé vers la connexion").toBe(chemin);
+      expect(new URL(page.url()).pathname, "pas renvoyé vers la connexion").toBe(chemin.split("?")[0]);
       await page.screenshot({ path: `test-results/visuel/partenaire-${nom}-${f.nom}.png`, fullPage: false });
       expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
     });

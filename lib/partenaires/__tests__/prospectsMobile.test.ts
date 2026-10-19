@@ -6,12 +6,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { adresseLien, lienSms, messageTexto, LIMITE_CARTES } from "@/lib/partenaires/prospects";
+import { adresseLien, lienSms, messageTexto } from "@/lib/partenaires/prospects";
 
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
 test("le lien du texto : domaine public, jamais l'adresse locale de la WebView", () => {
-  const page = lire("app/partenaire/prospects/page.tsx");
+  const page = lire("components/partenaire/CartesEnAttenteWeb.tsx");
   assert.match(page, /setLien\(\{ carteId, adresse: adresseLien\(adressePublique\(\), jeton\), evalue \}\);/);
   assert.doesNotMatch(page, /window\.location\.origin/);
   const adr = lire("lib/partage/adressePublique.ts");
@@ -49,10 +49,10 @@ test("formulaire de carte : remonter ET plafonner au-dessus du clavier (appli), 
   assert.match(src, /atteste/);
 });
 
-test("ce que la page fait déjà, identique dans l'appli : x/50, révoquer, supprimer, Terminées", () => {
-  assert.equal(LIMITE_CARTES, 50);
-  const page = lire("app/partenaire/prospects/page.tsx");
-  assert.match(page, /\{cartes\.length\} \/ \{LIMITE_CARTES\}/);
+test("ce que la page fait déjà, identique dans l'appli : révoquer, supprimer, Terminées — plus de « x/50 » (6.3)", () => {
+  const page = lire("components/partenaire/CartesEnAttenteWeb.tsx");
+  assert.doesNotMatch(page, /LIMITE_CARTES|cartes actives/);
+  assert.doesNotMatch(lire("components/partenaire/mobile/MesAthletesMobile.tsx"), /LIMITE_CARTES|cartes actives/);
   assert.match(page, /await revoquerLien\(createClient\(\), carteId\);/);
   assert.match(page, /await supprimerCarte\(createClient\(\), carteId\);/);
   assert.match(page, /chargerCartesTerminees/);
@@ -65,7 +65,7 @@ test("texto : sans évaluation sur la carte, il invite sans « t'a évalué » (
   assert.doesNotMatch(messageTexto("Club Test", adr, false), /évalu/);
   // Avec évaluation : le texte d'aujourd'hui, inchangé (c'est aussi le défaut).
   assert.equal(messageTexto("Club Test", adr, true), messageTexto("Club Test", adr));
-  const page = lire("app/partenaire/prospects/page.tsx");
+  const page = lire("components/partenaire/CartesEnAttenteWeb.tsx");
   assert.match(page, /const evalue = cartes\.find\(\(c\) => c\.id === carteId\)\?\.coteGlobale != null;/);
   assert.match(page, /<EnvoyerLien organisation=\{partenaire\.organizationName\} adresse=\{lien\.adresse\} evalue=\{lien\.evalue\}/);
   assert.match(lire("components/partenaire/prospects/EnvoyerLien.tsx"), /const message = messageTexto\(organisation, adresse, evalue\);/);

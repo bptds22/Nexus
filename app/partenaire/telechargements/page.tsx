@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
-import AthletePhoto from "@/components/shared/AthletePhoto";
+import ListeTelechargements from "@/components/partenaire/ListeTelechargements";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/telechargements — partner's own download history
@@ -13,10 +13,11 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
    partner via 'Partners read own download history' policy from
    Phase 1). Most recent 50 downloads, reverse chronological.
 
-   Three "columns" per row: Athlète (photo + name + sport),
-   Format pill (Publication blue / Story purple), Date
-   (relative French time). Entire row is a Link to the
-   athlete profile.
+   Chaque ligne : l'athlète, le format (Publication 1080×1350 ou
+   Story 1080×1920, vignette à la bonne proportion) et la date.
+   6.6 (BP 2026-10-18) : toucher une ligne ouvre l'APERÇU de la vraie
+   carte en plein écran (Enregistrer, Partager, Voir le profil) —
+   components/partenaire/ListeTelechargements + ApercuCarte.
 ═══════════════════════════════════════════════════════════════ */
 
 /** Ligne PLATE rendue par public.partner_card_downloads_list. Les champs
@@ -45,17 +46,6 @@ type DownloadRow = {
     sport_id: string | null;
     sports: { nom: string | null } | null;
   } | null;
-};
-
-const FORMAT_PILL: Record<DownloadRow["format"], { className: string; label: string }> = {
-  publication: {
-    className: "bg-gray-500/20 text-gray-400 border border-gray-500/30",
-    label: "Publication",
-  },
-  story: {
-    className: "bg-purple-500/20 text-purple-400 border border-purple-500/30",
-    label: "Story",
-  },
 };
 
 function formatRelativeFrench(iso: string): string {
@@ -118,7 +108,7 @@ async function rendre() {
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
       <div>
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Téléchargements</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">Historique des cartes téléchargées</p>
+        <p className="text-[14px] text-[#9CA3AF] mt-1">Historique des cartes téléchargées. Touche une carte pour la revoir, l&apos;enregistrer ou la partager.</p>
       </div>
 
       {loadFailed ? (
@@ -166,57 +156,17 @@ async function rendre() {
               {downloads.length === 50 && <span className="ml-2 text-[10px] text-[#6b7280] normal-case tracking-normal">(50 plus récents)</span>}
             </h2>
           </div>
-          <div className="divide-y divide-[#2D3748]/40">
-            {downloads.map((d) => {
-              const ath = d.athletes;
-              const name = ath ? `${ath.first_name ?? ""} ${ath.last_name ?? ""}`.trim() : "Athlète supprimé";
-              const sportName = ath?.sports?.nom ?? null;
-              const pill = FORMAT_PILL[d.format];
-              const rowInner = (
-                <>
-                  <AthletePhoto
-                    photoUrl={ath?.photo_url}
-                    firstName={ath?.first_name}
-                    lastName={ath?.last_name}
-                    size={40}
-                    alt={name}
-                  />
-
-                  {/* Athlète column — name + sport */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-white truncate">{name}</p>
-                    {sportName && (
-                      <p className="text-[12px] text-[#9CA3AF] truncate">{sportName}</p>
-                    )}
-                  </div>
-
-                  {/* Format column */}
-                  <span className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${pill.className}`}>
-                    {pill.label}
-                  </span>
-
-                  {/* Date column */}
-                  <span className="text-[11px] text-[#6b7280] tabular-nums shrink-0 sm:w-[110px] sm:text-right">
-                    {formatRelativeFrench(d.downloaded_at)}
-                  </span>
-                </>
-              );
-
-              return ath?.id ? (
-                <Link
-                  key={d.id}
-                  href={`/partenaire/athletes/${ath.id}`}
-                  className="px-5 py-4 flex items-center gap-4 hover:bg-[#2D3748]/40 transition-colors"
-                >
-                  {rowInner}
-                </Link>
-              ) : (
-                <div key={d.id} className="px-5 py-4 flex items-center gap-4">
-                  {rowInner}
-                </div>
-              );
-            })}
-          </div>
+          <ListeTelechargements lignes={downloads.map((d) => ({
+            id: d.id,
+            format: d.format,
+            le: d.downloaded_at,
+            libelleDate: formatRelativeFrench(d.downloaded_at),
+            athleteId: d.athletes?.id ?? null,
+            prenom: d.athletes?.first_name ?? null,
+            nom: d.athletes?.last_name ?? null,
+            photo: d.athletes?.photo_url ?? null,
+            sport: d.athletes?.sports?.nom ?? null,
+          }))} />
         </div>
       )}
     </div>

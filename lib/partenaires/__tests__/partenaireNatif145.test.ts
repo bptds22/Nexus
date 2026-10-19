@@ -20,24 +20,29 @@ test("layout de l'appli : transitions iOS par onglet, en-tête natif des écrans
 test("pages : l'appli rend l'écran natif, le web garde le sien", () => {
   const cas: [string, string, string][] = [
     ["app/partenaire/page.tsx", "<AccueilPartenaireMobile />", "<AccueilPartenaireWeb />"],
-    ["app/partenaire/mes-athletes/page.tsx", "<MesEvaluationsMobile />", "<MesEvaluationsWeb />"],
-    ["app/partenaire/prospects/page.tsx", "<MesAthletesMobile />", "<MesAthletesWeb />"],
   ];
   for (const [f, mobile, web] of cas) {
     const src = lire(f);
     assert.ok(src.includes("IS_CAPACITOR ?") && src.includes(mobile) && src.includes(web), f);
+  }
+  // 6.1 : « Mes athlètes » fusionné — la page passe le build à la fusion, qui aiguille web / appli.
+  assert.ok(lire("app/partenaire/mes-athletes/page.tsx").includes("<MesAthletesPartenaire mobile={IS_CAPACITOR} />"));
+  const fusion = lire("components/partenaire/MesAthletesPartenaire.tsx");
+  for (const x of ["<MesEvaluationsMobile />", "<MesEvaluationsWeb />", "<MesAthletesMobile propositionsSeulement", "<CartesEnAttenteWeb propositionsSeulement"]) {
+    assert.ok(fusion.includes(x), x);
   }
   assert.ok(lire("components/partenaire/PartnerAthletesSearch.tsx").includes('<EnTeteMobilePartenaire titre="Recherche" />'));
   assert.ok(lire("app/partenaire/athletes/[id]/PageClient.tsx").includes("EnTeteMobilePartenaire"));
 });
 
 test("écrans natifs : en-tête natif, pas de confirmation native ni de spinner web", () => {
+  // 6.1 : l'en-tête natif est posé UNE fois par la fusion, au-dessus des pastilles.
+  assert.ok(lire("components/partenaire/MesAthletesPartenaire.tsx").includes('<EnTeteMobilePartenaire titre="Mes athlètes" />'));
   for (const f of [
     "components/partenaire/mobile/MesEvaluationsMobile.tsx",
     "components/partenaire/mobile/MesAthletesMobile.tsx",
   ]) {
     const src = lire(f);
-    assert.ok(src.includes("EnTeteMobilePartenaire"), f);
     assert.ok(src.includes("useMobileToast"), f);
     assert.ok(!src.includes("confirm(") && !src.includes("animate-spin"), f);
   }

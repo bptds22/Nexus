@@ -14,6 +14,8 @@ import {
   sortPartnerRows,
 } from "../_components/partnerFilters";
 import NewsroomEventCard, { type NewsroomEventType } from "@/components/partner/NewsroomEventCard";
+import EnTeteExploration from "../_components/EnTeteExploration";
+import { debutPeriode, lirePeriode, PASTILLES_PERIODE } from "@/lib/partenaires/periodeExploration";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/newsroom — async server component
@@ -113,7 +115,8 @@ function FilterChip({ label, href, active }: { label: string; href: string; acti
 async function rendre(brut: ParamsUrl) {
   const params = brut as FilterParams;
   const typeFilter = params.type === "COMMITMENT" || params.type === "FIVE_STAR_SIGNUP" ? params.type : null;
-  const rangeFilter = params.range === "7d" ? "7d" : params.range === "all" ? "all" : "30d";
+  // Pastilles de période (6.5) : Cette semaine · Ce mois (défaut) · Saison ; « all » reste lu.
+  const rangeFilter = lirePeriode(params.range, "30d");
   const orgFilter = isOrgType(params.org) ? params.org : null;
   const coteFilter = parseCoteMin(params.cote);
   /* `recent` par défaut, et tout param inconnu y retombe — un tri fantôme
@@ -163,10 +166,7 @@ async function rendre(brut: ParamsUrl) {
      (is_approved_partner + is_partner_eligible_athlete, ce dernier tolerant un
      evenement sans athlete). Les colonnes d'athletes servant aux filtres sont
      utilisees dans son WHERE sans etre projetees. */
-  const since =
-    rangeFilter === "7d"  ? new Date(Date.now() -  7 * 86400000).toISOString() :
-    rangeFilter === "30d" ? new Date(Date.now() - 30 * 86400000).toISOString() :
-    null;
+  const since = debutPeriode(rangeFilter);
 
   const { data, error } = await supabase.rpc("partner_newsroom_events", {
     p_event_type:  typeFilter,
@@ -261,13 +261,19 @@ async function rendre(brut: ParamsUrl) {
     || orgFilter || coteFilter !== null || sortKey !== NEWSROOM_RECENT_SORT
     || regionFilter || yearFilter !== null
   );
+  // Filtres derrière le bouton « Filtres » (hors période, qui a ses pastilles).
+  const nbActifs = [typeFilter, sportFilter, positionFilter, genreFilter, orgFilter, coteFilter, regionFilter, yearFilter]
+    .filter((v) => v !== null).length + (sortKey !== NEWSROOM_RECENT_SORT ? 1 : 0);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
-      <div>
-        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Newsroom</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">Engagements et nouvelles 5 étoiles</p>
-      </div>
+      <EnTeteExploration
+        titre="Newsroom"
+        sousTitre="Engagements et nouvelles 5 étoiles"
+        nbActifs={nbActifs}
+        reinitialiser="/partenaire/newsroom"
+        periode={PASTILLES_PERIODE.map((p) => ({ label: p.label, href: buildHref({ range: p.cle }), actif: rangeFilter === p.cle }))}
+      >
 
       {/* Filtres en DEUX rangées depuis le 2026-08-19.
           Les chips (type, période) restent sur leur rangée à défilement
@@ -278,17 +284,11 @@ async function rendre(brut: ParamsUrl) {
           pouvait pas se déplier dans un conteneur `flex-nowrap` à défilement.
           Ce n'est PAS la refonte complète de la barre newsroom (chips ⇄
           selects, hiérarchie des chips), qui reste un chantier distinct. */}
-      <div className="space-y-2">
         <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Type</span>
           <FilterChip label="Tout" href={buildHref({ type: null })} active={typeFilter === null} />
           <FilterChip label="Engagements" href={buildHref({ type: "COMMITMENT" })} active={typeFilter === "COMMITMENT"} />
           <FilterChip label="5 étoiles" href={buildHref({ type: "FIVE_STAR_SIGNUP" })} active={typeFilter === "FIVE_STAR_SIGNUP"} />
-          <span className="w-px h-5 bg-[#2D3748] mx-2 shrink-0" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Période</span>
-          <FilterChip label="7 jours" href={buildHref({ range: "7d" })} active={rangeFilter === "7d"} />
-          <FilterChip label="30 jours" href={buildHref({ range: "30d" })} active={rangeFilter === "30d"} />
-          <FilterChip label="Tout" href={buildHref({ range: "all" })} active={rangeFilter === "all"} />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -299,7 +299,7 @@ async function rendre(brut: ParamsUrl) {
             graduationYears={GRADUATION_YEARS}
           />
         </div>
-      </div>
+      </EnTeteExploration>
 
       {/* Feed */}
       {events.length === 0 ? (

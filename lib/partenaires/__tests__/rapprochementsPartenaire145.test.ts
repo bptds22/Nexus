@@ -11,9 +11,12 @@ const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace
 test("P2/P3 : lecture et décision par les trois fonctions de la migration", async () => {
   const appels: string[] = [];
   const faux = {
-    rpc: async (nom: string) => {
+    // Lecture par pages (lireTout, 2026-10-18) : rpc(…).select(…).order(…).range(…).
+    rpc: (nom: string) => {
       appels.push(nom);
-      return { data: [{ carte_id: "c1", athlete_id: "a1", prenom: "Alexis", nom: "Caron", ecole: "X", sport: "Football", promotion: 2028, photo_url: null, critere: "ETABLISSEMENT", force: "MOYENNE", deja_propose: false }], error: null };
+      const res = { data: [{ carte_id: "c1", athlete_id: "a1", prenom: "Alexis", nom: "Caron", ecole: "X", sport: "Football", promotion: 2028, photo_url: null, critere: "ETABLISSEMENT", force: "MOYENNE", deja_propose: false }], error: null, count: 1 };
+      const b = { select: () => b, order: () => b, range: async () => res };
+      return b;
     },
   } as unknown as Parameters<typeof chargerRapprochements>[0];
   const r = await chargerRapprochements(faux);
@@ -33,7 +36,7 @@ test("P2/P3 : les niveaux dans les mots du recruteur", () => {
 });
 
 test("P2/P3 : « Mes athlètes » — bandeau, lien sur la carte, fenêtre ; plus de « c'est lui qui décide »", () => {
-  const page = lire("app/partenaire/prospects/page.tsx");
+  const page = lire("components/partenaire/CartesEnAttenteWeb.tsx");
   for (const extrait of [
     "setRapprochements(await chargerRapprochements(supabase).catch(() => []));",
     "<BandeauRapprochementsPartenaire total={rapprochements.length} onVoir={() => setFenetre({})} />",

@@ -10,10 +10,13 @@
    lien n'est affiché qu'une fois (EnvoyerLien) et bâti sur le domaine public
    (adressePublique), jamais sur l'adresse locale de la WebView.
 
+   Fusion du 2026-10-18 (6.1) : c'est la pastille « En attente » de « Mes
+   athlètes » (en-tête et pastilles posés par MesAthletesPartenaire). Cartes
+   ROUGES comme les cartes prospect du recruteur (SURFACE_PROSPECT) ; plus de
+   quota de cartes (BP : aucun maximum) ; les réclamées visibles passent dans
+   « Mes évaluations », les autres issues sont repliées sous « Cartes terminées ».
+
    Canon recruteur copié :
-   - en-tête natif (EnTeteMobilePartenaire), quota « N / 50 cartes actives »
-     et « + » rond rouge (plein → toast, pas de formulaire) ;
-   - Actives / Terminées en contrôle segmenté (SegmentedTabs) ;
    - rangées rounded-2xl #1A1D24 + bouton ⋮ (RecruteurListesMobile) ; un tap
      ouvre la feuille d'actions iOS (copie locale de ListActionSheet) ;
    - ce qui tue un lien ou une carte passe par ConfirmSheet, avec les MÊMES
@@ -43,15 +46,14 @@ import {
   LIBELLE_ISSUE,
   LIBELLE_RAISON_BADGE,
   LIBELLE_STATUT,
-  LIMITE_CARTES,
   messageErreurCarte,
   revoquerLien,
   supprimerCarte,
   type CartePartenaire,
   type CarteTerminee,
 } from "@/lib/partenaires/prospects";
-import EnTeteMobilePartenaire, { BoutonRondPartenaire } from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
-import SegmentedTabs from "@/components/shared/SegmentedTabs";
+import { SURFACE_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
+import { estReclameeVisible } from "@/lib/partenaires/vueMesAthletes";
 import { ConfirmSheet } from "@/components/shared/settings";
 import { EmptyState } from "@/components/mobile/EmptyState";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -59,12 +61,6 @@ import { triggerHaptic } from "@/lib/haptics";
 
 interface Partenaire { id: string; organizationName: string; peutEvaluer: boolean; approuve: boolean }
 type ActionConfirmee = "supprimer" | "nouveau-lien" | "revoquer";
-type Onglet = "actives" | "terminees";
-
-const ONGLETS = [
-  { key: "actives", label: "Actives" },
-  { key: "terminees", label: "Terminées" },
-] as const;
 
 /** Pastille de statut (mêmes tons que le web : neutre / succès / attention). */
 const COULEUR_STATUT: Record<CartePartenaire["statut"], string> = {
@@ -200,7 +196,8 @@ function RangeeCarte({ c, noms, occupe, nbRapprochements, onOptions, onVoirRappr
   const jours = joursRestants(c.expireLe);
   const nbBadges = c.badgesPartenaire.length + c.badgesNexus.length;
   return (
-    <div className={`relative bg-[#1A1D24] rounded-2xl overflow-hidden ${occupe ? "opacity-60" : ""}`} data-carte-prospect={c.id}>
+    <div className={`relative rounded-2xl overflow-hidden border border-[#E63946]/25 ${occupe ? "opacity-60" : ""}`}
+      style={{ backgroundColor: SURFACE_PROSPECT }} data-carte-prospect={c.id}>
       <button
         type="button"
         disabled={occupe}
@@ -307,7 +304,11 @@ function Squelettes() {
 
 /* ── Écran ────────────────────────────────────────────────────── */
 
-export default function MesAthletesMobile() {
+export default function MesAthletesMobile({ propositionsSeulement = false, onToutVoir }: {
+  /** Venue de « À confirmer » (Accueil) : seulement les cartes avec une proposition. */
+  propositionsSeulement?: boolean;
+  onToutVoir?: () => void;
+}) {
   const toast = useMobileToast();
   const [partenaire, setPartenaire] = useState<Partenaire | null>(null);
   const [sportsPermis, setSportsPermis] = useState<{ id: string; nom: string }[]>([]);
@@ -316,7 +317,7 @@ export default function MesAthletesMobile() {
   const [noms, setNoms] = useState<{ sports: Record<string, string>; positions: Record<string, string>; ecoles: Record<string, string>; equipes: Record<string, string> }>({ sports: {}, positions: {}, ecoles: {}, equipes: {} });
   const [chargement, setChargement] = useState(true);
   const [erreurChargement, setErreurChargement] = useState(false);
-  const [onglet, setOnglet] = useState<Onglet>("actives");
+  const [terminesOuvertes, setTerminesOuvertes] = useState(false);
   const [formulaire, setFormulaire] = useState<{ carte: CartePartenaire | null } | null>(null);
   const [lien, setLien] = useState<{ carteId: string; adresse: string; evalue: boolean } | null>(null);
   // P2/P3 (1.4.5) : correspondances possibles de mes cartes, et la fenêtre ouverte (une carte, ou toutes).
@@ -377,15 +378,8 @@ export default function MesAthletesMobile() {
   }, [charger]);
 
   const autorise = !!partenaire?.peutEvaluer && partenaire.approuve && sportsPermis.length > 0;
-  const plein = cartes.length >= LIMITE_CARTES;
 
-  const nouvelleCarte = () => {
-    if (plein) {
-      toast.warning({ message: "Limite de 50 cartes actives atteinte", detail: "Supprime une carte pour en créer une autre." });
-      return;
-    }
-    setFormulaire({ carte: null });
-  };
+  const nouvelleCarte = () => setFormulaire({ carte: null });
 
   const envoyer = async (carteId: string) => {
     setOccupe(carteId);
@@ -459,25 +453,15 @@ export default function MesAthletesMobile() {
   };
 
   const nbParCarte = useMemo(() => parCarte(rapprochements), [rapprochements]);
-  const terminesTries = useMemo(() => [...terminees].sort((a, b) => b.termineeLe.localeCompare(a.termineeLe)), [terminees]);
+  // Les réclamations dont le jeune est visible vivent dans « Mes évaluations » (6.1).
+  const terminesTries = useMemo(() => [...terminees].filter((t) => !estReclameeVisible(t))
+    .sort((a, b) => b.termineeLe.localeCompare(a.termineeLe)), [terminees]);
+  const cartesVisibles = useMemo(() => (propositionsSeulement ? cartes.filter((c) => (nbParCarte.get(c.id) ?? 0) > 0) : cartes),
+    [cartes, nbParCarte, propositionsSeulement]);
   const textesConfirmation = confirmation ? CONFIRMATIONS[confirmation.action] : null;
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white" data-page-prospects-mobile>
-      <EnTeteMobilePartenaire
-        titre="Mes athlètes"
-        sousTitre={!chargement && autorise
-          ? <span className={plein ? "text-[#F59E0B]" : undefined} data-compteur-cartes>{cartes.length} / {LIMITE_CARTES} cartes actives</span>
-          : undefined}
-        action={!chargement && autorise ? (
-          <BoutonRondPartenaire libelle={plein ? "Limite de 50 cartes actives atteinte" : "Nouvelle carte"} onClick={nouvelleCarte} principal={!plein}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={plein ? "#9CA3AF" : "#FFFFFF"} strokeWidth="2.6" strokeLinecap="round">
-              <path d="M12 5v14" /><path d="M5 12h14" />
-            </svg>
-          </BoutonRondPartenaire>
-        ) : undefined}
-      />
-
+    <div className="text-white" data-page-prospects-mobile data-vue-attente>
       <div className="px-4 pt-3 pb-6">
         {chargement ? (
           <Squelettes />
@@ -510,19 +494,37 @@ export default function MesAthletesMobile() {
               </div>
             ) : (
               <>
-                <SegmentedTabs tabs={ONGLETS} active={onglet} onChange={setOnglet} className="mb-4" />
+                <button type="button" onClick={() => { void triggerHaptic("Medium"); nouvelleCarte(); }}
+                  className="mb-4 w-full h-12 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white text-[15px] font-bold flex items-center justify-center gap-2"
+                  data-nouvelle-carte>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+                  Nouvelle carte
+                </button>
+                {propositionsSeulement && (
+                  <div className="mb-3 flex items-center gap-2" data-filtre-propositions>
+                    <span className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#E63946]/15 text-white border border-[#E63946]/40">Propositions à confirmer seulement</span>
+                    {onToutVoir && (
+                      <button type="button" onClick={() => { void triggerHaptic("Light"); onToutVoir(); }}
+                        className="min-h-[36px] px-2 text-[13px] font-bold text-[#9CA3AF] active:text-white">Tout voir</button>
+                    )}
+                  </div>
+                )}
 
-                {onglet === "actives" ? (
-                  cartes.length === 0 ? (
+                {cartesVisibles.length === 0 ? (
+                  propositionsSeulement ? (
+                    <EmptyState image="/empty/nexus-empty-vues.png" title="Aucune proposition à confirmer"
+                      description="Toutes les correspondances possibles ont été traitées." />
+                  ) : (
                     <EmptyState
                       image="/empty/nexus-empty-shortlist.png"
                       title="Aucune carte pour l'instant"
                       description="Crée ta première carte, puis envoie le lien au jeune par texto."
                       action={{ label: "Créer ma première carte", onClick: () => { void triggerHaptic("Medium"); nouvelleCarte(); } }}
                     />
-                  ) : (
+                  )
+                ) : (
                     <div className="space-y-3">
-                      {cartes.map((c) => (
+                      {cartesVisibles.map((c) => (
                         <RangeeCarte
                           key={c.id}
                           c={c}
@@ -534,18 +536,26 @@ export default function MesAthletesMobile() {
                         />
                       ))}
                     </div>
-                  )
-                ) : (
-                  <div data-section-terminees>
-                    <p className="text-[12px] text-white/40 mb-3 px-1">
-                      Une carte réclamée affiche le jeune tant qu&apos;il garde sa visibilité partenaire ; les autres issues restent sans nom.
-                    </p>
-                    {terminesTries.length === 0 ? (
-                      <EmptyState image="/empty/nexus-empty-vues.png" title="Aucune carte terminée." />
-                    ) : (
-                      <div className="space-y-3">
-                        {terminesTries.map((t) => <RangeeTerminee key={`${t.carteId}-${t.termineeLe}`} t={t} />)}
-                      </div>
+                )}
+
+                {terminesTries.length > 0 && !propositionsSeulement && (
+                  <div className="mt-6" data-section-terminees>
+                    <button type="button" aria-expanded={terminesOuvertes}
+                      onClick={() => { void triggerHaptic("Light"); setTerminesOuvertes((v) => !v); }}
+                      className="w-full flex items-center justify-between px-1 min-h-[44px] text-[13px] font-bold uppercase tracking-[0.12em] text-white/60">
+                      Cartes terminées ({terminesTries.length})
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                        className={`transition-transform ${terminesOuvertes ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
+                    </button>
+                    {terminesOuvertes && (
+                      <>
+                        <p className="text-[12px] text-white/40 mb-3 px-1">
+                          Les cartes expirées ou retirées restent sans nom. Une carte réclamée passe dans « Mes évaluations ».
+                        </p>
+                        <div className="space-y-3">
+                          {terminesTries.map((t) => <RangeeTerminee key={`${t.carteId}-${t.termineeLe}`} t={t} />)}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}

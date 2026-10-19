@@ -9,7 +9,7 @@ const ECRANS: [string, string][] = [
   ["accueil", "/partenaire"],
   ["recherche", "/partenaire/athletes"],
   ["evaluations", "/partenaire/mes-athletes"],
-  ["mes-athletes", "/partenaire/prospects"],
+  ["mes-athletes", "/partenaire/mes-athletes?vue=attente"],
   ["fiche", `/partenaire/athletes/${FICHE}`],
   ["classements", "/partenaire/classements"],
   ["newsroom", "/partenaire/newsroom"],

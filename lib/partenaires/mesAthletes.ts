@@ -4,6 +4,7 @@
    ses données ne sont pas effacées (W2). RPC partenaire_mes_athletes. */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireTout } from "@/lib/supabase/lireTout";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 
 export interface BadgeMonAthlete {
@@ -36,10 +37,11 @@ export interface MonAthlete {
   derniereAction: string | null;
 }
 
+/** Toutes les lignes, par pages (lireTout) : aucun plafond de 1 000 (BP 2026-10-18, « aucun maximum »). */
 export async function chargerMesAthletes(supabase: SupabaseClient): Promise<MonAthlete[]> {
-  const { data, error } = await supabase.rpc("partenaire_mes_athletes");
-  if (error) throw error;
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+  const data = await lireTout<Record<string, unknown>>((de, a) => supabase
+    .rpc("partenaire_mes_athletes", {}, { count: "exact" }).select("*").order("athlete_id").range(de, a));
+  return data.map((r) => ({
     athleteId: r.athlete_id as string,
     prenom: (r.prenom as string | null) ?? "",
     nom: (r.nom as string | null) ?? "",

@@ -19,8 +19,7 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const ONGLETS_PARTENAIRE: OngletsAnimes = [
   { index: 0, matchers: ["/partenaire"], exact: true },
   { index: 1, matchers: ["/partenaire/athletes"] },
-  { index: 2, matchers: ["/partenaire/mes-athletes"] },
-  { index: 3, matchers: ["/partenaire/prospects"] },
+  { index: 2, matchers: ["/partenaire/mes-athletes", "/partenaire/prospects"] },
 ];
 /** Écrans du menu « Plus » : en-tête natif posé par le layout. */
 const TITRES_EN_TETE: Record<string, string> = {

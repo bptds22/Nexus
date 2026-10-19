@@ -2,11 +2,14 @@
 
 /* 1.4.5 (B1) — rendu CLIENT (PageChargee) : le portail est dans l'appli, qui est un
    export statique. Le corps est celui de l'ancien composant serveur, inchangé. */
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import TendancesDropdownFilters from "../_components/TendancesDropdownFilters";
+import EnTeteExploration from "../_components/EnTeteExploration";
+import { debutPeriode, libellePeriode, lirePeriode, PASTILLES_PERIODE, type ClePeriode } from "@/lib/partenaires/periodeExploration";
 import {
   isOrgType,
   parseCoteMin,
@@ -67,6 +70,8 @@ type FilterParams = {
   cote?: string;
   /** Clé de tri — ordre d'AFFICHAGE, pas de composition. Cf. sortPartnerRows. */
   sort?: string;
+  /** Période de la rangée Engagements (6.5) : 7d (défaut) | 30d | saison. */
+  range?: string;
 };
 
 function formatDelta(d: number): string {
@@ -89,50 +94,43 @@ function ArrowUp() {
   );
 }
 
-function ArrowDown() {
+/* ── Rangées défilantes gauche-droite (BP 2026-10-18, 6.5) ───────── */
+
+/** Un engagement (newsroom COMMITMENT) dans la rangée « Engagements ». */
+type Engagement = {
+  id: string; athleteId: string; prenom: string | null; nom: string | null; photo: string | null;
+  sport: string | null; ecole: string | null; engageA: string | null; le: string;
+};
+
+function Rangee({ titre, sousTitre, vide, children, n }: { titre: string; sousTitre: string; vide: string; children: ReactNode; n: number }) {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <polyline points="19 12 12 19 5 12" />
-    </svg>
+    <section data-rangee-tendance={titre}>
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <h2 className="text-[14px] font-bold text-white uppercase tracking-tight">{titre}</h2>
+        <p className="text-[11px] text-[#6b7280] shrink-0">{sousTitre}</p>
+      </div>
+      {n === 0 ? (
+        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl"><EmptyPanel message={vide} /></div>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x" style={{ scrollbarWidth: "thin" }}>{children}</div>
+      )}
+    </section>
   );
 }
 
-function AthleteRow({ row, mode }: { row: TrendingRow; mode: "views" | "favs" }) {
-  const name = `${row.first_name ?? ""} ${row.last_name ?? ""}`.trim();
-  const delta = mode === "views" ? row.views_delta : row.favs_delta;
-  const current = mode === "views" ? row.views_7d : row.favs_7d;
-  const color = deltaColor(delta);
-
-  const subtitleParts = [row.sport_name, row.school_name].filter(Boolean) as string[];
-  const subtitle = subtitleParts.join(" · ") || "—";
-
+function CarteTendance({ href, photo, prenom, nom, ligne, valeur, couleur, detail }: {
+  href: string; photo: string | null; prenom: string | null; nom: string | null; ligne: string;
+  valeur: ReactNode; couleur?: string; detail?: string;
+}) {
+  const nomComplet = `${prenom ?? ""} ${nom ?? ""}`.trim();
   return (
-    <Link
-      href={`/partenaire/athletes/${row.id}`}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors group"
-    >
-      <AthletePhoto
-        photoUrl={row.photo_url}
-        firstName={row.first_name}
-        lastName={row.last_name}
-        size={44}
-        alt={name}
-      />
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-bold text-white truncate group-hover:text-[#E63946] transition-colors">{name}</p>
-        <p className="text-[11px] text-[#6b7280] truncate">{subtitle}</p>
-      </div>
-      <div className="flex flex-col items-end shrink-0">
-        <span className="font-head text-[18px] font-black leading-none" style={{ color }}>
-          <span className="inline-flex items-center gap-1">
-            {delta > 0 && <ArrowUp />}
-            {delta < 0 && <ArrowDown />}
-            {formatDelta(delta)}
-          </span>
-        </span>
-        <span className="text-[10px] text-[#6b7280] mt-0.5">{current} cette sem.</span>
-      </div>
+    <Link href={href}
+      className="snap-start shrink-0 w-[150px] bg-[#1A1D24] border border-[#2D3748] rounded-xl p-3 flex flex-col items-center text-center hover:border-[#E63946]/40 transition-colors">
+      <AthletePhoto photoUrl={photo} firstName={prenom} lastName={nom} size={56} alt={nomComplet} />
+      <p className="mt-2 w-full text-[13px] font-bold text-white truncate">{nomComplet || "Athlète"}</p>
+      <p className="w-full text-[11px] text-[#6b7280] truncate">{ligne || "—"}</p>
+      <p className="mt-1.5 font-head text-[16px] font-black leading-none" style={couleur ? { color: couleur } : undefined}>{valeur}</p>
+      {detail && <p className="mt-0.5 w-full text-[10px] text-[#6b7280] truncate">{detail}</p>}
     </Link>
   );
 }
@@ -223,7 +221,43 @@ async function rendre(brut: ParamsUrl) {
   if (orgFilter === "ligue_civile") favsQuery = favsQuery.is("school_name", null);
   if (coteFilter !== null) favsQuery = favsQuery.gte("cote_globale_entraineur", coteFilter);
 
-  const [viewsRes, favsRes] = await Promise.all([viewsQuery, favsQuery]);
+  /* Engagements (6.5) : les mêmes filtres, sur la période choisie (pastilles). La vue des tendances
+     ne mesure que 7 jours ; la période s'applique donc à la rangée Engagements. */
+  const periode: ClePeriode = lirePeriode(params.range, "7d");
+  const engagementsQuery = supabase.rpc("partner_newsroom_events", {
+    p_event_type:  "COMMITMENT",
+    p_since:       debutPeriode(periode),
+    p_sport_id:    sportFilter,
+    p_position_id: positionFilter,
+    p_genre:       genreFilter,
+    p_org:         orgFilter,
+    p_cote_min:    coteFilter,
+    p_year:        yearFilter,
+    p_region:      regionFilter,
+    p_limit:       20,
+  });
+
+  const [viewsRes, favsRes, engagementsRes] = await Promise.all([viewsQuery, favsQuery, engagementsQuery]);
+  const engagements: Engagement[] = engagementsRes.error ? [] : ((engagementsRes.data ?? []) as {
+    id: string; athlete_id: string | null; metadata: Record<string, unknown> | null; occurred_at: string;
+    athlete_first_name: string | null; athlete_last_name: string | null; athlete_photo_url: string | null;
+    athlete_school_name: string | null; athlete_sport_nom: string | null;
+  }[]).filter((r) => !!r.athlete_id).map((r) => ({
+    id: r.id, athleteId: r.athlete_id as string, prenom: r.athlete_first_name, nom: r.athlete_last_name,
+    photo: r.athlete_photo_url, sport: r.athlete_sport_nom, ecole: r.athlete_school_name,
+    engageA: typeof r.metadata?.school_name === "string" ? (r.metadata.school_name as string) : null,
+    le: r.occurred_at,
+  }));
+
+  // Pastilles de période : l'adresse courante, seul `range` change (7d = défaut, omis).
+  const hrefPeriode = (cle: string) => {
+    const q = new URLSearchParams(Object.entries(params).filter(([, v]) => typeof v === "string") as [string, string][]);
+    if (cle === "7d") q.delete("range"); else q.set("range", cle);
+    const s = q.toString();
+    return s ? `/partenaire/tendances?${s}` : "/partenaire/tendances";
+  };
+  const nbActifs = [sportFilter, positionFilter, regionFilter, genreFilter, orgFilter, coteFilter, yearFilter]
+    .filter((v) => v !== null).length + (sortKey !== DEFAULT_PARTNER_SORT ? 1 : 0);
 
   /* Comme sur /classements, le tri s'applique APRÈS la coupe. Le `.limit(10)`
      ci-dessus, ordonné par delta, DÉFINIT qui sont les dix athlètes en
@@ -256,67 +290,52 @@ async function rendre(brut: ParamsUrl) {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
-      <div>
-        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Tendances</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">Athlètes en pleine ascension cette semaine</p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <TendancesDropdownFilters
-          sports={sports}
-          positions={positions}
-          regions={distinctRegions}
-          graduationYears={GRADUATION_YEARS}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Views panel */}
-        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#2D3748] flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#3B82F6]/15 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-[14px] font-bold text-white uppercase tracking-tight">Plus de vues cette semaine</h2>
-              <p className="text-[11px] text-[#6b7280]">Variation vs. 7 jours précédents</p>
-            </div>
-          </div>
-          {viewsTop.length === 0 ? (
-            <EmptyPanel message={emptyMessage} />
-          ) : (
-            <div className="divide-y divide-[#2D3748]/40">
-              {viewsTop.map((r) => <AthleteRow key={r.id} row={r} mode="views" />)}
-            </div>
-          )}
+      <EnTeteExploration
+        titre="Tendances"
+        sousTitre="Athlètes en pleine ascension"
+        nbActifs={nbActifs}
+        reinitialiser="/partenaire/tendances"
+        periode={PASTILLES_PERIODE.map((p) => ({ label: p.label, href: hrefPeriode(p.cle), actif: periode === p.cle }))}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <TendancesDropdownFilters
+            sports={sports}
+            positions={positions}
+            regions={distinctRegions}
+            graduationYears={GRADUATION_YEARS}
+          />
         </div>
+      </EnTeteExploration>
 
-        {/* Favs panel */}
-        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#2D3748] flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#E63946]/15 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#E63946" stroke="none">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-[14px] font-bold text-white uppercase tracking-tight">Plus de favoris cette semaine</h2>
-              <p className="text-[11px] text-[#6b7280]">Variation vs. 7 jours précédents</p>
-            </div>
-          </div>
-          {favsTop.length === 0 ? (
-            <EmptyPanel message={emptyMessage} />
-          ) : (
-            <div className="divide-y divide-[#2D3748]/40">
-              {favsTop.map((r) => <AthleteRow key={r.id} row={r} mode="favs" />)}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Rangées défilantes gauche-droite (6.5). Vues et likes : la vue des tendances compare
+          7 jours aux 7 précédents ; la période choisie s'applique aux Engagements. */}
+      <Rangee titre="Plus de vues cette semaine" sousTitre="vs 7 jours précédents" vide={emptyMessage} n={viewsTop.length}>
+        {viewsTop.map((r) => (
+          <CarteTendance key={r.id} href={`/partenaire/athletes/${r.id}`} photo={r.photo_url} prenom={r.first_name} nom={r.last_name}
+            ligne={[r.sport_name, r.school_name].filter(Boolean).join(" · ")}
+            valeur={<span className="inline-flex items-center gap-1">{r.views_delta > 0 && <ArrowUp />}{formatDelta(r.views_delta)}</span>}
+            couleur={deltaColor(r.views_delta)} detail={`${r.views_7d} vues cette sem.`} />
+        ))}
+      </Rangee>
+
+      <Rangee titre="Plus de likes cette semaine" sousTitre="vs 7 jours précédents" vide={emptyMessage} n={favsTop.length}>
+        {favsTop.map((r) => (
+          <CarteTendance key={r.id} href={`/partenaire/athletes/${r.id}`} photo={r.photo_url} prenom={r.first_name} nom={r.last_name}
+            ligne={[r.sport_name, r.school_name].filter(Boolean).join(" · ")}
+            valeur={<span className="inline-flex items-center gap-1">{r.favs_delta > 0 && <ArrowUp />}{formatDelta(r.favs_delta)}</span>}
+            couleur={deltaColor(r.favs_delta)} detail={`${r.favs_7d} cette sem.`} />
+        ))}
+      </Rangee>
+
+      <Rangee titre="Engagements" sousTitre={libellePeriode(periode)}
+        vide={hasActiveFilters ? "Aucun engagement ne correspond à ces filtres." : "Aucun engagement sur cette période."} n={engagements.length}>
+        {engagements.map((e) => (
+          <CarteTendance key={e.id} href={`/partenaire/athletes/${e.athleteId}`} photo={e.photo} prenom={e.prenom} nom={e.nom}
+            ligne={[e.sport, e.ecole].filter(Boolean).join(" · ")}
+            valeur={<span className="text-[12px] text-[#22C55E]">S&apos;engage</span>}
+            detail={[e.engageA, new Date(e.le).toLocaleDateString("fr-CA", { day: "numeric", month: "short" })].filter(Boolean).join(" · ")} />
+        ))}
+      </Rangee>
     </div>
   );
 }
