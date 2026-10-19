@@ -393,7 +393,10 @@ export function useAthletesMatch(gameId: string | null | undefined) {
       let { data, error } = await supabase.rpc("depistage_profils_match", { p_game: gameId });
       if (error && fonctionAbsente(error)) ({ data, error } = await supabase.rpc("matchs_profils_nexus", { p_games: [gameId] }));
       if (error) return [];
-      const lignes = (data ?? []) as { athlete_id: string; prenom: string | null; nom: string | null; cote: "DOMICILE" | "VISITEUR" }[];
+      // BP 2026-10-19 : PAS les joueurs sans équipe (source « ECOLE ») — un cadet ne doit pas sortir dans
+      // un match juvénile. Restent l'équipe du match et ses équipes sœurs (même école, sport, groupe d'âge).
+      const lignes = ((data ?? []) as { athlete_id: string; prenom: string | null; nom: string | null; cote: "DOMICILE" | "VISITEUR"; source?: string }[])
+        .filter((l) => l.source !== "ECOLE");
       if (lignes.length === 0) return [];
       const cartes = await fetchRecruiterAthleteCards(supabase, lignes.map((l) => l.athlete_id)).catch(() => null);
       return lignes.flatMap((l): AthleteCandidat[] => {
