@@ -17,18 +17,21 @@ test("appli — personnaliser la barre : ajouter Recherche, puis revenir au déf
   await page.getByRole("button", { name: "Plus d'options" }).click();
   await page.getByRole("button", { name: "Personnaliser la barre" }).click();
   await expect(page.getByTestId("personnaliser-barre")).toBeVisible();
-  await page.getByRole("button", { name: "Retirer Messages" }).click();
-  await page.locator('[data-onglet-possible="recherche"]').click();
+  // Défaut (BP 2026-10-19) : Recherche · Processus · En direct.
+  await page.getByRole("button", { name: "Retirer Recherche" }).click();
+  await page.locator('[data-onglet-possible="dashboard"]').click();
   await page.screenshot({ path: "test-results/visuel/appli-barre-perso-editeur.png" });
   await page.getByRole("button", { name: "Enregistrer" }).click();
-  await expect(nav.getByRole("link", { name: /Recherche/ })).toBeVisible({ timeout: 15_000 });
-  await expect(nav.getByRole("link", { name: /Messages/ })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: /Accueil/ })).toBeVisible({ timeout: 15_000 });
+  await expect(nav.getByRole("link", { name: /Recherche/ })).toHaveCount(0);
   await page.screenshot({ path: "test-results/visuel/appli-barre-perso-barre.png" });
-  // Retour au défaut.
+  // Déplacer, pas enlever : Recherche est maintenant dans Plus, et Accueil n'y est plus.
   await page.getByRole("button", { name: "Plus d'options" }).click();
+  await expect(page.getByRole("link", { name: "Recherche" }).last()).toBeVisible();
+  await page.screenshot({ path: "test-results/visuel/appli-barre-perso-plus.png" });
   await page.getByRole("button", { name: "Personnaliser la barre" }).click();
   await page.getByRole("button", { name: "Par défaut" }).click();
-  await expect(nav.getByRole("link", { name: /Messages/ })).toBeVisible({ timeout: 15_000 });
+  await expect(nav.getByRole("link", { name: /Recherche/ })).toBeVisible({ timeout: 15_000 });
   expect(versCloud, "requêtes vers Supabase cloud").toEqual([]);
 });
 

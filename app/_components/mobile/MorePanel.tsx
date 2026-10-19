@@ -170,6 +170,10 @@ interface MorePanelProps {
    *  ou Notifications (athlete). */
   actBadge: number;
   onLockedClick: (tierId: string, label: string) => void;
+  /** Barre personnalisable (BP 2026-10-19 : « on doit déplacer, pas enlever ») : les routes déjà dans
+   *  la barre ne sont pas répétées ici ; ce qui a quitté la barre y revient, en tête. */
+  enBarre?: readonly string[];
+  horsBarre?: readonly { key: string; label: string; href: string; icon: React.ReactNode; requiredTier?: "pro" | "all_star" }[];
 }
 
 export default function MorePanel({
@@ -181,6 +185,8 @@ export default function MorePanel({
   isSchoolAdmin,
   actBadge,
   onLockedClick,
+  enBarre = [],
+  horsBarre = [],
 }: MorePanelProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -226,7 +232,7 @@ export default function MorePanel({
   const hasProAccess = tier === "all_star" || isSchoolAdmin;
 
   /* ── Sections par rôle ── */
-  const sections: PanelSection[] = (() => {
+  const sectionsRole: PanelSection[] = (() => {
     if (role === "recruteur") {
       return [
         {
@@ -483,6 +489,19 @@ export default function MorePanel({
       },
     ];
   })();
+
+  // Déplacer, pas enlever (BP 2026-10-19) : un écran est dans la barre OU dans Plus, jamais perdu.
+  const sansSlash = (h: string) => h.replace(/\/+$/, "");
+  const dansBarre = new Set(enBarre.map(sansSlash));
+  const sectionsFiltrees = sectionsRole
+    .map((sec) => ({ ...sec, items: sec.items.filter((it) => !dansBarre.has(sansSlash(it.href))) }))
+    .filter((sec) => sec.items.length > 0 || !!sec.note);
+  const dejaLa = new Set(sectionsFiltrees.flatMap((sec) => sec.items.map((it) => sansSlash(it.href))));
+  const revenus: PanelItem[] = horsBarre
+    .filter((t) => !dejaLa.has(sansSlash(t.href)))
+    .map((t) => ({ key: `barre-${t.key}`, label: t.label, href: t.href, requiredTier: t.requiredTier,
+      icon: <span className="inline-flex [&_svg]:h-[18px] [&_svg]:w-[18px]">{t.icon}</span> }));
+  const sections: PanelSection[] = revenus.length > 0 ? [{ items: revenus }, ...sectionsFiltrees] : sectionsFiltrees;
 
   function renderItem(item: PanelItem) {
     // Pas de cadenas tant que le tier n'est pas chargé (évite le flash free).

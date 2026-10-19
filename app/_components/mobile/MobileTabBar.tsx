@@ -204,13 +204,18 @@ interface TabConfig {
   exact?: boolean;
 }
 
+/* BP 2026-10-19 : la barre PAR DÉFAUT du recruteur = Recherche · Mon processus · En direct (+ Plus).
+   Accueil, Calendrier et Messages restent montables (barre personnalisable) et vivent dans Plus. */
 const RECRUTEUR_TABS: TabConfig[] = [
-  { key: "dashboard", label: "Accueil", href: "/recruteur/tableau-de-bord", icon: Icons.dashboard, activeMatch: "/recruteur/tableau-de-bord" },
-  // BP 2026-10-18 : sur le téléphone, la barre sert le terrain — Calendrier, Dépistage, Messages.
-  // Recherche et Processus passent dans « Plus » (MorePanel). Calendrier et Dépistage sans requiredTier :
-  // le gratuit atteint la page et y voit sa porte Pro (FeatureGate), comme dans le panneau Plus.
-  { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar, activeMatch: "/recruteur/calendrier" },
+  { key: "recherche", label: "Recherche", href: "/recruteur/recherche", icon: Icons.search, activeMatch: "/recruteur/recherche" },
+  { key: "pipeline", label: "Processus", href: "/recruteur/pipeline", icon: Icons.kanban, activeMatch: "/recruteur/pipeline", requiredTier: "pro" },
   { key: "game-on", label: DEPISTAGE.onglet, href: "/recruteur/game-on", icon: Icons.gameOn, activeMatch: "/recruteur/game-on" },
+];
+
+const RECRUTEUR_AUTRES: TabConfig[] = [
+  { key: "dashboard", label: "Accueil", href: "/recruteur/tableau-de-bord", icon: Icons.dashboard, activeMatch: "/recruteur/tableau-de-bord" },
+  // Calendrier sans requiredTier : le gratuit atteint la page et y voit sa porte Pro (FeatureGate).
+  { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar, activeMatch: "/recruteur/calendrier" },
   { key: "messages", label: "Messages", href: "/recruteur/messages", icon: Icons.envelope, requiredTier: "pro" },
 ];
 
@@ -256,8 +261,7 @@ const PARTENAIRE_TABS: TabConfig[] = [
 const POOL_BY_ROLE: Record<RoleBarre, TabConfig[]> = {
   recruteur: [
     ...RECRUTEUR_TABS,
-    { key: "recherche", label: "Recherche", href: "/recruteur/recherche", icon: Icons.search, activeMatch: "/recruteur/recherche" },
-    { key: "pipeline", label: "Processus", href: "/recruteur/pipeline", icon: Icons.kanban, activeMatch: "/recruteur/pipeline", requiredTier: "pro" },
+    ...RECRUTEUR_AUTRES,
     { key: "favoris", label: "Favoris", href: "/recruteur/favoris", icon: Icons.heart, activeMatch: "/recruteur/favoris" },
     { key: "listes", label: "Listes", href: "/recruteur/listes", icon: Icons.listes, activeMatch: "/recruteur/listes" },
     { key: "carte-matchs", label: "Matchs", href: "/recruteur/carte-matchs", icon: Icons.carte, activeMatch: "/recruteur/carte-matchs" },
@@ -689,6 +693,8 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         isSchoolAdmin={isSchoolAdmin}
         actBadge={actBadge}
         onLockedClick={(tierId, label) => setUpgradeModal({ tierId, lockedFeatureTitle: label })}
+        enBarre={tabs.map((t) => t.href)}
+        horsBarre={poolBarre.filter((p) => !tabs.includes(p)).map((p) => ({ key: p.key, label: p.label, href: p.href, icon: p.icon, requiredTier: p.requiredTier }))}
       />
 
       {upgradeModal && (
