@@ -28,7 +28,7 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { mapPartnerRpcToRecruiterView, libelleFormat, type PartnerAthleteRow } from "@/lib/partenaires/carteAthlete";
 import { journaliserTelechargement, type FormatCarte } from "@/lib/partenaires/journal";
 import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
-import { enregistrerImage, rendusNecessaires } from "@/lib/partage/enregistrerImage";
+import { enregistrerImage } from "@/lib/partage/enregistrerImage";
 import { partagerImage } from "@/lib/partage/partagerImage";
 
 /** Clé lue par la fiche partenaire (appli) pour son bouton Retour. */
@@ -75,8 +75,14 @@ export default function ApercuCarte({ athleteId, format, onFermer, notifier }: {
         if (document.fonts) await document.fonts.ready;
         const node = capture.current;
         if (!node) throw new Error("carte non rendue");
+        // BP 2026-10-19 (photo vide dans l'aperçu) : la carte est montée à l'instant ; on attend
+        // que ses images soient décodées (8 s au plus), puis un rendu d'échauffement, partout.
+        await Promise.race([
+          Promise.all(Array.from(node.querySelectorAll("img")).map((img) => img.decode().catch(() => undefined))),
+          new Promise((r) => setTimeout(r, 8000)),
+        ]);
         const options = { ...OPTIONS_IMAGE_INJOIGNABLE, pixelRatio: 1, cacheBust: true };
-        if (rendusNecessaires() === 2) await toPng(node, options);
+        await toPng(node, options);
         const url = await toPng(node, options);
         if (vivant) setImage(url);
       } catch (e) {
