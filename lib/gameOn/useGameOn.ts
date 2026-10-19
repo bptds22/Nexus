@@ -388,7 +388,10 @@ export function useAthletesMatch(gameId: string | null | undefined) {
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const supabase = createClient();
-      const { data, error } = await supabase.rpc("matchs_profils_nexus", { p_games: [gameId] });
+      // BP 2026-10-19 : les profils de l'ÉCOLE aussi (sans équipe, ou dans une équipe en double) —
+      // depistage_profils_match ; l'ancienne lecture (inscrits des deux équipes) si elle manque.
+      let { data, error } = await supabase.rpc("depistage_profils_match", { p_game: gameId });
+      if (error && fonctionAbsente(error)) ({ data, error } = await supabase.rpc("matchs_profils_nexus", { p_games: [gameId] }));
       if (error) return [];
       const lignes = (data ?? []) as { athlete_id: string; prenom: string | null; nom: string | null; cote: "DOMICILE" | "VISITEUR" }[];
       if (lignes.length === 0) return [];
