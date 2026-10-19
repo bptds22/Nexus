@@ -16,8 +16,10 @@
      serveur juge admissibles pour CET athlète (universels, et ceux de SON
      sport ; jamais les honneurs). Un badge déjà porté reste listé, grisé,
      avec qui le porte — le serveur refuse de toute façon le doublon.
-   Le retrait d'un badge se fait depuis la rangée « Distinctions » de la
-   fiche (BadgePartenaireVignette, actions="partenaire").
+   - « Retirer un badge » (BP 2026-10-19) : à côté de « Retirer mon
+     évaluation », la liste des badges que J'AI posés — les miens ET les
+     badges Nexus —, chacun avec sa confirmation. Le lien sous la vignette
+     des « Distinctions » reste (il était caché derrière « +N »).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from "react";
@@ -30,6 +32,7 @@ import {
 import {
   attribuerBadgePartenaire,
   attribuerBadgeNexus,
+  retirerBadgePartenaire,
   chargerBadgesNexusAdmissibles,
   chargerMesBadgesPartenaire,
   signalerBadgesPartenaire,
@@ -64,6 +67,9 @@ export default function ActionsPartenaireFiche({
   const [nexus, setNexus] = useState<BadgeNexusAdmissible[]>([]);
   const [choixNexusOuvert, setChoixNexusOuvert] = useState(false);
   const poses = useBadgesPartenaires(athleteId);
+  const mesPoses = poses.filter((b) => b.estLeMien);
+  const [retraitOuvert, setRetraitOuvert] = useState(false);
+  const [aRetirer, setARetirer] = useState<string | null>(null);
 
   useEffect(() => {
     if (!peutEvaluer) return;
@@ -109,6 +115,21 @@ export default function ActionsPartenaireFiche({
     }
   };
 
+  const retirerBadge = async (poseId: string, libelle: string) => {
+    setOccupe(true);
+    try {
+      await retirerBadgePartenaire(createClient(), poseId);
+      signalerBadgesPartenaire(athleteId);
+      setARetirer(null);
+      if (mesPoses.length <= 1) setRetraitOuvert(false);
+      notifier("success", `Badge « ${libelle} » retiré.`);
+    } catch (e) {
+      notifier("error", messageErreur(e));
+    } finally {
+      setOccupe(false);
+    }
+  };
+
   const attribuer = async (badge: BadgeCatalogue) => {
     setOccupe(true);
     try {
@@ -137,7 +158,7 @@ export default function ActionsPartenaireFiche({
     }
   };
 
-  if (!maEvaluation && !(peutEvaluer && (catalogue.length > 0 || nexus.length > 0))) return null;
+  if (!maEvaluation && mesPoses.length === 0 && !(peutEvaluer && (catalogue.length > 0 || nexus.length > 0))) return null;
 
   return (
     <div className="flex items-center gap-3 flex-wrap" data-actions-partenaire>
@@ -170,6 +191,59 @@ export default function ActionsPartenaireFiche({
           >
             Annuler
           </button>
+        </div>
+      )}
+
+      {/* Retirer MES badges (les miens et les Nexus que j'ai posés), même sans droit d'évaluer :
+          retirer réduit l'exposition, ça ne l'étend jamais. */}
+      {mesPoses.length > 0 && (
+        <div className="relative">
+          <button
+            type="button"
+            disabled={occupe}
+            onClick={() => { setRetraitOuvert((v) => !v); setARetirer(null); }}
+            className="px-4 py-2 border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50"
+            data-retirer-badge
+          >
+            Retirer un badge
+          </button>
+          {retraitOuvert && (
+            <div className="absolute z-20 mt-2 left-0 w-[300px] max-h-[360px] overflow-y-auto bg-[#1A1D24] border border-[#2D3748] rounded-xl p-2 shadow-xl">
+              {mesPoses.map((b) => {
+                const svg = b.estNexus && b.codeNexus ? badgeSvgPath(b.codeNexus) : b.iconeUrl;
+                return (
+                  <div key={b.id} className="flex items-center gap-3 px-2 py-2 rounded-lg">
+                    {svg ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={svg} alt="" className="w-9 h-9 object-contain shrink-0" />
+                    ) : (
+                      <span className="w-9 h-9 rounded-full border border-[#2D3748] flex items-center justify-center text-[13px] font-bold text-[#9CA3AF] shrink-0">
+                        {b.libelle.slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                    <span className="flex flex-col min-w-0 flex-1">
+                      <span className="text-[13px] font-semibold text-white truncate">{b.libelle}</span>
+                      <span className="text-[11px] text-[#6B7280]">{b.estNexus ? "Badge Nexus" : "Ton badge"}</span>
+                    </span>
+                    {aRetirer === b.id ? (
+                      <span className="flex items-center gap-1 shrink-0">
+                        <button type="button" disabled={occupe} onClick={() => retirerBadge(b.id, b.libelle)}
+                          className="px-2 py-1 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-md disabled:opacity-50">
+                          {occupe ? "…" : "Confirmer"}
+                        </button>
+                        <button type="button" disabled={occupe} onClick={() => setARetirer(null)} className="px-1 text-[12px] text-[#9CA3AF] hover:text-white">Non</button>
+                      </span>
+                    ) : (
+                      <button type="button" disabled={occupe} onClick={() => setARetirer(b.id)}
+                        className="shrink-0 px-2 py-1 text-[12px] font-bold text-[#E63946] hover:underline disabled:opacity-50">
+                        Retirer
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
