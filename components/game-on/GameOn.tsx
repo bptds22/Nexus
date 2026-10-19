@@ -646,7 +646,11 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, onFermer, o
   // BP 2026-10-18 : garder ça simple — pas d'étiquettes, pas de gabarits, pas de bouton Dicter.
   const ok = cible ? !!texte.trim() : noteValide({ numero, prenom, texte, etiquettes: [] });
   const sujet = `gameon:${seance.id}:${cote}:${numero ?? (prenom ?? "").toLowerCase()}`;
-  const historique = [...(groupe?.notes ?? [])].reverse();
+  // BP 2026-10-19 : l'historique EN HAUT (ordre du match, la plus récente juste au-dessus du champ),
+  // le joueur et la boîte d'écriture TOUJOURS collés en bas — comme un fil de messages.
+  const historique = groupe?.notes ?? [];
+  const finHistorique = useRef<HTMLDivElement>(null);
+  useEffect(() => { finHistorique.current?.scrollIntoView({ block: "end" }); }, [historique.length]);
 
   const enregistrer = () => {
     if (!ok) return;
@@ -657,31 +661,36 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, onFermer, o
   };
   const validerPrenom = () => { onRenommer(prenomSaisi); setCrayon(false); };
 
+  // Le joueur : #N · Prénom ✏️ (collé en bas, au-dessus du champ).
+  const joueur = (
+    <div className="flex min-h-[44px] items-center gap-2">
+      <Chandail couleur={couleurCote(seance, cote)} taille={18} />
+      <span className="shrink-0 text-[26px] font-black leading-none text-white">{numero ? `#${numero}` : (prenom || "Joueur")}</span>
+      {numero && (crayon ? (
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <input autoFocus value={prenomSaisi} onChange={(e) => setPrenomSaisi(e.target.value)} maxLength={60}
+            onKeyDown={(e) => { if (e.key === "Enter") validerPrenom(); }}
+            placeholder="Prénom (facultatif)" aria-label="Prénom du joueur"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-[#2D3748] bg-[#111317] px-3 text-[16px] text-white placeholder:text-white/30" />
+          <button type="button" onClick={validerPrenom} className="h-11 shrink-0 rounded-xl bg-white/10 px-3 text-[14px] font-bold text-white">OK</button>
+        </span>
+      ) : (
+        <button type="button" onClick={() => { setPrenomSaisi(prenom ?? ""); setCrayon(true); }} aria-label="Modifier le prénom"
+          data-testid="fiche-joueur-crayon"
+          className="flex min-h-[44px] min-w-0 items-center gap-1.5 text-left">
+          <span className={`truncate text-[18px] font-bold ${prenom ? "text-white" : "text-white/40"}`}>· {prenom || "Prénom (facultatif)"}</span>
+          <span aria-hidden className="text-[16px]">✏️</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  // En-tête mince : l'équipe et Fermer. L'historique défile dessous.
   const entete = (
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        <div className="flex min-h-[44px] items-center gap-2">
-          <Chandail couleur={couleurCote(seance, cote)} taille={18} />
-          <span className="shrink-0 text-[26px] font-black leading-none text-white">{numero ? `#${numero}` : (prenom || "Joueur")}</span>
-          {numero && (crayon ? (
-            <span className="flex min-w-0 flex-1 items-center gap-2">
-              <input autoFocus value={prenomSaisi} onChange={(e) => setPrenomSaisi(e.target.value)} maxLength={60}
-                onKeyDown={(e) => { if (e.key === "Enter") validerPrenom(); }}
-                placeholder="Prénom (facultatif)" aria-label="Prénom du joueur"
-                className="h-11 min-w-0 flex-1 rounded-xl border border-[#2D3748] bg-[#111317] px-3 text-[16px] text-white placeholder:text-white/30" />
-              <button type="button" onClick={validerPrenom} className="h-11 shrink-0 rounded-xl bg-white/10 px-3 text-[14px] font-bold text-white">OK</button>
-            </span>
-          ) : (
-            <button type="button" onClick={() => { setPrenomSaisi(prenom ?? ""); setCrayon(true); }} aria-label="Modifier le prénom"
-              data-testid="fiche-joueur-crayon"
-              className="flex min-h-[44px] min-w-0 items-center gap-1.5 text-left">
-              <span className={`truncate text-[18px] font-bold ${prenom ? "text-white" : "text-white/40"}`}>· {prenom || "Prénom (facultatif)"}</span>
-              <span aria-hidden className="text-[16px]">✏️</span>
-            </button>
-          ))}
-        </div>
-        <p className="mt-0.5 truncate text-[13px] text-white/50">{equipe}</p>
-      </div>
+    <div className="flex items-center justify-between gap-3">
+      <p className="min-w-0 truncate text-[13px] font-semibold text-white/60">
+        {equipe} · <span className="uppercase tracking-wider text-white/45">Historique</span>
+      </p>
       <button type="button" onClick={onFermer} className="h-11 shrink-0 px-2 text-[14px] font-semibold text-white/60">Fermer</button>
     </div>
   );
@@ -690,53 +699,57 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, onFermer, o
     <FeuilleBas variante="feuille" onFermer={onFermer} etiquette={`Fiche — ${numero ? `#${numero}` : (prenom || "Joueur")}`} testId="game-on-note"
       entete={entete}
       pied={
-        <button type="button" disabled={!ok} onClick={enregistrer}
-          className="h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
-          {cible ? "Ajouter à cette note" : "Enregistrer"}
-        </button>
+        <div data-testid="fiche-joueur-saisie">
+          {joueur}
+          {cible && (
+            <div className="mb-2 mt-1 flex items-center justify-between gap-2 rounded-xl border border-[#E63946]/40 bg-[#E63946]/10 px-3 py-2 text-[13px] text-white">
+              <span className="min-w-0 truncate">Ajout à ta note de {heureLigne(cible.noteLe)}</span>
+              <button type="button" onClick={() => setCibleId(null)} className="shrink-0 font-bold text-white/70 underline">Nouvelle note</button>
+            </div>
+          )}
+          <div className="mt-1">
+            <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits sansDictee
+              placeholder={cible ? "Ce que tu ajoutes…" : "Ce que tu as vu…"} ariaLabel="Note sur ce joueur" />
+          </div>
+          <button type="button" disabled={!ok} onClick={enregistrer}
+            className="mt-3 h-14 w-full rounded-2xl bg-[#E63946] text-[17px] font-black text-white disabled:opacity-40">
+            {cible ? "Ajouter à cette note" : "Enregistrer"}
+          </button>
+        </div>
       }>
-        {cible && (
-          <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-[#E63946]/40 bg-[#E63946]/10 px-3 py-2 text-[13px] text-white">
-            <span className="min-w-0 truncate">Ajout à ta note de {heureLigne(cible.noteLe)}</span>
-            <button type="button" onClick={() => setCibleId(null)} className="shrink-0 font-bold text-white/70 underline">Nouvelle note</button>
-          </div>
+        {historique.length === 0 ? (
+          <p className="py-6 text-center text-[14px] text-white/40">Aucune note sur ce joueur pour l&apos;instant.</p>
+        ) : (
+          <ul className="space-y-2" data-testid="fiche-joueur-historique">
+            {historique.map((n: NoteAffichee) => {
+              const modifiable = n.deMoi && !n.lieLe;
+              const contenu = (
+                <>
+                  <span className="mb-0.5 block text-[12px] text-white/45">
+                    {heureLigne(n.noteLe)} · {n.deMoi ? "Toi" : (n.auteurNom ?? "Collègue")}
+                    {n.enAttente && <span className="ml-1 text-[#FCD34D]">(en attente)</span>}
+                  </span>
+                  <span className="block whitespace-pre-line">{n.texte}</span>
+                </>
+              );
+              return (
+                <li key={n.id} className={`flex items-start gap-2 rounded-xl px-3 py-2 text-[14px] text-white/85 ${cibleId === n.id ? "bg-[#E63946]/15 ring-1 ring-[#E63946]/50" : "bg-[#111317]"}`}>
+                  {modifiable ? (
+                    <button type="button" className="min-w-0 flex-1 text-left" aria-label={`Ajouter à ta note de ${heureLigne(n.noteLe)}`}
+                      onClick={() => { triggerHaptic("Light"); setCibleId(n.id); }}>
+                      {contenu}
+                    </button>
+                  ) : <div className="min-w-0 flex-1">{contenu}</div>}
+                  {modifiable && (
+                    <button type="button" onClick={() => { if (cibleId === n.id) setCibleId(null); void onSupprimer(n.id); }}
+                      className="h-9 shrink-0 px-1 text-[12px] text-white/40 underline">Supprimer</button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
-        <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits sansDictee
-          placeholder={cible ? "Ce que tu ajoutes…" : "Ce que tu as vu…"} ariaLabel="Note sur ce joueur" />
-
-        {historique.length > 0 && (
-          <div className="mt-4">
-            <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">Historique</p>
-            <ul className="space-y-2" data-testid="fiche-joueur-historique">
-              {historique.map((n: NoteAffichee) => {
-                const modifiable = n.deMoi && !n.lieLe;
-                const contenu = (
-                  <>
-                    <span className="mb-0.5 block text-[12px] text-white/45">
-                      {heureLigne(n.noteLe)} · {n.deMoi ? "Toi" : (n.auteurNom ?? "Collègue")}
-                      {n.enAttente && <span className="ml-1 text-[#FCD34D]">(en attente)</span>}
-                    </span>
-                    <span className="block whitespace-pre-line">{n.texte}</span>
-                  </>
-                );
-                return (
-                  <li key={n.id} className={`flex items-start gap-2 rounded-xl px-3 py-2 text-[14px] text-white/85 ${cibleId === n.id ? "bg-[#E63946]/15 ring-1 ring-[#E63946]/50" : "bg-[#111317]"}`}>
-                    {modifiable ? (
-                      <button type="button" className="min-w-0 flex-1 text-left" aria-label={`Ajouter à ta note de ${heureLigne(n.noteLe)}`}
-                        onClick={() => { triggerHaptic("Light"); setCibleId(n.id); }}>
-                        {contenu}
-                      </button>
-                    ) : <div className="min-w-0 flex-1">{contenu}</div>}
-                    {modifiable && (
-                      <button type="button" onClick={() => { if (cibleId === n.id) setCibleId(null); void onSupprimer(n.id); }}
-                        className="h-9 shrink-0 px-1 text-[12px] text-white/40 underline">Supprimer</button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
+        <div ref={finHistorique} />
     </FeuilleBas>
   );
 }
