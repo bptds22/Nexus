@@ -103,6 +103,26 @@ export function BandeauRapprochements({ className = "" }: { className?: string }
   );
 }
 
+/** « Propositions » — TOUJOURS là dans Mon processus (BP 2026-10-19 : « pas d'endroit pour revoir les
+ *  profils que j'ai refusés »). Ouvre la fenêtre : en attente, puis les refusées. */
+export function BoutonPropositions({ tactile = false, actif = true }: { tactile?: boolean; actif?: boolean }) {
+  const { parCarte, nbRefusees, ouvrir } = useContexteRapprochements();
+  if (!actif) return null;
+  const n = [...parCarte.values()].reduce((a, b) => a + b, 0);
+  return (
+    <button type="button" onClick={() => ouvrir()} data-testid="bouton-propositions"
+      title={nbRefusees > 0 ? `${nbRefusees} refusée${nbRefusees > 1 ? "s" : ""} à revoir` : "Profils Nexus qui semblent correspondre à tes cartes"}
+      className={tactile
+        ? "relative h-11 px-4 rounded-full flex items-center justify-center gap-1.5 bg-white/[0.06] active:bg-white/[0.1] text-[13px] font-bold text-white"
+        : "flex items-center gap-2 px-5 py-3 rounded-xl border border-[#2a2d36] bg-[#13151a] text-[14px] font-bold text-white hover:border-[#4a4d56] transition-colors"}>
+      Propositions
+      {n > 0 && (
+        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#3B82F6] text-white text-[10px] font-black leading-none">{n}</span>
+      )}
+    </button>
+  );
+}
+
 /** Sur une carte prospect : rien si aucune proposition. `stopPropagation`
  *  pour ne pas ouvrir le panneau du kanban en même temps. */
 export function LienRapprochementCarte({ carteId, className = "" }: { carteId: string; className?: string }) {

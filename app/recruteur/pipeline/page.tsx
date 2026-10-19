@@ -98,7 +98,7 @@ import { retirerDossier, messageRetrait as messageErreurRetrait, type RaisonRetr
 import { ChoixRaisonRetrait, LigneRetrait } from "@/components/recruteur/retraits/ChoixRaisonRetrait";
 import { invaliderRetraits } from "@/lib/queries/recruiter/useRetraits";
 import { formaterTelephone } from "@/lib/cartes/saisie";
-import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
+import { FournisseurRapprochements, BandeauRapprochements, BoutonPropositions, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
 import { fusionnerCarte } from "@/lib/cartes/fusions";
 import FilNotesSuivi from "@/components/recruteur/notes/FilNotesSuivi";
 import { MarqueurExpiration, OngletInfosCarte, OngletHistoriqueCarte, MentionProspect, RenvoyerInvitation, LegendeProspect, FOND_PROSPECT, SURFACE_PROSPECT, BANDEAU_PROSPECT } from "@/components/recruteur/cartes/PanneauCarte";
@@ -2395,6 +2395,8 @@ function PipelinePageContent() {
             Ajouter un prospect
           </button>
         )}
+        {/* Propositions (BP 2026-10-19) : toujours là — en attente ET refusées. */}
+        <BoutonPropositions actif={modeUnite && !isFreeDemoMode} />
         {/* Export Excel (lot B) — désactivé en mode démo (réservé au Pro). */}
         <button
           type="button"

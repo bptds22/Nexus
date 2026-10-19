@@ -43,7 +43,7 @@ import OngletHistoriquePanneau from "@/app/recruteur/pipeline/_components/Onglet
 import { useFiltreSportUnite, type FiltreSportUnite as FiltreSportUniteEtat } from "@/lib/queries/recruiter/useFiltreSportUnite";
 import FiltreSportUnite from "@/components/recruteur/cegep/FiltreSportUnite";
 import AvisLectureSeule from "@/components/recruteur/cegep/AvisLectureSeule";
-import { FournisseurRapprochements, BandeauRapprochements, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
+import { FournisseurRapprochements, BandeauRapprochements, BoutonPropositions, LienRapprochementCarte } from "@/components/recruteur/cartes/Rapprochements";
 import { fusionnerCarte } from "@/lib/cartes/fusions";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
 import { createClient } from "@/lib/supabase/client";
@@ -213,9 +213,11 @@ function useClientNow(): number {
    existaient depuis toujours, deux sections plus bas, invisibles. Un bouton
    NOMMÉ les rend atteignables, et sa pastille dit combien sont actifs sans
    qu'on ait à ouvrir quoi que ce soit. */
-function PipelineHeader({ nActiveFilters, onFilterTap }: {
+function PipelineHeader({ nActiveFilters, onFilterTap, propositions = false }: {
   nActiveFilters: number;
   onFilterTap: () => void;
+  /** BP 2026-10-19 : « Propositions » sous « Filtrer » (unité Pro). */
+  propositions?: boolean;
 }) {
   return (
     <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
@@ -276,6 +278,7 @@ function PipelineHeader({ nActiveFilters, onFilterTap }: {
             </span>
           )}
         </button>
+        <BoutonPropositions tactile actif={propositions} />
         </div>
       </div>
     </div>
@@ -1978,6 +1981,7 @@ export function RecruteurPipelineMobile() {
       <PipelineHeader
         nActiveFilters={activeFilterCount(filters, extra)}
         onFilterTap={handleMenuTap}
+        propositions={modeUnite && !isFreeDemoMode}
       />
 
       {/* Free demo banner */}
