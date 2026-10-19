@@ -58,6 +58,13 @@ export interface StockGameOn {
 
 export const CLE_STOCK = "nexus.gameon.v1";
 
+/** La clé du stock D'UN COMPTE (BP 2026-10-19 : un recruteur et un partenaire sur le même téléphone
+ *  voyaient les mêmes « matchs en cours »). L'ancienne clé commune n'est plus jamais lue : aucune
+ *  séance ni note d'un compte ne peut passer à un autre. */
+export function cleStock(compte: string): string {
+  return `${CLE_STOCK}:${compte}`;
+}
+
 /** Ce que la page sait d'un stockage : localStorage, ou un faux dans les tests. */
 export interface Stockage {
   getItem(k: string): string | null;
@@ -66,10 +73,10 @@ export interface Stockage {
 
 const VIDE: StockGameOn = { seances: {}, active: null };
 
-export function lireStock(s: Stockage | null | undefined): StockGameOn {
+export function lireStock(s: Stockage | null | undefined, cle: string = CLE_STOCK): StockGameOn {
   if (!s) return { ...VIDE, seances: {} };
   try {
-    const brut = s.getItem(CLE_STOCK);
+    const brut = s.getItem(cle);
     if (!brut) return { ...VIDE, seances: {} };
     const v = JSON.parse(brut) as Partial<StockGameOn>;
     if (!v || typeof v !== "object" || typeof v.seances !== "object" || v.seances === null) return { ...VIDE, seances: {} };
@@ -80,10 +87,10 @@ export function lireStock(s: Stockage | null | undefined): StockGameOn {
 }
 
 /** Vrai si l'écriture a réussi (stockage plein ou bloqué : faux, sans planter). */
-export function ecrireStock(s: Stockage | null | undefined, stock: StockGameOn): boolean {
+export function ecrireStock(s: Stockage | null | undefined, stock: StockGameOn, cle: string = CLE_STOCK): boolean {
   if (!s) return false;
   try {
-    s.setItem(CLE_STOCK, JSON.stringify(stock));
+    s.setItem(cle, JSON.stringify(stock));
     return true;
   } catch {
     return false;

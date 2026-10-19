@@ -67,3 +67,14 @@ test("peut-être le même joueur : un athlète Nexus reconnu ET une seule carte 
   assert.equal(carteJumelle({ cote: "A", numero: "9" }, athleteConnu, cartes, "t-A"), null);
   assert.equal(carteJumelle({ cote: "A", numero: "16" }, athleteConnu, [...cartes, carte("c3", "16", "t-A")], "t-A"), null, "deux cartes : on ne choisit pas");
 });
+
+test("le stock local est rangé PAR COMPTE : un autre compte ne voit rien", async () => {
+  const { cleStock, ecrireStock, lireStock } = await import("@/lib/gameOn/gameOn");
+  const m = new Map<string, string>();
+  const s = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); } };
+  const e = nouvelleSeance("s1", { equipeA: "Cougars" });
+  ecrireStock(s, { seances: { s1: e }, active: "s1" }, cleStock("recruteur"));
+  assert.equal(lireStock(s, cleStock("recruteur")).active, "s1");
+  assert.deepEqual(lireStock(s, cleStock("partenaire")), { seances: {}, active: null });
+  assert.notEqual(cleStock("recruteur"), cleStock("partenaire"));
+});

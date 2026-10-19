@@ -17,8 +17,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { surReprise } from "@/lib/push/pastillesAppareil";
 import { fetchRecruiterAthleteCards } from "@/lib/queries/shared/recruiterAthleteCards";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import {
-  ajouterLigneDatee, ajouterNote, avecCouleurs, avecPasLui, avecPrenom, ecrireStock, fonctionAbsente, lireStock, lots, marquerEnvoyees, messageErreur,
+  ajouterLigneDatee, ajouterNote, avecCouleurs, avecPasLui, avecPrenom, cleStock, ecrireStock, fonctionAbsente, lireStock, lots, marquerEnvoyees, messageErreur,
   notesEnAttente, nouvelleSeance, remapperSeance, retirerNote, versEnvoi,
   type AthleteCandidat, type CarteCandidate, type Cote, type EtatSeance, type GroupeJoueur, type NoteAffichee, type NoteLocale, type StockGameOn,
 } from "@/lib/gameOn/gameOn";
@@ -123,20 +124,27 @@ export function useStockGameOn() {
   const [indisponible, setIndisponible] = useState(false);
   const ref = useRef(stock);
   const verrou = useRef(false);
+  // Le stock est celui DU COMPTE connecté (BP 2026-10-19) : rien n'est lu ni écrit avant de le connaître.
+  const { data: user } = useCurrentUser();
+  const compte = user?.authUser.id ?? null;
+  const cle = useRef<string | null>(null);
 
-  // Lecture au montage seulement (le serveur de rendu n'a pas de localStorage).
+  // Lecture au montage, et à chaque changement de compte (le serveur de rendu n'a pas de localStorage).
   useEffect(() => {
-    const s = lireStock(stockage());
+    if (!compte) return;
+    cle.current = cleStock(compte);
+    const s = lireStock(stockage(), cle.current);
     ref.current = s;
-    // Lecture unique du stockage de l'appareil au montage.
+    // Lecture du stockage de l'appareil, pour ce compte.
     setStockEtat(s);
     setCharge(true);
     setEnLigne(typeof navigator === "undefined" ? true : navigator.onLine !== false);
-  }, []);
+  }, [compte]);
 
   const poser = useCallback((s: StockGameOn) => {
+    if (!cle.current) return;
     ref.current = s;
-    ecrireStock(stockage(), s);
+    ecrireStock(stockage(), s, cle.current);
     setStockEtat(s);
   }, []);
 
