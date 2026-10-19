@@ -31,6 +31,8 @@ export interface SeanceLocale {
   couleurB?: string | null;
   /** Prénom corrigé au crayon, par joueur (clé cleJoueur) — sur l'appareil ; mes notes le portent aussi. */
   prenoms?: Record<string, string>;
+  /** « Pas lui » (BP 2026-10-19) : par joueur (clé cleJoueur), la carte ou l'athlète reconnu à écarter. */
+  pasLui?: Record<string, string>;
 }
 
 export interface NoteLocale {
@@ -448,6 +450,46 @@ export function suggestionsTri(
     .sort((a, b) => a.rang - b.rang || a.nom.localeCompare(b.nom, "fr"))
     .slice(0, 6)
     .map((x): Suggestion => ({ type: x.type, id: x.id, nom: x.nom, numero: x.numero, equipe: x.equipe, raison: x.raison, memeEquipe: x.memeEquipe }));
+}
+
+/* ── Joueur déjà connu (BP 2026-10-19) ──────────────────────────────
+   « Si je le connais déjà, je veux continuer mes notes là, pas recommencer. »
+   Pendant le match, un numéro est RECONNU quand un seul candidat sûr le porte
+   dans l'équipe de ce côté : un athlète Nexus du match, sinon une carte de
+   l'unité de cette équipe. Le nom proche ne suffit pas (trop de faux amis) :
+   il reste une suggestion au tri. Deux cartes au même numéro : on ne choisit
+   pas, le tri tranche. */
+export function joueurConnu(
+  g: Pick<GroupeJoueur, "cote" | "numero">,
+  athletes: readonly AthleteCandidat[],
+  cartes: readonly CarteCandidate[],
+  equipeCote: string | null,
+  ecarte?: string | null,
+): Suggestion | null {
+  if (!g.numero) return null;
+  const memeNumero = (n: string | null) => (n ?? "").trim() === g.numero;
+  const a = athletes.filter((x) => x.cote === g.cote && memeNumero(x.numero) && x.id !== ecarte);
+  if (a.length === 1) {
+    return { type: "athlete", id: a[0].id, nom: `${a[0].prenom} ${a[0].nom}`.trim(), numero: a[0].numero, equipe: null, raison: "numero", memeEquipe: true };
+  }
+  if (a.length > 1 || !equipeCote) return null;
+  const c = cartes.filter((x) => x.teamId === equipeCote && memeNumero(x.numero) && x.id !== ecarte);
+  if (c.length !== 1) return null;
+  return { type: "carte", id: c[0].id, nom: `${c[0].prenom} ${c[0].nom}`.trim(), numero: c[0].numero, equipe: c[0].equipe, raison: "numero", memeEquipe: true };
+}
+
+/** « Pas lui » : on écarte (ou on rétablit, id null) le joueur reconnu pour ce numéro. */
+export function avecPasLui(e: EtatSeance, cle: string, id: string | null): EtatSeance {
+  const pasLui = { ...(e.seance.pasLui ?? {}) };
+  if (id) pasLui[cle] = id; else delete pasLui[cle];
+  return { ...e, seance: { ...e.seance, pasLui } };
+}
+
+/** Prénom court pour la pastille : « Marc T. ». */
+export function nomCourt(nom: string): string {
+  const [p, ...r] = nom.trim().split(/\s+/);
+  const n = r.join(" ");
+  return n ? `${p} ${n[0].toUpperCase()}.` : (p ?? "");
 }
 
 /* ── Tableau de bord : les quatre pastilles (BP 2026-10-18) ──────── */

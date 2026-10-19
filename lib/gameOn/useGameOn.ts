@@ -18,9 +18,9 @@ import { createClient } from "@/lib/supabase/client";
 import { surReprise } from "@/lib/push/pastillesAppareil";
 import { fetchRecruiterAthleteCards } from "@/lib/queries/shared/recruiterAthleteCards";
 import {
-  ajouterLigneDatee, ajouterNote, avecCouleurs, avecPrenom, ecrireStock, fonctionAbsente, lireStock, lots, marquerEnvoyees, messageErreur,
+  ajouterLigneDatee, ajouterNote, avecCouleurs, avecPasLui, avecPrenom, ecrireStock, fonctionAbsente, lireStock, lots, marquerEnvoyees, messageErreur,
   notesEnAttente, nouvelleSeance, remapperSeance, retirerNote, versEnvoi,
-  type AthleteCandidat, type Cote, type EtatSeance, type GroupeJoueur, type NoteAffichee, type NoteLocale, type StockGameOn,
+  type AthleteCandidat, type CarteCandidate, type Cote, type EtatSeance, type GroupeJoueur, type NoteAffichee, type NoteLocale, type StockGameOn,
 } from "@/lib/gameOn/gameOn";
 
 /** Cadence des relectures pendant le match (BP 2026-10-18 : « sinon 15 s »). */
@@ -294,6 +294,11 @@ export function useStockGameOn() {
     void synchroniser();
   }, [majSeance, synchroniser]);
 
+  /** « Pas lui » sur le joueur reconnu (id), ou le rétablir (null). Sur l'appareil seulement. */
+  const ecarter = useCallback((seance: string, cle: string, id: string | null) => {
+    majSeance(seance, (x) => avecPasLui(x, cle, id));
+  }, [majSeance]);
+
   const supprimerNote = useCallback(async (seance: string, id: string) => {
     const e = ref.current.seances[seance];
     const locale = e?.notes.find((n) => n.id === id);
@@ -326,7 +331,7 @@ export function useStockGameOn() {
 
   return {
     stock, charge, enLigne, envoiEnCours, erreurEnvoi, indisponible, enAttente,
-    demarrer, rejoindre, colorer, activer, noter, ajouterA, renommer, supprimerNote, terminer, oublier, synchroniser,
+    demarrer, rejoindre, colorer, activer, noter, ajouterA, renommer, ecarter, supprimerNote, terminer, oublier, synchroniser,
   };
 }
 
@@ -388,6 +393,39 @@ export function useAthletesMatch(gameId: string | null | undefined) {
           numero: c.numero_jersey ?? null, cote: l.cote === "DOMICILE" ? "A" : "B",
         }];
       });
+    },
+  });
+}
+
+/** Les cartes de l'unité : même numéro (toutes équipes) ET toutes celles des équipes du match.
+ *  Le match n'en demande que par équipe (numeros vide) : la clé ne change pas à chaque numéro tapé. */
+export function useCartesUnite(numeros: readonly string[], idsEquipes: readonly string[]) {
+  return useQuery<CarteCandidate[]>({
+    queryKey: ["game-on", "cartes", numeros.join(","), idsEquipes.join(",")],
+    enabled: numeros.length > 0 || idsEquipes.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const supabase = createClient();
+      const champs = "id, prenom, nom, numero, team_id, teams:team_id(name)";
+      const [parNumero, parEquipe] = await Promise.all([
+        numeros.length > 0
+          ? supabase.from("cartes_prospect").select(champs).in("numero", [...numeros]).is("fusionnee_le", null).limit(500)
+          : Promise.resolve({ data: [], error: null }),
+        idsEquipes.length > 0
+          ? supabase.from("cartes_prospect").select(champs).in("team_id", [...idsEquipes]).is("fusionnee_le", null).limit(500)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (parNumero.error) throw parNumero.error;
+      if (parEquipe.error) throw parEquipe.error;
+      const vus = new Map<string, CarteCandidate>();
+      for (const c of [...(parNumero.data ?? []), ...(parEquipe.data ?? [])] as Record<string, unknown>[]) {
+        const t = Array.isArray(c.teams) ? c.teams[0] : c.teams;
+        vus.set(c.id as string, {
+          id: c.id as string, prenom: (c.prenom as string) ?? "", nom: (c.nom as string) ?? "", numero: (c.numero as string) ?? null,
+          teamId: (c.team_id as string) ?? null, equipe: ((t as { name?: string } | null)?.name) ?? null,
+        });
+      }
+      return [...vus.values()];
     },
   });
 }
