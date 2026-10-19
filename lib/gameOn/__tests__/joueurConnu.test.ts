@@ -27,7 +27,7 @@ test("pas de numéro, autre équipe, match sans équipe ou deux cartes au même 
   assert.equal(joueurConnu({ cote: "A", numero: "16" }, [], [carte("c1", "16", "t-Z")], "t-A"), null);
   assert.equal(joueurConnu({ cote: "A", numero: "16" }, [], [carte("c1", "16", "t-A")], null), null);
   assert.equal(joueurConnu({ cote: "A", numero: "16" }, [], [carte("c1", "16", "t-A"), carte("c2", "16", "t-A")], "t-A"), null);
-  assert.equal(joueurConnu({ cote: "A", numero: "7" }, [], [carte("c1", "07", "t-A")], "t-A"), null);
+  assert.equal(joueurConnu({ cote: "A", numero: "7" }, [], [carte("c1", "07", "t-A")], "t-A")?.id, "c1", "« 07 » = « 7 » (BP 2026-10-19)");
 });
 
 test("« Pas lui » écarte le reconnu, et la carte reprend si c'était l'athlète", () => {
@@ -77,4 +77,16 @@ test("le stock local est rangé PAR COMPTE : un autre compte ne voit rien", asyn
   assert.equal(lireStock(s, cleStock("recruteur")).active, "s1");
   assert.deepEqual(lireStock(s, cleStock("partenaire")), { seances: {}, active: null });
   assert.notEqual(cleStock("recruteur"), cleStock("partenaire"));
+});
+
+test("« 06 » et « 6 » : le même chandail pour la reconnaissance", async () => {
+  const { numeroEgal } = await import("@/lib/gameOn/gameOn");
+  assert.equal(numeroEgal("06", "6"), true);
+  assert.equal(numeroEgal("0", "00"), true);
+  assert.equal(numeroEgal("16", "6"), false);
+  assert.equal(numeroEgal(null, "6"), false);
+  assert.equal(joueurConnu({ cote: "A", numero: "6" }, [athlete("a1", "06", "A")], [], "t-A")?.id, "a1");
+  const r = connusDuCote("A", [athlete("a1", "06", "A")], [], "t-A", new Set(["6"]));
+  assert.deepEqual(r, [], "déjà noté sous « 6 » : pas de 2e pastille");
+  assert.deepEqual(connusDuCote("A", [athlete("a1", "06", "A")], [], "t-A", new Set()).map((x) => x.numero), ["6"]);
 });

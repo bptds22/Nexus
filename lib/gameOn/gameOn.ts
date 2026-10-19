@@ -159,6 +159,18 @@ export function numeroValide(n: string | null | undefined): string | null {
   return /^[0-9]{1,3}$/.test(v) ? v : null;
 }
 
+/** Le numéro pour COMPARER : « 06 » et « 6 » sont le même chandail (BP 2026-10-19 : un profil Nexus
+ *  porte « 06 », on tape « 6 »). La note garde ce qui a été tapé ; seule la reconnaissance compare ainsi. */
+export function numeroCle(n: string | null | undefined): string | null {
+  const v = numeroValide(n);
+  return v === null ? null : String(Number(v));
+}
+
+export function numeroEgal(a: string | null | undefined, b: string | null | undefined): boolean {
+  const x = numeroCle(a);
+  return x !== null && x === numeroCle(b);
+}
+
 export function noteValide(n: Pick<NoteLocale, "numero" | "prenom" | "texte" | "etiquettes">): boolean {
   const qui = !!numeroValide(n.numero) || !!(n.prenom ?? "").trim();
   const quoi = !!n.texte.trim() || n.etiquettes.length > 0;
@@ -379,7 +391,7 @@ export function suggestionsCartes(g: Pick<GroupeJoueur, "numero" | "prenom">, ca
   if (!g.numero) return [];
   const prenom = (g.prenom ?? "").trim().toLowerCase();
   return cartes
-    .filter((c) => (c.numero ?? "").trim() === g.numero)
+    .filter((c) => numeroEgal(c.numero, g.numero))
     .map((c) => ({ ...c, memeEquipe: !!c.teamId && equipesDuMatch.includes(c.teamId) }))
     .sort((a, b) =>
       Number(b.memeEquipe) - Number(a.memeEquipe)
@@ -436,7 +448,7 @@ export function suggestionsTri(
   const r: (Suggestion & { rang: number })[] = [];
   const vu = new Set<string>();
   const correspondance = (prenom: string, numero: string | null): number | null => {
-    const n = !!g.numero && (numero ?? "").trim() === g.numero;
+    const n = !!g.numero && numeroEgal(numero, g.numero);
     const p = prenomProche(g.prenom, prenom);
     if (n && p) return 0;
     if (p) return 1;
@@ -486,7 +498,7 @@ export function joueurConnu(
   ecarte?: string | null,
 ): Suggestion | null {
   if (!g.numero) return null;
-  const memeNumero = (n: string | null) => (n ?? "").trim() === g.numero;
+  const memeNumero = (n: string | null) => numeroEgal(n, g.numero);
   const a = athletes.filter((x) => x.cote === g.cote && memeNumero(x.numero) && x.id !== ecarte);
   if (a.length === 1) {
     return { type: "athlete", id: a[0].id, nom: `${a[0].prenom} ${a[0].nom}`.trim(), numero: a[0].numero, equipe: null, raison: "numero", memeEquipe: true };
@@ -509,11 +521,13 @@ export function connusDuCote(
   pasLui: Readonly<Record<string, string>> = {},
 ): { numero: string; connu: Suggestion }[] {
   const numeros = new Set<string>();
-  for (const a of athletes) if (a.cote === cote && numeroValide(a.numero)) numeros.add(a.numero!.trim());
-  for (const c of cartes) if (equipeCote && c.teamId === equipeCote && numeroValide(c.numero)) numeros.add(c.numero!.trim());
+  // Un numéro par chandail : « 06 » et « 6 » ne font qu'une pastille, affichée « 6 ».
+  for (const a of athletes) { const k = a.cote === cote ? numeroCle(a.numero) : null; if (k) numeros.add(k); }
+  for (const c of cartes) { const k = equipeCote && c.teamId === equipeCote ? numeroCle(c.numero) : null; if (k) numeros.add(k); }
+  const notes = new Set([...dejaNotes].map((n) => numeroCle(n)).filter((n): n is string => !!n));
   const r: { numero: string; connu: Suggestion }[] = [];
   for (const numero of numeros) {
-    if (dejaNotes.has(numero)) continue;
+    if (notes.has(numero)) continue;
     const connu = joueurConnu({ cote, numero }, athletes, cartes, equipeCote, pasLui[`${cote}|#${numero}`] ?? null);
     if (connu) r.push({ numero, connu });
   }
@@ -535,7 +549,7 @@ export function carteJumelle(
   equipeCote: string | null,
 ): CarteCandidate | null {
   if (!g.numero || !connu || connu.type !== "athlete" || !equipeCote) return null;
-  const c = cartes.filter((x) => x.teamId === equipeCote && (x.numero ?? "").trim() === g.numero);
+  const c = cartes.filter((x) => x.teamId === equipeCote && numeroEgal(x.numero, g.numero));
   return c.length === 1 ? c[0] : null;
 }
 
