@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { estCleTableauBlanc } from "@/lib/queries/tableauBlanc";
+import { estPersistable } from "@/lib/queries/persistance";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState, type ReactNode } from "react";
 
@@ -139,7 +140,11 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             // Le sport de l'unité Mon CÉGEP (2026-10-01) : réhydraté, il
             // servait l'ancien sport après un changement de rattachement.
             && q.queryKey?.[0] !== "cegep-sport-unite"
-            && !estCleTableauBlanc(q.queryKey),
+            && !estCleTableauBlanc(q.queryKey)
+            // Une Map / un Set redevient `{}` en JSON : réhydraté, il fait
+            // planter l'écran qui le lit (fiche → Recherche, 2026-10-18,
+            // lib/queries/persistance.ts). Il se relit au serveur.
+            && estPersistable(q.state.data),
         },
       }}
     >

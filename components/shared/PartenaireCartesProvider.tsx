@@ -49,9 +49,11 @@ export function useDeclarerCarteVisible(athleteId: string | null | undefined) {
   return ref;
 }
 
-function fusionner<T>(parts: (Map<string, T[]> | undefined)[]): Map<string, T[]> {
+/** Ceinture : un paquet qui ne serait pas une Map (cache réhydraté, voir
+ *  lib/queries/persistance.ts) est ignoré au lieu de faire planter l'écran. */
+export function fusionner<T>(parts: readonly unknown[]): Map<string, T[]> {
   const out = new Map<string, T[]>();
-  for (const m of parts) if (m) for (const [k, v] of m) out.set(k, v);
+  for (const m of parts) if (m instanceof Map) for (const [k, v] of m as Map<string, T[]>) out.set(k, v);
   return out;
 }
 
