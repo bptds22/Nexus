@@ -43,11 +43,11 @@ const FORMAT_CONFIG: Record<CardFormat, {
   // horizontally with 90px margins. ~15px top offset to give a
   // touch of breathing room above the badge.
   publication: { width: 1080, height: 1350, scale: 3.0,  topOffset: 15,  leftOffset: 90 },
-  // Story: 1080×1920 (IG/TT story, 9:16). The natural design at
-  // scale 3.6 = 1080 wide × 1584 tall, fits comfortably in 1920.
-  // topOffset 285 pushes the card down so the ticket sits mid-
-  // frame, leaving room above for partners to overlay text.
-  story:       { width: 1080, height: 1920, scale: 3.6,  topOffset: 285, leftOffset: 0  },
+  // Story: 1080×1920 (IG/TT story, 9:16). BP 2026-10-19 : à l'échelle 3.6 la carte faisait
+  // EXACTEMENT 1080 de large — la pastille « vérifié » (right −12 + bordure) et le ticket
+  // (right −22) dépassaient et étaient coupés. Échelle 3.1 = 930 de large, centrée
+  // (75 px de chaque côté > 22 × 3.1 = 68 px de débord) ; ~1364 de haut, toujours au milieu.
+  story:       { width: 1080, height: 1920, scale: 3.1,  topOffset: 285, leftOffset: 75 },
   // Bannière: 1920×1080 (LinkedIn / Facebook / X cover, 16:9 wide).
   //
   // ⚠ DESIGN-PASS REQUIRED. The natural card is portrait (300 wide ×
