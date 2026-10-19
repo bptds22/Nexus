@@ -189,7 +189,7 @@ function GameOnEcrans({ mobile }: { mobile: boolean }) {
         {/* BP 2026-10-19 : une fois le tri fini, on retourne au Live d'un toucher. */}
         <button type="button" onClick={() => { triggerHaptic("Light"); setVue({ type: "choix" }); }} data-testid="retour-live"
           className="mt-6 h-12 w-full rounded-xl border border-white/15 text-[15px] font-bold text-white active:bg-white/[0.06]">
-          ← Retour au {DEPISTAGE.titre}
+          ← Retour à {DEPISTAGE.titre}
         </button>
       </Coquille>
     );
@@ -344,8 +344,9 @@ function EcranTableau({ st, seances, chargement, moi, onLancer, onMatch, onTrier
       )}
 
       {/* Les quatre pastilles (BP 2026-10-18). */}
-      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Tableau de bord du Live" data-testid="depistage-pastilles">
-        {PASTILLES.filter((p) => mode === "recruteur" || p.cle !== "unite").map((p) => (
+      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Tableau de bord En direct" data-testid="depistage-pastilles">
+        {/* BP 2026-10-19 : plus de « Mon unité » (recruteur ni partenaire). */}
+        {PASTILLES.filter((p) => p.cle !== "unite").map((p) => (
           <button key={p.cle} type="button" role="tab" aria-selected={pastille === p.cle} data-testid={`pastille-${p.cle}`}
             onClick={() => { triggerHaptic("Light"); setChoisie(p.cle); }}
             className={`flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-bold ${pastille === p.cle ? "border-[#E63946] bg-[#E63946] text-white" : "border-white/10 bg-white/[0.04] text-white/75"}`}>
@@ -1106,7 +1107,7 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
         <p className="py-6 text-center text-[14px] text-white/50">Aucune note pour ce match.</p>
       ) : (
         <>
-          {aTrier.length === 0 && <p className="mb-4 text-[14px] text-[#22C55E]">Tout est trié. Beau travail ! Touche « Retour au {DEPISTAGE.titre} » plus bas.</p>}
+          {aTrier.length === 0 && <p className="mb-4 text-[14px] text-[#22C55E]">Tout est trié. Beau travail ! Touche « Retour à {DEPISTAGE.titre} » plus bas.</p>}
           {reconnus.length > 0 && (
             <div className="mb-4 rounded-2xl border border-[#22C55E]/30 bg-[#22C55E]/[0.07] p-4" data-testid="tri-reconnus">
               <p className="mb-2 text-[14px] font-bold text-white">Déjà connus ({reconnus.length})</p>

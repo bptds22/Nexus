@@ -16,6 +16,8 @@
      serveur juge admissibles pour CET athlète (universels, et ceux de SON
      sport ; jamais les honneurs). Un badge déjà porté reste listé, grisé,
      avec qui le porte — le serveur refuse de toute façon le doublon.
+   Les choix de badges s'ouvrent dans une FENÊTRE (FeuilleBas, BP 2026-10-19 : le menu
+   déroulant était caché par la page).
    - « Retirer un badge » (BP 2026-10-19) : à côté de « Retirer mon
      évaluation », la liste des badges que J'AI posés — les miens ET les
      badges Nexus —, en un toucher. Le lien sous la vignette
@@ -42,6 +44,7 @@ import {
 } from "@/lib/badges/partenaire";
 import { badgeSvgPath } from "@/lib/config/badges";
 import { useBadgesPartenaires } from "@/components/shared/athlete/BadgesPartenaire";
+import { FeuilleBas } from "@/components/mobile/FeuilleBas";
 
 function messageErreur(e: unknown): string {
   return (e as { message?: string })?.message?.replace(/^NEXUS:\s*/, "") ?? "Action impossible.";
@@ -206,7 +209,7 @@ export default function ActionsPartenaireFiche({
             Retirer un badge
           </button>
           {retraitOuvert && (
-            <div className="absolute z-20 mt-2 left-0 w-[300px] max-h-[360px] overflow-y-auto bg-[#1A1D24] border border-[#2D3748] rounded-xl p-2 shadow-xl">
+            <FeuilleBas onFermer={() => setRetraitOuvert(false)} titre="Retirer un badge" testId="feuille-retirer-badge" largeurModale={380}>
               {mesPoses.map((b) => {
                 const svg = b.estNexus && b.codeNexus ? badgeSvgPath(b.codeNexus) : b.iconeUrl;
                 return (
@@ -231,7 +234,7 @@ export default function ActionsPartenaireFiche({
                   </div>
                 );
               })}
-            </div>
+            </FeuilleBas>
           )}
         </div>
       )}
@@ -248,7 +251,7 @@ export default function ActionsPartenaireFiche({
             Attribuer un badge
           </button>
           {choixOuvert && disponibles.length > 0 && (
-            <div className="absolute z-20 mt-2 right-0 w-[280px] bg-[#1A1D24] border border-[#2D3748] rounded-xl p-2 shadow-xl">
+            <FeuilleBas onFermer={() => setChoixOuvert(false)} titre="Attribuer un badge" testId="feuille-attribuer-badge" largeurModale={380}>
               {disponibles.map((b) => (
                 <button
                   key={b.id}
@@ -268,7 +271,7 @@ export default function ActionsPartenaireFiche({
                   <span className="text-[13px] font-semibold text-white">{b.libelle}</span>
                 </button>
               ))}
-            </div>
+            </FeuilleBas>
           )}
         </div>
       )}
@@ -286,7 +289,7 @@ export default function ActionsPartenaireFiche({
             Attribuer un badge Nexus
           </button>
           {choixNexusOuvert && (
-            <div className="absolute z-20 mt-2 right-0 w-[300px] max-h-[360px] overflow-y-auto bg-[#1A1D24] border border-[#2D3748] rounded-xl p-2 shadow-xl">
+            <FeuilleBas onFermer={() => setChoixNexusOuvert(false)} titre="Attribuer un badge Nexus" testId="feuille-attribuer-badge-nexus" largeurModale={400}>
               {nexus.map((b) => {
                 const svg = badgeSvgPath(b.code);
                 return (
@@ -312,7 +315,7 @@ export default function ActionsPartenaireFiche({
                   </button>
                 );
               })}
-            </div>
+            </FeuilleBas>
           )}
         </div>
       )}

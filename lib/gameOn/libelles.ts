@@ -7,20 +7,20 @@
    partout. La route reste /recruteur/game-on (aucune URL ne bouge).
 ═══════════════════════════════════════════════════════════════ */
 
-/* BP 2026-10-19 : « Dépistage » devient « Live » (onglet, barre latérale, titres, bouton). */
+/* BP 2026-10-19 : « Dépistage » devient « En direct » (onglet, barre latérale, titres, bouton). */
 export const DEPISTAGE = {
   /** L'onglet de la barre du bas (appli) et la barre latérale (web). */
-  onglet: "Live",
+  onglet: "En direct",
   /** Le titre de l'écran. */
-  titre: "Live",
+  titre: "En direct",
   /** Le sous-titre du tableau de bord. */
   sousTitre: "Tes notes de match, même sans réseau",
   /** Le bouton qui ouvre une séance sur un match connu. */
-  bouton: "Lancer le Live",
+  bouton: "Suivre en direct",
   /** Le bouton qui renvoie à la carte des matchs (ses filtres existants). */
   trouver: "Trouver un match",
   /** Migration absente en prod. */
-  bientot: "Le Live arrive bientôt",
+  bientot: "Le mode En direct arrive bientôt",
 } as const;
 
 /** La route de l'écran (inchangée depuis « Game On »). */

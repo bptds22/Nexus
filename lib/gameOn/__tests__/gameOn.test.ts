@@ -149,8 +149,8 @@ test("entrées : barre du bas de l'appli et barre latérale web, route Pro", () 
   // Nuit du 2026-10-18 : « Game On » devient « Dépistage », libellé tiré d'UNE constante.
   assert.ok(barre.includes('{ key: "game-on", label: DEPISTAGE.onglet, href: "/recruteur/game-on"'));
   // BP 2026-10-19 : « Dépistage » devient « Live ».
-  assert.equal(DEPISTAGE.onglet, "Live");
-  assert.equal(DEPISTAGE.bouton, "Lancer le Live");
+  assert.equal(DEPISTAGE.onglet, "En direct");
+  assert.equal(DEPISTAGE.bouton, "Suivre en direct");
   assert.ok(!lire("app/_components/mobile/MorePanel.tsx").includes('key: "game-on"'));
   const web = lire("app/recruteur/_components/RecruiterSidebar.tsx");
   assert.ok(web.includes('label: DEPISTAGE.onglet, href: "/recruteur/game-on"'));
