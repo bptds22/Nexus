@@ -1,7 +1,7 @@
 /* Dépistage — joueur déjà connu pendant le match (BP 2026-10-19). */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { avecPasLui, joueurConnu, nomCourt, nouvelleSeance, type AthleteCandidat, type CarteCandidate } from "@/lib/gameOn/gameOn";
+import { avecPasLui, connusDuCote, joueurConnu, nomCourt, prenomDe, nouvelleSeance, type AthleteCandidat, type CarteCandidate } from "@/lib/gameOn/gameOn";
 
 const carte = (id: string, numero: string | null, teamId: string | null, prenom = "Marc", nom = "Tremblay"): CarteCandidate =>
   ({ id, prenom, nom, numero, teamId, equipe: "Cougars" });
@@ -47,4 +47,14 @@ test("nomCourt", () => {
   assert.equal(nomCourt("Marc Tremblay"), "Marc T.");
   assert.equal(nomCourt("Marc"), "Marc");
   assert.equal(nomCourt("  Jean de la Fontaine "), "Jean D.");
+});
+
+test("dès le début : les connus du côté, sans ceux déjà notés ni les écartés", () => {
+  const athletes = [athlete("a1", "9", "A"), athlete("a2", "3", "B")];
+  const cartes = [carte("c1", "16", "t-A"), carte("c2", "22", "t-A", "Luc", "Roy"), carte("c3", "5", "t-Z"), carte("c4", null, "t-A")];
+  const r = connusDuCote("A", athletes, cartes, "t-A", new Set(["22"]));
+  assert.deepEqual(r.map((x) => `${x.numero}:${x.connu.id}`), ["9:a1", "16:c1"]);
+  assert.deepEqual(connusDuCote("A", athletes, cartes, "t-A", new Set(), { "A|#16": "c1" }).map((x) => x.numero), ["9", "22"]);
+  assert.equal(prenomDe({ nom: "Marc Tremblay" }), "Marc");
+  assert.equal(prenomDe(null), null);
 });

@@ -51,7 +51,7 @@ import CreerProspectMobile from "@/components/shared/CreerProspectMobile";
 import { triggerHaptic } from "@/lib/haptics";
 import { DEPISTAGE, ROUTE_DEPISTAGE, lireDepister } from "@/lib/gameOn/libelles";
 import {
-  CHANDAILS, PASTILLES, cleJoueur, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, heureLigne, joueurConnu, libelleJoueur, messageErreur, nomCourt,
+  CHANDAILS, PASTILLES, cleJoueur, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, connusDuCote, heureLigne, joueurConnu, libelleJoueur, messageErreur, nomCourt, prenomDe,
   notesEnAttente, numeroValide, noteValide, pastilleParDefaut, pastillesCote, rangerSeances, resumeEnvoi, suggestionsTri,
   texteRecopie, texteSur, titreSeance,
   type Cote, type GroupeJoueur, type NoteAffichee, type Pastille, type SeanceLocale, type Suggestion,
@@ -485,16 +485,29 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
   const equipesQ = useEquipesMatch(etat?.seance.gameId);
   const athletesQ = useAthletesMatch(etat?.seance.gameId);
   const idsEquipes = useMemo(() => [equipesQ.data?.A?.teamId, equipesQ.data?.B?.teamId].filter((x): x is string => !!x), [equipesQ.data]);
-  const cartesQ = useCartesUnite(AUCUN_NUMERO, idsEquipes);
+  const ecoles = useMemo(() => [equipesQ.data?.A?.etablissement?.id, equipesQ.data?.B?.etablissement?.id].filter((x): x is string => !!x), [equipesQ.data]);
+  const cartesQ = useCartesUnite(ecoles, idsEquipes);
   if (!etat || !monte) return null;
   const s = etat.seance;
   const attente = notesEnAttente(etat).length;
   const nomCote = (c: Cote) => (c === "A" ? s.equipeA : s.equipeB || "Adversaire");
   const cc = (c: Cote) => couleurCote(s, c);
   const pastilles = pastillesCote(groupes, cote);
+  const connus = connusDuCote(cote, athletesQ.data ?? [], cartesQ.data ?? [],
+    (cote === "A" ? equipesQ.data?.A : equipesQ.data?.B)?.teamId ?? null,
+    new Set(pastilles.map((g) => g.numero).filter((n): n is string => !!n)), s.pasLui ?? {});
   const connuDe = (j: { cote: Cote; numero: string | null; prenom: string | null }) => joueurConnu(
     j, athletesQ.data ?? [], cartesQ.data ?? [], (j.cote === "A" ? equipesQ.data?.A : equipesQ.data?.B)?.teamId ?? null,
     s.pasLui?.[cleJoueur(j)] ?? null);
+  // « Pas lui » se défait (BP 2026-10-19 : revoir une suggestion écartée) : le nom de l'écarté.
+  const ecarteDe = (j: { cote: Cote; numero: string | null; prenom: string | null }) => {
+    const id = s.pasLui?.[cleJoueur(j)];
+    if (!id) return null;
+    const a = athletesQ.data?.find((x) => x.id === id);
+    const c = cartesQ.data?.find((x) => x.id === id);
+    const nom = a ? `${a.prenom} ${a.nom}` : c ? `${c.prenom} ${c.nom}` : null;
+    return nom ? { id, nom: nom.trim() } : null;
+  };
   const groupeOuvert = joueur ? groupes.find((g) => g.cote === joueur.cote && (joueur.numero ? g.numero === joueur.numero : !g.numero && (g.prenom ?? "").toLowerCase() === (joueur.prenom ?? "").toLowerCase())) : null;
 
   return createPortal(
@@ -534,7 +547,7 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
 
       {/* Pastilles */}
       <div className="flex-1 overflow-y-auto px-3 pb-3">
-        {pastilles.length === 0 ? (
+        {pastilles.length === 0 && connus.length === 0 ? (
           <p className="mt-10 px-6 text-center text-[15px] text-white/50">
             Touche « + Numéro » pour noter un joueur de {nomCote(cote)}.
           </p>
@@ -550,6 +563,15 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
                 </span>
               </button>
             ); })}
+            {connus.map(({ numero, connu }) => (
+              <button key={`connu-${numero}`} type="button" data-testid="pastille-connue"
+                onClick={() => { triggerHaptic("Light"); setJoueur({ cote, numero, prenom: prenomDe(connu) }); }}
+                className="flex min-h-[76px] flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-[#1A1D24]/60 px-2 py-2 active:bg-white/[0.06]"
+                style={{ borderColor: `${cc(cote)}99` }}>
+                <span className="text-[26px] font-black leading-none text-white/70">#{numero}</span>
+                <span className="mt-1 max-w-full truncate text-[12px] font-semibold text-[#22C55E]/80">✓ {nomCourt(connu.nom)}</span>
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -570,10 +592,12 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
 
       {joueur && (
         <FicheJoueur
-          seance={s} cote={joueur.cote} numero={joueur.numero} prenom={groupeOuvert?.prenom ?? joueur.prenom}
+          seance={s} cote={joueur.cote} numero={joueur.numero} prenom={groupeOuvert?.prenom ?? joueur.prenom ?? prenomDe(connuDe(joueur))}
           equipe={nomCote(joueur.cote)} groupe={groupeOuvert ?? null}
           connu={connuDe(joueur)}
+          ecarte={ecarteDe(joueur)}
           onPasLui={(id) => st.ecarter(seanceId, cleJoueur(joueur), id)}
+          onRetablir={() => st.ecarter(seanceId, cleJoueur(joueur), null)}
           onFermer={() => setJoueur(null)}
           onSupprimer={async (id) => { await st.supprimerNote(seanceId, id); }}
           onRenommer={(p) => {
@@ -643,12 +667,15 @@ function PaveNumerique({ couleur, equipe, onFermer, onValider }: {
    · l'historique du joueur (heure, auteur), suppression de MES notes ;
    · toucher une de MES notes la recharge : Enregistrer y AJOUTE une ligne datée
      (« 14 h 32 : … »), sans écraser le texte d'avant. Hors ligne comme le reste. */
-function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, onPasLui, onFermer, onEnregistrer, onAjouterA, onRenommer, onSupprimer }: {
+function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, ecarte, onPasLui, onRetablir, onFermer, onEnregistrer, onAjouterA, onRenommer, onSupprimer }: {
   seance: SeanceLocale; cote: Cote; numero: string | null; prenom: string | null; equipe: string;
   groupe: GroupeJoueur | null;
   /** Le joueur reconnu (athlète Nexus ou carte de l'unité), s'il y en a un. */
   connu: Suggestion | null;
+  /** Le joueur écarté par « Pas lui » pour ce numéro, s'il y en a un. */
+  ecarte: { id: string; nom: string } | null;
   onPasLui: (id: string) => void;
+  onRetablir: () => void;
   onFermer: () => void;
   onEnregistrer: (n: { prenom: string | null; texte: string }) => void;
   onAjouterA: (base: NoteAffichee, texte: string) => void;
@@ -740,6 +767,12 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, onPa
         </div>
       }>
         {connu && <NotesAvant connu={connu} onPasLui={() => onPasLui(connu.id)} />}
+        {!connu && ecarte && (
+          <p className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2 text-[13px] text-white/60" data-testid="fiche-joueur-ecarte">
+            <span className="min-w-0 truncate">Écarté : {ecarte.nom}</span>
+            <button type="button" onClick={onRetablir} className="h-9 shrink-0 px-1 font-semibold text-white/80 underline">Rétablir</button>
+          </p>
+        )}
         {historique.length === 0 ? (
           <p className="py-6 text-center text-[14px] text-white/40">{connu ? "Rien encore sur lui dans ce match." : "Aucune note sur ce joueur pour l'instant."}</p>
         ) : (
@@ -780,7 +813,6 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, onPa
 /* Ses notes d'AVANT ce match (BP 2026-10-19) : « je veux continuer mes notes, pas recommencer ».
    Le fil de la carte, ou les notes de l'unité sur l'athlète ; les 10 plus récentes, en ordre. */
 const AVANT_MAX = 10;
-const AUCUN_NUMERO: readonly string[] = [];
 
 function NotesAvant({ connu, onPasLui }: { connu: Suggestion; onPasLui: () => void }) {
   const carteQ = useNotesCarte(connu.type === "carte" ? connu.id : null);
@@ -831,14 +863,14 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
   const notes = useMemo(() => fusionnerNotes(locale?.notes ?? [], serveurQ.data ?? [], moi), [locale?.notes, serveurQ.data, moi]);
   const groupes = useMemo(() => grouperParJoueur(notes, locale?.seance.prenoms), [notes, locale?.seance.prenoms]);
   const attente = locale ? notesEnAttente(locale).length : 0;
-  const numeros = useMemo(() => [...new Set(groupes.map((g) => g.numero).filter((n): n is string => !!n))].sort(), [groupes]);
 
   const equipesQ = useEquipesMatch(s?.gameId);
   const athletesQ = useAthletesMatch(s?.gameId);
   const equipeDe = (c: Cote): EquipeMatch | null => (c === "A" ? equipesQ.data?.A : equipesQ.data?.B) ?? null;
   const idsEquipes = [equipesQ.data?.A?.teamId, equipesQ.data?.B?.teamId].filter((x): x is string => !!x);
 
-  const cartesQ = useCartesUnite(numeros, idsEquipes);
+  const ecoles = [equipesQ.data?.A?.etablissement?.id, equipesQ.data?.B?.etablissement?.id].filter((x): x is string => !!x);
+  const cartesQ = useCartesUnite(ecoles, idsEquipes);
 
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [creer, setCreer] = useState<GroupeJoueur | null>(null);
@@ -957,7 +989,7 @@ function EcranTrier({ st, seanceId, seanceServeur, moi, mobile, sportId, avis }:
           <ul className="space-y-3">
             {aTrier.map((g) => (
               <LigneTri key={g.cle} g={g} couleur={couleurCote(locale?.seance, g.cote)} ouvert={ouvert === g.cle} desactive={attente > 0 || enCours}
-                suggestions={suggestionsTri(g, athletesQ.data ?? [], cartesQ.data ?? [], equipeDe(g.cote)?.teamId ?? null)}
+                suggestions={suggestionsTri(g, athletesQ.data ?? [], cartesQ.data ?? [], equipeDe(g.cote)?.teamId ?? null, equipeDe(g.cote)?.etablissement?.id ?? null)}
                 onOuvrir={() => setOuvert((v) => (v === g.cle ? null : g.cle))}
                 onLier={(sug) => void lier(g, sug.type === "carte" ? { carteId: sug.id } : { athleteId: sug.id }, sug.nom)}
                 onLierAthlete={(id, nom) => void lier(g, { athleteId: id }, nom)}

@@ -120,8 +120,8 @@ test("après le match : texte recopié et suggestions de cartes", () => {
   ])[0];
   const t = texteRecopie({ equipeA: "Cougars", equipeB: "Titans", commenceLe: "2026-10-18T19:00:00Z" }, g);
   // BP 2026-10-18 : le fil de la carte reçoit « Match X vs Y, date », puis une ligne par note (heure).
-  assert.match(t, /^Match Cougars vs Titans, .+\n• \d{1,2} h \d{2} : \[Bras\] Très bon bras\n• \d{1,2} h \d{2} : Lecture du jeu \(Rec Deux\)$/);
-  assert.equal(titreRecopie({ equipeA: "Cougars", equipeB: null, commenceLe: "pas une date" }), "Match Cougars");
+  assert.match(t, /^Notes du match Cougars vs Titans, .+\n• \d{1,2} h \d{2} : \[Bras\] Très bon bras\n• \d{1,2} h \d{2} : Lecture du jeu \(Rec Deux\)$/);
+  assert.equal(titreRecopie({ equipeA: "Cougars", equipeB: null, commenceLe: "pas une date" }), "Notes du match Cougars");
 
   const cartes = [
     { id: "c1", prenom: "Zack", nom: "B", numero: "16", teamId: "t-autre", equipe: null },
@@ -269,16 +269,19 @@ test("trier : athlètes Nexus ET cartes de l'équipe, même numéro ou nom proch
     { id: "a3", prenom: "Luc", nom: "Gagnon", numero: "16", cote: "B" as const },
   ];
   const cartes = [
-    { id: "c1", prenom: "Zack", nom: "B", numero: "16", teamId: "t-autre", equipe: "Ailleurs" },
-    { id: "c2", prenom: "Paul", nom: "A", numero: "16", teamId: "t-A", equipe: "Cougars" },
-    { id: "c3", prenom: "Jeannot", nom: "C", numero: "7", teamId: "t-A", equipe: "Cougars" },
-    { id: "c4", prenom: "Rémi", nom: "D", numero: "9", teamId: "t-A", equipe: "Cougars" },
+    { id: "c1", prenom: "Zack", nom: "B", numero: "16", teamId: "t-autre", equipe: "Ailleurs", schoolId: "e-autre" },
+    { id: "c2", prenom: "Paul", nom: "A", numero: "16", teamId: "t-A", equipe: "Cougars", schoolId: "e-A" },
+    { id: "c3", prenom: "Jeannot", nom: "C", numero: "7", teamId: "t-A", equipe: "Cougars", schoolId: "e-A" },
+    { id: "c4", prenom: "Rémi", nom: "D", numero: "9", teamId: "t-A", equipe: "Cougars", schoolId: "e-A" },
+    { id: "c5", prenom: "Jean", nom: "E", numero: "16", teamId: "t-A-juvenile", equipe: "Cougars juvénile", schoolId: "e-A" },
   ];
-  const s = suggestionsTri({ cote: "A", numero: "16", prenom: "Jean" }, athletes, cartes, "t-A");
-  assert.deepEqual(s.map((x) => `${x.type}:${x.id}`), ["athlete:a1", "carte:c2", "athlete:a2", "carte:c3", "carte:c1"]);
-  assert.equal(s[0].raison, "numero");
-  assert.equal(s[2].raison, "nom");
-  assert.equal(s[4].memeEquipe, false, "même numéro ailleurs : en dernier");
+  // BP 2026-10-19 : école, équipe, nom, puis numéro ; jamais une autre école.
+  const s = suggestionsTri({ cote: "A", numero: "16", prenom: "Jean" }, athletes, cartes, "t-A", "e-A");
+  assert.deepEqual(s.map((x) => `${x.type}:${x.id}`), ["athlete:a2", "carte:c3", "athlete:a1", "carte:c2", "carte:c5"]);
+  assert.equal(s[0].raison, "nom");
+  assert.equal(s[2].raison, "numero");
+  assert.equal(s[4].memeEquipe, false, "même école, autre équipe : après l'équipe du match");
+  assert.ok(!s.some((x) => x.id === "c1"), "même numéro dans une autre école : jamais proposé");
   assert.ok(!s.some((x) => x.id === "a3"), "l'autre côté du match n'est pas proposé");
   assert.ok(!s.some((x) => x.id === "c4"), "même équipe, ni numéro ni nom : pas proposé");
   assert.deepEqual(suggestionsTri({ cote: "B", numero: null, prenom: null }, athletes, cartes, null), []);

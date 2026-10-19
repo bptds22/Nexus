@@ -397,32 +397,33 @@ export function useAthletesMatch(gameId: string | null | undefined) {
   });
 }
 
-/** Les cartes de l'unité : même numéro (toutes équipes) ET toutes celles des équipes du match.
- *  Le match n'en demande que par équipe (numeros vide) : la clé ne change pas à chaque numéro tapé. */
-export function useCartesUnite(numeros: readonly string[], idsEquipes: readonly string[]) {
+/** Les cartes de l'unité des ÉCOLES du match (toutes leurs équipes) et des deux équipes du match.
+ *  BP 2026-10-19 : une suggestion reste dans la même école — plus de « même numéro » ailleurs. */
+export function useCartesUnite(ecoles: readonly string[], idsEquipes: readonly string[]) {
   return useQuery<CarteCandidate[]>({
-    queryKey: ["game-on", "cartes", numeros.join(","), idsEquipes.join(",")],
-    enabled: numeros.length > 0 || idsEquipes.length > 0,
+    queryKey: ["game-on", "cartes", ecoles.join(","), idsEquipes.join(",")],
+    enabled: ecoles.length > 0 || idsEquipes.length > 0,
     staleTime: 60_000,
     queryFn: async () => {
       const supabase = createClient();
-      const champs = "id, prenom, nom, numero, team_id, teams:team_id(name)";
-      const [parNumero, parEquipe] = await Promise.all([
-        numeros.length > 0
-          ? supabase.from("cartes_prospect").select(champs).in("numero", [...numeros]).is("fusionnee_le", null).limit(500)
+      const champs = "id, prenom, nom, numero, team_id, school_id, teams:team_id(name)";
+      const [parEcole, parEquipe] = await Promise.all([
+        ecoles.length > 0
+          ? supabase.from("cartes_prospect").select(champs).in("school_id", [...ecoles]).is("fusionnee_le", null).limit(1000)
           : Promise.resolve({ data: [], error: null }),
         idsEquipes.length > 0
-          ? supabase.from("cartes_prospect").select(champs).in("team_id", [...idsEquipes]).is("fusionnee_le", null).limit(500)
+          ? supabase.from("cartes_prospect").select(champs).in("team_id", [...idsEquipes]).is("fusionnee_le", null).limit(1000)
           : Promise.resolve({ data: [], error: null }),
       ]);
-      if (parNumero.error) throw parNumero.error;
+      if (parEcole.error) throw parEcole.error;
       if (parEquipe.error) throw parEquipe.error;
       const vus = new Map<string, CarteCandidate>();
-      for (const c of [...(parNumero.data ?? []), ...(parEquipe.data ?? [])] as Record<string, unknown>[]) {
+      for (const c of [...(parEcole.data ?? []), ...(parEquipe.data ?? [])] as Record<string, unknown>[]) {
         const t = Array.isArray(c.teams) ? c.teams[0] : c.teams;
         vus.set(c.id as string, {
           id: c.id as string, prenom: (c.prenom as string) ?? "", nom: (c.nom as string) ?? "", numero: (c.numero as string) ?? null,
-          teamId: (c.team_id as string) ?? null, equipe: ((t as { name?: string } | null)?.name) ?? null,
+          teamId: (c.team_id as string) ?? null, schoolId: (c.school_id as string) ?? null,
+          equipe: ((t as { name?: string } | null)?.name) ?? null,
         });
       }
       return [...vus.values()];

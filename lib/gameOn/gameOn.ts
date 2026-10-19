@@ -317,7 +317,7 @@ export function dateSeance(iso: string): string {
 /** Titre du bloc recopié dans le fil de la carte (BP 2026-10-18) : « Match X vs Y, date ». */
 export function titreRecopie(s: Pick<SeanceLocale, "equipeA" | "equipeB" | "commenceLe">): string {
   const d = dateSeance(s.commenceLe);
-  return `Match ${titreSeance(s)}${d ? `, ${d}` : ""}`;
+  return `Notes du match ${titreSeance(s)}${d ? `, ${d}` : ""}`;
 }
 
 /** Le texte recopié dans la fiche : le titre « Match X vs Y, date », puis une ligne par note (heure, auteur). */
@@ -363,6 +363,8 @@ export interface CarteCandidate {
   numero: string | null;
   teamId: string | null;
   equipe: string | null;
+  /** L'établissement de la carte (BP 2026-10-19 : une suggestion reste dans la même école). */
+  schoolId?: string | null;
 }
 
 /** Cartes de l'unité qui portent le même numéro ; celles de l'équipe du match d'abord. */
@@ -398,7 +400,7 @@ export interface Suggestion {
   equipe: string | null;
   /** Pourquoi on la propose : même numéro, ou nom proche. */
   raison: "numero" | "nom";
-  /** De l'équipe du côté noté. */
+  /** De l'équipe du côté noté (sinon : même école, autre équipe). */
   memeEquipe: boolean;
 }
 
@@ -412,16 +414,28 @@ export function prenomProche(note: string | null | undefined, candidat: string):
   return a.startsWith(b) || b.startsWith(a);
 }
 
-/** D'abord les athlètes Nexus et les cartes DE L'ÉQUIPE du côté noté (même numéro, puis nom proche),
- *  ensuite les cartes d'ailleurs qui portent le même numéro. Six au plus. */
+/** Les suggestions du tri, avec les MÊMES règles que les cartes (BP 2026-10-19 : « école, équipe,
+ *  nom, après numéro » — plus jamais un joueur d'une autre école) :
+ *  1. le lieu : l'équipe du côté noté, puis une autre équipe de la même école ;
+ *  2. la correspondance : nom proche ET numéro, puis nom proche, puis numéro.
+ *  À rang égal, l'athlète Nexus avant la carte. Six au plus. */
 export function suggestionsTri(
   g: Pick<GroupeJoueur, "cote" | "numero" | "prenom">,
   athletes: readonly AthleteCandidat[],
   cartes: readonly CarteCandidate[],
   equipeCote: string | null,
+  ecoleCote: string | null = null,
 ): Suggestion[] {
   const r: (Suggestion & { rang: number })[] = [];
   const vu = new Set<string>();
+  const correspondance = (prenom: string, numero: string | null): number | null => {
+    const n = !!g.numero && (numero ?? "").trim() === g.numero;
+    const p = prenomProche(g.prenom, prenom);
+    if (n && p) return 0;
+    if (p) return 1;
+    if (n) return 2;
+    return null;
+  };
   const pousser = (s: Suggestion, rang: number) => {
     const k = `${s.type}:${s.id}`;
     if (vu.has(k)) return;
@@ -430,21 +444,19 @@ export function suggestionsTri(
   };
   for (const a of athletes) {
     if (a.cote !== g.cote) continue;
-    const memeNumero = !!g.numero && (a.numero ?? "").trim() === g.numero;
-    if (!memeNumero && !prenomProche(g.prenom, a.prenom)) continue;
+    const c = correspondance(a.prenom, a.numero);
+    if (c === null) continue;
     pousser({ type: "athlete", id: a.id, nom: `${a.prenom} ${a.nom}`.trim(), numero: a.numero, equipe: null,
-      raison: memeNumero ? "numero" : "nom", memeEquipe: true }, memeNumero ? 0 : 2);
+      raison: c === 2 ? "numero" : "nom", memeEquipe: true }, c * 2);
   }
-  for (const c of cartes) {
-    const memeEquipe = !!equipeCote && c.teamId === equipeCote;
-    const memeNumero = !!g.numero && (c.numero ?? "").trim() === g.numero;
-    const nomProche = prenomProche(g.prenom, c.prenom);
-    const nom = `${c.prenom} ${c.nom}`.trim();
-    if (memeEquipe && (memeNumero || nomProche)) {
-      pousser({ type: "carte", id: c.id, nom, numero: c.numero, equipe: c.equipe, raison: memeNumero ? "numero" : "nom", memeEquipe: true }, memeNumero ? 1 : 3);
-    } else if (memeNumero) {
-      pousser({ type: "carte", id: c.id, nom, numero: c.numero, equipe: c.equipe, raison: "numero", memeEquipe: false }, nomProche ? 4 : 5);
-    }
+  for (const x of cartes) {
+    const memeEquipe = !!equipeCote && x.teamId === equipeCote;
+    const memeEcole = !memeEquipe && !!ecoleCote && x.schoolId === ecoleCote;
+    if (!memeEquipe && !memeEcole) continue;
+    const c = correspondance(x.prenom, x.numero);
+    if (c === null) continue;
+    pousser({ type: "carte", id: x.id, nom: `${x.prenom} ${x.nom}`.trim(), numero: x.numero, equipe: x.equipe,
+      raison: c === 2 ? "numero" : "nom", memeEquipe }, (memeEquipe ? 0 : 6) + c * 2 + 1);
   }
   return r
     .sort((a, b) => a.rang - b.rang || a.nom.localeCompare(b.nom, "fr"))
@@ -476,6 +488,34 @@ export function joueurConnu(
   const c = cartes.filter((x) => x.teamId === equipeCote && memeNumero(x.numero) && x.id !== ecarte);
   if (c.length !== 1) return null;
   return { type: "carte", id: c[0].id, nom: `${c[0].prenom} ${c[0].nom}`.trim(), numero: c[0].numero, equipe: c[0].equipe, raison: "numero", memeEquipe: true };
+}
+
+/** Dès le début du match (BP 2026-10-19) : les joueurs DÉJÀ CONNUS d'un côté, avec leur numéro —
+ *  pour revoir ses notes avant même de noter. Un numéro par pastille (celui que joueurConnu reconnaît) ;
+ *  ceux qui ont déjà des notes dans ce match sont déjà à l'écran et ne sont pas répétés. */
+export function connusDuCote(
+  cote: Cote,
+  athletes: readonly AthleteCandidat[],
+  cartes: readonly CarteCandidate[],
+  equipeCote: string | null,
+  dejaNotes: ReadonlySet<string>,
+  pasLui: Readonly<Record<string, string>> = {},
+): { numero: string; connu: Suggestion }[] {
+  const numeros = new Set<string>();
+  for (const a of athletes) if (a.cote === cote && numeroValide(a.numero)) numeros.add(a.numero!.trim());
+  for (const c of cartes) if (equipeCote && c.teamId === equipeCote && numeroValide(c.numero)) numeros.add(c.numero!.trim());
+  const r: { numero: string; connu: Suggestion }[] = [];
+  for (const numero of numeros) {
+    if (dejaNotes.has(numero)) continue;
+    const connu = joueurConnu({ cote, numero }, athletes, cartes, equipeCote, pasLui[`${cote}|#${numero}`] ?? null);
+    if (connu) r.push({ numero, connu });
+  }
+  return r.sort((a, b) => Number(a.numero) - Number(b.numero) || a.numero.localeCompare(b.numero));
+}
+
+/** Le prénom d'un joueur reconnu, pour préremplir (« Marc Tremblay » → « Marc »). */
+export function prenomDe(connu: Pick<Suggestion, "nom"> | null | undefined): string | null {
+  return connu?.nom.trim().split(/\s+/)[0] || null;
 }
 
 /** « Pas lui » : on écarte (ou on rétablit, id null) le joueur reconnu pour ce numéro. */
