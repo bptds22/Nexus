@@ -457,6 +457,24 @@ export function normaliserNom(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/* Recherche d'un établissement (BP 2026-10-19 : « Polyvalente Saint-Georges » introuvable).
+   La clé ignore la ponctuation (« Saint-Georges » = « Saint Georges ») et déplie les
+   abréviations des noms d'écoles (« St » = « Saint », « Poly » = « Polyvalente »). */
+const ABREVIATIONS: Record<string, string> = {
+  st: "saint", ste: "sainte", poly: "polyvalente", ecole: "ecole", sec: "secondaire", coll: "college",
+};
+
+export function cleEtablissement(s: string): string {
+  return normaliserNom(s).replace(/[-'’.,()/]/g, " ").split(/\s+/).filter(Boolean)
+    .map((m) => ABREVIATIONS[m] ?? m).join(" ");
+}
+
+/** Chaque mot tapé se retrouve dans la clé de l'établissement (nom + ville). */
+export function correspondEtablissement(cle: string, recherche: string): boolean {
+  const mots = cleEtablissement(recherche).split(" ").filter(Boolean);
+  return mots.length > 0 && mots.every((m) => cle.includes(m));
+}
+
 /** Deux prénoms désignent-ils possiblement la même personne ? Le premier
  *  élément de l'un est le début du premier élément de l'autre. */
 export function prenomsCompatibles(a: string, b: string): boolean {

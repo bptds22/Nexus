@@ -40,7 +40,7 @@ import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
-import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
+import { cleEtablissement, correspondEtablissement, creerCarte, libelleEquipe } from "@/lib/cartes/carteProspect";
 import { trierEquipes } from "@/lib/teams/teamLabel";
 import { chercherDoublonsCarte, type DoublonCarte } from "@/lib/cartes/doublonsCarte";
 import { MENTION_INVITATION_NON_ENVOYEE } from "@/lib/cartes/invitationEtat";
@@ -91,7 +91,7 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
   // Dépistage : l'établissement de l'équipe du côté noté, déjà choisi.
   const [etablissement, setEtablissement] = useState<Etablissement | null>(() => {
     const e = prerempli?.etablissement;
-    return e ? { id: e.id, name: e.name, city: e.city, cle: normaliserNom(`${e.name} ${e.city ?? ""}`) } : null;
+    return e ? { id: e.id, name: e.name, city: e.city, cle: cleEtablissement(`${e.name} ${e.city ?? ""}`) } : null;
   });
   // Le sport DE L'ATHLÈTE (décision BP 2026-10-05) — distinct du sport de
   // l'unité (sportId, prop) : la carte naît dans l'unité du créateur, mais
@@ -166,7 +166,7 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
   // recherche se fait ici, sans accents (un ilike côté base ne sait pas les
   // ignorer). Aucun filtre de sport — comme le web (bug prod 2026-09-30).
   const { data: tous = null } = useQuery({
-    queryKey: ["carte-etablissements", genre],
+    queryKey: ["carte-etablissements", "v2", genre],
     staleTime: Infinity,
     queryFn: async () => {
       const supabase = createClient();
@@ -174,10 +174,10 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
       for (let debut = 0; debut < 20000; debut += 1000) {
         const { data, error } = await supabase
           .from("schools").select("id, name, city").in("type", TYPES[genre])
-          .order("name").range(debut, debut + 999);
+          .order("name").order("id").range(debut, debut + 999); // tri STABLE entre les pages
         if (error || !data) break;
         for (const e of data as { id: string; name: string; city: string | null }[]) {
-          lus.push({ id: e.id, name: e.name, city: e.city, cle: normaliserNom(`${e.name} ${e.city ?? ""}`) });
+          lus.push({ id: e.id, name: e.name, city: e.city, cle: cleEtablissement(`${e.name} ${e.city ?? ""}`) });
         }
         if (data.length < 1000) break;
       }
@@ -187,8 +187,7 @@ export default function CreerProspectMobile({ sportId, onClose, prerempli, onCar
 
   const resultats = useMemo(() => {
     if (etablissement || !tous || recherche.trim().length < 2) return [];
-    const mots = normaliserNom(recherche).split(" ").filter(Boolean);
-    return tous.filter((e) => mots.every((m) => e.cle.includes(m))).slice(0, 12);
+    return tous.filter((e) => correspondEtablissement(e.cle, recherche)).slice(0, 12);
   }, [recherche, etablissement, tous]);
 
   // Les équipes DU SPORT DE L'ATHLÈTE choisi dans l'établissement.

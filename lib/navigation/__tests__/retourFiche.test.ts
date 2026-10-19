@@ -22,3 +22,13 @@ test("une page d'un autre espace donne le défaut", () => {
   noterPage("/recruteur/game-on/?x=1", s);
   assert.equal(lireRetourFiche("/recruteur", "/recruteur/recherche", s), "/recruteur/game-on/?x=1");
 });
+
+test("recherche d'école : « Polyvalente Saint-Georges », « Poly St-Georges », « saint georges »", async () => {
+  const { cleEtablissement, correspondEtablissement } = await import("@/lib/cartes/carteProspect");
+  const cle = cleEtablissement("Polyvalente de Saint-Georges Saint-Georges");
+  assert.equal(correspondEtablissement(cle, "Polyvalente Saint-Georges"), true);
+  assert.equal(correspondEtablissement(cle, "Poly St-Georges"), true);
+  assert.equal(correspondEtablissement(cle, "saint georges"), true);
+  assert.equal(correspondEtablissement(cle, "Polyvalente Sainte-Marie"), false);
+  assert.equal(correspondEtablissement(cleEtablissement("École Georges-Vanier Laval"), "ecole georges vanier"), true);
+});

@@ -29,7 +29,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { creerCarte, libelleEquipe, normaliserNom } from "@/lib/cartes/carteProspect";
+import { cleEtablissement, correspondEtablissement, creerCarte, libelleEquipe } from "@/lib/cartes/carteProspect";
 import { trierEquipes } from "@/lib/teams/teamLabel";
 import { chercherDoublonsCarte } from "@/lib/cartes/doublonsCarte";
 import { lireTaille, lirePoids, lireCourriel, lireLien, lireTelephone, lireNomParent, lireCourrielParent } from "@/lib/cartes/saisie";
@@ -192,10 +192,11 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
           .select("id, name, city")
           .in("type", TYPES[genre])
           .order("name")
+          .order("id") // tri STABLE entre les pages (des noms en double faisaient sauter des écoles)
           .range(debut, debut + 999);
         if (error || !data) break;
         for (const e of data as { id: string; name: string; city: string | null }[]) {
-          tous.push({ id: e.id, name: e.name, city: e.city, cle: normaliserNom(`${e.name} ${e.city ?? ""}`) });
+          tous.push({ id: e.id, name: e.name, city: e.city, cle: cleEtablissement(`${e.name} ${e.city ?? ""}`) });
         }
         if (data.length < 1000) break;
       }
@@ -205,9 +206,8 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
   }, [genre, sportId]);
 
   const etablissements = useMemo(() => {
-    const mots = normaliserNom(recherche).split(" ").filter(Boolean);
     if (etablissement || !tousEtablissements || recherche.trim().length < 2) return [];
-    return tousEtablissements.filter((e) => mots.every((m) => e.cle.includes(m))).slice(0, 15);
+    return tousEtablissements.filter((e) => correspondEtablissement(e.cle, recherche)).slice(0, 15);
   }, [recherche, etablissement, tousEtablissements]);
 
   // 2. Ses équipes DU SPORT DE L'ATHLÈTE choisi (jamais celui de l'unité).
