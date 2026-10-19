@@ -411,6 +411,31 @@ export function useAthletesMatch(gameId: string | null | undefined) {
   });
 }
 
+/** Parmi ces athlètes, ceux qui sont dans MON processus (celui de l'unité, sinon ma propre ligne) —
+ *  BP 2026-10-19 : une pastille hors processus est estompée. Filtré en base sur les ids (pas de coupure à 1000). */
+export function useDansProcessus(athleteIds: readonly string[], actif = true) {
+  const ids = [...new Set(athleteIds)].sort();
+  return useQuery<Set<string>>({
+    queryKey: ["game-on", "dans-processus", ids.join(",")],
+    enabled: actif && ids.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .rpc("unite_pipeline", { p_sport_id: null, p_tout_le_cegep: false })
+        .select("athlete_id")
+        .in("athlete_id", ids);
+      if (!error) return new Set(((data ?? []) as { athlete_id: string }[]).map((l) => l.athlete_id));
+      // Sans unité (ou fonction en erreur) : ma propre ligne.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return new Set();
+      const propre = await supabase.from("recruiter_pipeline").select("athlete_id").eq("recruiter_id", user.id).in("athlete_id", ids);
+      if (propre.error) throw propre.error;
+      return new Set(((propre.data ?? []) as { athlete_id: string }[]).map((l) => l.athlete_id));
+    },
+  });
+}
+
 /** Les cartes de l'unité des ÉCOLES du match (toutes leurs équipes) et des deux équipes du match.
  *  BP 2026-10-19 : une suggestion reste dans la même école — plus de « même numéro » ailleurs. */
 export function useCartesUnite(ecoles: readonly string[], idsEquipes: readonly string[]) {

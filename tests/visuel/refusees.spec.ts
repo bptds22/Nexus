@@ -17,8 +17,9 @@ test("Mon processus — refuser, revoir les refusées, proposer de nouveau (écr
   await page.getByTestId("proposition").first().getByRole("button", { name: "Refuser" }).click();
   await expect(page.getByRole("dialog").getByRole("status")).toContainText("Refusé", { timeout: 15_000 });
   await page.getByRole("button", { name: "Fermer" }).last().click();
-  // Plus rien à décider : le lien discret mène aux refusées.
-  await page.getByTestId("lien-refusees").click({ timeout: 30_000 });
+  // Plus rien à décider : rien en haut ; les refusées se revoient par « Propositions » (BP 2026-10-19).
+  await expect(page.getByTestId("bandeau-rapprochements")).toHaveCount(0, { timeout: 30_000 });
+  await page.getByTestId("bouton-propositions").click();
   await page.getByTestId("propositions-refusees").getByRole("button").first().click();
   await page.screenshot({ path: "test-results/visuel/processus-refusees-bureau.png" });
   await page.getByRole("button", { name: "Proposer de nouveau" }).first().click();

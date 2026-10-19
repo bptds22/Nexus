@@ -204,16 +204,17 @@ interface TabConfig {
   exact?: boolean;
 }
 
-/* BP 2026-10-19 : la barre PAR DÉFAUT du recruteur = Recherche · Mon processus · En direct (+ Plus).
-   Accueil, Calendrier et Messages restent montables (barre personnalisable) et vivent dans Plus. */
+/* BP 2026-10-19 : la barre PAR DÉFAUT du recruteur = Accueil · Recherche · Mon processus · En direct (+ Plus).
+   Calendrier et Messages restent montables (barre personnalisable) et vivent dans Plus. */
 const RECRUTEUR_TABS: TabConfig[] = [
+  { key: "dashboard", label: "Accueil", href: "/recruteur/tableau-de-bord", icon: Icons.dashboard, activeMatch: "/recruteur/tableau-de-bord" },
   { key: "recherche", label: "Recherche", href: "/recruteur/recherche", icon: Icons.search, activeMatch: "/recruteur/recherche" },
   { key: "pipeline", label: "Processus", href: "/recruteur/pipeline", icon: Icons.kanban, activeMatch: "/recruteur/pipeline", requiredTier: "pro" },
-  { key: "game-on", label: DEPISTAGE.onglet, href: "/recruteur/game-on", icon: Icons.gameOn, activeMatch: "/recruteur/game-on" },
+  // En direct : Pro, comme la page (FeatureGate) et la barre latérale web — cadenas + offre au toucher (BP 2026-10-19).
+  { key: "game-on", label: DEPISTAGE.onglet, href: "/recruteur/game-on", icon: Icons.gameOn, activeMatch: "/recruteur/game-on", requiredTier: "pro" },
 ];
 
 const RECRUTEUR_AUTRES: TabConfig[] = [
-  { key: "dashboard", label: "Accueil", href: "/recruteur/tableau-de-bord", icon: Icons.dashboard, activeMatch: "/recruteur/tableau-de-bord" },
   // Calendrier sans requiredTier : le gratuit atteint la page et y voit sa porte Pro (FeatureGate).
   { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar, activeMatch: "/recruteur/calendrier" },
   { key: "messages", label: "Messages", href: "/recruteur/messages", icon: Icons.envelope, requiredTier: "pro" },

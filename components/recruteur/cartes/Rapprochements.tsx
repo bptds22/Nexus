@@ -74,20 +74,10 @@ export function FournisseurRapprochements({
 }
 
 export function BandeauRapprochements({ className = "" }: { className?: string }) {
-  const { parCarte, nbRefusees, ouvrir } = useContexteRapprochements();
+  const { parCarte, ouvrir } = useContexteRapprochements();
   const n = [...parCarte.values()].reduce((a, b) => a + b, 0);
-  if (n === 0) {
-    // Rien à décider, mais des refus à revoir : un lien discret (BP 2026-10-19).
-    if (nbRefusees === 0) return null;
-    return (
-      <div className={`${className} flex justify-end`}>
-        <button type="button" onClick={() => ouvrir()} data-testid="lien-refusees"
-          className="min-h-[36px] text-[12px] font-semibold text-[#9CA3AF] underline hover:text-white">
-          Propositions refusées ({nbRefusees})
-        </button>
-      </div>
-    );
-  }
+  // Rien à décider : rien en haut. Les refusées se revoient dans « Propositions » (BP 2026-10-19).
+  if (n === 0) return null;
   return (
     <div role="note" data-testid="bandeau-rapprochements"
       className={`${className} flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#3B82F6]/30 bg-[#3B82F6]/[0.07] px-4 py-3`}>

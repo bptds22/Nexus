@@ -22,10 +22,10 @@ export const PASTILLES_MES_ATHLETES: readonly { key: VueMesAthletes; label: stri
 
 export const ROUTE_MES_ATHLETES = "/partenaire/mes-athletes";
 
-/** Lecture des paramètres d'adresse ; « Mes évaluations » par défaut. */
+/** Lecture des paramètres d'adresse ; « En attente » par défaut (BP 2026-10-19). */
 export function lireVue(params: { get(nom: string): string | null } | null | undefined): { vue: VueMesAthletes; propositions: boolean } {
   const v = params?.get("vue");
-  const vue: VueMesAthletes = v === "attente" ? "attente" : "evaluations";
+  const vue: VueMesAthletes = v === "evaluations" ? "evaluations" : "attente";
   return { vue, propositions: vue === "attente" && params?.get("filtre") === "propositions" };
 }
 

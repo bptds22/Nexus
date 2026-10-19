@@ -15,9 +15,10 @@ const params = (q: string) => new URLSearchParams(q);
 
 /* ── 6.1 fusion ─────────────────────────────────────────────── */
 
-test("6.1 : deux pastilles, adresse lisible, « Mes évaluations » par défaut", () => {
+test("6.1 : deux pastilles, adresse lisible, « En attente » par défaut (BP 2026-10-19)", () => {
   assert.deepEqual(PASTILLES_MES_ATHLETES.map((p) => p.label), ["En attente", "Mes évaluations"]);
-  assert.deepEqual(lireVue(params("")), { vue: "evaluations", propositions: false });
+  assert.deepEqual(lireVue(params("")), { vue: "attente", propositions: false });
+  assert.deepEqual(lireVue(params("vue=evaluations")), { vue: "evaluations", propositions: false });
   assert.deepEqual(lireVue(params("vue=attente")), { vue: "attente", propositions: false });
   assert.deepEqual(lireVue(params("vue=attente&filtre=propositions")), { vue: "attente", propositions: true });
   // Le filtre « propositions » n'a de sens que dans « En attente ».

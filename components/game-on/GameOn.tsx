@@ -54,13 +54,13 @@ import FormulaireCarte from "@/components/partenaire/prospects/FormulaireCarte";
 import { triggerHaptic } from "@/lib/haptics";
 import { DEPISTAGE, lireDepister, routeDepistage, type ModeDepistage } from "@/lib/gameOn/libelles";
 import {
-  CHANDAILS, PASTILLES, carteJumelle, cleJoueur, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, connusDuCote, heureLigne, joueurConnu, libelleJoueur, messageErreur, nomCourt, prenomDe,
+  CHANDAILS, PASTILLES, allurePastille, carteJumelle, cleJoueur, couleurCote, dateSeance, fusionnerNotes, grouperParJoueur, connusDuCote, heureLigne, joueurConnu, libelleJoueur, messageErreur, nomCourt, prenomDe,
   notesEnAttente, numeroValide, noteValide, pastilleParDefaut, pastillesCote, rangerSeances, resumeEnvoi, suggestionsTri,
   texteRecopie, texteSur, titreSeance,
   type CarteCandidate, type Cote, type GroupeJoueur, type NoteAffichee, type Pastille, type SeanceLocale, type Suggestion,
 } from "@/lib/gameOn/gameOn";
 import {
-  nouvelId, useAthletesMatch, useCartesPartenaire, useCartesUnite, useEquipesMatch, useNotesCartePartenaire, useNotesSeance, useSeancesRecentes, useStockGameOn,
+  nouvelId, useAthletesMatch, useCartesPartenaire, useCartesUnite, useDansProcessus, useEquipesMatch, useNotesCartePartenaire, useNotesSeance, useSeancesRecentes, useStockGameOn,
   type EquipeMatch, type SeanceServeur,
 } from "@/lib/gameOn/useGameOn";
 
@@ -521,9 +521,22 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
   const idsEquipes = useMemo(() => [equipesQ.data?.A?.teamId, equipesQ.data?.B?.teamId].filter((x): x is string => !!x), [equipesQ.data]);
   const ecoles = useMemo(() => [equipesQ.data?.A?.etablissement?.id, equipesQ.data?.B?.etablissement?.id].filter((x): x is string => !!x), [equipesQ.data]);
   const cartesQ = useCartesDepistage(ecoles, idsEquipes);
+  const idsAthletes = useMemo(() => (athletesQ.data ?? []).map((a) => a.id), [athletesQ.data]);
+  const processusQ = useDansProcessus(idsAthletes, !partenaire);
   if (!etat || !monte) return null;
   const s = etat.seance;
   const attente = notesEnAttente(etat).length;
+  // Trait = qui c'est (plein Nexus, pointillé carte) ; opacité = dans mon processus ou non (BP 2026-10-19).
+  const dansProcessus = processusQ.data ?? new Set<string>();
+  const stylePastille = (connu: Suggestion | null, couleur: string) => {
+    const { trait, estompe } = allurePastille(connu, dansProcessus);
+    return {
+      borderWidth: 2,
+      borderStyle: trait === "pointille" ? "dashed" : "solid",
+      borderColor: trait === "neutre" ? "rgba(255,255,255,0.18)" : couleur,
+      opacity: estompe ? 0.5 : 1,
+    } as const;
+  };
   const nomCote = (c: Cote) => (c === "A" ? s.equipeA : s.equipeB || "Adversaire");
   const cc = (c: Cote) => couleurCote(s, c);
   const pastilles = pastillesCote(groupes, cote);
@@ -589,8 +602,9 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
           <div className="grid grid-cols-3 gap-2">
             {pastilles.map((g) => { const connu = connuDe(g); return (
               <button key={g.cle} type="button" onClick={() => { triggerHaptic("Light"); setJoueur({ cote: g.cote, numero: g.numero, prenom: g.prenom }); }}
-                className="flex min-h-[76px] flex-col items-center justify-center rounded-2xl border bg-[#1A1D24] px-2 py-2 active:bg-white/[0.06]"
-                style={{ borderColor: cc(g.cote), borderWidth: 2 }}>
+                data-trait={allurePastille(connu, dansProcessus).trait}
+                className="flex min-h-[76px] flex-col items-center justify-center rounded-2xl bg-[#1A1D24] px-2 py-2 active:bg-white/[0.06]"
+                style={stylePastille(connu, cc(g.cote))}>
                 <span className="text-[26px] font-black leading-none">{g.numero ? `#${g.numero}` : "—"}</span>
                 <span className={`mt-1 max-w-full truncate text-[12px] ${connu ? "font-semibold text-[#22C55E]" : "text-white/60"}`}>
                   {connu ? `✓ ${nomCourt(connu.nom)}` : g.prenom || `${g.notes.length} note${g.notes.length > 1 ? "s" : ""}`}
@@ -600,10 +614,11 @@ function EcranMatch({ st, seanceId, moi, onQuitter, onTermine }: {
             {connus.map(({ numero, connu }) => (
               <button key={`connu-${numero}`} type="button" data-testid="pastille-connue"
                 onClick={() => { triggerHaptic("Light"); setJoueur({ cote, numero, prenom: prenomDe(connu) }); }}
-                className="flex min-h-[76px] flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-[#1A1D24]/60 px-2 py-2 active:bg-white/[0.06]"
-                style={{ borderColor: `${cc(cote)}99` }}>
-                <span className="text-[26px] font-black leading-none text-white/70">#{numero}</span>
-                <span className="mt-1 max-w-full truncate text-[12px] font-semibold text-[#22C55E]/80">✓ {nomCourt(connu.nom)}</span>
+                data-trait={allurePastille(connu, dansProcessus).trait}
+                className="flex min-h-[76px] flex-col items-center justify-center rounded-2xl bg-[#1A1D24] px-2 py-2 active:bg-white/[0.06]"
+                style={stylePastille(connu, cc(cote))}>
+                <span className="text-[26px] font-black leading-none">#{numero}</span>
+                <span className="mt-1 max-w-full truncate text-[12px] font-semibold text-[#22C55E]">✓ {nomCourt(connu.nom)}</span>
               </button>
             ))}
           </div>

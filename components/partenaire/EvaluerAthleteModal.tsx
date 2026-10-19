@@ -17,6 +17,10 @@
    admissibles, cochés s'il les a déjà posés. Enregistrer pose les nouveaux et
    retire les décochés. Sans évaluation existante, on peut n'enregistrer que
    des badges (la cote reste alors vide).
+
+   BP 2026-10-19 : « Retirer mon évaluation » vit ici (la fiche n'a plus que deux
+   boutons). Confirmation en deux temps, pas de boîte native (elle bloquerait la
+   WebView). Le serveur supprime la ligne et en garde une trace non publique.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useState } from "react";
@@ -34,6 +38,7 @@ import EditeurEvaluationPartenaire, {
 } from "@/components/partenaire/EditeurEvaluationPartenaire";
 import {
   enregistrerEvaluationPartenaire,
+  retirerEvaluationPartenaire,
   EVENEMENT_EVALUATION_PARTENAIRE,
   type EvaluationPartenaire,
 } from "@/lib/evaluations/partenaire";
@@ -45,6 +50,7 @@ export default function EvaluerAthleteModal({
   existante,
   onClose,
   onSaved,
+  onRetiree,
 }: {
   athleteId: string;
   athleteNom: string;
@@ -52,6 +58,7 @@ export default function EvaluerAthleteModal({
   existante: EvaluationPartenaire | null;
   onClose: () => void;
   onSaved: () => void;
+  onRetiree?: () => void;
 }) {
   const [valeur, setValeur] = useState<ValeurEvaluation>({
     mode: existante && Object.keys(existante.criteres).length > 0 ? "detaille" : "simple",
@@ -60,6 +67,7 @@ export default function EvaluerAthleteModal({
   });
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [confirmerRetrait, setConfirmerRetrait] = useState(false);
 
   // Ses badges : le catalogue, les Nexus admissibles, et ceux qu'il a déjà posés (clé « p:id » / « n:id »).
   const [catalogue, setCatalogue] = useState<BadgeCatalogue[]>([]);
@@ -118,6 +126,22 @@ export default function EvaluerAthleteModal({
     }
   }
 
+  async function retirer() {
+    if (!existante) return;
+    setEnvoi(true);
+    setErreur(null);
+    try {
+      await retirerEvaluationPartenaire(createClient(), existante.id);
+      window.dispatchEvent(new CustomEvent(EVENEMENT_EVALUATION_PARTENAIRE, { detail: { athleteId } }));
+      onRetiree?.();
+    } catch (e) {
+      setErreur((e as { message?: string })?.message?.replace(/^NEXUS:\s*/, "") ?? "Retrait impossible.");
+      setConfirmerRetrait(false);
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !envoi && onClose()} />
@@ -167,7 +191,27 @@ export default function EvaluerAthleteModal({
 
         {erreur && <p className="text-[12px] text-[#EF4444] mt-3">{erreur}</p>}
 
+        {existante && onRetiree && confirmerRetrait && (
+          <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-[#E63946]/40 px-3 py-2" data-confirmer-retrait-evaluation>
+            <span className="text-[13px] text-[#c8c8cc]">Retirer ton évaluation de cet athlète ? Elle disparaîtra de sa fiche.</span>
+            <button type="button" disabled={envoi} onClick={() => void retirer()}
+              className="px-3 py-1.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-md disabled:opacity-50">
+              {envoi ? "Retrait…" : "Confirmer le retrait"}
+            </button>
+            <button type="button" disabled={envoi} onClick={() => setConfirmerRetrait(false)}
+              className="px-3 py-1.5 text-[12px] font-semibold text-[#9CA3AF] hover:text-white">
+              Annuler
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#2D3748]/40">
+          {existante && onRetiree && !confirmerRetrait && (
+            <button type="button" onClick={() => setConfirmerRetrait(true)} disabled={envoi}
+              className="mr-auto px-3 py-2 text-[13px] font-bold text-[#E63946] hover:underline disabled:opacity-50" data-retirer-evaluation>
+              Retirer mon évaluation
+            </button>
+          )}
           <button type="button" onClick={onClose} disabled={envoi}
             className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">
             Annuler

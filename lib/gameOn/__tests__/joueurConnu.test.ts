@@ -1,7 +1,7 @@
 /* Dépistage — joueur déjà connu pendant le match (BP 2026-10-19). */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { avecPasLui, carteJumelle, connusDuCote, joueurConnu, nomCourt, prenomDe, nouvelleSeance, type AthleteCandidat, type CarteCandidate } from "@/lib/gameOn/gameOn";
+import { allurePastille, avecPasLui, carteJumelle, connusDuCote, joueurConnu, nomCourt, prenomDe, nouvelleSeance, type AthleteCandidat, type CarteCandidate } from "@/lib/gameOn/gameOn";
 
 const carte = (id: string, numero: string | null, teamId: string | null, prenom = "Marc", nom = "Tremblay"): CarteCandidate =>
   ({ id, prenom, nom, numero, teamId, equipe: "Cougars" });
@@ -89,4 +89,14 @@ test("« 06 » et « 6 » : le même chandail pour la reconnaissance", async () 
   const r = connusDuCote("A", [athlete("a1", "06", "A")], [], "t-A", new Set(["6"]));
   assert.deepEqual(r, [], "déjà noté sous « 6 » : pas de 2e pastille");
   assert.deepEqual(connusDuCote("A", [athlete("a1", "06", "A")], [], "t-A", new Set()).map((x) => x.numero), ["6"]);
+});
+
+test("allure d'une pastille : trait plein = profil Nexus, pointillé = carte ; estompée hors de mon processus", () => {
+  const dans = new Set(["a1"]);
+  assert.deepEqual(allurePastille({ type: "athlete", id: "a1" }, dans), { trait: "plein", estompe: false });
+  assert.deepEqual(allurePastille({ type: "athlete", id: "a2" }, dans), { trait: "plein", estompe: true });
+  // Une carte n'existe que dans le processus.
+  assert.deepEqual(allurePastille({ type: "carte", id: "c1" }, dans), { trait: "pointille", estompe: false });
+  // Pas encore reconnu : neutre, plein (on est en train de le noter).
+  assert.deepEqual(allurePastille(null, dans), { trait: "neutre", estompe: false });
 });

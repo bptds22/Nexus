@@ -3,34 +3,23 @@
 /* ═══════════════════════════════════════════════════════════════
    Actions du PARTENAIRE sur la fiche d'un athlète (lots W3 et « C »).
 
-   - « Retirer mon évaluation » : seulement s'il en a une. Confirmation en
-     deux temps (pas de boîte native : elle bloquerait la WebView). Le
-     serveur supprime la ligne et en garde une trace non publique ; elle
-     sort des fiches ET du filtre « 4+ étoiles ». Proposé même si la
-     permission d'évaluer a été retirée : retirer sa propre note réduit
-     l'exposition, ça ne l'étend jamais.
-   - « Attribuer un badge » : seulement si le serveur dit que le partenaire
-     peut évaluer cet athlète (même garde que W2) ET qu'il a un catalogue.
-     Les badges déjà posés (vivants) ne sont pas reproposés.
-   - « Attribuer un badge Nexus » (W3b) : les badges du catalogue que le
-     serveur juge admissibles pour CET athlète (universels, et ceux de SON
-     sport ; jamais les honneurs). Un badge déjà porté reste listé, grisé,
-     avec qui le porte — le serveur refuse de toute façon le doublon.
-   Les choix de badges s'ouvrent dans un MENU DÉROULANT accroché au bouton (MenuDeroulant,
-   BP 2026-10-19 : l'ancien menu en absolu était caché par la page ; pas de fenêtre).
-   - « Retirer un badge » (BP 2026-10-19) : à côté de « Retirer mon
-     évaluation », la liste des badges que J'AI posés — les miens ET les
-     badges Nexus —, en un toucher. Le lien sous la vignette
-     des « Distinctions » reste (il était caché derrière « +N »).
+   BP 2026-10-19 : DEUX choix seulement.
+   - « Attribuer un badge » : UN menu déroulant (MenuDeroulant, accroché au
+     bouton) avec ses badges ET les badges Nexus que le serveur juge
+     admissibles pour CET athlète (universels, et ceux de SON sport ; jamais
+     les honneurs). Toucher un badge que j'ai posé le retire, sans
+     confirmation (il se réattribue facilement). Un badge Nexus porté par un
+     autre reste listé, grisé, avec qui le porte — le serveur refuse de toute
+     façon le doublon. Sans droit d'évaluer, seuls mes badges posés sont
+     listés : les retirer réduit l'exposition, ça ne l'étend jamais.
+   - « Évaluer » / « Mon évaluation » : ouvre EvaluerAthleteModal, où vit
+     aussi « Retirer mon évaluation ».
+   Le lien sous la vignette des « Distinctions » reste.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import {
-  retirerEvaluationPartenaire,
-  EVENEMENT_EVALUATION_PARTENAIRE,
-  type EvaluationPartenaire,
-} from "@/lib/evaluations/partenaire";
+import type { EvaluationPartenaire } from "@/lib/evaluations/partenaire";
 import {
   attribuerBadgePartenaire,
   attribuerBadgeNexus,
@@ -50,32 +39,39 @@ function messageErreur(e: unknown): string {
   return (e as { message?: string })?.message?.replace(/^NEXUS:\s*/, "") ?? "Action impossible.";
 }
 
+const BOUTON = "px-4 py-2 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+
+interface LigneBadge {
+  cle: string;
+  libelle: string;
+  svg: string | null;
+  sousTitre: string;
+  /** Porté par un autre partenaire (badge Nexus) : grisé. */
+  ailleurs: string | null;
+  poser: () => Promise<void>;
+}
+
 export default function ActionsPartenaireFiche({
   athleteId,
   peutEvaluer,
   maEvaluation,
-  onEvaluationRetiree,
+  onEvaluer,
   notifier,
 }: {
   athleteId: string;
   peutEvaluer: boolean;
   maEvaluation: EvaluationPartenaire | null;
-  onEvaluationRetiree: () => void;
+  /** Ouvre la fenêtre d'évaluation (le retrait de l'évaluation y vit). */
+  onEvaluer: () => void;
   notifier: (kind: "success" | "error", message: string) => void;
 }) {
-  const [confirmerRetrait, setConfirmerRetrait] = useState(false);
   const [occupe, setOccupe] = useState(false);
   const [catalogue, setCatalogue] = useState<BadgeCatalogue[]>([]);
-  const [choixOuvert, setChoixOuvert] = useState(false);
   const [nexus, setNexus] = useState<BadgeNexusAdmissible[]>([]);
-  const [choixNexusOuvert, setChoixNexusOuvert] = useState(false);
+  const [menuOuvert, setMenuOuvert] = useState(false);
   const poses = useBadgesPartenaires(athleteId);
   const mesPoses = poses.filter((b) => b.estLeMien);
-  const [retraitOuvert, setRetraitOuvert] = useState(false);
-  // Les trois menus déroulants s'accrochent à leur bouton (MenuDeroulant, jamais coupés par la page).
-  const refRetrait = useRef<HTMLButtonElement>(null);
   const refBadge = useRef<HTMLButtonElement>(null);
-  const refNexus = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!peutEvaluer) return;
@@ -93,7 +89,6 @@ export default function ActionsPartenaireFiche({
     window.addEventListener(EVENEMENT_BADGE_PARTENAIRE, surChangement);
     return () => { vivant = false; window.removeEventListener(EVENEMENT_BADGE_PARTENAIRE, surChangement); };
   }, [peutEvaluer, athleteId]);
-  const nexusLibres = nexus.filter((b) => !b.dejaPar);
 
   useEffect(() => {
     if (!peutEvaluer) return;
@@ -102,229 +97,94 @@ export default function ActionsPartenaireFiche({
       .catch((e) => console.warn("[partenaire] catalogue de badges :", e?.message ?? e));
   }, [peutEvaluer]);
 
-  const dejaPoses = new Set(poses.filter((b) => b.estLeMien).map((b) => b.badgeId));
-  const disponibles = catalogue.filter((b) => !dejaPoses.has(b.id));
+  // Mes poses, par badge : « p:id » pour les miens, « n:id » pour les Nexus.
+  const cleDe = (b: { estNexus: boolean; badgeId: string }) => `${b.estNexus ? "n" : "p"}:${b.badgeId}`;
+  const maPose = new Map(mesPoses.map((b) => [cleDe(b), b.id]));
 
-  const retirerEvaluation = async () => {
-    if (!maEvaluation) return;
+  const agir = async (f: () => Promise<void>, succes: string) => {
     setOccupe(true);
     try {
-      await retirerEvaluationPartenaire(createClient(), maEvaluation.id);
-      window.dispatchEvent(new CustomEvent(EVENEMENT_EVALUATION_PARTENAIRE, { detail: { athleteId } }));
-      onEvaluationRetiree();
-      notifier("success", "Évaluation retirée.");
-    } catch (e) {
-      notifier("error", messageErreur(e));
-    } finally {
-      setOccupe(false);
-      setConfirmerRetrait(false);
-    }
-  };
-
-  const retirerBadge = async (poseId: string, libelle: string) => {
-    setOccupe(true);
-    try {
-      await retirerBadgePartenaire(createClient(), poseId);
+      await f();
       signalerBadgesPartenaire(athleteId);
-      if (mesPoses.length <= 1) setRetraitOuvert(false);
-      notifier("success", `Badge « ${libelle} » retiré.`);
+      notifier("success", succes);
     } catch (e) {
       notifier("error", messageErreur(e));
     } finally {
       setOccupe(false);
     }
   };
-
-  const attribuer = async (badge: BadgeCatalogue) => {
-    setOccupe(true);
-    try {
-      await attribuerBadgePartenaire(createClient(), athleteId, badge.id);
-      signalerBadgesPartenaire(athleteId);
-      setChoixOuvert(false);
-      notifier("success", `Badge « ${badge.libelle} » attribué.`);
-    } catch (e) {
-      notifier("error", messageErreur(e));
-    } finally {
-      setOccupe(false);
-    }
+  const basculer = (l: LigneBadge) => {
+    const pose = maPose.get(l.cle);
+    if (pose) void agir(() => retirerBadgePartenaire(createClient(), pose), `Badge « ${l.libelle} » retiré.`);
+    else void agir(l.poser, `Badge « ${l.libelle} » attribué.`);
   };
 
-  const attribuerNexus = async (badge: BadgeNexusAdmissible) => {
-    setOccupe(true);
-    try {
-      await attribuerBadgeNexus(createClient(), athleteId, badge.id);
-      signalerBadgesPartenaire(athleteId);
-      setChoixNexusOuvert(false);
-      notifier("success", `Badge « ${badge.libelle} » attribué.`);
-    } catch (e) {
-      notifier("error", messageErreur(e));
-    } finally {
-      setOccupe(false);
-    }
-  };
+  const badgesPossibles = (peutEvaluer && (catalogue.length > 0 || nexus.length > 0)) || mesPoses.length > 0;
+  const evaluationPossible = peutEvaluer || !!maEvaluation;
+  if (!badgesPossibles && !evaluationPossible) return null;
 
-  if (!maEvaluation && mesPoses.length === 0 && !(peutEvaluer && (catalogue.length > 0 || nexus.length > 0))) return null;
+  const lignes: LigneBadge[] = peutEvaluer
+    ? [
+        ...catalogue.map((b) => ({
+          cle: `p:${b.id}`, libelle: b.libelle, svg: b.iconeUrl, sousTitre: "Ton badge", ailleurs: null,
+          poser: () => attribuerBadgePartenaire(createClient(), athleteId, b.id),
+        })),
+        ...nexus.map((b) => ({
+          cle: `n:${b.id}`, libelle: b.libelle, svg: badgeSvgPath(b.code),
+          sousTitre: b.famille === "sport" ? "Badge Nexus · sport" : "Badge Nexus",
+          ailleurs: b.dejaPar && !maPose.has(`n:${b.id}`) ? b.dejaPar : null,
+          poser: () => attribuerBadgeNexus(createClient(), athleteId, b.id),
+        })),
+      ]
+    : [];
+  // Mes poses absentes des listes (sans droit d'évaluer, ou badge sorti du catalogue) : pour les retirer.
+  const listees = new Set(lignes.map((l) => l.cle));
+  for (const b of mesPoses) {
+    if (listees.has(cleDe(b))) continue;
+    lignes.push({
+      cle: cleDe(b), libelle: b.libelle, svg: b.estNexus && b.codeNexus ? badgeSvgPath(b.codeNexus) : b.iconeUrl,
+      sousTitre: b.estNexus ? "Badge Nexus" : "Ton badge", ailleurs: null, poser: async () => {},
+    });
+  }
 
   return (
     <div className="flex items-center gap-3 flex-wrap" data-actions-partenaire>
-      {maEvaluation && !confirmerRetrait && (
-        <button
-          type="button"
-          disabled={occupe}
-          onClick={() => setConfirmerRetrait(true)}
-          className="px-4 py-2 border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50"
-        >
-          Retirer mon évaluation
-        </button>
-      )}
-      {maEvaluation && confirmerRetrait && (
-        <div className="flex items-center gap-2 flex-wrap bg-[#1A1D24] border border-[#E63946]/40 rounded-lg px-3 py-2">
-          <span className="text-[13px] text-[#c8c8cc]">Retirer ton évaluation de cet athlète ? Elle disparaîtra de sa fiche.</span>
-          <button
-            type="button"
-            disabled={occupe}
-            onClick={retirerEvaluation}
-            className="px-3 py-1.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-md disabled:opacity-50"
-          >
-            {occupe ? "Retrait…" : "Confirmer le retrait"}
-          </button>
-          <button
-            type="button"
-            disabled={occupe}
-            onClick={() => setConfirmerRetrait(false)}
-            className="px-3 py-1.5 text-[12px] font-semibold text-[#9CA3AF] hover:text-white"
-          >
-            Annuler
-          </button>
-        </div>
-      )}
-
-      {/* Retirer MES badges (les miens et les Nexus que j'ai posés), même sans droit d'évaluer :
-          retirer réduit l'exposition, ça ne l'étend jamais. */}
-      {mesPoses.length > 0 && (
+      {badgesPossibles && (
         <div className="relative">
-          <button
-            type="button"
-            disabled={occupe}
-            ref={refRetrait}
-            onClick={() => setRetraitOuvert((v) => !v)}
-            className="px-4 py-2 border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50"
-            data-retirer-badge
-          >
-            Retirer un badge
+          <button type="button" disabled={occupe} ref={refBadge} onClick={() => setMenuOuvert((v) => !v)} className={BOUTON} data-attribuer-badge>
+            Attribuer un badge
           </button>
-          {retraitOuvert && (
-            <MenuDeroulant ancre={refRetrait} onFermer={() => setRetraitOuvert(false)} testId="menu-retirer-badge">
-              {mesPoses.map((b) => {
-                const svg = b.estNexus && b.codeNexus ? badgeSvgPath(b.codeNexus) : b.iconeUrl;
+          {menuOuvert && (
+            <MenuDeroulant ancre={refBadge} onFermer={() => setMenuOuvert(false)} testId="menu-attribuer-badge" largeur={320}>
+              {lignes.map((l) => {
+                const pose = maPose.has(l.cle);
                 return (
-                  <div key={b.id} className="flex items-center gap-3 px-2 py-2 rounded-lg">
-                    {svg ? (
+                  <button key={l.cle} type="button" disabled={occupe || !!l.ailleurs} aria-pressed={pose} onClick={() => basculer(l)}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 text-left disabled:opacity-45 disabled:hover:bg-transparent disabled:cursor-not-allowed">
+                    {l.svg ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={svg} alt="" className="w-9 h-9 object-contain shrink-0" />
+                      <img src={l.svg} alt="" className="w-9 h-9 object-contain shrink-0" />
                     ) : (
                       <span className="w-9 h-9 rounded-full border border-[#2D3748] flex items-center justify-center text-[13px] font-bold text-[#9CA3AF] shrink-0">
-                        {b.libelle.slice(0, 1).toUpperCase()}
+                        {l.libelle.slice(0, 1).toUpperCase()}
                       </span>
                     )}
                     <span className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[13px] font-semibold text-white truncate">{b.libelle}</span>
-                      <span className="text-[11px] text-[#6B7280]">{b.estNexus ? "Badge Nexus" : "Ton badge"}</span>
+                      <span className="text-[13px] font-semibold text-white truncate">{l.libelle}</span>
+                      <span className="text-[11px] text-[#6B7280]">{l.ailleurs ? `Déjà porté — ${l.ailleurs}` : l.sousTitre}</span>
                     </span>
-                    {/* BP 2026-10-19 : pas de confirmation, un badge se réattribue facilement. */}
-                    <button type="button" disabled={occupe} onClick={() => retirerBadge(b.id, b.libelle)}
-                      className="shrink-0 px-2 py-1 text-[12px] font-bold text-[#E63946] hover:underline disabled:opacity-50">
-                      Retirer
-                    </button>
-                  </div>
-                );
-              })}
-            </MenuDeroulant>
-          )}
-        </div>
-      )}
-
-      {peutEvaluer && catalogue.length > 0 && (
-        <div className="relative">
-          <button
-            type="button"
-            disabled={occupe || disponibles.length === 0}
-            ref={refBadge}
-            onClick={() => setChoixOuvert((v) => !v)}
-            className="px-4 py-2 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={disponibles.length === 0 ? "Tous tes badges sont déjà attribués à cet athlète" : undefined}
-          >
-            Attribuer un badge
-          </button>
-          {choixOuvert && disponibles.length > 0 && (
-            <MenuDeroulant ancre={refBadge} onFermer={() => setChoixOuvert(false)} testId="menu-attribuer-badge">
-              {disponibles.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  disabled={occupe}
-                  onClick={() => attribuer(b)}
-                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 text-left disabled:opacity-50"
-                >
-                  {b.iconeUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={b.iconeUrl} alt="" className="w-9 h-9 object-contain shrink-0" />
-                  ) : (
-                    <span className="w-9 h-9 rounded-full border border-[#2D3748] flex items-center justify-center text-[13px] font-bold text-[#9CA3AF] shrink-0">
-                      {b.libelle.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                  <span className="text-[13px] font-semibold text-white">{b.libelle}</span>
-                </button>
-              ))}
-            </MenuDeroulant>
-          )}
-        </div>
-      )}
-
-      {peutEvaluer && nexus.length > 0 && (
-        <div className="relative">
-          <button
-            type="button"
-            disabled={occupe || nexusLibres.length === 0}
-            ref={refNexus}
-            onClick={() => setChoixNexusOuvert((v) => !v)}
-            className="px-4 py-2 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={nexusLibres.length === 0 ? "Cet athlète porte déjà tous les badges Nexus que tu peux attribuer" : undefined}
-            data-attribuer-badge-nexus
-          >
-            Attribuer un badge Nexus
-          </button>
-          {choixNexusOuvert && (
-            <MenuDeroulant ancre={refNexus} onFermer={() => setChoixNexusOuvert(false)} testId="menu-attribuer-badge-nexus" largeur={320}>
-              {nexus.map((b) => {
-                const svg = badgeSvgPath(b.code);
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    disabled={occupe || !!b.dejaPar}
-                    onClick={() => attribuerNexus(b)}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 text-left disabled:opacity-45 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                  >
-                    {svg ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={svg} alt="" className="w-9 h-9 object-contain shrink-0" />
-                    ) : (
-                      <span className="w-9 h-9 shrink-0" />
-                    )}
-                    <span className="flex flex-col min-w-0">
-                      <span className="text-[13px] font-semibold text-white">{b.libelle}</span>
-                      <span className="text-[11px] text-[#6B7280]">
-                        {b.dejaPar ? `Déjà porté — ${b.dejaPar}` : b.famille === "sport" ? "Badge de sport" : "Badge universel"}
-                      </span>
-                    </span>
+                    {pose && <span className="shrink-0 text-[12px] font-bold text-[#E63946]">Retirer</span>}
                   </button>
                 );
               })}
             </MenuDeroulant>
           )}
         </div>
+      )}
+      {evaluationPossible && (
+        <button type="button" disabled={occupe} onClick={onEvaluer} className={BOUTON} data-evaluation-partenaire>
+          {maEvaluation ? "Mon évaluation" : "Évaluer"}
+        </button>
       )}
     </div>
   );

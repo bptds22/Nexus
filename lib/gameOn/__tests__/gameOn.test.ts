@@ -165,11 +165,11 @@ test("entrées : barre du bas de l'appli et barre latérale web, route Pro", () 
   const plus = lire("app/_components/mobile/MorePanel.tsx");
   assert.ok(plus.includes('{ key: "recherche", label: "Recherche", href: "/recruteur/recherche"'));
   assert.ok(plus.includes('{ key: "pipeline", label: "Mon processus", href: "/recruteur/pipeline"'));
-  // BP 2026-10-19 : la barre PAR DÉFAUT = Recherche · Processus · En direct ; Accueil, Calendrier, Messages
+  // BP 2026-10-19 : la barre PAR DÉFAUT = Accueil · Recherche · Processus · En direct ; Calendrier, Messages
   // restent montables (barre personnalisable) et vivent dans Plus.
   const defaut = barre.slice(barre.indexOf("const RECRUTEUR_TABS"), barre.indexOf("const RECRUTEUR_AUTRES"));
-  assert.ok(defaut.includes('key: "recherche"') && defaut.includes('key: "pipeline"') && defaut.includes('key: "game-on"'));
-  assert.ok(!defaut.includes('key: "dashboard"') && !defaut.includes('key: "messages"'));
+  assert.ok(defaut.includes('key: "dashboard"') && defaut.includes('key: "recherche"') && defaut.includes('key: "pipeline"') && defaut.includes('key: "game-on"'));
+  assert.ok(!defaut.includes('key: "messages"') && !defaut.includes('key: "calendrier"'));
 });
 
 test("couleurs des chandails : choisies à chaque match, texte lisible, repli rouge / bleu", () => {

@@ -26,7 +26,7 @@ import { mapPartnerRpcToRecruiterView, type PartnerAthleteRow } from "@/lib/part
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
 import ActionsPartenaireFiche from "@/components/partenaire/ActionsPartenaireFiche";
 import EnTeteMobilePartenaire, { BoutonRondPartenaire } from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
-import FeuilleActionsFiche, { IconeEtoile, IconeMenu, IconeTelecharger, type ActionFiche } from "@/components/partenaire/mobile/FicheActionsMobile";
+import FeuilleActionsFiche, { IconeMenu, IconeTelecharger, type ActionFiche } from "@/components/partenaire/mobile/FicheActionsMobile";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import {
   chargerContexteEvaluation,
@@ -269,9 +269,6 @@ export default function PartnerAthleteProfilePage() {
   const actionsFiche: ActionFiche[] = [
     { label: "Télécharger — publication", icon: <IconeTelecharger />, disabled: downloading !== null, onClick: () => { setFeuilleOuverte(false); void handleDownload("publication"); } },
     { label: "Télécharger — story", icon: <IconeTelecharger />, disabled: downloading !== null, onClick: () => { setFeuilleOuverte(false); void handleDownload("story"); } },
-    ...(contexteEval?.peutEvaluer
-      ? [{ label: maEvaluation ? "Modifier mon évaluation" : "Évaluer", icon: <IconeEtoile />, onClick: () => { setFeuilleOuverte(false); setEvalOuverte(true); } }]
-      : []),
   ];
 
   const modaleEvaluation = evalOuverte && contexteEval ? (
@@ -287,6 +284,11 @@ export default function PartnerAthleteProfilePage() {
         chargerEvaluationsPartenaires(createClient(), id)
           .then((r) => setMaEvaluation(r.find((e) => e.estLaMienne) ?? null))
           .catch(() => {});
+      }}
+      onRetiree={() => {
+        setEvalOuverte(false);
+        setMaEvaluation(null);
+        showToast("success", "Évaluation retirée.");
       }}
     />
   ) : null;
@@ -336,24 +338,15 @@ export default function PartnerAthleteProfilePage() {
           {downloading === activeFormat ? "Génération…" : "Télécharger la carte"}
         </button>
         <span className="text-[12px] text-[#6b7280]">PNG haute résolution · enregistrement automatique</span>
-        {contexteEval?.peutEvaluer && (
-          <button
-            type="button"
-            onClick={() => setEvalOuverte(true)}
-            className="ml-auto px-5 py-2.5 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors"
-          >
-            {maEvaluation ? "Modifier mon évaluation" : "Évaluer"}
-          </button>
-        )}
       </div>
       )}
 
-      {/* W3 / C — retirer son évaluation, attribuer un badge. */}
+      {/* BP 2026-10-19 : deux choix — « Attribuer un badge » et « Évaluation » (le retrait vit dans la fenêtre). */}
       <ActionsPartenaireFiche
         athleteId={id}
         peutEvaluer={!!contexteEval?.peutEvaluer}
         maEvaluation={maEvaluation}
-        onEvaluationRetiree={() => setMaEvaluation(null)}
+        onEvaluer={() => setEvalOuverte(true)}
         notifier={showToast}
       />
 

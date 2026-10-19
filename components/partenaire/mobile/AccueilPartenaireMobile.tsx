@@ -207,7 +207,7 @@ export default function AccueilPartenaireMobile() {
   ] : null;
   const encartsRaccourcis = [
     { label: "Recherche", href: "/partenaire/athletes", subtitle: "le catalogue" },
-    { label: "Évaluations", href: "/partenaire/mes-athletes", subtitle: "les tiennes" },
+    { label: "Évaluations", href: "/partenaire/mes-athletes?vue=evaluations", subtitle: "les tiennes" },
     { label: "Mes athlètes", href: "/partenaire/prospects", subtitle: "à suivre" },
     { label: "Tendances", href: "/partenaire/tendances", subtitle: "cette semaine" },
     { label: "Classements", href: "/partenaire/classements", subtitle: "top 25" },

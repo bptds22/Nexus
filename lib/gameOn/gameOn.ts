@@ -534,6 +534,19 @@ export function connusDuCote(
   return r.sort((a, b) => Number(a.numero) - Number(b.numero) || a.numero.localeCompare(b.numero));
 }
 
+/** L'allure d'une pastille (BP 2026-10-19) : le TRAIT dit qui c'est — plein = profil Nexus, pointillé =
+ *  carte seulement, neutre = pas encore reconnu ; l'OPACITÉ dit s'il est dans mon processus — pleine s'il y
+ *  est, estompée sinon. Une carte est toujours dans le processus (elle n'existe que là) ; un numéro pas encore
+ *  reconnu reste plein : c'est celui qu'on est en train de noter. */
+export function allurePastille(
+  connu: Pick<Suggestion, "type" | "id"> | null,
+  dansProcessus: ReadonlySet<string>,
+): { trait: "plein" | "pointille" | "neutre"; estompe: boolean } {
+  if (!connu) return { trait: "neutre", estompe: false };
+  if (connu.type === "carte") return { trait: "pointille", estompe: false };
+  return { trait: "plein", estompe: !dansProcessus.has(connu.id) };
+}
+
 /** Le prénom d'un joueur reconnu, pour préremplir (« Marc Tremblay » → « Marc »). */
 export function prenomDe(connu: Pick<Suggestion, "nom"> | null | undefined): string | null {
   return connu?.nom.trim().split(/\s+/)[0] || null;
