@@ -106,6 +106,7 @@ import { useEvaluationsPartenaires } from "@/components/shared/athlete/Evaluatio
 import { coteCarteDepuisEvaluations, deuxCotes, libelleCotePartenaire, type CoteCarte } from "@/lib/evaluations/coteCarte";
 import CotesEvaluations from "@/components/shared/CotesEvaluations";
 import { resolveProgrammesVisesAsync } from "@/lib/queries/shared/useCegepPrograms";
+import { lireRetourFiche } from "@/lib/navigation/retourFiche";
 
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
 /** Surface viewer — drives recruteur-only gates + coach-only additions.
@@ -2194,7 +2195,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             // self-preview flow was built to avoid.
             if (isSelfPreview) { router.push("/athlete/profil"); return; }
             if (isCoach) { router.push("/coach/athletes"); return; }
-            let dest = "/recruteur/recherche";
+            // BP 2026-10-19 : par défaut, la page d'où l'on vient (dépistage, tableau de bord, messages…).
+            let dest = lireRetourFiche("/recruteur", "/recruteur/recherche");
             try {
               const last = sessionStorage.getItem("lastRecruiterTab");
               /* La query de l'écran d'origine, posée en même temps que
@@ -2216,7 +2218,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 const id = last.slice("list-detail:".length);
                 if (id) dest = `/recruteur/listes/${id}`;
               }
-              if (qs) dest += qs;
+              if (qs && !dest.includes("?")) dest += qs;
               sessionStorage.removeItem("lastRecruiterTab");
               sessionStorage.removeItem("lastRecruiterQuery");
             } catch { /* no-op */ }

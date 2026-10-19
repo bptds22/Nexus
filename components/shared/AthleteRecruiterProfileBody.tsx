@@ -4,7 +4,8 @@ import { useBasculeFavori } from "@/components/recruteur/unite/useBasculeFavori"
 import { joindreNoms } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useQueryClient } from "@tanstack/react-query";
 import { invaliderTableauBlanc } from "@/lib/queries/tableauBlanc";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
+import { lireRetourFiche } from "@/lib/navigation/retourFiche";
 import { limiterBadgesFiche } from "@/lib/badges/carteBadges";
 import { useFicheAthleteDonnees } from "@/components/shared/athlete/useFicheAthleteDonnees";
 import {
@@ -53,6 +54,9 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { useAthleteContactable, blackoutSortie, blackoutSortieCourt } from "@/lib/queries/recruiter/useAthleteContactable";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
 import { isShowcaseAthlete } from "@/lib/showcase";
+
+/* Flèche de retour de la fiche (BP 2026-10-19) : la page d'origine, lue sans abonnement. */
+const abonnementVideRetour = () => () => {};
 
 /* ═══════════════════════════════════════════════════════════════
    AthleteRecruiterProfileBody — shared across recruiter, athlete-
@@ -496,6 +500,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     const t = window.setTimeout(() => setErreurFavori(null), 5000);
     return () => window.clearTimeout(t);
   }, [erreurFavori]);
+  // BP 2026-10-19 : la flèche ramène à la page d'où l'on vient (processus, favoris, dépistage…).
+  const retourFiche = useSyncExternalStore(abonnementVideRetour, () => lireRetourFiche("/recruteur", "/recruteur/recherche"), () => "/recruteur/recherche");
   // BP 2026-10-19 : après le cœur, l'étape affichée suit la base (elle restait « Retiré »).
   const [versionDossier, setVersionDossier] = useState(0);
   const toggleFav = async (): Promise<string | null> => {
@@ -845,11 +851,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       <div className="bg-[#1A1D24]/80 backdrop-blur-sm border-b border-[#2D3748] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/recruteur/recherche" className="text-[14px] text-[#6b7280] hover:text-white transition-colors flex items-center gap-1.5">
+            <Link href={retourFiche} className="text-[14px] text-[#6b7280] hover:text-white transition-colors flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
               </svg>
-              Retour à la recherche
+              Retour
             </Link>
             <span className="text-[#2D3748]">|</span>
             <span className="text-[12px] text-[#6b7280] tracking-wider uppercase">Profil athlète</span>

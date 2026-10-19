@@ -34,6 +34,7 @@ import {
   type ContexteEvaluation,
   type EvaluationPartenaire,
 } from "@/lib/evaluations/partenaire";
+import { lireRetourFiche } from "@/lib/navigation/retourFiche";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/athletes/[id]
@@ -62,12 +63,11 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const CLE_RETOUR_FICHE = "nexus.partenaire.retourFiche";
 const RETOUR_FICHE_DEFAUT = "/partenaire/athletes";
 const abonnementVide = () => () => {};
-function lireRetourFiche(): string {
-  try {
-    return window.sessionStorage.getItem(CLE_RETOUR_FICHE) || RETOUR_FICHE_DEFAUT;
-  } catch {
-    return RETOUR_FICHE_DEFAUT;
-  }
+function lireRetourFicheDepuis(): string {
+  // BP 2026-10-19 : la page d'où l'on vient (lib/navigation/retourFiche) ; l'ancienne clé en repli.
+  let ancienne = RETOUR_FICHE_DEFAUT;
+  try { ancienne = window.sessionStorage.getItem(CLE_RETOUR_FICHE) || RETOUR_FICHE_DEFAUT; } catch { /* privé */ }
+  return lireRetourFiche("/partenaire", ancienne);
 }
 
 function safeFilenamePart(s: string): string {
@@ -102,7 +102,7 @@ export default function PartnerAthleteProfilePage() {
   // Appli : feuille d'actions de l'en-tête, toast natif, retour explicite.
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
   const toastMobile = useMobileToast();
-  const retourFiche = useSyncExternalStore(abonnementVide, lireRetourFiche, () => RETOUR_FICHE_DEFAUT);
+  const retourFiche = useSyncExternalStore(abonnementVide, lireRetourFicheDepuis, () => RETOUR_FICHE_DEFAUT);
 
   const showToast = (kind: "success" | "error", message: string) => {
     if (IS_CAPACITOR) {
@@ -252,7 +252,7 @@ export default function PartnerAthleteProfilePage() {
             </svg>
           </div>
           <p className="text-[13px] text-[#9CA3AF] font-semibold">{error || "Athlète introuvable."}</p>
-          <button type="button" onClick={() => router.push(IS_CAPACITOR ? retourFiche : "/partenaire/athletes")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] mt-4">
+          <button type="button" onClick={() => router.push(retourFiche)} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] mt-4">
             ← Retour aux athlètes
           </button>
         </div>
@@ -308,7 +308,7 @@ export default function PartnerAthleteProfilePage() {
     )}
     <div className={IS_CAPACITOR ? "px-4 pt-2 pb-6 space-y-5" : "px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6"}>
       {!IS_CAPACITOR && (
-      <Link href="/partenaire/athletes" className="text-[12px] font-bold text-[#9CA3AF] hover:text-white transition-colors inline-flex items-center gap-1">
+      <Link href={retourFiche} className="text-[12px] font-bold text-[#9CA3AF] hover:text-white transition-colors inline-flex items-center gap-1">
         ← Retour
       </Link>
       )}

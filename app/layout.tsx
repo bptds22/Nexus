@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import MemoireRetour from "@/components/shared/MemoireRetour";
 import { Anton, Barlow_Condensed, Bebas_Neue, Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -225,6 +226,8 @@ export default function RootLayout({
                   native-only, no-op web. Fiabilise overlaysWebView. */}
               <StatusBarBootstrap />
               <KeyboardInset />
+              {/* Retour d'une fiche vers la page d'origine (BP 2026-10-19). */}
+              <MemoireRetour />
               {/* Listener auth racine (additif) : ré-invalide ["currentUser"]
                   dès que la session redevient dispo (boot/resume) → recovery
                   sans cold restart. Single-instance, dans QueryProvider. */}
