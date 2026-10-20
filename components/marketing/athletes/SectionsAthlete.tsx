@@ -6,15 +6,25 @@ import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/config/appStores";
 
 /* ─────────────────────────────────────────────────────────────────
    Page athlète v2 (BP 2026-10-20) — même langage que l'accueil v2 et
-   la page recruteur : héros, une section par fonction avec une vraie
-   capture d'appli (données fictives, public/images/athlete/), étapes,
+   la page recruteur : héros (carte de joueur de l'accueil), une section par
+   fonction avec une capture bureau (données fictives, public/images/athlete/), étapes,
    gratuité, appel final. Tutoiement. Aucun chiffre, aucun témoignage.
 ───────────────────────────────────────────────────────────────────*/
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
-/** Captures d'appli, dans l'ordre de `fonctions.items`. */
-const CAPTURES = ["profil", "postes", "ambassadeur"] as const;
+/** Image de la carte de joueur du héros — LE seul endroit où son chemin est écrit.
+ *  Aujourd'hui : la carte du héros de l'accueil (app/page.tsx, `.nx-v30-wrap`) capturée telle
+ *  quelle sur fond transparent (maquettes/pages-v2b/outils/carte.js). Pour la remplacer par une
+ *  autre image, changer ce chemin et les dimensions ci-dessous. */
+const CARTE_JOUEUR = { src: "/images/athlete/carte-joueur-accueil.webp", width: 760, height: 1052 } as const;
+
+/** Captures bureau (données fictives), dans l'ordre de `fonctions.items`. */
+const CAPTURES = [
+  { src: "/images/athlete/profil-rapport.webp", width: 1200, height: 1462 },
+  { src: "/images/athlete/equipe-postes.webp", width: 1240, height: 820 },
+  { src: "/images/athlete/ambassadeur-web.webp", width: 1200, height: 820 },
+] as const;
 
 function Etiquette({ children, centre = false }: { children: React.ReactNode; centre?: boolean }) {
   return (
@@ -63,10 +73,10 @@ export default function SectionsAthlete() {
                 />
                 {/* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */}
                 <img
-                  src="/images/athlete/carte-joueur.webp"
+                  src={CARTE_JOUEUR.src}
                   alt={T.hero.imageAlt}
-                  width={600}
-                  height={797}
+                  width={CARTE_JOUEUR.width}
+                  height={CARTE_JOUEUR.height}
                   decoding="async"
                   className="relative w-full h-auto"
                 />
@@ -102,16 +112,16 @@ export default function SectionsAthlete() {
                     ))}
                   </ul>
                 </div>
-                <div className={`lg:col-span-6 ${inverse ? "lg:order-1" : ""} flex justify-center rounded-xl border border-white/[0.07] bg-[#1A1D24] pt-8 overflow-hidden max-h-[520px]`}>
+                <div className={`lg:col-span-6 ${inverse ? "lg:order-1" : ""} rounded-xl border border-white/[0.07] bg-[#111317] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.45)]`}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */}
                   <img
-                    src={`/images/athlete/${CAPTURES[i]}.webp`}
+                    src={CAPTURES[i].src}
                     alt={f.alt}
-                    width={600}
-                    height={1298}
+                    width={CAPTURES[i].width}
+                    height={CAPTURES[i].height}
                     loading="lazy"
                     decoding="async"
-                    className="w-[280px] h-auto self-start rounded-t-[22px] border border-b-0 border-white/[0.1]"
+                    className="block w-full h-auto"
                   />
                 </div>
               </div>
