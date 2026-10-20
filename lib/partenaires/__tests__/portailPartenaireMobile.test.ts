@@ -134,8 +134,9 @@ test("fiche : id par useDynamicParam, journal avant la carte, carte par la feuil
   const j = src.indexOf("await toPng(node, options)");
   assert.ok(i > 0 && j > i, "le téléchargement est journalisé AVANT la capture");
   assert.match(src, /enregistrerImage\(\{ dataUrl, nomFichier: filename/);
-  // Évaluation et badges : les mêmes composants que le web.
-  assert.match(src, /<ActionsPartenaireFiche/);
+  // BP 2026-10-19 : un seul bouton « Évaluer » ; badges et retrait dans la fenêtre (même composant que le web).
+  assert.match(src, /data-evaluation-partenaire/);
+  assert.doesNotMatch(src, /ActionsPartenaireFiche/);
   assert.match(src, /<EvaluerAthleteModal/);
   assert.match(src, /<AthleteRecruiterProfileBody athleteId=\{id\} viewerMode="partner" \/>/);
 });

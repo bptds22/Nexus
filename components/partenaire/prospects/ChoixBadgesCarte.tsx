@@ -4,7 +4,7 @@
    ChoixBadgesCarte — badges d'une carte prospect (W4b), facultatifs.
 
    Deux catalogues, les mêmes que sur la fiche d'un athlète inscrit
-   (ActionsPartenaireFiche) :
+   (EvaluerAthleteModal) :
    - les badges PROPRES du partenaire (W3, partenaire_mes_badges) ;
    - les badges du catalogue NEXUS (W3b) : universels, et ceux du SPORT DE LA
      CARTE ; actifs, sans contexte requis, jamais la famille honneur — la

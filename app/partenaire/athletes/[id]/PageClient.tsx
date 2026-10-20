@@ -24,7 +24,6 @@ import AthleteRecruiterProfileBody from "@/components/shared/AthleteRecruiterPro
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { mapPartnerRpcToRecruiterView, type PartnerAthleteRow } from "@/lib/partenaires/carteAthlete";
 import EvaluerAthleteModal from "@/components/partenaire/EvaluerAthleteModal";
-import ActionsPartenaireFiche from "@/components/partenaire/ActionsPartenaireFiche";
 import EnTeteMobilePartenaire, { BoutonRondPartenaire } from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
 import FeuilleActionsFiche, { IconeMenu, IconeTelecharger, type ActionFiche } from "@/components/partenaire/mobile/FicheActionsMobile";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -263,9 +262,8 @@ export default function PartnerAthleteProfilePage() {
 
   const nomAthlete = `${athlete.firstName} ${athlete.lastName}`.trim();
 
-  /* Appli : tout ce que la rangée web propose passe par la feuille d'actions
-     (mêmes gestionnaires). Les actions de ActionsPartenaireFiche restent
-     rendues dans la page : le composant porte sa propre confirmation. */
+  /* Appli : les téléchargements passent par la feuille d'actions (mêmes
+     gestionnaires) ; « Évaluer » reste dans la page. */
   const actionsFiche: ActionFiche[] = [
     { label: "Télécharger — publication", icon: <IconeTelecharger />, disabled: downloading !== null, onClick: () => { setFeuilleOuverte(false); void handleDownload("publication"); } },
     { label: "Télécharger — story", icon: <IconeTelecharger />, disabled: downloading !== null, onClick: () => { setFeuilleOuverte(false); void handleDownload("story"); } },
@@ -341,14 +339,15 @@ export default function PartnerAthleteProfilePage() {
       </div>
       )}
 
-      {/* BP 2026-10-19 : deux choix — « Attribuer un badge » et « Évaluation » (le retrait vit dans la fenêtre). */}
-      <ActionsPartenaireFiche
-        athleteId={id}
-        peutEvaluer={!!contexteEval?.peutEvaluer}
-        maEvaluation={maEvaluation}
-        onEvaluer={() => setEvalOuverte(true)}
-        notifier={showToast}
-      />
+      {/* BP 2026-10-19 : un seul choix, « Évaluer ». Les badges et le retrait de l'évaluation vivent dans la fenêtre. */}
+      {(contexteEval?.peutEvaluer || maEvaluation) && (
+        <div data-actions-partenaire>
+          <button type="button" onClick={() => setEvalOuverte(true)} data-evaluation-partenaire
+            className="px-4 py-2 border border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10 text-[13px] font-bold rounded-lg transition-colors">
+            {maEvaluation ? "Mon évaluation" : "Évaluer"}
+          </button>
+        </div>
+      )}
 
       {/* Appli : la modale (`fixed inset-0`) sort d'AnimatedRoute, conteneur transformé. */}
       {IS_CAPACITOR && modaleEvaluation ? createPortal(modaleEvaluation, document.body) : modaleEvaluation}
