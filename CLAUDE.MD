@@ -102,6 +102,18 @@ Le pont RSEQ relie les données de `diffusion.s1.rseq.ca` / `s1.rseq.ca`
   étape suggérée.
 - **Jamais de push, de déploiement ni de migration en prod** sans l'accord explicite de BP.
 
+### VOCABULAIRE — « RECRUTEUR » N'EXISTE PAS SEUL (BP, 2026-10-20)
+
+- **Recruteur COLLÉGIAL** : recrute le secondaire et le civil. Pour l'instant, ne voit AUCUN
+  joueur collégial (profil, nom, compte, évaluation). Il voit les matchs collégiaux, sans
+  données d'athlète.
+- **Recruteur UNIVERSITAIRE** : recrute tout, y compris les joueurs collégiaux. On ne lui masque
+  rien.
+- Toute règle, question ou rapport nomme lequel des deux. **Une règle écrite « recruteur » sans
+  précision est un défaut.**
+- La partie coach du recruteur collégial (son équipe, ses évaluations) est une phase future :
+  ne rien construire pour elle sans GO.
+
 ---
 
 ## PROJECT OVERVIEW
