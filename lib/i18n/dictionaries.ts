@@ -112,6 +112,8 @@ export interface Dictionary {
   /** Page coach v2 (BP 2026-10-20). Tutoiement, comme avant. */
   coachLanding: {
     hero: { eyebrow: string; title1: string; title2: string; lede: string; ledeSmall: string; cta: string; ctaSecondary: string; imageAlt: string };
+    /** « La discussion qui revient » : les questions de chaque recruteur, répondues une fois par le profil. */
+    discussion: { eyebrow: string; title1: string; title2: string; lede: string; items: { q: string; a: string }[]; note: string; imageAlt: string };
     etapes: { eyebrow: string; title1: string; title2: string; items: { title: string; body: string }[] };
     evaluation: { eyebrow: string; title1: string; title2: string; points: string[] };
     outils: { eyebrow: string; title1: string; title2: string; items: { title: string; body: string; note?: string }[] };
@@ -711,13 +713,29 @@ export const dictionaries: Record<Lang, Dictionary> = {
     coachLanding: {
       hero: {
         eyebrow: "Pour les entraîneurs",
-        title1: "Tes joueurs méritent",
-        title2: "d'être vus.",
-        lede: "Crée ton équipe, invite tes joueurs, vérifie et évalue leurs profils. Pour un recruteur, un profil vérifié par son coach, c'est du sérieux.",
+        title1: "Nexus te fait",
+        title2: "gagner du temps.",
+        lede: "Chaque recruteur te pose les mêmes questions, sur chacun de tes joueurs. Sur Nexus, les réponses sont déjà dans son profil : la discussion, tu l'as une fois.",
         ledeSmall: "Gratuit, pour toi comme pour tes joueurs.",
         cta: "Inscris ton équipe",
-        ctaSecondary: "Comment ça marche",
-        imageAlt: "Profil d'athlète vu par un recruteur : rapport et cote du coach (données fictives)",
+        ctaSecondary: "La discussion qui revient",
+        imageAlt: "Profil d'athlète vu par un recruteur : moyenne, programme visé, ouvert à déménager, au privé, à l'anglais, puis le rapport et la cote du coach (données fictives)",
+      },
+      discussion: {
+        eyebrow: "La discussion qui revient",
+        title1: "La même discussion,",
+        title2: "avec chaque recruteur.",
+        lede: "Pour chaque joueur, les mêmes questions. Maintenant, c'est son profil qui répond.",
+        items: [
+          { q: "Est-il prêt à changer de région\u00a0?", a: "« Ouvert à déménager », et ses régions de cégep préférées." },
+          { q: "Quel est son potentiel\u00a0?", a: "Ta cote, ton rapport et tes distinctions, signés de ton nom." },
+          { q: "Est-il ouvert aux cégeps anglophones\u00a0?", a: "« Ouvert anglophone » : oui ou non, sur son profil." },
+          { q: "Et aux cégeps privés\u00a0?", a: "« Ouvert au privé » : même chose." },
+          { q: "Quel programme vise-t-il\u00a0?", a: "Son programme de cégep visé." },
+          { q: "Comment vont ses notes\u00a0?", a: "Sa moyenne générale, ses matières fortes et ses mentions." },
+        ],
+        note: "Ton joueur remplit ces réponses une fois (ou toi, dans sa fiche). Ensuite, le recruteur les lit sur son profil — sans t'appeler pour les demander.",
+        imageAlt: "Détails académiques sur un profil d'athlète : programme visé, matières fortes, mentions et régions de cégep préférées (données fictives)",
       },
       etapes: {
         eyebrow: "Comment ça marche",
@@ -763,8 +781,8 @@ export const dictionaries: Record<Lang, Dictionary> = {
       },
       cta: {
         eyebrow: "Sois le nex",
-        title1: "Prêt à mettre",
-        title2: "tes joueurs en vitrine\u00a0?",
+        title1: "Réponds une fois.",
+        title2: "Le profil fait le reste.",
         body: "Inscris-toi gratuitement. Monte ton équipe. Vérifie tes athlètes.",
         button: "Inscris ton équipe",
         trustFree: "100 % gratuit",
@@ -1606,13 +1624,29 @@ export const dictionaries: Record<Lang, Dictionary> = {
     coachLanding: {
       hero: {
         eyebrow: "For coaches",
-        title1: "Your players deserve",
-        title2: "to be seen.",
-        lede: "Build your team, invite your players, verify and evaluate their profiles. To a recruiter, a profile verified by its coach means business.",
+        title1: "Nexus saves",
+        title2: "you time.",
+        lede: "Every recruiter asks you the same questions about every one of your players. On Nexus, the answers are already in the player's profile: you have that conversation once.",
         ledeSmall: "Free, for you and for your players.",
         cta: "Sign up your team",
-        ctaSecondary: "How it works",
-        imageAlt: "Athlete profile seen by a recruiter: coach report and rating (fictional data)",
+        ctaSecondary: "The conversation that keeps coming back",
+        imageAlt: "Athlete profile seen by a recruiter: GPA, target program, open to relocating, to private and to English CÉGEPs, then the coach's report and rating (fictional data)",
+      },
+      discussion: {
+        eyebrow: "The conversation that keeps coming back",
+        title1: "The same conversation,",
+        title2: "with every recruiter.",
+        lede: "For every player, the same questions. Now the profile answers them.",
+        items: [
+          { q: "Is he ready to move to another region?", a: "“Open to relocating”, plus his preferred CÉGEP regions." },
+          { q: "What's his potential?", a: "Your rating, your report and your distinctions, signed with your name." },
+          { q: "Is he open to English CÉGEPs?", a: "“Open to English”: yes or no, on his profile." },
+          { q: "And private CÉGEPs?", a: "“Open to private”: same thing." },
+          { q: "Which program is he aiming for?", a: "His target CÉGEP program." },
+          { q: "How are his grades?", a: "His overall average, strong subjects and academic honours." },
+        ],
+        note: "Your player fills in these answers once (or you do, in his file). After that, recruiters read them on his profile — without calling you to ask.",
+        imageAlt: "Academic details on an athlete profile: target program, strong subjects, honours and preferred CÉGEP regions (fictional data)",
       },
       etapes: {
         eyebrow: "How it works",

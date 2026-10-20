@@ -6,9 +6,12 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 /* ─────────────────────────────────────────────────────────────────
    Page coach v2 (BP 2026-10-20) — même langage que l'accueil v2 et la
    page recruteur. Tutoiement, comme avant. Aucune statistique inventée,
-   aucun nom de recruteur, aucune capture à données réelles : la seule
-   image est la capture fictive du profil vu par un recruteur
-   (public/images/athlete/profil.webp, partagée avec la page athlète).
+   aucun nom de recruteur, aucune capture à données réelles.
+   Récit (retour de BP) : Nexus fait gagner du temps au coach — la
+   discussion que chaque recruteur refait sur chaque joueur (région,
+   potentiel, anglophone, privé, programme, notes) a lieu une fois, dans
+   le profil. Captures : fiche fictive de Léo vue par un recruteur, en
+   bureau (public/images/coach/, voir maquettes/pages-v2b/outils/coach.js).
 ───────────────────────────────────────────────────────────────────*/
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
@@ -53,22 +56,56 @@ export default function SectionsCoach() {
                 <Link href="/inscription" className={bouton}>
                   {T.hero.cta} <span aria-hidden>→</span>
                 </Link>
-                <a href="#comment-ca-marche" className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
+                <a href="#discussion" className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
                   {T.hero.ctaSecondary}
                 </a>
               </div>
             </div>
-            <div className="lg:col-span-5 flex justify-center rounded-xl border border-white/[0.07] bg-[#1A1D24] pt-8 overflow-hidden max-h-[520px]">
+            <div className="lg:col-span-5 rounded-xl border border-white/[0.07] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
               {/* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */}
               <img
-                src="/images/athlete/profil.webp"
+                src="/images/coach/profil-repond.webp"
                 alt={T.hero.imageAlt}
-                width={600}
-                height={1298}
+                width={1200}
+                height={1076}
                 decoding="async"
-                className="w-[280px] h-auto self-start rounded-t-[22px] border border-b-0 border-white/[0.1]"
+                className="block w-full h-auto"
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── La discussion qui revient ─────────────────── */}
+      <section id="discussion" aria-labelledby="coach-discussion" className="py-24 lg:py-32 scroll-mt-20 border-b border-white/[0.06]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-14 grid gap-12 lg:grid-cols-12 lg:gap-16 items-start">
+          <div className="lg:col-span-7">
+            <Etiquette>{T.discussion.eyebrow}</Etiquette>
+            <Titre id="coach-discussion" l1={T.discussion.title1} l2={T.discussion.title2} taille="text-[44px] sm:text-6xl lg:text-[72px]" />
+            <p className="text-[17px] sm:text-[19px] text-white/75 leading-relaxed mt-6 max-w-[560px]">{T.discussion.lede}</p>
+            <ul className="mt-10 grid gap-3 sm:grid-cols-2">
+              {T.discussion.items.map((it) => (
+                <li key={it.q} className="rounded-md border border-white/[0.07] bg-[#1A1D24] px-5 py-5">
+                  <p className="font-head font-bold text-[17px] leading-snug text-white">{it.q}</p>
+                  <p className="mt-2.5 flex gap-2.5 text-[15px] text-[#9CA3AF] leading-relaxed">
+                    <span aria-hidden className="text-[#E63946]">→</span><span>{it.a}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-8 text-[16px] text-[#D1D5DB] leading-relaxed max-w-[620px] border-l-2 border-[#E63946] pl-4">{T.discussion.note}</p>
+          </div>
+          <div className="lg:col-span-5 lg:sticky lg:top-24 rounded-xl border border-white/[0.07] overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */}
+            <img
+              src="/images/coach/details-academiques.webp"
+              alt={T.discussion.imageAlt}
+              width={1200}
+              height={782}
+              loading="lazy"
+              decoding="async"
+              className="block w-full h-auto"
+            />
           </div>
         </div>
       </section>
