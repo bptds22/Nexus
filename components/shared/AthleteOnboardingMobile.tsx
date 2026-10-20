@@ -65,7 +65,8 @@ import { confirmerNomSiAConfirmer, nomADemander } from "@/lib/athlete/nomAConfir
 import { verifierDoublonInscription, type DoublonInscription } from "@/lib/athlete/doublonInscription";
 import { AvertissementDoublonInscription, PlusieursSports } from "@/components/athlete/AvertissementDoublonInscription";
 import { deconnexion } from "@/lib/auth/deconnexion";
-import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { POLITIQUE_CARTE_SEULE, PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { transmettreChoixInscription } from "@/lib/partenaires/consentementV2";
 import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
@@ -1174,12 +1175,16 @@ export function AthleteOnboardingMobile() {
     if (ligne) ficheEnBase.current = instantaneProtege(ligne);
     setExistingAthleteId(athleteId);
 
-    if (final && adultPartnerParRpc) {
+    if (final && (meta.choix_partenaires_v2 === "OUI" || meta.choix_partenaires_v2 === "NON")) {
+      /* Consentement partenaires v2 : le choix explicite de l'inscription (texte v2) part à la
+         base — OUI journalise l'accord v2 (par la RPC), NON clôt la demande v2. Non bloquant. */
+      await transmettreChoixInscription(supabase, meta);
+    } else if (final && adultPartnerParRpc) {
       /* Non bloquant : l'inscription est faite ; un refus (DOB < 14 côté base)
          laisse la fiche à false, et l'athlète peut l'activer dans Paramètres. */
       const { data: rpcRes, error: rpcErr } = await supabase.rpc("set_my_partner_visibility", {
         p_granted: true,
-        p_policy_version: PRIVACY_POLICY_VERSION,
+        p_policy_version: POLITIQUE_CARTE_SEULE, // inscription commencée avant la v2 : carte seule
       });
       const ok = (rpcRes as { ok?: boolean } | null)?.ok === true;
       if (rpcErr || !ok) {

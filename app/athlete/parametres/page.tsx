@@ -8,6 +8,7 @@ import { peutConsentirPartenaires } from "@/lib/legal/ageGate";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { AthleteParametresMobile } from "@/components/shared/AthleteParametresMobile";
 import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
+import EtendreConsentementPartenairesV2 from "@/components/shared/EtendreConsentementPartenairesV2";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { deconnexion } from "@/lib/auth/deconnexion";
@@ -381,7 +382,7 @@ function ParametresPageDesktop() {
                   <div>
                     <p className="text-[14px] font-bold text-white">Partenaires médias</p>
                     <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-1">
-                      Permettre aux partenaires médias approuvés (journalistes sportifs, pages spécialisées) de télécharger ma carte Nexus pour publication.
+                      Permettre aux partenaires médias approuvés (journalistes sportifs, pages spécialisées) de télécharger ma carte Nexus pour publication, et de voir mes vidéos et mes réseaux sociaux.
                     </p>
                     <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-2">
                       {partnerResponsibilityText("self")}
@@ -403,7 +404,7 @@ function ParametresPageDesktop() {
                         {peutAgir ? (
                           <div className="flex items-center justify-between py-2">
                             <div className="flex-1 pr-4">
-                              <p className="text-[13px] font-semibold text-white">Permettre l&apos;utilisation de ma carte par les partenaires</p>
+                              <p className="text-[13px] font-semibold text-white">Permettre l&apos;utilisation de ma carte, de mes vidéos et de mes réseaux par les partenaires</p>
                               {profile.partnerOptIn && profile.partnerOptInDate && (
                                 <p className="text-[11px] text-[#22C55E] mt-1">
                                   Activé le {new Date(profile.partnerOptInDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
@@ -413,7 +414,7 @@ function ParametresPageDesktop() {
                             <button
                               type="button"
                               disabled={!toggleEnabled}
-                              aria-label="Permettre l'utilisation de ma carte par les partenaires"
+                              aria-label="Permettre l'utilisation de ma carte, de mes vidéos et de mes réseaux par les partenaires"
                               onClick={async () => {
                                 if (!toggleEnabled) return;
                                 setSavingPartnerOptIn(true);
@@ -455,6 +456,7 @@ function ParametresPageDesktop() {
                       </>
                     );
                   })()}
+                  {profile && <EtendreConsentementPartenairesV2 cle={profile.partnerOptIn} notifier={showToast} />}
                 </div>
               </div>
 

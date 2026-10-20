@@ -15,6 +15,7 @@ import { AnimatedRoute } from "../recruteur/_components/AnimatedRoute";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
 import BandeauCartesPartenaires from "@/components/athlete/prospects/BandeauCartesPartenaires";
 import BandeauNomAConfirmer from "@/components/athlete/BandeauNomAConfirmer";
+import DemandeConsentementPartenairesV2 from "@/components/shared/DemandeConsentementPartenairesV2";
 import { lireJetonCarte } from "@/lib/partenaires/prospects";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -468,6 +469,8 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
       <DeactivationGuard />
+      {/* Consentement partenaires v2 (vidéos + réseaux) : carte plein écran à l'ouverture, web et appli. */}
+      <DemandeConsentementPartenairesV2 />
       <PlaybookBackground />
       <AthleteSidebar mobileOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       {/* min-w-0 : sans lui, cet élément flex prend la largeur MINIMALE de son

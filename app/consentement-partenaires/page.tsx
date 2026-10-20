@@ -25,7 +25,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createServiceClient } from "@/lib/supabase/service";
-import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
+import { PARTNER_MEDIA_COPY_V1 } from "@/lib/legal/partnerMediaCopy";
 
 export const dynamic = "force-dynamic";
 
@@ -91,7 +91,8 @@ function Explication({ prenom }: { prenom: string }) {
         <li>Cette autorisation est distincte de la visibilité auprès des recruteurs des cégeps. Refuser ne change rien au reste de son profil.</li>
       </ul>
       <p className="mt-4 border-t border-white/[0.06] pt-4 text-[12px] leading-relaxed text-white/50">
-        {partnerResponsibilityText("child")}
+        {/* Ce lien ne demande que la CARTE (journalisé « carte seule ») : texte v1. */}
+        {PARTNER_MEDIA_COPY_V1.responsabiliteChild}
       </p>
     </div>
   );

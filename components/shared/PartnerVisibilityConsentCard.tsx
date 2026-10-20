@@ -41,7 +41,7 @@
    SOURCE UNIQUE, pronom adapté selon l'audience (self / athlete).
 ═══════════════════════════════════════════════════════════════ */
 
-import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
+import { PARTNER_MEDIA_COPY, PARTNER_MEDIA_COPY_V1, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 
 interface PartnerVisibilityConsentCardProps {
   /** null = pas encore répondu (mode `obligatoire`) ; ailleurs, null vaut non. */
@@ -59,6 +59,10 @@ interface PartnerVisibilityConsentCardProps {
 interface Copy {
   intro: string;
   whatAppears: string;
+  /** Consentement v2 (2026-10-19) : vidéos et réseaux sociaux, nommés. Absent = texte v1 (la carte seulement). */
+  videosEtReseaux?: string;
+  /** Texte de responsabilité, quand il diffère de partnerResponsibilityText(). */
+  responsabilite?: string;
   bullets: string[];
   checkboxLabel: string;
   helper: string;
@@ -71,20 +75,25 @@ const COPY: Record<"athlete" | "adult" | "coach", Copy> = {
        AthleteParametresMobile "En savoir plus" disclosure stay byte-identical.
        The shared-responsibility paragraph comes from partnerResponsibilityText()
        (same source). checkboxLabel + helper are flow-specific and stay inline. */
-    intro: PARTNER_MEDIA_COPY.intro,
-    whatAppears: PARTNER_MEDIA_COPY.whatAppears,
-    bullets: [...PARTNER_MEDIA_COPY.bullets],
+    /* Case parentale HÉRITÉE (inscription commencée avant le 2026-10-02) : elle écrit
+       la fiche directement, sans journal → l'accord est v1. Son texte reste donc le v1. */
+    intro: PARTNER_MEDIA_COPY_V1.intro,
+    whatAppears: PARTNER_MEDIA_COPY_V1.whatAppears,
+    bullets: [...PARTNER_MEDIA_COPY_V1.bullets],
+    responsabilite: PARTNER_MEDIA_COPY_V1.responsabiliteSelf,
     checkboxLabel:
       "Mes parents autorisent l’utilisation de ma carte Nexus par les partenaires Nexus.",
     helper:
       "Tu peux compléter ton inscription sans cocher cette case. Ce choix peut être ajusté plus tard dans tes paramètres.",
   },
   adult: {
+    // v2 : la réponse part à la base avec la politique v2 (transmettreChoixInscription).
     intro: PARTNER_MEDIA_COPY.intro,
     whatAppears: PARTNER_MEDIA_COPY.whatAppears,
+    videosEtReseaux: PARTNER_MEDIA_COPY.videosEtReseaux,
     bullets: [...PARTNER_MEDIA_COPY.bullets],
     checkboxLabel:
-      "J’autorise l’utilisation de ma carte Nexus par les partenaires Nexus.",
+      "J’autorise l’utilisation de ma carte Nexus, de mes vidéos et de mes réseaux sociaux par les partenaires Nexus.",
     helper:
       "Tu peux compléter ton inscription sans cocher cette case. Ce choix peut être ajusté plus tard dans tes paramètres.",
   },
@@ -138,6 +147,13 @@ export default function PartnerVisibilityConsentCard({
         {copy.whatAppears}
       </p>
 
+      {copy.videosEtReseaux && (
+        <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-3">
+          <span className="font-bold text-white">Ce que les partenaires voient aussi :</span>{" "}
+          {copy.videosEtReseaux}
+        </p>
+      )}
+
       <p className="text-[13px] font-bold text-white leading-relaxed mt-3">
         Ce que cela signifie concrètement :
       </p>
@@ -148,7 +164,7 @@ export default function PartnerVisibilityConsentCard({
       </ul>
 
       <p className="text-[12px] text-[#9CA3AF] leading-relaxed mt-3 pt-3 border-t border-[#2D3748]">
-        {partnerResponsibilityText(audience === "coach" ? "athlete" : "self")}
+        {copy.responsabilite ?? partnerResponsibilityText(audience === "coach" ? "athlete" : "self")}
       </p>
 
       {obligatoire ? (

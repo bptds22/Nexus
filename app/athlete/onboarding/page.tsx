@@ -18,7 +18,8 @@ import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import { instantaneProtege, elaguerProtegees, erreurLisible } from "@/lib/athlete/perimetreProtege";
-import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { POLITIQUE_CARTE_SEULE, PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { transmettreChoixInscription } from "@/lib/partenaires/consentementV2";
 import { deconnexion } from "@/lib/auth/deconnexion";
 import { verifierDoublonInscription, type DoublonInscription } from "@/lib/athlete/doublonInscription";
 import { confirmerNomSiAConfirmer } from "@/lib/athlete/nomAConfirmer";
@@ -958,6 +959,7 @@ function AthleteOnboardingDesktop() {
      l'horodatage est celui du SIGNUP. `partner_visibility_parental_consent`
      n'est PAS écrite : aucun parent n'a rien autorisé. */
   const [adultPartnerISO, setAdultPartnerISO] = useState<string | null>(null);
+  const choixPartenairesV2 = useRef<string | null>(null);
   /* Le signup a laissé une trace « oui » à la case partenaires parentale
      (metadata + privacy_preferences). Si l'athlète DÉCOCHE la case à l'étape 1,
      cette trace doit dire non elle aussi — sinon la fiche dit non et le journal
@@ -1027,6 +1029,8 @@ function AthleteOnboardingDesktop() {
       if (typeof meta.consent_partner_visibility === "string") {
         setAdultPartnerISO(meta.consent_partner_visibility);
       }
+      // Consentement partenaires v2 : la réponse explicite de l'inscription (OUI / NON).
+      choixPartenairesV2.current = typeof meta.choix_partenaires_v2 === "string" ? meta.choix_partenaires_v2 : null;
 
       // Single retried read of public.users. Right after signup the JWT
       // cookie hasn't fully propagated, so RLS can return 0 rows for ~1s
@@ -1807,12 +1811,18 @@ function AthleteOnboardingDesktop() {
       athleteIdForTeam = (inserted?.id as string) ?? null;
     }
 
-    if (partenaireParRpc) {
+    if (choixPartenairesV2.current === "OUI" || choixPartenairesV2.current === "NON") {
+      /* Consentement partenaires v2 : le choix explicite de l'inscription (texte v2) part à la
+         base — OUI journalise l'accord v2 (par la RPC, fiche réclamée ou non), NON clôt la
+         demande v2. Non bloquant, comme l'ancien chemin ci-dessous. */
+      await transmettreChoixInscription(supabase, { choix_partenaires_v2: choixPartenairesV2.current });
+    } else if (partenaireParRpc) {
+      // Inscription commencée avant la v2 (aucune réponse v2 dans la metadata) : carte seule.
       /* Non bloquant : l'inscription est faite ; un refus (moins de 14 ans
          côté base) laisse la fiche à false, et Paramètres reste ouvert. */
       const { data: rpcRes, error: rpcErr } = await supabase.rpc("set_my_partner_visibility", {
         p_granted: true,
-        p_policy_version: PRIVACY_POLICY_VERSION,
+        p_policy_version: POLITIQUE_CARTE_SEULE,
       });
       if (rpcErr || (rpcRes as { ok?: boolean } | null)?.ok !== true) {
         console.error(`[Onboarding] visibilité partenaires : ${rpcErr ? erreurLisible(rpcErr) : JSON.stringify(rpcRes)}`);

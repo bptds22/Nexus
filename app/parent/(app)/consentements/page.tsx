@@ -186,7 +186,7 @@ export default function ParentConsentsPage() {
         />
 
         <ToggleRow
-          label="Image et visibilité auprès des partenaires"
+          label="Carte, vidéos et réseaux sociaux auprès des partenaires"
           hint={partnerResponsibilityText("child")}
           on={partnerOn}
           date={partnerOn ? partnerDate : null}

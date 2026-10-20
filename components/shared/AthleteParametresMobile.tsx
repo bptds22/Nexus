@@ -39,6 +39,7 @@ import { peutConsentirPartenaires } from "@/lib/legal/ageGate";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
+import EtendreConsentementPartenairesV2 from "@/components/shared/EtendreConsentementPartenairesV2";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   triggerHaptic,
@@ -483,7 +484,7 @@ export function AthleteParametresMobile() {
               {peutAgir ? (
                 <ToggleRow
                   label="Visibilité partenaires médias"
-                  sublabel="Permet aux partenaires médias approuvés de télécharger ta carte Nexus."
+                  sublabel="Permet aux partenaires médias approuvés de télécharger ta carte Nexus et de voir tes vidéos et tes réseaux sociaux."
                   isFirst
                   checked={profile.partnerOptIn}
                   onChange={togglePartnerOptIn}
@@ -540,6 +541,10 @@ export function AthleteParametresMobile() {
                     <span className="font-bold text-white">Ce qui apparaît sur la carte :</span>{" "}
                     {PARTNER_MEDIA_COPY.whatAppears}
                   </p>
+                  <p>
+                    <span className="font-bold text-white">Ce que les partenaires voient aussi :</span>{" "}
+                    {PARTNER_MEDIA_COPY.videosEtReseaux}
+                  </p>
                   <p className="font-bold text-white">Ce que cela signifie concrètement :</p>
                   <ul className="list-disc pl-5 space-y-1.5">
                     {PARTNER_MEDIA_COPY.bullets.map((b) => (
@@ -550,6 +555,10 @@ export function AthleteParametresMobile() {
                 </div>
               )}
             </Group>
+            {/* Consentement partenaires v2 : un accord v1 s'étend aux vidéos et aux réseaux. */}
+            <div className="px-4 pt-3">
+              <EtendreConsentementPartenairesV2 cle={profile.partnerOptIn} notifier={(m) => toast.success({ message: m })} />
+            </div>
             {/* Read-only consent dates footer (mirrors recruiter L402-407) */}
             <div className="px-6 pt-3 text-[11px] text-[#6b7280] leading-5">
               {signupDate && <p>Inscription : {signupDate}</p>}

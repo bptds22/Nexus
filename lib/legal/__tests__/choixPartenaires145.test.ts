@@ -8,12 +8,12 @@ import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 
-test("C5 : le texte de l'athlète est au tutoiement et nomme la cote, comme la carte", () => {
+test("C5 : le texte de l'athlète est au tutoiement et nomme la cote, comme la carte (v2 : vidéos et réseaux aussi)", () => {
   const soi = partnerResponsibilityText("self");
-  assert.ok(soi.startsWith("En activant cette option, tu autorises Nexus à communiquer ta carte (nom, position, établissement, cote, photo)"));
-  assert.ok(soi.endsWith("Tu peux retirer ce consentement en tout temps."));
+  assert.ok(soi.startsWith("En donnant ton accord, tu autorises Nexus à communiquer ta carte (nom, position, établissement, cote, photo), tes vidéos et les liens de tes réseaux sociaux"));
+  assert.ok(soi.includes("Tu peux retirer ce consentement en tout temps"));
   assert.ok(!/\bvous\b|\bvotre\b/.test(soi));
-  assert.ok(partnerResponsibilityText("child").includes("la carte de votre enfant (nom, position, établissement, cote, photo)"));
+  assert.ok(partnerResponsibilityText("child").includes("la carte de votre enfant (nom, position, établissement, cote, photo), ses vidéos et les liens de ses réseaux sociaux"));
 });
 
 test("C5 : la carte, en mode obligatoire, propose Oui / Non sans défaut", () => {

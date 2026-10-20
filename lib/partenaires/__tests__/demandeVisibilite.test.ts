@@ -104,5 +104,5 @@ test("écran de carte, moins de 14 ans : la MÊME demande au parent que « Accep
   f = faux(null, null);
   assert.match(await demanderAuParentDepuisCarte(f.client as never, "c1", false, "v1"), /Confirme d'abord/);
   assert.match(lire("components/athlete/prospects/CarteProspectReponse.tsx"),
-    /await demanderAuParentDepuisCarte\(createClient\(\), carte\.carteId, issue\?\.type === "attente", PRIVACY_POLICY_VERSION\)/);
+    /await demanderAuParentDepuisCarte\(createClient\(\), carte\.carteId, issue\?\.type === "attente", POLITIQUE_CARTE_SEULE\)/);
 });
