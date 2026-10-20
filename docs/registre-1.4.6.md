@@ -52,3 +52,32 @@ Game On reste au texte (le bouton Dicter actuel renvoie au micro du clavier dans
 Une vraie dictée (module natif `@capacitor-community/speech-recognition`, bouton à maintenir, « numéro 16… »
 qui choisit le joueur) et le nettoyage par IA (Whisper / Claude) ne se font PAS pour l'instant : BP les voit
 comme un **supplément payant par mois**, à reprendre avec la grille tarifaire.
+
+## Écritures qui ignorent leur erreur — messagerie et lectures (lot dédié, BP 2026-10-19)
+
+Même défaut que celui corrigé en 1.4.5 sur les écrans de profil (`lib/sauvegarde/messageEchec.ts`) :
+l'écriture part, son erreur n'est pas lue, l'écran fait comme si elle avait réussi. Relevé par l'audit
+du 2026-10-19 ; aucune n'est corrigée en 1.4.5.
+
+- **Envoi optimiste** — le message reste affiché « envoyé » si l'insert échoue :
+  `app/athlete/messages/[id]/PageClient.tsx:233-243` (+ `conversations` non vérifié),
+  `app/athlete/messages/[id]/AthleteGroupThreadView.tsx:137-148` (+ `last_read_at`, l.121),
+  `app/parent/(app)/messages/[id]/page.tsx:127-137` (+ `mark_conversation_read`, l.107).
+- **« Tout marquer comme lu »** : toast avant l'écriture, jamais vérifiée —
+  `app/athlete/notifications/page.tsx:217-221` (et l.209, une seule).
+- **Lu / non lu** non vérifiés : `app/coach/activites/page.tsx:156` ;
+  `app/coach/demandes/[id]/CoachCoachThreadView.tsx:124-125` ; `mark_conversation_read` /
+  `last_message_at` dans `components/shared/AthleteMessagesThreadMobile.tsx:156,179`,
+  `components/shared/CoachAthleteThreadMobile.tsx:146`, `app/coach/demandes/[id]/CoachAthleteThreadView.tsx:163,191`,
+  `CoachGroupThreadView.tsx:166`, `CoachParentThreadView.tsx:88,118`,
+  `app/recruteur/messages/[id]/PageClient.tsx:418`, `app/recruteur/messages/nouveau/page.tsx:569`,
+  `components/shared/MessageNouveauMobile.tsx:304`.
+- **Recruteur, fiche athlète** : suppression de note (l.131) et ajout à une liste (l.139) non vérifiés —
+  `app/recruteur/athletes/[id]/_components/NotesListsPanel.tsx`.
+- **Coach** : refus d'une suggestion, erreur en console seulement — `app/coach/athletes/[id]/PageClient.tsx:412-413`.
+- **Admin** : retrait d'un coach d'une école non vérifié — `app/admin/schools/[id]/PageClient.tsx:794`.
+- Restes hors profil de l'onboarding web : insert `admin_claims` (console seulement,
+  `app/onboarding/page.tsx` — demandes de directeur) ; opt-in partenaire en fin d'onboarding, volontairement
+  non bloquant, mais muet.
+
+Les numéros de ligne sont ceux du 2026-10-19 (branche `feat/visites-mode-match`, `65eab34a`).
