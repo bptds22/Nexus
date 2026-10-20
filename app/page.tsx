@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PlaybookBackground from "./components/PlaybookBackground";
 import PartnerCarousel from "./components/PartnerCarousel";
+import SectionsAccueil from "@/components/marketing/accueil/SectionsAccueil";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -12,7 +13,7 @@ import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRout
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Homepage (rewrite)
-   Four sections only: Hero, Persona Cards, Trust Strip, Footer.
+   Hero, bannière partenaires, puis les sections de l'accueil v2 (SectionsAccueil), Footer.
 ───────────────────────────────────────────────────────────────────*/
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
@@ -266,6 +267,9 @@ export default function Home() {
           SECTION 2 — PARTNER CAROUSEL (live media_partners)
       ══════════════════════════════════════════ */}
       <PartnerCarousel />
+
+      {/* Accueil v2 (BP 2026-10-20) : les sections sous la bannière partenaires. */}
+      <SectionsAccueil />
 
       <Footer />
 

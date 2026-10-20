@@ -50,6 +50,19 @@ export interface Dictionary {
       location: string;
       promotion: string;
     };
+    /** Accueil v2 (BP 2026-10-20) : les sections sous le héros et la bannière partenaires. */
+    sections: {
+      quoi: { eyebrow: string; title1: string; title2: string; intro: string; points: { title: string; body: string }[] };
+      recus: {
+        eyebrow: string; title1: string; title2: string; receiptNo: string; total: string;
+        avant: { label: string; items: string[]; total: string };
+        avec: { label: string; items: string[]; total: string };
+      };
+      tuiles: { eyebrow: string; title1: string; title2: string; items: { kicker: string; title: string; body: string; alt: string }[] };
+      etapes: { eyebrow: string; title: string; items: { title: string; body: string }[] };
+      recruteurs: { eyebrow: string; title1: string; title2: string; cta: string };
+      final: { eyebrow: string; title1: string; title2: string; appStoreSmall: string; playSmall: string; codeLead: string; code: string };
+    };
   };
   nav: {
     discover: string;
@@ -643,6 +656,75 @@ export const dictionaries: Record<Lang, Dictionary> = {
         schoolName: "École secondaire Saint-Jean-Eudes",
         location: "Québec, QC",
         promotion: "Promotion 2026",
+      },
+      sections: {
+        quoi: {
+          eyebrow: "C'est quoi Nexus ?",
+          title1: "Ta carte. Ton profil.",
+          title2: "Tous les cégeps.",
+          intro: "Nexus réunit ta carte d'athlète et ton profil complet au même endroit, pour que les recruteurs des cégeps te trouvent, peu importe ton école.",
+          points: [
+            { title: "Fais-toi voir", body: "Ta carte, tes étoiles, tes badges." },
+            { title: "Tout au même endroit", body: "Pour les recruteurs : faits saillants, tests physiques, historique d'équipes, scolaire." },
+            { title: "Ton prochain niveau", body: "Le depth chart (postes à combler), les pages des cégeps, le choix du programme." },
+            { title: "En quelques étapes", body: "Apple ou Google, ton code d'équipe, et tout se remplit." },
+            { title: "Et plus", body: "Carte des cégeps, liste des écoles, ambassadeurs, transferts." },
+          ],
+        },
+        recus: {
+          eyebrow: "Les reçus",
+          title1: "Avant.",
+          title2: "Avec Nexus.",
+          receiptNo: "Reçu nº",
+          total: "Total",
+          avant: {
+            label: "Avant",
+            items: ["Courriels aux recruteurs, un par un", "Un CV en PDF que personne n'ouvre", "Des liens vidéo éparpillés", "Des stats dans un texto", "Les petites écoles, invisibles"],
+            total: "« On verra »",
+          },
+          avec: {
+            label: "Avec Nexus",
+            items: ["Une carte de joueur", "Un profil standard, toujours le même", "Vidéos, tests et scolaire au même endroit", "Évalué par ton coach", "Visible pour tous les cégeps"],
+            total: "Un seul lien",
+          },
+        },
+        tuiles: {
+          eyebrow: "Dans l'appli",
+          title1: "Tout ce qu'il te faut.",
+          title2: "Rien de trop.",
+          items: [
+            { kicker: "Athlète", title: "Ta carte de joueur", body: "Ta cote, ta position, ton école. Elle se partage en un lien.", alt: "Carte de joueur Nexus d'un athlète fictif, quart-arrière, cinq étoiles" },
+            { kicker: "Athlète", title: "Ton profil en 3 onglets", body: "Rapport, académique, sportif. Le même format pour tout le monde.", alt: "Profil d'athlète avec ses trois onglets" },
+            { kicker: "Cégeps", title: "Le depth chart", body: "Les postes à combler dans chaque programme, l'an prochain.", alt: "Depth chart d'un cégep : postes à combler" },
+            { kicker: "Cégeps", title: "Trouve ton cégep", body: "Les programmes de ton sport, par région, d'un coup d'œil.", alt: "Recherche des cégeps" },
+            { kicker: "Recruteurs", title: "En direct", body: "Les recruteurs notent les joueurs pendant le match, même sans réseau.", alt: "Écran En direct : notes par numéro de chandail" },
+            { kicker: "Athlète", title: "Deviens ambassadeur", body: "Invite tes coéquipiers avec ton lien et gagne ton badge.", alt: "Page ambassadeur" },
+          ],
+        },
+        etapes: {
+          eyebrow: "Comment ça marche",
+          title: "3 étapes.",
+          items: [
+            { title: "Inscris-toi en quelques minutes", body: "Stats, position, vidéo, parcours : remplis ce que tu peux, peaufine plus tard." },
+            { title: "Ton coach te vérifie", body: "Il valide tes infos et ajoute son évaluation. Le crochet bleu fait monter ton profil." },
+            { title: "Les recruteurs te trouvent", body: "Ton profil apparaît dans leurs recherches. Ils peuvent te contacter, ou contacter ton coach." },
+          ],
+        },
+        recruteurs: {
+          eyebrow: "Pour les recruteurs et les écoles",
+          title1: "Tout ton recrutement,",
+          title2: "au même endroit.",
+          cta: "Voir la page recruteur",
+        },
+        final: {
+          eyebrow: "Sois le nex",
+          title1: "Télécharge Nexus.",
+          title2: "À toi de jouer.",
+          appStoreSmall: "Télécharger dans",
+          playSmall: "Disponible sur",
+          codeLead: "Pas encore de code d'équipe ?",
+          code: "Demande ton code à ton coach.",
+        },
       },
     },
     nav: {
@@ -1470,6 +1552,75 @@ export const dictionaries: Record<Lang, Dictionary> = {
         schoolName: "École secondaire Saint-Jean-Eudes", // TODO-EN — confirm whether marketing wants this anglicized
         location: "Québec, QC",
         promotion: "Class of 2026",
+      },
+      sections: {
+        quoi: {
+          eyebrow: "What is Nexus?",
+          title1: "Your card. Your profile.",
+          title2: "Every CÉGEP.",
+          intro: "Nexus brings your athlete card and your full profile together, so CÉGEP recruiters can find you, whatever your school.",
+          points: [
+            { title: "Get seen", body: "Your card, your stars, your badges." },
+            { title: "All in one place", body: "For recruiters: highlights, physical tests, team history, academics." },
+            { title: "Your next level", body: "The depth chart (open positions), CÉGEP pages, choosing your program." },
+            { title: "A few steps", body: "Apple or Google, your team code, and everything fills in." },
+            { title: "And more", body: "CÉGEP map, school list, ambassadors, transfers." },
+          ],
+        },
+        recus: {
+          eyebrow: "The receipts",
+          title1: "Before.",
+          title2: "With Nexus.",
+          receiptNo: "Receipt no.",
+          total: "Total",
+          avant: {
+            label: "Before",
+            items: ["Emails to recruiters, one by one", "A PDF résumé nobody opens", "Scattered video links", "Stats in a text message", "Small schools, invisible"],
+            total: "\"We'll see\"",
+          },
+          avec: {
+            label: "With Nexus",
+            items: ["One player card", "A standard profile, always the same", "Videos, tests and academics in one place", "Rated by your coach", "Visible to every CÉGEP"],
+            total: "One link",
+          },
+        },
+        tuiles: {
+          eyebrow: "In the app",
+          title1: "Everything you need.",
+          title2: "Nothing you don't.",
+          items: [
+            { kicker: "Athlete", title: "Your player card", body: "Your rating, your position, your school. Share it with one link.", alt: "Nexus player card of a fictitious athlete, quarterback, five stars" },
+            { kicker: "Athlete", title: "Your profile, 3 tabs", body: "Report, academics, sport. The same format for everyone.", alt: "Athlete profile with its three tabs" },
+            { kicker: "CÉGEPs", title: "The depth chart", body: "The positions each program needs to fill next year.", alt: "A CÉGEP depth chart: open positions" },
+            { kicker: "CÉGEPs", title: "Find your CÉGEP", body: "Programs in your sport, by region, at a glance.", alt: "CÉGEP search" },
+            { kicker: "Recruiters", title: "Live", body: "Recruiters take notes during the game, even offline.", alt: "Live screen: notes by jersey number" },
+            { kicker: "Athlete", title: "Become an ambassador", body: "Invite your teammates with your link and earn your badge.", alt: "Ambassador page" },
+          ],
+        },
+        etapes: {
+          eyebrow: "How it works",
+          title: "3 steps.",
+          items: [
+            { title: "Sign up in minutes", body: "Stats, position, video, background: fill in what you can, polish later." },
+            { title: "Your coach verifies you", body: "They confirm your info and add their evaluation. The blue check lifts your profile." },
+            { title: "Recruiters find you", body: "Your profile shows up in their searches. They can reach you, or your coach." },
+          ],
+        },
+        recruteurs: {
+          eyebrow: "For recruiters and schools",
+          title1: "All your recruiting,",
+          title2: "in one place.",
+          cta: "See the recruiter page",
+        },
+        final: {
+          eyebrow: "Be the nex",
+          title1: "Get Nexus.",
+          title2: "Your move.",
+          appStoreSmall: "Download on the",
+          playSmall: "Get it on",
+          codeLead: "No team code yet?",
+          code: "Ask your coach for yours.",
+        },
       },
     },
     nav: {
