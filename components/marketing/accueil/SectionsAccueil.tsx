@@ -9,13 +9,17 @@ import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/config/appStores";
    bannière partenaires, qui restent inchangés. Même langage visuel que
    le héros : titres nx-display (Barlow Condensed) en majuscules,
    étiquette rouge précédée d'un trait, texte Outfit, fond #111317.
-   Captures : vraies captures de l'appli, données fictives
-   (public/images/accueil/). Aucun chiffre, aucun témoignage, aucun logo.
+   Aucun chiffre, aucun témoignage, aucun logo.
 ───────────────────────────────────────────────────────────────────*/
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
-const TUILES_IMG = ["carte-joueur", "profil", "depth-chart", "cegeps", "en-direct", "ambassadeur"] as const;
+/** Les liens des trois rôles, dans l'ordre du dictionnaire (athlète, coach, recruteur). */
+const PERSONAS_LIENS = [
+  { cta: "/inscription?role=ATHLETE", plus: "/pour-les-etudiant-athlete" },
+  { cta: "/inscription", plus: "/pour-les-coachs" },
+  { cta: "/pour-les-recruteurs#cta", plus: "/pour-les-recruteurs" },
+] as const;
 
 /** Bord inférieur dentelé d'un reçu. */
 const DENTS: React.CSSProperties = {
@@ -98,32 +102,39 @@ export default function SectionsAccueil() {
         </div>
       </section>
 
-      {/* ── Tuiles : vraies captures, données fictives ──── */}
-      <section aria-labelledby="accueil-tuiles" className="py-24 lg:py-32">
+      {/* ── Choisis ton rôle : athlète, coach, recruteur ── */}
+      <section aria-labelledby="accueil-personas" className="py-24 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-14">
-          <Etiquette>{S.tuiles.eyebrow}</Etiquette>
-          <Titre id="accueil-tuiles" l1={S.tuiles.title1} l2={S.tuiles.title2} />
-          <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {S.tuiles.items.map((it, i) => (
-              <article key={it.title} className="flex flex-col overflow-hidden rounded-lg border border-white/[0.07] bg-[#1A1D24]">
-                <div className="px-6 pt-6">
-                  <div className={`${label} text-[#E63946]`}>{it.kicker}</div>
-                  <h3 className="nx-display uppercase text-[30px] leading-none mt-2 text-white">{it.title}</h3>
-                  <p className="mt-2 text-[15px] text-[#9CA3AF]">{it.body}</p>
-                </div>
-                <div className="mt-6 h-[300px] overflow-hidden px-6 flex justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- export statique de l'appli : pas d'optimiseur d'images */}
-                  <img
-                    src={`/images/accueil/${TUILES_IMG[i]}.webp`}
-                    alt={it.alt}
-                    width={600}
-                    height={i === 0 ? 797 : 750}
-                    loading="lazy"
-                    decoding="async"
-                    className={i === 0
-                      ? "w-full max-w-[250px] h-auto self-start"
-                      : "w-full max-w-[300px] h-auto self-start rounded-t-[10px] border border-b-0 border-white/[0.07]"}
-                  />
+          <Etiquette>{S.personas.eyebrow}</Etiquette>
+          <Titre id="accueil-personas" l1={S.personas.title1} l2={S.personas.title2} />
+          <div className="mt-12 grid gap-4 lg:grid-cols-3">
+            {S.personas.items.map((p, i) => (
+              <article
+                key={p.role}
+                className="group relative flex flex-col overflow-hidden rounded-lg border border-white/[0.07] bg-[#1A1D24] p-7 lg:p-8 transition-colors hover:border-[#E63946]/60"
+              >
+                <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100" style={{ background: "radial-gradient(420px 220px at 50% 0%, rgba(230,57,70,0.14), transparent 70%)" }} />
+                <div className={`${label} relative text-[#9CA3AF]`}>{S.personas.iAm}</div>
+                <h3 className="nx-display relative uppercase leading-[0.9] mt-2 text-[56px] lg:text-[64px] text-white">{p.role}</h3>
+                <span className="relative mt-5 block h-px w-10 bg-[#E63946]" />
+                <p className="relative mt-5 text-xl font-semibold text-white">{p.title}</p>
+                <ul className="relative mt-4 space-y-2.5">
+                  {p.points.map((pt) => (
+                    <li key={pt} className="flex gap-3 text-[15px] text-[#9CA3AF] leading-relaxed">
+                      <span aria-hidden className="text-[#E63946]">→</span><span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="relative mt-auto pt-8 flex flex-col items-start gap-4">
+                  <Link
+                    href={PERSONAS_LIENS[i].cta}
+                    className="inline-flex items-center gap-3 h-11 px-6 bg-[#E63946] text-white font-head font-black text-[13px] uppercase tracking-widest hover:bg-[#D42B22] transition-colors rounded"
+                  >
+                    {p.cta} <span aria-hidden>→</span>
+                  </Link>
+                  <Link href={PERSONAS_LIENS[i].plus} className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
+                    {p.more}
+                  </Link>
                 </div>
               </article>
             ))}

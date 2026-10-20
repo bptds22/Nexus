@@ -58,7 +58,7 @@ export interface Dictionary {
         avant: { label: string; items: string[]; total: string };
         avec: { label: string; items: string[]; total: string };
       };
-      tuiles: { eyebrow: string; title1: string; title2: string; items: { kicker: string; title: string; body: string; alt: string }[] };
+      personas: { eyebrow: string; title1: string; title2: string; iAm: string; items: { role: string; title: string; points: string[]; cta: string; more: string }[] };
       etapes: { eyebrow: string; title: string; items: { title: string; body: string }[] };
       recruteurs: { eyebrow: string; title1: string; title2: string; cta: string };
       final: { eyebrow: string; title1: string; title2: string; appStoreSmall: string; playSmall: string; codeLead: string; code: string };
@@ -251,6 +251,11 @@ export interface Dictionary {
     };
   };
   recruiterLanding: {
+    /** Page recruteur v2 (BP 2026-10-20) : héros + une section par fonction, avec capture. */
+    v2: {
+      hero: { eyebrow: string; title1: string; title2: string; lede: string; cta: string; ctaSecondary: string };
+      fonctions: { eyebrow: string; title1: string; title2: string; items: { kicker: string; title: string; points: string[]; alt: string }[] };
+    };
     hero: {
       eyebrow: string;
       titleLine1: string;
@@ -688,17 +693,15 @@ export const dictionaries: Record<Lang, Dictionary> = {
             total: "Un seul lien",
           },
         },
-        tuiles: {
-          eyebrow: "Dans l'appli",
-          title1: "Tout ce qu'il te faut.",
-          title2: "Rien de trop.",
+        personas: {
+          eyebrow: "Choisis ton rôle",
+          title1: "Nexus pour toi.",
+          title2: "Choisis ton côté.",
+          iAm: "Je suis",
           items: [
-            { kicker: "Athlète", title: "Ta carte de joueur", body: "Ta cote, ta position, ton école. Elle se partage en un lien.", alt: "Carte de joueur Nexus d'un athlète fictif, quart-arrière, cinq étoiles" },
-            { kicker: "Athlète", title: "Ton profil en 3 onglets", body: "Rapport, académique, sportif. Le même format pour tout le monde.", alt: "Profil d'athlète avec ses trois onglets" },
-            { kicker: "Cégeps", title: "Le depth chart", body: "Les postes à combler dans chaque programme, l'an prochain.", alt: "Depth chart d'un cégep : postes à combler" },
-            { kicker: "Cégeps", title: "Trouve ton cégep", body: "Les programmes de ton sport, par région, d'un coup d'œil.", alt: "Recherche des cégeps" },
-            { kicker: "Recruteurs", title: "En direct", body: "Les recruteurs notent les joueurs pendant le match, même sans réseau.", alt: "Écran En direct : notes par numéro de chandail" },
-            { kicker: "Athlète", title: "Deviens ambassadeur", body: "Invite tes coéquipiers avec ton lien et gagne ton badge.", alt: "Page ambassadeur" },
+            { role: "Athlète", title: "Fais-toi voir.", points: ["Ta carte de joueur et ton profil complet", "Ton coach vérifie ton profil et t'évalue", "Les recruteurs de tous les cégeps te trouvent"], cta: "Crée ton profil", more: "En savoir plus" },
+            { role: "Coach", title: "Mets tes joueurs en vitrine.", points: ["Crée ton équipe, invite tes joueurs avec un code", "Vérifie et évalue leurs profils", "Tu restes le point de contact des recruteurs"], cta: "Inscris ton équipe", more: "En savoir plus" },
+            { role: "Recruteur", title: "Tout ton recrutement, au même endroit.", points: ["Recherche et filtres sur tous les athlètes", "Ton processus, tes notes, tes listes", "En direct pendant le match, même sans réseau"], cta: "Demander une démo", more: "En savoir plus" },
           ],
         },
         etapes: {
@@ -959,6 +962,30 @@ export const dictionaries: Record<Lang, Dictionary> = {
       },
     },
     recruiterLanding: {
+      v2: {
+        hero: {
+          eyebrow: "Pour les recruteurs et les écoles",
+          title1: "Tout votre recrutement,",
+          title2: "au même endroit.",
+          lede: "Trouvez, évaluez et suivez vos athlètes, du premier match à la signature.",
+          cta: "Demander une démo",
+          ctaSecondary: "Voir les fonctions",
+        },
+        fonctions: {
+          eyebrow: "Les fonctions",
+          title1: "Ce que Nexus fait",
+          title2: "pour vous.",
+          items: [
+            { kicker: "Recherche", title: "Recherche et filtres", points: ["Sport, position, promotion, ligue, division", "Moyenne, mentions, préférences de cégep", "Profils vérifiés par le coach, avec vidéo, avec distinction"], alt: "Recherche d'athlètes avec ses filtres" },
+            { kicker: "Mon processus", title: "Votre processus, étape par étape", points: ["Les étapes, d'« Identifié » à « Lettre signée »", "Votre grade, de A+ à E, et vos notes", "« Retiré », avec sa raison : l'historique reste"], alt: "Mon processus : colonnes par étape, grades et notes" },
+            { kicker: "En direct", title: "Dépistez pendant le match", points: ["Une note par numéro de chandail", "Hors ligne : ça fonctionne même sans réseau", "Partagé avec votre unité, trié après le match"], alt: "En direct : notes par numéro de chandail pendant un match" },
+            { kicker: "Matchs", title: "Carte des matchs et calendrier", points: ["Les matchs près de vous, sur une carte", "Votre calendrier de visites", "Une visite s'envoie à Google Agenda ou Outlook"], alt: "Calendrier des matchs et des visites" },
+            { kicker: "Prospects", title: "Des cartes pour les joueurs pas encore inscrits", points: ["Créez une carte pour un joueur repéré, modifiez-la", "Quand il s'inscrit, Nexus vous propose de la rapprocher de son vrai profil"], alt: "Rapprochement d'une carte de prospect avec un profil Nexus" },
+            { kicker: "Listes", title: "Vos listes, avec vos notes", points: ["Regroupez vos athlètes comme vous voulez", "Une note privée sur chacun"], alt: "Une liste d'athlètes avec ses notes" },
+            { kicker: "Règles", title: "Les périodes sans contact, respectées", points: ["Pendant une période sans contact, Nexus vous le signale sur le profil", "Vous pouvez toujours écrire à l'entraîneur"], alt: "Avis de période sans contact sur un profil d'athlète" },
+          ],
+        },
+      },
       hero: {
         eyebrow: "Pour les recruteurs CÉGEP",
         titleLine1: "Trouvez les athlètes",
@@ -1584,17 +1611,15 @@ export const dictionaries: Record<Lang, Dictionary> = {
             total: "One link",
           },
         },
-        tuiles: {
-          eyebrow: "In the app",
-          title1: "Everything you need.",
-          title2: "Nothing you don't.",
+        personas: {
+          eyebrow: "Pick your role",
+          title1: "Nexus for you.",
+          title2: "Pick your side.",
+          iAm: "I'm a",
           items: [
-            { kicker: "Athlete", title: "Your player card", body: "Your rating, your position, your school. Share it with one link.", alt: "Nexus player card of a fictitious athlete, quarterback, five stars" },
-            { kicker: "Athlete", title: "Your profile, 3 tabs", body: "Report, academics, sport. The same format for everyone.", alt: "Athlete profile with its three tabs" },
-            { kicker: "CÉGEPs", title: "The depth chart", body: "The positions each program needs to fill next year.", alt: "A CÉGEP depth chart: open positions" },
-            { kicker: "CÉGEPs", title: "Find your CÉGEP", body: "Programs in your sport, by region, at a glance.", alt: "CÉGEP search" },
-            { kicker: "Recruiters", title: "Live", body: "Recruiters take notes during the game, even offline.", alt: "Live screen: notes by jersey number" },
-            { kicker: "Athlete", title: "Become an ambassador", body: "Invite your teammates with your link and earn your badge.", alt: "Ambassador page" },
+            { role: "Athlete", title: "Get seen.", points: ["Your player card and full profile", "Your coach verifies and rates you", "Recruiters from every CÉGEP find you"], cta: "Create your profile", more: "Learn more" },
+            { role: "Coach", title: "Showcase your players.", points: ["Create your team, invite players with a code", "Verify and rate their profiles", "You stay the recruiters' point of contact"], cta: "Sign up your team", more: "Learn more" },
+            { role: "Recruiter", title: "All your recruiting, in one place.", points: ["Search and filters across every athlete", "Your process, your notes, your lists", "Live during the game, even offline"], cta: "Request a demo", more: "Learn more" },
           ],
         },
         etapes: {
@@ -1858,6 +1883,30 @@ export const dictionaries: Record<Lang, Dictionary> = {
       },
     },
     recruiterLanding: {
+      v2: {
+        hero: {
+          eyebrow: "For recruiters and schools",
+          title1: "All your recruiting,",
+          title2: "in one place.",
+          lede: "Find, evaluate and follow your athletes, from the first game to the signature.",
+          cta: "Request a demo",
+          ctaSecondary: "See the features",
+        },
+        fonctions: {
+          eyebrow: "Features",
+          title1: "What Nexus does",
+          title2: "for you.",
+          items: [
+            { kicker: "Search", title: "Search and filters", points: ["Sport, position, class, league, division", "GPA, honours, CÉGEP preferences", "Coach-verified profiles, with video, with distinctions"], alt: "Athlete search with its filters" },
+            { kicker: "My process", title: "Your process, step by step", points: ["Stages, from \"Identified\" to \"Letter signed\"", "Your grade, from A+ to E, and your notes", "\"Withdrawn\", with its reason: the history stays"], alt: "My process: columns by stage, grades and notes" },
+            { kicker: "Live", title: "Scout during the game", points: ["One note per jersey number", "Offline: works without a signal", "Shared with your staff, sorted after the game"], alt: "Live: notes by jersey number during a game" },
+            { kicker: "Games", title: "Game map and calendar", points: ["Games near you, on a map", "Your visit calendar", "Send a visit to Google Calendar or Outlook"], alt: "Game and visit calendar" },
+            { kicker: "Prospects", title: "Cards for players not signed up yet", points: ["Create a card for a player you spotted, edit it", "When they sign up, Nexus offers to match it to their real profile"], alt: "Matching a prospect card with a Nexus profile" },
+            { kicker: "Lists", title: "Your lists, with your notes", points: ["Group your athletes any way you like", "A private note on each one"], alt: "A list of athletes with its notes" },
+            { kicker: "Rules", title: "No-contact periods, respected", points: ["During a no-contact period, Nexus flags it on the profile", "You can always write to the coach"], alt: "No-contact period notice on an athlete profile" },
+          ],
+        },
+      },
       hero: {
         eyebrow: "For CÉGEP recruiters",
         titleLine1: "Find the athletes", // TODO-EN
