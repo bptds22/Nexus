@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Pour les athlètes — Fais-toi voir, fais-toi recruter",
   description:
-    "Découvre comment Nexus aide les athlètes du secondaire au Québec à se faire repérer par les recruteurs CÉGEP. Ton coach crée ton profil, tu te fais voir.",
+    "Découvre comment Nexus aide les athlètes du secondaire au Québec à se faire voir par les recruteurs des cégeps. Crée ton profil, ton coach le vérifie, les recruteurs te trouvent.",
   alternates: {
     canonical: "https://nexussports.ca/pour-les-etudiant-athlete",
   },
