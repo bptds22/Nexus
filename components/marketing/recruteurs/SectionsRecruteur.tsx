@@ -13,16 +13,19 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
-/** Les captures, dans l'ordre du dictionnaire. `mobile` : capture d'appli, cadrée comme un téléphone. */
-const CAPTURES = [
+/** Les captures, dans l'ordre du dictionnaire. `mobile` : capture d'appli, cadrée comme un téléphone.
+ *  `extra` : une seconde capture, plus petite, sous la première (son texte : `altExtra`).
+ *  Retour BP (v2c) : En direct, Matchs et Calendrier en captures WEB (maquettes/pages-v2c/outils/). */
+const CAPTURES: readonly { src: string; w: number; h: number; mobile?: boolean; extra?: { src: string; w: number; h: number } }[] = [
   { src: "recherche", w: 1400, h: 875 },
   { src: "processus", w: 1400, h: 875 },
-  { src: "en-direct", w: 600, h: 1298, mobile: true },
-  { src: "calendrier", w: 1400, h: 875 },
+  { src: "en-direct", w: 1400, h: 875 },
+  { src: "matchs", w: 1400, h: 852 },
+  { src: "calendrier", w: 1400, h: 875, extra: { src: "agenda", w: 1200, h: 493 } },
   { src: "prospects", w: 1400, h: 875 },
   { src: "listes", w: 1400, h: 875 },
   { src: "non-contact", w: 1200, h: 835 },
-] as const;
+]
 
 function Etiquette({ children }: { children: React.ReactNode }) {
   return (
@@ -103,7 +106,7 @@ export default function SectionsRecruteur() {
           {V.fonctions.items.map((f, i) => {
             const c = CAPTURES[i];
             const inverse = i % 2 === 1;
-            const mobile = "mobile" in c && c.mobile;
+            const mobile = !!c.mobile;
             return (
               <div key={f.title} className="grid gap-8 lg:gap-14 items-center py-16 lg:py-20 border-b border-white/[0.06] last:border-b-0 lg:grid-cols-12">
                 <div className={`lg:col-span-5 ${inverse ? "lg:order-2" : ""}`}>
@@ -130,6 +133,18 @@ export default function SectionsRecruteur() {
                       ? "w-[280px] h-auto self-start rounded-t-[22px] border border-b-0 border-white/[0.1]"
                       : "w-full h-auto rounded-xl border border-white/[0.08] shadow-[0_30px_80px_rgba(0,0,0,0.45)]"}
                   />
+                  {c.extra && f.altExtra && (
+                    /* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */
+                    <img
+                      src={`/images/recruteur/${c.extra.src}.webp`}
+                      alt={f.altExtra}
+                      width={c.extra.w}
+                      height={c.extra.h}
+                      loading="lazy"
+                      decoding="async"
+                      className="mt-4 w-full sm:ml-auto sm:w-[88%] h-auto rounded-xl border border-white/[0.08] shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
+                    />
+                  )}
                 </div>
               </div>
             );
