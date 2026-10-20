@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { RecruiterSettings } from "@/lib/types/models";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 /* ─────────────────────────────────────────────────────────────────
    CompteSection — Mon compte (avatar, name, email, phone, password)
@@ -25,6 +26,7 @@ interface Props {
 export default function CompteSection({ form, original, onUpdate, onSave, onPasswordModal, onPhotoUpload, onPhotoRemove }: Props) {
   const dirty = form.firstName !== original.firstName || form.lastName !== original.lastName || (form.phone ?? "") !== (original.phone ?? "");
   const [preferredLanguage, setPreferredLanguage] = useState<string>("fr");
+  const [erreurLangue, setErreurLangue] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadLang() {
@@ -106,7 +108,9 @@ export default function CompteSection({ form, original, onUpdate, onSave, onPass
             value={preferredLanguage}
             onChange={async (e) => {
               const value = e.target.value;
+              const avant = preferredLanguage;
               setPreferredLanguage(value);
+              setErreurLangue(null);
               const supabase = createClient();
               const { data: { user } } = await supabase.auth.getUser();
               if (!user) return;
@@ -114,12 +118,14 @@ export default function CompteSection({ form, original, onUpdate, onSave, onPass
                 .from("users")
                 .update({ preferred_language: value })
                 .eq("id", user.id);
+              if (error) { setPreferredLanguage(avant); setErreurLangue(messageEchecSauvegarde(error, "Langue recruteur")); }
             }}
             className={inputCls}
           >
             <option value="fr">Fran&#231;ais</option>
             <option value="en" disabled>English (disponible prochainement)</option>
           </select>
+          {erreurLangue && <p className="text-[12px] text-[#EF4444] mt-1" role="alert">{erreurLangue}</p>}
         </div>
       </div>
 

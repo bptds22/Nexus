@@ -46,6 +46,8 @@ export interface SaveResult {
   /** Athlete id (new in create, echoed in edit). */
   id?: string;
   error?: { message: string };
+  /** Création réussie, mais une étape secondaire a échoué (rattachement à l'équipe) : à montrer. */
+  avertissement?: string;
 }
 
 export interface SaveEditOptions {
@@ -326,7 +328,8 @@ export async function saveAthleteCreate(
     });
     if (taRes.error) {
       console.error("[saveAthleteCreate] team_athletes insert failed:", taRes.error);
-      // non-fatal — athlete row exists, team assignment can be redone manually
+      // Non fatal (la fiche existe), mais plus jamais muet : l'écran le dit au lieu de « Profil créé ».
+      return { id: athleteId, avertissement: "Le profil est créé, mais l'athlète n'a pas pu être ajouté à l'équipe. Ajoute-le depuis la page de l'équipe." };
     }
   }
 

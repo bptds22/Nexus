@@ -216,6 +216,10 @@ export function buildConsentMetadata(
   // nulle. Absence de clé = « refusé » OU « jamais demandé », indiscernables.
   if (consents.partnerVisibility !== undefined) {
     meta.consent_partner_visibility = consents.partnerVisibility ? now : null;
+    // Consentement partenaires v2 (2026-10-19) : la réponse EXPLICITE, en texte — une chaîne
+    // survit à GoTrue, un null non. L'onboarding la transmet à la base : « OUI » journalise
+    // l'accord v2, « NON » clôt la demande v2 (jamais relancée).
+    meta.choix_partenaires_v2 = consents.partnerVisibility ? "OUI" : "NON";
   }
 
   // PII parent — stashée dans raw_user_meta_data pour re-lecture au

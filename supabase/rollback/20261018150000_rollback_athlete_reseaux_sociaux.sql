@@ -1,10 +1,13 @@
--- Rollback de 20261018150000 : retire les 3 colonnes de réseaux sociaux, rend à delete_my_account et
--- à partner_athlete_profile leur corps EXACT d'avant (le partenaire ne voit plus Instagram).
+-- Rollback de 20261018150000 (réseaux sociaux + consentement partenaires v2).
+-- Rend à delete_my_account, partner_athlete_profile et top_athletes_view leur corps EXACT d'avant
+-- (relevés en prod le 2026-10-19), retire la v2 (déclencheur, fonctions, table) et les 3 colonnes.
+-- La preuve des accords reste dans consent_audit_trail (rien n'y est effacé).
 -- REFUSE si un athlète a déjà rempli un des nouveaux liens.
 do $$
 begin
-  if not exists (select 1 from information_schema.columns
-                  where table_schema = 'public' and table_name = 'athletes' and column_name = 'facebook_url') then
+  if to_regclass('public.consentement_partenaire_v2') is null
+     or not exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'athletes' and column_name = 'facebook_url') then
     raise exception 'NEXUS: 20261018150000 absente — rien à défaire';
   end if;
   if exists (select 1 from public.athletes
@@ -13,6 +16,7 @@ begin
   end if;
 end $$;
 
+-- Lecture partenaire d'abord (elle dépend des fonctions v2).
 drop function public.partner_athlete_profile(uuid);
 CREATE OR REPLACE FUNCTION public.partner_athlete_profile(p_athlete_id uuid)
  RETURNS TABLE(id uuid, first_name text, last_name text, photo_url text, numero_jersey text, age integer, genre text, annee_diplomation integer, verified boolean, last_profile_validation timestamp with time zone, cote_globale numeric, taille_pieds integer, taille_pouces integer, poids_lbs numeric, bio text, sport_nom text, position_nom text, position_abbr text, school_name text, school_region text, school_city text, school_type text, is_civil boolean, team_name text, league_name text, distinctions jsonb, video_faits_saillants_url text, hudl_url text, youtube_url text, badges jsonb, profile_completion integer, envergure text, taille_mains text, main_dominante text, pied_dominant text, test_40_verges text, saut_vertical text, saut_longueur text, developpe_couche text, navette_agilite text, sprint_100m text, video_match_complet_url text, video_entrainement_url text, parcours_equipes jsonb, eval_id uuid, eval_grille_id uuid, eval_cote_globale numeric, vitesse_explosivite numeric, force_puissance numeric, endurance_cardio numeric, agilite_coordination numeric, vision_du_jeu numeric, sens_tactique numeric, leadership integer, discipline integer, coachabilite integer, intelligence_jeu integer, competitivite integer, esprit_equipe integer, resilience integer, attitude_mentalite integer)
@@ -89,6 +93,69 @@ AS $function$
 $function$;
 revoke all on function public.partner_athlete_profile(uuid) from public, anon;
 grant execute on function public.partner_athlete_profile(uuid) to authenticated, service_role;
+
+-- top_athletes_view : la définition d'avant (20260921173234), DEFINER, sans reloptions.
+-- DEFINER, reloptions NULL : pas de clause WITH à restater (vérifié).
+CREATE OR REPLACE VIEW public.top_athletes_view AS
+ SELECT a.id,
+    a.first_name,
+    a.last_name,
+    a.cote_globale_entraineur,
+    a.annee_diplomation,
+    sch.region,
+    a.sport_id,
+    a.position_id,
+    a.school_id,
+    a.photo_url,
+    s.nom AS sport_name,
+    p.nom AS position_name,
+    sch.name AS school_name,
+    e.distinctions,
+    a.video_faits_saillants_url,
+    a.video_match_complet_url,
+    a.video_entrainement_url,
+    a.genre,
+    ( SELECT COALESCE(jsonb_agg(jsonb_build_object('code', x.code, 'libelle', x.libelle, 'famille', x.famille, 'contexte', x.contexte, 'attribue_le', x.attribue_le) ORDER BY x.rang, x.ordre, x.attribue_le), '[]'::jsonb) AS "coalesce"
+           FROM ( SELECT b2.code,
+                    b2.libelle,
+                    b2.famille,
+                    ab.contexte,
+                    ab.created_at AS attribue_le,
+                    b2.ordre,
+                        CASE b2.famille
+                            WHEN 'honneur'::text THEN 0
+                            WHEN 'universel'::text THEN 1
+                            ELSE 2
+                        END AS rang
+                   FROM public.athlete_badges ab
+                     JOIN public.badges b2 ON b2.id = ab.badge_id
+                  WHERE ab.athlete_id = a.id AND ab.retire_le IS NULL) x) AS badges
+   FROM public.athletes a
+     LEFT JOIN public.sports s ON s.id = a.sport_id
+     LEFT JOIN public.positions p ON p.id = a.position_id
+     LEFT JOIN public.schools sch ON sch.id = a.school_id
+     LEFT JOIN LATERAL ( SELECT evaluations.distinctions
+           FROM public.evaluations
+          WHERE evaluations.athlete_id = a.id
+          ORDER BY evaluations.created_at DESC
+         LIMIT 1) e ON true
+  WHERE a.status = 'ACTIF'::public.account_status
+    AND public.is_partner_eligible_athlete(a.id) AND public.is_approved_partner(auth.uid())
+  ORDER BY a.cote_globale_entraineur DESC;
+
+-- Consentement v2 : déclencheur, fonctions, table.
+drop trigger trg_consentement_partenaire_v2_sur_audit on public.consent_audit_trail;
+drop function public.consentement_partenaire_v2_sur_audit();
+drop function public.aviser_parent_extension_v2(uuid);
+alter table public.avis_parent_partenaires drop column portee;
+drop function public.consentement_partenaire_v2_pousser(text);
+drop function public.consentement_partenaire_v2_repondre(text, text);
+drop function public.consentement_partenaire_v2_etat();
+drop function public.admin_consentement_partenaire_stats();
+drop function public.is_partner_media_athlete(uuid);
+drop function public.consentement_partenaire_v2_valide(uuid);
+drop function public.consentement_partenaire_politiques_v2();
+drop table public.consentement_partenaire_v2;
 
 CREATE OR REPLACE FUNCTION public.delete_my_account()
  RETURNS void
@@ -286,6 +353,7 @@ $function$;
 alter table public.athletes drop column facebook_url, drop column tiktok_url, drop column linkedin_url;
 
 do $$
+declare vus text[];
 begin
   if (select md5(replace(prosrc, E'\r', '')) from pg_proc
        where pronamespace = 'public'::regnamespace and proname = 'delete_my_account')
@@ -297,10 +365,20 @@ begin
      is distinct from '496104a74ea8d5eaeec3e6918ab34dd9' then
     raise exception 'NEXUS: partner_athlete_profile ne retrouve pas son corps d''avant';
   end if;
-end $$;
-do $$
-declare vus text[];
-begin
+  if md5(pg_get_viewdef('public.top_athletes_view'::regclass)) is distinct from '1a4bd466dcad15765fb549864c852c70' then
+    raise exception 'NEXUS: top_athletes_view ne retrouve pas sa définition d''avant';
+  end if;
+  if (select reloptions from pg_class where oid = 'public.top_athletes_view'::regclass) is not null then
+    raise exception 'NEXUS: top_athletes_view porte des reloptions';
+  end if;
+  if exists (select 1 from pg_trigger where tgname = 'trg_consentement_partenaire_v2_sur_audit') then
+    raise exception 'NEXUS: le déclencheur v2 est encore là';
+  end if;
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'avis_parent_partenaires' and column_name = 'portee')
+     or to_regprocedure('public.aviser_parent_extension_v2(uuid)') is not null then
+    raise exception 'NEXUS: l''avis au parent v2 est encore là';
+  end if;
   select array_agg(t.g order by t.g) into vus
     from pg_proc pr,
          lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g
@@ -308,5 +386,13 @@ begin
    where pr.oid = 'public.partner_athlete_profile(uuid)'::regprocedure;
   if vus is distinct from array['authenticated','postgres','service_role'] then
     raise exception 'NEXUS: ACL public.partner_athlete_profile(uuid) = %', vus;
+  end if;
+  select array_agg(t.g order by t.g) into vus
+    from pg_proc pr,
+         lateral (select coalesce(nullif(split_part(x,'=',1),''),'PUBLIC') as g
+                    from unnest(pr.proacl::text[]) as x) t
+   where pr.oid = 'public.delete_my_account()'::regprocedure;
+  if vus is distinct from array['authenticated','postgres','service_role'] then
+    raise exception 'NEXUS: ACL public.delete_my_account() = %', vus;
   end if;
 end $$;

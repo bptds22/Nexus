@@ -50,6 +50,8 @@ const ROUTES_PAR_TYPE: Record<string, string> = {
   EVALUATION_PARTENAIRE: ROUTE_EVALUATION,
   CARTE_PARTENAIRE: "/athlete/cartes-partenaires",
   TEAM_INVITATION: "/athlete/notifications?section=invitations",
+  // Consentement partenaires v2 (2026-10-19) : le push unique de la campagne ouvre la carte.
+  CONSENTEMENT_PARTENAIRES_V2: "/athlete/consentement-partenaires",
 };
 const ROUTES_PERMISES = new Set(Object.values(ROUTES_PAR_TYPE));
 

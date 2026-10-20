@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { exporterMesDonnees } from "@/lib/recruteur/exporterMesDonnees";
+import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 
 /* ─────────────────────────────────────────────────────────────────
    ConfidentialiteSection — Privacy, Loi 25 rights, RPRP
@@ -27,21 +28,21 @@ export default function ConfidentialiteSection({ dirty, onSave, onSectionChange,
   const [exporting, setExporting] = useState(false);
   const [erreurExport, setErreurExport] = useState<string | null>(null);
 
-  /* ── Demander (data access request → admin_notifications) ── */
+  /* ── Demander (Loi 25, droit d'accès) → registre loi25_portability_requests ──
+     Avant le 2026-10-19 : un insert dans admin_notifications (RLS sans policy),
+     refusé à chaque fois, et l'écran annonçait quand même « envoyée ». */
   async function handleDataRequest() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("admin_notifications").insert({
-      type: "SYSTEM",
-      title: "Demande d'accès aux données",
-      message: `L'utilisateur ${user.email} a demandé une copie de ses données personnelles (Loi 25 — droit d'accès).`,
-      related_user_id: user.id,
-    });
-
+    const { data, error } = await createClient().rpc("demander_acces_mes_donnees");
+    const r = data as { ok?: boolean; deja?: boolean } | null;
+    if (error || !r?.ok) {
+      console.error(`[Demande d'accès] ${error ? erreurLisible(error) : JSON.stringify(r)}`);
+      alert("Votre demande n'a pas pu être envoyée. Réessayez, ou écrivez à confidentialite@nexussports.ca.");
+      return;
+    }
     setRequestSent(true);
-    alert("Votre demande a été envoyée. Vous recevrez vos données par courriel dans un délai de 30 jours.");
+    alert(r.deja
+      ? "Votre demande est déjà en cours. Vous recevrez vos données par courriel dans un délai de 30 jours."
+      : "Votre demande a été envoyée. Vous recevrez vos données par courriel dans un délai de 30 jours.");
   }
 
   /* ── Exporter : l'export réel, partagé avec la Zone danger ── */

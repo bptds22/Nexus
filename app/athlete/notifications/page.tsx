@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import PendingInvitations from "./_components/PendingInvitations";
-import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { POLITIQUE_CARTE_SEULE } from "@/lib/legal/policyVersion";
 import {
   accepterVisibilitePartenaire,
   etatDemande,
@@ -234,7 +234,7 @@ export default function NotificationsPage() {
   const accepterDemande = async (n: AthleteNotif) => {
     setAcceptation(n.id);
     setErreurDemande(null);
-    const r = await accepterVisibilitePartenaire(createClient(), n.id, PRIVACY_POLICY_VERSION);
+    const r = await accepterVisibilitePartenaire(createClient(), n.id, POLITIQUE_CARTE_SEULE);
     setAcceptation(null);
     if (!r.ok) {
       setErreurDemande({ id: n.id, message: r.message });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { POLITIQUE_CARTE_SEULE } from "@/lib/legal/policyVersion";
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/consentement-partenaires — la réponse du PARENT.
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     {
       p_jeton: t,
       p_accorde: decision === "accepte",
-      p_policy_version: PRIVACY_POLICY_VERSION,
+      p_policy_version: POLITIQUE_CARTE_SEULE, // page du lien : texte « carte » seulement
       p_ip: ip,
     } as never,
   );

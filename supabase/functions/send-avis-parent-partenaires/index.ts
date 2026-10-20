@@ -23,7 +23,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { FROM, APP_URL, SUPPORT } from "../_shared/emailLayout.ts";
 import { signerJetonDesabonnementParent } from "../_shared/jetonDesabonnement.ts";
-import { buildBody, sujet } from "./email.ts";
+import { buildBody, sujet, type PorteeAvis } from "./email.ts";
 
 const SECRET = Deno.env.get("PARENT_NOTICE_SECRET") ?? "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
@@ -46,11 +46,11 @@ function json(body: unknown, status = 200): Response {
 
 async function envoyer(
   a: string, prenomAthlete: string | null, prenomParent: string | null, athleteId: string,
-  portailUrl: string, espaceExistant: boolean, idempotence: string | null,
+  portailUrl: string, espaceExistant: boolean, idempotence: string | null, portee: PorteeAvis = "CARTE",
 ): Promise<{ ok: true; id: string | null } | { ok: false; erreur: string }> {
   const t = encodeURIComponent(await signerJetonDesabonnementParent(athleteId, DESABONNEMENT_SECRET));
   const { html, text } = buildBody({
-    prenomAthlete, prenomParent, portailUrl, espaceExistant,
+    prenomAthlete, prenomParent, portailUrl, espaceExistant, portee,
     desabonnementUrl: `${APP_URL}/desabonnement-parent?t=${t}`,
   });
   const headers: Record<string, string> = {
@@ -65,7 +65,7 @@ async function envoyer(
       from: FROM,
       to: a,
       reply_to: SUPPORT,
-      subject: sujet(prenomAthlete),
+      subject: sujet(prenomAthlete, portee),
       html,
       text,
       headers: {
@@ -128,7 +128,9 @@ Deno.serve(async (req) => {
     if (!a || !TEST_DESTINATAIRES.includes(a)) {
       return json({ ok: false, erreur: "Destinataire de test hors liste blanche (RELANCE_TEST_DESTINATAIRES)." }, 403);
     }
-    const r = await envoyer(a, "Alex", "Dominique", ATHLETE_TEST, APP_URL, false, null);
+    // { mode: "test", a, portee? } : portee CARTE (défaut), V2 ou EXTENSION_V2 — aperçu de chaque courriel.
+    const portee: PorteeAvis = p.portee === "V2" || p.portee === "EXTENSION_V2" ? p.portee : "CARTE";
+    const r = await envoyer(a, "Alex", "Dominique", ATHLETE_TEST, APP_URL, false, null, portee);
     return json(r.ok ? { ok: true, mode: "test", resend_id: r.id } : { ok: false, mode: "test", erreur: r.erreur },
                 r.ok ? 200 : 502);
   }
@@ -138,7 +140,7 @@ Deno.serve(async (req) => {
   if (!UUID_RE.test(avisId)) return json({ ok: false, erreur: "avis_id invalide" }, 400);
 
   const { data: avis, error: errAvis } = await supabase.from("avis_parent_partenaires")
-    .select("id, athlete_id, statut").eq("id", avisId).maybeSingle();
+    .select("id, athlete_id, statut, portee").eq("id", avisId).maybeSingle();
   if (errAvis || !avis) return json({ ok: false, erreur: "avis introuvable" }, 404);
   if (avis.statut !== "RESERVE") return json({ ok: true, deja: avis.statut });
 
@@ -154,7 +156,8 @@ Deno.serve(async (req) => {
 
   const portail = await lienPortail(a.id as string, parentEmail);
   const r = await envoyer(parentEmail, a.first_name as string | null, a.parent_first_name as string | null,
-                          a.id as string, portail.url, portail.existant, `avis-partenaires/${avisId}`);
+                          a.id as string, portail.url, portail.existant, `avis-partenaires/${avisId}`,
+                          (avis.portee as PorteeAvis | null) ?? "CARTE");
   await supabase.from("avis_parent_partenaires").update(
     r.ok ? { statut: "ENVOYE", resend_id: r.id, envoye_le: new Date().toISOString() }
          : { statut: "ECHEC", erreur: r.erreur },

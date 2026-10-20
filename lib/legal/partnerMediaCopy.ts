@@ -19,7 +19,28 @@
    (/parent/consentements). Toute révision de ce libellé se fait ICI.
 ═══════════════════════════════════════════════════════════════ */
 
+/* ── VERSION 2 (2026-10-19, politique 2026-10-v2) ─────────────────────────────
+   Nomme explicitement les VIDÉOS et les RÉSEAUX SOCIAUX (décision BP). C'est le texte
+   de toute surface athlète à partir de la 1.4.5. La version 1 reste plus bas, pour
+   l'historique : ce que les athlètes ont lu avant le 2026-10-19. */
 export const PARTNER_MEDIA_COPY = {
+  intro:
+    "Nexus collabore avec des partenaires approuvés — journalistes sportifs, pages de contenu sportif, podcasts, camps de sport spécialisés, et autres organisations qui apportent de la valeur aux athlètes québécois. Ces partenaires peuvent consulter ta fiche Nexus et télécharger ta carte officielle pour la publier dans leurs articles, publications sur les réseaux sociaux, blogs ou autres contenus.",
+  whatAppears: "ton nom, ton école, ta cote, ta position et ta photo.",
+  videosEtReseaux:
+    "tes vidéos (faits saillants, Hudl, YouTube, match complet, entraînement) et tes profils de réseaux sociaux (Instagram, Facebook, TikTok, LinkedIn), si tu les as ajoutés à ta fiche.",
+  bullets: [
+    "Ta carte peut apparaître dans des publications de partenaires approuvés",
+    "Les partenaires peuvent regarder tes vidéos, visiter tes réseaux sociaux et y renvoyer dans leurs contenus",
+    "Nexus ne donne jamais ton courriel ni ton numéro de téléphone. Tes réseaux sociaux sont publics : un partenaire pourrait t’y écrire, comme n’importe qui",
+    "Les partenaires sont vérifiés par l’équipe Nexus et s’engagent par contrat à un usage éditorial responsable",
+  ],
+} as const;
+
+/* ── VERSION 1 (2026-08 → 2026-10-19) — HISTORIQUE, n'est plus affichée ────────
+   Texte lu par les athlètes dont l'accord est journalisé avec une politique
+   antérieure à 2026-10-v2. Ne couvre que la carte. */
+export const PARTNER_MEDIA_COPY_V1 = {
   intro:
     "Nexus collabore avec des partenaires approuvés — journalistes sportifs, pages de contenu sportif, podcasts, camps de sport spécialisés, et autres organisations qui apportent de la valeur aux athlètes québécois. Ces partenaires peuvent télécharger ta carte officielle Nexus pour la publier dans leurs articles, publications sur les réseaux sociaux, blogs ou autres contenus.",
   whatAppears: "ton nom, ton école, ta cote, ta position et ta photo.",
@@ -28,6 +49,10 @@ export const PARTNER_MEDIA_COPY = {
     "Aucun partenaire ne peut te contacter directement",
     "Les partenaires sont vérifiés par l’équipe Nexus et s’engagent par contrat à un usage éditorial responsable",
   ],
+  responsabiliteSelf:
+    "En activant cette option, tu autorises Nexus à communiquer ta carte (nom, position, établissement, cote, photo) à ses partenaires média approuvés, qui l’utilisent dans leurs publications. Chaque partenaire est responsable de la protection des renseignements qu’il reçoit ; Nexus demeure responsable de cette communication et du consentement. Tu peux retirer ce consentement en tout temps.",
+  responsabiliteChild:
+    "En activant cette option, vous autorisez Nexus à communiquer la carte de votre enfant (nom, position, établissement, cote, photo) à ses partenaires média approuvés, qui l’utilisent dans leurs publications. Chaque partenaire est responsable de la protection des renseignements qu’il reçoit ; Nexus demeure responsable de cette communication et du consentement. Vous pouvez retirer ce consentement en tout temps.",
 } as const;
 
 /* Texte canonique de RESPONSABILITÉ PARTAGÉE (Loi 25) du consentement de
@@ -39,22 +64,33 @@ export const PARTNER_MEDIA_COPY = {
    Nexus reste responsable de la communication + du consentement ; le partenaire
    de la protection des renseignements reçus. */
 export function partnerResponsibilityText(subject: "self" | "child" | "athlete"): string {
-  // C5 (1.4.5) : la cote figure sur la carte (PARTNER_MEDIA_COPY.whatAppears) ; la liste le dit aussi.
-  const champs = "(nom, position, établissement, cote, photo)";
+  // v2 (2026-10-19) : la carte, les vidéos et les réseaux sociaux, nommés.
+  const carte = "(nom, position, établissement, cote, photo)";
   if (subject === "self") {
     return (
-      `En activant cette option, tu autorises Nexus à communiquer ta carte ${champs} ` +
-      "à ses partenaires média approuvés, qui l’utilisent dans leurs publications. Chaque partenaire " +
-      "est responsable de la protection des renseignements qu’il reçoit ; Nexus demeure responsable " +
-      "de cette communication et du consentement. Tu peux retirer ce consentement en tout temps."
+      `En donnant ton accord, tu autorises Nexus à communiquer ta carte ${carte}, tes vidéos ` +
+      "et les liens de tes réseaux sociaux à ses partenaires média approuvés, qui peuvent les utiliser " +
+      "dans leurs publications. Chaque partenaire est responsable de la protection des renseignements " +
+      "qu’il reçoit ; Nexus demeure responsable de cette communication et du consentement. Tu peux " +
+      "retirer ce consentement en tout temps : ta carte, tes vidéos et tes réseaux disparaissent alors " +
+      "pour les partenaires."
     );
   }
-  const objet = subject === "child" ? "la carte de votre enfant" : "la carte de l’athlète";
+  if (subject === "child") {
+    return (
+      `En donnant votre accord, vous autorisez Nexus à communiquer la carte de votre enfant ${carte}, ` +
+      "ses vidéos et les liens de ses réseaux sociaux à ses partenaires média approuvés, qui peuvent " +
+      "les utiliser dans leurs publications. Chaque partenaire est responsable de la protection des " +
+      "renseignements qu’il reçoit ; Nexus demeure responsable de cette communication et du consentement. " +
+      "Vous pouvez retirer ce consentement en tout temps : tout disparaît alors pour les partenaires."
+    );
+  }
+  // Coach qui crée un profil : l'autorisation qu'il enregistre reste celle de la CARTE (v1).
+  // Les vidéos et les réseaux se demandent ensuite à l'athlète lui-même (carte v2).
   return (
-    `En activant cette option, vous autorisez Nexus à communiquer ${objet} ` +
-    `${champs} à ses partenaires média approuvés, ` +
-    "qui l’utilisent dans leurs publications. Chaque partenaire est responsable " +
-    "de la protection des renseignements qu’il reçoit ; Nexus demeure responsable " +
-    "de cette communication et du consentement. Vous pouvez retirer ce consentement en tout temps."
+    `En activant cette option, vous autorisez Nexus à communiquer la carte de l’athlète ${carte} ` +
+    "à ses partenaires média approuvés, qui l’utilisent dans leurs publications. Chaque partenaire est " +
+    "responsable de la protection des renseignements qu’il reçoit ; Nexus demeure responsable de cette " +
+    "communication et du consentement. Vous pouvez retirer ce consentement en tout temps."
   );
 }

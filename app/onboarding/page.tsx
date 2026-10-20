@@ -21,6 +21,7 @@ import { CoachOnboardingMobileSchool } from "@/components/shared/CoachOnboarding
 import { CoachOnboardingMobileCivil } from "@/components/shared/CoachOnboardingMobileCivil";
 import { RecruiterOnboardingMobile } from "@/components/shared/RecruiterOnboardingMobile";
 import { SPORTS_PROPOSES } from "@/lib/config/sportsProposes";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 // Canonical Nexus support inbox for user-driven contact (school-not-found, etc.).
 // Remplaçait `support@` : la constante partagée tient désormais l'adresse.
@@ -134,7 +135,8 @@ function PhotoUpload({ photoUrl, onUploaded, sublabel = "Optionnel — visible p
 
     onUploaded(res.publicUrl);
     // Also save to users table
-    await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+    const { error: errPhoto } = await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+    if (errPhoto) setError(messageEchecSauvegarde(errPhoto, "Onboarding photo"));
     setUploading(false);
   }
 
@@ -573,23 +575,24 @@ export default function OnboardingPage() {
           const { data: schoolRow } = await supabase.from("schools").select("id").eq("name", institution.name).maybeSingle();
           if (schoolRow) {
             // Save school_id to users table
-            await supabase.from("users").update({ school_id: schoolRow.id, region: institution.region || null }).eq("id", authUser.id);
+            const { error: errEcole } = await supabase.from("users").update({ school_id: schoolRow.id, region: institution.region || null }).eq("id", authUser.id);
+            if (errEcole) throw errEcole;
 
             // Upsert into school_coaches for the school-coach flow.
-            await supabase.from("school_coaches").upsert({
+            const { error: scErr } = await supabase.from("school_coaches").upsert({
               coach_id: authUser.id,
               school_id: schoolRow.id,
               role: "COACH",
               sport: profileData.sport_principal || null,
-            }, { onConflict: "coach_id,school_id" }).then(({ error: scErr }) => {
-              if (scErr) console.error("[Onboarding] school_coaches upsert:", scErr);
-            });
+            }, { onConflict: "coach_id,school_id" });
+            if (scErr) throw scErr;
           }
         }
 
       }
     } catch (err) {
-      console.error("[Onboarding] step save error:", err);
+      // Plus de retour muet : l'étape ne passe pas, et on le dit.
+      setNavError(messageEchecSauvegarde(err as { code?: string; message?: string }, "Onboarding étape"));
       setStepSaving(false);
       return;
     }
@@ -972,7 +975,7 @@ export default function OnboardingPage() {
       };
 
       // Save profile data to users table
-      await supabase
+      const { error: errProfil } = await supabase
         .from("users")
         .update({
           onboarding_complete: true,
@@ -982,6 +985,7 @@ export default function OnboardingPage() {
           profile_data: profileData,
         })
         .eq("id", authUser.id);
+      if (errProfil) { setNavError(messageEchecSauvegarde(errProfil, "Onboarding fin")); return; }
 
       // Sprint civil-rpc-drop : ancien appel à claim_civil_league_admin()
       // retiré. La fonction est DROPPED (migration 20260612200000) et le
@@ -1005,13 +1009,15 @@ export default function OnboardingPage() {
           .maybeSingle();
 
         if (school) {
-          await supabase.from("users").update({ school_id: school.id }).eq("id", authUser.id);
-          await supabase.from("school_coaches").upsert({
+          const { error: errEcole } = await supabase.from("users").update({ school_id: school.id }).eq("id", authUser.id);
+          if (errEcole) { setNavError(messageEchecSauvegarde(errEcole, "Onboarding école")); return; }
+          const { error: errSc } = await supabase.from("school_coaches").upsert({
             coach_id: authUser.id,
             school_id: school.id,
             role: "COACH",
             sport: localUser.profile?.sport_principal || null,
           }, { onConflict: "coach_id,school_id" });
+          if (errSc) { setNavError(messageEchecSauvegarde(errSc, "Onboarding school_coaches")); return; }
 
           // Item 11-Security: file the admin_claims row when a school
           // coach claimed Directeur or Interim during DirectorChoiceStep.
@@ -1056,7 +1062,8 @@ export default function OnboardingPage() {
           if (selectedProgramId) {
             updatePayload.primary_team_id = selectedProgramId;
           }
-          await supabase.from("users").update(updatePayload).eq("id", authUser.id);
+          const { error: errCegep } = await supabase.from("users").update(updatePayload).eq("id", authUser.id);
+          if (errCegep) { setNavError(messageEchecSauvegarde(errCegep, "Onboarding cégep")); return; }
 
           // Item 11-Recruteur: file the admin_claims row when a
           // recruteur claimed Directeur OR Intérimaire for the CÉGEP.
@@ -1091,7 +1098,7 @@ export default function OnboardingPage() {
       // Save recruiter preferences if recruiter
       if (user?.role === "recruiter" && localUser.search_criteria) {
         const sc = localUser.search_criteria;
-        await supabase
+        const { error: errPrefs } = await supabase
           .from("recruiter_preferences")
           .upsert({
             recruiter_id: authUser.id,
@@ -1100,6 +1107,7 @@ export default function OnboardingPage() {
             graduation_years: sc.grad_years || [],
             moyenne_min: sc.min_gpa || 50,
           });
+        if (errPrefs) { setNavError(messageEchecSauvegarde(errPrefs, "Onboarding préférences")); return; }
       }
       } // close else (legacy path)
     }

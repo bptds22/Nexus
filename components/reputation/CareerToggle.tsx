@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 /* ── Props ── */
 interface CareerToggleProps {
@@ -37,6 +38,7 @@ export default function CareerToggle({
   const [role, setRole] = useState<"head" | "assistant" | "both" | undefined>(initialRole);
   const [bio, setBio] = useState(initialBio);
   const [showToast, setShowToast] = useState(false);
+  const [erreurSave, setErreurSave] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const BIO_MAX = 300;
 
@@ -87,9 +89,10 @@ export default function CareerToggle({
       }, { onConflict: "user_id" });
 
     if (error) {
-      console.error("CareerToggle save error:", error);
+      setErreurSave(messageEchecSauvegarde(error, "CareerToggle"));
       return;
     }
+    setErreurSave(null);
 
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setShowToast(true);
@@ -320,6 +323,7 @@ export default function CareerToggle({
             >
               Enregistrer
             </button>
+            {erreurSave && <p className="text-[13px] text-[#EF4444]" role="alert">{erreurSave}</p>}
 
             {/* Info box */}
             <div className="bg-[rgba(230,57,70,0.04)] border-l-[3px] border-l-[#6B7280] rounded-r-lg p-4">

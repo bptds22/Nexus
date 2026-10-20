@@ -9,6 +9,9 @@
    2026-10-v1 (décision BP 2026-10-02) : dès 14 ans, l'athlète consent seul
    à la visibilité partenaires ; le parent est avisé et peut la retirer
    (encadré mineurs, tableau 6.1, section 7.5).
+   2026-10-v2 (BP + avocat, 2026-10-19) : section 7.5 — consentement distinct
+   (version 2) pour les vidéos et les profils de réseaux sociaux ; la cote et la
+   fiche sportive nommées ; plus de promesse « aucun contact » (réseaux publics).
 
    ⚠️ Contenu juridique : ne PAS modifier sans accord BP + counsel.
 ═══════════════════════════════════════════════════════════════ */
@@ -331,10 +334,10 @@ export const SECTIONS_CONFIDENTIALITE: Section[] = [
         id: "communication-partenaires",
         title: "7.5 — Communication à des partenaires média",
         blocks: [
-          { type: "p", text: "Sur le fondement d'un consentement explicite et facultatif, Nexus peut communiquer la carte officielle de l'athlète — soit son nom, sa position, son établissement et sa photo — à ses partenaires média approuvés (par exemple journalistes sportifs, pages de contenu sportif, balados ou camps spécialisés). Ces partenaires utilisent la carte dans leurs publications, à des fins éditoriales et promotionnelles. Aucun partenaire ne peut contacter l'athlète directement." },
+          { type: "p", text: "Sur le fondement d'un consentement explicite et facultatif, Nexus peut communiquer à ses partenaires média approuvés (par exemple journalistes sportifs, pages de contenu sportif, balados ou camps spécialisés) la carte officielle de l'athlète (nom, position, établissement, cote, photo) et sa fiche sportive. Avec un consentement distinct (version 2, octobre 2026), Nexus peut aussi leur communiquer les liens de ses vidéos et de ses profils de réseaux sociaux (Instagram, Facebook, TikTok, LinkedIn). Ces partenaires les utilisent dans leurs publications, à des fins éditoriales et promotionnelles. Nexus ne leur communique jamais le courriel ni le téléphone de l'athlète ; ses réseaux étant publics, un partenaire pourrait toutefois l'y joindre." },
           { type: "p", text: "Cette communication repose sur une responsabilité partagée : chaque partenaire média est responsable de la protection des renseignements qu'il reçoit et de l'usage qu'il en fait dans ses publications, tandis que Nexus demeure responsable de la communication elle-même et de l'obtention du consentement préalable." },
           { type: "p", text: "Ce consentement est facultatif. Dès 14 ans, l'athlète le donne lui-même ; pour un athlète de moins de 14 ans, seul son parent ou tuteur peut le donner. Lorsqu'un athlète de 14 à 17 ans donne ce consentement, son parent ou tuteur en est avisé par courriel, avec un lien vers l'espace parent." },
-          { type: "p", text: "Ce consentement peut être retiré en tout temps, soit par l'athlète depuis les paramètres de son profil, soit par son parent ou tuteur depuis l'espace parent. Le retrait met fin à toute nouvelle communication de la carte aux partenaires." },
+          { type: "p", text: "Ce consentement peut être retiré en tout temps, soit par l'athlète depuis les paramètres de son profil, soit par son parent ou tuteur depuis l'espace parent. Le retrait met fin à toute nouvelle communication de la carte, des vidéos et des liens de réseaux sociaux." },
         ],
       },
     ],

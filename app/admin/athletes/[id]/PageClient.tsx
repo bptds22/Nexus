@@ -42,6 +42,7 @@ import {
 } from "@/lib/config/badges";
 import ReseauxSociaux from "@/components/shared/athlete/ReseauxSociaux";
 import { lienAffichable, pourEnregistrerLien, pourEnregistrerReseau } from "@/lib/liensSociaux";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 /* ─────────────────────────────────────────────────────────────
    Admin athlete detail — full edit form wired to Supabase.
@@ -521,7 +522,8 @@ export default function AdminAthleteDetailPage() {
       setToast("Photo supprimée");
       setTimeout(() => setToast(null), 2500);
     } catch (err) {
-      console.error("Photo remove failed:", err);
+      setToast(messageEchecSauvegarde(err as { code?: string; message?: string }, "Admin retrait photo"));
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setUploadingPhoto(false);
     }

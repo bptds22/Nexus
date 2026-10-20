@@ -65,10 +65,12 @@ import { confirmerNomSiAConfirmer, nomADemander } from "@/lib/athlete/nomAConfir
 import { verifierDoublonInscription, type DoublonInscription } from "@/lib/athlete/doublonInscription";
 import { AvertissementDoublonInscription, PlusieursSports } from "@/components/athlete/AvertissementDoublonInscription";
 import { deconnexion } from "@/lib/auth/deconnexion";
-import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { POLITIQUE_CARTE_SEULE, PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { transmettreChoixInscription } from "@/lib/partenaires/consentementV2";
 import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -1174,12 +1176,16 @@ export function AthleteOnboardingMobile() {
     if (ligne) ficheEnBase.current = instantaneProtege(ligne);
     setExistingAthleteId(athleteId);
 
-    if (final && adultPartnerParRpc) {
+    if (final && (meta.choix_partenaires_v2 === "OUI" || meta.choix_partenaires_v2 === "NON")) {
+      /* Consentement partenaires v2 : le choix explicite de l'inscription (texte v2) part à la
+         base — OUI journalise l'accord v2 (par la RPC), NON clôt la demande v2. Non bloquant. */
+      await transmettreChoixInscription(supabase, meta);
+    } else if (final && adultPartnerParRpc) {
       /* Non bloquant : l'inscription est faite ; un refus (DOB < 14 côté base)
          laisse la fiche à false, et l'athlète peut l'activer dans Paramètres. */
       const { data: rpcRes, error: rpcErr } = await supabase.rpc("set_my_partner_visibility", {
         p_granted: true,
-        p_policy_version: PRIVACY_POLICY_VERSION,
+        p_policy_version: POLITIQUE_CARTE_SEULE, // inscription commencée avant la v2 : carte seule
       });
       const ok = (rpcRes as { ok?: boolean } | null)?.ok === true;
       if (rpcErr || !ok) {
@@ -1297,7 +1303,13 @@ export function AthleteOnboardingMobile() {
 
     // Flip onboarding_complete BEFORE le WOW pour que toute navigation
     // back-button au milieu de l'animation aboutisse à un état cohérent.
-    await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    const { error: errFin } = await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    if (errFin) {
+      // Sans ce drapeau, le compte reviendrait à l'onboarding : on le dit, on ne navigue pas.
+      toast.error({ message: messageEchecSauvegarde(errFin, "OnboardingMobile fin") });
+      setSaving(false);
+      return;
+    }
     // Force le re-fetch de currentUser → PushRegistrar voit onboarding_complete=true
     // dans la MÊME session et déclenche registerPush() (sinon : seulement au prochain
     // cold start). Miroir de app/athlete/onboarding/page.tsx:1032.

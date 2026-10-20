@@ -23,8 +23,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
-import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
+import { POLITIQUE_CARTE_SEULE } from "@/lib/legal/policyVersion";
+import { PARTNER_MEDIA_COPY_V1 } from "@/lib/legal/partnerMediaCopy";
 import { badgeSvgPath } from "@/lib/config/badges";
 import { iconeBadgeUrl } from "@/lib/badges/partenaire";
 import {
@@ -119,14 +119,14 @@ export default function CarteProspectReponse({
     try {
       const { data, error } = await createClient().rpc("set_my_partner_visibility", {
         p_granted: true,
-        p_policy_version: PRIVACY_POLICY_VERSION,
+        p_policy_version: POLITIQUE_CARTE_SEULE, // le bloc ne montre que la carte : pas la v2
       });
       const res = data as { ok?: boolean; reason?: string } | null;
       if (error || !res?.ok) {
         // Sous 14 ans : la MÊME demande au parent que « Accepter » dans la cloche
         // (décision BP 2026-10-16) — jamais une activation directe.
         if (res?.reason === "parent_required") {
-          const m = await demanderAuParentDepuisCarte(createClient(), carte.carteId, issue?.type === "attente", PRIVACY_POLICY_VERSION);
+          const m = await demanderAuParentDepuisCarte(createClient(), carte.carteId, issue?.type === "attente", POLITIQUE_CARTE_SEULE);
           if (m === texteEtatDemande("DEMANDE_PARENT")) setAvis(m); else setErreur(m);
         } else {
           setErreur("L'activation n'a pas fonctionné. Réessaie dans un instant.");
@@ -165,7 +165,7 @@ export default function CarteProspectReponse({
       <button type="button" onClick={() => setPlus((v) => !v)} className="mt-2 text-[12px] font-semibold text-[#9CA3AF] underline underline-offset-2 hover:text-white">
         {plus ? "Masquer les détails" : "En savoir plus"}
       </button>
-      {plus && <p className="mt-2 text-[12px] text-[#9CA3AF] leading-relaxed">{partnerResponsibilityText("self")}</p>}
+      {plus && <p className="mt-2 text-[12px] text-[#9CA3AF] leading-relaxed">{PARTNER_MEDIA_COPY_V1.responsabiliteSelf}</p>}
       <button type="button" disabled={envoi} onClick={() => void activerVisibilite()}
         className="mt-3 w-full sm:w-auto px-5 py-2.5 bg-white text-[#111317] hover:bg-[#e5e7eb] text-[13px] font-bold rounded-lg disabled:opacity-50"
         data-action="activer-visibilite">

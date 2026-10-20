@@ -263,6 +263,8 @@ function ConsentementsTab() {
         </div>
       </div>
 
+      <CompteurConsentementPartenairesV2 />
+
       {/* Renewal banner — based on the attestation pipeline. */}
       {attestCounts.PENDING > 0 && (
         <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center gap-3">
@@ -1655,6 +1657,41 @@ function RprpTab() {
 /* ═══════════════════════════════════════════════════════════════
    Shared atoms
 ═══════════════════════════════════════════════════════════════ */
+
+/* Consentement partenaires v2 (vidéos + réseaux, 2026-10-19) : où en est la demande.
+   Athlètes avec compte, inscription terminée, ACTIF ou EN_ATTENTE. RPC réservée à l'admin. */
+type StatsV2 = {
+  total: number; accepte_v2: number; refuse_v2: number; demande_parent: number;
+  pas_repondu: number; pas_repondu_v1: number; plus_tard_epuise: number; push_envoyes: number;
+};
+function CompteurConsentementPartenairesV2() {
+  const [stats, setStats] = useState<StatsV2 | null>(null);
+  const [erreur, setErreur] = useState(false);
+  useEffect(() => {
+    createClient().rpc("admin_consentement_partenaire_stats").then(({ data, error }) => {
+      if (error) { console.error("[admin consentement v2]", error.message); setErreur(true); return; }
+      setStats(data as StatsV2);
+    });
+  }, []);
+  return (
+    <div data-compteur-consentement-v2>
+      <p className="text-[12px] text-[#6b7280] mb-2">
+        Consentement partenaires v2 (vidéos et réseaux sociaux) — athlètes inscrits, actifs ou en attente.
+      </p>
+      {erreur ? (
+        <p className="text-[13px] text-[#E63946]">Le compteur n&apos;a pas pu être chargé.</p>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <KpiCard label="Ont accepté la v2" value={stats?.accepte_v2 ?? 0} color="text-[#10B981]" footnote={stats ? `sur ${stats.total}` : undefined} />
+          <KpiCard label="Ont refusé" value={stats?.refuse_v2 ?? 0} color="text-[#E63946]" />
+          <KpiCard label="Pas encore répondu" value={stats?.pas_repondu ?? 0} color="text-[#F59E0B]"
+            footnote={stats ? `dont ${stats.pas_repondu_v1} en v1 · ${stats.plus_tard_epuise} « Plus tard » épuisés` : undefined} />
+          <KpiCard label="Attente du parent" value={stats?.demande_parent ?? 0} footnote={stats ? `${stats.push_envoyes} push envoyés` : undefined} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function KpiCard({ label, value, color = "text-white", footnote }: { label: string; value: number; color?: string; footnote?: string }) {
   return (
