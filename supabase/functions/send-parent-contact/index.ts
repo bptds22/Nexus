@@ -71,7 +71,12 @@ Deno.serve(async (req) => {
       console.error(`send-parent-contact: courriel ${TRANSPORT} ${r.status} ${r.detail}`);
       return json({ ok: false, mode: "courriel", transport: TRANSPORT, status: r.status }, r.status);
     }
-    return json({ ok: true, mode: "courriel", transport: TRANSPORT });
+    // Identifiant d'envoi du transport (Resend : { id } ; Mailpit : { ID }) — la
+    // preuve de livraison côté fournisseur. Jamais l'adresse dans le journal.
+    let envoiId: string | null = null;
+    try { const d = JSON.parse(r.detail); envoiId = d?.id ?? d?.ID ?? null; } catch { /* corps non JSON */ }
+    console.log(JSON.stringify({ evt: "parent_contact_courriel", transport: TRANSPORT, status: r.status, envoi_id: envoiId }));
+    return json({ ok: true, mode: "courriel", transport: TRANSPORT, envoi_id: envoiId });
   }
 
   if (payload?.mode === "push") {
