@@ -41,7 +41,7 @@ export default function SectionsRecruteur() {
   return (
     <>
       {/* ── Héros ─────────────────────────────────────── */}
-      <section id="hero" className="border-b border-white/[0.06]">
+      <section id="hero" className="border-b border-white/[0.06] overflow-hidden">
         <div className="max-w-[1200px] mx-auto px-6 py-20 lg:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
             <div className="lg:col-span-2">

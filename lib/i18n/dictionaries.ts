@@ -548,7 +548,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
           iAm: "Je suis",
           items: [
             { role: "Athlète", title: "Fais-toi voir.", points: ["Ta carte de joueur et ton profil complet", "Ton coach vérifie ton profil et t'évalue", "Les recruteurs de tous les cégeps te trouvent"], cta: "Crée ton profil", more: "En savoir plus" },
-            { role: "Coach", title: "Mets tes joueurs en vitrine.", points: ["Crée ton équipe, invite tes joueurs avec un code", "Vérifie et évalue leurs profils", "Tu restes le point de contact des recruteurs"], cta: "Inscris ton équipe", more: "En savoir plus" },
+            { role: "Coach", title: "Mets tes joueurs en vitrine.", points: ["Crée ton équipe et invite tes joueurs par courriel", "Vérifie et évalue leurs profils", "Tu restes le point de contact des recruteurs"], cta: "Inscris ton équipe", more: "En savoir plus" },
             { role: "Recruteur", title: "Tout ton recrutement, au même endroit.", points: ["Recherche et filtres sur tous les athlètes", "Ton processus, tes notes, tes listes", "En direct pendant le match, même sans réseau"], cta: "Demander une démo", more: "En savoir plus" },
           ],
         },
@@ -1443,7 +1443,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
           iAm: "I'm a",
           items: [
             { role: "Athlete", title: "Get seen.", points: ["Your player card and full profile", "Your coach verifies and rates you", "Recruiters from every CÉGEP find you"], cta: "Create your profile", more: "Learn more" },
-            { role: "Coach", title: "Showcase your players.", points: ["Create your team, invite players with a code", "Verify and rate their profiles", "You stay the recruiters' point of contact"], cta: "Sign up your team", more: "Learn more" },
+            { role: "Coach", title: "Showcase your players.", points: ["Create your team and invite players by email", "Verify and rate their profiles", "You stay the recruiters' point of contact"], cta: "Sign up your team", more: "Learn more" },
             { role: "Recruiter", title: "All your recruiting, in one place.", points: ["Search and filters across every athlete", "Your process, your notes, your lists", "Live during the game, even offline"], cta: "Request a demo", more: "Learn more" },
           ],
         },
