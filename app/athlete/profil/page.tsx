@@ -35,6 +35,7 @@ import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/u
 import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import type { ClePlateforme } from "@/lib/config/plateformesLien";
 import { RESEAUX, normaliserLien, normaliserReseau, type CleReseau } from "@/lib/liensSociaux";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -869,6 +870,7 @@ function TeamHistoryDirectEdit({ athleteId, current, anchor, recruiterView, onSa
   const [draft, setDraft] = useState<TeamHistoryEntry[]>(current);
   const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
   const [saving, setSaving] = useState(false);
+  const [erreurParcours, setErreurParcours] = useState<string | null>(null);
   const maxYear = new Date().getFullYear() + 1;
   const valid = isTeamHistoryValid(draft, maxYear);
 
@@ -886,7 +888,9 @@ function TeamHistoryDirectEdit({ athleteId, current, anchor, recruiterView, onSa
     setSaving(true);
     const { error } = await createClient().from("athletes").update({ parcours_equipes: draft }).eq("id", athleteId);
     setSaving(false);
-    if (!error) { onSaved(draft); setEditing(false); }
+    if (error) { setErreurParcours(messageEchecSauvegarde(error, "Parcours équipes")); return; }
+    setErreurParcours(null);
+    onSaved(draft); setEditing(false);
   }
 
   return (
@@ -903,6 +907,7 @@ function TeamHistoryDirectEdit({ athleteId, current, anchor, recruiterView, onSa
       {editing ? (
         <>
           <TeamHistoryEditor value={draft} onChange={setDraft} sports={sports} maxYear={maxYear} />
+          {erreurParcours && <p className="text-[13px] text-[#EF4444] mt-3" role="alert">{erreurParcours}</p>}
           <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#2D3748]/40">
             <button type="button" onClick={() => setEditing(false)} className="text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
             <button type="button" onClick={save} disabled={saving || !valid} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg transition-colors">{saving ? "…" : "Enregistrer"}</button>
@@ -1423,7 +1428,7 @@ function AthleteProfilPageDesktop() {
     setEditSaving(true);
     const supabase = createClient();
     const { error } = await supabase.from("athletes").update(updates).eq("id", athleteId);
-    if (error) { console.error("[Profile save]", error); setEditSaving(false); return; }
+    if (error) { showToast(messageEchecSauvegarde(error, "Profile save")); setEditSaving(false); return; }
     // Recalculate and persist profile_completion
     const { data: freshRow } = await supabase.from("athletes").select("*").eq("id", athleteId).single();
     if (freshRow) {
@@ -1489,7 +1494,10 @@ function AthleteProfilPageDesktop() {
         facebook: "facebook_url", tiktok: "tiktok_url", linkedin: "linkedin_url",
       };
       const col = dbMap[key];
-      if (col) await supabase.from("athletes").update({ [col]: propre || null }).eq("id", athleteId);
+      if (col) {
+        const { error } = await supabase.from("athletes").update({ [col]: propre || null }).eq("id", athleteId);
+        if (error) { showToast(messageEchecSauvegarde(error, "Profil lien")); await reloadProfile(); return; }
+      }
     }
     showToast("Mis à jour!");
   };
@@ -1601,7 +1609,7 @@ function AthleteProfilPageDesktop() {
       .from("athletes")
       .update({ last_profile_validation: new Date().toISOString() })
       .eq("id", athleteId);
-    if (error) { console.error("[Validation confirm]", error); setConfirming(false); return; }
+    if (error) { showToast(messageEchecSauvegarde(error, "Validation confirm")); setConfirming(false); return; }
     /* L'accusé de réception qui était inséré ici a été retiré. Il se heurtait
        au même mur que la notification de relance : `athlete_notifications`
        n'a qu'une policy INSERT (« admins insert notifications », is_admin()),
@@ -1728,7 +1736,8 @@ function AthleteProfilPageDesktop() {
                       return;
                     }
                     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-                    await supabase.from("athletes").update({ photo_url: urlData.publicUrl }).eq("id", athleteId);
+                    const { error: errPhoto } = await supabase.from("athletes").update({ photo_url: urlData.publicUrl }).eq("id", athleteId);
+                    if (errPhoto) { showToast(messageEchecSauvegarde(errPhoto, "Photo profil")); return; }
                     setA((prev: AnyProfile) => ({ ...prev, photoUrl: urlData.publicUrl }));
                     showToast("Photo mise à jour!");
                   }} />

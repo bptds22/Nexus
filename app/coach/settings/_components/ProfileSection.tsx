@@ -5,6 +5,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import type { CoachProfile } from "../_data/mockSettingsData";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 /* ─────────────────────────────────────────────────────────────────
    ProfileSection — Coach profile form + live preview card
@@ -279,6 +280,7 @@ export default function ProfileSection() {
               value={preferredLanguage}
               onChange={async (e) => {
                 const value = e.target.value;
+                const avant = preferredLanguage;
                 setPreferredLanguage(value);
                 if (!userId) return;
                 const supabase = createClient();
@@ -286,6 +288,7 @@ export default function ProfileSection() {
                   .from("users")
                   .update({ preferred_language: value })
                   .eq("id", userId);
+                if (langErr) { setPreferredLanguage(avant); setError(messageEchecSauvegarde(langErr, "Langue coach")); }
               }}
               className={input}
             >

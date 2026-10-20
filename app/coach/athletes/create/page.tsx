@@ -857,6 +857,8 @@ export default function CreateAthletePage() {
 
     setCompletedSteps((prev) => new Set([...prev, 7]));
     setCreatedAthleteId((result as { id?: string }).id ?? null);
+    // Profil créé, rattachement à l'équipe échoué : on le dit (sinon l'écran de succès le tairait).
+    if (result.avertissement) window.alert(result.avertissement);
     setSubmitted(true);
   }
 

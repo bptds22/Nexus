@@ -70,6 +70,7 @@ import { transmettreChoixInscription } from "@/lib/partenaires/consentementV2";
 import { ressembleACegep } from "@/lib/athlete/detecterCegep";
 import { useNomsCegeps } from "@/lib/athlete/useNomsCegeps";
 import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -1302,7 +1303,13 @@ export function AthleteOnboardingMobile() {
 
     // Flip onboarding_complete BEFORE le WOW pour que toute navigation
     // back-button au milieu de l'animation aboutisse à un état cohérent.
-    await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    const { error: errFin } = await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    if (errFin) {
+      // Sans ce drapeau, le compte reviendrait à l'onboarding : on le dit, on ne navigue pas.
+      toast.error({ message: messageEchecSauvegarde(errFin, "OnboardingMobile fin") });
+      setSaving(false);
+      return;
+    }
     // Force le re-fetch de currentUser → PushRegistrar voit onboarding_complete=true
     // dans la MÊME session et déclenche registerPush() (sinon : seulement au prochain
     // cold start). Miroir de app/athlete/onboarding/page.tsx:1032.

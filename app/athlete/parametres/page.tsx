@@ -12,6 +12,7 @@ import EtendreConsentementPartenairesV2 from "@/components/shared/EtendreConsent
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 import { erreurLisible } from "@/lib/athlete/perimetreProtege";
 import { deconnexion } from "@/lib/auth/deconnexion";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -337,6 +338,7 @@ function ParametresPageDesktop() {
                       .from("users")
                       .update({ preferred_language: value })
                       .eq("id", user.id);
+                    if (error) { showToast(messageEchecSauvegarde(error, "Langue")); return; }
                     showToast("Préférence de langue sauvegardée");
                   }}
                   className={`${inputCls} max-w-[260px]`}

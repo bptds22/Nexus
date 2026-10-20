@@ -49,6 +49,7 @@ const SPORTS = [
   "Baseball", "Ultimate frisbee", "Autre",
 ];
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
 
 /* ─────────────────────────────────────────────────────────────────
    Athlete Onboarding — Same fields as coach create form,
@@ -1897,7 +1898,13 @@ function AthleteOnboardingDesktop() {
       }
     }
 
-    await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    const { error: errFin } = await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    if (errFin) {
+      // Sans ce drapeau, le compte reviendrait à l'onboarding : on le dit, on ne navigue pas.
+      setSaveError(messageEchecSauvegarde(errFin, "Onboarding fin"));
+      setSaving(false);
+      return;
+    }
     // Le profil caché (useCurrentUser, staleTime: Infinity) doit voir false→true
     // dans CETTE session pour que PushRegistrar demande la permission push.
     // Await AVANT la nav : on lance le refetch avant de quitter l'onboarding.

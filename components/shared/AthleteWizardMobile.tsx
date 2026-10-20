@@ -1142,7 +1142,8 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     }
     const savedId = result.id ?? athleteId ?? "";
 
-    toast.success({ message: isCreate ? "Profil créé" : "Profil enregistré" });
+    if (result.avertissement) toast.warning({ message: "Profil créé", detail: result.avertissement });
+    else toast.success({ message: isCreate ? "Profil créé" : "Profil enregistré" });
     setSaving(false);
     setShowSummarySheet(false);
 
