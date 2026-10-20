@@ -11,7 +11,8 @@
 -- (G1:2* = match G1, 2 profils Nexus, étoile « cible »). « refus 42501 » = l'appel est refusé.
 --
 -- Colonnes : R recruteur collégial Pro (cégep X) · N recruteur sans école · A admin ·
---            P partenaire · K coach de S et C · anon.
+--            P partenaire · K coach de S et C · K2 coach de l'équipe de C seulement ·
+--            C (son propre compte ATHLETE) · PA parent de C · anon.
 -- Ligne service_role : fonctions sans appelant authentifié (agenda par jeton, candidats).
 --
 -- La lecture REST directe se prouve à part (vrai PostgREST, vrai JWT) :
@@ -70,6 +71,9 @@ end $$;
 \set A '''c0ce0a00-0000-4000-8000-000000000003'''
 \set P '''c0ce0a00-0000-4000-8000-000000000004'''
 \set K '''c0ce0a00-0000-4000-8000-000000000005'''
+\set CA '''c0ce0a00-0000-4000-8000-000000000006'''
+\set PA '''c0ce0a00-0000-4000-8000-000000000007'''
+\set K2 '''c0ce0a00-0000-4000-8000-000000000008'''
 
 with surfaces(ordre, surface, q) as (values
   ( 1, 'athletes (lecture directe)',          $$select id from public.athletes where id in (:C, :S)$$),
@@ -93,7 +97,17 @@ with surfaces(ordre, surface, q) as (values
   (18, 'match_notes_lier(n° 7 → C)',          $$select 'lien:' || public.match_notes_lier(:F1, 'A', '7', null, :C, null)$$),
   (19, 'matchs_profils_partenaire(G1)',       $$select (regexp_matches(public.matchs_profils_partenaire(:G1)::text, '[0-9a-f]{8}-[0-9a-f-]{27}', 'g'))[1]$$),
   (20, 'top_athletes_view (partenaire)',      $$select id from public.top_athletes_view where id in (:C, :S)$$),
-  (21, 'admin_prospects_rapprochements',      $$select athlete_id from public.admin_prospects_rapprochements()$$)
+  (21, 'admin_prospects_rapprochements',      $$select athlete_id from public.admin_prospects_rapprochements()$$),
+  -- Volet 2 : le cégépien lui-même (tableau de bord athlète), son parent, ses coachs.
+  (22, 'TdB athlète : get_my_athlete_view_details', $$select 'lignes:' || count(*) from public.get_my_athlete_view_details()$$),
+  (23, 'TdB athlète : list_interested_recruiters',  $$select 'lignes:' || count(*) from public.list_interested_recruiters()$$),
+  (24, 'TdB athlète : recruiter_favorites (C,S)',   $$select 'fav:' || count(*) from public.recruiter_favorites where athlete_id in (:C, :S)$$),
+  (25, 'TdB athlète : recruiter_athlete_views (C,S)', $$select 'vues:' || count(*) from public.recruiter_athlete_views where athlete_id in (:C, :S)$$),
+  (26, 'TdB athlète : recruiter_activity_log (C,S)',  $$select 'journal:' || count(*) from public.recruiter_activity_log where athlete_id in (:C, :S)$$),
+  (27, 'TdB athlète : athlete_notifications (C,S)',   $$select 'notifs:' || count(*) from public.athlete_notifications where athlete_id in (:C, :S)$$),
+  (28, 'parent : get_my_children',            $$select athlete_id from public.get_my_children()$$),
+  (29, 'parent : get_child_consents(C)',      $$select 'consents:' || left(md5(public.get_child_consents(:C)::text), 8)$$),
+  (30, 'coach : get_coach_athletes(true)',    $$select athlete_id from public.get_coach_athletes(true)$$)
 )
 select ordre as "#", surface,
        pg_temp.sonde(:R, 'authenticated', q) as "R collégial",
@@ -101,6 +115,9 @@ select ordre as "#", surface,
        pg_temp.sonde(:A, 'authenticated', q) as "A admin",
        pg_temp.sonde(:P, 'authenticated', q) as "P partenaire",
        pg_temp.sonde(:K, 'authenticated', q) as "K coach",
+       pg_temp.sonde(:K2, 'authenticated', q) as "K2 coach équipe C",
+       pg_temp.sonde(:CA, 'authenticated', q) as "C (son compte)",
+       pg_temp.sonde(:PA, 'authenticated', q) as "PA parent de C",
        case when ordre <= 4 then pg_temp.sonde(null, 'anon', q) end as "anon"
   from surfaces
  order by ordre;

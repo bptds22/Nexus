@@ -177,6 +177,63 @@ end $$;
 select public.rapprocher(null, 'c0ce0a00-0000-4000-8000-0000000000e1') as propositions_carte_1,
        public.rapprocher(null, 'c0ce0a00-0000-4000-8000-0000000000e2') as propositions_carte_2;
 
+-- ── Volet 2 (2026-10-20) : le cégépien lui-même, son parent, le coach de SON équipe ──
+--   C   compte ATHLETE lota.cedric@ — rattaché à sa fiche par on_user_created_link_athlete
+--       (même courriel, fiche orpheline : le chemin canonique d'inscription)
+--   PA  compte PARENT lota.parent@, lié à C par parent_athletes
+--   K2  coach de l'équipe collégiale TC seulement (K reste coach de TC et de TS)
+--   + vues de fiche de R sur S et C (tableau de bord athlète : « recruteurs intéressés »)
+do $$
+declare r record;
+begin
+  if exists (select 1 from auth.users where id = 'c0ce0a00-0000-4000-8000-000000000006') then
+    raise notice 'NEXUS fixtures: volet 2 déjà en place';
+    return;
+  end if;
+  for r in select * from (values
+      ('c0ce0a00-0000-4000-8000-000000000006'::uuid, 'lota.cedric@fixture-cegep.test',      'ATHLETE', 'Cedric', 'Cegepien'),
+      ('c0ce0a00-0000-4000-8000-000000000007'::uuid, 'lota.parent@fixture-cegep.test',      'PARENT',  'Pascale','Cegepien'),
+      ('c0ce0a00-0000-4000-8000-000000000008'::uuid, 'lota.coachequipe@fixture-cegep.test', 'COACH',   'Kim',    'Condors')
+    ) as t(id, email, role, prenom, nom) loop
+    insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+                            raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                            confirmation_token, recovery_token, email_change, email_change_token_new,
+                            email_change_token_current, phone_change, phone_change_token, reauthentication_token)
+    values (r.id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', r.email,
+            extensions.crypt('NexusTest123!', extensions.gen_salt('bf')), now(),
+            '{"provider":"email","providers":["email"]}',
+            jsonb_build_object('role', r.role, 'first_name', r.prenom, 'last_name', r.nom),
+            now(), now(), '', '', '', '', '', '', '', '');
+  end loop;
+  update public.users set onboarding_complete = true
+   where id in ('c0ce0a00-0000-4000-8000-000000000006', 'c0ce0a00-0000-4000-8000-000000000007',
+                'c0ce0a00-0000-4000-8000-000000000008');
+  update public.users set sport_id = (select id from public.sports where nom = 'Football'),
+                          school_id = (select id from public.schools where type = 'CEGEP' and name = 'Cégep Beauce-Appalaches')
+   where id = 'c0ce0a00-0000-4000-8000-000000000008';
+  if not exists (select 1 from public.athletes where id = 'c0ce0a00-0000-4000-8000-0000000000a2'
+                                                and user_id = 'c0ce0a00-0000-4000-8000-000000000006') then
+    raise exception 'NEXUS fixtures: la fiche de C n''a pas été rattachée à son compte';
+  end if;
+  insert into public.team_coaches (team_id, coach_id)
+  values ('c0ce0a00-0000-4000-8000-0000000000b1', 'c0ce0a00-0000-4000-8000-000000000008');
+  insert into public.parent_athletes (parent_user_id, athlete_id)
+  values ('c0ce0a00-0000-4000-8000-000000000007', 'c0ce0a00-0000-4000-8000-0000000000a2');
+  insert into public.recruiter_athlete_views (recruiter_id, athlete_id)
+  select 'c0ce0a00-0000-4000-8000-000000000001', a
+    from unnest(array['c0ce0a00-0000-4000-8000-0000000000a1', 'c0ce0a00-0000-4000-8000-0000000000a2']::uuid[]) a;
+end $$;
+
+-- auth.identities : la connexion par mot de passe passe sans elle (relevé 2026-10-20), mais un
+-- compte créé par GoTrue en porte toujours une. Forme canonique, idempotente.
+insert into auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+select u.id::text, u.id,
+       jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true, 'phone_verified', false),
+       'email', null, now(), now()
+  from auth.users u
+ where u.id::text like 'c0ce0a00-0000-4000-8000-%'
+   and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
+
 -- La proposition de la 2ᵉ carte est REFUSÉE (pour rapprochements_refuses_unite).
 update public.rapprochements
    set statut = 'REFUSEE', decide_par = 'c0ce0a00-0000-4000-8000-000000000001', decide_le = now()
