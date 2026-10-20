@@ -86,107 +86,28 @@ export interface Dictionary {
     contact: string;
     copyright: string;
   };
+  /** /comment-ca-marche v2 (BP 2026-10-20). `stars.definitions` est AUSSI lu par la
+      modale de changement de cote du coach (CoteChangeConfirmContent) : ne pas déplacer. */
   howItWorks: {
-    hero: {
-      eyebrow: string;
-      title: string;
-      lede: string;
-      discoverHint: string;
-    };
-    why: {
-      eyebrow: string;
-      title: string;
-      p1: string;
-      p2: string;
-      p3: string;
-    };
+    hero: { eyebrow: string; title1: string; title2: string; lede: string; cta: string; ctaSecondary: string };
+    why: { eyebrow: string; title1: string; title2: string; paragraphs: string[] };
+    etapes: { eyebrow: string; title1: string; title2: string; items: { kicker: string; title: string; body: string }[] };
     verification: {
-      eyebrow: string;
-      title: string;
-      lede: string;
-      grayTitle: string;
-      grayBody: string;
-      blueTitle: string;
-      blueBody: string;
-      perishableTitle: string;
-      perishableBody: string;
+      eyebrow: string; title1: string; title2: string; lede: string;
+      grayTitle: string; grayBody: string; blueTitle: string; blueBody: string;
+      perishableTitle: string; perishableBody: string;
     };
     stars: {
-      eyebrow: string;
-      title: string;
-      lede: string;
-      closing: string;
+      eyebrow: string; title1: string; title2: string; lede: string;
       definitions: string[];
+      detail: string;
+      question: { title: string; body: string };
     };
-    philosophy: {
-      eyebrow: string;
-      title: string;
-      p1: string;
-      p2: string;
-      p3: string;
-      badgesTitle: string;
-      badgesLede: string;
-      badgesClosing: string;
-      badgeNames: {
-        captain: string;
-        allstar: string;
-        progression: string;
-        team_leader: string;
-        league_leader: string;
-        mvp: string;
-        custom: string;
-      };
-      badgeDescs: {
-        captain: string;
-        allstar: string;
-        progression: string;
-        team_leader: string;
-        league_leader: string;
-        mvp: string;
-        custom: string;
-      };
-      badgeDetails: {
-        team_leader: string;
-        league_leader: string;
-        custom: string;
-      };
-    };
-    reputation: {
-      eyebrow: string;
-      title: string;
-      p1: string;
-      p2: string;
-      closing: string;
-      badges: { name: string; threshold: string }[];
-    };
-    communication: {
-      eyebrow: string;
-      title: string;
-      p1: string;
-      p2: string;
-      p3: string;
-    };
-    engagement: {
-      eyebrow: string;
-      title: string;
-      lede: string;
-      principleAthleteTitle: string;
-      principleAthleteBody: string;
-      principleVisibilityTitle: string;
-      principleVisibilityBody: string;
-      principleCoachTitle: string;
-      principleCoachBody: string;
-      closing: string;
-    };
-    conviction: {
-      eyebrow: string;
-      title: string;
-      p1: string;
-      p2: string;
-      p3: string;
-      p4: string;
-    };
-    personas: { question: string; line: string; label: string }[];
+    distinctions: { eyebrow: string; title1: string; title2: string; lede: string; labels: string[] };
+    communication: { eyebrow: string; title1: string; title2: string; paragraphs: string[] };
+    engagement: { eyebrow: string; title1: string; title2: string; items: { title: string; body: string }[] };
+    conviction: { eyebrow: string; title1: string; title2: string; paragraphs: string[]; closing: string };
+    personas: { eyebrow: string; title1: string; title2: string; items: { question: string; line: string; label: string }[] };
   };
   coachLanding: {
     hero: {
@@ -755,33 +676,49 @@ export const dictionaries: Record<Lang, Dictionary> = {
     howItWorks: {
       hero: {
         eyebrow: "Notre mission",
-        title: "Le talent n'a pas de code postal.",
+        title1: "Le talent n'a pas",
+        title2: "de code postal.",
         lede: "Quand j'étais au secondaire, chaque joueur de football de mon école allait au même CÉGEP. C'était juste comme ça. Si je n'avais pas fait des camps et rencontré d'autres personnes, je n'aurais jamais vécu les trois meilleures années de ma vie ailleurs. Nexus existe pour que ce genre de rencontre ne dépende pas de la chance.",
-        discoverHint: "Découvre comment ↓",
+        cta: "Crée ton profil",
+        ctaSecondary: "Voir comment ça marche",
       },
       why: {
-        eyebrow: "Pourquoi",
-        title: "Le recrutement sportif au Québec roule sur les réseaux.",
-        p1: "Les recruteurs CÉGEP connaissent les entraîneurs des grosses écoles secondaires. Ils assistent aux gros matchs. Ils appellent les mêmes numéros année après année. Ce système fonctionne — mais seulement pour les athlètes qui sont dans le bon cercle.",
-        p2: "Les écoles connues envoient leurs joueurs aux mêmes CÉGEPs. Les petites écoles se font oublier. Les jeunes en région se font oublier. Ce n'est pas une question de talent — c'est une question de réseau. Et tu ne choisis pas ton école secondaire en fonction de qui elle connaît.",
-        p3: "Nexus donne à chaque athlète la même visibilité structurée, peu importe son école, sa région ou le cercle d'influence de son entraîneur. Le talent ne change pas de valeur selon le code postal. Nexus non plus.",
+        eyebrow: "Pourquoi Nexus existe",
+        title1: "Le recrutement",
+        title2: "roule sur les réseaux.",
+        paragraphs: [
+          "Les recruteurs des cégeps connaissent les entraîneurs des grosses écoles. Ils vont aux gros matchs. Ils appellent les mêmes numéros, année après année. Ça marche — pour les athlètes qui sont dans le bon cercle.",
+          "Les petites écoles se font oublier. Les jeunes en région aussi. Ce n'est pas une question de talent, c'est une question de réseau. Et tu ne choisis pas ton école secondaire en fonction de qui elle connaît.",
+          "Nexus donne à chaque athlète la même vitrine, peu importe son école, sa région ou le carnet d'adresses de son coach.",
+        ],
+      },
+      etapes: {
+        eyebrow: "Comment ça marche",
+        title1: "Trois rôles.",
+        title2: "Un seul profil.",
+        items: [
+          { kicker: "L'athlète", title: "Tu crées ton profil", body: "Position, mesures, vidéos, parcours scolaire : tu remplis ce que tu peux, tu peaufines plus tard. Si ton coach a déjà créé ta fiche, tu la récupères en t'inscrivant." },
+          { kicker: "Le coach", title: "Il vérifie et il évalue", body: "Ton coach confirme tes infos (c'est le crochet bleu), te donne sa cote et peut t'attribuer des distinctions." },
+          { kicker: "Le recruteur", title: "Il te trouve", body: "Les recruteurs des cégeps cherchent par sport, position, région et promotion. Ils écrivent à ton coach, ou à toi quand les règles le permettent." },
+        ],
       },
       verification: {
         eyebrow: "La vérification",
-        title: "Pourquoi un profil bleu vaut plus qu'un profil gris.",
-        lede: "Sur Nexus, tout athlète peut créer son profil. Mais pas tous les profils portent le même poids aux yeux des recruteurs. La différence, c'est la vérification.",
-        grayTitle: "Check gris — Profil non vérifié",
-        grayBody: "L'athlète a créé son propre profil. Les infos sont là, mais personne ne les a confirmées. Le recruteur les prend avec un grain de sel — et c'est normal.",
-        blueTitle: "Check bleu — Profil vérifié par un coach",
-        blueBody: "L'entraîneur a passé en revue chaque champ du profil — identité, stats, école, position. Il met sa propre réputation en jeu en certifiant que tout est vrai. Le check bleu, c'est la crédibilité du coach transférée à l'athlète.",
-        perishableTitle: "La vérification est périssable.",
-        perishableBody: "Le premier de chaque mois, l'athlète reçoit 14 jours pour confirmer que ses infos sont toujours à jour. Pas de confirmation dans les temps = retour au check gris. Le coach peut toujours re-vérifier après. On empêche les profils zombies — un athlète vérifié il y a 2 ans ne peut pas glisser sur un check périmé.",
+        title1: "Gris ou bleu.",
+        title2: "Ça change tout.",
+        lede: "Tout athlète peut créer son profil. Mais aux yeux d'un recruteur, un profil confirmé par un coach ne pèse pas le même poids.",
+        grayTitle: "Crochet gris — non vérifié",
+        grayBody: "L'athlète a rempli son profil lui-même. Les infos sont là, mais personne ne les a confirmées. Le recruteur les lit avec un grain de sel — et c'est normal.",
+        blueTitle: "Crochet bleu — vérifié par le coach",
+        blueBody: "L'entraîneur a passé le profil en revue et confirme que c'est vrai. Le crochet bleu, c'est la crédibilité du coach transférée à l'athlète.",
+        perishableTitle: "Une vérification, ça se renouvelle.",
+        perishableBody: "Au début de chaque mois, l'athlète confirme que ses infos sont toujours à jour. Sans confirmation à la mi-mois, le crochet redevient gris — et le coach peut re-vérifier en tout temps. Pas de profil vérifié il y a deux ans qui dort sur son crochet.",
       },
       stars: {
-        eyebrow: "La cote",
-        title: "Ce que veut vraiment dire chaque étoile.",
-        lede: "Sur Nexus, la cote globale d'un athlète va de 1 à 5 étoiles. Mais une étoile, ça veut dire quoi exactement? On a défini une échelle claire pour que tous les coachs parlent la même langue.",
-        closing: "Une étoile sur Nexus = la même étoile partout. Un 5 étoiles donné par un coach de Sherbrooke veut dire la même chose qu'un 5 étoiles donné par un coach de Gatineau. C'est ça, la langue commune.",
+        eyebrow: "L'évaluation du coach",
+        title1: "Une étoile,",
+        title2: "partout la même.",
+        lede: "La cote globale va de 1 à 5 étoiles. Chaque niveau a une définition, la même pour tous les coachs — c'est celle qu'ils ont sous les yeux quand ils donnent une cote. Un 5 étoiles à Sherbrooke veut dire la même chose qu'un 5 étoiles à Gatineau.",
         definitions: [
           "Prospect D1, prêt à partir dès le CÉGEP.",
           "Potentiel D2, et le D1 à portée.",
@@ -789,85 +726,60 @@ export const dictionaries: Record<Lang, Dictionary> = {
           "Le D3 est à ta portée avec du travail.",
           "Un point de départ — la progression est devant toi.",
         ],
-      },
-      philosophy: {
-        eyebrow: "La philosophie",
-        title: "Pourquoi les stats brutes ne suffisent pas.",
-        p1: "Après avoir parlé avec plusieurs recruteurs CÉGEP, on a compris une chose: les stats ne racontent pas toute l'histoire. 50 plaqués dans une ligue faible, ce n'est pas 30 plaqués dans une ligue forte. Un joueur peut avoir des chiffres gonflés ou sous-évalués — et le recruteur n'a aucun moyen de calibrer.",
-        p2: "Ce que les recruteurs veulent, c'est comprendre ce qu'un joueur apporte. Son caractère. Sa façon de lire le jeu. Sa capacité à progresser. C'est pour ça qu'on évalue sur 8 critères standardisés: leadership, discipline, coachabilité, intelligence de jeu, compétitivité, esprit d'équipe, résilience, attitude.",
-        p3: "Les stats physiques — taille, poids, 40 verges, vertical — restent sur le profil. Mais ce qui fait la différence à l'évaluation finale, c'est ce qu'un coach peut dire du joueur. Pas un tableur.",
-        badgesTitle: "Les distinctions Nexus — le langage commun des coachs.",
-        badgesLede: "Les coachs attribuent des badges aux athlètes selon leurs accomplissements et leurs qualités sur le terrain. Chaque badge représente une réalité mesurable — pas une opinion vague. Les recruteurs savent exactement ce qu'ils regardent quand ils voient ces distinctions.",
-        badgesClosing: "Un badge sur Nexus, c'est un accomplissement vérifié par un coach. Pas un autocollant qu'on met sur un CV. C'est ce qui permet à un recruteur d'évaluer un athlète en 30 secondes — et de savoir que ce qu'il voit est réel.",
-        badgeNames: {
-          captain: "Capitaine",
-          allstar: "Étoile provinciale",
-          progression: "Progression marquée",
-          team_leader: "Meneur d'équipe",
-          league_leader: "Meneur de la ligue",
-          mvp: "Joueur par excellence",
-          custom: "Distinction personnalisée",
-        },
-        badgeDescs: {
-          captain: "Désigné capitaine de son équipe. Leadership officiel reconnu par le coach.",
-          allstar: "Sélectionné parmi les meilleurs de sa catégorie au niveau provincial.",
-          progression: "A démontré une évolution significative sur une ou plusieurs saisons.",
-          team_leader: "Chef de file statistique de son équipe. Le coach choisit la catégorie qui s'applique au sport (points, plaqués, buts, passes, interceptions, etc.).",
-          league_leader: "Chef de file statistique dans sa ligue. Le coach choisit la catégorie dominante — toute stat mesurable de son sport.",
-          mvp: "Reconnu comme joueur clé par son entraîneur pour sa saison ou sa carrière.",
-          custom: "Accomplissement spécifique reconnu par le coach — le texte est libre et reflète la réalité de l'athlète (ex. titre régional, record d'équipe, distinction du tournoi).",
-        },
-        badgeDetails: {
-          team_leader: "Catégorie au choix",
-          league_leader: "Catégorie au choix",
-          custom: "Texte personnalisé",
+        detail: "Les stats ne racontent pas toute l'histoire : 50 plaqués dans une ligue faible, ce n'est pas 30 plaqués dans une ligue forte. En évaluation détaillée, le coach note aussi le physique, les habiletés propres à la position et le caractère — leadership, discipline, coachabilité, intelligence de jeu. Ce qu'un coach peut dire d'un joueur, un tableur ne le dit pas.",
+        question: {
+          title: "Et si un coach donne 5 étoiles à tout le monde ?",
+          body: "Son nom est sur chaque évaluation qu'il signe. Les recruteurs peuvent aussi évaluer les coachs avec qui ils échangent, et ces avis bâtissent sa réputation. Un coach qui gonfle ses joueurs le paie en crédibilité.",
         },
       },
-      reputation: {
-        eyebrow: "L'anti-triche",
-        title: "Qu'est-ce qui empêche un coach de donner 5 étoiles à tout le monde?",
-        p1: "Question légitime. La réponse courte: la même chose qui empêche un mauvais avocat de garder ses clients — sa réputation.",
-        p2: "Sur Nexus, les coachs construisent une réputation à travers leurs actions. Chaque évaluation, chaque athlète vérifié, chaque placement confirmé compte. Les coachs accumulent des badges: Évalué, Recommandé, Coach Élite, Placeur.",
-        closing: "Bientôt, les recruteurs pourront évaluer directement les coachs après avoir recruté leurs athlètes. Un coach qui gonfle ses joueurs verra ses recommandations perdre de leur valeur. Un coach qui sait évaluer correctement deviendra une référence. Le système se corrige lui-même — exactement comme dans la vraie vie.",
-        badges: [
-          { name: "Évalué", threshold: "3 évaluations" },
-          { name: "Recommandé", threshold: "5 évaluations" },
-          { name: "Coach Élite", threshold: "15 évaluations" },
-          { name: "Placeur", threshold: "5 athlètes avec lettre signée" },
-        ],
+      distinctions: {
+        eyebrow: "Les distinctions",
+        title1: "Des badges",
+        title2: "qui veulent dire quelque chose.",
+        lede: "Le coach attribue des distinctions à ses athlètes : capitaine, joueur par excellence, meneur de la ligue, équipe d'étoiles, et des badges propres à chaque sport. Pas un autocollant sur un CV : une reconnaissance signée par celui qui te voit jouer.",
+        labels: ["Capitaine", "Joueur par excellence", "Meneur de la ligue", "Équipe d'étoiles", "Clutch", "Nexus X"],
       },
       communication: {
-        eyebrow: "La communication",
-        title: "Le coach est le point de contact. Toujours.",
-        p1: "Au Québec, les athlètes en voie de recrutement sont souvent mineurs. Les règles du RSEQ et le bon sens s'alignent: la communication entre un recruteur CÉGEP et un athlète mineur passe par l'entraîneur.",
-        p2: "Sur Nexus, c'est intégré. Quand un recruteur s'intéresse à un athlète, il écrit au coach via la messagerie. Le coach décide quoi partager, comment répondre, et quand impliquer l'athlète. C'est pas une gatekeeping — c'est une protection.",
-        p3: "Nexus suit les calendriers RSEQ par sport, mais ne les impose pas. Les recruteurs peuvent toujours contacter les coachs en dehors des périodes officielles. Ce que le coach choisit de partager, c'est sa décision. Nexus donne les outils, pas les règles.",
+        eyebrow: "Le contact",
+        title1: "Le coach",
+        title2: "reste dans la boucle.",
+        paragraphs: [
+          "Les athlètes en voie de recrutement sont souvent mineurs. Sur Nexus, un recruteur peut écrire à l'entraîneur, et à l'athlète quand les règles le permettent.",
+          "Pendant les périodes sans contact du RSEQ, Nexus bloque automatiquement les messages des recruteurs aux athlètes du sport visé. Le canal avec l'entraîneur, lui, reste ouvert.",
+          "Le coach voit l'activité des recruteurs sur ses joueurs. Il sait qui s'intéresse à qui, et il peut accompagner la suite.",
+        ],
       },
       engagement: {
         eyebrow: "L'engagement",
-        title: "La visibilité d'un athlète n'est jamais à vendre.",
-        lede: "Sur Nexus, les abonnements existent — mais ils gatent des outils, jamais des athlètes.",
-        principleAthleteTitle: "L'athlète ne paie jamais",
-        principleAthleteBody: "Profil complet, vidéos illimitées, vérification, statut de recrutement — tout est gratuit pour l'athlète. Pour toujours.",
-        principleVisibilityTitle: "La visibilité n'est pas gatée",
-        principleVisibilityBody: "Un recruteur gratuit voit le même profil qu'un recruteur payant. Un talent ne peut pas être ignoré parce qu'un recruteur n'a pas payé.",
-        principleCoachTitle: "Le coach a toujours l'essentiel gratuit",
-        principleCoachBody: "Créer des profils, évaluer, vérifier, recevoir des messages — c'est gratuit. Les outils d'analyse avancée sont Pro. Jamais l'inverse.",
-        closing: "On facture les outils — pipeline avancé, analytique recruteur, stats d'école. Pas le droit d'être vu. Un jeune athlète qui mérite d'être recruté le sera, peu importe qui paie quoi autour de lui.",
+        title1: "La visibilité",
+        title2: "n'est pas à vendre.",
+        items: [
+          { title: "L'athlète ne paie jamais", body: "Profil, vidéos, vérification, statut de recrutement : tout est gratuit pour l'athlète." },
+          { title: "Le coach non plus", body: "Créer son équipe, vérifier, évaluer, échanger avec les recruteurs : le compte coach est gratuit." },
+          { title: "Tous les athlètes, pour tous les recruteurs", body: "Un recruteur gratuit voit tous les athlètes dans sa recherche. L'abonnement paie des outils — identité, vidéos, messagerie, suivi. Personne ne paie pour faire monter un athlète." },
+        ],
       },
       conviction: {
         eyebrow: "Notre conviction",
-        title: "Le sport, c'est ce qui garde les jeunes à l'école.",
-        p1: "On croit au sport étudiant. C'est ce qui bâtit le caractère d'un jeune. C'est ce qui crée les amitiés qui durent toute la vie. C'est ce qui te pousse à te dépasser quand personne ne regarde. Ton environnement, quand tu grandis, c'est ce qui te définit — et pour beaucoup, cet environnement, c'est une équipe.",
-        p2: "Nexus ne réinvente pas le processus de recrutement. Les écoles connues vont continuer à produire des athlètes recrutés. Les grandes équipes vont continuer à exister. Ce qu'on fait, c'est élargir la porte. Donner une chance aux diamants bruts. Ouvrir les possibilités pour ceux qui ne sont pas dans le bon cercle.",
-        p3: "Parce que quelqu'un a eu la chance — ou la persévérance — de faire des camps, de rencontrer les bonnes personnes, et de finir dans le bon programme. Et cette personne-là a vécu les trois meilleures années de sa vie.",
-        p4: "On veut ça pour tous les athlètes du Québec.",
+        title1: "Le sport garde",
+        title2: "les jeunes à l'école.",
+        paragraphs: [
+          "On croit au sport étudiant. C'est ce qui bâtit le caractère d'un jeune. C'est ce qui crée les amitiés qui durent toute la vie. C'est ce qui te pousse à te dépasser quand personne ne regarde. Ton environnement, quand tu grandis, c'est ce qui te définit — et pour beaucoup, cet environnement, c'est une équipe.",
+          "Nexus ne réinvente pas le processus de recrutement. Les écoles connues vont continuer à produire des athlètes recrutés. Les grandes équipes vont continuer à exister. Ce qu'on fait, c'est élargir la porte. Donner une chance aux diamants bruts. Ouvrir les possibilités pour ceux qui ne sont pas dans le bon cercle.",
+          "Parce que quelqu'un a eu la chance — ou la persévérance — de faire des camps, de rencontrer les bonnes personnes, et de finir dans le bon programme. Et cette personne-là a vécu les trois meilleures années de sa vie.",
+        ],
+        closing: "On veut ça pour tous les athlètes du Québec.",
       },
-      personas: [
-        { question: "Tu es un athlète?", line: "Crée ton profil et fais-toi repérer par les recruteurs CÉGEP.", label: "Découvrir →" },
-        { question: "Tu es un entraîneur?", line: "Vérifie tes joueurs, ajoute ton évaluation, bâtis ta réputation.", label: "Découvrir →" },
-        { question: "Tu es un recruteur CÉGEP?", line: "Trouve les meilleurs prospects du secondaire à travers le Québec.", label: "Découvrir →" },
-      ],
+      personas: {
+        eyebrow: "À toi de jouer",
+        title1: "Choisis",
+        title2: "ton côté.",
+        items: [
+          { question: "Tu es un athlète ?", line: "Crée ton profil et fais-toi voir par les recruteurs des cégeps.", label: "Pour les athlètes" },
+          { question: "Tu es un entraîneur ?", line: "Vérifie tes joueurs, évalue-les, mets-les en vitrine.", label: "Pour les coachs" },
+          { question: "Vous recrutez pour un cégep ?", line: "Trouvez et suivez les athlètes du secondaire, partout au Québec.", label: "Pour les recruteurs" },
+        ],
+      },
     },
     coachLanding: {
       hero: {
@@ -1673,33 +1585,49 @@ export const dictionaries: Record<Lang, Dictionary> = {
     howItWorks: {
       hero: {
         eyebrow: "Our mission",
-        title: "Talent doesn't have a postal code.", // TODO-EN
+        title1: "Talent doesn't have",
+        title2: "a postal code.",
         lede: "When I was in high school, every football player at my school went to the same CÉGEP. That's just how it was. If I hadn't gone to camps and met other people, I never would have lived the three best years of my life somewhere else. Nexus exists so that kind of encounter doesn't depend on luck.",
-        discoverHint: "Discover how ↓",
+        cta: "Create your profile",
+        ctaSecondary: "See how it works",
       },
       why: {
-        eyebrow: "Why",
-        title: "Sports recruitment in Québec runs on networks.",
-        p1: "CÉGEP recruiters know the coaches at the big high schools. They show up at the big games. They call the same numbers year after year. That system works — but only for athletes inside the right circle.",
-        p2: "Well-known schools send their players to the same CÉGEPs. Smaller schools get forgotten. Kids in the regions get forgotten. It's not a question of talent — it's a question of network. And you don't pick your high school based on who it knows.",
-        p3: "Nexus gives every athlete the same structured visibility, no matter the school, the region, or the coach's circle of influence. Talent doesn't change in value depending on the postal code. Neither does Nexus.",
+        eyebrow: "Why Nexus exists",
+        title1: "Recruiting",
+        title2: "runs on networks.",
+        paragraphs: [
+          "CÉGEP recruiters know the coaches at the big schools. They go to the big games. They call the same numbers, year after year. It works — for athletes inside the right circle.",
+          "Small schools get forgotten. So do kids in the regions. It's not a question of talent, it's a question of network. And you don't pick your high school based on who it knows.",
+          "Nexus gives every athlete the same showcase, no matter the school, the region, or the coach's contact list.",
+        ],
+      },
+      etapes: {
+        eyebrow: "How it works",
+        title1: "Three roles.",
+        title2: "One profile.",
+        items: [
+          { kicker: "The athlete", title: "You create your profile", body: "Position, measurements, videos, academics: fill in what you can, polish it later. If your coach already created your file, you claim it when you sign up." },
+          { kicker: "The coach", title: "They verify and evaluate", body: "Your coach confirms your info (that's the blue check), gives you a rating and can award you distinctions." },
+          { kicker: "The recruiter", title: "They find you", body: "CÉGEP recruiters search by sport, position, region and graduating class. They message your coach, or you when the rules allow it." },
+        ],
       },
       verification: {
         eyebrow: "Verification",
-        title: "Why a blue profile is worth more than a gray one.",
-        lede: "On Nexus, any athlete can create a profile. But not every profile carries the same weight in a recruiter's eyes. The difference is verification.",
-        grayTitle: "Gray check — Unverified profile",
-        grayBody: "The athlete created their own profile. The info is there, but no one has confirmed it. The recruiter takes it with a grain of salt — and that's normal.",
-        blueTitle: "Blue check — Coach-verified profile",
-        blueBody: "The coach has reviewed every field on the profile — identity, stats, school, position. They put their own reputation on the line by certifying it's all true. The blue check is the coach's credibility transferred to the athlete.",
-        perishableTitle: "Verification is perishable.",
-        perishableBody: "On the first of every month, the athlete gets 14 days to confirm their info is still up to date. No confirmation in time = back to the gray check. The coach can always re-verify afterward. We prevent zombie profiles — an athlete verified 2 years ago can't coast on an expired check.",
+        title1: "Gray or blue.",
+        title2: "It changes everything.",
+        lede: "Any athlete can create a profile. But in a recruiter's eyes, a profile confirmed by a coach doesn't carry the same weight.",
+        grayTitle: "Gray check — unverified",
+        grayBody: "The athlete filled in the profile themselves. The info is there, but no one has confirmed it. The recruiter reads it with a grain of salt — and that's normal.",
+        blueTitle: "Blue check — verified by the coach",
+        blueBody: "The coach reviewed the profile and confirms it's true. The blue check is the coach's credibility transferred to the athlete.",
+        perishableTitle: "Verification has to be renewed.",
+        perishableBody: "At the start of every month, the athlete confirms their info is still up to date. No confirmation by mid-month and the check turns gray again — and the coach can re-verify at any time. No profile verified two years ago coasting on its check.",
       },
       stars: {
-        eyebrow: "The rating",
-        title: "What each star actually means.",
-        lede: "On Nexus, an athlete's overall rating goes from 1 to 5 stars. But what does a star actually mean? We defined a clear scale so every coach speaks the same language.",
-        closing: "One star on Nexus = the same star everywhere. A 5-star rating from a Sherbrooke coach means the same thing as a 5-star from a Gatineau coach. That's the common language.",
+        eyebrow: "The coach's evaluation",
+        title1: "One star,",
+        title2: "the same everywhere.",
+        lede: "The overall rating goes from 1 to 5 stars. Each level has a definition, the same for every coach — it's the one they see when they give a rating. A 5-star in Sherbrooke means the same thing as a 5-star in Gatineau.",
         definitions: [
           "D1 prospect. Can start as a Division 1 player from the moment they enter CÉGEP.",
           "Could eventually start in D1. Certain D2 starter in their first season.",
@@ -1707,85 +1635,60 @@ export const dictionaries: Record<Lang, Dictionary> = {
           "Could eventually become a D3 starter, but needs work and progression.",
           "Open to continuing at CÉGEP, but will need significant progression before being able to start even in D3.",
         ],
-      },
-      philosophy: {
-        eyebrow: "Philosophy",
-        title: "Why raw stats aren't enough.",
-        p1: "After talking with several CÉGEP recruiters, we understood one thing: stats don't tell the whole story. 50 tackles in a weak league isn't 30 tackles in a strong league. A player can have inflated or undervalued numbers — and the recruiter has no way to calibrate.",
-        p2: "What recruiters want is to understand what a player brings. Their character. The way they read the game. Their ability to progress. That's why we evaluate on 8 standardized criteria: leadership, discipline, coachability, game IQ, competitiveness, team spirit, resilience, attitude.",
-        p3: "Physical stats — height, weight, 40-yard dash, vertical — stay on the profile. But what makes the difference at final evaluation is what a coach can say about the player. Not a spreadsheet.",
-        badgesTitle: "Nexus distinctions — the common language of coaches.", // TODO-EN
-        badgesLede: "Coaches assign badges to athletes based on their accomplishments and on-field qualities. Every badge represents a measurable reality — not a vague opinion. Recruiters know exactly what they're looking at when they see these distinctions.",
-        badgesClosing: "A badge on Nexus is an accomplishment verified by a coach. Not a sticker stuck on a résumé. It's what lets a recruiter assess an athlete in 30 seconds — and know that what they see is real.",
-        badgeNames: {
-          captain: "Captain",
-          allstar: "Provincial all-star",
-          progression: "Marked progression",
-          team_leader: "Team leader",
-          league_leader: "League leader",
-          mvp: "Most valuable player",
-          custom: "Custom distinction",
-        },
-        badgeDescs: {
-          captain: "Designated team captain. Official leadership recognized by the coach.",
-          allstar: "Selected among the top players in their category at the provincial level.",
-          progression: "Demonstrated significant growth across one or several seasons.",
-          team_leader: "Statistical leader on their team. The coach picks the category that applies to the sport (points, tackles, goals, assists, interceptions, etc.).",
-          league_leader: "Statistical leader in their league. The coach picks the dominant category — any measurable stat from their sport.",
-          mvp: "Recognized as a key player by their coach for the season or career.",
-          custom: "Specific accomplishment recognized by the coach — the text is open and reflects the athlete's reality (e.g. regional title, team record, tournament distinction).",
-        },
-        badgeDetails: {
-          team_leader: "Category of choice",
-          league_leader: "Category of choice",
-          custom: "Custom text",
+        detail: "Stats don't tell the whole story: 50 tackles in a weak league isn't 30 tackles in a strong one. In a detailed evaluation, the coach also rates physical tools, position-specific skills and character — leadership, discipline, coachability, game IQ. What a coach can say about a player, a spreadsheet can't.",
+        question: {
+          title: "What if a coach gives 5 stars to everyone?",
+          body: "Their name is on every evaluation they sign. Recruiters can also rate the coaches they deal with, and those reviews build the coach's reputation. A coach who inflates their players pays for it in credibility.",
         },
       },
-      reputation: {
-        eyebrow: "Anti-gaming", // TODO-EN
-        title: "What stops a coach from giving 5 stars to everyone?", // TODO-EN
-        p1: "Fair question. Short answer: the same thing that stops a bad lawyer from keeping clients — reputation.",
-        p2: "On Nexus, coaches build a reputation through their actions. Every evaluation, every verified athlete, every confirmed placement counts. Coaches accumulate badges: Evaluated, Recommended, Elite Coach, Placer.",
-        closing: "Soon, recruiters will be able to evaluate coaches directly after recruiting their athletes. A coach who inflates their players will see their recommendations lose value. A coach who evaluates accurately becomes a reference. The system corrects itself — exactly like in real life.",
-        badges: [
-          { name: "Evaluated", threshold: "3 evaluations" },
-          { name: "Recommended", threshold: "5 evaluations" },
-          { name: "Elite Coach", threshold: "15 evaluations" },
-          { name: "Placer", threshold: "5 athletes with a signed letter" },
-        ],
+      distinctions: {
+        eyebrow: "Distinctions",
+        title1: "Badges",
+        title2: "that mean something.",
+        lede: "Coaches award distinctions to their athletes: captain, most valuable player, league leader, all-star team, plus badges specific to each sport. Not a sticker on a résumé: recognition signed by the person who watches you play.",
+        labels: ["Captain", "Most valuable player", "League leader", "All-star team", "Clutch", "Nexus X"],
       },
       communication: {
-        eyebrow: "Communication",
-        title: "The coach is the point of contact. Always.",
-        p1: "In Québec, recruitable athletes are often minors. RSEQ rules and common sense agree: communication between a CÉGEP recruiter and a minor athlete goes through the coach.",
-        p2: "On Nexus, it's built in. When a recruiter is interested in an athlete, they message the coach through the platform. The coach decides what to share, how to respond, and when to involve the athlete. It's not gatekeeping — it's protection.",
-        p3: "Nexus follows RSEQ schedules by sport, but doesn't enforce them. Recruiters can still reach coaches outside official periods. What the coach chooses to share is their call. Nexus provides the tools, not the rules.",
+        eyebrow: "Contact",
+        title1: "The coach",
+        title2: "stays in the loop.",
+        paragraphs: [
+          "Athletes being recruited are often minors. On Nexus, a recruiter can message the coach, and the athlete when the rules allow it.",
+          "During RSEQ no-contact periods, Nexus automatically blocks recruiter messages to athletes in the sport concerned. The channel with the coach stays open.",
+          "The coach sees recruiter activity on their players. They know who's interested in whom, and can guide what comes next.",
+        ],
       },
       engagement: {
-        eyebrow: "The commitment", // TODO-EN
-        title: "An athlete's visibility is never for sale.", // TODO-EN
-        lede: "On Nexus, subscriptions exist — but they gate tools, never athletes.",
-        principleAthleteTitle: "Athletes never pay",
-        principleAthleteBody: "Full profile, unlimited videos, verification, recruitment status — everything is free for the athlete. Forever.",
-        principleVisibilityTitle: "Visibility is not gated",
-        principleVisibilityBody: "A free recruiter sees the same profile as a paying recruiter. A talent can't be ignored because a recruiter didn't pay.",
-        principleCoachTitle: "Coaches always get the essentials free",
-        principleCoachBody: "Creating profiles, evaluating, verifying, receiving messages — it's free. Advanced analytics tools are Pro. Never the other way around.",
-        closing: "We charge for the tools — advanced pipeline, recruiter analytics, school stats. Not the right to be seen. A young athlete who deserves to be recruited will be, regardless of who pays for what around them.",
+        eyebrow: "Our commitment",
+        title1: "Visibility",
+        title2: "is not for sale.",
+        items: [
+          { title: "Athletes never pay", body: "Profile, videos, verification, recruitment status: everything is free for the athlete." },
+          { title: "Neither do coaches", body: "Building a team, verifying, evaluating, talking with recruiters: the coach account is free." },
+          { title: "Every athlete, for every recruiter", body: "A free recruiter sees every athlete in their search. A subscription pays for tools — identity, videos, messaging, tracking. Nobody pays to push an athlete up." },
+        ],
       },
       conviction: {
         eyebrow: "Our conviction",
-        title: "Sport is what keeps kids in school.", // TODO-EN
-        p1: "We believe in student sport. It's what builds a young person's character. It's what creates friendships that last a lifetime. It's what pushes you to give more when no one's watching. Your environment, growing up, is what defines you — and for many, that environment is a team.",
-        p2: "Nexus doesn't reinvent the recruitment process. Well-known schools will keep producing recruited athletes. Big teams will keep existing. What we do is widen the door. Give a chance to the diamonds in the rough. Open possibilities for those who aren't in the right circle.",
-        p3: "Because somebody had the chance — or the persistence — to do the camps, meet the right people, and end up in the right program. And that person lived the three best years of their life.",
-        p4: "We want that for every athlete in Québec.",
+        title1: "Sport keeps",
+        title2: "kids in school.",
+        paragraphs: [
+          "We believe in student sport. It's what builds a young person's character. It's what creates friendships that last a lifetime. It's what pushes you to give more when no one's watching. Your environment, growing up, is what defines you — and for many, that environment is a team.",
+          "Nexus doesn't reinvent the recruitment process. Well-known schools will keep producing recruited athletes. Big teams will keep existing. What we do is widen the door. Give a chance to the diamonds in the rough. Open possibilities for those who aren't in the right circle.",
+          "Because somebody had the chance — or the persistence — to do the camps, meet the right people, and end up in the right program. And that person lived the three best years of their life.",
+        ],
+        closing: "We want that for every athlete in Québec.",
       },
-      personas: [
-        { question: "Are you an athlete?", line: "Create your profile and get noticed by CÉGEP recruiters.", label: "Discover →" },
-        { question: "Are you a coach?", line: "Verify your players, add your evaluation, build your reputation.", label: "Discover →" },
-        { question: "Are you a CÉGEP recruiter?", line: "Find the best high school prospects across Québec.", label: "Discover →" },
-      ],
+      personas: {
+        eyebrow: "Your move",
+        title1: "Pick",
+        title2: "your side.",
+        items: [
+          { question: "Are you an athlete?", line: "Create your profile and get seen by CÉGEP recruiters.", label: "For athletes" },
+          { question: "Are you a coach?", line: "Verify your players, evaluate them, put them in the spotlight.", label: "For coaches" },
+          { question: "Recruiting for a CÉGEP?", line: "Find and track high school athletes across Québec.", label: "For recruiters" },
+        ],
+      },
     },
     coachLanding: {
       hero: {
