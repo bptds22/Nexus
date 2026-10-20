@@ -56,13 +56,15 @@ export default function SectionsCoach() {
                 <Link href="/inscription" className={bouton}>
                   {T.hero.cta} <span aria-hidden>→</span>
                 </Link>
-                <a href="#discussion" className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
+                <a href="#discussion" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
                   {T.hero.ctaSecondary}
                 </a>
               </div>
             </div>
             <div className="lg:col-span-5 rounded-xl border border-white/[0.07] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
-              {/* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */}
+              {/* Petit écran : capture plus étroite (texte lisible) ; bureau : capture large. */}
+              <picture>
+              <source media="(max-width: 639px)" srcSet="/images/coach/profil-repond-mobile.webp" width={888} height={1320} />
               <img
                 src="/images/coach/profil-repond.webp"
                 alt={T.hero.imageAlt}
@@ -71,6 +73,7 @@ export default function SectionsCoach() {
                 decoding="async"
                 className="block w-full h-auto"
               />
+              </picture>
             </div>
           </div>
         </div>
@@ -96,7 +99,8 @@ export default function SectionsCoach() {
             <p className="mt-8 text-[16px] text-[#D1D5DB] leading-relaxed max-w-[620px] border-l-2 border-[#E63946] pl-4">{T.discussion.note}</p>
           </div>
           <div className="lg:col-span-5 lg:sticky lg:top-24 rounded-xl border border-white/[0.07] overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */}
+            <picture>
+            <source media="(max-width: 639px)" srcSet="/images/coach/details-academiques-mobile.webp" width={888} height={750} />
             <img
               src="/images/coach/details-academiques.webp"
               alt={T.discussion.imageAlt}
@@ -106,6 +110,7 @@ export default function SectionsCoach() {
               decoding="async"
               className="block w-full h-auto"
             />
+            </picture>
           </div>
         </div>
       </section>
@@ -199,7 +204,7 @@ export default function SectionsCoach() {
           </div>
           <p className="mt-10 text-[15px] text-[#9CA3AF]">
             {T.cta.noPlayersPrefix}
-            <Link href="/pour-les-etudiant-athlete" className="font-semibold text-[#E63946] hover:text-white underline-offset-4 hover:underline">
+            <Link href="/pour-les-etudiant-athlete" className="inline-flex items-center min-h-[44px] font-semibold text-[#E63946] hover:text-white underline-offset-4 hover:underline">
               {T.cta.noPlayersLink} →
             </Link>
           </p>

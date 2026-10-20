@@ -297,7 +297,7 @@ export default function GuideRecrutementPage() {
                 <li key={t.href}>
                   <Link
                     href={t.href}
-                    className="flex items-start gap-2 text-[13px] text-white/75 hover:text-[#E63946] transition-colors leading-snug"
+                    className="flex items-center gap-2 min-h-[44px] py-1 text-[13px] text-white/75 hover:text-[#E63946] transition-colors leading-snug"
                   >
                     <span className="shrink-0 font-head font-black text-white/35 w-6">0{i + 1}</span>
                     <span>{t.label}</span>
@@ -406,7 +406,7 @@ export default function GuideRecrutementPage() {
               </Link>
             </div>
             <p className="text-[13px] text-white/55 mt-6">
-              <Link href="/pour-les-etudiant-athlete" className="text-[#E63946] hover:underline">
+              <Link href="/pour-les-etudiant-athlete" className="inline-flex items-center min-h-[44px] text-[#E63946] hover:underline">
                 Retour à la page athlètes →
               </Link>
             </p>

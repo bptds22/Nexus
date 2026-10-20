@@ -40,7 +40,7 @@ export default function Footer() {
                 adjacent footer text (text-[#475569]). opacity-40
                 on pure white over the near-black footer surface
                 reads as roughly the same visual weight. */}
-            <Link href="/" aria-label="Nexus" className="inline-flex">
+            <Link href="/" aria-label="Nexus" className="inline-flex items-center justify-center min-w-[44px] min-h-[44px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/brand/icon-white.svg" alt="" className="h-[22px] w-auto opacity-40" />
             </Link>
@@ -49,13 +49,13 @@ export default function Footer() {
             </span>
           </div>
 
-          <nav className="flex items-center gap-8">
-            <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.privacy}</Link>
-            <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.terms}</Link>
-            <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.contact}</Link>
+          <nav className="flex flex-wrap items-center justify-center gap-x-8 gap-y-1">
+            <Link href="/confidentialite" className={`${label} inline-flex items-center min-h-[44px] text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.privacy}</Link>
+            <Link href="/conditions" className={`${label} inline-flex items-center min-h-[44px] text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.terms}</Link>
+            <Link href="/contact" className={`${label} inline-flex items-center min-h-[44px] text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.contact}</Link>
           </nav>
 
-          <div className="flex items-center gap-5">
+          <div className="nx-cibles-44 flex items-center gap-1">
             <SocialIcons links={SOCIAL_LINKS} />
           </div>
 

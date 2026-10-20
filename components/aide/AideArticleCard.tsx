@@ -105,7 +105,7 @@ export default function AideArticleCard({ article, sectionTitle }: Props) {
           support (« va voir SECU-04 ») et elle est cherchable. */}
       <a
         href={`#${anchor}`}
-        className="inline-block mt-2 mb-4 text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] hover:text-[#9CA3AF] transition-colors"
+        className="inline-flex items-center min-h-[44px] min-w-[44px] mt-0 mb-1 text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] hover:text-[#9CA3AF] transition-colors"
       >
         {article.id}
       </a>

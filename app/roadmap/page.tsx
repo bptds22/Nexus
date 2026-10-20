@@ -129,7 +129,7 @@ export default function RoadmapPage() {
             </p>
             <Link
               href="/a-propos"
-              className="inline-block mt-6 text-[14px] font-bold uppercase tracking-wider text-[#E63946] hover:text-[#FF5C58] transition-colors"
+              className="inline-flex items-center min-h-[44px] mt-4 text-[14px] font-bold uppercase tracking-wider text-[#E63946] hover:text-[#FF5C58] transition-colors"
             >
               {T.bottom.cta}
             </Link>

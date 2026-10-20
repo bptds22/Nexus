@@ -250,7 +250,7 @@ export default function Home() {
 
               <Link
                 href="/comment-ca-marche"
-                className="inline-flex items-center gap-3 text-white font-sans font-semibold text-sm group"
+                className="inline-flex items-center gap-3 min-h-[44px] text-white font-sans font-semibold text-sm group"
               >
                 <span className="w-10 h-10 rounded-full border-[1.5px] border-white/35 inline-flex items-center justify-center group-hover:border-white group-hover:bg-white/5 transition-colors">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M2 1 L10 6 L2 11 Z" fill="#fff"/></svg>

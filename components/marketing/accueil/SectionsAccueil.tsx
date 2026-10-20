@@ -132,7 +132,7 @@ export default function SectionsAccueil() {
                   >
                     {p.cta} <span aria-hidden>→</span>
                   </Link>
-                  <Link href={PERSONAS_LIENS[i].plus} className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
+                  <Link href={PERSONAS_LIENS[i].plus} className="inline-flex items-center min-h-[44px] text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
                     {p.more}
                   </Link>
                 </div>

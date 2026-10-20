@@ -36,7 +36,7 @@ export default function MarketingNav() {
     <nav className="sticky top-0 z-50 bg-[#111317] border-b border-white/[0.08]">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 
-        <Link href="/" aria-label="Nexus" className="flex items-center">
+        <Link href="/" aria-label="Nexus" className="flex items-center min-h-[44px]">
           <NexusLogo variant="white" height={28} className="nx-logo-dark" priority />
           <NexusLogo variant="black-red" height={28} className="nx-logo-light" priority />
         </Link>
@@ -113,7 +113,7 @@ export default function MarketingNav() {
           <Link href="/auth" className={`hidden sm:block ${label} text-wl-red transition-colors px-4 h-9 leading-9 hover:drop-shadow-[0_0_8px_rgba(232,72,72,0.6)]`}>
             {t.nav.login}
           </Link>
-          <Link href="/auth?mode=signup" className="nx-ghost-btn h-9 px-5 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
+          <Link href="/auth?mode=signup" className="nx-ghost-btn h-11 lg:h-9 px-4 sm:px-5 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
             {t.nav.signup}
           </Link>
 
@@ -123,7 +123,7 @@ export default function MarketingNav() {
             aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            className="lg:hidden flex items-center justify-center w-9 h-9 -mr-1 text-white"
+            className="lg:hidden flex items-center justify-center w-11 h-11 -mr-2 text-white"
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -142,7 +142,7 @@ export default function MarketingNav() {
               key={d.href}
               href={d.href}
               onClick={closeMenu}
-              className="block px-4 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase text-[#9AA3B2] hover:text-white transition-colors"
+              className="flex items-center min-h-[44px] px-4 text-[12px] font-bold tracking-[0.18em] uppercase text-[#9AA3B2] hover:text-white transition-colors"
             >
               {d.label}
             </Link>
@@ -152,7 +152,7 @@ export default function MarketingNav() {
               key={l.href}
               href={l.href}
               onClick={closeMenu}
-              className={`block px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase transition-colors hover:text-white ${l.accent ? "text-[#E63946]" : "text-[#9AA3B2]"}`}
+              className={`flex items-center min-h-[44px] px-2 text-[12px] font-bold tracking-[0.18em] uppercase transition-colors hover:text-white ${l.accent ? "text-[#E63946]" : "text-[#9AA3B2]"}`}
             >
               {l.label}
             </Link>
@@ -161,14 +161,14 @@ export default function MarketingNav() {
           <Link
             href="/auth"
             onClick={closeMenu}
-            className="block px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase text-wl-red hover:text-white transition-colors"
+            className="flex items-center min-h-[44px] px-2 text-[12px] font-bold tracking-[0.18em] uppercase text-wl-red hover:text-white transition-colors"
           >
             {t.nav.login}
           </Link>
           <Link
             href="/auth?mode=signup"
             onClick={closeMenu}
-            className="nx-ghost-btn mt-2 h-10 border font-head font-black text-xs uppercase tracking-widest flex items-center justify-center"
+            className="nx-ghost-btn mt-2 h-11 border font-head font-black text-xs uppercase tracking-widest flex items-center justify-center"
           >
             {t.nav.signup}
           </Link>

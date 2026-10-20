@@ -156,7 +156,7 @@ export default function TarifsPage() {
                   type="button"
                   onClick={() => setPersona(p.key)}
                   aria-pressed={persona === p.key}
-                  className={`h-10 px-4 sm:px-6 rounded font-head font-black text-[12px] sm:text-[13px] uppercase tracking-widest transition-colors ${
+                  className={`h-11 px-4 sm:px-6 rounded font-head font-black text-[12px] sm:text-[13px] uppercase tracking-widest transition-colors ${
                     persona === p.key ? "bg-[#E63946] text-white" : "text-[#9CA3AF] hover:text-white"
                   }`}
                 >
@@ -175,7 +175,7 @@ export default function TarifsPage() {
                     type="button"
                     onClick={() => setBilling(b)}
                     aria-pressed={billing === b}
-                    className={`h-10 px-4 rounded text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                    className={`h-11 px-4 rounded text-[11px] font-bold uppercase tracking-wider transition-colors ${
                       billing === b ? "bg-white text-[#111317]" : "text-[#9CA3AF] hover:text-white"
                     }`}
                   >

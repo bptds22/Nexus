@@ -58,7 +58,7 @@ export default function SectionsRecruteur() {
                 >
                   {V.hero.cta} <span aria-hidden>→</span>
                 </Link>
-                <a href="#fonctions" className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
+                <a href="#fonctions" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
                   {V.hero.ctaSecondary}
                 </a>
               </div>

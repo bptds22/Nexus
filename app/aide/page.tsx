@@ -242,7 +242,7 @@ export default function AidePage() {
                       <a
                         key={s.id}
                         href={`#${s.id}`}
-                        className="flex items-start gap-3 py-2 text-[#9CA3AF] hover:text-white transition-colors"
+                        className="flex items-start gap-3 py-3 min-h-[44px] text-[#9CA3AF] hover:text-white transition-colors"
                       >
                         <span className={`${label} text-[#6b7280] w-5 flex-shrink-0 pt-0.5`}>
                           {String(i + 1).padStart(2, "0")}

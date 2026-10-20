@@ -88,7 +88,7 @@ export default function SectionsCommentCaMarche() {
             >
               {T.hero.cta} <span aria-hidden>→</span>
             </Link>
-            <a href="#etapes" className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
+            <a href="#etapes" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
               {T.hero.ctaSecondary}
             </a>
           </div>

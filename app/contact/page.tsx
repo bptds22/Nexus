@@ -141,7 +141,7 @@ export default function ContactPage() {
                       {item.href ? (
                         <a
                           href={item.href}
-                          className="font-sans text-sm text-white hover:text-wl-red transition-colors duration-300"
+                          className="inline-flex items-center min-h-[44px] font-sans text-sm text-white hover:text-wl-red transition-colors duration-300"
                         >
                           {item.value}
                         </a>
@@ -156,7 +156,7 @@ export default function ContactPage() {
               {/* Social links */}
               <div className="mt-10 pt-6 border-t border-white/[0.08]">
                 <p className={`${label} text-[#9AA3B2] mb-4`}>Suivez-nous</p>
-                <div className="flex items-center gap-5">
+                <div className="nx-cibles-44 flex items-center gap-1 -ml-3">
                   {SOCIALS.map(({ name, href, d }) => (
                     <a key={name} href={href} aria-label={name} target="_blank" rel="noopener noreferrer"
                       className="nx-social-icon">

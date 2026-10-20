@@ -59,7 +59,7 @@ export default function SectionsAthlete() {
                 >
                   {T.hero.cta} <span aria-hidden>→</span>
                 </Link>
-                <Link href="/comment-ca-marche" className="text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
+                <Link href="/comment-ca-marche" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-white/80 hover:text-white underline-offset-4 hover:underline">
                   {T.hero.ctaSecondary}
                 </Link>
               </div>
@@ -162,7 +162,7 @@ export default function SectionsAthlete() {
             </div>
             <div className="relative">
               <p className="text-[15px] text-white/80">{T.gratuit.parentsLead}</p>
-              <Link href="/pour-les-parents" className="mt-2 inline-flex items-center gap-2 font-head font-black text-[13px] uppercase tracking-widest text-[#E63946] hover:text-white transition-colors">
+              <Link href="/pour-les-parents" className="mt-1 inline-flex items-center gap-2 min-h-[44px] font-head font-black text-[13px] uppercase tracking-widest text-[#E63946] hover:text-white transition-colors">
                 {T.gratuit.parentsLink} <span aria-hidden>→</span>
               </Link>
             </div>
@@ -191,7 +191,7 @@ export default function SectionsAthlete() {
             )}
           </div>
           <p className="mt-5">
-            <Link href="/inscription?role=ATHLETE" className="text-sm font-semibold text-white/80 hover:text-white underline underline-offset-4">{T.final.web}</Link>
+            <Link href="/inscription?role=ATHLETE" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-white/80 hover:text-white underline underline-offset-4">{T.final.web}</Link>
           </p>
           <p className="mt-6 text-[#9CA3AF]">{T.final.codeLead} <b className="text-white font-semibold">{T.final.code}</b></p>
         </div>
