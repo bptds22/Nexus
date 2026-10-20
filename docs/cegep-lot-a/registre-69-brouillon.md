@@ -35,8 +35,7 @@ athlète et parent : inchangées.
 identique sur tous les comptes avant/après ; avec un cégépien, seuls le recruteur collégial et
 le recruteur sans école changent (24 surfaces + REST + écriture d'une vue de fiche refusée) ; le
 cégépien lui-même, son parent, ses coachs, l'admin, le partenaire et `anon` identiques sur 32
-lignes ; rollback à l'octet près (md5 + ACL). Test écran de l'étape 2 (BP) : processus, listes,
-recherche, carte des matchs (match collégial affiché, 0 profil) conformes.
+lignes ; rollback à l'octet près (md5 + ACL). Test écran de l'étape 2 (BP) : en cours.
 Le local prouve que ça fonctionne, pas que c'est étanche : étape 3 en prod.
 
 **Défaut d'écran relevé à l'étape 2, déjà présent en prod (correctif en attente de GO) :** la fiche
