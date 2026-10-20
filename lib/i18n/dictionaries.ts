@@ -109,67 +109,14 @@ export interface Dictionary {
     conviction: { eyebrow: string; title1: string; title2: string; paragraphs: string[]; closing: string };
     personas: { eyebrow: string; title1: string; title2: string; items: { question: string; line: string; label: string }[] };
   };
+  /** Page coach v2 (BP 2026-10-20). Tutoiement, comme avant. */
   coachLanding: {
-    hero: {
-      eyebrow: string;
-      titleLine1: string;
-      titleLine2: string;
-      lede: string;
-      ledeSmall: string;
-      cta: string;
-      mockupAlt: string;
-    };
-    howItWorks: {
-      eyebrow: string;
-      title: string;
-      steps: { role: string; title: string; body: string }[];
-    };
-    evaluation: {
-      eyebrow: string;
-      title: string;
-      body: string;
-      cta: string;
-      mockupAlt: string;
-    };
-    reputation: {
-      eyebrow: string;
-      title: string;
-      lede: string;
-      badges: { name: string; threshold: string }[];
-      stats: { label: string; value: string }[];
-      progressTitle: string;
-      progressFooter: string;
-    };
-    myAthletes: {
-      eyebrow: string;
-      title: string;
-      body: string;
-      mockupAlt: string;
-    };
-    messaging: {
-      eyebrow: string;
-      title: string;
-      body: string;
-      mockupLabel: string;
-      items: { name: string; org: string; preview: string; time: string }[];
-    };
-    features: {
-      eyebrow: string;
-      title: string;
-      lede: string;
-      items: { title: string; body: string }[];
-    };
-    cta: {
-      title1: string;
-      title2: string;
-      title3: string;
-      body: string;
-      button: string;
-      trustFree: string;
-      trustQuick: string;
-      noPlayersPrefix: string;
-      noPlayersLink: string;
-    };
+    hero: { eyebrow: string; title1: string; title2: string; lede: string; ledeSmall: string; cta: string; ctaSecondary: string; imageAlt: string };
+    etapes: { eyebrow: string; title1: string; title2: string; items: { title: string; body: string }[] };
+    evaluation: { eyebrow: string; title1: string; title2: string; points: string[] };
+    outils: { eyebrow: string; title1: string; title2: string; items: { title: string; body: string; note?: string }[] };
+    contact: { eyebrow: string; title1: string; title2: string; body: string };
+    cta: { eyebrow: string; title1: string; title2: string; body: string; button: string; trustFree: string; noPlayersPrefix: string; noPlayersLink: string };
   };
   recruiterLanding: {
     /** Page recruteur v2 (BP 2026-10-20) : héros + une section par fonction, avec capture. */
@@ -763,94 +710,66 @@ export const dictionaries: Record<Lang, Dictionary> = {
     },
     coachLanding: {
       hero: {
-        eyebrow: "Pour les entraîneurs du secondaire",
-        titleLine1: "Tes joueurs méritent d'être vus.",
-        titleLine2: "Ta réputation aussi.",
-        lede: "Vérifie tes athlètes, ajoute ton évaluation, et bâtis ta réputation comme entraîneur. Les recruteurs CÉGEP font confiance aux coachs qui connaissent leurs joueurs.",
-        ledeSmall: "Tes joueurs s'inscrivent. Tu les vérifies. Tout le monde y gagne.",
-        cta: "Sois le Nex",
-        mockupAlt: "Tableau de bord entraîneur — Mes athlètes",
+        eyebrow: "Pour les entraîneurs",
+        title1: "Tes joueurs méritent",
+        title2: "d'être vus.",
+        lede: "Crée ton équipe, invite tes joueurs, vérifie et évalue leurs profils. Pour un recruteur, un profil vérifié par son coach, c'est du sérieux.",
+        ledeSmall: "Gratuit, pour toi comme pour tes joueurs.",
+        cta: "Inscris ton équipe",
+        ctaSecondary: "Comment ça marche",
+        imageAlt: "Profil d'athlète vu par un recruteur : rapport et cote du coach (données fictives)",
       },
-      howItWorks: {
+      etapes: {
         eyebrow: "Comment ça marche",
-        title: "4 étapes. Un impact réel.",
-        steps: [
-          { role: "Inscription", title: "Inscris-toi", body: "Crée ton compte en 2 minutes et associe-toi à ton école. C'est gratuit." },
-          { role: "Vérification", title: "Vérifie tes athlètes", body: "Tes joueurs remplissent leur profil eux-mêmes. Tu confirmes leurs infos et tu ajoutes ton évaluation. Leur profil passe de visible à crédible." },
-          { role: "Réputation", title: "Bâtis ta réputation", body: "Chaque vérification et chaque placement comptent. Tes badges Coach Élite et Placeur disent aux recruteurs que tu connais tes joueurs." },
-          { role: "Contact", title: "Deviens le point de contact", body: "Selon les règles du RSEQ, les recruteurs CÉGEP communiquent d'abord avec l'entraîneur — pas directement avec l'athlète mineur. Sur Nexus, tu gères cette communication via la messagerie intégrée. Tu facilites le lien entre tes joueurs et les programmes CÉGEP, dans le respect des règles." },
+        title1: "4 étapes.",
+        title2: "Zéro paperasse.",
+        items: [
+          { title: "Inscris-toi", body: "Crée ton compte et associe-toi à ton école ou à ton club. C'est gratuit." },
+          { title: "Monte ton équipe", body: "Invite tes joueurs par courriel. Ils remplissent leur profil eux-mêmes — ou tu crées leur fiche." },
+          { title: "Vérifie et évalue", body: "Tu confirmes leurs infos (crochet bleu), tu donnes ta cote et tes distinctions." },
+          { title: "Reste dans la boucle", body: "Les recruteurs t'écrivent par la messagerie, et tu vois leur activité sur tes joueurs." },
         ],
       },
       evaluation: {
         eyebrow: "Ton évaluation",
-        title: "Ton évaluation, c'est ce qui fait la différence.",
-        body: "N'importe quel athlète peut dire qu'il est bon. Quand tu le vérifies et que tu l'évalues sur 8 critères — leadership, discipline, coachabilité, intelligence de jeu, compétitivité, esprit d'équipe, résilience, attitude — les recruteurs savent que c'est vrai. Ton rapport est lu par chaque recruteur qui consulte le profil.",
-        cta: "Sois le Nex →",
-        mockupAlt: "Profil athlète vérifié avec évaluation du coach",
-      },
-      reputation: {
-        eyebrow: "Ma réputation",
-        title: "Ta réputation te précède.",
-        lede: "Chaque vérification et chaque placement comptent. Quand un recruteur clique sur ton nom, il voit ta page de réputation — ton historique, tes évaluations, tes badges. C'est ce qui te distingue.",
-        badges: [
-          { name: "Évalué", threshold: "3 évaluations" },
-          { name: "Recommandé", threshold: "5 évaluations" },
-          { name: "Coach Élite", threshold: "15 évaluations" },
-          { name: "Placeur", threshold: "5 athlètes avec lettre signée" },
+        title1: "C'est ce qui",
+        title2: "fait la différence.",
+        points: [
+          "N'importe quel athlète peut dire qu'il est bon. Ton crochet bleu dit que c'est vrai.",
+          "Évaluation simple (une cote) ou détaillée : physique, habiletés propres à la position, caractère.",
+          "Une échelle d'étoiles définie, la même pour tous les coachs.",
+          "Des distinctions : capitaine, joueur par excellence, meneur de la ligue, et les badges de ton sport.",
+          "Ton nom et ton rapport accompagnent le profil que lit le recruteur.",
         ],
-        stats: [
-          { label: "Temps de réponse moyen", value: "2h" },
-          { label: "Athlètes placés", value: "8" },
-          { label: "Profils complétés", value: "87%" },
-        ],
-        progressTitle: "Prochain badge — Coach Élite",
-        progressFooter: "Coach Élite dans 3 évaluations.",
       },
-      myAthletes: {
-        eyebrow: "Mes athlètes",
-        title: "Tous tes joueurs. Un seul endroit.",
-        body: "Vois d'un coup d'œil qui est vérifié, qui a un profil complet, qui est en processus de recrutement. Gère ton équipe sans tableur et sans papier.",
-        mockupAlt: "Tableau de bord entraîneur — gestion des athlètes",
-      },
-      messaging: {
-        eyebrow: "Messagerie",
-        title: "Tu es le premier point de contact.",
-        body: "Quand un recruteur s'intéresse à un de tes joueurs, il te contacte via Nexus — pas le parent, pas l'athlète. Tu contrôles la communication. Tu facilites le processus. C'est ton rôle.",
-        mockupLabel: "Messagerie",
+      outils: {
+        eyebrow: "Tes outils",
+        title1: "Tout pour gérer",
+        title2: "tes athlètes.",
         items: [
-          { name: "Jean-François L.", org: "Collège André-Grasset", preview: "Bonjour coach, j'aimerais discuter du profil d'Alexandre…", time: "2h" },
-          { name: "Caroline M.", org: "CÉGEP de Sherbrooke", preview: "Merci pour l'évaluation. On planifie une visite…", time: "1j" },
-          { name: "Philippe D.", org: "Campus Notre-Dame-de-Foy", preview: "Est-ce qu'Émilie serait disponible pour…", time: "3j" },
+          { title: "Mes athlètes", body: "Ton alignement au même endroit : qui est vérifié, qui a un profil complet, qui est en processus de recrutement." },
+          { title: "À traiter", body: "Les demandes de tes athlètes arrivent dans une seule boîte. Tu approuves ou tu refuses." },
+          { title: "Messagerie", body: "Les recruteurs t'écrivent. Toi, tu écris à ton équipe, à tes entraîneurs et à ta direction." },
+          { title: "Ma réputation", body: "Les recruteurs peuvent évaluer les coachs avec qui ils échangent. Leurs avis et tes badges — Évalué, Recommandé, Coach Élite, Placeur — vivent sur ta page." },
+          { title: "Mon école", body: "Tableau de bord, stats, placements et gestion des entraîneurs de ton école.", note: "Responsable d'école" },
+          { title: "Écoles et clubs", body: "Équipe scolaire ou ligue civile : ton équipe a sa place, avec son sport, sa catégorie et sa division." },
         ],
       },
-      features: {
-        eyebrow: "Fonctionnalités",
-        title: "Tout ce qu'il te faut pour gérer tes athlètes.",
-        lede: "Crée des profils et vérifie tes athlètes gratuitement.",
-        items: [
-          { title: "Compte entraîneur", body: "Crée ton compte, associe-toi à ton école." },
-          { title: "Gestion des athlètes", body: "Crée et gère les profils. Ajout illimité." },
-          { title: "Vérification", body: "Vérifie les profils. Badge bleu = crédibilité." },
-          { title: "Évaluation simplifiée", body: "Évalue sur les critères essentiels. Visible par les recruteurs." },
-          { title: "Messagerie entrante", body: "Reçois les messages des recruteurs intéressés par tes joueurs." },
-          { title: "Notifications", body: "Sois alerté quand un recruteur consulte un de tes athlètes." },
-          { title: "Mon école", body: "Page complète de ton école — tous les sports, tous les athlètes, tous les coachs." },
-          { title: "Stats école", body: "Vues, profils consultés, tendances par sport." },
-          { title: "Placement", body: "Suis tes athlètes — qui est recruté, par quel CÉGEP." },
-          { title: "Ma réputation", body: "Tes badges, ton historique, ta crédibilité." },
-          { title: "Analytics", body: "Tendances, activité recruteurs, performance pipeline." },
-        ],
+      contact: {
+        eyebrow: "Le contact",
+        title1: "Tu restes",
+        title2: "dans la boucle.",
+        body: "Un recruteur peut t'écrire en tout temps. Pendant les périodes sans contact, Nexus bloque ses messages aux athlètes : il passe par toi.",
       },
       cta: {
-        title1: "Prêt à faire la ",
-        title2: "différence",
-        title3: " pour tes joueurs?",
-        body: "Inscris-toi gratuitement. Vérifie tes athlètes. Bâtis ta réputation.",
-        button: "Sois le Nex",
-        trustFree: "100% gratuit",
-        trustQuick: "Inscription en 2 min",
-        noPlayersPrefix: "Pas de joueurs inscrits? ",
-        noPlayersLink: "Envoie-leur ce lien →",
+        eyebrow: "Sois le nex",
+        title1: "Prêt à mettre",
+        title2: "tes joueurs en vitrine\u00a0?",
+        body: "Inscris-toi gratuitement. Monte ton équipe. Vérifie tes athlètes.",
+        button: "Inscris ton équipe",
+        trustFree: "100 % gratuit",
+        noPlayersPrefix: "Tes joueurs ne sont pas encore inscrits\u00a0? ",
+        noPlayersLink: "Envoie-leur ce lien",
       },
     },
     recruiterLanding: {
@@ -1686,97 +1605,66 @@ export const dictionaries: Record<Lang, Dictionary> = {
     },
     coachLanding: {
       hero: {
-        eyebrow: "For high school coaches",
-        titleLine1: "Your players deserve to be seen.", // TODO-EN
-        titleLine2: "So does your reputation.", // TODO-EN
-        lede: "Verify your athletes, add your evaluation, and build your reputation as a coach. CÉGEP recruiters trust coaches who know their players.",
-        ledeSmall: "Your players sign up. You verify them. Everybody wins.",
-        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
-        cta: "Be the Nex",
-        mockupAlt: "Coach dashboard — My athletes",
+        eyebrow: "For coaches",
+        title1: "Your players deserve",
+        title2: "to be seen.",
+        lede: "Build your team, invite your players, verify and evaluate their profiles. To a recruiter, a profile verified by its coach means business.",
+        ledeSmall: "Free, for you and for your players.",
+        cta: "Sign up your team",
+        ctaSecondary: "How it works",
+        imageAlt: "Athlete profile seen by a recruiter: coach report and rating (fictional data)",
       },
-      howItWorks: {
+      etapes: {
         eyebrow: "How it works",
-        title: "4 steps. Real impact.", // TODO-EN
-        steps: [
-          { role: "Signup", title: "Sign up", body: "Create your account in 2 minutes and link to your school. It's free." },
-          { role: "Verification", title: "Verify your athletes", body: "Your players fill out their profiles themselves. You confirm their info and add your evaluation. Their profile goes from visible to credible." },
-          { role: "Reputation", title: "Build your reputation", body: "Every verification and every placement counts. Your Elite Coach and Placer badges tell recruiters you know your players." },
-          { role: "Contact", title: "Become the point of contact", body: "Per RSEQ rules, CÉGEP recruiters first communicate with the coach — not directly with the minor athlete. On Nexus, you handle that communication through the built-in messaging. You facilitate the link between your players and CÉGEP programs, within the rules." },
+        title1: "4 steps.",
+        title2: "Zero paperwork.",
+        items: [
+          { title: "Sign up", body: "Create your account and link it to your school or club. It's free." },
+          { title: "Build your team", body: "Invite your players by email. They fill in their own profile — or you create their file." },
+          { title: "Verify and evaluate", body: "You confirm their info (blue check), give your rating and your distinctions." },
+          { title: "Stay in the loop", body: "Recruiters message you, and you see their activity on your players." },
         ],
       },
       evaluation: {
         eyebrow: "Your evaluation",
-        title: "Your evaluation is what makes the difference.", // TODO-EN
-        body: "Any athlete can say they're good. When you verify them and evaluate them on 8 criteria — leadership, discipline, coachability, game IQ, competitiveness, team spirit, resilience, attitude — recruiters know it's real. Your report is read by every recruiter who opens the profile.",
-        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
-        cta: "Be the Nex →",
-        mockupAlt: "Verified athlete profile with coach evaluation",
-      },
-      reputation: {
-        eyebrow: "My reputation",
-        title: "Your reputation precedes you.", // TODO-EN
-        lede: "Every verification and every placement counts. When a recruiter clicks your name, they see your reputation page — your history, your evaluations, your badges. That's what sets you apart.",
-        badges: [
-          { name: "Evaluated", threshold: "3 evaluations" },
-          { name: "Recommended", threshold: "5 evaluations" },
-          { name: "Elite Coach", threshold: "15 evaluations" },
-          { name: "Placer", threshold: "5 athletes with a signed letter" },
+        title1: "It's what",
+        title2: "makes the difference.",
+        points: [
+          "Any athlete can say they're good. Your blue check says it's true.",
+          "Simple evaluation (one rating) or detailed: physical tools, position-specific skills, character.",
+          "A defined star scale, the same for every coach.",
+          "Distinctions: captain, most valuable player, league leader, plus your sport's badges.",
+          "Your name and your report come with the profile the recruiter reads.",
         ],
-        stats: [
-          { label: "Average response time", value: "2h" },
-          { label: "Athletes placed", value: "8" },
-          { label: "Profiles completed", value: "87%" },
-        ],
-        progressTitle: "Next badge — Elite Coach",
-        progressFooter: "Elite Coach in 3 evaluations.",
       },
-      myAthletes: {
-        eyebrow: "My athletes",
-        title: "All your players. One place.", // TODO-EN
-        body: "See at a glance who's verified, who has a complete profile, who's in the recruitment process. Manage your team without spreadsheets and without paper.",
-        mockupAlt: "Coach dashboard — athlete management",
-      },
-      messaging: {
-        eyebrow: "Messaging",
-        title: "You're the first point of contact.", // TODO-EN
-        body: "When a recruiter is interested in one of your players, they contact you through Nexus — not the parent, not the athlete. You control the communication. You facilitate the process. That's your role.",
-        mockupLabel: "Messaging",
+      outils: {
+        eyebrow: "Your tools",
+        title1: "Everything to manage",
+        title2: "your athletes.",
         items: [
-          { name: "Jean-François L.", org: "Collège André-Grasset", preview: "Hi coach, I'd like to discuss Alexandre's profile…", time: "2h" },
-          { name: "Caroline M.", org: "CÉGEP de Sherbrooke", preview: "Thanks for the evaluation. We're planning a visit…", time: "1d" },
-          { name: "Philippe D.", org: "Campus Notre-Dame-de-Foy", preview: "Would Émilie be available for…", time: "3d" },
+          { title: "My athletes", body: "Your roster in one place: who's verified, who has a complete profile, who's being recruited." },
+          { title: "To review", body: "Your athletes' requests land in a single inbox. You approve or decline." },
+          { title: "Messaging", body: "Recruiters message you. You message your team, your fellow coaches and your administration." },
+          { title: "My reputation", body: "Recruiters can rate the coaches they deal with. Their reviews and your badges — Evaluated, Recommended, Elite Coach, Placer — live on your page." },
+          { title: "My school", body: "Dashboard, stats, placements and management of your school's coaches.", note: "School lead" },
+          { title: "Schools and clubs", body: "School team or civil league: your team has its place, with its sport, category and division." },
         ],
       },
-      features: {
-        eyebrow: "Features",
-        title: "Everything you need to manage your athletes.", // TODO-EN
-        lede: "Create profiles and verify your athletes for free.",
-        items: [
-          { title: "Coach account", body: "Create your account, link to your school." },
-          { title: "Athlete management", body: "Create and manage profiles. Unlimited additions." },
-          { title: "Verification", body: "Verify profiles. Blue badge = credibility." },
-          { title: "Simplified evaluation", body: "Evaluate on the essential criteria. Visible to recruiters." },
-          { title: "Inbox messaging", body: "Receive messages from recruiters interested in your players." },
-          { title: "Notifications", body: "Get alerted when a recruiter views one of your athletes." },
-          { title: "My school", body: "Full page for your school — every sport, every athlete, every coach." },
-          { title: "School stats", body: "Views, profile consultations, trends by sport." },
-          { title: "Placement", body: "Track your athletes — who's recruited, by which CÉGEP." },
-          { title: "My reputation", body: "Your badges, your history, your credibility." },
-          { title: "Analytics", body: "Trends, recruiter activity, pipeline performance." },
-        ],
+      contact: {
+        eyebrow: "Contact",
+        title1: "You stay",
+        title2: "in the loop.",
+        body: "A recruiter can message you at any time. During no-contact periods, Nexus blocks their messages to athletes: they go through you.",
       },
       cta: {
-        title1: "Ready to make the ", // TODO-EN
-        title2: "difference", // TODO-EN
-        title3: " for your players?", // TODO-EN
-        body: "Sign up for free. Verify your athletes. Build your reputation.",
-        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
-        button: "Be the Nex",
+        eyebrow: "Be the nex",
+        title1: "Ready to put",
+        title2: "your players in the spotlight?",
+        body: "Sign up for free. Build your team. Verify your athletes.",
+        button: "Sign up your team",
         trustFree: "100% free",
-        trustQuick: "Sign up in 2 min",
-        noPlayersPrefix: "No players signed up? ",
-        noPlayersLink: "Send them this link →",
+        noPlayersPrefix: "Your players aren't signed up yet? ",
+        noPlayersLink: "Send them this link",
       },
     },
     recruiterLanding: {
