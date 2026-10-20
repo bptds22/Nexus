@@ -7,7 +7,6 @@ import {
   Building2,
   ShieldCheck,
   BadgeCheck,
-  GraduationCap,
   Check,
   X as XIcon,
 } from "lucide-react";
@@ -23,23 +22,36 @@ import {
 } from "@/lib/config/pricing";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Lang } from "@/lib/i18n/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════════════
    Tarifs — Unified pricing (Recruteur / Coach / Athlète)
+   v2 (BP 2026-10-20) : présentation seulement — mêmes tiers (lib/config/
+   pricing.ts), même paiement (/api/stripe/checkout), même ?role=.
 ═══════════════════════════════════════════════════════════════ */
+
+const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
+
+function Etiquette({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="inline-flex items-center gap-3">
+      <span className="w-10 h-px bg-[#E63946]" />
+      <span className={`${label} text-[#E63946]`}>{children}</span>
+    </div>
+  );
+}
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
 /**
- * Price formatter. Defaults to two-decimal form ("$4.99") for per-month
- * values; pass `{ whole: true }` for annual totals we display as integers
- * ("$159"). Zero always collapses to "$0" so free tiers don't render
- * "$0.00".
+ * Price formatter. Two-decimal form for per-month values; pass
+ * `{ whole: true }` for annual totals we display as integers. Zero always
+ * collapses to a whole "0" so free tiers don't render "0.00".
+ * FR : « 19,99 $ » (espace insécable) ; EN : « $19.99 ».
  */
-function formatPrice(n: number, opts: { whole?: boolean } = {}): string {
-  if (n === 0) return "$0";
-  if (opts.whole) return `$${Math.round(n)}`;
-  return `$${n.toFixed(2)}`;
+function formatPrice(n: number, lang: Lang, opts: { whole?: boolean } = {}): string {
+  const nombre = n === 0 || opts.whole ? String(Math.round(n)) : n.toFixed(2);
+  return lang === "fr" ? `${nombre.replace(".", ",")}\u00a0$` : `$${nombre}`;
 }
 
 function isValidPersona(v: string | null): v is Persona {
@@ -53,7 +65,7 @@ function isValidPersona(v: string | null): v is Persona {
 export default function TarifsPage() {
   // Mobile build (Capacitor): page exclue.
   if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const T = t.pricing;
   const [persona, setPersona] = useState<Persona>("recruteur");
   const [billing, setBilling] = useState<Billing>("monthly");
@@ -121,83 +133,69 @@ export default function TarifsPage() {
       <PlaybookBackground />
       <MarketingNav />
 
-      {/* ─── SECTION 1 — HEADER ───────────────────────────── */}
-      <section>
-        <div className="max-w-[1200px] mx-auto px-6 pt-20 pb-10 text-center">
-          <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
-            {T.hero.eyebrow}
-          </p>
-          <h1 className="nx-display text-[40px] sm:text-[48px] font-extrabold text-white uppercase leading-[1.05] tracking-tight mt-4">
-            {T.hero.title}
+      {/* ─── HÉROS (style v2, BP 2026-10-20) ─────────────── */}
+      <section aria-labelledby="tarifs-titre" className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-14 pt-20 lg:pt-28 pb-10">
+          <Etiquette>{T.hero.eyebrow}</Etiquette>
+          <h1 id="tarifs-titre" className="nx-display uppercase leading-[0.92] tracking-tight mt-5 text-5xl sm:text-6xl lg:text-[88px]">
+            <span className="block text-white">{T.hero.title1}</span>
+            <span className="block text-[#E63946]">{T.hero.title2}</span>
           </h1>
-          <p className="text-[15px] sm:text-[16px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[600px] mx-auto">
-            {T.hero.lede}
-          </p>
-        </div>
-      </section>
+          <p className="mt-6 max-w-[680px] text-lg sm:text-xl text-[#D1D5DB] leading-relaxed">{T.hero.lede}</p>
 
-      {/* ─── SECTION 2 — PERSONA TOGGLE ───────────────────── */}
-      <section>
-        <div className="max-w-[1200px] mx-auto px-6 flex justify-center">
-          <div className="inline-flex items-center gap-1 bg-[#1A1D24] rounded-full p-1.5 border border-white/[0.06]">
-            {([
-              { key: "recruteur", label: T.personaToggle.recruiter },
-              { key: "coach", label: T.personaToggle.coach },
-              { key: "athlete", label: T.personaToggle.athlete },
-            ] as { key: Persona; label: string }[]).map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                onClick={() => setPersona(p.key)}
-                className={`px-5 sm:px-6 py-2 rounded-full text-[12px] sm:text-[13px] font-bold uppercase tracking-wider transition-all ${
-                  persona === p.key
-                    ? "bg-[#2A2D34] text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
-                    : "text-[#9CA3AF] hover:text-white"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+          {/* ─── Sélecteur de persona, puis de cadence ─────── */}
+          <div className="mt-10 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="inline-flex self-start rounded-md border border-white/[0.07] bg-[#1A1D24] p-1">
+              {([
+                { key: "recruteur", label: T.personaToggle.recruiter },
+                { key: "coach", label: T.personaToggle.coach },
+                { key: "athlete", label: T.personaToggle.athlete },
+              ] as { key: Persona; label: string }[]).map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setPersona(p.key)}
+                  aria-pressed={persona === p.key}
+                  className={`h-10 px-4 sm:px-6 rounded font-head font-black text-[12px] sm:text-[13px] uppercase tracking-widest transition-colors ${
+                    persona === p.key ? "bg-[#E63946] text-white" : "text-[#9CA3AF] hover:text-white"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Masqué quand la persona n'a aucun tier payant : un bascule
+                mensuel/annuel devant une offre gratuite ne commande rien. */}
+            {hasPaidTiers && (
+              <div className="inline-flex self-start rounded-md border border-white/[0.07] bg-[#1A1D24] p-1">
+                {(["monthly", "annual"] as Billing[]).map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => setBilling(b)}
+                    aria-pressed={billing === b}
+                    className={`h-10 px-4 rounded text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                      billing === b ? "bg-white text-[#111317]" : "text-[#9CA3AF] hover:text-white"
+                    }`}
+                  >
+                    {b === "monthly" ? T.billingToggle.monthly : T.billingToggle.annual}
+                    {b === "annual" && savingsPct > 0 && (
+                      <span className="ml-1.5 font-normal normal-case tracking-normal opacity-80">
+                        ({T.billingToggle.saveLabel} {savingsPct}%)
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* ─── SECTION 3 — BILLING TOGGLE ─────────────────────
-          Masqué quand la persona n'a aucun tier payant : un bascule
-          mensuel/annuel devant une offre gratuite ne commande rien. */}
-      {hasPaidTiers && (
-      <section>
-        <div className="max-w-[1200px] mx-auto px-6 flex justify-center mt-5">
-          <div className="inline-flex items-center gap-1 bg-[#1A1D24] rounded-full p-1 border border-white/[0.06]">
-            <button
-              type="button"
-              onClick={() => setBilling("monthly")}
-              className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
-                billing === "monthly" ? "bg-[#2A2D34] text-white" : "text-[#9CA3AF] hover:text-white"
-              }`}
-            >
-              {T.billingToggle.monthly}
-            </button>
-            <button
-              type="button"
-              onClick={() => setBilling("annual")}
-              className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
-                billing === "annual" ? "bg-[#2A2D34] text-white" : "text-[#9CA3AF] hover:text-white"
-              }`}
-            >
-              {T.billingToggle.annual}
-              {savingsPct > 0 && (
-                <span className="text-[10px] font-normal ml-1 opacity-80">({T.billingToggle.saveLabel} {savingsPct}%)</span>
-              )}
-            </button>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* ─── SECTION 4 — PRICING CARDS ────────────────────── */}
-      <section>
-        <div className="max-w-[1200px] mx-auto px-6 pt-10 pb-12">
+      {/* ─── CARTES ─────────────────────────────────────── */}
+      <section className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-14 pt-4 pb-16">
           {!hasPaidTiers ? (
             /* Aucun tier payant (athlète, coach) — encadré mission puis
                liste de ce qui est inclus. Piloté par la LONGUEUR du tableau
@@ -207,41 +205,38 @@ export default function TarifsPage() {
               items={persona === "coach" ? T.freePersona.coachItems : T.freePersona.athleteItems}
               missionBody={persona === "coach" ? T.freePersona.coachMissionBody : T.freePersona.athleteMissionBody}
               labels={T.freePersona}
+              lang={lang}
             />
           ) : tiers.length === 2 ? (
             /* 2 tiers (Athlète — Pro + Free; All Star hidden for MVP) */
-            <div className="max-w-[820px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-              <PricingCard tier={tiers[1]} copy={T.tiers[tiers[1].id]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} />
-              <PricingCard tier={tiers[0]} copy={T.tiers[tiers[0].id]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
+            <div className="max-w-[860px] grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              <PricingCard tier={tiers[1]} copy={T.tiers[tiers[1].id]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} lang={lang} />
+              <PricingCard tier={tiers[0]} copy={T.tiers[tiers[0].id]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} lang={lang} />
             </div>
           ) : (
-            /* 3 tiers (Recruteur, Coach) — Pro centered, Free left, All Star right */
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-              <PricingCard tier={tiers[1]} copy={T.tiers[tiers[1].id]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} onCheckout={tiers[1].monthly > 0 ? handleCheckout : undefined} />
-              <PricingCard tier={tiers[0]} copy={T.tiers[tiers[0].id]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
-              <PricingCard tier={tiers[2]} copy={T.tiers[tiers[2].id]} billing={billing} orderCls="order-3 md:order-3" cardLabels={T.card} />
+            /* 3 tiers (Recruteur) — Pro centered, Free left, All Star right */
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+              <PricingCard tier={tiers[1]} copy={T.tiers[tiers[1].id]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} lang={lang} onCheckout={tiers[1].monthly > 0 ? handleCheckout : undefined} />
+              <PricingCard tier={tiers[0]} copy={T.tiers[tiers[0].id]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} lang={lang} />
+              <PricingCard tier={tiers[2]} copy={T.tiers[tiers[2].id]} billing={billing} orderCls="order-3 md:order-3" cardLabels={T.card} lang={lang} />
             </div>
           )}
         </div>
       </section>
 
-      {/* ─── SECTION 5 — CÉGEP BANNER (recruiter only) ────── */}
+      {/* ─── BANDEAU CÉGEP (recruteur seulement) ────────── */}
       {persona === "recruteur" && (
-        <section>
-          <div className="max-w-[1200px] mx-auto px-6 pb-14">
-            <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 sm:p-7 flex flex-col md:flex-row items-start md:items-center gap-5">
-              <div className="shrink-0 w-12 h-12 rounded-full bg-[#E63946]/10 flex items-center justify-center">
-                <GraduationCap size={22} className="text-[#E63946]" strokeWidth={2} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-[16px] font-semibold text-white">{T.cegepBanner.title}</h3>
-                <p className="text-[14px] text-[#9CA3AF] mt-1.5 leading-relaxed">
-                  {T.cegepBanner.body}
-                </p>
+        <section className="relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-14 pb-20">
+            <div className="relative overflow-hidden rounded-lg border border-white/[0.07] bg-[#1A1D24] px-7 py-9 lg:px-12 lg:py-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 260px at 85% 50%, rgba(230,57,70,0.16), transparent 60%)" }} />
+              <div className="relative max-w-[720px]">
+                <h2 className="nx-display uppercase text-3xl sm:text-4xl leading-none text-white">{T.cegepBanner.title}</h2>
+                <p className="mt-3 text-[15px] text-[#9CA3AF] leading-relaxed">{T.cegepBanner.body}</p>
               </div>
               <Link
                 href="/contact"
-                className="shrink-0 inline-flex items-center h-11 px-5 rounded-lg border border-[#E63946] text-[#E63946] text-[12px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors"
+                className="relative shrink-0 self-start lg:self-auto inline-flex items-center h-12 px-7 bg-[#E63946] text-white font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] transition-colors rounded"
               >
                 {T.cegepBanner.cta}
               </Link>
@@ -250,42 +245,34 @@ export default function TarifsPage() {
         </section>
       )}
 
-      {/* ─── SECTION 6 — POURQUOI PRO (athlete only) ────────
+      {/* ─── POURQUOI PRO (athlète seulement) ───────────────
           Ne s'affiche que s'il existe un tier payant à justifier. L'athlète
           étant entièrement gratuit, cette section reste montée mais inerte —
           elle revient telle quelle si une offre athlète est réintroduite. */}
       {persona === "athlete" && hasPaidTiers && (
-        <section>
-          <div className="max-w-[820px] mx-auto px-6 pb-14 text-center">
-            <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#F59E0B]">
-              {T.whyPro.eyebrow}
-            </p>
-            <h2 className="nx-display text-[28px] sm:text-[34px] font-extrabold text-white uppercase leading-tight tracking-tight mt-3">
-              {T.whyPro.title}
-            </h2>
-            <p className="text-[15px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[640px] mx-auto">
-              {T.whyPro.lede}
-            </p>
+        <section className="relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-14 pb-16">
+            <Etiquette>{T.whyPro.eyebrow}</Etiquette>
+            <h2 className="nx-display uppercase text-4xl sm:text-5xl leading-none text-white mt-5">{T.whyPro.title}</h2>
+            <p className="text-[16px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[640px]">{T.whyPro.lede}</p>
           </div>
         </section>
       )}
 
-      {/* ─── TRUST STRIP ──────────────────────────────────── */}
-      <section className="bg-[#111317]/80 border-t border-white/[0.06] border-b border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6 py-8">
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[#9CA3AF] text-sm">
+      {/* ─── CONFIANCE ──────────────────────────────────── */}
+      <section className="relative z-10 border-t border-white/[0.06]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-14 py-8">
+          <div className={`flex flex-wrap items-center gap-x-8 gap-y-3 ${label} text-[#9CA3AF]`}>
             <span className="inline-flex items-center gap-2">
-              <Building2 size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              <Building2 size={15} strokeWidth={2} className="text-[#E63946]" />
               {T.trust.quebecHost}
             </span>
-            <span className="hidden sm:inline text-[#475569]">·</span>
             <span className="inline-flex items-center gap-2">
-              <ShieldCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              <ShieldCheck size={15} strokeWidth={2} className="text-[#E63946]" />
               {T.trust.loi25}
             </span>
-            <span className="hidden sm:inline text-[#475569]">·</span>
             <span className="inline-flex items-center gap-2">
-              <BadgeCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              <BadgeCheck size={15} strokeWidth={2} className="text-[#E63946]" />
               {T.trust.verifiedProfiles}
             </span>
           </div>
@@ -296,15 +283,14 @@ export default function TarifsPage() {
 }
 
 /* ── FreePersonaPanel ───────────────────────────────────────────
-   Affiché à la place des cartes pour une persona sans tier payant.
-   Encadré mission calqué sur la bannière CÉGEP (même surface, même
-   pastille d'icône), puis la liste de ce qui est inclus dans le même
-   vocabulaire visuel que les FeatureRow des cartes — pastille verte +
-   Check, texte 13px. Aucune notion de prix : il n'y en a pas. */
+   Affiché à la place des cartes pour une persona sans tier payant :
+   la mission à gauche, ce qui est inclus à droite. Aucune notion de
+   prix : il n'y en a pas. */
 function FreePersonaPanel({
   items,
   missionBody,
   labels,
+  lang,
 }: {
   items: string[];
   /** Corps de mission propre à la persona — choisi au site d'appel, comme
@@ -312,40 +298,23 @@ function FreePersonaPanel({
       registre (vouvoiement / tutoiement). */
   missionBody: string;
   labels: Dictionary["pricing"]["freePersona"];
+  lang: Lang;
 }) {
   return (
-    <div className="max-w-[820px] mx-auto">
-      <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 sm:p-7 flex flex-col sm:flex-row items-start gap-5">
-        <div className="shrink-0 w-12 h-12 rounded-full bg-[#E63946]/10 flex items-center justify-center">
-          <GraduationCap size={22} className="text-[#E63946]" strokeWidth={2} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
-            {labels.missionEyebrow}
-          </p>
-          <h3 className="text-[18px] sm:text-[20px] font-semibold text-white mt-1.5">
-            {labels.missionTitle}
-          </h3>
-          <p className="text-[14px] sm:text-[15px] text-[#9CA3AF] mt-2.5 leading-relaxed">
-            {missionBody}
-          </p>
-        </div>
+    <div className="grid gap-4 lg:grid-cols-12">
+      <div className="lg:col-span-5 rounded-lg border border-white/[0.07] border-t-[3px] border-t-[#E63946] bg-[#1A1D24] p-7 lg:p-9">
+        <div className={`${label} text-[#E63946]`}>{labels.missionEyebrow}</div>
+        <div className="nx-display uppercase text-[64px] leading-none text-white mt-3">{formatPrice(0, lang)}</div>
+        <h2 className="nx-display uppercase text-3xl leading-none text-white mt-6">{labels.missionTitle}</h2>
+        <p className="mt-3 text-[15px] text-[#9CA3AF] leading-relaxed">{missionBody}</p>
       </div>
-
-      {/* Même surface que l'encadré mission : sur le fond sombre de la page,
-          une liste posée à nu manquait de contraste et ne se lisait pas comme
-          un bloc. Deux cartes empilées — mission, puis inclus. */}
-      <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 sm:p-7 mt-5">
-        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
-          {labels.checklistTitle}
-        </h4>
-        <ul className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-          {items.map((label, idx) => (
-            <li key={`free-${idx}-${label}`} className="flex items-start gap-2.5">
-              <span className="shrink-0 mt-0.5 w-[16px] h-[16px] rounded-full bg-[#10B981]/15 text-[#10B981] flex items-center justify-center">
-                <Check size={11} strokeWidth={3} />
-              </span>
-              <span className="text-[13px] leading-relaxed text-white/85">{label}</span>
+      <div className="lg:col-span-7 rounded-lg border border-white/[0.07] bg-[#1A1D24] p-7 lg:p-9">
+        <h3 className={`${label} text-white/55`}>{labels.checklistTitle}</h3>
+        <ul className="mt-5 space-y-3">
+          {items.map((item, idx) => (
+            <li key={`free-${idx}-${item}`} className="flex gap-3 text-[15px] text-white/85 leading-relaxed">
+              <span aria-hidden className="text-[#E63946]">→</span>
+              <span>{item}</span>
             </li>
           ))}
         </ul>
@@ -362,6 +331,7 @@ function PricingCard({
   billing,
   orderCls,
   cardLabels,
+  lang,
   onCheckout,
 }: {
   tier: Tier;
@@ -371,6 +341,7 @@ function PricingCard({
   billing: Billing;
   orderCls: string;
   cardLabels: Dictionary["pricing"]["card"];
+  lang: Lang;
   onCheckout?: (tier: string, cycle: Billing) => Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
@@ -385,28 +356,26 @@ function PricingCard({
   // amount they'll be charged on that cadence. The two-line framing below
   // shows both options regardless of toggle for easy comparison.
   const priceDisplay = showAnnual
-    ? formatPrice(tier.annual, { whole: true })
-    : isFree
-    ? "$0"
-    : formatPrice(tier.monthly);
+    ? formatPrice(tier.annual, lang, { whole: true })
+    : formatPrice(tier.monthly, lang);
   const periodShort = isFree ? "" : showAnnual ? cardLabels.perYear : cardLabels.perMonth;
 
   return (
-    <div className={`relative bg-[#1A1D24] rounded-xl ${tier.border} ${tier.glow} ${orderCls} p-6 sm:p-7 flex flex-col`}>
+    <div className={`relative bg-[#1A1D24] rounded-lg ${tier.border} ${tier.glow} ${orderCls} p-7 lg:p-8 flex flex-col`}>
       {copy.badgeLabel && tier.badgeStyle && (
         <span
-          className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badgeStyle.bg} ${tier.badgeStyle.fg}`}
+          className={`absolute -top-3 left-7 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest ${tier.badgeStyle.bg} ${tier.badgeStyle.fg}`}
         >
           {copy.badgeLabel}
         </span>
       )}
 
-      <p className={`text-[11px] font-bold uppercase tracking-[0.2em] ${tier.nameColor}`}>
+      <h2 className={`nx-display uppercase text-[34px] leading-none ${tier.nameColor}`}>
         {copy.name}
-      </p>
+      </h2>
 
-      <div className="mt-3 flex items-baseline gap-1.5">
-        <span className="font-head text-[36px] sm:text-[40px] font-black text-white leading-none">
+      <div className="mt-4 flex items-baseline gap-1.5">
+        <span className="nx-display text-[56px] text-white leading-none">
           {priceDisplay}
         </span>
         {!isFree && (
@@ -414,19 +383,19 @@ function PricingCard({
         )}
       </div>
       {isFree ? (
-        <p className="text-[12px] text-[#9CA3AF] mt-2">{cardLabels.forever}</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-2">{cardLabels.forever}</p>
       ) : (
         <div className="mt-2 space-y-0.5">
-          <p className="text-[12px] text-[#c8c8cc]">
-            {cardLabels.fromPrefix}<span className="font-bold text-white">{formatPrice(tier.annualMonthlyEq ?? tier.monthly)}{cardLabels.perMonth}</span>{cardLabels.fromSuffixAnnual}
+          <p className="text-[13px] text-[#c8c8cc]">
+            {cardLabels.fromPrefix}<span className="font-bold text-white">{formatPrice(tier.annualMonthlyEq ?? tier.monthly, lang)}{cardLabels.perMonth}</span>{cardLabels.fromSuffixAnnual}
           </p>
-          <p className="text-[11px] text-[#6b7280]">
-            {cardLabels.orPrefix}{formatPrice(tier.monthly)}{cardLabels.perMonth}{cardLabels.orSuffixMonthly}
+          <p className="text-[12px] text-[#6b7280]">
+            {cardLabels.orPrefix}{formatPrice(tier.monthly, lang)}{cardLabels.perMonth}{cardLabels.orSuffixMonthly}
           </p>
         </div>
       )}
 
-      <div className="h-px bg-white/[0.06] my-5" />
+      <div className="h-px bg-white/[0.07] my-6" />
 
       {copy.featuresHeader && (
         <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-3">
@@ -440,7 +409,7 @@ function PricingCard({
             return (
               <li
                 key={`sec-${idx}-${f.label}`}
-                className="pt-3 pb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/55"
+                className={`pt-3 pb-1 ${label} text-white/55`}
               >
                 {f.label}
               </li>
@@ -457,7 +426,7 @@ function PricingCard({
                   <XIcon size={11} strokeWidth={2.5} />
                 </span>
               )}
-              <span className={`text-[13px] leading-relaxed ${f.included ? "text-white/85" : "text-[#6b7280]"}`}>
+              <span className={`text-[14px] leading-relaxed ${f.included ? "text-white/85" : "text-[#6b7280]"}`}>
                 {f.label}
               </span>
             </li>
@@ -477,14 +446,14 @@ function PricingCard({
               setLoading(false);
             }
           }}
-          className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 ${tier.ctaClass}`}
+          className={`mt-7 inline-flex items-center justify-center w-full h-12 rounded font-head font-black text-[13px] uppercase tracking-widest transition-colors disabled:opacity-50 ${tier.ctaClass}`}
         >
           {loading ? "Redirection..." : copy.ctaLabel}
         </button>
       ) : (
         <Link
           href={tier.ctaHref}
-          className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors ${tier.ctaClass}`}
+          className={`mt-7 inline-flex items-center justify-center w-full h-12 rounded font-head font-black text-[13px] uppercase tracking-widest transition-colors ${tier.ctaClass}`}
         >
           {copy.ctaLabel}
         </Link>

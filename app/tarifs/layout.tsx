@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Tarifs Nexus — Plans recruteurs, coachs et athlètes",
   description:
-    "Plans Free, Starter et Pro pour les recruteurs CÉGEP. Coachs gratuits avec options Pro et All Star. Tarification claire, sans frais cachés.",
+    "Nexus est gratuit pour les athlètes et les coachs. Pour les recruteurs des cégeps : forfaits Gratuit, Pro et All Star. Tarification claire, sans frais cachés.",
   alternates: {
     canonical: "https://nexussports.ca/tarifs",
   },

@@ -376,7 +376,8 @@ export interface Dictionary {
   pricing: {
     hero: {
       eyebrow: string;
-      title: string;
+      title1: string;
+      title2: string;
       lede: string;
     };
     personaToggle: {
@@ -1202,8 +1203,9 @@ export const dictionaries: Record<Lang, Dictionary> = {
     pricing: {
       hero: {
         eyebrow: "Tarifs",
-        title: "Choisis ton plan",
-        lede: "Commence gratuitement. Passe à Pro quand tu es prêt.",
+        title1: "Gratuit pour les athlètes",
+        title2: "et les coachs.",
+        lede: "Seuls les recruteurs ont des forfaits payants. Personne ne paie pour être vu.",
       },
       personaToggle: {
         recruiter: "Recruteur",
@@ -1244,12 +1246,11 @@ export const dictionaries: Record<Lang, Dictionary> = {
           "Profil complet : photo, bio, parcours, vidéos, stats et mesures",
           "Badge vérifié et cote globale de l'entraîneur",
           "Ma visibilité : vues, favoris, graphique hebdomadaire, régions",
-          "Quels CÉGEPs consultent ton profil",
           "Messagerie avec les recruteurs, ton entraîneur et la direction de ton école, dans le respect des périodes de silence RSEQ",
           "Recherche complète des CÉGEPs : programmes, équipes et informations de chaque établissement",
           "Transfer portal",
           "Consentement parental documenté",
-          "Statut de recrutement et confirmation d'engagement",
+          "Statut de recrutement",
         ],
         coachItems: [
           "Créer et gérer les profils de vos athlètes",
@@ -1258,8 +1259,8 @@ export const dictionaries: Record<Lang, Dictionary> = {
           "Messagerie avec les recruteurs",
           "Messagerie interne avec votre équipe, vos entraîneurs et votre direction",
           "Gérer les demandes de vos athlètes",
-          "Mon école : tableau de bord, stats, placements, analytique",
-          "Gestion des entraîneurs de votre école",
+          "Mon école : tableau de bord, stats, placements, analytique (responsable d'école)",
+          "Gestion des entraîneurs de votre école (responsable d'école)",
           "Ma réputation",
         ],
       },
@@ -2116,8 +2117,9 @@ export const dictionaries: Record<Lang, Dictionary> = {
     pricing: {
       hero: {
         eyebrow: "Pricing",
-        title: "Choose your plan",
-        lede: "Start free. Upgrade to Pro when you're ready.",
+        title1: "Free for athletes",
+        title2: "and coaches.",
+        lede: "Only recruiters have paid plans. Nobody pays to be seen.",
       },
       personaToggle: {
         recruiter: "Recruiter",
@@ -2158,12 +2160,11 @@ export const dictionaries: Record<Lang, Dictionary> = {
           "Complete profile: photo, bio, background, videos, stats and measurements",
           "Verified badge and overall coach rating",
           "My visibility: views, favorites, weekly chart, regions",
-          "Which CÉGEPs are viewing your profile",
           "Messaging with recruiters, your coach and your school's administration, within RSEQ quiet periods",
           "Full CÉGEP search: programs, teams and details for every institution",
           "Transfer portal",
           "Documented parental consent",
-          "Recruitment status and commitment confirmation",
+          "Recruitment status",
         ],
         coachItems: [
           "Create and manage your athletes' profiles",
@@ -2172,8 +2173,8 @@ export const dictionaries: Record<Lang, Dictionary> = {
           "Messaging with recruiters",
           "Internal messaging with your team, your coaches and your administration",
           "Handle your athletes' requests",
-          "My school: dashboard, stats, placements, analytics",
-          "Manage your school's coaches",
+          "My school: dashboard, stats, placements, analytics (school lead)",
+          "Manage your school's coaches (school lead)",
           "My reputation",
         ],
       },
@@ -2191,7 +2192,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
             { kind: "item", label: "Stars, overall rating, verified badge", included: true },
             { kind: "item", label: "School, sport, graduation year, GPA", included: true },
             { kind: "item", label: "Height / weight", included: true },
-            { kind: "item", label: "Full profiles + overall rating", included: true },
+            { kind: "item", label: "Athlete profiles + overall rating", included: true },
             { kind: "item", label: "Your CÉGEP page: a customizable page to showcase your program to athletes", included: true },
             { kind: "item", label: "Your team page: one page per team, visible to every athlete", included: true },
             { kind: "item", label: "Athlete identity (name, photo, number)", included: false },
@@ -2211,7 +2212,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
             { kind: "item", label: "Highlight videos", included: true },
             { kind: "item", label: "Full academic background", included: true },
             { kind: "item", label: "Coach's comments", included: true },
-            { kind: "item", label: "Detailed coach report (11 criteria)", included: true },
+            { kind: "item", label: "Detailed coach report", included: true },
             { kind: "section", label: "Communication" },
             { kind: "item", label: "Coach's contact information", included: true },
             { kind: "item", label: "Messaging with the coach and the athlete, without limits, automatically respecting RSEQ quiet periods", included: true },
