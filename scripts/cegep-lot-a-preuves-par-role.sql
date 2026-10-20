@@ -46,7 +46,8 @@ begin
     perform set_config('role', p_role, true);
     -- Préparation éventuelle, sous le même rôle, annulée avec la sonde.
     if p_prep is not null then
-      execute replace(p_prep, ':E1', '''c0ce0a00-0000-4000-8000-0000000000e1''::uuid');
+      execute replace(replace(p_prep, ':E1', '''c0ce0a00-0000-4000-8000-0000000000e1''::uuid'),
+                      ':C', '''c0ce0a00-0000-4000-8000-0000000000a2''::uuid');
     end if;
     execute format($q$
       select coalesce(string_agg(x, ',' order by x), '-')
@@ -107,7 +108,10 @@ with surfaces(ordre, surface, q) as (values
   (27, 'TdB athlète : athlete_notifications (C,S)',   $$select 'notifs:' || count(*) from public.athlete_notifications where athlete_id in (:C, :S)$$),
   (28, 'parent : get_my_children',            $$select athlete_id from public.get_my_children()$$),
   (29, 'parent : get_child_consents(C)',      $$select 'consents:' || left(md5(public.get_child_consents(:C)::text), 8)$$),
-  (30, 'coach : get_coach_athletes(true)',    $$select athlete_id from public.get_coach_athletes(true)$$)
+  (30, 'coach : get_coach_athletes(true)',    $$select athlete_id from public.get_coach_athletes(true)$$),
+  -- Retour de test BP (étape 2) : tableau de bord du recruteur.
+  (31, 'TdB recruteur : Athlètes tendance (vues de fiche)', $$select athlete_id from public.recruiter_athlete_views where athlete_id in (:C, :S)$$),
+  (32, 'TdB recruteur : tuile Nouveaux (10 j)',     $$select id from public.recruiter_search_athletes(p_new_only => true)$$)
 )
 select ordre as "#", surface,
        pg_temp.sonde(:R, 'authenticated', q) as "R collégial",
@@ -132,6 +136,17 @@ select 'rapprochement_candidats(carte1)',
          $$select athlete_id from public.rapprochement_candidats(null, :E1)$$,
          -- La paire déjà proposée est exclue des candidats : on retire la proposition le temps de la sonde.
          $$delete from public.rapprochements where carte_id = :E1$$);
+
+-- Écriture d'une vue de fiche de C (ouvrir l'URL de sa fiche) : refusée au recruteur collégial ?
+select 'écrire une vue de fiche de C' as surface,
+       pg_temp.sonde(:R, 'authenticated', $$select 'vue-ecrite'$$,
+         $$insert into public.recruiter_athlete_views (recruiter_id, athlete_id, viewed_at)
+           values (auth.uid(), :C, now())
+           on conflict (recruiter_id, athlete_id, view_date) do update set viewed_at = excluded.viewed_at$$) as "R collégial",
+       pg_temp.sonde(:N, 'authenticated', $$select 'vue-ecrite'$$,
+         $$insert into public.recruiter_athlete_views (recruiter_id, athlete_id, viewed_at)
+           values (auth.uid(), :C, now())
+           on conflict (recruiter_id, athlete_id, view_date) do update set viewed_at = excluded.viewed_at$$) as "N sans école";
 
 -- Ancrage de C au moment de la preuve.
 select 'C ancré sur : ' || s.type || ' — ' || s.name as etat

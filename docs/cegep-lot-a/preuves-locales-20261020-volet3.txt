@@ -1,0 +1,319 @@
+Chantier cégep, lot A — preuves LOCALES, volet 3 (2026-10-20) : retour du test BP de l'étape 2.
+Ajout : policy restrictive FOR ALL sur recruiter_athlete_views (« Athlètes tendance » + écriture d'une vue de fiche).
+Migration md5 e0a3e5eeed91bac27fdbcea9d8b6167a — rollback md5 43a38fa797ae6f44025e6e4416dd3c78. Pile jetable NexusCegepA.
+Ordre joué : ancien rollback → B_sec → B_ceg → migration → M_ceg → M_sec → rollback → ré-application → M_ceg2 (C cégépien à la fin).
+
+════ Comparaison colonne par colonne ════
+== C au secondaire : sans migration → avec migration
+   R collégial: identique (32/32)
+   N sans école: identique (32/32)
+   A admin: identique (32/32)
+   P partenaire: identique (32/32)
+   K coach: identique (32/32)
+   K2 coach équipe C: identique (32/32)
+   C (son compte): identique (32/32)
+   PA parent de C: identique (32/32)
+   anon: identique (32/32)
+   blocs annexes : identiques
+== C cégépien : sans migration → avec migration
+   R collégial: 21 écart(s)
+      athletes (lecture directe): C,S → S
+      team_athletes (lecture directe): C,S → S
+      athlete_badges (lecture directe): C,S → S
+      evaluations (lecture directe): C,S → S
+      recruiter_search_athletes(): C,S → S
+      recruiter_search_athletes(texte): C,S → S
+      recruiter_athlete_profile: C,S → S
+      recruiter_athlete_cards: C,S → S
+      athletes_targeting_my_cegep: C,S → S
+      matchs_profils_nexus: C,S → S
+      depistage_profils_match: C,S → S
+      matchs_recherche (G1 coll., G2 sec.): G1:1*,G2:1* → G1:0*,G2:1*
+      rapprochements_unite: C → -
+      rapprochements_refuses_unite: C → -
+      fusionner_carte(carte1, C): fusion-ok → refus 42501
+      athletes_nom_proche: C,S → S
+      athlete_nexus_par_courriel: C,S → S
+      match_notes_lier(n° 7 → C): lien:1 → refus P0001
+      TdB athlète : recruiter_athlete_views (C,S): vues:2 → vues:1
+      TdB recruteur : Athlètes tendance (vues de fiche): C,S → S
+      TdB recruteur : tuile Nouveaux (10 j): C,S → S
+   N sans école: 9 écart(s)
+      athletes (lecture directe): C,S → S
+      team_athletes (lecture directe): C,S → S
+      athlete_badges (lecture directe): C,S → S
+      evaluations (lecture directe): C,S → S
+      recruiter_search_athletes(): C,S → S
+      recruiter_search_athletes(texte): C,S → S
+      recruiter_athlete_profile: C,S → S
+      recruiter_athlete_cards: C,S → S
+      TdB recruteur : tuile Nouveaux (10 j): C,S → S
+   A admin: identique (32/32)
+   P partenaire: identique (32/32)
+   K coach: identique (32/32)
+   K2 coach équipe C: identique (32/32)
+   C (son compte): identique (32/32)
+   PA parent de C: identique (32/32)
+   anon: identique (32/32)
+   blocs annexes : 
+      avant : agenda_flux(jeton de R) | C,S
+      avant : rapprochement_candidats(carte1) | C
+      avant : écrire une vue de fiche de C | vue-ecrite | vue-ecrite
+      après : agenda_flux(jeton de R) | S
+      après : rapprochement_candidats(carte1) | -
+      après : écrire une vue de fiche de C | refus 42501 | refus 42501
+== C cégépien : 1re application → ré-application après rollback
+   R collégial: identique (32/32)
+   N sans école: identique (32/32)
+   A admin: identique (32/32)
+   P partenaire: identique (32/32)
+   K coach: identique (32/32)
+   K2 coach équipe C: identique (32/32)
+   C (son compte): identique (32/32)
+   PA parent de C: identique (32/32)
+   anon: identique (32/32)
+   blocs annexes : identiques
+== REST (jetons GoTrue) B_sec → M_sec : IDENTIQUE
+== REST (jetons GoTrue) B_ceg → M_ceg : DIFFÈRE
+== REST (jetons GoTrue) M_ceg → M_ceg2 : IDENTIQUE
+== notifications de C sous son JWT B_sec → B_ceg : IDENTIQUE
+== notifications de C sous son JWT B_ceg → M_ceg : IDENTIQUE
+
+════ Dormance globale (tous les comptes, 9 surfaces dont recruiter_athlete_views) : avant = après (diff vide) ════
+   role    | comptes |      empreinte_des_comptes       | athletes_lus_total 
+-----------+---------+----------------------------------+--------------------
+ ADMIN     |       3 | 33195ca1964d2c9023ef957518f84ea1 |                222
+ COACH     |      14 | f677364eb6d2fb846bb0b9f28e1620c5 |                 70
+ RECRUTEUR |      16 | a522da31df6a66ada0e6db46e218a781 |                976
+ ATHLETE   |      36 | 4e6583aa6d6b39db6953490c345589f9 |                 30
+ PARTNER   |       7 | 7cf63593b5584c31504c5b12cb2f0f84 |                  0
+(5 rows)
+
+
+════ Empreintes : base = après rollback (diff vide) ════
+           proname            |               md5                |                  acl                  
+------------------------------+----------------------------------+---------------------------------------
+ agenda_flux                  | 6c1e9e2cb301ba8db313c72a2c68a47d | {postgres,service_role}
+ athlete_nexus_par_courriel   | 6f4023f8437a354d3cc64c62a1a7540f | {authenticated,postgres,service_role}
+ athletes_nom_proche          | 492f6f32bdd04bd5099ab706a3eb55b3 | {authenticated,postgres,service_role}
+ athletes_targeting_my_cegep  | 564a2e940ad9d187b3e0b8f4c16631e0 | {authenticated,postgres,service_role}
+ depistage_profils_match      | ad18404a95b8ee3713d2d2acef79d7b6 | {authenticated,postgres,service_role}
+ fusionner_carte              | 38f4f1a78a4c6635c8f5244df033e5a1 | {authenticated,postgres,service_role}
+ match_notes_lier             | f6c6f67a42a18711011c377bd93bb19e | {authenticated,postgres,service_role}
+ matchs_profils_nexus         | b94ab615cf14a4fa104f28bce1213abf | {authenticated,postgres,service_role}
+ matchs_recherche             | 9674fbf129c1f0f0b93d05948e2659dd | {authenticated,postgres,service_role}
+ rapprochement_candidats      | 7a71383b81597b9c6b21fe4530670623 | {postgres,service_role}
+ rapprochements_refuses_unite | a5d84a05834fc1fd293f7ee85c9210dd | {authenticated,postgres,service_role}
+ rapprochements_unite         | dd4be21b51d7f25cc7e2305137a73da0 | {authenticated,postgres,service_role}
+ recruiter_athlete_cards      | 18ab33af6d239268c0d80e2f5ccc02c3 | {authenticated,postgres,service_role}
+ recruiter_athlete_profile    | 0b58d368f76a81cd0cb066404e8d77e0 | {authenticated,postgres,service_role}
+ recruiter_search_athletes    | 1d04401fe73aed88764c0899a22d76f7 | {authenticated,postgres,service_role}
+(15 rows)
+
+        tablename        |                 policyname                  | permissive |  cmd   |      roles      |                q                 
+-------------------------+---------------------------------------------+------------+--------+-----------------+----------------------------------
+ athlete_badges          | athlete_badges coach insert                 | PERMISSIVE | INSERT | {authenticated} | d41d8cd98f00b204e9800998ecf8427e
+ athlete_badges          | athlete_badges read                         | PERMISSIVE | SELECT | {public}        | c7a901f907f7f2e4dadecade7ca194cd
+ athlete_badges          | athlete_badges retrait                      | PERMISSIVE | UPDATE | {authenticated} | 80ae375bb057141d482cdf7a4fbca888
+ athletes                | Coaches update own team athletes            | PERMISSIVE | UPDATE | {authenticated} | 3fddd5a85892ac00e1c35c819292c6ae
+ athletes                | admins read all                             | PERMISSIVE | SELECT | {public}        | 5533b5b0c6cb6bc41c771c2f6a2c8f37
+ athletes                | admins update all                           | PERMISSIVE | UPDATE | {public}        | 5533b5b0c6cb6bc41c771c2f6a2c8f37
+ athletes                | athletes can claim own orphan match         | PERMISSIVE | UPDATE | {authenticated} | a9523a125107131f5f66353571fd0765
+ athletes                | athletes can insert own profile             | PERMISSIVE | INSERT | {public}        | d41d8cd98f00b204e9800998ecf8427e
+ athletes                | athletes can read own orphan match          | PERMISSIVE | SELECT | {authenticated} | a9523a125107131f5f66353571fd0765
+ athletes                | athletes can read own profile               | PERMISSIVE | SELECT | {public}        | 6a6b7c2a3a520c44377894171204e8d2
+ athletes                | athletes can update own profile             | PERMISSIVE | UPDATE | {public}        | 6a6b7c2a3a520c44377894171204e8d2
+ athletes                | athletes_insert                             | PERMISSIVE | INSERT | {authenticated} | d41d8cd98f00b204e9800998ecf8427e
+ athletes                | coaches assign unclaimed school athletes    | PERMISSIVE | UPDATE | {authenticated} | 3192280cc80d4025af7be6bd7aff7ee2
+ athletes                | coaches can claim unclaimed school athletes | PERMISSIVE | UPDATE | {public}        | 3192280cc80d4025af7be6bd7aff7ee2
+ athletes                | coaches can update own athletes             | PERMISSIVE | UPDATE | {public}        | c130e52aba986c64d6fbe4c5c0130ada
+ athletes                | coaches read own athletes                   | PERMISSIVE | SELECT | {authenticated} | f5735b7a872caded918ce10829b1009b
+ athletes                | coaches reassign athletes within school     | PERMISSIVE | UPDATE | {authenticated} | 92002ce0fefc243373357ce15fe23a0d
+ athletes                | recruiters read active athletes             | PERMISSIVE | SELECT | {authenticated} | 15563bf5704ec83a00334a7d2106fa47
+ evaluations             | admins insert all                           | PERMISSIVE | INSERT | {public}        | d41d8cd98f00b204e9800998ecf8427e
+ evaluations             | admins read all                             | PERMISSIVE | SELECT | {public}        | 5533b5b0c6cb6bc41c771c2f6a2c8f37
+ evaluations             | admins update all                           | PERMISSIVE | UPDATE | {public}        | 5533b5b0c6cb6bc41c771c2f6a2c8f37
+ evaluations             | authenticated read evaluations              | PERMISSIVE | SELECT | {public}        | f1c5418263e7252c6c2a79b8ab8eac8b
+ evaluations             | evaluations coach                           | PERMISSIVE | ALL    | {authenticated} | c130e52aba986c64d6fbe4c5c0130ada
+ recruiter_athlete_views | Coaches read views for their athletes       | PERMISSIVE | SELECT | {public}        | d915e48af9c6e43157a2f0cc45222d4c
+ recruiter_athlete_views | Recruiters manage own views                 | PERMISSIVE | ALL    | {public}        | 08760c155928653c9f57eb25ea626e1f
+ recruiter_athlete_views | admins read recruiter_athlete_views         | PERMISSIVE | SELECT | {public}        | 5533b5b0c6cb6bc41c771c2f6a2c8f37
+ recruiter_athlete_views | athletes read own views                     | PERMISSIVE | SELECT | {public}        | 42bef7f4696b8c867b719c3aca8c7202
+ recruiter_athlete_views | cegep admin read athlete_views              | PERMISSIVE | SELECT | {authenticated} | 6aefda384b2d940694a72837031471d2
+ team_athletes           | Athletes read own team rows                 | PERMISSIVE | SELECT | {public}        | 3ed7c12a7349c401889ef3289a37421a
+ team_athletes           | Coaches manage own team athletes            | PERMISSIVE | ALL    | {public}        | 01665e4558e6e56ecdfc8afe98d4384c
+ team_athletes           | Directors manage school team athletes       | PERMISSIVE | ALL    | {public}        | 50af64d73f5d545e9bdc9ad27ffb8eb8
+ team_athletes           | Recruiters read own target team rows        | PERMISSIVE | SELECT | {authenticated} | c97619dfc499ebc7e46467f6535c5911
+ team_athletes           | Recruiters read verified team athletes      | PERMISSIVE | SELECT | {public}        | 6df690233f54d2a019fbf4e38e23fac4
+ team_athletes           | admins read all                             | PERMISSIVE | SELECT | {public}        | 5533b5b0c6cb6bc41c771c2f6a2c8f37
+ team_athletes           | unite_equipes_suivies                       | PERMISSIVE | SELECT | {authenticated} | 19db98c0f52959a3b9a3c6c7a82c5618
+(35 rows)
+
+
+════ Matrice brute B_ceg ════
+ #  |                      surface                      |    R collégial    |   N sans école    |      A admin      |   P partenaire    |      K coach      | K2 coach équipe C |  C (son compte)   |  PA parent de C   |    anon     
+----+---------------------------------------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------
+  1 | athletes (lecture directe)                        | C,S               | C,S               | C,S               | -                 | S                 | C                 | C                 | -                 | -
+  2 | team_athletes (lecture directe)                   | C,S               | C,S               | C,S               | -                 | C,S               | C                 | C                 | -                 | -
+  3 | athlete_badges (lecture directe)                  | C,S               | C,S               | C,S               | -                 | C,S               | C                 | C                 | -                 | refus 42501
+  4 | evaluations (lecture directe)                     | C,S               | C,S               | C,S               | -                 | C,S               | C                 | C                 | -                 | refus 42501
+  5 | recruiter_search_athletes()                       | C,S               | C,S               | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  6 | recruiter_search_athletes(texte)                  | C,S               | C,S               | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  7 | recruiter_athlete_profile                         | C,S               | C,S               | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  8 | recruiter_athlete_cards                           | C,S               | C,S               | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  9 | athletes_targeting_my_cegep                       | C,S               | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 10 | matchs_profils_nexus                              | C,S               | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 11 | depistage_profils_match                           | C,S               | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 12 | matchs_recherche (G1 coll., G2 sec.)              | G1:1*,G2:1*       | refus 42501       | refus 42501       | G1:1,G2:1         | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 13 | rapprochements_unite                              | C                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 14 | rapprochements_refuses_unite                      | C                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 15 | fusionner_carte(carte1, C)                        | fusion-ok         | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 16 | athletes_nom_proche                               | C,S               | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 17 | athlete_nexus_par_courriel                        | C,S               | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 18 | match_notes_lier(n° 7 → C)                        | lien:1            | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | ·
+ 19 | matchs_profils_partenaire(G1)                     | refus 42501       | refus 42501       | refus 42501       | C                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 20 | top_athletes_view (partenaire)                    | -                 | -                 | -                 | C,S               | -                 | -                 | -                 | -                 | ·
+ 21 | admin_prospects_rapprochements                    | refus 42501       | refus 42501       | -                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 22 | TdB athlète : get_my_athlete_view_details         | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | ·
+ 23 | TdB athlète : list_interested_recruiters          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | ·
+ 24 | TdB athlète : recruiter_favorites (C,S)           | fav:2             | fav:0             | fav:2             | fav:0             | fav:0             | fav:0             | fav:1             | fav:0             | ·
+ 25 | TdB athlète : recruiter_athlete_views (C,S)       | vues:2            | vues:0            | vues:2            | vues:0            | vues:0            | vues:0            | vues:1            | vues:0            | ·
+ 26 | TdB athlète : recruiter_activity_log (C,S)        | journal:8         | journal:0         | journal:16        | journal:0         | journal:0         | journal:0         | journal:0         | journal:0         | ·
+ 27 | TdB athlète : athlete_notifications (C,S)         | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:2          | notifs:0          | ·
+ 28 | parent : get_my_children                          | -                 | -                 | -                 | -                 | -                 | -                 | -                 | C                 | ·
+ 29 | parent : get_child_consents(C)                    | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:27e40494 | ·
+ 30 | coach : get_coach_athletes(true)                  | -                 | -                 | -                 | -                 | C,S               | C                 | -                 | -                 | ·
+ 31 | TdB recruteur : Athlètes tendance (vues de fiche) | C,S               | -                 | C,S               | -                 | -                 | -                 | C                 | -                 | ·
+ 32 | TdB recruteur : tuile Nouveaux (10 j)             | C,S               | C,S               | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+(32 rows)
+
+             surface             | service_role 
+---------------------------------+--------------
+ agenda_flux(jeton de R)         | C,S
+ rapprochement_candidats(carte1) | C
+(2 rows)
+
+           surface            | R collégial | N sans école 
+------------------------------+-------------+--------------
+ écrire une vue de fiche de C | vue-ecrite  | vue-ecrite
+(1 row)
+
+                     etat                      
+-----------------------------------------------
+ C ancré sur : CEGEP — Cégep Beauce-Appalaches
+(1 row)
+
+-- REST (jetons GoTrue réels) :
+R collégial          REST HTTP 200  C,S
+N sans école         REST HTTP 200  C,S
+A admin              REST HTTP 200  C,S
+P partenaire         REST HTTP 200  -
+K coach              REST HTTP 200  S
+K2 coach équipe C    REST HTTP 200  C
+C cégépien (compte)  REST HTTP 200  C
+PA parent de C       REST HTTP 200  -
+anon                 REST HTTP 200  []
+
+════ Matrice brute M_ceg ════
+ #  |                      surface                      |    R collégial    |   N sans école    |      A admin      |   P partenaire    |      K coach      | K2 coach équipe C |  C (son compte)   |  PA parent de C   |    anon     
+----+---------------------------------------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------
+  1 | athletes (lecture directe)                        | S                 | S                 | C,S               | -                 | S                 | C                 | C                 | -                 | -
+  2 | team_athletes (lecture directe)                   | S                 | S                 | C,S               | -                 | C,S               | C                 | C                 | -                 | -
+  3 | athlete_badges (lecture directe)                  | S                 | S                 | C,S               | -                 | C,S               | C                 | C                 | -                 | refus 42501
+  4 | evaluations (lecture directe)                     | S                 | S                 | C,S               | -                 | C,S               | C                 | C                 | -                 | refus 42501
+  5 | recruiter_search_athletes()                       | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  6 | recruiter_search_athletes(texte)                  | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  7 | recruiter_athlete_profile                         | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  8 | recruiter_athlete_cards                           | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  9 | athletes_targeting_my_cegep                       | S                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 10 | matchs_profils_nexus                              | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 11 | depistage_profils_match                           | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 12 | matchs_recherche (G1 coll., G2 sec.)              | G1:0*,G2:1*       | refus 42501       | refus 42501       | G1:1,G2:1         | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 13 | rapprochements_unite                              | -                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 14 | rapprochements_refuses_unite                      | -                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 15 | fusionner_carte(carte1, C)                        | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 16 | athletes_nom_proche                               | S                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 17 | athlete_nexus_par_courriel                        | S                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 18 | match_notes_lier(n° 7 → C)                        | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | ·
+ 19 | matchs_profils_partenaire(G1)                     | refus 42501       | refus 42501       | refus 42501       | C                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 20 | top_athletes_view (partenaire)                    | -                 | -                 | -                 | C,S               | -                 | -                 | -                 | -                 | ·
+ 21 | admin_prospects_rapprochements                    | refus 42501       | refus 42501       | -                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 22 | TdB athlète : get_my_athlete_view_details         | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | ·
+ 23 | TdB athlète : list_interested_recruiters          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | ·
+ 24 | TdB athlète : recruiter_favorites (C,S)           | fav:2             | fav:0             | fav:2             | fav:0             | fav:0             | fav:0             | fav:1             | fav:0             | ·
+ 25 | TdB athlète : recruiter_athlete_views (C,S)       | vues:1            | vues:0            | vues:2            | vues:0            | vues:0            | vues:0            | vues:1            | vues:0            | ·
+ 26 | TdB athlète : recruiter_activity_log (C,S)        | journal:8         | journal:0         | journal:16        | journal:0         | journal:0         | journal:0         | journal:0         | journal:0         | ·
+ 27 | TdB athlète : athlete_notifications (C,S)         | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:2          | notifs:0          | ·
+ 28 | parent : get_my_children                          | -                 | -                 | -                 | -                 | -                 | -                 | -                 | C                 | ·
+ 29 | parent : get_child_consents(C)                    | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:27e40494 | ·
+ 30 | coach : get_coach_athletes(true)                  | -                 | -                 | -                 | -                 | C,S               | C                 | -                 | -                 | ·
+ 31 | TdB recruteur : Athlètes tendance (vues de fiche) | S                 | -                 | C,S               | -                 | -                 | -                 | C                 | -                 | ·
+ 32 | TdB recruteur : tuile Nouveaux (10 j)             | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+(32 rows)
+
+             surface             | service_role 
+---------------------------------+--------------
+ agenda_flux(jeton de R)         | S
+ rapprochement_candidats(carte1) | -
+(2 rows)
+
+           surface            | R collégial | N sans école 
+------------------------------+-------------+--------------
+ écrire une vue de fiche de C | refus 42501 | refus 42501
+(1 row)
+
+                     etat                      
+-----------------------------------------------
+ C ancré sur : CEGEP — Cégep Beauce-Appalaches
+(1 row)
+
+-- REST (jetons GoTrue réels) :
+R collégial          REST HTTP 200  S
+N sans école         REST HTTP 200  S
+A admin              REST HTTP 200  C,S
+P partenaire         REST HTTP 200  -
+K coach              REST HTTP 200  S
+K2 coach équipe C    REST HTTP 200  C
+C cégépien (compte)  REST HTTP 200  C
+PA parent de C       REST HTTP 200  -
+anon                 REST HTTP 200  []
+
+════ Notifications de C sous son propre JWT (identiques B_sec, B_ceg, M_ceg) ════
+ jwt_c 
+-------
+ t
+(1 row)
+
+         lecture          | count 
+--------------------------+-------
+ athletes (user_id = moi) |     1
+(1 row)
+
+        type        |                 title                 | read | created_at 
+--------------------+---------------------------------------+------+------------
+ PROFILE_TIP        | ⚠️ Ton badge vérifié a été désactivé   | f    | 2026-10-20
+ ADDED_TO_FAVORITES | Un recruteur t'a ajouté à ses favoris | f    | 2026-10-20
+(2 rows)
+
+             polname             |        pg_get_expr         
+---------------------------------+----------------------------
+ Athletes read own notifications | is_own_athlete(athlete_id)
+(1 row)
+
+
+════ Connexion réelle en navigateur HEADLESS (serveur 3005, pile jetable) : route d'arrivée ════
+### recruteur
+URL : http://localhost:3005/recruteur/tableau-de-bord
+ERREURS CONSOLE (0) : 
+### parent
+URL : http://localhost:3005/parent
+ERREURS CONSOLE (0) : 
+### coachequipe
+URL : http://localhost:3005/coach/tableau-de-bord
+ERREURS CONSOLE (2) : Failed to load resource: the server responded with a status of 406 (Not Acceptable) | Failed to load resource: the server responded with a status of 406 (Not Acceptable)
+### partenaire
+URL : http://localhost:3005/partenaire
+ERREURS CONSOLE (0) : 
+### sansecole
+URL : http://localhost:3005/recruteur/tableau-de-bord
+ERREURS CONSOLE (0) : 

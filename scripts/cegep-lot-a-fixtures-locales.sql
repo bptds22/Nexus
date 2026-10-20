@@ -224,6 +224,16 @@ begin
     from unnest(array['c0ce0a00-0000-4000-8000-0000000000a1', 'c0ce0a00-0000-4000-8000-0000000000a2']::uuid[]) a;
 end $$;
 
+-- Matchs visibles sur la carte (retour de test BP, étape 2) : la carte écarte un match sans
+-- coordonnées exploitables (lib/carteMatchs, lieuExploitable), et G1/G2 étaient datés de J+3/J+4.
+-- On les remet au jour où l'on rejoue ce fichier, avec de vraies coordonnées.
+update public.games set game_date = current_date, venue_lat = 46.1196, venue_lon = -70.6679,
+       venue = 'Stade fixture collégial (Saint-Georges)'
+ where id = 'c0ce0a00-0000-4000-8000-0000000000c1';
+update public.games set game_date = current_date, game_time = '16:00', venue_lat = 46.0234, venue_lon = -73.4436,
+       venue = 'Stade fixture secondaire (Joliette)'
+ where id = 'c0ce0a00-0000-4000-8000-0000000000c2';
+
 -- auth.identities : la connexion par mot de passe passe sans elle (relevé 2026-10-20), mais un
 -- compte créé par GoTrue en porte toujours une. Forme canonique, idempotente.
 insert into auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)

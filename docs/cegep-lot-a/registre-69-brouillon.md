@@ -16,8 +16,13 @@ athlète et parent : inchangées.
   `unite_voit_cegepiens(uuid)` (sur une école — pour `agenda_flux`, appelé par jeton, et
   `rapprochement_candidats`, appelé par la file : aucun `auth.uid()`) ;
 - 15 RPC rebasées sur le corps prod (garde md5, même signature, aucun DROP) ;
-- une policy **RESTRICTIVE** `cegepiens_masques_recruteurs` (SELECT, `TO authenticated`) sur
-  `athletes`, `team_athletes`, `athlete_badges`, `evaluations` ; aucune policy existante modifiée.
+- une policy **RESTRICTIVE** `cegepiens_masques_recruteurs` (`TO authenticated`) : SELECT sur
+  `athletes`, `team_athletes`, `athlete_badges`, `evaluations` ; **ALL** sur
+  `recruiter_athlete_views` (ajout après le test de l'étape 2 : « Athlètes tendance » du tableau
+  de bord recruteur lit les vues de fiche du recruteur lui-même et affichait le cégépien en
+  « Athlète » anonyme ; et ouvrir l'URL d'une fiche ÉCRIT une vue même quand la fiche ne se
+  charge pas — la policy rend la trace invisible ET refuse d'en créer une). Aucune policy
+  existante modifiée.
   **Ne jamais réécrire ces quals dans les policies `TO public`** : PostgreSQL vérifie EXECUTE à
   l'initialisation de l'expression, même dans une branche qui ne peut pas être vraie — `anon`
   prendrait « permission denied for function » (sondé 2026-10-20).
@@ -27,16 +32,26 @@ athlète et parent : inchangées.
   d'un cégépien (`send_broadcast`, conversations) : reportés à la partie coach.
 
 **Preuves locales** (`docs/cegep-lot-a/preuves-locales-20261020*.txt`, pile jetable) : dormance
-identique sur tous les comptes avant/après ; avec un cégépien, seuls les recruteurs non
-universitaires changent (21 surfaces + REST) ; le cégépien lui-même, son parent, ses coachs,
-l'admin, le partenaire et `anon` identiques sur 30 lignes ; rollback à l'octet près (md5 + ACL).
+identique sur tous les comptes avant/après ; avec un cégépien, seuls le recruteur collégial et
+le recruteur sans école changent (24 surfaces + REST + écriture d'une vue de fiche refusée) ; le
+cégépien lui-même, son parent, ses coachs, l'admin, le partenaire et `anon` identiques sur 32
+lignes ; rollback à l'octet près (md5 + ACL). Test écran de l'étape 2 (BP) : processus, listes,
+recherche, carte des matchs (match collégial affiché, 0 profil) conformes.
 Le local prouve que ça fonctionne, pas que c'est étanche : étape 3 en prod.
+
+**Défaut d'écran relevé à l'étape 2, déjà présent en prod (correctif en attente de GO) :** la fiche
+recruteur (`useFicheAthleteDonnees` + `AthleteRecruiterProfileBody`, et `AthleteRecruiterProfileBodyMobile`)
+tourne en chargement infini quand l'athlète n'est pas lisible — cégépien, mais aussi aujourd'hui
+tout athlète non ACTIF ou supprimé (lecture `.single()` en erreur → `a` reste nul → spinner).
+La même page écrit la vue de fiche avant de savoir si la fiche existe.
 
 **D5 (décision BP 2026-10-20) :** les traces du recruteur collégial (journal d'activité, notes,
 relances, visites, conversations) et le blocage des messages recruteur collégial → joueur
 collégial sont reportés au NETTOYAGE DE L'ÉTÉ (passage secondaire → cégep). Aujourd'hui ces
 traces ne peuvent pas exister : les joueurs collégiaux sont de nouveaux inscrits sans lien avec
-un recruteur collégial. Le lot A n'est donc pas étendu.
+un recruteur collégial. Le lot A n'est donc pas étendu — sauf `recruiter_athlete_views`, ajoutée
+après le test de l'étape 2 parce que la trace pouvait se RECRÉER après la migration (ouvrir l'URL
+d'une fiche, par exemple depuis Activités → Voir, écrivait une vue).
 *Relevé local qui motive le nettoyage :* après une bascule secondaire → cégep simulée, le
 recruteur collégial lit toujours 8 lignes de `recruiter_activity_log` sur S et C (prénom et nom
 écrits au moment du geste) ; contenu des `recruiter_notes` et messages : non filtrés non plus.

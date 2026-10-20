@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════════════════
 -- ROLLBACK du lot A cégep (20261020190000_cegep_lot_a_base.sql).
--- Restaure, à l'octet près, les 15 corps PROD relevés le 2026-10-20, retire les 4 policies
+-- Restaure, à l'octet près, les 15 corps PROD relevés le 2026-10-20, retire les 5 policies
 -- restrictives et les trois fonctions-règles. Vérifie md5 et ACL (liste complète triée).
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -42,6 +42,7 @@ drop policy "cegepiens_masques_recruteurs" on public.athletes;
 drop policy "cegepiens_masques_recruteurs" on public.team_athletes;
 drop policy "cegepiens_masques_recruteurs" on public.athlete_badges;
 drop policy "cegepiens_masques_recruteurs" on public.evaluations;
+drop policy "cegepiens_masques_recruteurs" on public.recruiter_athlete_views;
 
 -- ── Les 15 corps prod, tels que relevés ──
 

@@ -20,8 +20,10 @@
 --      qui n'ont pas d'appelant authentifié : rapprochement_candidats et agenda_flux) ;
 --   2. 15 fonctions REBASÉES SUR LE CORPS PROD (pg_get_functiondef relevé le 2026-10-20),
 --      CREATE OR REPLACE, même signature, aucun DROP — garde md5 avant d'écraser ;
---   3. une policy RESTRICTIVE « cegepiens_masques_recruteurs » FOR SELECT TO authenticated sur athletes,
---      team_athletes, athlete_badges, evaluations. AUCUNE policy existante n'est modifiée.
+--   3. une policy RESTRICTIVE « cegepiens_masques_recruteurs » TO authenticated : FOR SELECT sur athletes,
+--      team_athletes, athlete_badges, evaluations ; FOR ALL sur recruiter_athlete_views (les vues
+--      de fiche du recruteur : « Athlètes tendance » les lit, et ouvrir l'URL d'une fiche en écrit
+--      une même quand la fiche ne se charge pas). AUCUNE policy existante n'est modifiée.
 --      Pourquoi pas un ALTER des quals existants : trois d'entre elles sont TO public et anon a
 --      SELECT sur athletes/evaluations/team_athletes ; PostgreSQL vérifie EXECUTE à
 --      l'initialisation de l'expression, même dans une branche qui ne peut pas être vraie —
@@ -78,7 +80,7 @@ create temp table _cegep_lot_a_polices_avant as
 select tablename, policyname, cmd, permissive, roles::text as roles,
        md5(coalesce(qual, '')) as q, md5(coalesce(with_check, '')) as w
   from pg_policies
- where schemaname = 'public' and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations');
+ where schemaname = 'public' and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views');
 
 do $$
 declare r record; veut text[];
@@ -1296,8 +1298,9 @@ begin
 end $function$;
 
 -- ── 3. Lecture directe : une policy RESTRICTIVE par table ─────────────────────
--- Ne touche que les RECRUTEURS (not is_recruiter() → passe). Coach, athlète, parent,
--- partenaire, admin : inchangés.
+-- Ne touche que les recruteurs COLLÉGIAUX et sans école (peut_voir_cegepiens() faux). Le
+-- recruteur UNIVERSITAIRE passe par peut_voir_cegepiens() (lot D). Coach, athlète, parent,
+-- partenaire, admin : not is_recruiter() → inchangés.
 
 create policy "cegepiens_masques_recruteurs" on public.athletes
   as restrictive
@@ -1334,6 +1337,21 @@ create policy "cegepiens_masques_recruteurs" on public.evaluations
   for select
   to authenticated
   using (
+    not (select public.is_recruiter())
+    or (select public.peut_voir_cegepiens())
+    or not public.athlete_est_cegepien(athlete_id)
+  );
+
+create policy "cegepiens_masques_recruteurs" on public.recruiter_athlete_views
+  as restrictive
+  for all
+  to authenticated
+  using (
+    not (select public.is_recruiter())
+    or (select public.peut_voir_cegepiens())
+    or not public.athlete_est_cegepien(athlete_id)
+  )
+  with check (
     not (select public.is_recruiter())
     or (select public.peut_voir_cegepiens())
     or not public.athlete_est_cegepien(athlete_id)
@@ -1389,16 +1407,18 @@ begin
       or md5(coalesce(p.qual, '')) <> a.q or md5(coalesce(p.with_check, '')) <> a.w;
   if n <> 0 then raise exception 'NEXUS: % policy(ies) existante(s) modifiée(s)', n; end if;
 
-  -- Exactement une policy de plus par table, restrictive, SELECT, authenticated.
+  -- Exactement une policy de plus par table, restrictive, authenticated ; SELECT sur les quatre
+  -- tables de l'athlète, ALL sur recruiter_athlete_views.
   select count(*) into n from pg_policies
    where schemaname = 'public' and policyname = 'cegepiens_masques_recruteurs'
-     and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations')
-     and permissive = 'RESTRICTIVE' and cmd = 'SELECT' and roles::text = '{authenticated}';
-  if n <> 4 then raise exception 'NEXUS: % policy(ies) restrictive(s) sur 4', n; end if;
+     and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views')
+     and permissive = 'RESTRICTIVE' and roles::text = '{authenticated}'
+     and cmd = case when tablename = 'recruiter_athlete_views' then 'ALL' else 'SELECT' end;
+  if n <> 5 then raise exception 'NEXUS: % policy(ies) restrictive(s) sur 5', n; end if;
   select count(*) into n from pg_policies p
-   where p.schemaname = 'public' and p.tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations')
+   where p.schemaname = 'public' and p.tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views')
      and not exists (select 1 from _cegep_lot_a_polices_avant a where a.tablename = p.tablename and a.policyname = p.policyname);
-  if n <> 4 then raise exception 'NEXUS: % policy(ies) nouvelle(s), attendu 4', n; end if;
+  if n <> 5 then raise exception 'NEXUS: % policy(ies) nouvelle(s), attendu 5', n; end if;
 
   -- Dormance : la règle ne vise aujourd'hui personne.
   select count(*) into n from public.athletes a join public.schools s on s.id = a.school_id where s.type::text = 'CEGEP';
