@@ -20,7 +20,7 @@ import { signalerCompteursAJour } from "@/lib/messaging/nonLusRecruteur";
 
 interface Notif {
   id: string;
-  type: "CHILD_FAVORITED" | "CHILD_PIPELINE_STAGE" | "CHILD_VISIT_PLANNED" | "CHILD_PARTNER_VISIBILITY_REQUEST" | string;
+  type: "CHILD_FAVORITED" | "CHILD_PIPELINE_STAGE" | "CHILD_VISIT_PLANNED" | "CHILD_PARTNER_VISIBILITY_REQUEST" | "CHILD_RECRUITER_CONTACT" | string;
   title: string;
   message: string | null;
   read: boolean;
@@ -30,6 +30,9 @@ interface Notif {
 const card = "bg-[#1A1D24] border border-white/5 rounded-xl";
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
+  CHILD_RECRUITER_CONTACT: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+  ),
   CHILD_PARTNER_VISIBILITY_REQUEST: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
   ),

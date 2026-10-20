@@ -384,6 +384,11 @@ verify_jwt = false
 [functions.rseq-weekly-sync]
 verify_jwt = false
 
+# Avis au parent (premier contact d'un recruteur) — appelée par la base (net.http_post),
+# pas par un usager : pas de JWT. Protection : en-tête x-parent-contact-secret.
+[functions.send-parent-contact]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

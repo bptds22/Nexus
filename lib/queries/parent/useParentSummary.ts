@@ -99,14 +99,13 @@ export function useParentSummary(athleteId: string | null): ParentSummary {
    jamais lire `title`/`message` de la ligne — ces champs sont écrits par
    des triggers et pourraient contenir autre chose demain.
 
-   ⚠️ « Un recruteur a contacté votre enfant » n'est PAS dans cette liste :
-   `parent_notifications` n'a que trois types (CHILD_FAVORITED,
-   CHILD_PIPELINE_STAGE, CHILD_VISIT_PLANNED), tous émis par des triggers
-   sur recruiter_favorites et recruiter_pipeline. Le premier contact vit
-   dans `recruiter_contact_notifications`, table que le parent NE PEUT PAS
-   lire (RLS : admin + coach uniquement). Voir le rapport de session.     */
+   CHILD_RECRUITER_CONTACT : premier message d'un cégep à l'enfant mineur
+   (trigger aviser_parent_contact_recruteur, 20261020170000). Le CONTACTE
+   que ce message pose n'écrit plus CHILD_PIPELINE_STAGE.                 */
 export function notifLabel(type: string): string {
   switch (type) {
+    case "CHILD_RECRUITER_CONTACT":
+      return "Un recruteur a contacté votre enfant.";
     case "CHILD_FAVORITED":
       return "Un recruteur a ajouté votre enfant à ses favoris.";
     case "CHILD_PIPELINE_STAGE":
