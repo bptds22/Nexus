@@ -378,10 +378,14 @@ export interface Dictionary {
   about: {
     hero: {
       eyebrow: string;
-      title: string;
+      title1: string;
+      title2: string;
       lede: string;
     };
     founders: {
+      eyebrow: string;
+      title1: string;
+      title2: string;
       bp: {
         name: string;
         role: string;
@@ -395,14 +399,19 @@ export interface Dictionary {
         photoAlt: string;
       };
     };
-    security: {
+    /** Faits vérifiés : hébergement (content/legal/confidentialite.ts), RPRP, 14 ans et volet parental (content/aide/sections.ts). */
+    engagements: {
       eyebrow: string;
-      title: string;
-      body: string;
+      title1: string;
+      title2: string;
+      lede: string;
+      items: { title: string; body: string }[];
+      privacyLink: string;
     };
     contact: {
       eyebrow: string;
-      title: string;
+      title1: string;
+      title2: string;
       lede: string;
       labelName: string;
       placeholderName: string;
@@ -1268,15 +1277,19 @@ export const dictionaries: Record<Lang, Dictionary> = {
     about: {
       hero: {
         eyebrow: "À propos",
-        title: "Nexus, c'est nous avant d'être un produit.",
+        title1: "Nexus, c'est nous",
+        title2: "avant d'être un produit.",
         lede: "Un ancien athlète qui voulait être vu. Un ancien coach qui voulait donner une chance à ses joueurs. Deux professionnels en technologie qui savent bâtir des plateformes sécurisées. Voilà qui on est.",
       },
       founders: {
+        eyebrow: "Les fondateurs",
+        title1: "Un athlète.",
+        title2: "Un coach.",
         bp: {
-          name: "Bruno-Philippe Simard",
+          name: "Bruno-Philippe Desfosses Simard",
           role: "Fondateur · Ancien athlète",
           bio: "Ancien joueur de football collégial. J'ai vécu le processus de recrutement de l'intérieur — j'ai vu des coéquipiers plus talentueux que moi passer inaperçus parce que leur coach ne connaissait pas les bonnes personnes. En parallèle, je travaille en technologie — infrastructure, applications, cybersécurité. Nexus combine ces deux mondes.",
-          photoAlt: "Bruno-Philippe Simard",
+          photoAlt: "Bruno-Philippe Desfosses Simard",
         },
         chuck: {
           name: "Chuck",
@@ -1285,14 +1298,23 @@ export const dictionaries: Record<Lang, Dictionary> = {
           photoAlt: "Chuck",
         },
       },
-      security: {
-        eyebrow: "Sécurité",
-        title: "Bâti par des professionnels en cybersécurité.",
-        body: "Nexus est hébergé au Québec. Conforme à la Loi 25 sur la protection des renseignements personnels. Consentement parental documenté pour chaque athlète mineur. Vos données ne quittent jamais la province.",
+      engagements: {
+        eyebrow: "Nos engagements",
+        title1: "Les données des jeunes,",
+        title2: "on les protège.",
+        lede: "Nexus est bâti par des professionnels en cybersécurité. Des profils de mineurs, ça se traite avec sérieux.",
+        items: [
+          { title: "Hébergé à Montréal", body: "Les renseignements personnels sont hébergés au Canada, dans la région de Montréal (Amazon Web Services, Canada Central)." },
+          { title: "Conforme à la Loi 25", body: "Un responsable de la protection des renseignements personnels est désigné. Accès, correction ou plainte : il répond." },
+          { title: "14 ans et plus", body: "Il faut avoir 14 ans pour créer son compte. Entre 14 et 17 ans, le jeune nomme son parent ou tuteur, qui reçoit une invitation." },
+          { title: "Un portail parent", body: "Le parent a son propre accès pour suivre le profil de son enfant et gérer ses consentements." },
+        ],
+        privacyLink: "Politique de confidentialité",
       },
       contact: {
         eyebrow: "Nous écrire",
-        title: "Une question pour l'équipe?",
+        title1: "Une question",
+        title2: "pour l'équipe ?",
         lede: "On répond dans les 48 heures.",
         labelName: "Nom complet",
         placeholderName: "Jean Tremblay",
@@ -2233,15 +2255,19 @@ export const dictionaries: Record<Lang, Dictionary> = {
     about: {
       hero: {
         eyebrow: "About",
-        title: "Nexus is us before it's a product.", // TODO-EN
+        title1: "Nexus is people",
+        title2: "before it's a product.",
         lede: "A former athlete who wanted to be seen. A former coach who wanted to give his players a chance. Two tech professionals who know how to build secure platforms. That's who we are.",
       },
       founders: {
+        eyebrow: "The founders",
+        title1: "An athlete.",
+        title2: "A coach.",
         bp: {
-          name: "Bruno-Philippe Simard",
+          name: "Bruno-Philippe Desfosses Simard",
           role: "Founder · Former athlete",
           bio: "Former college football player. I lived the recruitment process from the inside — I saw teammates more talented than me go unnoticed because their coach didn't know the right people. In parallel, I work in technology — infrastructure, applications, cybersecurity. Nexus combines these two worlds.",
-          photoAlt: "Bruno-Philippe Simard",
+          photoAlt: "Bruno-Philippe Desfosses Simard",
         },
         chuck: {
           name: "Chuck",
@@ -2250,14 +2276,23 @@ export const dictionaries: Record<Lang, Dictionary> = {
           photoAlt: "Chuck",
         },
       },
-      security: {
-        eyebrow: "Security",
-        title: "Built by cybersecurity professionals.",
-        body: "Nexus is hosted in Québec. Compliant with Loi 25 on the protection of personal information. Parental consent documented for every minor athlete. Your data never leaves the province.",
+      engagements: {
+        eyebrow: "Our commitments",
+        title1: "Young athletes' data,",
+        title2: "we protect it.",
+        lede: "Nexus is built by cybersecurity professionals. Profiles of minors deserve to be handled seriously.",
+        items: [
+          { title: "Hosted in Montréal", body: "Personal information is hosted in Canada, in the Montréal region (Amazon Web Services, Canada Central)." },
+          { title: "Loi 25 compliant", body: "A person in charge of the protection of personal information is designated. Access, correction or complaint: they answer." },
+          { title: "14 and older", body: "You must be 14 to create your own account. Between 14 and 17, the athlete names a parent or guardian, who receives an invitation." },
+          { title: "A parent portal", body: "Parents have their own access to follow their child's profile and manage consents." },
+        ],
+        privacyLink: "Privacy policy",
       },
       contact: {
         eyebrow: "Write to us",
-        title: "A question for the team?", // TODO-EN
+        title1: "A question",
+        title2: "for the team?",
         lede: "We respond within 48 hours.",
         labelName: "Full name",
         placeholderName: "Jean Tremblay",
