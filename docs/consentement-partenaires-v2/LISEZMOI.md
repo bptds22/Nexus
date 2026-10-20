@@ -115,8 +115,10 @@ annule tout). Ils ne s'inscrivent pas dans `schema_migrations` (comme les préc�
 ```powershell
 # Depuis la racine du dépôt (branche feat/visites-mode-match, après la fusion). Fichiers testés ?
 Get-FileHash -Algorithm MD5 supabase\migrations\20261018150000_athlete_reseaux_sociaux.sql, supabase\migrations\20261019230000_demande_acces_donnees.sql
-#   20261018150000_athlete_reseaux_sociaux.sql  @@MD5_150@@
-#   20261019230000_demande_acces_donnees.sql    @@MD5_230@@
+#   20261018150000_athlete_reseaux_sociaux.sql  A827410C2C606229EE14B5AFC9678DCF
+#   20261019230000_demande_acces_donnees.sql    B86F645F856583771CEC295506892D24
+#   (copie de travail Windows, fins de ligne CRLF. En LF : 150000 = a9c477ed…, 230000 = 4cb763a1….)
+#   Commande rejouée telle quelle sur une base remise dans l'état prod (2026-10-19) : OK, 0 écart de vue.
 
 $env:PGCLIENTENCODING = "UTF8"
 psql "<chaîne de connexion session pooler, comme pour W2/W3>" -v ON_ERROR_STOP=1 -1 `
@@ -127,7 +129,7 @@ psql "<chaîne de connexion session pooler, comme pour W2/W3>" -v ON_ERROR_STOP=
 Sortie attendue : `DO`, `ALTER TABLE`, `CREATE …` — **aucune ERROR**. Une ERROR = rien n'est écrit.
 Vérification après (lecture seule) : `select to_regclass('public.consentement_partenaire_v2'),
 to_regprocedure('public.demander_acces_mes_donnees()');` → deux valeurs non nulles.
-Rollbacks : `supabase/rollback/20261018150000_…` puis `20261019230000_…` (même commande, `-f` du rollback).
+Rollbacks, dans l'ordre INVERSE : `supabase/rollback/20261019230000_…` puis `20261018150000_…` (même commande).
 
 **a2. Juste après a (GO BP) : déployer la fonction `send-avis-parent-partenaires`.** Elle lit la nouvelle
 colonne `portee` : la déployer AVANT la migration la ferait échouer ; la laisser à l'ancienne version
