@@ -56,41 +56,93 @@ Exécutable par `postgres` et `service_role` seulement.
 (dont v1, dont « Plus tard » épuisés), « Attente du parent », push envoyés.
 RPC `admin_consentement_partenaire_stats()` (admin seulement).
 
+## Avis au parent d'un 14–17 ans (BP 2026-10-19)
+
+`avis_parent_partenaires.portee` dit ce qui a été accordé, et le courriel `send-avis-parent-partenaires`
+l'écrit :
+
+| Portée | Quand | Courriel |
+|---|---|---|
+| `CARTE` | accord « carte » (client 1.4.4, surfaces carte seule) | texte d'avant |
+| `V2` | premier accord, donné en v2 | carte + vidéos + réseaux ; réseaux publics |
+| `EXTENSION_V2` | accord carte déjà donné, étendu par le jeune | « partage aussi ses vidéos et ses réseaux » |
+
+L'extension avise le parent **même si c'est lui qui avait accordé la carte** (il n'a pas accordé les
+vidéos). Au plus un avis d'extension par 24 h ; mêmes exclusions qu'avant (moins de 14 ou 18 et plus,
+sans courriel parent, désabonné). Aperçu des 3 courriels : `mode: "test"` de la fonction, avec
+`portee: "V2"` ou `"EXTENSION_V2"`.
+
 ## Textes
 
-Source unique : `lib/legal/partnerMediaCopy.ts` — `PARTNER_MEDIA_COPY` (v2) et `PARTNER_MEDIA_COPY_V1`
-(historique, encore affiché sur les surfaces « carte seule »). Carte plein écran : `TEXTES_V2` dans
-`lib/partenaires/consentementV2.ts`.
+Source unique : `lib/legal/partnerMediaCopy.ts` — `PARTNER_MEDIA_COPY` (v2, validé BP) et
+`PARTNER_MEDIA_COPY_V1` (historique, encore affiché sur les surfaces « carte seule »). Carte plein écran :
+`TEXTES_V2` dans `lib/partenaires/consentementV2.ts`.
 
-**Politique de confidentialité, section 7.5 : PAS modifiée** (« ne PAS modifier sans accord BP +
-counsel »). Proposition à valider — voir le rapport de session. Tant qu'elle n'est pas appliquée, la
-page affiche « Version 2026-10-v2 » avec le texte 7.5 de la v1.
+**Politique de confidentialité 2026-10-v2** (validée BP + avocat, 2026-10-19) : section 7.5,
+`content/legal/confidentialite.ts`. Le PDF de l'appli (`assets/legal/confidentialite.pdf`) est régénéré ;
+il doit être téléversé (étape b2 ci-dessous), sinon l'appli montre l'ancienne politique.
+
+## Aussi dans ce lot : la demande d'accès Loi 25 (migration `20261019230000`)
+
+Le bouton « Demander » des paramètres recruteur insérait dans `admin_notifications` (RLS sans policy) :
+refus à chaque fois, et l'écran disait « envoyée ». Désormais `demander_acces_mes_donnees()` inscrit la
+demande dans `loi25_portability_requests` (onglet Portabilité de `/admin/loi25`, échéance 30 jours,
+pas de doublon). L'écran ne dit « envoyée » qu'en cas de succès.
 
 ## Tests faits (base jetable, copie de la locale, état prod reproduit)
 
 - Empreintes d'avant = prod (relevé 2026-10-19) : `delete_my_account` 2c1ad094…,
   `partner_athlete_profile` 496104a7…, `top_athletes_view` 1a4bd466….
-- Application → rollback (empreintes retrouvées) → réapplication : OK.
+- `20261018150000` : application → rollback (empreintes retrouvées, `portee` retirée) → réapplication : OK.
+  `20261019230000` : application → rollback → réapplication : OK.
 - 34 étapes par rôle (JWT réels, transaction annulée) : v1 → vidéos/réseaux masqués ; OUI v2 → visibles
   (fiche ET `top_athletes_view`) ; retrait → 0 ligne ; nouvel accord v1 → masqués de nouveau ; NON journalisé,
   rien retiré ; « Plus tard » ×3 et règle des 3 jours ; moins de 14 ans → parent avisé → accord parental v2 ;
   anon / athlète refusés sur l'état, la table, le push, les stats ; push : mauvais nombre refusé, heures
   calmes refusées, envoi puis 0 cible au second aperçu.
-- Sauvegardes (point 3) : athlète (une colonne à la fois et groupé) et coach — aucune erreur ; `http://` refusé
-  par la contrainte (le client écrit toujours `https://`).
+- Avis au parent : accord v1 → `CARTE` ; extension → `+ EXTENSION_V2` ; premier accord v2 → un seul avis `V2` ;
+  carte parentale puis extension par le jeune → `EXTENSION_V2`. Deux requêtes pg_net en file, annulées.
+- Demande d'accès : inscrite (`access`, `pending`, échéance +30 j), redemande → `deja`, anon refusé.
+- Sauvegardes : athlète (une colonne à la fois et groupé) et coach — aucune erreur ; `http://` refusé par la
+  contrainte (le client écrit toujours `https://`).
 - `check-view-hardening.sql` : 0 écart.
 
-## Appliquer en prod (BP, psql)
+## Mise en ligne — ORDRE (BP 2026-10-19)
 
-Fichiers (md5 de la copie de travail, CRLF) :
-- `supabase/migrations/20261018150000_athlete_reseaux_sociaux.sql` — `d8601cdf3f890cc0ce8e93fb7bb2dca3`
-- `supabase/rollback/20261018150000_rollback_athlete_reseaux_sociaux.sql` — `17cb84de091e83ebac3d45cf59ea1ecb`
+**a. Migrations en prod — BP, par psql.** Les deux fichiers dans UNE transaction (une garde qui échoue
+annule tout). Ils ne s'inscrivent pas dans `schema_migrations` (comme les précédentes du lot).
 
-En une transaction (`psql -v ON_ERROR_STOP=1 -1 -f …`) ; les gardes de tête refusent toute base qui n'a pas
-les corps relevés. Le fichier ne s'inscrit pas dans `schema_migrations` (comme les précédentes du lot).
+```powershell
+# Depuis la racine du dépôt (branche feat/visites-mode-match, après la fusion). Fichiers testés ?
+Get-FileHash -Algorithm MD5 supabase\migrations\20261018150000_athlete_reseaux_sociaux.sql, supabase\migrations\20261019230000_demande_acces_donnees.sql
+#   20261018150000_athlete_reseaux_sociaux.sql  @@MD5_150@@
+#   20261019230000_demande_acces_donnees.sql    @@MD5_230@@
 
-**Ordre** : migration en prod → push du code web (main) → AAB/IPA 1.4.5 → après la sortie : le push.
+$env:PGCLIENTENCODING = "UTF8"
+psql "<chaîne de connexion session pooler, comme pour W2/W3>" -v ON_ERROR_STOP=1 -1 `
+  -f supabase/migrations/20261018150000_athlete_reseaux_sociaux.sql `
+  -f supabase/migrations/20261019230000_demande_acces_donnees.sql
+```
+
+Sortie attendue : `DO`, `ALTER TABLE`, `CREATE …` — **aucune ERROR**. Une ERROR = rien n'est écrit.
+Vérification après (lecture seule) : `select to_regclass('public.consentement_partenaire_v2'),
+to_regprocedure('public.demander_acces_mes_donnees()');` → deux valeurs non nulles.
+Rollbacks : `supabase/rollback/20261018150000_…` puis `20261019230000_…` (même commande, `-f` du rollback).
+
+**a2. Juste après a (GO BP) : déployer la fonction `send-avis-parent-partenaires`.** Elle lit la nouvelle
+colonne `portee` : la déployer AVANT la migration la ferait échouer ; la laisser à l'ancienne version
+enverrait le texte « carte » pour une extension.
+
+**b. Merge dans `main`, puis Promote Vercel** — le web avec la 7.5 et la v2, ensemble.
+
+**b2. Avec b (GO BP) : téléverser la politique en PDF** pour l'appli — `node scripts/upload-legal-pdfs.mjs`
+(`.env.local` de prod). Sans cela, l'appli montre l'ancienne politique.
+
+**c. 1.4.5 dans les deux magasins.**
+
+**d. Push v2 aux athlètes — BP, à la main, APRÈS la sortie de c** (voir « Le push unique »), jamais entre
+21 h et 8 h.
 
 **Base locale de BP** : elle porte l'ANCIENNE version de `20261018150000` (colonnes, sans v2). Pour passer à
-la nouvelle : l'ancien rollback (copie : historique git de ce fichier), puis la nouvelle migration — à faire
+la nouvelle : l'ancien rollback (historique git de ce fichier, commit `f481d45b`), puis les deux migrations —
 quand personne ne teste sur la base locale.

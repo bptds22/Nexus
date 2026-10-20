@@ -28,7 +28,10 @@
 --        « Non » ne retire RIEN (un accord v1 reste) et met fin aux relances, pour toujours ;
 --      · consentement_partenaire_v2_pousser(confirmer) : UN push par athlète, jamais en heures
 --        calmes (21 h – 8 h), lancé à la main après la sortie de la 1.4.5 ;
---      · admin_consentement_partenaire_stats() : compteur pour l'admin.
+--      · admin_consentement_partenaire_stats() : compteur pour l'admin ;
+--      · avis au parent d'un 14–17 ans : premier accord en v2 (portée V2) ou extension d'un accord
+--        v1 (EXTENSION_V2, aviser_parent_extension_v2). Le courriel send-avis-parent-partenaires
+--        dit la portée (avis_parent_partenaires.portee, CARTE par défaut).
 --
 -- 4. Lecture partenaire : partner_athlete_profile (+ 3 réseaux, vidéos et réseaux masqués
 --    sans v2) et top_athletes_view (vidéos masquées sans v2 ; le filtre « Avec vidéo » suit).
@@ -47,6 +50,11 @@ begin
   end if;
   if to_regclass('public.consentement_partenaire_v2') is not null then
     raise exception 'NEXUS: 20261018150000 déjà appliquée (consentement_partenaire_v2 présente)';
+  end if;
+  if to_regclass('public.avis_parent_partenaires') is null
+     or exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'avis_parent_partenaires' and column_name = 'portee') then
+    raise exception 'NEXUS: avis_parent_partenaires absente, ou portee déjà là';
   end if;
   if (select md5(replace(prosrc, E'\r', '')) from pg_proc
        where pronamespace = 'public'::regnamespace and proname = 'delete_my_account')
@@ -357,6 +365,67 @@ as $$
      and public.consentement_partenaire_v2_valide(p_athlete_id)
 $$;
 
+-- Avis au parent : la PORTÉE de ce qui a été accordé (le courriel en dépend).
+--   CARTE        : la carte (avis d'avant, et accords « carte seule ») ;
+--   V2           : premier accord, donné en v2 (carte + vidéos + réseaux) ;
+--   EXTENSION_V2 : accord v1 étendu aux vidéos et aux réseaux.
+alter table public.avis_parent_partenaires
+  add column portee text not null default 'CARTE' check (portee in ('CARTE', 'V2', 'EXTENSION_V2'));
+
+-- Conditions de aviser_parent_partenaires (14–17 ans, courriel parent, pas désabonné), SAUF l'accord
+-- parental de la carte (le parent n'a pas accordé les vidéos). Un avis d'extension par 24 h au plus.
+create function public.aviser_parent_extension_v2(p_athlete_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+set row_security to 'off'
+as $$
+declare
+  a        public.athletes;
+  v_age    int;
+  v_avis   uuid;
+  v_secret text;
+  v_url    text := 'https://nrloizyemulbhujrqhgx.supabase.co/functions/v1/send-avis-parent-partenaires';
+begin
+  select * into a from public.athletes where id = p_athlete_id;
+  if a.id is null or not coalesce(a.partner_visibility_opt_in, false) then return; end if;
+  -- Accord parental pour la CARTE : le parent est quand même avisé, c'est le jeune qui étend aux vidéos.
+  if a.date_naissance is null then return; end if;
+  v_age := extract(year from age(a.date_naissance))::int;
+  if v_age < 14 or v_age > 17 then return; end if;
+  if nullif(btrim(a.parent_email), '') is null then return; end if;
+
+  begin
+    if exists (select 1 from public.parent_courriel_desabonnements
+                where courriel_sha256 = public.courriel_sha256(a.parent_email)) then
+      return;
+    end if;
+    if exists (select 1 from public.avis_parent_partenaires
+                where athlete_id = a.id and portee = 'EXTENSION_V2' and cree_le > now() - interval '24 hours') then
+      return;
+    end if;
+
+    insert into public.avis_parent_partenaires (athlete_id, portee) values (a.id, 'EXTENSION_V2') returning id into v_avis;
+
+    select decrypted_secret into v_secret
+      from vault.decrypted_secrets where name = 'PARENT_NOTICE_SECRET' limit 1;
+    if v_secret is null then
+      update public.avis_parent_partenaires set statut = 'SANS_SECRET' where id = v_avis;
+      raise warning 'aviser_parent_extension_v2: PARENT_NOTICE_SECRET absent du Vault (avis %)', v_avis;
+      return;
+    end if;
+
+    perform net.http_post(
+      url     := v_url,
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-parent-notice-secret', v_secret),
+      body    := jsonb_build_object('avis_id', v_avis)
+    );
+  exception when others then
+    raise warning 'aviser_parent_extension_v2 a échoué pour athlete %: %', a.id, SQLERRM;
+  end;
+end $$;
+
 -- Déclencheur : tout accord image_partenaire journalisé sous une politique v2 pose la v2.
 create function public.consentement_partenaire_v2_sur_audit()
 returns trigger
@@ -372,6 +441,19 @@ begin
     insert into public.consentement_partenaire_v2 (athlete_id, accepte_le, maj_le)
     values (NEW.athlete_id, now(), now())
     on conflict (athlete_id) do update set accepte_le = now(), maj_le = now();
+
+    -- Avis au parent d'un 14–17 ans (BP 2026-10-19) : accord de l'athlète lui-même seulement.
+    if NEW.metadata->>'acting_role' = 'ATHLETE' then
+      if NEW.previous_status = 'granted' then
+        -- Accord v1 étendu à la v2 : aucun « flip » d'opt-in, donc aucun avis n'est parti — on l'envoie.
+        perform public.aviser_parent_extension_v2(NEW.athlete_id);
+      else
+        -- Premier accord, donné en v2 : aviser_parent_partenaires vient de réserver l'avis (même
+        -- transaction, envoi après le commit) — il dira la portée v2 (vidéos et réseaux).
+        update public.avis_parent_partenaires set portee = 'V2'
+         where athlete_id = NEW.athlete_id and statut = 'RESERVE' and cree_le = now();
+      end if;
+    end if;
   end if;
   return null;
 end $$;
@@ -632,6 +714,7 @@ revoke all on function public.consentement_partenaire_v2_etat()                 
 revoke all on function public.consentement_partenaire_v2_repondre(text, text)    from public, anon;
 revoke all on function public.consentement_partenaire_v2_pousser(text)           from public, anon, authenticated;
 revoke all on function public.admin_consentement_partenaire_stats()              from public, anon;
+revoke all on function public.aviser_parent_extension_v2(uuid)                   from public, anon, authenticated;
 grant execute on function public.consentement_partenaire_politiques_v2()         to authenticated, service_role;
 grant execute on function public.consentement_partenaire_v2_valide(uuid)         to service_role;
 grant execute on function public.is_partner_media_athlete(uuid)                  to authenticated, service_role;
@@ -640,6 +723,7 @@ grant execute on function public.consentement_partenaire_v2_etat()              
 grant execute on function public.consentement_partenaire_v2_repondre(text, text) to authenticated, service_role;
 grant execute on function public.consentement_partenaire_v2_pousser(text)        to service_role;
 grant execute on function public.admin_consentement_partenaire_stats()           to authenticated, service_role;
+grant execute on function public.aviser_parent_extension_v2(uuid)                to service_role;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 3. LECTURE PARTENAIRE
@@ -797,7 +881,8 @@ begin
       ('public.consentement_partenaire_v2_etat()',                  array['authenticated','postgres','service_role']),
       ('public.consentement_partenaire_v2_repondre(text, text)',    array['authenticated','postgres','service_role']),
       ('public.consentement_partenaire_v2_pousser(text)',           array['postgres','service_role']),
-      ('public.admin_consentement_partenaire_stats()',              array['authenticated','postgres','service_role'])
+      ('public.admin_consentement_partenaire_stats()',              array['authenticated','postgres','service_role']),
+      ('public.aviser_parent_extension_v2(uuid)',                   array['postgres','service_role'])
     ) as t(sig, veut)
   loop
     select array_agg(t.g order by t.g) into vus

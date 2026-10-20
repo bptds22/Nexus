@@ -146,6 +146,8 @@ CREATE OR REPLACE VIEW public.top_athletes_view AS
 -- Consentement v2 : déclencheur, fonctions, table.
 drop trigger trg_consentement_partenaire_v2_sur_audit on public.consent_audit_trail;
 drop function public.consentement_partenaire_v2_sur_audit();
+drop function public.aviser_parent_extension_v2(uuid);
+alter table public.avis_parent_partenaires drop column portee;
 drop function public.consentement_partenaire_v2_pousser(text);
 drop function public.consentement_partenaire_v2_repondre(text, text);
 drop function public.consentement_partenaire_v2_etat();
@@ -371,6 +373,11 @@ begin
   end if;
   if exists (select 1 from pg_trigger where tgname = 'trg_consentement_partenaire_v2_sur_audit') then
     raise exception 'NEXUS: le déclencheur v2 est encore là';
+  end if;
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'avis_parent_partenaires' and column_name = 'portee')
+     or to_regprocedure('public.aviser_parent_extension_v2(uuid)') is not null then
+    raise exception 'NEXUS: l''avis au parent v2 est encore là';
   end if;
   select array_agg(t.g order by t.g) into vus
     from pg_proc pr,

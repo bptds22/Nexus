@@ -6,6 +6,11 @@
 // Vouvoiement : on écrit au parent. Le prénom de l'athlète est NOMMÉ — c'est
 // l'objet même de l'avis (BP : « [Prénom] a autorisé la visibilité
 // partenaires médias »), à la différence de l'avis d'inscription.
+//
+// Portée (consentement v2, BP 2026-10-19 — avis_parent_partenaires.portee) :
+//   CARTE        : la carte seulement (texte d'avant) ;
+//   V2           : premier accord, la carte + les vidéos + les réseaux sociaux ;
+//   EXTENSION_V2 : un accord « carte » déjà donné, étendu aux vidéos et aux réseaux.
 
 import { renderEmail } from "../_shared/emailLayout.ts";
 
@@ -20,11 +25,12 @@ function de(nom: string): string {
   return /^[aeiouyhàâäéèêëîïôöûüœ]/i.test(nom) ? `d’${nom}` : `de ${nom}`;
 }
 
-export function sujet(prenomAthlete: string | null): string {
-  const p = prenomAthlete?.trim();
-  return p
-    ? `${p} a autorisé la visibilité partenaires médias`
-    : "Votre enfant a autorisé la visibilité partenaires médias";
+export type PorteeAvis = "CARTE" | "V2" | "EXTENSION_V2";
+
+export function sujet(prenomAthlete: string | null, portee: PorteeAvis = "CARTE"): string {
+  const p = prenomAthlete?.trim() || "Votre enfant";
+  if (portee === "EXTENSION_V2") return `${p} partage aussi ses vidéos et ses réseaux avec les partenaires médias`;
+  return `${p} a autorisé la visibilité partenaires médias`;
 }
 
 export interface DonneesAvisParent {
@@ -36,6 +42,8 @@ export interface DonneesAvisParent {
   /** Vrai si le parent a déjà son espace : change le libellé du bouton. */
   espaceExistant: boolean;
   desabonnementUrl: string;
+  /** Ce qui a été accordé (défaut : la carte, comme avant). */
+  portee?: PorteeAvis;
 }
 
 export function buildBody(d: DonneesAvisParent): { html: string; text: string } {
@@ -47,11 +55,25 @@ export function buildBody(d: DonneesAvisParent): { html: string; text: string } 
   const salutT = parent ? `Bonjour ${parent},` : "Bonjour,";
   const p = (s: string, dernier = false) => `<p style="margin:0${dernier ? "" : " 0 12px"};">${s}</p>`;
 
-  const l1 = (e: string) =>
-    `${Maj(e)} a activé, depuis son compte Nexus, la visibilité auprès de nos partenaires médias ` +
-    `approuvés (journalistes sportifs, pages de contenu sportif, balados). Ils peuvent désormais publier ` +
-    `la carte Nexus ${de(e)} — son nom, son école, sa position, sa cote et sa photo. ` +
-    `Aucun partenaire ne peut contacter ${e} directement.`;
+  const portee: PorteeAvis = d.portee ?? "CARTE";
+  const videos = "ses vidéos (faits saillants, Hudl, YouTube, match complet, entraînement) et les liens de ses " +
+    "réseaux sociaux (Instagram, Facebook, TikTok, LinkedIn)";
+  const contact = (e: string) =>
+    `Nexus ne leur communique jamais le courriel ni le téléphone ${de(e)} ; ses réseaux sociaux étant publics, ` +
+    `un partenaire pourrait toutefois l’y joindre.`;
+  const l1 = (e: string) => portee === "EXTENSION_V2"
+    ? `${Maj(e)} avait déjà autorisé nos partenaires médias approuvés (journalistes sportifs, pages de contenu ` +
+      `sportif, balados) à publier sa carte Nexus. Depuis son compte, ${e} vient d’accepter qu’ils voient aussi ` +
+      `${videos}. ${contact(e)}`
+    : portee === "V2"
+    ? `${Maj(e)} a activé, depuis son compte Nexus, la visibilité auprès de nos partenaires médias ` +
+      `approuvés (journalistes sportifs, pages de contenu sportif, balados). Ils peuvent désormais publier ` +
+      `la carte Nexus ${de(e)} — son nom, son école, sa position, sa cote et sa photo — et voir ${videos}. ` +
+      contact(e)
+    : `${Maj(e)} a activé, depuis son compte Nexus, la visibilité auprès de nos partenaires médias ` +
+      `approuvés (journalistes sportifs, pages de contenu sportif, balados). Ils peuvent désormais publier ` +
+      `la carte Nexus ${de(e)} — son nom, son école, sa position, sa cote et sa photo. ` +
+      `Aucun partenaire ne peut contacter ${e} directement.`;
   const l2 = "À partir de 14 ans, la loi québécoise permet à un jeune de donner ce consentement lui-même. " +
     "Nous vous en avisons, comme le prévoit notre politique de confidentialité.";
   const l3 = d.espaceExistant
@@ -62,7 +84,7 @@ export function buildBody(d: DonneesAvisParent): { html: string; text: string } 
 
   return renderEmail({
     preheader: `Vous pouvez la retirer en tout temps depuis votre espace parent.`,
-    heading: "Visibilité partenaires médias activée",
+    heading: portee === "EXTENSION_V2" ? "Vidéos et réseaux partagés avec les partenaires" : "Visibilité partenaires médias activée",
     bodyHtml: p(salutH) + p(l1(enfantH)) + p(l2) + p(l3) + p(l4, true),
     ctaLabel: d.espaceExistant ? "Ouvrir mon espace parent" : "Créer mon espace parent",
     ctaUrl: d.portailUrl,
