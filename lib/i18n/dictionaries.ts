@@ -111,9 +111,9 @@ export interface Dictionary {
   };
   /** Page coach v2 (BP 2026-10-20). Tutoiement, comme avant. */
   coachLanding: {
-    hero: { eyebrow: string; title1: string; title2: string; lede: string; ledeSmall: string; cta: string; ctaSecondary: string; imageAlt: string };
+    hero: { eyebrow: string; title1: string; title2: string; lede: string; ledeSmall: string; cta: string; ctaSecondary: string; imageAlt: string; imageLabel: string };
     /** « La discussion qui revient » : les questions de chaque recruteur, répondues une fois par le profil. */
-    discussion: { eyebrow: string; title1: string; title2: string; lede: string; items: { q: string; a: string }[]; note: string; imageAlt: string };
+    discussion: { eyebrow: string; title1: string; title2: string; lede: string; flux: string[]; items: { q: string; a: string }[]; note: string; imageAlt: string; imageLabel: string };
     etapes: { eyebrow: string; title1: string; title2: string; items: { title: string; body: string }[] };
     evaluation: { eyebrow: string; title1: string; title2: string; points: string[] };
     outils: { eyebrow: string; title1: string; title2: string; items: { title: string; body: string; note?: string }[] };
@@ -724,27 +724,30 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "Pour les entraîneurs",
         title1: "Nexus te fait",
         title2: "gagner du temps.",
-        lede: "Chaque recruteur te pose les mêmes questions, sur chacun de tes joueurs. Sur Nexus, les réponses sont déjà dans son profil : la discussion, tu l'as une fois.",
+        lede: "Chaque recruteur te pose les mêmes questions, sur chacun de tes joueurs. Sur Nexus, c'est ton joueur qui y répond, une fois, dans son profil. Le recruteur lit ses réponses : toi, tu n'as plus à les répéter.",
         ledeSmall: "Gratuit, pour toi comme pour tes joueurs.",
         cta: "Inscris ton équipe",
         ctaSecondary: "La discussion qui revient",
-        imageAlt: "Profil d'athlète vu par un recruteur : moyenne, programme visé, ouvert à déménager, au privé, à l'anglais, puis le rapport et la cote du coach (données fictives)",
+        imageAlt: "Le profil académique rempli par l'athlète lui-même : moyenne, programme de cégep visé, matières fortes, mentions, ouvert au privé, ouvert anglophone, ouvert à déménager (données fictives)",
+        imageLabel: "Vue de l'athlète · Léo remplit son profil",
       },
       discussion: {
         eyebrow: "La discussion qui revient",
         title1: "La même discussion,",
         title2: "avec chaque recruteur.",
-        lede: "Pour chaque joueur, les mêmes questions. Maintenant, c'est son profil qui répond.",
+        lede: "Pour chaque joueur, les mêmes questions. Maintenant, c'est lui qui y répond, dans son profil, et le recruteur les lit là.",
+        flux: ["Ton joueur remplit son profil", "Ses réponses s'affichent sur son profil", "Le recruteur les lit", "Tu n'as plus à les répéter"],
         items: [
-          { q: "Est-il prêt à changer de région\u00a0?", a: "« Ouvert à déménager », et ses régions de cégep préférées." },
-          { q: "Quel est son potentiel\u00a0?", a: "Ta cote, ton rapport et tes distinctions, signés de ton nom." },
-          { q: "Est-il ouvert aux cégeps anglophones\u00a0?", a: "« Ouvert anglophone » : oui ou non, sur son profil." },
-          { q: "Et aux cégeps privés\u00a0?", a: "« Ouvert au privé » : même chose." },
-          { q: "Quel programme vise-t-il\u00a0?", a: "Son programme de cégep visé." },
-          { q: "Comment vont ses notes\u00a0?", a: "Sa moyenne générale, ses matières fortes et ses mentions." },
+          { q: "Est-il prêt à changer de région\u00a0?", a: "Il coche « Ouvert à déménager » et choisit ses régions de cégep préférées." },
+          { q: "Quel est son potentiel\u00a0?", a: "Ça, c'est toi : ta cote, ton rapport et tes distinctions, signés de ton nom." },
+          { q: "Est-il ouvert aux cégeps anglophones\u00a0?", a: "Il coche « Ouvert anglophone », ou non." },
+          { q: "Et aux cégeps privés\u00a0?", a: "Il coche « Ouvert au privé », ou non." },
+          { q: "Quel programme vise-t-il\u00a0?", a: "Il choisit son programme de cégep visé." },
+          { q: "Comment vont ses notes\u00a0?", a: "Il inscrit sa moyenne générale, ses matières fortes et ses mentions." },
         ],
-        note: "Ton joueur remplit ces réponses une fois (ou toi, dans sa fiche). Ensuite, le recruteur les lit sur son profil — sans t'appeler pour les demander.",
-        imageAlt: "Détails académiques sur un profil d'athlète : programme visé, matières fortes, mentions et régions de cégep préférées (données fictives)",
+        note: "C'est ton joueur qui remplit ces réponses, dans son profil. Tu peux aussi les remplir ou les corriger dans sa fiche. Le recruteur les lit sur son profil, sans t'appeler pour les demander.",
+        imageAlt: "Le même profil vu par un recruteur : la moyenne, le programme visé et les préférences remplis par l'athlète, puis le rapport et la cote du coach (données fictives)",
+        imageLabel: "Vue du recruteur · ce que Léo a rempli, et ton rapport",
       },
       etapes: {
         eyebrow: "Comment ça marche",
@@ -790,7 +793,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       },
       cta: {
         eyebrow: "Sois le nex",
-        title1: "Réponds une fois.",
+        title1: "Ton joueur répond une fois.",
         title2: "Le profil fait le reste.",
         body: "Inscris-toi gratuitement. Monte ton équipe. Vérifie tes athlètes.",
         button: "Inscris ton équipe",
@@ -1648,27 +1651,30 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "For coaches",
         title1: "Nexus saves",
         title2: "you time.",
-        lede: "Every recruiter asks you the same questions about every one of your players. On Nexus, the answers are already in the player's profile: you have that conversation once.",
+        lede: "Every recruiter asks you the same questions about every one of your players. On Nexus, your player answers them once, in his own profile. Recruiters read his answers: you no longer have to repeat them.",
         ledeSmall: "Free, for you and for your players.",
         cta: "Sign up your team",
         ctaSecondary: "The conversation that keeps coming back",
-        imageAlt: "Athlete profile seen by a recruiter: GPA, target program, open to relocating, to private and to English CÉGEPs, then the coach's report and rating (fictional data)",
+        imageAlt: "The academic profile filled in by the athlete himself: average, target CÉGEP program, strong subjects, honours, open to private, open to English, open to relocating (fictional data)",
+        imageLabel: "Athlete view · Léo fills in his profile",
       },
       discussion: {
         eyebrow: "The conversation that keeps coming back",
         title1: "The same conversation,",
         title2: "with every recruiter.",
-        lede: "For every player, the same questions. Now the profile answers them.",
+        lede: "For every player, the same questions. Now he answers them himself, in his profile, and recruiters read them there.",
+        flux: ["Your player fills in his profile", "His answers show on his profile", "Recruiters read them", "You no longer repeat them"],
         items: [
-          { q: "Is he ready to move to another region?", a: "“Open to relocating”, plus his preferred CÉGEP regions." },
-          { q: "What's his potential?", a: "Your rating, your report and your distinctions, signed with your name." },
-          { q: "Is he open to English CÉGEPs?", a: "“Open to English”: yes or no, on his profile." },
-          { q: "And private CÉGEPs?", a: "“Open to private”: same thing." },
-          { q: "Which program is he aiming for?", a: "His target CÉGEP program." },
-          { q: "How are his grades?", a: "His overall average, strong subjects and academic honours." },
+          { q: "Is he ready to move to another region?", a: "He ticks “Open to relocating” and picks his preferred CÉGEP regions." },
+          { q: "What's his potential?", a: "That part is yours: your rating, your report and your distinctions, signed with your name." },
+          { q: "Is he open to English CÉGEPs?", a: "He ticks “Open to English”, or not." },
+          { q: "And private CÉGEPs?", a: "He ticks “Open to private”, or not." },
+          { q: "Which program is he aiming for?", a: "He picks his target CÉGEP program." },
+          { q: "How are his grades?", a: "He enters his overall average, strong subjects and academic honours." },
         ],
-        note: "Your player fills in these answers once (or you do, in his file). After that, recruiters read them on his profile — without calling you to ask.",
-        imageAlt: "Academic details on an athlete profile: target program, strong subjects, honours and preferred CÉGEP regions (fictional data)",
+        note: "Your player fills in these answers himself, in his profile. You can also fill them in or correct them in his file. Recruiters read them on his profile, without calling you to ask.",
+        imageAlt: "The same profile seen by a recruiter: the average, target program and preferences filled in by the athlete, then the coach's report and rating (fictional data)",
+        imageLabel: "Recruiter view · what Léo filled in, plus your report",
       },
       etapes: {
         eyebrow: "How it works",

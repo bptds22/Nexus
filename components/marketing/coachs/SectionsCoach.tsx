@@ -10,8 +10,11 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
    Récit (retour de BP) : Nexus fait gagner du temps au coach — la
    discussion que chaque recruteur refait sur chaque joueur (région,
    potentiel, anglophone, privé, programme, notes) a lieu une fois, dans
-   le profil. Captures : fiche fictive de Léo vue par un recruteur, en
-   bureau (public/images/coach/, voir maquettes/pages-v2b/outils/coach.js).
+   le profil. Retour BP (v2c) : c'est le JOUEUR qui remplit ces réponses
+   (/athlete/profil, section académique en écriture directe ; le coach peut
+   aussi, dans sa fiche) — d'où la capture du formulaire de l'athlète en
+   héros, puis la même fiche vue par le recruteur (public/images/coach/,
+   voir maquettes/pages-v2c/outils/athlete-edite.js et pages-v2b/outils/coach.js).
 ───────────────────────────────────────────────────────────────────*/
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
@@ -61,20 +64,23 @@ export default function SectionsCoach() {
                 </a>
               </div>
             </div>
-            <div className="lg:col-span-5 rounded-xl border border-white/[0.07] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
-              {/* Petit écran : capture plus étroite (texte lisible) ; bureau : capture large. */}
-              <picture>
-              <source media="(max-width: 639px)" srcSet="/images/coach/profil-repond-mobile.webp" width={888} height={1320} />
-              <img
-                src="/images/coach/profil-repond.webp"
-                alt={T.hero.imageAlt}
-                width={1200}
-                height={1076}
-                decoding="async"
-                className="block w-full h-auto"
-              />
-              </picture>
-            </div>
+            <figure className="lg:col-span-5">
+              <figcaption className={`${label} text-[#9CA3AF] mb-3`}>{T.hero.imageLabel}</figcaption>
+              <div className="rounded-xl border border-white/[0.07] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+                {/* Le formulaire de l'athlète lui-même (/athlete/profil, web). Petit écran : capture plus étroite. */}
+                <picture>
+                <source media="(max-width: 639px)" srcSet="/images/coach/joueur-remplit-mobile.webp" width={888} height={610} />
+                <img
+                  src="/images/coach/joueur-remplit.webp"
+                  alt={T.hero.imageAlt}
+                  width={1200}
+                  height={610}
+                  decoding="async"
+                  className="block w-full h-auto"
+                />
+                </picture>
+              </div>
+            </figure>
           </div>
         </div>
       </section>
@@ -86,7 +92,16 @@ export default function SectionsCoach() {
             <Etiquette>{T.discussion.eyebrow}</Etiquette>
             <Titre id="coach-discussion" l1={T.discussion.title1} l2={T.discussion.title2} taille="text-[44px] sm:text-6xl lg:text-[72px]" />
             <p className="text-[17px] sm:text-[19px] text-white/75 leading-relaxed mt-6 max-w-[560px]">{T.discussion.lede}</p>
-            <ul className="mt-10 grid gap-3 sm:grid-cols-2">
+            {/* Qui fait quoi : le joueur remplit, le recruteur lit, le coach n'a plus à répéter. */}
+            <ol className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {T.discussion.flux.map((etape, i) => (
+                <li key={etape} className="rounded-md border border-white/[0.07] bg-[#1A1D24] px-4 py-3">
+                  <span className="nx-display text-[22px] leading-none text-[#E63946]">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="block mt-1.5 text-[14px] leading-snug text-white">{etape}</span>
+                </li>
+              ))}
+            </ol>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {T.discussion.items.map((it) => (
                 <li key={it.q} className="rounded-md border border-white/[0.07] bg-[#1A1D24] px-5 py-5">
                   <p className="font-head font-bold text-[17px] leading-snug text-white">{it.q}</p>
@@ -98,20 +113,23 @@ export default function SectionsCoach() {
             </ul>
             <p className="mt-8 text-[16px] text-[#D1D5DB] leading-relaxed max-w-[620px] border-l-2 border-[#E63946] pl-4">{T.discussion.note}</p>
           </div>
-          <div className="lg:col-span-5 lg:sticky lg:top-24 rounded-xl border border-white/[0.07] overflow-hidden">
-            <picture>
-            <source media="(max-width: 639px)" srcSet="/images/coach/details-academiques-mobile.webp" width={888} height={750} />
-            <img
-              src="/images/coach/details-academiques.webp"
-              alt={T.discussion.imageAlt}
-              width={1200}
-              height={782}
-              loading="lazy"
-              decoding="async"
-              className="block w-full h-auto"
-            />
-            </picture>
-          </div>
+          <figure className="lg:col-span-5 lg:sticky lg:top-24">
+            <figcaption className={`${label} text-[#9CA3AF] mb-3`}>{T.discussion.imageLabel}</figcaption>
+            <div className="rounded-xl border border-white/[0.07] overflow-hidden">
+              <picture>
+              <source media="(max-width: 639px)" srcSet="/images/coach/profil-repond-mobile.webp" width={888} height={1320} />
+              <img
+                src="/images/coach/profil-repond.webp"
+                alt={T.discussion.imageAlt}
+                width={1200}
+                height={1076}
+                loading="lazy"
+                decoding="async"
+                className="block w-full h-auto"
+              />
+              </picture>
+            </div>
+          </figure>
         </div>
       </section>
 
