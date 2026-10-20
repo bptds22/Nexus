@@ -37,7 +37,7 @@ async function accesValide(t: string | undefined, idVideo: string): Promise<bool
 
 function Cadre({ children }: { children: React.ReactNode }) {
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
       <MarketingNav />
       <section className="flex-1 relative z-10 px-4 sm:px-6 pt-10 sm:pt-14 pb-16">
@@ -57,7 +57,7 @@ export default async function DemoVideoPage({ searchParams }: { searchParams: Pr
   if (!ok) {
     return (
       <Cadre>
-        <div className="max-w-2xl mx-auto nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-6 sm:p-10 font-sans text-[15px] text-[#D1D5DB] leading-relaxed space-y-4">
+        <div className="max-w-2xl mx-auto nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-6 sm:p-10 font-sans text-[15px] text-[#D1D5DB] leading-relaxed space-y-4">
           <h1 className="nx-display text-3xl font-black text-white uppercase tracking-tight">Accès non disponible</h1>
           <p>
             Ce lien n&apos;est pas valide ou n&apos;est plus actif. Écrivez-nous à{" "}

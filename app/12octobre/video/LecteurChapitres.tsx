@@ -12,7 +12,7 @@ export default function LecteurChapitres({ idVideo }: { idVideo: string }) {
 
   return (
     <>
-      <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] overflow-hidden">
+      <div className="nx-auth-card bg-[#1A1D24] border border-white/[0.08] overflow-hidden">
         <iframe
           key={depart?.n ?? 0}
           src={urlLecteur(idVideo, depart?.s ?? 0, depart !== null)}
@@ -24,7 +24,7 @@ export default function LecteurChapitres({ idVideo }: { idVideo: string }) {
       </div>
 
       <h2 className="text-[12px] font-bold tracking-[0.16em] uppercase text-[#B4BCC8] mt-9 mb-3">Chapitres</h2>
-      <ol className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] divide-y divide-[#1E2D4A]">
+      <ol className="nx-auth-card bg-[#1A1D24] border border-white/[0.08] divide-y divide-white/[0.08]">
         {CHAPITRES.map((c) => (
           <li key={c.temps}>
             <button

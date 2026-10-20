@@ -128,7 +128,7 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
 
       <MarketingNav />
@@ -155,7 +155,7 @@ function ResetPasswordContent() {
           </div>
 
           {/* Card */}
-          <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-8 sm:p-10">
+          <div className="nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-8 sm:p-10">
             <div className="nx-auth-fade">
 
               {!submitted ? (
@@ -199,7 +199,7 @@ function ResetPasswordContent() {
                       placeholder="••••••••"
                       required
                       minLength={8}
-                      className="nx-input w-full h-11 px-4 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
+                      className="nx-input w-full h-11 px-4 bg-[#111317] border border-white/[0.08] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
                     />
                     <p className={`${label} text-[#475569] mt-1.5`}>Minimum 8 caractères</p>
                   </div>
@@ -214,7 +214,7 @@ function ResetPasswordContent() {
                       placeholder="••••••••"
                       required
                       minLength={8}
-                      className="nx-input w-full h-11 px-4 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
+                      className="nx-input w-full h-11 px-4 bg-[#111317] border border-white/[0.08] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
                     />
                   </div>
 

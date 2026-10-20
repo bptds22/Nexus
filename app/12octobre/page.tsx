@@ -32,7 +32,7 @@ import { CLE_JETON_MERCI, DUREE_MINUTES, messageErreurAcces } from "@/lib/demo/d
 
 const LARGEUR = "max-w-[1100px] mx-auto";
 const label = "text-[12px] font-bold tracking-[0.16em] uppercase text-[#B4BCC8]";
-const champ = "nx-input w-full h-12 px-4 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-base placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors";
+const champ = "nx-input w-full h-12 px-4 bg-[#111317] border border-white/[0.08] text-white font-sans text-base placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors";
 const caseACocher = "w-5 h-5 shrink-0 accent-[#E63946]";
 const option = "flex items-center gap-3 text-base text-white cursor-pointer";
 const AUTRE = "__autre__";
@@ -119,7 +119,7 @@ export default function Demo12OctobrePage() {
   };
 
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
       <MarketingNav />
 
@@ -137,7 +137,7 @@ export default function Demo12OctobrePage() {
             ))}
           </ul>
 
-          <div className="mt-9 nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-5 sm:p-6 font-sans text-[17px] sm:text-[18px] text-[#E5E7EB] leading-relaxed flex flex-col gap-1.5">
+          <div className="mt-9 nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-5 sm:p-6 font-sans text-[17px] sm:text-[18px] text-[#E5E7EB] leading-relaxed flex flex-col gap-1.5">
             <p className="text-white font-semibold">Accès complet gratuit jusqu&apos;au 31 octobre.</p>
             <p>On migre votre fichier de suivi pour vous.</p>
             <p>
@@ -151,7 +151,7 @@ export default function Demo12OctobrePage() {
       </section>
 
       <section className="relative z-10 px-4 sm:px-6 pb-12">
-        <div className={`${LARGEUR} nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-5 sm:p-8 lg:p-10`}>
+        <div className={`${LARGEUR} nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-5 sm:p-8 lg:p-10`}>
           <h2 className="nx-display text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-7">Recevoir l&apos;enregistrement</h2>
           <form onSubmit={envoyer} className="flex flex-col gap-8">
             <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -204,7 +204,7 @@ export default function Demo12OctobrePage() {
               Je veux aussi une présentation 1:1 avec Nexus
             </label>
 
-            <label className="flex items-start gap-3 text-base text-[#D1D5DB] cursor-pointer border-t border-[#1E2D4A] pt-7">
+            <label className="flex items-start gap-3 text-base text-[#D1D5DB] cursor-pointer border-t border-white/[0.08] pt-7">
               <input id="consentement" type="checkbox" checked={consentement} onChange={(e) => setConsentement(e.target.checked)} required className={`${caseACocher} mt-0.5`} />
               <span>
                 J&apos;accepte de recevoir par courriel le lien vers l&apos;enregistrement. *{" "}

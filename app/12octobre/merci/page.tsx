@@ -28,7 +28,7 @@ function Contenu() {
   }, []);
 
   return (
-    <div className="max-w-2xl mx-auto nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-6 sm:p-10 font-sans text-[15px] text-[#D1D5DB] leading-relaxed space-y-4">
+    <div className="max-w-2xl mx-auto nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-6 sm:p-10 font-sans text-[15px] text-[#D1D5DB] leading-relaxed space-y-4">
       <h1 className="nx-display text-3xl font-black text-white uppercase tracking-tight">Merci !</h1>
       {jeton ? (
         <div className="space-y-3">
@@ -64,7 +64,7 @@ function Contenu() {
 export default function MerciPage() {
   if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
       <MarketingNav />
       <section className="flex-1 relative z-10 px-4 sm:px-6 py-16">

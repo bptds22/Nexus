@@ -295,7 +295,7 @@ export default function AidePage() {
         </section>
 
         {/* ══ CTA ═══════════════════════════════════════════ */}
-        <section className="border-t border-[#2D3748] bg-[#0d0f12]">
+        <section className="border-t border-[#2D3748] bg-[#111317]">
           <div className="max-w-[900px] mx-auto px-6 py-14 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
             <div>
               <div className={`${label} text-[#E63946] mb-2`}>Toujours bloqué ?</div>

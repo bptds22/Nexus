@@ -33,7 +33,7 @@ export default function MarketingNav() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#111317] border-b border-[#1E2D4A]">
+    <nav className="sticky top-0 z-50 bg-[#111317] border-b border-white/[0.08]">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 
         <Link href="/" aria-label="Nexus" className="flex items-center">
@@ -54,7 +54,7 @@ export default function MarketingNav() {
               </svg>
             </span>
             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 opacity-0 invisible translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-300 ease-out">
-              <ul className="bg-[#0A0E18]/95 backdrop-blur-md border border-[#1E2D4A] rounded-lg py-2 min-w-[240px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] list-none overflow-hidden">
+              <ul className="bg-[#111317]/95 backdrop-blur-md border border-white/[0.08] rounded-lg py-2 min-w-[240px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] list-none overflow-hidden">
                 {DROPDOWN_ITEMS.map((d, i) => (
                   <li key={d.href} style={{ animationDelay: `${i * 50}ms` }} className="group/item">
                     <Link href={d.href} className="flex items-center gap-3 px-5 py-3 text-[11px] font-bold tracking-[0.2em] uppercase text-[#9AA3B2] hover:text-white transition-all duration-200 relative overflow-hidden">
@@ -133,7 +133,7 @@ export default function MarketingNav() {
 
       {/* Mobile menu — hamburger drawer; mirrors the desktop nav links */}
       {menuOpen && (
-        <div id="mobile-menu" className="lg:hidden border-t border-[#1E2D4A] bg-[#111317] px-6 py-3">
+        <div id="mobile-menu" className="lg:hidden border-t border-white/[0.08] bg-[#111317] px-6 py-3">
           <p className="px-2 pt-2 pb-1 text-[10px] font-bold tracking-[0.25em] uppercase text-[#475569]">
             {t.nav.discover}
           </p>
@@ -157,7 +157,7 @@ export default function MarketingNav() {
               {l.label}
             </Link>
           ))}
-          <div className="border-t border-[#1E2D4A] my-2" />
+          <div className="border-t border-white/[0.08] my-2" />
           <Link
             href="/auth"
             onClick={closeMenu}
@@ -180,7 +180,7 @@ export default function MarketingNav() {
             type="button"
             onClick={toggleLang}
             aria-label={langSwitchLabel}
-            className="mt-3 w-full flex items-center justify-center gap-1.5 px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase border-t border-[#1E2D4A] pt-3"
+            className="mt-3 w-full flex items-center justify-center gap-1.5 px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase border-t border-white/[0.08] pt-3"
           >
             <span className={lang === "fr" ? "text-white" : "text-gray-500"}>FR</span>
             <span className="text-gray-600">/</span>

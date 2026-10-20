@@ -15,13 +15,13 @@ const NAV_LINKS = [
 
 export default function NotFound() {
   return (
-    <div className="hero-playbook bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
 
       {/* ══════════════════════════════════════════
           NAV
       ══════════════════════════════════════════ */}
-      <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
+      <nav className="sticky top-0 z-50 bg-[#111317]/92 backdrop-blur-md border-b border-white/[0.08]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 
           <Link href="/" aria-label="Nexus" className="flex items-center">

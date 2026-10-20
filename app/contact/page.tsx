@@ -97,7 +97,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
 
       <MarketingNav />
@@ -127,7 +127,7 @@ export default function ContactPage() {
 
           {/* ── Left: Contact Info Card ── */}
           <div className="md:col-span-2">
-            <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-8 h-full">
+            <div className="nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-8 h-full">
               <h2 className="nx-display text-lg font-black text-white uppercase tracking-tight mb-6">
                 Informations
               </h2>
@@ -154,7 +154,7 @@ export default function ContactPage() {
               </div>
 
               {/* Social links */}
-              <div className="mt-10 pt-6 border-t border-[#1E2D4A]">
+              <div className="mt-10 pt-6 border-t border-white/[0.08]">
                 <p className={`${label} text-[#9AA3B2] mb-4`}>Suivez-nous</p>
                 <div className="flex items-center gap-5">
                   {SOCIALS.map(({ name, href, d }) => (
@@ -172,7 +172,7 @@ export default function ContactPage() {
 
           {/* ── Right: Contact Form ── */}
           <div className="md:col-span-3">
-            <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-8 sm:p-10">
+            <div className="nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-8 sm:p-10">
               <div ref={fadeRef} className="nx-auth-fade">
 
                 {!submitted ? (
@@ -189,7 +189,7 @@ export default function ContactPage() {
                           onChange={handleChange}
                           placeholder="Jean Tremblay"
                           required
-                          className="nx-input w-full h-11 px-4 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
+                          className="nx-input w-full h-11 px-4 bg-[#111317] border border-white/[0.08] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
                         />
                       </div>
                       <div>
@@ -201,7 +201,7 @@ export default function ContactPage() {
                           onChange={handleChange}
                           placeholder="jean@ecole.qc.ca"
                           required
-                          className="nx-input w-full h-11 px-4 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
+                          className="nx-input w-full h-11 px-4 bg-[#111317] border border-white/[0.08] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
                         />
                       </div>
                     </div>
@@ -215,7 +215,7 @@ export default function ContactPage() {
                         value={form.subject}
                         onChange={handleChange}
                         placeholder="Question générale"
-                        className="nx-input w-full h-11 px-4 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
+                        className="nx-input w-full h-11 px-4 bg-[#111317] border border-white/[0.08] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
                       />
                     </div>
 
@@ -229,7 +229,7 @@ export default function ContactPage() {
                         placeholder="Comment pouvons-nous vous aider?"
                         required
                         rows={5}
-                        className="nx-input w-full px-4 py-3 bg-[#060A14] border border-[#1E2D4A] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors resize-none"
+                        className="nx-input w-full px-4 py-3 bg-[#111317] border border-white/[0.08] text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors resize-none"
                       />
                     </div>
 

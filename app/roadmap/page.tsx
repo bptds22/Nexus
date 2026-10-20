@@ -119,7 +119,7 @@ export default function RoadmapPage() {
         </section>
 
         {/* ─── BOTTOM — Suggestion ───────────────────────────── */}
-        <section className="bg-[#0d0f12] border-t border-white/[0.06]">
+        <section className="bg-[#111317] border-t border-white/[0.06]">
           <div className="max-w-[600px] mx-auto px-6 py-16 sm:py-20 text-center">
             <h3 className="nx-display text-[24px] sm:text-[28px] font-extrabold text-white tracking-tight">
               {T.bottom.title}

@@ -58,7 +58,7 @@ export default function ConditionsPage() {
   }, []);
 
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
 
       <MarketingNav />
@@ -92,14 +92,14 @@ export default function ConditionsPage() {
       </section>
 
       {/* Separator */}
-      <div className="nx-sep relative h-14 bg-[#060A14]/60 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[#0A1020]/60" style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%)" }} />
+      <div className="nx-sep relative h-14 bg-[#111317]/60 overflow-hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[#1A1D24]/60" style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%)" }} />
       </div>
 
       {/* ══════════════════════════════════════════
           CONTENT — sidebar TOC + main body
       ══════════════════════════════════════════ */}
-      <section className="bg-[#060A14]/75 flex-1">
+      <section className="bg-[#111317]/75 flex-1">
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-12">
 
@@ -114,14 +114,14 @@ export default function ConditionsPage() {
       </section>
 
       {/* Separator reverse */}
-      <div className="nx-sep relative h-14 bg-[#0A1020]/60 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[#060A14]/60" style={{ clipPath: "polygon(0 0, 100% 100%, 0 100%)" }} />
+      <div className="nx-sep relative h-14 bg-[#1A1D24]/60 overflow-hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[#111317]/60" style={{ clipPath: "polygon(0 0, 100% 100%, 0 100%)" }} />
       </div>
 
       {/* ══════════════════════════════════════════
           CTA STRIP
       ══════════════════════════════════════════ */}
-      <section className="bg-[#060A14]/75">
+      <section className="bg-[#111317]/75">
         <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <div className={`${label} text-wl-red mb-3`}>Des questions?</div>

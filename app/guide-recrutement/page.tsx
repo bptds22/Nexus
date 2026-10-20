@@ -391,7 +391,7 @@ export default function GuideRecrutementPage() {
         </div>
 
         {/* ─── BOTTOM CTA ───────────────────────────────────── */}
-        <section className="bg-[#0d0f12] border-t border-white/[0.06]">
+        <section className="bg-[#111317] border-t border-white/[0.06]">
           <div className="max-w-[900px] mx-auto px-6 py-24 text-center">
             <h2 className="nx-display text-[32px] sm:text-[40px] font-extrabold text-white leading-tight tracking-tight">
               Prêt à commencer?

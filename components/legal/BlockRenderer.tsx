@@ -53,7 +53,7 @@ export function renderBlocks(blocks: Block[]): ReactNode {
           <div key={i} className="my-6 -mx-2 overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-left">
               <thead>
-                <tr className="bg-[#0F1A30] border-b-2 border-wl-red/40">
+                <tr className="bg-[#1A1D24] border-b-2 border-wl-red/40">
                   {block.headers.map((h, hi) => (
                     <th
                       key={hi}
@@ -68,8 +68,8 @@ export function renderBlocks(blocks: Block[]): ReactNode {
                 {block.rows.map((row, ri) => (
                   <tr
                     key={ri}
-                    className={`border-b border-[#1E2D4A] ${
-                      ri % 2 === 0 ? "bg-[#0A1428]/40" : "bg-transparent"
+                    className={`border-b border-white/[0.08] ${
+                      ri % 2 === 0 ? "bg-white/[0.02]" : "bg-transparent"
                     }`}
                   >
                     {row.map((cell, ci) => (
@@ -125,7 +125,7 @@ export function renderBlocks(blocks: Block[]): ReactNode {
         return (
           <div
             key={i}
-            className="my-5 bg-[#0A1428] border border-[#1E2D4A] rounded-md p-5"
+            className="my-5 bg-[#1A1D24] border border-white/[0.08] rounded-md p-5"
           >
             <dl className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-3 gap-x-4">
               {block.rows.map((r, ri) => (
@@ -154,7 +154,7 @@ export function renderBlocks(blocks: Block[]): ReactNode {
           <section
             key={i}
             id={block.id}
-            className="mt-8 pt-4 border-t border-[#1E2D4A]/60 scroll-mt-24"
+            className="mt-8 pt-4 border-t border-white/[0.08]/60 scroll-mt-24"
           >
             <h3 className="font-head font-black text-base text-white uppercase tracking-tight mb-4">
               {block.title}

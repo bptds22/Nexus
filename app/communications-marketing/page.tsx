@@ -165,7 +165,7 @@ export default function CommunicationsMarketingPage() {
   }, []);
 
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
       <MarketingNav />
 
@@ -191,12 +191,12 @@ export default function CommunicationsMarketingPage() {
       </section>
 
       {/* Separator */}
-      <div className="nx-sep relative h-14 bg-[#060A14]/60 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[#0A1020]/60" style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%)" }} />
+      <div className="nx-sep relative h-14 bg-[#111317]/60 overflow-hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[#1A1D24]/60" style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%)" }} />
       </div>
 
       {/* ── CONTENT ── */}
-      <section className="bg-[#060A14]/75 flex-1">
+      <section className="bg-[#111317]/75 flex-1">
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-12">
 
@@ -226,7 +226,7 @@ export default function CommunicationsMarketingPage() {
             </aside>
 
             {/* Mobile TOC */}
-            <div className="lg:hidden nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-6 mb-4">
+            <div className="lg:hidden nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-6 mb-4">
               <div className={`${label} text-wl-red mb-4`}>Table des matières</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                 {SECTIONS.map((s, i) => (
@@ -244,7 +244,7 @@ export default function CommunicationsMarketingPage() {
                 <article
                   key={section.id}
                   id={section.id}
-                  className="nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-[#1E2D4A] last:border-b-0 last:mb-0 last:pb-0"
+                  className="nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-white/[0.08] last:border-b-0 last:mb-0 last:pb-0"
                 >
                   <div className="flex items-center gap-4 mb-6">
                     <span className="nx-step-num nx-display text-5xl font-black text-white/[0.08] leading-none select-none" aria-hidden>
@@ -278,12 +278,12 @@ export default function CommunicationsMarketingPage() {
       </section>
 
       {/* Separator reverse */}
-      <div className="nx-sep relative h-14 bg-[#0A1020]/60 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[#060A14]/60" style={{ clipPath: "polygon(0 0, 100% 100%, 0 100%)" }} />
+      <div className="nx-sep relative h-14 bg-[#1A1D24]/60 overflow-hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[#111317]/60" style={{ clipPath: "polygon(0 0, 100% 100%, 0 100%)" }} />
       </div>
 
       {/* ── CTA ── */}
-      <section className="bg-[#060A14]/75">
+      <section className="bg-[#111317]/75">
         <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <div className={`${label} text-wl-red mb-3`}>Des questions?</div>

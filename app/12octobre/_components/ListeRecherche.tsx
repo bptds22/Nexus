@@ -78,7 +78,7 @@ export default function ListeRecherche({
       />
       {ouverte && resultats.length > 0 && (
         <ul ref={ul} id={listeId} role="listbox"
-          className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto border border-[#2D3F5E] bg-[#0A1428] shadow-2xl">
+          className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto border border-white/[0.12] bg-[#1A1D24] shadow-2xl">
           {resultats.map((o, i) => (
             <li key={o.id} id={`${listeId}-${o.id}`} role="option" aria-selected={i === active}
               // mousedown : choisir AVANT que le blur du champ ne ferme la liste.

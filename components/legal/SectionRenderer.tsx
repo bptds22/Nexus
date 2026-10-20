@@ -38,7 +38,7 @@ export default function SectionRenderer({ sections }: SectionRendererProps) {
         <article
           key={section.id}
           id={section.id}
-          className={`nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-[#1E2D4A] last:border-b-0 last:mb-0 last:pb-0 ${
+          className={`nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-white/[0.08] last:border-b-0 last:mb-0 last:pb-0 ${
             section.emphasized ? "border-l-4 border-l-[#F59E0B] pl-6" : ""
           }`}
         >
@@ -97,7 +97,7 @@ export function LegalTocDesktop({
 /** TOC accordéon mobile (≥ lg cachée). */
 export function LegalTocMobile({ sections }: { sections: Section[] }) {
   return (
-    <div className="lg:hidden nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-6 mb-4">
+    <div className="lg:hidden nx-auth-card bg-[#1A1D24] border border-white/[0.08] p-6 mb-4">
       <div className={`${label} text-wl-red mb-4`}>Table des matières</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
         {sections.map((s, i) => (

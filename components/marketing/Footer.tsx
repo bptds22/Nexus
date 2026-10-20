@@ -30,10 +30,10 @@ const SOCIAL_LINKS: SocialLink[] = [
 export default function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="bg-[#030609]/80 border-t border-[#1E2D4A]">
+    <footer className="bg-[#111317] border-t border-white/[0.08]">
       <div className="max-w-6xl mx-auto px-6 pt-10 pb-6">
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-[#1E2D4A]">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-white/[0.08]">
 
           <div className="flex items-center gap-3">
             {/* White X icon — muted to match the gray of the

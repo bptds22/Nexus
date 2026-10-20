@@ -227,7 +227,7 @@ export default function PourLesRecruteursPage() {
         </section>
 
         {/* ─── SECTION 10 — FINAL CTA ───────────────────────── */}
-        <section id="cta" className="bg-[#0d0f12] border-t border-white/[0.06]">
+        <section id="cta" className="bg-[#111317] border-t border-white/[0.06]">
           <div className="max-w-[820px] mx-auto px-6 py-24 text-center">
             <span className="inline-block w-10 h-[2px] bg-[#E63946] mb-8" />
 
