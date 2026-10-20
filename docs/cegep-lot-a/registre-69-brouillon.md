@@ -32,19 +32,18 @@ universitaires changent (21 surfaces + REST) ; le cégépien lui-même, son pare
 l'admin, le partenaire et `anon` identiques sur 30 lignes ; rollback à l'octet près (md5 + ACL).
 Le local prouve que ça fonctionne, pas que c'est étanche : étape 3 en prod.
 
-**Données déjà écrites (décision 5 — À TRANCHER PAR BP, non encore donnée).** Les tables lues
-par le recruteur gardent les traces d'un athlète devenu cégépien après coup :
-`recruiter_activity_log.details` (prénom et nom écrits au moment du geste — relevé local : le
-recruteur collégial lit toujours 8 lignes de journal sur S et C après la bascule), contenu des
-`recruiter_notes`, messages. Le lot A ne les filtre pas.
-- *Si « masquer à l'affichage dans un lot app »* : un lot app (web, puis mobile) masque à
-  l'affichage toute ligne d'activité, note ou mention dont l'athlète n'est plus visible
-  (`recruiter_athlete_cards` ne le rend plus) ; l'historique en base n'est pas réécrit.
-- *Si « laisser »* : les traces historiques restent lisibles telles qu'écrites ; seul le
-  présent (fiches, recherche, compteurs, matchs) est masqué. Assumé : le journal dit ce qui a
-  été fait, pas ce qui est visible aujourd'hui.
+**D5 (décision BP 2026-10-20) :** les traces du recruteur collégial (journal d'activité, notes,
+relances, visites, conversations) et le blocage des messages recruteur collégial → joueur
+collégial sont reportés au NETTOYAGE DE L'ÉTÉ (passage secondaire → cégep). Aujourd'hui ces
+traces ne peuvent pas exister : les joueurs collégiaux sont de nouveaux inscrits sans lien avec
+un recruteur collégial. Le lot A n'est donc pas étendu.
+*Relevé local qui motive le nettoyage :* après une bascule secondaire → cégep simulée, le
+recruteur collégial lit toujours 8 lignes de `recruiter_activity_log` sur S et C (prénom et nom
+écrits au moment du geste) ; contenu des `recruiter_notes` et messages : non filtrés non plus.
 
 **Reste ouvert** : écrans à l'étape 2 (cartes orphelines du processus, des listes et favoris,
 compteurs du tableau de bord, fiche par URL directe), étanchéité et coût
-(`athlete_est_cegepien` ligne à ligne dans la policy) en prod à l'étape 3, valeur `UNIVERSITE`
+(`athlete_est_cegepien` ligne à ligne dans la policy) en prod à l'étape 3 — dont un point à
+vérifier : un recruteur collégial peut-il ouvrir une NOUVELLE conversation avec un joueur
+collégial par l'API, sans le voir à l'écran ? Si oui, on le signale (pas bloquant) —, valeur `UNIVERSITE`
 (lot D), double rôle recruteur/coach (§68, exigence 1).
