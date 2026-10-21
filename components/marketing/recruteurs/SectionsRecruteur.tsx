@@ -16,10 +16,11 @@ const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 /** Les captures, dans l'ordre du dictionnaire. `mobile` : capture d'appli, cadrée comme un téléphone.
  *  `extra` : une seconde capture, plus petite, sous la première (son texte : `altExtra`).
  *  Retour BP (v2c) : En direct, Matchs et Calendrier en captures WEB (maquettes/pages-v2c/outils/). */
-const CAPTURES: readonly { src: string; w: number; h: number; mobile?: boolean; extra?: { src: string; w: number; h: number } }[] = [
+const CAPTURES: readonly { src: string; w: number; h: number; mobile?: boolean; video?: string; extra?: { src: string; w: number; h: number } }[] = [
   { src: "recherche", w: 1400, h: 875 },
   { src: "processus", w: 1400, h: 875 },
-  { src: "en-direct", w: 1400, h: 875 },
+  // Démo vidéo d'En direct (BP 2026-10-21) : vraie appli, données fictives, sous-titrée — muette en lecture auto.
+  { src: "en-direct-affiche", w: 720, h: 1280, video: "/videos/recruteur/en-direct.mp4" },
   { src: "matchs", w: 1400, h: 852 },
   { src: "calendrier", w: 1400, h: 875, extra: { src: "agenda", w: 1200, h: 493 } },
   { src: "prospects", w: 1400, h: 875 },
@@ -120,8 +121,24 @@ export default function SectionsRecruteur() {
                     ))}
                   </ul>
                 </div>
-                <div className={`lg:col-span-7 ${inverse ? "lg:order-1" : ""} ${mobile ? "flex justify-center rounded-xl border border-white/[0.07] bg-[#1A1D24] pt-8 overflow-hidden max-h-[520px]" : ""}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */}
+                <div className={`lg:col-span-7 ${inverse ? "lg:order-1" : ""} ${mobile ? "flex justify-center rounded-xl border border-white/[0.07] bg-[#1A1D24] pt-8 overflow-hidden max-h-[520px]" : ""} ${c.video ? "flex justify-center" : ""}`}>
+                  {c.video ? (
+                    <video
+                      src={c.video}
+                      poster={`/images/recruteur/${c.src}.webp`}
+                      aria-label={f.alt}
+                      width={c.w}
+                      height={c.h}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      controls
+                      preload="metadata"
+                      className="w-full max-w-[340px] h-auto rounded-[28px] border border-white/[0.1] bg-[#1A1D24] shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
+                    />
+                  ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */
                   <img
                     src={`/images/recruteur/${c.src}.webp`}
                     alt={f.alt}
@@ -133,6 +150,7 @@ export default function SectionsRecruteur() {
                       ? "w-[280px] h-auto self-start rounded-t-[22px] border border-b-0 border-white/[0.1]"
                       : "w-full h-auto rounded-xl border border-white/[0.08] shadow-[0_30px_80px_rgba(0,0,0,0.45)]"}
                   />
+                  )}
                   {c.extra && f.altExtra && (
                     /* eslint-disable-next-line @next/next/no-img-element -- export statique : pas d'optimiseur d'images */
                     <img
