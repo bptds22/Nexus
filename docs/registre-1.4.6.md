@@ -81,3 +81,37 @@ du 2026-10-19 ; aucune n'est corrigée en 1.4.5.
   non bloquant, mais muet.
 
 Les numéros de ligne sont ceux du 2026-10-19 (branche `feat/visites-mode-match`, `65eab34a`).
+
+## Changer `PARENT_CONTACT_SECRET` (valeur passée dans une conversation, BP 2026-10-20)
+
+Le secret qui protège `send-parent-contact` (avis au parent au premier contact d'un recruteur,
+migration `20261020170000`) a circulé dans une conversation : à remplacer.
+
+- **Deux endroits, même valeur** : le Vault (`PARENT_CONTACT_SECRET`, lu par
+  `parent_contact_appeler`) et le secret de la fonction (Edge Functions). Un écart = 401 : vécu le
+  2026-10-20, l'un des deux avait été mal collé.
+- **Fenêtre d'écart** : entre les deux poses, un premier contact serait journalisé `AVISE` puis
+  refusé en 401, et ne repartirait jamais (l'unicité est prise). Désactiver
+  `trg_aviser_parent_contact` le temps du changement : les contacts de l'intervalle ne sont pas
+  journalisés et restent rattrapables (`scripts/avis-parent-rattrapage/`).
+- **Contrôle sans afficher la valeur** : préfixe du SHA-256 du Vault
+  (`extensions.digest(convert_to(decrypted_secret,'UTF8'),'sha256')`) = préfixe de l'empreinte de
+  `supabase secrets list -o json` (la CLI donne le SHA-256 de la valeur) ; puis
+  `parent_contact_appeler('{"mode":"push","user_id":<uuid aléatoire>}')` → 200 dans
+  `net._http_response`.
+
+## Adresses prod codées en dur dans les triggers (lot dédié, constat 2026-10-20)
+
+Huit fonctions edge sont appelées par une URL `https://<projet prod>…/functions/v1/…` écrite en dur
+dans les migrations : `send-push` (7 occurrences : `push_to_user`, `notify_first_recruiter_contact`,
+`notify_on_message`…), `send-parent-notice` (3), `rseq-weekly-sync` (cron `rseq-veille-hebdo`, 4),
+`send-announcement` (3), `send-invitation-carte` (2), `send-invitation`, `send-team-invitation`,
+`send-avis-parent-partenaires`. Une base LOCALE qui porte le secret correspondant appelle donc la PROD.
+
+- **Vécu** : le cron local `rseq-veille-hebdo` a appelé `rseq-weekly-sync` en prod les 2026-09-23 et
+  2026-09-30 avec le secret local (réponse non vérifiable, journaux prod limités à 24 h). Désactivé
+  sur les deux bases locales le 2026-10-20.
+- **Correctif** : même mécanisme que `parent_contact_appeler` — adresse au Vault
+  (`EDGE_FUNCTIONS_URL`, déjà posé en prod), absente en local par défaut. Redéfinir chaque appelant
+  en recopiant sa version en place (gardes md5, ACL complètes après).
+- Détail et inventaire : `docs/avis-parent-contact-recruteur.md`.
