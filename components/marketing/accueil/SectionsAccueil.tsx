@@ -18,7 +18,7 @@ const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 const PERSONAS_LIENS = [
   { cta: "/inscription?role=ATHLETE", plus: "/pour-les-etudiant-athlete" },
   { cta: "/inscription", plus: "/pour-les-coachs" },
-  { cta: "/pour-les-recruteurs#cta", plus: "/pour-les-recruteurs" },
+  { cta: "/inscription", plus: "/pour-les-recruteurs" },
 ] as const;
 
 /** Bord inférieur dentelé d'un reçu. */
