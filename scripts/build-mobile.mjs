@@ -139,6 +139,11 @@ const HIDE_PATTERNS = [
   // WEB SEULEMENT : l'app l'appelle en URL absolue (nexussports.ca), jamais
   // depuis son bundle.
   'app/api/rseq/calendrier/route.ts',
+  // GET /api/admin/ecran — chiffres de l'écran mural (2026-10-22). Porte
+  // `force-dynamic`, qu'output:'export' refuse : il a cassé le build mobile dès
+  // son arrivée sur main. WEB SEULEMENT : son seul appelant est la page
+  // /admin/ecran, déjà masquée par 'app/admin/**/page.tsx'.
+  'app/api/admin/ecran/route.ts',
   // ⚠ CORRIGÉ le 2026-08-26. Cette liste portait : « les autres route.ts sous
   // app/api/* sont des POST → ignorés par l'export, pas besoin de les masquer ».
   // C'est vrai d'une route STATIQUE, faux dès qu'un segment est DYNAMIQUE :
