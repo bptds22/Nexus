@@ -1,6 +1,8 @@
 # Contenu du centre d'aide Nexus
 
-Ce fichier est la **source de vérité** du contenu de `/aide`.
+> **Historique (2026-10-21).** Ce fichier est la version d'origine du 2026-08-17. Il n'est plus tenu à jour : la source de vérité est désormais `content/aide/sections.ts` (16 sections). Le texte ci-dessous ne décrit plus le produit actuel.
+
+Ce fichier était la **source de vérité** du contenu de `/aide`.
 Il se convertit en `content/aide/sections.ts`.
 
 ## Convention de balisage

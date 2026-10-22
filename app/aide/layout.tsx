@@ -24,14 +24,14 @@ export const metadata: Metadata = {
   // répéter la marque ici, sinon le titre sort « … Nexus | Nexus ».
   title: "Centre d'aide — Questions fréquentes",
   description:
-    "Réponses aux questions fréquentes des entraîneurs, athlètes et parents sur Nexus : profils, vérification, sécurité des données et recrutement CÉGEP.",
+    "Réponses aux questions fréquentes des athlètes, parents, entraîneurs, recruteurs et partenaires sur Nexus : profils, vérification, sécurité des données et outils de recrutement CÉGEP.",
   alternates: {
     canonical: "https://nexussports.ca/aide",
   },
   openGraph: {
     title: "Centre d'aide — Nexus",
     description:
-      "Réponses aux questions fréquentes des entraîneurs, athlètes et parents sur Nexus.",
+      "Réponses aux questions fréquentes des athlètes, parents, entraîneurs, recruteurs et partenaires sur Nexus.",
     url: "https://nexussports.ca/aide",
     type: "website",
   },

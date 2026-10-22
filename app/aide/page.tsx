@@ -114,8 +114,8 @@ export default function AidePage() {
               Comment pouvons-nous aider ?
             </h1>
             <p className="text-[16px] sm:text-[17px] text-white/70 leading-relaxed mt-5 max-w-[640px]">
-              Les réponses aux questions les plus fréquentes des entraîneurs, des
-              athlètes et des parents. Aucun compte n&apos;est nécessaire pour
+              Les réponses aux questions les plus fréquentes des athlètes, des
+              parents, des entraîneurs, des recruteurs et des partenaires. Aucun compte n&apos;est nécessaire pour
               consulter cette page.
             </p>
 
