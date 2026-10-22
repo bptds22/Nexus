@@ -66,7 +66,7 @@ const CH2_INTRO = {
 const CH2_VERIF = {
   title: "La vérification de ton coach",
   body:
-    "N'importe quel athlète peut écrire qu'il est exceptionnel. Quand ton coach vérifie ton profil ET ajoute son évaluation écrite avec des cotes spécifiques sur 8 critères, les recruteurs font 10x plus confiance à ton profil. 77% des athlètes vérifiés sur Nexus sont contactés par un recruteur.",
+    "N'importe quel athlète peut écrire qu'il est exceptionnel. Quand ton coach vérifie ton profil ET ajoute son évaluation écrite, avec des cotes sur 14 critères, ton profil porte la parole d'un adulte qui te voit jouer chaque semaine. C'est ce qui le distingue d'une fiche remplie par toi seul.",
 };
 
 const CH2_VIDEO_TIPS = [
