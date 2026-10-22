@@ -18,6 +18,7 @@ import { CIBLE_DIVULGATION_LISTE } from "@/lib/cibles/divulgation";
 import { toPng } from "html-to-image";
 import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
 import MonParcoursMobile from "@/components/shared/MonParcoursMobile";
+import { ETAPES, phaseCourante, choixPhase, libelleSaison, type Phase } from "@/lib/parcours/calendrier";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -46,16 +47,8 @@ export default function MonParcoursPage() {
    Athlete voice throughout — tutoiement, never a counsellor tone.
 ═══════════════════════════════════════════════════════════════ */
 
-const STEPS = [
-  { label: "Entraînement d'été", phase: "entrainement" },
-  { label: "Camps & essais", phase: "camps" },
-  { label: "Saison Sec 5", phase: "saison" },
-  { label: "Fenêtre de signature", phase: "signature" },
-];
-
-// Season label — currentYear–(currentYear+1), computed, never hardcoded.
-const SEASON_YEAR = new Date().getFullYear();
-const SEASON_LABEL = `${SEASON_YEAR}–${SEASON_YEAR + 1}`;
+/* Étapes, étape courante et libellé de saison : lib/parcours/calendrier.ts,
+   partagé avec MonParcoursMobile. */
 
 /* Les badges viennent du CATALOGUE, plus d'une liste de 6 codes figés.
 
@@ -126,6 +119,8 @@ type Readiness = {
   knows_numbers?: boolean;
   contacted_program?: boolean;
   current_phase?: string;
+  /** Saison où current_phase a été posé — sinon le choix est ignoré. */
+  phase_saison?: string;
 };
 
 type ChecklistItem = {
@@ -157,6 +152,8 @@ function MonParcoursPageDesktop() {
   const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
   const [earnedBadges, setEarnedBadges] = useState<Map<string, string | undefined>>(new Map());
   const [sportId, setSportId] = useState<string | null>(null);
+  /** sports.nom — choisit le calendrier (automne / hiver) de la ligne du temps. */
+  const [sportNom, setSportNom] = useState<string | null>(null);
   /* Le fondu bas ne s'affiche QUE s'il reste des badges sous le pli. Aucun
      moyen CSS de détecter un débordement — d'où ces quelques lignes plutôt
      qu'un dégradé permanent qui mentirait sur une liste courte (9 badges
@@ -237,7 +234,7 @@ function MonParcoursPageDesktop() {
       const { data } = await supabase
         .from("athletes")
         .select(
-          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, sports!sport_id(nom)",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -246,6 +243,7 @@ function MonParcoursPageDesktop() {
          erreur : c'est un athlète sans équipe, et la section le lui dit au lieu
          de disparaître sans explication. */
       setSportId((data as { sport_id: string | null }).sport_id ?? null);
+      setSportNom(pickOne((data as { sports: { nom: string } | { nom: string }[] | null }).sports)?.nom ?? null);
       setFirstName((data.first_name as string) || "");
       setProfileCompletion((data.profile_completion as number) || 0);
       setHighlightUrl((data.video_faits_saillants_url as string | null) ?? null);
@@ -416,7 +414,7 @@ function MonParcoursPageDesktop() {
     }
   }
 
-  async function setPhase(phase: string) {
+  async function setPhase(phase: Phase) {
     if (phaseSaving) return;
     setPhaseSaving(true);
     try {
@@ -426,8 +424,8 @@ function MonParcoursPageDesktop() {
         showToast("error", "Session expirée. Reconnecte-toi.");
         return;
       }
-      // Merge — set current_phase, preserve the manual-checkbox keys.
-      const next: Readiness = { ...readiness, current_phase: phase };
+      // Merge — set current_phase + phase_saison, preserve the manual-checkbox keys.
+      const next: Readiness = { ...readiness, ...choixPhase(phase) };
       const { data, error } = await supabase
         .from("athletes")
         .update({ parcours_readiness: next })
@@ -458,17 +456,17 @@ function MonParcoursPageDesktop() {
     });
   }
 
-  // Current phase from the readiness jsonb; defaults to the first step.
-  const currentPhase = readiness.current_phase ?? "entrainement";
+  // Date du jour + sport, sauf choix manuel posé dans la saison courante.
+  const currentPhase = phaseCourante(readiness, sportNom);
   const currentStepIndex = Math.max(
     0,
-    STEPS.findIndex((s) => s.phase === currentPhase),
+    ETAPES.findIndex((s) => s.phase === currentPhase),
   );
   // Track spans node-0 centre → node-3 centre (left/right inset 12.5%).
   // Fill reaches the current node: one 25%-of-container segment per step.
-  const fillWidth = (currentStepIndex * 75) / (STEPS.length - 1);
+  const fillWidth = (currentStepIndex * 75) / (ETAPES.length - 1);
 
-  const steps = STEPS.map((s, i) => ({
+  const steps = ETAPES.map((s, i) => ({
     ...s,
     state: i < currentStepIndex ? "done" : i === currentStepIndex ? "current" : "upcoming",
   }));
@@ -581,7 +579,7 @@ function MonParcoursPageDesktop() {
         <div className="inline-flex items-center gap-2.5 mb-4">
           <span className="w-8 h-px bg-[#E63946]" />
           <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.22em] uppercase text-[#E63946]">
-            Saison {SEASON_LABEL}
+            {libelleSaison()}
           </span>
         </div>
         <h1 className="font-head text-4xl sm:text-5xl font-black text-white uppercase tracking-tight leading-[0.95]">
@@ -669,7 +667,7 @@ function MonParcoursPageDesktop() {
                   {step.label}
                 </p>
                 {step.state === "current" && (
-                  <p className="mt-1 text-[10px] text-[#6b7280]">Saison {SEASON_LABEL}</p>
+                  <p className="mt-1 text-[10px] text-[#6b7280]">{libelleSaison()}</p>
                 )}
               </div>
             ))}

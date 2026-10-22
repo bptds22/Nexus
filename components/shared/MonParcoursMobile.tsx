@@ -19,6 +19,7 @@ import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { triggerHaptic } from "@/lib/haptics";
 import { enregistrerImage } from "@/lib/partage/enregistrerImage";
 import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
+import { ETAPES, phaseCourante, choixPhase, libelleSaison, type Phase } from "@/lib/parcours/calendrier";
 
 /* ═══════════════════════════════════════════════════════════════
    MonParcoursMobile — Sprint B-1.
@@ -42,8 +43,8 @@ import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
 
      - Manual key union ............ desktop page.tsx :41-46
      - Readiness shape ............. desktop page.tsx :47-54
-     - STEPS const ................. desktop page.tsx :25-30
-     - SEASON_YEAR / SEASON_LABEL .. desktop page.tsx :33-34
+     - Étapes / étape courante /
+       libellé de saison ........... lib/parcours/calendrier.ts (partagé)
      - Athletes SELECT columns ..... desktop page.tsx :142
      - athlete_targets load ........ desktop page.tsx :112-132
      - toggleManual write .......... desktop page.tsx :280-310
@@ -72,20 +73,12 @@ type Readiness = {
   knows_numbers?: boolean;
   contacted_program?: boolean;
   current_phase?: string;
+  /** Saison où current_phase a été posé — sinon le choix est ignoré. */
+  phase_saison?: string;
 };
 
-// ── 4 timeline phases (verbatim from desktop page.tsx :25-30).
-const STEPS = [
-  { label: "Entraînement d'été", phase: "entrainement" },
-  { label: "Camps & essais",     phase: "camps" },
-  { label: "Saison Sec 5",       phase: "saison" },
-  { label: "Fenêtre de signature", phase: "signature" },
-];
-
-// ── Season label — verbatim from desktop page.tsx :33-34. Computed,
-//    never hardcoded — survives the calendar rollover.
-const SEASON_YEAR = new Date().getFullYear();
-const SEASON_LABEL = `${SEASON_YEAR}–${SEASON_YEAR + 1}`;
+// ── Étapes, étape courante et libellé de saison : lib/parcours/calendrier.ts,
+//    la MÊME source que la page web.
 
 type ChecklistItem = {
   key: string;
@@ -183,6 +176,8 @@ export default function MonParcoursMobile() {
   /* Le sport pilote la section « Spécifiques au sport ». null = athlète sans
      équipe : la section reste, avec son explication. */
   const [sportId, setSportId] = useState<string | null>(null);
+  /** sports.nom — choisit le calendrier (automne / hiver) de la ligne du temps. */
+  const [sportNom, setSportNom] = useState<string | null>(null);
   const badgeCat = useBadgeCatalogue();
   /* Le compteur vit au niveau du composant : l'en-tête de l'écran est HORS de
      l'IIFE qui construit la grille, et dupliquer le calcul serait la meilleure
@@ -295,7 +290,7 @@ export default function MonParcoursMobile() {
       const { data: a } = await supabase
         .from("athletes")
         .select(
-          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, sports!sport_id(nom), evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -321,6 +316,7 @@ export default function MonParcoursMobile() {
          table par athlète. */
       setDistinctions(pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>)));
       setSportId((a as { sport_id?: string | null }).sport_id ?? null);
+      setSportNom(pickOne((a as { sports?: { nom: string } | { nom: string }[] | null }).sports)?.nom ?? null);
 
       /* Module 2 — saved targets + the CÉGEP list for the picker.
          Verbatim from desktop page.tsx :206-213. loadTargets
@@ -565,7 +561,7 @@ export default function MonParcoursMobile() {
   // ── WRITE — current phase set (timeline tap) ────────────────
   // Verbatim from desktop page.tsx :312-343 — merge to preserve the
   // manual checkbox keys, same RLS-aware 0-row handling.
-  async function setPhase(phase: string) {
+  async function setPhase(phase: Phase) {
     if (phaseSaving) return;
     setPhaseSaving(true);
     try {
@@ -575,7 +571,7 @@ export default function MonParcoursMobile() {
         showToast("error", "Session expirée. Reconnecte-toi.");
         return;
       }
-      const next: Readiness = { ...readiness, current_phase: phase };
+      const next: Readiness = { ...readiness, ...choixPhase(phase) };
       const { data, error } = await supabase
         .from("athletes")
         .update({ parcours_readiness: next })
@@ -596,14 +592,13 @@ export default function MonParcoursMobile() {
     }
   }
 
-  // Current phase — default to the first STEPS entry if unset.
-  // Verbatim from desktop page.tsx :355-359.
-  const currentPhase = readiness.current_phase ?? "entrainement";
+  // Date du jour + sport, sauf choix manuel posé dans la saison courante.
+  const currentPhase = phaseCourante(readiness, sportNom);
   const currentStepIndex = Math.max(
     0,
-    STEPS.findIndex((s) => s.phase === currentPhase),
+    ETAPES.findIndex((s) => s.phase === currentPhase),
   );
-  const steps = STEPS.map((s, i) => ({
+  const steps = ETAPES.map((s, i) => ({
     ...s,
     state: (i < currentStepIndex
       ? "done"
@@ -694,7 +689,7 @@ export default function MonParcoursMobile() {
           Mon Parcours
         </h1>
         <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-white/45 mt-2">
-          Saison {SEASON_LABEL}
+          {libelleSaison()}
         </p>
       </div>
 
