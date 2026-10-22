@@ -12,7 +12,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   CALENDRIERS, ETAPES, calendrierDuSport, phaseParDate, phaseCourante,
-  choixPhase, libelleSaison, type Calendrier, type Phase,
+  choixPhase, libelleSaison, niveauScolaire, signatureVerrouillee, etapesPourNiveau,
+  type Calendrier, type Phase,
 } from "@/lib/parcours/calendrier";
 
 const le = (a: number, m: number, j: number) => new Date(a, m - 1, j, 12);
@@ -114,4 +115,80 @@ test("libellé de saison : bascule le 1er juillet, juste en janvier", () => {
   assert.equal(libelleSaison(le(2026, 10, 22)), "Saison 2026-2027");
   assert.equal(libelleSaison(le(2027, 1, 15)), "Saison 2026-2027");
   assert.equal(libelleSaison(le(2027, 7, 1)), "Saison 2027-2028");
+});
+
+/* ── Niveau scolaire ─────────────────────────────────────────────────────── */
+
+const OCT_2026 = le(2026, 10, 22);
+
+test("niveau en octobre 2026 : 2027 → Sec 5 … 2031 → Sec 1", () => {
+  const attendu: [number, number][] = [[2027, 5], [2028, 4], [2029, 3], [2030, 2], [2031, 1]];
+  for (const [annee, sec] of attendu) {
+    assert.deepEqual(niveauScolaire(annee, OCT_2026), { type: "sec", sec, saisonSec5: `${annee - 1}-${annee}` });
+  }
+  // La colonne peut arriver en texte : même résultat.
+  assert.deepEqual(niveauScolaire("2028", OCT_2026), { type: "sec", sec: 4, saisonSec5: "2027-2028" });
+});
+
+test("bascule au 1er juillet 2027 : 2028 devient Sec 5, 2027 diplômé", () => {
+  assert.deepEqual(niveauScolaire(2028, le(2027, 6, 30)), { type: "sec", sec: 4, saisonSec5: "2027-2028" });
+  assert.deepEqual(niveauScolaire(2028, le(2027, 7, 1)), { type: "sec", sec: 5, saisonSec5: "2027-2028" });
+  assert.deepEqual(niveauScolaire(2027, le(2027, 7, 1)), { type: "diplome", annee: 2027 });
+});
+
+test("diplômé : « Saison » sans Sec, mention, signature active", () => {
+  const n = niveauScolaire(2026, OCT_2026);
+  assert.deepEqual(n, { type: "diplome", annee: 2026 });
+  const [, , saison, signature] = etapesPourNiveau(n);
+  assert.equal(saison.label, "Saison");
+  assert.equal(saison.note, "Diplômé 2026");
+  assert.equal(signature.verrouillee, false);
+  assert.equal(phaseCourante({}, "Football", le(2027, 1, 15), n), "signature");
+});
+
+test("année vide ou hors 1-5 (2036) : inconnu, « Saison » sans niveau, aucune restriction", () => {
+  for (const v of [null, undefined, "", 2036]) {
+    const n = niveauScolaire(v as number | null | undefined, OCT_2026);
+    assert.deepEqual(n, { type: "inconnu" });
+    const [, , saison, signature] = etapesPourNiveau(n);
+    assert.equal(saison.label, "Saison");
+    assert.equal(saison.note, undefined);
+    assert.equal(signature.verrouillee, false);
+  }
+});
+
+test("Sec 5 : « Saison Sec 5 », signature active", () => {
+  const n = niveauScolaire(2027, OCT_2026);
+  const [, , saison, signature] = etapesPourNiveau(n);
+  assert.equal(saison.label, "Saison Sec 5");
+  assert.equal(signature.verrouillee, false);
+  assert.equal(signatureVerrouillee(n), false);
+  assert.equal(phaseCourante({}, "Football", le(2027, 1, 15), n), "signature");
+});
+
+test("Sec 4 : signature grisée « en Sec 5 (2027-2028) »", () => {
+  const n = niveauScolaire(2028, OCT_2026);
+  const etapes = etapesPourNiveau(n);
+  assert.equal(etapes[2].label, "Saison Sec 4");
+  assert.equal(etapes[3].verrouillee, true);
+  assert.equal(etapes[3].note, "en Sec 5 (2027-2028)");
+  assert.equal(etapes[3].label, "Fenêtre de signature");
+  // Les autres étapes ne sont pas touchées.
+  assert.deepEqual(etapes.slice(0, 2).map((e) => [e.label, e.verrouillee]),
+    [["Entraînement d'été", false], ["Camps & essais", false]]);
+});
+
+test("Sec 4 : l'étape calculée s'arrête à « saison »", () => {
+  const n = niveauScolaire(2028, OCT_2026);
+  // Football en janvier = signature par le calendrier → plafonné.
+  assert.equal(phaseCourante({}, "Football", le(2027, 1, 15), n), "saison");
+  // Hors signature, rien ne change.
+  assert.equal(phaseCourante({}, "Football", OCT_2026, n), "saison");
+  assert.equal(phaseCourante({}, "Basketball", OCT_2026, n), "camps");
+});
+
+test("Sec 4 : un choix manuel « signature » est ramené à « saison »", () => {
+  const n = niveauScolaire(2028, OCT_2026);
+  assert.equal(phaseCourante(choixPhase("signature", OCT_2026), "Football", OCT_2026, n), "saison");
+  assert.equal(phaseCourante({ current_phase: "signature" }, "Football", OCT_2026, n), "saison");
 });

@@ -18,7 +18,9 @@ import { CIBLE_DIVULGATION_LISTE } from "@/lib/cibles/divulgation";
 import { toPng } from "html-to-image";
 import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
 import MonParcoursMobile from "@/components/shared/MonParcoursMobile";
-import { ETAPES, phaseCourante, choixPhase, libelleSaison, type Phase } from "@/lib/parcours/calendrier";
+import {
+  phaseCourante, choixPhase, libelleSaison, niveauScolaire, etapesPourNiveau, type Phase,
+} from "@/lib/parcours/calendrier";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -154,6 +156,8 @@ function MonParcoursPageDesktop() {
   const [sportId, setSportId] = useState<string | null>(null);
   /** sports.nom — choisit le calendrier (automne / hiver) de la ligne du temps. */
   const [sportNom, setSportNom] = useState<string | null>(null);
+  /** athletes.annee_diplomation — donne le niveau (Sec 1-5, diplômé, inconnu). */
+  const [anneeDiplomation, setAnneeDiplomation] = useState<number | null>(null);
   /* Le fondu bas ne s'affiche QUE s'il reste des badges sous le pli. Aucun
      moyen CSS de détecter un débordement — d'où ces quelques lignes plutôt
      qu'un dégradé permanent qui mentirait sur une liste courte (9 badges
@@ -234,7 +238,7 @@ function MonParcoursPageDesktop() {
       const { data } = await supabase
         .from("athletes")
         .select(
-          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, sports!sport_id(nom)",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, sports!sport_id(nom)",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -243,6 +247,7 @@ function MonParcoursPageDesktop() {
          erreur : c'est un athlète sans équipe, et la section le lui dit au lieu
          de disparaître sans explication. */
       setSportId((data as { sport_id: string | null }).sport_id ?? null);
+      setAnneeDiplomation((data.annee_diplomation as number | null) ?? null);
       setSportNom(pickOne((data as { sports: { nom: string } | { nom: string }[] | null }).sports)?.nom ?? null);
       setFirstName((data.first_name as string) || "");
       setProfileCompletion((data.profile_completion as number) || 0);
@@ -456,17 +461,20 @@ function MonParcoursPageDesktop() {
     });
   }
 
-  // Date du jour + sport, sauf choix manuel posé dans la saison courante.
-  const currentPhase = phaseCourante(readiness, sportNom);
+  // Date du jour + sport, sauf choix manuel posé dans la saison courante ;
+  // un Sec 1-4 plafonne à « saison » (la signature attend sa Sec 5).
+  const niveau = niveauScolaire(anneeDiplomation);
+  const etapes = etapesPourNiveau(niveau);
+  const currentPhase = phaseCourante(readiness, sportNom, new Date(), niveau);
   const currentStepIndex = Math.max(
     0,
-    ETAPES.findIndex((s) => s.phase === currentPhase),
+    etapes.findIndex((s) => s.phase === currentPhase),
   );
   // Track spans node-0 centre → node-3 centre (left/right inset 12.5%).
   // Fill reaches the current node: one 25%-of-container segment per step.
-  const fillWidth = (currentStepIndex * 75) / (ETAPES.length - 1);
+  const fillWidth = (currentStepIndex * 75) / (etapes.length - 1);
 
-  const steps = ETAPES.map((s, i) => ({
+  const steps = etapes.map((s, i) => ({
     ...s,
     state: i < currentStepIndex ? "done" : i === currentStepIndex ? "current" : "upcoming",
   }));
@@ -631,16 +639,24 @@ function MonParcoursPageDesktop() {
                   <button
                     type="button"
                     onClick={() => setPhase(step.phase)}
-                    disabled={phaseSaving}
-                    aria-label={`Marquer : ${step.label}`}
-                    className={`relative transition-all duration-300 hover:scale-110 disabled:opacity-60 ${
-                      step.state === "done"
+                    disabled={phaseSaving || step.verrouillee}
+                    aria-label={step.verrouillee ? `${step.label} — ${step.note}` : `Marquer : ${step.label}`}
+                    className={`relative transition-all duration-300 ${
+                      step.verrouillee
+                        ? "w-7 h-7 rounded-full bg-[#13151a] border-2 border-dashed border-[#2D3748] flex items-center justify-center opacity-60 cursor-not-allowed"
+                        : `hover:scale-110 disabled:opacity-60 ${step.state === "done"
                         ? "w-7 h-7 rounded-full bg-[#E63946] flex items-center justify-center"
                         : step.state === "current"
                           ? "w-7 h-7 rounded-full bg-[#E63946] ring-4 ring-[#E63946]/25 shadow-[0_0_14px_rgba(230,57,70,0.6)] flex items-center justify-center"
-                          : "w-7 h-7 rounded-full bg-[#13151a] border-2 border-[#2D3748] hover:border-[#E63946]"
+                          : "w-7 h-7 rounded-full bg-[#13151a] border-2 border-[#2D3748] hover:border-[#E63946]"}`
                     }`}
                   >
+                    {step.verrouillee && (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0110 0v4" />
+                      </svg>
+                    )}
                     {step.state === "done" && (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 6L9 17l-5-5" />
@@ -661,11 +677,16 @@ function MonParcoursPageDesktop() {
               <div key={i} className="flex-1 px-1 text-center">
                 <p
                   className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.06em] leading-tight transition-colors duration-300 ${
-                    step.state === "upcoming" ? "text-[#6b7280]" : "text-white"
+                    step.verrouillee ? "text-[#4a4d56]" : step.state === "upcoming" ? "text-[#6b7280]" : "text-white"
                   }`}
                 >
                   {step.label}
                 </p>
+                {step.note && (
+                  <p className={`mt-1 text-[10px] ${step.verrouillee ? "text-[#4a4d56]" : "text-[#9CA3AF]"}`}>
+                    {step.note}
+                  </p>
+                )}
                 {step.state === "current" && (
                   <p className="mt-1 text-[10px] text-[#6b7280]">{libelleSaison()}</p>
                 )}
@@ -673,6 +694,19 @@ function MonParcoursPageDesktop() {
             ))}
           </div>
         </div>
+
+        {/* Sans année de diplomation (ou une année hors 1-5), on ne connaît pas
+            le niveau : la ligne reste sans « Sec », et on le dit discrètement. */}
+        {niveau.type === "inconnu" && (
+          <p className="mt-6 text-center">
+            <Link
+              href="/athlete/profil"
+              className="text-[12px] text-[#6b7280] underline underline-offset-2 hover:text-white transition-colors"
+            >
+              Ajoute ton année de diplomation
+            </Link>
+          </p>
+        )}
       </div>
 
       {/* ── Module 1 — Ma carte ── */}

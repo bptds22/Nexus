@@ -19,7 +19,10 @@ import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { triggerHaptic } from "@/lib/haptics";
 import { enregistrerImage } from "@/lib/partage/enregistrerImage";
 import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
-import { ETAPES, phaseCourante, choixPhase, libelleSaison, type Phase } from "@/lib/parcours/calendrier";
+import Link from "next/link";
+import {
+  phaseCourante, choixPhase, libelleSaison, niveauScolaire, etapesPourNiveau, type Phase,
+} from "@/lib/parcours/calendrier";
 
 /* ═══════════════════════════════════════════════════════════════
    MonParcoursMobile — Sprint B-1.
@@ -178,6 +181,8 @@ export default function MonParcoursMobile() {
   const [sportId, setSportId] = useState<string | null>(null);
   /** sports.nom — choisit le calendrier (automne / hiver) de la ligne du temps. */
   const [sportNom, setSportNom] = useState<string | null>(null);
+  /** athletes.annee_diplomation — donne le niveau (Sec 1-5, diplômé, inconnu). */
+  const [anneeDiplomation, setAnneeDiplomation] = useState<number | null>(null);
   const badgeCat = useBadgeCatalogue();
   /* Le compteur vit au niveau du composant : l'en-tête de l'écran est HORS de
      l'IIFE qui construit la grille, et dupliquer le calcul serait la meilleure
@@ -290,7 +295,7 @@ export default function MonParcoursMobile() {
       const { data: a } = await supabase
         .from("athletes")
         .select(
-          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, sports!sport_id(nom), evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, sports!sport_id(nom), evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -316,6 +321,7 @@ export default function MonParcoursMobile() {
          table par athlète. */
       setDistinctions(pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>)));
       setSportId((a as { sport_id?: string | null }).sport_id ?? null);
+      setAnneeDiplomation((a.annee_diplomation as number | null) ?? null);
       setSportNom(pickOne((a as { sports?: { nom: string } | { nom: string }[] | null }).sports)?.nom ?? null);
 
       /* Module 2 — saved targets + the CÉGEP list for the picker.
@@ -592,13 +598,16 @@ export default function MonParcoursMobile() {
     }
   }
 
-  // Date du jour + sport, sauf choix manuel posé dans la saison courante.
-  const currentPhase = phaseCourante(readiness, sportNom);
+  // Date du jour + sport, sauf choix manuel posé dans la saison courante ;
+  // un Sec 1-4 plafonne à « saison » (la signature attend sa Sec 5).
+  const niveau = niveauScolaire(anneeDiplomation);
+  const etapes = etapesPourNiveau(niveau);
+  const currentPhase = phaseCourante(readiness, sportNom, new Date(), niveau);
   const currentStepIndex = Math.max(
     0,
-    ETAPES.findIndex((s) => s.phase === currentPhase),
+    etapes.findIndex((s) => s.phase === currentPhase),
   );
-  const steps = ETAPES.map((s, i) => ({
+  const steps = etapes.map((s, i) => ({
     ...s,
     state: (i < currentStepIndex
       ? "done"
@@ -707,7 +716,7 @@ export default function MonParcoursMobile() {
               const isFinal = i === steps.length - 1;
               const isDone = step.state === "done";
               const isCurrent = step.state === "current";
-              const isGold = isFinal && isCurrent === false;
+              const isGold = isFinal && isCurrent === false && !step.verrouillee;
               return (
                 <div key={step.phase} className="relative flex items-start gap-4">
                   {/* Column with the node + the connector line below it. */}
@@ -715,10 +724,12 @@ export default function MonParcoursMobile() {
                     <button
                       type="button"
                       onClick={() => { void triggerHaptic("Light"); setPhase(step.phase); }}
-                      disabled={phaseSaving}
-                      aria-label={`Marquer : ${step.label}`}
+                      disabled={phaseSaving || step.verrouillee}
+                      aria-label={step.verrouillee ? `${step.label} — ${step.note}` : `Marquer : ${step.label}`}
                       className={`relative flex items-center justify-center transition-all duration-300 active:scale-95 disabled:opacity-60 ${
-                        isDone
+                        step.verrouillee
+                          ? "w-7 h-7 rounded-full bg-[#13151a] border-2 border-dashed border-[#2D3748]"
+                          : isDone
                           ? "w-7 h-7 rounded-full bg-[#22C55E]"
                           : isCurrent
                             ? "w-7 h-7 rounded-full bg-[#E63946] ring-4 ring-[#E63946]/25 shadow-[0_0_14px_rgba(230,57,70,0.6)]"
@@ -734,7 +745,7 @@ export default function MonParcoursMobile() {
                       )}
                       {isCurrent && <span className="w-2 h-2 rounded-full bg-white" />}
                       {isFinal && !isCurrent && !isDone && (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={step.verrouillee ? "#6b7280" : "#F59E0B"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="11" width="18" height="11" rx="2" />
                           <path d="M7 11V7a5 5 0 0110 0v4" />
                         </svg>
@@ -758,17 +769,22 @@ export default function MonParcoursMobile() {
                   <div className="flex-1 min-w-0 pt-1 pb-6">
                     <p
                       className={`text-[14px] font-bold leading-tight ${
-                        step.state === "upcoming" ? "text-white/45" : "text-white"
+                        step.verrouillee ? "text-white/30" : step.state === "upcoming" ? "text-white/45" : "text-white"
                       }`}
                     >
                       {step.label}
                     </p>
+                    {step.note && (
+                      <p className={`text-[11px] mt-1 ${step.verrouillee ? "text-white/30" : "text-white/55"}`}>
+                        {step.note}
+                      </p>
+                    )}
                     {isCurrent && (
                       <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full bg-[#E63946] text-white text-[9px] font-black uppercase tracking-[0.14em]">
                         Tu es ici
                       </span>
                     )}
-                    {isFinal && !isCurrent && (
+                    {isFinal && !isCurrent && !step.verrouillee && (
                       <p className="text-[11px] text-[#F59E0B]/85 mt-1">
                         L&apos;objectif final.
                       </p>
@@ -778,6 +794,17 @@ export default function MonParcoursMobile() {
               );
             })}
           </div>
+
+          {/* Sans année de diplomation (ou hors 1-5) : pas de « Sec », et une
+              invitation discrète à la saisir. */}
+          {niveau.type === "inconnu" && (
+            <Link
+              href="/athlete/profil"
+              className="block text-[12px] text-white/45 underline underline-offset-2 mt-1"
+            >
+              Ajoute ton année de diplomation
+            </Link>
+          )}
         </div>
       </div>
 

@@ -24,7 +24,18 @@
       1er juillet 2027, ignoré comme tout choix d'une autre saison
       (décision BP, 2026-10-22).
    3. La saison bascule le 1er JUILLET : saisonCourante() de saisonEnCours.ts,
-      la même que les pages cégep. PAS getCurrentSeason() (1er août). */
+      la même que les pages cégep. PAS getCurrentSeason() (1er août).
+
+   ── LE NIVEAU (décision BP, 2026-10-22) ───────────────────────────────────
+   Déduit de athletes.annee_diplomation : niveau = 5 − (diplomation − fin de
+   saison), la fin de saison étant l'année de début + 1. En 2026-2027 :
+   2027 → Sec 5, 2028 → Sec 4 … 2031 → Sec 1.
+   - Sec 1 à 4 : la fenêtre de signature est verrouillée (grisée, « en Sec 5
+     (AAAA-AAAA) ») ; l'étape — calculée OU choisie — plafonne à « saison ».
+   - Diplômé (diplomation < fin de saison) : « Saison » sans Sec, mention
+     « Diplômé AAAA », signature active.
+   - Année vide ou hors 1-5 sans être diplômé (ex. 2036) : « Saison » sans
+     niveau, aucune restriction ; l'écran invite à saisir l'année. */
 
 import { saisonCourante } from "@/lib/queries/schoolPage/saisonEnCours";
 
@@ -34,7 +45,7 @@ export type Calendrier = "AUTOMNE" | "HIVER";
 export const ETAPES: { label: string; phase: Phase }[] = [
   { label: "Entraînement d'été", phase: "entrainement" },
   { label: "Camps & essais", phase: "camps" },
-  { label: "Saison Sec 5", phase: "saison" },
+  { label: "Saison", phase: "saison" }, // niveau ajouté par etapesPourNiveau()
   { label: "Fenêtre de signature", phase: "signature" },
 ];
 
@@ -104,6 +115,16 @@ export function phaseCourante(
   readiness: ChoixPhase | null | undefined,
   nomSport: string | null | undefined,
   d: Date = new Date(),
+  niveau?: Niveau,
+): Phase {
+  const phase = phaseSansNiveau(readiness, nomSport, d);
+  return niveau && signatureVerrouillee(niveau) && phase === "signature" ? "saison" : phase;
+}
+
+function phaseSansNiveau(
+  readiness: ChoixPhase | null | undefined,
+  nomSport: string | null | undefined,
+  d: Date,
 ): Phase {
   const calculee = phaseParDate(calendrierDuSport(nomSport), d);
   const choix = readiness?.current_phase;
@@ -125,4 +146,62 @@ export function choixPhase(phase: Phase, d: Date = new Date()): Required<ChoixPh
 /** « Saison 2026-2027 » — bascule le 1er juillet. */
 export function libelleSaison(d: Date = new Date()): string {
   return `Saison ${saisonCourante(d)}`;
+}
+
+/* ── Niveau scolaire ─────────────────────────────────────────────────────── */
+
+export type Niveau =
+  | { type: "sec"; sec: 1 | 2 | 3 | 4 | 5; saisonSec5: string }
+  | { type: "diplome"; annee: number }
+  | { type: "inconnu" };
+
+/** Dernière année civile de la saison courante : 2027 en 2026-2027. */
+function finDeSaison(d: Date): number {
+  return Number(saisonCourante(d).slice(0, 4)) + 1;
+}
+
+export function niveauScolaire(
+  anneeDiplomation: number | string | null | undefined,
+  d: Date = new Date(),
+): Niveau {
+  const annee = Number(anneeDiplomation);
+  if (anneeDiplomation == null || anneeDiplomation === "" || !Number.isInteger(annee)) {
+    return { type: "inconnu" };
+  }
+  const fin = finDeSaison(d);
+  if (annee < fin) return { type: "diplome", annee };
+  const sec = 5 - (annee - fin);
+  if (sec < 1 || sec > 5) return { type: "inconnu" };
+  return { type: "sec", sec: sec as 1 | 2 | 3 | 4 | 5, saisonSec5: `${annee - 1}-${annee}` };
+}
+
+export function signatureVerrouillee(niveau: Niveau): boolean {
+  return niveau.type === "sec" && niveau.sec < 5;
+}
+
+export type EtapeAffichee = {
+  label: string;
+  phase: Phase;
+  /** Fenêtre de signature d'un Sec 1-4 : grisée, non cliquable. */
+  verrouillee: boolean;
+  /** Petite ligne sous le libellé : « en Sec 5 (2027-2028) », « Diplômé 2026 ». */
+  note?: string;
+};
+
+/** ETAPES avec les libellés qui dépendent du niveau. */
+export function etapesPourNiveau(niveau: Niveau): EtapeAffichee[] {
+  return ETAPES.map((e) => {
+    if (e.phase === "saison") {
+      return {
+        ...e,
+        label: niveau.type === "sec" ? `Saison Sec ${niveau.sec}` : "Saison",
+        verrouillee: false,
+        note: niveau.type === "diplome" ? `Diplômé ${niveau.annee}` : undefined,
+      };
+    }
+    if (e.phase === "signature" && niveau.type === "sec" && niveau.sec < 5) {
+      return { ...e, verrouillee: true, note: `en Sec 5 (${niveau.saisonSec5})` };
+    }
+    return { ...e, verrouillee: false };
+  });
 }
