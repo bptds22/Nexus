@@ -7,6 +7,35 @@ Follow these instructions exactly. Updated April 2026.
 
 ## RÈGLES TRANSVERSES DE SESSION
 
+### JOURNAL DE SESSION ET LEÇONS (décision BP, 2026-10-22)
+
+**Au début de chaque tâche : relire `docs/lecons.md`.**
+
+**À la fin de chaque session : écrire ou compléter `docs/journal/AAAA-MM-JJ.md`**
+(date du jour, heure de Montréal), avec le skill `journal-session`. Le tableau
+de bord du matin lit ces fichiers. Une section par chantier, toujours dans ce
+format, avec les mêmes mots :
+
+    ## <nom du chantier>
+    - État : En cours | À tester | Prêt | Bloqué | Fait
+    - Fait : une ou deux phrases
+    - Reste : une ou deux phrases
+    - Décisions de BP : la liste (ou « aucune »)
+    - Migrations : appliquées en prod | en local seulement | aucune
+    - Branche : nom
+
+Si une section existe déjà pour ce chantier ce jour-là, on la **met à jour**,
+on n'en ajoute pas une deuxième.
+
+**Quand BP corrige une façon de faire :** ajouter la règle dans
+`docs/lecons.md`, en une ligne : `- AAAA-MM-JJ — règle`.
+
+**Loi 25 — aucune donnée personnelle dans le journal ni dans les leçons :** pas
+de nom d'athlète, de parent, de coach ou de recruteur, pas de courriel, pas de
+téléphone, pas d'identifiant (UUID) d'une personne. On écrit « un athlète
+mineur », « le compte parent de test ». Les noms de branches, de migrations,
+de fichiers et les numéros de commit sont permis.
+
 ### PROTOCOLE WEB-D'ABORD (décision BP, 2026-09-04)
 
 Tout chantier se construit et se valide sur le **WEB uniquement**. **AUCUN
