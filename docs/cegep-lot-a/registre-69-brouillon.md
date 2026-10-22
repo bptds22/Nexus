@@ -5,7 +5,8 @@
 l'admin, les partenaires (rôle `PARTNER`, sans exigence de statut : les surfaces partenaire exigent
 déjà `APPROVED`), et au lot D les recruteurs dont l'école est de type `UNIVERSITE` (comparé en
 `::text` ; la valeur n'existe pas encore). Tous les autres recruteurs — collégiaux, y compris ceux
-de son propre cégep, et les 12 sans école (relevé prod 2026-10-20) — n'en voient aucun. Les
+de son propre cégep, et les 3 recruteurs sans école (9 comptes vides supprimés le 2026-10-22,
+admin_operations SUPPRESSION_COMPTES_RECRUTEUR_VIDES) — n'en voient aucun. Les
 matchs collégiaux leur restent visibles ; seules disparaissent les données d'athlète (noms,
 fiches, nombre de profils Nexus, étoile « cible » due à l'athlète). Surfaces partenaire, coach,
 athlète et parent : inchangées.
