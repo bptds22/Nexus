@@ -1,0 +1,574 @@
+{
+  "calcule_le": "2026-10-22T21:08:05.739Z",
+  "periode": "jour",
+  "fenetres": {
+    "courant_de": "2026-10-22T04:00:00.000Z",
+    "courant_a": "2026-10-22T21:08:05.739Z",
+    "precedent_de": "2026-10-21T04:00:00.000Z",
+    "precedent_a": "2026-10-21T21:08:05.739Z"
+  },
+  "aujourdhui": {
+    "invitations_parent": {
+      "reclamees": 1,
+      "en_attente": 11,
+      "expirees": 0
+    },
+    "consentements_v2": {
+      "acceptes": 0,
+      "refuses": 0,
+      "en_attente": 0,
+      "jamais_demande": 16
+    },
+    "ecoles_non_listees": 0,
+    "loi25_ouvertes": 0,
+    "reclamations_etablissement": 1,
+    "loi25": {
+      "ouvertes": 0,
+      "portabilite": 0,
+      "suppression": 0,
+      "en_retard": 0,
+      "sous_7_jours": 0,
+      "prochaine": null
+    }
+  },
+  "croissance": {
+    "connectes": {
+      "courant": {
+        "total": 3,
+        "par_role": {
+          "ADMIN": 1,
+          "COACH": 2
+        }
+      },
+      "precedent": {
+        "total": 0,
+        "par_role": {}
+      }
+    },
+    "nouveaux": {
+      "athletes": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "autres": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "par_role": {
+        "COACH": {
+          "courant": 0,
+          "precedent": 0
+        },
+        "RECRUTEUR": {
+          "courant": 0,
+          "precedent": 0
+        },
+        "PARENT": {
+          "courant": 0,
+          "precedent": 0
+        },
+        "PARTNER": {
+          "courant": 0,
+          "precedent": 0
+        },
+        "ADMIN": {
+          "courant": 0,
+          "precedent": 0
+        }
+      }
+    },
+    "serie": [
+      {
+        "libelle": "23 sept.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "24 sept.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 6
+      },
+      {
+        "libelle": "25 sept.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "26 sept.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "27 sept.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "28 sept.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 2
+      },
+      {
+        "libelle": "29 sept.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "30 sept.",
+        "en_cours": false,
+        "athletes": 1,
+        "autres": 0
+      },
+      {
+        "libelle": "1 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "2 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "3 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "4 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "5 oct.",
+        "en_cours": false,
+        "athletes": 1,
+        "autres": 1
+      },
+      {
+        "libelle": "6 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "7 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "8 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "9 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 2
+      },
+      {
+        "libelle": "10 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "11 oct.",
+        "en_cours": false,
+        "athletes": 1,
+        "autres": 8
+      },
+      {
+        "libelle": "12 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "13 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "14 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "15 oct.",
+        "en_cours": false,
+        "athletes": 8,
+        "autres": 3
+      },
+      {
+        "libelle": "16 oct.",
+        "en_cours": false,
+        "athletes": 4,
+        "autres": 7
+      },
+      {
+        "libelle": "17 oct.",
+        "en_cours": false,
+        "athletes": 2,
+        "autres": 0
+      },
+      {
+        "libelle": "18 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "19 oct.",
+        "en_cours": false,
+        "athletes": 3,
+        "autres": 0
+      },
+      {
+        "libelle": "20 oct.",
+        "en_cours": false,
+        "athletes": 1,
+        "autres": 2
+      },
+      {
+        "libelle": "21 oct.",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "22 oct.",
+        "en_cours": true,
+        "athletes": 0,
+        "autres": 0
+      }
+    ],
+    "parcours": {
+      "inscrits": 32,
+      "profil_80": 4,
+      "valide_coach": 13,
+      "vu_recruteur": 8,
+      "suivi_recruteur": 12
+    }
+  },
+  "recruteurs": {
+    "tuiles": {
+      "recruteurs_actifs": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "profils_consultes": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "favoris": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "mouvements_processus": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "notes_match": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "messages": {
+        "courant": 0,
+        "precedent": 0
+      },
+      "suivi_cartes": {
+        "courant": 0,
+        "precedent": 0
+      }
+    },
+    "serie": [
+      {
+        "libelle": "23 sept.",
+        "en_cours": false,
+        "profils_consultes": 1,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "24 sept.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 6,
+        "mouvements_processus": 46,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "25 sept.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "26 sept.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "27 sept.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "28 sept.",
+        "en_cours": false,
+        "profils_consultes": 3,
+        "favoris": 0,
+        "mouvements_processus": 34,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "29 sept.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "30 sept.",
+        "en_cours": false,
+        "profils_consultes": 2,
+        "favoris": 0,
+        "mouvements_processus": 4,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "1 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 12,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "2 oct.",
+        "en_cours": false,
+        "profils_consultes": 1,
+        "favoris": 0,
+        "mouvements_processus": 4,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "3 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "4 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "5 oct.",
+        "en_cours": false,
+        "profils_consultes": 2,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "6 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "7 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "8 oct.",
+        "en_cours": false,
+        "profils_consultes": 2,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "9 oct.",
+        "en_cours": false,
+        "profils_consultes": 1,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "10 oct.",
+        "en_cours": false,
+        "profils_consultes": 3,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 1
+      },
+      {
+        "libelle": "11 oct.",
+        "en_cours": false,
+        "profils_consultes": 4,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "12 oct.",
+        "en_cours": false,
+        "profils_consultes": 3,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "13 oct.",
+        "en_cours": false,
+        "profils_consultes": 4,
+        "favoris": 4,
+        "mouvements_processus": 8,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "14 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "15 oct.",
+        "en_cours": false,
+        "profils_consultes": 1,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "16 oct.",
+        "en_cours": false,
+        "profils_consultes": 4,
+        "favoris": 0,
+        "mouvements_processus": 4,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "17 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "18 oct.",
+        "en_cours": false,
+        "profils_consultes": 1,
+        "favoris": 1,
+        "mouvements_processus": 4,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "19 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 1,
+        "notes_match": 0,
+        "messages": 3
+      },
+      {
+        "libelle": "20 oct.",
+        "en_cours": false,
+        "profils_consultes": 1,
+        "favoris": 0,
+        "mouvements_processus": 9,
+        "notes_match": 4,
+        "messages": 4
+      },
+      {
+        "libelle": "21 oct.",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "22 oct.",
+        "en_cours": true,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+﻿== jour (t = 2026-10-22T21:08:05.739Z)
+docs/qg-admin/reponse-qg-jour.json : 327 chiffres dans la réponse, 327 recalculés en SQL, 0 écart(s).
+== semaine (t = 2026-10-22T21:08:06.834Z)
+docs/qg-admin/reponse-qg-semaine.json : 171 chiffres dans la réponse, 171 recalculés en SQL, 0 écart(s).
+== mois (t = 2026-10-22T21:08:07.930Z)
+docs/qg-admin/reponse-qg-mois.json : 170 chiffres dans la réponse, 170 recalculés en SQL, 0 écart(s).

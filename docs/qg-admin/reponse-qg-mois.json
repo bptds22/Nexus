@@ -1,0 +1,310 @@
+{
+  "calcule_le": "2026-10-22T21:08:07.930Z",
+  "periode": "mois",
+  "fenetres": {
+    "courant_de": "2026-10-01T04:00:00.000Z",
+    "courant_a": "2026-10-22T21:08:07.930Z",
+    "precedent_de": "2026-09-01T04:00:00.000Z",
+    "precedent_a": "2026-09-22T21:08:07.930Z"
+  },
+  "aujourdhui": {
+    "invitations_parent": {
+      "reclamees": 1,
+      "en_attente": 11,
+      "expirees": 0
+    },
+    "consentements_v2": {
+      "acceptes": 0,
+      "refuses": 0,
+      "en_attente": 0,
+      "jamais_demande": 16
+    },
+    "ecoles_non_listees": 0,
+    "loi25_ouvertes": 0,
+    "reclamations_etablissement": 1,
+    "loi25": {
+      "ouvertes": 0,
+      "portabilite": 0,
+      "suppression": 0,
+      "en_retard": 0,
+      "sous_7_jours": 0,
+      "prochaine": null
+    }
+  },
+  "croissance": {
+    "connectes": {
+      "courant": {
+        "total": 41,
+        "par_role": {
+          "ADMIN": 1,
+          "COACH": 4,
+          "PARENT": 2,
+          "ATHLETE": 21,
+          "PARTNER": 3,
+          "RECRUTEUR": 10
+        }
+      },
+      "precedent": {
+        "total": 1,
+        "par_role": {
+          "ATHLETE": 1
+        }
+      }
+    },
+    "nouveaux": {
+      "athletes": {
+        "courant": 20,
+        "precedent": 9
+      },
+      "autres": {
+        "courant": 23,
+        "precedent": 2
+      },
+      "par_role": {
+        "COACH": {
+          "courant": 11,
+          "precedent": 0
+        },
+        "RECRUTEUR": {
+          "courant": 6,
+          "precedent": 0
+        },
+        "PARENT": {
+          "courant": 1,
+          "precedent": 0
+        },
+        "PARTNER": {
+          "courant": 5,
+          "precedent": 0
+        },
+        "ADMIN": {
+          "courant": 0,
+          "precedent": 2
+        }
+      }
+    },
+    "serie": [
+      {
+        "libelle": "nov. 2025",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "déc. 2025",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "janv. 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "févr. 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "mars 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "avr. 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "mai 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "juin 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "juill. 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "août 2026",
+        "en_cours": false,
+        "athletes": 0,
+        "autres": 0
+      },
+      {
+        "libelle": "sept. 2026",
+        "en_cours": false,
+        "athletes": 12,
+        "autres": 13
+      },
+      {
+        "libelle": "oct. 2026",
+        "en_cours": true,
+        "athletes": 20,
+        "autres": 23
+      }
+    ],
+    "parcours": {
+      "inscrits": 32,
+      "profil_80": 4,
+      "valide_coach": 13,
+      "vu_recruteur": 8,
+      "suivi_recruteur": 12
+    }
+  },
+  "recruteurs": {
+    "tuiles": {
+      "recruteurs_actifs": {
+        "courant": 7,
+        "precedent": 2
+      },
+      "profils_consultes": {
+        "courant": 27,
+        "precedent": 0
+      },
+      "favoris": {
+        "courant": 5,
+        "precedent": 1
+      },
+      "mouvements_processus": {
+        "courant": 42,
+        "precedent": 0
+      },
+      "notes_match": {
+        "courant": 4,
+        "precedent": 0
+      },
+      "messages": {
+        "courant": 8,
+        "precedent": 1
+      },
+      "suivi_cartes": {
+        "courant": 8,
+        "precedent": 0
+      }
+    },
+    "serie": [
+      {
+        "libelle": "nov. 2025",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "déc. 2025",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "janv. 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "févr. 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "mars 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "avr. 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "mai 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "juin 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "juill. 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "août 2026",
+        "en_cours": false,
+        "profils_consultes": 0,
+        "favoris": 0,
+        "mouvements_processus": 0,
+        "notes_match": 0,
+        "messages": 0
+      },
+      {
+        "libelle": "sept. 2026",
+        "en_cours": false,
+        "profils_consultes": 6,
+        "favoris": 7,
+        "mouvements_processus": 84,
+        "notes_match": 0,
+        "messages": 1
+      },
+      {
+        "libelle": "oct. 2026",
+        "en_cours": true,
+        "profils_consultes": 27,
+        "favoris": 5,
+        "mouvements_processus": 42,
+        "notes_match": 4,
+        "messages": 8
+      }
+    ]
+  }
+}
