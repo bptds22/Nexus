@@ -49,6 +49,8 @@ test("sport → calendrier, accents et casse ignorés ; inconnu → AUTOMNE", ()
   assert.equal(calendrierDuSport("Basketball"), "HIVER");
   assert.equal(calendrierDuSport("VOLLEYBALL"), "HIVER");
   assert.equal(calendrierDuSport("Hockey"), "HIVER");
+  assert.equal(calendrierDuSport("Futsal"), "HIVER");
+  assert.equal(calendrierDuSport("Soccer intérieur"), "HIVER");
   assert.equal(calendrierDuSport("Athlétisme"), "AUTOMNE");
   assert.equal(calendrierDuSport(null), "AUTOMNE");
 });
@@ -75,8 +77,21 @@ test("choix manuel de la saison précédente : ignoré", () => {
   assert.equal(phaseCourante(r, "Football", le(2026, 7, 1)), "entrainement");
 });
 
-test("choix sans phase_saison (posé avant le correctif) : ignoré", () => {
-  assert.equal(phaseCourante({ current_phase: "entrainement" }, "Football", le(2026, 10, 22)), "saison");
+test("futsal / soccer intérieur suivent le calendrier HIVER", () => {
+  assert.equal(phaseCourante({}, "Futsal", le(2026, 10, 22)), "camps");
+  assert.equal(phaseCourante({}, "Soccer intérieur", le(2027, 1, 15)), "saison");
+});
+
+test("choix ancien (sans phase_saison) : gardé seulement s'il est égal ou plus avancé", () => {
+  const oct = le(2026, 10, 22);
+  // Plus avancé que le calcul (football oct = saison) : gardé.
+  assert.equal(phaseCourante({ current_phase: "signature" }, "Football", oct), "signature");
+  // En retard sur le calcul : remplacé.
+  assert.equal(phaseCourante({ current_phase: "entrainement" }, "Football", oct), "saison");
+  // Basket oct = camps ; « saison » est plus avancé : gardé.
+  assert.equal(phaseCourante({ current_phase: "saison" }, "Basketball", oct), "saison");
+  // Égal au calcul : gardé (même résultat).
+  assert.equal(phaseCourante({ current_phase: "camps" }, "Basketball", oct), "camps");
 });
 
 test("phase inconnue dans le JSONB : ignorée", () => {

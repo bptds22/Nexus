@@ -73,7 +73,7 @@ type Readiness = {
   knows_numbers?: boolean;
   contacted_program?: boolean;
   current_phase?: string;
-  /** Saison où current_phase a été posé — sinon le choix est ignoré. */
+  /** Saison où current_phase a été posé — règle de lecture : phaseCourante(). */
   phase_saison?: string;
 };
 

@@ -36,7 +36,7 @@ export default function MonParcoursPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   /athlete/mon-parcours — "L'été où tout se joue"
+   /athlete/mon-parcours — "La saison où tout se joue"
 
    Chunk 2: scaffold, hero, season timeline spine.
    Chunk 3: Module 1 "Ma carte" — AthletePlayerCard + download + badges.
@@ -119,7 +119,7 @@ type Readiness = {
   knows_numbers?: boolean;
   contacted_program?: boolean;
   current_phase?: string;
-  /** Saison où current_phase a été posé — sinon le choix est ignoré. */
+  /** Saison où current_phase a été posé — règle de lecture : phaseCourante(). */
   phase_saison?: string;
 };
 
@@ -586,7 +586,7 @@ function MonParcoursPageDesktop() {
           Mon Parcours
         </h1>
         <p className="text-[14px] sm:text-[15px] text-[#9CA3AF] leading-relaxed mt-4 max-w-2xl">
-          {firstName ? `${firstName}, l'été` : "L'été"} où tout se joue. Prépare ta saison,
+          {firstName ? `${firstName}, la saison` : "La saison"} où tout se joue. Prépare ta saison,
           construis ta vitrine et sois prêt quand le CÉGEP cogne à ta porte.
         </p>
       </div>

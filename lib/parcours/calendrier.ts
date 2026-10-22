@@ -15,9 +15,11 @@
    1. Par défaut, l'étape se DÉDUIT de la date du jour et du calendrier du sport.
    2. Le choix manuel de l'athlète l'emporte, mais SEULEMENT s'il a été posé
       dans la saison courante : `phase_saison` (même JSONB, pas de migration)
-      doit valoir saisonCourante(). Un choix d'une autre saison, ou sans
-      `phase_saison` (tous ceux posés avant ce correctif), est ignoré — sinon
-      un « signature » du printemps resterait collé à l'automne suivant.
+      doit valoir saisonCourante(). Un choix d'une autre saison est ignoré —
+      sinon un « signature » du printemps resterait collé à l'automne suivant.
+   2b. Choix ANCIEN, sans `phase_saison` (les 72 posés avant ce correctif) :
+      gardé seulement s'il est égal ou plus avancé que l'étape calculée —
+      il ne fait jamais reculer l'athlète (décision BP, 2026-10-22).
    3. La saison bascule le 1er JUILLET : saisonCourante() de saisonEnCours.ts,
       la même que les pages cégep. PAS getCurrentSeason() (1er août). */
 
@@ -59,6 +61,8 @@ const CALENDRIER_PAR_SPORT: Record<string, Calendrier> = {
   "basketball": "HIVER",
   "volleyball": "HIVER",
   "hockey": "HIVER",
+  "futsal": "HIVER",
+  "soccer interieur": "HIVER",
 };
 
 const CALENDRIER_PAR_DEFAUT: Calendrier = "AUTOMNE";
@@ -85,14 +89,23 @@ function estPhase(v: unknown): v is Phase {
   return ETAPES.some((e) => e.phase === v);
 }
 
+/** Rang dans ETAPES : entrainement < camps < saison < signature. */
+function rang(p: Phase): number {
+  return ETAPES.findIndex((e) => e.phase === p);
+}
+
 export function phaseCourante(
   readiness: ChoixPhase | null | undefined,
   nomSport: string | null | undefined,
   d: Date = new Date(),
 ): Phase {
+  const calculee = phaseParDate(calendrierDuSport(nomSport), d);
   const choix = readiness?.current_phase;
-  if (estPhase(choix) && readiness?.phase_saison === saisonCourante(d)) return choix;
-  return phaseParDate(calendrierDuSport(nomSport), d);
+  if (!estPhase(choix)) return calculee;
+  if (readiness?.phase_saison === undefined) {
+    return rang(choix) >= rang(calculee) ? choix : calculee;
+  }
+  return readiness.phase_saison === saisonCourante(d) ? choix : calculee;
 }
 
 /** Les clés à fusionner dans parcours_readiness quand l'athlète touche une
