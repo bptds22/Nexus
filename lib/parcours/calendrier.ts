@@ -18,8 +18,11 @@
       doit valoir saisonCourante(). Un choix d'une autre saison est ignoré —
       sinon un « signature » du printemps resterait collé à l'automne suivant.
    2b. Choix ANCIEN, sans `phase_saison` (les 72 posés avant ce correctif) :
-      gardé seulement s'il est égal ou plus avancé que l'étape calculée —
-      il ne fait jamais reculer l'athlète (décision BP, 2026-10-22).
+      traité comme posé en SAISON_DES_CHOIX_ANCIENS (2026-2027). Dans cette
+      saison, gardé seulement s'il est égal ou plus avancé que l'étape
+      calculée — il ne fait jamais reculer l'athlète ; à partir du
+      1er juillet 2027, ignoré comme tout choix d'une autre saison
+      (décision BP, 2026-10-22).
    3. La saison bascule le 1er JUILLET : saisonCourante() de saisonEnCours.ts,
       la même que les pages cégep. PAS getCurrentSeason() (1er août). */
 
@@ -89,6 +92,9 @@ function estPhase(v: unknown): v is Phase {
   return ETAPES.some((e) => e.phase === v);
 }
 
+/** La saison attribuée aux choix posés avant l'existence de `phase_saison`. */
+const SAISON_DES_CHOIX_ANCIENS = "2026-2027";
+
 /** Rang dans ETAPES : entrainement < camps < saison < signature. */
 function rang(p: Phase): number {
   return ETAPES.findIndex((e) => e.phase === p);
@@ -102,10 +108,12 @@ export function phaseCourante(
   const calculee = phaseParDate(calendrierDuSport(nomSport), d);
   const choix = readiness?.current_phase;
   if (!estPhase(choix)) return calculee;
+  const saison = saisonCourante(d);
   if (readiness?.phase_saison === undefined) {
+    if (saison !== SAISON_DES_CHOIX_ANCIENS) return calculee;
     return rang(choix) >= rang(calculee) ? choix : calculee;
   }
-  return readiness.phase_saison === saisonCourante(d) ? choix : calculee;
+  return readiness.phase_saison === saison ? choix : calculee;
 }
 
 /** Les clés à fusionner dans parcours_readiness quand l'athlète touche une

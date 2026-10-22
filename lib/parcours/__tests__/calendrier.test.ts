@@ -94,6 +94,13 @@ test("choix ancien (sans phase_saison) : gardé seulement s'il est égal ou plus
   assert.equal(phaseCourante({ current_phase: "camps" }, "Basketball", oct), "camps");
 });
 
+test("choix ancien : traité comme posé en 2026-2027, ignoré dès le 1er juillet 2027", () => {
+  const ancienSignature = { current_phase: "signature" };
+  assert.equal(phaseCourante(ancienSignature, "Football", le(2027, 6, 15)), "signature");
+  assert.equal(phaseCourante(ancienSignature, "Football", le(2027, 7, 1)), "entrainement");
+  assert.equal(phaseCourante({ current_phase: "saison" }, "Basketball", le(2027, 7, 1)), "entrainement");
+});
+
 test("phase inconnue dans le JSONB : ignorée", () => {
   assert.equal(
     phaseCourante({ current_phase: "n_importe", phase_saison: "2026-2027" }, "Hockey", le(2026, 10, 22)),
