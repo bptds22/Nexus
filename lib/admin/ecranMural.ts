@@ -300,7 +300,8 @@ export interface EcranMuralDonnees {
   };
   files: {
     invitations_parent: { reclamees: number; en_attente: number; expirees: number };
-    consentements_v2: { acceptes: number; refuses: number; en_attente: number };
+    /** 4 cases (BP 2026-10-22) : la somme fait tous les athlètes admissibles. */
+    consentements_v2: { acceptes: number; refuses: number; en_attente: number; jamais_demande: number };
     ecoles_non_listees: number;
     loi25_ouvertes: number;
     reclamations_etablissement: number;

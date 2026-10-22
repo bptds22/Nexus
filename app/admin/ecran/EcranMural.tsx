@@ -339,9 +339,10 @@ function Files({ d }: { d: EcranMuralDonnees }) {
         <Bloc titre="Consentements partenaires v2" valeurs={[
           ["Acceptés", f.consentements_v2.acceptes, C.vert],
           ["Refusés", f.consentements_v2.refuses, C.rouge],
-          // admin_consentement_partenaire_stats : athlètes admissibles sans réponse v2,
-          // pas seulement les lignes de consentement_partenaire_v2 (BP 2026-10-22).
-          ["Sans réponse", f.consentements_v2.en_attente, C.bleu],
+          // 4 cases (BP 2026-10-22) : « En attente » = question posée, sans réponse
+          // (plus tard, demande au parent) ; « Jamais demandé » = aucune ligne v2.
+          ["En attente", f.consentements_v2.en_attente, C.bleu],
+          ["Jamais demandé", f.consentements_v2.jamais_demande, C.pale],
         ]} />
         <Seul titre="Écoles non listées" n={f.ecoles_non_listees} aTraiter />
         <Seul titre="Demandes Loi 25 ouvertes" n={f.loi25_ouvertes} aTraiter />
@@ -355,7 +356,7 @@ function Bloc({ titre, valeurs }: { titre: string; valeurs: [string, number, str
   return (
     <div className="rounded-[0.7em] flex flex-col" style={{ background: "rgba(255,255,255,0.03)", padding: "0.9em 1em", gap: "0.6em" }}>
       <span style={{ color: C.doux, fontSize: "0.95em" }}>{titre}</span>
-      <div className="flex justify-between" style={{ gap: "0.8em" }}>
+      <div className="flex flex-wrap justify-between" style={{ gap: "0.6em 0.8em" }}>
         {valeurs.map(([libelle, n, couleur]) => (
           <div key={libelle} className="flex flex-col">
             <span className="font-head font-bold tabular-nums leading-none" style={{ fontSize: "2em", color: couleur }}>{fmt(n)}</span>
