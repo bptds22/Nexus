@@ -9,6 +9,11 @@ import { UserCheck, ShieldCheck } from "lucide-react";
 
 const NAV_ITEMS = [
   {
+    /* QG admin (BP 2026-10-22) : remplacera le tableau de bord après validation du lot 1. */
+    label: "QG", href: "/admin/qg",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-4 3 3 5-6" /></svg>,
+  },
+  {
     label: "Tableau de bord", href: "/admin/dashboard",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>,
   },

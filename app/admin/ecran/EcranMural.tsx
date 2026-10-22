@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FUSEAU_MONTREAL, type Comparaison, type EcranMuralDonnees } from "@/lib/admin/ecranMural";
+import { PALETTE_MURALE } from "@/app/admin/_components/paletteMurale";
 
 /* ─────────────────────────────────────────────────────────────────
    Écran mural — moniteur ultrawide laissé ouvert en permanence.
@@ -21,18 +22,7 @@ import { FUSEAU_MONTREAL, type Comparaison, type EcranMuralDonnees } from "@/lib
 const INTERVALLE_MS = 15 * 60 * 1000;
 const VIEUX_MS = 16 * 60 * 1000;
 
-const C = {
-  fond: "#070B15",
-  carte: "#0F1729",
-  bord: "rgba(79,140,255,0.14)",
-  bleu: "#4F8CFF",
-  rouge: "#E63946",
-  vert: "#2FD18B",
-  orange: "#F5A524",
-  texte: "#E6ECF7",
-  doux: "#8A97B1",
-  pale: "#56627C",
-} as const;
+const C = PALETTE_MURALE;
 
 const nf = new Intl.NumberFormat("fr-CA");
 const fmt = (n: number) => nf.format(n);
