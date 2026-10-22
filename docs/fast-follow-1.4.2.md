@@ -2793,3 +2793,63 @@ Le nom du coach, lui, passe déjà par `coach_nommable`.
 À faire : un genre `PRISE_EN_CHARGE` dans `push_file` (CHECK élargi, texte dans `push_textes`), une
 catégorie (`RAPPELS` ou une nouvelle), `claim_school_athletes` qui met en file au lieu d'envoyer. Mêmes
 gardes et même méthode de lot que A4a.
+
+## 101. school_coaches : correctif 42P17 appliqué puis ANNULÉ — trou ouvert 6 min en prod (2026-10-22, incident clos, à refaire)
+
+**Défaut d'origine (toujours présent) :** la policy INSERT « Coaches insert school_coaches » boucle
+(`42P17 infinite recursion`) → sur le WEB, un coach scolaire est bloqué à l'étape École
+(`app/onboarding/page.tsx` L582, upsert `school_coaches`). Mobile et civil passent (RPC SECURITY DEFINER).
+
+**Ce qui a été appliqué (GO BP), par le connecteur Supabase :**
+
+| version | nom | effet |
+|---|---|---|
+| `20261022195319` | `school_coaches_insert_sans_recursion` | `coach_dirige_ecole(uuid)` + with_check `7ffd84e3…` |
+| `20261022195927` | `rollback_school_coaches_insert_sans_recursion` | with_check revenu à `75fa4edc…`, fonction supprimée |
+
+Empreintes (méthode du lot B1 : `pg_proc` / `pg_policies` / `pg_trigger` / `pg_class` du schéma `public`) :
+
+| | AVANT (19:18 et 19:52) | APRÈS correctif (19:53) | APRÈS rollback (19:59) |
+|---|---|---|---|
+| fonctions | 536 `04bb3b0a…` | 537 `3eed5261…` (hors correctif 536 `04bb3b0a…`) | 536 `04bb3b0a…` |
+| policies | 379 `dcc5ad5f…` | 379 `ceefb2d8…` | 379 `dcc5ad5f…` |
+| policies hors visée | 378 `2f3d7041…` | 378 `2f3d7041…` | 378 `2f3d7041…` |
+| triggers | 179 `4f70f2a5…` | = | = |
+| tables | 176 `9410e03a…` | = | = |
+| with_check INSERT | `75fa4edc…` | `7ffd84e3…` | `75fa4edc…` |
+| `trg_porte_coach_cegep` | 6 | 6 | 6 |
+| `finish_coach_school_onboarding` | `07b068f8…` | = | = |
+
+Note de méthode : le contrôle « md5 du texte envoyé, calculé par la prod » a été **remplacé par un
+contrôle du résultat après** (la requête volumineuse échoue en « Invalid or expired requestState »).
+Le premier `apply_migration` a lui aussi échoué ainsi (rien d'écrit, vérifié) ; il est passé après `/mcp`.
+
+**L'incident :** les preuves par rôle après application ont montré qu'un **athlète** et un **recruteur
+collégial** pouvaient s'insérer eux-mêmes dans `school_coaches`, et qu'un compte quelconque pouvait
+s'y inscrire **DIRECTEUR** de n'importe quelle école secondaire (puis y ajouter d'autres comptes).
+Via « coaches read own athletes » (qui passe par `school_coaches`), cela ouvrait la lecture des fiches
+athlètes d'une école à tout compte connecté — fuite Loi 25 potentielle.
+
+- **Fenêtre :** de 19:53:19 à 19:59:27 UTC (versions ci-dessus).
+- **0 ligne** `school_coaches` créée depuis 19:50 UTC (relevé avant ET après le rollback) : personne
+  n'a obtenu d'appartenance, donc aucune lecture n'a pu passer par ce chemin.
+- **Cause :** la branche (α) `coach_id = auth.uid()` (héritée de `20260512140000`, reprise mot pour mot)
+  ne contrôle **ni le rôle du compte ni la colonne `role`**. Avant le correctif, la récursion 42P17
+  bloquait toute insertion client : le trou était fermé **par accident**.
+- **Angle mort des preuves locales :** l'insertion **de soi-même par un compte non coach** (et de
+  soi-même comme DIRECTEUR) n'était pas testée. Les refus prouvés ne portaient que sur l'insertion
+  d'un AUTRE compte.
+
+**Décision BP (2026-10-22) : option B, correctif d'ÉCRAN, aucune migration.** Le web n'écrit plus
+`school_coaches` directement (étape École et création d'équipe civile) : les RPC
+`finish_coach_school_onboarding` / `finish_coach_civil_onboarding` (SECURITY DEFINER) l'écrivent déjà.
+La policy INSERT reste telle qu'en prod (elle boucle, donc refuse tout insert client) — ce qui ferme,
+de fait, le trou de la branche (α).
+
+**Si un jour on corrige la policy :** (α) resserrée — le compte appelant est COACH et
+`role` ∈ ('COACH','PENDING') ; preuves locales PUIS prod incluant obligatoirement : athlète /
+recruteur / partenaire s'insèrent eux-mêmes → REFUS ; coach s'insère DIRECTEUR → REFUS.
+
+Trace de la tentative : `supabase/migrations/20261022195319_school_coaches_insert_sans_recursion.sql`
+et `supabase/migrations/20261022195927_rollback_school_coaches_insert_sans_recursion.sql` (le rollback
+est rangé dans `migrations/` parce que la prod l'a enregistré comme migration).
