@@ -1,0 +1,186 @@
+LOT B1 cégep — porte coach → cégep + liste d'attente : PREUVES LOCALES (sorties brutes), 2026-10-22
+Pile jetable NexusCegepB1 (ports 564xx, C:\tmp\nexus-cegep-b1-pile), clone pg_dump de la base locale de BP,
+5 fonctions alignées sur leur corps PROD (alignement-prod.sql, md5 = prod : apply_admin_claim_approval c8c32c16…,
+consume_invitation_token 0fb94444…, handle_new_auth_user 90ddd9d5…, finish_coach_school_onboarding 07b068f8…,
+finish_coach_civil_onboarding 0a894504…), fixtures scripts/cegep-lot-b1-fixtures-locales.sql.
+Migration md5 6acdc71770043380b2d80d14df41f82b — rollback md5 184f3fed49ece13a6c38caf2d2035728
+
+=== 0. PROD, lecture seule (MCP), 2026-10-22 ===
+COACH rattachés à une école hors SECONDAIRE/LIGUE_CIVILE : users.school_id 0 · school_coaches 0 · team_coaches 0 ·
+athletes.coach_id 0 · admin_claims 0 · invitations PENDING portant un cégep 0 · types d'école présents 3 ·
+objets B1 en prod 0. backfill_athletes_on_coach_join prod md5 9344f99399ea5d3fa5c24c65da64f743 (= pile).
+
+=== 1. PREUVES AVANT LA MIGRATION (scripts/cegep-lot-b1-preuves.sql) ===
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+a. empreinte admin_claims | e8819ffd4e579ab1050060a908ab15dc
+a. empreinte athletes | d0b49b27e7b107c2526025af8bd832d9
+a. empreinte invitations | 0d8e23e0ed2339922ab268856753df59
+a. empreinte school_coaches | 42d02e506b81c38abcfeae35d7ff5374
+a. empreinte team_coaches | 4af92262105d2d8dbf2df42fe906d62e
+a. empreinte teams | 6802428984883f561cdbdc79b635289a
+a. empreinte users | f803d85d734f700aea29125551ac5bef
+a. rattachements admin_claims COACH -> CEGEP | 1
+a. rattachements admin_claims COACH -> SECONDAIRE | 1
+a. rattachements admin_claims RECRUTEUR -> CEGEP | 1
+a. rattachements athletes.coach_id COACH -> SECONDAIRE | 33
+a. rattachements school_coaches COACH -> CEGEP | 1
+a. rattachements school_coaches COACH -> SECONDAIRE | 2
+a. rattachements team_coaches COACH -> CEGEP | 2
+a. rattachements team_coaches COACH -> LIGUE_CIVILE | 1
+a. rattachements team_coaches COACH -> SECONDAIRE | 10
+a. rattachements users.school_id ADMIN -> (aucune) | 3
+a. rattachements users.school_id ATHLETE -> (aucune) | 30
+a. rattachements users.school_id ATHLETE -> SECONDAIRE | 3
+a. rattachements users.school_id COACH -> (aucune) | 3
+a. rattachements users.school_id COACH -> CEGEP | 3
+a. rattachements users.school_id COACH -> SECONDAIRE | 10
+a. rattachements users.school_id PARENT -> (aucune) | 2
+a. rattachements users.school_id PARTNER -> (aucune) | 6
+a. rattachements users.school_id RECRUTEUR -> (aucune) | 1
+a. rattachements users.school_id RECRUTEUR -> CEGEP | 14
+b.A  KS onboarding école = cégep Y (finish_coach_school_onboarding) | OK    true
+b.A2 KS onboarding école secondaire + équipe du cégep (p_team_id = TY) | OK    true
+b.B1 inscription COACH avec l'invitation du recruteur collégial (cégep Y) | OK    COACH / école CEGEP / invitation CONSUMED
+b.B2 inscription par l'invitation (rôle par défaut) puis choix du rôle COACH | OK    COACH / école CEGEP
+b.C/E KO PATCH de son users.school_id vers le cégep Y | OK    1
+b.D  KO insère school_coaches sur le cégep Y | OK    1
+b.F  KL (coach déjà au cégep Y) crée une équipe sous le cégep | OK    1
+b.G  KO rejoint l'équipe du cégep TY (team_coaches) | OK    1
+b.H  KC onboarding civil, club 5 Majeur + équipe du cégep (p_team_id = TY) | OK    true
+b.I1 KO réclame la direction du cégep Y (admin_claims) | OK    1
+b.I2 AD approuve la réclamation de direction de KL (cégep Y, en attente d'avant) | OK    1
+b.J1 KO crée un athlète ancré au cégep Y | OK    1
+b.J2 KL réclame l'athlète AY ancré au cégep Y (claim_school_athletes) | OK    1
+b.K  AD change le rôle du recruteur collégial RC (cégep Y) en COACH | OK    1
+c.1  KS onboarding école secondaire Manseau + nouvelle équipe | OK    {"ok": true, "team_linked": true, "team_adopted": false, "claim_created": true, "has_responsable_before": false}
+c.10 KO modifie son profil (téléphone) ; AS (secondaire, sans coach) après | OK    profil sauvé ; AS pris en charge automatiquement : true
+c.2  KC onboarding civil, club 5 Majeur + son équipe TCIV | OK    {"ok": true, "club_id": "29e0440f-0543-4463-a6c1-a14c27012349", "team_id": "c0ce0b10-0000-4000-8000-0000000000b4", "club_created": false, "team_adopted": false, "team_created": false, "claim_created": true, "has_responsable_before": false}
+c.3  KO crée une équipe sous son école secondaire | OK    1
+c.4  KO rejoint l'équipe secondaire TS2 (Greaves) | OK    1
+c.5  KO crée un athlète ancré à son école secondaire | OK    1
+c.6  KO réclame l'athlète AS de son école (claim_school_athletes) | OK    1
+c.7  KO réclame la direction intérimaire de son école secondaire | OK    1
+c.8  KO modifie son profil (téléphone) | OK    1
+c.9  KL (déjà au cégep Y, ligne d'avant) modifie son profil (téléphone) ; AY (cégep, sans coach) après | OK    profil sauvé ; AY pris en charge automatiquement : true
+d.1  RC invite un collègue (invitation qui porte le cégep Y) | OK    1
+d.2  inscription RECRUTEUR avec l'invitation du cégep Y | OK    RECRUTEUR / école CEGEP / invitation CONSUMED
+d.3  RC modifie son profil (téléphone) | OK    1
+d.4  RC réclame la direction intérimaire de son cégep | OK    1
+d.5  RC crée une équipe sous son cégep | OK    1
+d.6  RC lit l'équipe du cégep et ses entraîneurs | OK    1 équipe, 0 entraîneur(s)
+d.7  import RSEQ (service, sans appelant) crée une équipe de cégep | OK    1
+e.1  KO s'inscrit, puis se réinscrit (idempotent), puis RC s'inscrit | REFUS 42883 function public.inscrire_liste_attente_collegiale(unknown) does not exist
+
+=== 2. PREUVES APRÈS LA MIGRATION ===
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+a. empreinte admin_claims | e8819ffd4e579ab1050060a908ab15dc
+a. empreinte athletes | d0b49b27e7b107c2526025af8bd832d9
+a. empreinte invitations | 0d8e23e0ed2339922ab268856753df59
+a. empreinte school_coaches | 42d02e506b81c38abcfeae35d7ff5374
+a. empreinte team_coaches | 4af92262105d2d8dbf2df42fe906d62e
+a. empreinte teams | 6802428984883f561cdbdc79b635289a
+a. empreinte users | f803d85d734f700aea29125551ac5bef
+a. rattachements admin_claims COACH -> CEGEP | 1
+a. rattachements admin_claims COACH -> SECONDAIRE | 1
+a. rattachements admin_claims RECRUTEUR -> CEGEP | 1
+a. rattachements athletes.coach_id COACH -> SECONDAIRE | 33
+a. rattachements school_coaches COACH -> CEGEP | 1
+a. rattachements school_coaches COACH -> SECONDAIRE | 2
+a. rattachements team_coaches COACH -> CEGEP | 2
+a. rattachements team_coaches COACH -> LIGUE_CIVILE | 1
+a. rattachements team_coaches COACH -> SECONDAIRE | 10
+a. rattachements users.school_id ADMIN -> (aucune) | 3
+a. rattachements users.school_id ATHLETE -> (aucune) | 30
+a. rattachements users.school_id ATHLETE -> SECONDAIRE | 3
+a. rattachements users.school_id COACH -> (aucune) | 3
+a. rattachements users.school_id COACH -> CEGEP | 3
+a. rattachements users.school_id COACH -> SECONDAIRE | 10
+a. rattachements users.school_id PARENT -> (aucune) | 2
+a. rattachements users.school_id PARTNER -> (aucune) | 6
+a. rattachements users.school_id RECRUTEUR -> (aucune) | 1
+a. rattachements users.school_id RECRUTEUR -> CEGEP | 14
+b.A  KS onboarding école = cégep Y (finish_coach_school_onboarding) | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.A2 KS onboarding école secondaire + équipe du cégep (p_team_id = TY) | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.B1 inscription COACH avec l'invitation du recruteur collégial (cégep Y) | OK    COACH / école aucune / invitation CONSUMED
+b.B2 inscription par l'invitation (rôle par défaut) puis choix du rôle COACH | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.C/E KO PATCH de son users.school_id vers le cégep Y | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.D  KO insère school_coaches sur le cégep Y | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.F  KL (coach déjà au cégep Y) crée une équipe sous le cégep | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.G  KO rejoint l'équipe du cégep TY (team_coaches) | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.H  KC onboarding civil, club 5 Majeur + équipe du cégep (p_team_id = TY) | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.I1 KO réclame la direction du cégep Y (admin_claims) | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.I2 AD approuve la réclamation de direction de KL (cégep Y, en attente d'avant) | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.J1 KO crée un athlète ancré au cégep Y | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.J2 KL réclame l'athlète AY ancré au cégep Y (claim_school_athletes) | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+b.K  AD change le rôle du recruteur collégial RC (cégep Y) en COACH | REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+c.1  KS onboarding école secondaire Manseau + nouvelle équipe | OK    {"ok": true, "team_linked": true, "team_adopted": false, "claim_created": true, "has_responsable_before": false}
+c.10 KO modifie son profil (téléphone) ; AS (secondaire, sans coach) après | OK    profil sauvé ; AS pris en charge automatiquement : true
+c.2  KC onboarding civil, club 5 Majeur + son équipe TCIV | OK    {"ok": true, "club_id": "29e0440f-0543-4463-a6c1-a14c27012349", "team_id": "c0ce0b10-0000-4000-8000-0000000000b4", "club_created": false, "team_adopted": false, "team_created": false, "claim_created": true, "has_responsable_before": false}
+c.3  KO crée une équipe sous son école secondaire | OK    1
+c.4  KO rejoint l'équipe secondaire TS2 (Greaves) | OK    1
+c.5  KO crée un athlète ancré à son école secondaire | OK    1
+c.6  KO réclame l'athlète AS de son école (claim_school_athletes) | OK    1
+c.7  KO réclame la direction intérimaire de son école secondaire | OK    1
+c.8  KO modifie son profil (téléphone) | OK    1
+c.9  KL (déjà au cégep Y, ligne d'avant) modifie son profil (téléphone) ; AY (cégep, sans coach) après | OK    profil sauvé ; AY pris en charge automatiquement : false
+d.1  RC invite un collègue (invitation qui porte le cégep Y) | OK    1
+d.2  inscription RECRUTEUR avec l'invitation du cégep Y | OK    RECRUTEUR / école CEGEP / invitation CONSUMED
+d.3  RC modifie son profil (téléphone) | OK    1
+d.4  RC réclame la direction intérimaire de son cégep | OK    1
+d.5  RC crée une équipe sous son cégep | OK    1
+d.6  RC lit l'équipe du cégep et ses entraîneurs | OK    1 équipe, 0 entraîneur(s)
+d.7  import RSEQ (service, sans appelant) crée une équipe de cégep | OK    1
+e.1  KO s'inscrit, puis se réinscrit (idempotent), puis RC s'inscrit | OK    KO 1re=t 2e=f, KO voit 1 ligne(s), insertion directe 42501 ; RC 1re=t, RC voit 1 ligne(s) ; admin voit 2 ; athlète 42501 ; anon 42501
+
+=== 3. EMPREINTES DU CATALOGUE public (scripts/cegep-lot-b1-empreinte-catalogue.sql) ===
+E_origine — copie fraîche du clone + alignement + fixtures, jamais B1 :
+fonctions | 526 | 3b70defefdfa9fd1d72f21329c62c5cb
+policies | 379 | 223050c1f787fec06468c6c5a8d85f54
+triggers | 173 | 3dd740810b94d9a1a2f44c6f317a0b42
+tables | 174 | 2a7670c4c2622ce31b687e048ea6aab1
+E0 — après rollback :
+fonctions | 526 | 3b70defefdfa9fd1d72f21329c62c5cb
+policies | 379 | 223050c1f787fec06468c6c5a8d85f54
+triggers | 173 | 3dd740810b94d9a1a2f44c6f317a0b42
+tables | 174 | 2a7670c4c2622ce31b687e048ea6aab1
+E1 — appliqué :
+fonctions | 529 | 586fb3a73974238c84869c620c18c54f
+policies | 380 | 904a3f07dae7fc96713ff45cd34b0fcf
+triggers | 179 | 51571fe65de15886ef8a9d243cc3146b
+tables | 175 | e577d14d5482fef77d0938481b404dd7
+E3 — réappliqué après un 2e rollback :
+fonctions | 529 | 586fb3a73974238c84869c620c18c54f
+policies | 380 | 904a3f07dae7fc96713ff45cd34b0fcf
+triggers | 179 | 51571fe65de15886ef8a9d243cc3146b
+tables | 175 | e577d14d5482fef77d0938481b404dd7
+E_origine = E0 : vrai · E1 = E3 : vrai · preuves après rollback = preuves avant : vrai (deux cycles) ·
+preuves réappliqué = preuves après : vrai.
+
+=== 4. REST, vrais jetons GoTrue (pile appliquée) ===
+jeton KO  obtenu (868 car.)
+jeton KL  obtenu (867 car.)
+jeton RC  obtenu (879 car.)
+jeton AD  obtenu (831 car.)
+jeton AT  obtenu (840 car.)
+b.C/E KO PATCH users.school_id -> cégep Y                     HTTP 400 {"code":"P0001","details":"table users, opération UPDATE","hint":"liste_attente_gestion_collegiale","message":"NEXUS_COACH_CEGEP: Un compte coach ne peut pas être ratta
+b.D   KO POST school_coaches cégep Y                          HTTP 400 {"code":"P0001","details":"table school_coaches, opération INSERT","hint":"liste_attente_gestion_collegiale","message":"NEXUS_COACH_CEGEP: Un compte coach ne peut pas ê
+b.G   KO POST team_coaches équipe TY                          HTTP 400 {"code":"P0001","details":"table team_coaches, opération INSERT","hint":"liste_attente_gestion_collegiale","message":"NEXUS_COACH_CEGEP: Un compte coach ne peut pas êtr
+b.I1  KO POST admin_claims cégep Y                            HTTP 400 {"code":"P0001","details":"table admin_claims, opération INSERT","hint":"liste_attente_gestion_collegiale","message":"NEXUS_COACH_CEGEP: Un compte coach ne peut pas êtr
+c.9   KL PATCH son téléphone (déjà au cégep)              HTTP 204 
+d.3   RC PATCH son téléphone                                 HTTP 204 
+e.1   KO rpc inscrire (1re fois)                               HTTP 200 true
+      KO 2e appel rend : false
+      RC 1er appel rend : true
+e.2   AT rpc inscrire (athlète)                               HTTP 403 {"code":"42501","details":null,"hint":null,"message":"NEXUS: la liste d'attente est réservée aux coachs et aux recruteurs collégiaux"}
+e.3   KO POST direct dans la table                             HTTP 403 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT INSERT ON public.liste_attente_gestion_collegiale TO authenticated;",
+e.4   KO GET liste_attente (lignes visibles)                   [{"user_id":"c0ce0b10-0000-4000-8000-000000000003","source":"onboarding_coach"}]
+e.4   RC GET liste_attente (lignes visibles)                   [{"user_id":"c0ce0b10-0000-4000-8000-000000000001","source":"parametres_recruteur"}]
+e.4   AD GET liste_attente (lignes visibles)                   [{"user_id":"c0ce0b10-0000-4000-8000-000000000003","source":"onboarding_coach"}, 
+ {"user_id":"c0ce0b10-0000-4000-8000-000000000001","source":"parametres_recruteur"}]
+e.4   AT GET liste_attente (lignes visibles)                   []
+e.5   anon GET liste_attente                                   {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.liste_attente_gestion_collegiale TO anon;","message":"permission denied for table liste_attente_gestion_collegiale"} HTTP 401
+(effets de bord nettoyés ensuite : liste d'attente vidée, téléphones remis à null ; AY toujours sans coach)
