@@ -1,0 +1,8 @@
+admin 3440x1440 : url=http://localhost:3010/admin/ecran hauteur=1440 largeur=3440 menu/barre présents=false
+  réponses enregistrées : document 200 /admin/ecran | fetch 200 /auth/v1/user | fetch 200 /auth/v1/user | fetch 200 /monitoring | fetch 200 /monitoring | fetch 200 /rest/v1/users | fetch 200 /rest/v1/users | fetch 200 /rest/v1/app_settings | fetch 200 /rest/v1/subscriptions | fetch 200 /rest/v1/users | fetch 200 /api/admin/ecran
+admin 1920x1080 : url=http://localhost:3010/admin/ecran hauteur=1080 largeur=1920 menu/barre présents=false
+  réponses enregistrées : document 200 /admin/ecran | fetch 200 /auth/v1/user | fetch 200 /monitoring | fetch 200 /monitoring | fetch 200 /auth/v1/user | fetch 200 /rest/v1/app_settings | fetch 200 /rest/v1/users | fetch 200 /rest/v1/users | fetch 200 /rest/v1/users | fetch 200 /rest/v1/subscriptions | fetch 200 /api/admin/ecran
+coach : /admin/ecran → aboutit à /
+coach : GET /api/admin/ecran → 403 {"error":"Accès refusé — administrateur requis"}
+anonyme : GET /api/admin/ecran → 401 {"error":"Non authentifié"}
+anonyme : /admin/ecran → aboutit à /auth
