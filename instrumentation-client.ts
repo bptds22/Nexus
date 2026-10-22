@@ -3,6 +3,13 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import {
+  beforeBreadcrumb,
+  beforeSend,
+  beforeSendSpan,
+  beforeSendTransaction,
+  COLLECTE_SANS_DONNEES_PERSONNELLES,
+} from "@/lib/sentry/nettoyage";
 
 Sentry.init({
   dsn: "https://ff9b0574720f3e4da653798546367a53@o4511733766619136.ingest.de.sentry.io/4511733773238352",
@@ -10,7 +17,7 @@ Sentry.init({
   /* RIEN N'EST ENVOYÉ DEPUIS LE DÉVELOPPEMENT (2026-09-17).
      Les sessions locales (`next dev`, `dev:mobile`) arrivaient dans le même
      projet Sentry que la production, sous `environment: development`, et
-     noyaient les vraies erreurs — replays compris, qui brûlent le quota.
+     noyaient les vraies erreurs.
 
      `NODE_ENV` est le bon discriminant ici, et PAS un test sur
      l'environnement Sentry : sur Vercel, `NODE_ENV` vaut `production` en
@@ -26,8 +33,8 @@ Sentry.init({
      donc visible en local ; seul l'ENVOI est coupé. */
   enabled: process.env.NODE_ENV === "production",
 
-  // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+  /* Session Replay RETIRÉ (décision BP, 2026-10-22) : même masqué, un
+     replay enregistre la session d'un athlète, souvent mineur. */
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 0.2,
@@ -35,20 +42,15 @@ Sentry.init({
   // carry athlete data (minors — Loi 25). Turn on deliberately, scoped.
   enableLogs: false,
 
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 5%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.05,
-
-  // Define how likely Replay events are sampled when an error occurs.
-  replaysOnErrorSampleRate: 1.0,
-
-  dataCollection: {
-    // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#dataCollection
-    // userInfo: false,
-    // httpBodies: [],
-  },
+  /* AUCUNE DONNÉE PERSONNELLE NE PART (décision BP, 2026-10-22, Loi 25).
+     Seul l'UUID Supabase est permis. Le détail de ce qui est retiré, et
+     pourquoi les défauts du SDK ne suffisent pas : `lib/sentry/nettoyage.ts`. */
+  sendDefaultPii: false,
+  dataCollection: COLLECTE_SANS_DONNEES_PERSONNELLES,
+  beforeSend,
+  beforeBreadcrumb,
+  beforeSendTransaction,
+  beforeSendSpan,
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
