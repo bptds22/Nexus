@@ -4,6 +4,13 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import {
+  beforeBreadcrumb,
+  beforeSend,
+  beforeSendSpan,
+  beforeSendTransaction,
+  COLLECTE_SANS_DONNEES_PERSONNELLES,
+} from "@/lib/sentry/nettoyage";
 
 Sentry.init({
   dsn: "https://ff9b0574720f3e4da653798546367a53@o4511733766619136.ingest.de.sentry.io/4511733773238352",
@@ -22,10 +29,13 @@ Sentry.init({
   // carry athlete data (minors — Loi 25). Turn on deliberately, scoped.
   enableLogs: false,
 
-  dataCollection: {
-    // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#dataCollection
-    // userInfo: false,
-    // httpBodies: [],
-  },
+  /* AUCUNE DONNÉE PERSONNELLE NE PART (décision BP, 2026-10-22, Loi 25).
+     Seul l'UUID Supabase est permis. Le détail de ce qui est retiré, et
+     pourquoi les défauts du SDK ne suffisent pas : `lib/sentry/nettoyage.ts`. */
+  sendDefaultPii: false,
+  dataCollection: COLLECTE_SANS_DONNEES_PERSONNELLES,
+  beforeSend,
+  beforeBreadcrumb,
+  beforeSendTransaction,
+  beforeSendSpan,
 });
