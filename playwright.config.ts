@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import { ANON_LOCALE, SERVICE_LOCALE, SUPABASE_LOCAL_URL } from "./tests/visuel/local";
 
-// Tests visuels (npm run test:visuel) — navigateur SANS interface seulement (CLAUDE.MD : jamais de
+// Tests visuels (npm run test:visuel) — navigateur SANS interface seulement (CLAUDE.md : jamais de
 // capture de l'écran de BP). Pages publiques, et pages connectées avec un compte de la pile LOCALE
 // (tests/visuel/session.ts) : lectures seulement.
 //
