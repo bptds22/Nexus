@@ -9,3 +9,4 @@ Les règles déjà écrites dans CLAUDE.md n'y sont pas recopiées.
 - 2026-10-07 — Jamais de rebase ni de force push sur une branche déjà poussée. Pour récupérer main : `git merge --no-ff origin/main`.
 - 2026-10-14 — Si une autre session travaille dans le dossier principal : travailler dans un worktree séparé. Jamais de `git stash` dans un dossier partagé.
 - 2026-10-22 — Ne jamais modifier une migration déjà appliquée sous le même numéro : créer un nouveau fichier.
+- 2026-10-22 — Tout nouveau worktree va dans `C:\tmp`, jamais dans `Documents`. Le retirer avec `git worktree remove`, après avoir retiré sa jonction `node_modules` ; jamais de suppression à la main sans GO de BP.
