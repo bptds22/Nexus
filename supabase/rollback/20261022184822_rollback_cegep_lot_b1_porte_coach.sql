@@ -1,5 +1,7 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- ROLLBACK du lot B1 cégep (20261022190000_cegep_lot_b1_porte_coach.sql).
+-- ROLLBACK du lot B1 cégep (20261022184822_cegep_lot_b1_porte_coach.sql, appliquée en prod le 2026-10-22).
+-- md5 de ce fichier testé en local avant renommage : 184f3fed49ece13a6c38caf2d2035728 (seul cet en-tête a changé).
+-- NE S'EXÉCUTE QUE SUR GO EXPLICITE DE BP.
 -- Retire les 6 triggers, la fonction de trigger, la fonction de contrôle, la liste d'attente
 -- (⚠ ses lignes sont perdues) et remet consume_invitation_token (md5 0fb9444467a2754217a4c2f4390debc8)
 -- et backfill_athletes_on_coach_join (md5 9344f99399ea5d3fa5c24c65da64f743) sur leur corps prod

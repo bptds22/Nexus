@@ -1,6 +1,8 @@
 -- ════════════════════════════════════════════════════════════════════════════
 -- Chantier cégep — LOT B1 « porte coach → cégep » + liste d'attente (décisions BP 2026-10-22).
--- TIMESTAMP PROVISOIRE.
+-- APPLIQUÉE EN PROD le 2026-10-22 18:48 UTC : version 20261022184822 (apply_migration). Texte appliqué :
+-- md5 6acdc71770043380b2d80d14df41f82b = ce fichier tel qu'il était avant la mise à jour de cet en-tête
+-- (horodatage provisoire 20261022190000, chemin du rollback et message de garde renommés après coup).
 --
 -- Règle : un compte COACH ne se rattache JAMAIS à un cégep — ni users.school_id d'un cégep, ni
 -- school_coaches, ni team_coaches d'une équipe de cégep, ni réclamation d'un athlète ancré cégep,
@@ -46,7 +48,7 @@
 --   NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des
 --   équipes collégiales arrive bientôt.
 --
--- Rollback : supabase/rollback/20261022190000_rollback_cegep_lot_b1_porte_coach.sql
+-- Rollback : supabase/rollback/20261022184822_rollback_cegep_lot_b1_porte_coach.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- ── 0. Gardes et relevé AVANT ──────────────────────────────────────────────
@@ -55,7 +57,7 @@ begin
   if to_regprocedure('public.ecole_ouverte_aux_coachs(uuid)') is not null
      or to_regprocedure('public.porte_coach_cegep()') is not null
      or to_regclass('public.liste_attente_gestion_collegiale') is not null then
-    raise exception 'NEXUS: 20261022190000 déjà appliquée';
+    raise exception 'NEXUS: 20261022184822 déjà appliquée';
   end if;
   if to_regprocedure('public.is_admin()') is null then
     raise exception 'NEXUS: préalable is_admin() absent';
