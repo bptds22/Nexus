@@ -183,6 +183,8 @@ export default function MonParcoursMobile() {
   const [sportNom, setSportNom] = useState<string | null>(null);
   /** athletes.annee_diplomation — donne le niveau (Sec 1-5, diplômé, inconnu). */
   const [anneeDiplomation, setAnneeDiplomation] = useState<number | null>(null);
+  /** schools.type de athletes.school_id — un diplômé encore en SECONDAIRE confirme son année. */
+  const [typeOrganisation, setTypeOrganisation] = useState<string | null>(null);
   const badgeCat = useBadgeCatalogue();
   /* Le compteur vit au niveau du composant : l'en-tête de l'écran est HORS de
      l'IIFE qui construit la grille, et dupliquer le calcul serait la meilleure
@@ -295,7 +297,7 @@ export default function MonParcoursMobile() {
       const { data: a } = await supabase
         .from("athletes")
         .select(
-          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, sports!sport_id(nom), evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, sports!sport_id(nom), schools!school_id(type), evaluations(distinctions, updated_at), athlete_badges(contexte, retire_le, badges(code, libelle))",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -322,6 +324,7 @@ export default function MonParcoursMobile() {
       setDistinctions(pastillesBadges(badgesDepuisRaw(a as Record<string, unknown>)));
       setSportId((a as { sport_id?: string | null }).sport_id ?? null);
       setAnneeDiplomation((a.annee_diplomation as number | null) ?? null);
+      setTypeOrganisation(pickOne((a as { schools?: { type: string } | { type: string }[] | null }).schools)?.type ?? null);
       setSportNom(pickOne((a as { sports?: { nom: string } | { nom: string }[] | null }).sports)?.nom ?? null);
 
       /* Module 2 — saved targets + the CÉGEP list for the picker.
@@ -601,7 +604,7 @@ export default function MonParcoursMobile() {
   // Date du jour + sport, sauf choix manuel posé dans la saison courante ;
   // un Sec 1-4 plafonne à « saison » (la signature attend sa Sec 5).
   const niveau = niveauScolaire(anneeDiplomation);
-  const etapes = etapesPourNiveau(niveau);
+  const etapes = etapesPourNiveau(niveau, typeOrganisation);
   const currentPhase = phaseCourante(readiness, sportNom, new Date(), niveau);
   const currentStepIndex = Math.max(
     0,
@@ -778,6 +781,14 @@ export default function MonParcoursMobile() {
                       <p className={`text-[11px] mt-1 ${step.verrouillee ? "text-white/30" : "text-white/55"}`}>
                         {step.note}
                       </p>
+                    )}
+                    {step.question && (
+                      <Link
+                        href="/athlete/profil"
+                        className="block text-[11px] mt-1 text-white/55 underline underline-offset-2"
+                      >
+                        {step.question}
+                      </Link>
                     )}
                     {isCurrent && (
                       <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full bg-[#E63946] text-white text-[9px] font-black uppercase tracking-[0.14em]">

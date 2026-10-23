@@ -33,7 +33,10 @@
    - Sec 1 à 4 : la fenêtre de signature est verrouillée (grisée, « en Sec 5
      (AAAA-AAAA) ») ; l'étape — calculée OU choisie — plafonne à « saison ».
    - Diplômé (diplomation < fin de saison) : « Saison » sans Sec, mention
-     « Diplômé AAAA », signature active.
+     « Diplômé AAAA », signature active. Encore rattaché à une école
+     SECONDAIRE, l'année est suspecte (27 des 49 diplômés 2026 relevés le
+     2026-10-22) : à la place de la mention, « Ton année de diplomation est
+     AAAA. C'est bien ça ? », avec un lien vers le profil.
    - Année vide ou hors 1-5 sans être diplômé (ex. 2036) : « Saison » sans
      niveau, aucune restriction ; l'écran invite à saisir l'année. */
 
@@ -186,17 +189,28 @@ export type EtapeAffichee = {
   verrouillee: boolean;
   /** Petite ligne sous le libellé : « en Sec 5 (2027-2028) », « Diplômé 2026 ». */
   note?: string;
+  /** Diplômé encore rattaché à une école secondaire : la phrase qui remplace
+   *  la note et mène au profil pour corriger l'année. */
+  question?: string;
 };
 
-/** ETAPES avec les libellés qui dépendent du niveau. */
-export function etapesPourNiveau(niveau: Niveau): EtapeAffichee[] {
+/** ETAPES avec les libellés qui dépendent du niveau. `typeOrganisation` est
+ *  schools.type de l'organisation de l'athlète (athletes.school_id). */
+export function etapesPourNiveau(
+  niveau: Niveau,
+  typeOrganisation?: string | null,
+): EtapeAffichee[] {
+  const aConfirmer = niveau.type === "diplome" && typeOrganisation === "SECONDAIRE";
   return ETAPES.map((e) => {
     if (e.phase === "saison") {
       return {
         ...e,
         label: niveau.type === "sec" ? `Saison Sec ${niveau.sec}` : "Saison",
         verrouillee: false,
-        note: niveau.type === "diplome" ? `Diplômé ${niveau.annee}` : undefined,
+        note: niveau.type === "diplome" && !aConfirmer ? `Diplômé ${niveau.annee}` : undefined,
+        question: aConfirmer
+          ? `Ton année de diplomation est ${niveau.annee}. C'est bien ça ?`
+          : undefined,
       };
     }
     if (e.phase === "signature" && niveau.type === "sec" && niveau.sec < 5) {

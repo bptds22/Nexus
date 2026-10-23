@@ -192,3 +192,26 @@ test("Sec 4 : un choix manuel « signature » est ramené à « saison »", () =
   assert.equal(phaseCourante(choixPhase("signature", OCT_2026), "Football", OCT_2026, n), "saison");
   assert.equal(phaseCourante({ current_phase: "signature" }, "Football", OCT_2026, n), "saison");
 });
+
+test("diplômé rattaché à une école secondaire : la mention devient une question", () => {
+  const n = niveauScolaire(2026, OCT_2026);
+  const [, , saison, signature] = etapesPourNiveau(n, "SECONDAIRE");
+  assert.equal(saison.label, "Saison");
+  assert.equal(saison.note, undefined);
+  assert.equal(saison.question, "Ton année de diplomation est 2026. C'est bien ça ?");
+  // Le reste suit la règle « diplômé ».
+  assert.equal(signature.verrouillee, false);
+  assert.equal(phaseCourante({}, "Football", le(2027, 1, 15), n), "signature");
+});
+
+test("diplômé en ligue civile ou sans organisation : « Diplômé AAAA », sans question", () => {
+  const n = niveauScolaire(2026, OCT_2026);
+  for (const type of ["LIGUE_CIVILE", null, undefined]) {
+    const [, , saison] = etapesPourNiveau(n, type);
+    assert.equal(saison.note, "Diplômé 2026");
+    assert.equal(saison.question, undefined);
+  }
+  // Un Sec 5 d'école secondaire n'est pas concerné.
+  const [, , sec5] = etapesPourNiveau(niveauScolaire(2027, OCT_2026), "SECONDAIRE");
+  assert.equal(sec5.question, undefined);
+});

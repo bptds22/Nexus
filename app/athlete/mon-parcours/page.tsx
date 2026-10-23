@@ -158,6 +158,8 @@ function MonParcoursPageDesktop() {
   const [sportNom, setSportNom] = useState<string | null>(null);
   /** athletes.annee_diplomation — donne le niveau (Sec 1-5, diplômé, inconnu). */
   const [anneeDiplomation, setAnneeDiplomation] = useState<number | null>(null);
+  /** schools.type de athletes.school_id — un diplômé encore en SECONDAIRE confirme son année. */
+  const [typeOrganisation, setTypeOrganisation] = useState<string | null>(null);
   /* Le fondu bas ne s'affiche QUE s'il reste des badges sous le pli. Aucun
      moyen CSS de détecter un débordement — d'où ces quelques lignes plutôt
      qu'un dégradé permanent qui mentirait sur une liste courte (9 badges
@@ -238,7 +240,7 @@ function MonParcoursPageDesktop() {
       const { data } = await supabase
         .from("athletes")
         .select(
-          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, sports!sport_id(nom)",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, sports!sport_id(nom), schools!school_id(type)",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -248,6 +250,7 @@ function MonParcoursPageDesktop() {
          de disparaître sans explication. */
       setSportId((data as { sport_id: string | null }).sport_id ?? null);
       setAnneeDiplomation((data.annee_diplomation as number | null) ?? null);
+      setTypeOrganisation(pickOne((data as { schools?: { type: string } | { type: string }[] | null }).schools)?.type ?? null);
       setSportNom(pickOne((data as { sports: { nom: string } | { nom: string }[] | null }).sports)?.nom ?? null);
       setFirstName((data.first_name as string) || "");
       setProfileCompletion((data.profile_completion as number) || 0);
@@ -464,7 +467,7 @@ function MonParcoursPageDesktop() {
   // Date du jour + sport, sauf choix manuel posé dans la saison courante ;
   // un Sec 1-4 plafonne à « saison » (la signature attend sa Sec 5).
   const niveau = niveauScolaire(anneeDiplomation);
-  const etapes = etapesPourNiveau(niveau);
+  const etapes = etapesPourNiveau(niveau, typeOrganisation);
   const currentPhase = phaseCourante(readiness, sportNom, new Date(), niveau);
   const currentStepIndex = Math.max(
     0,
@@ -686,6 +689,14 @@ function MonParcoursPageDesktop() {
                   <p className={`mt-1 text-[10px] ${step.verrouillee ? "text-[#4a4d56]" : "text-[#9CA3AF]"}`}>
                     {step.note}
                   </p>
+                )}
+                {step.question && (
+                  <Link
+                    href="/athlete/profil"
+                    className="mt-1 block text-[10px] text-[#9CA3AF] underline underline-offset-2 hover:text-white transition-colors"
+                  >
+                    {step.question}
+                  </Link>
                 )}
                 {step.state === "current" && (
                   <p className="mt-1 text-[10px] text-[#6b7280]">{libelleSaison()}</p>
