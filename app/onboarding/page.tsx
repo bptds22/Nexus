@@ -1196,7 +1196,7 @@ export default function OnboardingPage() {
               (école/ligue picker + team creation), everything else
               falls into the school-coach CoachStep. */}
           <div key={`${user.role}-${step}`} className={slideDir === "right" ? "animate-slide-right" : "animate-slide-left"}>
-            {user.role === "coach" && user.context !== "ligue_civile" && <CoachStep step={step} user={user} save={save} onFinish={finish} />}
+            {user.role === "coach" && user.context !== "ligue_civile" && <CoachStep step={step} user={user} save={save} onFinish={finish} onNext={next} />}
             {user.role === "coach" && user.context === "ligue_civile" && <LeagueCoachStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "recruiter" && <RecruiterStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "coordinator_league" && <LeagueCoordinatorStep step={step} user={user} save={save} onFinish={finish} />}
@@ -1308,7 +1308,7 @@ function RprpDeclineNotice() {
 /* ═══════════════════════════════════════════════════════════════
    COACH ONBOARDING STEPS
 ═══════════════════════════════════════════════════════════════ */
-function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
+function CoachStep({ step, user, save, onNext }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void; onNext: () => void }) {
   const p = (user.profile || {}) as Record<string, unknown>;
 
   // School-coach flow: 5 steps total (profil, école, équipe, directeur,
@@ -1318,7 +1318,7 @@ function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: 
   // with no match.
   if (step === 0) return <CoachProfile profile={p} save={save} />;
   if (step === 1) return <SchoolStep user={user} save={save} />;
-  if (step === 2) return <SchoolCoachTeamStep user={user} save={save} />;
+  if (step === 2) return <SchoolCoachTeamStep user={user} save={save} onSkip={onNext} />;
   if (step === 3) return <DirectorChoiceStep user={user} save={save} type="school" />;
   return <CoachConfirmation user={user} />;
 }
@@ -2315,7 +2315,7 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
    only join existing teams (admin onboards new teams out-of-band). When
    no teams match, the step renders the empty-state copy and the coach
    can still advance (selection is optional). */
-function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+function SchoolCoachTeamStep({ user, save, onSkip }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; onSkip: () => void }) {
   // Read fresh localStorage so we see SchoolStep's id write even when
   // the React `user` prop is stale (same pattern as LeagueCoachLeagueStep).
   const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
@@ -2556,6 +2556,19 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
           selectedTeamId={joinedTeam?.id ?? null}
           emptyMessage="Aucune équipe trouvée pour cette école. Crée la tienne ci-dessous."
         />
+      )}
+
+      {/* Passer l'étape sans équipe : rien n'est écrit ici, comme « Suivant ». */}
+      {mode === "umbrella" && !joinedTeam && (
+        <div className="border-t border-white/5 pt-4 space-y-3">
+          <p className="text-[12px] text-[#9CA3AF]">
+            Pas d&apos;équipe pour l&apos;instant ? Tu pourras la créer ou la rejoindre plus tard depuis Mes équipes.
+          </p>
+          <button type="button" onClick={onSkip}
+            className="h-10 px-5 rounded-lg border border-white/10 text-[13px] font-bold text-white hover:border-white/20 transition-colors">
+            Continuer sans équipe
+          </button>
+        </div>
       )}
 
       {mode === "create" && (
