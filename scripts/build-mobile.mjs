@@ -95,12 +95,6 @@ const HIDE_PATTERNS = [
   // Le layout.tsx voisin reste en place — un layout sans page ne cree
   // aucune route (meme montage que /tarifs, /a-propos, etc.).
   'app/aide/page.tsx',
-  // /12octobre — la démo recruteurs (2026-10-12). WEB SEULEMENT : /video est
-  // `force-dynamic` (jeton lu au serveur, service_role), qu'output:'export'
-  // refuse — il cassait le build mobile depuis son arrivée sur main. Le
-  // segment entier est marketing (MarketingNav + Footer) : rien pour l'appli.
-  'app/12octobre/**/page.tsx',
-  'app/12octobre/**/route.ts',
   'app/tarifs/page.tsx',
   'app/a-propos/page.tsx',
   'app/comment-ca-marche/page.tsx',
@@ -139,15 +133,6 @@ const HIDE_PATTERNS = [
   // WEB SEULEMENT : l'app l'appelle en URL absolue (nexussports.ca), jamais
   // depuis son bundle.
   'app/api/rseq/calendrier/route.ts',
-  // GET /api/admin/ecran — chiffres de l'écran mural (2026-10-22). Porte
-  // `force-dynamic`, qu'output:'export' refuse : il a cassé le build mobile dès
-  // son arrivée sur main. WEB SEULEMENT : son seul appelant est la page
-  // /admin/ecran, déjà masquée par 'app/admin/**/page.tsx'.
-  'app/api/admin/ecran/route.ts',
-  // GET /api/admin/qg — chiffres du QG admin (2026-10-22). Même cas : porte
-  // `force-dynamic`, WEB SEULEMENT, son seul appelant /admin/qg est masqué par
-  // 'app/admin/**/page.tsx'.
-  'app/api/admin/qg/route.ts',
   // ⚠ CORRIGÉ le 2026-08-26. Cette liste portait : « les autres route.ts sous
   // app/api/* sont des POST → ignorés par l'export, pas besoin de les masquer ».
   // C'est vrai d'une route STATIQUE, faux dès qu'un segment est DYNAMIQUE :
