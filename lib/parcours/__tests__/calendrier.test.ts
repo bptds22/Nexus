@@ -193,25 +193,26 @@ test("Sec 4 : un choix manuel « signature » est ramené à « saison »", () =
   assert.equal(phaseCourante({ current_phase: "signature" }, "Football", OCT_2026, n), "saison");
 });
 
-test("diplômé rattaché à une école secondaire : la mention devient une question", () => {
-  const n = niveauScolaire(2026, OCT_2026);
-  const [, , saison, signature] = etapesPourNiveau(n, "SECONDAIRE");
-  assert.equal(saison.label, "Saison");
+test("diplômé rattaché à une école secondaire : traité comme Sec 5", () => {
+  const n = niveauScolaire(2026, OCT_2026, "SECONDAIRE");
+  assert.deepEqual(n, { type: "sec", sec: 5, saisonSec5: "2026-2027" });
+  const [, , saison, signature] = etapesPourNiveau(n);
+  assert.equal(saison.label, "Saison Sec 5");
   assert.equal(saison.note, undefined);
-  assert.equal(saison.question, "Ton année de diplomation est 2026. C'est bien ça ?");
-  // Le reste suit la règle « diplômé ».
   assert.equal(signature.verrouillee, false);
   assert.equal(phaseCourante({}, "Football", le(2027, 1, 15), n), "signature");
 });
 
-test("diplômé en ligue civile ou sans organisation : « Diplômé AAAA », sans question", () => {
-  const n = niveauScolaire(2026, OCT_2026);
+test("diplômé en ligue civile ou sans organisation : « Diplômé AAAA »", () => {
   for (const type of ["LIGUE_CIVILE", null, undefined]) {
-    const [, , saison] = etapesPourNiveau(n, type);
-    assert.equal(saison.note, "Diplômé 2026");
-    assert.equal(saison.question, undefined);
+    const n = niveauScolaire(2026, OCT_2026, type);
+    assert.deepEqual(n, { type: "diplome", annee: 2026 });
+    assert.equal(etapesPourNiveau(n)[2].note, "Diplômé 2026");
   }
-  // Un Sec 5 d'école secondaire n'est pas concerné.
-  const [, , sec5] = etapesPourNiveau(niveauScolaire(2027, OCT_2026), "SECONDAIRE");
-  assert.equal(sec5.question, undefined);
+});
+
+test("l'organisation ne change rien hors diplômés", () => {
+  assert.deepEqual(niveauScolaire(2028, OCT_2026, "SECONDAIRE"), { type: "sec", sec: 4, saisonSec5: "2027-2028" });
+  assert.deepEqual(niveauScolaire(null, OCT_2026, "SECONDAIRE"), { type: "inconnu" });
+  assert.deepEqual(niveauScolaire(2036, OCT_2026, "SECONDAIRE"), { type: "inconnu" });
 });

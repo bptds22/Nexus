@@ -13,6 +13,8 @@
  * named exports, inline-computed values (no DB-driven).
  */
 
+import { saisonCourante } from "@/lib/queries/schoolPage/saisonEnCours";
+
 export interface GradYearOption {
   value: string;
   label: string;
@@ -36,3 +38,23 @@ export const GRAD_YEAR_OPTIONS: GradYearOption[] = Array.from(
  * the prior hardcoded default behavior, now de-staled.
  */
 export const DEFAULT_GRAD_YEAR = String(CURRENT_YEAR);
+
+/**
+ * Onboarding ATHLÈTE seulement (décision BP, 2026-10-22) — « Année où tu
+ * finis ton Sec 5 ». De la fin de la saison courante (bascule au 1er juillet,
+ * saisonCourante()) à +4 : en 2026-2027, 2027 (Sec 5) → 2031 (Sec 1). Aucun
+ * défaut : l'ancienne présélection de l'année CIVILE faisait d'un élève de
+ * Sec 5 un « diplômé » à l'automne. Les écrans coach gardent GRAD_YEAR_OPTIONS.
+ *
+ * `garder` : une année déjà enregistrée hors de la fenêtre (reprise d'un
+ * onboarding) reste dans la liste, sinon le menu afficherait une autre valeur
+ * que celle qui sera écrite.
+ */
+export function optionsAnneeSec5(d: Date = new Date(), garder?: string | null): GradYearOption[] {
+  const fin = Number(saisonCourante(d).slice(0, 4)) + 1;
+  const annees = Array.from({ length: 5 }, (_, i) => String(fin + i));
+  if (garder && !annees.includes(garder)) annees.push(garder);
+  return annees.sort().map((y) => ({ value: y, label: y }));
+}
+
+export const LIBELLE_ANNEE_SEC5 = "Année où tu finis ton Sec 5";

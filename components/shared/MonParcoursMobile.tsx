@@ -19,7 +19,6 @@ import BadgeVignette from "@/components/shared/badges/BadgeVignette";
 import { triggerHaptic } from "@/lib/haptics";
 import { enregistrerImage } from "@/lib/partage/enregistrerImage";
 import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
-import Link from "next/link";
 import {
   phaseCourante, choixPhase, libelleSaison, niveauScolaire, etapesPourNiveau, type Phase,
 } from "@/lib/parcours/calendrier";
@@ -183,7 +182,7 @@ export default function MonParcoursMobile() {
   const [sportNom, setSportNom] = useState<string | null>(null);
   /** athletes.annee_diplomation — donne le niveau (Sec 1-5, diplômé, inconnu). */
   const [anneeDiplomation, setAnneeDiplomation] = useState<number | null>(null);
-  /** schools.type de athletes.school_id — un diplômé encore en SECONDAIRE confirme son année. */
+  /** schools.type de athletes.school_id — un diplômé encore en SECONDAIRE compte comme Sec 5. */
   const [typeOrganisation, setTypeOrganisation] = useState<string | null>(null);
   const badgeCat = useBadgeCatalogue();
   /* Le compteur vit au niveau du composant : l'en-tête de l'écran est HORS de
@@ -603,8 +602,8 @@ export default function MonParcoursMobile() {
 
   // Date du jour + sport, sauf choix manuel posé dans la saison courante ;
   // un Sec 1-4 plafonne à « saison » (la signature attend sa Sec 5).
-  const niveau = niveauScolaire(anneeDiplomation);
-  const etapes = etapesPourNiveau(niveau, typeOrganisation);
+  const niveau = niveauScolaire(anneeDiplomation, new Date(), typeOrganisation);
+  const etapes = etapesPourNiveau(niveau);
   const currentPhase = phaseCourante(readiness, sportNom, new Date(), niveau);
   const currentStepIndex = Math.max(
     0,
@@ -782,14 +781,6 @@ export default function MonParcoursMobile() {
                         {step.note}
                       </p>
                     )}
-                    {step.question && (
-                      <Link
-                        href="/athlete/profil"
-                        className="block text-[11px] mt-1 text-white/55 underline underline-offset-2"
-                      >
-                        {step.question}
-                      </Link>
-                    )}
                     {isCurrent && (
                       <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full bg-[#E63946] text-white text-[9px] font-black uppercase tracking-[0.14em]">
                         Tu es ici
@@ -805,17 +796,6 @@ export default function MonParcoursMobile() {
               );
             })}
           </div>
-
-          {/* Sans année de diplomation (ou hors 1-5) : pas de « Sec », et une
-              invitation discrète à la saisir. */}
-          {niveau.type === "inconnu" && (
-            <Link
-              href="/athlete/profil"
-              className="block text-[12px] text-white/45 underline underline-offset-2 mt-1"
-            >
-              Ajoute ton année de diplomation
-            </Link>
-          )}
         </div>
       </div>
 

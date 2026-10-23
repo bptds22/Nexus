@@ -41,7 +41,7 @@ import { createClient } from "@/lib/supabase/client";
 import { filtrerClubs } from "@/lib/clubs/clubCorrespond";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
-import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
+import { optionsAnneeSec5, LIBELLE_ANNEE_SEC5 } from "@/lib/config/gradYears";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
@@ -149,7 +149,6 @@ function normalize(s: string): string {
 
 // Graduation years — rolling window (current year → +10) from
 // lib/config/gradYears, shared with the web onboarding + athlete wizard.
-const YEAR_OPTIONS: PickerOption[] = GRAD_YEAR_OPTIONS;
 
 const REGION_OPTIONS: PickerOption[] = CEGEP_REGIONS.map((r) => ({ value: r, label: r }));
 
@@ -1734,8 +1733,8 @@ export function AthleteOnboardingMobile() {
       <MobilePicker
         open={openYear}
         onClose={() => setOpenYear(false)}
-        title="Année de graduation"
-        options={YEAR_OPTIONS}
+        title={LIBELLE_ANNEE_SEC5}
+        options={optionsAnneeSec5(new Date(), gradYear)}
         value={gradYear || null}
         onChange={(v) => setGradYear(v ? String(v) : "")}
       />
@@ -2518,7 +2517,7 @@ function Step2Content(p: Step2Props) {
 
       <SectionTitle>Ta promotion</SectionTitle>
       <PickerRow
-        label="Année de graduation"
+        label={LIBELLE_ANNEE_SEC5}
         value={p.gradYear}
         placeholder="Sélectionner l'année…"
         onTap={p.onOpenYear}

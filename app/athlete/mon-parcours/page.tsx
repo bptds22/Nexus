@@ -158,7 +158,7 @@ function MonParcoursPageDesktop() {
   const [sportNom, setSportNom] = useState<string | null>(null);
   /** athletes.annee_diplomation — donne le niveau (Sec 1-5, diplômé, inconnu). */
   const [anneeDiplomation, setAnneeDiplomation] = useState<number | null>(null);
-  /** schools.type de athletes.school_id — un diplômé encore en SECONDAIRE confirme son année. */
+  /** schools.type de athletes.school_id — un diplômé encore en SECONDAIRE compte comme Sec 5. */
   const [typeOrganisation, setTypeOrganisation] = useState<string | null>(null);
   /* Le fondu bas ne s'affiche QUE s'il reste des badges sous le pli. Aucun
      moyen CSS de détecter un débordement — d'où ces quelques lignes plutôt
@@ -466,8 +466,8 @@ function MonParcoursPageDesktop() {
 
   // Date du jour + sport, sauf choix manuel posé dans la saison courante ;
   // un Sec 1-4 plafonne à « saison » (la signature attend sa Sec 5).
-  const niveau = niveauScolaire(anneeDiplomation);
-  const etapes = etapesPourNiveau(niveau, typeOrganisation);
+  const niveau = niveauScolaire(anneeDiplomation, new Date(), typeOrganisation);
+  const etapes = etapesPourNiveau(niveau);
   const currentPhase = phaseCourante(readiness, sportNom, new Date(), niveau);
   const currentStepIndex = Math.max(
     0,
@@ -690,14 +690,6 @@ function MonParcoursPageDesktop() {
                     {step.note}
                   </p>
                 )}
-                {step.question && (
-                  <Link
-                    href="/athlete/profil"
-                    className="mt-1 block text-[10px] text-[#9CA3AF] underline underline-offset-2 hover:text-white transition-colors"
-                  >
-                    {step.question}
-                  </Link>
-                )}
                 {step.state === "current" && (
                   <p className="mt-1 text-[10px] text-[#6b7280]">{libelleSaison()}</p>
                 )}
@@ -705,19 +697,6 @@ function MonParcoursPageDesktop() {
             ))}
           </div>
         </div>
-
-        {/* Sans année de diplomation (ou une année hors 1-5), on ne connaît pas
-            le niveau : la ligne reste sans « Sec », et on le dit discrètement. */}
-        {niveau.type === "inconnu" && (
-          <p className="mt-6 text-center">
-            <Link
-              href="/athlete/profil"
-              className="text-[12px] text-[#6b7280] underline underline-offset-2 hover:text-white transition-colors"
-            >
-              Ajoute ton année de diplomation
-            </Link>
-          </p>
-        )}
       </div>
 
       {/* ── Module 1 — Ma carte ── */}

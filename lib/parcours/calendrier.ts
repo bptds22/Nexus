@@ -35,10 +35,10 @@
    - Diplômé (diplomation < fin de saison) : « Saison » sans Sec, mention
      « Diplômé AAAA », signature active. Encore rattaché à une école
      SECONDAIRE, l'année est suspecte (27 des 49 diplômés 2026 relevés le
-     2026-10-22) : à la place de la mention, « Ton année de diplomation est
-     AAAA. C'est bien ça ? », avec un lien vers le profil.
+     2026-10-22 ; l'onboarding web présélectionnait l'année civile) : il est
+     traité comme un Sec 5 de la saison courante.
    - Année vide ou hors 1-5 sans être diplômé (ex. 2036) : « Saison » sans
-     niveau, aucune restriction ; l'écran invite à saisir l'année. */
+     niveau, aucune restriction. */
 
 import { saisonCourante } from "@/lib/queries/schoolPage/saisonEnCours";
 
@@ -163,16 +163,22 @@ function finDeSaison(d: Date): number {
   return Number(saisonCourante(d).slice(0, 4)) + 1;
 }
 
+/** `typeOrganisation` : schools.type de athletes.school_id. */
 export function niveauScolaire(
   anneeDiplomation: number | string | null | undefined,
   d: Date = new Date(),
+  typeOrganisation?: string | null,
 ): Niveau {
   const annee = Number(anneeDiplomation);
   if (anneeDiplomation == null || anneeDiplomation === "" || !Number.isInteger(annee)) {
     return { type: "inconnu" };
   }
   const fin = finDeSaison(d);
-  if (annee < fin) return { type: "diplome", annee };
+  if (annee < fin) {
+    return typeOrganisation === "SECONDAIRE"
+      ? { type: "sec", sec: 5, saisonSec5: saisonCourante(d) }
+      : { type: "diplome", annee };
+  }
   const sec = 5 - (annee - fin);
   if (sec < 1 || sec > 5) return { type: "inconnu" };
   return { type: "sec", sec: sec as 1 | 2 | 3 | 4 | 5, saisonSec5: `${annee - 1}-${annee}` };
@@ -189,28 +195,17 @@ export type EtapeAffichee = {
   verrouillee: boolean;
   /** Petite ligne sous le libellé : « en Sec 5 (2027-2028) », « Diplômé 2026 ». */
   note?: string;
-  /** Diplômé encore rattaché à une école secondaire : la phrase qui remplace
-   *  la note et mène au profil pour corriger l'année. */
-  question?: string;
 };
 
-/** ETAPES avec les libellés qui dépendent du niveau. `typeOrganisation` est
- *  schools.type de l'organisation de l'athlète (athletes.school_id). */
-export function etapesPourNiveau(
-  niveau: Niveau,
-  typeOrganisation?: string | null,
-): EtapeAffichee[] {
-  const aConfirmer = niveau.type === "diplome" && typeOrganisation === "SECONDAIRE";
+/** ETAPES avec les libellés qui dépendent du niveau. */
+export function etapesPourNiveau(niveau: Niveau): EtapeAffichee[] {
   return ETAPES.map((e) => {
     if (e.phase === "saison") {
       return {
         ...e,
         label: niveau.type === "sec" ? `Saison Sec ${niveau.sec}` : "Saison",
         verrouillee: false,
-        note: niveau.type === "diplome" && !aConfirmer ? `Diplômé ${niveau.annee}` : undefined,
-        question: aConfirmer
-          ? `Ton année de diplomation est ${niveau.annee}. C'est bien ça ?`
-          : undefined,
+        note: niveau.type === "diplome" ? `Diplômé ${niveau.annee}` : undefined,
       };
     }
     if (e.phase === "signature" && niveau.type === "sec" && niveau.sec < 5) {

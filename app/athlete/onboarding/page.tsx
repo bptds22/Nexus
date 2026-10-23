@@ -7,7 +7,7 @@ import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { filtrerClubs } from "@/lib/clubs/clubCorrespond";
 import { needsConsent } from "@/lib/auth/needsConsent";
-import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
+import { optionsAnneeSec5, LIBELLE_ANNEE_SEC5 } from "@/lib/config/gradYears";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
 import { isUnder14, MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
@@ -834,7 +834,7 @@ function AthleteOnboardingDesktop() {
   // false uniquement si aucune source ne l'a fournie (vieux compte NULL) →
   // champ éditable + validation recouvrement (isUnder14) au save.
   const [dobLocked, setDobLocked] = useState(false);
-  const [gradYear, setGradYear] = useState(DEFAULT_GRAD_YEAR);
+  const [gradYear, setGradYear] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   // School (used when userContext === 'scolaire')
@@ -2152,8 +2152,8 @@ function AthleteOnboardingDesktop() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div><label className={labelCls}>Année de graduation <span className="text-[#EF4444]">*</span></label>
-                <select title="Graduation" value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}>{GRAD_YEAR_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
+              <div><label className={labelCls}>{LIBELLE_ANNEE_SEC5} <span className="text-[#EF4444]">*</span></label>
+                <select title={LIBELLE_ANNEE_SEC5} value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}><option value="" disabled>Sélectionner l&apos;année…</option>{optionsAnneeSec5(new Date(), gradYear).map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
               </div>
               <div><label className={labelCls}>Courriel</label><input type="email" title="Courriel" placeholder="courriel@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} text-[#6b7280]`} readOnly /></div>
             </div>
