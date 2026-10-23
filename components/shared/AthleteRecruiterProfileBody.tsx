@@ -829,7 +829,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         <div className="text-center max-w-sm">
           <p className="text-white font-bold">Athlète introuvable — ce profil n&apos;existe plus ou n&apos;est pas accessible.</p>
           <button type="button"
-            onClick={() => (window.history.length > 1 ? router.back() : router.push(retour))}
+            onClick={() => (document.referrer.startsWith(window.location.origin) ? router.back() : router.push(retour))}
             className="mt-6 h-10 px-5 rounded-lg border border-white/10 text-[13px] font-bold text-white hover:border-white/20 transition-colors">
             ← Retour
           </button>
