@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
@@ -18,19 +17,6 @@ import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
-
-  /* Écran mural (décision BP 2026-10-22) : plein écran, sans menu ni barre.
-     La garde is_platform_admin du layout s'applique toujours — seule la
-     coquille visuelle est retirée. DeactivationGuard reste : c'est une garde. */
-  if (pathname === "/admin/ecran") {
-    return (
-      <>
-        <DeactivationGuard />
-        {children}
-      </>
-    );
-  }
 
 
   return (

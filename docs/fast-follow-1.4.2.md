@@ -2853,3 +2853,27 @@ recruteur / partenaire s'insèrent eux-mêmes → REFUS ; coach s'insère DIRECT
 Trace de la tentative : `supabase/migrations/20261022195319_school_coaches_insert_sans_recursion.sql`
 et `supabase/migrations/20261022195927_rollback_school_coaches_insert_sans_recursion.sql` (le rollback
 est rangé dans `migrations/` parce que la prod l'a enregistré comme migration).
+
+## 102. QG admin, écran mural et démo du 12 octobre retirés du site — restes en base (2026-10-23, à retirer au prochain ménage)
+
+Décision BP 2026-10-23 : `/admin/qg`, `/admin/ecran` et la démo du 12 octobre (`/12octobre`,
+`/12octobre/video`, `/12octobre/merci`, `/12octobre/demo-nexus.ics`, `/api/demo-access`,
+`/admin/demo`, `/admin/demo-access`) sont retirés du code web. `/12octobre` et tout ce qui est
+dessous redirigent vers l'accueil (`next.config.ts`), pour les liens déjà envoyés par courriel.
+L'historique est dans git ; `docs/qg-admin/` et `docs/ecran-mural/` restent comme trace.
+
+**Rien n'a été retiré en base.** Inutilisé par le site, à retirer au prochain ménage :
+
+- `admin_consentement_partenaire_stats()` (avec les clés ajoutées le 2026-10-22) et
+  `admin_comptes_connectes(p_de, p_a)` — appelées seulement par `/api/admin/qg`. Réservées à
+  l'admin, inoffensives.
+- Démo : tables `demo_inscriptions` (4 lignes au 2026-10-23), `demo_inscriptions_tentatives`,
+  `demo_access` (1 ligne) ; fonctions `inscrire_demo`, `demo_clic_compte`,
+  `demo_access_demander`, `demo_access_consulter`, `admin_demo_access_liste`,
+  `admin_demo_access_statut`. **Les données sont des renseignements personnels (Loi 25)** :
+  avant tout DROP, décider de leur sort (export, durée de conservation), sur GO de BP.
+  ⚠ `inscrire_demo` et `demo_access_demander` étaient appelées depuis une page publique :
+  elles restent appelables directement par l'API REST (garde anti-abus incluse) tant
+  qu'elles existent.
+- Fonctions edge `send-demo-inscription` et `send-demo-access` : toujours déployées, plus
+  aucun appelant dans le site. Leur code reste dans `supabase/functions/`.

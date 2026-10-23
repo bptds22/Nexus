@@ -9,18 +9,8 @@ import { UserCheck, ShieldCheck } from "lucide-react";
 
 const NAV_ITEMS = [
   {
-    /* QG admin (BP 2026-10-22) : remplacera le tableau de bord après validation du lot 1. */
-    label: "QG", href: "/admin/qg",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-4 3 3 5-6" /></svg>,
-  },
-  {
     label: "Tableau de bord", href: "/admin/dashboard",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>,
-  },
-  {
-    /* Écran mural : chiffres agrégés seulement, plein écran, rafraîchi aux 15 min. */
-    label: "Écran mural", href: "/admin/ecran",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></svg>,
   },
   {
     label: "Utilisateurs", href: "/admin/users",
@@ -46,14 +36,6 @@ const NAV_ITEMS = [
     /* W4d : cartes prospects de tous les partenaires, issues, rapprochements. */
     label: "Prospects partenaires", href: "/admin/prospects-partenaires",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="11" r="2.5" /><path d="M5.5 17a3.5 3.5 0 017 0" /><path d="M15 9h3M15 13h3" /></svg>,
-  },
-  {
-    label: "Démo 12 octobre", href: "/admin/demo",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="15" height="14" rx="2" /><path d="M17 10l5-3v10l-5-3" /></svg>,
-  },
-  {
-    label: "Accès à la démo", href: "/admin/demo-access",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="15" r="4" /><path d="M10.85 12.15L19 4" /><path d="M18 5l2 2" /><path d="M15 8l2 2" /></svg>,
   },
   {
     label: "Établissements", href: "/admin/schools",

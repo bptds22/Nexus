@@ -84,6 +84,20 @@ const nextConfig: NextConfig = {
         destination: "/auth?mode=signup",
         permanent: false,
       },
+      // Démo recruteurs du 12 octobre : pages retirées le 2026-10-23 (BP).
+      // Les vieux liens (courriels, .ics, /video?t=…) mènent à l'accueil
+      // plutôt qu'à une 404. Les données (demo_inscriptions, demo_access)
+      // restent en base.
+      {
+        source: "/12octobre",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/12octobre/:path*",
+        destination: "/",
+        permanent: false,
+      },
     ],
   }),
 };
