@@ -2875,8 +2875,10 @@ L'historique est dans git ; `docs/qg-admin/` et `docs/ecran-mural/` restent comm
   Correction du 2026-10-23 : seules `inscrire_demo` et `demo_clic_compte` étaient ouvertes à
   anon et authenticated ; `demo_access_demander` et `demo_access_consulter` étaient déjà
   réservées à service_role (appelées par la route serveur, retirée). Migration
-  `20261023174206_demo_fonctions_publiques_fermees.sql` (EXECUTE retiré à anon et
-  authenticated sur les 4, rien de supprimé) : prouvée en local, **pas encore en prod**.
+  `20261023175123_demo_fonctions_publiques_fermees.sql` (EXECUTE retiré à anon et
+  authenticated sur les 4, rien de supprimé) : **appliquée en prod le 2026-10-23** (version
+  20261023175123, texte identique au fichier, md5 19a9eca7…), ligne `admin_operations`
+  MIGRATION_DEMO_FONCTIONS_FERMEES. Rollback : `supabase/rollback/20261023175123_rollback_demo_fonctions_publiques_fermees.sql`.
 - **Suppression des inscriptions démo après le 31 octobre 2026, fin de l'accès promis, sur GO
   de BP.**
 - Fonctions edge `send-demo-inscription` et `send-demo-access` : toujours déployées, plus

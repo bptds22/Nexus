@@ -1,5 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- ROLLBACK de 20261023174206_demo_fonctions_publiques_fermees.sql
+-- ROLLBACK de 20261023175123_demo_fonctions_publiques_fermees.sql
+-- (version enregistrée en prod le 2026-10-23 ; le fichier s'appelait 20261023174206
+-- avant l'application, et son en-tête cite encore ce nom : texte laissé tel quel,
+-- identique à celui que la prod a exécuté, md5 19a9eca7…).
 -- Rend EXECUTE à anon et authenticated sur inscrire_demo et demo_clic_compte,
 -- les deux seules qui l'avaient avant. demo_access_demander et
 -- demo_access_consulter étaient déjà fermées : on n'y rend rien.
