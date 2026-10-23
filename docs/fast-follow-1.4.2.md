@@ -2872,8 +2872,18 @@ L'historique est dans git ; `docs/qg-admin/` et `docs/ecran-mural/` restent comm
   `demo_access_demander`, `demo_access_consulter`, `admin_demo_access_liste`,
   `admin_demo_access_statut`. **Les données sont des renseignements personnels (Loi 25)** :
   avant tout DROP, décider de leur sort (export, durée de conservation), sur GO de BP.
-  ⚠ `inscrire_demo` et `demo_access_demander` étaient appelées depuis une page publique :
-  elles restent appelables directement par l'API REST (garde anti-abus incluse) tant
-  qu'elles existent.
+  Correction du 2026-10-23 : seules `inscrire_demo` et `demo_clic_compte` étaient ouvertes à
+  anon et authenticated ; `demo_access_demander` et `demo_access_consulter` étaient déjà
+  réservées à service_role (appelées par la route serveur, retirée). Migration
+  `20261023175123_demo_fonctions_publiques_fermees.sql` (EXECUTE retiré à anon et
+  authenticated sur les 4, rien de supprimé) : **appliquée en prod le 2026-10-23** (version
+  20261023175123, texte identique au fichier, md5 19a9eca7…), ligne `admin_operations`
+  MIGRATION_DEMO_FONCTIONS_FERMEES. Rollback : `supabase/rollback/20261023175123_rollback_demo_fonctions_publiques_fermees.sql`.
+- **Suppression des inscriptions démo après le 31 octobre 2026, fin de l'accès promis, sur GO
+  de BP.**
 - Fonctions edge `send-demo-inscription` et `send-demo-access` : toujours déployées, plus
-  aucun appelant dans le site. Leur code reste dans `supabase/functions/`.
+  aucun appelant dans le site. Leur code reste dans `supabase/functions/`. Appelées
+  directement, elles n'envoient un courriel que pour une ligne dont le statut est
+  `A_ENVOYER` (réclamée avant l'envoi). Relevé prod 2026-10-23 : les 5 lignes sont à
+  `ENVOYE`. Une fois `inscrire_demo` fermée, plus aucune ligne à envoyer ne peut naître
+  par l'API.
