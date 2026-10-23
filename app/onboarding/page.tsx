@@ -577,15 +577,9 @@ export default function OnboardingPage() {
             // Save school_id to users table
             const { error: errEcole } = await supabase.from("users").update({ school_id: schoolRow.id, region: institution.region || null }).eq("id", authUser.id);
             if (errEcole) throw errEcole;
-
-            // Upsert into school_coaches for the school-coach flow.
-            const { error: scErr } = await supabase.from("school_coaches").upsert({
-              coach_id: authUser.id,
-              school_id: schoolRow.id,
-              role: "COACH",
-              sport: profileData.sport_principal || null,
-            }, { onConflict: "coach_id,school_id" });
-            if (scErr) throw scErr;
+            // Pas d'écriture school_coaches ici : la policy INSERT boucle en
+            // prod (42P17, registre §101). La ligne est posée au finish par
+            // finish_coach_school_onboarding (SECURITY DEFINER).
           }
         }
 
@@ -3944,21 +3938,11 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         return;
       }
 
-      // 3. INSERT school_coaches (institution level, role='COACH').
-      //    Sprint cards-restructure-web : plus jamais DIRECTEUR direct ici
-      //    (l'auto-promotion est fermée — le claim DIRECTEUR/INTERIM passe
-      //    par admin_claims modéré via la RPC finish_coach_civil_onboarding
-      //    appelée au finish()). L'UPSERT à finish() est idempotent.
-      const { error: scError } = await supabase.from("school_coaches").insert({
-        coach_id: authUser.id,
-        school_id: schoolId,
-        role: "COACH",
-      });
-      if (scError && scError.code !== "23505") {
-        // Non-critical for proceeding; the team exists and the
-        // creator can be re-attached manually. Log but continue.
-        console.error("[LeagueCoachLeagueStep] school_coaches insert failed:", scError);
-      }
+      // 3. Pas d'écriture school_coaches ici : la policy INSERT boucle en
+      //    prod (42P17, registre §101) et l'erreur était avalée. La ligne
+      //    (role='COACH') est posée au finish() par la RPC
+      //    finish_coach_civil_onboarding (SECURITY DEFINER), qui gère aussi
+      //    le claim DIRECTEUR/INTERIM via admin_claims.
 
       const { error: tcError } = await supabase.from("team_coaches").insert({
         coach_id: authUser.id,
