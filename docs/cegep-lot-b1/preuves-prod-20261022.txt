@@ -1,0 +1,71 @@
+LOT B1 cégep — application en PROD (nrloizyemulbhujrqhgx), 2026-10-22, GO BP
+Connecteur Supabase (MCP). Sorties brutes recopiées telles quelles.
+
+── 1. AVANT (lecture, 18:04 puis 18:10 puis 18:46 UTC — identiques) ─────────────
+fonctions (tout)      533  7ecf68fe071a125840c57acd876c3809
+fonctions (hors B1)   531  48d318a2403be4137fe22bf0ba79db68
+policies              378  22abf0c22a36837e8c965ee4efe9f838
+triggers              173  da742fd2601905cb43c176b0193922b1
+tables                175  282dd3ba7969807958caa257a677ad03
+md5 consume_invitation_token        0fb9444467a2754217a4c2f4390debc8  (= garde)
+md5 backfill_athletes_on_coach_join 9344f99399ea5d3fa5c24c65da64f743  (= garde)
+COACH rattachés à une école fermée : users 0 · school_coaches 0 · team_coaches 0 · athletes 0 · admin_claims 0
+invitations PENDING portant un cégep : 0
+objets B1 déjà en prod : 0
+(« hors B1 » = sans ecole_ouverte_aux_coachs, porte_coach_cegep, inscrire_liste_attente_collegiale,
+ consume_invitation_token, backfill_athletes_on_coach_join, la table liste_attente_gestion_collegiale,
+ sa policy et trg_porte_coach_cegep.)
+
+Deux échecs du connecteur avant l'application (« Invalid or expired requestState »), sur des
+LECTURES : rien n'a été écrit. Reprise après relance de session par BP.
+
+── 2. APPLY (18:48 UTC) ───────────────────────────────────────────────────────────
+select 1                                   → 1
+md5 du texte envoyé, calculé par la prod   → 6acdc71770043380b2d80d14df41f82b (= fichier)
+apply_migration cegep_lot_b1_porte_coach   → {"success":true}
+version enregistrée                        → 20261022184822
+
+── 3. APRÈS (lecture, 18:48 UTC) ──────────────────────────────────────────────────
+fonctions (tout)      536  04bb3b0adb61ca2f4763cf6ba4bcddce
+fonctions (hors B1)   531  48d318a2403be4137fe22bf0ba79db68   ← identique
+policies (tout)       379  dcc5ad5ffb3ae864ee2a4a78151a8733
+policies (hors B1)    378  22abf0c22a36837e8c965ee4efe9f838   ← identique
+triggers (tout)       179  4f70f2a52eba3a8425f96d68398b565f
+triggers (hors B1)    173  da742fd2601905cb43c176b0193922b1   ← identique
+tables (tout)         176  9410e03a566d1295c776b3d3adf5f829
+tables (hors B1)      175  282dd3ba7969807958caa257a677ad03   ← identique
+ACL ecole_ouverte_aux_coachs(uuid)             {postgres,authenticated,service_role}
+ACL porte_coach_cegep()                        {postgres,service_role}
+ACL inscrire_liste_attente_collegiale(text)    {postgres,authenticated,service_role}
+ACL consume_invitation_token(text,uuid)        {PUBLIC,postgres,anon,authenticated,service_role}  (inchangée, = avant)
+ACL backfill_athletes_on_coach_join()          {PUBLIC,postgres,anon,authenticated,service_role}  (inchangée, = avant)
+triggers trg_porte_coach_cegep  6  admin_claims,athletes,school_coaches,team_coaches,teams,users
+table liste_attente : rls true, grants authenticated:SELECT
+md5 corps (consume | backfill)  eaf4d2b9bef6eaabf460a4afdf078ced | 84405b9da8facd8b0cc4f58b07cdc38e
+
+── Preuve sous vrai rôle (authenticated + request.jwt.claims), transaction ANNULÉE ─
+Comptes : coach secondaire nexus.coachs (…a2, Nexus Secondaire), coach civil nexus.coachc (…a3,
+Nexus Civil), cégep Campus Notre-Dame-de-Foy, secondaire Saint-Jean-Eudes, 1 athlète, 1 recruteur
+non admin. Le bloc se termine par RAISE : tout est annulé, le rapport voyage dans le message.
+
+ERROR:  P0001: PREUVE_B1 (transaction annulée)
+P1 coach→cégep (users) : REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+P2 coach→cégep (school_coaches) : REFUS 42P17 infinite recursion detected in policy for relation "school_coaches"
+P3 coach secondaire→secondaire : OK 1 ligne
+P4 coach civil→cégep (users) : REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+P5 coach inscription 1re=true 2e=false, coach voit 1 ligne(s)
+P6 recruteur (non inscrit) voit 0 ligne(s)
+P7 athlète inscription : REFUS 42501
+P8 insertion directe : REFUS 42501
+P9 anon EXECUTE inscrire=false ecole_ouverte=false ; anon SELECT table=false
+
+P2 n'est pas B1 — contre-preuve, transaction ANNULÉE :
+ERROR:  P0001: PREUVE_B1_P2 (transaction annulée)
+P2b coach→SECONDAIRE (school_coaches, sous rôle) : 42P17 infinite recursion detected in policy for relation "school_coaches"
+P2c coach→cégep (school_coaches, sans RLS) : REFUS P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.
+→ l'insertion directe d'un coach dans school_coaches échoue en prod par récursion de policy, même
+  vers une école secondaire (policies inchangées par B1 : empreinte hors B1 identique). Sans RLS,
+  le trigger B1 refuse bien le cégep.
+
+Après les preuves (lecture) : liste_attente 0 ligne ; école du coach secondaire et du coach civil
+inchangées ; school_coaches du coach secondaire : 1 (déjà là).
