@@ -62,7 +62,9 @@ function ecartMontreal(instant: Date): number {
 
 /** L'instant qui porte cette heure murale à Montréal. Le jour peut déborder
  *  (jour 0, jour 32…) : Date.UTC le normalise, ce qui sert au calcul des
- *  semaines. Une heure qui n'existe pas (saut de printemps) avance d'une heure. */
+ *  semaines. Une heure qui n'existe pas (saut de printemps, 2 h 30) RECULE
+ *  d'une heure (1 h 30 HNE) — vérifié par les tests du QG ; voir
+ *  `memeMomentMural` pour les comparaisons « à date ». */
 export function montrealVersInstant(
   annee: number, mois: number, jour: number, heure = 0, minute = 0, seconde = 0,
 ): Date {
@@ -159,6 +161,102 @@ export function libelleSemaine(debut: Date): string {
   return debut.toLocaleDateString("fr-CA", { timeZone: FUSEAU_MONTREAL, day: "numeric", month: "short" });
 }
 
+/* ── Périodes du QG admin (/admin/qg) : jour, semaine, mois ─────────
+   « À date vs même moment » (décision BP 2026-10-22), heure murale de
+   Montréal, changements d'heure compris :
+   - jour    : aujourd'hui 0 h → maintenant  vs  hier 0 h → même heure ;
+   - semaine : lundi 0 h → maintenant  vs  lundi précédent → même jour, même heure ;
+   - mois    : le 1er → maintenant  vs  le 1er du mois précédent → même jour,
+               même heure, borné à la fin de ce mois (31 mars → fin février).
+   ───────────────────────────────────────────────────────────────── */
+
+export type Granularite = "jour" | "semaine" | "mois";
+
+/** Longueur des séries du QG (décision BP) : 30 jours, 12 semaines, 12 mois. */
+export const LONGUEUR_SERIE: Record<Granularite, number> = { jour: 30, semaine: 12, mois: 12 };
+
+/** 0 h (Montréal) du jour qui contient `instant`. */
+export function debutJourMontreal(instant: Date): Date {
+  const p = partiesMontreal(instant);
+  return montrealVersInstant(p.annee, p.mois, p.jour);
+}
+
+/** Le 1er à 0 h (Montréal) du mois qui contient `instant`. */
+export function debutMoisMontreal(instant: Date): Date {
+  const p = partiesMontreal(instant);
+  return montrealVersInstant(p.annee, p.mois, 1);
+}
+
+/** Début de la période (jour, semaine du lundi, mois) qui contient `instant`. */
+export function debutPeriode(instant: Date, g: Granularite): Date {
+  if (g === "jour") return debutJourMontreal(instant);
+  if (g === "semaine") return lundiMontreal(instant);
+  return debutMoisMontreal(instant);
+}
+
+/** Début de la période située `n` périodes avant celle qui commence à `debut`. */
+function periodeAvant(debut: Date, g: Granularite, n: number): Date {
+  const p = partiesMontreal(debut);
+  if (g === "jour") return montrealVersInstant(p.annee, p.mois, p.jour - n);
+  if (g === "semaine") return montrealVersInstant(p.annee, p.mois, p.jour - 7 * n);
+  // Date.UTC normalise le mois 0, −1… vers l'année précédente.
+  return montrealVersInstant(p.annee, p.mois - n, 1);
+}
+
+/** L'instant qui porte cette heure murale, millisecondes comprises. Si elle
+ *  n'existe pas (2 h 30 le jour du saut de printemps), on rend le moment du
+ *  saut (3 h 00 HAE) : tout ce qui précède 2 h 30 à l'horloge, ni plus ni moins. */
+function memeMomentMural(annee: number, mois: number, jour: number, heure: number, minute: number, seconde: number, ms: number): Date {
+  const x = montrealVersInstant(annee, mois, jour, heure, minute, seconde);
+  const p = partiesMontreal(x);
+  if (p.heure !== heure || p.minute !== minute) {
+    return montrealVersInstant(annee, mois, jour, heure + 1, 0, 0);
+  }
+  return new Date(x.getTime() + ms);
+}
+
+/** La période en cours jusqu'à maintenant, et la précédente jusqu'au même moment. */
+export function fenetresADate(maintenant: Date, g: Granularite): { courant: Fenetre; precedent: Fenetre } {
+  const debut = debutPeriode(maintenant, g);
+  const debutAvant = periodeAvant(debut, g, 1);
+  const p = partiesMontreal(maintenant);
+  const ms = ((maintenant.getTime() % 1000) + 1000) % 1000;
+  let finAvant: Date;
+  if (g === "jour") finAvant = memeMomentMural(p.annee, p.mois, p.jour - 1, p.heure, p.minute, p.seconde, ms);
+  else if (g === "semaine") finAvant = memeMomentMural(p.annee, p.mois, p.jour - 7, p.heure, p.minute, p.seconde, ms);
+  else {
+    const memeMoment = memeMomentMural(p.annee, p.mois - 1, p.jour, p.heure, p.minute, p.seconde, ms);
+    // Le 31 n'existe pas toujours le mois d'avant : on s'arrête à la fin de ce mois.
+    finAvant = memeMoment.getTime() > debut.getTime() ? debut : memeMoment;
+  }
+  return {
+    courant: { de: debut, a: maintenant },
+    precedent: { de: debutAvant, a: finAvant },
+  };
+}
+
+/** Début de chacune des `n` dernières périodes, la plus ancienne d'abord ;
+ *  la dernière est la période en cours. */
+export function debutsPeriodes(maintenant: Date, g: Granularite, n = LONGUEUR_SERIE[g]): Date[] {
+  const debut = debutPeriode(maintenant, g);
+  const debuts: Date[] = [];
+  for (let i = n - 1; i >= 0; i--) debuts.push(periodeAvant(debut, g, i));
+  return debuts;
+}
+
+/** Comptes par période (mêmes règles que `parSemaine` : périodes contiguës, la dernière jusqu'à `fin`). */
+export function parPeriode(dates: Iterable<string | null | undefined>, debuts: Date[], fin: Date): number[] {
+  return parSemaine(dates, debuts, fin);
+}
+
+/** Libellé court d'un début de période : « 22 oct. » (jour, semaine) ou « oct. 2026 » (mois). */
+export function libellePeriode(debut: Date, g: Granularite): string {
+  if (g === "mois") {
+    return debut.toLocaleDateString("fr-CA", { timeZone: FUSEAU_MONTREAL, month: "short", year: "numeric" });
+  }
+  return libelleSemaine(debut);
+}
+
 /* ── Ce que la route renvoie au navigateur : des nombres, rien d'autre ── */
 
 export interface Comparaison {
@@ -202,7 +300,8 @@ export interface EcranMuralDonnees {
   };
   files: {
     invitations_parent: { reclamees: number; en_attente: number; expirees: number };
-    consentements_v2: { acceptes: number; refuses: number; en_attente: number };
+    /** 4 cases (BP 2026-10-22) : la somme fait tous les athlètes admissibles. */
+    consentements_v2: { acceptes: number; refuses: number; en_attente: number; jamais_demande: number };
     ecoles_non_listees: number;
     loi25_ouvertes: number;
     reclamations_etablissement: number;

@@ -1,0 +1,32 @@
+﻿   set_config    
+-----------------
+ {"role":"anon"}
+(1 row)
+
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "22222222-0000-0000-0000-00000000000c", "role" : "authenticated"}
+(1 row)
+
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "eeeeeeee-0000-0000-0000-0000000000aa", "role" : "authenticated"}
+(1 row)
+
+ n  |                                      quoi                                      |                                                                                           resultat                                                                                           
+----+--------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1 | anon → admin_comptes_connectes                                                 | refusé : permission denied for function admin_comptes_connectes
+  2 | anon → admin_consentement_partenaire_stats                                     | refusé : permission denied for function admin_consentement_partenaire_stats
+  3 | coach → admin_comptes_connectes                                                | refusé : NEXUS: réservé à l'admin
+  4 | coach → admin_consentement_partenaire_stats                                    | refusé : NEXUS: réservé à l'admin
+  5 | admin → admin_comptes_connectes (30 j)                                         | {"total": 43, "par_role": {"ADMIN": 1, "COACH": 4, "PARENT": 2, "ATHLETE": 21, "PARTNER": 3, "RECRUTEUR": 12}}
+  6 | admin → admin_consentement_partenaire_stats                                    | {"total": 16, "refuse_v2": 0, "accepte_v2": 0, "en_attente": 0, "pas_repondu": 16, "push_envoyes": 0, "demande_parent": 0, "jamais_demande": 16, "pas_repondu_v1": 0, "plus_tard_epuise": 0}
+  7 | 4 cases = total ?                                                              | oui
+  8 | en_attente + jamais_demande = pas_repondu + demande_parent ?                   | oui
+  9 | admin → fenêtre inversée                                                       | refusé : NEXUS: fenêtre invalide
+ 10 | à la main (30 j)                                                               | {"total": 43, "par_role": {"ADMIN": 1, "COACH": 4, "PARENT": 2, "ATHLETE": 21, "PARTNER": 3, "RECRUTEUR": 12}}
+ 11 | ACL admin_consentement_partenaire_stats()                                      | {authenticated,postgres,service_role}
+ 12 | ACL admin_comptes_connectes(timestamp with time zone,timestamp with time zone) | {authenticated,postgres,service_role}
+ 13 | sabotage (anon ajouté)                                                         | la garde lève : ACL = {anon,authenticated,postgres,service_role}
+(13 rows)
+

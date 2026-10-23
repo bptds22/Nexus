@@ -1,0 +1,4 @@
+docs/qg-admin/reponse-qg-jour.json : @=0 UUID=0 courriels=0 noms dans les valeurs=0 (130 noms cherchés) ; avec les clés : 3 — mots des clés : parent, coach, admin
+docs/qg-admin/reponse-qg-semaine.json : @=0 UUID=0 courriels=0 noms dans les valeurs=0 (130 noms cherchés) ; avec les clés : 3 — mots des clés : parent, coach, admin
+docs/qg-admin/reponse-qg-mois.json : @=0 UUID=0 courriels=0 noms dans les valeurs=0 (130 noms cherchés) ; avec les clés : 3 — mots des clés : parent, coach, admin
+docs/qg-admin/ecran-nouveau.json : @=0 UUID=0 courriels=0 noms dans les valeurs=0 (130 noms cherchés) ; avec les clés : 2 — mots des clés : parent, coach

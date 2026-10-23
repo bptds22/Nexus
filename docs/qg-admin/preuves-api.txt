@@ -1,0 +1,12 @@
+ecran : ancien 200, nouveau 200
+ecran : réponses identiques hors calcule_le, fenetres et files.consentements_v2 → OUI
+ecran : consentements_v2 ancien  = {"acceptes":0,"refuses":0,"en_attente":16}
+ecran : consentements_v2 nouveau = {"acceptes":0,"refuses":0,"en_attente":0,"jamais_demande":16}
+ecran : clés de premier niveau identiques → OUI
+qg jour : 200, 7133 octets
+qg semaine : 200, 3801 octets
+qg mois : 200, 3843 octets
+anonyme : GET /api/admin/qg?periode=jour → 401 {"error":"Non authentifié"}
+coach : GET /api/admin/qg?periode=jour → 403 {"error":"Accès refusé — administrateur requis"}
+anonyme : GET /api/admin/ecran → 401 {"error":"Non authentifié"}
+coach : GET /api/admin/ecran → 403 {"error":"Accès refusé — administrateur requis"}
