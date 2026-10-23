@@ -38,8 +38,10 @@ Preuves des 2 migrations (par rôle, sabotage d'ACL) : `scripts/qg-admin/preuves
   jamais demandé = aucune ligne. La somme fait les athlètes admissibles.
 - **Comptes connectés** : `auth.users.last_sign_in_at` dans la période, par rôle
   (`admin_comptes_connectes`). LIMITE : c'est la DERNIÈRE connexion ; un compte revenu
-  depuis n'est plus compté dans la période d'avant, qui est donc sous-estimée (la page le
-  dit en note sous la tuile).
+  depuis n'est plus compté dans la période d'avant, qui est donc sous-estimée. Décision BP
+  (2026-10-22, mise en prod) : la tuile montre le chiffre de la période SEUL, sans écart ni
+  pourcentage, avec « Comparaison à venir. » (`qg-tuile-connectes-1366x768.png`,
+  `scripts/qg-admin/verif-tuile.mjs`).
 - **Loi 25** : demandes ouvertes ; échéance = `deadline` (accès / portabilité, dépôt + 30 j)
   ou dépôt + 30 jours (suppression) ; en retard, sous 7 jours, prochaine échéance.
 - **Recruteurs** : mêmes définitions que l'écran mural (`lib/admin/indicateurs.ts`).

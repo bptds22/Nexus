@@ -319,22 +319,27 @@ function Ecart({ v }: { v: Comparaison }) {
   );
 }
 
-function Tuile({ titre, v, g, accent, bas, note }: {
-  titre: string; v: Comparaison; g: Granularite; accent: string; bas?: string; note?: string;
+// sansComparaison : le chiffre de la période seul, sans écart ni période d'avant
+// (comptes connectés — décision BP 2026-10-22, la source ne permet pas encore de
+// comparer honnêtement).
+function Tuile({ titre, v, g, accent, bas, note, sansComparaison }: {
+  titre: string; v: Comparaison; g: Granularite; accent: string; bas?: string; note?: string; sansComparaison?: boolean;
 }) {
   return (
     <Carte titre={titre} sousTitre={MOTS[g].courant}>
       <div className="flex items-end justify-between flex-wrap" style={{ gap: "0.8em", borderLeft: `0.25em solid ${accent}`, paddingLeft: "0.8em" }}>
         <span className="font-head font-bold tabular-nums leading-none" style={{ fontSize: "3.1em" }}>{fmt(v.courant)}</span>
-        <div className="text-right" style={{ paddingBottom: "0.2em" }}>
-          <Ecart v={v} />
-          <div style={{ color: C.pale, fontSize: "0.85em" }} title={note}>
-            {MOTS[g].avant} : {fmt(v.precedent)}{note ? " *" : ""}
+        {!sansComparaison && (
+          <div className="text-right" style={{ paddingBottom: "0.2em" }}>
+            <Ecart v={v} />
+            <div style={{ color: C.pale, fontSize: "0.85em" }} title={note}>
+              {MOTS[g].avant} : {fmt(v.precedent)}{note ? " *" : ""}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {bas && <div style={{ color: C.doux, fontSize: "0.92em" }}>{bas}</div>}
-      {note && <div style={{ color: C.pale, fontSize: "0.8em" }}>* {note}</div>}
+      {note && <div style={{ color: C.pale, fontSize: "0.8em" }}>{sansComparaison ? "" : "* "}{note}</div>}
     </Carte>
   );
 }
@@ -437,7 +442,7 @@ function Aujourdhui({ d }: { d: QgDonnees }) {
 
 /* ── Croissance ──────────────────────────────────────────────────── */
 
-const NOTE_CONNEXION = "Dernière connexion seulement (auth.users.last_sign_in_at) : un compte revenu depuis n'est plus compté dans la période d'avant.";
+const NOTE_CONNEXION = "Comparaison à venir.";
 
 function Croissance({ d }: { d: QgDonnees }) {
   const c = d.croissance;
@@ -466,7 +471,7 @@ function Croissance({ d }: { d: QgDonnees }) {
   const serie = c.serie.map((p) => ({ ...p, nom: enCours(p.libelle, p.en_cours) }));
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4" style={{ gap: "1.1em" }}>
-      <Tuile titre="Comptes connectés" v={{ courant: c.connectes.courant.total, precedent: c.connectes.precedent.total }} g={g} accent={C.vert} note={NOTE_CONNEXION} />
+      <Tuile titre="Comptes connectés" v={{ courant: c.connectes.courant.total, precedent: c.connectes.precedent.total }} g={g} accent={C.vert} note={NOTE_CONNEXION} sansComparaison />
       <Tuile titre="Nouveaux athlètes" v={c.nouveaux.athletes} g={g} accent={C.bleu} />
       <Tuile titre="Nouveaux comptes, autres rôles" v={c.nouveaux.autres} g={g} accent={C.violet} bas={autresRoles} />
       <Carte titre="Connectés par rôle" sousTitre={`${MOTS[g].courant} vs ${MOTS[g].avant}`}>
