@@ -144,6 +144,10 @@ const HIDE_PATTERNS = [
   // son arrivée sur main. WEB SEULEMENT : son seul appelant est la page
   // /admin/ecran, déjà masquée par 'app/admin/**/page.tsx'.
   'app/api/admin/ecran/route.ts',
+  // GET /api/admin/qg — chiffres du QG admin (2026-10-22). Même cas : porte
+  // `force-dynamic`, WEB SEULEMENT, son seul appelant /admin/qg est masqué par
+  // 'app/admin/**/page.tsx'.
+  'app/api/admin/qg/route.ts',
   // ⚠ CORRIGÉ le 2026-08-26. Cette liste portait : « les autres route.ts sous
   // app/api/* sont des POST → ignorés par l'export, pas besoin de les masquer ».
   // C'est vrai d'une route STATIQUE, faux dès qu'un segment est DYNAMIQUE :
