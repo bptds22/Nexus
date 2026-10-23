@@ -809,15 +809,31 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     }
   }
 
-  // #52 — gate anti-flash : tant que le fetch charge (loadingAthlete) ou que
-  // a est null (aucune vraie donnée encore), on rend un fallback spinner —
-  // jamais le mock. Placé APRÈS tous les hooks et AVANT le premier accès
-  // a.xxx (traitEntries ci-dessous) → narrowing TS de a à non-null + pas de
-  // crash sur null.
-  if (loadingAthlete || !a) {
+  // #52 — gate anti-flash : tant que le fetch charge, un spinner — jamais le mock.
+  // Placé APRÈS tous les hooks et AVANT le premier accès a.xxx.
+  if (loadingAthlete) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#111317]">
         <div className="w-8 h-8 rounded-full border-2 border-[#2D3748] border-t-[#E63946] animate-spin" role="status" aria-label="Chargement du profil" />
+      </div>
+    );
+  }
+  // Chargement fini sans ligne : 0 ligne lisible, id inconnu ou lecture en échec.
+  // On ne dit JAMAIS pourquoi — la raison (dont la règle cégépien) ne se devine pas.
+  if (!a) {
+    const retour = viewerMode === "partner" ? "/partenaire/athletes"
+      : viewerMode === "preview" ? "/athlete/profil"
+      : "/recruteur/recherche";
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#111317] px-4">
+        <div className="text-center max-w-sm">
+          <p className="text-white font-bold">Athlète introuvable — ce profil n&apos;existe plus ou n&apos;est pas accessible.</p>
+          <button type="button"
+            onClick={() => (window.history.length > 1 ? router.back() : router.push(retour))}
+            className="mt-6 h-10 px-5 rounded-lg border border-white/10 text-[13px] font-bold text-white hover:border-white/20 transition-colors">
+            ← Retour
+          </button>
+        </div>
       </div>
     );
   }
