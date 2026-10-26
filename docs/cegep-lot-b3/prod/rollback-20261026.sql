@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- Lot B3 cégep — ROLLBACK RÉEL EN PROD de la version 20261028160000. À lancer SEULEMENT sur GO BP.
+-- Lot B3 cégep — ROLLBACK RÉEL EN PROD de la version 20261026210100. À lancer SEULEMENT sur GO BP.
 -- Fichier GÉNÉRÉ par scripts/cegep-lot-b3/generer.sh <date> rollback : le rollback y est embarqué tel
 -- quel (fins de ligne LF, même texte que celui du rejeu à blanc, md5 gardé).
 --
@@ -33,8 +33,8 @@ begin
     raise exception 'NEXUS: lancer en postgres (propriétaire des 5 objets), pas en %', current_user;
   end if;
   if not exists (select 1 from supabase_migrations.schema_migrations
-                  where version = '20261028160000' and name = 'cegep_lot_b3_filtres') then
-    raise exception 'NEXUS: lot B3 20261028160000 non inscrit — rien à défaire';
+                  where version = '20261026210100' and name = 'cegep_lot_b3_filtres') then
+    raise exception 'NEXUS: lot B3 20261026210100 non inscrit — rien à défaire';
   end if;
   if exists (select 1 from public.admin_operations where operation = 'ROLLBACK_B3_FILTRES') then
     raise exception 'NEXUS: le lot B3 a déjà été retiré';
@@ -99,9 +99,14 @@ select genre, count(*) as comptes from _r group by genre order by genre;
 
 -- ── 1. Le rollback, texte gardé par son md5 ─────────────────────────────────
 create temp table _rb on commit drop as
-select to_char(clock_timestamp() at time zone 'utc', 'YYYYMMDDHH24MISS') as version,
+-- Heure UTC du lancement, mais jamais avant B3 + 1 min ni avant la dernière version inscrite + 1 s
+-- (une version peut être datée dans le futur, comme 20261026210000).
+select to_char(greatest(clock_timestamp() at time zone 'utc',
+                        to_timestamp('20261026210100', 'YYYYMMDDHH24MISS')::timestamp + interval '1 minute',
+                        to_timestamp((select max(version) from supabase_migrations.schema_migrations), 'YYYYMMDDHH24MISS')::timestamp + interval '1 second'),
+               'YYYYMMDDHH24MISS') as version,
        $nexus_rb$-- ════════════════════════════════════════════════════════════════════════════
--- Rollback du lot B3 cégep (20261028160000_cegep_lot_b3_filtres). Sur GO BP seulement.
+-- Rollback du lot B3 cégep (20261026210100_cegep_lot_b3_filtres). Sur GO BP seulement.
 -- Remet les 3 fonctions recruteur et les 2 vues partenaire dans leur état prod du 2026-10-26 :
 -- corps d'origine à la lettre, ACL au texte exact, commentaires reposés, reloptions identiques.
 -- Les vues perdent des colonnes : DROP + CREATE (aucun objet n'en dépend, gardé ci-dessous).
@@ -723,11 +728,11 @@ $nexus_rb$::text as contenu;
 select clock_timestamp() as debut_rollback;
 do $rb$
 begin
-  if (select md5(contenu) from _rb) <> 'c4009d73f3a38ba334545724b60df502' then
+  if (select md5(contenu) from _rb) <> 'b2c1c1262a9e395ed9d2cab643a34345' then
     raise exception 'NEXUS: texte du rollback altéré (md5 %)', (select md5(contenu) from _rb);
   end if;
-  if (select version from _rb) <= '20261028160000' then
-    raise exception 'NEXUS: version du rollback pas après 20261028160000';
+  if (select version from _rb) <= '20261026210100' then
+    raise exception 'NEXUS: version du rollback pas après 20261026210100';
   end if;
   execute (select contenu from _rb);
 end $rb$;
@@ -758,10 +763,10 @@ select version, 'rollback_cegep_lot_b3_filtres', array[contenu], 'bptds22@gmail.
 
 insert into public.admin_operations (operation, motif, details, par)
 select 'ROLLBACK_B3_FILTRES',
-       'Rollback du lot B3 cégep (20261028160000) : les 3 fonctions recruteur et les 2 vues partenaire reprennent leur définition prod du 2026-10-26 (GO BP)',
-       jsonb_build_object('version_retiree', '20261028160000', 'version_rollback', version,
-                          'fichier', 'supabase/rollback/20261028160000_rollback_cegep_lot_b3_filtres.sql',
-                          'md5_rollback', 'c4009d73f3a38ba334545724b60df502', 'comptes_verifies', (select count(*) from _r),
+       'Rollback du lot B3 cégep (20261026210100) : les 3 fonctions recruteur et les 2 vues partenaire reprennent leur définition prod du 2026-10-26 (GO BP)',
+       jsonb_build_object('version_retiree', '20261026210100', 'version_rollback', version,
+                          'fichier', 'supabase/rollback/20261026210100_rollback_cegep_lot_b3_filtres.sql',
+                          'md5_rollback', 'b2c1c1262a9e395ed9d2cab643a34345', 'comptes_verifies', (select count(*) from _r),
                           'voie', 'psql (session pooler)'),
        'f51384b5-a2c2-4827-9137-8aa8d29a1fe0'
   from _rb;

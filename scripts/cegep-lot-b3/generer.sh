@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 DATE="${1:?date AAAAMMJJ}"
 TYPE="${2:-rejeu-blanc}"
-VERSION=20261028160000
+VERSION=20261026210100
 MIG=supabase/migrations/${VERSION}_cegep_lot_b3_filtres.sql
 RB=supabase/rollback/${VERSION}_rollback_cegep_lot_b3_filtres.sql
 GAB=docs/cegep-lot-b3/prod/$TYPE.gabarit.sql

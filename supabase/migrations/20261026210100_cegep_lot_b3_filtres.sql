@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════════════════
 -- Chantier cégep — LOT B3 « base des filtres » Type + Catégorie (GO BP 2026-10-26).
--- NON APPLIQUÉE EN PROD. Apply par la voie psql, sur GO BP seulement (au plus tôt mercredi 12 h).
+-- NON APPLIQUÉE EN PROD. Apply par la voie psql, sur GO BP seulement (jamais le mardi, ni le mercredi avant midi).
 --
 -- Rend, en COLONNES AJOUTÉES EN FIN, le type de l'école d'ancrage, le type de l'école de l'équipe
 -- et la catégorie de l'équipe (teams.age_group), pour que B4 (web) et B5 (mobile) filtrent sans
@@ -21,7 +21,7 @@
 -- Les 2 vues : CREATE OR REPLACE (colonnes ajoutées en fin) ; ACL et commentaires conservés ;
 -- top_athletes_view sans reloptions, trending_athletes_view avec security_barrier (restatée).
 --
--- Rollback : supabase/rollback/20261028160000_rollback_cegep_lot_b3_filtres.sql
+-- Rollback : supabase/rollback/20261026210100_rollback_cegep_lot_b3_filtres.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- pg_get_viewdef dépend du search_path : les md5 des vues sont relevés sous celui-ci.

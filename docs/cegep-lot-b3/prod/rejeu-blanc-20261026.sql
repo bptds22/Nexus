@@ -31,7 +31,7 @@ select now() as debut, current_user, current_setting('server_version') as versio
 -- ── Garde : B3 pas encore en place ──────────────────────────────────────────
 do $$
 begin
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261028160000') then
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261026210100') then
     raise exception 'NEXUS: le lot B3 est déjà inscrit';
   end if;
   if pg_get_function_result(to_regprocedure('public.recruiter_athlete_cards(uuid[])')) like '%team_age_group%' then
@@ -247,7 +247,7 @@ select clock_timestamp() as debut_migration;
 do $rejeu$
 declare t text := $nexus_mig$-- ════════════════════════════════════════════════════════════════════════════
 -- Chantier cégep — LOT B3 « base des filtres » Type + Catégorie (GO BP 2026-10-26).
--- NON APPLIQUÉE EN PROD. Apply par la voie psql, sur GO BP seulement (au plus tôt mercredi 12 h).
+-- NON APPLIQUÉE EN PROD. Apply par la voie psql, sur GO BP seulement (jamais le mardi, ni le mercredi avant midi).
 --
 -- Rend, en COLONNES AJOUTÉES EN FIN, le type de l'école d'ancrage, le type de l'école de l'équipe
 -- et la catégorie de l'équipe (teams.age_group), pour que B4 (web) et B5 (mobile) filtrent sans
@@ -268,7 +268,7 @@ declare t text := $nexus_mig$-- ════════════════
 -- Les 2 vues : CREATE OR REPLACE (colonnes ajoutées en fin) ; ACL et commentaires conservés ;
 -- top_athletes_view sans reloptions, trending_athletes_view avec security_barrier (restatée).
 --
--- Rollback : supabase/rollback/20261028160000_rollback_cegep_lot_b3_filtres.sql
+-- Rollback : supabase/rollback/20261026210100_rollback_cegep_lot_b3_filtres.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- pg_get_viewdef dépend du search_path : les md5 des vues sont relevés sous celui-ci.
@@ -938,7 +938,7 @@ end $$;
 notify pgrst, 'reload schema';
 $nexus_mig$;
 begin
-  if md5(t) <> '8be0e1f1e60b7f86f11f4e1018997880' then
+  if md5(t) <> 'a4f8ea9d2fb4efef5889f05da0507ca9' then
     raise exception 'NEXUS: texte de la migration altéré (md5 %)', md5(t);
   end if;
   execute t;
@@ -954,7 +954,7 @@ select pg_temp.empreinte('2 après');
 -- ── 4. Le rollback, texte gardé par son md5 ─────────────────────────────────
 do $rejeu$
 declare t text := $nexus_rb$-- ════════════════════════════════════════════════════════════════════════════
--- Rollback du lot B3 cégep (20261028160000_cegep_lot_b3_filtres). Sur GO BP seulement.
+-- Rollback du lot B3 cégep (20261026210100_cegep_lot_b3_filtres). Sur GO BP seulement.
 -- Remet les 3 fonctions recruteur et les 2 vues partenaire dans leur état prod du 2026-10-26 :
 -- corps d'origine à la lettre, ACL au texte exact, commentaires reposés, reloptions identiques.
 -- Les vues perdent des colonnes : DROP + CREATE (aucun objet n'en dépend, gardé ci-dessous).
@@ -1573,7 +1573,7 @@ end $$;
 notify pgrst, 'reload schema';
 $nexus_rb$;
 begin
-  if md5(t) <> 'c4009d73f3a38ba334545724b60df502' then
+  if md5(t) <> 'b2c1c1262a9e395ed9d2cab643a34345' then
     raise exception 'NEXUS: texte du rollback altéré (md5 %)', md5(t);
   end if;
   execute t;

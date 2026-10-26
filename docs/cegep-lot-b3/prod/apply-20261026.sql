@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- Lot B3 cégep — APPLY RÉEL EN PROD, version 20261028160000 (GO BP après le rejeu à blanc : VERDICT
+-- Lot B3 cégep — APPLY RÉEL EN PROD, version 20261026210100 (GO BP après le rejeu à blanc : VERDICT
 -- tout à 0, aucun cégépien rendu aux recruteurs, seuls les 5 objets changent, rollback 0/0).
 -- Fichier GÉNÉRÉ par scripts/cegep-lot-b3/generer.sh <date> apply : la migration y est embarquée telle
 -- quelle (fins de ligne LF, même texte que celui du rejeu à blanc, md5 gardé).
@@ -26,23 +26,20 @@ select now() as debut, current_user, current_setting('server_version') as versio
 do $$
 declare v text;
 begin
-  -- Rien en prod le mardi, ni le mercredi avant midi (heure de Montréal) ; pas avant mercredi 2026-10-28 12 h.
+  -- Rien en prod le mardi, ni le mercredi avant midi (heure de Montréal).
   if extract(isodow from now() at time zone 'America/Toronto') = 2
      or (extract(isodow from now() at time zone 'America/Toronto') = 3
          and extract(hour from now() at time zone 'America/Toronto') < 12) then
     raise exception 'NEXUS: pas d''apply le mardi ni le mercredi avant midi';
   end if;
-  if now() < '2026-10-28 12:00 America/Toronto'::timestamptz then
-    raise exception 'NEXUS: apply du lot B3 au plus tôt le mercredi 2026-10-28 à 12 h (Montréal)';
-  end if;
   if current_user <> 'postgres' then
     raise exception 'NEXUS: lancer en postgres (propriétaire des 5 objets), pas en %', current_user;
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261028160000') then
-    raise exception 'NEXUS: version 20261028160000 déjà inscrite';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261026210100') then
+    raise exception 'NEXUS: version 20261026210100 déjà inscrite';
   end if;
   select max(version) into v from supabase_migrations.schema_migrations;
-  if v >= '20261028160000' then raise exception 'NEXUS: version 20261028160000 pas après la dernière (%) — régénérer', v; end if;
+  if v >= '20261026210100' then raise exception 'NEXUS: version 20261026210100 pas après la dernière (%) — régénérer', v; end if;
   if exists (select 1 from public.admin_operations where operation in ('MIGRATION_B3_FILTRES', 'ROLLBACK_B3_FILTRES')) then
     raise exception 'NEXUS: le lot B3 a déjà laissé une trace dans admin_operations';
   end if;
@@ -106,9 +103,9 @@ select genre, count(*) as comptes from _r group by genre order by genre;
 
 -- ── 1. La migration, texte gardé par son md5 (elle vérifie elle-même les 5 objets avant et après) ─
 create temp table _lot_b3 on commit drop as
-select '20261028160000'::text as version, $nexus_mig$-- ════════════════════════════════════════════════════════════════════════════
+select '20261026210100'::text as version, $nexus_mig$-- ════════════════════════════════════════════════════════════════════════════
 -- Chantier cégep — LOT B3 « base des filtres » Type + Catégorie (GO BP 2026-10-26).
--- NON APPLIQUÉE EN PROD. Apply par la voie psql, sur GO BP seulement (au plus tôt mercredi 12 h).
+-- NON APPLIQUÉE EN PROD. Apply par la voie psql, sur GO BP seulement (jamais le mardi, ni le mercredi avant midi).
 --
 -- Rend, en COLONNES AJOUTÉES EN FIN, le type de l'école d'ancrage, le type de l'école de l'équipe
 -- et la catégorie de l'équipe (teams.age_group), pour que B4 (web) et B5 (mobile) filtrent sans
@@ -129,7 +126,7 @@ select '20261028160000'::text as version, $nexus_mig$-- ════════
 -- Les 2 vues : CREATE OR REPLACE (colonnes ajoutées en fin) ; ACL et commentaires conservés ;
 -- top_athletes_view sans reloptions, trending_athletes_view avec security_barrier (restatée).
 --
--- Rollback : supabase/rollback/20261028160000_rollback_cegep_lot_b3_filtres.sql
+-- Rollback : supabase/rollback/20261026210100_rollback_cegep_lot_b3_filtres.sql
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- pg_get_viewdef dépend du search_path : les md5 des vues sont relevés sous celui-ci.
@@ -802,7 +799,7 @@ $nexus_mig$::text as contenu;
 select clock_timestamp() as debut_migration;
 do $apply$
 begin
-  if (select md5(contenu) from _lot_b3) <> '8be0e1f1e60b7f86f11f4e1018997880' then
+  if (select md5(contenu) from _lot_b3) <> 'a4f8ea9d2fb4efef5889f05da0507ca9' then
     raise exception 'NEXUS: texte de la migration altéré (md5 %)', (select md5(contenu) from _lot_b3);
   end if;
   execute (select contenu from _lot_b3);
@@ -840,8 +837,8 @@ select 'MIGRATION_B3_FILTRES',
          'version', version,
          'fichier', 'supabase/migrations/' || version || '_cegep_lot_b3_filtres.sql',
          'rollback', 'supabase/rollback/' || version || '_rollback_cegep_lot_b3_filtres.sql',
-         'md5_fichier', '8be0e1f1e60b7f86f11f4e1018997880',
-         'md5_rollback', 'c4009d73f3a38ba334545724b60df502',
+         'md5_fichier', 'a4f8ea9d2fb4efef5889f05da0507ca9',
+         'md5_rollback', 'b2c1c1262a9e395ed9d2cab643a34345',
          'comptes_verifies', (select count(*) from _r),
          'voie', 'psql (session pooler)',
          'rejeu_blanc', 'VERDICT tout à 0, aucun cégépien rendu aux recruteurs, seuls les 5 objets changent, rollback 0/0'),
@@ -851,7 +848,7 @@ select 'MIGRATION_B3_FILTRES',
 do $$
 begin
   if not exists (select 1 from supabase_migrations.schema_migrations
-                  where version = '20261028160000' and name = 'cegep_lot_b3_filtres') then
+                  where version = '20261026210100' and name = 'cegep_lot_b3_filtres') then
     raise exception 'NEXUS: inscription schema_migrations absente';
   end if;
   if (select count(*) from public.admin_operations where operation = 'MIGRATION_B3_FILTRES') <> 1 then

@@ -99,7 +99,12 @@ select genre, count(*) as comptes from _r group by genre order by genre;
 
 -- ── 1. Le rollback, texte gardé par son md5 ─────────────────────────────────
 create temp table _rb on commit drop as
-select to_char(clock_timestamp() at time zone 'utc', 'YYYYMMDDHH24MISS') as version,
+-- Heure UTC du lancement, mais jamais avant B3 + 1 min ni avant la dernière version inscrite + 1 s
+-- (une version peut être datée dans le futur, comme 20261026210000).
+select to_char(greatest(clock_timestamp() at time zone 'utc',
+                        to_timestamp('@@VERSION@@', 'YYYYMMDDHH24MISS')::timestamp + interval '1 minute',
+                        to_timestamp((select max(version) from supabase_migrations.schema_migrations), 'YYYYMMDDHH24MISS')::timestamp + interval '1 second'),
+               'YYYYMMDDHH24MISS') as version,
        $nexus_rb$@@ROLLBACK@@$nexus_rb$::text as contenu;
 
 select clock_timestamp() as debut_rollback;

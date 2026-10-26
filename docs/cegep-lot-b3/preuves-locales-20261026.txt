@@ -1,8 +1,22 @@
-Lot B3 cégep — preuves locales du 2026-10-26 (base jetable nexus_b3 = copie de nexus_b2, propriétaire postgres comme en prod,
-alignée sur la prod par scripts/cegep-lot-b3/aligner-local.sql, fixtures scripts/cegep-lot-b3/fixtures-locales.sql). Lancé en postgres.
-Les fichiers ont été générés sous l'étiquette 20261027 pour ces preuves, puis régénérés sous 20261026 : octet pour octet identiques (apply fc0b6858…, rejeu eb1c6fab…, rollback 1e802ae3… ; migration 8be0e1f1…, rollback c4009d73…).
+Lot B3 cégep — preuves locales du 2026-10-26 (2e passage, version 20261026210100). Base jetable nexus_b3 recréée depuis nexus_b2,
+propriétaire postgres comme en prod, alignée par scripts/cegep-lot-b3/aligner-local.sql, fixtures scripts/cegep-lot-b3/fixtures-locales.sql.
+Fichiers prod lancés TELS QUELS, en postgres : rejeu 7414c83b732ac16ca3d17406c2d6efea, apply 3a1b9af108b2045516e7d5a2dfeb4a82, rollback 5a825393b681b68a5871beb306e79b7b.
 
-######## 1. REJEU À BLANC (rejeu-blanc-20261027.sql, md5 eb1c6fab8f962ec841592f767fbc10c3)
+######## 0. ALIGNEMENT ET FIXTURES
+== nexus_b3 alignée sur la prod (objets B3).
+ lot_b2 | ath |   ancrage    |    equipe    | categorie  | cegepien 
+--------+-----+--------------+--------------+------------+----------
+ t      | a1  | CEGEP        | CEGEP        | Collégial  | t
+ t      | a2  |              |              |            | f
+ t      | a3  | SECONDAIRE   | SECONDAIRE   | Juvénile   | f
+ f      | a4  | LIGUE_CIVILE | LIGUE_CIVILE | Midget AAA | f
+ f      | a5  | SECONDAIRE   |              |            | f
+ f      | a6  |              |              |            | f
+ f      | a7  | SECONDAIRE   | CEGEP        | Collégial  | f
+ f      | a8  | CEGEP        |              |            | t
+(8 rows)
+
+######## 1. REJEU À BLANC
 Pager usage is off.
 Null display is "·".
 BEGIN
@@ -12,7 +26,7 @@ SET
 SET
              debut             | current_user | version 
 -------------------------------+--------------+---------
- 2026-10-26 20:15:07.389755+00 | postgres     | 17.6
+ 2026-10-26 20:48:08.102079+00 | postgres     | 17.6
 (1 row)
 
 DO
@@ -50,7 +64,7 @@ CREATE TABLE
 CREATE FUNCTION
       debut_mesure_avant       
 -------------------------------
- 2026-10-26 20:15:07.401028+00
+ 2026-10-26 20:48:08.115881+00
 (1 row)
 
  mesurer 
@@ -65,13 +79,13 @@ CREATE FUNCTION
 
         debut_migration        
 -------------------------------
- 2026-10-26 20:15:07.512352+00
+ 2026-10-26 20:48:08.237854+00
 (1 row)
 
 DO
          fin_migration         
 -------------------------------
- 2026-10-26 20:15:07.529403+00
+ 2026-10-26 20:48:08.255065+00
 (1 row)
 
 SET
@@ -99,15 +113,15 @@ SET
 
           fin_mesures          
 -------------------------------
- 2026-10-26 20:15:07.745316+00
+ 2026-10-26 20:48:08.483939+00
 (1 row)
 
 CREATE VIEW
 == 0. Valeurs AVANT (une ligne par valeur distincte ; md5 abrégés)
                                  surface                                 |    compte    | comptes |                                                                              valeur                                                                              
 -------------------------------------------------------------------------+--------------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------
- a01 recruiter_search_athletes (défaut, tout)                            | R01 b2000000 |       1 | n=6;lignes=38ff19a2…;ordre=7890b4be…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/LIGUE_CIVILE/-,SECONDAIRE/-/-,SECONDAIRE/CEGEP/-,SECONDAIRE/SECONDAIRE/-
- a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | R01 b2000000 |       1 | grad_asc=6/b0ce179b…;promo2027=4/2f9669f7…;texte_athle=6/9a4ac943…;texte_cegep=1/d57b44cf…
+ a01 recruiter_search_athletes (défaut, tout)                            | R01 b2000000 |       1 | n=6;lignes=23e61ef5…;ordre=7890b4be…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/LIGUE_CIVILE/-,SECONDAIRE/-/-,SECONDAIRE/CEGEP/-,SECONDAIRE/SECONDAIRE/-
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | R01 b2000000 |       1 | grad_asc=6/c938ab47…;promo2027=4/56b61264…;texte_athle=6/de27e500…;texte_cegep=1/62c7d814…
  a03 recruiter_athlete_cards (tous les actifs)                           | R01 b2000000 |       1 | n=6;lignes=52975e25…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/-/-,SECONDAIRE/-/-
  a04 recruiter_athlete_profile (chaque actif)                            | R01 b2000000 |       1 | n=6;lignes=9204f0ca…;cegepiens=0;effet_categories=-/-
  a05 top_athletes_view                                                   | ADMIN        |       3 | n=0;lignes=d41d8cd9…;ordre=d41d8cd9…;cegepiens=0;effet_categories=-
@@ -117,7 +131,7 @@ CREATE VIEW
  a07 trending_athletes_view                                              | ADMIN        |       3 | n=0;lignes=d41d8cd9…;cegepiens=0;effet_categories=-
  a07 trending_athletes_view                                              | ANON         |       1 | refus=42501 permission denied for view trending_athletes_view
  a07 trending_athletes_view                                              | P01 b2000000 |       1 | n=8;lignes=9cda5fc1…;cegepiens=2;effet_categories=-/-/-
- t01 données (athlètes, équipes, rattachements, écoles)                  | SU           |       1 | athletes=b4c4e0fa…;teams=05504287…;team_athletes=ea97bd36…;schools=87892490…
+ t01 données (athlètes, équipes, rattachements, écoles)                  | SU           |       1 | athletes=08ada40c…;teams=05504287…;team_athletes=ab7f2ce8…;schools=87892490…
  t02 signatures et colonnes d'avant                                      | SU           |       1 | recruiter_athlete_cards=541446b8…/e276f541…;recruiter_athlete_profile=e269b537…/59540770…;recruiter_search_athletes=e916fe47…/3113f8e3…;effet_resultats=e276f541
  t03 lot A : cégépiens et règle                                          | SU           |       1 | cegepiens_actifs=2;regle=51b21617…;policies=5c1f9e30…
 (14 rows)
@@ -170,36 +184,36 @@ CREATE VIEW
 == F. Durées (ms) par sonde et par phase
                                  surface                                 |      phase       | appels | ms_moyen | ms_max 
 -------------------------------------------------------------------------+------------------+--------+----------+--------
- a01 recruiter_search_athletes (défaut, tout)                            | 1 avant          |      1 |      6.9 |    6.9
- a01 recruiter_search_athletes (défaut, tout)                            | 2 après          |      1 |      3.5 |    3.5
- a01 recruiter_search_athletes (défaut, tout)                            | 3 après rollback |      1 |      3.6 |    3.6
- a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 1 avant          |      1 |     11.2 |   11.2
- a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 2 après          |      1 |      9.4 |    9.4
- a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 3 après rollback |      1 |      8.6 |    8.6
- a03 recruiter_athlete_cards (tous les actifs)                           | 1 avant          |      1 |      1.5 |    1.5
+ a01 recruiter_search_athletes (défaut, tout)                            | 1 avant          |      1 |     10.5 |   10.5
+ a01 recruiter_search_athletes (défaut, tout)                            | 2 après          |      1 |      3.8 |    3.8
+ a01 recruiter_search_athletes (défaut, tout)                            | 3 après rollback |      1 |      3.5 |    3.5
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 1 avant          |      1 |     13.5 |   13.5
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 2 après          |      1 |      9.8 |    9.8
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 3 après rollback |      1 |      9.3 |    9.3
+ a03 recruiter_athlete_cards (tous les actifs)                           | 1 avant          |      1 |      1.9 |    1.9
  a03 recruiter_athlete_cards (tous les actifs)                           | 2 après          |      1 |      2.2 |    2.2
- a03 recruiter_athlete_cards (tous les actifs)                           | 3 après rollback |      1 |      1.5 |    1.5
- a04 recruiter_athlete_profile (chaque actif)                            | 1 avant          |      1 |      5.4 |    5.4
- a04 recruiter_athlete_profile (chaque actif)                            | 2 après          |      1 |      8.6 |    8.6
- a04 recruiter_athlete_profile (chaque actif)                            | 3 après rollback |      1 |      5.7 |    5.7
- a05 top_athletes_view                                                   | 1 avant          |      5 |      1.1 |    3.3
+ a03 recruiter_athlete_cards (tous les actifs)                           | 3 après rollback |      1 |      1.6 |    1.6
+ a04 recruiter_athlete_profile (chaque actif)                            | 1 avant          |      1 |      5.7 |    5.7
+ a04 recruiter_athlete_profile (chaque actif)                            | 2 après          |      1 |      8.3 |    8.3
+ a04 recruiter_athlete_profile (chaque actif)                            | 3 après rollback |      1 |      5.4 |    5.4
+ a05 top_athletes_view                                                   | 1 avant          |      5 |      1.2 |    3.4
  a05 top_athletes_view                                                   | 2 après          |      5 |      1.3 |    3.6
- a05 top_athletes_view                                                   | 3 après rollback |      5 |      1.0 |    3.0
- a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 1 avant          |      1 |      7.3 |    7.3
- a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 2 après          |      1 |      8.4 |    8.4
- a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 3 après rollback |      1 |      7.3 |    7.3
- a07 trending_athletes_view                                              | 1 avant          |      5 |      0.9 |    1.6
- a07 trending_athletes_view                                              | 2 après          |      5 |      1.1 |    1.5
+ a05 top_athletes_view                                                   | 3 après rollback |      5 |      1.0 |    3.1
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 1 avant          |      1 |      7.8 |    7.8
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 2 après          |      1 |      9.0 |    9.0
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 3 après rollback |      1 |      9.5 |    9.5
+ a07 trending_athletes_view                                              | 1 avant          |      5 |      1.0 |    1.8
+ a07 trending_athletes_view                                              | 2 après          |      5 |      1.2 |    1.6
  a07 trending_athletes_view                                              | 3 après rollback |      5 |      0.8 |    1.1
- t01 données (athlètes, équipes, rattachements, écoles)                  | 1 avant          |      1 |     45.7 |   45.7
- t01 données (athlètes, équipes, rattachements, écoles)                  | 2 après          |      1 |     44.4 |   44.4
- t01 données (athlètes, équipes, rattachements, écoles)                  | 3 après rollback |      1 |     44.4 |   44.4
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 1 avant          |      1 |     46.5 |   46.5
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 2 après          |      1 |     52.2 |   52.2
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 3 après rollback |      1 |     43.9 |   43.9
  t02 signatures et colonnes d'avant                                      | 1 avant          |      1 |      1.0 |    1.0
  t02 signatures et colonnes d'avant                                      | 2 après          |      1 |      0.7 |    0.7
- t02 signatures et colonnes d'avant                                      | 3 après rollback |      1 |      0.7 |    0.7
- t03 lot A : cégépiens et règle                                          | 1 avant          |      1 |      0.6 |    0.6
+ t02 signatures et colonnes d'avant                                      | 3 après rollback |      1 |      0.6 |    0.6
+ t03 lot A : cégépiens et règle                                          | 1 avant          |      1 |      0.7 |    0.7
  t03 lot A : cégépiens et règle                                          | 2 après          |      1 |      0.5 |    0.5
- t03 lot A : cégépiens et règle                                          | 3 après rollback |      1 |      0.5 |    0.5
+ t03 lot A : cégépiens et règle                                          | 3 après rollback |      1 |      0.4 |    0.4
 (30 rows)
 
 == VERDICT (attendu : tout à 0)
@@ -217,7 +231,7 @@ CREATE VIEW
 
               fin              
 -------------------------------
- 2026-10-26 20:15:07.753815+00
+ 2026-10-26 20:48:08.492504+00
 (1 row)
 
 ROLLBACK
@@ -233,10 +247,10 @@ SET
 
              athletes             |              teams               
 ----------------------------------+----------------------------------
- b4c4e0fa64f1226abbf072e7be940bbf | 05504287e534fe5be7f3898e0cfd85f1
+ 08ada40c6908019b8683eb9ba63c17bf | 05504287e534fe5be7f3898e0cfd85f1
 (1 row)
 
-######## 3. APPLY RÉEL LOCAL (apply-20261027.sql, gardes de jour et de date retirées dans la copie locale seulement)
+######## 3. APPLY RÉEL LOCAL
 Pager usage is off.
 Null display is "·".
 BEGIN
@@ -246,7 +260,7 @@ SET
 SET
              debut             | current_user | version 
 -------------------------------+--------------+---------
- 2026-10-26 20:15:08.089667+00 | postgres     | 17.6
+ 2026-10-26 20:48:08.858181+00 | postgres     | 17.6
 (1 row)
 
 DO
@@ -265,13 +279,13 @@ DO
 SELECT 1
         debut_migration        
 -------------------------------
- 2026-10-26 20:15:08.113864+00
+ 2026-10-26 20:48:08.882708+00
 (1 row)
 
 DO
          fin_migration         
 -------------------------------
- 2026-10-26 20:15:08.130135+00
+ 2026-10-26 20:48:08.899197+00
 (1 row)
 
 SET
@@ -288,15 +302,15 @@ INSERT 0 1
 DO
  version_inscrite | comptes_verifies |         avant_commit          
 ------------------+------------------+-------------------------------
- 20261028160000   |                2 | 2026-10-26 20:15:08.144186+00
+ 20261026210100   |                2 | 2026-10-26 20:48:08.912873+00
 (1 row)
 
 COMMIT
 == COMMIT fait : B3 en prod.
 exit=0
 ######## 4. APPLY REJOUÉ (attendu : refusé)
-psql:/tmp/b3-apply.sql:49: ERROR:  NEXUS: version 20261028160000 déjà inscrite
-######## 5. ROLLBACK RÉEL LOCAL (rollback-20261027.sql ; copie locale : version d'inscription fixée à 20261028170000, l'heure du jour étant avant la version B3)
+psql:/tmp/b3-apply.sql:46: ERROR:  NEXUS: version 20261026210100 déjà inscrite
+######## 5. ROLLBACK RÉEL LOCAL
 Pager usage is off.
 Null display is "·".
 BEGIN
@@ -306,7 +320,7 @@ SET
 SET
              debut             | current_user | version 
 -------------------------------+--------------+---------
- 2026-10-26 20:15:27.044792+00 | postgres     | 17.6
+ 2026-10-26 20:48:09.195706+00 | postgres     | 17.6
 (1 row)
 
 DO
@@ -325,13 +339,13 @@ DO
 SELECT 1
         debut_rollback         
 -------------------------------
- 2026-10-26 20:15:27.073949+00
+ 2026-10-26 20:48:09.222819+00
 (1 row)
 
 DO
          fin_rollback          
 -------------------------------
- 2026-10-26 20:15:27.089278+00
+ 2026-10-26 20:48:09.236974+00
 (1 row)
 
 SET
@@ -348,7 +362,7 @@ INSERT 0 1
 DO
  version_rollback | comptes_verifies |         avant_commit          
 ------------------+------------------+-------------------------------
- 20261028170000   |                2 | 2026-10-26 20:15:27.100816+00
+ 20261026210200   |                2 | 2026-10-26 20:48:09.248996+00
 (1 row)
 
 COMMIT
@@ -366,6 +380,19 @@ SET
 
              athletes             |              teams               
 ----------------------------------+----------------------------------
- b4c4e0fa64f1226abbf072e7be940bbf | 05504287e534fe5be7f3898e0cfd85f1
+ 08ada40c6908019b8683eb9ba63c17bf | 05504287e534fe5be7f3898e0cfd85f1
 (1 row)
+
+######## 8. INSCRIPTIONS
+    version     |             name              
+----------------+-------------------------------
+ 20261026210100 | cegep_lot_b3_filtres
+ 20261026210200 | rollback_cegep_lot_b3_filtres
+(2 rows)
+
+      operation       |       v        |       vr       
+----------------------+----------------+----------------
+ MIGRATION_B3_FILTRES | 20261026210100 | 
+ ROLLBACK_B3_FILTRES  |                | 20261026210200
+(2 rows)
 

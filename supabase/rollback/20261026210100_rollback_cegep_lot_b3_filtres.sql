@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- Rollback du lot B3 cégep (20261028160000_cegep_lot_b3_filtres). Sur GO BP seulement.
+-- Rollback du lot B3 cégep (20261026210100_cegep_lot_b3_filtres). Sur GO BP seulement.
 -- Remet les 3 fonctions recruteur et les 2 vues partenaire dans leur état prod du 2026-10-26 :
 -- corps d'origine à la lettre, ACL au texte exact, commentaires reposés, reloptions identiques.
 -- Les vues perdent des colonnes : DROP + CREATE (aucun objet n'en dépend, gardé ci-dessous).
