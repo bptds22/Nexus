@@ -1,0 +1,84 @@
+Pager usage is off.
+Null display is "┬╖".
+BEGIN
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 03:13:13.330688+00 | postgres     | 17.6
+(1 row)
+
+DO
+ temoin_trouve 
+---------------
+ t
+(1 row)
+
+ collegial_trouve 
+------------------
+ t
+(1 row)
+
+ journal_temoin_avant 
+----------------------
+                    5
+(1 row)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-26 03:13:13.398693+00
+(1 row)
+
+psql.exe : psql:C:/tmp/nexus-cegep-a/docs/cegep-lot-a/prod/apply-20261025.sql:1647: NOTICE:  NEXUS lot A : 1 athl├¿te(s) ancr├⌐(s) sur un c├⌐gep au 
+moment de l'application.
+At line:2 char:1
++ & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" "host=aws-1-ca-c ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:C:/tmp/nex... l'application.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 03:13:13.467852+00
+(1 row)
+
+DO
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "74fc504e-3133-4a3d-be2c-5e3d27efc954", "role" : "authenticated"}
+(1 row)
+
+SET
+DO
+RESET
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "f51384b5-a2c2-4827-9137-8aa8d29a1fe0", "role" : "authenticated"}
+(1 row)
+
+SET
+DO
+RESET
+ set_config 
+------------
+ 
+(1 row)
+
+ journal_temoin_apres 
+----------------------
+                    5
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261026030400   | 2026-10-26 03:13:13.573902+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot A en prod.
