@@ -98,8 +98,33 @@ abîmés dans la sortie viennent de la console, pas de la base.
   local). C'est surtout les mesures APRÈS et APRÈS ROLLBACK sous verrou ; l'apply réel ne
   contient que la migration et ne garde les verrous que le temps de celle-ci.
 
-Rien n'est appliqué : la mise en prod réelle attend le GO de BP (prévue lundi 2026-10-26 en
-journée).
+Rien n'est appliqué par le rejeu ; la mise en prod réelle passe par l'apply ci-dessous.
+
+## Apply réel (GO BP 2026-10-25, dimanche soir)
+
+Version **20261026030400** : la migration et le rollback ont été renommés à cette version
+(texte inchangé, md5 ce98b188… et 3ff81629… ; il cite encore l'horodatage provisoire
+20261020190000, laissé tel quel pour ne pas changer le texte prouvé au rejeu).
+
+- `docs/cegep-lot-a/prod/apply-20261025.sql` (généré : `scripts/cegep-lot-a-rejeu-blanc.sh 20261025 apply`) —
+  une transaction, `lock_timeout` 3 s, `statement_timeout` 60 s. Gardes avant : pas mardi/mercredi
+  avant 5 h, aucune fonction-règle, aucune policy `cegepiens_masques_recruteurs`, version non
+  inscrite et postérieure à la dernière, md5 prod des 18 fonctions touchées identiques au rejeu.
+  Puis la migration (md5 du texte gardé), gardes après (21 md5 attendus, 6 policies
+  RESTRICTIVE), preuve sous vrai JWT avant le COMMIT (collégial : témoin 0 en lecture, recherche,
+  fiche et journal ; admin : témoin 1, journal 5), inscription `schema_migrations`
+  (`cegep_lot_a_base`) et `admin_operations` `MIGRATION_LOT_A_CEGEPIENS_MASQUES`, COMMIT.
+- `docs/cegep-lot-a/prod/rollback-20261025.sql` (généré : `… rollback`) — sur GO seulement. Gardes
+  avant (lot A inscrit, 6 policies, md5 d'après l'apply), rollback (md5 gardé), gardes après,
+  inscription `rollback_cegep_lot_a_base` (version = heure UTC du lancement, comme le
+  2026-10-22) et `admin_operations` `ROLLBACK_LOT_A_CEGEPIENS_MASQUES`, COMMIT.
+- Joués en local le 2026-10-25 sur la pile mise dans l'état de la prod (constantes admin et
+  journal adaptées) : apply → COMMIT, 6 policies, inscriptions faites ; rollback → COMMIT, 0 policy,
+  aucune fonction-règle ; second apply refusé (« version déjà inscrite ») ; un échec en cours
+  de route ne laisse rien (vu sur la colonne `created_by` absente en local). Migration
+  elle-même : environ 25 ms en local.
+
+**Sortie prod : à venir** (`docs/cegep-lot-a/prod/apply-20261025.sortie.txt`).
 
 ## À prouver juste après l'apply (vrai JWT, jamais superuser)
 
@@ -114,4 +139,4 @@ Plus : `athletes ancrés CEGEP` vu par le recruteur collégial = 0 ; ses athlèt
 civil et sans ancrage inchangés ; les matchs collégiaux toujours visibles ; coach, athlète et
 `anon` identiques à avant ; le journal compte toujours ses 5 lignes sur le témoin (rien
 d'effacé). Si le recruteur collégial voit encore le témoin : rollback
-(`supabase/rollback/20261020190000_rollback_cegep_lot_a_base.sql`) sur GO.
+(`supabase/rollback/20261026030400_rollback_cegep_lot_a_base.sql`) sur GO.

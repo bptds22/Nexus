@@ -11,7 +11,7 @@ matchs collégiaux leur restent visibles ; seules disparaissent les données d'a
 fiches, nombre de profils Nexus, étoile « cible » due à l'athlète). Surfaces partenaire, coach,
 athlète et parent : inchangées.
 
-**Mécanique** (`20261020190000_cegep_lot_a_base.sql`, horodatage provisoire) :
+**Mécanique** (`20261026030400_cegep_lot_a_base.sql` ; horodatage provisoire 20261020190000 jusqu'au 2026-10-25, encore cité dans le texte du fichier, gardé tel quel pour son md5) :
 - trois fonctions-règles, STABLE, SECURITY DEFINER, `search_path` épinglé, `row_security off` :
   `athlete_est_cegepien(uuid)`, `peut_voir_cegepiens()` (sur l'appelant),
   `unite_voit_cegepiens(uuid)` (sur une école — pour `agenda_flux`, appelé par jeton, et
