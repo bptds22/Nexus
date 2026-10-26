@@ -4,7 +4,7 @@
 -- état, on ne le rejoue pas.
 \set ON_ERROR_STOP 1
 set session_replication_role = replica;
-truncate public.games, public.rseq_standings, public.rseq_sync_alerts, public.teams, public.schools, public.sports,
+truncate public.games, public.rseq_standings, public.rseq_sync_alerts, public.rseq_sync_runs, public.teams, public.schools, public.sports,
          public.rseq_watch_leagues, public.lieux_geocodes, public.rseq_ligues_publiees cascade;
 create temp table raw (k text, j jsonb);
 create temp table ligne (t text);
@@ -16,6 +16,8 @@ insert into raw select 'schools', t::jsonb from ligne; truncate ligne;
 insert into raw select 'teams', t::jsonb from ligne; truncate ligne;
 \copy ligne from '/tmp/copie/games.ndjson' with (format csv, quote e'\x01', delimiter e'\x02')
 insert into raw select 'games', t::jsonb from ligne; truncate ligne;
+\copy ligne from '/tmp/copie/rseq_sync_runs.ndjson' with (format csv, quote e'\x01', delimiter e'\x02')
+insert into raw select 'rseq_sync_runs', t::jsonb from ligne; truncate ligne;
 \copy ligne from '/tmp/copie/rseq_sync_alerts.ndjson' with (format csv, quote e'\x01', delimiter e'\x02')
 insert into raw select 'rseq_sync_alerts', t::jsonb from ligne; truncate ligne;
 \copy ligne from '/tmp/copie/rseq_watch_leagues.ndjson' with (format csv, quote e'\x01', delimiter e'\x02')
@@ -31,6 +33,7 @@ insert into public.sports               select (jsonb_populate_record(null::publ
 insert into public.schools              select (jsonb_populate_record(null::public.schools, j)).* from raw where k = 'schools';
 insert into public.teams                select (jsonb_populate_record(null::public.teams, j)).* from raw where k = 'teams';
 insert into public.games                select (jsonb_populate_record(null::public.games, j)).* from raw where k = 'games';
+insert into public.rseq_sync_runs       select (jsonb_populate_record(null::public.rseq_sync_runs, j)).* from raw where k = 'rseq_sync_runs';
 insert into public.rseq_sync_alerts     select (jsonb_populate_record(null::public.rseq_sync_alerts, j)).* from raw where k = 'rseq_sync_alerts';
 insert into public.rseq_watch_leagues   select (jsonb_populate_record(null::public.rseq_watch_leagues, j)).* from raw where k = 'rseq_watch_leagues';
 insert into public.rseq_standings       select (jsonb_populate_record(null::public.rseq_standings, j)).* from raw where k = 'rseq_standings';

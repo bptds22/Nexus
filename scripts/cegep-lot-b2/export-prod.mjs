@@ -11,8 +11,10 @@ const env = Object.fromEntries(readFileSync("C:/Users/bptds/Documents/Nexus/.env
 const URL = env.NEXT_PUBLIC_SUPABASE_URL, KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 if (URL !== "https://nrloizyemulbhujrqhgx.supabase.co" || !KEY) { console.error("ABORT cible"); process.exit(1); }
 
-const TABLES = ["sports", "schools", "teams", "games", "rseq_sync_alerts", "rseq_watch_leagues",
+const TOUTES = ["sports", "schools", "teams", "games", "rseq_sync_runs", "rseq_sync_alerts", "rseq_watch_leagues",
                 "rseq_standings", "lieux_geocodes", "rseq_ligues_publiees"];
+// node export-prod.mjs <dossier> [table…] : sans liste, toutes.
+const TABLES = process.argv.length > 3 ? process.argv.slice(3) : TOUTES;
 const PAGE = 1000;
 for (const t of TABLES) {
   const rows = [];
