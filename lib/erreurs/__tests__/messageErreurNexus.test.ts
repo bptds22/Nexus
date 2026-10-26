@@ -11,7 +11,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { messageErreurNexus, messageCourrielDejaPris, messageErreurSauvegarde } from "@/lib/erreurs/messageErreurNexus";
+import { MESSAGE_COACH_CEGEP, messageLisible, messageErreurNexus, messageCourrielDejaPris, messageErreurSauvegarde } from "@/lib/erreurs/messageErreurNexus";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -92,4 +92,13 @@ test("AthleteWizardMobile : l'erreur d'enregistrement passe par messageErreurSau
   assert.match(src, /detail: messageErreurSauvegarde\(result\.error\.message, MESSAGE_ERREUR_GENERIQUE\)/);
   assert.doesNotMatch(src, /detail: result\.error\.message/);
   assert.doesNotMatch(src, /\balert\(/);
+});
+
+test("lot B4 — refus coach → cégep : message lisible, jamais le texte brut", () => {
+  const brut = "NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.";
+  assert.equal(messageErreurNexus(brut), MESSAGE_COACH_CEGEP);
+  assert.equal(messageLisible(brut), MESSAGE_COACH_CEGEP);
+  assert.ok(!MESSAGE_COACH_CEGEP.includes("NEXUS"));
+  assert.equal(messageErreurSauvegarde(brut, "générique"), MESSAGE_COACH_CEGEP);
+  assert.equal(messageLisible("autre chose"), "autre chose");
 });

@@ -349,6 +349,12 @@ function AdminCegepSection() {
       {/* Invite */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
         <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-4">Inviter un membre</p>
+        {/* Lot B4 cégep : accroche — une invitation ajoute un RECRUTEUR à ton cégep ; un compte coach
+            ne peut pas encore y être rattaché (porte coach, lot B1). */}
+        <p className="text-[12px] text-[#9CA3AF] leading-snug -mt-2 mb-4">
+          Les coachs de cégep arrivent bientôt sur Nexus : la gestion des équipes collégiales est en préparation.
+          D&apos;ici là, une invitation ajoute un recruteur à ton cégep.
+        </p>
         <div className="max-w-md space-y-4">
           <div>
             <label className={labelCls}>Courriel</label>

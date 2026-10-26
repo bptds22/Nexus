@@ -18,6 +18,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  ORGANISATION_LABELS, organisationsAffichees, sansCollegial, categorieOptions, matchesCategorie, categorieOf, taxonomyFromSearchRow,
   UNSET_VALUE, UNSET_LABEL, RSEQ,
   normalizeDivision, normalizeLeague,
   organisationOf, leagueOf, divisionOf,
@@ -107,7 +108,8 @@ test("organisationOf — la déclaration de l'athlète prime", () => {
 
 test("organisationOf — repli sur le type d'école quand le contexte est vide", () => {
   assert.equal(organisationOf(mk({ schoolType: "SECONDAIRE" })), "scolaire");
-  assert.equal(organisationOf(mk({ schoolType: "CEGEP" })), "scolaire");
+  // Lot B4 cégep (décision BP 2026-10-26) : le cégep n'est plus fondu dans le scolaire.
+  assert.equal(organisationOf(mk({ schoolType: "CEGEP" })), "collegial");
   assert.equal(organisationOf(mk({ schoolType: "LIGUE_CIVILE" })), "ligue_civile");
 });
 
@@ -184,7 +186,7 @@ test("organisationOf — l'ordre des replis : chaque cran ne parle que si le pr�
 test("organisationOf — casse et espaces parasites ne cassent rien", () => {
   assert.equal(organisationOf(mk({ context: "  SCOLAIRE " })), "scolaire");
   assert.equal(organisationOf(mk({ schoolType: " ligue_civile " })), "ligue_civile");
-  assert.equal(organisationOf(mk({ context: "peu importe", schoolType: "CEGEP" })), "scolaire");
+  assert.equal(organisationOf(mk({ context: "peu importe", schoolType: "CEGEP" })), "collegial");
 });
 
 /* ── leagueOf — la règle qui rattrape 26 athlètes ──────────────────────────── */
@@ -283,8 +285,9 @@ test("organisationOptions — compte, et « Non renseigné » ferme la marche", 
   ];
   const opts = organisationOptions(rows);
   assert.deepEqual(opts.map((o) => [o.label, o.count]), [
-    ["Ligue civile", 1],
-    ["Scolaire", 2],
+    // Lot B4 : ordre fixe Secondaire, Civil, Collégial ; « Non renseigné » en dernier.
+    ["Secondaire", 2],
+    ["Civil", 1],
     [UNSET_LABEL, 2],
   ]);
   assert.equal(opts.at(-1)?.value, UNSET_VALUE);
@@ -385,7 +388,7 @@ test("axisDisplay — un monde unique se LIT au lieu de se choisir", () => {
     mk({ context: "scolaire", teamLeague: "RSEQ", teamDivision: "D1" }),
   ];
   assert.deepEqual(axisDisplay(organisationOptions(rseqPur)), {
-    state: "prefilled", label: "Scolaire",
+    state: "prefilled", label: "Secondaire",
   });
   assert.deepEqual(axisDisplay(leagueOptions(rseqPur)), {
     state: "prefilled", label: RSEQ,
@@ -643,4 +646,53 @@ test("INVARIANT — sur les trois axes, le compte d'une option est EXACTEMENT ce
       }
     }
   }
+});
+
+/* ── Lot B4 cégep — Type à 3 valeurs et axe Catégorie ──────────────────────── */
+
+test("lot B4 — une école d'ancrage CEGEP l'emporte sur le contexte « scolaire »", () => {
+  assert.equal(organisationOf(mk({ context: "scolaire", schoolType: "CEGEP" })), "collegial");
+  assert.equal(organisationOf(mk({ context: "scolaire", schoolType: "SECONDAIRE" })), "scolaire");
+  // Une déclaration « ligue civile » reste prioritaire, comme avant.
+  assert.equal(organisationOf(mk({ context: "ligue_civile", schoolType: "CEGEP" })), "ligue_civile");
+});
+
+test("lot B4 — libellés du Type : Secondaire / Civil / Collégial", () => {
+  assert.equal(ORGANISATION_LABELS.scolaire, "Secondaire");
+  assert.equal(ORGANISATION_LABELS.ligue_civile, "Civil");
+  assert.equal(ORGANISATION_LABELS.collegial, "Collégial");
+  assert.deepEqual(organisationsAffichees(true).map((o) => o.value), ["scolaire", "ligue_civile", "collegial"]);
+  assert.deepEqual(organisationsAffichees(false).map((o) => o.value), ["scolaire", "ligue_civile"]);
+  assert.deepEqual(sansCollegial([{ value: "scolaire" }, { value: "collegial" }]), [{ value: "scolaire" }]);
+});
+
+test("lot B4 — Catégorie : libellé canonique, ordre par âge, « Non renseigné » en dernier", () => {
+  const rows = [
+    mk({ teamAgeGroup: "Juvénile" }), mk({ teamAgeGroup: "Benjamin" }), mk({ teamAgeGroup: "cegep" }),
+    mk({ teamAgeGroup: "Midget AAA" }), mk({ teamAgeGroup: "juvénile " }), mk(),
+  ];
+  const opts = categorieOptions(rows);
+  assert.deepEqual(opts.map((o) => [o.label, o.count]), [
+    ["Benjamin", 1], ["Juvénile", 2], ["Midget AAA", 1], ["Collégial", 1], [UNSET_LABEL, 1],
+  ]);
+  assert.equal(matchesCategorie(mk({ teamAgeGroup: "cegep" }), "Collégial"), true);
+  assert.equal(matchesCategorie(mk(), UNSET_VALUE), true);
+  assert.equal(matchesCategorie(mk({ teamAgeGroup: "Cadet" }), "Juvénile"), false);
+});
+
+test("lot B4 — la Catégorie cadre les autres axes (facettes dépendantes)", () => {
+  const rows = [
+    mk({ context: "scolaire", teamAgeGroup: "Cadet" }),
+    mk({ context: "ligue_civile", teamAgeGroup: "Midget AAA" }),
+  ];
+  const opts = organisationOptions(rows, { categorie: "Cadet" });
+  assert.deepEqual(opts.map((o) => [o.value, o.count, o.disabled]), [["scolaire", 1, false], ["ligue_civile", 0, true]]);
+});
+
+test("lot B4 — la ligne de recherche recruteur porte team_age_group (B3)", () => {
+  const src = taxonomyFromSearchRow({
+    context: null, school_type: "SECONDAIRE", team_division: "D1", team_league: null,
+    team_is_rseq: true, team_school_type: "SECONDAIRE", team_age_group: "Juvénile",
+  });
+  assert.equal(categorieOf(src), "Juvénile");
 });

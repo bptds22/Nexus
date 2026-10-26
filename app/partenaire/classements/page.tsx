@@ -9,12 +9,16 @@ import ClassementsFilterBar from "../_components/ClassementsFilterBar";
 import EnTeteExploration from "../_components/EnTeteExploration";
 import {
   isOrgType,
+  parseCategorie,
+  TYPE_ECOLE,
   parseCoteMin,
   isPartnerSortKey,
   DEFAULT_PARTNER_SORT,
   sortPartnerRows,
 } from "../_components/partnerFilters";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import { variantesCategorie } from "@/lib/config/categories";
+import { libellePromotion } from "@/lib/config/gradYears";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/classements — Top 25 leaderboard
@@ -47,6 +51,8 @@ type AthleteRow = {
   sport_id: string | null;
   position_id: string | null;
   school_id: string | null;
+  /** Lot B3 : type de l'école d'ancrage. */
+  school_type?: string | null;
   photo_url: string | null;
   sport_name: string | null;
   position_name: string | null;
@@ -60,8 +66,10 @@ type FilterParams = {
   position?: string;
   region?: string;
   year?: string;
-  /** 'scolaire' | 'ligue_civile' */
+  /** Type (lot B4) : 'scolaire' (Secondaire) | 'ligue_civile' (Civil) | 'collegial'. */
   org?: string;
+  /** Catégorie (lot B4) : libellé canonique, lib/config/categories.ts. */
+  cat?: string;
   /** Cote minimale, en texte ('3' | '3.5' | '4' | '4.5'). */
   cote?: string;
   /** Clé de tri — ordre d'AFFICHAGE, pas de composition. Cf. sortPartnerRows. */
@@ -125,6 +133,7 @@ async function rendre(brut: ParamsUrl) {
   const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
   const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
   const orgFilter = isOrgType(params.org) ? params.org : null;
+  const categorieFilter = parseCategorie(params.cat);
   const coteFilter = parseCoteMin(params.cote);
   const sortKey = isPartnerSortKey(params.sort) ? params.sort : DEFAULT_PARTNER_SORT;
 
@@ -136,10 +145,10 @@ async function rendre(brut: ParamsUrl) {
   if (yearFilter !== null) query = query.eq("annee_diplomation", yearFilter);
   // Genre — colonne projetée par top_athletes_view depuis 20260817190000.
   if (params.genre) query = query.eq("genre", params.genre);
-  /* ORGANISME — `school_id` est projeté par la vue : « scolaire » = rattaché à
-     une école, « ligue_civile » = sans école. Aucun DDL. */
-  if (orgFilter === "scolaire") query = query.not("school_id", "is", null);
-  if (orgFilter === "ligue_civile") query = query.is("school_id", null);
+  /* TYPE et CATÉGORIE (lot B4) — colonnes rendues par la vue depuis B3. Filtrés DANS la
+     requête, avant la coupe à 25 : un filtre posé après viderait le top. */
+  if (orgFilter) query = query.eq("school_type", TYPE_ECOLE[orgFilter]);
+  if (categorieFilter) query = query.in("team_age_group", variantesCategorie(categorieFilter));
   if (coteFilter !== null) query = query.gte("cote_globale_entraineur", coteFilter);
 
   /* TRI EXPLICITE — ne PAS s'en remettre au `ORDER BY` interne de la vue.
@@ -197,7 +206,7 @@ async function rendre(brut: ParamsUrl) {
       <EnTeteExploration
         titre="Classements"
         sousTitre={sousTitre}
-        nbActifs={[params.sport, params.position, params.region, params.genre, orgFilter, coteFilter, yearFilter]
+        nbActifs={[params.sport, params.position, params.region, params.genre, orgFilter, categorieFilter, coteFilter, yearFilter]
           .filter((v) => v != null && v !== "").length + (sortKey !== DEFAULT_PARTNER_SORT ? 1 : 0)}
         reinitialiser="/partenaire/classements"
       >
@@ -260,7 +269,7 @@ async function rendre(brut: ParamsUrl) {
 
                   <div className="hidden md:flex flex-col items-end shrink-0 mr-2 text-right">
                     {a.region && <span className="text-[11px] text-[#9CA3AF]">{a.region}</span>}
-                    {a.annee_diplomation && <span className="text-[11px] text-[#6b7280]">Promotion {a.annee_diplomation}</span>}
+                    {a.annee_diplomation && <span className="text-[11px] text-[#6b7280]">{libellePromotion(a.annee_diplomation, a.school_type)}</span>}
                   </div>
 
                   <div className="shrink-0">

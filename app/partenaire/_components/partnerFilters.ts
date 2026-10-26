@@ -1,3 +1,5 @@
+import { CATEGORIES_CANONIQUES } from "@/lib/config/categories";
+
 /* ═══════════════════════════════════════════════════════════════
    partnerFilters — vocabulaire PARTAGÉ des filtres du portail
    partenaire, et le tri post-fetch.
@@ -129,18 +131,59 @@ export function sortPartnerRows<T>(
   return out;
 }
 
-/* ── ORGANISME ───────────────────────────────────────────────── */
+/* ── TYPE (lot B4 cégep) ─────────────────────────────────────── */
 
-/** `scolaire` = rattaché à une école ; `ligue_civile` = sans école. */
+/** Type = type de l'école d'ancrage (`school_type`, rendu par les vues partenaire depuis B3).
+ *  Mêmes libellés et même ordre que lib/config/team-taxonomy.ts ; le partenaire voit le
+ *  Collégial (il voit les cégépiens, décision BP). Les clés restent celles d'avant B4 pour
+ *  les liens déjà partagés (`org=scolaire` = Secondaire). */
 export const ORG_TYPE_OPTIONS = [
+  { value: "scolaire", label: "Secondaire" },
+  { value: "ligue_civile", label: "Civil" },
+  { value: "collegial", label: "Collégial" },
+] as const;
+
+export const ORG_TYPE_PLACEHOLDER = "Tous les types";
+
+export type OrgType = (typeof ORG_TYPE_OPTIONS)[number]["value"];
+
+export function isOrgType(v: string | null | undefined): v is OrgType {
+  return v === "scolaire" || v === "ligue_civile" || v === "collegial";
+}
+
+/** Valeur de `school_type` (schools.type de l'école d'ancrage) pour un Type.
+ *  ⚠ Un athlète SANS école n'a pas de type : il n'apparaît que sans filtre Type. Avant B4,
+ *  « Ligue civile » voulait dire « sans école » (school_id nul) ; c'est fini — même règle que
+ *  la taxonomie (pas d'école ≠ ligue civile). */
+export const TYPE_ECOLE: Record<OrgType, string> = {
+  scolaire: "SECONDAIRE",
+  ligue_civile: "LIGUE_CIVILE",
+  collegial: "CEGEP",
+};
+
+/** NEWSROOM SEULEMENT, inchangé (hors lot B4) : sa RPC (`p_org`) ne connaît que ces deux
+ *  valeurs, au sens d'avant B4 (`scolaire` = rattaché à une école, `ligue_civile` = sans école). */
+export const ORG_TYPE_OPTIONS_NEWSROOM = [
   { value: "scolaire", label: "École secondaire" },
   { value: "ligue_civile", label: "Ligue civile" },
 ] as const;
 
-export const ORG_TYPE_PLACEHOLDER = "Tous les organismes";
+export const ORG_TYPE_PLACEHOLDER_NEWSROOM = "Tous les organismes";
 
-export function isOrgType(v: string | null | undefined): v is "scolaire" | "ligue_civile" {
+export function isOrgTypeNewsroom(v: string | null | undefined): v is "scolaire" | "ligue_civile" {
   return v === "scolaire" || v === "ligue_civile";
+}
+
+/* ── CATÉGORIE (lot B4 cégep) ────────────────────────────────── */
+
+/** Liste canonique unique (lib/config/categories.ts), complète et rangée par âge — comme le
+ *  genre, elle ne rétrécit pas avec le jeu de données. Filtre serveur sur `team_age_group`. */
+export const CATEGORIE_OPTIONS = CATEGORIES_CANONIQUES.map((c) => ({ value: c, label: c }));
+
+export const CATEGORIE_PLACEHOLDER = "Toutes les catégories";
+
+export function parseCategorie(v: string | null | undefined): string | null {
+  return v && CATEGORIES_CANONIQUES.includes(v) ? v : null;
 }
 
 /* ── COTE MINIMALE ───────────────────────────────────────────── */

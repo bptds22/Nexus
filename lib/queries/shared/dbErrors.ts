@@ -6,6 +6,8 @@
 // les deux, donc une troisième copie n'était pas tenable.
 // ============================================================================
 
+import { messageCoachCegep } from "@/lib/erreurs/messageErreurNexus";
+
 /** Marque posée par les sauvegardes qui SUPPRIMENT avant de réinsérer. Quand
  *  l'insert échoue, les lignes ne sont plus en base — mais l'éditeur les a
  *  encore en mémoire (saveAll s'arrête sans vider dirtyKeys), donc un second
@@ -157,6 +159,9 @@ export function friendlyDbError(e: unknown): Error {
   const plafond = PLAFOND.exec(msg);
   if (plafond) {
     clair = `Maximum ${plafond[1]} ${NOMS[plafond[2]] ?? "éléments"} — retires-en un avant d'en ajouter un autre.`;
+  } else if (messageCoachCegep(msg)) {
+    // Lot B4 cégep : refus coach → cégep (préfixe NEXUS_COACH_CEGEP, pas « NEXUS: »).
+    clair = messageCoachCegep(msg) as string;
   } else if (MARQUEUR.test(msg)) {
     clair = msg.replace(MARQUEUR, "");
   } else if (code === "23514" || CHECK_VIOLATION.test(msg)) {

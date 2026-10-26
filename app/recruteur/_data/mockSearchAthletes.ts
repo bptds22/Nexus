@@ -14,6 +14,8 @@ export interface SearchAthlete {
   school: string;
   region: string;
   graduationYear: number;
+  /** Lot B4 cégep : « Secondaire AAAA » / « DEC AAAA ». */
+  promotionLabel?: string | null;
   niveau: "Sec. 4" | "Sec. 5";
   heightDisplay: string;
   weightDisplay: string;

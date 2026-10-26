@@ -8,7 +8,7 @@ import DatePicker from "../../components/DatePicker";
 import SportPositionSelect from "../../components/SportPositionSelect";
 import NxSelect from "../../components/NxSelect";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
-import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
+import { optionsAnneeSec5, libellePromotion, LIBELLE_ANNEE_SEC5_COACH } from "@/lib/config/gradYears";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
 import { useGrilles } from "@/lib/evaluations/useGrilles";
@@ -977,9 +977,9 @@ export default function CreateAthletePage() {
             )}
           </div>
           <div>
-            <label className={labelCls}>Promotion{req}</label>
+            <label className={labelCls}>{LIBELLE_ANNEE_SEC5_COACH}{req}</label>
             <NxSelect value={d.gradYear} onChange={(v) => updateIdentity("gradYear", v)} hasError={isFieldEmpty(d.gradYear)}
-              options={GRAD_YEAR_OPTIONS} />
+              options={optionsAnneeSec5(new Date(), d.gradYear)} />
           </div>
           <div className="sm:col-span-2">
             <label className={labelCls}>
@@ -1728,7 +1728,7 @@ export default function CreateAthletePage() {
             {infoRow("Nom", `${identity.firstName} ${identity.lastName}`)}
             {infoRow("Genre", identity.gender === "M" ? "Masculin" : identity.gender === "F" ? "Féminin" : identity.gender === "X" ? "Non genré" : "")}
             {infoRow("Date de naissance", identity.dateOfBirth)}
-            {infoRow("Promotion", identity.gradYear)}
+            {infoRow("Promotion", libellePromotion(identity.gradYear, null) ?? "")}
             {infoRow("École", identity.school)}
             {infoRow("Ville / Région", `${identity.city}${identity.region ? `, ${identity.region}` : ""}`)}
           </div>

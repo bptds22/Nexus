@@ -26,6 +26,8 @@ export interface CalendarFilters {
   promotions: string[];
   region: string;
   orgType: string;
+  /** Lot B4 cégep : libellé canonique de catégorie (lib/config/categories.ts). */
+  categorie: string;
   minRating: string;
   minGpa: string;
   /** Stage recruiter_pipeline. */
@@ -47,6 +49,7 @@ export const EMPTY_FILTERS: CalendarFilters = {
   promotions: [],
   region: "",
   orgType: "",
+  categorie: "",
   minRating: "",
   minGpa: "",
   stage: "",
@@ -59,7 +62,7 @@ export const EMPTY_FILTERS: CalendarFilters = {
 export function hasActiveFilters(f: CalendarFilters): boolean {
   return (
     !!f.sport || !!f.position || f.promotions.length > 0 || !!f.region ||
-    !!f.orgType || !!f.minRating || !!f.minGpa || !!f.stage ||
+    !!f.orgType || !!f.categorie || !!f.minRating || !!f.minGpa || !!f.stage ||
     f.listIds.length > 0 || f.verifiedOnly || f.withVideoOnly ||
     f.minTargets > 1
   );
@@ -72,6 +75,7 @@ export function filterTargets(targets: CalendarTarget[], f: CalendarFilters): Ca
     if (f.promotions.length && !f.promotions.includes(String(t.graduationYear))) return false;
     if (f.region && t.region !== f.region) return false;
     if (f.orgType && t.orgType !== f.orgType) return false;
+    if (f.categorie && (t.categorie ?? null) !== f.categorie) return false;
     if (f.minRating && t.stars < parseFloat(f.minRating)) return false;
     if (f.minGpa && t.gpa < parseFloat(f.minGpa)) return false;
     if (f.stage && t.pipelineStage !== f.stage) return false;

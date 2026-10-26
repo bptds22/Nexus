@@ -11,6 +11,9 @@
    vouvoiement.
 ═══════════════════════════════════════════════════════════════ */
 
+import { organisationsAffichees } from "@/lib/config/team-taxonomy";
+import { categoriesTriees } from "@/lib/config/categories";
+import { libelleOptionPromotion } from "@/lib/config/gradYears";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -595,6 +598,9 @@ function CalendrierContent() {
   };
 
 
+  /* Lot B4 : catégories présentes chez les cibles, dans l'ordre canonique (par âge). */
+  const categoriesCibles = useMemo(() => categoriesTriees(targets.map((x) => x.categorie)), [targets]);
+
   const matches = useMemo(
     () => buildMatches(games, filterTargets(targets, filters), sort, filters.minTargets),
     [games, targets, filters, sort],
@@ -790,12 +796,12 @@ function CalendrierContent() {
               <MultiFilterSelect
                 values={filters.promotions}
                 placeholder="Toutes les promotions"
-                renderLabel={(v) => (v.length === 1 ? `Promotion ${v[0]}` : `${v.length} promotions`)}
+                renderLabel={(v) => (v.length === 1 ? libelleOptionPromotion(v[0], "secondaire") : `${v.length} promotions`)}
                 onAdd={(v) => set("promotions", toggleIn(filters.promotions, v))}
                 onClear={() => set("promotions", [])}
               >
                 {PROMOTIONS.map((p) => (
-                  <option key={p} value={p}>{filters.promotions.includes(p) ? `✓ ${p}` : p}</option>
+                  <option key={p} value={p}>{filters.promotions.includes(p) ? `✓ ${libelleOptionPromotion(p, "secondaire")}` : libelleOptionPromotion(p, "secondaire")}</option>
                 ))}
               </MultiFilterSelect>
 
@@ -862,10 +868,17 @@ function CalendrierContent() {
                   {regions.map((r) => <option key={r} value={r}>{r}</option>)}
                 </FilterSelect>
 
-                <FilterSelect value={filters.orgType} active={!!filters.orgType} ariaLabel="Organisation" onChange={(v) => set("orgType", v)}>
-                  <option value="">Toutes les organisations</option>
-                  <option value="scolaire">Scolaire</option>
-                  <option value="ligue_civile">Ligue civile</option>
+                {/* Lot B4 : Type à 3 valeurs, sans « Collégial » pour le recruteur collégial (il ne
+                    reçoit jamais de cégépien, lot A). */}
+                <FilterSelect value={filters.orgType} active={!!filters.orgType} ariaLabel="Type" onChange={(v) => set("orgType", v)}>
+                  <option value="">Tous les types</option>
+                  {organisationsAffichees(false).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </FilterSelect>
+
+                {/* Lot B4 : Catégorie de l'équipe, liste canonique rangée par âge (valeurs présentes). */}
+                <FilterSelect value={filters.categorie} active={!!filters.categorie} ariaLabel="Catégorie" onChange={(v) => set("categorie", v)}>
+                  <option value="">Toutes les catégories</option>
+                  {categoriesCibles.map((c) => <option key={c} value={c}>{c}</option>)}
                 </FilterSelect>
 
                 <FilterSelect value={filters.minRating} active={!!filters.minRating} ariaLabel="Cote" onChange={(v) => set("minRating", v)}>

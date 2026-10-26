@@ -14,6 +14,7 @@
    · Lieu non exploitable → liste seulement, « Lieu non précisé ».
 ═══════════════════════════════════════════════════════════════ */
 
+import { categoriesTriees, libelleCategorie } from "@/lib/config/categories";
 import { sourceDuMatch, type SourceMatch } from "@/lib/calendar/sourceMatch";
 import { heureCarte, heureQuebec, minutesDe } from "@/lib/calendar/heureMatch";
 import { nomGroupe } from "@/lib/civil/classementCivil";
@@ -191,12 +192,14 @@ export function erreurPlage(debut: string, fin: string | null | undefined): stri
 export function optionsCatDiv(matchs: Pick<MatchRecherche, "categorie" | "division">[]): { categories: string[]; divisions: string[] } {
   const valeurs = (cle: (m: Pick<MatchRecherche, "categorie" | "division">) => string | null) =>
     [...new Set(matchs.map(cle).map((v) => (v ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
-  return { categories: valeurs((m) => m.categorie), divisions: valeurs((m) => m.division) };
+  // Lot B4 cégep : la Catégorie passe par la liste canonique unique (libellé, ordre par âge).
+  return { categories: categoriesTriees(matchs.map((m) => m.categorie)), divisions: valeurs((m) => m.division) };
 }
 
 export function filtrerCatDiv<T extends Pick<MatchRecherche, "categorie" | "division">>(matchs: T[], categorie: string, division: string): T[] {
   return matchs.filter((m) =>
-    (!categorie || norm(m.categorie) === norm(categorie)) && (!division || norm(m.division) === norm(division)));
+    (!categorie || libelleCategorie(m.categorie) === libelleCategorie(categorie))
+    && (!division || norm(m.division) === norm(division)));
 }
 
 /* ── Jours ─────────────────────────────────────────────────── */

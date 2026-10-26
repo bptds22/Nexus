@@ -86,6 +86,12 @@ function ecrire(evenements: Evenement[]) {
     });
 }
 
+/* Clés de filtre que search_filter_events ne connaît pas encore. La table porte un CHECK en LISTE
+   FERMÉE sur `filtre` (search_filter_events_filtre_check) : une clé inconnue fait échouer le LOT
+   d'événements en entier. L'ajouter demande une migration ; d'ici là, elle n'est pas journalisée.
+   Lot B4 cégep : `categorieFilter`. */
+const NON_JOURNALISES = new Set<string>(["categorieFilter"]);
+
 export function useJournalFiltres<F extends JeuDeFiltres<F>>({
   surface, filtres, defauts, nbResultats, pret,
 }: Options<F>) {
@@ -100,6 +106,7 @@ export function useJournalFiltres<F extends JeuDeFiltres<F>>({
     const avant = reference.current;
     if (avant === filtres) return;
     for (const [cle, valeur] of changementsAJournaliser(avant, filtres, defauts)) {
+      if (NON_JOURNALISES.has(cle)) continue;
       enAttente.current.set(cle, valeur);
     }
     reference.current = filtres;

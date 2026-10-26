@@ -1,5 +1,6 @@
 "use client";
 
+import { libelleOptionPromotion, porteePromotion } from "@/lib/config/gradYears";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import AdvancedFilterDrawer from "./AdvancedFilterDrawer";
@@ -8,6 +9,8 @@ import {
   DEFAULT_PARTNER_SORT,
   ORG_TYPE_OPTIONS,
   ORG_TYPE_PLACEHOLDER,
+  CATEGORIE_OPTIONS,
+  CATEGORIE_PLACEHOLDER,
   COTE_MIN_OPTIONS,
   COTE_MIN_PLACEHOLDER,
 } from "./partnerFilters";
@@ -58,6 +61,7 @@ export default function TendancesDropdownFilters({
   const currentYear = searchParams.get("year") || "";
   const currentGenre = searchParams.get("genre") || "";
   const currentOrg = searchParams.get("org") || "";
+  const currentCat = searchParams.get("cat") || "";
   const currentCote = searchParams.get("cote") || "";
   const currentSort = searchParams.get("sort") || DEFAULT_PARTNER_SORT;
 
@@ -93,7 +97,7 @@ export default function TendancesDropdownFilters({
      la semaine, alors que la cause est le filtre. */
   const hasFilters =
     currentSport || currentPosition || currentRegion || currentYear || currentGenre
-    || currentOrg || currentCote || currentSort !== DEFAULT_PARTNER_SORT;
+    || currentOrg || currentCat || currentCote || currentSort !== DEFAULT_PARTNER_SORT;
 
   return (
     <>
@@ -132,7 +136,33 @@ export default function TendancesDropdownFilters({
         aria-label="Promotion"
       >
         <option value="">Toutes les promotions</option>
-        {graduationYears.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+        {/* Lot B4 : jamais l'année seule — « Secondaire ou DEC » tant que le Type n'est pas choisi. */}
+        {graduationYears.map((y) => <option key={y} value={String(y)}>{libelleOptionPromotion(y, porteePromotion(currentOrg, true))}</option>)}
+      </select>
+
+      {/* TYPE et CATÉGORIE (lot B4 cégep) — dans la barre principale, toujours affichés.
+          Type = type de l'école d'ancrage (Secondaire / Civil / Collégial) ; Catégorie = liste
+          canonique unique (lib/config/categories.ts), rangée par âge. */}
+      <select
+        value={currentOrg}
+        onChange={(e) => pushFilter({ org: e.target.value || null })}
+        className={`${selectCls} ${currentOrg ? activeCls : ""}`}
+        aria-label="Type"
+      >
+        <option value="">{ORG_TYPE_PLACEHOLDER}</option>
+        {ORG_TYPE_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+
+      <select
+        value={currentCat}
+        onChange={(e) => pushFilter({ cat: e.target.value || null })}
+        className={`${selectCls} ${currentCat ? activeCls : ""}`}
+        aria-label="Catégorie"
+      >
+        <option value="">{CATEGORIE_PLACEHOLDER}</option>
+        {CATEGORIE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
 
       <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
@@ -169,27 +199,6 @@ export default function TendancesDropdownFilters({
         >
           <option value="">Toutes les régions</option>
           {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
-
-        {/* ORGANISME — `trending_athletes_view` ne projette PAS `school_id`,
-            contrairement à `top_athletes_view`. On teste donc `school_name`,
-            qui vient de la même LEFT JOIN : `school_name IS NULL` ⟺
-            `school_id IS NULL` (vérifié le 19 août 2026 : 0 désaccord sur les
-            27 éligibles, la FK garantit qu'une école référencée existe).
-            Substitut exact, et surtout AUCUN DDL — ajouter `school_id` à la
-            vue entrerait en collision avec le chantier RLS partenaire.
-            Même réserve de données que sur /classements : 0 athlète éligible
-            en ligue civile aujourd'hui. */}
-        <select
-          value={currentOrg}
-          onChange={(e) => pushFilter({ org: e.target.value || null })}
-          className={`${selectCls} ${currentOrg ? activeCls : ""}`}
-          aria-label="Organisme"
-        >
-          <option value="">{ORG_TYPE_PLACEHOLDER}</option>
-          {ORG_TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
         </select>
 
         {/* GENRE — `athletes.genre` est brut en base ('M' | 'F' | 'X' | NULL).

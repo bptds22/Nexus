@@ -248,6 +248,21 @@ function ProSignupContent() {
                   </button>
                 );
               })}
+
+              {/* Lot B4 cégep (décision BP 2026-10-22) : le coach de cégep, grisé — un compte coach
+                  ne peut pas encore être rattaché à un cégep (porte coach, lot B1). Non sélectionnable. */}
+              <div
+                aria-disabled="true"
+                className="w-full flex items-start gap-4 p-4 rounded-xl border border-white/5 text-left opacity-50 cursor-not-allowed select-none"
+              >
+                <div className="shrink-0 mt-0.5 text-[#4B5563]">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+                </div>
+                <div>
+                  <p className="font-head font-bold text-[13px] uppercase tracking-wide text-[#6B7280]">Coach cégep — bientôt disponible</p>
+                  <p className="text-[11px] text-[#6B7280] leading-snug mt-0.5">La gestion des équipes collégiales arrive bientôt.</p>
+                </div>
+              </div>
             </div>
 
             {/* Step 2 — Form (appears after selection) */}

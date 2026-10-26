@@ -26,6 +26,7 @@
    Clé sous ["recruiting-calendar"] : dans tableauBlanc.ts.
 ═══════════════════════════════════════════════════════════════ */
 
+import { libelleCategorie } from "@/lib/config/categories";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -203,7 +204,9 @@ export function useCalendrierUnite(enabled: boolean) {
           hasVideo: !!c.lien_video,
           stars: 0,
           gpa: 0,
-          orgType: (c.teams?.schools?.type === "LIGUE_CIVILE" ? "ligue_civile" : "scolaire") as "scolaire" | "ligue_civile",
+          orgType: (c.teams?.schools?.type === "LIGUE_CIVILE" ? "ligue_civile"
+            : c.teams?.schools?.type === "CEGEP" ? "collegial" : "scolaire") as "scolaire" | "ligue_civile" | "collegial",
+          categorie: libelleCategorie(c.teams?.age_group),
           pipelineStage: c.etape,
           listIds: listesParCarte.get(c.id) ?? [],
           teamId: c.team_id!,

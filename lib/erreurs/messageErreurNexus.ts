@@ -14,6 +14,23 @@
 
 const PREFIXE = /^\s*NEXUS:\s*/;
 
+/* Refus « coach → cégep » (lot B1 cégep, trigger porte_coach_cegep) : la base lève
+   « NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cégep. La gestion des
+   équipes collégiales arrive bientôt. » Son préfixe n'est PAS « NEXUS: » : sans cette règle, il
+   tombait dans le message générique, ou s'affichait brut. Lot B4 : le texte lisible, toujours. */
+const COACH_CEGEP = /NEXUS_COACH_CEGEP/;
+export const MESSAGE_COACH_CEGEP =
+  "Un compte coach ne peut pas être rattaché à un cégep. La gestion des équipes collégiales arrive bientôt.";
+
+export function messageCoachCegep(message: string | null | undefined): string | null {
+  return message && COACH_CEGEP.test(message) ? MESSAGE_COACH_CEGEP : null;
+}
+
+/** Le message à montrer : le refus coach → cégep en clair, sinon le message reçu tel quel. */
+export function messageLisible(message: string): string {
+  return messageCoachCegep(message) ?? message;
+}
+
 /* « cet athlète a déjà le badge « Vitesse » (attribué par L'Esprit Sportif) »
    → « Cet athlète a déjà le badge Vitesse, attribué par L'Esprit Sportif. »
    Couvre les trois formes levées par la base : sans auteur, « par <partenaire> »,
@@ -21,6 +38,8 @@ const PREFIXE = /^\s*NEXUS:\s*/;
 const BADGE_DEJA = /^cet athlète a déjà le badge « (.+?) »(?: \(attribué par (.+)\))?\.?$/;
 
 export function messageErreurNexus(message: string | null | undefined): string | null {
+  const coachCegep = messageCoachCegep(message);
+  if (coachCegep) return coachCegep;
   if (!message || !PREFIXE.test(message)) return null;
   const phrase = message.replace(PREFIXE, "").trim();
   if (!phrase) return null;
