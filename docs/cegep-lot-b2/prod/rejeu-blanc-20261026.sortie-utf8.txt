@@ -1,0 +1,267 @@
+Pager usage is off.
+Null display is "┬╖".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 14:00:46.060577+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 256
+DO
+SELECT 4569
+SELECT 204
+SELECT 93
+CREATE TABLE
+INSERT 0 5
+CREATE TABLE
+INSERT 0 1
+INSERT 0 12
+INSERT 0 4
+INSERT 0 0
+INSERT 0 1
+DELETE 0
+DO
+            cat             | comptes 
+----------------------------+---------
+ admin                      |       1
+ anon                       |       1
+ partenaire admis           |       4
+ recruteur Pro, ├⌐cole CEGEP |      12
+(4 rows)
+
+ les_256 | matchs_d_equipe_de_cegep | alertes_nouvelle_equipe_ouvertes | textes_de_recherche | jetons_d_equipe 
+---------+--------------------------+----------------------------------+---------------------+-----------------
+     256 |                     4569 |                              204 |                  93 |             147
+(1 row)
+
+CREATE TABLE
+INSERT 0 21
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+      debut_mesure_avant       
+-------------------------------
+ 2026-10-26 14:00:46.445864+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ┬╖
+(1 row)
+
+ empreinte 
+-----------
+ ┬╖
+(1 row)
+
+        debut_migration        
+-------------------------------
+ 2026-10-26 14:01:12.472834+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 14:01:12.498759+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ┬╖
+(1 row)
+
+ empreinte 
+-----------
+ ┬╖
+(1 row)
+
+DO
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ┬╖
+(1 row)
+
+ empreinte 
+-----------
+ ┬╖
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 14:02:05.628845+00
+(1 row)
+
+CREATE VIEW
+== 0. Valeurs AVANT (une ligne par sonde, premier compte ; md5 abr├⌐g├⌐s)
+                              surface                              |    compte    | comptes |                                                                                                                                                       valeur                                                                                                                                                        
+-------------------------------------------------------------------+--------------+---------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ a01 matchs_recherche : matchs des 256, saison                     | P01 011ef8c9 |      16 | n=1705;avenir=894;md5=e41ee782ΓÇª
+ a02 matchs_recherche : saison, fen├¬tres de 31 j                   | R01 16809ad4 |       1 | f20260701=0/d41d8cd9ΓÇª;f20260801=142/cefb13c6ΓÇª;f20260901=2552/76144593ΓÇª;f20261002=5808/af09d8b4ΓÇª;f20261102=4269/88b5edabΓÇª;f20261203=2433/9fe9c753ΓÇª;f20270103=3801/1f031550ΓÇª;f20270203=3215/9e09d6feΓÇª;f20270306=925/94e50707ΓÇª;f20270406=0/d41d8cd9ΓÇª;f20270507=0/d41d8cd9ΓÇª;f20270607=0/d41d8cd9ΓÇª;f20270708=0/d41d8cd9ΓÇª
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | R01 16809ad4 |       1 | CIVIL=135/063b5c0fΓÇª;COLLEGIAL=699/3c7d8259ΓÇª;COLLEGIAL+CIVIL=834/113447d8ΓÇª;SECONDAIRE=3536/dc4d8277ΓÇª;SECONDAIRE+CIVIL=3671/f7dce5deΓÇª;SECONDAIRE+COLLEGIAL=4235/bc3aad08ΓÇª;SECONDAIRE+COLLEGIAL+CIVIL=4370/3e2ce09eΓÇª
+ a04 matchs_suggestions : c├⌐geps, ├⌐coles, mots                     | R01 16809ad4 |       1 | lignes=322;hors256=0f10ea4dΓÇª;les256_sans_detail=e9f02a64ΓÇª;libelle_les256=1cdf1551ΓÇª;libelle_les256_lignes=160
+ a05 depistage_profils_match : matchs d'├⌐quipes de c├⌐gep           | R01 16809ad4 |       1 | matchs=4569;non_vides=0;contenu=-
+ a06 jetons d'├⌐quipe (apercu_code_equipe, resolve_team_join_token) | ADMIN        |       1 | jetons=147;hors256=eb212cf7ΓÇª;les256_sans_categorie=d41d8cd9ΓÇª;libelle_les256=-
+ a08 rseq_creer_equipes_proposees ├á blanc (alertes ouvertes)       | ADMIN        |       1 | equipes=192;cotes_domicile=1462;cotes_visiteur=1454;refusees=b1b6b188ΓÇª;refusees_n=12
+ t01 teams hors des 256 (ligne compl├¿te)                           | SU           |       1 | n=9889;md5=699908aaΓÇª
+ t02 les 256 sans age_group                                        | SU           |       1 | n=256;md5=ec5a6764ΓÇª
+ t03 les 256 : cat├⌐gorie et ligne compl├¿te                         | SU           |       1 | libelle_categories=NULL;libelle_md5_complet=86d202ebΓÇª
+ t04 SECONDAIRE en ┬½ Coll├⌐gial ┬╗ (Coll├¿ge de l'Assomption)         | SU           |       1 | n=5;ecoles=1;md5=57d1b4b3ΓÇª
+ t05 LIGUE_CIVILE en ┬½ cegep ┬╗ (Champlain Cavaliers)               | SU           |       1 | n=1;md5=103eb58fΓÇª
+ t06 index teams_identity_unique                                   | SU           |       1 | valide=true;groupes_en_double=0;les256_jumelle_collegial=0
+ t07 matchs li├⌐s aux 256                                           | SU           |       1 | n=1709;avenir=894;md5=641ce616ΓÇª
+ t08 tous les matchs                                               | SU           |       1 | n=70303;md5=0d084c3fΓÇª
+ t09 classements rseq_standings                                    | SU           |       1 | n=4463;des256=256;md5=2878d32eΓÇª
+ t10 classements affich├⌐s (├⌐quipe et ├⌐cole jointes)                | SU           |       1 | n=4463;md5=8b43e3c4ΓÇª;libelle_categories_des256=NULL
+ t11 cl├⌐ de regroupement ├⌐cran des ├⌐quipes de c├⌐gep                | SU           |       1 | n=654;md5=a1711db7ΓÇª
+ t12 d├⌐pendants des 256                                            | SU           |       1 | team_athletes=0;team_coaches=0;team_invitations=0;team_join_tokens=0;cartes_prospect=0;alertes=23;matchs_ajoutes=0
+ t13 athl├¿tes sur une ├⌐quipe s┼ôur ┬½ Coll├⌐gial ┬╗                    | SU           |       1 | cegepiens=0;non_cegepiens=0
+(20 rows)
+
+== A. ├ëcarts AVANT ΓåÆ APR├êS, cl├⌐ par cl├⌐ (seules les cl├⌐s ┬½ libelleΓÇª ┬╗ ont le droit de changer)
+                      surface                       |            cle            | nature | comptes |   avant   |   apres   
+----------------------------------------------------+---------------------------+--------+---------+-----------+-----------
+ a04 matchs_suggestions : c├⌐geps, ├⌐coles, mots      | libelle_les256            | permis |       1 | 1cdf1551ΓÇª | 55b0ed28ΓÇª
+ t03 les 256 : cat├⌐gorie et ligne compl├¿te          | libelle_categories        | permis |       1 | NULL      | Coll├⌐gial
+ t03 les 256 : cat├⌐gorie et ligne compl├¿te          | libelle_md5_complet       | permis |       1 | 86d202ebΓÇª | a01b5281ΓÇª
+ t10 classements affich├⌐s (├⌐quipe et ├⌐cole jointes) | libelle_categories_des256 | permis |       1 | NULL      | Coll├⌐gial
+(4 rows)
+
+== A2. D├⌐pistage : matchs dont le contenu change (attendu : seulement des matchs d'une des 256)
+ compte | cote | match | profils | match_d_une_des_256 
+--------+------+-------+---------+---------------------
+(0 rows)
+
+== C. Propositions de la veille, alerte par alerte (rseq_proposition_equipe)
+       avant       |       apres       | alertes | doublon_change | ecole_change | cotes_change |    categorie     
+-------------------+-------------------+---------+----------------+--------------+--------------+------------------
+ a_creer           | a_creer           |     192 |              0 |            0 |            0 | NULL ΓåÆ Coll├⌐gial
+ doublon           | doublon           |       2 |              0 |            0 |            0 | NULL ΓåÆ Coll├⌐gial
+ ecole_introuvable | ecole_introuvable |      10 |              0 |            0 |            0 | NULL ΓåÆ Coll├⌐gial
+(3 rows)
+
+== C2. Les doublons : m├¬me ├⌐quipe vis├⌐e avant et apr├¿s
+  alerte  | doublon_avant | doublon_apres | equipe_visee_parmi_les_256 
+----------+---------------+---------------+----------------------------
+ e5bffe47 | 38e387b3      | 38e387b3      | t
+ ea152938 | d469c1ce      | d469c1ce      | t
+(2 rows)
+
+== D. Rollback : AVANT ΓåÆ APR├êS ROLLBACK (attendu : 0, 0, 0)
+ cellules_differentes | propositions_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------+--------------------------------+--------------------
+                    0 |                        0 |                              0 |               1108
+(1 row)
+
+== E. Ce que la migration change au sch├⌐ma (empreinte AVANT ΓåÆ APR├êS ; attendu : rseq_proposition_equipe seule)
+                                           objet                                            |      cote       
+--------------------------------------------------------------------------------------------+-----------------
+ F|rseq_proposition_equipe(uuid,uuid,text,uuid,text,text)|00766b1735952d9a5366db23e383c6bd| | avant seulement
+ F|rseq_proposition_equipe(uuid,uuid,text,uuid,text,text)|80c3399deff44d064abcc77442e3d744| | apr├¿s seulement
+(2 rows)
+
+== F. Dur├⌐es (ms) par sonde et par phase
+                              surface                              |      phase       | appels | ms_moyen | ms_max  
+-------------------------------------------------------------------+------------------+--------+----------+---------
+ a01 matchs_recherche : matchs des 256, saison                     | 1 avant          |     16 |    116.3 |   131.0
+ a01 matchs_recherche : matchs des 256, saison                     | 2 apr├¿s          |     16 |    117.8 |   126.9
+ a01 matchs_recherche : matchs des 256, saison                     | 3 apr├¿s rollback |     16 |    116.2 |   118.3
+ a02 matchs_recherche : saison, fen├¬tres de 31 j                   | 1 avant          |      1 |   1831.3 |  1831.3
+ a02 matchs_recherche : saison, fen├¬tres de 31 j                   | 2 apr├¿s          |      1 |   1864.7 |  1864.7
+ a02 matchs_recherche : saison, fen├¬tres de 31 j                   | 3 apr├¿s rollback |      1 |   1869.5 |  1869.5
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 1 avant          |      1 |   1582.3 |  1582.3
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 2 apr├¿s          |      1 |   1679.0 |  1679.0
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 3 apr├¿s rollback |      1 |   1583.6 |  1583.6
+ a04 matchs_suggestions : c├⌐geps, ├⌐coles, mots                     | 1 avant          |      1 |  14998.0 | 14998.0
+ a04 matchs_suggestions : c├⌐geps, ├⌐coles, mots                     | 2 apr├¿s          |      1 |  15330.2 | 15330.2
+ a04 matchs_suggestions : c├⌐geps, ├⌐coles, mots                     | 3 apr├¿s rollback |      1 |  15520.3 | 15520.3
+ a05 depistage_profils_match : matchs d'├⌐quipes de c├⌐gep           | 1 avant          |      1 |   1886.0 |  1886.0
+ a05 depistage_profils_match : matchs d'├⌐quipes de c├⌐gep           | 2 apr├¿s          |      1 |   1934.1 |  1934.1
+ a05 depistage_profils_match : matchs d'├⌐quipes de c├⌐gep           | 3 apr├¿s rollback |      1 |   1985.3 |  1985.3
+ a06 jetons d'├⌐quipe (apercu_code_equipe, resolve_team_join_token) | 1 avant          |      1 |     98.8 |    98.8
+ a06 jetons d'├⌐quipe (apercu_code_equipe, resolve_team_join_token) | 2 apr├¿s          |      1 |     95.7 |    95.7
+ a06 jetons d'├⌐quipe (apercu_code_equipe, resolve_team_join_token) | 3 apr├¿s rollback |      1 |     95.7 |    95.7
+ a08 rseq_creer_equipes_proposees ├á blanc (alertes ouvertes)       | 1 avant          |      1 |    430.8 |   430.8
+ a08 rseq_creer_equipes_proposees ├á blanc (alertes ouvertes)       | 2 apr├¿s          |      1 |    431.8 |   431.8
+ a08 rseq_creer_equipes_proposees ├á blanc (alertes ouvertes)       | 3 apr├¿s rollback |      1 |    350.1 |   350.1
+ t01 teams hors des 256 (ligne compl├¿te)                           | 1 avant          |      1 |    104.2 |   104.2
+ t01 teams hors des 256 (ligne compl├¿te)                           | 2 apr├¿s          |      1 |    104.8 |   104.8
+ t01 teams hors des 256 (ligne compl├¿te)                           | 3 apr├¿s rollback |      1 |    103.7 |   103.7
+ t02 les 256 sans age_group                                        | 1 avant          |      1 |      4.4 |     4.4
+ t02 les 256 sans age_group                                        | 2 apr├¿s          |      1 |      4.4 |     4.4
+ t02 les 256 sans age_group                                        | 3 apr├¿s rollback |      1 |      4.5 |     4.5
+ t03 les 256 : cat├⌐gorie et ligne compl├¿te                         | 1 avant          |      1 |      4.3 |     4.3
+ t03 les 256 : cat├⌐gorie et ligne compl├¿te                         | 2 apr├¿s          |      1 |      4.2 |     4.2
+ t03 les 256 : cat├⌐gorie et ligne compl├¿te                         | 3 apr├¿s rollback |      1 |      4.2 |     4.2
+ t04 SECONDAIRE en ┬½ Coll├⌐gial ┬╗ (Coll├¿ge de l'Assomption)         | 1 avant          |      1 |      3.0 |     3.0
+ t04 SECONDAIRE en ┬½ Coll├⌐gial ┬╗ (Coll├¿ge de l'Assomption)         | 2 apr├¿s          |      1 |      2.9 |     2.9
+ t04 SECONDAIRE en ┬½ Coll├⌐gial ┬╗ (Coll├¿ge de l'Assomption)         | 3 apr├¿s rollback |      1 |      2.9 |     2.9
+ t05 LIGUE_CIVILE en ┬½ cegep ┬╗ (Champlain Cavaliers)               | 1 avant          |      1 |      1.6 |     1.6
+ t05 LIGUE_CIVILE en ┬½ cegep ┬╗ (Champlain Cavaliers)               | 2 apr├¿s          |      1 |      1.5 |     1.5
+ t05 LIGUE_CIVILE en ┬½ cegep ┬╗ (Champlain Cavaliers)               | 3 apr├¿s rollback |      1 |      1.6 |     1.6
+ t06 index teams_identity_unique                                   | 1 avant          |      1 |      6.9 |     6.9
+ t06 index teams_identity_unique                                   | 2 apr├¿s          |      1 |      7.1 |     7.1
+ t06 index teams_identity_unique                                   | 3 apr├¿s rollback |      1 |      6.7 |     6.7
+ t07 matchs li├⌐s aux 256                                           | 1 avant          |      1 |     63.7 |    63.7
+ t07 matchs li├⌐s aux 256                                           | 2 apr├¿s          |      1 |     63.9 |    63.9
+ t07 matchs li├⌐s aux 256                                           | 3 apr├¿s rollback |      1 |     63.5 |    63.5
+ t08 tous les matchs                                               | 1 avant          |      1 |   2704.5 |  2704.5
+ t08 tous les matchs                                               | 2 apr├¿s          |      1 |   2691.2 |  2691.2
+ t08 tous les matchs                                               | 3 apr├¿s rollback |      1 |   2669.8 |  2669.8
+ t09 classements rseq_standings                                    | 1 avant          |      1 |    281.8 |   281.8
+ t09 classements rseq_standings                                    | 2 apr├¿s          |      1 |    275.7 |   275.7
+ t09 classements rseq_standings                                    | 3 apr├¿s rollback |      1 |    265.1 |   265.1
+ t10 classements affich├⌐s (├⌐quipe et ├⌐cole jointes)                | 1 avant          |      1 |     15.6 |    15.6
+ t10 classements affich├⌐s (├⌐quipe et ├⌐cole jointes)                | 2 apr├¿s          |      1 |     14.7 |    14.7
+ t10 classements affich├⌐s (├⌐quipe et ├⌐cole jointes)                | 3 apr├¿s rollback |      1 |     14.6 |    14.6
+ t11 cl├⌐ de regroupement ├⌐cran des ├⌐quipes de c├⌐gep                | 1 avant          |      1 |      2.0 |     2.0
+ t11 cl├⌐ de regroupement ├⌐cran des ├⌐quipes de c├⌐gep                | 2 apr├¿s          |      1 |      2.1 |     2.1
+ t11 cl├⌐ de regroupement ├⌐cran des ├⌐quipes de c├⌐gep                | 3 apr├¿s rollback |      1 |      2.3 |     2.3
+ t12 d├⌐pendants des 256                                            | 1 avant          |      1 |      6.7 |     6.7
+ t12 d├⌐pendants des 256                                            | 2 apr├¿s          |      1 |      6.8 |     6.8
+ t12 d├⌐pendants des 256                                            | 3 apr├¿s rollback |      1 |      7.0 |     7.0
+ t13 athl├¿tes sur une ├⌐quipe s┼ôur ┬½ Coll├⌐gial ┬╗                    | 1 avant          |      1 |      2.4 |     2.4
+ t13 athl├¿tes sur une ├⌐quipe s┼ôur ┬½ Coll├⌐gial ┬╗                    | 2 apr├¿s          |      1 |      2.5 |     2.5
+ t13 athl├¿tes sur une ├⌐quipe s┼ôur ┬½ Coll├⌐gial ┬╗                    | 3 apr├¿s rollback |      1 |      2.6 |     2.6
+(60 rows)
+
+== VERDICT (attendu : tout ├á 0 et refus ├á 0)
+ ecarts_interdits | decisions_changees | ecarts_apres_rollback | empreinte_apres_rollback | refus 
+------------------+--------------------+-----------------------+--------------------------+-------
+                0 |                  0 |                     0 |                        0 |     0
+(1 row)
+
+ surface | compte | phase | v 
+---------+--------+-------+---
+(0 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 14:02:05.698901+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est rest├⌐.
