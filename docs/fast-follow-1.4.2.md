@@ -2950,3 +2950,19 @@ L'historique est dans git ; `docs/qg-admin/` et `docs/ecran-mural/` restent comm
   `A_ENVOYER` (réclamée avant l'envoi). Relevé prod 2026-10-23 : les 5 lignes sont à
   `ENVOYE`. Une fois `inscrire_demo` fermée, plus aucune ligne à envoyer ne peut naître
   par l'API.
+
+## 103. Suggestions de la carte des matchs : pas de départage final à la coupe de 8 (2026-10-26, lot à part, plus tard)
+
+`matchs_suggestions` trie la partie équipes par `(préfixe du 1er mot) desc, nb_matchs desc,
+libelle` puis coupe à 8 (`limit 8`), **sans départage final**. Deux équipes ex-aequo sur ces
+trois clés (même libellé, même nombre de matchs, ex. les équipes F et M d'un même cégep) se
+disputent la 8e place au hasard de l'ordre d'exécution : la liste affichée peut changer d'un
+appel à l'autre sans que les données changent.
+
+- **Constat** : rejeu à blanc prod des 12 équipes cégep (2026-10-26), recherche « Champlain » :
+  l'entrée de Ch.-Lennoxville dans le top 8 n'a laissé qu'une des deux Ch.-St-Lawrence D2 (F
+  avant, M après). Faux positif de la sonde, corrigé dans le rejeu (classement « échange entre
+  ex-aequo (effet) », `docs/cegep-equipes-12/prod/rejeu-blanc.gabarit.sql`), pas dans la
+  fonction.
+- **Correctif proposé** : ajouter `e.cle` en dernier critère du `order by`. Changement de
+  fonction, donc migration à part, avec son rejeu, sur GO de BP. Aucun effet sur les données.
