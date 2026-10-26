@@ -21,7 +21,7 @@ Fichiers source hors dépôt : `Documents/Nexus-Imports/civil-2026/`. Aucune don
 | 0 | `scripts/civil-2026/lot0_plan.py` : plan JSON, lecture seule | fait |
 | 1 | `20261026210000_civil_sources_lot1` : `games.source_match_id` / `statut_source`, `games_identite_civile` restreint, sources SPORDLE / MBL / KREEZEE, tables de correspondance | **EN PROD** 2026-10-26 20 h 03 UTC (`prod/apply-20261026210000.sql`, admin_operations `69e6300d`) |
 | 2 | `lot2/1-organisations.sql` : 201 organisations (69 géocodées) + 86 existantes géocodées + 489 correspondances INVENTAIRE ; rollback `lot2/2-rollback.sql` | **EN PROD** 2026-10-26 20 h 22 UTC (op `f029d1f8`) |
-| 2b | `lot2b/1-geocodage-villes.sql` : 152 organisations géocodées par ville (Nominatim, 111 villes) ; rollback `lot2b/2-rollback.sql` | local prouvé, prod sur GO séparé |
+| 2b | `lot2b/1-geocodage-villes.sql` : 152 organisations géocodées par ville (Nominatim, 111 villes) ; rollback `lot2b/2-rollback.sql` | **EN PROD** 2026-10-26 20 h 34 UTC (op `6daa5649`) : 307 / 473 organisations civiles avec un point |
 | 3 | `lot3/1-equipes.sql` : 2 039 équipes de moins de 18 ans + 2 049 clés source ; rollback `lot3/2-rollback.sql` | local prouvé, **pas en prod** |
 | 4 | Équipes de 18 ans et plus | à faire |
 | 5 | Matchs à venir | à faire |
