@@ -108,7 +108,9 @@ function sql(ligue, rows) {
   L.push(...resolution(ligue, "tv", "visitor_name"));
   L.push(`ON CONFLICT (league_name, season, category, division, zone, game_date,`);
   L.push(`             LEAST(home_name_raw, visitor_name_raw), GREATEST(home_name_raw, visitor_name_raw))`);
-  L.push(`  WHERE rseq_game_id IS NULL`);
+  // Prédicat de games_identite_civile depuis 20261026210000 (lot 1 civil) : l'ancien
+  // « WHERE rseq_game_id IS NULL » ne trouve plus d'index (42P10).
+  L.push(`  WHERE rseq_game_id IS NULL AND source_match_id IS NULL`);
   L.push(`DO NOTHING;`);
   return L.join("\n");
 }

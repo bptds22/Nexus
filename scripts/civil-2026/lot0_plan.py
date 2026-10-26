@@ -238,7 +238,7 @@ def soccer(S, j1, j2, depuis, rejets, journal):
         if not paires:
             vu_030 = any(v[0] == e["Équipe"] and (v[2] or "").upper().startswith("0-30")
                          for t in par_nom.get(e["Équipe"], set()) for v in variantes[t])
-            rejets.append(("soccer", "equipe", "categorie_0-30_a_trancher" if vu_030 else "id_spordle_absent",
+            rejets.append(("soccer", "equipe", "categorie_0-30_ecartee_veterans" if vu_030 else "id_spordle_absent",
                            e["Équipe"], e["Ligue"], age + " " + genre))
             continue
         if homonymes[(e["Équipe"], e["Ligue"], age, genre, e["Niveau"])] > 1:
@@ -339,16 +339,12 @@ AGE_BASKET = {"U13-U14 (sec. 1-2)": "Benjamin", "U14": "Benjamin",
 
 def division_basket(lib):
     """'Cadet Girls AAA' → ('AAA', 'Féminin') ; 'Cadet Majeur Masculin' → ('Majeur', 'Masculin') ;
-    'Élite' → ('Élite', None : sexe à trancher) ; MBL sans 'Girls' → Masculin (hypothèse signalée)."""
+    sans mention du sexe (MBL sans « Girls », Circuit Élite) → Masculin (décision BP 2026-10-26)."""
     l = lib or ""
     if re.search(r"F[ée]minin|Girls", l, re.I):
         genre = "Féminin"
-    elif re.search(r"Masculin", l, re.I):
-        genre = "Masculin"
-    elif re.search(r"\b(AAA|AA|A)\b", l):
-        genre = "Masculin*"  # MBL : division garçons non étiquetée
     else:
-        genre = None
+        genre = "Masculin"
     niv = next((n for n in ("AAA", "AA", "Majeur", "Élite") if re.search(rf"\b{n}\b", l)), "")
     return niv, genre
 
@@ -506,6 +502,7 @@ def collisions(equipes, rejets):
                      e["age_group"], e["division"], e["gender"], e["season"], e["league"], e["zone"])
     groupes = defaultdict(list)
     for e in equipes:
+        e.pop("nom_propose_dedoublonne", None)
         groupes[cle(e)].append(e)
     n = 0
     for g in groupes.values():
@@ -515,6 +512,226 @@ def collisions(equipes, rejets):
                 e["nom_propose_dedoublonne"] = f'{e["nom"]} #{i}'
                 n += 1
     return n
+
+
+# ── Décisions BP sur le lot 0 (2026-10-26) ─────────────────────────────────────
+# Arbitrages donnés EN PLUS des colonnes reco_claude (qui portaient « À TOI »).
+DECISIONS_BP_ORG = {
+    "OTTAWA SOUTH UNITED": ("CREER", None, "Ontario"),
+    "WEST OTTAWA SOCCER CLUB": ("CREER", None, "Ontario"),
+    "Parc Ex": ("CREER", "Parc-Ex", None),
+    "Centre des loisirs du Parc": ("CREER", None, None),
+}
+REGION_FORCEE = {"Escadron Sport-Études": "Laurentides"}
+# Noms annotés de l'inventaire → organisation existante (propositions acceptées)
+NOMS_ANNOTES = {
+    "AS Laval (Alliance Soccer Laval)": ("AS Laval", "LIGUE_CIVILE"),
+    "Association de basketball de Gatineau (programme Dragons)": ("Association de basketball de Gatineau", "LIGUE_CIVILE"),
+    "Basketball Laval (programme Nobel)": ("Basketball Laval", "LIGUE_CIVILE"),
+    "Comité de basketball Saint-Laurent (Basketball St-Laurent)": ("Comité de basketball Saint-Laurent", "LIGUE_CIVILE"),
+    "Révolution (Rosemère)": ("Révolution", "LIGUE_CIVILE"),
+}
+# Écoles nommées par la reco → nom exact en prod (relevé du 26 oct.) ; None = absente de la base
+ECOLES = {
+    "École secondaire Cardinal-Roy": "École Cardinal-Roy",
+    "École polyvalente Saint-Jérôme": "École polyvalente Saint-Jérôme",
+    "École Saint-Gabriel (Escadron)": "École Saint-Gabriel",
+    "École secondaire Marie-Victorin": None,
+}
+# Coquilles de la reco Sport-études, corrigées (casse et « Soccerontréal »)
+NOMS_CORRIGES = {
+    "Sport-études soccer Soccerontréal": "Sport-études soccer Montréal",
+    "Sport-études soccer Arsq": "Sport-études soccer ARSQ",
+    "Sport-études soccer Centre-Du-Québec": "Sport-études soccer Centre-du-Québec",
+    "Sport-études soccer Est-Du-Québec": "Sport-études soccer Est-du-Québec",
+}
+REGION_SPORT_ETUDES = {
+    "ARSQ": "Québec", "Montréal": "Montréal", "Abitibi": "Abitibi-Témiscamingue",
+    "Saguenay Lac-Saint-Jean": "Saguenay-Lac-Saint-Jean",
+}
+
+
+# Région source → vocabulaire des LIGUE_CIVILE existantes (relevé prod du 26 oct.). Absent = à compléter.
+REGIONS = {
+    "Soccer Montréal": "Montréal", "Soccer Laval": "Laval", "De L'Est-Du-Québec": "Est-du-Québec",
+    "Centre-Du-Québec": "Centre-du-Québec", "Saguenay Lac St-Jean Chibougamau-Chapais": "Saguenay-Lac-Saint-Jean",
+    "Saguenay–Lac-St-Jean": "Saguenay-Lac-Saint-Jean", "Québec / Chaudière-Appalaches": "Québec",
+}
+REGIONS_VALIDES = {"Abitibi-Témiscamingue", "Bourassa", "Centre-du-Québec", "Côte-Nord", "Est-du-Québec", "Estrie",
+                   "Lac St-Louis", "Lanaudière", "Laurentides", "Laval", "Mauricie", "Montréal", "Ontario",
+                   "Outaouais", "Québec", "Richelieu-Yamaska", "Rive-Sud", "Saguenay-Lac-Saint-Jean", "Sud-Ouest"}
+
+
+def region_nexus(r):
+    r = REGIONS.get((r or "").strip(), (r or "").strip())
+    return r if r in REGIONS_VALIDES else ""
+
+
+def action_org(reco):
+    r = (reco or "").strip()
+    m = re.match(r"CR[ÉE]ER sous le nom « (.+?) »", r, re.I)
+    if m:
+        return "CREER", m.group(1)
+    if re.match(r"cr[ée]er\b", r, re.I):
+        return "CREER", None
+    m = re.match(r"NE PAS CR[ÉE]ER : existe déjà sous « (.+?) »", r)
+    if m:
+        return "EXISTANTE", re.sub(r"\s*\(à confirmer\)\s*$", "", m.group(1)).strip()
+    if r.startswith("NE PAS CRÉER (école"):
+        return "ECOLE", None
+    if r.startswith("NE PAS CRÉER"):
+        return "NON_RETENUE", None
+    m = re.match(r"FUSIONNER dans « (.+?) »", r)
+    if m:
+        return "FUSION", m.group(1)
+    raise ValueError(f"reco illisible : {r!r}")
+
+
+# Clés apparues après la décision « Circuit Élite = Masculin » (équipes jusque-là rejetées) et qui
+# désignent une organisation déjà dans la liste reco sous une autre graphie.
+ALIAS_CLES = {"creer:basket:parc-ex": "creer:basket:parc ex"}
+
+
+def appliquer_decisions(eqs, sans_club, matchs, org_brut, f_orgs, f_trancher, rejets, journal):
+    reco = {r["cle"]: r for r in csv.DictReader(open(f_orgs, encoding="utf-8-sig"))}
+    for e in eqs:
+        o = e.get("organisation") or {}
+        if o.get("cle") in ALIAS_CLES:
+            o["cle"] = ALIAS_CLES[o["cle"]]
+    org_brut = [o for o in org_brut if o["cle"] not in ALIAS_CLES]
+    ecart = set(reco) ^ {o["cle"] for o in org_brut}
+    assert not ecart, f"la liste reco ne correspond pas au plan brut : {sorted(ecart)}"
+    brut = {o["cle"]: o for o in org_brut}
+
+    # 1. Une action par organisation proposée
+    act, journal_dec = {}, []
+    for cle, r in reco.items():
+        if r["nom_source"] in DECISIONS_BP_ORG:
+            a_, nom, region = DECISIONS_BP_ORG[r["nom_source"]]
+            act[cle] = {"action": a_, "nom": nom or r["nom_propose"], "region": region}
+        else:
+            a_, nom = action_org(r["reco_claude"])
+            act[cle] = {"action": a_, "nom": nom or (r["nom_propose"] if a_ == "CREER" else None), "region": None}
+        journal_dec.append({"cle": cle, "sport": r["sport"], "nom_source": r["nom_source"],
+                            "action": act[cle]["action"], "cible": act[cle]["nom"] or ""})
+    par_nom_cree = {norm(v["nom"]): c for c, v in act.items() if v["action"] == "CREER"}
+    for c, v in act.items():
+        if v["action"] == "FUSION":
+            cible = par_nom_cree.get(norm(v["nom"]))
+            assert cible, f"cible de fusion introuvable : {v['nom']}"
+            v["cible_cle"] = cible
+
+    # 2. Organisations créées (avec leurs variantes de nom source, pour organisations_sources)
+    finales = {}
+    for c, v in act.items():
+        if v["action"] == "CREER":
+            o = brut[c]
+            finales[c] = {"cle": c, "sport": o["sport"], "nom": v["nom"],
+                          "region": v["region"] or REGION_FORCEE.get(v["nom"]) or o["region_proposee"],
+                          "ville": o["ville_proposee"], "noms_source": [o["nom_source"]],
+                          "avec_calendrier": o["avec_calendrier"]}
+    for c, v in act.items():
+        if v["action"] == "FUSION":
+            finales[v["cible_cle"]]["noms_source"].append(brut[c]["nom_source"])
+
+    def rattacher(e, cle_source):
+        v = act[cle_source]
+        if v["action"] == "CREER":
+            e["organisation"] = {"cle": cle_source, "statut": "a_creer", "nom": v["nom"], "type_attendu": "LIGUE_CIVILE"}
+        elif v["action"] == "FUSION":
+            e["organisation"] = {"cle": v["cible_cle"], "statut": "a_creer", "nom": act[v["cible_cle"]]["nom"],
+                                 "type_attendu": "LIGUE_CIVILE"}
+        elif v["action"] == "EXISTANTE":
+            e["organisation"] = {"cle": "nexus:" + v["nom"], "statut": "existante", "nom": v["nom"],
+                                 "type_attendu": "LIGUE_CIVILE"}
+        else:
+            return v["action"]
+        return None
+
+    # 3. Équipes : organisation finale
+    garde = []
+    for e in eqs:
+        o = e.get("organisation") or {}
+        if o.get("statut") == "a_creer":
+            refus = rattacher(e, o["cle"])
+            if refus:
+                rejets.append((e["sport"].lower(), "equipe", "ecole_rseq_liaison_a_faire" if refus == "ECOLE"
+                               else "organisation_non_retenue", e["nom"], e["league"], o.get("nom_source", "")))
+                continue
+        elif o.get("statut") == "nom_a_trancher":
+            nom, typ = NOMS_ANNOTES[o["nom"]]
+            e["organisation"] = {"cle": "nexus:" + nom, "statut": "existante", "nom": nom, "type_attendu": typ}
+        elif o.get("statut") == "existante":
+            o["type_attendu"] = "LIGUE_CIVILE"
+        garde.append(e)
+
+    # 4. Sport-études « sans club » : école existante ou organisation régionale à créer
+    reco_t = list(csv.DictReader(open(f_trancher, encoding="utf-8-sig")))
+    par_equipe = defaultdict(set)
+    for r in reco_t:
+        if r["sujet"] == "sport_etudes_sans_club":
+            par_equipe[r["nom"]].add(r["reco_claude"])
+    a_trancher = []
+    for e in sans_club:
+        recos = par_equipe.get(e["nom"])
+        assert recos and len(recos) == 1, f"reco Sport-études absente ou multiple : {e['nom']}"
+        rc = next(iter(recos))
+        m = re.match(r"Rattacher à l'école « (.+?) »", rc)
+        if m:
+            ecole = ECOLES[m.group(1)]
+            if ecole is None:
+                rejets.append(("soccer", "equipe", "ecole_absente_de_nexus_a_trancher", e["nom"], e["league"], m.group(1)))
+                a_trancher.append({"sujet": "sport_etudes_ecole_absente", "nom": e["nom"], "ligue": e["league"],
+                                   "age": e["age_group"], "genre": e["gender"], "division": e["division"],
+                                   "club_office_spordle": "",
+                                   "proposition": f"« {m.group(1)} » n'existe pas dans Nexus (seul le Cégep Marie-Victorin y est). "
+                                                  "Rattacher à « Sport-études soccer Montréal » ? (aucune école créée sans GO)",
+                                   "decision_bp": ""})
+                continue
+            e["organisation"] = {"cle": "nexus:" + ecole, "statut": "existante", "nom": ecole, "type_attendu": "SECONDAIRE"}
+        else:
+            m = re.match(r"Créer UNE organisation « (.+?) »", rc)
+            assert m, f"reco Sport-études illisible : {rc!r}"
+            nom = NOMS_CORRIGES.get(m.group(1), m.group(1))
+            cle = "creer:soccer:" + norm(nom)
+            suffixe = nom.replace("Sport-études soccer ", "")
+            finales.setdefault(cle, {"cle": cle, "sport": "Soccer", "nom": nom,
+                                     "region": REGION_SPORT_ETUDES.get(suffixe, suffixe), "ville": "",
+                                     "noms_source": [], "avec_calendrier": True})
+            e["organisation"] = {"cle": cle, "statut": "a_creer", "nom": nom, "type_attendu": "LIGUE_CIVILE"}
+        garde.append(e)
+
+    # 5. Futsal : sport « Futsal » pour les ligues de futsal ; le reste du soccer d'hiver reste « Soccer »
+    for e in garde:
+        if "FUTSAL" in (e["league"] or "").upper():
+            e["sport"] = "Futsal"
+            journal["equipes_futsal"] += 1
+    for m_ in matchs:
+        if "FUTSAL" in (m_.get("league_name") or "").upper():
+            m_["sport"] = "Futsal"
+            journal["matchs_futsal"] += 1
+
+    # 6. Match basket « Canceled/Postponed » : traité comme annulé (ignoré, alerte)
+    rejets[:] = [(r[0], r[1], "annule_ou_reporte_ignore_alerte" if r[2] == "annule_ou_reporte_a_trancher" else r[2],
+                  *r[3:]) for r in rejets]
+
+    # 7. Régions normalisées et comptes des organisations finales
+    for f in finales.values():
+        f["region_source"] = f["region"]
+        f["region"] = region_nexus(f["region"])
+        if not f["region"]:
+            journal["orgs_region_a_completer"] += 1
+        f["equipes_u14_plus"] = sum(1 for e in garde if (e.get("organisation") or {}).get("cle") == f["cle"])
+        f["sports_equipes"] = dict(Counter(e["sport"] for e in garde if (e.get("organisation") or {}).get("cle") == f["cle"]))
+    existantes = {}
+    for e in garde:
+        o = e["organisation"]
+        if o["statut"] == "existante":
+            x = existantes.setdefault(o["cle"], {"nom": o["nom"], "type_attendu": o["type_attendu"],
+                                                 "sports": Counter(), "equipes": 0})
+            x["sports"][e["sport"]] += 1
+            x["equipes"] += 1
+    return garde, sorted(finales.values(), key=lambda f: (f["sport"], norm(f["nom"]))), existantes, a_trancher, journal_dec
 
 
 def ecrire_csv(chemin, lignes_, entetes=None):
@@ -536,6 +753,8 @@ def main():
     ap.add_argument("--depuis", default="2026-10-26")
     ap.add_argument("--controle-prod", default=None,
                     help="JSON {nom_source: constat} relevé en lecture seule sur la prod (optionnel)")
+    ap.add_argument("--decisions-orgs", default=None, help="organisations-a-creer-reco-claude.csv validé par BP")
+    ap.add_argument("--decisions-trancher", default=None, help="a-trancher-reco-claude.csv validé par BP")
     a = ap.parse_args()
     os.makedirs(a.sortie, exist_ok=True)
     rejets, journal = [], Counter()
@@ -546,9 +765,10 @@ def main():
 
     # 40 équipes « sans club rattaché » (Sport-études) : à trancher, hors plan
     a_trancher = []
-    garde = []
+    garde, sans_club = [], []
     for e in eq_s:
         if e["organisation"]["statut"] == "sans_club":
+            sans_club.append(e)
             a_trancher.append({"sujet": "sport_etudes_sans_club", "nom": e["nom"], "ligue": e["league"],
                                "age": e["age_group"], "genre": e["gender"], "division": e["division"],
                                "club_office_spordle": (offices.get(equipe_json.get(int(e["source_team_id"].split(",")[0]), (None, None))[1]) or [None, ""])[1],
@@ -584,17 +804,18 @@ def main():
     for o in org_a_creer:
         o["controle_prod"] = controle.get(o["nom_source"], "")
 
-    # Hypothèses et anomalies à faire valider
-    for e in eqs:
-        if e.get("genre_hypothese"):
-            journal["basket_genre_masculin_suppose"] += 1
-    for lg in sorted({e["league"] for e in eq_s if "FUTSAL" in (e["league"] or "").upper()}):
-        a_trancher.append({"sujet": "futsal_sport_soccer", "nom": lg, "ligue": lg, "age": "", "genre": "",
-                           "division": "", "club_office_spordle": "",
-                           "proposition": "Décision 8 : sport = Soccer. Confirmer pour les ligues de FUTSAL (sport « Futsal » existe dans Nexus).",
-                           "decision_bp": ""})
-
     matchs = m_s + m_b
+    decisions = []
+    if a.decisions_orgs and a.decisions_trancher:
+        eqs, org_a_creer, existantes, a_trancher, decisions = appliquer_decisions(
+            eqs, sans_club, matchs, org_a_creer, a.decisions_orgs, a.decisions_trancher, rejets, journal)
+        n_coll = collisions(eqs, rejets)
+    else:
+        for lg in sorted({e["league"] for e in eq_s if "FUTSAL" in (e["league"] or "").upper()}):
+            a_trancher.append({"sujet": "futsal_sport_soccer", "nom": lg, "ligue": lg, "age": "", "genre": "",
+                               "division": "", "club_office_spordle": "",
+                               "proposition": "Décision 8 : sport = Soccer. Confirmer pour les ligues de FUTSAL (sport « Futsal » existe dans Nexus).",
+                               "decision_bp": ""})
     plan = {
         "meta": {"genere_le": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                  "depuis": a.depuis, "saison": SAISON, "sources": SOURCES,
@@ -608,8 +829,11 @@ def main():
     json.dump(plan, open(os.path.join(a.sortie, "plan.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
     ecrire_csv(os.path.join(a.sortie, "organisations-a-creer.csv"), org_a_creer)
+    if decisions:
+        ecrire_csv(os.path.join(a.sortie, "decisions-appliquees.csv"), decisions)
     ecrire_csv(os.path.join(a.sortie, "organisations-existantes.csv"),
-               [{"organisation": v["nom"], "equipes": v["equipes"], "sports": dict(v["sports"])}
+               [{"organisation": v["nom"], "type_attendu": v.get("type_attendu", ""), "equipes": v["equipes"],
+                 "sports": dict(v["sports"])}
                 for v in sorted(existantes.values(), key=lambda v: norm(v["nom"]))])
     ecrire_csv(os.path.join(a.sortie, "equipes.csv"),
                [{"sport": e["sport"], "organisation": (e.get("organisation") or {}).get("nom") or (e.get("organisation") or {}).get("nom_source"),
@@ -634,7 +858,7 @@ def main():
     ms = C((m["sport"], m["statut"]) for m in matchs)
     lien = C((m["sport"], m["home_dans_plan"] and m["visitor_dans_plan"]) for m in matchs)
     oc = C((o["sport"], o["avec_calendrier"]) for o in org_a_creer)
-    sus = sum(1 for o in org_a_creer if o["signal"])
+    sus = sum(1 for o in org_a_creer if o.get("signal"))
     with open(os.path.join(a.sortie, "resume.md"), "w", encoding="utf-8") as f:
         p = lambda *x: print(*x, file=f)
         p(f"# Lot 0 — plan d'import civil 2026-27 (aucune écriture)\n\nGénéré le {plan['meta']['genere_le']}, matchs à partir du {a.depuis}.\n")
@@ -655,11 +879,20 @@ def main():
         for (sp, ok), n in sorted(lien.items()):
             p(f"- {sp}, deux équipes dans le plan = {ok} : {n}")
         p("\n## Organisations\n")
-        p(f"- existantes réutilisées : {len(existantes)}")
-        for (sp, cal), n in sorted(oc.items()):
+        p(f"- existantes réutilisées : {len(existantes)}"
+          + (" (" + ", ".join(f"{t} {n}" for t, n in sorted(C(v.get('type_attendu') for v in existantes.values()).items())) + ")"
+             if decisions else ""))
+        if decisions:
+            p("- décisions appliquées aux " + str(len(decisions)) + " propositions : "
+              + ", ".join(f"{k} {n}" for k, n in sorted(C(d['action'] for d in decisions).items())))
+            p(f"- organisations finales à créer : {len(org_a_creer)} ; dont sans équipe dans le plan : "
+              f"{sum(1 for o in org_a_creer if not o['equipes_u14_plus'])}")
+            p(f"- Futsal : {journal['equipes_futsal']} équipes, {journal['matchs_futsal']} matchs")
+            p(f"- organisations à créer sans région déductible (région laissée vide) : {journal['orgs_region_a_completer']}")
+        for (sp, cal), n in sorted(oc.items(), key=str):
             p(f"- à créer, {sp}, avec calendrier = {cal} : {n}")
         p(f"- dont signalées SUSPECTES (événement, sélection, stage, ligue, hors Québec…) : {sus}")
-        p(f"- avec un quasi-doublon possible dans la liste : {sum(1 for o in org_a_creer if o['doublon_interne_possible'])}")
+        p(f"- avec un quasi-doublon possible dans la liste : {sum(1 for o in org_a_creer if o.get('doublon_interne_possible'))}")
         p(f"- avec un signal du contrôle prod : {sum(1 for o in org_a_creer if o.get('controle_prod'))}")
         p("\n## Rejets (rejets.csv)\n")
         for (sp, ob, rs), n in sorted(rz.items()):
