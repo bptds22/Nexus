@@ -1,7 +1,9 @@
 -- ════════════════════════════════════════════════════════════════════════════
 -- ROLLBACK du lot A cégep (20261020190000_cegep_lot_a_base.sql).
--- Restaure, à l'octet près, les 15 corps PROD relevés le 2026-10-20, retire les 5 policies
--- restrictives et les trois fonctions-règles. Vérifie md5 et ACL (liste complète triée).
+-- Restaure, à l'octet près, les 15 corps PROD relevés le 2026-10-20 et les 3 déclencheurs du
+-- journal relevés le 2026-10-25, retire les 6 policies restrictives et les trois
+-- fonctions-règles. Vérifie md5 et ACL (liste complète triée). Le journal n'a rien perdu : les
+-- lignes filtrées à l'écriture entre l'apply et le rollback n'ont jamais existé.
 -- ════════════════════════════════════════════════════════════════════════════
 
 do $$
@@ -27,7 +29,10 @@ insert into _cegep_lot_a_rb values
   ('public.athlete_nexus_par_courriel(text)', '6f4023f8437a354d3cc64c62a1a7540f', array['authenticated', 'postgres', 'service_role']),
   ('public.agenda_flux(text)', '6c1e9e2cb301ba8db313c72a2c68a47d', array['postgres', 'service_role']),
   ('public.matchs_recherche(date,date,text,text[],text,uuid[],text[],boolean)', '9674fbf129c1f0f0b93d05948e2659dd', array['authenticated', 'postgres', 'service_role']),
-  ('public.match_notes_lier(uuid,text,text,text,uuid,uuid)', 'f6c6f67a42a18711011c377bd93bb19e', array['authenticated', 'postgres', 'service_role']);
+  ('public.match_notes_lier(uuid,text,text,text,uuid,uuid)', 'f6c6f67a42a18711011c377bd93bb19e', array['authenticated', 'postgres', 'service_role']),
+  ('public.log_new_athlete()',    '6fc96267a5d89574a305f3da137e2b24', array['PUBLIC', 'anon', 'authenticated', 'postgres', 'service_role']),
+  ('public.log_athlete_update()', 'cda68b5c35a432d7957f4b8fca5c9b2c', array['PUBLIC', 'anon', 'authenticated', 'postgres', 'service_role']),
+  ('public.log_coach_reply()',    '2fe3a0ef413037a4fc13d993c2a4f601', array['PUBLIC', 'anon', 'authenticated', 'postgres', 'service_role']);
 
 create temp table _cegep_lot_a_rb_acl as
 select r.sig,
@@ -43,6 +48,7 @@ drop policy "cegepiens_masques_recruteurs" on public.team_athletes;
 drop policy "cegepiens_masques_recruteurs" on public.athlete_badges;
 drop policy "cegepiens_masques_recruteurs" on public.evaluations;
 drop policy "cegepiens_masques_recruteurs" on public.recruiter_athlete_views;
+drop policy "cegepiens_masques_recruteurs" on public.recruiter_activity_log;
 
 -- ── Les 15 corps prod, tels que relevés ──
 
@@ -1153,6 +1159,53 @@ begin
   get diagnostics v_n = row_count;
   return v_n;
 end $function$;
+
+-- ── Les déclencheurs du journal, corps prod relevés le 2026-10-25 ──
+
+-- log_new_athlete
+CREATE OR REPLACE FUNCTION public.log_new_athlete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  INSERT INTO recruiter_activity_log (recruiter_id, athlete_id, action_type, details)
+  SELECT DISTINCT rf.recruiter_id, NEW.id, 'NEW_ATHLETE',
+    jsonb_build_object('first_name', NEW.first_name, 'last_name', NEW.last_name)
+  FROM recruiter_favorites rf;
+  RETURN NEW;
+END;
+$function$;
+
+-- log_athlete_update
+CREATE OR REPLACE FUNCTION public.log_athlete_update()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$ BEGIN IF OLD.video_faits_saillants_url IS DISTINCT FROM NEW.video_faits_saillants_url OR OLD.verified IS DISTINCT FROM NEW.verified OR OLD.cote_globale_entraineur IS DISTINCT FROM NEW.cote_globale_entraineur THEN INSERT INTO recruiter_activity_log (recruiter_id, athlete_id, action_type, details) SELECT rf.recruiter_id, NEW.id, CASE WHEN OLD.video_faits_saillants_url IS DISTINCT FROM NEW.video_faits_saillants_url AND NEW.video_faits_saillants_url IS NOT NULL THEN 'VIDEO_ADDED' WHEN OLD.verified IS DISTINCT FROM NEW.verified AND NEW.verified = true THEN 'ATHLETE_VERIFIED' ELSE 'PROFILE_UPDATED' END, jsonb_build_object('first_name', NEW.first_name, 'last_name', NEW.last_name) FROM recruiter_favorites rf WHERE rf.athlete_id = NEW.id; END IF; RETURN NEW; END; $function$;
+
+-- log_coach_reply
+CREATE OR REPLACE FUNCTION public.log_coach_reply()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  INSERT INTO public.recruiter_activity_log (recruiter_id, athlete_id, action_type, details)
+  SELECT c.recruiter_id, c.athlete_id, 'COACH_REPLY',
+    jsonb_build_object('first_name', u.first_name, 'last_name', u.last_name, 'conversation_id', c.id)
+  FROM public.conversations c
+  LEFT JOIN public.users u ON u.id = NEW.sender_id
+  WHERE c.id = NEW.conversation_id
+    AND c.conversation_type = 'RECRUTEUR_COACH'
+    AND NEW.sender_id = c.coach_id
+    AND NEW.sender_id <> c.recruiter_id;
+  RETURN NEW;
+END;
+$function$;
 
 drop function public.peut_voir_cegepiens();
 drop function public.athlete_est_cegepien(uuid);

@@ -16,9 +16,11 @@ athlète et parent : inchangées.
   `athlete_est_cegepien(uuid)`, `peut_voir_cegepiens()` (sur l'appelant),
   `unite_voit_cegepiens(uuid)` (sur une école — pour `agenda_flux`, appelé par jeton, et
   `rapprochement_candidats`, appelé par la file : aucun `auth.uid()`) ;
-- 15 RPC rebasées sur le corps prod (garde md5, même signature, aucun DROP) ;
+- 15 RPC rebasées sur le corps prod (garde md5, même signature, aucun DROP) ; plus (2026-10-25)
+  les 3 déclencheurs du journal, filtrés à l'écriture (voir D5) ;
 - une policy **RESTRICTIVE** `cegepiens_masques_recruteurs` (`TO authenticated`) : SELECT sur
-  `athletes`, `team_athletes`, `athlete_badges`, `evaluations` ; **ALL** sur
+  `athletes`, `team_athletes`, `athlete_badges`, `evaluations` et (ajout 2026-10-25)
+  `recruiter_activity_log` ; **ALL** sur
   `recruiter_athlete_views` (ajout après le test de l'étape 2 : « Athlètes tendance » du tableau
   de bord recruteur lit les vues de fiche du recruteur lui-même et affichait le cégépien en
   « Athlète » anonyme ; et ouvrir l'URL d'une fiche ÉCRIT une vue même quand la fiche ne se
@@ -52,6 +54,13 @@ traces ne peuvent pas exister : les joueurs collégiaux sont de nouveaux inscrit
 un recruteur collégial. Le lot A n'est donc pas étendu — sauf `recruiter_athlete_views`, ajoutée
 après le test de l'étape 2 parce que la trace pouvait se RECRÉER après la migration (ouvrir l'URL
 d'une fiche, par exemple depuis Activités → Voir, écrivait une vue).
+**Révisé le 2026-10-25 (GO BP) :** l'affirmation « ces traces ne peuvent pas exister » est fausse
+pour le journal. `log_new_athlete` écrit une ligne `NEW_ATHLETE` (prénom, nom) chez les
+recruteurs à l'inscription de TOUT athlète, sans geste de leur part : le témoin rattaché le
+2026-10-23 est nommé chez 5 recruteurs collégiaux. Le lot A couvre donc aussi
+`recruiter_activity_log` : policy RESTRICTIVE FOR SELECT (rien d'effacé) et filtre à l'écriture
+dans `log_new_athlete`, `log_athlete_update`, `log_coach_reply` (corps prod du 2026-10-25, garde
+md5). Les autres traces (notes, relances, visites, conversations) restent au nettoyage de l'été.
 *Relevé local qui motive le nettoyage :* après une bascule secondaire → cégep simulée, le
 recruteur collégial lit toujours 8 lignes de `recruiter_activity_log` sur S et C (prénom et nom
 écrits au moment du geste) ; contenu des `recruiter_notes` et messages : non filtrés non plus.

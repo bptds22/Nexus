@@ -30,6 +30,14 @@
 --      anon aurait pris « permission denied for function athlete_est_cegepien » (sondé en local).
 --      Une restrictive TO authenticated n'est jamais initialisée pour anon.
 --   4. gate d'ACL en LISTE COMPLÈTE TRIÉE, relevée AVANT, attendue identique APRÈS.
+--   5. (ajout GO BP 2026-10-25) recruiter_activity_log, seule table qui recopie le nom d'un
+--      athlète et qu'un recruteur peut lire : même policy RESTRICTIVE, FOR SELECT (son
+--      historique, le journal partagé de l'unité, la lecture par l'admin du cégep) — on
+--      n'efface rien ; et filtre à l'écriture dans les trois déclencheurs qui écrivent sans
+--      geste du recruteur (log_new_athlete, log_athlete_update, log_coach_reply), rebasés sur
+--      le corps prod relevé le 2026-10-25 (garde md5) : plus d'entrée pour un cégépien chez un
+--      recruteur qui ne voit pas les cégépiens. newsroom_events, activities et les tables
+--      admin/athlète/parent : hors périmètre.
 --
 -- Rollback : supabase/rollback/20261020190000_rollback_cegep_lot_a_base.sql
 -- ════════════════════════════════════════════════════════════════════════════
@@ -63,7 +71,11 @@ insert into _cegep_lot_a_releve values
   ('public.athlete_nexus_par_courriel(text)', '6f4023f8437a354d3cc64c62a1a7540f', array['authenticated', 'postgres', 'service_role']),
   ('public.agenda_flux(text)', '6c1e9e2cb301ba8db313c72a2c68a47d', array['postgres', 'service_role']),
   ('public.matchs_recherche(date,date,text,text[],text,uuid[],text[],boolean)', '9674fbf129c1f0f0b93d05948e2659dd', array['authenticated', 'postgres', 'service_role']),
-  ('public.match_notes_lier(uuid,text,text,text,uuid,uuid)', 'f6c6f67a42a18711011c377bd93bb19e', array['authenticated', 'postgres', 'service_role']);
+  ('public.match_notes_lier(uuid,text,text,text,uuid,uuid)', 'f6c6f67a42a18711011c377bd93bb19e', array['authenticated', 'postgres', 'service_role']),
+  -- Déclencheurs du journal (relevé prod 2026-10-25). ACL d'origine, PUBLIC compris : inchangée.
+  ('public.log_new_athlete()',    '6fc96267a5d89574a305f3da137e2b24', array['PUBLIC', 'anon', 'authenticated', 'postgres', 'service_role']),
+  ('public.log_athlete_update()', 'cda68b5c35a432d7957f4b8fca5c9b2c', array['PUBLIC', 'anon', 'authenticated', 'postgres', 'service_role']),
+  ('public.log_coach_reply()',    '2fe3a0ef413037a4fc13d993c2a4f601', array['PUBLIC', 'anon', 'authenticated', 'postgres', 'service_role']);
 
 -- Relevé AVANT : corps et ACL de chaque fonction, en liste complète triée.
 create temp table _cegep_lot_a_avant as
@@ -80,7 +92,7 @@ create temp table _cegep_lot_a_polices_avant as
 select tablename, policyname, cmd, permissive, roles::text as roles,
        md5(coalesce(qual, '')) as q, md5(coalesce(with_check, '')) as w
   from pg_policies
- where schemaname = 'public' and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views');
+ where schemaname = 'public' and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views', 'recruiter_activity_log');
 
 do $$
 declare r record; veut text[];
@@ -1297,6 +1309,91 @@ begin
   return v_n;
 end $function$;
 
+-- ── 2 bis. Déclencheurs du journal recruteur : filtre à l'écriture ──────────────
+-- Corps prod du 2026-10-25, seul ajout : le filtre. Le destinataire est jugé comme la policy
+-- juge le lecteur : un RECRUTEUR dont l'école ne voit pas les cégépiens (collégial, sans école)
+-- ne reçoit plus d'entrée pour un cégépien. Les autres destinataires : inchangés.
+
+-- log_new_athlete
+CREATE OR REPLACE FUNCTION public.log_new_athlete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_cegepien boolean := public.athlete_est_cegepien(NEW.id);
+BEGIN
+  INSERT INTO recruiter_activity_log (recruiter_id, athlete_id, action_type, details)
+  SELECT DISTINCT rf.recruiter_id, NEW.id, 'NEW_ATHLETE',
+    jsonb_build_object('first_name', NEW.first_name, 'last_name', NEW.last_name)
+  FROM recruiter_favorites rf
+  WHERE NOT v_cegepien
+     OR NOT EXISTS (SELECT 1 FROM public.users u
+                     WHERE u.id = rf.recruiter_id
+                       AND u.role = 'RECRUTEUR'::public.user_role
+                       AND NOT public.unite_voit_cegepiens(u.school_id));
+  RETURN NEW;
+END;
+$function$;
+
+-- log_athlete_update
+CREATE OR REPLACE FUNCTION public.log_athlete_update()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_cegepien boolean;
+BEGIN
+  IF OLD.video_faits_saillants_url IS DISTINCT FROM NEW.video_faits_saillants_url OR OLD.verified IS DISTINCT FROM NEW.verified OR OLD.cote_globale_entraineur IS DISTINCT FROM NEW.cote_globale_entraineur THEN
+    v_cegepien := public.athlete_est_cegepien(NEW.id);
+    INSERT INTO recruiter_activity_log (recruiter_id, athlete_id, action_type, details)
+    SELECT rf.recruiter_id, NEW.id,
+      CASE WHEN OLD.video_faits_saillants_url IS DISTINCT FROM NEW.video_faits_saillants_url AND NEW.video_faits_saillants_url IS NOT NULL THEN 'VIDEO_ADDED'
+           WHEN OLD.verified IS DISTINCT FROM NEW.verified AND NEW.verified = true THEN 'ATHLETE_VERIFIED'
+           ELSE 'PROFILE_UPDATED' END,
+      jsonb_build_object('first_name', NEW.first_name, 'last_name', NEW.last_name)
+    FROM recruiter_favorites rf
+    WHERE rf.athlete_id = NEW.id
+      AND (NOT v_cegepien
+           OR NOT EXISTS (SELECT 1 FROM public.users u
+                           WHERE u.id = rf.recruiter_id
+                             AND u.role = 'RECRUTEUR'::public.user_role
+                             AND NOT public.unite_voit_cegepiens(u.school_id)));
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+-- log_coach_reply
+CREATE OR REPLACE FUNCTION public.log_coach_reply()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  INSERT INTO public.recruiter_activity_log (recruiter_id, athlete_id, action_type, details)
+  SELECT c.recruiter_id, c.athlete_id, 'COACH_REPLY',
+    jsonb_build_object('first_name', u.first_name, 'last_name', u.last_name, 'conversation_id', c.id)
+  FROM public.conversations c
+  LEFT JOIN public.users u ON u.id = NEW.sender_id
+  WHERE c.id = NEW.conversation_id
+    AND c.conversation_type = 'RECRUTEUR_COACH'
+    AND NEW.sender_id = c.coach_id
+    AND NEW.sender_id <> c.recruiter_id
+    AND (c.athlete_id IS NULL
+         OR NOT public.athlete_est_cegepien(c.athlete_id)
+         OR NOT EXISTS (SELECT 1 FROM public.users r
+                         WHERE r.id = c.recruiter_id
+                           AND r.role = 'RECRUTEUR'::public.user_role
+                           AND NOT public.unite_voit_cegepiens(r.school_id)));
+  RETURN NEW;
+END;
+$function$;
+
 -- ── 3. Lecture directe : une policy RESTRICTIVE par table ─────────────────────
 -- Ne touche que les recruteurs COLLÉGIAUX et sans école (peut_voir_cegepiens() faux). Le
 -- recruteur UNIVERSITAIRE passe par peut_voir_cegepiens() (lot D). Coach, athlète, parent,
@@ -1357,6 +1454,18 @@ create policy "cegepiens_masques_recruteurs" on public.recruiter_athlete_views
     or not public.athlete_est_cegepien(athlete_id)
   );
 
+-- Le journal : les lignes d'un cégépien deviennent illisibles au recruteur collégial (son
+-- historique, l'unité, l'admin du cégep). Rien n'est effacé ; lignes sans athlète : inchangées.
+create policy "cegepiens_masques_recruteurs" on public.recruiter_activity_log
+  as restrictive
+  for select
+  to authenticated
+  using (
+    not (select public.is_recruiter())
+    or (select public.peut_voir_cegepiens())
+    or not public.athlete_est_cegepien(athlete_id)
+  );
+
 -- ── 4. Gates ──────────────────────────────────────────────────────────────────
 do $$
 declare r record; vus text[]; veut text[]; f text; n int;
@@ -1408,17 +1517,31 @@ begin
   if n <> 0 then raise exception 'NEXUS: % policy(ies) existante(s) modifiée(s)', n; end if;
 
   -- Exactement une policy de plus par table, restrictive, authenticated ; SELECT sur les quatre
-  -- tables de l'athlète, ALL sur recruiter_athlete_views.
+  -- tables de l'athlète et sur le journal, ALL sur recruiter_athlete_views.
   select count(*) into n from pg_policies
    where schemaname = 'public' and policyname = 'cegepiens_masques_recruteurs'
-     and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views')
+     and tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views', 'recruiter_activity_log')
      and permissive = 'RESTRICTIVE' and roles::text = '{authenticated}'
      and cmd = case when tablename = 'recruiter_athlete_views' then 'ALL' else 'SELECT' end;
-  if n <> 5 then raise exception 'NEXUS: % policy(ies) restrictive(s) sur 5', n; end if;
+  if n <> 6 then raise exception 'NEXUS: % policy(ies) restrictive(s) sur 6', n; end if;
   select count(*) into n from pg_policies p
-   where p.schemaname = 'public' and p.tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views')
+   where p.schemaname = 'public' and p.tablename in ('athletes', 'team_athletes', 'athlete_badges', 'evaluations', 'recruiter_athlete_views', 'recruiter_activity_log')
      and not exists (select 1 from _cegep_lot_a_polices_avant a where a.tablename = p.tablename and a.policyname = p.policyname);
-  if n <> 5 then raise exception 'NEXUS: % policy(ies) nouvelle(s), attendu 5', n; end if;
+  if n <> 6 then raise exception 'NEXUS: % policy(ies) nouvelle(s), attendu 6', n; end if;
+
+  -- Déclencheurs du journal : toujours SECURITY DEFINER, search_path inchangé, toujours branchés.
+  select count(*) into n from pg_proc pr
+   where pr.oid in ('public.log_new_athlete()'::regprocedure, 'public.log_athlete_update()'::regprocedure,
+                    'public.log_coach_reply()'::regprocedure)
+     and pr.prosecdef and pr.proconfig = array['search_path=public'];
+  if n <> 3 then raise exception 'NEXUS: déclencheurs du journal mal réglés (% sur 3)', n; end if;
+  select count(*) into n from pg_trigger t
+   where not t.tgisinternal and t.tgenabled = 'O'
+     and (t.tgname, t.tgrelid, t.tgfoid) in (
+       ('trg_log_new_athlete',    'public.athletes'::regclass, 'public.log_new_athlete()'::regprocedure),
+       ('trg_log_athlete_update', 'public.athletes'::regclass, 'public.log_athlete_update()'::regprocedure),
+       ('trg_log_coach_reply',    'public.messages'::regclass, 'public.log_coach_reply()'::regprocedure));
+  if n <> 3 then raise exception 'NEXUS: déclencheurs du journal débranchés (% sur 3)', n; end if;
 
   -- Dormance : la règle ne vise aujourd'hui personne.
   select count(*) into n from public.athletes a join public.schools s on s.id = a.school_id where s.type::text = 'CEGEP';
