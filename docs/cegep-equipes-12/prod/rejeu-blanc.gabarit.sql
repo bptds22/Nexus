@@ -139,8 +139,17 @@ insert into _s values
        from (values (array['SECONDAIRE']), (array['COLLEGIAL']), (array['CIVIL']), (array['SECONDAIRE','COLLEGIAL']),
                     (array['SECONDAIRE','CIVIL']), (array['COLLEGIAL','CIVIL']), (array['SECONDAIRE','COLLEGIAL','CIVIL'])) ty(t)$$),
   -- Suggestions : une équipe parmi les 12 et les terrains = effet ; les autres équipes identiques.
+  -- matchs_suggestions trie par (préfixe, nb_matchs desc, libellé) puis coupe à 8, SANS départage
+  -- final : entre ex-aequo à la 8e place, l'élu dépend de l'ordre d'exécution. Chaque ligne porte
+  -- donc empreinte ~ équipe ~ clé d'égalité (recherche, libellé, école, nb_matchs) ~ ligne en clair
+  -- (noms d'équipe et d'école seulement), pour reconnaître un échange entre ex-aequo (rapport B2).
   ('a03 matchs_suggestions : cégeps, écoles, mots', 'R1',
-   $$select 'effet_existantes_lignes=' || coalesce(string_agg(left(md5(x.tx || '|' || r::text), 10), ',' order by x.tx, r.cle)
+   $$select 'effet_existantes_lignes=' || coalesce(string_agg(
+                left(md5(x.tx || '|' || r::text), 10)
+                || '~' || left(md5(x.tx || '|' || r.cle), 8)
+                || '~' || left(md5(x.tx || '|' || r.libelle || '|' || split_part(r.detail, ' · ', 2) || '|' || r.nb_matchs), 8)
+                || '~' || translate(x.tx || ' | ' || r.libelle || ' | ' || r.detail || ' | ' || r.nb_matchs || ' match(s)', ',;=~', '    '),
+                ',' order by x.tx, r.cle)
                                        filter (where r.genre = 'EQUIPE' and not z.nouvelle), '-')
             || ';effet_equipes_12=' || count(*) filter (where r.genre = 'EQUIPE' and z.nouvelle)
             || ';effet_terrains=' || md5(coalesce(string_agg(x.tx || '|' || r::text, '§' order by x.tx, r.cle) filter (where r.genre <> 'EQUIPE'), ''))
@@ -337,6 +346,24 @@ select clock_timestamp() as fin_mesures;
 create temp view _kv as
 select m.phase, m.compte, m.surface, split_part(x.kv, '=', 1) as k, substr(x.kv, length(split_part(x.kv, '=', 1)) + 2) as v
   from _m m, lateral regexp_split_to_table(m.v, ';') x(kv);
+-- Lignes de suggestions d'équipes existantes : retirée (effet), échange entre ex-aequo à la coupe
+-- de 8 (apparue, équipe absente avant pour cette recherche, même clé d'égalité qu'une retirée :
+-- limite du tri, effet), ou INTERDITE (ligne d'une équipe déjà présente modifiée, ou apparue sans
+-- ex-aequo retiré).
+create temp view _sug as
+with l as (select phase, e, split_part(e, '~', 1) as h, split_part(e, '~', 2) as eq, split_part(e, '~', 3) as egal,
+                  split_part(e, '~', 4) as clair
+             from _kv, lateral unnest(string_to_array(v, ',')) e
+            where k = 'effet_existantes_lignes' and v <> '-' and phase in ('1 avant', '2 après')),
+     av as (select * from l where phase = '1 avant'),
+     ap as (select * from l where phase = '2 après'),
+     ret as (select * from av where e not in (select e from ap)),
+     app as (select * from ap where e not in (select e from av))
+select 'retirée (effet)' as sort, clair from ret
+union all
+select case when app.eq not in (select eq from av) and app.egal in (select egal from ret)
+            then 'apparue : échange entre ex-aequo (effet)' else 'apparue ou modifiée (INTERDIT)' end, clair
+  from app;
 
 \echo '== 0. Valeurs AVANT (md5 abrégés)'
 select m.surface, min(m.compte) as compte, left(regexp_replace(min(m.v), '([0-9a-f]{8})[0-9a-f]{24}', '\1…', 'g'), 200) as valeur
@@ -360,8 +387,10 @@ select a.surface, a.k as cle, left(regexp_replace(a.v, '([0-9a-f]{8})[0-9a-f]{24
 with av as (select unnest(string_to_array(v, ',')) e from _kv where phase = '1 avant' and k = 'effet_existantes_lignes' and v <> '-'),
      ap as (select unnest(string_to_array(v, ',')) e from _kv where phase = '2 après' and k = 'effet_existantes_lignes' and v <> '-')
 select (select count(*) from av) as lignes_avant, (select count(*) from ap) as lignes_apres,
-       (select count(*) from (select e from av except all select e from ap) d) as retirees_effet,
-       (select count(*) from (select e from ap except all select e from av) d) as apparues_ou_modifiees_interdit;
+       (select count(*) from _sug where sort = 'retirée (effet)') as retirees_effet,
+       (select count(*) from _sug where sort like 'apparue : échange%') as echanges_ex_aequo_effet,
+       (select count(*) from _sug where sort like '%INTERDIT%') as apparues_ou_modifiees_interdit;
+select sort, clair as ligne from _sug order by sort desc, clair;
 
 \echo '== C. Ce que l''opération écrit dans admin_operations (dans la transaction)'
 select operation, details->>'equipes' as equipes, details->>'cotes_domicile' as domicile, details->>'cotes_visiteur' as visiteur
@@ -397,10 +426,7 @@ select (select count(*) from _kv a join _kv b on b.compte = a.compte and b.surfa
                                union all
                               (select ligne from _e where phase = '3 après rollback' except all select ligne from _e where phase = '1 avant')) d)
          as empreinte_apres_rollback,
-       (select count(*) from (select unnest(string_to_array(v, ',')) from _kv where phase = '2 après' and k = 'effet_existantes_lignes' and v <> '-'
-                              except all
-                              select unnest(string_to_array(v, ',')) from _kv where phase = '1 avant' and k = 'effet_existantes_lignes' and v <> '-') d)
-         as suggestions_modifiees,
+       (select count(*) from _sug where sort like '%INTERDIT%') as suggestions_modifiees,
        (select count(*) from _m where v like 'refus=%') as refus;
 select m.surface, m.compte, m.phase, m.v from _m m where m.v like 'refus=%' order by 1, 2, 3 limit 20;
 
