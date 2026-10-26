@@ -1,0 +1,352 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 20:52:34.968389+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 199
+CREATE TABLE
+INSERT 0 2
+CREATE TABLE
+INSERT 0 1
+INSERT 0 25
+INSERT 0 4
+INSERT 0 1
+INSERT 0 1
+DELETE 0
+DO
+               cat               | comptes 
+---------------------------------+---------
+ admin                           |       1
+ anon                            |       1
+ athlète                         |       1
+ partenaire admis                |       4
+ recruteur all_star, école CEGEP |      11
+ recruteur free, école aucune    |       3
+ recruteur free, école CEGEP     |      10
+ recruteur pro, école CEGEP      |       1
+(8 rows)
+
+ athletes_actifs | cegepiens_actifs 
+-----------------+------------------
+             199 |                1
+(1 row)
+
+CREATE TABLE
+INSERT 0 10
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+      debut_mesure_avant       
+-------------------------------
+ 2026-10-26 20:52:35.097529+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+        debut_migration        
+-------------------------------
+ 2026-10-26 20:52:45.366634+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 20:52:45.431792+00
+(1 row)
+
+SET
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+DO
+SET
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 20:53:06.464661+00
+(1 row)
+
+CREATE VIEW
+== 0. Valeurs AVANT (une ligne par valeur distincte ; md5 abrégés)
+                                 surface                                 |    compte    | comptes |                                                                              valeur                                                                              
+-------------------------------------------------------------------------+--------------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ a01 recruiter_search_athletes (défaut, tout)                            | R01 127e14f9 |      13 | n=190;lignes=12cff79d…;ordre=d7cd89e2…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/-/-,LIGUE_CIVILE/LIGUE_CIVILE/-,SECONDAIRE/-/-,SECONDAIRE/SECONDAIRE/-
+ a01 recruiter_search_athletes (défaut, tout)                            | R04 16809ad4 |      12 | n=190;lignes=7ba4885c…;ordre=d7cd89e2…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/-/-,LIGUE_CIVILE/LIGUE_CIVILE/-,SECONDAIRE/-/-,SECONDAIRE/SECONDAIRE/-
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | R01 127e14f9 |      13 | grad_asc=190/fc405fef…;promo2027=86/9a3e64f7…;texte_athle=0/d41d8cd9…;texte_cegep=0/d41d8cd9…
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | R04 16809ad4 |      12 | grad_asc=190/0da69fdc…;promo2027=86/d04dca99…;texte_athle=1/3e432253…;texte_cegep=0/d41d8cd9…
+ a03 recruiter_athlete_cards (tous les actifs)                           | R01 127e14f9 |      13 | n=198;lignes=5b386a3c…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/-/-,SECONDAIRE/-/-
+ a03 recruiter_athlete_cards (tous les actifs)                           | R04 16809ad4 |      12 | n=198;lignes=20c32574…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/-/-,SECONDAIRE/-/-
+ a04 recruiter_athlete_profile (chaque actif)                            | R01 127e14f9 |      13 | n=198;lignes=b5917957…;cegepiens=0;effet_categories=-/-
+ a04 recruiter_athlete_profile (chaque actif)                            | R04 16809ad4 |      12 | n=198;lignes=733d1d5e…;cegepiens=0;effet_categories=-/-
+ a05 top_athletes_view                                                   | ADMIN        |      27 | n=0;lignes=d41d8cd9…;ordre=d41d8cd9…;cegepiens=0;effet_categories=-
+ a05 top_athletes_view                                                   | ANON         |       1 | refus=42501 permission denied for view top_athletes_view
+ a05 top_athletes_view                                                   | P01 011ef8c9 |       4 | n=133;lignes=6d0ca98e…;ordre=ced3a410…;cegepiens=1;effet_categories=-/-/-
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | P01 011ef8c9 |       4 | civil=13/cb61b664…;promo2027=25/0a0b6f7a…;scolaire=25/d4302db2…;tout=25/7b521346…
+ a07 trending_athletes_view                                              | ADMIN        |      27 | n=0;lignes=d41d8cd9…;cegepiens=0;effet_categories=-
+ a07 trending_athletes_view                                              | ANON         |       1 | refus=42501 permission denied for view trending_athletes_view
+ a07 trending_athletes_view                                              | P01 011ef8c9 |       4 | n=133;lignes=9d92dab4…;cegepiens=1;effet_categories=-/-/-
+ t01 données (athlètes, équipes, rattachements, écoles)                  | SU           |       1 | athletes=7e2daf6a…;teams=23ed1187…;team_athletes=40ab75f5…;schools=bf5f1d0c…
+ t02 signatures et colonnes d'avant                                      | SU           |       1 | recruiter_athlete_cards=541446b8…/e276f541…;recruiter_athlete_profile=e269b537…/59540770…;recruiter_search_athletes=e916fe47…/3113f8e3…;effet_resultats=e276f541
+ t03 lot A : cégépiens et règle                                          | SU           |       1 | cegepiens_actifs=1;regle=51b21617…;policies=5c1f9e30…
+(18 rows)
+
+== A. Écarts AVANT → APRÈS, clé par clé (seules les clés « effet… » ont le droit de changer)
+                    surface                    |       cle        | nature | comptes |                            avant                             |                                                          apres                                                           
+-----------------------------------------------+------------------+--------+---------+--------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------
+ a01 recruiter_search_athletes (défaut, tout)  | effet_categories | permis |      25 | -/-/-,LIGUE_CIVILE/-/-,LIGUE_CIVILE/LIGUE_CIVILE/-,SECONDAIR | -/-/-,LIGUE_CIVILE/-/-,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/SECONDAIRE/Cadet,SECONDAIRE/SECOND
+ a03 recruiter_athlete_cards (tous les actifs) | effet_categories | permis |      25 | -/-/-,LIGUE_CIVILE/-/-,SECONDAIRE/-/-                        | -/-/-,LIGUE_CIVILE/-/-,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/SECONDAIRE/Cadet,SECONDAIRE/SECOND
+ a04 recruiter_athlete_profile (chaque actif)  | effet_categories | permis |      25 | -/-                                                          | -/-,LIGUE_CIVILE/Midget AAA,SECONDAIRE/Cadet,SECONDAIRE/Juvénile
+ a05 top_athletes_view                         | effet_categories | permis |       4 | -/-/-                                                        | -/-/-,CEGEP/-/-,LIGUE_CIVILE/-/-,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/SECONDAIRE/Cadet,SECONDA
+ a07 trending_athletes_view                    | effet_categories | permis |       4 | -/-/-                                                        | -/-/-,CEGEP/-/-,LIGUE_CIVILE/-/-,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/SECONDAIRE/Cadet,SECONDA
+ t02 signatures et colonnes d'avant            | effet_resultats  | permis |       1 | e276f541,59540770,3113f8e3                                   | a0ab4f70,35dde511,54e221d4
+ t02 signatures et colonnes d'avant            | effet_vues       | permis |       1 | top_athletes_view:19,trending_athletes_view:18               | top_athletes_view:22,trending_athletes_view:21
+(7 rows)
+
+== B. Lot A : cégépiens rendus, par compte et par surface, APRÈS (attendu : 0 pour tout recruteur collégial)
+    compte    |            categorie            |                    surface                    | cegepiens 
+--------------+---------------------------------+-----------------------------------------------+-----------
+ P01 011ef8c9 | partenaire admis                | a05 top_athletes_view                         | 1
+ P01 011ef8c9 | partenaire admis                | a07 trending_athletes_view                    | 1
+ P02 b2158111 | partenaire admis                | a05 top_athletes_view                         | 1
+ P02 b2158111 | partenaire admis                | a07 trending_athletes_view                    | 1
+ P03 ded30d03 | partenaire admis                | a05 top_athletes_view                         | 1
+ P03 ded30d03 | partenaire admis                | a07 trending_athletes_view                    | 1
+ P04 e21e8903 | partenaire admis                | a05 top_athletes_view                         | 1
+ P04 e21e8903 | partenaire admis                | a07 trending_athletes_view                    | 1
+ R01 127e14f9 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R01 127e14f9 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R01 127e14f9 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R01 127e14f9 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R01 127e14f9 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R02 14674de1 | recruteur free, école aucune    | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R02 14674de1 | recruteur free, école aucune    | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R02 14674de1 | recruteur free, école aucune    | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R02 14674de1 | recruteur free, école aucune    | a05 top_athletes_view                         | 0
+ R02 14674de1 | recruteur free, école aucune    | a07 trending_athletes_view                    | 0
+ R03 149bd0e2 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R03 149bd0e2 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R03 149bd0e2 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R03 149bd0e2 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R03 149bd0e2 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R04 16809ad4 | recruteur pro, école CEGEP      | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R04 16809ad4 | recruteur pro, école CEGEP      | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R04 16809ad4 | recruteur pro, école CEGEP      | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R04 16809ad4 | recruteur pro, école CEGEP      | a05 top_athletes_view                         | 0
+ R04 16809ad4 | recruteur pro, école CEGEP      | a07 trending_athletes_view                    | 0
+ R05 1a4488d6 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R05 1a4488d6 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R05 1a4488d6 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R05 1a4488d6 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R05 1a4488d6 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R06 29a045ee | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R06 29a045ee | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R06 29a045ee | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R06 29a045ee | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R06 29a045ee | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R07 4aad3a56 | recruteur free, école aucune    | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R07 4aad3a56 | recruteur free, école aucune    | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R07 4aad3a56 | recruteur free, école aucune    | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R07 4aad3a56 | recruteur free, école aucune    | a05 top_athletes_view                         | 0
+ R07 4aad3a56 | recruteur free, école aucune    | a07 trending_athletes_view                    | 0
+ R08 52470683 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R08 52470683 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R08 52470683 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R08 52470683 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R08 52470683 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R09 53489e88 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R09 53489e88 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R09 53489e88 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R09 53489e88 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R09 53489e88 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R10 5991ca45 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R10 5991ca45 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R10 5991ca45 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R10 5991ca45 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R10 5991ca45 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R11 67bbe128 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R11 67bbe128 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R11 67bbe128 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R11 67bbe128 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R11 67bbe128 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R12 74fc504e | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R12 74fc504e | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R12 74fc504e | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R12 74fc504e | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R12 74fc504e | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R13 97ba8dc9 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R13 97ba8dc9 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R13 97ba8dc9 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R13 97ba8dc9 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R13 97ba8dc9 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R14 9cd5fdea | recruteur free, école aucune    | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R14 9cd5fdea | recruteur free, école aucune    | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R14 9cd5fdea | recruteur free, école aucune    | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R14 9cd5fdea | recruteur free, école aucune    | a05 top_athletes_view                         | 0
+ R14 9cd5fdea | recruteur free, école aucune    | a07 trending_athletes_view                    | 0
+ R15 9ed6b893 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R15 9ed6b893 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R15 9ed6b893 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R15 9ed6b893 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R15 9ed6b893 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R16 a0000000 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R16 a0000000 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R16 a0000000 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R16 a0000000 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R16 a0000000 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R17 a7d55c63 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R17 a7d55c63 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R17 a7d55c63 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R17 a7d55c63 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R17 a7d55c63 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R18 b02bd187 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R18 b02bd187 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R18 b02bd187 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R18 b02bd187 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R18 b02bd187 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R19 ba2e0946 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R19 ba2e0946 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R19 ba2e0946 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R19 ba2e0946 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R19 ba2e0946 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R20 bf77282e | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R20 bf77282e | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R20 bf77282e | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R20 bf77282e | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R20 bf77282e | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R21 c9a63ff5 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R21 c9a63ff5 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R21 c9a63ff5 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R21 c9a63ff5 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R21 c9a63ff5 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R22 d049dc52 | recruteur free, école CEGEP     | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R22 d049dc52 | recruteur free, école CEGEP     | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R22 d049dc52 | recruteur free, école CEGEP     | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R22 d049dc52 | recruteur free, école CEGEP     | a05 top_athletes_view                         | 0
+ R22 d049dc52 | recruteur free, école CEGEP     | a07 trending_athletes_view                    | 0
+ R23 d45fba8a | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R23 d45fba8a | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R23 d45fba8a | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R23 d45fba8a | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R23 d45fba8a | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R24 d8b80d58 | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R24 d8b80d58 | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R24 d8b80d58 | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R24 d8b80d58 | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R24 d8b80d58 | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+ R25 f565759d | recruteur all_star, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R25 f565759d | recruteur all_star, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R25 f565759d | recruteur all_star, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R25 f565759d | recruteur all_star, école CEGEP | a05 top_athletes_view                         | 0
+ R25 f565759d | recruteur all_star, école CEGEP | a07 trending_athletes_view                    | 0
+(133 rows)
+
+== D. Rollback : AVANT → APRÈS ROLLBACK (attendu : 0, 0)
+ cellules_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------------+--------------------
+                    0 |                              0 |               1113
+(1 row)
+
+== E. Ce que la migration change au schéma (attendu : les 3 fonctions recruteur et les 2 vues partenaire, rien d'autre)
+                                                objet                                                 |      cote       
+------------------------------------------------------------------------------------------------------+-----------------
+ F|recruiter_athlete_cards(uuid[])|3151013bc5bd0931d1d0eb0c057c8c95|{postgres=X/postgres,authenticate | après seulement
+ F|recruiter_athlete_cards(uuid[])|83edcd33fd085fb3d3750338665433d2|{postgres=X/postgres,authenticate | avant seulement
+ F|recruiter_athlete_profile(uuid)|90dd1734451b9cd2017193fd9fba56a5|{postgres=X/postgres,authenticate | avant seulement
+ F|recruiter_athlete_profile(uuid)|a876699b6e370ec6d1684df92da3f4a2|{postgres=X/postgres,authenticate | après seulement
+ F|recruiter_search_athletes(text,uuid,integer,boolean,boolean,numeric,numeric,boolean,boolean,boolea | après seulement
+ F|recruiter_search_athletes(text,uuid,integer,boolean,boolean,numeric,numeric,boolean,boolean,boolea | avant seulement
+ V|top_athletes_view|8e1706ef53b73bb9ca8520f5f620ba78|{postgres=arwdDxtm/postgres,authenticated=arwdD | après seulement
+ V|top_athletes_view|b677336de698551f2d5b733bc7f70bab|{postgres=arwdDxtm/postgres,authenticated=arwdD | avant seulement
+ V|trending_athletes_view|b45eb0030c789288a79dddbdd020d060|{postgres=arwdDxtm/postgres,authenticated= | avant seulement
+ V|trending_athletes_view|e864e7158e3ca8b6c8a41474b28e1dbc|{postgres=arwdDxtm/postgres,authenticated= | après seulement
+(10 rows)
+
+== F. Durées (ms) par sonde et par phase
+                                 surface                                 |      phase       | appels | ms_moyen | ms_max 
+-------------------------------------------------------------------------+------------------+--------+----------+--------
+ a01 recruiter_search_athletes (défaut, tout)                            | 1 avant          |     25 |     32.8 |   46.8
+ a01 recruiter_search_athletes (défaut, tout)                            | 2 après          |     25 |     32.9 |   37.2
+ a01 recruiter_search_athletes (défaut, tout)                            | 3 après rollback |     25 |     31.8 |   35.8
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 1 avant          |     25 |     69.0 |   76.9
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 2 après          |     25 |     69.1 |   73.1
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 3 après rollback |     25 |     69.3 |   74.4
+ a03 recruiter_athlete_cards (tous les actifs)                           | 1 avant          |     25 |     24.5 |   26.5
+ a03 recruiter_athlete_cards (tous les actifs)                           | 2 après          |     25 |     26.8 |   29.5
+ a03 recruiter_athlete_cards (tous les actifs)                           | 3 après rollback |     25 |     24.5 |   25.5
+ a04 recruiter_athlete_profile (chaque actif)                            | 1 avant          |     25 |    230.1 |  265.1
+ a04 recruiter_athlete_profile (chaque actif)                            | 2 après          |     25 |    242.7 |  259.8
+ a04 recruiter_athlete_profile (chaque actif)                            | 3 après rollback |     25 |    234.4 |  337.4
+ a05 top_athletes_view                                                   | 1 avant          |     32 |     17.9 |  136.5
+ a05 top_athletes_view                                                   | 2 après          |     32 |     19.7 |  141.1
+ a05 top_athletes_view                                                   | 3 après rollback |     32 |     17.8 |  133.2
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 1 avant          |      4 |     93.2 |   93.6
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 2 après          |      4 |     97.7 |   98.0
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 3 après rollback |      4 |     94.1 |   95.3
+ a07 trending_athletes_view                                              | 1 avant          |     32 |      4.8 |   13.8
+ a07 trending_athletes_view                                              | 2 après          |     32 |      5.1 |   15.4
+ a07 trending_athletes_view                                              | 3 après rollback |     32 |      4.0 |   13.1
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 1 avant          |      1 |    174.0 |  174.0
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 2 après          |      1 |    154.4 |  154.4
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 3 après rollback |      1 |    154.0 |  154.0
+ t02 signatures et colonnes d'avant                                      | 1 avant          |      1 |      2.9 |    2.9
+ t02 signatures et colonnes d'avant                                      | 2 après          |      1 |      1.7 |    1.7
+ t02 signatures et colonnes d'avant                                      | 3 après rollback |      1 |      1.6 |    1.6
+ t03 lot A : cégépiens et règle                                          | 1 avant          |      1 |      2.1 |    2.1
+ t03 lot A : cégépiens et règle                                          | 2 après          |      1 |      1.1 |    1.1
+ t03 lot A : cégépiens et règle                                          | 3 après rollback |      1 |      1.1 |    1.1
+(30 rows)
+
+== VERDICT (attendu : tout à 0)
+ ecarts_interdits | cegepiens_rendus_aux_recruteurs | ecarts_apres_rollback | empreinte_apres_rollback | autres_objets_changes | autres_lignes_changees 
+------------------+---------------------------------+-----------------------+--------------------------+-----------------------+------------------------
+                0 |                               0 |                     0 |                        0 |                     0 |                      0
+(1 row)
+
+== Refus (identiques avant et après : comptes qui n'ont pas accès à une surface, attendu)
+          surface           | avant | apres |                           exemple                            
+----------------------------+-------+-------+--------------------------------------------------------------
+ a05 top_athletes_view      |     1 |     1 | refus=42501 permission denied for view top_athletes_view
+ a07 trending_athletes_view |     1 |     1 | refus=42501 permission denied for view trending_athletes_vie
+(2 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 20:53:06.548506+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.

@@ -1,0 +1,56 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 20:57:55.657529+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 29
+SELECT 1
+SELECT 1
+CREATE FUNCTION
+SELECT 29
+DO
+ genre | comptes 
+-------+---------
+ P     |       4
+ R     |      25
+(2 rows)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-26 20:57:57.549684+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 20:57:57.605592+00
+(1 row)
+
+SET
+UPDATE 29
+DO
+ genre | comptes | identiques 
+-------+---------+------------
+ P     |       4 |          4
+ R     |      25 |         25
+(2 rows)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite | comptes_verifies |         avant_commit          
+------------------+------------------+-------------------------------
+ 20261026210100   |               29 | 2026-10-26 20:57:59.492655+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B3 en prod.
