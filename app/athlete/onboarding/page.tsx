@@ -36,6 +36,7 @@ import { lignesEquipeResolue } from "@/lib/teams/teamLabel";
 import LignesEquipe from "@/components/athlete/LignesEquipe";
 import { apercuCodeEquipe, nomsAffichablesCode } from "@/lib/invitations/apercuCodeEquipe";
 import { libelleEquipe, trierEquipes, comparerEquipes, equipeCorrespond } from "@/lib/teams/teamLabel";
+import { ageRevolu, equipeProposable } from "@/lib/teams/eligibiliteEquipe";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 import ChampsReseauxSociaux from "@/components/shared/athlete/ChampsReseauxSociaux";
 import { pourEnregistrerLien, pourEnregistrerReseau } from "@/lib/liensSociaux";
@@ -240,6 +241,8 @@ type CivilTeamRow = {
   /** teams.zone — « Atome Nord » (BP 2026-10-09). */
   zone?: string | null;
   gender?: string | null;
+  /** teams.season — filtre de saison du sélecteur (lot 7 civil). */
+  season?: string | null;
   school_id: string;
   school_name: string;
 };
@@ -251,6 +254,7 @@ function CivilTeamPicker({
   selectedTeamId,
   onSelect,
   onContinueWithoutTeam,
+  dateNaissance,
 }: {
   clubId: string;
   clubName: string;
@@ -258,6 +262,8 @@ function CivilTeamPicker({
   selectedTeamId: string | null;
   onSelect: (team: CivilTeamRow) => void;
   onContinueWithoutTeam: () => void;
+  /** Âge / saison (lot 7 civil) : moins de 18 ans → équipes de moins de 18 ans, et l'inverse ; saisons passées cachées. */
+  dateNaissance?: string | null;
 }) {
   const [teams, setTeams] = useState<CivilTeamRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -290,7 +296,7 @@ function CivilTeamPicker({
       // the previous client-side type filter is no longer needed.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division, zone, gender")
+        .select("id, name, age_group, division, zone, gender, season")
         .eq("school_id", clubId)
         .eq("sport_id", sportRow.id)
         .eq("is_active", true);
@@ -303,6 +309,7 @@ function CivilTeamPicker({
         division: (raw.division as string) ?? null,
         zone: (raw.zone as string) ?? null,
         gender: (raw.gender as string) ?? null,
+        season: (raw.season as string) ?? null,
         school_id: clubId,
         school_name: clubName,
       }));
@@ -315,8 +322,10 @@ function CivilTeamPicker({
     return () => { cancelled = true; };
   }, [clubId, clubName, sportName]);
 
-  // Recherche commune : nom + catégorie + division + genre (+ zone).
-  const visible = teams.filter((t) => equipeCorrespond(t, search));
+  // Âge et saison d'abord (lot 7 civil), puis la recherche commune : nom + catégorie + division + genre (+ zone).
+  const age = ageRevolu(dateNaissance);
+  const proposables = teams.filter((t) => equipeProposable(t, age));
+  const visible = proposables.filter((t) => equipeCorrespond(t, search));
 
   if (skipped) {
     return (
@@ -330,10 +339,14 @@ function CivilTeamPicker({
     return <p className="text-[13px] text-[#6b7280]">Chargement des équipes...</p>;
   }
 
-  if (teams.length === 0) {
+  if (proposables.length === 0) {
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
-        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe pour {sportName || "ton sport"} dans {clubName || "ce club"}.</p>
+        <p className="text-[13px] text-[#9CA3AF] mb-1">
+          {teams.length === 0
+            ? <>Aucune équipe pour {sportName || "ton sport"} dans {clubName || "ce club"}.</>
+            : <>Aucune équipe de ton groupe d&apos;âge pour la saison en cours dans {clubName || "ce club"}.</>}
+        </p>
         <p className="text-[12px] text-[#6b7280] mb-4">Tu peux rester rattaché au club seul — continue.</p>
         <button
           type="button"
@@ -2234,6 +2247,7 @@ function AthleteOnboardingDesktop() {
                     <div className="mb-3">
                       {primarySport ? (
                         <CivilTeamPicker
+                          dateNaissance={dateOfBirth}
                           clubId={selectedClubId}
                           clubName={selectedClubName}
                           sportName={primarySport}
