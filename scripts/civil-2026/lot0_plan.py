@@ -538,6 +538,8 @@ ECOLES = {
     "École Saint-Gabriel (Escadron)": "École Saint-Gabriel",
     "École secondaire Marie-Victorin": None,
 }
+# École absente de Nexus → organisation de repli (décision BP 2026-10-26 : Marie-Victorin)
+REPLI_ECOLE_ABSENTE = {"École secondaire Marie-Victorin": "Sport-études soccer Montréal"}
 # Coquilles de la reco Sport-études, corrigées (casse et « Soccerontréal »)
 NOMS_CORRIGES = {
     "Sport-études soccer Soccerontréal": "Sport-études soccer Montréal",
@@ -680,25 +682,24 @@ def appliquer_decisions(eqs, sans_club, matchs, org_brut, f_orgs, f_trancher, re
         if m:
             ecole = ECOLES[m.group(1)]
             if ecole is None:
-                rejets.append(("soccer", "equipe", "ecole_absente_de_nexus_a_trancher", e["nom"], e["league"], m.group(1)))
-                a_trancher.append({"sujet": "sport_etudes_ecole_absente", "nom": e["nom"], "ligue": e["league"],
-                                   "age": e["age_group"], "genre": e["gender"], "division": e["division"],
-                                   "club_office_spordle": "",
-                                   "proposition": f"« {m.group(1)} » n'existe pas dans Nexus (seul le Cégep Marie-Victorin y est). "
-                                                  "Rattacher à « Sport-études soccer Montréal » ? (aucune école créée sans GO)",
-                                   "decision_bp": ""})
+                # Aucune école créée sans GO : repli décidé par BP sur l'organisation régionale
+                rc = f"Créer UNE organisation « {REPLI_ECOLE_ABSENTE[m.group(1)]} »"
+                journal["sport_etudes_repli_ecole_absente"] += 1
+                m = None
+            else:
+                e["organisation"] = {"cle": "nexus:" + ecole, "statut": "existante", "nom": ecole,
+                                     "type_attendu": "SECONDAIRE"}
+                garde.append(e)
                 continue
-            e["organisation"] = {"cle": "nexus:" + ecole, "statut": "existante", "nom": ecole, "type_attendu": "SECONDAIRE"}
-        else:
-            m = re.match(r"Créer UNE organisation « (.+?) »", rc)
-            assert m, f"reco Sport-études illisible : {rc!r}"
-            nom = NOMS_CORRIGES.get(m.group(1), m.group(1))
-            cle = "creer:soccer:" + norm(nom)
-            suffixe = nom.replace("Sport-études soccer ", "")
-            finales.setdefault(cle, {"cle": cle, "sport": "Soccer", "nom": nom,
-                                     "region": REGION_SPORT_ETUDES.get(suffixe, suffixe), "ville": "",
-                                     "noms_source": [], "avec_calendrier": True})
-            e["organisation"] = {"cle": cle, "statut": "a_creer", "nom": nom, "type_attendu": "LIGUE_CIVILE"}
+        m = re.match(r"Créer UNE organisation « (.+?) »", rc)
+        assert m, f"reco Sport-études illisible : {rc!r}"
+        nom = NOMS_CORRIGES.get(m.group(1), m.group(1))
+        cle = "creer:soccer:" + norm(nom)
+        suffixe = nom.replace("Sport-études soccer ", "")
+        finales.setdefault(cle, {"cle": cle, "sport": "Soccer", "nom": nom,
+                                 "region": REGION_SPORT_ETUDES.get(suffixe, suffixe), "ville": "",
+                                 "noms_source": [], "avec_calendrier": True})
+        e["organisation"] = {"cle": cle, "statut": "a_creer", "nom": nom, "type_attendu": "LIGUE_CIVILE"}
         garde.append(e)
 
     # 5. Futsal : sport « Futsal » pour les ligues de futsal ; le reste du soccer d'hiver reste « Soccer »
