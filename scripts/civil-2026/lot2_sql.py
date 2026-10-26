@@ -86,15 +86,18 @@ begin
   end if;
 
   create temp table _l2_new on commit drop as
-    select gen_random_uuid() as id, x.* from jsonb_to_recordset(d->'nouvelles')
-      as x(nom text, region text, city text, lat float8, lng float8, sport text, sources text[]);
+    select gen_random_uuid() as id, e->>0 as nom, e->>1 as region, e->>2 as city,
+           (e->>3)::float8 as lat, (e->>4)::float8 as lng,
+           array(select e->>0 union select jsonb_array_elements_text(e->5)) as sources
+      from jsonb_array_elements(d->'n') e;
   create temp table _l2_geo on commit drop as
-    select x.*, s.id, s.lat as lat_avant, s.lng as lng_avant, s.geo_source as geo_avant
-      from jsonb_to_recordset(d->'geo_existantes') as x(nom text, type text, lat float8, lng float8)
-      left join public.schools s on s.name = x.nom and s.type = x.type;
+    select x.nom, 'LIGUE_CIVILE'::text as type, x.lat, x.lng, s.id, s.lat as lat_avant, s.lng as lng_avant,
+           s.geo_source as geo_avant
+      from (select e->>0 as nom, (e->>1)::float8 as lat, (e->>2)::float8 as lng from jsonb_array_elements(d->'g') e) x
+      left join public.schools s on s.name = x.nom and s.type = 'LIGUE_CIVILE';
   create temp table _l2_src on commit drop as
     select x.*, s.id as school_id
-      from jsonb_to_recordset(d->'sources_existantes') as x(nom text, type text, source_cle text)
+      from (select e->>0 as nom, e->>1 as type, e->>2 as source_cle from jsonb_array_elements(d->'s') e) x
       left join public.schools s on s.name = x.nom and s.type = x.type;
 
   -- Gardes d'avant
@@ -104,10 +107,10 @@ begin
    where exists (select 1 from public.schools s where lower(s.name) = lower(n.nom));
   if v_txt is not null then raise exception 'NEXUS: existe déjà : %', v_txt; end if;
   select string_agg(nom, ' ; ') into v_txt from (
-    select x.nom from jsonb_to_recordset(d->'geo_existantes') as x(nom text, type text)
-     where (select count(*) from public.schools s where s.name = x.nom and s.type = x.type) <> 1
+    select g.nom from _l2_geo g
+     where (select count(*) from public.schools s where s.name = g.nom and s.type = g.type) <> 1
     union
-    select x.nom from jsonb_to_recordset(d->'sources_existantes') as x(nom text, type text)
+    select x.nom from _l2_src x
      where (select count(*) from public.schools s where s.name = x.nom and s.type = x.type) <> 1) z;
   if v_txt is not null then raise exception 'NEXUS: organisation existante introuvable ou en double : %', v_txt; end if;
   select string_agg(nom, ' ; ') into v_txt from _l2_geo where lat_avant is not null;
@@ -228,7 +231,14 @@ def main():
     geo = json.load(open(a.geo, encoding="utf-8"))
     d = donnees(plan, geo)
     os.makedirs(a.sortie, exist_ok=True)
-    texte = json.dumps(d, ensure_ascii=False, sort_keys=True, separators=(", ", ": "))
+    # Format compact (le connecteur porte mal les gros blocs) : tableaux positionnels, la source
+    # identique au nom n'est pas répétée (le SQL l'ajoute toujours).
+    compact = {"n": [[n["nom"], n["region"], n["city"], n["lat"], n["lng"], [x for x in n["sources"] if x != n["nom"]]]
+                     for n in d["nouvelles"]],
+               "g": [[g["nom"], g["lat"], g["lng"]] for g in d["geo_existantes"]],
+               "s": [[x["nom"], x["type"], x["source_cle"]] for x in d["sources_existantes"]]}
+    assert all(g["type"] == "LIGUE_CIVILE" for g in d["geo_existantes"])
+    texte = json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
     assert "$donnees$" not in texte
     open(os.path.join(a.sortie, "donnees.json"), "w", encoding="utf-8").write(texte)
     md5 = hashlib.md5(texte.encode()).hexdigest()
