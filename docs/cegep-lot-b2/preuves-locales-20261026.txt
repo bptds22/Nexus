@@ -613,3 +613,86 @@ CREATE VIEW
 
 ROLLBACK
 == ROLLBACK fait : rien n'est resté.
+
+════════════════ ESSAI LOCAL DES FICHIERS PROD RÉELS (apply puis rollback, nexus_b2, 2026-10-26) ════════════════
+teams avant f5365c5d080ef56c4817f9f6def7a248 ; après apply+rollback f5365c5d080ef56c4817f9f6def7a248 ; rseq_proposition_equipe 70b3e97e…/00766b17… ; relance apply → « version déjà inscrite » ; relance rollback → « déjà retiré ».
+── apply-20261026.sql
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             |  current_user  | version 
+-------------------------------+----------------+---------
+ 2026-10-26 14:38:06.986643+00 | supabase_admin | 17.6
+(1 row)
+
+DO
+SELECT 256
+SELECT 1
+SELECT 204
+ les_256 | matchs_des_256 | alertes_ouvertes |                  decisions                   
+---------+----------------+------------------+----------------------------------------------
+     256 |           1709 |              204 | a_creer:192, doublon:2, ecole_introuvable:10
+(1 row)
+
+SELECT 1
+       debut_migration        
+------------------------------
+ 2026-10-26 14:38:07.08767+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 14:38:07.098003+00
+(1 row)
+
+INSERT 0 204
+DO
+ les_256_en_collegial | secondaire_en_collegial_inchange | champlain_cavaliers_inchange |               decisions_apres                
+----------------------+----------------------------------+------------------------------+----------------------------------------------
+                  256 |                                5 |                            1 | a_creer:192, doublon:2, ecole_introuvable:10
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit         
+------------------+------------------------------
+ 20261026140000   | 2026-10-26 14:38:07.18831+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B2 en prod.
+── rollback-20261026.sql
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             |  current_user  
+-------------------------------+----------------
+ 2026-10-26 14:38:15.110505+00 | supabase_admin
+(1 row)
+
+DO
+SELECT 256
+DO
+SELECT 1
+SELECT 1
+DO
+DO
+INSERT 0 1
+INSERT 0 1
+ version_rollback_inscrite |         avant_commit          
+---------------------------+-------------------------------
+ 20261026143815            | 2026-10-26 14:38:15.209466+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B2 retiré de la prod.
