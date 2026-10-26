@@ -33,6 +33,15 @@ Sentry.init({
      donc visible en local ; seul l'ENVOI est coupé. */
   enabled: process.env.NODE_ENV === "production",
 
+  /* BRUIT DE SCANNER CONNU (2026-10-26, issue JAVASCRIPT-NEXTJS-1V).
+     « Object Not Found Matching Id:N, MethodName:update, ParamCount:4 » est
+     un rejet non-Error levé par un Chromium piloté depuis .NET (CefSharp) —
+     typiquement le scanner de liens d'Outlook qui ouvre le courriel de
+     réclamation parent. Aucune pile, 0 utilisateur réel, chaîne absente de
+     notre code. Le filtre par défaut du SDK ne couvre que
+     `MethodName:simulateEvent` ; celui-ci couvre toutes les méthodes. */
+  ignoreErrors: [/Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/],
+
   /* Session Replay RETIRÉ (décision BP, 2026-10-22) : même masqué, un
      replay enregistre la session d'un athlète, souvent mineur. */
 
