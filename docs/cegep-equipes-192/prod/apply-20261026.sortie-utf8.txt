@@ -1,0 +1,39 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 15:52:47.612299+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 1
+ nb_equipes | alertes_ouvertes 
+------------+------------------
+      10145 |              204
+(1 row)
+
+SELECT 1
+        debut_operation        
+-------------------------------
+ 2026-10-26 15:52:51.354427+00
+(1 row)
+
+DO
+         fin_operation         
+-------------------------------
+ 2026-10-26 15:52:51.889436+00
+(1 row)
+
+DO
+ equipes_collegial | refus_restes_ouverts |         avant_commit          
+-------------------+----------------------+-------------------------------
+               192 |                   12 | 2026-10-26 15:52:55.580858+00
+(1 row)
+
+COMMIT
+== COMMIT fait : 192 équipes cégep en prod.

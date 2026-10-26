@@ -1,0 +1,236 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 15:45:32.816538+00 | postgres     | 17.6
+(1 row)
+
+SELECT 192
+DO
+SELECT 10145
+SELECT 1492
+SELECT 6061
+SELECT 94
+CREATE TABLE
+INSERT 0 5
+CREATE TABLE
+INSERT 0 1
+INSERT 0 12
+INSERT 0 4
+INSERT 0 0
+DELETE 0
+DO
+            cat             | comptes 
+----------------------------+---------
+ admin                      |       1
+ partenaire admis           |       4
+ recruteur Pro, école CEGEP |      12
+(3 rows)
+
+ les_192 | matchs_des_192 | matchs_cegep_sondes | textes | equipes_avant 
+---------+----------------+---------------------+--------+---------------
+     192 |           1492 |                6061 |     94 |         10145
+(1 row)
+
+CREATE TABLE
+INSERT 0 16
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+      debut_mesure_avant       
+-------------------------------
+ 2026-10-26 15:45:33.488814+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+        debut_operation        
+-------------------------------
+ 2026-10-26 15:46:08.538682+00
+(1 row)
+
+DO
+         fin_operation         
+-------------------------------
+ 2026-10-26 15:46:09.187688+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+DO
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 15:47:15.984743+00
+(1 row)
+
+CREATE VIEW
+== 0. Valeurs AVANT (md5 abrégés)
+                              surface                              |    compte    |                                                                                                  valeur                                                                                                  
+-------------------------------------------------------------------+--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | R01 16809ad4 | f20260701=0/d41d8cd9…;effet_f20260701=0/d41d8cd9…;f20260801=134/979c66c0…;effet_f20260801=8/42e283a7…;f20260901=2479/78c3d5a3…;effet_f20260901=73/c7817c95…;f20261002=5496/18f0b5d3…;effet_f20261002=312
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | R01 16809ad4 | CIVIL=135/29573c49…;effet_192_CIVIL=d41d8cd9…;COLLEGIAL=699/f3b04dbe…;effet_192_COLLEGIAL=94c2d9a2…;COLLEGIAL+CIVIL=834/bdd5ad57…;effet_192_COLLEGIAL+CIVIL=94c2d9a2…;SECONDAIRE=3536/d43d9e96…;effet_19
+ a03 matchs_suggestions : cégeps, écoles, mots                     | R01 16809ad4 | effet_existantes_lignes=9a78a80dc7,558b739d1d,cc4cec517a,25e21c6ea0,48c569fe13,06a25542bb,0a48cca9ed,27a91d5433,e367d60b0a,b2c5abf750,2eefb698f4,6de76b5d33,645d045eca,53b8afd28d,d72cf21a27,78b503aeab,
+ a04 depistage_profils_match : matchs de cégep et des 192          | R01 16809ad4 | matchs=6061;non_vides=0;contenu=-
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | ADMIN        | jetons=147;md5=eb212cf7…
+ t01 équipes présentes avant (ligne complète)                      | SU           | n=10145;md5=b62e675e…
+ t02 les 192 équipes créées                                        | SU           | effet_n=0;effet_categories=-;effet_saisons=-;effet_ecoles=0;hors_cegep=0;toutes_les_equipes=10145
+ t03 matchs : contenu hors liaison, et liaisons                    | SU           | n=70303;sans_liaison_md5=30b62ecd…;hors192_md5=167249b1…;effet_cotes_domicile=0;effet_cotes_visiteur=0;effet_matchs_192_a_venir=1169
+ t04 classements rseq_standings                                    | SU           | n=4463;md5=2878d32e…;des192_sans_equipe=192
+ t05 alertes de la veille                                          | SU           | hors192_md5=45e5be43…;refus_ouverts=12;effet_statut_192=OUVERTE;effet_md5_192=48761ac4…
+ t06 athlètes et rattachements (lot A : rien touché)               | SU           | athletes=7c89b993…;team_athletes=40ab75f5…;team_coaches=07746ce5…;users=9e8b9c44…
+ t07 écoles                                                        | SU           | n=1207;md5=87892490…
+ t08 index teams_identity_unique                                   | SU           | valide=true;groupes_en_double=0
+ t09 dépendants des 192                                            | SU           | n=0
+ t10 athlètes sur une équipe sœur « Collégial » des 192            | SU           | cegepiens=0;non_cegepiens=0
+(15 rows)
+
+== A. Écarts INTERDITS AVANT → APRÈS (attendu : aucune ligne)
+ surface | cle | avant | apres 
+---------+-----+-------+-------
+(0 rows)
+
+== B. EFFETS de l'opération (AVANT → APRÈS)
+                    surface                     |           cle           |                       avant                        |                       apres                        
+------------------------------------------------+-------------------------+----------------------------------------------------+----------------------------------------------------
+ a03 matchs_suggestions : cégeps, écoles, mots  | effet_equipes_192       | 0                                                  | 169
+ a03 matchs_suggestions : cégeps, écoles, mots  | effet_existantes_lignes | 9a78a80dc7,558b739d1d,cc4cec517a,25e21c6ea0,48c569 | 9a78a80dc7,558b739d1d,cc4cec517a,25e21c6ea0,48c569
+ a03 matchs_suggestions : cégeps, écoles, mots  | effet_terrains          | 2b71af0d…                                          | 48aa743f…
+ t02 les 192 équipes créées                     | effet_categories        | -                                                  | Collégial
+ t02 les 192 équipes créées                     | effet_ecoles            | 0                                                  | 60
+ t02 les 192 équipes créées                     | effet_n                 | 0                                                  | 192
+ t02 les 192 équipes créées                     | effet_saisons           | -                                                  | 2026-2027
+ t03 matchs : contenu hors liaison, et liaisons | effet_cotes_domicile    | 0                                                  | 1462
+ t03 matchs : contenu hors liaison, et liaisons | effet_cotes_visiteur    | 0                                                  | 1454
+ t05 alertes de la veille                       | effet_md5_192           | 48761ac4…                                          | 8db0aa56…
+ t05 alertes de la veille                       | effet_statut_192        | OUVERTE                                            | TRAITEE
+(11 rows)
+
+== B2. Suggestions (8 équipes au plus par recherche) : lignes d'équipes existantes retirées par les nouvelles (effet) ou apparues / modifiées (INTERDIT)
+ lignes_avant | lignes_apres | retirees_effet | apparues_ou_modifiees_interdit 
+--------------+--------------+----------------+--------------------------------
+          247 |          231 |             16 |                              0
+(1 row)
+
+== C. Ce que l'opération écrit dans admin_operations (dans la transaction)
+            operation            | equipes | domicile | visiteur 
+---------------------------------+---------+----------+----------
+ CEGEP_EQUIPES_RSEQ_192          | 192     | 1462     | 1454
+ CEGEP_EQUIPES_RSEQ_192_RETIREES | 192     | 1462     | 1454
+ EQUIPES_RSEQ_CREEES             | 192     | 1462     | 1454
+(3 rows)
+
+== D. Rollback : AVANT → APRÈS ROLLBACK (attendu : 0, 0)
+ cellules_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------------+--------------------
+                    0 |                              0 |               1105
+(1 row)
+
+ surface | cle 
+---------+-----
+(0 rows)
+
+== E. Schéma (attendu : aucune ligne — opération de données)
+ objet | cote 
+-------+------
+(0 rows)
+
+== F. Durées (ms)
+                              surface                              |      phase       | appels | ms_moyen | ms_max  
+-------------------------------------------------------------------+------------------+--------+----------+---------
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | 1 avant          |      1 |   4961.6 |  4961.6
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | 2 après          |      1 |   3942.1 |  3942.1
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | 3 après rollback |      1 |   3984.6 |  3984.6
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | 1 avant          |      1 |   4528.5 |  4528.5
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | 2 après          |      1 |   3592.2 |  3592.2
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | 3 après rollback |      1 |   3538.7 |  3538.7
+ a03 matchs_suggestions : cégeps, écoles, mots                     | 1 avant          |      1 |  16397.4 | 16397.4
+ a03 matchs_suggestions : cégeps, écoles, mots                     | 2 après          |      1 |  16895.0 | 16895.0
+ a03 matchs_suggestions : cégeps, écoles, mots                     | 3 après rollback |      1 |  16243.5 | 16243.5
+ a04 depistage_profils_match : matchs de cégep et des 192          | 1 avant          |      1 |   2617.7 |  2617.7
+ a04 depistage_profils_match : matchs de cégep et des 192          | 2 après          |      1 |   2645.2 |  2645.2
+ a04 depistage_profils_match : matchs de cégep et des 192          | 3 après rollback |      1 |   2567.8 |  2567.8
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 1 avant          |      1 |    104.0 |   104.0
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 2 après          |      1 |     95.3 |    95.3
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 3 après rollback |      1 |     95.7 |    95.7
+ t01 équipes présentes avant (ligne complète)                      | 1 avant          |      1 |    118.8 |   118.8
+ t01 équipes présentes avant (ligne complète)                      | 2 après          |      1 |    115.5 |   115.5
+ t01 équipes présentes avant (ligne complète)                      | 3 après rollback |      1 |    117.4 |   117.4
+ t02 les 192 équipes créées                                        | 1 avant          |      1 |      2.9 |     2.9
+ t02 les 192 équipes créées                                        | 2 après          |      1 |      3.5 |     3.5
+ t02 les 192 équipes créées                                        | 3 après rollback |      1 |      2.8 |     2.8
+ t03 matchs : contenu hors liaison, et liaisons                    | 1 avant          |      1 |   5870.1 |  5870.1
+ t03 matchs : contenu hors liaison, et liaisons                    | 2 après          |      1 |   5875.7 |  5875.7
+ t03 matchs : contenu hors liaison, et liaisons                    | 3 après rollback |      1 |   5859.9 |  5859.9
+ t04 classements rseq_standings                                    | 1 avant          |      1 |    284.8 |   284.8
+ t04 classements rseq_standings                                    | 2 après          |      1 |    266.6 |   266.6
+ t04 classements rseq_standings                                    | 3 après rollback |      1 |    267.2 |   267.2
+ t05 alertes de la veille                                          | 1 avant          |      1 |     44.8 |    44.8
+ t05 alertes de la veille                                          | 2 après          |      1 |     42.8 |    42.8
+ t05 alertes de la veille                                          | 3 après rollback |      1 |     43.1 |    43.1
+ t06 athlètes et rattachements (lot A : rien touché)               | 1 avant          |      1 |     28.9 |    28.9
+ t06 athlètes et rattachements (lot A : rien touché)               | 2 après          |      1 |     27.9 |    27.9
+ t06 athlètes et rattachements (lot A : rien touché)               | 3 après rollback |      1 |     28.0 |    28.0
+ t07 écoles                                                        | 1 avant          |      1 |     20.8 |    20.8
+ t07 écoles                                                        | 2 après          |      1 |     20.9 |    20.9
+ t07 écoles                                                        | 3 après rollback |      1 |     20.9 |    20.9
+ t08 index teams_identity_unique                                   | 1 avant          |      1 |      3.8 |     3.8
+ t08 index teams_identity_unique                                   | 2 après          |      1 |      3.7 |     3.7
+ t08 index teams_identity_unique                                   | 3 après rollback |      1 |      3.5 |     3.5
+ t09 dépendants des 192                                            | 1 avant          |      1 |      4.1 |     4.1
+ t09 dépendants des 192                                            | 2 après          |      1 |      3.9 |     3.9
+ t09 dépendants des 192                                            | 3 après rollback |      1 |      4.0 |     4.0
+ t10 athlètes sur une équipe sœur « Collégial » des 192            | 1 avant          |      1 |      2.9 |     2.9
+ t10 athlètes sur une équipe sœur « Collégial » des 192            | 2 après          |      1 |      3.1 |     3.1
+ t10 athlètes sur une équipe sœur « Collégial » des 192            | 3 après rollback |      1 |      3.1 |     3.1
+(45 rows)
+
+== VERDICT (attendu : tout à 0)
+ ecarts_interdits | ecarts_apres_rollback | empreinte_apres_rollback | suggestions_modifiees | refus 
+------------------+-----------------------+--------------------------+-----------------------+-------
+                0 |                     0 |                        0 |                     0 |     0
+(1 row)
+
+ surface | compte | phase | v 
+---------+--------+-------+---
+(0 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 15:47:16.064665+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
