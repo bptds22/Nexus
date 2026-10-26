@@ -1,0 +1,164 @@
+Chantier cégep, lot A — preuves LOCALES, volet 4 (2026-10-25) : le journal recruiter_activity_log (GO BP).
+Ajout : policy RESTRICTIVE FOR SELECT sur recruiter_activity_log + filtre à l'écriture dans log_new_athlete,
+log_athlete_update, log_coach_reply (corps prod du 2026-10-25, garde md5). Pile jetable NexusCegepA (volumes gardés).
+Migration md5 ce98b188fac2feb9b50f066297e79e30 — rollback md5 3ff81629983ee40ff2b8eb9155f0a5a6.
+Préalable : log_coach_reply local réaligné sur le texte prod (seul écart : un commentaire, perdu à l'apply prod) → md5 2fe3a0ef… = prod.
+Ordre joué : ancien rollback → B_sec → B_ceg → migration → M_ceg → M_sec → rollback → R_sec → R_ceg → ré-application → M_ceg2
+             puis rollback → ANCIENNE migration (O_ceg) → ancien rollback → nouvelle migration (pile laissée : lot A appliqué, C cégépien).
+Sondes : role authenticated + request.jwt.claims du compte (jamais superuser), sous-transaction annulée.
+Scripts : scripts/cegep-lot-a-preuves-par-role.sql (32 surfaces) et scripts/cegep-lot-a-preuves-journal.sql (J1-J5, W1-W6).
+
+════ Verdicts ════
+== Dormance (C au secondaire), sans lot A → nouveau lot A :
+   32 surfaces par rôle : IDENTIQUE
+   journal :       <  W1 inscription d'un nouvel athlète CÉGÉPIEN      | coll:5
+      >  W1 inscription d'un nouvel athlète CÉGÉPIEN      | -
+      (seul écart : W1, l'inscription d'un NOUVEL athlète cégépien — la cible)
+== C cégépien, ANCIENNE version du lot A → nouvelle :
+   32 surfaces par rôle, seul écart :
+      <  26 | TdB athlète : recruiter_activity_log (C,S)        | journal:9         | journal:0         | journal:17        | journal:0         | journal:0         | journal:8         | journal:0         | journal:0         | ·
+      >  26 | TdB athlète : recruiter_activity_log (C,S)        | journal:5         | journal:0         | journal:17        | journal:0         | journal:0         | journal:8         | journal:0         | journal:0         | ·
+   journal :
+      <  J1 | journal : lecture directe (C,S)                     | C,S         | -            | C,S               | C,S        | -            | -          | C                     | -              | -
+      <  J2 | journal : unité — gestes partagés de R (C,S)        | C,S         | -            | C,S               | C,S        | -            | -          | C                     | -              | -
+      <  J3 | journal : admin du cégep — vues de fiche de R (C,S) | C,S         | -            | C,S               | C,S        | -            | -          | C                     | -              | -
+      <  J4 | journal : lignes de R, toutes (compte)              | n:10        | n:0          | n:10              | n:10       | n:0          | n:0        | n:4                   | n:0            | n:0
+      >  J1 | journal : lecture directe (C,S)                     | S           | -            | S                 | C,S        | -            | -          | C                     | -              | -
+      >  J2 | journal : unité — gestes partagés de R (C,S)        | S           | -            | S                 | C,S        | -            | -          | C                     | -              | -
+      >  J3 | journal : admin du cégep — vues de fiche de R (C,S) | S           | -            | S                 | C,S        | -            | -          | C                     | -              | -
+      >  J4 | journal : lignes de R, toutes (compte)              | n:6         | n:0          | n:6               | n:10       | n:0          | n:0        | n:4                   | n:0            | n:0
+      <  J1 | journal : lecture directe (C,S)                     | C,S
+      <  J2 | journal : unité — gestes partagés de R (C,S)        | C,S
+      >  J1 | journal : lecture directe (C,S)                     | S
+      >  J2 | journal : unité — gestes partagés de R (C,S)        | S
+      <  W1 inscription d'un nouvel athlète CÉGÉPIEN      | coll:5
+      >  W1 inscription d'un nouvel athlète CÉGÉPIEN      | -
+      <  W3 vidéo ajoutée à C                             | coll:1
+      >  W3 vidéo ajoutée à C                             | -
+      <  W5 le coach K répond à R (conversation sur C)    | coll:1
+      >  W5 le coach K répond à R (conversation sur C)    | -
+== Rollback à l'identique :
+   empreinte schéma public (fonctions md5+ACL+réglages, policies, déclencheurs), avant migration → après rollback : IDENTIQUE (1065 lignes)
+   preuves B_sec → R_sec : IDENTIQUES
+   preuves B_ceg → R_ceg : IDENTIQUES
+   ré-application : empreinte IDENTIQUE, preuves M_ceg → M_ceg2 IDENTIQUES
+
+════ Matrice journal B_ceg (sans lot A, C cégépien) ════
+ #  |                       surface                       | R collégial | N sans école | AC admin du cégep |  A admin   | P partenaire |  K coach   | K2 coach de C (fiche) | C (son compte) | PA parent de C 
+----+-----------------------------------------------------+-------------+--------------+-------------------+------------+--------------+------------+-----------------------+----------------+----------------
+ J1 | journal : lecture directe (C,S)                     | C,S         | -            | C,S               | C,S        | -            | -          | C                     | -              | -
+ J2 | journal : unité — gestes partagés de R (C,S)        | C,S         | -            | C,S               | C,S        | -            | -          | C                     | -              | -
+ J3 | journal : admin du cégep — vues de fiche de R (C,S) | C,S         | -            | C,S               | C,S        | -            | -          | C                     | -              | -
+ J4 | journal : lignes de R, toutes (compte)              | n:10        | n:0          | n:10              | n:10       | n:0          | n:0        | n:4                   | n:0            | n:0
+ J5 | journal : non lues du compte (badge)                | non-lues:1  | non-lues:0   | non-lues:1        | non-lues:0 | non-lues:0   | non-lues:0 | non-lues:0            | non-lues:0     | non-lues:0
+(5 rows)
+
+ #  |                       surface                       | AL collègue d'unité 
+----+-----------------------------------------------------+---------------------
+ J1 | journal : lecture directe (C,S)                     | C,S
+ J2 | journal : unité — gestes partagés de R (C,S)        | C,S
+ J3 | journal : admin du cégep — vues de fiche de R (C,S) | -
+(3 rows)
+
+                     surface                      | resultat 
+--------------------------------------------------+----------
+ W1 inscription d'un nouvel athlète CÉGÉPIEN      | coll:5
+ W2 inscription d'un nouvel athlète du SECONDAIRE | coll:5
+ W3 vidéo ajoutée à C                             | coll:1
+ W4 vidéo ajoutée à S                             | coll:1
+ W5 le coach K répond à R (conversation sur C)    | coll:1
+ W6 le coach K répond à R (conversation sur S)    | coll:1
+(6 rows)
+
+                     etat                      
+-----------------------------------------------
+ journal total (C,S):17
+ C ancré sur : CEGEP — Cégep Beauce-Appalaches
+(2 rows)
+
+════ Matrice journal M_ceg (nouveau lot A, C cégépien) ════
+ #  |                       surface                       | R collégial | N sans école | AC admin du cégep |  A admin   | P partenaire |  K coach   | K2 coach de C (fiche) | C (son compte) | PA parent de C 
+----+-----------------------------------------------------+-------------+--------------+-------------------+------------+--------------+------------+-----------------------+----------------+----------------
+ J1 | journal : lecture directe (C,S)                     | S           | -            | S                 | C,S        | -            | -          | C                     | -              | -
+ J2 | journal : unité — gestes partagés de R (C,S)        | S           | -            | S                 | C,S        | -            | -          | C                     | -              | -
+ J3 | journal : admin du cégep — vues de fiche de R (C,S) | S           | -            | S                 | C,S        | -            | -          | C                     | -              | -
+ J4 | journal : lignes de R, toutes (compte)              | n:6         | n:0          | n:6               | n:10       | n:0          | n:0        | n:4                   | n:0            | n:0
+ J5 | journal : non lues du compte (badge)                | non-lues:1  | non-lues:0   | non-lues:1        | non-lues:0 | non-lues:0   | non-lues:0 | non-lues:0            | non-lues:0     | non-lues:0
+(5 rows)
+
+ #  |                       surface                       | AL collègue d'unité 
+----+-----------------------------------------------------+---------------------
+ J1 | journal : lecture directe (C,S)                     | S
+ J2 | journal : unité — gestes partagés de R (C,S)        | S
+ J3 | journal : admin du cégep — vues de fiche de R (C,S) | -
+(3 rows)
+
+                     surface                      | resultat 
+--------------------------------------------------+----------
+ W1 inscription d'un nouvel athlète CÉGÉPIEN      | -
+ W2 inscription d'un nouvel athlète du SECONDAIRE | coll:5
+ W3 vidéo ajoutée à C                             | -
+ W4 vidéo ajoutée à S                             | coll:1
+ W5 le coach K répond à R (conversation sur C)    | -
+ W6 le coach K répond à R (conversation sur S)    | coll:1
+(6 rows)
+
+                     etat                      
+-----------------------------------------------
+ journal total (C,S):17
+ C ancré sur : CEGEP — Cégep Beauce-Appalaches
+(2 rows)
+
+════ Matrice par rôle M_ceg (nouveau lot A, C cégépien) ════
+ #  |                      surface                      |    R collégial    |   N sans école    |      A admin      |   P partenaire    |      K coach      | K2 coach équipe C |  C (son compte)   |  PA parent de C   |    anon     
+----+---------------------------------------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+-------------
+  1 | athletes (lecture directe)                        | S                 | S                 | C,S               | -                 | S                 | C                 | C                 | -                 | -
+  2 | team_athletes (lecture directe)                   | S                 | S                 | C,S               | -                 | C,S               | C                 | C                 | -                 | -
+  3 | athlete_badges (lecture directe)                  | S                 | S                 | C,S               | -                 | C,S               | C                 | C                 | -                 | refus 42501
+  4 | evaluations (lecture directe)                     | S                 | S                 | C,S               | -                 | C,S               | C                 | C                 | -                 | refus 42501
+  5 | recruiter_search_athletes()                       | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  6 | recruiter_search_athletes(texte)                  | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  7 | recruiter_athlete_profile                         | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  8 | recruiter_athlete_cards                           | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+  9 | athletes_targeting_my_cegep                       | S                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 10 | matchs_profils_nexus                              | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 11 | depistage_profils_match                           | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 12 | matchs_recherche (G1 coll., G2 sec.)              | G1:0*,G2:1*       | refus 42501       | refus 42501       | G1:1,G2:1         | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 13 | rapprochements_unite                              | -                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 14 | rapprochements_refuses_unite                      | -                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 15 | fusionner_carte(carte1, C)                        | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 16 | athletes_nom_proche                               | S                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 17 | athlete_nexus_par_courriel                        | S                 | -                 | -                 | -                 | -                 | -                 | -                 | -                 | ·
+ 18 | match_notes_lier(n° 7 → C)                        | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | refus P0001       | ·
+ 19 | matchs_profils_partenaire(G1)                     | refus 42501       | refus 42501       | refus 42501       | C                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 20 | top_athletes_view (partenaire)                    | -                 | -                 | -                 | C,S               | -                 | -                 | -                 | -                 | ·
+ 21 | admin_prospects_rapprochements                    | refus 42501       | refus 42501       | -                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+ 22 | TdB athlète : get_my_athlete_view_details         | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | ·
+ 23 | TdB athlète : list_interested_recruiters          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:0          | lignes:1          | lignes:0          | lignes:0          | ·
+ 24 | TdB athlète : recruiter_favorites (C,S)           | fav:2             | fav:0             | fav:2             | fav:0             | fav:0             | fav:1             | fav:1             | fav:0             | ·
+ 25 | TdB athlète : recruiter_athlete_views (C,S)       | vues:2            | vues:0            | vues:3            | vues:0            | vues:0            | vues:1            | vues:1            | vues:0            | ·
+ 26 | TdB athlète : recruiter_activity_log (C,S)        | journal:5         | journal:0         | journal:17        | journal:0         | journal:0         | journal:8         | journal:0         | journal:0         | ·
+ 27 | TdB athlète : athlete_notifications (C,S)         | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:0          | notifs:3          | notifs:0          | ·
+ 28 | parent : get_my_children                          | -                 | -                 | -                 | -                 | -                 | -                 | -                 | C                 | ·
+ 29 | parent : get_child_consents(C)                    | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:705c7b4c | consents:27e40494 | ·
+ 30 | coach : get_coach_athletes(true)                  | -                 | -                 | -                 | -                 | C,S               | C                 | -                 | -                 | ·
+ 31 | TdB recruteur : Athlètes tendance (vues de fiche) | S                 | -                 | C,S               | -                 | -                 | C                 | C                 | -                 | ·
+ 32 | TdB recruteur : tuile Nouveaux (10 j)             | S                 | S                 | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | refus 42501       | ·
+(32 rows)
+
+             surface             | service_role 
+---------------------------------+--------------
+ agenda_flux(jeton de R)         | S
+ rapprochement_candidats(carte1) | -
+(2 rows)
+
+           surface            | R collégial | N sans école 
+------------------------------+-------------+--------------
+ écrire une vue de fiche de C | refus 42501 | refus 42501
+(1 row)
+
+                     etat                      
+-----------------------------------------------
+ C ancré sur : CEGEP — Cégep Beauce-Appalaches
+(1 row)
+

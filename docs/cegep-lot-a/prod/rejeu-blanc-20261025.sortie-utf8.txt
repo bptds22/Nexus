@@ -1,0 +1,253 @@
+Pager usage is off.
+Null display is "┬╖".
+BEGIN
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 02:00:39.157028+00 | postgres     | 17.6
+(1 row)
+
+SELECT 1
+DO
+CREATE TABLE
+INSERT 0 25
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DELETE 2
+                     cat                      | comptes 
+----------------------------------------------+---------
+ admin                                        |       1
+ anon                                         |       1
+ athl├¿te                                      |       1
+ coach                                        |       1
+ coll├⌐gial                                    |       5
+ coll├⌐gial [journal du t├⌐moin]                |       1
+ coll├⌐gial admin du c├⌐gep                     |      12
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] |       4
+ partenaire                                   |       1
+ sans ├⌐cole                                   |       2
+ sans ├⌐cole (DESACTIVE)                       |       1
+(11 rows)
+
+CREATE TABLE
+INSERT 0 15
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ┬╖
+(1 row)
+
+         debut_verrous         
+-------------------------------
+ 2026-10-26 02:00:51.944055+00
+(1 row)
+
+psql.exe : psql:C:/tmp/nexus-cegep-a/docs/cegep-lot-a/prod/rejeu-blanc-20261025.sql:1729: NOTICE:  NEXUS lot A : 1 athl├¿te(s) ancr├⌐(s) sur un 
+c├⌐gep au moment de l'application.
+At line:1 char:3
++   & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" "host=aws-1-ca ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:C:/tmp/nex... l'application.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DO
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ┬╖
+(1 row)
+
+DO
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ┬╖
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 02:01:18.615082+00
+(1 row)
+
+== A. ├ëcarts AVANT ΓåÆ APR├êS, regroup├⌐s (seules les cellules qui changent)
+                     cat                      |                surface                |                      avant                      |                  apres                  | comptes |                                                 debuts_d_id                                                 
+----------------------------------------------+---------------------------------------+-------------------------------------------------+-----------------------------------------+---------+-------------------------------------------------------------------------------------------------------------
+ coll├⌐gial                                    | s01 athletes : le t├⌐moin              | 1                                               | 0                                       |       5 | 149bd0e2 16809ad4 1a4488d6 a7d55c63 bf77282e
+ coll├⌐gial                                    | s02 athletes : total lisible          | 198                                             | 197                                     |       5 | 149bd0e2 16809ad4 1a4488d6 a7d55c63 bf77282e
+ coll├⌐gial                                    | s03 athletes : par ancrage            | aucun:22,CEGEP:1,LIGUE_CIVILE:35,SECONDAIRE:140 | aucun:22,LIGUE_CIVILE:35,SECONDAIRE:140 |       5 | 149bd0e2 16809ad4 1a4488d6 a7d55c63 bf77282e
+ coll├⌐gial                                    | s04 recruiter_search_athletes()       | tot:190,temoin:1                                | tot:189,temoin:0                        |       5 | 149bd0e2 16809ad4 1a4488d6 a7d55c63 bf77282e
+ coll├⌐gial                                    | s05 recruiter_athlete_profile(t├⌐moin) | 1                                               | 0                                       |       5 | 149bd0e2 16809ad4 1a4488d6 a7d55c63 bf77282e
+ coll├⌐gial                                    | s06 recruiter_athlete_cards(t├⌐moin)   | 1                                               | 0                                       |       5 | 149bd0e2 16809ad4 1a4488d6 a7d55c63 bf77282e
+ coll├⌐gial [journal du t├⌐moin]                | s01 athletes : le t├⌐moin              | 1                                               | 0                                       |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s02 athletes : total lisible          | 198                                             | 197                                     |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s03 athletes : par ancrage            | aucun:22,CEGEP:1,LIGUE_CIVILE:35,SECONDAIRE:140 | aucun:22,LIGUE_CIVILE:35,SECONDAIRE:140 |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s04 recruiter_search_athletes()       | tot:190,temoin:1                                | tot:189,temoin:0                        |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s05 recruiter_athlete_profile(t├⌐moin) | 1                                               | 0                                       |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s06 recruiter_athlete_cards(t├⌐moin)   | 1                                               | 0                                       |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s13 journal : lignes du t├⌐moin        | 1                                               | 0                                       |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s14 journal : total lisible           | 598                                             | 597                                     |       1 | a0000000
+ coll├⌐gial [journal du t├⌐moin]                | s15 journal du t├⌐moin, par recruteur  | a0000000:1                                      | -                                       |       1 | a0000000
+ coll├⌐gial admin du c├⌐gep                     | s01 athletes : le t├⌐moin              | 1                                               | 0                                       |      12 | 127e14f9 29a045ee 52470683 53489e88 5991ca45 67bbe128 9ed6b893 b02bd187 ba2e0946 d049dc52 d45fba8a f565759d
+ coll├⌐gial admin du c├⌐gep                     | s02 athletes : total lisible          | 198                                             | 197                                     |      12 | 127e14f9 29a045ee 52470683 53489e88 5991ca45 67bbe128 9ed6b893 b02bd187 ba2e0946 d049dc52 d45fba8a f565759d
+ coll├⌐gial admin du c├⌐gep                     | s03 athletes : par ancrage            | aucun:22,CEGEP:1,LIGUE_CIVILE:35,SECONDAIRE:140 | aucun:22,LIGUE_CIVILE:35,SECONDAIRE:140 |      12 | 127e14f9 29a045ee 52470683 53489e88 5991ca45 67bbe128 9ed6b893 b02bd187 ba2e0946 d049dc52 d45fba8a f565759d
+ coll├⌐gial admin du c├⌐gep                     | s04 recruiter_search_athletes()       | tot:190,temoin:1                                | tot:189,temoin:0                        |      12 | 127e14f9 29a045ee 52470683 53489e88 5991ca45 67bbe128 9ed6b893 b02bd187 ba2e0946 d049dc52 d45fba8a f565759d
+ coll├⌐gial admin du c├⌐gep                     | s05 recruiter_athlete_profile(t├⌐moin) | 1                                               | 0                                       |      12 | 127e14f9 29a045ee 52470683 53489e88 5991ca45 67bbe128 9ed6b893 b02bd187 ba2e0946 d049dc52 d45fba8a f565759d
+ coll├⌐gial admin du c├⌐gep                     | s06 recruiter_athlete_cards(t├⌐moin)   | 1                                               | 0                                       |      12 | 127e14f9 29a045ee 52470683 53489e88 5991ca45 67bbe128 9ed6b893 b02bd187 ba2e0946 d049dc52 d45fba8a f565759d
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s01 athletes : le t├⌐moin              | 1                                               | 0                                       |       4 | 74fc504e 97ba8dc9 c9a63ff5 d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s02 athletes : total lisible          | 198                                             | 197                                     |       4 | 74fc504e 97ba8dc9 c9a63ff5 d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s03 athletes : par ancrage            | aucun:22,CEGEP:1,LIGUE_CIVILE:35,SECONDAIRE:140 | aucun:22,LIGUE_CIVILE:35,SECONDAIRE:140 |       4 | 74fc504e 97ba8dc9 c9a63ff5 d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s04 recruiter_search_athletes()       | tot:190,temoin:1                                | tot:189,temoin:0                        |       4 | 74fc504e 97ba8dc9 c9a63ff5 d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s05 recruiter_athlete_profile(t├⌐moin) | 1                                               | 0                                       |       4 | 74fc504e 97ba8dc9 c9a63ff5 d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s06 recruiter_athlete_cards(t├⌐moin)   | 1                                               | 0                                       |       4 | 74fc504e 97ba8dc9 c9a63ff5 d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s13 journal : lignes du t├⌐moin        | 1                                               | 0                                       |       3 | 74fc504e c9a63ff5 d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s13 journal : lignes du t├⌐moin        | 2                                               | 0                                       |       1 | 97ba8dc9
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s14 journal : total lisible           | 104                                             | 103                                     |       1 | c9a63ff5
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s14 journal : total lisible           | 153                                             | 152                                     |       1 | 74fc504e
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s14 journal : total lisible           | 195                                             | 194                                     |       1 | d8b80d58
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s14 journal : total lisible           | 742                                             | 740                                     |       1 | 97ba8dc9
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s15 journal du t├⌐moin, par recruteur  | 74fc504e:1                                      | -                                       |       1 | 74fc504e
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s15 journal du t├⌐moin, par recruteur  | 97ba8dc9:1,a0000000:1                           | -                                       |       1 | 97ba8dc9
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s15 journal du t├⌐moin, par recruteur  | c9a63ff5:1                                      | -                                       |       1 | c9a63ff5
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | s15 journal du t├⌐moin, par recruteur  | d8b80d58:1                                      | -                                       |       1 | d8b80d58
+ sans ├⌐cole                                   | s01 athletes : le t├⌐moin              | 1                                               | 0                                       |       2 | 14674de1 9cd5fdea
+ sans ├⌐cole                                   | s02 athletes : total lisible          | 198                                             | 197                                     |       2 | 14674de1 9cd5fdea
+ sans ├⌐cole                                   | s03 athletes : par ancrage            | aucun:22,CEGEP:1,LIGUE_CIVILE:35,SECONDAIRE:140 | aucun:22,LIGUE_CIVILE:35,SECONDAIRE:140 |       2 | 14674de1 9cd5fdea
+ sans ├⌐cole                                   | s04 recruiter_search_athletes()       | tot:190,temoin:1                                | tot:189,temoin:0                        |       2 | 14674de1 9cd5fdea
+ sans ├⌐cole                                   | s05 recruiter_athlete_profile(t├⌐moin) | 1                                               | 0                                       |       2 | 14674de1 9cd5fdea
+ sans ├⌐cole                                   | s06 recruiter_athlete_cards(t├⌐moin)   | 1                                               | 0                                       |       2 | 14674de1 9cd5fdea
+ sans ├⌐cole (DESACTIVE)                       | s01 athletes : le t├⌐moin              | 1                                               | 0                                       |       1 | 4aad3a56
+ sans ├⌐cole (DESACTIVE)                       | s02 athletes : total lisible          | 198                                             | 197                                     |       1 | 4aad3a56
+ sans ├⌐cole (DESACTIVE)                       | s03 athletes : par ancrage            | aucun:22,CEGEP:1,LIGUE_CIVILE:35,SECONDAIRE:140 | aucun:22,LIGUE_CIVILE:35,SECONDAIRE:140 |       1 | 4aad3a56
+ sans ├⌐cole (DESACTIVE)                       | s04 recruiter_search_athletes()       | tot:190,temoin:1                                | tot:189,temoin:0                        |       1 | 4aad3a56
+ sans ├⌐cole (DESACTIVE)                       | s05 recruiter_athlete_profile(t├⌐moin) | 1                                               | 0                                       |       1 | 4aad3a56
+ sans ├⌐cole (DESACTIVE)                       | s06 recruiter_athlete_cards(t├⌐moin)   | 1                                               | 0                                       |       1 | 4aad3a56
+(49 rows)
+
+== B. Bilan par cat├⌐gorie de compte
+                     cat                      | comptes | cellules | ecarts_avant_apres 
+----------------------------------------------+---------+----------+--------------------
+ admin                                        |       1 |       15 |                  0
+ anon                                         |       1 |       15 |                  0
+ athl├¿te                                      |       1 |       15 |                  0
+ coach                                        |       1 |       15 |                  0
+ coll├⌐gial                                    |       5 |       75 |                 30
+ coll├⌐gial [journal du t├⌐moin]                |       1 |       15 |                  9
+ coll├⌐gial admin du c├⌐gep                     |      12 |      180 |                 72
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] |       4 |       60 |                 36
+ partenaire                                   |       1 |       15 |                  0
+ sans ├⌐cole                                   |       2 |       30 |                 12
+ sans ├⌐cole (DESACTIVE)                       |       1 |       15 |                  6
+(11 rows)
+
+== C. Journal du t├⌐moin (s13, s15) : comptes qui en lisaient une ligne, et l'admin
+                     cat                      |    compte    |               surface                |                         avant                          |                         apres                          |                     apres_rollback                     
+----------------------------------------------+--------------+--------------------------------------+--------------------------------------------------------+--------------------------------------------------------+--------------------------------------------------------
+ admin                                        | ADMIN        | s13 journal : lignes du t├⌐moin       | 5                                                      | 5                                                      | 5
+ admin                                        | ADMIN        | s15 journal du t├⌐moin, par recruteur | 74fc504e:1,97ba8dc9:1,a0000000:1,c9a63ff5:1,d8b80d58:1 | 74fc504e:1,97ba8dc9:1,a0000000:1,c9a63ff5:1,d8b80d58:1 | 74fc504e:1,97ba8dc9:1,a0000000:1,c9a63ff5:1,d8b80d58:1
+ coll├⌐gial [journal du t├⌐moin]                | R16 a0000000 | s13 journal : lignes du t├⌐moin       | 1                                                      | 0                                                      | 1
+ coll├⌐gial [journal du t├⌐moin]                | R16 a0000000 | s15 journal du t├⌐moin, par recruteur | a0000000:1                                             | -                                                      | a0000000:1
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R12 74fc504e | s13 journal : lignes du t├⌐moin       | 1                                                      | 0                                                      | 1
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R12 74fc504e | s15 journal du t├⌐moin, par recruteur | 74fc504e:1                                             | -                                                      | 74fc504e:1
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R13 97ba8dc9 | s13 journal : lignes du t├⌐moin       | 2                                                      | 0                                                      | 2
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R13 97ba8dc9 | s15 journal du t├⌐moin, par recruteur | 97ba8dc9:1,a0000000:1                                  | -                                                      | 97ba8dc9:1,a0000000:1
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R21 c9a63ff5 | s13 journal : lignes du t├⌐moin       | 1                                                      | 0                                                      | 1
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R21 c9a63ff5 | s15 journal du t├⌐moin, par recruteur | c9a63ff5:1                                             | -                                                      | c9a63ff5:1
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R24 d8b80d58 | s13 journal : lignes du t├⌐moin       | 1                                                      | 0                                                      | 1
+ coll├⌐gial admin du c├⌐gep [journal du t├⌐moin] | R24 d8b80d58 | s15 journal du t├⌐moin, par recruteur | d8b80d58:1                                             | -                                                      | d8b80d58:1
+(12 rows)
+
+== D. Rollback ├á blanc : AVANT ΓåÆ APR├êS ROLLBACK (attendu : 0 et 0)
+ cellules_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------------+--------------------
+                    0 |                              0 |               1095
+(1 row)
+
+== E. Ce que la migration change au sch├⌐ma (empreinte AVANT ΓåÆ APR├êS)
+                                           objet                                            |      cote       
+--------------------------------------------------------------------------------------------+-----------------
+ F|agenda_flux(text)|6c1e9e2cb301ba8db313c72a2c68a47d|{postgres=X/postgres,service_role=X/p | avant seulement
+ F|agenda_flux(text)|e66aa71a38527be3a3222a21a837f19b|{postgres=X/postgres,service_role=X/p | apr├¿s seulement
+ F|athlete_est_cegepien(uuid)|64d1f6e988444fd2fdd915beab11da2d|{postgres=X/postgres,service | apr├¿s seulement
+ F|athlete_nexus_par_courriel(text)|0c0cee48b51459649559fe0bd7f42852|{postgres=X/postgres,a | apr├¿s seulement
+ F|athlete_nexus_par_courriel(text)|6f4023f8437a354d3cc64c62a1a7540f|{postgres=X/postgres,a | avant seulement
+ F|athletes_nom_proche(text,text,uuid)|1ab37c3c47bbd70de790d27b7676bffa|{postgres=X/postgre | apr├¿s seulement
+ F|athletes_nom_proche(text,text,uuid)|492f6f32bdd04bd5099ab706a3eb55b3|{postgres=X/postgre | avant seulement
+ F|athletes_targeting_my_cegep()|564a2e940ad9d187b3e0b8f4c16631e0|{postgres=X/postgres,auth | avant seulement
+ F|athletes_targeting_my_cegep()|ddd4f17140902ccbd76318682e74de3a|{postgres=X/postgres,auth | apr├¿s seulement
+ F|depistage_profils_match(uuid)|01a05c483eeeb9ef40fa6bcf6ea199a5|{postgres=X/postgres,serv | apr├¿s seulement
+ F|depistage_profils_match(uuid)|ad18404a95b8ee3713d2d2acef79d7b6|{postgres=X/postgres,serv | avant seulement
+ F|fusionner_carte(uuid,uuid)|38f4f1a78a4c6635c8f5244df033e5a1|{postgres=X/postgres,authent | avant seulement
+ F|fusionner_carte(uuid,uuid)|ccac55c88a0fb44dd76737562ca9dc72|{postgres=X/postgres,authent | apr├¿s seulement
+ F|log_athlete_update()|7b927d3036f7ca1e6d24090c7202c672|{=X/postgres,postgres=X/postgres,a | apr├¿s seulement
+ F|log_athlete_update()|cda68b5c35a432d7957f4b8fca5c9b2c|{=X/postgres,postgres=X/postgres,a | avant seulement
+ F|log_coach_reply()|2fe3a0ef413037a4fc13d993c2a4f601|{=X/postgres,postgres=X/postgres,anon | avant seulement
+ F|log_coach_reply()|8d37af1940e9062e69f5170a7cf21be9|{=X/postgres,postgres=X/postgres,anon | apr├¿s seulement
+ F|log_new_athlete()|6fc96267a5d89574a305f3da137e2b24|{=X/postgres,postgres=X/postgres,anon | avant seulement
+ F|log_new_athlete()|d69c225b3fc04007d527ef0a69717d04|{=X/postgres,postgres=X/postgres,anon | apr├¿s seulement
+ F|match_notes_lier(uuid,text,text,text,uuid,uuid)|3402b892940b6a7049fa7ba262a5af11|{postgr | apr├¿s seulement
+ F|match_notes_lier(uuid,text,text,text,uuid,uuid)|f6c6f67a42a18711011c377bd93bb19e|{postgr | avant seulement
+ F|matchs_profils_nexus(uuid[])|b94ab615cf14a4fa104f28bce1213abf|{postgres=X/postgres,authe | avant seulement
+ F|matchs_profils_nexus(uuid[])|f8404ce1015afe98912a670cf58c433b|{postgres=X/postgres,authe | apr├¿s seulement
+ F|matchs_recherche(date,date,text,text[],text,uuid[],text[],boolean)|82ac7e3aebbb103335346 | apr├¿s seulement
+ F|matchs_recherche(date,date,text,text[],text,uuid[],text[],boolean)|9674fbf129c1f0f0b93d0 | avant seulement
+ F|peut_voir_cegepiens()|bf3463481d1b2862acc6367f2640b3b1|{postgres=X/postgres,service_role | apr├¿s seulement
+ F|rapprochement_candidats(uuid,uuid)|7a71383b81597b9c6b21fe4530670623|{postgres=X/postgres | avant seulement
+ F|rapprochement_candidats(uuid,uuid)|f0f48daf500a3f12ed1aaa489406d227|{postgres=X/postgres | apr├¿s seulement
+ F|rapprochements_refuses_unite()|a5d84a05834fc1fd293f7ee85c9210dd|{postgres=X/postgres,ser | avant seulement
+ F|rapprochements_refuses_unite()|aaddce48d4247293b1af5c316c42db67|{postgres=X/postgres,ser | apr├¿s seulement
+ F|rapprochements_unite(uuid)|c9a5819e84d9bff5235443eabb60725d|{postgres=X/postgres,authent | apr├¿s seulement
+ F|rapprochements_unite(uuid)|dd4be21b51d7f25cc7e2305137a73da0|{postgres=X/postgres,authent | avant seulement
+ F|recruiter_athlete_cards(uuid[])|18ab33af6d239268c0d80e2f5ccc02c3|{postgres=X/postgres,au | avant seulement
+ F|recruiter_athlete_cards(uuid[])|83edcd33fd085fb3d3750338665433d2|{postgres=X/postgres,au | apr├¿s seulement
+ F|recruiter_athlete_profile(uuid)|0b58d368f76a81cd0cb066404e8d77e0|{postgres=X/postgres,au | avant seulement
+ F|recruiter_athlete_profile(uuid)|90dd1734451b9cd2017193fd9fba56a5|{postgres=X/postgres,au | apr├¿s seulement
+ F|recruiter_search_athletes(text,uuid,integer,boolean,boolean,numeric,numeric,boolean,bool | apr├¿s seulement
+ F|recruiter_search_athletes(text,uuid,integer,boolean,boolean,numeric,numeric,boolean,bool | avant seulement
+ F|unite_voit_cegepiens(uuid)|e6c978a07191e40681a89c1ebfa3d1b7|{postgres=X/postgres,service | apr├¿s seulement
+ P|athlete_badges|cegepiens_masques_recruteurs|SELECT|RESTRICTIVE|{authenticated}|fe05f7639 | apr├¿s seulement
+ P|athletes|cegepiens_masques_recruteurs|SELECT|RESTRICTIVE|{authenticated}|75886b3eee1c66f | apr├¿s seulement
+ P|evaluations|cegepiens_masques_recruteurs|SELECT|RESTRICTIVE|{authenticated}|fe05f76399a6 | apr├¿s seulement
+ P|recruiter_activity_log|cegepiens_masques_recruteurs|SELECT|RESTRICTIVE|{authenticated}|f | apr├¿s seulement
+ P|recruiter_athlete_views|cegepiens_masques_recruteurs|ALL|RESTRICTIVE|{authenticated}|fe0 | apr├¿s seulement
+ P|team_athletes|cegepiens_masques_recruteurs|SELECT|RESTRICTIVE|{authenticated}|fe05f76399 | apr├¿s seulement
+(45 rows)
+
+== F. Co├╗t : recruiter_search_athletes, moyenne par recruteur (ms)
+      phase       | ms_moyen | ms_max | appels 
+------------------+----------+--------+--------
+ 1 avant          |     20.6 |   32.9 |     25
+ 2 apr├¿s          |     24.4 |   32.8 |     25
+ 3 apr├¿s rollback |     20.1 |   23.9 |     25
+(3 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 02:01:18.697039+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : la prod est inchang├⌐e.
