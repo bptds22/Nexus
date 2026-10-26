@@ -19,7 +19,7 @@ Fichiers source hors dépôt : `Documents/Nexus-Imports/civil-2026/`. Aucune don
 | Lot | Contenu | État |
 |---|---|---|
 | 0 | `scripts/civil-2026/lot0_plan.py` : plan JSON, lecture seule | fait |
-| 1 | `20261026210000_civil_sources_lot1` : `games.source_match_id` / `statut_source`, `games_identite_civile` restreint, sources SPORDLE / MBL / KREEZEE, tables de correspondance | local prouvé, **pas en prod** |
+| 1 | `20261026210000_civil_sources_lot1` : `games.source_match_id` / `statut_source`, `games_identite_civile` restreint, sources SPORDLE / MBL / KREEZEE, tables de correspondance | **EN PROD** 2026-10-26 20 h 03 UTC (`prod/apply-20261026210000.sql`, admin_operations `69e6300d`) |
 | 2 | Organisations à créer (201) + géocodage approximatif | à faire |
 | 3 | Équipes de moins de 18 ans | à faire |
 | 4 | Équipes de 18 ans et plus | à faire |
@@ -35,5 +35,5 @@ Fichiers source hors dépôt : `Documents/Nexus-Imports/civil-2026/`. Aucune don
 Ordre : relevé → apply → tests → refus du rollback avec données → rollback → relevé identique →
 second cycle → double apply refusé → rollback sur base défaite refusé.
 
-**Ordre de prod :** la migration AVANT toute exécution du script football mis à jour
+**Ordre de prod (respecté le 2026-10-26) :** la migration AVANT toute exécution du script football mis à jour
 (`scripts/plan-civil-football-games.mjs`, nouveau prédicat d'`ON CONFLICT`).
