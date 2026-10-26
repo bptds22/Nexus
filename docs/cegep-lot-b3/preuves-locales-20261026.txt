@@ -1,0 +1,371 @@
+Lot B3 cégep — preuves locales du 2026-10-26 (base jetable nexus_b3 = copie de nexus_b2, propriétaire postgres comme en prod,
+alignée sur la prod par scripts/cegep-lot-b3/aligner-local.sql, fixtures scripts/cegep-lot-b3/fixtures-locales.sql). Lancé en postgres.
+Les fichiers ont été générés sous l'étiquette 20261027 pour ces preuves, puis régénérés sous 20261026 : octet pour octet identiques (apply fc0b6858…, rejeu eb1c6fab…, rollback 1e802ae3… ; migration 8be0e1f1…, rollback c4009d73…).
+
+######## 1. REJEU À BLANC (rejeu-blanc-20261027.sql, md5 eb1c6fab8f962ec841592f767fbc10c3)
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 20:15:07.389755+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 8
+CREATE TABLE
+INSERT 0 2
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DELETE 0
+DO
+            cat             | comptes 
+----------------------------+---------
+ admin                      |       1
+ anon                       |       1
+ athlète                    |       1
+ partenaire admis           |       1
+ recruteur pro, école CEGEP |       1
+(5 rows)
+
+ athletes_actifs | cegepiens_actifs 
+-----------------+------------------
+               8 |                2
+(1 row)
+
+CREATE TABLE
+INSERT 0 10
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+      debut_mesure_avant       
+-------------------------------
+ 2026-10-26 20:15:07.401028+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+        debut_migration        
+-------------------------------
+ 2026-10-26 20:15:07.512352+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 20:15:07.529403+00
+(1 row)
+
+SET
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+DO
+SET
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 20:15:07.745316+00
+(1 row)
+
+CREATE VIEW
+== 0. Valeurs AVANT (une ligne par valeur distincte ; md5 abrégés)
+                                 surface                                 |    compte    | comptes |                                                                              valeur                                                                              
+-------------------------------------------------------------------------+--------------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ a01 recruiter_search_athletes (défaut, tout)                            | R01 b2000000 |       1 | n=6;lignes=38ff19a2…;ordre=7890b4be…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/LIGUE_CIVILE/-,SECONDAIRE/-/-,SECONDAIRE/CEGEP/-,SECONDAIRE/SECONDAIRE/-
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | R01 b2000000 |       1 | grad_asc=6/b0ce179b…;promo2027=4/2f9669f7…;texte_athle=6/9a4ac943…;texte_cegep=1/d57b44cf…
+ a03 recruiter_athlete_cards (tous les actifs)                           | R01 b2000000 |       1 | n=6;lignes=52975e25…;cegepiens=0;effet_categories=-/-/-,LIGUE_CIVILE/-/-,SECONDAIRE/-/-
+ a04 recruiter_athlete_profile (chaque actif)                            | R01 b2000000 |       1 | n=6;lignes=9204f0ca…;cegepiens=0;effet_categories=-/-
+ a05 top_athletes_view                                                   | ADMIN        |       3 | n=0;lignes=d41d8cd9…;ordre=d41d8cd9…;cegepiens=0;effet_categories=-
+ a05 top_athletes_view                                                   | ANON         |       1 | refus=42501 permission denied for view top_athletes_view
+ a05 top_athletes_view                                                   | P01 b2000000 |       1 | n=8;lignes=9752fe70…;ordre=dd8f7452…;cegepiens=2;effet_categories=-/-/-
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | P01 b2000000 |       1 | civil=2/71b9c8be…;promo2027=6/d48515a3…;scolaire=6/bfc16c1d…;tout=8/9a8cbc2c…
+ a07 trending_athletes_view                                              | ADMIN        |       3 | n=0;lignes=d41d8cd9…;cegepiens=0;effet_categories=-
+ a07 trending_athletes_view                                              | ANON         |       1 | refus=42501 permission denied for view trending_athletes_view
+ a07 trending_athletes_view                                              | P01 b2000000 |       1 | n=8;lignes=9cda5fc1…;cegepiens=2;effet_categories=-/-/-
+ t01 données (athlètes, équipes, rattachements, écoles)                  | SU           |       1 | athletes=b4c4e0fa…;teams=05504287…;team_athletes=ea97bd36…;schools=87892490…
+ t02 signatures et colonnes d'avant                                      | SU           |       1 | recruiter_athlete_cards=541446b8…/e276f541…;recruiter_athlete_profile=e269b537…/59540770…;recruiter_search_athletes=e916fe47…/3113f8e3…;effet_resultats=e276f541
+ t03 lot A : cégépiens et règle                                          | SU           |       1 | cegepiens_actifs=2;regle=51b21617…;policies=5c1f9e30…
+(14 rows)
+
+== A. Écarts AVANT → APRÈS, clé par clé (seules les clés « effet… » ont le droit de changer)
+                    surface                    |       cle        | nature | comptes |                            avant                             |                                                          apres                                                           
+-----------------------------------------------+------------------+--------+---------+--------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------
+ a01 recruiter_search_athletes (défaut, tout)  | effet_categories | permis |       1 | -/-/-,LIGUE_CIVILE/LIGUE_CIVILE/-,SECONDAIRE/-/-,SECONDAIRE/ | -/-/-,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/CEGEP/Collégial,SECONDAIRE/SECONDAIRE/Juvénile
+ a03 recruiter_athlete_cards (tous les actifs) | effet_categories | permis |       1 | -/-/-,LIGUE_CIVILE/-/-,SECONDAIRE/-/-                        | -/-/-,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/CEGEP/Collégial,SECONDAIRE/SECONDAIRE/Juvénile
+ a04 recruiter_athlete_profile (chaque actif)  | effet_categories | permis |       1 | -/-                                                          | -/-,CEGEP/Collégial,LIGUE_CIVILE/Midget AAA,SECONDAIRE/Juvénile
+ a05 top_athletes_view                         | effet_categories | permis |       1 | -/-/-                                                        | -/-/-,CEGEP/-/-,CEGEP/CEGEP/Collégial,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/CEGEP/Collégial,SEC
+ a07 trending_athletes_view                    | effet_categories | permis |       1 | -/-/-                                                        | -/-/-,CEGEP/-/-,CEGEP/CEGEP/Collégial,LIGUE_CIVILE/LIGUE_CIVILE/Midget AAA,SECONDAIRE/-/-,SECONDAIRE/CEGEP/Collégial,SEC
+ t02 signatures et colonnes d'avant            | effet_resultats  | permis |       1 | e276f541,59540770,3113f8e3                                   | a0ab4f70,35dde511,54e221d4
+ t02 signatures et colonnes d'avant            | effet_vues       | permis |       1 | top_athletes_view:19,trending_athletes_view:18               | top_athletes_view:22,trending_athletes_view:21
+(7 rows)
+
+== B. Lot A : cégépiens rendus, par compte et par surface, APRÈS (attendu : 0 pour tout recruteur collégial)
+    compte    |         categorie          |                    surface                    | cegepiens 
+--------------+----------------------------+-----------------------------------------------+-----------
+ P01 b2000000 | partenaire admis           | a05 top_athletes_view                         | 2
+ P01 b2000000 | partenaire admis           | a07 trending_athletes_view                    | 2
+ R01 b2000000 | recruteur pro, école CEGEP | a01 recruiter_search_athletes (défaut, tout)  | 0
+ R01 b2000000 | recruteur pro, école CEGEP | a03 recruiter_athlete_cards (tous les actifs) | 0
+ R01 b2000000 | recruteur pro, école CEGEP | a04 recruiter_athlete_profile (chaque actif)  | 0
+ R01 b2000000 | recruteur pro, école CEGEP | a05 top_athletes_view                         | 0
+ R01 b2000000 | recruteur pro, école CEGEP | a07 trending_athletes_view                    | 0
+(7 rows)
+
+== D. Rollback : AVANT → APRÈS ROLLBACK (attendu : 0, 0)
+ cellules_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------------+--------------------
+                    0 |                              0 |               1092
+(1 row)
+
+== E. Ce que la migration change au schéma (attendu : les 3 fonctions recruteur et les 2 vues partenaire, rien d'autre)
+                                                objet                                                 |      cote       
+------------------------------------------------------------------------------------------------------+-----------------
+ F|recruiter_athlete_cards(uuid[])|3151013bc5bd0931d1d0eb0c057c8c95|{postgres=X/postgres,authenticate | après seulement
+ F|recruiter_athlete_cards(uuid[])|83edcd33fd085fb3d3750338665433d2|{postgres=X/postgres,authenticate | avant seulement
+ F|recruiter_athlete_profile(uuid)|90dd1734451b9cd2017193fd9fba56a5|{postgres=X/postgres,authenticate | avant seulement
+ F|recruiter_athlete_profile(uuid)|a876699b6e370ec6d1684df92da3f4a2|{postgres=X/postgres,authenticate | après seulement
+ F|recruiter_search_athletes(text,uuid,integer,boolean,boolean,numeric,numeric,boolean,boolean,boolea | après seulement
+ F|recruiter_search_athletes(text,uuid,integer,boolean,boolean,numeric,numeric,boolean,boolean,boolea | avant seulement
+ V|top_athletes_view|8e1706ef53b73bb9ca8520f5f620ba78|{postgres=arwdDxtm/postgres,authenticated=arwdD | après seulement
+ V|top_athletes_view|b677336de698551f2d5b733bc7f70bab|{postgres=arwdDxtm/postgres,authenticated=arwdD | avant seulement
+ V|trending_athletes_view|b45eb0030c789288a79dddbdd020d060|{postgres=arwdDxtm/postgres,authenticated= | avant seulement
+ V|trending_athletes_view|e864e7158e3ca8b6c8a41474b28e1dbc|{postgres=arwdDxtm/postgres,authenticated= | après seulement
+(10 rows)
+
+== F. Durées (ms) par sonde et par phase
+                                 surface                                 |      phase       | appels | ms_moyen | ms_max 
+-------------------------------------------------------------------------+------------------+--------+----------+--------
+ a01 recruiter_search_athletes (défaut, tout)                            | 1 avant          |      1 |      6.9 |    6.9
+ a01 recruiter_search_athletes (défaut, tout)                            | 2 après          |      1 |      3.5 |    3.5
+ a01 recruiter_search_athletes (défaut, tout)                            | 3 après rollback |      1 |      3.6 |    3.6
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 1 avant          |      1 |     11.2 |   11.2
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 2 après          |      1 |      9.4 |    9.4
+ a02 recruiter_search_athletes (filtres serveur : promotion, texte, tri) | 3 après rollback |      1 |      8.6 |    8.6
+ a03 recruiter_athlete_cards (tous les actifs)                           | 1 avant          |      1 |      1.5 |    1.5
+ a03 recruiter_athlete_cards (tous les actifs)                           | 2 après          |      1 |      2.2 |    2.2
+ a03 recruiter_athlete_cards (tous les actifs)                           | 3 après rollback |      1 |      1.5 |    1.5
+ a04 recruiter_athlete_profile (chaque actif)                            | 1 avant          |      1 |      5.4 |    5.4
+ a04 recruiter_athlete_profile (chaque actif)                            | 2 après          |      1 |      8.6 |    8.6
+ a04 recruiter_athlete_profile (chaque actif)                            | 3 après rollback |      1 |      5.7 |    5.7
+ a05 top_athletes_view                                                   | 1 avant          |      5 |      1.1 |    3.3
+ a05 top_athletes_view                                                   | 2 après          |      5 |      1.3 |    3.6
+ a05 top_athletes_view                                                   | 3 après rollback |      5 |      1.0 |    3.0
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 1 avant          |      1 |      7.3 |    7.3
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 2 après          |      1 |      8.4 |    8.4
+ a06 top_athletes_view (filtres d'écran .eq + limit 25)                  | 3 après rollback |      1 |      7.3 |    7.3
+ a07 trending_athletes_view                                              | 1 avant          |      5 |      0.9 |    1.6
+ a07 trending_athletes_view                                              | 2 après          |      5 |      1.1 |    1.5
+ a07 trending_athletes_view                                              | 3 après rollback |      5 |      0.8 |    1.1
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 1 avant          |      1 |     45.7 |   45.7
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 2 après          |      1 |     44.4 |   44.4
+ t01 données (athlètes, équipes, rattachements, écoles)                  | 3 après rollback |      1 |     44.4 |   44.4
+ t02 signatures et colonnes d'avant                                      | 1 avant          |      1 |      1.0 |    1.0
+ t02 signatures et colonnes d'avant                                      | 2 après          |      1 |      0.7 |    0.7
+ t02 signatures et colonnes d'avant                                      | 3 après rollback |      1 |      0.7 |    0.7
+ t03 lot A : cégépiens et règle                                          | 1 avant          |      1 |      0.6 |    0.6
+ t03 lot A : cégépiens et règle                                          | 2 après          |      1 |      0.5 |    0.5
+ t03 lot A : cégépiens et règle                                          | 3 après rollback |      1 |      0.5 |    0.5
+(30 rows)
+
+== VERDICT (attendu : tout à 0)
+ ecarts_interdits | cegepiens_rendus_aux_recruteurs | ecarts_apres_rollback | empreinte_apres_rollback | autres_objets_changes | autres_lignes_changees 
+------------------+---------------------------------+-----------------------+--------------------------+-----------------------+------------------------
+                0 |                               0 |                     0 |                        0 |                     0 |                      0
+(1 row)
+
+== Refus (identiques avant et après : comptes qui n'ont pas accès à une surface, attendu)
+          surface           | avant | apres |                           exemple                            
+----------------------------+-------+-------+--------------------------------------------------------------
+ a05 top_athletes_view      |     1 |     1 | refus=42501 permission denied for view top_athletes_view
+ a07 trending_athletes_view |     1 |     1 | refus=42501 permission denied for view trending_athletes_vie
+(2 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 20:15:07.753815+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
+exit=0
+######## 2. EMPREINTE AVANT LE CYCLE RÉEL
+Pager usage is off.
+SET
+         empreinte_schema         | lignes 
+----------------------------------+--------
+ e03aa657cc63f6a9ddd1d73003bbf8de |    532
+(1 row)
+
+             athletes             |              teams               
+----------------------------------+----------------------------------
+ b4c4e0fa64f1226abbf072e7be940bbf | 05504287e534fe5be7f3898e0cfd85f1
+(1 row)
+
+######## 3. APPLY RÉEL LOCAL (apply-20261027.sql, gardes de jour et de date retirées dans la copie locale seulement)
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 20:15:08.089667+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 2
+SELECT 2
+SELECT 1
+CREATE FUNCTION
+SELECT 2
+DO
+ genre | comptes 
+-------+---------
+ P     |       1
+ R     |       1
+(2 rows)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-26 20:15:08.113864+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 20:15:08.130135+00
+(1 row)
+
+SET
+UPDATE 2
+DO
+ genre | comptes | identiques 
+-------+---------+------------
+ P     |       1 |          1
+ R     |       1 |          1
+(2 rows)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite | comptes_verifies |         avant_commit          
+------------------+------------------+-------------------------------
+ 20261028160000   |                2 | 2026-10-26 20:15:08.144186+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B3 en prod.
+exit=0
+######## 4. APPLY REJOUÉ (attendu : refusé)
+psql:/tmp/b3-apply.sql:49: ERROR:  NEXUS: version 20261028160000 déjà inscrite
+######## 5. ROLLBACK RÉEL LOCAL (rollback-20261027.sql ; copie locale : version d'inscription fixée à 20261028170000, l'heure du jour étant avant la version B3)
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 20:15:27.044792+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 2
+SELECT 2
+SELECT 1
+CREATE FUNCTION
+SELECT 2
+DO
+ genre | comptes 
+-------+---------
+ P     |       1
+ R     |       1
+(2 rows)
+
+SELECT 1
+        debut_rollback         
+-------------------------------
+ 2026-10-26 20:15:27.073949+00
+(1 row)
+
+DO
+         fin_rollback          
+-------------------------------
+ 2026-10-26 20:15:27.089278+00
+(1 row)
+
+SET
+UPDATE 2
+DO
+ genre | comptes | identiques 
+-------+---------+------------
+ P     |       1 |          1
+ R     |       1 |          1
+(2 rows)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_rollback | comptes_verifies |         avant_commit          
+------------------+------------------+-------------------------------
+ 20261028170000   |                2 | 2026-10-26 20:15:27.100816+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B3 retiré de la prod.
+exit=0
+######## 6. ROLLBACK REJOUÉ (attendu : refusé)
+psql:/tmp/b3-rollback.sql:42: ERROR:  NEXUS: le lot B3 a déjà été retiré
+######## 7. EMPREINTE APRÈS LE CYCLE (attendu : identique au point 2)
+Pager usage is off.
+SET
+         empreinte_schema         | lignes 
+----------------------------------+--------
+ e03aa657cc63f6a9ddd1d73003bbf8de |    532
+(1 row)
+
+             athletes             |              teams               
+----------------------------------+----------------------------------
+ b4c4e0fa64f1226abbf072e7be940bbf | 05504287e534fe5be7f3898e0cfd85f1
+(1 row)
+
