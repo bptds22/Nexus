@@ -1,0 +1,39 @@
+Pager usage is off.
+Null display is "A·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version
+-------------------------------+--------------+---------
+ 2026-10-26 18:52:44.400039+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 1
+ nb_equipes | alertes_ouvertes
+------------+------------------
+      10337 |               12
+(1 row)
+
+SELECT 1
+       debut_operation
+------------------------------
+ 2026-10-26 18:52:48.20222+00
+(1 row)
+
+DO
+         fin_operation
+-------------------------------
+ 2026-10-26 18:52:48.311118+00
+(1 row)
+
+DO
+ equipes_collegial | refus_restes_ouverts |         avant_commit
+-------------------+----------------------+-------------------------------
+                12 |                    0 | 2026-10-26 18:52:51.993703+00
+(1 row)
+
+COMMIT
+== COMMIT fait : 12 Acquipes cAcgep en prod.
