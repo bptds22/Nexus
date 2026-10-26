@@ -1,0 +1,299 @@
+Chantier cégep — 12 équipes : diagnostic du rejeu prod du 2026-10-26 (suggestions_modifiees = 1) et sonde a03 corrigée.
+
+Rejeu prod (rejeu-blanc-20261026.sql, sortie versée) : tout à 0 sauf B2 = 422 → 417 lignes, 6 retirées, 1 « apparue ».
+Cause : matchs_suggestions trie par (préfixe, nb_matchs desc, libellé) et coupe à 8 équipes SANS départage
+final. Recherche « Champlain » : la nouvelle équipe Ch.-Lennoxville (Champlain College Lennoxville, 13 matchs)
+entre dans le top 8 et passe devant les deux Ch.-St-Lawrence D2 (F et M, 13 matchs chacune, même libellé,
+même école : ex-aequo parfaits). Une seule des deux reste ; laquelle dépend de l'ordre d'exécution. Avant :
+F affichée ; après : M affichée → la sonde voyait « F retirée + M apparue ». Aucune ligne n'est modifiée,
+aucun libellé « (Sud-Ouest …) » en cause. Le premier rejeu local avait gardé F (5 retirées, 0 apparue) : même
+données, autre élu → non déterministe, limite du tri (et de la sonde), pas un effet de l'opération.
+
+Sonde a03 corrigée (rejeu-blanc-20261026b.sql ; opération et rollback inchangés, md5 16c6678e… / fb7ea44e…,
+apply et rollback inchangés) : chaque ligne porte la clé d'égalité du tri et la ligne en clair (noms d'équipe et
+d'école seulement). Une ligne apparue est un « échange entre ex-aequo (effet) » si son équipe était absente
+avant pour cette recherche ET qu'une ligne retirée a la même clé (recherche, libellé, école, nb_matchs) ; sinon
+INTERDIT, et toute ligne d'une équipe déjà présente qui change reste INTERDITE.
+
+Rejeu local avec la sonde corrigée : verdict 0/0/0/0/0 ; B2 = 6 retirées, 1 échange entre ex-aequo, 0 interdit :
+== B2. Suggestions (8 équipes au plus par recherche) : lignes d'équipes existantes retirées par les nouvelles (effet) ou apparues / modifiées (INTERDIT)
+ lignes_avant | lignes_apres | retirees_effet | echanges_ex_aequo_effet | apparues_ou_modifiees_interdit 
+--------------+--------------+----------------+-------------------------+--------------------------------
+          422 |          417 |              6 |                       1 |                              0
+(1 row)
+
+                   sort                   |                                                             ligne                                                              
+------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------
+ retirée (effet)                          | Cégep de Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Football Collégial Masculin · D2 | 1 match(s)
+ retirée (effet)                          | Cégep de Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Rugby Collégial Féminin | 1 match(s)
+ retirée (effet)                          | Cégep de Trois-Rivières | Trois-Rivières | Collégial · Cégep de Trois-Rivières · Football Collégial Masculin · D2 | 1 match(s)
+ retirée (effet)                          | Champlain | Ch.-St-Lawrence | Collégial · Champlain College St-Lawrence · Basketball Collégial Féminin · D2 | 13 match(s)
+ retirée (effet)                          | Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Football Collégial Masculin · D2 | 1 match(s)
+ retirée (effet)                          | Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Rugby Collégial Féminin | 1 match(s)
+ apparue : échange entre ex-aequo (effet) | Champlain | Ch.-St-Lawrence | Collégial · Champlain College St-Lawrence · Basketball Collégial Masculin · D2 | 13 match(s)
+(7 rows)
+
+== C. Ce que l'opération écrit dans admin_operations (dans la transaction)
+
+════════════════ REJEU À BLANC LOCAL (sonde corrigée) ════════════════
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             |  current_user  | version 
+-------------------------------+----------------+---------
+ 2026-10-26 17:52:38.006981+00 | supabase_admin | 17.6
+(1 row)
+
+SELECT 12
+DO
+CREATE TABLE
+INSERT 0 9
+SELECT 10337
+SELECT 108
+SELECT 6103
+SELECT 100
+CREATE TABLE
+INSERT 0 5
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DELETE 0
+DO
+            cat             | comptes 
+----------------------------+---------
+ admin                      |       1
+ destinataire d'invitation  |       1
+ partenaire admis           |       1
+ recruteur Pro, école CEGEP |       1
+(4 rows)
+
+ les_12 | matchs_des_12 | matchs_cegep_sondes | textes | equipes_avant 
+--------+---------------+---------------------+--------+---------------
+     12 |           108 |                6103 |    100 |         10337
+(1 row)
+
+CREATE TABLE
+INSERT 0 17
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+      debut_mesure_avant       
+-------------------------------
+ 2026-10-26 17:52:38.195215+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+        debut_operation        
+-------------------------------
+ 2026-10-26 17:52:55.932349+00
+(1 row)
+
+DO
+         fin_operation         
+-------------------------------
+ 2026-10-26 17:52:55.959005+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+DO
+ mesurer 
+---------
+ 
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 17:53:31.396272+00
+(1 row)
+
+CREATE VIEW
+CREATE VIEW
+== 0. Valeurs AVANT (md5 abrégés)
+                              surface                              |    compte    |                                                                                                  valeur                                                                                                  
+-------------------------------------------------------------------+--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | R01 b2000000 | f20260701=0/d41d8cd9…;effet_f20260701=0/d41d8cd9…;f20260801=142/cc455279…;effet_f20260801=0/d41d8cd9…;f20260901=2543/de5aa753…;effet_f20260901=9/a2d51f66…;f20261002=5780/b4580e62…;effet_f20261002=28/9
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | R01 b2000000 | CIVIL=135/04ca9ee3…;effet_12_CIVIL=d41d8cd9…;COLLEGIAL=699/bfcfe66b…;effet_12_COLLEGIAL=a598f2a3…;COLLEGIAL+CIVIL=834/81f8bbd4…;effet_12_COLLEGIAL+CIVIL=a598f2a3…;SECONDAIRE=3536/9fb89675…;effet_12_SE
+ a03 matchs_suggestions : cégeps, écoles, mots                     | R01 b2000000 | effet_existantes_lignes=9a78a80dc7~ff6aa754~7525bdc3~Académie Antoine-Manseau | Antoine-Manseau | Secondaire · Académie Antoine-Manseau · Flag football Benjamin Féminin | 2 match(s),558b739d1d~e54197d
+ a04 depistage_profils_match : matchs de cégep et des 12           | R01 b2000000 | matchs=6103;non_vides=0;contenu=-
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | ADMIN        | jetons=3;md5=f1f15f29…
+ a06 resolve_transfer_token (destinataire)                         | I01 b2000000 | lignes=1;md5=f71ba7f0…
+ t01 équipes présentes avant (ligne complète)                      | SU           | n=10337;md5=05504287…
+ t02 les 12 équipes créées                                         | SU           | effet_n=0;effet_noms=-;effet_categories=-;effet_saisons=-;effet_ecoles=0;hors_cegep=0;toutes_les_equipes=10337
+ t03 matchs : contenu hors liaison, et liaisons                    | SU           | n=70303;sans_liaison_md5=30b62ecd…;hors12_md5=f8772d90…;effet_cotes_domicile=0;effet_cotes_visiteur=0;effet_matchs_12_a_venir=77
+ t04 classements rseq_standings                                    | SU           | n=4463;md5=2878d32e…;des12_sans_equipe=12
+ t05 alertes de la veille                                          | SU           | hors12_md5=11f66ff5…;autres_ouvertes=0;effet_statut_12=OUVERTE;effet_md5_12=4225a59b…
+ t06 athlètes et rattachements (lot A : rien touché)               | SU           | athletes=715da2c5…;team_athletes=e4ca9c57…;team_coaches=d41d8cd9…;users=1426f93d…
+ t07 écoles                                                        | SU           | n=1207;md5=87892490…
+ t08 index teams_identity_unique                                   | SU           | valide=true;groupes_en_double=0
+ t09 dépendants des 12                                             | SU           | n=0
+ t10 athlètes sur une équipe sœur « Collégial » des 12             | SU           | cegepiens=0;non_cegepiens=0
+ t11 1res équipes flag F D3 (Sud-Ouest A)                          | SU           | n=2;md5=0d7e3915…;matchs=21
+(17 rows)
+
+== A. Écarts INTERDITS AVANT → APRÈS (attendu : aucune ligne)
+ surface | cle | avant | apres 
+---------+-----+-------+-------
+(0 rows)
+
+== B. EFFETS de l'opération (AVANT → APRÈS)
+                     surface                     |           cle           |                       avant                        |                       apres                        
+-------------------------------------------------+-------------------------+----------------------------------------------------+----------------------------------------------------
+ a01 matchs_recherche : saison, fenêtres de 31 j | effet_f20260901         | 9/a2d51f66…                                        | 9/315f972e…
+ a01 matchs_recherche : saison, fenêtres de 31 j | effet_f20261002         | 28/9a8e6e99…                                       | 28/06516d59…
+ a03 matchs_suggestions : cégeps, écoles, mots   | effet_equipes_12        | 0                                                  | 13
+ a03 matchs_suggestions : cégeps, écoles, mots   | effet_existantes_lignes | 9a78a80dc7~ff6aa754~7525bdc3~Académie Antoine-Mans | 9a78a80dc7~ff6aa754~7525bdc3~Académie Antoine-Mans
+ a03 matchs_suggestions : cégeps, écoles, mots   | effet_terrains          | a2df94a1…                                          | f9f43b51…
+ t02 les 12 équipes créées                       | effet_categories        | -                                                  | Collégial
+ t02 les 12 équipes créées                       | effet_ecoles            | 0                                                  | 9
+ t02 les 12 équipes créées                       | effet_n                 | 0                                                  | 12
+ t02 les 12 équipes créées                       | effet_noms              | -                                                  | Ch.-Lennoxville/M/D2,Joliette (Sud-Ouest C)/F/D3,L
+ t02 les 12 équipes créées                       | effet_saisons           | -                                                  | 2026-2027
+ t03 matchs : contenu hors liaison, et liaisons  | effet_cotes_domicile    | 0                                                  | 72
+ t03 matchs : contenu hors liaison, et liaisons  | effet_cotes_visiteur    | 0                                                  | 76
+ t05 alertes de la veille                        | effet_md5_12            | 4225a59b…                                          | d4baf4bf…
+ t05 alertes de la veille                        | effet_statut_12         | OUVERTE                                            | TRAITEE
+(14 rows)
+
+== B2. Suggestions (8 équipes au plus par recherche) : lignes d'équipes existantes retirées par les nouvelles (effet) ou apparues / modifiées (INTERDIT)
+ lignes_avant | lignes_apres | retirees_effet | echanges_ex_aequo_effet | apparues_ou_modifiees_interdit 
+--------------+--------------+----------------+-------------------------+--------------------------------
+          422 |          417 |              6 |                       1 |                              0
+(1 row)
+
+                   sort                   |                                                             ligne                                                              
+------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------
+ retirée (effet)                          | Cégep de Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Football Collégial Masculin · D2 | 1 match(s)
+ retirée (effet)                          | Cégep de Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Rugby Collégial Féminin | 1 match(s)
+ retirée (effet)                          | Cégep de Trois-Rivières | Trois-Rivières | Collégial · Cégep de Trois-Rivières · Football Collégial Masculin · D2 | 1 match(s)
+ retirée (effet)                          | Champlain | Ch.-St-Lawrence | Collégial · Champlain College St-Lawrence · Basketball Collégial Féminin · D2 | 13 match(s)
+ retirée (effet)                          | Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Football Collégial Masculin · D2 | 1 match(s)
+ retirée (effet)                          | Sherbrooke | Sherbrooke | Collégial · Cégep de Sherbrooke · Rugby Collégial Féminin | 1 match(s)
+ apparue : échange entre ex-aequo (effet) | Champlain | Ch.-St-Lawrence | Collégial · Champlain College St-Lawrence · Basketball Collégial Masculin · D2 | 13 match(s)
+(7 rows)
+
+== C. Ce que l'opération écrit dans admin_operations (dans la transaction)
+           operation            | equipes | domicile | visiteur 
+--------------------------------+---------+----------+----------
+ CEGEP_EQUIPES_RSEQ_12          | 12      | 72       | 76
+ CEGEP_EQUIPES_RSEQ_12_RETIREES | 12      | 72       | 76
+(2 rows)
+
+== D. Rollback : AVANT → APRÈS ROLLBACK (attendu : 0, 0)
+ cellules_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------------+--------------------
+                    0 |                              0 |               1082
+(1 row)
+
+ surface | cle 
+---------+-----
+(0 rows)
+
+== E. Schéma (attendu : aucune ligne — opération de données)
+ objet | cote 
+-------+------
+(0 rows)
+
+== F. Durées (ms)
+                              surface                              |      phase       | appels | ms_moyen | ms_max 
+-------------------------------------------------------------------+------------------+--------+----------+--------
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | 1 avant          |      1 |   2299.8 | 2299.8
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | 2 après          |      1 |   2275.7 | 2275.7
+ a01 matchs_recherche : saison, fenêtres de 31 j                   | 3 après rollback |      1 |   2321.6 | 2321.6
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | 1 avant          |      1 |   1956.1 | 1956.1
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | 2 après          |      1 |   1945.4 | 1945.4
+ a02 matchs_recherche : filtres Type, 31 prochains jours           | 3 après rollback |      1 |   1987.1 | 1987.1
+ a03 matchs_suggestions : cégeps, écoles, mots                     | 1 avant          |      1 |   8289.9 | 8289.9
+ a03 matchs_suggestions : cégeps, écoles, mots                     | 2 après          |      1 |   8281.0 | 8281.0
+ a03 matchs_suggestions : cégeps, écoles, mots                     | 3 après rollback |      1 |   8174.4 | 8174.4
+ a04 depistage_profils_match : matchs de cégep et des 12           | 1 avant          |      1 |   2778.5 | 2778.5
+ a04 depistage_profils_match : matchs de cégep et des 12           | 2 après          |      1 |   2785.5 | 2785.5
+ a04 depistage_profils_match : matchs de cégep et des 12           | 3 après rollback |      1 |   2736.2 | 2736.2
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 1 avant          |      1 |      3.2 |    3.2
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 2 après          |      1 |      1.4 |    1.4
+ a05 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 3 après rollback |      1 |      1.4 |    1.4
+ a06 resolve_transfer_token (destinataire)                         | 1 avant          |      1 |      0.9 |    0.9
+ a06 resolve_transfer_token (destinataire)                         | 2 après          |      1 |      0.5 |    0.5
+ a06 resolve_transfer_token (destinataire)                         | 3 après rollback |      1 |      0.5 |    0.5
+ t01 équipes présentes avant (ligne complète)                      | 1 avant          |      1 |     43.6 |   43.6
+ t01 équipes présentes avant (ligne complète)                      | 2 après          |      1 |     40.6 |   40.6
+ t01 équipes présentes avant (ligne complète)                      | 3 après rollback |      1 |     40.5 |   40.5
+ t02 les 12 équipes créées                                         | 1 avant          |      1 |      0.9 |    0.9
+ t02 les 12 équipes créées                                         | 2 après          |      1 |      1.0 |    1.0
+ t02 les 12 équipes créées                                         | 3 après rollback |      1 |      1.0 |    1.0
+ t03 matchs : contenu hors liaison, et liaisons                    | 1 avant          |      1 |   2215.4 | 2215.4
+ t03 matchs : contenu hors liaison, et liaisons                    | 2 après          |      1 |   2280.6 | 2280.6
+ t03 matchs : contenu hors liaison, et liaisons                    | 3 après rollback |      1 |   2292.2 | 2292.2
+ t04 classements rseq_standings                                    | 1 avant          |      1 |    102.2 |  102.2
+ t04 classements rseq_standings                                    | 2 après          |      1 |     94.4 |   94.4
+ t04 classements rseq_standings                                    | 3 après rollback |      1 |     88.7 |   88.7
+ t05 alertes de la veille                                          | 1 avant          |      1 |     14.9 |   14.9
+ t05 alertes de la veille                                          | 2 après          |      1 |     15.4 |   15.4
+ t05 alertes de la veille                                          | 3 après rollback |      1 |     14.3 |   14.3
+ t06 athlètes et rattachements (lot A : rien touché)               | 1 avant          |      1 |      0.5 |    0.5
+ t06 athlètes et rattachements (lot A : rien touché)               | 2 après          |      1 |      0.6 |    0.6
+ t06 athlètes et rattachements (lot A : rien touché)               | 3 après rollback |      1 |      0.4 |    0.4
+ t07 écoles                                                        | 1 avant          |      1 |      7.3 |    7.3
+ t07 écoles                                                        | 2 après          |      1 |      7.4 |    7.4
+ t07 écoles                                                        | 3 après rollback |      1 |      7.3 |    7.3
+ t08 index teams_identity_unique                                   | 1 avant          |      1 |      1.5 |    1.5
+ t08 index teams_identity_unique                                   | 2 après          |      1 |      1.4 |    1.4
+ t08 index teams_identity_unique                                   | 3 après rollback |      1 |      1.4 |    1.4
+ t09 dépendants des 12                                             | 1 avant          |      1 |      0.4 |    0.4
+ t09 dépendants des 12                                             | 2 après          |      1 |      0.4 |    0.4
+ t09 dépendants des 12                                             | 3 après rollback |      1 |      0.4 |    0.4
+ t10 athlètes sur une équipe sœur « Collégial » des 12             | 1 avant          |      1 |      0.3 |    0.3
+ t10 athlètes sur une équipe sœur « Collégial » des 12             | 2 après          |      1 |      0.3 |    0.3
+ t10 athlètes sur une équipe sœur « Collégial » des 12             | 3 après rollback |      1 |      0.3 |    0.3
+ t11 1res équipes flag F D3 (Sud-Ouest A)                          | 1 avant          |      1 |      0.2 |    0.2
+ t11 1res équipes flag F D3 (Sud-Ouest A)                          | 2 après          |      1 |      0.2 |    0.2
+ t11 1res équipes flag F D3 (Sud-Ouest A)                          | 3 après rollback |      1 |      0.2 |    0.2
+(51 rows)
+
+== VERDICT (attendu : tout à 0)
+ ecarts_interdits | ecarts_apres_rollback | empreinte_apres_rollback | suggestions_modifiees | refus 
+------------------+-----------------------+--------------------------+-----------------------+-------
+                0 |                     0 |                        0 |                     0 |     0
+(1 row)
+
+ surface | compte | phase | v 
+---------+--------+-------+---
+(0 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 17:53:31.426336+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
