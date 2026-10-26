@@ -1,0 +1,50 @@
+Pager usage is off.
+Null display is "┬╖".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-26 14:46:45.670955+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 256
+SELECT 1
+SELECT 204
+ les_256 | matchs_des_256 | alertes_ouvertes |                  decisions                   
+---------+----------------+------------------+----------------------------------------------
+     256 |           1709 |              204 | a_creer:192, doublon:2, ecole_introuvable:10
+(1 row)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-26 14:46:46.028178+00
+(1 row)
+
+DO
+        fin_migration         
+------------------------------
+ 2026-10-26 14:46:46.06319+00
+(1 row)
+
+INSERT 0 204
+DO
+ les_256_en_collegial | secondaire_en_collegial_inchange | champlain_cavaliers_inchange |               decisions_apres                
+----------------------+----------------------------------+------------------------------+----------------------------------------------
+                  256 |                                5 |                            1 | a_creer:192, doublon:2, ecole_introuvable:10
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261026140000   | 2026-10-26 14:46:46.338428+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B2 en prod.

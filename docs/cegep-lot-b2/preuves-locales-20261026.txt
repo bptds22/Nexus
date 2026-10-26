@@ -1,0 +1,698 @@
+Chantier cégep, lot B2 « données » — preuves LOCALES du 2026-10-26 (rejeu à blanc, transaction annulée).
+
+Base jetable nexus_b2 dans la pile NexusCegepA (sa base « postgres » n'est pas touchée) :
+- schéma : pg_dump -s de la pile locale, puis les 15 fonctions de la fermeture des sondes qui différaient
+  de la prod alignées sur leur corps prod (scripts/cegep-lot-b2/aligner-local.sql) : les 34 fonctions
+  exécutées par les sondes ont le md5 prod (pg_get_functiondef, search_path public, extensions) ;
+  déclencheurs du lot B1 posés tels qu'en prod. ACL des fonctions sondées identiques à la prod.
+- données : copie LECTURE SEULE des tables publiques RSEQ de la prod (export REST GET du 2026-10-26 :
+  24 sports, 1 207 écoles, 10 145 équipes, 70 303 matchs, 370 alertes, 4 463 lignes de classement,
+  67 familles, 37 lieux, 1 823 ligues publiées). Les 256 : même empreinte qu'en prod (8d08926f…).
+- comptes et données personnelles : fixtures fictives (scripts/cegep-lot-b2/fixtures-locales.sql).
+
+Fichier exécuté : docs/cegep-lot-b2/prod/rejeu-blanc-20261026.sql (le MÊME qu'en prod).
+Migration md5 0d8d3f694ffbb1d265f5eec53ec93de6, rollback md5 6a62c459d91168d9beded95ef32e7905 (textes LF).
+
+Deux passages :
+  1. AVEC le cas limite A2 (athlète ACTIF, SANS ancrage cégep, sur une équipe « Collégial » 2025-2026
+     de l'Outaouais, volleyball) : la sonde du dépistage DOIT voir changer les matchs des équipes sœurs
+     parmi les 256. Résultat : 2 écarts interdits, tous a05, 40 matchs, tous d'une des 256 → la sonde voit.
+  2. SANS A2 (sa ligne team_athletes retirée) : verdict 0 / 0 / 0 / 0 / 0.
+
+En prod, la ligne t13 compte les vrais cas : « non_cegepiens » > 0 ferait apparaître des profils
+d'équipe sœur au dépistage des matchs des 256 ; « cegepiens » restent masqués aux recruteurs (lot A).
+
+════════════════════════ PASSAGE 2 — SANS A2 (référence) ════════════════════════
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             |  current_user  | version 
+-------------------------------+----------------+---------
+ 2026-10-26 13:53:22.994668+00 | supabase_admin | 17.6
+(1 row)
+
+DO
+SELECT 256
+DO
+SELECT 4569
+SELECT 204
+SELECT 93
+CREATE TABLE
+INSERT 0 5
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DELETE 0
+DO
+            cat             | comptes 
+----------------------------+---------
+ admin                      |       1
+ anon                       |       1
+ destinataire d'invitation  |       1
+ partenaire admis           |       1
+ recruteur Pro, école CEGEP |       1
+(5 rows)
+
+ les_256 | matchs_d_equipe_de_cegep | alertes_nouvelle_equipe_ouvertes | textes_de_recherche | jetons_d_equipe 
+---------+--------------------------+----------------------------------+---------------------+-----------------
+     256 |                     4569 |                              204 |                  93 |               3
+(1 row)
+
+CREATE TABLE
+INSERT 0 21
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+      debut_mesure_avant       
+-------------------------------
+ 2026-10-26 13:53:23.066972+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ·
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+        debut_migration        
+-------------------------------
+ 2026-10-26 13:53:35.527513+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 13:53:35.533203+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ·
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+DO
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ·
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 13:54:00.753268+00
+(1 row)
+
+CREATE VIEW
+== 0. Valeurs AVANT (une ligne par sonde, premier compte ; md5 abrégés)
+                              surface                              |    compte    | comptes |                                                                                                                                                       valeur                                                                                                                                                        
+-------------------------------------------------------------------+--------------+---------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ a01 matchs_recherche : matchs des 256, saison                     | P01 b2000000 |       2 | n=1705;avenir=894;md5=e41ee782…
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | R01 b2000000 |       1 | f20260701=0/d41d8cd9…;f20260801=142/cc455279…;f20260901=2552/cb8ae30a…;f20261002=5808/679e4d32…;f20261102=4269/1795e592…;f20261203=2433/9fe9c753…;f20270103=3801/1f031550…;f20270203=3215/9e09d6fe…;f20270306=925/94e50707…;f20270406=0/d41d8cd9…;f20270507=0/d41d8cd9…;f20270607=0/d41d8cd9…;f20270708=0/d41d8cd9…
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | R01 b2000000 |       1 | CIVIL=135/9cfc6aba…;COLLEGIAL=699/08985b3e…;COLLEGIAL+CIVIL=834/75711aeb…;SECONDAIRE=3536/7bf25fdc…;SECONDAIRE+CIVIL=3671/79a27ab3…;SECONDAIRE+COLLEGIAL=4235/42242a92…;SECONDAIRE+COLLEGIAL+CIVIL=4370/625bc49b…
+ a04 matchs_suggestions : cégeps, écoles, mots                     | R01 b2000000 |       1 | lignes=322;hors256=0f10ea4d…;les256_sans_detail=0957b70d…;libelle_les256=d550572e…;libelle_les256_lignes=160
+ a05 depistage_profils_match : matchs d'équipes de cégep           | R01 b2000000 |       1 | matchs=4569;non_vides=0;contenu=-
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | ADMIN        |       1 | jetons=3;hors256=bf4a72cf…;les256_sans_categorie=e58a1562…;libelle_les256=NULL/NULL
+ a07 resolve_transfer_token (destinataire)                         | I01 b2000000 |       1 | lignes=1;hors256=f71ba7f0…;les256_sans_categorie=d41d8cd9…;libelle_les256=-
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | ADMIN        |       1 | equipes=192;cotes_domicile=1462;cotes_visiteur=1454;refusees=b1b6b188…;refusees_n=12
+ t01 teams hors des 256 (ligne complète)                           | SU           |       1 | n=9889;md5=699908aa…
+ t02 les 256 sans age_group                                        | SU           |       1 | n=256;md5=ec5a6764…
+ t03 les 256 : catégorie et ligne complète                         | SU           |       1 | libelle_categories=NULL;libelle_md5_complet=86d202eb…
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | SU           |       1 | n=5;ecoles=1;md5=57d1b4b3…
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | SU           |       1 | n=1;md5=103eb58f…
+ t06 index teams_identity_unique                                   | SU           |       1 | valide=true;groupes_en_double=0;les256_jumelle_collegial=0
+ t07 matchs liés aux 256                                           | SU           |       1 | n=1709;avenir=894;md5=641ce616…
+ t08 tous les matchs                                               | SU           |       1 | n=70303;md5=0d084c3f…
+ t09 classements rseq_standings                                    | SU           |       1 | n=4463;des256=256;md5=2878d32e…
+ t10 classements affichés (équipe et école jointes)                | SU           |       1 | n=4463;md5=8b43e3c4…;libelle_categories_des256=NULL
+ t11 clé de regroupement écran des équipes de cégep                | SU           |       1 | n=654;md5=a1711db7…
+ t12 dépendants des 256                                            | SU           |       1 | team_athletes=0;team_coaches=0;team_invitations=0;team_join_tokens=1;cartes_prospect=0;alertes=23;matchs_ajoutes=0
+ t13 athlètes sur une équipe sœur « Collégial »                    | SU           |       1 | cegepiens=1;non_cegepiens=0
+(21 rows)
+
+== A. Écarts AVANT → APRÈS, clé par clé (seules les clés « libelle… » ont le droit de changer)
+                              surface                              |            cle            | nature | comptes |   avant   |        apres        
+-------------------------------------------------------------------+---------------------------+--------+---------+-----------+---------------------
+ a04 matchs_suggestions : cégeps, écoles, mots                     | libelle_les256            | permis |       1 | d550572e… | c75af5b3…
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | libelle_les256            | permis |       1 | NULL/NULL | Collégial/Collégial
+ t03 les 256 : catégorie et ligne complète                         | libelle_categories        | permis |       1 | NULL      | Collégial
+ t03 les 256 : catégorie et ligne complète                         | libelle_md5_complet       | permis |       1 | 86d202eb… | a01b5281…
+ t10 classements affichés (équipe et école jointes)                | libelle_categories_des256 | permis |       1 | NULL      | Collégial
+(5 rows)
+
+== A2. Dépistage : matchs dont le contenu change (attendu : seulement des matchs d'une des 256)
+ compte | cote | match | profils | match_d_une_des_256 
+--------+------+-------+---------+---------------------
+(0 rows)
+
+== C. Propositions de la veille, alerte par alerte (rseq_proposition_equipe)
+       avant       |       apres       | alertes | doublon_change | ecole_change | cotes_change |    categorie     
+-------------------+-------------------+---------+----------------+--------------+--------------+------------------
+ a_creer           | a_creer           |     192 |              0 |            0 |            0 | NULL → Collégial
+ doublon           | doublon           |       2 |              0 |            0 |            0 | NULL → Collégial
+ ecole_introuvable | ecole_introuvable |      10 |              0 |            0 |            0 | NULL → Collégial
+(3 rows)
+
+== C2. Les doublons : même équipe visée avant et après
+  alerte  | doublon_avant | doublon_apres | equipe_visee_parmi_les_256 
+----------+---------------+---------------+----------------------------
+ e5bffe47 | 38e387b3      | 38e387b3      | t
+ ea152938 | d469c1ce      | d469c1ce      | t
+(2 rows)
+
+== D. Rollback : AVANT → APRÈS ROLLBACK (attendu : 0, 0, 0)
+ cellules_differentes | propositions_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------+--------------------------------+--------------------
+                    0 |                        0 |                              0 |               1086
+(1 row)
+
+== E. Ce que la migration change au schéma (empreinte AVANT → APRÈS ; attendu : rseq_proposition_equipe seule)
+                                           objet                                            |      cote       
+--------------------------------------------------------------------------------------------+-----------------
+ F|rseq_proposition_equipe(uuid,uuid,text,uuid,text,text)|00766b1735952d9a5366db23e383c6bd| | avant seulement
+ F|rseq_proposition_equipe(uuid,uuid,text,uuid,text,text)|80c3399deff44d064abcc77442e3d744| | après seulement
+(2 rows)
+
+== F. Durées (ms) par sonde et par phase
+                              surface                              |      phase       | appels | ms_moyen | ms_max 
+-------------------------------------------------------------------+------------------+--------+----------+--------
+ a01 matchs_recherche : matchs des 256, saison                     | 1 avant          |      2 |     62.3 |   80.8
+ a01 matchs_recherche : matchs des 256, saison                     | 2 après          |      2 |     58.9 |   79.2
+ a01 matchs_recherche : matchs des 256, saison                     | 3 après rollback |      2 |     58.5 |   79.7
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | 1 avant          |      1 |   1153.1 | 1153.1
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | 2 après          |      1 |   1125.4 | 1125.4
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | 3 après rollback |      1 |   1135.7 | 1135.7
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 1 avant          |      1 |    927.6 |  927.6
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 2 après          |      1 |    918.4 |  918.4
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 3 après rollback |      1 |    934.2 |  934.2
+ a04 matchs_suggestions : cégeps, écoles, mots                     | 1 avant          |      1 |   6971.8 | 6971.8
+ a04 matchs_suggestions : cégeps, écoles, mots                     | 2 après          |      1 |   7087.0 | 7087.0
+ a04 matchs_suggestions : cégeps, écoles, mots                     | 3 après rollback |      1 |   7209.2 | 7209.2
+ a05 depistage_profils_match : matchs d'équipes de cégep           | 1 avant          |      1 |   1981.0 | 1981.0
+ a05 depistage_profils_match : matchs d'équipes de cégep           | 2 après          |      1 |   1991.2 | 1991.2
+ a05 depistage_profils_match : matchs d'équipes de cégep           | 3 après rollback |      1 |   1973.4 | 1973.4
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 1 avant          |      1 |      3.6 |    3.6
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 2 après          |      1 |      2.0 |    2.0
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 3 après rollback |      1 |      2.1 |    2.1
+ a07 resolve_transfer_token (destinataire)                         | 1 avant          |      1 |      1.2 |    1.2
+ a07 resolve_transfer_token (destinataire)                         | 2 après          |      1 |      1.0 |    1.0
+ a07 resolve_transfer_token (destinataire)                         | 3 après rollback |      1 |      1.0 |    1.0
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | 1 avant          |      1 |    111.9 |  111.9
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | 2 après          |      1 |    117.8 |  117.8
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | 3 après rollback |      1 |    121.0 |  121.0
+ t01 teams hors des 256 (ligne complète)                           | 1 avant          |      1 |     37.3 |   37.3
+ t01 teams hors des 256 (ligne complète)                           | 2 après          |      1 |     35.7 |   35.7
+ t01 teams hors des 256 (ligne complète)                           | 3 après rollback |      1 |     35.6 |   35.6
+ t02 les 256 sans age_group                                        | 1 avant          |      1 |      1.6 |    1.6
+ t02 les 256 sans age_group                                        | 2 après          |      1 |      1.6 |    1.6
+ t02 les 256 sans age_group                                        | 3 après rollback |      1 |      1.6 |    1.6
+ t03 les 256 : catégorie et ligne complète                         | 1 avant          |      1 |      1.4 |    1.4
+ t03 les 256 : catégorie et ligne complète                         | 2 après          |      1 |      1.7 |    1.7
+ t03 les 256 : catégorie et ligne complète                         | 3 après rollback |      1 |      1.5 |    1.5
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | 1 avant          |      1 |      1.0 |    1.0
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | 2 après          |      1 |      1.1 |    1.1
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | 3 après rollback |      1 |      1.0 |    1.0
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | 1 avant          |      1 |      0.7 |    0.7
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | 2 après          |      1 |      0.7 |    0.7
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | 3 après rollback |      1 |      0.7 |    0.7
+ t06 index teams_identity_unique                                   | 1 avant          |      1 |      2.3 |    2.3
+ t06 index teams_identity_unique                                   | 2 après          |      1 |      2.5 |    2.5
+ t06 index teams_identity_unique                                   | 3 après rollback |      1 |      2.2 |    2.2
+ t07 matchs liés aux 256                                           | 1 avant          |      1 |     24.2 |   24.2
+ t07 matchs liés aux 256                                           | 2 après          |      1 |     23.4 |   23.4
+ t07 matchs liés aux 256                                           | 3 après rollback |      1 |     22.4 |   22.4
+ t08 tous les matchs                                               | 1 avant          |      1 |    959.3 |  959.3
+ t08 tous les matchs                                               | 2 après          |      1 |    954.0 |  954.0
+ t08 tous les matchs                                               | 3 après rollback |      1 |    970.9 |  970.9
+ t09 classements rseq_standings                                    | 1 avant          |      1 |     96.3 |   96.3
+ t09 classements rseq_standings                                    | 2 après          |      1 |     92.0 |   92.0
+ t09 classements rseq_standings                                    | 3 après rollback |      1 |     89.7 |   89.7
+ t10 classements affichés (équipe et école jointes)                | 1 avant          |      1 |      5.4 |    5.4
+ t10 classements affichés (équipe et école jointes)                | 2 après          |      1 |      5.3 |    5.3
+ t10 classements affichés (équipe et école jointes)                | 3 après rollback |      1 |      5.4 |    5.4
+ t11 clé de regroupement écran des équipes de cégep                | 1 avant          |      1 |      0.9 |    0.9
+ t11 clé de regroupement écran des équipes de cégep                | 2 après          |      1 |      0.9 |    0.9
+ t11 clé de regroupement écran des équipes de cégep                | 3 après rollback |      1 |      0.9 |    0.9
+ t12 dépendants des 256                                            | 1 avant          |      1 |      2.1 |    2.1
+ t12 dépendants des 256                                            | 2 après          |      1 |      2.3 |    2.3
+ t12 dépendants des 256                                            | 3 après rollback |      1 |      2.1 |    2.1
+ t13 athlètes sur une équipe sœur « Collégial »                    | 1 avant          |      1 |      0.9 |    0.9
+ t13 athlètes sur une équipe sœur « Collégial »                    | 2 après          |      1 |      1.0 |    1.0
+ t13 athlètes sur une équipe sœur « Collégial »                    | 3 après rollback |      1 |      1.1 |    1.1
+(63 rows)
+
+== VERDICT (attendu : tout à 0 et refus à 0)
+ ecarts_interdits | decisions_changees | ecarts_apres_rollback | empreinte_apres_rollback | refus 
+------------------+--------------------+-----------------------+--------------------------+-------
+                0 |                  0 |                     0 |                        0 |     0
+(1 row)
+
+ surface | compte | phase | v 
+---------+--------+-------+---
+(0 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 13:54:00.761857+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
+
+════════════════════════ PASSAGE 1 — AVEC A2 (la sonde du dépistage doit voir) ════════════════════════
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             |  current_user  | version 
+-------------------------------+----------------+---------
+ 2026-10-26 13:52:44.415435+00 | supabase_admin | 17.6
+(1 row)
+
+DO
+SELECT 256
+DO
+SELECT 4569
+SELECT 204
+SELECT 93
+CREATE TABLE
+INSERT 0 5
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DELETE 0
+DO
+            cat             | comptes 
+----------------------------+---------
+ admin                      |       1
+ anon                       |       1
+ destinataire d'invitation  |       1
+ partenaire admis           |       1
+ recruteur Pro, école CEGEP |       1
+(5 rows)
+
+ les_256 | matchs_d_equipe_de_cegep | alertes_nouvelle_equipe_ouvertes | textes_de_recherche | jetons_d_equipe 
+---------+--------------------------+----------------------------------+---------------------+-----------------
+     256 |                     4569 |                              204 |                  93 |               3
+(1 row)
+
+CREATE TABLE
+INSERT 0 21
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+      debut_mesure_avant       
+-------------------------------
+ 2026-10-26 13:52:44.490088+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ·
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+        debut_migration        
+-------------------------------
+ 2026-10-26 13:52:57.320838+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 13:52:57.326141+00
+(1 row)
+
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ·
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+DO
+ mesurer 
+---------
+ 
+(1 row)
+
+ propositions 
+--------------
+ ·
+(1 row)
+
+ empreinte 
+-----------
+ ·
+(1 row)
+
+          fin_mesures          
+-------------------------------
+ 2026-10-26 13:53:22.670362+00
+(1 row)
+
+CREATE VIEW
+== 0. Valeurs AVANT (une ligne par sonde, premier compte ; md5 abrégés)
+                              surface                              |    compte    | comptes |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     valeur                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+-------------------------------------------------------------------+--------------+---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ a01 matchs_recherche : matchs des 256, saison                     | P01 b2000000 |       2 | n=1705;avenir=894;md5=e41ee782…
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | R01 b2000000 |       1 | f20260701=0/d41d8cd9…;f20260801=142/cc455279…;f20260901=2552/cb8ae30a…;f20261002=5808/3d8366a1…;f20261102=4269/daffbd6d…;f20261203=2433/5421eaba…;f20270103=3801/29abe5bf…;f20270203=3215/5630554c…;f20270306=925/94e50707…;f20270406=0/d41d8cd9…;f20270507=0/d41d8cd9…;f20270607=0/d41d8cd9…;f20270708=0/d41d8cd9…
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | R01 b2000000 |       1 | CIVIL=135/9cfc6aba…;COLLEGIAL=699/e1d5ba48…;COLLEGIAL+CIVIL=834/63a72b0f…;SECONDAIRE=3536/7bf25fdc…;SECONDAIRE+CIVIL=3671/79a27ab3…;SECONDAIRE+COLLEGIAL=4235/27ec1189…;SECONDAIRE+COLLEGIAL+CIVIL=4370/a8f8c113…
+ a04 matchs_suggestions : cégeps, écoles, mots                     | R01 b2000000 |       1 | lignes=322;hors256=0f10ea4d…;les256_sans_detail=0957b70d…;libelle_les256=d550572e…;libelle_les256_lignes=160
+ a05 depistage_profils_match : matchs d'équipes de cégep           | R01 b2000000 |       1 | matchs=4569;non_vides=78;contenu=059f81b4-0bc8-4953-b2dc-971f0934fef8:1:573f36ca…,0a575f83-2886-4ced-893a-e2df768ea1b2:1:b5b29681…,0bb89611-f33d-4e1f-86e5-122bdbf216be:1:40baae1b…,0bd16194-d763-4bf1-adfe-2757a66f0fe8:1:b5b29681…,0f93f9d8-9f45-46e2-8422-a1afef9c3c02:1:b5b29681…,14578429-57c7-4041-8f04-f6295114d8df:1:b5b29681…,166b18e7-fc59-4688-abe6-90d4ccdb77dc:1:573f36ca…,1e62381c-2069-4614-9d83-6b0cc4ffdcb4:1:40baae1b…,2149a87a-789a-4d4e-b0f3-97afc5e70d2f:1:573f36ca…,21d2ac92-ade8-4aaa-97d2-7415a65238eb:1:b77bd4f9…,222e3c24-e031-439c-99ec-d0154034dcc8:1:b5b29681…,261e7adb-c4b8-4b40-aa98-5abd3189ff59:1:b77bd4f9…,279174be-c071-4544-a7a2-9c6b0f29ed83:1:573f36ca…,2963a30f-c6dc-4be2-950a-410b4fe13e41:1:b5b29681…,2aa69e10-7b70-4e99-b0aa-318c4d3b6f31:1:573f36ca…,302df187-41e1-4fc6-8726-2e6856c1b130:1:573f36ca…,310696c4-96c2-421f-b010-c287bd98b21c:1:b5b29681…,33eb4018-08b9-4df7-98ff-5138f5e7e982:1:b77bd4f9…,38bd310c-ebe9-4131-af05-8122770dea42:1:b77bd4f9…,3ea6f6f0-e5c7-44fe-86be-c9240447d32b:1:b5b29681…,40f2cefd-4c60-42de-a935-ed3e02690c4a:1:b5b29681…,41ff8aa2-4ad1-4750-80ce-36f8b63e45a8:1:b5b29681…,4afd8532-c145-4f2b-8218-73be8bbaeff2:1:573f36ca…,4f59ce6b-c412-46a7-ac54-2aad9cf2bd0a:1:573f36ca…,4f7f00bd-73d5-4dad-a4d2-e2ffe8309533:1:40baae1b…,5068a24f-54b4-4b36-a00c-f0ec6b38e3ee:1:573f36ca…,5155d67a-c79e-488e-8b5c-e5706e69437e:1:573f36ca…,52f0e330-808f-4d35-8e7f-6f0f489800e3:1:b5b29681…,54218d1d-bb2f-4b03-8036-ad3e7cc86254:1:40baae1b…,580548f9-fcfe-46ff-81f8-2c3d4968596f:1:573f36ca…,647b2504-cf94-4b66-bcf9-20a2a9a42213:1:573f36ca…,64d7e24f-7708-4147-a89b-3faac898fab2:1:573f36ca…,65b48291-f8bd-4040-b093-d25acb7918b3:1:b5b29681…,676b4723-e760-4088-a440-615d0758296c:1:573f36ca…,7c1e6ada-d3b9-4645-9bc7-fd590534ba64:1:573f36ca…,7c56696a-87ff-411e-b602-ec944276476b:1:573f36ca…,7e26edf6-676b-4e40-945f-267a3c0fd4c7:1:573f36ca…,7f2f4fe9-55e3-4458-9aff-37192eebbb81:1:573f36ca…,7f9739ce-3bec-49aa-a8e3-1f53376e2755:1:b77bd4f9…,812d1b9b-6352-45bb-b8cc-ed845cb0fd47:1:40baae1b…,81b9c10c-d379-4b6a-9292-13456230d236:1:573f36ca…,8283fec8-6fb5-46ca-ad47-a877089ab207:1:b5b29681…,83a13184-66b0-4fef-bbb4-ae3ad730003a:1:573f36ca…,8468b7a4-4614-4129-a4e2-21f7e613fb64:1:b77bd4f9…,8a65682a-f44f-459e-8f80-5911d7844276:1:573f36ca…,8e01320a-903e-46f8-9cbb-863c04de45d9:1:b5b29681…,8f369345-f0ae-4d40-8dcc-2eac07852422:1:b5b29681…,8f6baf47-1ab2-4d70-bb41-8ac7785bebdf:1:b5b29681…,91ad9ce7-4989-4df8-9ee3-644cac553f64:1:573f36ca…,938f1231-ed41-47a1-b633-8b0acc3a3984:1:573f36ca…,948166d0-c690-4e57-9faa-b3a435792a7c:1:573f36ca…,95603982-69e5-414d-94b5-8ce93d0dcaac:1:573f36ca…,95b605b5-ffc5-4a8c-921c-3f117e6ecce6:1:573f36ca…,99b997ab-ba3f-4809-811f-c24c3824a1f4:1:40baae1b…,9b6dd564-45ed-41ae-99bb-7d4debc42d05:1:573f36ca…,9bfbacd9-0f31-46bc-be63-cbdaaaae0aa8:1:b5b29681…,9c949679-1dad-4f09-9469-185131ef1b03:1:b77bd4f9…,9e69a431-9d76-40e1-8af7-08194fc28224:1:b5b29681…,a63f64e7-8ee3-492d-8198-be19cb3bc31f:1:b77bd4f9…,ad0bd7a7-dacd-4563-8c51-e818101367cd:1:b5b29681…,b17209dc-8c88-4a6d-8a39-e6fc9f803ab9:1:573f36ca…,b26019a6-c814-40c0-ab3b-7b0bb13bd612:1:40baae1b…,bd3e7dc7-62f0-4e10-834d-2a5e3a1c90de:1:573f36ca…,bf51ffd2-8913-48e5-bbc3-3b6f671dc369:1:b5b29681…,bff790e0-7b7b-4aa2-9653-43ae5d3dee0c:1:40baae1b…,ca1be4a8-05b1-483f-9ee4-7333e0d9c074:1:b5b29681…,d0fe2c09-3c1e-49a0-927f-140714bb58ec:1:40baae1b…,d23ac6cb-2ef6-4d9c-aaec-2491b432013e:1:b5b29681…,d7ceac21-582b-4a3b-af60-678fd757e731:1:573f36ca…,d9e20e8b-ecc9-4133-adfe-62a9aa1bcfa4:1:b5b29681…,dd485cb1-aac5-47e3-a40f-93816fdcefaf:1:b77bd4f9…,e1ea7622-34c5-46e7-b9e2-41104e401808:1:b5b29681…,e84f518c-a50f-43d3-b0c3-2bf4d6ab0539:1:b5b29681…,eccebb61-2c9c-4505-adfd-8d62b42d12d9:1:b77bd4f9…,ef8adca8-393a-4e50-bad3-e4a1c4612533:1:40baae1b…,f87a2f26-bf89-4d39-a0a5-a85951019be8:1:b5b29681…,fd29e8ef-7e9d-416a-99f5-15524f482e74:1:b5b29681…,fe5bdc5c-48ca-4147-a16b-547915ea39e7:1:b5b29681…
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | ADMIN        |       1 | jetons=3;hors256=bf4a72cf…;les256_sans_categorie=e58a1562…;libelle_les256=NULL/NULL
+ a07 resolve_transfer_token (destinataire)                         | I01 b2000000 |       1 | lignes=1;hors256=f71ba7f0…;les256_sans_categorie=d41d8cd9…;libelle_les256=-
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | ADMIN        |       1 | equipes=192;cotes_domicile=1462;cotes_visiteur=1454;refusees=b1b6b188…;refusees_n=12
+ t01 teams hors des 256 (ligne complète)                           | SU           |       1 | n=9889;md5=699908aa…
+ t02 les 256 sans age_group                                        | SU           |       1 | n=256;md5=ec5a6764…
+ t03 les 256 : catégorie et ligne complète                         | SU           |       1 | libelle_categories=NULL;libelle_md5_complet=86d202eb…
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | SU           |       1 | n=5;ecoles=1;md5=57d1b4b3…
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | SU           |       1 | n=1;md5=103eb58f…
+ t06 index teams_identity_unique                                   | SU           |       1 | valide=true;groupes_en_double=0;les256_jumelle_collegial=0
+ t07 matchs liés aux 256                                           | SU           |       1 | n=1709;avenir=894;md5=641ce616…
+ t08 tous les matchs                                               | SU           |       1 | n=70303;md5=0d084c3f…
+ t09 classements rseq_standings                                    | SU           |       1 | n=4463;des256=256;md5=2878d32e…
+ t10 classements affichés (équipe et école jointes)                | SU           |       1 | n=4463;md5=8b43e3c4…;libelle_categories_des256=NULL
+ t11 clé de regroupement écran des équipes de cégep                | SU           |       1 | n=654;md5=a1711db7…
+ t12 dépendants des 256                                            | SU           |       1 | team_athletes=0;team_coaches=0;team_invitations=0;team_join_tokens=1;cartes_prospect=0;alertes=23;matchs_ajoutes=0
+ t13 athlètes sur une équipe sœur « Collégial »                    | SU           |       1 | cegepiens=1;non_cegepiens=1
+(21 rows)
+
+== A. Écarts AVANT → APRÈS, clé par clé (seules les clés « libelle… » ont le droit de changer)
+                              surface                              |            cle            |  nature  | comptes |                                 avant                                  |                                 apres                                  
+-------------------------------------------------------------------+---------------------------+----------+---------+------------------------------------------------------------------------+------------------------------------------------------------------------
+ a04 matchs_suggestions : cégeps, écoles, mots                     | libelle_les256            | permis   |       1 | d550572e…                                                              | c75af5b3…
+ a05 depistage_profils_match : matchs d'équipes de cégep           | contenu                   | INTERDIT |       1 | 059f81b4-0bc8-4953-b2dc-971f0934fef8:1:573f36ca…,0a575f83-2886-4ced-89 | 03a4445b-b6a2-4810-9293-3ff6c409075d:1:573f36ca…,059f81b4-0bc8-4953-b2
+ a05 depistage_profils_match : matchs d'équipes de cégep           | non_vides                 | INTERDIT |       1 | 78                                                                     | 118
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | libelle_les256            | permis   |       1 | NULL/NULL                                                              | Collégial/Collégial
+ t03 les 256 : catégorie et ligne complète                         | libelle_categories        | permis   |       1 | NULL                                                                   | Collégial
+ t03 les 256 : catégorie et ligne complète                         | libelle_md5_complet       | permis   |       1 | 86d202eb…                                                              | a01b5281…
+ t10 classements affichés (équipe et école jointes)                | libelle_categories_des256 | permis   |       1 | NULL                                                                   | Collégial
+(7 rows)
+
+== A2. Dépistage : matchs dont le contenu change (attendu : seulement des matchs d'une des 256)
+    compte    |      cote       |  match   | profils | match_d_une_des_256 
+--------------+-----------------+----------+---------+---------------------
+ R01 b2000000 | après seulement | 03a4445b | 1       | t
+ R01 b2000000 | après seulement | 065c7f59 | 1       | t
+ R01 b2000000 | après seulement | 1ae2ed3e | 1       | t
+ R01 b2000000 | après seulement | 1dea185e | 1       | t
+ R01 b2000000 | après seulement | 1e4b30f7 | 1       | t
+ R01 b2000000 | après seulement | 1fcde70c | 1       | t
+ R01 b2000000 | après seulement | 2a3344b7 | 1       | t
+ R01 b2000000 | après seulement | 2aa753de | 1       | t
+ R01 b2000000 | après seulement | 3298be09 | 1       | t
+ R01 b2000000 | après seulement | 398204fb | 1       | t
+ R01 b2000000 | après seulement | 3a3a57e6 | 1       | t
+ R01 b2000000 | après seulement | 3bf0bac3 | 1       | t
+ R01 b2000000 | après seulement | 58a1fa54 | 1       | t
+ R01 b2000000 | après seulement | 59b743ac | 1       | t
+ R01 b2000000 | après seulement | 6a3d9c32 | 1       | t
+ R01 b2000000 | après seulement | 799106f6 | 1       | t
+ R01 b2000000 | après seulement | 7d24780f | 1       | t
+ R01 b2000000 | après seulement | 8382aa5e | 1       | t
+ R01 b2000000 | après seulement | 849faa91 | 1       | t
+ R01 b2000000 | après seulement | 86f81990 | 1       | t
+ R01 b2000000 | après seulement | 8af51a3d | 1       | t
+ R01 b2000000 | après seulement | 8dcc9c3e | 1       | t
+ R01 b2000000 | après seulement | 92d6e267 | 1       | t
+ R01 b2000000 | après seulement | 9522391c | 1       | t
+ R01 b2000000 | après seulement | 99039e4c | 1       | t
+ R01 b2000000 | après seulement | 99385883 | 1       | t
+ R01 b2000000 | après seulement | 9aed155b | 1       | t
+ R01 b2000000 | après seulement | ab94033c | 1       | t
+ R01 b2000000 | après seulement | b11415a9 | 1       | t
+ R01 b2000000 | après seulement | b3aca689 | 1       | t
+ R01 b2000000 | après seulement | bcc5ff4c | 1       | t
+ R01 b2000000 | après seulement | bcde52f8 | 1       | t
+ R01 b2000000 | après seulement | bf0f23b1 | 1       | t
+ R01 b2000000 | après seulement | c3e165fe | 1       | t
+ R01 b2000000 | après seulement | ce27d025 | 1       | t
+ R01 b2000000 | après seulement | d794a62f | 1       | t
+ R01 b2000000 | après seulement | e0fc4405 | 1       | t
+ R01 b2000000 | après seulement | e21c5da7 | 1       | t
+ R01 b2000000 | après seulement | ff85cb9c | 1       | t
+ R01 b2000000 | après seulement | ffa5f4ca | 1       | t
+(40 rows)
+
+== C. Propositions de la veille, alerte par alerte (rseq_proposition_equipe)
+       avant       |       apres       | alertes | doublon_change | ecole_change | cotes_change |    categorie     
+-------------------+-------------------+---------+----------------+--------------+--------------+------------------
+ a_creer           | a_creer           |     192 |              0 |            0 |            0 | NULL → Collégial
+ doublon           | doublon           |       2 |              0 |            0 |            0 | NULL → Collégial
+ ecole_introuvable | ecole_introuvable |      10 |              0 |            0 |            0 | NULL → Collégial
+(3 rows)
+
+== C2. Les doublons : même équipe visée avant et après
+  alerte  | doublon_avant | doublon_apres | equipe_visee_parmi_les_256 
+----------+---------------+---------------+----------------------------
+ e5bffe47 | 38e387b3      | 38e387b3      | t
+ ea152938 | d469c1ce      | d469c1ce      | t
+(2 rows)
+
+== D. Rollback : AVANT → APRÈS ROLLBACK (attendu : 0, 0, 0)
+ cellules_differentes | propositions_differentes | lignes_d_empreinte_differentes | lignes_d_empreinte 
+----------------------+--------------------------+--------------------------------+--------------------
+                    0 |                        0 |                              0 |               1086
+(1 row)
+
+== E. Ce que la migration change au schéma (empreinte AVANT → APRÈS ; attendu : rseq_proposition_equipe seule)
+                                           objet                                            |      cote       
+--------------------------------------------------------------------------------------------+-----------------
+ F|rseq_proposition_equipe(uuid,uuid,text,uuid,text,text)|00766b1735952d9a5366db23e383c6bd| | avant seulement
+ F|rseq_proposition_equipe(uuid,uuid,text,uuid,text,text)|80c3399deff44d064abcc77442e3d744| | après seulement
+(2 rows)
+
+== F. Durées (ms) par sonde et par phase
+                              surface                              |      phase       | appels | ms_moyen | ms_max 
+-------------------------------------------------------------------+------------------+--------+----------+--------
+ a01 matchs_recherche : matchs des 256, saison                     | 1 avant          |      2 |     62.0 |   80.8
+ a01 matchs_recherche : matchs des 256, saison                     | 2 après          |      2 |     60.2 |   81.6
+ a01 matchs_recherche : matchs des 256, saison                     | 3 après rollback |      2 |     59.8 |   80.9
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | 1 avant          |      1 |   1172.5 | 1172.5
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | 2 après          |      1 |   1190.8 | 1190.8
+ a02 matchs_recherche : saison, fenêtres de 31 j                   | 3 après rollback |      1 |   1143.1 | 1143.1
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 1 avant          |      1 |    964.0 |  964.0
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 2 après          |      1 |    940.6 |  940.6
+ a03 matchs_recherche : filtres Type, 31 prochains jours           | 3 après rollback |      1 |    946.8 |  946.8
+ a04 matchs_suggestions : cégeps, écoles, mots                     | 1 avant          |      1 |   7209.5 | 7209.5
+ a04 matchs_suggestions : cégeps, écoles, mots                     | 2 après          |      1 |   7094.0 | 7094.0
+ a04 matchs_suggestions : cégeps, écoles, mots                     | 3 après rollback |      1 |   7110.6 | 7110.6
+ a05 depistage_profils_match : matchs d'équipes de cégep           | 1 avant          |      1 |   2057.5 | 2057.5
+ a05 depistage_profils_match : matchs d'équipes de cégep           | 2 après          |      1 |   2016.6 | 2016.6
+ a05 depistage_profils_match : matchs d'équipes de cégep           | 3 après rollback |      1 |   2057.2 | 2057.2
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 1 avant          |      1 |      3.3 |    3.3
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 2 après          |      1 |      2.0 |    2.0
+ a06 jetons d'équipe (apercu_code_equipe, resolve_team_join_token) | 3 après rollback |      1 |      2.0 |    2.0
+ a07 resolve_transfer_token (destinataire)                         | 1 avant          |      1 |      1.2 |    1.2
+ a07 resolve_transfer_token (destinataire)                         | 2 après          |      1 |      1.0 |    1.0
+ a07 resolve_transfer_token (destinataire)                         | 3 après rollback |      1 |      1.1 |    1.1
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | 1 avant          |      1 |    108.4 |  108.4
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | 2 après          |      1 |     99.8 |   99.8
+ a08 rseq_creer_equipes_proposees à blanc (alertes ouvertes)       | 3 après rollback |      1 |    119.0 |  119.0
+ t01 teams hors des 256 (ligne complète)                           | 1 avant          |      1 |     36.5 |   36.5
+ t01 teams hors des 256 (ligne complète)                           | 2 après          |      1 |     35.1 |   35.1
+ t01 teams hors des 256 (ligne complète)                           | 3 après rollback |      1 |     35.8 |   35.8
+ t02 les 256 sans age_group                                        | 1 avant          |      1 |      1.6 |    1.6
+ t02 les 256 sans age_group                                        | 2 après          |      1 |      1.8 |    1.8
+ t02 les 256 sans age_group                                        | 3 après rollback |      1 |      1.7 |    1.7
+ t03 les 256 : catégorie et ligne complète                         | 1 avant          |      1 |      1.3 |    1.3
+ t03 les 256 : catégorie et ligne complète                         | 2 après          |      1 |      1.5 |    1.5
+ t03 les 256 : catégorie et ligne complète                         | 3 après rollback |      1 |      1.4 |    1.4
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | 1 avant          |      1 |      0.9 |    0.9
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | 2 après          |      1 |      1.0 |    1.0
+ t04 SECONDAIRE en « Collégial » (Collège de l'Assomption)         | 3 après rollback |      1 |      1.2 |    1.2
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | 1 avant          |      1 |      0.6 |    0.6
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | 2 après          |      1 |      0.7 |    0.7
+ t05 LIGUE_CIVILE en « cegep » (Champlain Cavaliers)               | 3 après rollback |      1 |      0.7 |    0.7
+ t06 index teams_identity_unique                                   | 1 avant          |      1 |      2.2 |    2.2
+ t06 index teams_identity_unique                                   | 2 après          |      1 |      2.4 |    2.4
+ t06 index teams_identity_unique                                   | 3 après rollback |      1 |      2.4 |    2.4
+ t07 matchs liés aux 256                                           | 1 avant          |      1 |     23.8 |   23.8
+ t07 matchs liés aux 256                                           | 2 après          |      1 |     22.9 |   22.9
+ t07 matchs liés aux 256                                           | 3 après rollback |      1 |     22.9 |   22.9
+ t08 tous les matchs                                               | 1 avant          |      1 |    965.6 |  965.6
+ t08 tous les matchs                                               | 2 après          |      1 |    971.9 |  971.9
+ t08 tous les matchs                                               | 3 après rollback |      1 |    974.6 |  974.6
+ t09 classements rseq_standings                                    | 1 avant          |      1 |     98.1 |   98.1
+ t09 classements rseq_standings                                    | 2 après          |      1 |     92.3 |   92.3
+ t09 classements rseq_standings                                    | 3 après rollback |      1 |     90.4 |   90.4
+ t10 classements affichés (équipe et école jointes)                | 1 avant          |      1 |      5.7 |    5.7
+ t10 classements affichés (équipe et école jointes)                | 2 après          |      1 |      6.1 |    6.1
+ t10 classements affichés (équipe et école jointes)                | 3 après rollback |      1 |      5.5 |    5.5
+ t11 clé de regroupement écran des équipes de cégep                | 1 avant          |      1 |      0.8 |    0.8
+ t11 clé de regroupement écran des équipes de cégep                | 2 après          |      1 |      1.0 |    1.0
+ t11 clé de regroupement écran des équipes de cégep                | 3 après rollback |      1 |      1.0 |    1.0
+ t12 dépendants des 256                                            | 1 avant          |      1 |      2.2 |    2.2
+ t12 dépendants des 256                                            | 2 après          |      1 |      2.1 |    2.1
+ t12 dépendants des 256                                            | 3 après rollback |      1 |      2.1 |    2.1
+ t13 athlètes sur une équipe sœur « Collégial »                    | 1 avant          |      1 |      1.0 |    1.0
+ t13 athlètes sur une équipe sœur « Collégial »                    | 2 après          |      1 |      0.9 |    0.9
+ t13 athlètes sur une équipe sœur « Collégial »                    | 3 après rollback |      1 |      1.0 |    1.0
+(63 rows)
+
+== VERDICT (attendu : tout à 0 et refus à 0)
+ ecarts_interdits | decisions_changees | ecarts_apres_rollback | empreinte_apres_rollback | refus 
+------------------+--------------------+-----------------------+--------------------------+-------
+                2 |                  0 |                     0 |                        0 |     0
+(1 row)
+
+ surface | compte | phase | v 
+---------+--------+-------+---
+(0 rows)
+
+              fin              
+-------------------------------
+ 2026-10-26 13:53:22.688693+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
+
+════════════════ ESSAI LOCAL DES FICHIERS PROD RÉELS (apply puis rollback, nexus_b2, 2026-10-26) ════════════════
+teams avant f5365c5d080ef56c4817f9f6def7a248 ; après apply+rollback f5365c5d080ef56c4817f9f6def7a248 ; rseq_proposition_equipe 70b3e97e…/00766b17… ; relance apply → « version déjà inscrite » ; relance rollback → « déjà retiré ».
+── apply-20261026.sql
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             |  current_user  | version 
+-------------------------------+----------------+---------
+ 2026-10-26 14:38:06.986643+00 | supabase_admin | 17.6
+(1 row)
+
+DO
+SELECT 256
+SELECT 1
+SELECT 204
+ les_256 | matchs_des_256 | alertes_ouvertes |                  decisions                   
+---------+----------------+------------------+----------------------------------------------
+     256 |           1709 |              204 | a_creer:192, doublon:2, ecole_introuvable:10
+(1 row)
+
+SELECT 1
+       debut_migration        
+------------------------------
+ 2026-10-26 14:38:07.08767+00
+(1 row)
+
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-26 14:38:07.098003+00
+(1 row)
+
+INSERT 0 204
+DO
+ les_256_en_collegial | secondaire_en_collegial_inchange | champlain_cavaliers_inchange |               decisions_apres                
+----------------------+----------------------------------+------------------------------+----------------------------------------------
+                  256 |                                5 |                            1 | a_creer:192, doublon:2, ecole_introuvable:10
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit         
+------------------+------------------------------
+ 20261026140000   | 2026-10-26 14:38:07.18831+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B2 en prod.
+── rollback-20261026.sql
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             |  current_user  
+-------------------------------+----------------
+ 2026-10-26 14:38:15.110505+00 | supabase_admin
+(1 row)
+
+DO
+SELECT 256
+DO
+SELECT 1
+SELECT 1
+DO
+DO
+INSERT 0 1
+INSERT 0 1
+ version_rollback_inscrite |         avant_commit          
+---------------------------+-------------------------------
+ 20261026143815            | 2026-10-26 14:38:15.209466+00
+(1 row)
+
+COMMIT
+== COMMIT fait : B2 retiré de la prod.
