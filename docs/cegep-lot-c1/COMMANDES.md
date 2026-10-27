@@ -15,8 +15,8 @@ avant que C1b puisse être rejouée à blanc.
 | `supabase/rollback/20261027230100_rollback_cegep_lot_c1b_verification_auto_cegep.sql` | `a71dd22deeb965a80cdd8a8d3fb6c428` |
 | `docs/cegep-lot-c1/prod/c1a-rejeu-blanc-20261027.sql` | `54598fb181ea70d2f46242f4100f7d08` |
 | `docs/cegep-lot-c1/prod/c1a-apply-20261027.sql` | `7be71527b0daf25cbf681fe363130f0b` |
-| `docs/cegep-lot-c1/prod/c1b-rejeu-blanc-20261027.sql` | `047a9b74d68a3dc12af5913e623a1d3e` |
-| `docs/cegep-lot-c1/prod/c1b-apply-20261027.sql` | `50fc1a24a94bd95f097bfc329b73a90a` |
+| `docs/cegep-lot-c1/prod/c1b-rejeu-blanc-20261027.sql` | `5f91aa4f5618e1d7025c4c04beb2b2aa` |
+| `docs/cegep-lot-c1/prod/c1b-apply-20261027.sql` | `cc47ef1df99220dc13ff546d0ade8844` |
 | `docs/cegep-lot-c1/prod/c1b-rollback-20261027.sql` | `7e1e5d0d8ddf6d79f8f0d9a8394b5c83` |
 
 - **C1a** : la valeur `auto_cegep` de `verification_method`. Aucune ligne, fonction, policy ni trigger ne
@@ -53,12 +53,12 @@ $f = "docs\cegep-lot-c1\prod\c1a-apply-20261027.sql"
 
 # 3. C1b — rejeu à blanc (exige C1a inscrite ; finit par ROLLBACK)
 $f = "docs\cegep-lot-c1\prod\c1b-rejeu-blanc-20261027.sql"
-(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 047A9B74D68A3DC12AF5913E623A1D3E
+(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 5F91AA4F5618E1D7025C4C04BEB2B2AA
 & $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\cegep-lot-c1\prod\c1b-rejeu-blanc-20261027.sortie.txt"
 
 # 4. C1b — apply (sur GO, après lecture du rejeu)
 $f = "docs\cegep-lot-c1\prod\c1b-apply-20261027.sql"
-(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 50FC1A24A94BD95F097BFC329B73A90A
+(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : CC47EF1DF99220DC13FF546D0ADE8844
 & $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\cegep-lot-c1\prod\c1b-apply-20261027.sortie.txt"
 
 # 5. C1b — rollback (sur GO seulement)

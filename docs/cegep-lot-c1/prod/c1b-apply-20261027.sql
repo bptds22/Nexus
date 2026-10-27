@@ -35,6 +35,13 @@ begin
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261027230000') then
     raise exception 'NEXUS: C1a (20261027230000) n''est pas inscrite — l''appliquer d''abord';
   end if;
+  if v is distinct from '20261027230000' then
+    raise exception 'NEXUS: dernière version % au lieu de 20261027230000 (C1a)', v;
+  end if;
+  if to_regprocedure('public.verification_auto_cegep()') is not null
+     or exists (select 1 from pg_trigger where tgname = 'trg_verification_auto_cegep') then
+    raise exception 'NEXUS: C1b est déjà présente (fonction ou trigger)';
+  end if;
   if exists (select 1 from public.admin_operations where operation in ('MIGRATION_CEGEP_LOT_C1B_VERIFICATION', 'ROLLBACK_CEGEP_LOT_C1B_VERIFICATION')) then
     raise exception 'NEXUS: le lot C1b a déjà laissé une trace dans admin_operations';
   end if;

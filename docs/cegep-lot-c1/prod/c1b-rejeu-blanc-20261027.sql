@@ -16,6 +16,11 @@
 --   E. Essais APRÈS (ON) : mêmes avis ; seule la vérification change, là où elle doit.
 --   F. Sous OFF : le rattachement à une équipe de cégep est refusé par le verrou C0, rien n'est vérifié.
 --   G. Le rollback (md5 gardé) : empreinte et essais identiques à AVANT.
+--   Fiche test (créée dans la transaction) : ancrage cégep → vérifiée auto_cegep ; sortie → grise.
+--   Empreinte des FICHES athlètes (chaque ligne, dont verified et verification_method) : identique au
+--   début, après la migration et ses essais, et après le rollback.
+--   Avis « Ton coach a vérifié ton profil » et file pg_net : rien de plus pour la vérification automatique.
+--   Gardes : postgres, interrupteur OFF, C1a = dernière version, C1b absente.
 --   ROLLBACK, puis relecture hors transaction.
 -- Lancer SANS -1, en postgres.
 -- ════════════════════════════════════════════════════════════════════════════
@@ -65,6 +70,17 @@ begin
   if v >= '20261027230100' then raise exception 'NEXUS: version 20261027230100 pas après la dernière (%) — régénérer', v; end if;
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261027230000') then
     raise exception 'NEXUS: C1a (20261027230000) n''est pas inscrite — l''appliquer d''abord';
+  end if;
+  -- Gardes demandées par BP (2026-10-27) : C1a est la dernière version, C1b absente, interrupteur OFF.
+  if v is distinct from '20261027230000' then
+    raise exception 'NEXUS: dernière version % au lieu de 20261027230000 (C1a)', v;
+  end if;
+  if to_regprocedure('public.verification_auto_cegep()') is not null
+     or exists (select 1 from pg_trigger where tgname = 'trg_verification_auto_cegep') then
+    raise exception 'NEXUS: C1b est déjà présente (fonction ou trigger)';
+  end if;
+  if to_regprocedure('public.lancement_collegial_actif()') is null or public.lancement_collegial_actif() then
+    raise exception 'NEXUS: l''interrupteur lancement_collegial n''est pas OFF';
   end if;
 end $$;
 
@@ -117,6 +133,9 @@ begin
       s := s || r.t || '=' || n || ';';
     end if;
   end loop;
+  -- Le seul avis qu'une vérification peut créer (notify_athlete_verified).
+  s := s || 'avis_coach_verifie=' || (select count(*) from public.athlete_notifications
+                                        where title = 'Ton coach a vérifié ton profil') || ';';
   return s;
 end $$;
 create function pg_temp.delta(p_avant text, p_apres text) returns text language sql as $$
@@ -201,10 +220,43 @@ begin
   return next;
 end $$;
 
+-- Empreinte des FICHES athlètes : chaque ligne complète (verified, verification_method compris).
+create function pg_temp.empreinte_fiches() returns text language sql as $$
+  select count(*) || ' fiches ; ' || count(*) filter (where a.verified) || ' vérifiées ; '
+         || count(*) filter (where a.verification_method::text = 'auto_cegep') || ' auto_cegep ; md5 '
+         || md5(coalesce(string_agg(a::text, '|' order by a.id), ''))
+    from public.athletes a;
+$$;
+create temp table _fiches on commit drop as select 'début' as moment, pg_temp.empreinte_fiches() as empreinte;
+select * from _fiches;
+
+-- Fiche test créée dans la transaction : secondaire → cégep → secondaire, puis tout est défait (NX000).
+create function pg_temp.fiche_test() returns text language plpgsql as $$
+declare t record; v_id uuid; avant text; e1 text; e2 text;
+begin
+  select * into t from _t2;
+  begin
+    avant := pg_temp.compte_avis();
+    insert into public.athletes (first_name, last_name, school_id, status)
+    values ('Rejeu', 'C1b-fiche', t.autre_sec, 'ACTIF') returning id into v_id;
+    update public.athletes set school_id = t.ecole_cegep where id = v_id;
+    e1 := pg_temp.etat(v_id);
+    update public.athletes set school_id = t.autre_sec where id = v_id;
+    e2 := pg_temp.etat(v_id);
+    raise exception using errcode = 'NX000', message = 'ancrage cégep → ' || e1 || ' ; sortie du cégep → ' || e2
+      || coalesce(nullif(' (' || pg_temp.delta(avant, pg_temp.compte_avis()) || ')', ' ()'), '');
+  exception
+    when sqlstate 'NX000' then return sqlerrm;
+    when others then return 'REFUSÉ ' || sqlstate || ' ' || left(sqlerrm, 110);
+  end;
+end $$;
+
 -- ── B. Essais AVANT (interrupteur ON dans la transaction) ────────────────────
 update public.app_settings set value = 'true' where key = 'lancement_collegial';
 create temp table _avant on commit drop as select * from pg_temp.essais();
 select 'AVANT' as phase, * from _avant order by cas;
+create temp table _ft_avant on commit drop as select pg_temp.fiche_test() as resultat;
+select 'AVANT' as phase, '8 fiche test (créée dans la transaction)' as cas, resultat from _ft_avant;
 
 -- ── C. Empreinte du schéma public ────────────────────────────────────────────
 create function pg_temp.empreinte() returns table (ligne text) language sql as $$
@@ -446,6 +498,24 @@ set local search_path = public, extensions;
 create temp table _apres on commit drop as select * from pg_temp.essais();
 select 'APRÈS' as phase, p.*, case when p.resultat = b.resultat then '=' else 'CHANGE' end as vs_avant
   from _apres p join _avant b using (cas) order by cas;
+create temp table _ft_apres on commit drop as select pg_temp.fiche_test() as resultat;
+select 'APRÈS' as phase, '8 fiche test (créée dans la transaction)' as cas, resultat from _ft_apres;
+insert into _fiches select 'après la migration et ses essais', pg_temp.empreinte_fiches();
+do $$
+begin
+  if (select resultat from _ft_apres) not like 'ancrage cégep → CEGEP / vérifié / auto_cegep / par personne ; sortie du cégep → SECONDAIRE / non vérifié / ·%' then
+    raise exception 'NEXUS: fiche test — ancrage ou sortie du cégep inattendu : %', (select resultat from _ft_apres);
+  end if;
+  if (select resultat from _ft_apres) ~ '(athlete_notifications|http_request_queue|avis_coach_verifie)' then
+    raise exception 'NEXUS: fiche test — un avis ou un envoi pg_net a été mis en file';
+  end if;
+  if exists (select 1 from _apres where resultat like '%avis_coach_verifie%') then
+    raise exception 'NEXUS: un avis « Ton coach a vérifié ton profil » a été créé';
+  end if;
+  if (select count(distinct empreinte) from _fiches) <> 1 then
+    raise exception 'NEXUS: une fiche athlète existante a changé';
+  end if;
+end $$;
 -- Ce qui doit changer, et seulement ça : 1 et 2 vérifiés 'auto_cegep' par personne, sans un avis de plus.
 create function pg_temp.sans_etat(r text) returns text language sql as $$
   select regexp_replace(r, '→ [^(]*', '→ ');
@@ -510,7 +580,15 @@ begin
   end if;
 end $$;
 update public.app_settings set value = 'false' where key = 'lancement_collegial';
-select 'VERDICT : nouvel ancrage cégep → vérifié auto_cegep par personne, sans aucun avis de plus ; rien d''autre ne change ; retour au secondaire → gris ; sous OFF le verrou refuse ; rollback à l''identique' as verdict,
+insert into _fiches select 'après le rollback', pg_temp.empreinte_fiches();
+select * from _fiches;
+do $$
+begin
+  if (select count(distinct empreinte) from _fiches) <> 1 then
+    raise exception 'NEXUS: l''empreinte des fiches athlètes diffère';
+  end if;
+end $$;
+select 'VERDICT : aucune fiche existante ne change ; fiche test : ancrage cégep → vérifiée auto_cegep par personne, sortie → grise ; nouvel ancrage cégep → vérifié auto_cegep, sans avis « coach a vérifié » ni envoi pg_net de plus ; rien d''autre ne change ; sous OFF le verrou refuse ; rollback à l''identique' as verdict,
        clock_timestamp() as avant_rollback;
 rollback;
 

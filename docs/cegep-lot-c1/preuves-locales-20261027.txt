@@ -223,3 +223,162 @@ COMMIT
 == COMMIT fait : lot C1b cégep retiré.
 
 ## C1b — second apply après réapplication : refusé « NEXUS: version 20261027230100 déjà inscrite » ; migration rejouée (psql -1), trigger présent.
+
+## C1b — rejeu à blanc renforcé (2026-10-27 soir), joué en local après retrait local de C1b ; gardes de version neutralisées dans la copie locale seulement
+Pager usage is off.
+Null display is "·".
+CREATE TABLE
+INSERT 0 9
+CREATE TABLE
+DO
+SELECT 1
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 20:01:18.829769+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 1
+SELECT 1
+DO
+                                                                    temoins                                                                    
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ témoins trouvés (identifiants non affichés) ; secondaire majeur : true ; même sport que l'équipe de cégep : true ; cégépien déjà ancré : true
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 1
+ moment |                                   empreinte                                    
+--------+--------------------------------------------------------------------------------
+ début  | 76 fiches ; 42 vérifiées ; 1 auto_cegep ; md5 027920549956e45afb8e6e7eab7d60ed
+(1 row)
+
+CREATE FUNCTION
+UPDATE 1
+SELECT 7
+ phase |                                         cas                                          |                          resultat                           
+-------+--------------------------------------------------------------------------------------+-------------------------------------------------------------
+ AVANT | 1 nouvel athlète inscrit, ancré à un cégep (INSERT)                                  | accepté → CEGEP / non vérifié / ·
+ AVANT | 2 athlète du secondaire rejoint une équipe de cégep (apply_team_attachment, son JWT) | accepté → CEGEP / non vérifié / · (public.team_athletes +1)
+ AVANT | 3 athlète du secondaire change d'école secondaire                                    | accepté → SECONDAIRE / non vérifié / ·
+ AVANT | 4 athlète vérifié par un humain, ancré à un cégep                                    | accepté → CEGEP / vérifié / manuel_coach / par un compte
+ AVANT | 5 athlète ancré au cégep puis revenu au secondaire                                   | accepté → SECONDAIRE / non vérifié / ·
+ AVANT | 6 cégépien déjà ancré : mise à jour sans changer d'école                             | accepté → CEGEP / vérifié / auto_cegep / par personne
+ AVANT | 7 athlète du secondaire : sa propre mise à jour d'un champ libre (son JWT)           | accepté → SECONDAIRE / non vérifié / ·
+(7 rows)
+
+SELECT 1
+ phase |                   cas                    |                                                          resultat                                                           
+-------+------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------
+ AVANT | 8 fiche test (créée dans la transaction) | ancrage cégep → CEGEP / non vérifié / · ; sortie du cégep → SECONDAIRE / non vérifié / · (public.recruiter_activity_log +4)
+(1 row)
+
+CREATE FUNCTION
+SELECT 1111
+ lignes_empreinte 
+------------------
+             1111
+(1 row)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-27 20:01:18.894436+00
+(1 row)
+
+psql:C:/Users/bptds/AppData/Local/Temp/claude/C--Users-bptds/99493c53-2e67-4472-b2f8-e0c2fa59099e/scratchpad/c1b-rejeu-local2.sql:493: NOTICE:  NEXUS: lot C1b cégep — vérification automatique des cégépiens en place
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-27 20:01:18.898015+00
+(1 row)
+
+SET
+SELECT 7
+ phase |                                         cas                                          |                                    resultat                                     | vs_avant 
+-------+--------------------------------------------------------------------------------------+---------------------------------------------------------------------------------+----------
+ APRÈS | 1 nouvel athlète inscrit, ancré à un cégep (INSERT)                                  | accepté → CEGEP / vérifié / auto_cegep / par personne                           | CHANGE
+ APRÈS | 2 athlète du secondaire rejoint une équipe de cégep (apply_team_attachment, son JWT) | accepté → CEGEP / vérifié / auto_cegep / par personne (public.team_athletes +1) | CHANGE
+ APRÈS | 3 athlète du secondaire change d'école secondaire                                    | accepté → SECONDAIRE / non vérifié / ·                                          | =
+ APRÈS | 4 athlète vérifié par un humain, ancré à un cégep                                    | accepté → CEGEP / vérifié / manuel_coach / par un compte                        | =
+ APRÈS | 5 athlète ancré au cégep puis revenu au secondaire                                   | accepté → SECONDAIRE / non vérifié / ·                                          | =
+ APRÈS | 6 cégépien déjà ancré : mise à jour sans changer d'école                             | accepté → CEGEP / vérifié / auto_cegep / par personne                           | =
+ APRÈS | 7 athlète du secondaire : sa propre mise à jour d'un champ libre (son JWT)           | accepté → SECONDAIRE / non vérifié / ·                                          | =
+(7 rows)
+
+SELECT 1
+ phase |                   cas                    |                                                                    resultat                                                                     
+-------+------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------
+ APRÈS | 8 fiche test (créée dans la transaction) | ancrage cégep → CEGEP / vérifié / auto_cegep / par personne ; sortie du cégep → SECONDAIRE / non vérifié / · (public.recruiter_activity_log +4)
+(1 row)
+
+INSERT 0 1
+DO
+CREATE FUNCTION
+DO
+UPDATE 1
+SELECT 1
+ phase |                         cas                         |                                        resultat                                         
+-------+-----------------------------------------------------+-----------------------------------------------------------------------------------------
+ OFF   | 2 athlète du secondaire rejoint une équipe de cégep | REFUSÉ 42501 NEXUS: Les cégeps ne sont pas encore ouverts sur Nexus. Ça arrive bientôt.
+(1 row)
+
+DO
+UPDATE 1
+psql:C:/Users/bptds/AppData/Local/Temp/claude/C--Users-bptds/99493c53-2e67-4472-b2f8-e0c2fa59099e/scratchpad/c1b-rejeu-local2.sql:564: NOTICE:  NEXUS: lot C1b cégep annulé
+DO
+SET
+SELECT 1111
+SELECT 7
+              sonde               | disparues | apparues | essais_ecarts 
+----------------------------------+-----------+----------+---------------
+ empreinte avant / après rollback |         0 |        0 |             0
+(1 row)
+
+DO
+UPDATE 1
+INSERT 0 1
+              moment              |                                   empreinte                                    
+----------------------------------+--------------------------------------------------------------------------------
+ début                            | 76 fiches ; 42 vérifiées ; 1 auto_cegep ; md5 027920549956e45afb8e6e7eab7d60ed
+ après la migration et ses essais | 76 fiches ; 42 vérifiées ; 1 auto_cegep ; md5 027920549956e45afb8e6e7eab7d60ed
+ après le rollback                | 76 fiches ; 42 vérifiées ; 1 auto_cegep ; md5 027920549956e45afb8e6e7eab7d60ed
+(3 rows)
+
+DO
+                                                                                                                                                   verdict                                                                                                                                                   |        avant_rollback         
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ VERDICT : aucune fiche existante ne change ; fiche test : ancrage cégep → vérifiée auto_cegep par personne, sortie → grise ; nouvel ancrage cégep → vérifié auto_cegep, sans avis « coach a vérifié » ni envoi pg_net de plus ; rien d'autre ne change ; sous OFF le verrou refuse ; rollback à l'identique | 2026-10-27 20:01:18.953941+00
+(1 row)
+
+ROLLBACK
+CREATE TABLE
+DO
+         table_suivie          | avant | apres 
+-------------------------------+-------+-------
+ net.http_request_queue        |     0 |     0
+ public.activities             |   273 |   273
+ public.admin_notifications    |    42 |    42
+ public.athlete_notifications  |   123 |   123
+ public.newsroom_events        |     2 |     2
+ public.parent_notifications   |    41 |    41
+ public.recruiter_activity_log |   455 |   455
+ public.team_athletes          |    61 |    61
+(8 rows)
+
+ verifiees_avant | verifiees_apres | auto_cegep_apres | interrupteur | trigger_reste | derniere_version 
+-----------------+-----------------+------------------+--------------+---------------+------------------
+              42 |              42 |                1 | false        |             0 | 20261027230100
+(1 row)
+
+== ROLLBACK fait : rien n'est appliqué.
