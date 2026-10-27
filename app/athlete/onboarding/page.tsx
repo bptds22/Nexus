@@ -908,6 +908,12 @@ function AthleteOnboardingDesktop() {
      (et inversement) — jamais une valeur offerte par l'autre question. */
   const ecoleCegep = userContext === "scolaire" && selectedSchoolType === "CEGEP";
   const libelleAnnee = ecoleCegep ? LIBELLE_ANNEE_CEGEP : LIBELLE_ANNEE_SEC5;
+  /* Retour de test BP (2026-10-27) : sous ON, en scolaire, le champ école vient AVANT l'année, et
+     l'année reste désactivée tant que l'école n'est pas choisie — puis son libellé est d'emblée le
+     bon (Sec 5 ou cégep). Sous OFF, l'écran reste celui d'aujourd'hui (année à côté du courriel). */
+  const anneeApresEcole = lancementCollegial && userContext === "scolaire";
+  const ecoleChoisie = (!!selectedSchoolId && !!selectedSchoolType) || ecoleNonListeeValide;
+  const anneeEnAttente = anneeApresEcole && !ecoleChoisie;
   const optionsAnnee = (ecoleCegep ? optionsAnneeCegep : optionsAnneeSec5)(new Date(), anneeEnBase.current);
   useEffect(() => {
     if (gradYear && !optionsAnnee.some((o) => o.value === gradYear)) setGradYear("");
@@ -2210,9 +2216,11 @@ function AthleteOnboardingDesktop() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div><label className={labelCls}>{libelleAnnee} <span className="text-[#EF4444]">*</span></label>
+              {!anneeApresEcole && (
+                <div><label className={labelCls}>{libelleAnnee} <span className="text-[#EF4444]">*</span></label>
                 <select title={libelleAnnee} value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}><option value="" disabled>Sélectionner l&apos;année…</option>{(gradYear && !optionsAnnee.some((o) => o.value === gradYear) ? [...optionsAnnee, { value: gradYear, label: gradYear }] : optionsAnnee).map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
-              </div>
+                </div>
+              )}
               <div><label className={labelCls}>Courriel</label><input type="email" title="Courriel" placeholder="courriel@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} text-[#6b7280]`} readOnly /></div>
             </div>
             <div className="mb-4"><label className={labelCls}>Téléphone</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="514-000-0000" className={inputCls} /></div>
@@ -2380,6 +2388,14 @@ function AthleteOnboardingDesktop() {
                     >
                       Revenir à la recherche
                     </button>
+                  </div>
+                )}
+
+                {anneeApresEcole && (
+                  <div className="mb-6">
+                    <div><label className={labelCls}>{anneeEnAttente ? "Année de fin" : libelleAnnee} <span className="text-[#EF4444]">*</span></label>
+                <select title={anneeEnAttente ? "Année de fin" : libelleAnnee} value={anneeEnAttente ? "" : gradYear} disabled={anneeEnAttente} onChange={(e) => setGradYear(e.target.value)} className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}><option value="" disabled>{anneeEnAttente ? "Choisis d’abord ton école ou ton cégep" : "Sélectionner l’année…"}</option>{(gradYear && !optionsAnnee.some((o) => o.value === gradYear) ? [...optionsAnnee, { value: gradYear, label: gradYear }] : optionsAnnee).map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
+                    </div>
                   </div>
                 )}
 

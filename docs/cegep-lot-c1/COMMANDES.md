@@ -147,6 +147,11 @@ Fin : `--off`.
 - **Mobile (C2, 1.4.6)** : `AthleteOnboardingMobile` envoie encore `verified: false` à chaque étape — sur une
   fiche vérifiée `auto_cegep`, la garde de périmètre refuserait l'étape. À retirer en C2, comme ici au web.
   Le bloc année de `/athlete/transfert` et le bandeau sont web seulement (`IS_CAPACITOR`).
+- **Recherche d'école (1.4.6)** : le web passe par `lib/schools/rechercheEcole.ts` (mot par mot, accents, St ⇔ Saint).
+  Le mobile a QUATRE copies séparées, encore par sous-chaîne : `AthleteOnboardingMobile` (≈ l. 750),
+  `AthleteWizardMobile` (≈ l. 1216), `CoachOnboardingMobileSchool` (≈ l. 276) et la feuille mobile de
+  `MonEquipeSection` (≈ l. 237). À brancher sur la même fonction dans la 1.4.6.
+- **Ordre école / année (1.4.6)** : sous ON, l'onboarding web demande l'école avant l'année ; le mobile à aligner en C2.
 - Le cégépien déjà ancré en prod (témoin du lot A) n'est PAS vérifié par C1b (décision 5 : rien en base pour lui).
 - L'étape « Académique » de l'onboarding (programmes visés au cégep, régions de cégep) et « Trouver mon cégep »
   restent montrés au cégépien.
