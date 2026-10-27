@@ -9,6 +9,11 @@ import PartenaireCartesProvider, { useDeclarerCarteVisible } from "@/components/
 import { AthleteCardMobile } from "@/components/shared/RecruteurRechercheMobile";
 import FiltresRechercheFeuille from "@/components/partenaire/recherche/FiltresRechercheFeuille";
 import { nombreFiltresActifs, versCarteRecherche } from "@/lib/partenaires/recherche";
+import {
+  ORG_TYPE_OPTIONS, ORG_TYPE_PLACEHOLDER, CATEGORIE_OPTIONS, CATEGORIE_PLACEHOLDER, TYPE_ECOLE, isOrgType,
+} from "@/app/partenaire/_components/partnerFilters";
+import { variantesCategorie } from "@/lib/config/categories";
+import { libellePromotion, libelleOptionPromotion, porteePromotion } from "@/lib/config/gradYears";
 import { Chargement, classesBouton, classesSurface, EnTetePartenaire, EtatVide } from "@/components/partenaire/kit/KitPartenaire";
 import EnTeteMobilePartenaire from "@/components/partenaire/mobile/EnTeteMobilePartenaire";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
@@ -67,6 +72,8 @@ type AthleteRow = {
   sport_id: string | null;
   position_id: string | null;
   school_id: string | null;
+  /** Lot B3 : type de l'école d'ancrage. */
+  school_type?: string | null;
   photo_url: string | null;
   sport_name: string | null;
   position_name: string | null;
@@ -165,7 +172,7 @@ function CarteRechercheBureau({ a }: { a: AthleteRow }) {
         <p className="text-[15px] font-bold text-white group-hover:text-[#E63946] transition-colors">{name}</p>
         <p className="text-[12px] text-[#9CA3AF] truncate">{[a.sport_name, a.position_name].filter(Boolean).join(" · ") || "—"}</p>
         <p className="text-[11px] text-[#6b7280] truncate">{a.school_name || "—"}{a.region ? ` · ${a.region}` : ""}</p>
-        {a.annee_diplomation && <p className="text-[11px] font-bold text-[#E63946] mt-1">Promotion {a.annee_diplomation}</p>}
+        {a.annee_diplomation && <p className="text-[11px] font-bold text-[#E63946] mt-1">{libellePromotion(a.annee_diplomation, a.school_type)}</p>}
         <CarteBadges athleteId={a.id} coach={coach} variante="grille" className="mt-2" />
       </div>
     </Link>
@@ -184,7 +191,8 @@ export default function PartnerAthletesSearch({
   const [position, setPosition] = useState("");
   const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
-  const [orgType, setOrgType] = useState(""); // "" | "scolaire" | "ligue_civile"
+  const [orgType, setOrgType] = useState(""); // "" | "scolaire" | "ligue_civile" | "collegial" (lot B4)
+  const [categorie, setCategorie] = useState(""); // lot B4 : libellé canonique
   const [genre, setGenre] = useState(""); // "" | "M" | "F" | "X"
   const [minRating, setMinRating] = useState("");
   const [withSportBadge, setWithSportBadge] = useState(false);
@@ -238,8 +246,10 @@ export default function PartnerAthletesSearch({
       if (position) query = query.eq("position_id", position);
       if (region) query = query.eq("region", region);
       if (promotion) query = query.eq("annee_diplomation", parseInt(promotion, 10));
-      if (orgType === "scolaire") query = query.not("school_id", "is", null);
-      if (orgType === "ligue_civile") query = query.is("school_id", null);
+      /* TYPE et CATÉGORIE (lot B4) — colonnes de la vue depuis B3 : type de l'école d'ancrage,
+         catégorie de l'équipe. Un athlète sans école n'a pas de Type (il reste visible sans filtre). */
+      if (isOrgType(orgType)) query = query.eq("school_type", TYPE_ECOLE[orgType]);
+      if (categorie) query = query.in("team_age_group", variantesCategorie(categorie));
       if (genre) query = query.eq("genre", genre);
       if (minRating) query = query.gte("cote_globale_entraineur", parseFloat(minRating));
       if (withVideoOnly) query = query.not("video_faits_saillants_url", "is", null);
@@ -293,7 +303,7 @@ export default function PartnerAthletesSearch({
     // s'arrête et n'écrase pas le résultat du nouveau filtre.
     return () => { annule = true; };
   }, [
-    search, sport, position, region, promotion, orgType,
+    search, sport, position, region, promotion, orgType, categorie,
     genre, minRating, withVideoOnly, sortBy,
   ]);
 
@@ -321,10 +331,11 @@ export default function PartnerAthletesSearch({
      comprendre que c'est son propre filtre qui l'a vidé. */
   const hasFilters =
     !!search || !!sport || !!position || !!region || !!promotion ||
-    !!orgType || !!genre || !!minRating || withSportBadge || withVideoOnly ||
+    !!orgType || !!categorie || !!genre || !!minRating || withSportBadge || withVideoOnly ||
     sortBy !== "cote_desc";
 
-  const nbFiltres = nombreFiltresActifs({ sport, position, promotion, region, orgType, genre, minRating, withSportBadge, withVideoOnly, sortBy });
+  const nbFiltres = nombreFiltresActifs({ sport, position, promotion, region, orgType, genre, minRating, withSportBadge, withVideoOnly, sortBy })
+    + (categorie ? 1 : 0);
 
   const resetFilters = () => {
     setSearch("");
@@ -333,6 +344,7 @@ export default function PartnerAthletesSearch({
     setRegion("");
     setPromotion("");
     setOrgType("");
+    setCategorie("");
     setGenre("");
     setMinRating("");
     setWithSportBadge(false);
@@ -454,9 +466,31 @@ export default function PartnerAthletesSearch({
             className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}
           >
             <option value="">Toutes les promotions</option>
+            {/* Lot B4 : jamais l'année seule — « Secondaire ou DEC » tant que le Type n'est pas choisi. */}
             {promotions.map((p) => (
-              <option key={p} value={String(p)}>{p}</option>
+              <option key={p} value={String(p)}>{libelleOptionPromotion(p, porteePromotion(orgType, true))}</option>
             ))}
+          </select>
+
+          {/* TYPE et CATÉGORIE (lot B4 cégep) — sortis des filtres avancés, toujours affichés. */}
+          <select
+            value={orgType}
+            onChange={(e) => setOrgType(e.target.value)}
+            className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
+            aria-label="Type"
+          >
+            <option value="">{ORG_TYPE_PLACEHOLDER}</option>
+            {ORG_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+
+          <select
+            value={categorie}
+            onChange={(e) => setCategorie(e.target.value)}
+            className={`nx-filter-select${categorie ? " nx-filter-active" : ""}`}
+            aria-label="Catégorie"
+          >
+            <option value="">{CATEGORIE_PLACEHOLDER}</option>
+            {CATEGORIE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
           <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
@@ -572,16 +606,6 @@ export default function PartnerAthletesSearch({
                 {regions.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
-              </select>
-
-              <select
-                value={orgType}
-                onChange={(e) => setOrgType(e.target.value)}
-                className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
-              >
-                <option value="">Tous les organismes</option>
-                <option value="scolaire">École secondaire</option>
-                <option value="ligue_civile">Ligue civile</option>
               </select>
 
               {/* GENRE — `athletes.genre` est brut en base ('M' | 'F' | 'X' | NULL).

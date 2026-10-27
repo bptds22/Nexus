@@ -41,9 +41,10 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
 import {
-  organisationOptions, leagueOptions, divisionOptions, axisDisplay,
-  matchesOrganisation, matchesLeague, matchesDivision,
+  organisationOptions, leagueOptions, divisionOptions, categorieOptions, axisDisplay,
+  matchesOrganisation, matchesLeague, matchesDivision, matchesCategorie, sansCollegial,
 } from "@/lib/config/team-taxonomy";
+import { libelleOptionPromotion } from "@/lib/config/gradYears";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, useMonCegepOffreDesProgrammes } from "@/lib/queries/shared/useCegepPrograms";
 /* ═══════════════════════════════════════════════════════════════
@@ -235,7 +236,7 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
               <span className="truncate">{a.school}</span>
             )}
             <span className="text-[#4a4d56] shrink-0">·</span>
-            <span className="shrink-0">{a.graduationYear}</span>
+            <span className="shrink-0">{a.promotionLabel ?? a.graduationYear}</span>
           </span>
           <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-semibold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1 shrink-0">
             Voir le profil
@@ -361,7 +362,7 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
       </span>
 
       {/* Promotion */}
-      <span className="text-[13px] text-[#9CA3AF] shrink-0 w-[50px]">{a.graduationYear}</span>
+      <span className="text-[13px] text-[#9CA3AF] shrink-0 w-[110px]">{a.promotionLabel ?? a.graduationYear}</span>
 
       {/* Badges : 5 au plus, puis « +N » — la ligne ne déborde plus (rangée rognée). */}
       <div className="flex-1 min-w-0 overflow-hidden">
@@ -438,7 +439,7 @@ function RechercheContent() {
   const { filtres, setFiltre, poserPlusieurs } = useFiltresRecherche();
   const {
     search, sport, genderFilter, position, region, promotion, orgType,
-    leagueFilter, divisionFilter,
+    leagueFilter, divisionFilter, categorieFilter,
     minGpa, minRating, sortBy, verifiedOnly, withVideoOnly, withSportBadge,
     withAcademicBadge, hideFavorites, filterOuvertDemenager, filterOuvertPrive,
     filterOuvertAnglophone, offertParMonCegep, filterNewOnly, meCiblent, progFilterIds,
@@ -456,6 +457,7 @@ function RechercheContent() {
   const setOrgType = useCallback((v: string) => setFiltre("orgType", v), [setFiltre]);
   const setLeagueFilter = useCallback((v: string) => setFiltre("leagueFilter", v), [setFiltre]);
   const setDivisionFilter = useCallback((v: string) => setFiltre("divisionFilter", v), [setFiltre]);
+  const setCategorieFilter = useCallback((v: string) => setFiltre("categorieFilter", v), [setFiltre]);
   /* Changer le NIVEAU 1 remet les deux niveaux du dessous a zero — meme regle
      que la page coach. Sans ca, une Ligue cochee puis rendue hors-cadre par un
      changement d'Organisation continuerait de filtrer derriere un menu grise. */
@@ -586,6 +588,7 @@ function RechercheContent() {
     if (orgType) list = list.filter((a) => matchesOrganisation(a.taxonomy, orgType));
     if (leagueFilter) list = list.filter((a) => matchesLeague(a.taxonomy, leagueFilter));
     if (divisionFilter) list = list.filter((a) => matchesDivision(a.taxonomy, divisionFilter));
+    if (categorieFilter) list = list.filter((a) => matchesCategorie(a.taxonomy, categorieFilter));
     if (position) list = list.filter((a) => a.position === position);
     if (region) list = list.filter((a) => a.region === region);
     // Genre d'ÉQUIPE (teams.gender), pas athletes.genre. Un athlète sans équipe
@@ -617,7 +620,7 @@ function RechercheContent() {
         ? `Favori de ${joindreNoms((favorisUnite.parAthlete[a.id] ?? []).map(favorisUnite.nom))}`
         : undefined,
     }));
-  }, [athletes, orgType, leagueFilter, divisionFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite, currentUser?.authUser.id]);
+  }, [athletes, orgType, leagueFilter, divisionFilter, categorieFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite, currentUser?.authUser.id]);
 
   /* ── OPTIONS ET ETATS DES TROIS MENUS ─────────────────────────────────────
      Construites sur `athletes` — LE JEU RENVOYE PAR LA RPC, donc apres les
@@ -634,22 +637,31 @@ function RechercheContent() {
      l'organisation — d'où « Non renseigné (19) » sous civile+LFMM alors que la
      liste ne rendait rien. Le vocabulaire, lui, reste celui de toute la page :
      une option à 0 se grise, elle ne disparaît pas. */
+  /* Lot B4 cégep : le recruteur COLLÉGIAL ne voit pas l'option Type « Collégial » ici — il ne
+     reçoit jamais de cégépien (masquage du lot A, en base). Un recruteur universitaire (lot D)
+     la verra : retirer alors ce filtre selon le type d'école du compte. */
   const orgOptions = useMemo(
-    () => organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter }),
-    [taxonomyRows, leagueFilter, divisionFilter],
+    () => sansCollegial(organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter, categorie: categorieFilter })),
+    [taxonomyRows, leagueFilter, divisionFilter, categorieFilter],
   );
   const leagueOptionList = useMemo(
-    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter }),
-    [taxonomyRows, orgType, divisionFilter],
+    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter, categorie: categorieFilter }),
+    [taxonomyRows, orgType, divisionFilter, categorieFilter],
   );
   const divisionOptionList = useMemo(
-    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter }),
-    [taxonomyRows, orgType, leagueFilter],
+    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter, categorie: categorieFilter }),
+    [taxonomyRows, orgType, leagueFilter, categorieFilter],
+  );
+  /* CATÉGORIE (lot B4) : teams.age_group (B3), liste canonique unique, rangée par âge. */
+  const categorieOptionList = useMemo(
+    () => categorieOptions(taxonomyRows, { org: orgType, league: leagueFilter, division: divisionFilter }),
+    [taxonomyRows, orgType, leagueFilter, divisionFilter],
   );
 
   const orgAxis = useMemo(() => axisDisplay(orgOptions), [orgOptions]);
   const leagueAxis = useMemo(() => axisDisplay(leagueOptionList), [leagueOptionList]);
   const divisionAxis = useMemo(() => axisDisplay(divisionOptionList), [divisionOptionList]);
+  const categorieAxis = useMemo(() => axisDisplay(categorieOptionList), [categorieOptionList]);
 
   /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
      filtrer derriere un menu masque.
@@ -663,8 +675,9 @@ function RechercheContent() {
     if (orgAxis.state !== "active" && orgType) setOrgType("");
     if (leagueAxis.state !== "active" && leagueFilter) setLeagueFilter("");
     if (divisionAxis.state !== "active" && divisionFilter) setDivisionFilter("");
-  }, [orgAxis.state, leagueAxis.state, divisionAxis.state, orgType, leagueFilter,
-      divisionFilter, setOrgType, setLeagueFilter, setDivisionFilter]);
+    if (categorieAxis.state !== "active" && categorieFilter) setCategorieFilter("");
+  }, [orgAxis.state, leagueAxis.state, divisionAxis.state, categorieAxis.state, orgType, leagueFilter,
+      divisionFilter, categorieFilter, setOrgType, setLeagueFilter, setDivisionFilter, setCategorieFilter]);
 
   /* Télémétrie d'usage des filtres (search_filter_events). Le compte écrit
      est celui de la liste RENDUE, après les filtres client — ce que
@@ -700,7 +713,7 @@ function RechercheContent() {
     if (res && !res.ok) setErreurFavori(res.message);
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== FILTRES_DEFAUT.sortBy;
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || leagueFilter || divisionFilter || categorieFilter || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || filtreMeCiblentActif || progFilterIds.length > 0 || offertParMonCegep || sortBy !== FILTRES_DEFAUT.sortBy;
 
   /* PÉRIMÈTRE INCHANGÉ. Ce bouton ne vide NI `search`, NI `progFilterIds`, NI
      `offertParMonCegep` — c'était déjà le cas avant la bascule vers l'URL, et
@@ -710,7 +723,7 @@ function RechercheContent() {
     journaliserReinitialisation();
     poserPlusieurs({
       sport: "", genderFilter: "", position: "", region: "", promotion: "", orgType: "",
-      leagueFilter: "", divisionFilter: "",
+      leagueFilter: "", divisionFilter: "", categorieFilter: "",
       minRating: "", minGpa: "", sortBy: FILTRES_DEFAUT.sortBy,
       verifiedOnly: false, withVideoOnly: false,
       withSportBadge: false, withAcademicBadge: false, hideFavorites: false,
@@ -807,9 +820,9 @@ function RechercheContent() {
               value={orgType}
               onChange={(e) => handleOrgTypeChange(e.target.value)}
               className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
-              aria-label="Organisation"
+              aria-label="Type"
             >
-              <option value="">Toutes les organisations</option>
+              <option value="">Tous les types</option>
               {/* C2 (1.4.5) : aucun compte de joueurs — libellés seuls dans les menus. */}
               {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
             </select>
@@ -839,6 +852,18 @@ function RechercheContent() {
             </select>
           )}
 
+          {categorieAxis.state === "active" && (
+            <select
+              value={categorieFilter}
+              onChange={(e) => setCategorieFilter(e.target.value)}
+              className={`nx-filter-select${categorieFilter ? " nx-filter-active" : ""}`}
+              aria-label="Catégorie"
+            >
+              <option value="">Toutes les catégories</option>
+              {categorieOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
+            </select>
+          )}
+
           <select value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
             <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
             {dynamicPositions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
@@ -846,7 +871,8 @@ function RechercheContent() {
 
           <select value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>
             <option value="">Toutes les promotions</option>
-            {PROMOTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {/* Lot B4 : jamais l'année seule ; le recruteur collégial ne reçoit pas de cégépien. */}
+            {PROMOTIONS.map((p) => <option key={p} value={p}>{libelleOptionPromotion(p, "secondaire")}</option>)}
           </select>
 
           <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />

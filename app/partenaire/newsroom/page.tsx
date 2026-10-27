@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import NewsroomDropdownFilters from "../_components/NewsroomDropdownFilters";
 import {
-  isOrgType,
+  isOrgTypeNewsroom,
   parseCoteMin,
   isPartnerSortKey,
   NEWSROOM_RECENT_SORT,
@@ -117,7 +117,7 @@ async function rendre(brut: ParamsUrl) {
   const typeFilter = params.type === "COMMITMENT" || params.type === "FIVE_STAR_SIGNUP" ? params.type : null;
   // Pastilles de période (6.5) : Cette semaine · Ce mois (défaut) · Saison ; « all » reste lu.
   const rangeFilter = lirePeriode(params.range, "30d");
-  const orgFilter = isOrgType(params.org) ? params.org : null;
+  const orgFilter = isOrgTypeNewsroom(params.org) ? params.org : null;
   const coteFilter = parseCoteMin(params.cote);
   /* `recent` par défaut, et tout param inconnu y retombe — un tri fantôme
      issu d'une URL trafiquée ne doit pas réordonner le fil en silence. */

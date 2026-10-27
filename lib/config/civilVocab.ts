@@ -12,6 +12,10 @@
  *
  * Pattern mirrors lib/config/pricing.ts : JSDoc header, type at top,
  * named array exports, all values inline literals (no DB-driven).
+ *
+ * ⚠ Liste de SAISIE seulement (formulaire d'équipe, avec « Autre »). Pour FILTRER et RANGER les
+ * catégories (ordre par âge, libellés, « cegep » → « Collégial ») : la liste canonique unique
+ * `lib/config/categories.ts` (lot B4 cégep). N'y ajoutez pas de deuxième liste ici.
  */
 
 export interface VocabOption {

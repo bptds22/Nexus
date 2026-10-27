@@ -8,6 +8,8 @@
    recherche partenaire avait déjà : rien de plus, aucune donnée nouvelle.
 ═══════════════════════════════════════════════════════════════ */
 
+import { ORG_TYPE_OPTIONS, ORG_TYPE_PLACEHOLDER } from "@/app/partenaire/_components/partnerFilters";
+import { libelleOptionPromotion, porteePromotion } from "@/lib/config/gradYears";
 import { useState } from "react";
 import { FilterBottomSheetShell, FilterRow, TogglePill } from "@/components/shared/filters/FilterBottomSheetShell";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -58,11 +60,16 @@ export default function FiltresRechercheFeuille({
       titre: "Position",
       liste: [{ value: "", label: "Toutes les positions" }, ...positions.map((p) => ({ value: p.id, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom }))],
     },
-    promotion: { titre: "Promotion", liste: [{ value: "", label: "Toutes les promotions" }, ...promotions.map((p) => ({ value: String(p), label: String(p) }))] },
+    promotion: {
+      titre: "Promotion",
+      liste: [{ value: "", label: "Toutes les promotions" },
+        ...promotions.map((p) => ({ value: String(p), label: libelleOptionPromotion(p, porteePromotion(filtres.orgType, true)) }))],
+    },
     region: { titre: "Région", liste: [{ value: "", label: "Toutes les régions" }, ...regions.map((r) => ({ value: r, label: r }))] },
+    /* Lot B4 : Type à 3 valeurs, mêmes clés et libellés que partnerFilters. */
     orgType: {
-      titre: "Organisme",
-      liste: [{ value: "", label: "Tous les organismes" }, { value: "scolaire", label: "École secondaire" }, { value: "ligue_civile", label: "Ligue civile" }],
+      titre: "Type",
+      liste: [{ value: "", label: ORG_TYPE_PLACEHOLDER }, ...ORG_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))],
     },
     genre: {
       titre: "Genre",
@@ -85,7 +92,7 @@ export default function FiltresRechercheFeuille({
             disabled={!filtres.sport} disabledReason="Choisis un sport" />
           <FilterRow label="Promotion" value={libelle("promotion")} onTap={() => setPicker("promotion")} />
           <FilterRow label="Région" value={libelle("region")} onTap={() => setPicker("region")} />
-          <FilterRow label="Organisme" value={libelle("orgType")} onTap={() => setPicker("orgType")} />
+          <FilterRow label="Type" value={libelle("orgType")} onTap={() => setPicker("orgType")} />
           <FilterRow label="Genre" value={libelle("genre")} onTap={() => setPicker("genre")} />
           <FilterRow label="Cote minimale" value={libelle("minRating")} onTap={() => setPicker("minRating")} />
           <FilterRow label="Trier par" value={libelle("sortBy")} onTap={() => setPicker("sortBy")} />

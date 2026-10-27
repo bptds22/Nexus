@@ -1,5 +1,6 @@
 "use client";
 
+import { messageLisible } from "@/lib/erreurs/messageErreurNexus";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -245,7 +246,7 @@ function EquipesPageDesktop() {
       season: formValues.season,
     });
     if (error || !teamId) {
-      setCreateError((error as { message?: string } | undefined)?.message || "Création échouée.");
+      setCreateError(messageLisible((error as { message?: string } | undefined)?.message || "Création échouée."));
       setSaving(false);
       return;
     }
@@ -284,7 +285,7 @@ function EquipesPageDesktop() {
       setCreateError(
         (error as { message?: string }).message?.includes("one_referent_per_team")
           ? "Un autre entraîneur vient de prendre la responsabilité de cette équipe. Recharge la page pour la rejoindre comme adjoint."
-          : (error as { message?: string }).message || "Impossible de rejoindre cette équipe.",
+          : messageLisible((error as { message?: string }).message || "Impossible de rejoindre cette équipe."),
       );
       setPendingClaim(null);
       return;

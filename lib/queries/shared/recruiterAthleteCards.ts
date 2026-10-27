@@ -90,6 +90,9 @@ export interface RecruiterAthleteCard {
   school_region: string | null;
   school_type: string | null;
   committed_school_name: string | null;
+  /** Lot B3 cégep (20261026210100) : type de l'école de l'équipe et catégorie de l'équipe. */
+  team_school_type?: string | null;
+  team_age_group?: string | null;
   evaluations: RecruiterEvalRow[] | null;
 }
 

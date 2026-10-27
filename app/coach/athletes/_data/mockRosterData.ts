@@ -84,6 +84,8 @@ export interface RosterAthlete {
    *  Optionnelle : les fixtures mock ci-dessous ne la portent pas et se rangent
    *  alors en « Non renseigné », ce qui est la vérité. */
   taxonomy?: TaxonomySource;
+  /** Lot B4 cégep : « Secondaire AAAA » ou « DEC AAAA » (lib/config/gradYears.ts). */
+  promotionLabel?: string | null;
   /** Primary coach owning this athlete (NULL = unclaimed in the school pool). */
   coach_id?: string | null;
   /** Nom de l'évaluateur de la note affichée, SEULEMENT quand ce n'est pas le

@@ -33,11 +33,12 @@ import EtiquetteNomAConfirmer from "@/components/athlete/EtiquetteNomAConfirmer"
 
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 import {
-  taxonomyFromAthleteRow, organisationOptions, leagueOptions, divisionOptions,
+  taxonomyFromAthleteRow, organisationOptions, leagueOptions, divisionOptions, categorieOptions,
   EMPTY_TAXONOMY, axisDisplay,
-  matchesOrganisation, matchesLeague, matchesDivision,
+  matchesOrganisation, matchesLeague, matchesDivision, matchesCategorie,
   type Organisation,
 } from "@/lib/config/team-taxonomy";
+import { libellePromotion, libelleOptionPromotion } from "@/lib/config/gradYears";
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -146,7 +147,7 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
 
         {/* Footer — school · year left, actions right */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
-          <span className="text-[12px] text-[#6b7280] truncate">{a.school} <span className="text-[#4a4d56]">·</span> {a.gradYear}</span>
+          <span className="text-[12px] text-[#6b7280] truncate">{a.school} <span className="text-[#4a4d56]">·</span> {a.promotionLabel ?? a.gradYear}</span>
           <div className="flex items-center gap-3 shrink-0">
             <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[13px] font-semibold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1">
               Modifier
@@ -221,7 +222,7 @@ const ATHLETE_ROSTER_SELECT = `
           context,
           schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
-          team_athletes(team_id, teams!team_id(name, gender, division, league, rseq_team_id, schools!school_id(type))),
+          team_athletes(team_id, teams!team_id(name, gender, division, league, rseq_team_id, age_group, schools!school_id(type))),
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at),
           athlete_badges(contexte, retire_le, badges(code, libelle))
         `;
@@ -261,6 +262,7 @@ function MesAthletesContent() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [minGpa, setMinGpa] = useState("");
   const [orgType, setOrgType] = useState("");
+  const [categorieFilter, setCategorieFilter] = useState("");
   const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
   const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
   const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
@@ -585,6 +587,7 @@ function MesAthletesContent() {
              regles (repli d'organisation, `rseq_team_id => RSEQ`) vivent dans le
              module, et le jour ou elles bougent, cette page ne bouge pas. */
           taxonomy: taxonomyFromAthleteRow(a),
+          promotionLabel: libellePromotion(gradYear, taxonomyFromAthleteRow(a).schoolType),
           coach_id: (a.coach_id as string | null) ?? null,
         };
 
@@ -778,6 +781,7 @@ function MesAthletesContent() {
     if (orgType) list = list.filter((a) => matchesOrganisation(a.taxonomy ?? EMPTY_TAXONOMY, orgType));
     if (leagueFilter) list = list.filter((a) => matchesLeague(a.taxonomy ?? EMPTY_TAXONOMY, leagueFilter));
     if (divisionFilter) list = list.filter((a) => matchesDivision(a.taxonomy ?? EMPTY_TAXONOMY, divisionFilter));
+    if (categorieFilter) list = list.filter((a) => matchesCategorie(a.taxonomy ?? EMPTY_TAXONOMY, categorieFilter));
     if (region) list = list.filter((a) => a.region === region);
     if (promotion) list = list.filter((a) => a.gradYear === parseInt(promotion));
     if (verifiedOnly) list = list.filter((a) => a.isVerified);
@@ -805,7 +809,7 @@ function MesAthletesContent() {
     }
 
     return list;
-  }, [search, sport, genderFilter, orgType, leagueFilter, divisionFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
+  }, [search, sport, genderFilter, orgType, leagueFilter, divisionFilter, categorieFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
 
   const filtered = useMemo(() => applyFilters(myRoster), [applyFilters, myRoster]);
   const filteredSchool = useMemo(() => applyFilters(schoolAthletes), [applyFilters, schoolAthletes]);
@@ -826,16 +830,22 @@ function MesAthletesContent() {
      chaque menu compte sur la population cadrée par les DEUX autres axes, le
      vocabulaire reste celui de toute la page, une option à 0 se grise. */
   const orgOptions = useMemo(
-    () => organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter }),
-    [taxonomyRows, leagueFilter, divisionFilter],
+    () => organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter, categorie: categorieFilter }),
+    [taxonomyRows, leagueFilter, divisionFilter, categorieFilter],
   );
   const leagueOptionList = useMemo(
-    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter }),
-    [taxonomyRows, orgType, divisionFilter],
+    () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter, categorie: categorieFilter }),
+    [taxonomyRows, orgType, divisionFilter, categorieFilter],
   );
   const divisionOptionList = useMemo(
-    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter }),
-    [taxonomyRows, orgType, leagueFilter],
+    () => divisionOptions(taxonomyRows, { org: orgType, league: leagueFilter, categorie: categorieFilter }),
+    [taxonomyRows, orgType, leagueFilter, categorieFilter],
+  );
+  /* CATÉGORIE (lot B4 cégep) : teams.age_group lu par la liste canonique unique
+     (lib/config/categories.ts), rangé par âge. Même mécanique que les trois autres axes. */
+  const categorieOptionList = useMemo(
+    () => categorieOptions(taxonomyRows, { org: orgType, league: leagueFilter, division: divisionFilter }),
+    [taxonomyRows, orgType, leagueFilter, divisionFilter],
   );
 
   /* ── DANS QUEL ETAT AFFICHER CHAQUE MENU ? ──────────────────────────────────
@@ -851,6 +861,7 @@ function MesAthletesContent() {
   const orgAxis = useMemo(() => axisDisplay(orgOptions), [orgOptions]);
   const leagueAxis = useMemo(() => axisDisplay(leagueOptionList), [leagueOptionList]);
   const divisionAxis = useMemo(() => axisDisplay(divisionOptionList), [divisionOptionList]);
+  const categorieAxis = useMemo(() => axisDisplay(categorieOptionList), [categorieOptionList]);
 
   /* PURGE — un axe qui repasse en pre-rempli ou vide ne doit pas continuer de
      filtrer derriere un menu masque. Sans ca, une selection posee quand l'axe
@@ -860,7 +871,8 @@ function MesAthletesContent() {
     if (orgAxis.state !== "active" && orgType) setOrgType("");
     if (leagueAxis.state !== "active" && leagueFilter) setLeagueFilter("");
     if (divisionAxis.state !== "active" && divisionFilter) setDivisionFilter("");
-  }, [orgAxis.state, leagueAxis.state, divisionAxis.state, orgType, leagueFilter, divisionFilter]);
+    if (categorieAxis.state !== "active" && categorieFilter) setCategorieFilter("");
+  }, [orgAxis.state, leagueAxis.state, divisionAxis.state, categorieAxis.state, orgType, leagueFilter, divisionFilter, categorieFilter]);
 
   /* Changer d'organisation REMET A ZERO les deux niveaux du dessous.
      Sans ca : cocher « Ligue civile » + « LFMM », puis basculer sur
@@ -874,7 +886,7 @@ function MesAthletesContent() {
     setDivisionFilter("");
   }, []);
 
-  const hasFilters = sport || orgType || leagueFilter || divisionFilter || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
+  const hasFilters = sport || orgType || leagueFilter || divisionFilter || categorieFilter || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
   /* Télémétrie d'usage des filtres (search_filter_events) — même hook que la
      recherche recruteur. Les clés sont un sous-ensemble de FiltresRecherche,
@@ -899,7 +911,7 @@ function MesAthletesContent() {
 
   const resetFilters = () => {
     journaliserReinitialisation();
-    setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setLeagueFilter(""); setDivisionFilter(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
+    setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setLeagueFilter(""); setDivisionFilter(""); setCategorieFilter(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
   const totalPending = unverifiedAthletes.length + pendingSuggestions.length;
@@ -971,6 +983,7 @@ function MesAthletesContent() {
             region={a.region}
             heightWeight={a.heightWeight}
             gradYear={a.gradYear}
+            promotionLabel={a.promotionLabel}
             stars={a.stars}
           >
             {/* Spacer — keeps the trailing actions right-aligned in the
@@ -1196,7 +1209,7 @@ function MesAthletesContent() {
                       </div>
                       <div>
                         <p className="text-[13px] font-bold text-white">{a.firstName} {a.lastName}</p>
-                        <p className="text-[11px] text-[#6b7280]">{a.sport} · {a.position} · Promotion {a.gradYear}</p>
+                        <p className="text-[11px] text-[#6b7280]">{a.sport} · {a.position} · {libellePromotion(a.gradYear, null) ?? "Promotion inconnue"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1304,12 +1317,12 @@ function MesAthletesContent() {
             hors-cadre. Meme regle que la recherche recruteur. */}
         {orgAxis.state === "active" && (
           <select
-            title="Organisation"
+            title="Type"
             value={orgType}
             onChange={(e) => handleOrgTypeChange(e.target.value)}
             className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}
           >
-            <option value="">Toutes les organisations</option>
+            <option value="">Tous les types</option>
             {orgOptions.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
           </select>
         )}
@@ -1338,6 +1351,18 @@ function MesAthletesContent() {
           </select>
         )}
 
+        {categorieAxis.state === "active" && (
+          <select
+            title="Catégorie"
+            value={categorieFilter}
+            onChange={(e) => setCategorieFilter(e.target.value)}
+            className={`nx-filter-select${categorieFilter ? " nx-filter-active" : ""}`}
+          >
+            <option value="">Toutes les catégories</option>
+            {categorieOptionList.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label} ({o.count})</option>)}
+          </select>
+        )}
+
         <select title="Position" value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
           <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
           {dynamicPositions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
@@ -1345,7 +1370,8 @@ function MesAthletesContent() {
 
         <select title="Promotion" value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>
           <option value="">Toutes les promotions</option>
-          {PROMOTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+          {/* Lot B4 : jamais l'année seule. Un coach n'a pas de cégépien (porte coach, lot B1). */}
+          {PROMOTIONS.map((p) => <option key={p} value={p}>{libelleOptionPromotion(p, "secondaire")}</option>)}
         </select>
 
         <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />

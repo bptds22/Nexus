@@ -1,5 +1,6 @@
 "use client";
 
+import { MESSAGE_COACH_CEGEP, messageCoachCegep, messageLisible } from "@/lib/erreurs/messageErreurNexus";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -788,7 +789,9 @@ export default function OnboardingPage() {
           console.error("[Onboarding] finish_coach_civil_onboarding:", civilErr);
           const msg = civilErr.message || "";
           let userMessage = "Erreur lors de la finalisation — réessaye.";
-          if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
+          if (messageCoachCegep(msg)) {
+            userMessage = MESSAGE_COACH_CEGEP;
+          } else if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
             userMessage = "Ce club n'a pas encore de responsable. Choisis « C'est moi » ou « Je serai intérimaire ».";
           } else if (msg.includes("RPRP_REQUIRED")) {
             userMessage = "L'attestation RPRP est obligatoire pour devenir responsable.";
@@ -877,7 +880,9 @@ export default function OnboardingPage() {
           console.error("[Onboarding] finish_coach_school_onboarding:", rpcErr);
           const msg = rpcErr.message || "";
           let userMessage = "Erreur lors de la finalisation — réessaye.";
-          if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
+          if (messageCoachCegep(msg)) {
+            userMessage = MESSAGE_COACH_CEGEP;
+          } else if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
             userMessage = "Cette école n'a pas encore de responsable. Choisis « C'est moi » ou « Je serai intérimaire ».";
           } else if (msg.includes("RPRP_REQUIRED")) {
             userMessage = "L'attestation RPRP est obligatoire pour devenir responsable.";
@@ -4000,7 +4005,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
       setMode("search");
     } catch (err) {
       console.error("[LeagueCoachLeagueStep] create exception:", err);
-      setError(err instanceof Error ? err.message : "Une erreur est survenue. Réessaie.");
+      setError(err instanceof Error ? messageLisible(err.message) : "Une erreur est survenue. Réessaie.");
     } finally {
       setSubmitting(false);
     }

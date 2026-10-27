@@ -14,7 +14,7 @@ import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
-import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
+import { optionsAnneeSec5, libellePromotion, LIBELLE_ANNEE_SEC5_COACH } from "@/lib/config/gradYears";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import { useCegepPrograms, resolveProgrammesVises } from "@/lib/queries/shared/useCegepPrograms";
 import { traitGroups, resolvePositionId } from "@/lib/evaluations/grilles";
@@ -639,7 +639,7 @@ function ModifierContent({ id }: { id: string }) {
           {/* DOB lecture seule à l'edit : aucun <14 ne peut légitimement exister
               (gate à la création). La valeur reste affichée, non modifiable. */}
           <div><label className={labelCls}>Date de naissance{req}</label><DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth)} disabled={true} /></div>
-          <div><label className={labelCls}>Promotion{req}</label><NxSelect value={d.gradYear} onChange={(v) => updateIdentity("gradYear", v)} hasError={isFieldEmpty(d.gradYear)} options={GRAD_YEAR_OPTIONS} /></div>
+          <div><label className={labelCls}>{LIBELLE_ANNEE_SEC5_COACH}{req}</label><NxSelect value={d.gradYear} onChange={(v) => updateIdentity("gradYear", v)} hasError={isFieldEmpty(d.gradYear)} options={optionsAnneeSec5(new Date(), d.gradYear)} /></div>
         </div>
 
         {(
@@ -1146,7 +1146,7 @@ function ModifierContent({ id }: { id: string }) {
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Révision &amp; Enregistrement</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Vérifiez les informations avant d&apos;enregistrer</p>
 
-        {summaryCard("Étudiant-athlète", 1, (<div>{infoRow("Nom", `${identity.firstName} ${identity.lastName}`)}{infoRow("Genre", identity.gender === "M" ? "Masculin" : identity.gender === "F" ? "Féminin" : "")}{infoRow("Date de naissance", identity.dateOfBirth)}{infoRow("Promotion", identity.gradYear)}{infoRow("École", identity.school)}</div>))}
+        {summaryCard("Étudiant-athlète", 1, (<div>{infoRow("Nom", `${identity.firstName} ${identity.lastName}`)}{infoRow("Genre", identity.gender === "M" ? "Masculin" : identity.gender === "F" ? "Féminin" : "")}{infoRow("Date de naissance", identity.dateOfBirth)}{infoRow("Promotion", libellePromotion(identity.gradYear, null) ?? "")}{infoRow("École", identity.school)}</div>))}
 
         {summaryCard("Académique", 2, (<div>{infoRow("Moyenne", academic.gpa ? `${academic.gpa}%` : "")}{infoRow("Programme visé", resolveProgrammesVises(academic.programmesVises, null, catalogueProg).join(", "))}{academic.openToPrivate && infoRow("CÉGEP privé", "Oui")}{academic.openToRelocate && infoRow("Prêt à changer de région", "Oui")}</div>))}
 
