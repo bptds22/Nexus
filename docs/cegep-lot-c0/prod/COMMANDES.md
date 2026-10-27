@@ -1,5 +1,7 @@
 # Lot C0 cégep — mise en prod (base seulement), commandes psql
 
+> **EN PROD le 27 oct. 2026, COMMIT à 16 h 14 UTC** (lancé par BP ; rejeu à blanc à 16 h 14 UTC). Version 20261027210000 inscrite, admin_operations MIGRATION_CEGEP_LOT_C0_BASE, interrupteur `false`. Sorties : `*.sortie.txt` (UTF-16 de Tee-Object) et `*.sortie-utf8.txt`. L'en-tête « NON APPLIQUÉE » de la migration est laissé tel quel : le md5 inscrit en prod en dépend.
+
 Migration `20261027210000_cegep_lot_c0_base` : écritures recruteur collégial → cégépien fermées (favori,
 pipeline, fils, `is_athlete_contactable`), interrupteur `app_settings.lancement_collegial` = `false`,
 verrou d'ancrage (trigger `verrou_lancement_collegial` sur `athletes` et `team_athletes`).

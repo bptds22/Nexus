@@ -1,0 +1,197 @@
+Pager usage is off.
+Null display is "·".
+CREATE TABLE
+INSERT 0 12
+CREATE TABLE
+DO
+BEGIN
+SET
+SET
+SET
+SET
+            debut             | current_user | version 
+------------------------------+--------------+---------
+ 2026-10-27 16:14:00.89197+00 | postgres     | 17.6
+(1 row)
+
+DO
+CREATE FUNCTION
+SELECT 1
+DO
+                                                                temoins                                                                
+---------------------------------------------------------------------------------------------------------------------------------------
+ témoins trouvés (identifiants non affichés) ; recruteur collégial Pro : true ; cégépien en période d'interdiction des messages : true
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 30
+ phase |       acteur        |   cible    |                   ecriture                    |                                                                 resultat                                                                 
+-------+---------------------+------------+-----------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------
+ AVANT | admin               | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | admin               | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id f51384b5-a2c2-4827-9137-8aa8d29a1fe0 is not a RECRUTEUR user
+ AVANT | admin               | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | admin               | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 23514 Période de black-out — la messagerie est suspendue par la ligue pour protéger l'intégrité du recrutement.
+ AVANT | admin               | cégépien   | 5 is_athlete_contactable                      | faux
+ AVANT | admin               | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | admin               | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id f51384b5-a2c2-4827-9137-8aa8d29a1fe0 is not a RECRUTEUR user
+ AVANT | admin               | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | admin               | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | admin               | secondaire | 5 is_athlete_contactable                      | vrai
+ AVANT | partenaire          | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | partenaire          | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 011ef8c9-c97a-429f-b630-29b493895fcf is not a RECRUTEUR user
+ AVANT | partenaire          | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | partenaire          | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 23514 Période de black-out — la messagerie est suspendue par la ligue pour protéger l'intégrité du recrutement.
+ AVANT | partenaire          | cégépien   | 5 is_athlete_contactable                      | faux
+ AVANT | partenaire          | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | partenaire          | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 011ef8c9-c97a-429f-b630-29b493895fcf is not a RECRUTEUR user
+ AVANT | partenaire          | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | partenaire          | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | partenaire          | secondaire | 5 is_athlete_contactable                      | vrai
+ AVANT | recruteur collégial | cégépien   | 1 favori                                      | accepté (public.athlete_notifications +1, public.recruiter_activity_log +2, public.recruiter_favorites +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | cégépien   | 2 pipeline                                    | accepté (public.recruiter_activity_log +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | cégépien   | 3 fil recruteur ↔ coach                       | accepté (public.conversations +1)
+ AVANT | recruteur collégial | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 23514 Période de black-out — la messagerie est suspendue par la ligue pour protéger l'intégrité du recrutement.
+ AVANT | recruteur collégial | cégépien   | 5 is_athlete_contactable                      | faux
+ AVANT | recruteur collégial | secondaire | 1 favori                                      | accepté (public.athlete_notifications +1, public.recruiter_activity_log +2, public.recruiter_favorites +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | secondaire | 2 pipeline                                    | accepté (public.recruiter_activity_log +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | secondaire | 3 fil recruteur ↔ coach                       | accepté (public.conversations +1)
+ AVANT | recruteur collégial | secondaire | 4 fil direct + message (favori posé hors RLS) | accepté (net.http_request_queue +1, public.conversations +1, public.messages +1, public.recruiter_activity_log +1)
+ AVANT | recruteur collégial | secondaire | 5 is_athlete_contactable                      | vrai
+(30 rows)
+
+CREATE FUNCTION
+SELECT 1134
+ lignes_empreinte 
+------------------
+             1134
+(1 row)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-27 16:14:01.662265+00
+(1 row)
+
+DO
+psql.exe : psql:C:/tmp/nexus-cegep-c0/docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:505: NOTICE:  NEXUS: lot C0 cégep — écritures recruteur 
+collégial → cégépien fermées, interrupteur OFF, verrou en place
+At line:2 char:1
++ & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" "host=aws-1-ca-c ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:C:/tmp/nex...verrou en place:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+         fin_migration         
+-------------------------------
+ 2026-10-27 16:14:01.687421+00
+(1 row)
+
+SET
+SELECT 418
+               sonde                | comptes | ecarts | recruteurs_masques 
+------------------------------------+---------+--------+--------------------
+ équivalence règle C0 / règle lot A |     418 |      0 |                 25
+(1 row)
+
+DO
+SELECT 30
+ phase |       acteur        |   cible    |                   ecriture                    |                                                                 resultat                                                                 | vs_avant 
+-------+---------------------+------------+-----------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+----------
+ APRÈS | admin               | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                  | =
+ APRÈS | admin               | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id f51384b5-a2c2-4827-9137-8aa8d29a1fe0 is not a RECRUTEUR user                                                   | =
+ APRÈS | admin               | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                        | =
+ APRÈS | admin               | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 23514 Période de black-out — la messagerie est suspendue par la ligue pour protéger l'intégrité du recrutement.                   | =
+ APRÈS | admin               | cégépien   | 5 is_athlete_contactable                      | faux                                                                                                                                     | =
+ APRÈS | admin               | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                  | =
+ APRÈS | admin               | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id f51384b5-a2c2-4827-9137-8aa8d29a1fe0 is not a RECRUTEUR user                                                   | =
+ APRÈS | admin               | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                        | =
+ APRÈS | admin               | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                        | =
+ APRÈS | admin               | secondaire | 5 is_athlete_contactable                      | vrai                                                                                                                                     | =
+ APRÈS | partenaire          | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                  | =
+ APRÈS | partenaire          | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 011ef8c9-c97a-429f-b630-29b493895fcf is not a RECRUTEUR user                                                   | =
+ APRÈS | partenaire          | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                        | =
+ APRÈS | partenaire          | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 23514 Période de black-out — la messagerie est suspendue par la ligue pour protéger l'intégrité du recrutement.                   | =
+ APRÈS | partenaire          | cégépien   | 5 is_athlete_contactable                      | faux                                                                                                                                     | =
+ APRÈS | partenaire          | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                  | =
+ APRÈS | partenaire          | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 011ef8c9-c97a-429f-b630-29b493895fcf is not a RECRUTEUR user                                                   | =
+ APRÈS | partenaire          | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                        | =
+ APRÈS | partenaire          | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                        | =
+ APRÈS | partenaire          | secondaire | 5 is_athlete_contactable                      | vrai                                                                                                                                     | =
+ APRÈS | recruteur collégial | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy "cegepiens_ecriture_recruteurs" for table "recruiter_favorites"                  | CHANGE
+ APRÈS | recruteur collégial | cégépien   | 2 pipeline                                    | REFUSÉ 42501 new row violates row-level security policy "cegepiens_ecriture_recruteurs" for table "recruiter_pipeline"                   | CHANGE
+ APRÈS | recruteur collégial | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy "cegepiens_ecriture_recruteurs" for table "conversations"                        | CHANGE
+ APRÈS | recruteur collégial | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 23514 Période de black-out — la messagerie est suspendue par la ligue pour protéger l'intégrité du recrutement.                   | =
+ APRÈS | recruteur collégial | cégépien   | 5 is_athlete_contactable                      | faux                                                                                                                                     | =
+ APRÈS | recruteur collégial | secondaire | 1 favori                                      | accepté (public.athlete_notifications +1, public.recruiter_activity_log +2, public.recruiter_favorites +1, public.recruiter_pipeline +1) | =
+ APRÈS | recruteur collégial | secondaire | 2 pipeline                                    | accepté (public.recruiter_activity_log +1, public.recruiter_pipeline +1)                                                                 | =
+ APRÈS | recruteur collégial | secondaire | 3 fil recruteur ↔ coach                       | accepté (public.conversations +1)                                                                                                        | =
+ APRÈS | recruteur collégial | secondaire | 4 fil direct + message (favori posé hors RLS) | accepté (net.http_request_queue +1, public.conversations +1, public.messages +1, public.recruiter_activity_log +1)                       | =
+ APRÈS | recruteur collégial | secondaire | 5 is_athlete_contactable                      | vrai                                                                                                                                     | =
+(30 rows)
+
+DO
+CREATE FUNCTION
+SELECT 4
+   phase    |                          cas                           |                                        resultat                                         
+------------+--------------------------------------------------------+-----------------------------------------------------------------------------------------
+ VERROU OFF | nouvel ancrage cégep (UPDATE)                          | REFUSÉ 42501 NEXUS: Les cégeps ne sont pas encore ouverts sur Nexus. Ça arrive bientôt.
+ VERROU OFF | nouvel athlète ancré cégep (INSERT)                    | REFUSÉ 42501 NEXUS: Les cégeps ne sont pas encore ouverts sur Nexus. Ça arrive bientôt.
+ VERROU OFF | rattachement à une équipe de cégep                     | REFUSÉ 42501 NEXUS: Les cégeps ne sont pas encore ouverts sur Nexus. Ça arrive bientôt.
+ VERROU OFF | cégépien déjà ancré : mise à jour sans changer d'école | accepté
+(4 rows)
+
+UPDATE 1
+SELECT 4
+   phase   |                          cas                           | resultat 
+-----------+--------------------------------------------------------+----------
+ VERROU ON | nouvel ancrage cégep (UPDATE)                          | accepté
+ VERROU ON | nouvel athlète ancré cégep (INSERT)                    | accepté
+ VERROU ON | rattachement à une équipe de cégep                     | accepté
+ VERROU ON | cégépien déjà ancré : mise à jour sans changer d'école | accepté
+(4 rows)
+
+UPDATE 1
+DO
+DO
+psql:C:/tmp/nexus-cegep-c0/docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:587: NOTICE:  NEXUS: lot C0 cégep annulé
+SET
+SELECT 1134
+SELECT 30
+              sonde               | disparues | apparues | matrice_ecarts 
+----------------------------------+-----------+----------+----------------
+ empreinte avant / après rollback |         0 |        0 |              0
+(1 row)
+
+DO
+                                                                                                              verdict                                                                                                               |        avant_rollback         
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ VERDICT : seul « recruteur collégial × cégépien » change (tout refusé, aucun avis) ; règle identique au lot A pour tous les comptes ; verrou refuse sous OFF, accepte sous ON, cégépien déjà ancré intact ; rollback à l'identique | 2026-10-27 16:14:02.929098+00
+(1 row)
+
+ROLLBACK
+CREATE TABLE
+DO
+              table_suivie              | avant | apres 
+----------------------------------------+-------+-------
+ net.http_request_queue                 |     0 |     0
+ public.athlete_notifications           |   524 |   524
+ public.conversations                   |   108 |   108
+ public.messages                        |   207 |   207
+ public.newsroom_events                 |     3 |     3
+ public.parent_contact_avis             |     1 |     1
+ public.parent_notifications            |    27 |    27
+ public.recruiter_activity_log          |  1266 |  1266
+ public.recruiter_contact_notifications |     4 |     4
+ public.recruiter_favorites             |    21 |    21
+ public.recruiter_pipeline              |    37 |    37
+(11 rows)
+
+ interrupteur_reste | policies_restent |         contactable_md5          | derniere_version 
+--------------------+------------------+----------------------------------+------------------
+ f                  |                0 | fe2ea3e93c6ed4036d249b7d406d3e56 | 20261027150000
+(1 row)
+
+== ROLLBACK fait : rien n'est appliqué.
