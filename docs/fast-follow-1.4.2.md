@@ -2966,3 +2966,33 @@ appel à l'autre sans que les données changent.
   fonction.
 - **Correctif proposé** : ajouter `e.cle` en dernier critère du `order by`. Changement de
   fonction, donc migration à part, avec son rejeu, sur GO de BP. Aucun effet sur les données.
+
+## 104. Filtre Catégorie absent de la télémétrie des recherches (2026-10-27, lot à part, plus tard)
+
+Le lot B4 cégep a ajouté l'axe Catégorie (recherche recruteur, clé d'URL `cat`), mais
+`search_filter_events.filtre` a une liste fermée (CHECK) qui ne connaît pas `categorie`.
+Pour ne pas faire échouer l'écriture, le filtre est exclu du journal côté web
+(`lib/recherche/useJournalFiltres.ts`, `NON_JOURNALISES = {"categorieFilter"}`).
+
+- **Effet** : aucune mesure d'usage de la Catégorie tant que ce n'est pas corrigé.
+- **Correctif proposé** : migration qui ajoute `categorie` à la contrainte CHECK, puis
+  retirer `categorieFilter` de `NON_JOURNALISES`. Rejeu à blanc et GO de BP.
+
+## 105. Engagements de /partenaire/tendances sans Collégial ni Catégorie (2026-10-27, base, plus tard)
+
+Sur /partenaire/tendances, les listes lues dans `trending_athletes_view` suivent le Type
+(dont Collégial) et la Catégorie depuis B3 / B4. Le bloc « Engagements » passe par un RPC
+qui ne connaît ni `school_type` ni `team_age_group` : avec Collégial ou une Catégorie
+choisie, il reste vide ou ne suit pas le filtre (limite commentée dans la page).
+
+- **Correctif proposé** : ajouter les deux paramètres au RPC (colonnes déjà présentes
+  dans les vues depuis 20261026210100), migration à part avec rejeu, sur GO de BP.
+
+## 106. Newsroom partenaire : Type encore à 2 options (2026-10-27, plus tard)
+
+La newsroom partenaire (`partner_newsroom_events`, `NewsroomDropdownFilters`) garde
+l'ancien Type à 2 options (« École secondaire » / « Ligue civile », `ORG_TYPE_OPTIONS_NEWSROOM`), sans
+Collégial ni Catégorie : sa source ne porte pas encore ces colonnes.
+
+- **Correctif proposé** : aligner la source (base) puis passer la page sur
+  `ORG_TYPE_OPTIONS` et `CATEGORIE_OPTIONS` comme classements et tendances.
