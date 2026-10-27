@@ -162,9 +162,11 @@ export const TYPE_ECOLE: Record<OrgType, string> = {
 };
 
 /** NEWSROOM SEULEMENT, inchangé (hors lot B4) : sa RPC (`p_org`) ne connaît que ces deux
- *  valeurs, au sens d'avant B4 (`scolaire` = rattaché à une école, `ligue_civile` = sans école). */
+ *  valeurs, au sens d'avant B4 (`scolaire` = rattaché à une école, `ligue_civile` = sans école).
+ *  Lot C1 : « scolaire » couvre aussi le cégep (toute école d'ancrage) — le libellé le dit, au lieu
+ *  de ranger un cégépien sous « École secondaire ». Un vrai Type Collégial demanderait la RPC. */
 export const ORG_TYPE_OPTIONS_NEWSROOM = [
-  { value: "scolaire", label: "École secondaire" },
+  { value: "scolaire", label: "École secondaire ou cégep" },
   { value: "ligue_civile", label: "Ligue civile" },
 ] as const;
 

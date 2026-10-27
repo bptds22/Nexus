@@ -152,6 +152,8 @@ const VERIF_METHOD_OPTS = [
   { v: "auto", l: "Automatique" },
   { v: "manuel_coach", l: "Manuel — coach" },
   { v: "manuel_directeur", l: "Manuel — directeur" },
+  // Lot C1 cégep : posé par la base à l'ancrage à un cégep (trigger verification_auto_cegep).
+  { v: "auto_cegep", l: "Automatique — cégep" },
 ];
 
 const RECRUIT_OPTS = [

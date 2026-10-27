@@ -7,7 +7,9 @@ import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { filtrerClubs } from "@/lib/clubs/clubCorrespond";
 import { needsConsent } from "@/lib/auth/needsConsent";
-import { optionsAnneeSec5, LIBELLE_ANNEE_SEC5 } from "@/lib/config/gradYears";
+import { optionsAnneeSec5, LIBELLE_ANNEE_SEC5, optionsAnneeCegep, LIBELLE_ANNEE_CEGEP } from "@/lib/config/gradYears";
+import { lireLancementCollegial } from "@/lib/config/lancementCollegial";
+import { loadSchools } from "@/lib/queries/schools/allSchools";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
 import { isUnder14, MIN_SIGNUP_AGE, maxBirthdateForAge, minBirthdateForAge } from "@/lib/legal/ageGate";
@@ -848,6 +850,8 @@ function AthleteOnboardingDesktop() {
   // champ éditable + validation recouvrement (isUnder14) au save.
   const [dobLocked, setDobLocked] = useState(false);
   const [gradYear, setGradYear] = useState("");
+  /* Année relue en base (reprise d'onboarding) : elle reste offerte même hors fenêtre — `garder`. */
+  const anneeEnBase = useRef<string | null>(null);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   // School (used when userContext === 'scolaire')
@@ -863,6 +867,28 @@ function AthleteOnboardingDesktop() {
      bloque rien — change seulement la phrase d'aide sous le champ. */
   const nomsCegeps = useNomsCegeps(ecoleIntrouvable);
   const ecoleSembleCegep = ecoleNonListeeValide && ressembleACegep(ecoleNonListee, nomsCegeps);
+  /* Lot C1 cégep (décisions BP 2026-10-27) — derrière l'interrupteur lancement_collegial, OFF tant
+     qu'il n'est pas lu : OFF, l'inscription reste celle d'avant (secondaire seulement). ON, le
+     sélecteur offre aussi les cégeps ; une école CEGEP change la question d'année (« Année où tu
+     finis ton cégep », même colonne annee_diplomation) ; l'équipe se choisit ensuite parmi celles
+     du cégep (SchoolTeamPicker, inchangé). La base vérifie le cégépien d'elle-même
+     (trigger verification_auto_cegep) et refuse tout ancrage cégep sous OFF (verrou C0). */
+  const [lancementCollegial, setLancementCollegial] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void lireLancementCollegial(createClient()).then((on) => { if (alive) setLancementCollegial(on); });
+    return () => { alive = false; };
+  }, []);
+  /* schools.type de l'école choisie, lu dans la liste déjà chargée (cache de loadSchools). */
+  const [selectedSchoolType, setSelectedSchoolType] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    if (!selectedSchoolId) { setSelectedSchoolType(null); return; }
+    void loadSchools().then((l) => {
+      if (alive) setSelectedSchoolType(l.find((s) => s.id === selectedSchoolId)?.type ?? null);
+    });
+    return () => { alive = false; };
+  }, [selectedSchoolId]);
   // Coach (optional, school-context only)
   const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
 
@@ -877,6 +903,22 @@ function AthleteOnboardingDesktop() {
   // team_athletes junction. Legacy athletes.league_team_id is left
   // NULL on writes; the column itself is dropped in Phase 6.3.
   const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile" | null>(null);
+  /* Cégépien en cours d'inscription : école CEGEP choisie (scolaire). La question d'année et sa
+     fenêtre suivent ; une année choisie pour le Sec 5 et absente de la fenêtre du cégep est effacée
+     (et inversement) — jamais une valeur offerte par l'autre question. */
+  const ecoleCegep = userContext === "scolaire" && selectedSchoolType === "CEGEP";
+  const libelleAnnee = ecoleCegep ? LIBELLE_ANNEE_CEGEP : LIBELLE_ANNEE_SEC5;
+  /* Retour de test BP (2026-10-27) : sous ON, en scolaire, le champ école vient AVANT l'année, et
+     l'année reste désactivée tant que l'école n'est pas choisie — puis son libellé est d'emblée le
+     bon (Sec 5 ou cégep). Sous OFF, l'écran reste celui d'aujourd'hui (année à côté du courriel). */
+  const anneeApresEcole = lancementCollegial && userContext === "scolaire";
+  const ecoleChoisie = (!!selectedSchoolId && !!selectedSchoolType) || ecoleNonListeeValide;
+  const anneeEnAttente = anneeApresEcole && !ecoleChoisie;
+  const optionsAnnee = (ecoleCegep ? optionsAnneeCegep : optionsAnneeSec5)(new Date(), anneeEnBase.current);
+  useEffect(() => {
+    if (gradYear && !optionsAnnee.some((o) => o.value === gradYear)) setGradYear("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seulement quand la question change
+  }, [ecoleCegep]);
   // Civil CLUB tier (parity with mobile selectedClubId/Name). The club
   // is the anchor written to athletes.school_id at submit (Étape 3);
   // the team below is optional and scoped to this club.
@@ -1156,7 +1198,10 @@ function AthleteOnboardingDesktop() {
         if (existing.genre) setGender(existing.genre);
         if (existing.photo_url) setPhoto(existing.photo_url);
         if (existing.telephone) setPhone(existing.telephone);
-        if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
+        if (existing.annee_diplomation) {
+          anneeEnBase.current = String(existing.annee_diplomation);
+          setGradYear(String(existing.annee_diplomation));
+        }
         const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
         const schoolType = (schoolRel as { type?: string } | null)?.type;
         // Fallback civil (routage) — PORT 1:1 du mobile : orphelin coach-créé
@@ -1343,7 +1388,10 @@ function AthleteOnboardingDesktop() {
     if (full.genre) setGender(full.genre);
     if (full.photo_url) setPhoto(full.photo_url);
     if (full.telephone) setPhone(full.telephone);
-    if (full.annee_diplomation) setGradYear(String(full.annee_diplomation));
+    if (full.annee_diplomation) {
+      anneeEnBase.current = String(full.annee_diplomation);
+      setGradYear(String(full.annee_diplomation));
+    }
     const schoolRel = Array.isArray(full.schools) ? full.schools[0] : full.schools;
     if (full.school_id && (schoolRel as { type?: string } | null)?.type !== "LIGUE_CIVILE") {
       setSelectedSchoolId(full.school_id as string);
@@ -1554,7 +1602,10 @@ function AthleteOnboardingDesktop() {
           partner_visibility_opt_in: true,
           partner_visibility_opted_in_at: partnerVisibilityISO ?? adultPartnerISO,
         } : {}),
-        status: "ACTIF", verified: false,
+        // `verified` ne part plus (lot C1 cégep) : la colonne vaut false par défaut à l'INSERT, et
+        // la base vérifie d'elle-même un cégépien (verification_auto_cegep). Renvoyer false sur une
+        // fiche ainsi vérifiée lèverait la garde de périmètre à chaque « Suivant ».
+        status: "ACTIF",
       };
       /* LE SPORT PART DÈS L'ÉTAPE 1 QUAND IL Y EST CHOISI (2026-09-21).
          Le civil (et tout profil sous code d'équipe) choisit son sport ICI.
@@ -1792,7 +1843,7 @@ function AthleteOnboardingDesktop() {
         partner_visibility_opted_in_at: partnerVisibilityISO ?? adultPartnerISO,
       } : {}),
       status: "ACTIF",
-      verified: false,
+      // Pas de `verified` : voir l'étape 1 (lot C1 cégep).
     };
 
     /* Fiche RÉCLAMÉE encore à false : la case du signup passe par la RPC
@@ -2165,9 +2216,11 @@ function AthleteOnboardingDesktop() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div><label className={labelCls}>{LIBELLE_ANNEE_SEC5} <span className="text-[#EF4444]">*</span></label>
-                <select title={LIBELLE_ANNEE_SEC5} value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}><option value="" disabled>Sélectionner l&apos;année…</option>{optionsAnneeSec5(new Date(), gradYear).map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
-              </div>
+              {!anneeApresEcole && (
+                <div><label className={labelCls}>{libelleAnnee} <span className="text-[#EF4444]">*</span></label>
+                <select title={libelleAnnee} value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}><option value="" disabled>Sélectionner l&apos;année…</option>{(gradYear && !optionsAnnee.some((o) => o.value === gradYear) ? [...optionsAnnee, { value: gradYear, label: gradYear }] : optionsAnnee).map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
+                </div>
+              )}
               <div><label className={labelCls}>Courriel</label><input type="email" title="Courriel" placeholder="courriel@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} text-[#6b7280]`} readOnly /></div>
             </div>
             <div className="mb-4"><label className={labelCls}>Téléphone</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="514-000-0000" className={inputCls} /></div>
@@ -2278,7 +2331,7 @@ function AthleteOnboardingDesktop() {
             ) : (
               <>
                 {/* School selection */}
-                <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Mon école <span className="text-[#EF4444]">*</span></div>
+                <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />{lancementCollegial ? "Mon école ou mon cégep" : "Mon école"} <span className="text-[#EF4444]">*</span></div>
                 {!ecoleIntrouvable ? (
                   <>
                     <div className="mb-3">
@@ -2289,8 +2342,8 @@ function AthleteOnboardingDesktop() {
                           if (!id) setSelectedSchoolName("");
                           setSelectedCoachId(null);
                         }}
-                        filterType="SECONDAIRE"
-                        placeholder="Rechercher ton école..."
+                        filterType={lancementCollegial ? ["SECONDAIRE", "CEGEP"] : "SECONDAIRE"}
+                        placeholder={lancementCollegial ? "Rechercher ton école ou ton cégep..." : "Rechercher ton école..."}
                       />
                     </div>
                     {selectedSchoolName && <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedSchoolName}</p>}
@@ -2315,7 +2368,11 @@ function AthleteOnboardingDesktop() {
                       placeholder="Ex. : Cégep Garneau, Québec"
                       className={inputCls}
                     />
-                    {ecoleSembleCegep ? (
+                    {ecoleSembleCegep && lancementCollegial ? (
+                      <p className="text-[12px] text-[#F59E0B] mt-2">
+                        On dirait un cégep. Les cégeps sont maintenant sur Nexus : reviens à la recherche pour choisir le tien.
+                      </p>
+                    ) : ecoleSembleCegep ? (
                       <p className="text-[12px] text-[#F59E0B] mt-2">
                         On dirait un cégep. Nexus ne couvre pas encore les équipes de cégep : ton inscription continue, et l&apos;équipe Nexus voit ta réponse.
                       </p>
@@ -2331,6 +2388,14 @@ function AthleteOnboardingDesktop() {
                     >
                       Revenir à la recherche
                     </button>
+                  </div>
+                )}
+
+                {anneeApresEcole && (
+                  <div className="mb-6">
+                    <div><label className={labelCls}>{anneeEnAttente ? "Année de fin" : libelleAnnee} <span className="text-[#EF4444]">*</span></label>
+                <select title={anneeEnAttente ? "Année de fin" : libelleAnnee} value={anneeEnAttente ? "" : gradYear} disabled={anneeEnAttente} onChange={(e) => setGradYear(e.target.value)} className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}><option value="" disabled>{anneeEnAttente ? "Choisis d’abord ton école ou ton cégep" : "Sélectionner l’année…"}</option>{(gradYear && !optionsAnnee.some((o) => o.value === gradYear) ? [...optionsAnnee, { value: gradYear, label: gradYear }] : optionsAnnee).map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
+                    </div>
                   </div>
                 )}
 

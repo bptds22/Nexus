@@ -1,0 +1,35 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user 
+-------------------------------+--------------
+ 2026-10-27 21:11:46.187975+00 | postgres
+(1 row)
+
+DO
+SELECT 1
+ cegepiens_non_verifies | cegepiens_total 
+------------------------+-----------------
+                      1 |               1
+(1 row)
+
+DO
+SELECT 1
+UPDATE 1
+ phase | poses_auto_cegep | notifications_ajoutees | activites_ajoutees | journal_recruteurs_ajoute | newsroom_ajoutes | pg_net_ajoutes | verifiees_en_plus 
+-------+------------------+------------------------+--------------------+---------------------------+------------------+----------------+-------------------
+ après |                1 |                      0 |                  0 |                         0 |                0 |              0 |                 1
+(1 row)
+
+DO
+           avant_fin           
+-------------------------------
+ 2026-10-27 21:11:46.259206+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

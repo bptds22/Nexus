@@ -269,15 +269,16 @@ type MaybeSource = TaxonomySource | null | undefined;
 export function organisationOf(src: MaybeSource): Organisation | null {
   if (!src) return null;
 
-  // 1. La déclaration de l'athlète.
+  // 0. Lot B4 cégep (décision BP 2026-10-26) : le cégep n'est plus fondu dans le scolaire.
+  //    Une école d'ancrage CEGEP l'emporte sur TOUT contexte déclaré (même définition que le
+  //    cégépien du lot A : athlete_est_cegepien). Lot C1 : elle passe aussi AVANT « ligue_civile » —
+  //    un cégépien qui s'était déclaré en ligue civile s'affichait « Civil ».
   const ctx = (src.context ?? "").trim().toLowerCase();
-  if (ctx === "ligue_civile") return "ligue_civile";
-
-  // 1b. Lot B4 cégep (décision BP 2026-10-26) : le cégep n'est plus fondu dans le scolaire.
-  //     Une école d'ancrage CEGEP l'emporte sur le contexte déclaré « scolaire », qui couvre
-  //     les deux (même définition que le cégépien du lot A : athlete_est_cegepien).
   const type = (src.schoolType ?? "").trim().toUpperCase();
   if (type === "CEGEP") return "collegial";
+
+  // 1. La déclaration de l'athlète.
+  if (ctx === "ligue_civile") return "ligue_civile";
   if (ctx === "scolaire") return "scolaire";
 
   // 2. Le type de son école.

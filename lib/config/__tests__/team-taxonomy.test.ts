@@ -650,11 +650,14 @@ test("INVARIANT — sur les trois axes, le compte d'une option est EXACTEMENT ce
 
 /* ── Lot B4 cégep — Type à 3 valeurs et axe Catégorie ──────────────────────── */
 
-test("lot B4 — une école d'ancrage CEGEP l'emporte sur le contexte « scolaire »", () => {
+test("lot B4 / C1 — une école d'ancrage CEGEP l'emporte sur tout contexte déclaré", () => {
   assert.equal(organisationOf(mk({ context: "scolaire", schoolType: "CEGEP" })), "collegial");
   assert.equal(organisationOf(mk({ context: "scolaire", schoolType: "SECONDAIRE" })), "scolaire");
-  // Une déclaration « ligue civile » reste prioritaire, comme avant.
-  assert.equal(organisationOf(mk({ context: "ligue_civile", schoolType: "CEGEP" })), "ligue_civile");
+  // Lot C1 (décision BP 2026-10-27) : un cégépien déclaré « ligue civile » ne s'affiche plus « Civil »
+  // — même règle que le filtre Type côté base (school_type CEGEP → Collégial).
+  assert.equal(organisationOf(mk({ context: "ligue_civile", schoolType: "CEGEP" })), "collegial");
+  // Hors cégep, la déclaration « ligue civile » reste prioritaire, comme avant.
+  assert.equal(organisationOf(mk({ context: "ligue_civile", schoolType: "SECONDAIRE" })), "ligue_civile");
 });
 
 test("lot B4 — libellés du Type : Secondaire / Civil / Collégial", () => {

@@ -3,13 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadSchools, type SchoolRow } from "@/lib/queries/schools/allSchools";
 import type { SchoolType } from "@/lib/utils/orgLabel";
+import { rechercherEcoles } from "@/lib/schools/rechercheEcole";
 
 /* ─────────────────────────────────────────────────────────────────
    SchoolSelect — searchable combobox for picking a school.
    - Fetches all schools once (client-cached across instances)
-   - Client-side filtering on name + city
+   - Client-side filtering on name + city — mot par mot, sans accents,
+     St ⇔ Saint (lib/schools/rechercheEcole.ts, lot C1 cégep)
    - Max 20 visible results
-   - Optional filterType to restrict to SECONDAIRE or CEGEP
+   - Optional filterType to restrict to SECONDAIRE or CEGEP — or to several
+     types (lot C1 cégep : l'inscription athlète offre SECONDAIRE + CEGEP
+     quand l'interrupteur lancement_collegial est ON)
 ───────────────────────────────────────────────────────────────── */
 
 /* Le chargement (pagination + cache) vit désormais dans
@@ -24,17 +28,9 @@ interface Props {
   value: string | null;
   onChange: (schoolId: string) => void;
   placeholder?: string;
-  filterType?: SchoolType | null;
+  filterType?: SchoolType | readonly SchoolType[] | null;
   className?: string;
   disabled?: boolean;
-}
-
-function stripAccents(s: string): string {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function normalize(s: string): string {
-  return stripAccents(s).toLowerCase().trim();
 }
 
 export default function SchoolSelect({
@@ -76,16 +72,10 @@ export default function SchoolSelect({
   );
 
   const filtered = useMemo(() => {
-    const base = filterType ? schools.filter((s) => s.type === filterType) : schools;
-    const q = normalize(query);
-    if (!q) return base.slice(0, 20);
-    return base
-      .filter((s) => {
-        const n = normalize(s.name);
-        const c = s.city ? normalize(s.city) : "";
-        return n.includes(q) || c.includes(q);
-      })
-      .slice(0, 20);
+    const types: readonly SchoolType[] | null =
+      filterType == null ? null : Array.isArray(filterType) ? filterType : [filterType as SchoolType];
+    const base = types ? schools.filter((s) => types.includes(s.type)) : schools;
+    return rechercherEcoles(base, query, 20);
   }, [schools, filterType, query]);
 
   const inputValue = open ? query : selected ? `${selected.name}${selected.city ? " — " + selected.city : ""}` : query;

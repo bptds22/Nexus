@@ -1,0 +1,20 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 20:58:22.017911+00 | postgres     | 17.6
+(1 row)
+
+psql.exe : psql:docs/cegep-lot-c1/prod/c1b-apply-20261027.sql:51: ERROR:  NEXUS: version 20261027230100 déjà inscrite
+At line:9 char:1
++ & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee- ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...0 déjà inscrite:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+CONTEXT:  PL/pgSQL function inline_code_block line 8 at RAISE
