@@ -138,7 +138,7 @@ export interface OptionsRecherche {
 }
 
 /** Types d'école lus comme destinations : le cégep, plus l'université quand les destinations
- *  18+ sont ouvertes. Aucune école UNIVERSITE n'existe au 2026-10-27 (création sur GO BP, lot A) :
+ *  18+ sont ouvertes. Aucune école UNIVERSITE n'existe au 2026-10-27 (création sur GO BP, lot D) :
  *  la valeur ne rend rien tant qu'il n'y en a pas. */
 const typesDestination = (o: OptionsRecherche) => (o.destinations18Plus ? ["CEGEP", "UNIVERSITE"] : ["CEGEP"]);
 

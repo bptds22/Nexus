@@ -26,7 +26,7 @@ Fichiers source hors dépôt : `Documents/Nexus-Imports/civil-2026/`. Aucune don
 | 4 | Équipes de 18 ans et plus | à faire |
 | 5 | Matchs à venir | à faire |
 | 6 | Veille hebdomadaire | attend l'accord écrit Spordle |
-| 7 | Web : interrupteur `lancement_civil` + verrou en base (migration 20261027150000), destinations 18+ dans Trouve ton cégep (filtre Type), sélecteur athlète filtré âge/saison, catégories Novice/Mini/Pee-Wee/Bantam ; reste : ordre des divisions, vocabulaire coach | prouvé en local (27 oct.), NON appliqué en prod |
+| 7 | Web : interrupteur `lancement_civil` + verrou en base (migration 20261027150000), destinations 18+ dans Trouve ton cégep (filtre Type), sélecteur athlète filtré âge/saison, catégories Novice/Mini/Pee-Wee/Bantam, ordre canonique des divisions (`lib/config/divisions.ts`), divisions et catégories de l'import dans `civilVocab.ts` ; fichiers prod `lot7/prod/` (rejeu à blanc, apply, rollback, COMMANDES.md) | prouvé en local (27 oct.), NON appliqué en prod |
 | 8 | Mobile | lot dédié, sur GO |
 
 ## Lot 1 — preuve locale
@@ -85,5 +85,5 @@ civils n'auront pas de point sur la carte des matchs.
   refusés ; équipe de l'appli et mise à jour sans changement d'équipe acceptées ; ON : acceptés ; clé absente : OFF).
 - Trouve ton cégep (web desktop seulement ; mobile = lot 8) : ON → organisations civiles avec au moins une équipe 18+
   active de la saison en cours ou à venir ; filtre Type « Cégep public / Cégep privé / Université / Club civil 18+ »
-  (une valeur sans destination n'est pas proposée : aucune université tant que BP n'a pas donné son GO) ;
+  (une valeur sans destination n'est pas proposée : aucune université avant le lot D, sur GO BP) ;
   pas de cible sur un club civil (à trancher). OFF → page identique à avant.

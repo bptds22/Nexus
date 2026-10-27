@@ -44,8 +44,14 @@ export const AGE_OPTIONS: VocabOption[] = [
   { value: "U9",        label: "U9" },
   { value: "U11",       label: "U11" },
   { value: "U13",       label: "U13" },
+  { value: "U14",       label: "U14" },
   { value: "U15",       label: "U15" },
+  { value: "U16",       label: "U16" },
+  { value: "U17",       label: "U17" },
   { value: "U18",       label: "U18" },
+  // Soccer 18 ans et plus (import civil 2026-27, lot 7) : écrites comme l'import.
+  { value: "U19",       label: "U19" },
+  { value: "U21",       label: "U21" },
   { value: "Novice",    label: "Novice" },
   { value: "Atome",     label: "Atome" },
   { value: "Moustique", label: "Moustique" },
@@ -83,6 +89,20 @@ export const DIVISION_OPTIONS: VocabOption[] = [
   // quelles, comme l'import — sinon le coach ne retrouve pas son équipe.
   { value: "Diamond",     label: "Diamond" },
   { value: "Gold",        label: "Gold" },
+  // Divisions de l'import civil 2026-27 (lot 7) : Soccer Québec, puis basket (Circuit Élite, MBL).
+  // Écrites EXACTEMENT comme en base : le coach doit retrouver l'équipe importée au lieu d'en
+  // créer une seconde par « Autre ». Ordre d'affichage des filtres : lib/config/divisions.ts.
+  { value: "PLSJQ",       label: "PLSJQ" },
+  { value: "Ligue 1 QC",  label: "Ligue 1 QC" },
+  { value: "Ligue 2 QC",  label: "Ligue 2 QC" },
+  { value: "Ligue 3 QC",  label: "Ligue 3 QC" },
+  { value: "Espoirs",     label: "Espoirs" },
+  { value: "LDP",         label: "LDP" },
+  { value: "LDIR",        label: "LDIR" },
+  { value: "Régional AA", label: "Régional AA" },
+  { value: "Local A",     label: "Local A" },
+  { value: "Élite",       label: "Élite" },
+  { value: "Majeur",      label: "Majeur" },
   { value: AUTRE_VALUE,   label: "Autre" },
 ];
 

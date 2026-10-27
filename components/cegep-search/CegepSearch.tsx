@@ -52,7 +52,7 @@ const LANGUES = [{ v: "FR", label: "Français" }, { v: "EN", label: "Anglais" },
 const RESEAUX = [{ v: "PUBLIC", label: "Public" }, { v: "PRIVE", label: "Privé" }];
 /* Filtre « Type » quand le lancement civil est ON (lot 7 civil, décision BP 2026-10-27, point 2) :
    le réseau du cégep, l'université, le club civil 18+. Une valeur sans aucune destination n'est
-   pas proposée (au 2026-10-27, aucune université : création sur GO BP). OFF : la liste
+   pas proposée (au 2026-10-27, aucune université : création sur GO BP, lot D). OFF : la liste
    Public / Privé d'avant, à l'identique. */
 const TYPES_18PLUS = [
   { v: "PUBLIC", label: "Cégep public" }, { v: "PRIVE", label: "Cégep privé" },

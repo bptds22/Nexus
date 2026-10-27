@@ -1,0 +1,175 @@
+Lot 7 civil — preuves LOCALES des fichiers prod (pile Docker locale mise dans l'état de la prod : lot 7 retiré, schema_migrations.created_by ajoutée), 2026-10-27.
+Même commande que pour la prod : psql -X -v ON_ERROR_STOP=1 -f <fichier>, sortie par Tee-Object.
+
+===================== rejeu
+Pager usage is off.
+Null display is "·".
+CREATE TABLE
+INSERT 0 4
+BEGIN
+SET
+SET
+SET
+SET
+            debut             | current_user | version 
+------------------------------+--------------+---------
+ 2026-10-27 13:48:31.02899+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 1
+DO
+                                       temoins                                       
+-------------------------------------------------------------------------------------
+ témoins trouvés : athlète sans équipe, transfert, coach (identifiants non affichés)
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 3
+ phase |               cas               | resultat 
+-------+---------------------------------+----------
+ AVANT | athlète → équipe existante      | accepté
+ AVANT | transfert vers une autre équipe | accepté
+ AVANT | coach → équipe existante        | accepté
+(3 rows)
+
+SELECT 1
+       debut_migration        
+------------------------------
+ 2026-10-27 13:48:31.04638+00
+(1 row)
+
+DO
+psql.exe : psql:docs/civil-2026/lot7/prod/rejeu-blanc-20261027.sql:291: NOTICE:  NEXUS: lot 7 civil — interrupteur 
+OFF, verrou en place (2039 équipes importées verrouillées)
+At line:1 char:588
++ ... 5 $f).Hash; & $psql $env:NEXUS_LOCAL_DB -X -v ON_ERROR_STOP=1 -f $f 2 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/civil...s verrouillées):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+         fin_migration         
+-------------------------------
+ 2026-10-27 13:48:31.049369+00
+(1 row)
+
+SET
+SELECT 3
+    phase    |               cas               | resultat 
+-------------+---------------------------------+----------
+ APRÈS (OFF) | athlète → équipe existante      | accepté
+ APRÈS (OFF) | transfert vers une autre équipe | accepté
+ APRÈS (OFF) | coach → équipe existante        | accepté
+(3 rows)
+
+DO
+DO
+INSERT 0 2
+SELECT 3
+             phase              |               cas               |                                                  resultat                                                  
+--------------------------------+---------------------------------+------------------------------------------------------------------------------------------------------------
+ VERROU, équipes importées, OFF | athlète → équipe existante      | REFUSÉ 42501 NEXUS: Cette équipe sera ouverte au lancement des ligues civiles sur Nexus. Réessaie bientôt.
+ VERROU, équipes importées, OFF | transfert vers une autre équipe | REFUSÉ 42501 NEXUS: Cette équipe sera ouverte au lancement des ligues civiles sur Nexus. Réessaie bientôt.
+ VERROU, équipes importées, OFF | coach → équipe existante        | REFUSÉ 42501 NEXUS: Cette équipe sera ouverte au lancement des ligues civiles sur Nexus. Réessaie bientôt.
+(3 rows)
+
+UPDATE 1
+SELECT 3
+             phase             |               cas               | resultat 
+-------------------------------+---------------------------------+----------
+ VERROU, équipes importées, ON | athlète → équipe existante      | accepté
+ VERROU, équipes importées, ON | transfert vers une autre équipe | accepté
+ VERROU, équipes importées, ON | coach → équipe existante        | accepté
+(3 rows)
+
+DO
+UPDATE 1
+DELETE 2
+psql:docs/civil-2026/lot7/prod/rejeu-blanc-20261027.sql:342: NOTICE:  NEXUS: lot 7 civil annulé (verrou et 
+interrupteur retirés)
+DO
+SET
+SELECT 3
+DO
+                                                                verdict                                                                 |        avant_rollback         
+----------------------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ VERDICT : inscriptions normales identiques avant / après / après rollback ; verrou refuse sous OFF, accepte sous ON ; rollback complet | 2026-10-27 13:48:31.070843+00
+(1 row)
+
+ROLLBACK
+          cle           | avant | apres 
+------------------------+-------+-------
+ athlete_notifications  |   122 |   122
+ net.http_request_queue |     0 |     0
+ team_athletes          |    60 |    60
+ team_coaches           |    12 |    12
+(4 rows)
+
+ interrupteur_reste | triggers_restent | equipes_sources | derniere_version 
+--------------------+------------------+-----------------+------------------
+ f                  |                0 |            2049 | 20261017010000
+(1 row)
+
+== ROLLBACK fait : rien n'est appliqué.
+===================== apply (dernier passage : second apply REFUSÉ « version déjà inscrite » ; le premier a fait COMMIT à 13 h 48 min 53,6 s UTC, AVANT et APRÈS « accepté | accepté », interrupteur false)
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 13:48:53.773421+00 | postgres     | 17.6
+(1 row)
+
+psql.exe : psql:docs/civil-2026/lot7/prod/apply-20261027.sql:38: ERROR:  NEXUS: version 20261027150000 déjà inscrite
+At line:1 char:995
++ ... $f).Hash)"; & $psql $env:NEXUS_LOCAL_DB -X -v ON_ERROR_STOP=1 -f $f 2 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/civil...0 déjà inscrite:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+CONTEXT:  PL/pgSQL function inline_code_block line 8 at RAISE
+===================== rollback (COMMIT, version 20261027134853 inscrite, objets du lot 7 retirés)
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 13:48:53.691124+00 | postgres     | 17.6
+(1 row)
+
+DO
+ interrupteur_avant | equipes_importees 
+--------------------+-------------------
+ false              |              2039
+(1 row)
+
+SELECT 1
+psql.exe : psql:docs/civil-2026/lot7/prod/rollback-20261027.sql:74: NOTICE:  NEXUS: lot 7 civil annulé (verrou et 
+interrupteur retirés)
+At line:1 char:995
++ ... $f).Hash)"; & $psql $env:NEXUS_LOCAL_DB -X -v ON_ERROR_STOP=1 -f $f 2 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/civil...upteur retirés):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DO
+SET
+INSERT 0 1
+INSERT 0 1
+DO
+ version_rollback |         avant_commit          
+------------------+-------------------------------
+ 20261027134853   | 2026-10-27 13:48:53.701782+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot 7 civil retiré.

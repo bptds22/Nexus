@@ -32,6 +32,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { attributsEquipe, comparerEquipes, nomEstCeluiDuClub } from "@/lib/teams/teamLabel";
+import { comparerDivisions } from "@/lib/config/divisions";
 
 /** Saison scolaire courante. L'année RSEQ bascule en juillet. */
 export function saisonCourante(d = new Date()): string {
@@ -216,7 +217,7 @@ export async function loadSaisonEnCours(
   sortie.sort((a, b) =>
     b.nbMatchs - a.nbMatchs ||
     a.sport.localeCompare(b.sport, "fr") ||
-    (a.division ?? "").localeCompare(b.division ?? "", "fr") ||
+    comparerDivisions(a.division, b.division) ||
     (a.genre ?? "").localeCompare(b.genre ?? "", "fr") ||
     comparerEquipes(
       { name: a.nom, age_group: a.ageGroup, division: a.division, gender: a.genre },
