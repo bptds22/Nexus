@@ -66,8 +66,22 @@ $f = "docs\cegep-lot-c1\prod\c1b-rollback-20261027.sql"
 (Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 7E1E5D0D8DDF6D79F8F0D9A8394B5C83
 & $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\cegep-lot-c1\prod\c1b-rollback-20261027.sortie.txt"
 
+# 6. Crochet bleu du cégépien déjà ancré (décision BP : oui) — APRÈS C1b, interrupteur OFF
+$f = "docs\cegep-lot-c1\prod\c1c-crochet-existant-rejeu-blanc-20261027.sql"
+(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : CDA16EB3DC6A29E1AF32C4B6C37716DD
+& $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\cegep-lot-c1\prod\c1c-crochet-existant-rejeu-blanc-20261027.sortie.txt"
+$f = "docs\cegep-lot-c1\prod\c1c-crochet-existant-apply-20261027.sql"
+(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : BD86D09FC31C3403F80E00CA4247375C
+& $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\cegep-lot-c1\prod\c1c-crochet-existant-apply-20261027.sortie.txt"
+
 Remove-Item Env:NEXUS_PROD_DB
 ```
+
+**Crochet du cégépien déjà ancré (6)** : gardes C1b inscrite, interrupteur OFF, exactement 1 cégépien ACTIF non
+vérifié (relevé du 2026-10-27) ; `poses_auto_cegep` = 1, `notifications_ajoutees` / `activites_ajoutees` /
+`newsroom_ajoutes` / `pg_net_ajoutes` = 0 ; apply : admin_operations `CEGEP_CROCHET_AUTO_EXISTANTS`, COMMIT.
+Généré par `scripts/cegep-lot-c1/generer-crochet.sh 20261027 1`. Remettre en gris = `UPDATE` ciblé sur
+`verification_method = 'auto_cegep'`, sur GO.
 
 **Ce qu'il faut voir :**
 - C1a rejeu : `valeurs_apres` = `auto,manuel_coach,manuel_directeur,auto_cegep`, empreinte 0 / 0, VERDICT,
