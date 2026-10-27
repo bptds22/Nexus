@@ -5,8 +5,9 @@
 --
 -- UNE transaction : gardes → migration → inscription (schema_migrations + admin_operations
 -- MIGRATION_CEGEP_LOT_C1A_METHODE) → COMMIT ; puis, hors transaction, la valeur est lue comme un vrai
--- verification_method. Pas de rollback : une valeur d'enum ne se retire pas, elle reste inerte tant
--- que C1b n'est pas appliquée. Lancer SANS -1, en postgres.
+-- verification_method. PAS DE ROLLBACK pour C1a : une valeur d'enum ne se retire pas sans réécrire le
+-- type ; seule, elle est inerte (aucune ligne ne la porte) tant que C1b n'est pas appliquée.
+-- Gardes : postgres, interrupteur lancement_collegial OFF, valeur auto_cegep absente, version non inscrite. Lancer SANS -1, en postgres.
 -- ════════════════════════════════════════════════════════════════════════════
 
 \set ON_ERROR_STOP 1
@@ -28,6 +29,17 @@ begin
   end if;
   if exists (select 1 from supabase_migrations.schema_migrations where version = '@@VERSION@@') then
     raise exception 'NEXUS: version @@VERSION@@ déjà inscrite';
+  end if;
+  -- Gardes demandées par BP (2026-10-27) : interrupteur OFF, valeur absente.
+  if to_regprocedure('public.lancement_collegial_actif()') is null then
+    raise exception 'NEXUS: C0 absent (lancement_collegial_actif introuvable)';
+  end if;
+  if public.lancement_collegial_actif() then
+    raise exception 'NEXUS: l''interrupteur lancement_collegial est ON — C1a se joue interrupteur OFF';
+  end if;
+  if exists (select 1 from pg_enum where enumtypid = 'public.verification_method'::regtype
+                                     and enumlabel = 'auto_cegep') then
+    raise exception 'NEXUS: la valeur auto_cegep existe déjà dans verification_method';
   end if;
   select max(version) into v from supabase_migrations.schema_migrations;
   if v >= '@@VERSION@@' then raise exception 'NEXUS: version @@VERSION@@ pas après la dernière (%) — régénérer', v; end if;

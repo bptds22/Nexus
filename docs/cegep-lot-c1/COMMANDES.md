@@ -13,8 +13,8 @@ avant que C1b puisse être rejouée à blanc.
 | `supabase/migrations/20261027230000_cegep_lot_c1a_methode_auto_cegep.sql` | `3cfa1d46d1dbe918f3a103d31a6dec6a` |
 | `supabase/migrations/20261027230100_cegep_lot_c1b_verification_auto_cegep.sql` | `34cc976b66aac462f185777419a205f6` |
 | `supabase/rollback/20261027230100_rollback_cegep_lot_c1b_verification_auto_cegep.sql` | `a71dd22deeb965a80cdd8a8d3fb6c428` |
-| `docs/cegep-lot-c1/prod/c1a-rejeu-blanc-20261027.sql` | `96b005c927ebd5be447e2d656955c6b2` |
-| `docs/cegep-lot-c1/prod/c1a-apply-20261027.sql` | `73aae2bc7fdb592b4cc3bb52b2a18ff9` |
+| `docs/cegep-lot-c1/prod/c1a-rejeu-blanc-20261027.sql` | `54598fb181ea70d2f46242f4100f7d08` |
+| `docs/cegep-lot-c1/prod/c1a-apply-20261027.sql` | `7be71527b0daf25cbf681fe363130f0b` |
 | `docs/cegep-lot-c1/prod/c1b-rejeu-blanc-20261027.sql` | `047a9b74d68a3dc12af5913e623a1d3e` |
 | `docs/cegep-lot-c1/prod/c1b-apply-20261027.sql` | `50fc1a24a94bd95f097bfc329b73a90a` |
 | `docs/cegep-lot-c1/prod/c1b-rollback-20261027.sql` | `7e1e5d0d8ddf6d79f8f0d9a8394b5c83` |
@@ -43,12 +43,12 @@ $env:NEXUS_PROD_DB = "postgresql://postgres.nrloizyemulbhujrqhgx@aws-1-ca-centra
 
 # 1. C1a — rejeu à blanc (finit par ROLLBACK)
 $f = "docs\cegep-lot-c1\prod\c1a-rejeu-blanc-20261027.sql"
-(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 96B005C927EBD5BE447E2D656955C6B2
+(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 54598FB181EA70D2F46242F4100F7D08
 & $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\cegep-lot-c1\prod\c1a-rejeu-blanc-20261027.sortie.txt"
 
 # 2. C1a — apply (sur GO)
 $f = "docs\cegep-lot-c1\prod\c1a-apply-20261027.sql"
-(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 73AAE2BC7FDB592B4CC3BB52B2A18FF9
+(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 7BE71527B0DAF25CBF681FE363130F0B
 & $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\cegep-lot-c1\prod\c1a-apply-20261027.sortie.txt"
 
 # 3. C1b — rejeu à blanc (exige C1a inscrite ; finit par ROLLBACK)

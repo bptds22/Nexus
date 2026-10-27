@@ -5,6 +5,10 @@
 --
 -- UNE transaction qui finit par ROLLBACK : RIEN n'est appliqué. Gardes → valeurs avant → migration →
 -- valeurs après → empreinte (seul l'enum change) → ROLLBACK → relecture.
+-- Gardes : lancé en postgres, interrupteur lancement_collegial OFF, valeur auto_cegep absente, version
+-- non inscrite dans schema_migrations, dernière version = 20261027210000 (C0).
+-- PAS DE ROLLBACK pour C1a : une valeur d'enum ne se retire pas sans réécrire le type ; seule, elle est
+-- inerte (aucune ligne ne la porte, rien ne s'en sert tant que C1b n'est pas appliquée).
 -- Lancer SANS -1, en postgres.
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -27,6 +31,17 @@ begin
   end if;
   if exists (select 1 from supabase_migrations.schema_migrations where version = '20261027230000') then
     raise exception 'NEXUS: version 20261027230000 déjà inscrite';
+  end if;
+  -- Gardes demandées par BP (2026-10-27) : interrupteur OFF, valeur absente.
+  if to_regprocedure('public.lancement_collegial_actif()') is null then
+    raise exception 'NEXUS: C0 absent (lancement_collegial_actif introuvable)';
+  end if;
+  if public.lancement_collegial_actif() then
+    raise exception 'NEXUS: l''interrupteur lancement_collegial est ON — C1a se joue interrupteur OFF';
+  end if;
+  if exists (select 1 from pg_enum where enumtypid = 'public.verification_method'::regtype
+                                     and enumlabel = 'auto_cegep') then
+    raise exception 'NEXUS: la valeur auto_cegep existe déjà dans verification_method';
   end if;
   select max(version) into v from supabase_migrations.schema_migrations;
   if v >= '20261027230000' then raise exception 'NEXUS: version 20261027230000 pas après la dernière (%) — régénérer', v; end if;
