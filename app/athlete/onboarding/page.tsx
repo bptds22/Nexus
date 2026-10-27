@@ -2323,7 +2323,7 @@ function AthleteOnboardingDesktop() {
             ) : (
               <>
                 {/* School selection */}
-                <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Mon école <span className="text-[#EF4444]">*</span></div>
+                <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />{lancementCollegial ? "Mon école ou mon cégep" : "Mon école"} <span className="text-[#EF4444]">*</span></div>
                 {!ecoleIntrouvable ? (
                   <>
                     <div className="mb-3">
