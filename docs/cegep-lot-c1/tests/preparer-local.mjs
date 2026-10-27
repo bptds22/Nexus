@@ -103,7 +103,8 @@ async function preparer() {
   await un(svc.from("partenaire_sports_permis").insert([{ partner_id: mp.id, sport_id: sport }]));
 
   const uAdm = await compte(`c1.admin${DOM}`, { role: "ADMIN", prenom: "Admin", nom: "C1" });
-  await un(svc.from("users").update({ role: "ADMIN", onboarding_complete: true }).eq("id", uAdm));
+  // is_platform_admin : c'est LUI que lit la garde de /admin (is_platform_admin(uid)), pas le rôle.
+  await un(svc.from("users").update({ role: "ADMIN", is_platform_admin: true, onboarding_complete: true }).eq("id", uAdm));
   note("recruteur collégial (Pro, " + CEGEP + ", " + SPORT + "), partenaire approuvé, admin");
   note("mot de passe commun : " + MOT_DE_PASSE);
 }
