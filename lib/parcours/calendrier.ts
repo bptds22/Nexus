@@ -156,6 +156,8 @@ export function libelleSaison(d: Date = new Date()): string {
 export type Niveau =
   | { type: "sec"; sec: 1 | 2 | 3 | 4 | 5; saisonSec5: string }
   | { type: "diplome"; annee: number }
+  /** Cégépien (école d'ancrage CEGEP, lot C1) : `annee` = année où il finit son cégep. */
+  | { type: "cegep"; annee: number }
   | { type: "inconnu" };
 
 /** Dernière année civile de la saison courante : 2027 en 2026-2027. */
@@ -163,7 +165,8 @@ function finDeSaison(d: Date): number {
   return Number(saisonCourante(d).slice(0, 4)) + 1;
 }
 
-/** `typeOrganisation` : schools.type de athletes.school_id. */
+/** `typeOrganisation` : schools.type de athletes.school_id. Pour un cégépien, annee_diplomation est
+ *  l'année où il finit son cégep (lot C1) : jamais un « Sec N ». */
 export function niveauScolaire(
   anneeDiplomation: number | string | null | undefined,
   d: Date = new Date(),
@@ -173,6 +176,7 @@ export function niveauScolaire(
   if (anneeDiplomation == null || anneeDiplomation === "" || !Number.isInteger(annee)) {
     return { type: "inconnu" };
   }
+  if (typeOrganisation === "CEGEP") return { type: "cegep", annee };
   const fin = finDeSaison(d);
   if (annee < fin) {
     return typeOrganisation === "SECONDAIRE"
@@ -205,7 +209,8 @@ export function etapesPourNiveau(niveau: Niveau): EtapeAffichee[] {
         ...e,
         label: niveau.type === "sec" ? `Saison Sec ${niveau.sec}` : "Saison",
         verrouillee: false,
-        note: niveau.type === "diplome" ? `Diplômé ${niveau.annee}` : undefined,
+        note: niveau.type === "diplome" ? `Diplômé ${niveau.annee}`
+          : niveau.type === "cegep" ? `Cégep ${niveau.annee}` : undefined,
       };
     }
     if (e.phase === "signature" && niveau.type === "sec" && niveau.sec < 5) {

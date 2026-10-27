@@ -9,7 +9,9 @@ import type { SchoolType } from "@/lib/utils/orgLabel";
    - Fetches all schools once (client-cached across instances)
    - Client-side filtering on name + city
    - Max 20 visible results
-   - Optional filterType to restrict to SECONDAIRE or CEGEP
+   - Optional filterType to restrict to SECONDAIRE or CEGEP — or to several
+     types (lot C1 cégep : l'inscription athlète offre SECONDAIRE + CEGEP
+     quand l'interrupteur lancement_collegial est ON)
 ───────────────────────────────────────────────────────────────── */
 
 /* Le chargement (pagination + cache) vit désormais dans
@@ -24,7 +26,7 @@ interface Props {
   value: string | null;
   onChange: (schoolId: string) => void;
   placeholder?: string;
-  filterType?: SchoolType | null;
+  filterType?: SchoolType | readonly SchoolType[] | null;
   className?: string;
   disabled?: boolean;
 }
@@ -76,7 +78,9 @@ export default function SchoolSelect({
   );
 
   const filtered = useMemo(() => {
-    const base = filterType ? schools.filter((s) => s.type === filterType) : schools;
+    const types: readonly SchoolType[] | null =
+      filterType == null ? null : Array.isArray(filterType) ? filterType : [filterType as SchoolType];
+    const base = types ? schools.filter((s) => types.includes(s.type)) : schools;
     const q = normalize(query);
     if (!q) return base.slice(0, 20);
     return base

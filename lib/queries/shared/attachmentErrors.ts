@@ -166,12 +166,17 @@ export function attachmentSentinel(err: unknown): AttachmentSentinel | null {
    message déjà rédigé pour l'athlète, sans aucune donnée personnelle : on le montre tel quel,
    sans le préfixe. */
 const VERROU_CIVIL = /NEXUS:\s*(Cette équipe sera ouverte au lancement des ligues civiles.*)/;
+/* Verrou du lancement collégial (lot C0 cégep, trigger verrou_lancement_collegial) : tant que
+   l'interrupteur lancement_collegial est OFF, ni ancrage à un cégep ni rattachement à une équipe de
+   cégep. Même traitement que le verrou civil. */
+const VERROU_COLLEGIAL = /NEXUS:\s*(Les cégeps ne sont pas encore ouverts sur Nexus.*)/;
 
 /** Message français prêt à afficher pour une erreur de rattachement. */
 export function attachmentErrorMessage(err: unknown): string {
   const s = attachmentSentinel(err);
   if (s) return MESSAGES[s];
-  return rawMessage(err).match(VERROU_CIVIL)?.[1] ?? ATTACHMENT_FALLBACK;
+  const brut = rawMessage(err);
+  return brut.match(VERROU_CIVIL)?.[1] ?? brut.match(VERROU_COLLEGIAL)?.[1] ?? ATTACHMENT_FALLBACK;
 }
 
 /** Même chose depuis une CHAÎNE brute — sentinelle nue ou message Postgres.

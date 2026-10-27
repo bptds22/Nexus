@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthleteDashboardMobile from "@/components/shared/AthleteDashboardMobile";
 import { countAthleteUnread } from "@/lib/messaging/athleteUnread";
+import BandeauCegeps from "@/components/athlete/BandeauCegeps";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -316,6 +317,9 @@ function AthleteDashboardPageDesktop() {
         )}
       </div>
       <p className="text-[14px] text-[#9CA3AF] -mt-4">Voici ce qui se passe avec ton profil</p>
+
+      {/* ── Cégeps ouverts (lot C1 cégep) : rien tant que lancement_collegial est OFF ── */}
+      <BandeauCegeps />
 
       {/* ── Pending invitations banner (5.5e-iv-c) ────────────── */}
       {pendingInvitations > 0 && (

@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import MonEquipeSection from "@/components/athlete/MonEquipeSection";
+import AnneeFinCegep from "@/components/athlete/AnneeFinCegep";
+import { useEtatCegepien } from "@/lib/athlete/useEtatCegepien";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    /athlete/transfert — l'écran de transfert d'équipe, sorti des paramètres.
@@ -37,9 +41,13 @@ export default function AthleteTransfertPage() {
   /* Même mécanique de toast que la page des paramètres d'où l'écran vient :
      MonEquipeSection ne rend aucun toast lui-même, il notifie par onToast. */
   const [toast, setToast] = useState<string | null>(null);
+  /* Lot C1 cégep — web seulement : l'année de fin de cégep se confirme ici, sous l'équipe (ON et
+     ancré à un cégep seulement). Relu après chaque rattachement, qui peut changer l'école. */
+  const { etat: etatCegepien, recharger } = useEtatCegepien();
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
+    recharger();
   };
 
   return (
@@ -68,6 +76,8 @@ export default function AthleteTransfertPage() {
       </header>
 
       <MonEquipeSection onToast={showToast} />
+
+      {!IS_CAPACITOR && <AnneeFinCegep etat={etatCegepien} onEnregistre={showToast} />}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] rounded-lg bg-[#1A1D24] border border-[#2D3748] px-5 py-3 shadow-lg">

@@ -48,16 +48,16 @@ test("valeur inconnue : gardée telle quelle, rangée après les connues", () =>
   assert.ok(comparerCategories("Collégial", "Relève") < 0);
 });
 
-test("promotion : « DEC AAAA » pour un cégep d'ancrage, sinon « Secondaire AAAA », jamais l'année seule", () => {
-  assert.equal(libellePromotion(2027, "CEGEP"), "DEC 2027");
+test("promotion : « Cégep AAAA » pour un cégep d'ancrage, sinon « Secondaire AAAA », jamais l'année seule", () => {
+  assert.equal(libellePromotion(2027, "CEGEP"), "Cégep 2027");
   assert.equal(libellePromotion(2027, "SECONDAIRE"), "Secondaire 2027");
   assert.equal(libellePromotion("2028", "LIGUE_CIVILE"), "Secondaire 2028");
   assert.equal(libellePromotion(2028, null), "Secondaire 2028");
   assert.equal(libellePromotion(null, "CEGEP"), null);
   assert.equal(libellePromotion(0, "SECONDAIRE"), null);
-  assert.equal(libelleOptionPromotion(2027, porteePromotion("collegial", true)), "DEC 2027");
+  assert.equal(libelleOptionPromotion(2027, porteePromotion("collegial", true)), "Cégep 2027");
   assert.equal(libelleOptionPromotion(2027, porteePromotion("scolaire", true)), "Secondaire 2027");
-  assert.equal(libelleOptionPromotion(2027, porteePromotion("", true)), "Secondaire ou DEC 2027");
+  assert.equal(libelleOptionPromotion(2027, porteePromotion("", true)), "Secondaire ou Cégep 2027");
   assert.equal(libelleOptionPromotion(2027, porteePromotion("", false)), "Secondaire 2027");
 });
 

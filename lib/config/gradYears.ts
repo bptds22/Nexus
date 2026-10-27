@@ -59,12 +59,28 @@ export function optionsAnneeSec5(d: Date = new Date(), garder?: string | null): 
 
 export const LIBELLE_ANNEE_SEC5 = "Année où tu finis ton Sec 5";
 
+/** Athlète CÉGÉPIEN (lot C1 cégep, décision BP 2026-10-27) — « Année où tu finis ton cégep », même
+ *  colonne annee_diplomation, aucune nouvelle colonne. De la fin de la saison courante à +3 : en
+ *  2026-2027, 2027 → 2030. Couvre un DEC préuniversitaire (2 ans) commencé à l'automne 2025 qui finit
+ *  en 2027, jusqu'à une technique (3 ans) commencée à l'automne 2026 et allongée d'une session ou d'un
+ *  an (2030) — un parcours d'athlète au cégep est souvent étiré. Aucun défaut, et la même règle
+ *  `garder` que le Sec 5. */
+export function optionsAnneeCegep(d: Date = new Date(), garder?: string | null): GradYearOption[] {
+  const fin = Number(saisonCourante(d).slice(0, 4)) + 1;
+  const annees = Array.from({ length: 4 }, (_, i) => String(fin + i));
+  if (garder && !annees.includes(garder)) annees.push(garder);
+  return annees.sort().map((y) => ({ value: y, label: y }));
+}
+
+export const LIBELLE_ANNEE_CEGEP = "Année où tu finis ton cégep";
+
 /** Écrans COACH (création et modification d'athlète, lot B4 cégep, décision BP 2026-10-26) :
  *  même fenêtre que l'athlète (optionsAnneeSec5), sans présélection. */
 export const LIBELLE_ANNEE_SEC5_COACH = "Année où il finit son Sec 5";
 
-/* ── Libellé de promotion (lot B4 cégep, décision BP 2026-10-26) ───────────────
-   « DEC AAAA » quand l'école d'ancrage de l'athlète est un cégep, sinon « Secondaire AAAA ».
+/* ── Libellé de promotion (lot B4 cégep, décision BP 2026-10-26 ; « Cégep » au lieu de « DEC »
+   depuis le lot C1, décision BP 2026-10-27) ───────────────────────────────────────────────────────
+   « Cégep AAAA » quand l'école d'ancrage de l'athlète est un cégep, sinon « Secondaire AAAA ».
    JAMAIS l'année seule. `typeEcole` = schools.type de athletes.school_id (même définition que
    le cégépien du lot A). */
 export function libellePromotion(
@@ -73,7 +89,7 @@ export function libellePromotion(
 ): string | null {
   const a = Number(annee);
   if (annee == null || annee === "" || !Number.isInteger(a) || a <= 0) return null;
-  return (typeEcole ?? "").trim().toUpperCase() === "CEGEP" ? `DEC ${a}` : `Secondaire ${a}`;
+  return (typeEcole ?? "").trim().toUpperCase() === "CEGEP" ? `Cégep ${a}` : `Secondaire ${a}`;
 }
 
 /** Ce que couvre une option du filtre Promotion : le filtre porte sur l'année, le libellé dit
@@ -82,12 +98,12 @@ export function libellePromotion(
 export type PortéePromotion = "secondaire" | "dec" | "les_deux";
 
 export function libelleOptionPromotion(annee: number | string, portee: PortéePromotion): string {
-  if (portee === "dec") return `DEC ${annee}`;
-  if (portee === "les_deux") return `Secondaire ou DEC ${annee}`;
+  if (portee === "dec") return `Cégep ${annee}`;
+  if (portee === "les_deux") return `Secondaire ou Cégep ${annee}`;
   return `Secondaire ${annee}`;
 }
 
-/** Portée du filtre Promotion selon le Type choisi (« collegial » → DEC) et la présence
+/** Portée du filtre Promotion selon le Type choisi (« collegial » → Cégep) et la présence
  *  possible de cégépiens dans la liste (faux pour coach et recruteur collégial). */
 export function porteePromotion(typeChoisi: string | null | undefined, cegepiensPossibles: boolean): PortéePromotion {
   if (typeChoisi === "collegial") return "dec";

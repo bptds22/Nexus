@@ -216,3 +216,16 @@ test("l'organisation ne change rien hors diplômés", () => {
   assert.deepEqual(niveauScolaire(null, OCT_2026, "SECONDAIRE"), { type: "inconnu" });
   assert.deepEqual(niveauScolaire(2036, OCT_2026, "SECONDAIRE"), { type: "inconnu" });
 });
+
+test("lot C1 — cégépien : jamais « Sec N », l'année est celle de la fin du cégep, signature ouverte", async () => {
+  const { niveauScolaire, etapesPourNiveau } = await import("@/lib/parcours/calendrier");
+  const oct = new Date(2026, 9, 27, 12);
+  const niveau = niveauScolaire(2029, oct, "CEGEP");
+  assert.deepEqual(niveau, { type: "cegep", annee: 2029 });
+  const saison = etapesPourNiveau(niveau).find((e) => e.phase === "saison")!;
+  assert.equal(saison.label, "Saison");
+  assert.equal(saison.note, "Cégep 2029");
+  assert.equal(etapesPourNiveau(niveau).some((e) => e.verrouillee), false);
+  // Le même 2029 au secondaire reste un Sec 3.
+  assert.deepEqual(niveauScolaire(2029, oct, "SECONDAIRE"), { type: "sec", sec: 3, saisonSec5: "2028-2029" });
+});
