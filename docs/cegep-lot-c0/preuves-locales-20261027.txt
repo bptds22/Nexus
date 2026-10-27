@@ -1,0 +1,256 @@
+Lot C0 cégep — preuves LOCALES (pile Docker locale ; fonctions-règles du lot A et cégépien témoin posés par docs/cegep-lot-c0/tests/aligner-local.sql), 2026-10-27.
+Même commande que pour la prod : psql -X -v ON_ERROR_STOP=1 -f <fichier>, sortie par Tee-Object.
+Local ≠ prod sur quelques corps (is_recruiter, user_has_pro, notify_first_recruiter_contact, notify_parent_favorited, unite_poser, unite_aligner_pipeline ; log_new_athlete sans le filtre du lot A) : le rejeu prod fait foi.
+
+===================== rejeu à blanc (986f42bf…)
+Pager usage is off.
+Null display is "·".
+CREATE TABLE
+INSERT 0 12
+CREATE TABLE
+DO
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 15:49:36.665109+00 | postgres     | 17.6
+(1 row)
+
+DO
+CREATE FUNCTION
+SELECT 1
+DO
+                                                                temoins                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------
+ témoins trouvés (identifiants non affichés) ; recruteur collégial Pro : true ; cégépien en période d'interdiction des messages : false
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+psql.exe : psql:docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:198: WARNING:  notify_on_message: PUSH_DISPATCH_SECRET 
+absent du Vault
+At line:1 char:597
++ ... $f).Hash)"; & $psql $env:NEXUS_LOCAL_DB -X -v ON_ERROR_STOP=1 -f $f 2 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...absent du Vault:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+psql:docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:198: WARNING:  notify_on_message: PUSH_DISPATCH_SECRET absent du 
+Vault
+SELECT 30
+ phase |       acteur        |   cible    |                   ecriture                    |                                                                                           resultat                                                                                           
+-------+---------------------+------------+-----------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ AVANT | admin               | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | admin               | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id eeeeeeee-0000-0000-0000-0000000000aa is not a RECRUTEUR user
+ AVANT | admin               | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | admin               | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | admin               | cégépien   | 5 is_athlete_contactable                      | vrai
+ AVANT | admin               | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | admin               | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id eeeeeeee-0000-0000-0000-0000000000aa is not a RECRUTEUR user
+ AVANT | admin               | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | admin               | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | admin               | secondaire | 5 is_athlete_contactable                      | vrai
+ AVANT | partenaire          | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | partenaire          | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 455bd55d-0416-4411-88fa-775354975e85 is not a RECRUTEUR user
+ AVANT | partenaire          | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | partenaire          | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | partenaire          | cégépien   | 5 is_athlete_contactable                      | vrai
+ AVANT | partenaire          | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"
+ AVANT | partenaire          | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 455bd55d-0416-4411-88fa-775354975e85 is not a RECRUTEUR user
+ AVANT | partenaire          | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | partenaire          | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"
+ AVANT | partenaire          | secondaire | 5 is_athlete_contactable                      | vrai
+ AVANT | recruteur collégial | cégépien   | 1 favori                                      | accepté (public.athlete_notifications +1, public.recruiter_activity_log +2, public.recruiter_favorites +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | cégépien   | 2 pipeline                                    | accepté (public.recruiter_activity_log +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | cégépien   | 3 fil recruteur ↔ coach                       | accepté (public.conversations +1)
+ AVANT | recruteur collégial | cégépien   | 4 fil direct + message (favori posé hors RLS) | accepté (public.conversations +1, public.messages +1, public.recruiter_activity_log +1, public.recruiter_contact_notifications +1)
+ AVANT | recruteur collégial | cégépien   | 5 is_athlete_contactable                      | vrai
+ AVANT | recruteur collégial | secondaire | 1 favori                                      | accepté (public.athlete_notifications +1, public.recruiter_activity_log +2, public.recruiter_favorites +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | secondaire | 2 pipeline                                    | accepté (public.recruiter_activity_log +1, public.recruiter_pipeline +1)
+ AVANT | recruteur collégial | secondaire | 3 fil recruteur ↔ coach                       | accepté (public.conversations +1)
+ AVANT | recruteur collégial | secondaire | 4 fil direct + message (favori posé hors RLS) | accepté (net.http_request_queue +1, public.conversations +1, public.messages +1, public.parent_contact_avis +1, public.recruiter_activity_log +1, public.recruiter_contact_notifications +1)
+ AVANT | recruteur collégial | secondaire | 5 is_athlete_contactable                      | vrai
+(30 rows)
+
+CREATE FUNCTION
+SELECT 1122
+ lignes_empreinte 
+------------------
+             1122
+(1 row)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-27 15:49:36.829357+00
+(1 row)
+
+psql:docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:505: NOTICE:  NEXUS: lot C0 cégep — écritures recruteur collégial 
+→ cégépien fermées, interrupteur OFF, verrou en place
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-27 15:49:36.838123+00
+(1 row)
+
+SET
+SELECT 69
+               sonde                | comptes | ecarts | recruteurs_masques 
+------------------------------------+---------+--------+--------------------
+ équivalence règle C0 / règle lot A |      69 |      0 |                 14
+(1 row)
+
+DO
+psql:docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:526: WARNING:  notify_on_message: PUSH_DISPATCH_SECRET absent du 
+Vault
+SELECT 30
+ phase |       acteur        |   cible    |                   ecriture                    |                                                                                           resultat                                                                                           | vs_avant 
+-------+---------------------+------------+-----------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------
+ APRÈS | admin               | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                                                                      | =
+ APRÈS | admin               | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id eeeeeeee-0000-0000-0000-0000000000aa is not a RECRUTEUR user                                                                                                       | =
+ APRÈS | admin               | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | admin               | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | admin               | cégépien   | 5 is_athlete_contactable                      | vrai                                                                                                                                                                                         | =
+ APRÈS | admin               | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                                                                      | =
+ APRÈS | admin               | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id eeeeeeee-0000-0000-0000-0000000000aa is not a RECRUTEUR user                                                                                                       | =
+ APRÈS | admin               | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | admin               | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | admin               | secondaire | 5 is_athlete_contactable                      | vrai                                                                                                                                                                                         | =
+ APRÈS | partenaire          | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                                                                      | =
+ APRÈS | partenaire          | cégépien   | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 455bd55d-0416-4411-88fa-775354975e85 is not a RECRUTEUR user                                                                                                       | =
+ APRÈS | partenaire          | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | partenaire          | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | partenaire          | cégépien   | 5 is_athlete_contactable                      | vrai                                                                                                                                                                                         | =
+ APRÈS | partenaire          | secondaire | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy for table "recruiter_favorites"                                                                                                      | =
+ APRÈS | partenaire          | secondaire | 2 pipeline                                    | REFUSÉ 23514 recruiter_id 455bd55d-0416-4411-88fa-775354975e85 is not a RECRUTEUR user                                                                                                       | =
+ APRÈS | partenaire          | secondaire | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | partenaire          | secondaire | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | =
+ APRÈS | partenaire          | secondaire | 5 is_athlete_contactable                      | vrai                                                                                                                                                                                         | =
+ APRÈS | recruteur collégial | cégépien   | 1 favori                                      | REFUSÉ 42501 new row violates row-level security policy "cegepiens_ecriture_recruteurs" for table "recruiter_favorites"                                                                      | CHANGE
+ APRÈS | recruteur collégial | cégépien   | 2 pipeline                                    | REFUSÉ 42501 new row violates row-level security policy "cegepiens_ecriture_recruteurs" for table "recruiter_pipeline"                                                                       | CHANGE
+ APRÈS | recruteur collégial | cégépien   | 3 fil recruteur ↔ coach                       | REFUSÉ 42501 new row violates row-level security policy "cegepiens_ecriture_recruteurs" for table "conversations"                                                                            | CHANGE
+ APRÈS | recruteur collégial | cégépien   | 4 fil direct + message (favori posé hors RLS) | REFUSÉ 42501 new row violates row-level security policy for table "conversations"                                                                                                            | CHANGE
+ APRÈS | recruteur collégial | cégépien   | 5 is_athlete_contactable                      | faux                                                                                                                                                                                         | CHANGE
+ APRÈS | recruteur collégial | secondaire | 1 favori                                      | accepté (public.athlete_notifications +1, public.recruiter_activity_log +2, public.recruiter_favorites +1, public.recruiter_pipeline +1)                                                     | =
+ APRÈS | recruteur collégial | secondaire | 2 pipeline                                    | accepté (public.recruiter_activity_log +1, public.recruiter_pipeline +1)                                                                                                                     | =
+ APRÈS | recruteur collégial | secondaire | 3 fil recruteur ↔ coach                       | accepté (public.conversations +1)                                                                                                                                                            | =
+ APRÈS | recruteur collégial | secondaire | 4 fil direct + message (favori posé hors RLS) | accepté (net.http_request_queue +1, public.conversations +1, public.messages +1, public.parent_contact_avis +1, public.recruiter_activity_log +1, public.recruiter_contact_notifications +1) | =
+ APRÈS | recruteur collégial | secondaire | 5 is_athlete_contactable                      | vrai                                                                                                                                                                                         | =
+(30 rows)
+
+DO
+CREATE FUNCTION
+SELECT 4
+   phase    |                          cas                           |                                        resultat                                         
+------------+--------------------------------------------------------+-----------------------------------------------------------------------------------------
+ VERROU OFF | nouvel ancrage cégep (UPDATE)                          | REFUSÉ 42501 NEXUS: Les cégeps ne sont pas encore ouverts sur Nexus. Ça arrive bientôt.
+ VERROU OFF | nouvel athlète ancré cégep (INSERT)                    | REFUSÉ 42501 NEXUS: Les cégeps ne sont pas encore ouverts sur Nexus. Ça arrive bientôt.
+ VERROU OFF | rattachement à une équipe de cégep                     | REFUSÉ 42501 NEXUS: Les cégeps ne sont pas encore ouverts sur Nexus. Ça arrive bientôt.
+ VERROU OFF | cégépien déjà ancré : mise à jour sans changer d'école | accepté
+(4 rows)
+
+UPDATE 1
+SELECT 4
+   phase   |                          cas                           |                  resultat                  
+-----------+--------------------------------------------------------+--------------------------------------------
+ VERROU ON | nouvel ancrage cégep (UPDATE)                          | accepté
+ VERROU ON | nouvel athlète ancré cégep (INSERT)                    | accepté (public.recruiter_activity_log +4)
+ VERROU ON | rattachement à une équipe de cégep                     | accepté
+ VERROU ON | cégépien déjà ancré : mise à jour sans changer d'école | accepté
+(4 rows)
+
+UPDATE 1
+DO
+psql:docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:587: NOTICE:  NEXUS: lot C0 cégep annulé
+DO
+SET
+SELECT 1122
+psql:docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:590: WARNING:  notify_on_message: PUSH_DISPATCH_SECRET absent du 
+Vault
+psql:docs/cegep-lot-c0/prod/rejeu-blanc-20261027.sql:590: WARNING:  notify_on_message: PUSH_DISPATCH_SECRET absent du 
+Vault
+SELECT 30
+              sonde               | disparues | apparues | matrice_ecarts 
+----------------------------------+-----------+----------+----------------
+ empreinte avant / après rollback |         0 |        0 |              0
+(1 row)
+
+DO
+                                                                                                              verdict                                                                                                               |        avant_rollback         
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ VERDICT : seul « recruteur collégial × cégépien » change (tout refusé, aucun avis) ; règle identique au lot A pour tous les comptes ; verrou refuse sous OFF, accepte sous ON, cégépien déjà ancré intact ; rollback à l'identique | 2026-10-27 15:49:37.051904+00
+(1 row)
+
+ROLLBACK
+CREATE TABLE
+DO
+              table_suivie              | avant | apres 
+----------------------------------------+-------+-------
+ net.http_request_queue                 |     0 |     0
+ public.athlete_notifications           |   122 |   122
+ public.conversations                   |     8 |     8
+ public.messages                        |    16 |    16
+ public.newsroom_events                 |     2 |     2
+ public.parent_contact_avis             |     3 |     3
+ public.parent_notifications            |    41 |    41
+ public.recruiter_activity_log          |   447 |   447
+ public.recruiter_contact_notifications |     3 |     3
+ public.recruiter_favorites             |    12 |    12
+ public.recruiter_pipeline              |    36 |    36
+(11 rows)
+
+ interrupteur_reste | policies_restent |         contactable_md5          | derniere_version 
+--------------------+------------------+----------------------------------+------------------
+ f                  |                0 | fe2ea3e93c6ed4036d249b7d406d3e56 | 20261017010000
+(1 row)
+
+== ROLLBACK fait : rien n'est appliqué.
+
+===================== apply (3b6f992a…) : AVANT cégépien accepté / secondaire accepté ; APRÈS cégépien REFUSÉ 42501 / secondaire accepté ; version 20261027210000, interrupteur false, COMMIT 15 h 49 min 52,9 s UTC.
+===================== rollback (abd93b68…) : COMMIT, version 20261027154953 inscrite.
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 15:49:53.030287+00 | postgres     | 17.6
+(1 row)
+
+DO
+ interrupteur_avant | policies 
+--------------------+----------
+ false              |        3
+(1 row)
+
+SELECT 1
+DO
+psql.exe : psql:docs/cegep-lot-c0/prod/rollback-20261027.sql:95: NOTICE:  NEXUS: lot C0 cégep annulé
+At line:1 char:636
++ ... $f).Hash)"; & $psql $env:NEXUS_LOCAL_DB -X -v ON_ERROR_STOP=1 -f $f 2 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...C0 cégep annulé:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+SET
+INSERT 0 1
+INSERT 0 1
+DO
+ version_rollback |         avant_commit          
+------------------+-------------------------------
+ 20261027154953   | 2026-10-27 15:49:53.049482+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot C0 cégep retiré.
+
+===================== second apply : REFUSÉ « version 20261027210000 déjà inscrite » (attendu).
+Base locale laissée AVEC C0 (migration rejouée par docker psql -1).
