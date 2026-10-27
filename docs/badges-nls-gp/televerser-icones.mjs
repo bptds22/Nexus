@@ -16,8 +16,11 @@
    --envoyer : dépose les fichiers absents (jamais d'écrasement : upsert
                false), puis relit CHAQUE fichier par son URL publique et
                compare le md5 au fichier du dépôt.
-   --retirer : supprime les 10 fichiers (après le rollback SQL en mode
+   --retirer : supprime les fichiers (après le rollback SQL en mode
                suppression seulement — sinon des lignes les citent encore).
+   --fichiers a.png,b.png : limite à ce lot (défaut : les 10 de départ).
+               Ex. GP v2 (27 oct.) : déposer les 5 « gp-*-v2.png », puis,
+               une fois le catalogue pointé dessus, retirer les 5 « gp-*.png ».
 ═══════════════════════════════════════════════════════════════ */
 
 import { createHash } from "node:crypto";
@@ -27,12 +30,16 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const BUCKET = "partner-badges";
-const FICHIERS = [
-  "nls-prospect.png", "nls-top50.png", "nls-top25.png", "nls-top10.png", "nls-mvp.png",
-  "gp-prospect.png", "gp-top50.png", "gp-top25.png", "gp-top10.png", "gp-mvp.png",
-];
-
 const args = process.argv.slice(2);
+
+// --fichiers a.png,b.png : un lot précis de images/ (ex. les 5 GP v2, ou les 5 GP v1 à retirer).
+const FICHIERS = args.includes("--fichiers")
+  ? args[args.indexOf("--fichiers") + 1].split(",").map((f) => f.trim()).filter(Boolean)
+  : [
+      "nls-prospect.png", "nls-top50.png", "nls-top25.png", "nls-top10.png", "nls-mvp.png",
+      "gp-prospect.png", "gp-top50.png", "gp-top25.png", "gp-top10.png", "gp-mvp.png",
+    ];
+if (FICHIERS.some((f) => !/^[a-z0-9-]+\.png$/.test(f))) throw new Error(`--fichiers : noms invalides (${FICHIERS.join(",")})`);
 const partenaire = args[args.indexOf("--partenaire") + 1];
 const envoyer = args.includes("--envoyer");
 const retirer = args.includes("--retirer");
@@ -52,6 +59,18 @@ console.log(`Cible : ${url} — ${BUCKET}/${partenaire}/ — mode ${envoyer ? "E
 const { data: presents, error: errListe } = await supabase.storage.from(BUCKET).list(partenaire, { limit: 1000 });
 if (errListe) throw errListe;
 const parNom = new Map(presents.map((o) => [o.name, o]));
+
+if (retirer) {
+  // Jamais un fichier qu'une ligne du catalogue cite encore (l'icône disparaîtrait des fiches).
+  const chemins = FICHIERS.map((f) => `${partenaire}/${f}`);
+  const { data: cites, error: errCites } = await supabase.from("partner_badges")
+    .select("libelle, icone_path").in("icone_path", chemins);
+  if (errCites) throw errCites;
+  if (cites.length > 0) {
+    throw new Error(`ARRÊT : encore cité(s) par le catalogue — ${cites.map((c) => `${c.libelle} → ${c.icone_path}`).join(" ; ")}`);
+  }
+  console.log(`  aucun des ${FICHIERS.length} fichiers n'est cité par partner_badges`);
+}
 
 let ecarts = 0;
 for (const nom of FICHIERS) {

@@ -19,6 +19,7 @@ if (API !== "http://127.0.0.1:56321") throw new Error(`pas la pile locale NexusB
 const APP = process.env.APP ?? "http://localhost:3110";
 if (!/^http:\/\/localhost/.test(APP)) throw new Error("APP pas local");
 const OUT = "docs/badges-nls-gp/preuves";
+const SUFFIXE = process.env.SUFFIXE ?? ""; // ex. « -gp-v2 » : ne pas écraser les captures précédentes
 const ATHLETE = "47f8dced-6338-4727-bafe-75affac53067"; // Alex Démo-Partenaire (fictif)
 const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -54,7 +55,7 @@ try {
   console.log("choix « Mes badges » :", choix.map((t) => t.trim()).join(" | "));
   await bloc.getByRole("button", { name: "NLS · Top 10" }).click();
   await bloc.getByRole("button", { name: "GP · MVP" }).click();
-  await page.screenshot({ path: path.join(OUT, "1-choix-mes-badges.png") });
+  await page.screenshot({ path: path.join(OUT, `1-choix-mes-badges${SUFFIXE}.png`) });
   await page.getByRole("button", { name: "Enregistrer les badges" }).click();
 
   const vignettes = page.locator("[data-badge-partenaire]");
@@ -63,7 +64,7 @@ try {
   const titres = await vignettes.evaluateAll((els) => els.map((e) => e.textContent?.trim()));
   console.log("vignettes sur la fiche :", titres.join(" | "));
   await vignettes.first().scrollIntoViewIfNeeded();
-  await page.screenshot({ path: path.join(OUT, "2-fiche-nls-et-gp.png") });
+  await page.screenshot({ path: path.join(OUT, `2-fiche-nls-et-gp${SUFFIXE}.png`) });
 
   const lus = await client.rpc("badges_partenaires_athlete", { p_athlete_id: ATHLETE });
   if (lus.error) throw lus.error;
