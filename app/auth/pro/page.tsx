@@ -263,6 +263,16 @@ function ProSignupContent() {
                   <p className="text-[11px] text-[#6B7280] leading-snug mt-0.5">La gestion des équipes collégiales arrive bientôt.</p>
                 </div>
               </div>
+              {/* Accroche (décision BP 2026-10-26) : en attendant, le coach de cégep peut s'inscrire comme
+                  recruteur collégial — le lien choisit la carte « Recruteur CÉGEP ». */}
+              <p className="text-[12px] text-[#9CA3AF] leading-snug px-1">
+                Tu es coach dans un cégep ? En attendant, inscris-toi comme{" "}
+                <button type="button" onClick={() => setSelectedRole("collegial")}
+                  className="text-[#60A5FA] hover:text-white underline underline-offset-2 transition-colors">
+                  recruteur CÉGEP
+                </button>
+                {" "}pour repérer dès maintenant les athlètes du secondaire.
+              </p>
             </div>
 
             {/* Step 2 — Form (appears after selection) */}
