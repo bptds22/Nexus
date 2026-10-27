@@ -1,0 +1,62 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 16:14:34.777239+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 1
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 2
+ phase |   cible    | favori  
+-------+------------+---------
+ AVANT | cégépien   | accepté
+ AVANT | secondaire | accepté
+(2 rows)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-27 16:14:34.878207+00
+(1 row)
+
+DO
+psql.exe : psql:C:/tmp/nexus-cegep-c0/docs/cegep-lot-c0/prod/apply-20261027.sql:309: NOTICE:  NEXUS: lot C0 cégep — écritures recruteur 
+collégial → cégépien fermées, interrupteur OFF, verrou en place
+At line:2 char:1
++ & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" "host=aws-1-ca-c ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:C:/tmp/nex...verrou en place:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+         fin_migration         
+-------------------------------
+ 2026-10-27 16:14:34.896155+00
+(1 row)
+
+SET
+SELECT 2
+ phase |   cible    |    favori    
+-------+------------+--------------
+ APRÈS | cégépien   | REFUSÉ 42501
+ APRÈS | secondaire | accepté
+(2 rows)
+
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite | interrupteur |         avant_commit          
+------------------+--------------+-------------------------------
+ 20261027210000   | false        | 2026-10-27 16:14:34.966467+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot C0 cégep en prod (interrupteur OFF).

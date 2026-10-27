@@ -2996,3 +2996,16 @@ Collégial ni Catégorie : sa source ne porte pas encore ces colonnes.
 
 - **Correctif proposé** : aligner la source (base) puis passer la page sur
   `ORG_TYPE_OPTIONS` et `CATEGORIE_OPTIONS` comme classements et tendances.
+
+## 107. `log_new_athlete` : chaque nouvel athlète écrit chez tout recruteur qui a un favori (2026-10-27, plus tard)
+
+Relevé au diagnostic du lot C cégep (2026-10-27), **non corrigé** (décision BP : noter seulement).
+Le déclencheur `trg_log_new_athlete` (AFTER INSERT sur `athletes`) écrit une ligne `NEW_ATHLETE`
+(prénom, nom) dans `recruiter_activity_log` pour chaque recruteur qui a **au moins un favori** : la
+clause `FROM recruiter_favorites rf` n'a pas de filtre `rf.athlete_id`. Un recruteur reçoit donc le nom
+de chaque nouvel inscrit, sans lien avec ses favoris. Le lot A filtre seulement les cégépiens à
+l'écriture (corps rebasé `20261026030400`), le défaut lui-même reste. Vu aussi en local au rejeu du
+lot C0 : un athlète inséré s'écrit chez 4 recruteurs.
+
+- **Correctif proposé** : décider ce que « nouvel athlète » doit signaler (ses favoris ? son unité ?),
+  puis rebaser `log_new_athlete` sur le corps prod (garde md5), migration à part avec rejeu.
