@@ -12,6 +12,7 @@
 --   D. Les mêmes inscriptions APRÈS, interrupteur OFF : elles doivent donner exactement le même résultat.
 --   E. Le verrou : les trois équipes marquées « importées » (lignes temporaires dans equipes_sources) →
 --      refus NEXUS sous OFF ; acceptées sous ON.
+--   G. Une cible sur un club civil n'apparaît chez aucun recruteur (athletes_targeting_my_cegep, vrai JWT).
 --   F. Le rollback (md5 gardé), puis vérification qu'il ne reste rien.
 --   ROLLBACK, puis relecture hors transaction : rien n'est resté, aucune notification ni appel réseau.
 -- Les inscriptions passent en postgres, par DML direct : le verrou est un trigger, il se déclenche
@@ -29,7 +30,8 @@ insert into _hors values
   ('net.http_request_queue', (select count(*) from net.http_request_queue)),
   ('athlete_notifications', (select count(*) from public.athlete_notifications)),
   ('team_athletes', (select count(*) from public.team_athletes)),
-  ('team_coaches', (select count(*) from public.team_coaches));
+  ('team_coaches', (select count(*) from public.team_coaches)),
+  ('athlete_targets', (select count(*) from public.athlete_targets));
 
 begin;
 set local lock_timeout = '3s';
@@ -175,6 +177,65 @@ end $$;
 update public.app_settings set value = 'false' where key = 'lancement_civil';
 delete from public.equipes_sources where source_cle like 'rejeu-blanc-lot7|%';
 
+-- ── G. Cœur sur un club civil (décision BP 2026-10-27) : aucun recruteur ne le voit ─
+-- Un athlète du SECONDAIRE sans aucune cible. Témoin : il cible un club civil ; chaque recruteur, sous
+-- son vrai JWT, appelle athletes_targeting_my_cegep() : l'athlète ne doit apparaître chez personne.
+-- Contrôle : la même sonde, avec une cible vers un cégep qui a un recruteur, doit le voir au moins une fois
+-- (sinon la sonde serait aveugle).
+create temp table _g on commit drop as
+select (select a.id from public.athletes a join public.schools s on s.id = a.school_id and s.type::text = 'SECONDAIRE'
+         where a.status = 'ACTIF' and not exists (select 1 from public.athlete_targets t where t.athlete_id = a.id)
+         order by a.id limit 1) as athlete,
+       (select s.id from public.schools s where s.type::text = 'LIGUE_CIVILE' order by s.id limit 1) as club,
+       (select s.id from public.schools s
+         where s.type::text = 'CEGEP'
+           and exists (select 1 from public.users u where u.school_id = s.id and u.role = 'RECRUTEUR'::public.user_role)
+         order by s.id limit 1) as cegep;
+do $$
+begin
+  if exists (select 1 from _g where athlete is null or club is null or cegep is null) then
+    raise exception 'NEXUS: témoin de cible manquant (athlète, club ou cégep avec recruteur)';
+  end if;
+end $$;
+insert into public.athlete_targets (athlete_id, school_id) select athlete, club from _g;
+create function pg_temp.voit_cible_club(p_uid uuid) returns text language plpgsql as $$
+declare n int; cible uuid := (select athlete from _g);
+begin
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
+    perform set_config('role', 'authenticated', true);
+    select count(*) into n from public.athletes_targeting_my_cegep() r where r.athlete_id = cible;
+    raise exception using errcode = 'NX000', message = n::text;
+  exception
+    when sqlstate 'NX000' then return sqlerrm;
+    when others then return 'refus=' || sqlstate;
+  end;
+end $$;
+create temp table _gr on commit drop as
+select u.id, pg_temp.voit_cible_club(u.id) as vu from public.users u where u.role = 'RECRUTEUR'::public.user_role;
+select 'cible sur un club, vue par les recruteurs' as sonde, count(*) as recruteurs,
+       count(*) filter (where vu = '0') as ne_la_voient_pas, count(*) filter (where vu <> '0') as autres
+  from _gr;
+do $$
+begin
+  if exists (select 1 from _gr where vu <> '0') then
+    raise exception 'NEXUS: une cible sur un club apparaît chez un recruteur (%)', (select string_agg(distinct vu, ',') from _gr where vu <> '0');
+  end if;
+end $$;
+delete from public.athlete_targets t using _g where t.athlete_id = _g.athlete and t.school_id = _g.club;
+insert into public.athlete_targets (athlete_id, school_id) select athlete, cegep from _g;
+create temp table _gc on commit drop as
+select u.id, pg_temp.voit_cible_club(u.id) as vu from public.users u where u.role = 'RECRUTEUR'::public.user_role;
+select 'contrôle : cible sur un cégep, vue par les recruteurs' as sonde, count(*) filter (where vu = '1') as la_voient
+  from _gc;
+do $$
+begin
+  if not exists (select 1 from _gc where vu = '1') then
+    raise exception 'NEXUS: contrôle raté — la sonde ne voit pas non plus une cible sur un cégep';
+  end if;
+end $$;
+delete from public.athlete_targets t using _g where t.athlete_id = _g.athlete and t.school_id = _g.cegep;
+
 -- ── F. Le rollback, texte gardé par son md5 ──────────────────────────────────
 do $r$
 begin
@@ -196,7 +257,7 @@ begin
     raise exception 'NEXUS: après rollback, une inscription ne retrouve pas son résultat d''avant';
   end if;
 end $$;
-select 'VERDICT : inscriptions normales identiques avant / après / après rollback ; verrou refuse sous OFF, accepte sous ON ; rollback complet' as verdict,
+select 'VERDICT : inscriptions normales identiques avant / après / après rollback ; verrou refuse sous OFF, accepte sous ON ; cible sur un club vue par aucun recruteur ; rollback complet' as verdict,
        clock_timestamp() as avant_rollback;
 rollback;
 
@@ -207,6 +268,7 @@ select h.cle, h.n as avant,
          when 'athlete_notifications' then (select count(*) from public.athlete_notifications)
          when 'team_athletes' then (select count(*) from public.team_athletes)
          when 'team_coaches' then (select count(*) from public.team_coaches)
+         when 'athlete_targets' then (select count(*) from public.athlete_targets)
        end as apres
   from _hors h order by h.cle;
 select exists (select 1 from public.app_settings where key = 'lancement_civil') as interrupteur_reste,

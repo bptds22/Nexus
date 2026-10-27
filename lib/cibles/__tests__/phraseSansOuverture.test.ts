@@ -21,3 +21,13 @@ test("web et appli lisent la même source ; l'ancienne phrase a disparu", () => 
     assert.ok(!src.includes("les coachs voient qui les suit."), f);
   }
 });
+
+test("club civil 18+ (lot 7) : la phrase ne promet aucun regard de recruteur", async () => {
+  const { divulgationCible, CIBLE_DIVULGATION_AVANT } = await import("@/lib/cibles/divulgation");
+  assert.equal(divulgationCible(false), CIBLE_DIVULGATION_AVANT);
+  for (const dans of [false, true]) {
+    const p = divulgationCible(dans, true);
+    assert.ok(!/recruteur/i.test(p), p);
+    assert.ok(/club ne voit pas/i.test(p), p);
+  }
+});

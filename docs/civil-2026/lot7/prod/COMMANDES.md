@@ -6,7 +6,7 @@ rollback md5 `341ac6212860cc824e374204f4308e51`.
 
 | Fichier | md5 (LF, tel que généré) | Effet |
 |---|---|---|
-| `rejeu-blanc-20261027.sql` | `fab8b62d28b632cbb271833d919af044` | finit par ROLLBACK : rien n'est appliqué |
+| `rejeu-blanc-20261027.sql` | `5d04fff679cfada9245e72a474108828` | finit par ROLLBACK : rien n'est appliqué |
 | `apply-20261027.sql` | `111311e4728326f0dac5f34c5f81eb7c` | COMMIT : lot 7 en prod, interrupteur OFF |
 | `rollback-20261027.sql` | `906f8e4cbca4122f7ac1e7c1c96b070e` | COMMIT : lot 7 retiré (sur GO seulement) |
 
@@ -30,14 +30,15 @@ $env:NEXUS_PROD_DB = "postgresql://postgres.nrloizyemulbhujrqhgx@aws-1-ca-centra
 
 ```powershell
 $f = "docs\civil-2026\lot7\prod\rejeu-blanc-20261027.sql"
-(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : FAB8B62D28B632CBB271833D919AF044
+(Get-FileHash -Algorithm MD5 $f).Hash   # attendu : 5D04FFF679CFADA9245E72A474108828
 & $psql $env:NEXUS_PROD_DB -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee-Object -FilePath "docs\civil-2026\lot7\prod\rejeu-blanc-20261027.sortie.txt"
 ```
 
 Attendu : AVANT, APRÈS (OFF) et après rollback = `accepté` pour les trois cas (athlète → équipe existante, transfert,
 coach → équipe existante) ; VERROU OFF = trois `REFUSÉ 42501 NEXUS: Cette équipe sera ouverte…` ; VERROU ON = trois
-`accepté` ; ligne VERDICT ; relecture hors transaction : `net.http_request_queue`, `athlete_notifications`,
-`team_athletes`, `team_coaches` identiques avant / après ; `interrupteur_reste` = f, `triggers_restent` = 0,
+`accepté` ; cible sur un club : `autres` = 0 (aucun recruteur ne la voit) et contrôle sur un cégep
+`la_voient` ≥ 1 ; ligne VERDICT ; relecture hors transaction : `net.http_request_queue`, `athlete_notifications`,
+`athlete_targets`, `team_athletes`, `team_coaches` identiques avant / après ; `interrupteur_reste` = f, `triggers_restent` = 0,
 `equipes_sources` = 0, `derniere_version` = 20261026210100. Toute garde qui échoue arrête tout avant le ROLLBACK.
 Les NOTICE « NEXUS: » s'affichent en rouge (NativeCommandError) : c'est PowerShell, pas une erreur.
 

@@ -86,4 +86,4 @@ civils n'auront pas de point sur la carte des matchs.
 - Trouve ton cégep (web desktop seulement ; mobile = lot 8) : ON → organisations civiles avec au moins une équipe 18+
   active de la saison en cours ou à venir ; filtre Type « Cégep public / Cégep privé / Université / Club civil 18+ »
   (une valeur sans destination n'est pas proposée : aucune université avant le lot D, sur GO BP) ;
-  pas de cible sur un club civil (à trancher). OFF → page identique à avant.
+  cœur sur un club civil (athlete_targets, décision BP 27 oct.) : aucun recruteur ne le voit (rejeu à blanc G). OFF → page identique à avant.

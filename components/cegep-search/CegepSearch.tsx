@@ -496,14 +496,12 @@ export default function CegepSearch() {
                     {[c.city, libType(c), libLangue(c.langue)].filter(Boolean).join(" · ")}
                   </div>
                 </div>
-                {/* Pas de cible sur un club civil : une cible se montre aux recruteurs
-                    d'un établissement, et un club n'en a pas (à trancher par BP). */}
-                {c.genre !== "CLUB_CIVIL" && <button
+                <button
                   className={"heart" + (cibles.has(c.id) ? " on" : "")}
                   disabled={!viewer}
                   title={viewer ? (cibles.has(c.id) ? "Retirer de mes cibles" : "Ajouter à mes cibles") : "Connecte-toi pour cibler"}
                   onClick={(e) => { e.stopPropagation(); toggleCible(c.id); }}
-                ><Heart size={15} fill={cibles.has(c.id) ? "currentColor" : "none"} aria-hidden /></button>}
+                ><Heart size={15} fill={cibles.has(c.id) ? "currentColor" : "none"} aria-hidden /></button>
               </div>
               );
             })}
@@ -630,20 +628,16 @@ function Apercu({
         </div>
       )}
 
-      {cible && <div className="pcible">Ce collège est dans tes cibles.</div>}
+      {cible && <div className="pcible">{c.genre === "CLUB_CIVIL" ? "Ce club est dans tes cibles." : "Ce collège est dans tes cibles."}</div>}
 
-      {c.genre === "CLUB_CIVIL" ? (
-      <div className="pcta">
-        <span className="note">Club civil avec des équipes 18 ans et plus. Les cibles restent réservées aux établissements.</span>
-      </div>
-      ) : (
       <div className="pcta">
         {/* Page collège = route NATIVE (bundle Capacitor) → navigation INTERNE
             (client-side), l'athlète ne quitte pas l'app. Idem web. */}
         {/* Route PUBLIQUE `/college/[id]`. Sous Capacitor on passe par le
             navigateur in-app plutot qu'un <Link> Next : la page vit cote web,
             elle n'est pas dans le bundle natif. */}
-        {c.riche ? (
+        {/* Club civil 18+ : pas de page collège (la route /college/ est celle d'un cégep). */}
+        {c.genre === "CLUB_CIVIL" ? null : c.riche ? (
             <a
               className="btn page"
               href={`/college/${c.id}`}
@@ -662,10 +656,9 @@ function Apercu({
         {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Rendue pour
             un athlète connecté seulement : sans `viewer` le bouton est inerte,
             et annoncer une conséquence à un geste impossible embrouille. */}
-        {viewer && <span className="note">{divulgationCible(cible)}</span>}
+        {viewer && <span className="note">{divulgationCible(cible, c.genre === "CLUB_CIVIL")}</span>}
         {!viewer && <span className="note">Connecte-toi avec ton compte athlète pour cibler un collège.</span>}
       </div>
-      )}
     </div>
   );
 }
