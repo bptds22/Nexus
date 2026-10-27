@@ -1,0 +1,57 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+            debut             | current_database | current_user | version |            nexus_attendu             
+------------------------------+------------------+--------------+---------+--------------------------------------
+ 2026-10-27 20:00:33.36393+00 | postgres         | postgres     | 17.6    | 2e44e46d-f507-485f-b0bb-77c32965d390
+(1 row)
+
+DO
+SELECT 1
+ nb_catalogue | nb_ops 
+--------------+--------
+            1 |    115
+(1 row)
+
+psql:docs/badges-nls-gp/operation.sql:89: NOTICE:  NEXUS: 10 badges ajoutés au partenaire Nexus 2e44e46d-f507-485f-b0bb-77c32965d390
+DO
+DO
+        libelle        | ordre |                      icone_path                       | actif 
+-----------------------+-------+-------------------------------------------------------+-------
+ Test Nexus Partenaire |     0 | ·                                                     | t
+ NLS · Prospect        |   101 | 2e44e46d-f507-485f-b0bb-77c32965d390/nls-prospect.png | t
+ NLS · Top 50          |   102 | 2e44e46d-f507-485f-b0bb-77c32965d390/nls-top50.png    | t
+ NLS · Top 25          |   103 | 2e44e46d-f507-485f-b0bb-77c32965d390/nls-top25.png    | t
+ NLS · Top 10          |   104 | 2e44e46d-f507-485f-b0bb-77c32965d390/nls-top10.png    | t
+ NLS · MVP             |   105 | 2e44e46d-f507-485f-b0bb-77c32965d390/nls-mvp.png      | t
+ GP · Prospect         |   201 | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect.png  | t
+ GP · Top 50           |   202 | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top50.png     | t
+ GP · Top 25           |   203 | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top25.png     | t
+ GP · Top 10           |   204 | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top10.png     | t
+ GP · MVP              |   205 | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp.png       | t
+(11 rows)
+
+SET
+RESET
+SET
+RESET
+ bp_voit_nls | bp_voit_gp | bp_total | autre_partenaire_voit 
+-------------+------------+----------+-----------------------
+ 5           | 5          | 11       | 0
+(1 row)
+
+DO
+psql:docs/badges-nls-gp/retrait.sql:58: NOTICE:  NEXUS: retrait des 10 badges — mode SUPPRESSION, 0 pose(s) trouvée(s)
+DO
+DO
+                    verdict                    |              fin              
+-----------------------------------------------+-------------------------------
+ REJEU OK : ajout, sondes et retrait conformes | 2026-10-27 20:00:33.384664+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.

@@ -1,0 +1,11 @@
+Badges NLS + GP — gardes prouvées sur la pile locale NexusBadges (2026-10-27). Chaque cas s'arrête AVANT tout COMMIT.
+== Garde 1 : mauvaise cible (uuid d'un autre partenaire)
+psql:docs/badges-nls-gp/prod/apply.sql:44: ERROR:  NEXUS: partenaire de bpdesfosses = 2e44e46d-f507-485f-b0bb-77c32965d390, attendu 00000000-0000-4000-8000-000000000000 — mauvaise base ?
+== Garde 2 : sans -v nexus_attendu
+ARRÊT : passer -v nexus_attendu=<uuid du partenaire Nexus>
+== Garde 3 : une icône absente (renommée le temps du test, transaction annulée)
+psql:docs/badges-nls-gp/operation.sql:89: ERROR:  NEXUS: icône 2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp.png absente, ou pas 59191 octets en image/png — lancer televerser-icones.mjs --envoyer d'abord
+== Garde 4 : rejouer l'ajout une 2e fois (après un 1er ajout, transaction annulée)
+psql:docs/badges-nls-gp/operation.sql:89: ERROR:  NEXUS: BADGES_NLS_GP_NEXUS a déjà laissé une trace dans admin_operations
+== Rien n'est resté (catalogue Nexus, traces, fichier gp-mvp) :
+1|0|2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp.png
