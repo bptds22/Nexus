@@ -1,0 +1,25 @@
+﻿Pager usage is off.
+BEGIN
+ catalogue_total | nls_gp | libelles_exacts_test | actifs 
+-----------------+--------+----------------------+--------
+              16 |     10 |                    2 |     10
+(1 row)
+
+      operation      |              le               |              partenaire              | nb 
+---------------------+-------------------------------+--------------------------------------+----
+ BADGES_NLS_GP_NEXUS | 2026-10-27 21:09:26.580141+00 | f3751302-cdce-44a6-ac0d-bf4802968637 | 10
+(1 row)
+
+ poses_nls_gp 
+--------------
+            0
+(1 row)
+
+SET
+                                                                          choix_bpdesfosses                                                                           | count 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------
+ GP · MVP | GP · Prospect | GP · Top 10 | GP · Top 25 | GP · Top 50 | NLS · MVP | NLS · Prospect | NLS · Top 10 | NLS · Top 25 | NLS · Top 50 | Test Nexus Partenaire |    11
+(1 row)
+
+RESET
+ROLLBACK

@@ -1,0 +1,64 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_database | current_user | version |            nexus_attendu             
+-------------------------------+------------------+--------------+---------+--------------------------------------
+ 2026-10-27 21:07:51.164313+00 | postgres         | postgres     | 17.6    | f3751302-cdce-44a6-ac0d-bf4802968637
+(1 row)
+
+DO
+SELECT 1
+ nb_catalogue | nb_ops 
+--------------+--------
+            6 |     93
+(1 row)
+
+psql : psql:docs/badges-nls-gp/operation.sql:89: NOTICE:  NEXUS: 10 badges ajoutés au partenaire Nexus 
+f3751302-cdce-44a6-ac0d-bf4802968637
+At line:6 char:1
++ psql $cx -X -w -v ON_ERROR_STOP=1 -v nexus_attendu=f3751302-cdce-44a6 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/badge...0d-bf4802968637:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DO
+DO
+        libelle        | ordre |                          icone_path                          | actif 
+-----------------------+-------+--------------------------------------------------------------+-------
+ Test Nexus Partenaire |     0 | f3751302-cdce-44a6-ac0d-bf4802968637/badge-1792084829007.png | t
+ NLS · Prospect        |   101 | f3751302-cdce-44a6-ac0d-bf4802968637/nls-prospect.png        | t
+ NLS · Top 50          |   102 | f3751302-cdce-44a6-ac0d-bf4802968637/nls-top50.png           | t
+ NLS · Top 25          |   103 | f3751302-cdce-44a6-ac0d-bf4802968637/nls-top25.png           | t
+ NLS · Top 10          |   104 | f3751302-cdce-44a6-ac0d-bf4802968637/nls-top10.png           | t
+ NLS · MVP             |   105 | f3751302-cdce-44a6-ac0d-bf4802968637/nls-mvp.png             | t
+ GP · Prospect         |   201 | f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect.png         | t
+ GP · Top 50           |   202 | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50.png            | t
+ GP · Top 25           |   203 | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25.png            | t
+ GP · Top 10           |   204 | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10.png            | t
+ GP · MVP              |   205 | f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp.png              | t
+(11 rows)
+
+SET
+RESET
+SET
+RESET
+ bp_voit_nls | bp_voit_gp | bp_total | autre_partenaire_voit 
+-------------+------------+----------+-----------------------
+ 5           | 5          | 11       | 0
+(1 row)
+
+DO
+psql:docs/badges-nls-gp/retrait.sql:58: NOTICE:  NEXUS: retrait des 10 badges — mode SUPPRESSION, 0 pose(s) trouvée(s)
+DO
+DO
+                    verdict                    |              fin              
+-----------------------------------------------+-------------------------------
+ REJEU OK : ajout, sondes et retrait conformes | 2026-10-27 21:07:51.278607+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
