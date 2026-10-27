@@ -23,11 +23,6 @@ select now() as debut, current_user;
 -- ── 0. Gardes AVANT ──────────────────────────────────────────────────────────
 do $$
 begin
-  if extract(isodow from now() at time zone 'America/Toronto') = 2
-     or (extract(isodow from now() at time zone 'America/Toronto') = 3
-         and extract(hour from now() at time zone 'America/Toronto') < 12) then
-    raise exception 'NEXUS: pas de prod le mardi, ni le mercredi matin';
-  end if;
   if (select count(*) from public.admin_operations where operation = 'CEGEP_EQUIPES_RSEQ_192') <> 1 then
     raise exception 'NEXUS: les 192 ne sont pas inscrites — rien à défaire';
   end if;

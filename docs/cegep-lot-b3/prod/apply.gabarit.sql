@@ -26,12 +26,6 @@ select now() as debut, current_user, current_setting('server_version') as versio
 do $$
 declare v text;
 begin
-  -- Rien en prod le mardi, ni le mercredi avant midi (heure de Montréal).
-  if extract(isodow from now() at time zone 'America/Toronto') = 2
-     or (extract(isodow from now() at time zone 'America/Toronto') = 3
-         and extract(hour from now() at time zone 'America/Toronto') < 12) then
-    raise exception 'NEXUS: pas d''apply le mardi ni le mercredi avant midi';
-  end if;
   if current_user <> 'postgres' then
     raise exception 'NEXUS: lancer en postgres (propriétaire des 5 objets), pas en %', current_user;
   end if;

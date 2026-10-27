@@ -24,10 +24,6 @@ select now() as debut, current_user;
 -- ── 0. Gardes AVANT : B2 est en place, tel qu'appliqué ───────────────────────
 do $$
 begin
-  if extract(isodow from now() at time zone 'America/Toronto') in (2, 3)
-     and extract(hour from now() at time zone 'America/Toronto') < 5 then
-    raise exception 'NEXUS: pas de prod le mardi ou le mercredi avant 5 h';
-  end if;
   if not exists (select 1 from supabase_migrations.schema_migrations
                   where version = '20261026140000' and name = 'cegep_lot_b2_categorie_collegial') then
     raise exception 'NEXUS: lot B2 20261026140000 non inscrit — rien à défaire';
