@@ -44,8 +44,8 @@ test("variantes d'écriture : casse, accents, espaces ; « cegep » → Collégi
 });
 
 test("valeur inconnue : gardée telle quelle, rangée après les connues", () => {
-  assert.deepEqual(categoriesTriees(["Primaire 6", "Collégial", "Benjamin", "Novice"]), ["Benjamin", "Collégial", "Novice", "Primaire 6"]);
-  assert.ok(comparerCategories("Collégial", "Novice") < 0);
+  assert.deepEqual(categoriesTriees(["Primaire 6", "Collégial", "Benjamin", "Relève"]), ["Benjamin", "Collégial", "Primaire 6", "Relève"]);
+  assert.ok(comparerCategories("Collégial", "Relève") < 0);
 });
 
 test("promotion : « DEC AAAA » pour un cégep d'ancrage, sinon « Secondaire AAAA », jamais l'année seule", () => {
@@ -59,4 +59,9 @@ test("promotion : « DEC AAAA » pour un cégep d'ancrage, sinon « Secondaire A
   assert.equal(libelleOptionPromotion(2027, porteePromotion("scolaire", true)), "Secondaire 2027");
   assert.equal(libelleOptionPromotion(2027, porteePromotion("", true)), "Secondaire ou DEC 2027");
   assert.equal(libelleOptionPromotion(2027, porteePromotion("", false)), "Secondaire 2027");
+});
+
+test("lot 7 civil : Novice, Mini, Pee-Wee, Bantam rangés parmi les catégories civiles", () => {
+  assert.deepEqual(categoriesTriees(["Bantam AAA", "Bantam", "Pee-Wee", "Mini", "Novice", "Atome"]),
+    ["Atome", "Novice", "Mini", "Pee-Wee", "Bantam", "Bantam AAA"]);
 });

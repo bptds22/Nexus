@@ -11,30 +11,10 @@
    n'en sait rien et les gardes Loi 25 restent celles de _apply_team_attachment_core). */
 
 import { saisonCourante } from "@/lib/queries/schoolPage/saisonEnCours";
+import { trancheCategorie, type Tranche } from "@/lib/config/categories";
 
-export type Tranche = "-18" | "18+";
-
-const MOINS_18 = new Set([
-  "benjamin", "cadet", "juvenile", "atome", "moustique", "pee-wee", "peewee", "bantam", "midget", "novice", "mini",
-]);
-const DIX_HUIT_PLUS = new Set(["senior", "junior", "junior majeur", "collegial"]);
-
-function normaliser(s: string): string {
-  return s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-}
-
-/** Tranche d'une catégorie d'équipe, ou null si on ne sait pas la classer. */
-export function trancheCategorie(ageGroup: string | null | undefined): Tranche | null {
-  if (!ageGroup) return null;
-  const c = normaliser(ageGroup);
-  // U14, U-17, M15, M18 AAA, « U17 (juvénile) » : le nombre décide (moins de 19 = moins de 18 ans)
-  const m = c.match(/^[um]-?\s?(\d{1,2})\b/);
-  if (m) return Number(m[1]) <= 18 ? "-18" : "18+";
-  const premier = c.replace(/\s+(aaa|aa|a|d\d)$/, "");
-  if (DIX_HUIT_PLUS.has(premier) || DIX_HUIT_PLUS.has(c)) return "18+";
-  if (MOINS_18.has(premier) || MOINS_18.has(premier.split(" ")[0])) return "-18";
-  return null;
-}
+// La tranche vit dans la liste canonique des catégories (décision BP 2026-10-27, point 5).
+export { trancheCategorie, type Tranche };
 
 /** Âge révolu à la date de référence, ou null si la date de naissance est absente ou illisible. */
 export function ageRevolu(dateNaissance: string | null | undefined, ref: Date = new Date()): number | null {

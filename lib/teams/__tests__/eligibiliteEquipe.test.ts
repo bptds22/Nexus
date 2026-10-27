@@ -21,7 +21,7 @@ test("tranche : catégories soccer, basket, hockey", () => {
 });
 
 test("tranche : inconnue ou vide → null (on ne cache rien faute de savoir)", () => {
-  for (const c of [null, undefined, "", "Autre", "Ouvert", "cegep"]) assert.equal(trancheCategorie(c), null, String(c));
+  for (const c of [null, undefined, "", "Autre", "Ouvert"]) assert.equal(trancheCategorie(c), null, String(c));
 });
 
 test("âge révolu, anniversaire compris", () => {
@@ -55,4 +55,18 @@ test("saison : passée cachée, en cours et à venir proposées, absente propos�
   assert.equal(equipeProposable({ age_group: "U15", season: "2026-2027" }, 14, s), true);
   assert.equal(equipeProposable({ age_group: "U15", season: "2027-2028" }, 14, s), true);
   assert.equal(equipeProposable({ age_group: "U15", season: null }, 14, s), true);
+});
+
+test("catégories ajoutées au lot 7 (Novice, Mini, Pee-Wee, Bantam, U19) : tranche et rang canonique", async () => {
+  const { CATEGORIES_CANONIQUES, libelleCategorie } = await import("@/lib/config/categories");
+  for (const c of ["Novice", "Mini", "Pee-Wee", "Bantam"]) {
+    assert.ok(CATEGORIES_CANONIQUES.includes(c), c);
+    assert.equal(trancheCategorie(c), "-18", c);
+  }
+  assert.equal(trancheCategorie("U19"), "18+");
+  assert.equal(libelleCategorie("pee-wee"), "Pee-Wee");
+  assert.equal(trancheCategorie("Ouvert"), null);
+  assert.equal(trancheCategorie("cegep"), "18+");
+  assert.equal(trancheCategorie("Junior"), "18+");
+  assert.equal(trancheCategorie("Senior AA"), "18+");
 });

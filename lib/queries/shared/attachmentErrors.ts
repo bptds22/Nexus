@@ -161,10 +161,17 @@ export function attachmentSentinel(err: unknown): AttachmentSentinel | null {
   return hit ?? null;
 }
 
+/* Verrou du lancement civil (lot 7 civil, trigger verrou_lancement_civil) : une équipe civile
+   importée ne se rejoint pas tant que l'interrupteur lancement_civil est OFF. La base lève un
+   message déjà rédigé pour l'athlète, sans aucune donnée personnelle : on le montre tel quel,
+   sans le préfixe. */
+const VERROU_CIVIL = /NEXUS:\s*(Cette équipe sera ouverte au lancement des ligues civiles.*)/;
+
 /** Message français prêt à afficher pour une erreur de rattachement. */
 export function attachmentErrorMessage(err: unknown): string {
   const s = attachmentSentinel(err);
-  return s ? MESSAGES[s] : ATTACHMENT_FALLBACK;
+  if (s) return MESSAGES[s];
+  return rawMessage(err).match(VERROU_CIVIL)?.[1] ?? ATTACHMENT_FALLBACK;
 }
 
 /** Même chose depuis une CHAÎNE brute — sentinelle nue ou message Postgres.

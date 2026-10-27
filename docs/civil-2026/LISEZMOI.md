@@ -26,7 +26,7 @@ Fichiers source hors dépôt : `Documents/Nexus-Imports/civil-2026/`. Aucune don
 | 4 | Équipes de 18 ans et plus | à faire |
 | 5 | Matchs à venir | à faire |
 | 6 | Veille hebdomadaire | attend l'accord écrit Spordle |
-| 7 | Web : destinations 18+, ordre des divisions, vocabulaire coach | à faire |
+| 7 | Web : interrupteur `lancement_civil` + verrou en base (migration 20261027150000), destinations 18+ dans Trouve ton cégep (filtre Type), sélecteur athlète filtré âge/saison, catégories Novice/Mini/Pee-Wee/Bantam ; reste : ordre des divisions, vocabulaire coach | prouvé en local (27 oct.), NON appliqué en prod |
 | 8 | Mobile | lot dédié, sur GO |
 
 ## Lot 1 — preuve locale
@@ -72,3 +72,18 @@ saison 2026-2027, 0 sans clé source, 0 initiale « (XX) » restante ; rollback 
 
 Géocoder aussi les TERRAINS des matchs à partir des adresses Spordle (`venue_lat` / `venue_lon`), sinon les matchs
 civils n'auront pas de point sur la carte des matchs.
+
+## Lot 7 — interrupteur et verrou (décisions BP 2026-10-27)
+
+- `app_settings.lancement_civil` (BOOLEAN, `false`) ; web : `lib/config/lancementCivil.ts` (OFF si absent ou en erreur) ;
+  SQL : `lancement_civil_actif()`.
+- Verrou : `verrou_lancement_civil()`, trigger BEFORE sur `team_athletes` et `team_coaches` (INSERT, UPDATE OF team_id).
+  Refuse d'entrer dans une équipe présente dans `equipes_sources` tant que l'interrupteur est OFF
+  (`NEXUS: Cette équipe sera ouverte au lancement des ligues civiles sur Nexus. Réessaie bientôt.`).
+- Jour du lancement (décision 4) : lots 3 à 5 en prod, contrôles, PUIS `lancement_civil` → `true` dans /admin/settings.
+- Preuve locale : `tests/lot7-verrou-preuve.sql` (OFF : athlète, coach, transfert, valeur illisible, rôle authenticated
+  refusés ; équipe de l'appli et mise à jour sans changement d'équipe acceptées ; ON : acceptés ; clé absente : OFF).
+- Trouve ton cégep (web desktop seulement ; mobile = lot 8) : ON → organisations civiles avec au moins une équipe 18+
+  active de la saison en cours ou à venir ; filtre Type « Cégep public / Cégep privé / Université / Club civil 18+ »
+  (une valeur sans destination n'est pas proposée : aucune université tant que BP n'a pas donné son GO) ;
+  pas de cible sur un club civil (à trancher). OFF → page identique à avant.
