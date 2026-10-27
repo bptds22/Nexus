@@ -26,7 +26,7 @@ Fichiers source hors dépôt : `Documents/Nexus-Imports/civil-2026/`. Aucune don
 | 4 | Équipes de 18 ans et plus | à faire |
 | 5 | Matchs à venir | à faire |
 | 6 | Veille hebdomadaire | attend l'accord écrit Spordle |
-| 7 | Web : interrupteur `lancement_civil` + verrou en base (migration 20261027150000), destinations 18+ dans Trouve ton cégep (filtre Type), sélecteur athlète filtré âge/saison, catégories Novice/Mini/Pee-Wee/Bantam, ordre canonique des divisions (`lib/config/divisions.ts`), divisions et catégories de l'import dans `civilVocab.ts` ; fichiers prod `lot7/prod/` (rejeu à blanc, apply, rollback, COMMANDES.md) | prouvé en local (27 oct.), NON appliqué en prod |
+| 7 | Web : interrupteur `lancement_civil` + verrou en base (migration 20261027150000), destinations 18+ dans Trouve ton cégep (filtre Type), sélecteur athlète filtré âge/saison, catégories Novice/Mini/Pee-Wee/Bantam, ordre canonique des divisions (`lib/config/divisions.ts`), divisions et catégories de l'import dans `civilVocab.ts` ; fichiers prod `lot7/prod/` (rejeu à blanc, apply, rollback, COMMANDES.md) | migration EN PROD 2026-10-27 14 h 38 UTC (psql par BP, `lot7/prod/apply-20261027.sortie*.txt`), interrupteur OFF |
 | 8 | Mobile | lot dédié, sur GO |
 
 ## Lot 1 — preuve locale

@@ -1,5 +1,8 @@
 # Lot 7 civil — mise en prod (migration seule), commandes psql
 
+**FAIT** : rejeu à blanc 2026-10-27 14 h 37 UTC (VERDICT, cœur sur un club vu par 0 / 25 recruteurs, contrôle 2),
+apply 14 h 38 UTC (COMMIT, interrupteur false). Sorties : `*-20261027.sortie.txt` (UTF-16) et `*.sortie-utf8.txt`.
+
 Migration `20261027150000_civil_lot7_lancement` : interrupteur `app_settings.lancement_civil` = `false` et verrou
 (trigger `verrou_lancement_civil` sur `team_athletes` et `team_coaches`). Migration md5 `114f1359354a921686dcddb29e194bb1`,
 rollback md5 `341ac6212860cc824e374204f4308e51`.

@@ -1,0 +1,131 @@
+Pager usage is off.
+Null display is "·".
+CREATE TABLE
+INSERT 0 5
+BEGIN
+SET
+SET
+SET
+SET
+            debut             | current_user | version 
+------------------------------+--------------+---------
+ 2026-10-27 14:37:46.45452+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 1
+DO
+                                       temoins                                       
+-------------------------------------------------------------------------------------
+ témoins trouvés : athlète sans équipe, transfert, coach (identifiants non affichés)
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 3
+ phase |               cas               | resultat 
+-------+---------------------------------+----------
+ AVANT | athlète → équipe existante      | accepté
+ AVANT | transfert vers une autre équipe | accepté
+ AVANT | coach → équipe existante        | accepté
+(3 rows)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-27 14:37:46.643045+00
+(1 row)
+
+DO
+psql.exe : psql:C:/tmp/nexus-civil/docs/civil-2026/lot7/prod/rejeu-blanc-20261027.sql:293: NOTICE:  NEXUS: lot 7 civil — interrupteur OFF, verrou 
+en place (0 équipes importées verrouillées)
+At line:2 char:1
++ & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" "host=aws-1-ca-c ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:C:/tmp/nex... verrouillées):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+         fin_migration         
+-------------------------------
+ 2026-10-27 14:37:46.657706+00
+(1 row)
+
+SET
+SELECT 3
+    phase    |               cas               | resultat 
+-------------+---------------------------------+----------
+ APRÈS (OFF) | athlète → équipe existante      | accepté
+ APRÈS (OFF) | transfert vers une autre équipe | accepté
+ APRÈS (OFF) | coach → équipe existante        | accepté
+(3 rows)
+
+DO
+DO
+INSERT 0 3
+SELECT 3
+             phase              |               cas               |                                                  resultat                                                  
+--------------------------------+---------------------------------+------------------------------------------------------------------------------------------------------------
+ VERROU, équipes importées, OFF | athlète → équipe existante      | REFUSÉ 42501 NEXUS: Cette équipe sera ouverte au lancement des ligues civiles sur Nexus. Réessaie bientôt.
+ VERROU, équipes importées, OFF | transfert vers une autre équipe | REFUSÉ 42501 NEXUS: Cette équipe sera ouverte au lancement des ligues civiles sur Nexus. Réessaie bientôt.
+ VERROU, équipes importées, OFF | coach → équipe existante        | REFUSÉ 42501 NEXUS: Cette équipe sera ouverte au lancement des ligues civiles sur Nexus. Réessaie bientôt.
+(3 rows)
+
+UPDATE 1
+SELECT 3
+             phase             |               cas               | resultat 
+-------------------------------+---------------------------------+----------
+ VERROU, équipes importées, ON | athlète → équipe existante      | accepté
+ VERROU, équipes importées, ON | transfert vers une autre équipe | accepté
+ VERROU, équipes importées, ON | coach → équipe existante        | accepté
+(3 rows)
+
+DO
+UPDATE 1
+DELETE 3
+SELECT 1
+DO
+INSERT 0 1
+CREATE FUNCTION
+SELECT 25
+                   sonde                   | recruteurs | ne_la_voient_pas | autres 
+-------------------------------------------+------------+------------------+--------
+ cible sur un club, vue par les recruteurs |         25 |               25 |      0
+(1 row)
+
+DO
+DELETE 1
+INSERT 0 1
+SELECT 25
+                         sonde                         | la_voient 
+-------------------------------------------------------+-----------
+ contrôle : cible sur un cégep, vue par les recruteurs |         2
+(1 row)
+
+DO
+DELETE 1
+psql:C:/tmp/nexus-civil/docs/civil-2026/lot7/prod/rejeu-blanc-20261027.sql:403: NOTICE:  NEXUS: lot 7 civil annulé (verrou et interrupteur retirés)
+DO
+SET
+SELECT 3
+DO
+                                                                                      verdict                                                                                       |        avant_rollback         
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ VERDICT : inscriptions normales identiques avant / après / après rollback ; verrou refuse sous OFF, accepte sous ON ; cible sur un club vue par aucun recruteur ; rollback complet | 2026-10-27 14:37:46.870735+00
+(1 row)
+
+ROLLBACK
+          cle           | avant | apres 
+------------------------+-------+-------
+ athlete_notifications  |   524 |   524
+ athlete_targets        |   598 |   598
+ net.http_request_queue |     0 |     0
+ team_athletes          |   130 |   130
+ team_coaches           |    18 |    18
+(5 rows)
+
+ interrupteur_reste | triggers_restent | equipes_sources | derniere_version 
+--------------------+------------------+-----------------+------------------
+ f                  |                0 |               0 | 20261026210100
+(1 row)
+
+== ROLLBACK fait : rien n'est appliqué.
