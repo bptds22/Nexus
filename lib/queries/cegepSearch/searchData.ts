@@ -9,6 +9,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
+import { trancheCategorie } from "@/lib/config/categories";
+import { saisonCourante } from "@/lib/queries/schoolPage/saisonEnCours";
 
 /** Écoles de test de la plateforme — jamais dans la recherche publique.
  *  Critère volontairement bête : le préfixe du nom. Les vraies écoles sont
@@ -28,8 +30,14 @@ export interface TeamBadge {
  *  libellé est le nom CANONIQUE — jamais le libellé propre à une école. */
 export interface ProgrammeCanonique { id: string; nom: string }
 
+/** Genre de destination. CEGEP seul tant que le lancement civil est OFF ; UNIVERSITE et
+ *  CLUB_CIVIL (organisation civile qui a au moins une équipe 18+) seulement quand il est ON
+ *  (lot 7 civil, décision BP 2026-10-27, point 2 — option C1). */
+export type GenreDestination = "CEGEP" | "UNIVERSITE" | "CLUB_CIVIL";
+
 export interface CegepRow {
   id: string;
+  genre: GenreDestination;
   name: string;
   city: string;
   region: string;
@@ -123,14 +131,26 @@ function logoDeLEcole(supabase: SupabaseClient, logoPath: string | null | undefi
   return supabase.storage.from("school-logos").getPublicUrl(chemin).data.publicUrl;
 }
 
-export async function loadSearchData(supabase: SupabaseClient): Promise<SearchData> {
-  const [schools, teams, programs, pageContent, cards, canon] = await Promise.all([
+export interface OptionsRecherche {
+  /** Destinations 18+ (universités, clubs civils 18+). Vrai seulement quand l'interrupteur
+   *  lancement_civil est ON — c'est l'appelant qui le lit (lib/config/lancementCivil.ts). */
+  destinations18Plus?: boolean;
+}
+
+/** Types d'école lus comme destinations : le cégep, plus l'université quand les destinations
+ *  18+ sont ouvertes. Aucune école UNIVERSITE n'existe au 2026-10-27 (création sur GO BP, lot D) :
+ *  la valeur ne rend rien tant qu'il n'y en a pas. */
+const typesDestination = (o: OptionsRecherche) => (o.destinations18Plus ? ["CEGEP", "UNIVERSITE"] : ["CEGEP"]);
+
+export async function loadSearchData(supabase: SupabaseClient, options: OptionsRecherche = {}): Promise<SearchData> {
+  const types = typesDestination(options);
+  const [schools, teams, programs, pageContent, cards, canon, civils] = await Promise.all([
     supabase.from("schools")
       // logo_url N'EST PAS lu : un champ chargé et jamais rendu est exactement
       // le piège qui a fait croire que la recherche affichait un logo. Voir
       // logoDeLEcole().
-      .select("id, name, city, region, langue, reseau, lat, lng")
-      .eq("type", "CEGEP"),
+      .select("id, name, city, region, langue, reseau, lat, lng, type")
+      .in("type", types),
     // Filtre de type CÔTÉ SERVEUR (schools!...!inner) : sans lui, ce select
     // balayait les 7943 équipes toutes catégories et PostgREST en rendait
     // 1000, en ordre physique. Les équipes de cégep (398, sur 65 cégeps)
@@ -144,7 +164,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     // seule chose qui compte est que les deux saisons tombent sur la même clé.
     supabase.from("teams")
       .select("school_id, division, gender, name, age_group, sports:sport_id(nom), schools!school_id!inner(type)")
-      .eq("schools.type", "CEGEP"),
+      .in("schools.type", types),
     // Les 1263 programmes sont TOUS is_displayed=true et TOUS rattachés à un
     // cégep : le filtre ne borne rien et on dépasse les 1000. Pagination.
     fetchAllRows<{ school_id: string; name: string; program_id: string | null }>(
@@ -155,6 +175,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     supabase.from("school_campus_cards").select("school_id"),
     // 183 lignes : le référentiel des programmes, pour les noms du rail.
     supabase.from("cegep_programs").select("id, nom_canonique"),
+    options.destinations18Plus ? loadClubsCivils18Plus(supabase) : Promise.resolve(null),
   ]);
   // `programs` vient de fetchAllRows : c'est un tableau, sans .error.
   for (const r of [schools, teams, pageContent, cards]) if (r.error) throw r.error;
@@ -219,7 +240,20 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     contentBy.set(c.school_id, c);
   }
 
-  const cegeps: CegepRow[] = ((schools.data ?? []) as Record<string, unknown>[])
+  // Clubs civils 18+ : leurs équipes 18+ font les badges, leurs lignes rejoignent la liste.
+  if (civils) {
+    for (const t of civils.equipes) {
+      const arr = teamsBy.get(t.school_id) ?? [];
+      arr.push({ sport: t.sport, division: t.division, gender: t.gender, name: t.name });
+      teamsBy.set(t.school_id, arr);
+    }
+  }
+  const lignesEcoles = [
+    ...((schools.data ?? []) as Record<string, unknown>[]),
+    ...(civils?.ecoles ?? []),
+  ];
+
+  const cegeps: CegepRow[] = lignesEcoles
     .filter((r) => !isTestSchool(s(r.name)))
     .map((r) => {
       const id = s(r.id);
@@ -237,6 +271,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
       const teamList = teamsBy.get(id) ?? [];
       return {
         id,
+        genre: (r.type === "UNIVERSITE" ? "UNIVERSITE" : r.type === "LIGUE_CIVILE" ? "CLUB_CIVIL" : "CEGEP") as GenreDestination,
         name: s(r.name),
         city: s(r.city),
         region: s(r.region),
@@ -331,6 +366,53 @@ export function equipesParSport(teams: TeamBadge[]): LigneSport[] {
         .sort((a, b) => a.localeCompare(b, "fr"));
       return { sport, details: [...new Set(details)] };
     });
+}
+
+/** Organisations civiles qui ont au moins une équipe 18+ ACTIVE de la saison en cours ou à venir
+ *  (Senior, U19, U21, Junior…, voir trancheCategorie). Seules ces équipes font leurs badges :
+ *  une équipe U14 d'un club n'a rien à faire sur une carte de destinations 18+.
+ *  Plusieurs milliers d'équipes civiles après les lots 3-4 : pagination, tri par id. */
+async function loadClubsCivils18Plus(supabase: SupabaseClient): Promise<{
+  ecoles: Record<string, unknown>[];
+  equipes: { school_id: string; sport: string; division: string | null; gender: string | null; name: string | null }[];
+}> {
+  type LigneEquipe = {
+    id: string; school_id: string; division: string | null; gender: string | null; name: string | null;
+    age_group: string | null; season: string | null; sports: { nom: string } | null;
+  };
+  const saison = saisonCourante();
+  const lignes = await fetchAllRows<LigneEquipe>(
+    (f, t) => supabase.from("teams")
+      .select("id, school_id, division, gender, name, age_group, season, sports:sport_id(nom), schools!school_id!inner(type)")
+      .eq("schools.type", "LIGUE_CIVILE")
+      .eq("is_active", true)
+      .or(`season.is.null,season.gte.${saison}`)
+      .order("id")
+      .range(f, t) as unknown as PromiseLike<{ data: LigneEquipe[] | null; error: unknown }>,
+    "cegepSearch/clubsCivils18",
+  );
+  // Même déduplication que les cégeps : une équipe vue sur deux saisons fait UN badge.
+  const vues = new Set<string>();
+  const equipes: { school_id: string; sport: string; division: string | null; gender: string | null; name: string | null }[] = [];
+  for (const t of lignes) {
+    const sport = t.sports?.nom;
+    if (!sport || trancheCategorie(t.age_group) !== "18+") continue;
+    const k = JSON.stringify([t.school_id, sport, t.division ?? "", t.gender ?? "", t.name ?? "", t.age_group ?? ""]);
+    if (vues.has(k)) continue;
+    vues.add(k);
+    equipes.push({ school_id: t.school_id, sport, division: t.division, gender: t.gender, name: t.name });
+  }
+  const ids = [...new Set(equipes.map((e) => e.school_id))];
+  const ecoles: Record<string, unknown>[] = [];
+  // Par paquets : 300+ identifiants dans un seul `in` dépasseraient la longueur d'URL.
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase.from("schools")
+      .select("id, name, city, region, langue, reseau, lat, lng, type")
+      .in("id", ids.slice(i, i + 100));
+    if (error) throw error;
+    ecoles.push(...((data ?? []) as Record<string, unknown>[]));
+  }
+  return { ecoles, equipes };
 }
 
 /** Athlète connecté. Visiteur non connecté / non-athlète → null : la page

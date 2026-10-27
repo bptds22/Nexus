@@ -17,6 +17,7 @@ import dynamic from "next/dynamic";
 import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { loadSearchData, trouverProgramme, equipesParSport, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
+import { lireLancementCivil } from "@/lib/config/lancementCivil";
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
 import Link from "next/link";
 import type { MapFocus } from "./MapPane";
@@ -49,9 +50,21 @@ const MapPane = dynamic(() => import("./MapPane"), { ssr: false });
 
 const LANGUES = [{ v: "FR", label: "Français" }, { v: "EN", label: "Anglais" }, { v: "BILINGUE", label: "Bilingue" }];
 const RESEAUX = [{ v: "PUBLIC", label: "Public" }, { v: "PRIVE", label: "Privé" }];
+/* Filtre « Type » quand le lancement civil est ON (lot 7 civil, décision BP 2026-10-27, point 2) :
+   le réseau du cégep, l'université, le club civil 18+. Une valeur sans aucune destination n'est
+   pas proposée (au 2026-10-27, aucune université : création sur GO BP, lot D). OFF : la liste
+   Public / Privé d'avant, à l'identique. */
+const TYPES_18PLUS = [
+  { v: "PUBLIC", label: "Cégep public" }, { v: "PRIVE", label: "Cégep privé" },
+  { v: "UNIVERSITE", label: "Université" }, { v: "CLUB_CIVIL", label: "Club civil 18+" },
+];
+/** Valeur du filtre Type d'une destination : le réseau pour un cégep, le genre sinon. */
+const typeDe = (c: CegepRow): string | null => (c.genre === "CEGEP" ? c.reseau : c.genre);
 
 const libLangue = (l: string | null) => (l === "EN" ? "ANG" : l === "BILINGUE" ? "BIL" : l === "FR" ? "FR" : "");
 const libReseau = (r: string | null) => (r === "PRIVE" ? "Privé" : r === "PUBLIC" ? "Public" : "");
+const libType = (c: CegepRow) =>
+  c.genre === "CLUB_CIVIL" ? "Club civil 18+" : c.genre === "UNIVERSITE" ? "Université" : libReseau(c.reseau);
 
 const initialesDe = (nom: string) =>
   nom.replace(/^(Cégep|Collège|Campus|Centre)\s+(de\s+|du\s+|d'|des\s+)?/i, "")
@@ -179,6 +192,8 @@ export default function CegepSearch() {
   const [langues, setLangues] = React.useState<string[]>([]);
   const [reseaux, setReseaux] = React.useState<string[]>([]);
   const [pourMoi, setPourMoi] = React.useState(false);
+  /** Interrupteur lancement_civil : ON → destinations 18+ (clubs civils, universités). */
+  const [destinations18, setDestinations18] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [focus, setFocus] = React.useState<MapFocus | null>(null);
@@ -202,8 +217,10 @@ export default function CegepSearch() {
     let annule = false;
     (async () => {
       try {
-        const d = await loadSearchData(supabase);
+        const on = await lireLancementCivil(supabase);
+        const d = await loadSearchData(supabase, { destinations18Plus: on });
         if (annule) return;
+        setDestinations18(on);
         setData(d);
         if (d.viewer) {
           const { data: rows } = await supabase.from("athlete_targets")
@@ -243,7 +260,8 @@ export default function CegepSearch() {
   const origine = React.useMemo(() => {
     if (!data) return { lat: null, lng: null };
     const r = regions[0] ?? data.viewer?.regionOrigine ?? null;
-    return r ? regionCentroid(data.cegeps, r) : { lat: null, lng: null };
+    // Barycentre des CÉGEPS seulement : les clubs civils ne déplacent pas l'origine.
+    return r ? regionCentroid(data.cegeps.filter((c) => c.genre === "CEGEP"), r) : { lat: null, lng: null };
   }, [data, regions]);
 
   const resultats = React.useMemo(() => {
@@ -255,7 +273,10 @@ export default function CegepSearch() {
         if (sports.length && !sports.some((s) => c.sports.includes(s))) return false;
         if (regions.length && !regions.includes(c.region)) return false;
         if (langues.length && (!c.langue || !langues.includes(c.langue))) return false;
-        if (reseaux.length && (!c.reseau || !reseaux.includes(c.reseau))) return false;
+        if (reseaux.length) {
+          const t = typeDe(c);
+          if (!t || !reseaux.includes(t)) return false;
+        }
         if (progs.length && !progs.some((id) => c.programmeIds.includes(id))) return false;
         if (pourMoi) {
           const v = data.viewer;
@@ -363,6 +384,9 @@ export default function CegepSearch() {
     .filter((p) => !progQ || norm(p.nom).includes(norm(progQ)))
     .map((p) => p.id);
   const nomsProgrammes = Object.fromEntries(data.catalogueProgrammes.map((p) => [p.id, p.nom]));
+  const typesPresents = new Set(data.cegeps.map(typeDe));
+  const typesProposes = destinations18 ? TYPES_18PLUS.filter((t) => typesPresents.has(t.v)) : RESEAUX;
+  const nomResultat = destinations18 ? "destination" : "collège";
 
   return (
     <div className="cs" ref={rootRef} style={{ ["--cs-h" as string]: hauteur }}>
@@ -418,7 +442,7 @@ export default function CegepSearch() {
 
         <FiltreBtn label="Type" compteur={reseaux.length} onClear={() => setReseaux([])}>
           {() => (
-            <ListeCases items={RESEAUX.map((r) => r.v)} labels={Object.fromEntries(RESEAUX.map((r) => [r.v, r.label]))}
+            <ListeCases items={typesProposes.map((r) => r.v)} labels={Object.fromEntries(typesProposes.map((r) => [r.v, r.label]))}
               selection={reseaux} onToggle={(v) => setReseaux((x) => toggle(x, v))} />
           )}
         </FiltreBtn>
@@ -442,7 +466,7 @@ export default function CegepSearch() {
       <div className="main">
         <div className="list">
           <div className="count">
-            <b>{resultats.length} collège{resultats.length > 1 ? "s" : ""}</b>
+            <b>{resultats.length} {nomResultat}{resultats.length > 1 ? "s" : ""}</b>
             {viewer ? " · fits d'abord" : " · connecte-toi pour tes fits"}
           </div>
           <div className="cards" ref={listRef}>
@@ -469,7 +493,7 @@ export default function CegepSearch() {
                     {montreFit && <span className="fitbadge">FIT</span>}
                   </div>
                   <div className="m">
-                    {[c.city, libReseau(c.reseau), libLangue(c.langue)].filter(Boolean).join(" · ")}
+                    {[c.city, libType(c), libLangue(c.langue)].filter(Boolean).join(" · ")}
                   </div>
                 </div>
                 <button
@@ -481,7 +505,7 @@ export default function CegepSearch() {
               </div>
               );
             })}
-            {!resultats.length && <div className="vide">Aucun collège ne correspond. Retire un filtre.</div>}
+            {!resultats.length && <div className="vide">Aucun{destinations18 ? "e destination" : " collège"} ne correspond. Retire un filtre.</div>}
           </div>
         </div>
 
@@ -539,7 +563,7 @@ function Apercu({
         </div>
         <div>
           <b>{c.name}{c.nickname ? ` — ${c.nickname}` : ""}</b>
-          <div className="m">{[c.city, libReseau(c.reseau),
+          <div className="m">{[c.city, libType(c),
             c.langue === "EN" ? "Anglophone" : c.langue === "FR" ? "Francophone" : c.langue === "BILINGUE" ? "Bilingue" : null,
           ].filter(Boolean).join(" · ")}</div>
         </div>
@@ -553,7 +577,7 @@ function Apercu({
       )}
 
       <div className="pstat">
-        <div className="ps"><div className="v">{c.sports.length}</div><div className="l">SPORTS RSEQ</div></div>
+        <div className="ps"><div className="v">{c.sports.length}</div><div className="l">{c.genre === "CEGEP" ? "SPORTS RSEQ" : "SPORTS"}</div></div>
         <div className="ps"><div className="v">{c.programmes.length}</div><div className="l">PROGRAMMES</div></div>
         <div className="ps">
           {/* tilde assumé : l'origine est le barycentre de la région, pas le
@@ -604,7 +628,7 @@ function Apercu({
         </div>
       )}
 
-      {cible && <div className="pcible">Ce collège est dans tes cibles.</div>}
+      {cible && <div className="pcible">{c.genre === "CLUB_CIVIL" ? "Ce club est dans tes cibles." : "Ce collège est dans tes cibles."}</div>}
 
       <div className="pcta">
         {/* Page collège = route NATIVE (bundle Capacitor) → navigation INTERNE
@@ -612,7 +636,8 @@ function Apercu({
         {/* Route PUBLIQUE `/college/[id]`. Sous Capacitor on passe par le
             navigateur in-app plutot qu'un <Link> Next : la page vit cote web,
             elle n'est pas dans le bundle natif. */}
-        {c.riche ? (
+        {/* Club civil 18+ : pas de page collège (la route /college/ est celle d'un cégep). */}
+        {c.genre === "CLUB_CIVIL" ? null : c.riche ? (
             <a
               className="btn page"
               href={`/college/${c.id}`}
@@ -631,7 +656,7 @@ function Apercu({
         {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Rendue pour
             un athlète connecté seulement : sans `viewer` le bouton est inerte,
             et annoncer une conséquence à un geste impossible embrouille. */}
-        {viewer && <span className="note">{divulgationCible(cible)}</span>}
+        {viewer && <span className="note">{divulgationCible(cible, c.genre === "CLUB_CIVIL")}</span>}
         {!viewer && <span className="note">Connecte-toi avec ton compte athlète pour cibler un collège.</span>}
       </div>
     </div>

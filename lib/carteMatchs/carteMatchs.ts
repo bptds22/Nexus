@@ -15,6 +15,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { categoriesTriees, libelleCategorie } from "@/lib/config/categories";
+import { divisionsTriees } from "@/lib/config/divisions";
 import { sourceDuMatch, type SourceMatch } from "@/lib/calendar/sourceMatch";
 import { heureCarte, heureQuebec, minutesDe } from "@/lib/calendar/heureMatch";
 import { nomGroupe } from "@/lib/civil/classementCivil";
@@ -190,10 +191,9 @@ export function erreurPlage(debut: string, fin: string | null | undefined): stri
 /** Catégorie et division se filtrent côté page, sur le résultat de la RPC.
  *  Une liste d'une seule valeur → la page grise le filtre (jamais caché). */
 export function optionsCatDiv(matchs: Pick<MatchRecherche, "categorie" | "division">[]): { categories: string[]; divisions: string[] } {
-  const valeurs = (cle: (m: Pick<MatchRecherche, "categorie" | "division">) => string | null) =>
-    [...new Set(matchs.map(cle).map((v) => (v ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
   // Lot B4 cégep : la Catégorie passe par la liste canonique unique (libellé, ordre par âge).
-  return { categories: categoriesTriees(matchs.map((m) => m.categorie)), divisions: valeurs((m) => m.division) };
+  // Lot 7 civil : la Division par l'ordre canonique des niveaux (lib/config/divisions.ts).
+  return { categories: categoriesTriees(matchs.map((m) => m.categorie)), divisions: divisionsTriees(matchs.map((m) => m.division)) };
 }
 
 export function filtrerCatDiv<T extends Pick<MatchRecherche, "categorie" | "division">>(matchs: T[], categorie: string, division: string): T[] {

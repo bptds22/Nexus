@@ -1,0 +1,59 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-27 14:38:18.432617+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 1
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 1
+ phase |     resultat      
+-------+-------------------
+ AVANT | accepté | accepté
+(1 row)
+
+SELECT 1
+       debut_migration        
+------------------------------
+ 2026-10-27 14:38:18.60266+00
+(1 row)
+
+psql.exe : psql:C:/tmp/nexus-civil/docs/civil-2026/lot7/prod/apply-20261027.sql:225: NOTICE:  NEXUS: lot 7 civil — interrupteur OFF, verrou en 
+place (0 équipes importées verrouillées)
+At line:2 char:1
++ & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" "host=aws-1-ca-c ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:C:/tmp/nex... verrouillées):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-27 14:38:18.614694+00
+(1 row)
+
+SET
+DO
+    phase    |     resultat      
+-------------+-------------------
+ APRÈS (OFF) | accepté | accepté
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite | interrupteur |         avant_commit          
+------------------+--------------+-------------------------------
+ 20261027150000   | false        | 2026-10-27 14:38:18.649861+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot 7 civil en prod (interrupteur OFF).

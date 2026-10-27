@@ -23,6 +23,7 @@
 
 import { avecZone } from "@/lib/config/teamLabel";
 import { genderLabel } from "@/lib/config/gender";
+import { comparerDivisions } from "@/lib/config/divisions";
 
 export interface EquipeLibellable {
   name?: string | null;
@@ -115,12 +116,12 @@ export function rangCategorie(cat: string | null | undefined): number {
 
 const fr = (a: string, b: string) => a.localeCompare(b, "fr", { sensitivity: "base", numeric: true });
 
-/** Comparateur commun : nom, catégorie (ordre des âges), division, genre. */
+/** Comparateur commun : nom, catégorie (ordre des âges), division (ordre des niveaux), genre. */
 export function comparerEquipes(a: EquipeLibellable, b: EquipeLibellable): number {
   return fr(net(a.name), net(b.name))
     || rangCategorie(a.age_group) - rangCategorie(b.age_group)
     || fr(net(a.age_group), net(b.age_group))
-    || fr(net(a.division), net(b.division))
+    || comparerDivisions(net(a.division), net(b.division))
     || fr(genreAffiche(a.gender), genreAffiche(b.gender));
 }
 

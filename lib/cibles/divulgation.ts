@@ -41,11 +41,21 @@ export const CIBLE_DIVULGATION_APRES =
 export const CIBLE_DIVULGATION_LISTE =
   "Les recruteurs de chaque cégep de ta liste voient que tu les as ciblés.";
 
+/* Club civil 18+ (lot 7 civil, décision BP 2026-10-27 : le cœur réutilise athlete_targets).
+   Un club n'a pas de recruteur : AUCUN compte ne lit la cible d'un club (athletes_targeting_my_cegep
+   ne rend que les cibles de l'école du recruteur, toujours un cégep). La phrase le dit, sans promettre
+   un regard qui n'existe pas. */
+export const CIBLE_DIVULGATION_CLUB_AVANT =
+  "Le club ne voit pas tes cibles : elles restent dans ta liste, pour toi.";
+export const CIBLE_DIVULGATION_CLUB_APRES =
+  "Ce club est dans ta liste. Le club ne voit pas tes cibles.";
+
 /**
  * La bonne phrase selon l'état du bouton. À préférer à un ternaire écrit
  * sur place : c'est le point unique où le temps du verbe se décide.
  */
-export function divulgationCible(dansLesCibles: boolean): string {
+export function divulgationCible(dansLesCibles: boolean, club = false): string {
+  if (club) return dansLesCibles ? CIBLE_DIVULGATION_CLUB_APRES : CIBLE_DIVULGATION_CLUB_AVANT;
   return dansLesCibles ? CIBLE_DIVULGATION_APRES : CIBLE_DIVULGATION_AVANT;
 }
 

@@ -9,6 +9,7 @@ import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import type { ProgramPageContent, Sport } from "@/components/program-page/content";
 import type { SchoolPageState } from "./schoolPageData";
 import { attributsEquipe, comparerEquipes, nomEstCeluiDuClub } from "@/lib/teams/teamLabel";
+import { comparerDivisions } from "@/lib/config/divisions";
 
 const PROV_CODE: Record<string, string> = { Québec: "QC", Ontario: "ON", Canada: "CA" };
 const nn = (v: string | null | undefined, fb: string) => (v && v.trim() ? v : fb);
@@ -209,7 +210,7 @@ export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[], nomCl
     });
     if (!avecNoms) {
       sports.get(sport)!.equipes.sort((a, b) =>
-        (a.division ?? "").localeCompare(b.division ?? "", "fr") || a.nom.localeCompare(b.nom, "fr"));
+        comparerDivisions(a.division, b.division) || a.nom.localeCompare(b.nom, "fr"));
     }
   }
   return [...sports.values()].sort((a, b) => a.nom.localeCompare(b.nom, "fr"));

@@ -32,9 +32,14 @@ export const CATEGORIES_CANONIQUES: readonly string[] = [
   "M14",
   "M15",
   "M18",
-  // Civil (hockey, football), du plus jeune au plus vieux.
+  // Civil (hockey, football, basket), du plus jeune au plus vieux. Novice, Mini, Pee-Wee et
+  // Bantam sans calibre : vocabulaire de saisie civil (civilVocab.ts), ajoutés au lot 7 civil.
+  "Novice",
+  "Mini",
   "Moustique AAA",
+  "Pee-Wee",
   "Pee-Wee AAA",
+  "Bantam",
   "Bantam AAA",
   "M18 AAA",
   "Midget",
@@ -120,4 +125,38 @@ export function variantesCategorie(libelle: string): string[] {
 export function correspondCategorie(brut: string | null | undefined, choisi: string): boolean {
   if (!choisi) return true;
   return libelleCategorie(brut) === choisi;
+}
+
+/* ── Tranche d'âge (lot 7 civil, décision BP 2026-10-27) ───────────────────
+   Une catégorie est de moins de 18 ans (« -18 ») ou de 18 ans et plus (« 18+ »). Le sélecteur
+   d'équipe de l'athlète et les destinations 18+ de « Trouve ton cégep » s'en servent.
+   « Ouvert » n'a pas d'âge : null. Une valeur hors liste se classe par son nombre (U14, M-17 :
+   moins de 19 → -18) ou par son premier mot (Junior, Senior → 18+ ; Novice, Atome… → -18) ;
+   introuvable → null, et l'appelant ne cache rien faute de savoir. */
+
+export type Tranche = "-18" | "18+";
+
+const DIX_HUIT_PLUS: ReadonlySet<string> = new Set(["Junior Majeur", "U19", "U21", "Senior", "Collégial"]);
+const SANS_AGE: ReadonlySet<string> = new Set(["Ouvert"]);
+
+const MOTS_MOINS_18 = new Set([
+  "novice", "mini", "moustique", "atome", "pee-wee", "peewee", "bantam", "midget", "benjamin", "cadet", "juvenile",
+]);
+const MOTS_18_PLUS = new Set(["junior", "senior", "collegial"]);
+
+/** Tranche d'une catégorie brute (`teams.age_group`, `games.category`), ou null si on ne sait pas. */
+export function trancheCategorie(brut: string | null | undefined): Tranche | null {
+  const libelle = libelleCategorie(brut);
+  if (!libelle) return null;
+  if (RANG.has(libelle)) {
+    if (SANS_AGE.has(libelle)) return null;
+    return DIX_HUIT_PLUS.has(libelle) ? "18+" : "-18";
+  }
+  const k = cle(libelle);
+  const n = k.match(/^[um]-?\s?(\d{1,2})\b/);
+  if (n) return Number(n[1]) <= 18 ? "-18" : "18+";
+  const premier = k.split(" ")[0];
+  if (MOTS_18_PLUS.has(premier)) return "18+";
+  if (MOTS_MOINS_18.has(premier)) return "-18";
+  return null;
 }
