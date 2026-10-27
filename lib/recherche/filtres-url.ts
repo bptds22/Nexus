@@ -46,6 +46,8 @@ export interface FiltresRecherche {
    *  `orgType` leur sert de NIVEAU 1 : le changer remet ces deux-la a zero. */
   leagueFilter: string;
   divisionFilter: string;
+  /** Lot B4 cégep — axe Catégorie (libellé canonique, lib/config/categories.ts). */
+  categorieFilter: string;
   minGpa: string;
   minRating: string;
   sortBy: string;
@@ -78,6 +80,7 @@ export const FILTRES_DEFAUT: FiltresRecherche = Object.freeze({
   orgType: "",
   leagueFilter: "",
   divisionFilter: "",
+  categorieFilter: "",
   minGpa: "",
   minRating: "",
   sortBy: "decouverte",
@@ -109,6 +112,7 @@ const CLES: Record<keyof FiltresRecherche, string> = {
   orgType: "org",
   leagueFilter: "ligue",
   divisionFilter: "div",
+  categorieFilter: "cat",
   minGpa: "gpa",
   minRating: "note",
   sortBy: "tri",
@@ -161,6 +165,7 @@ export function decoderFiltres(params: SourceParams): FiltresRecherche {
     orgType: texte("orgType"),
     leagueFilter: texte("leagueFilter"),
     divisionFilter: texte("divisionFilter"),
+    categorieFilter: texte("categorieFilter"),
     minGpa: texte("minGpa"),
     minRating: texte("minRating"),
     sortBy: texte("sortBy"),
@@ -212,6 +217,7 @@ export function encoderFiltres(f: FiltresRecherche): string {
   poserTexte("orgType");
   poserTexte("leagueFilter");
   poserTexte("divisionFilter");
+  poserTexte("categorieFilter");
   poserTexte("minGpa");
   poserTexte("minRating");
   poserTexte("sortBy");

@@ -26,11 +26,6 @@ select now() as debut, current_user, current_setting('server_version') as versio
 do $$
 declare n int; e text; v text;
 begin
-  -- Jamais le mardi ou le mercredi avant 5 h (heure de Montréal).
-  if extract(isodow from now() at time zone 'America/Toronto') in (2, 3)
-     and extract(hour from now() at time zone 'America/Toronto') < 5 then
-    raise exception 'NEXUS: pas d''apply le mardi ou le mercredi avant 5 h';
-  end if;
 
   if exists (select 1 from supabase_migrations.schema_migrations where version = '@@VERSION@@') then
     raise exception 'NEXUS: version @@VERSION@@ déjà inscrite';

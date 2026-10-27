@@ -87,6 +87,7 @@ import { coteCarte, cotePartenaireEnPlus, type CoteCarte } from "@/lib/evaluatio
 import { createClient } from "@/lib/supabase/client";
 import { pastillesBadges, textePastille } from "@/lib/queries/shared/athleteBadges";
 import { taxonomyFromSearchRow, type TaxonomySource } from "@/lib/config/team-taxonomy";
+import { libellePromotion } from "@/lib/config/gradYears";
 
 export interface AthleteSearchFilters {
   search: string;           // déjà débouncé en amont
@@ -199,6 +200,8 @@ interface RpcSearchRow {
   team_league: string | null;
   team_is_rseq: boolean | null;
   team_school_type: string | null;
+  /** Lot B3 cégep (20261026210100) : catégorie de l'équipe (teams.age_group). */
+  team_age_group?: string | null;
   /* W2 (20261014133428) — l'évaluation PARTENAIRE, à part. `cote_globale`
      reste la note du COACH seule : les binaires mobiles publiés la lisent
      sans libellé. Le filtre « 4+ » et le tri serveur utilisent
@@ -224,6 +227,8 @@ export interface SearchAthleteRow {
   school: string;
   region: string;
   graduationYear: number;
+  /** Lot B4 cégep : « Secondaire AAAA » / « DEC AAAA ». */
+  promotionLabel?: string | null;
   niveau: "Sec. 5";
   heightDisplay: string;
   weightDisplay: string;
@@ -380,6 +385,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           school: a.school_name ?? "",
           region: a.school_region ?? "",
           graduationYear: a.annee_diplomation ?? 0,
+          promotionLabel: libellePromotion(a.annee_diplomation, a.school_type),
           niveau: "Sec. 5" as const,
           heightDisplay: "",
           weightDisplay: "",

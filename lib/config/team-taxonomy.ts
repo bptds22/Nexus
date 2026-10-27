@@ -1,4 +1,4 @@
-// Taxonomie d'équipe — ORGANISATION, LIGUE, DIVISION.
+// Taxonomie d'équipe — ORGANISATION (« Type »), LIGUE, DIVISION, CATÉGORIE.
 //
 // Source unique des trois axes ajoutés aux moteurs de recherche d'athlètes
 // (coach + directeur, recruteur, et un jour peut-être partenaire). Jumeau de
@@ -26,6 +26,7 @@
 // utilisable et une facette qui se trompe sur 26 athlètes.
 
 import { taRows } from "@/lib/queries/shared/embeds";
+import { categoriesTriees, comparerCategories, libelleCategorie } from "@/lib/config/categories";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    SENTINELLE « NON RENSEIGNÉ »
@@ -69,9 +70,14 @@ export type TaxonomySource = {
    *  nul côté athlète, équipe rattachée à un club civil). Utiliser
    *  `schoolType` comme approximation serait donc faux dès aujourd'hui. */
   teamSchoolType: string | null;
+  /** `teams.age_group` de l'équipe courante, brut (lot B4 cégep). Absent des sources
+   *  d'avant B3 : `undefined` vaut « Non renseigné ». */
+  teamAgeGroup?: string | null;
 };
 
-export type Organisation = "scolaire" | "ligue_civile";
+/** Le « Type » affiché (lot B4 cégep, décision BP 2026-10-26) : Secondaire / Civil / Collégial.
+ *  La clé « scolaire » reste celle du secondaire (clés d'URL et préférences existantes). */
+export type Organisation = "scolaire" | "ligue_civile" | "collegial";
 
 /** Source « tout inconnu ». Repli explicite pour les fixtures mock, qui ne
  *  portent aucune taxonomie : elles se rangent alors en « Non renseigné »,
@@ -79,7 +85,7 @@ export type Organisation = "scolaire" | "ligue_civile";
 export const EMPTY_TAXONOMY: TaxonomySource = {
   context: null, schoolType: null,
   teamDivision: null, teamLeague: null, teamIsRseq: false,
-  hasTeam: false, teamSchoolType: null,
+  hasTeam: false, teamSchoolType: null, teamAgeGroup: null,
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -120,6 +126,7 @@ export function taxonomyFromAthleteRow(row: Record<string, unknown>): TaxonomySo
     teamIsRseq: team?.rseq_team_id != null,
     hasTeam: team !== null,
     teamSchoolType: asText(teamSchool?.type),
+    teamAgeGroup: asText(team?.age_group),
   };
 }
 
@@ -149,6 +156,8 @@ export type SearchRowTaxonomy = {
   team_league: string | null;
   team_is_rseq: boolean | null;
   team_school_type: string | null;
+  /** Rendu par la RPC depuis le lot B3 (20261026210100). */
+  team_age_group?: string | null;
 };
 
 export function taxonomyFromSearchRow(row: SearchRowTaxonomy): TaxonomySource {
@@ -161,13 +170,31 @@ export function taxonomyFromSearchRow(row: SearchRowTaxonomy): TaxonomySource {
     teamIsRseq: row.team_is_rseq === true,
     hasTeam: teamSchoolType !== null,
     teamSchoolType,
+    teamAgeGroup: asText(row.team_age_group),
   };
 }
 
 export const ORGANISATION_LABELS: Record<Organisation, string> = {
-  scolaire: "Scolaire",
-  ligue_civile: "Ligue civile",
+  scolaire: "Secondaire",
+  ligue_civile: "Civil",
+  collegial: "Collégial",
 };
+
+/** Ordre d'affichage du Type, partout. */
+export const ORGANISATIONS: readonly Organisation[] = ["scolaire", "ligue_civile", "collegial"];
+
+/** Options du Type pour une liste FIXE (calendrier, mobile) ; `avecCollegial` faux pour le
+ *  recruteur collégial (lot B4 : il ne reçoit jamais de cégépien, lot A — l'option serait
+ *  toujours vide). Un recruteur universitaire (lot D) la verra. */
+export function organisationsAffichees(avecCollegial: boolean): { value: Organisation; label: string }[] {
+  return ORGANISATIONS.filter((o) => avecCollegial || o !== "collegial")
+    .map((o) => ({ value: o, label: ORGANISATION_LABELS[o] }));
+}
+
+/** Retire l'option Collégial d'un menu calculé (recruteur collégial, surfaces d'athlètes). */
+export function sansCollegial<T extends { value: string }>(options: readonly T[]): T[] {
+  return options.filter((o) => o.value !== "collegial");
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    AXE 1 — ORGANISATION
@@ -245,12 +272,17 @@ export function organisationOf(src: MaybeSource): Organisation | null {
   // 1. La déclaration de l'athlète.
   const ctx = (src.context ?? "").trim().toLowerCase();
   if (ctx === "ligue_civile") return "ligue_civile";
+
+  // 1b. Lot B4 cégep (décision BP 2026-10-26) : le cégep n'est plus fondu dans le scolaire.
+  //     Une école d'ancrage CEGEP l'emporte sur le contexte déclaré « scolaire », qui couvre
+  //     les deux (même définition que le cégépien du lot A : athlete_est_cegepien).
+  const type = (src.schoolType ?? "").trim().toUpperCase();
+  if (type === "CEGEP") return "collegial";
   if (ctx === "scolaire") return "scolaire";
 
   // 2. Le type de son école.
-  const type = (src.schoolType ?? "").trim().toUpperCase();
   if (type === "LIGUE_CIVILE") return "ligue_civile";
-  if (type) return "scolaire"; // SECONDAIRE | CEGEP — et tout type scolaire à venir
+  if (type) return "scolaire"; // SECONDAIRE — et tout type scolaire à venir
 
   // 3. La ligue NOMMÉE de son équipe — jamais RSEQ, voir l'encadré ci-dessus.
   const league = leagueOf(src);
@@ -422,6 +454,8 @@ export type AxisSelection = {
   org?: string | null;
   league?: string | null;
   division?: string | null;
+  /** Lot B4 : libellé canonique (lib/config/categories.ts). */
+  categorie?: string | null;
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -533,11 +567,12 @@ function libelleLigue(src: MaybeSource): string | null { return leagueOf(src); }
 function libelleDivision(src: MaybeSource): string | null { return divisionOf(src); }
 
 /** Population cadrée par les axes AUTRES que celui qu'on construit. */
-function cadrer(rows: readonly MaybeSource[], sel: AxisSelection, sauf: "org" | "league" | "division") {
+function cadrer(rows: readonly MaybeSource[], sel: AxisSelection, sauf: "org" | "league" | "division" | "categorie") {
   return rows.filter((r) =>
     (sauf === "org" || matchesOrganisation(r, sel.org ?? ""))
     && (sauf === "league" || matchesLeague(r, sel.league ?? ""))
-    && (sauf === "division" || matchesDivision(r, sel.division ?? "")),
+    && (sauf === "division" || matchesDivision(r, sel.division ?? ""))
+    && (sauf === "categorie" || matchesCategorie(r, sel.categorie ?? "")),
   );
 }
 
@@ -602,6 +637,12 @@ function optionsDAxe(
   return sortOptions(options);
 }
 
+/** Ordre fixe du Type (Secondaire, Civil, Collégial), « Non renseigné » en dernier. */
+function trierOrganisations(options: TaxonomyOption[]): TaxonomyOption[] {
+  const rang = (v: string) => { const i = ORGANISATIONS.indexOf(v as Organisation); return i < 0 ? 99 : i; };
+  return [...options].sort((a, b) => rang(a.value) - rang(b.value));
+}
+
 /** Trie les options par libellé (fr), « Non renseigné » toujours en dernier. */
 function sortOptions(options: TaxonomyOption[]): TaxonomyOption[] {
   return [...options].sort((a, b) => {
@@ -615,13 +656,13 @@ export function organisationOptions(
   rows: readonly MaybeSource[],
   sel: AxisSelection = {},
 ): TaxonomyOption[] {
-  return optionsDAxe(
+  return trierOrganisations(optionsDAxe(
     rows,
     cleOrganisation,
     (r) => { const o = organisationOf(r); return o === null ? null : ORGANISATION_LABELS[o]; },
     cadrer(rows, sel, "org"),
     sel.org ?? "",
-  );
+  ));
 }
 
 export function leagueOptions(
@@ -648,6 +689,41 @@ export function divisionOptions(
    La comparaison se fait sur `value` (casefoldée pour ligue et division), pas
    sur le libellé : deux orthographes d'une même ligue doivent matcher ensemble.
    ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   AXE 4 — CATÉGORIE (lot B4 cégep)
+
+   `teams.age_group` de l'équipe de l'athlète, lu à travers la liste canonique unique
+   (lib/config/categories.ts) : libellé canonique, ordre par âge, aucun regroupement.
+   Sans équipe ou sans catégorie : « Non renseigné ».
+   ───────────────────────────────────────────────────────────────────────────── */
+
+export function categorieOf(src: MaybeSource): string | null {
+  if (!src) return null;
+  return libelleCategorie(src.teamAgeGroup ?? null);
+}
+
+export function categorieOptions(
+  rows: readonly MaybeSource[],
+  sel: AxisSelection = {},
+): TaxonomyOption[] {
+  const options = optionsDAxe(rows, categorieOf, categorieOf, cadrer(rows, sel, "categorie"), sel.categorie ?? "");
+  return [...options].sort((a, b) => {
+    if (a.value === UNSET_VALUE) return 1;
+    if (b.value === UNSET_VALUE) return -1;
+    return comparerCategories(a.value, b.value);
+  });
+}
+
+export function matchesCategorie(src: MaybeSource, selected: string): boolean {
+  if (!selected) return true;
+  const c = categorieOf(src);
+  if (selected === UNSET_VALUE) return c === null;
+  return c === selected;
+}
+
+/** Ré-export pour les surfaces qui listent des catégories hors taxonomie (carte des matchs). */
+export { categoriesTriees };
 
 export function matchesOrganisation(src: MaybeSource, selected: string): boolean {
   if (!selected) return true;

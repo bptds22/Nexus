@@ -7,11 +7,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PageChargee, { type ParamsUrl } from "../_components/PageChargee";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import { variantesCategorie } from "@/lib/config/categories";
 import TendancesDropdownFilters from "../_components/TendancesDropdownFilters";
 import EnTeteExploration from "../_components/EnTeteExploration";
 import { debutPeriode, libellePeriode, lirePeriode, PASTILLES_PERIODE, type ClePeriode } from "@/lib/partenaires/periodeExploration";
 import {
   isOrgType,
+  parseCategorie,
+  TYPE_ECOLE,
   parseCoteMin,
   isPartnerSortKey,
   DEFAULT_PARTNER_SORT,
@@ -64,8 +67,10 @@ type FilterParams = {
   region?: string;
   /** `annee_diplomation` — même nom de param que sur /classements. */
   year?: string;
-  /** 'scolaire' | 'ligue_civile' */
+  /** Type (lot B4) : 'scolaire' (Secondaire) | 'ligue_civile' (Civil) | 'collegial'. */
   org?: string;
+  /** Catégorie (lot B4) : libellé canonique, lib/config/categories.ts. */
+  cat?: string;
   /** Cote minimale, en texte ('3' | '3.5' | '4' | '4.5'). */
   cote?: string;
   /** Clé de tri — ordre d'AFFICHAGE, pas de composition. Cf. sortPartnerRows. */
@@ -159,6 +164,7 @@ async function rendre(brut: ParamsUrl) {
   const yearParsed = params.year ? parseInt(params.year, 10) : NaN;
   const yearFilter = Number.isFinite(yearParsed) ? yearParsed : null;
   const orgFilter = isOrgType(params.org) ? params.org : null;
+  const categorieFilter = parseCategorie(params.cat);
   const coteFilter = parseCoteMin(params.cote);
   const sortKey = isPartnerSortKey(params.sort) ? params.sort : DEFAULT_PARTNER_SORT;
 
@@ -199,10 +205,10 @@ async function rendre(brut: ParamsUrl) {
   if (yearFilter !== null) viewsQuery = viewsQuery.eq("annee_diplomation", yearFilter);
   // Genre — projeté par trending_athletes_view depuis 20260817190100.
   if (genreFilter) viewsQuery = viewsQuery.eq("genre", genreFilter);
-  /* ORGANISME — la vue ne projette pas `school_id` : on teste `school_name`,
-     substitut exact vérifié (0 désaccord). Détaillé dans la barre de filtres. */
-  if (orgFilter === "scolaire") viewsQuery = viewsQuery.not("school_name", "is", null);
-  if (orgFilter === "ligue_civile") viewsQuery = viewsQuery.is("school_name", null);
+  /* TYPE et CATÉGORIE (lot B4) — colonnes rendues par la vue depuis B3 (school_type,
+     team_age_group). Filtrés dans la requête, avant la coupe à 10. */
+  if (orgFilter) viewsQuery = viewsQuery.eq("school_type", TYPE_ECOLE[orgFilter]);
+  if (categorieFilter) viewsQuery = viewsQuery.in("team_age_group", variantesCategorie(categorieFilter));
   if (coteFilter !== null) viewsQuery = viewsQuery.gte("cote_globale_entraineur", coteFilter);
 
   let favsQuery = supabase
@@ -217,8 +223,8 @@ async function rendre(brut: ParamsUrl) {
   if (regionFilter) favsQuery = favsQuery.eq("region", regionFilter);
   if (yearFilter !== null) favsQuery = favsQuery.eq("annee_diplomation", yearFilter);
   if (genreFilter) favsQuery = favsQuery.eq("genre", genreFilter);
-  if (orgFilter === "scolaire") favsQuery = favsQuery.not("school_name", "is", null);
-  if (orgFilter === "ligue_civile") favsQuery = favsQuery.is("school_name", null);
+  if (orgFilter) favsQuery = favsQuery.eq("school_type", TYPE_ECOLE[orgFilter]);
+  if (categorieFilter) favsQuery = favsQuery.in("team_age_group", variantesCategorie(categorieFilter));
   if (coteFilter !== null) favsQuery = favsQuery.gte("cote_globale_entraineur", coteFilter);
 
   /* Engagements (6.5) : les mêmes filtres, sur la période choisie (pastilles). La vue des tendances
@@ -230,6 +236,10 @@ async function rendre(brut: ParamsUrl) {
     p_sport_id:    sportFilter,
     p_position_id: positionFilter,
     p_genre:       genreFilter,
+    /* ⚠ Limite connue (lot B4, sans base) : la RPC des engagements ne connaît que l'ancienne
+       règle (« scolaire » = a une école, « ligue_civile » = sans école) et ni le Collégial ni la
+       Catégorie. Elle reçoit le Type tel quel ; « collegial » n'y rend rien. À aligner dans un
+       lot de base (partner_newsroom_events). */
     p_org:         orgFilter,
     p_cote_min:    coteFilter,
     p_year:        yearFilter,
@@ -256,7 +266,7 @@ async function rendre(brut: ParamsUrl) {
     const s = q.toString();
     return s ? `/partenaire/tendances?${s}` : "/partenaire/tendances";
   };
-  const nbActifs = [sportFilter, positionFilter, regionFilter, genreFilter, orgFilter, coteFilter, yearFilter]
+  const nbActifs = [sportFilter, positionFilter, regionFilter, genreFilter, orgFilter, categorieFilter, coteFilter, yearFilter]
     .filter((v) => v !== null).length + (sortKey !== DEFAULT_PARTNER_SORT ? 1 : 0);
 
   /* Comme sur /classements, le tri s'applique APRÈS la coupe. Le `.limit(10)`

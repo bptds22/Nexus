@@ -279,3 +279,14 @@ test("heures civiles AM/PM (BP 2026-10-09) : « 6:30 PM » = 18 h 30, jamais 6 h
   const c = match({ heure: "8:00 PM", domicile: "C" }), d = match({ heure: "18:30", domicile: "D" });
   assert.deepEqual(trierMatchs([a, b, c, d]).map((m) => m.domicile), ["B", "A", "D", "C"]);
 });
+
+test("lot B4 — Catégorie de la carte : liste canonique, rangée par âge", () => {
+  const m = (categorie: string | null) => ({ categorie, division: null });
+  assert.deepEqual(optionsCatDiv([m("Juvénile"), m("Benjamin"), m("Collégial"), m("Cadet")]).categories,
+    ["Benjamin", "Cadet", "Juvénile", "Collégial"]);
+  assert.equal(filtrerCatDiv([m("juvénile"), m("Cadet")], "Juvénile", "").length, 1);
+});
+
+test("lot B4 — Collégial décoché par défaut", () => {
+  assert.deepEqual([...TYPES_PAR_DEFAUT].sort(), ["CIVIL", "SECONDAIRE"]);
+});

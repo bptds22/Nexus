@@ -44,7 +44,7 @@ export const DEFAULT_GRAD_YEAR = String(CURRENT_YEAR);
  * finis ton Sec 5 ». De la fin de la saison courante (bascule au 1er juillet,
  * saisonCourante()) à +4 : en 2026-2027, 2027 (Sec 5) → 2031 (Sec 1). Aucun
  * défaut : l'ancienne présélection de l'année CIVILE faisait d'un élève de
- * Sec 5 un « diplômé » à l'automne. Les écrans coach gardent GRAD_YEAR_OPTIONS.
+ * Sec 5 un « diplômé » à l'automne. Les écrans coach web l'utilisent aussi depuis le lot B4 (le mobile, au lot B5).
  *
  * `garder` : une année déjà enregistrée hors de la fenêtre (reprise d'un
  * onboarding) reste dans la liste, sinon le menu afficherait une autre valeur
@@ -58,3 +58,39 @@ export function optionsAnneeSec5(d: Date = new Date(), garder?: string | null): 
 }
 
 export const LIBELLE_ANNEE_SEC5 = "Année où tu finis ton Sec 5";
+
+/** Écrans COACH (création et modification d'athlète, lot B4 cégep, décision BP 2026-10-26) :
+ *  même fenêtre que l'athlète (optionsAnneeSec5), sans présélection. */
+export const LIBELLE_ANNEE_SEC5_COACH = "Année où il finit son Sec 5";
+
+/* ── Libellé de promotion (lot B4 cégep, décision BP 2026-10-26) ───────────────
+   « DEC AAAA » quand l'école d'ancrage de l'athlète est un cégep, sinon « Secondaire AAAA ».
+   JAMAIS l'année seule. `typeEcole` = schools.type de athletes.school_id (même définition que
+   le cégépien du lot A). */
+export function libellePromotion(
+  annee: number | string | null | undefined,
+  typeEcole: string | null | undefined,
+): string | null {
+  const a = Number(annee);
+  if (annee == null || annee === "" || !Number.isInteger(a) || a <= 0) return null;
+  return (typeEcole ?? "").trim().toUpperCase() === "CEGEP" ? `DEC ${a}` : `Secondaire ${a}`;
+}
+
+/** Ce que couvre une option du filtre Promotion : le filtre porte sur l'année, le libellé dit
+ *  de quelle fin d'études il s'agit. « les_deux » quand la liste peut mêler secondaire et cégep
+ *  (partenaire, Type non choisi). */
+export type PortéePromotion = "secondaire" | "dec" | "les_deux";
+
+export function libelleOptionPromotion(annee: number | string, portee: PortéePromotion): string {
+  if (portee === "dec") return `DEC ${annee}`;
+  if (portee === "les_deux") return `Secondaire ou DEC ${annee}`;
+  return `Secondaire ${annee}`;
+}
+
+/** Portée du filtre Promotion selon le Type choisi (« collegial » → DEC) et la présence
+ *  possible de cégépiens dans la liste (faux pour coach et recruteur collégial). */
+export function porteePromotion(typeChoisi: string | null | undefined, cegepiensPossibles: boolean): PortéePromotion {
+  if (typeChoisi === "collegial") return "dec";
+  if (typeChoisi) return "secondaire";
+  return cegepiensPossibles ? "les_deux" : "secondaire";
+}

@@ -40,6 +40,7 @@
    recruteur suit déjà. Un recruteur sans cible ne lit donc rien.
 ═══════════════════════════════════════════════════════════════ */
 
+import { libelleCategorie } from "@/lib/config/categories";
 import { useQuery } from "@tanstack/react-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -77,7 +78,11 @@ export interface CalendarTarget {
   hasVideo: boolean;
   stars: number;
   gpa: number;
-  orgType: "scolaire" | "ligue_civile" | undefined;
+  /** Lot B4 : type de l'école d'ancrage (« collegial » pour un cégep — jamais servi au
+   *  recruteur collégial, masquage du lot A). */
+  orgType: "scolaire" | "ligue_civile" | "collegial" | undefined;
+  /** Lot B4 : catégorie de l'équipe, libellé canonique (lib/config/categories.ts). */
+  categorie?: string | null;
   /** Stage recruiter_pipeline, null si la cible vient d'un favori/liste seul. */
   pipelineStage: string | null;
   /** Listes du recruteur contenant cet athlète. */
@@ -349,7 +354,10 @@ export async function construireCalendrier(
         ? undefined
         : card.school_type === "LIGUE_CIVILE"
           ? "ligue_civile"
-          : "scolaire") as "scolaire" | "ligue_civile" | undefined,
+          : card.school_type === "CEGEP"
+            ? "collegial"
+            : "scolaire") as "scolaire" | "ligue_civile" | "collegial" | undefined,
+      categorie: libelleCategorie(card.team_age_group),
       pipelineStage: stageByAthlete.get(athleteId) ?? null,
       listIds: listsByAthlete.get(athleteId) ?? [],
     };

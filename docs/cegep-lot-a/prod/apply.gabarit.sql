@@ -25,11 +25,6 @@ select now() as debut, current_user, current_setting('server_version') as versio
 do $$
 declare r record; n int; v text;
 begin
-  -- Jamais le mardi ou le mercredi avant 5 h (heure de Montréal).
-  if extract(isodow from now() at time zone 'America/Toronto') in (2, 3)
-     and extract(hour from now() at time zone 'America/Toronto') < 5 then
-    raise exception 'NEXUS: pas d''apply le mardi ou le mercredi avant 5 h';
-  end if;
 
   if to_regprocedure('public.athlete_est_cegepien(uuid)') is not null
      or to_regprocedure('public.peut_voir_cegepiens()') is not null

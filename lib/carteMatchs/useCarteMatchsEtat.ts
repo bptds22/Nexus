@@ -147,9 +147,13 @@ export function useCarteMatchsEtat(mode: ModeCarte) {
   // Suggestions : sur le texte (déjà temporisé, 300 ms), avec les filtres en place. Une
   // pastille déjà posée n'est plus proposée.
   const { suggestions, pret: suggPret } = useSuggestionsCarte(texte, { sport, types, categorie, division }, actif && types.length > 0);
-  const filtresPoses = !!sport || !!categorie || !!division || types.length < TOUS_LES_TYPES.length;
-  /** « Retirer les filtres » : tous les sports, tous les types, toutes catégories et divisions. */
-  const retirerFiltres = () => { setSport(""); setTypes(TOUS_LES_TYPES); setCategorie(""); setDivision(""); };
+  /* Lot B4 cégep (décision BP 2026-10-26) : « Retirer les filtres » revient aux valeurs PAR DÉFAUT —
+     Secondaire + Civil, Collégial décoché comme pour tous — et ne recoche plus le Collégial. Un filtre
+     est donc « posé » quand les types s'écartent du défaut, pas quand il en manque un. */
+  const typesParDefaut = types.length === TYPES_PAR_DEFAUT.length && TYPES_PAR_DEFAUT.every((t) => types.includes(t));
+  const filtresPoses = !!sport || !!categorie || !!division || !typesParDefaut;
+  /** « Retirer les filtres » : tous les sports, les types par défaut, toutes catégories et divisions. */
+  const retirerFiltres = () => { setSport(""); setTypes([...TYPES_PAR_DEFAUT]); setCategorie(""); setDivision(""); };
   const proposees = suggestions.filter((x) => !pastilles.some((y) => y.genre === x.genre && y.cle === x.cle));
   const menuVisible = suggOuvert && q.trim().length >= 2 && texte.trim().length >= 2 && (proposees.length > 0 || suggPret);
   /** Une suggestion devient une pastille ; le texte libre est vidé (sinon il

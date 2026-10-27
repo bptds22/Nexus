@@ -248,6 +248,31 @@ function ProSignupContent() {
                   </button>
                 );
               })}
+
+              {/* Lot B4 cégep (décision BP 2026-10-22) : le coach de cégep, grisé — un compte coach
+                  ne peut pas encore être rattaché à un cégep (porte coach, lot B1). Non sélectionnable. */}
+              <div
+                aria-disabled="true"
+                className="w-full flex items-start gap-4 p-4 rounded-xl border border-white/5 text-left opacity-50 cursor-not-allowed select-none"
+              >
+                <div className="shrink-0 mt-0.5 text-[#4B5563]">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+                </div>
+                <div>
+                  <p className="font-head font-bold text-[13px] uppercase tracking-wide text-[#6B7280]">Coach cégep — bientôt disponible</p>
+                  <p className="text-[11px] text-[#6B7280] leading-snug mt-0.5">La gestion des équipes collégiales arrive bientôt.</p>
+                </div>
+              </div>
+              {/* Accroche (décision BP 2026-10-26) : en attendant, le coach de cégep peut s'inscrire comme
+                  recruteur collégial — le lien choisit la carte « Recruteur CÉGEP ». */}
+              <p className="text-[12px] text-[#9CA3AF] leading-snug px-1">
+                Tu es coach dans un cégep ? En attendant, inscris-toi comme{" "}
+                <button type="button" onClick={() => setSelectedRole("collegial")}
+                  className="text-[#60A5FA] hover:text-white underline underline-offset-2 transition-colors">
+                  recruteur CÉGEP
+                </button>
+                {" "}pour repérer dès maintenant les athlètes du secondaire.
+              </p>
             </div>
 
             {/* Step 2 — Form (appears after selection) */}

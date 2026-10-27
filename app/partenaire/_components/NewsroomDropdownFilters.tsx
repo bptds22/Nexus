@@ -6,8 +6,8 @@ import AdvancedFilterDrawer from "./AdvancedFilterDrawer";
 import {
   NEWSROOM_SORT_OPTIONS,
   DEFAULT_NEWSROOM_SORT,
-  ORG_TYPE_OPTIONS,
-  ORG_TYPE_PLACEHOLDER,
+  ORG_TYPE_OPTIONS_NEWSROOM,
+  ORG_TYPE_PLACEHOLDER_NEWSROOM,
   COTE_MIN_OPTIONS,
   COTE_MIN_PLACEHOLDER,
 } from "./partnerFilters";
@@ -180,8 +180,8 @@ export default function NewsroomDropdownFilters({
           className={`${selectCls} ${currentOrg ? activeCls : ""}`}
           aria-label="Organisme"
         >
-          <option value="">{ORG_TYPE_PLACEHOLDER}</option>
-          {ORG_TYPE_OPTIONS.map((o) => (
+          <option value="">{ORG_TYPE_PLACEHOLDER_NEWSROOM}</option>
+          {ORG_TYPE_OPTIONS_NEWSROOM.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>

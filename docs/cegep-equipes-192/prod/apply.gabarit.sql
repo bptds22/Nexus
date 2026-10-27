@@ -24,11 +24,11 @@ select now() as debut, current_user, current_setting('server_version') as versio
 -- ── 0. Gardes AVANT ──────────────────────────────────────────────────────────
 do $$
 begin
-  -- Jamais le mardi ; jamais le mercredi matin (veille RSEQ collégiale à 3 h 55, heure de Montréal).
-  if extract(isodow from now() at time zone 'America/Toronto') = 2
-     or (extract(isodow from now() at time zone 'America/Toronto') = 3
-         and extract(hour from now() at time zone 'America/Toronto') < 12) then
-    raise exception 'NEXUS: pas de prod le mardi, ni le mercredi matin';
+  -- Pas le mercredi avant midi : la veille RSEQ collégiale (mercredi 3 h 55, heure de Montréal)
+  -- peut changer les comptes de matchs figés dans ce fichier.
+  if extract(isodow from now() at time zone 'America/Toronto') = 3
+     and extract(hour from now() at time zone 'America/Toronto') < 12 then
+    raise exception 'NEXUS: pas le mercredi avant midi (veille RSEQ collégiale, comptes de matchs)';
   end if;
   if exists (select 1 from public.admin_operations
               where operation in ('CEGEP_EQUIPES_RSEQ_192', 'CEGEP_EQUIPES_RSEQ_192_RETIREES')) then

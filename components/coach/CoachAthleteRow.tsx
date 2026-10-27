@@ -44,6 +44,8 @@ export interface CoachAthleteRowProps {
   region?: string;
   heightWeight?: string;
   gradYear?: number | null;
+  /** Lot B4 cégep : libellé de promotion déjà formé ; l'emporte sur `gradYear`. */
+  promotionLabel?: string | null;
   stars: number;
   /** Trailing slot for page-specific badges/actions. */
   children?: ReactNode;
@@ -73,7 +75,7 @@ export default function CoachAthleteRow(props: CoachAthleteRowProps) {
   const {
     athleteId, firstName, lastName, photoUrl, isVerified, lastValidation,
     school, position, recruitmentStatus, committedSchoolName, openToOffers,
-    region, heightWeight, gradYear, stars, children,
+    region, heightWeight, gradYear, promotionLabel, stars, children,
     showRegion = true, showYear = true,
   } = props;
 
@@ -145,7 +147,7 @@ export default function CoachAthleteRow(props: CoachAthleteRowProps) {
       {/* Year */}
       {showYear && (
         <div className="w-[45px] shrink-0">
-          <span className="text-[13px] text-[#9CA3AF]">{gradYear ?? "—"}</span>
+          <span className="text-[13px] text-[#9CA3AF]">{promotionLabel ?? gradYear ?? "—"}</span>
         </div>
       )}
 
