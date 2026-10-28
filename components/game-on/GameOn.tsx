@@ -809,7 +809,7 @@ function FicheJoueur({ seance, cote, numero, prenom, equipe, groupe, connu, jume
             </div>
           )}
           <div className="mt-1">
-            <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits sansDictee
+            <ChampNote value={texte} onChange={setTexte} sujet={sujet} mobile envoyerAvecEntree={false} sansGabarits
               placeholder={cible ? "Ce que tu ajoutes…" : "Ce que tu as vu…"} ariaLabel="Note sur ce joueur" />
           </div>
           <button type="button" disabled={!ok} onClick={enregistrer}

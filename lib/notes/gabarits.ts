@@ -17,11 +17,3 @@ export function insererGabarit(texte: string, gabarit: string): string {
   const sep = texte.endsWith("\n") ? "" : "\n";
   return `${texte}${sep}${gabarit} — `;
 }
-
-/** Ajoute une phrase dictée : séparée par une espace, première lettre inchangée. */
-export function ajouterDictee(texte: string, dictee: string): string {
-  const d = dictee.trim();
-  if (!d) return texte;
-  if (!texte || /\s$/.test(texte)) return `${texte}${d}`;
-  return `${texte} ${d}`;
-}
