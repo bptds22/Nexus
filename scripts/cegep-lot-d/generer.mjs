@@ -24,6 +24,7 @@ const LOTS = {
   t: ["20261028080000", "teams_ecriture_coachs"],
   d5a2: ["20261028090000", "cegep_lot_d5a_programmes_universitaires"],
   e1: ["20261028130000", "cegep_lot_e1_cibles_universitaires"],
+  e2: ["20261028140000", "cegep_lot_e2_pages_equipes_universitaires"],
 };
 if (!LOTS[lot]) throw new Error("lot inconnu : " + lot);
 const [VERSION, NOM] = LOTS[lot];
