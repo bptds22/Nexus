@@ -1,0 +1,2955 @@
+{
+ "source": "Classements 2026-27 (recoupés 2025-26) des conférences OUA (oua.ca), AUS (atlanticuniversitysport.com) et Canada West (canadawest.org) ; fiches membres AUS ; pages Wikipedia des conférences pour la liste des membres ; usports.ca refuse la lecture automatique. Lu le 2026-10-28. Exclus : Collège militaire royal (décision BP), Simon Fraser (joue en U SPORTS à partir de 2027-28).",
+ "saison": "2026-2027",
+ "sources_generales": [
+  {
+   "url": "https://oua.ca/sports/{code}/2026-27/standings",
+   "contenu": "Classements OUA 2026-27 (codes mbkb, wbkb, fball, mice, wice, mvball, wvball, msoc, wsoc, mrugby, wrugby), lus le 2026-10-28 ; 2025-26 aussi lu pour contrôle. RMC et les équipes québécoises (Concordia, McGill, UQTR en hockey M) retirées."
+  },
+  {
+   "url": "https://canadawest.org/sports/{code}/2026-27/standings",
+   "contenu": "Classements Canada West 2026-27 ; pas de rugby masculin (page 404, absent du menu). 2025-26 relu pour volleyball M/F, rugby F, hockey M, soccer F : mêmes équipes."
+  },
+  {
+   "url": "https://www.atlanticuniversitysport.com/sports/{code}/2026-27/standings",
+   "contenu": "Classements AUS 2026-27 ; l'AUS n'offre ni volleyball masculin ni rugby masculin (pages 404 en 2025-26 et 2026-27, absents du menu des sports)."
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Ontario_University_Athletics",
+   "contenu": "Liste des 20 membres OUA (dont RMC, exclu), surnoms, villes."
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association",
+   "contenu": "Liste des 17 membres Canada West ; SFU acceptée membre probatoire en mai 2026, compétition à partir de 2027-28."
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Atlantic_University_Sport",
+   "contenu": "Liste des 11 membres AUS ; Bishop's (football seulement) a quitté l'AUS en 2025."
+  },
+  {
+   "url": "https://www.atlanticuniversitysport.com/members/{membre}/info",
+   "contenu": "Fiches membres AUS : sites athlétiques (gocapersgo.ca, mountiepride.ca, goaigles.ca, gotommies.ca, etc.)."
+  },
+  {
+   "url": "https://canada-west.prezly.com/canada-west-approves-simon-fraser-universitys-application-for-volleyball",
+   "contenu": "Canada West, 15 juin 2026 : SFU joue en Canada West à partir de 2027-28 ; en 2026-27 elle reste en GNAC (NCAA D-II). SFU EXCLUE."
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/U_Sports_men%27s_volleyball",
+   "contenu": "UNB et Dalhousie (volleyball M) jouent dans le RSEQ depuis 2018-19 ; 31 programmes au total."
+  },
+  {
+   "url": "https://nouvelles.ulaval.ca/2025/10/20/le-rouge-et-or-conserve-son-titre-provincial-en-lemportant-contre-les-gee-gees-dottawa-13eb319a-424d-4259-9550-36f73a45e754",
+   "contenu": "Finale RSEQ rugby F 2025 Laval c. Gee-Gees d'Ottawa : confirme uOttawa rugby F dans le RSEQ."
+  },
+  {
+   "url": "https://usports.ca",
+   "contenu": "Non utilisé : usports.ca renvoie 404 / bloque la lecture automatisée ; totaux nationaux pris sur les pages Wikipedia « U Sports » par sport (sources secondaires)."
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/U_Sports_men%27s_basketball",
+   "contenu": "Totaux nationaux (pages Wikipedia U Sports men's/women's basketball, football, men's/women's ice hockey, men's/women's soccer, men's/women's volleyball) utilisés pour la vérification."
+  }
+ ],
+ "exclusions": [
+  "Royal Military College of Canada (Paladins) : exclu sur demande (présent en OUA hockey M, soccer M/F, volleyball M/F, rugby M).",
+  "Simon Fraser University (Red Leafs) : membre probatoire Canada West accepté en mai 2026 / U SPORTS juin 2026, mais compétition seulement à partir de 2027-28 ; en 2026-27 encore en GNAC (NCAA D-II). Exclue.",
+  "Concordia, McGill, UQTR : québécoises jouant en OUA hockey M, exclues (RSEQ)."
+ ],
+ "absences_notables": [
+  "uOttawa : pas de soccer M ni de volleyball M en OUA.",
+  "Regina : pas de volleyball M ni de soccer M ; Lethbridge et Victoria : pas de volleyball en Canada West (absents 2025-26 et 2026-27).",
+  "Winnipeg : pas de soccer F au classement Canada West (un modèle Wikipedia la mentionne à tort).",
+  "St. Thomas : seulement hockey F en AUS parmi les 6 sports.",
+  "Memorial : pas de hockey ; Mount Allison : pas de basketball ; Trent : pas de basketball ni de hockey ; Algoma : basketball et soccer seulement."
+ ],
+ "ecoles": [
+  {
+   "name": "Algoma University",
+   "team_name": "Thunderbirds",
+   "city": "Sault Ste. Marie",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://algomathunderbirds.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Brock University",
+   "team_name": "Badgers",
+   "city": "St. Catharines",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://gobadgers.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Carleton University",
+   "team_name": "Ravens",
+   "city": "Ottawa",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://goravens.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "University of Guelph",
+   "team_name": "Gryphons",
+   "city": "Guelph",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://www.home.gryphons.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Lakehead University",
+   "team_name": "Thunderwolves",
+   "city": "Thunder Bay",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://lakeheadthunderwolves.com/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Université Laurentienne",
+   "team_name": "Voyageurs",
+   "city": "Sudbury",
+   "province": "ON",
+   "langue": "BIL",
+   "website": "https://luvoyageurs.com/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "McMaster University",
+   "team_name": "Marauders",
+   "city": "Hamilton",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://marauders.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Nipissing University",
+   "team_name": "Lakers",
+   "city": "North Bay",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://nulakers.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Ontario Tech University",
+   "team_name": "Ridgebacks",
+   "city": "Oshawa",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://goridgebacks.com/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Université d'Ottawa",
+   "team_name": "Gee-Gees",
+   "city": "Ottawa",
+   "province": "ON",
+   "langue": "BIL",
+   "website": "https://geegees.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Queen's University",
+   "team_name": "Gaels",
+   "city": "Kingston",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://gogaelsgo.com/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Toronto Metropolitan University",
+   "team_name": "Bold",
+   "city": "Toronto",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://tmubold.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "University of Toronto",
+   "team_name": "Varsity Blues",
+   "city": "Toronto",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://varsityblues.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Trent University",
+   "team_name": "Excalibur",
+   "city": "Peterborough",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://trentexcalibur.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "University of Waterloo",
+   "team_name": "Warriors",
+   "city": "Waterloo",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://athletics.uwaterloo.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Western University",
+   "team_name": "Mustangs",
+   "city": "London",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://westernmustangs.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Wilfrid Laurier University",
+   "team_name": "Golden Hawks",
+   "city": "Waterloo",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://laurierathletics.com/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "University of Windsor",
+   "team_name": "Lancers",
+   "city": "Windsor",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://golancers.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "York University",
+   "team_name": "Lions",
+   "city": "Toronto",
+   "province": "ON",
+   "langue": "EN",
+   "website": "https://yorkulions.ca/",
+   "conference": "OUA",
+   "source": "https://en.wikipedia.org/wiki/Ontario_University_Athletics"
+  },
+  {
+   "name": "Acadia University",
+   "team_name": "Axemen / Axewomen",
+   "city": "Wolfville",
+   "province": "NS",
+   "langue": "EN",
+   "website": "https://acadiaathletics.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/acadia/info"
+  },
+  {
+   "name": "Cape Breton University",
+   "team_name": "Capers",
+   "city": "Sydney",
+   "province": "NS",
+   "langue": "EN",
+   "website": "https://gocapersgo.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/capebreton/info"
+  },
+  {
+   "name": "Dalhousie University",
+   "team_name": "Tigers",
+   "city": "Halifax",
+   "province": "NS",
+   "langue": "EN",
+   "website": "https://daltigers.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/dalhousie/info"
+  },
+  {
+   "name": "Memorial University of Newfoundland",
+   "team_name": "Sea-Hawks",
+   "city": "St. John's",
+   "province": "NL",
+   "langue": "EN",
+   "website": "https://goseahawks.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/memorial/info"
+  },
+  {
+   "name": "Mount Allison University",
+   "team_name": "Mounties",
+   "city": "Sackville",
+   "province": "NB",
+   "langue": "EN",
+   "website": "https://mountiepride.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/mountallison/info"
+  },
+  {
+   "name": "Université de Moncton",
+   "team_name": "Aigles Bleus / Aigles Bleues",
+   "city": "Moncton",
+   "province": "NB",
+   "langue": "FR",
+   "website": "https://goaigles.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/moncton/info"
+  },
+  {
+   "name": "University of New Brunswick",
+   "team_name": "Reds",
+   "city": "Fredericton",
+   "province": "NB",
+   "langue": "EN",
+   "website": "https://goredsgo.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/newbrunswick/info"
+  },
+  {
+   "name": "University of Prince Edward Island",
+   "team_name": "Panthers",
+   "city": "Charlottetown",
+   "province": "PE",
+   "langue": "EN",
+   "website": "https://gopanthersgo.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/upei/info"
+  },
+  {
+   "name": "Saint Mary's University",
+   "team_name": "Huskies",
+   "city": "Halifax",
+   "province": "NS",
+   "langue": "EN",
+   "website": "https://smuhuskies.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/smu/info"
+  },
+  {
+   "name": "St. Francis Xavier University",
+   "team_name": "X-Men / X-Women",
+   "city": "Antigonish",
+   "province": "NS",
+   "langue": "EN",
+   "website": "https://goxgo.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/stfx/info"
+  },
+  {
+   "name": "St. Thomas University",
+   "team_name": "Tommies",
+   "city": "Fredericton",
+   "province": "NB",
+   "langue": "EN",
+   "website": "https://gotommies.ca/",
+   "conference": "AUS",
+   "source": "https://www.atlanticuniversitysport.com/members/stthomas/info"
+  },
+  {
+   "name": "University of Alberta",
+   "team_name": "Golden Bears / Pandas",
+   "city": "Edmonton",
+   "province": "AB",
+   "langue": "EN",
+   "website": "https://bearsandpandas.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "Brandon University",
+   "team_name": "Bobcats",
+   "city": "Brandon",
+   "province": "MB",
+   "langue": "EN",
+   "website": "https://gobobcats.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of British Columbia",
+   "team_name": "Thunderbirds",
+   "city": "Vancouver",
+   "province": "BC",
+   "langue": "EN",
+   "website": "https://gothunderbirds.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of British Columbia Okanagan",
+   "team_name": "Heat",
+   "city": "Kelowna",
+   "province": "BC",
+   "langue": "EN",
+   "website": "https://goheat.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Calgary",
+   "team_name": "Dinos",
+   "city": "Calgary",
+   "province": "AB",
+   "langue": "EN",
+   "website": "https://godinos.com/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of the Fraser Valley",
+   "team_name": "Cascades",
+   "city": "Abbotsford",
+   "province": "BC",
+   "langue": "EN",
+   "website": "https://gocascades.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Lethbridge",
+   "team_name": "Pronghorns",
+   "city": "Lethbridge",
+   "province": "AB",
+   "langue": "EN",
+   "website": "https://gohorns.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Manitoba",
+   "team_name": "Bisons",
+   "city": "Winnipeg",
+   "province": "MB",
+   "langue": "EN",
+   "website": "https://gobisons.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "MacEwan University",
+   "team_name": "Griffins",
+   "city": "Edmonton",
+   "province": "AB",
+   "langue": "EN",
+   "website": "https://macewangriffins.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "Mount Royal University",
+   "team_name": "Cougars",
+   "city": "Calgary",
+   "province": "AB",
+   "langue": "EN",
+   "website": "https://mrucougars.com/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Northern British Columbia",
+   "team_name": "Timberwolves",
+   "city": "Prince George",
+   "province": "BC",
+   "langue": "EN",
+   "website": "https://unbctimberwolves.com/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Regina",
+   "team_name": "Cougars / Rams (football)",
+   "city": "Regina",
+   "province": "SK",
+   "langue": "EN",
+   "website": "https://cougarsandrams.com/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Saskatchewan",
+   "team_name": "Huskies",
+   "city": "Saskatoon",
+   "province": "SK",
+   "langue": "EN",
+   "website": "https://huskies.usask.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "Thompson Rivers University",
+   "team_name": "WolfPack",
+   "city": "Kamloops",
+   "province": "BC",
+   "langue": "EN",
+   "website": "https://gowolfpack.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "Trinity Western University",
+   "team_name": "Spartans",
+   "city": "Langley",
+   "province": "BC",
+   "langue": "EN",
+   "website": "https://gospartans.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Victoria",
+   "team_name": "Vikes",
+   "city": "Victoria",
+   "province": "BC",
+   "langue": "EN",
+   "website": "https://govikesgo.com/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  },
+  {
+   "name": "University of Winnipeg",
+   "team_name": "Wesmen",
+   "city": "Winnipeg",
+   "province": "MB",
+   "langue": "EN",
+   "website": "https://wesmen.ca/",
+   "conference": "CW",
+   "source": "https://en.wikipedia.org/wiki/Canada_West_Universities_Athletic_Association"
+  }
+ ],
+ "equipes": [
+  {
+   "ecole": "Carleton University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Université Laurentienne",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Ontario Tech University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Lakehead University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Algoma University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "OUA Basketball M",
+   "source": "https://oua.ca/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Carleton University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Université Laurentienne",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Ontario Tech University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Lakehead University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Algoma University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "OUA Basketball F",
+   "source": "https://oua.ca/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "Carleton University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "OUA Football M",
+   "source": "https://oua.ca/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Ontario Tech University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Carleton University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Lakehead University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "OUA Hockey M",
+   "source": "https://oua.ca/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Ontario Tech University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Carleton University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "OUA Hockey F",
+   "source": "https://oua.ca/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Trent University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "OUA Volleyball M",
+   "source": "https://oua.ca/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Trent University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Lakehead University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "OUA Volleyball F",
+   "source": "https://oua.ca/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Ontario Tech University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Trent University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Université Laurentienne",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Carleton University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Algoma University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "OUA Soccer M",
+   "source": "https://oua.ca/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Nipissing University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Ontario Tech University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Carleton University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Université Laurentienne",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Trent University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Windsor",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Algoma University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "OUA Soccer F",
+   "source": "https://oua.ca/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Trent University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Toronto Metropolitan University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "ligue": "OUA Rugby M",
+   "source": "https://oua.ca/sports/mrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Guelph",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Queen's University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Western University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Brock University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "McMaster University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Wilfrid Laurier University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Waterloo",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "York University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Trent University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Toronto",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "OUA Rugby F",
+   "source": "https://oua.ca/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Thompson Rivers University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Victoria",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia Okanagan",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of the Fraser Valley",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Northern British Columbia",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Winnipeg",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Lethbridge",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Regina",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Brandon University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "Canada West Basketball M",
+   "source": "https://canadawest.org/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Thompson Rivers University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Victoria",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia Okanagan",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of the Fraser Valley",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Northern British Columbia",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Winnipeg",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Lethbridge",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Regina",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Brandon University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "Canada West Basketball F",
+   "source": "https://canadawest.org/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "Canada West Football M",
+   "source": "https://canadawest.org/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "Canada West Football M",
+   "source": "https://canadawest.org/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Regina",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "Canada West Football M",
+   "source": "https://canadawest.org/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "Canada West Football M",
+   "source": "https://canadawest.org/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "Canada West Football M",
+   "source": "https://canadawest.org/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "Canada West Football M",
+   "source": "https://canadawest.org/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Regina",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "Canada West Hockey M",
+   "source": "https://canadawest.org/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Regina",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "Canada West Hockey F",
+   "source": "https://canadawest.org/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Winnipeg",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Brandon University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "Thompson Rivers University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia Okanagan",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of the Fraser Valley",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "Canada West Volleyball M",
+   "source": "https://canadawest.org/sports/mvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Winnipeg",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Thompson Rivers University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Brandon University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Regina",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia Okanagan",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of the Fraser Valley",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "Canada West Volleyball F",
+   "source": "https://canadawest.org/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of Victoria",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Thompson Rivers University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia Okanagan",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of the Fraser Valley",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Northern British Columbia",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Lethbridge",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "Canada West Soccer M",
+   "source": "https://canadawest.org/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Thompson Rivers University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Trinity Western University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Victoria",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia Okanagan",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of the Fraser Valley",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Northern British Columbia",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Royal University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Saskatchewan",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "MacEwan University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Manitoba",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Lethbridge",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Regina",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "Canada West Soccer F",
+   "source": "https://canadawest.org/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Victoria",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "Canada West Rugby F",
+   "source": "https://canadawest.org/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Lethbridge",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "Canada West Rugby F",
+   "source": "https://canadawest.org/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Alberta",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "Canada West Rugby F",
+   "source": "https://canadawest.org/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Calgary",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "Canada West Rugby F",
+   "source": "https://canadawest.org/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of British Columbia",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "Canada West Rugby F",
+   "source": "https://canadawest.org/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Cape Breton University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Memorial University of Newfoundland",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Prince Edward Island",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "ligue": "AUS Basketball M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Cape Breton University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Memorial University of Newfoundland",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "University of Prince Edward Island",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "ligue": "AUS Basketball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wbkb/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "AUS Football M",
+   "source": "https://www.atlanticuniversitysport.com/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "AUS Football M",
+   "source": "https://www.atlanticuniversitysport.com/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Allison University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "AUS Football M",
+   "source": "https://www.atlanticuniversitysport.com/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Football",
+   "gender": "Masculin",
+   "ligue": "AUS Football M",
+   "source": "https://www.atlanticuniversitysport.com/sports/fball/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "AUS Hockey M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Université de Moncton",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "AUS Hockey M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "AUS Hockey M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "AUS Hockey M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "AUS Hockey M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "AUS Hockey M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Prince Edward Island",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "ligue": "AUS Hockey M",
+   "source": "https://www.atlanticuniversitysport.com/sports/mice/2026-27/standings"
+  },
+  {
+   "ecole": "St. Thomas University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Université de Moncton",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Allison University",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "University of Prince Edward Island",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "ligue": "AUS Hockey F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wice/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "AUS Volleyball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "AUS Volleyball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Université de Moncton",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "AUS Volleyball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "AUS Volleyball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "Memorial University of Newfoundland",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "AUS Volleyball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "ligue": "AUS Volleyball F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wvball/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Cape Breton University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Université de Moncton",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Memorial University of Newfoundland",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Allison University",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Prince Edward Island",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "ligue": "AUS Soccer M",
+   "source": "https://www.atlanticuniversitysport.com/sports/msoc/2026-27/standings"
+  },
+  {
+   "ecole": "Cape Breton University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Memorial University of Newfoundland",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Université de Moncton",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Mount Allison University",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "University of Prince Edward Island",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "ligue": "AUS Soccer F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wsoc/2026-27/standings"
+  },
+  {
+   "ecole": "Acadia University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "AUS Rugby F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "St. Francis Xavier University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "AUS Rugby F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Saint Mary's University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "AUS Rugby F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "University of Prince Edward Island",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "AUS Rugby F",
+   "source": "https://www.atlanticuniversitysport.com/sports/wrugby/2026-27/standings"
+  },
+  {
+   "ecole": "Dalhousie University",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "RSEQ Volleyball M",
+   "source": "https://daltigers.ca/sports/mvball/2025-26/schedule"
+  },
+  {
+   "ecole": "University of New Brunswick",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "ligue": "RSEQ Volleyball M",
+   "source": "https://goredsgo.ca/sports/mvball/2025-26/releases/2526seasonpreview"
+  },
+  {
+   "ecole": "Carleton University",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "RSEQ Rugby F",
+   "source": "https://goravens.ca/sports/wrugby/2026-27/schedule"
+  },
+  {
+   "ecole": "Université d'Ottawa",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "ligue": "RSEQ Rugby F",
+   "source": "https://goravens.ca/sports/wrugby/2026-27/schedule"
+  }
+ ]
+}

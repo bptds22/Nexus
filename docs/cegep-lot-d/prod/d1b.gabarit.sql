@@ -119,8 +119,8 @@ union all select 3, 'coach', (select u.id from public.users u where u.role = 'CO
          and exists (select 1 from public.team_coaches tc where tc.coach_id = u.id) order by u.id limit 1)
 union all select 4, 'recruteur collégial', coalesce(
          (select c.cree_par from public.cartes_prospect c join public.users u on u.id = c.cree_par
-           where u.role = 'RECRUTEUR'::public.user_role and c.fusionnee_le is null order by c.created_at desc, c.id limit 1),
-         (select u.id from public.users u where u.role = 'RECRUTEUR'::public.user_role and u.onboarding_complete order by u.id limit 1))
+           where u.role = 'RECRUTEUR'::public.user_role and u.context is distinct from 'universitaire' and c.fusionnee_le is null order by c.created_at desc, c.id limit 1),
+         (select u.id from public.users u where u.role = 'RECRUTEUR'::public.user_role and u.context is distinct from 'universitaire' and u.onboarding_complete order by u.id limit 1))
 union all select 5, 'partenaire', (select mp.user_id from public.media_partners mp join public.users u on u.id = mp.user_id
          where u.role = 'PARTNER'::public.user_role
          order by exists (select 1 from _equipes q join public.sports s on s.nom = q.sport
@@ -336,7 +336,7 @@ create temp table _vu on commit drop as
 select 'anon (site public)' as role, pg_temp.vu('anon', null) as vu
 union all select 'athlète', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'ATHLETE'::public.user_role order by u.id limit 1))
 union all select 'coach', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'COACH'::public.user_role order by u.id limit 1))
-union all select 'recruteur collégial', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'RECRUTEUR'::public.user_role order by u.id limit 1))
+union all select 'recruteur collégial', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'RECRUTEUR'::public.user_role and u.context is distinct from 'universitaire' order by u.id limit 1))
 union all select 'partenaire', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'PARTNER'::public.user_role order by u.id limit 1))
 union all select 'admin', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'ADMIN'::public.user_role order by u.id limit 1));
 select role, vu as "écoles univ / équipes univ" from _vu;

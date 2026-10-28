@@ -43,7 +43,7 @@ for (const t of donnees.equipes) {
 const q = (v) => (v == null ? "null" : "'" + String(v).replace(/'/g, "''") + "'");
 const parNom = new Map(donnees.ecoles.map((e) => [e.name, e]));
 const ecoles = donnees.ecoles.map((e) =>
-  `  (${q(uuid(e.name))}, ${q(e.name)}, ${q(e.team_name)}, ${q(e.city)}, ${q(e.province)}, ${q(PROVINCES[e.province])}, ${q(e.langue)}, ${q(e.website)})`).join(",\n");
+  `  (${q(uuid(e.name))}, ${q(e.name)}, ${q(e.team_name)}, ${q(e.city)}, ${q(e.province)}, ${q(PROVINCES[e.province])}, ${q(e.langue === "BIL" ? "BILINGUE" : e.langue)}, ${q(e.website)})`).join(",\n");
 const equipes = donnees.equipes.map((t) =>
   `  (${q(uuid(`${t.ecole}|${t.sport}|${t.gender}`))}, ${q(uuid(t.ecole))}, ${q(parNom.get(t.ecole).team_name || t.ecole)}, ${q(t.sport)}, ${q(t.gender)}, null, ${q(t.ligue)})`).join(",\n");
 const NE = String(donnees.ecoles.length), N = String(donnees.equipes.length);
