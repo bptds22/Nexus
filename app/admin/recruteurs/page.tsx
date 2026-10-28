@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { lireTout } from "@/lib/supabase/lireTout";
 import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
 import ErreurChargement from "@/components/shared/ErreurChargement";
+import { correspondTypeEtablissement } from "@/lib/config/schoolTypes";
+import FiltreTypeEtablissement from "../_components/FiltreTypeEtablissement";
 import { UserCheck, AlertTriangle, AlertCircle, ShieldOff, ShieldCheck, Mail, Phone, Building2, X } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -25,6 +27,7 @@ interface RecruiterRow {
   avatar_url: string | null;
   school_id: string | null;
   school_name: string | null;
+  school_type: string | null;
   status: AccountStatus;
   created_at: string;
   activityCount: number;
@@ -73,6 +76,8 @@ export default function AdminRecruteursPage() {
   const chargement = useErreurChargement();
   const [activeMonthCount, setActiveMonthCount] = useState(0);
   const [tab, setTab] = useState<FilterTab>("all");
+  // Lot D-admin cégep : filtre par type d'établissement, combiné à l'onglet.
+  const [typeFiltre, setTypeFiltre] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -92,7 +97,7 @@ export default function AdminRecruteursPage() {
     // 1. Fetch all recruiters + school name
     const recruiters = await lireTout<Record<string, unknown> & { id: string }>((de, a) => supabase
       .from("users")
-      .select("id, email, first_name, last_name, phone, avatar_url, school_id, status, created_at, schools!school_id(name)", { count: "exact" })
+      .select("id, email, first_name, last_name, phone, avatar_url, school_id, status, created_at, schools!school_id(name, type)", { count: "exact" })
       .eq("role", "RECRUTEUR")
       .order("created_at", { ascending: false })
       .order("id")
@@ -147,7 +152,7 @@ export default function AdminRecruteursPage() {
 
     const built: RecruiterRow[] = (recruiters || []).map((r) => {
       const schoolRaw = (r as { schools?: unknown }).schools;
-      const school = (Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw) as { name?: string } | null;
+      const school = (Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw) as { name?: string; type?: string } | null;
       const id = r.id as string;
       const email = (r.email as string) || "";
       const schoolId = (r.school_id as string) || null;
@@ -161,6 +166,7 @@ export default function AdminRecruteursPage() {
         avatar_url: (r.avatar_url as string) || null,
         school_id: schoolId,
         school_name: school?.name || null,
+        school_type: school?.type || null,
         status: (r.status as AccountStatus) || "ACTIF",
         created_at: r.created_at as string,
         activityCount: (msgsByUser.get(id) || 0) + (pipeByUser.get(id) || 0),
@@ -199,10 +205,11 @@ export default function AdminRecruteursPage() {
   ).length;
 
   const visibleRows = useMemo(() => {
-    if (tab === "new") return rows.filter((r) => isWithinLastDays(r.created_at, 7));
-    if (tab === "flagged") return rows.filter((r) => r.flagNoSchool || r.flagSuspiciousEmail || r.flagDuplicateSchool);
-    return rows;
-  }, [rows, tab]);
+    const parType = rows.filter((r) => correspondTypeEtablissement(r.school_type, typeFiltre));
+    if (tab === "new") return parType.filter((r) => isWithinLastDays(r.created_at, 7));
+    if (tab === "flagged") return parType.filter((r) => r.flagNoSchool || r.flagSuspiciousEmail || r.flagDuplicateSchool);
+    return parType;
+  }, [rows, tab, typeFiltre]);
 
   return (
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
@@ -258,6 +265,9 @@ export default function AdminRecruteursPage() {
             {t.label}
           </button>
         ))}
+        <div className="ml-auto">
+          <FiltreTypeEtablissement value={typeFiltre} onChange={setTypeFiltre} />
+        </div>
       </div>
 
       {chargement.erreur && (

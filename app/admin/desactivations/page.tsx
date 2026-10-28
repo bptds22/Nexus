@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
-import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import { correspondTypeEtablissement, embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import FiltreTypeEtablissement from "../_components/FiltreTypeEtablissement";
 
 /* ─────────────────────────────────────────────────────────────────
    Admin Désactivations — derived from users.status='DESACTIVE'.
@@ -56,6 +57,12 @@ export default function AdminDesactivationsPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const [confirmRow, setConfirmRow] = useState<DeactRow | null>(null);
+  // Lot D-admin cégep : filtre par type d'établissement.
+  const [typeFiltre, setTypeFiltre] = useState("");
+  const rowsFiltrees = useMemo(
+    () => rows.filter((r) => correspondTypeEtablissement(r.school_type, typeFiltre)),
+    [rows, typeFiltre],
+  );
 
   useEffect(() => {
     (async () => {
@@ -176,6 +183,10 @@ export default function AdminDesactivationsPage() {
         </p>
       </div>
 
+      {!loading && rows.length > 0 && (
+        <FiltreTypeEtablissement value={typeFiltre} onChange={setTypeFiltre} />
+      )}
+
       {loading ? (
         <div className="text-center py-12 text-[#6b7280]">Chargement…</div>
       ) : rows.length === 0 ? (
@@ -187,7 +198,7 @@ export default function AdminDesactivationsPage() {
         </div>
       ) : (
         <AdminTable<DeactRow>
-          rows={rows}
+          rows={rowsFiltrees}
           columns={columns}
           table="users"
           searchFields={["name", "email"]}
