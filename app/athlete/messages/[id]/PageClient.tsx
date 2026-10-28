@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
+import { ecolesRecruteurs } from "@/lib/queries/messaging/ecolesRecruteurs";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 import { AthleteMessagesThreadMobile } from "@/components/shared/AthleteMessagesThreadMobile";
 import AthleteGroupThreadView from "./AthleteGroupThreadView";
@@ -165,6 +166,13 @@ function AthleteThreadPage() {
           if (co?.school_id) {
             const { data: s } = await supabase.from("schools").select("name").eq("id", co.school_id as string).maybeSingle();
             school = (s as { name?: string }) || null;
+          }
+          // Lot D3d : université masquée en base (ou fiche du recruteur illisible) → le nom par la RPC,
+          // qui ne le rend qu'à l'athlète de la conversation.
+          if (!school?.name) {
+            const recId = (conv as Record<string, unknown>).recruiter_id as string;
+            const nom = (await ecolesRecruteurs(supabase, [recId])).get(recId);
+            if (nom) school = { name: nom };
           }
         } else {
           const raw = (conv as Record<string, unknown>).coach;

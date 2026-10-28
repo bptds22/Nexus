@@ -9,6 +9,7 @@ import { STATUS_CONFIG, mapDbStatus, type ConversationThread, type ThreadStatus 
 import EntityLink from "@/components/shared/EntityLink";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { createClient } from "@/lib/supabase/client";
+import { ecolesRecruteurs } from "@/lib/queries/messaging/ecolesRecruteurs";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { CoachDemandesMobile } from "@/components/shared/CoachDemandesMobile";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
@@ -619,12 +620,16 @@ function DemandesContent() {
             const { data: schools } = await supabase.from("schools").select("id, name").in("id", schoolIds);
             for (const s of schools || []) schoolNameMap.set(s.id, s.name);
           }
+          // Lot D3d : l'école d'un recruteur universitaire ne se lit pas (université masquée en base) → par la RPC.
+          const ecolesRpc = await ecolesRecruteurs(supabase,
+            ((recruiters || []) as { id: string; school_id: string | null }[])
+              .filter((r) => r.school_id && !schoolNameMap.has(r.school_id)).map((r) => r.id));
           for (const r of recruiters || []) {
             recruiterMap.set(r.id, {
               first_name: (r.first_name as string) || "",
               last_name: (r.last_name as string) || "",
               email: (r.email as string) || "",
-              school_name: schoolNameMap.get(r.school_id) || "",
+              school_name: schoolNameMap.get(r.school_id) || ecolesRpc.get(r.id) || "",
               photo_url: (r.photo_url as string) || (r.avatar_url as string) || null,
             });
           }

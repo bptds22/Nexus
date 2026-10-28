@@ -7,6 +7,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { ecolesRecruteurs } from "@/lib/queries/messaging/ecolesRecruteurs";
 
 export interface CoachThreadContextMobile {
   conversationId: string;
@@ -62,6 +63,10 @@ export function useCoachThreadContext(conversationId: string | null) {
 
       const rf = (rec?.first_name as string) || "";
       const rl = (rec?.last_name as string) || "";
+      // Lot D3d : université masquée en base → le nom par la RPC (seulement pour qui lui parle).
+      const ecole = recSchool?.name
+        || (rec?.school_id ? (await ecolesRecruteurs(supabase, [rec.id as string])).get(rec.id as string) : "")
+        || "";
       const af = (ath?.first_name as string) || "";
       const al = (ath?.last_name as string) || "";
 
@@ -73,7 +78,7 @@ export function useCoachThreadContext(conversationId: string | null) {
         recruiterName: `${rf} ${rl}`.trim() || "Recruteur",
         recruiterInitials: `${rf[0] || ""}${rl[0] || ""}`.toUpperCase(),
         recruiterPhotoUrl: (rec?.photo_url as string) || (rec?.avatar_url as string) || null,
-        recruiterCegep: recSchool?.name || "",
+        recruiterCegep: ecole,
         athleteId: (ath?.id as string) || "",
         athleteName: `${af} ${al}`.trim() || "Athlète",
         athleteFirstName: af,

@@ -10,6 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { ecolesRecruteurs } from "@/lib/queries/messaging/ecolesRecruteurs";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { mapDbStatus, type ThreadStatus } from "@/lib/messaging/threadStatus";
 import {
@@ -130,6 +131,17 @@ export function useAthleteConversations() {
           const { data: sc } = await supabase.from("schools").select("id, name").in("id", schoolIds);
           for (const s of (sc ?? []) as { id: string; name: string }[]) schoolNameMap.set(s.id, s.name);
         }
+        // Lot D3d : l'école d'un recruteur universitaire ne se lit pas (université masquée en base) → par la RPC.
+        // La fiche du recruteur peut aussi être illisible pour l'athlète : on part des ids des conversations.
+        const lus = new Map(((recs ?? []) as Record<string, unknown>[]).map((r) => [r.id as string, r.school_id as string | null]));
+        const sansEcole = recruiterIds.filter((id) => !schoolNameMap.has(lus.get(id) ?? ""));
+        const ecolesRpc = await ecolesRecruteurs(supabase, sansEcole);
+        // Recruteur dont la fiche ne se lit pas : la ligne garde « Recruteur », avec le nom de l'école si la RPC le rend.
+        for (const id of recruiterIds) {
+          if (!lus.has(id) && ecolesRpc.has(id)) {
+            recruiterMap.set(id, { name: "Recruteur", initials: "R", photo: null, school: ecolesRpc.get(id) || "" });
+          }
+        }
         for (const r of (recs ?? []) as Record<string, unknown>[]) {
           const rf = (r.first_name as string) || "";
           const rl = (r.last_name as string) || "";
@@ -137,7 +149,7 @@ export function useAthleteConversations() {
             name: `${rf} ${rl}`.trim() || "Recruteur",
             initials: `${rf[0] || ""}${rl[0] || ""}`.toUpperCase() || "R",
             photo: (r.photo_url as string) || (r.avatar_url as string) || null,
-            school: schoolNameMap.get(r.school_id as string) || "",
+            school: schoolNameMap.get(r.school_id as string) || ecolesRpc.get(r.id as string) || "",
           });
         }
       }
