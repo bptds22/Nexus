@@ -1,0 +1,75 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 17:22:32.611924+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | interrupteur_on 
+------------------+-----------------
+ 20261028060000   | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+UPDATE 1
+UPDATE 1
+DO
+CREATE FUNCTION
+SELECT 479
+SELECT 1
+DO
+SET
+SELECT 479
+ droits_releves | droits_vrais_avant | droits_vrais_apres | droits_changes | changes_hors_universites 
+----------------+--------------------+--------------------+----------------+--------------------------
+            479 |                381 |                381 |              0 |                        0
+(1 row)
+
+CREATE FUNCTION
+SELECT 22
+ o  | interrupteur |        appelant         |                 geste                 |    attendu     |     obtenu     | ?  
+----+--------------+-------------------------+---------------------------------------+----------------+----------------+----
+  1 | OFF          | recruteur universitaire | page école                            | non            | non            | ok
+  2 | OFF          | recruteur universitaire | écrire school_page_content            | refusé 42501   | refusé 42501   | ok
+  3 | ON           | recruteur universitaire | page école                            | oui            | oui            | ok
+  4 | ON           | recruteur universitaire | écrire school_page_content            | écrit          | écrit          | ok
+  5 | ON           | recruteur universitaire | page école                            | non            | non            | ok
+  6 | ON           | recruteur universitaire | page école                            | non            | non            | ok
+  7 | ON           | recruteur universitaire | page équipe                           | non            | non            | ok
+  8 | ON           | recruteur universitaire | créer une équipe                      | refusé 42501   | refusé 42501   | ok
+  9 | ON           | recruteur universitaire | modifier une équipe                   | 0 modifiée(s)  | 0 modifiée(s)  | ok
+ 10 | ON           | recruteur universitaire | supprimer une équipe                  | 0 supprimée(s) | 0 supprimée(s) | ok
+ 11 | ON           | recruteur collégial     | page école                            | oui            | oui            | ok
+ 12 | OFF          | recruteur collégial     | page école                            | oui            | oui            | ok
+ 13 | ON           | recruteur collégial     | page équipe                           | oui            | oui            | ok
+ 14 | ON           | recruteur collégial     | page école                            | non            | non            | ok
+ 15 | ON           | recruteur collégial     | écrire school_page_content            | refusé 42501   | refusé 42501   | ok
+ 16 | ON           | recruteur collégial     | page équipe                           | non            | non            | ok
+ 17 | ON           | recruteur collégial     | déplacer son équipe vers l'université | refusé 42501   | refusé 42501   | ok
+ 18 | ON           | coach                   | page équipe                           | oui            | oui            | ok
+ 19 | ON           | coach                   | page équipe                           | non            | non            | ok
+ 20 | ON           | admin                   | page école                            | oui            | oui            | ok
+ 21 | ON           | admin                   | page équipe                           | oui            | oui            | ok
+ 22 | OFF          | admin                   | écrire school_page_content            | écrit          | écrit          | ok
+(22 rows)
+
+DO
+psql:docs/cegep-lot-d/prod/d5a-rejeu-blanc-20261028.sql:386: NOTICE:  NEXUS: VERDICT D5a — page et équipes universitaires : admin, ou le recruteur universitaire de SA page sous ON ; rien ne change ailleurs
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+psql:docs/cegep-lot-d/prod/d5a-rejeu-blanc-20261028.sql:396: NOTICE:  NEXUS: rollback D5a vérifié (corps d'origine par md5, policies retirées)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.
