@@ -57,6 +57,10 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
     .maybeSingle();
   const team = teamRow as TeamRow | null;
   if (!team) return { configured: false, teamName: null };
+  // Lot D1a cégep : la clé service ne passe pas par la policy universites_masquees — une équipe
+  // universitaire n'a pas de page publique (même règle que loadSchoolPageForRender).
+  const { data: ecole } = await svc.from("schools").select("type").eq("id", team.school_id).maybeSingle();
+  if ((ecole as { type?: string } | null)?.type === "UNIVERSITE") return { configured: false, teamName: null };
 
   // Pas de sortie anticipée quand la page n'est jamais configurée : on charge
   // quand même l'identité réelle (sport, école, calendrier, roster) pour bâtir

@@ -1,0 +1,88 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 12:53:27.240844+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261028000000
+(1 row)
+
+SELECT 1
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+ recruteur_toutes_equipes_ms_avant 
+-----------------------------------
+                             134.5
+(1 row)
+
+ phase |             role             | univ / équipe univ / écoles / équipes 
+-------+------------------------------+---------------------------------------
+ AVANT | anon (site public, visiteur) | 1 / refusé / 1408 / refusé
+ AVANT | athlète                      | 1 / 0 / 1408 / 10349
+ AVANT | parent                       | 1 / 0 / 1408 / 10349
+ AVANT | coach                        | 1 / 0 / 1408 / 10349
+ AVANT | recruteur collégial          | 1 / 1 / 1408 / 10349
+ AVANT | partenaire                   | 1 / 0 / 1408 / 10349
+ AVANT | admin                        | 1 / 1 / 1408 / 10349
+(7 rows)
+
+SELECT 1
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d1a-apply-20261028.sql:233: NOTICE:  NEXUS: lot D1a cégep — universités et 
+équipes universitaires masquées (admin seulement)
+At line:1 char:786
++ ... \psql.exe"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...dmin seulement):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+SET
+SELECT 7
+ phase |             role             | univ / équipe univ / écoles / équipes | hors_univ_vs_avant 
+-------+------------------------------+---------------------------------------+--------------------
+ APRÈS | anon (site public, visiteur) | 0 / refusé / 1408 / refusé            | =
+ APRÈS | athlète                      | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | parent                       | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | coach                        | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | recruteur collégial          | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | partenaire                   | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | admin                        | 1 / 1 / 1408 / 10349                  | =
+(7 rows)
+
+ recruteur_toutes_equipes_ms_apres 
+-----------------------------------
+                             138.0
+(1 row)
+
+psql:docs/cegep-lot-d/prod/d1a-apply-20261028.sql:261: NOTICE:  NEXUS: VERDICT D1a — universités invisibles hors 
+admin, écoles et équipes ordinaires identiques pour chaque rôle
+DO
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261028010000   | 2026-10-28 12:53:30.581712+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot D1a cégep en prod (universités masquées hors admin).

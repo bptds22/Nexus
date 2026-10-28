@@ -1,0 +1,87 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user 
+-------------------------------+--------------
+ 2026-10-28 01:55:51.408175+00 | postgres
+(1 row)
+
+CREATE TABLE
+INSERT 0 12
+CREATE TABLE
+INSERT 0 84
+DO
+CREATE FUNCTION
+SELECT 6
+ moment |          objet           |  n   |               md5                
+--------+--------------------------+------+----------------------------------
+ AVANT  | athletes                 |   76 | d056a64f0980757d4b5fd02bbf3faedd
+ AVANT  | games (côtés hors univ.) | 7227 | ccc591aa90cbf5abebb36d4920693ced
+ AVANT  | schools (hors univ.)     | 1389 | a06b2e0d5ddb2188d072174eda243a3d
+ AVANT  | team_athletes            |   61 | 86cafba0fb3991c2c62809e03b2ced55
+ AVANT  | teams (hors univ.)       | 3303 | aa5e9aac684f591142acae52380dab45
+ AVANT  | users                    |   76 | d0bbf63cf6a5b6fc8e81d152394b288a
+(6 rows)
+
+SELECT 1
+          quoi           | domicile | visiteur 
+-------------------------+----------+----------
+ côtés de match à relier |        0 |        0
+(1 row)
+
+INSERT 0 12
+INSERT 0 84
+UPDATE 0
+UPDATE 0
+              universite               |      programme       |     ville      | equipes |                                                                               detail                                                                               
+---------------------------------------+----------------------+----------------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ École de technologie supérieure       | Piranhas             | Montréal       |       4 | Flag football F, Hockey M D2, Rugby M, Volleyball F
+ Université Bishop's                   | Gaiters              | Sherbrooke     |       8 | Basketball F, Basketball M, Football M, Hockey F, Rugby F, Rugby M, Soccer F, Soccer intérieur F
+ Université Concordia                  | Stingers             | Montréal       |      11 | Basketball F, Basketball M, Flag football F, Football M, Hockey F, Rugby F, Rugby M, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M
+ Université de Montréal                | Carabins             | Montréal       |      11 | Flag football F, Football M, Hockey F, Rugby F, Rugby M, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F, Volleyball M
+ Université de Sherbrooke              | Vert & Or            | Sherbrooke     |      10 | Flag football F, Football M, Hockey M D2, Rugby F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F, Volleyball M
+ Université du Québec à Chicoutimi     | Inuk                 | Saguenay       |       2 | Hockey M D2, Volleyball F
+ Université du Québec à Montréal       | Citadins             | Montréal       |       8 | Basketball F, Basketball M, Flag football F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F
+ Université du Québec à Rimouski       | Nordet               | Rimouski       |       0 | ·
+ Université du Québec à Trois-Rivières | Patriotes            | Trois-Rivières |       6 | Flag football F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F
+ Université du Québec en Outaouais     | Torrents             | Gatineau       |       1 | Hockey M D2
+ Université Laval                      | Rouge et Or          | Québec         |      12 | Basketball F, Basketball M, Flag football F, Football M, Hockey F, Rugby F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F, Volleyball M
+ Université McGill                     | Redbirds et Martlets | Montréal       |      11 | Basketball F, Basketball M, Flag football F, Football M, Hockey F, Rugby M, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F
+(12 rows)
+
+SELECT 6
+ moment |          objet           |  n   |               md5                | vs_avant 
+--------+--------------------------+------+----------------------------------+----------
+ APRÈS  | athletes                 |   76 | d056a64f0980757d4b5fd02bbf3faedd | =
+ APRÈS  | games (côtés hors univ.) | 7227 | ccc591aa90cbf5abebb36d4920693ced | =
+ APRÈS  | schools (hors univ.)     | 1389 | a06b2e0d5ddb2188d072174eda243a3d | =
+ APRÈS  | team_athletes            |   61 | 86cafba0fb3991c2c62809e03b2ced55 | =
+ APRÈS  | teams (hors univ.)       | 3303 | aa5e9aac684f591142acae52380dab45 | =
+ APRÈS  | users                    |   76 | d0bbf63cf6a5b6fc8e81d152394b288a | =
+(6 rows)
+
+CREATE FUNCTION
+SELECT 2
+                  essai                   |                                 resultat                                  
+------------------------------------------+---------------------------------------------------------------------------
+ fiche athlète → Université Laval         | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une un
+ fiche athlète → une équipe universitaire | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une éq
+(2 rows)
+
+DO
+NOTICE:  NEXUS: VERDICT D1 — 12 universités, 84 équipes, rien d'autre ne bouge, verrou tenu
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+SELECT 1
+DO
+NOTICE:  NEXUS: rollback D1 vérifié (0 université, 0 équipe, empreinte identique à AVANT)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

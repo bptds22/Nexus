@@ -1,0 +1,956 @@
+{
+ "source": "API RSEQ s1.rseq.ca GetLeagueDiffusion, secteur Universitaire, saison 2026-2027, lue le 2026-10-28",
+ "saison": "2026-2027",
+ "ecoles": [
+  {
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "name": "Université Laval",
+   "team_name": "Rouge et Or",
+   "city": "Québec",
+   "region": "Capitale-Nationale",
+   "langue": "FR",
+   "website": "https://rougeetor.ulaval.ca/"
+  },
+  {
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "name": "Université de Montréal",
+   "team_name": "Carabins",
+   "city": "Montréal",
+   "region": "Montréal",
+   "langue": "FR",
+   "website": "https://carabins.umontreal.ca/"
+  },
+  {
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "name": "Université McGill",
+   "team_name": "Redbirds et Martlets",
+   "city": "Montréal",
+   "region": "Montréal",
+   "langue": "EN",
+   "website": "https://mcgillathletics.ca/"
+  },
+  {
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "name": "Université Concordia",
+   "team_name": "Stingers",
+   "city": "Montréal",
+   "region": "Montréal",
+   "langue": "EN",
+   "website": null
+  },
+  {
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "name": "Université de Sherbrooke",
+   "team_name": "Vert & Or",
+   "city": "Sherbrooke",
+   "region": "Estrie",
+   "langue": "FR",
+   "website": "https://www.usherbrooke.ca/vertetor/"
+  },
+  {
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "name": "Université Bishop's",
+   "team_name": "Gaiters",
+   "city": "Sherbrooke",
+   "region": "Estrie",
+   "langue": "EN",
+   "website": null
+  },
+  {
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "name": "Université du Québec à Montréal",
+   "team_name": "Citadins",
+   "city": "Montréal",
+   "region": "Montréal",
+   "langue": "FR",
+   "website": "https://citadins.uqam.ca/"
+  },
+  {
+   "rseq_institution_id": "e2c3b581-5ff5-4bb1-b560-1dbeea115d0b",
+   "name": "Université du Québec à Trois-Rivières",
+   "team_name": "Patriotes",
+   "city": "Trois-Rivières",
+   "region": "Mauricie",
+   "langue": "FR",
+   "website": null
+  },
+  {
+   "rseq_institution_id": "8967f2bb-2177-4d0e-942b-90b917b77df6",
+   "name": "Université du Québec à Chicoutimi",
+   "team_name": "Inuk",
+   "city": "Saguenay",
+   "region": "Saguenay–Lac-Saint-Jean",
+   "langue": "FR",
+   "website": null
+  },
+  {
+   "rseq_institution_id": "ad45518b-2e88-45dc-8fc2-94cbe8eae1db",
+   "name": "École de technologie supérieure",
+   "team_name": "Piranhas",
+   "city": "Montréal",
+   "region": "Montréal",
+   "langue": "FR",
+   "website": null
+  },
+  {
+   "rseq_institution_id": "97302265-c674-480e-b71b-a4f14cda3000",
+   "name": "Université du Québec en Outaouais",
+   "team_name": "Torrents",
+   "city": "Gatineau",
+   "region": "Outaouais",
+   "langue": "FR",
+   "website": null
+  },
+  {
+   "rseq_institution_id": "cb477817-eef4-4fdf-83e0-d71316b5bf44",
+   "name": "Université du Québec à Rimouski",
+   "team_name": "Nordet",
+   "city": "Rimouski",
+   "region": "Bas-Saint-Laurent",
+   "langue": "FR",
+   "website": "https://www.uqar.ca/services-a-la-communaute-universitaire/le-nordet"
+  }
+ ],
+ "equipes": [
+  {
+   "rseq_team_id": "5f105854-cc41-42f8-9c0b-47b775302f30",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Basketball U F",
+   "rseq_league_id": "2ba7cfa8-5e21-4351-b179-f6adf08f053e"
+  },
+  {
+   "rseq_team_id": "3d80bae8-d346-4179-ba55-d424adb25e23",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Basketball U M",
+   "rseq_league_id": "b1f083ac-4748-4563-b3bf-b3369204417b"
+  },
+  {
+   "rseq_team_id": "6a9c1012-fe7d-48bf-a431-b6c13076bac5",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Football",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Football U M",
+   "rseq_league_id": "d9538539-2732-439b-8521-02da4f3da6e8"
+  },
+  {
+   "rseq_team_id": "050a7c62-d2ea-4de5-af23-36a6fe63c47f",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Hockey U F",
+   "rseq_league_id": "925f3f12-3eb4-49ef-8479-891af559b304"
+  },
+  {
+   "rseq_team_id": "4c00ece5-bc80-4c38-adba-cf0c6a0f433d",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Rugby U F",
+   "rseq_league_id": "0a7e0d5f-8aa1-4d4e-b372-277c9cca2975"
+  },
+  {
+   "rseq_team_id": "5465ba69-4861-4924-a678-5ac0899b408f",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Rugby U M",
+   "rseq_league_id": "78bfcec5-326b-4f30-b1a1-eb7c7dccebb1"
+  },
+  {
+   "rseq_team_id": "d55a3e3c-373d-4c6b-b0af-5014e320d1e5",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "afd48cf0-d89e-43b2-89cf-0a5579bfaedb",
+   "rseq_institution_id": "f154e932-6a10-4e1d-8951-a08606304efd",
+   "nom": "Bishop's",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "506592f6-2f7c-4d43-972b-94f18374c500",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Basketball U F",
+   "rseq_league_id": "2ba7cfa8-5e21-4351-b179-f6adf08f053e"
+  },
+  {
+   "rseq_team_id": "dc08dc63-1b69-4aa2-86f8-b444a532f39c",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Basketball U M",
+   "rseq_league_id": "b1f083ac-4748-4563-b3bf-b3369204417b"
+  },
+  {
+   "rseq_team_id": "d0b63533-e9d4-417e-a481-0232b392242e",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F B",
+   "rseq_league_id": "52f20c0c-f4b7-4974-899c-3063218cd0ff"
+  },
+  {
+   "rseq_team_id": "26271cd6-bce1-44ff-9bd2-830e7b66139c",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Football",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Football U M",
+   "rseq_league_id": "d9538539-2732-439b-8521-02da4f3da6e8"
+  },
+  {
+   "rseq_team_id": "24fd589d-ae14-4403-a5a0-0089846a2c26",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Hockey U F",
+   "rseq_league_id": "925f3f12-3eb4-49ef-8479-891af559b304"
+  },
+  {
+   "rseq_team_id": "b01d3f40-cdba-41a7-a334-82e5bbac4e45",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Rugby U F",
+   "rseq_league_id": "0a7e0d5f-8aa1-4d4e-b372-277c9cca2975"
+  },
+  {
+   "rseq_team_id": "4ead91a4-c0f9-448c-ae65-aefa11e2efe0",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Rugby U M",
+   "rseq_league_id": "78bfcec5-326b-4f30-b1a1-eb7c7dccebb1"
+  },
+  {
+   "rseq_team_id": "d20c4f76-6b0a-42fb-babb-2fcc6411612f",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "72deeba3-0450-433c-a32b-0310497addfc",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Soccer intérieur",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer intérieur U M",
+   "rseq_league_id": "84699232-640e-4940-be07-1f02779e701d"
+  },
+  {
+   "rseq_team_id": "3470444a-361e-470d-aba5-1f2ac64d670a",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "1ccc45dd-8f8e-415f-b7e9-8d8b149d8ed5",
+   "rseq_institution_id": "ab6aabd3-3d1b-4de2-8d87-0509f72176ba",
+   "nom": "Concordia",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer U M",
+   "rseq_league_id": "bf91ad12-b8fc-4259-92a2-551a8da949e7"
+  },
+  {
+   "rseq_team_id": "844393cd-90da-4267-93f4-c4e44e2d378a",
+   "rseq_institution_id": "ad45518b-2e88-45dc-8fc2-94cbe8eae1db",
+   "nom": "ETS",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F B",
+   "rseq_league_id": "52f20c0c-f4b7-4974-899c-3063218cd0ff"
+  },
+  {
+   "rseq_team_id": "545357cd-1767-49b4-a2c2-71237bf73ad5",
+   "rseq_institution_id": "ad45518b-2e88-45dc-8fc2-94cbe8eae1db",
+   "nom": "ETS",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "division": "D2",
+   "ligue": "Hockey U M D2",
+   "rseq_league_id": "cfe8425a-7d16-48a1-a14b-07583a698043"
+  },
+  {
+   "rseq_team_id": "9dd61618-f121-4dc9-8b24-f775000dc895",
+   "rseq_institution_id": "ad45518b-2e88-45dc-8fc2-94cbe8eae1db",
+   "nom": "ETS",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Rugby U M",
+   "rseq_league_id": "78bfcec5-326b-4f30-b1a1-eb7c7dccebb1"
+  },
+  {
+   "rseq_team_id": "a820fb66-c73e-4ee8-97c2-5fba3e08aafe",
+   "rseq_institution_id": "ad45518b-2e88-45dc-8fc2-94cbe8eae1db",
+   "nom": "ETS",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  },
+  {
+   "rseq_team_id": "774e3a85-9ec0-49ca-8ebb-4529a0c54989",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Basketball U F",
+   "rseq_league_id": "2ba7cfa8-5e21-4351-b179-f6adf08f053e"
+  },
+  {
+   "rseq_team_id": "ada42b41-7c83-4b45-9386-3e62ffab6206",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Basketball U M",
+   "rseq_league_id": "b1f083ac-4748-4563-b3bf-b3369204417b"
+  },
+  {
+   "rseq_team_id": "ba18688e-4d0a-4591-9c65-9eed00a62379",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F B",
+   "rseq_league_id": "52f20c0c-f4b7-4974-899c-3063218cd0ff"
+  },
+  {
+   "rseq_team_id": "2f98c3ef-7627-4b7d-8933-f497c21c3cf9",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Football",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Football U M",
+   "rseq_league_id": "d9538539-2732-439b-8521-02da4f3da6e8"
+  },
+  {
+   "rseq_team_id": "44c673d9-491e-4bd4-adcb-170b0d4f399b",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Hockey U F",
+   "rseq_league_id": "925f3f12-3eb4-49ef-8479-891af559b304"
+  },
+  {
+   "rseq_team_id": "c75e77f3-a2aa-471f-ae76-1f160c7d562c",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Rugby U F",
+   "rseq_league_id": "0a7e0d5f-8aa1-4d4e-b372-277c9cca2975"
+  },
+  {
+   "rseq_team_id": "d1d71a75-3425-4fd1-90ea-edb17726c2d9",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "6ed334e6-ac52-428c-ba21-42de67c337f5",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Soccer intérieur",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer intérieur U M",
+   "rseq_league_id": "84699232-640e-4940-be07-1f02779e701d"
+  },
+  {
+   "rseq_team_id": "53543aa9-9a6c-443d-b9c9-9fe34e4111c0",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "4597b5c1-78ec-469d-92ce-afcb0546351b",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer U M",
+   "rseq_league_id": "bf91ad12-b8fc-4259-92a2-551a8da949e7"
+  },
+  {
+   "rseq_team_id": "6d34e3ee-1fb1-4a60-91ef-235241bd79df",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  },
+  {
+   "rseq_team_id": "70fa06db-d625-4c8c-b1d1-08d645bcfa2d",
+   "rseq_institution_id": "da7f9d58-d02a-4051-8d6b-9b4069d6316f",
+   "nom": "Laval",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Volleyball U M",
+   "rseq_league_id": "f4fb2dca-6430-474a-b04a-659273456e79"
+  },
+  {
+   "rseq_team_id": "dfee85d0-adbe-434d-8bfc-5150ada604a9",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Basketball U F",
+   "rseq_league_id": "2ba7cfa8-5e21-4351-b179-f6adf08f053e"
+  },
+  {
+   "rseq_team_id": "5ca94d05-bed5-46bc-85b9-be6fc69eaec1",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Basketball U M",
+   "rseq_league_id": "b1f083ac-4748-4563-b3bf-b3369204417b"
+  },
+  {
+   "rseq_team_id": "c4e1032f-aa88-4a8b-87dd-c4c773ed980a",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F A",
+   "rseq_league_id": "80719be9-fa12-46c2-acbf-ad3cfb1fcfc6"
+  },
+  {
+   "rseq_team_id": "3370de45-2cfb-4007-af50-d0b83afe36e6",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Football",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Football U M",
+   "rseq_league_id": "d9538539-2732-439b-8521-02da4f3da6e8"
+  },
+  {
+   "rseq_team_id": "fc71063e-48d9-439e-8e2d-dfd104973312",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Hockey U F",
+   "rseq_league_id": "925f3f12-3eb4-49ef-8479-891af559b304"
+  },
+  {
+   "rseq_team_id": "6cad5550-80f3-4ec3-8de8-c53bb6cffcb1",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Rugby U M",
+   "rseq_league_id": "78bfcec5-326b-4f30-b1a1-eb7c7dccebb1"
+  },
+  {
+   "rseq_team_id": "b82a088d-fb34-466e-8612-76d77947c78b",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "f5829bd6-4406-41d4-b1f0-babd05fdb1cb",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Soccer intérieur",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer intérieur U M",
+   "rseq_league_id": "84699232-640e-4940-be07-1f02779e701d"
+  },
+  {
+   "rseq_team_id": "8da1c885-51ab-48a0-ae71-e7c01f97f8d7",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "f2b92cbf-7cd2-439d-875e-b169248c62c1",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer U M",
+   "rseq_league_id": "bf91ad12-b8fc-4259-92a2-551a8da949e7"
+  },
+  {
+   "rseq_team_id": "86bf569b-acec-4087-a738-9355c68dc222",
+   "rseq_institution_id": "75ea03e5-4400-4744-a8dc-1ed249e23bdb",
+   "nom": "McGill",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  },
+  {
+   "rseq_team_id": "8c27e646-480e-4644-ab26-b30f7a49b1e4",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F A",
+   "rseq_league_id": "80719be9-fa12-46c2-acbf-ad3cfb1fcfc6"
+  },
+  {
+   "rseq_team_id": "793df9bf-39d8-47dd-923a-c34cf31d9974",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Football",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Football U M",
+   "rseq_league_id": "d9538539-2732-439b-8521-02da4f3da6e8"
+  },
+  {
+   "rseq_team_id": "d3675dc9-caaa-4503-920b-c955ccf5d9e0",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Hockey",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Hockey U F",
+   "rseq_league_id": "925f3f12-3eb4-49ef-8479-891af559b304"
+  },
+  {
+   "rseq_team_id": "c910600d-06d6-40ef-b5a6-2d81bd7cb438",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Rugby U F",
+   "rseq_league_id": "0a7e0d5f-8aa1-4d4e-b372-277c9cca2975"
+  },
+  {
+   "rseq_team_id": "ad64dbe9-936d-424b-9488-1038f4a7b291",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Rugby",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Rugby U M",
+   "rseq_league_id": "78bfcec5-326b-4f30-b1a1-eb7c7dccebb1"
+  },
+  {
+   "rseq_team_id": "abeada9d-eb63-4325-92f4-921881ef3c1f",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "ed0be222-652a-45dd-9444-ccf1380245bd",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Soccer intérieur",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer intérieur U M",
+   "rseq_league_id": "84699232-640e-4940-be07-1f02779e701d"
+  },
+  {
+   "rseq_team_id": "f312bcc3-0e7e-4bfc-9d08-5a725a558be6",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "d6fe43e4-2b0f-4b97-9c8d-333916870f0c",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer U M",
+   "rseq_league_id": "bf91ad12-b8fc-4259-92a2-551a8da949e7"
+  },
+  {
+   "rseq_team_id": "3889fe85-e149-4e71-b2e0-2c87f101d5f5",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  },
+  {
+   "rseq_team_id": "ac731835-41f9-4cab-a830-31d1958977f0",
+   "rseq_institution_id": "78dbadd2-5d8c-4b45-a8af-1100e081630d",
+   "nom": "Montréal",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Volleyball U M",
+   "rseq_league_id": "f4fb2dca-6430-474a-b04a-659273456e79"
+  },
+  {
+   "rseq_team_id": "9857e670-7a99-4b86-b07a-187b1460327e",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F A",
+   "rseq_league_id": "80719be9-fa12-46c2-acbf-ad3cfb1fcfc6"
+  },
+  {
+   "rseq_team_id": "38ca819c-1c2f-4434-a7bf-4deb24db640c",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Football",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Football U M",
+   "rseq_league_id": "d9538539-2732-439b-8521-02da4f3da6e8"
+  },
+  {
+   "rseq_team_id": "67f55ddb-5d15-4ef2-86fc-d36b41ffdbd8",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "division": "D2",
+   "ligue": "Hockey U M D2",
+   "rseq_league_id": "cfe8425a-7d16-48a1-a14b-07583a698043"
+  },
+  {
+   "rseq_team_id": "3760190c-42c5-420f-bf7e-76acaf959664",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Rugby",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Rugby U F",
+   "rseq_league_id": "0a7e0d5f-8aa1-4d4e-b372-277c9cca2975"
+  },
+  {
+   "rseq_team_id": "a813e518-a7d2-4bba-8252-0bb1f8d02ca1",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "0a4cd8b9-add1-4f6a-aa83-945737cf8b1b",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Soccer intérieur",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer intérieur U M",
+   "rseq_league_id": "84699232-640e-4940-be07-1f02779e701d"
+  },
+  {
+   "rseq_team_id": "7335a241-b2c2-4fb8-b1a0-c24ae1e2de51",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "0d7d0a80-8b60-4c8c-bed2-2ee3bc4ae772",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer U M",
+   "rseq_league_id": "bf91ad12-b8fc-4259-92a2-551a8da949e7"
+  },
+  {
+   "rseq_team_id": "3ded2920-fe0b-438e-aa29-4f0657dd3ea6",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  },
+  {
+   "rseq_team_id": "560e08e2-dae6-494c-b4a3-feb9b50de0fa",
+   "rseq_institution_id": "92b3efd4-7bb5-448e-982c-944d6cbeb0a3",
+   "nom": "Sherbrooke",
+   "sport": "Volleyball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Volleyball U M",
+   "rseq_league_id": "f4fb2dca-6430-474a-b04a-659273456e79"
+  },
+  {
+   "rseq_team_id": "490dc7c1-ed27-42a7-abb9-214e07796c05",
+   "rseq_institution_id": "8967f2bb-2177-4d0e-942b-90b917b77df6",
+   "nom": "UQAC",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "division": "D2",
+   "ligue": "Hockey U M D2",
+   "rseq_league_id": "cfe8425a-7d16-48a1-a14b-07583a698043"
+  },
+  {
+   "rseq_team_id": "9e1a409f-d54b-4c26-8353-702662852538",
+   "rseq_institution_id": "8967f2bb-2177-4d0e-942b-90b917b77df6",
+   "nom": "UQAC",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  },
+  {
+   "rseq_team_id": "6578caed-d641-471c-bf7b-833a298faa4c",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Basketball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Basketball U F",
+   "rseq_league_id": "2ba7cfa8-5e21-4351-b179-f6adf08f053e"
+  },
+  {
+   "rseq_team_id": "90877391-0df6-4345-a63b-cad6212fdb28",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Basketball",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Basketball U M",
+   "rseq_league_id": "b1f083ac-4748-4563-b3bf-b3369204417b"
+  },
+  {
+   "rseq_team_id": "009f55f4-a4b8-42f4-973e-b4d8e23901e0",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F A",
+   "rseq_league_id": "80719be9-fa12-46c2-acbf-ad3cfb1fcfc6"
+  },
+  {
+   "rseq_team_id": "932b666d-5dd4-436e-a72e-04b67fa0fbad",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "abcdddf7-9731-440f-9c6e-47b78649fc31",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Soccer intérieur",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer intérieur U M",
+   "rseq_league_id": "84699232-640e-4940-be07-1f02779e701d"
+  },
+  {
+   "rseq_team_id": "6c330bc7-5a4c-45e4-9118-8c8dc9cadc22",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "5574025c-bc34-41ce-bfd4-bcabc6c98120",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer U M",
+   "rseq_league_id": "bf91ad12-b8fc-4259-92a2-551a8da949e7"
+  },
+  {
+   "rseq_team_id": "c4858621-4dd0-4ce5-85ae-345ec2badce8",
+   "rseq_institution_id": "126d376e-6da9-4bc1-b816-b425bf311bde",
+   "nom": "UQAM",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  },
+  {
+   "rseq_team_id": "ddc5b24e-6d7a-4330-b970-517f6b6db433",
+   "rseq_institution_id": "97302265-c674-480e-b71b-a4f14cda3000",
+   "nom": "UQO",
+   "sport": "Hockey",
+   "gender": "Masculin",
+   "division": "D2",
+   "ligue": "Hockey U M D2",
+   "rseq_league_id": "cfe8425a-7d16-48a1-a14b-07583a698043"
+  },
+  {
+   "rseq_team_id": "772408da-7808-4a53-b7e2-60b2a251b300",
+   "rseq_institution_id": "e2c3b581-5ff5-4bb1-b560-1dbeea115d0b",
+   "nom": "UQTR",
+   "sport": "Flag football",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Flag football U F B",
+   "rseq_league_id": "52f20c0c-f4b7-4974-899c-3063218cd0ff"
+  },
+  {
+   "rseq_team_id": "3746940a-4095-4887-a418-d0582963cef7",
+   "rseq_institution_id": "e2c3b581-5ff5-4bb1-b560-1dbeea115d0b",
+   "nom": "UQTR",
+   "sport": "Soccer intérieur",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer intérieur U F",
+   "rseq_league_id": "8905d390-9e09-4fd4-be6d-a48eebaf23b8"
+  },
+  {
+   "rseq_team_id": "df33916d-7766-44bf-8079-8c7cd10be850",
+   "rseq_institution_id": "e2c3b581-5ff5-4bb1-b560-1dbeea115d0b",
+   "nom": "UQTR",
+   "sport": "Soccer intérieur",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer intérieur U M",
+   "rseq_league_id": "84699232-640e-4940-be07-1f02779e701d"
+  },
+  {
+   "rseq_team_id": "070aa425-59f4-4039-9bfb-af19a23c4e63",
+   "rseq_institution_id": "e2c3b581-5ff5-4bb1-b560-1dbeea115d0b",
+   "nom": "UQTR",
+   "sport": "Soccer",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Soccer U F",
+   "rseq_league_id": "56d5b9e4-84d5-4622-9cd4-f89b41ce9f2b"
+  },
+  {
+   "rseq_team_id": "f493476b-8c11-4f01-bcb5-5eab25b2f6e8",
+   "rseq_institution_id": "e2c3b581-5ff5-4bb1-b560-1dbeea115d0b",
+   "nom": "UQTR",
+   "sport": "Soccer",
+   "gender": "Masculin",
+   "division": null,
+   "ligue": "Soccer U M",
+   "rseq_league_id": "bf91ad12-b8fc-4259-92a2-551a8da949e7"
+  },
+  {
+   "rseq_team_id": "c43500bf-6497-4d60-8e7f-f917719d366d",
+   "rseq_institution_id": "e2c3b581-5ff5-4bb1-b560-1dbeea115d0b",
+   "nom": "UQTR",
+   "sport": "Volleyball",
+   "gender": "Féminin",
+   "division": null,
+   "ligue": "Volleyball U F",
+   "rseq_league_id": "2e9fb0a7-6241-4242-9f32-6d6a34b5c1f7"
+  }
+ ]
+}

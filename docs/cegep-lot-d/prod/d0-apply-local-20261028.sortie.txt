@@ -1,0 +1,133 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 01:42:50.813597+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261027230100
+(1 row)
+
+SELECT 1
+ athlete | autre_ecole | recruteur_collegial | coach | admin | sport 
+---------+-------------+---------------------+-------+-------+-------
+ t       | t           | t                   | t     | t     | t
+(1 row)
+
+DO
+CREATE FUNCTION
+SELECT 6
+ moment |     objet     |  n   |               md5                
+--------+---------------+------+----------------------------------
+ AVANT  | app_settings  |   26 | 94daf5467044425b12b640d52267d2e6
+ AVANT  | athletes      |   76 | 39fc67e88e6f20ef97b6f3a4fa395277
+ AVANT  | schools       | 1389 | a06b2e0d5ddb2188d072174eda243a3d
+ AVANT  | team_athletes |   61 | 829171020e59336d7e482d3efef2f058
+ AVANT  | teams         | 3303 | 9cccb450c22ab97a05ff7ecfed983ae1
+ AVANT  | users         |   76 | 8da47806e1c8579e9c878142c03d2ef4
+(6 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 4
+ phase |                      essai                       |   resultat   
+-------+--------------------------------------------------+--------------
+ AVANT | N1 athlète → autre école secondaire (service)    | accepté
+ AVANT | N2 recruteur collégial, téléphone inchangé (rpc) | accepté
+ AVANT | N3 créer une école UNIVERSITE (service)          | REFUSÉ 23514
+ AVANT | N4 compte au contexte universitaire (service)    | REFUSÉ 23514
+(4 rows)
+
+SELECT 1
+        debut_migration        
+-------------------------------
+ 2026-10-28 01:42:50.829104+00
+(1 row)
+
+NOTICE:  NEXUS: lot D0 cégep — type UNIVERSITE, province, contexte universitaire, interrupteur OFF, verrou en place
+DO
+         fin_migration         
+-------------------------------
+ 2026-10-28 01:42:50.837169+00
+(1 row)
+
+SET
+SELECT 4
+ phase |                      essai                       | resultat 
+-------+--------------------------------------------------+----------
+ APRÈS | N1 athlète → autre école secondaire (service)    | accepté
+ APRÈS | N2 recruteur collégial, téléphone inchangé (rpc) | accepté
+ APRÈS | N3 créer une école UNIVERSITE (service)          | accepté
+ APRÈS | N4 compte au contexte universitaire (service)    | accepté
+(4 rows)
+
+CREATE FUNCTION
+SELECT 11
+ interrupteur |                       essai                       |                                      resultat                                       
+--------------+---------------------------------------------------+-------------------------------------------------------------------------------------
+ OFF          | V1 fiche athlète → université (service)           | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une université.
+ OFF          | V2 fiche athlète → université (l'athlète)         | REFUSÉ P0001 NEXUS: ces informations ne se modifient pas depuis ton profil (school_
+ OFF          | V3 fiche athlète → équipe universitaire (service) | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une équipe unive
+ OFF          | V4 recruteur → université (rpc)                   | REFUSÉ 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus. Ça arriv
+ OFF          | V5 recruteur → contexte universitaire (rpc)       | REFUSÉ 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus. Ça arriv
+ OFF          | V6 coach → université (rpc)                       | REFUSÉ 42501 NEXUS: Seul un recruteur universitaire peut être rattaché à une univer
+ OFF          | V7 athlète (compte) → université (rpc)            | REFUSÉ 42501 NEXUS: Seul un recruteur universitaire peut être rattaché à une univer
+ OFF          | V8 admin rattache le recruteur (rpc admin)        | accepté
+ OFF          | V9 service rattache le recruteur                  | accepté
+ OFF          | V10 école hors liste de provinces (service)       | REFUSÉ 23514
+ OFF          | V11 université en Ontario (service)               | accepté
+(11 rows)
+
+SELECT 11
+ interrupteur |                       essai                       |                                      resultat                                       
+--------------+---------------------------------------------------+-------------------------------------------------------------------------------------
+ ON           | V1 fiche athlète → université (service)           | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une université.
+ ON           | V2 fiche athlète → université (l'athlète)         | REFUSÉ P0001 NEXUS: ces informations ne se modifient pas depuis ton profil (school_
+ ON           | V3 fiche athlète → équipe universitaire (service) | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une équipe unive
+ ON           | V4 recruteur → université (rpc)                   | accepté
+ ON           | V5 recruteur → contexte universitaire (rpc)       | accepté
+ ON           | V6 coach → université (rpc)                       | REFUSÉ 42501 NEXUS: Seul un recruteur universitaire peut être rattaché à une univer
+ ON           | V7 athlète (compte) → université (rpc)            | REFUSÉ 42501 NEXUS: Seul un recruteur universitaire peut être rattaché à une univer
+ ON           | V8 admin rattache le recruteur (rpc admin)        | accepté
+ ON           | V9 service rattache le recruteur                  | accepté
+ ON           | V10 école hors liste de provinces (service)       | REFUSÉ 23514
+ ON           | V11 université en Ontario (service)               | accepté
+(11 rows)
+
+SELECT 6
+ moment |     objet     |  n   |               md5                | vs_avant 
+--------+---------------+------+----------------------------------+----------
+ APRÈS  | app_settings  |   26 | 94daf5467044425b12b640d52267d2e6 | =
+ APRÈS  | athletes      |   76 | 39fc67e88e6f20ef97b6f3a4fa395277 | =
+ APRÈS  | schools       | 1389 | a06b2e0d5ddb2188d072174eda243a3d | =
+ APRÈS  | team_athletes |   61 | 829171020e59336d7e482d3efef2f058 | =
+ APRÈS  | teams         | 3303 | 9cccb450c22ab97a05ff7ecfed983ae1 | =
+ APRÈS  | users         |   76 | 8da47806e1c8579e9c878142c03d2ef4 | =
+(6 rows)
+
+DO
+NOTICE:  NEXUS: VERDICT D0 — CHECK ouverts, verrou conforme OFF et ON, données identiques
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite | interrupteur |         avant_commit          
+------------------+--------------+-------------------------------
+ 20261028000000   | false        | 2026-10-28 01:42:50.861512+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot D0 cégep en prod (interrupteur universitaire OFF).
