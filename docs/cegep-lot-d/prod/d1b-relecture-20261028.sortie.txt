@@ -1,0 +1,10 @@
+﻿Pager usage is off.
+ universites | equipes_univ | hors_qc |               ops                | interrupteur 
+-------------+--------------+---------+----------------------------------+--------------
+          59 |          429 |      47 | CEGEP_LOT_D1B_UNIVERSITES_CANADA | false
+(1 row)
+
+BEGIN
+NOTICE:  NEXUS: lecture non-admins (universités/équipes univ.) : anon refusé 42501 ; athlète 0/0 ; coach 0/0 ; recruteur collégial 0/0 ; partenaire 0/0 ; 
+DO
+ROLLBACK

@@ -1,0 +1,11 @@
+﻿Pager usage is off.
+    version     | op |                                                           policies                                                           | equipes 
+----------------+----+------------------------------------------------------------------------------------------------------------------------------+---------
+ 20261028080000 |  1 | teams_ecriture_coachs_delete:RESTRICTIVE, teams_ecriture_coachs_insert:RESTRICTIVE, teams_ecriture_coachs_update:RESTRICTIVE |   10778
+(1 row)
+
+BEGIN
+SELECT 3
+DO
+NOTICE:  NEXUS: relecture lot T (équipes de son école modifiables) : athlète modifie 0 ; recruteur collégial modifie 0 ; coach modifie 11 ; 
+ROLLBACK

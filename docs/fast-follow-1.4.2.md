@@ -3009,3 +3009,15 @@ lot C0 : un athlète inséré s'écrit chez 4 recruteurs.
 
 - **Correctif proposé** : décider ce que « nouvel athlète » doit signaler (ses favoris ? son unité ?),
   puis rebaser `log_new_athlete` sur le corps prod (garde md5), migration à part avec rejeu.
+
+## 108. Bouton admin « Supprimer l'équipe » sans effet ni message (2026-10-28, plus tard)
+
+Relevé au constat du lot T (2026-10-28), **non corrigé** (décision BP : noter au registre).
+`deleteTeam` (`app/admin/schools/[id]/PageClient.tsx`) supprime par l'API avec la session admin :
+`supabase.from("teams").delete().eq("id", teamId)`. Aucune policy DELETE de `teams` ne couvre l'admin
+(« Coaches delete teams » exige `school_id = current_user_school_id()`, l'admin n'a pas d'école). Le
+DELETE touche 0 ligne sans erreur, et la page affiche quand même « Équipe supprimée ».
+
+- **Correctif proposé** : une RPC admin SECURITY DEFINER (garde `is_admin()`, refus si l'équipe a des
+  dépendances ou renvoi de leur nombre), ou une route serveur à clé service. Le client doit vérifier le
+  nombre de lignes touchées avant d'annoncer la suppression.

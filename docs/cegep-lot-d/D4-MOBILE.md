@@ -33,9 +33,9 @@ Rien de la base ne change : tout ce qui suit est du code mobile (Capacitor), ave
 - Partout : « recruteur universitaire » / « recruteur collégial », jamais « recruteur » seul dans un nouveau texte.
 
 ## 3. Le nom de l'université chez l'athlète et le coach (Q4, après D3d en prod)
-- `AthleteMessagesMobile`, `AthleteMessagesThreadMobile`, `CoachDemandesThreadMobile` (et la liste des conversations
-  du coach mobile) : quand l'école du recruteur ne se lit pas (université masquée), la prendre par la RPC
-  `ecoles_recruteurs(ids)`. Même règle que le web.
+- Liste des messages de l'athlète et conversations du coach : déjà branchées, crochets partagés
+  (`useAthleteConversations`, `useCoachConversations`, `useCoachThreadContext`, D3d).
+- `AthleteMessagesThreadMobile` : à brancher sur `ecoles_recruteurs` (même règle que `app/athlete/messages/[id]`).
 
 ## 4. Listes d'écoles
 - Les listes partagées (`useSchoolsList`, `loadSchools`) excluent déjà les universités (D3b). Vérifier les copies
@@ -45,17 +45,15 @@ Rien de la base ne change : tout ce qui suit est du code mobile (Capacitor), ave
 - Déjà dans la liste canonique (`lib/config/categories.ts`, D3b) : rien à faire si le mobile lit le même module ;
   vérifier les filtres mobiles qui auraient une liste maison.
 
-## 6. Version minimale (Q7)
-- La 1.4.5 ne connaît qu'un plancher commun à tous les comptes (`min_version_ios` / `min_version_android`,
-  `lib/config/versionGate.ts`) : on ne peut pas refuser la 1.4.5 au seul recruteur universitaire.
-- Au passage à ON : poser le plancher à 1.4.6 pour tout le monde (écran « Mets ton app à jour » de la 1.4.5).
-- Dans la 1.4.6 : ajouter une porte par rôle (un plancher « recruteur universitaire ») pour les versions suivantes,
-  si BP le veut.
+## 6. Version minimale (Q7 — décision BP 2026-10-28)
+- Pas de version minimale propre aux recruteurs universitaires.
+- Au lancement (passage à ON) : la version minimale COMMUNE (`min_version_ios` / `min_version_android`,
+  `lib/config/versionGate.ts`) passe à 1.4.6 pour tout le monde (écran « Mets ton app à jour » de la 1.4.5).
 
 ## 7. Avant ON (hors mobile, rappel)
 - Textes Loi 25 tranchés et publiés (avis aux athlètes et, à trancher, aux parents des moins de 18 ans ; ligne dans la
   politique de confidentialité) — `docs/cegep-lot-d/D3-TEXTES-LOI25.md`.
-- Correctif web D3d (nom de l'université dans les 4 surfaces web) fusionné et promu.
+- Web D3d (nom de l'école du recruteur dans les messages) : fusionné main c3ba485c, à promouvoir.
 
 ## 8. Essais à prévoir (émulateur, comptes locaux)
 - OFF : carte grisée, claim refusé, aucun cégépien visible.

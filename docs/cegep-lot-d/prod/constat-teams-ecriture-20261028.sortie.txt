@@ -1,0 +1,37 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SELECT 5
+ALTER TABLE
+UPDATE 5
+UPDATE 5
+UPDATE 5
+        role         | compte_trouve | ecole_rattachee | equipe_trouvee 
+---------------------+---------------+-----------------+----------------
+ athlète             | t             | t               | t
+ coach               | t             | t               | t
+ coach directeur     | t             | t               | t
+ parent              | t             | f               | f
+ recruteur collégial | t             | t               | t
+(5 rows)
+
+CREATE FUNCTION
+        role         |    creer    |  modifier  | supprimer  
+---------------------+-------------+------------+------------
+ athlète             | OUI (créée) | OUI (1)    | OUI (1)
+ coach               | OUI (créée) | OUI (1)    | OUI (1)
+ coach directeur     | OUI (créée) | OUI (1)    | OUI (1)
+ parent              | sans école  | sans école | sans école
+ recruteur collégial | OUI (créée) | OUI (1)    | OUI (1)
+(5 rows)
+
+ n_tup_ins | n_tup_upd | n_tup_del | stats_reset 
+-----------+-----------+-----------+-------------
+      4257 |      1319 |       914 | ·
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.
