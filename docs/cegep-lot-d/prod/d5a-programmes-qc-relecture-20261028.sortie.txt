@@ -1,0 +1,21 @@
+﻿                 name                  |  n  | seed 
+---------------------------------------+-----+------
+ École de technologie supérieure       |  11 |   11
+ Université Bishop's                   |  77 |   77
+ Université Concordia                  | 128 |  128
+ Université de Montréal                | 179 |  179
+ Université de Sherbrooke              |  98 |   98
+ Université du Québec à Chicoutimi     |  92 |   92
+ Université du Québec à Montréal       | 135 |  135
+ Université du Québec à Rimouski       |  55 |   55
+ Université du Québec à Trois-Rivières |  84 |   84
+ Université du Québec en Outaouais     |  63 |   63
+ Université Laval                      | 191 |  191
+ Université McGill                     | 179 |  179
+(12 rows)
+
+ total | op | interrupteur 
+-------+----+--------------
+  1292 |  1 | false
+(1 row)
+
