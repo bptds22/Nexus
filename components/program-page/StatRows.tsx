@@ -7,7 +7,7 @@
 import * as React from "react";
 import { Heart, Check } from "lucide-react";
 import GhostLayer from "./GhostLayer";
-import type { ProgramPageContent } from "./content";
+import { cetEtablissement, type ProgramPageContent } from "./content";
 import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function StatRows({
@@ -18,6 +18,7 @@ export default function StatRows({
   onToggleTargets,
   followers = 86,
   ciblesVisibles = true,
+  etablissement,
 }: {
   schoolName: string;
   city: string;
@@ -29,6 +30,8 @@ export default function StatRows({
   followers?: number;
   /** Faux → bloc « Suivre » masqué (partenaire : lib/cibles/visibiliteBouton). */
   ciblesVisibles?: boolean;
+  /** Lot D5b : « cette université » au lieu de « ce collège ». Défaut collège. */
+  etablissement?: ProgramPageContent["etablissement"];
 }) {
   const first = schoolName.split(" ")[0];
   const body = schoolName.slice(first.length).trim();
@@ -63,7 +66,7 @@ export default function StatRows({
               )}
               <span className="t">{inTargets ? "Dans tes cibles" : "Rajouter dans mes cibles"}</span>
             </button>
-            <div className="hf-note"><b>{`${followers} athlètes`}</b> suivent ce collège</div>
+            <div className="hf-note"><b>{`${followers} athlètes`}</b> suivent {cetEtablissement(etablissement)}</div>
             {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Cibler
                 n'est pas un signet privé : le cégep le voit. */}
             <div className="hf-disc">{divulgationCible(inTargets)}</div>

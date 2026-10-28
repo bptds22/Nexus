@@ -27,7 +27,7 @@ test("hook partagé : rôle lu dans users, `visible` rendu par la règle", () =>
 test("page école : web (Suivre + bande CTA) et appli (pilule) suivent `visible`", () => {
   const web = lire("components/program-page/ProgramPage.tsx");
   assert.match(web, /visible: ciblesVisibles, toggle: toggleTargets \} = useSchoolTargets\(/);
-  assert.match(web, /followers=\{followers\} ciblesVisibles=\{ciblesVisibles\} \/>/);
+  assert.match(web, /followers=\{followers\} ciblesVisibles=\{ciblesVisibles\}( etablissement=\{content\.etablissement\})? \/>/);
   assert.match(web, /\{ciblesVisibles && <CtaCibles /);
   assert.match(lire("components/program-page/StatRows.tsx"), /\{ciblesVisibles && <div className="hfollow rv">/);
   const mob = lire("components/program-page/ProgramPageMobile.tsx");

@@ -7,8 +7,9 @@
    l'université choisie (RPC equipes_universite_inscription) : les policies, elles, ne lui montrent que SA
    propre université, une fois inscrit.
 
-   Portail (D3b, décisions Q1-Q3) : pas de « Ma page » (vitrine universitaire plus tard), « Mon université »
-   = Recruteurs + Réassignation ; carte des matchs : même défaut que le recruteur collégial (Q1 revue). */
+   Portail (D3b, décisions Q1-Q3) : « Mon université » = Recruteurs + Réassignation ; carte des matchs : même
+   défaut que le recruteur collégial (Q1 revue). « Ma page » rouverte au lot D5b : la page de SON université
+   (/universite/[école]), sans pages d'équipes (Q5) — la base n'accepte l'écriture que sous ON (D5a). */
 
 /** Le compte est-il un recruteur universitaire (users.context) ? */
 export function estRecruteurUniversitaire(profil: { context?: string | null } | null | undefined): boolean {
@@ -16,7 +17,7 @@ export function estRecruteurUniversitaire(profil: { context?: string | null } | 
 }
 
 /** Pages du portail recruteur propres au cégep, fermées au recruteur universitaire (Q2, Q3). */
-const PAGES_CEGEP_SEULEMENT = ["/recruteur/ma-page", "/recruteur/cegep/stats", "/recruteur/cegep/recrues", "/recruteur/cegep/entraineurs"];
+const PAGES_CEGEP_SEULEMENT = ["/recruteur/cegep/stats", "/recruteur/cegep/recrues", "/recruteur/cegep/entraineurs"];
 
 /** La page (pathname déjà sans « / » final) est-elle fermée au recruteur universitaire ? */
 export function pageFermeeUniversitaire(chemin: string): boolean {

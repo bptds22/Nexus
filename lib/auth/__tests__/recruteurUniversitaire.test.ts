@@ -33,10 +33,11 @@ test("portail universitaire : pages propres au cégep fermées, le reste ouvert"
   assert.equal(estRecruteurUniversitaire({ context: "universitaire" }), true);
   assert.equal(estRecruteurUniversitaire({ context: "collegial" }), false);
   assert.equal(estRecruteurUniversitaire(null), false);
-  for (const p of ["/recruteur/ma-page", "/recruteur/cegep", "/recruteur/cegep/stats", "/recruteur/cegep/recrues", "/recruteur/cegep/entraineurs/x"]) {
+  for (const p of ["/recruteur/cegep", "/recruteur/cegep/stats", "/recruteur/cegep/recrues", "/recruteur/cegep/entraineurs/x"]) {
     assert.equal(pageFermeeUniversitaire(p), true, p);
   }
-  for (const p of ["/recruteur/cegep/recruteurs", "/recruteur/cegep/reassignation", "/recruteur/recherche", "/recruteur/tableau-de-bord", "/recruteur/ma-pages"]) {
+  // « Ma page » rouverte au lot D5b (page de son université).
+  for (const p of ["/recruteur/ma-page", "/recruteur/cegep/recruteurs", "/recruteur/cegep/reassignation", "/recruteur/recherche", "/recruteur/tableau-de-bord", "/recruteur/ma-pages"]) {
     assert.equal(pageFermeeUniversitaire(p), false, p);
   }
 });

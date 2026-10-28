@@ -4,16 +4,16 @@
 // (jamais une grille vide).
 
 import * as React from "react";
-import type { NewsItem } from "./content";
+import { alEtablissement, type NewsItem, type ProgramPageContent } from "./content";
 
-export default function NewsSection({ news }: { news?: NewsItem[] }) {
+export default function NewsSection({ news, etablissement }: { news?: NewsItem[]; etablissement?: ProgramPageContent["etablissement"] }) {
   if (!news || news.length === 0) return null;
 
   return (
     <section id="news">
       <div className="sec-in">
         <div className="kick">ACTUALITÉS</div>
-        <h2 className="sec-h">Ce qui bouge au collège</h2>
+        <h2 className="sec-h">Ce qui bouge {alEtablissement(etablissement)}</h2>
         <div className="pbar" />
 
         <div className="news-grid">

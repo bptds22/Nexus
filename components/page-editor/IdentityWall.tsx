@@ -39,7 +39,7 @@ export default function IdentityWall({
 }) {
   const toast = useToast();
   // `school` est déjà pris plus bas par l'identité du mur (SchoolProgramIdentity).
-  const { initial, school: fiche, report, uploadAsset, assetUrl, setPreviewColors } = useEditor();
+  const { initial, school: fiche, report, uploadAsset, assetUrl, setPreviewColors, estUniversite, tonEtab } = useEditor();
   // La ville a-t-elle été SEEDÉE depuis `schools` (rien de saisi en base) ou
   // vient-elle d'une saisie ? Pilote le bandeau du bloc Géo, qui ne doit
   // annoncer que ce qui a réellement été pré-rempli.
@@ -182,7 +182,7 @@ export default function IdentityWall({
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">0</span>IDENTITÉ — AUTOMATIQUE</div>
             <div className="auto">
-              <span className="achip"><b>✓</b>Type : Collège privé</span>
+              <span className="achip"><b>✓</b>Type : {estUniversite ? "Université" : "Collège privé"}</span>
               <span className="achip"><b>✓</b>Nom : {initial.schoolName}</span>
             </div>
             <div className="note">Le nom officiel vient du seed Nexus. Une erreur ? Le ⚑ de la fiche Campus (section 3) la signale.</div>
@@ -199,7 +199,7 @@ export default function IdentityWall({
               </div>
               <div style={{ flex: 1 }}>
                 <span className="achip"><b>✓</b>Logo actuel — hérité de ton compte Nexus</span>
-                <div className="note" style={{ marginTop: 6 }}>Chargé automatiquement depuis la réclamation de ton collège (RPRP).</div>
+                <div className="note" style={{ marginTop: 6 }}>Chargé automatiquement depuis la réclamation de {tonEtab} (RPRP).</div>
               </div>
             </div>
             {/* Bloc 2 : upload réel */}
@@ -244,7 +244,7 @@ export default function IdentityWall({
                 ces deux champs restent vides et ne sont pas annoncés. */}
             {villePreremplie && (
               <div className="auto" style={{ marginBottom: 10 }}>
-                <span className="achip"><b>✓</b>Ville reprise de la fiche de ton collège — corrige si ça sonne pas juste</span>
+                <span className="achip"><b>✓</b>Ville reprise de la fiche de {tonEtab} — corrige si ça sonne pas juste</span>
               </div>
             )}
             <div className="row2">
@@ -283,7 +283,7 @@ export default function IdentityWall({
 
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">5</span>LETTRES &amp; MOTS DU MUR — TOUT SE CHANGE</div>
-            <div className="auto" style={{ marginBottom: 10 }}><span className="achip"><b>✓</b>Pré-remplis depuis ton collège — chaque mot ici a sa place sur le mur</span></div>
+            <div className="auto" style={{ marginBottom: 10 }}><span className="achip"><b>✓</b>Pré-remplis depuis {tonEtab} — chaque mot ici a sa place sur le mur</span></div>
             <div className="row2">
               <div>
                 <label className="fl" style={{ marginTop: 0 }}>Initiales (tuile géante)</label>

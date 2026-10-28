@@ -229,7 +229,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
   const nom = profil?.last_name?.trim() ?? "";
   const userName = `${prenom} ${nom}`.trim();
   const userInitials = `${prenom[0] ?? ""}${nom[0] ?? ""}`.toUpperCase();
-  // Recruteur universitaire (lot D3b) : pas de « Ma page », « Gestion université » = Recruteurs + Réassignation.
+  // Recruteur universitaire (lot D3b) : « Gestion université » = Recruteurs + Réassignation ; « Ma page » rouverte (D5b).
   const universitaire = estRecruteurUniversitaire(profil);
   const userSub = profil ? `${universitaire ? "Recruteur universitaire" : "Recruteur"}${nomCegep ? ` \u2014 ${nomCegep}` : ""}` : "";
   const itemsRecruteur = universitaire ? RECRUITER_ITEMS.filter((i) => !pageFermeeUniversitaire(i.href)) : RECRUITER_ITEMS;

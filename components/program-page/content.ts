@@ -89,6 +89,8 @@ export interface ProgramPageContent {
   sellText: string;
   sellTitle: string;
   /** S5 — académique */
+  /** Type d'établissement (lot D5b) : règle les mots « collège » / « université » des sections. Défaut collège. */
+  etablissement?: "college" | "universite";
   featuredPrograms: { title: string; blurb: string }[];
   programsList: string[];
   /** S6 — parcours */
@@ -121,3 +123,13 @@ export interface ProgramPageContent {
  *  tuile. Aucun repli « FRANCOPHONE » — c'était le défaut qui mentait. */
 export const languageLabel = (l: ProgramPageContent["language"]): string | null =>
   l === "EN" ? "ANGLOPHONE" : l === "BILINGUE" ? "BILINGUE" : l === "FR" ? "FRANCOPHONE" : null;
+
+/** « le collège » / « l'université » selon l'établissement (lot D5b). */
+export const lEtablissement = (e: ProgramPageContent["etablissement"]): string =>
+  e === "universite" ? "l'université" : "le collège";
+/** « ce collège » / « cette université ». */
+export const cetEtablissement = (e: ProgramPageContent["etablissement"]): string =>
+  e === "universite" ? "cette université" : "ce collège";
+/** « au collège » / « à l'université ». */
+export const alEtablissement = (e: ProgramPageContent["etablissement"]): string =>
+  e === "universite" ? "à l'université" : "au collège";
